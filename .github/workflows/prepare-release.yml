@@ -13,10 +13,10 @@ on:
         description: Current version (stable)
       candidate-beta:
         required: true
-        description: Release candidate version (stable)
+        description: Release candidate version (beta)
       current-beta:
         required: true
-        description: Current version (stable)
+        description: Current version (beta)
 jobs:
   # Releasing opentelemetry-collector
   prepare-release:
