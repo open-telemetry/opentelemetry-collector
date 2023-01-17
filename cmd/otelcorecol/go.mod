@@ -119,5 +119,3 @@ replace go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
-
-retract v0.69.0 // Release failed, use v0.69.1
