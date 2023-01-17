@@ -20,11 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBaseInternal(t *testing.T) {
-	base := baseFactory{}
-	assert.NotPanics(t, base.unexportedFactoryFunc)
-}
-
 func TestStabilityLevelString(t *testing.T) {
 	assert.EqualValues(t, "Undefined", StabilityLevelUndefined.String())
 	assert.EqualValues(t, "Unmaintained", StabilityLevelUnmaintained.String())

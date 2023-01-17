@@ -177,8 +177,6 @@ type Factory interface {
 	// 'componenttest.CheckConfigStruct'. It is recommended to have these checks in the
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() Config
-
-	unexportedFactoryFunc()
 }
 
 // CreateDefaultConfigFunc is the equivalent of Factory.CreateDefaultConfig().
@@ -187,15 +185,4 @@ type CreateDefaultConfigFunc func() Config
 // CreateDefaultConfig implements Factory.CreateDefaultConfig().
 func (f CreateDefaultConfigFunc) CreateDefaultConfig() Config {
 	return f()
-}
-
-type baseFactory struct {
-	cfgType Type
-	CreateDefaultConfigFunc
-}
-
-func (baseFactory) unexportedFactoryFunc() {}
-
-func (bf baseFactory) Type() Type {
-	return bf.cfgType
 }

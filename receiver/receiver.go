@@ -92,6 +92,8 @@ type Factory interface {
 
 	// LogsReceiverStability gets the stability level of the LogsReceiver.
 	LogsReceiverStability() component.StabilityLevel
+
+	unexportedFactoryFunc()
 }
 
 // FactoryOption apply changes to ReceiverOptions.
@@ -155,7 +157,6 @@ func (f CreateLogsFunc) CreateLogsReceiver(
 }
 
 type factory struct {
-	component.Factory
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
 	CreateTracesFunc
@@ -170,12 +171,7 @@ func (f *factory) Type() component.Type {
 	return f.cfgType
 }
 
-// CreateDefaultConfig creates the default configuration for the Component.
-//
-// TODO: Remove this when we remove the private func from component.Factory and add it to every specialized Factory.
-func (f *factory) CreateDefaultConfig() component.Config {
-	return f.CreateDefaultConfigFunc()
-}
+func (f *factory) unexportedFactoryFunc() {}
 
 func (f *factory) TracesReceiverStability() component.StabilityLevel {
 	return f.tracesStabilityLevel
