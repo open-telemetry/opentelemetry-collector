@@ -12,25 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testcomponents
+package testcomponents // import "go.opentelemetry.io/collector/service/internal/testcomponents"
 
 import (
 	"context"
-	"testing"
 
-	"github.com/stretchr/testify/assert"
-
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component"
 )
 
-func TestExampleProcessor(t *testing.T) {
-	prc := &ExampleProcessor{}
-	host := componenttest.NewNopHost()
-	assert.False(t, prc.Started())
-	assert.NoError(t, prc.Start(context.Background(), host))
-	assert.True(t, prc.Started())
+type componentState struct {
+	started bool
+	stopped bool
+}
 
-	assert.False(t, prc.Stopped())
-	assert.NoError(t, prc.Shutdown(context.Background()))
-	assert.True(t, prc.Stopped())
+func (cs *componentState) Started() bool {
+	return cs.started
+}
+
+func (cs *componentState) Stopped() bool {
+	return cs.stopped
+}
+
+func (cs *componentState) Start(_ context.Context, _ component.Host) error {
+	cs.started = true
+	return nil
+}
+
+func (cs *componentState) Shutdown(_ context.Context) error {
+	cs.stopped = true
+	return nil
 }
