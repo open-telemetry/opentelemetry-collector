@@ -218,7 +218,7 @@ func (f CreateMetricsToTracesFunc) CreateMetricsToTraces(
 // CreateMetricsToMetricsFunc is the equivalent of Factory.CreateMetricsToTraces().
 type CreateMetricsToMetricsFunc func(context.Context, CreateSettings, component.Config, consumer.Metrics) (Metrics, error)
 
-// CreateMetricsToTraces implements Factory.CreateMetricsToTraces().
+// CreateMetricsToMetrics implements Factory.CreateMetricsToTraces().
 func (f CreateMetricsToMetricsFunc) CreateMetricsToMetrics(
 	ctx context.Context,
 	set CreateSettings,
@@ -263,7 +263,7 @@ func (f CreateLogsToTracesFunc) CreateLogsToTraces(
 	return f(ctx, set, cfg, nextConsumer)
 }
 
-// CreateLogsToMetricssFunc is the equivalent of Factory.CreateLogsToMetrics().
+// CreateLogsToMetricsFunc is the equivalent of Factory.CreateLogsToMetrics().
 type CreateLogsToMetricsFunc func(context.Context, CreateSettings, component.Config, consumer.Metrics) (Logs, error)
 
 // CreateLogsToMetrics implements Factory.CreateLogsToMetrics().
