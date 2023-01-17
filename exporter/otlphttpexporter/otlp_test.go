@@ -37,7 +37,9 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -475,8 +477,7 @@ func TestErrorResponses(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mux := http.NewServeMux()
-			mux.HandleFunc("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+			srv, err := createBackend(addr, "/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
 				for k, v := range test.headers {
 					writer.Header().Add(k, v)
 				}
@@ -488,15 +489,8 @@ func TestErrorResponses(t *testing.T) {
 					require.NoError(t, err)
 				}
 			})
-			srv := http.Server{
-				Addr:    addr,
-				Handler: mux,
-			}
-			ln, err := net.Listen("tcp", addr)
 			require.NoError(t, err)
-			go func() {
-				_ = srv.Serve(ln)
-			}()
+			defer srv.Close()
 
 			cfg := &Config{
 				TracesEndpoint: fmt.Sprintf("http://%s/v1/traces", addr),
@@ -523,8 +517,6 @@ func TestErrorResponses(t *testing.T) {
 			} else {
 				assert.EqualValues(t, test.err, err)
 			}
-
-			srv.Close()
 		})
 	}
 }
@@ -559,20 +551,12 @@ func TestUserAgent(t *testing.T) {
 	t.Run("traces", func(t *testing.T) {
 		for _, test := range tests {
 			t.Run(test.name, func(t *testing.T) {
-				mux := http.NewServeMux()
-				mux.HandleFunc("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+				srv, err := createBackend(addr, "/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
 					assert.Contains(t, request.Header.Get("user-agent"), test.expectedUA)
 					writer.WriteHeader(200)
 				})
-				srv := http.Server{
-					Addr:    addr,
-					Handler: mux,
-				}
-				ln, err := net.Listen("tcp", addr)
 				require.NoError(t, err)
-				go func() {
-					_ = srv.Serve(ln)
-				}()
+				defer srv.Close()
 
 				cfg := &Config{
 					TracesEndpoint: fmt.Sprintf("http://%s/v1/traces", addr),
@@ -594,8 +578,6 @@ func TestUserAgent(t *testing.T) {
 				traces := ptrace.NewTraces()
 				err = exp.ConsumeTraces(context.Background(), traces)
 				require.NoError(t, err)
-
-				srv.Close()
 			})
 		}
 	})
@@ -603,20 +585,12 @@ func TestUserAgent(t *testing.T) {
 	t.Run("metrics", func(t *testing.T) {
 		for _, test := range tests {
 			t.Run(test.name, func(t *testing.T) {
-				mux := http.NewServeMux()
-				mux.HandleFunc("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
+				srv, err := createBackend(addr, "/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
 					assert.Contains(t, request.Header.Get("user-agent"), test.expectedUA)
 					writer.WriteHeader(200)
 				})
-				srv := http.Server{
-					Addr:    addr,
-					Handler: mux,
-				}
-				ln, err := net.Listen("tcp", addr)
 				require.NoError(t, err)
-				go func() {
-					_ = srv.Serve(ln)
-				}()
+				defer srv.Close()
 
 				cfg := &Config{
 					MetricsEndpoint: fmt.Sprintf("http://%s/v1/metrics", addr),
@@ -638,8 +612,6 @@ func TestUserAgent(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				err = exp.ConsumeMetrics(context.Background(), metrics)
 				require.NoError(t, err)
-
-				srv.Close()
 			})
 		}
 	})
@@ -647,20 +619,12 @@ func TestUserAgent(t *testing.T) {
 	t.Run("logs", func(t *testing.T) {
 		for _, test := range tests {
 			t.Run(test.name, func(t *testing.T) {
-				mux := http.NewServeMux()
-				mux.HandleFunc("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
+				srv, err := createBackend(addr, "/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
 					assert.Contains(t, request.Header.Get("user-agent"), test.expectedUA)
 					writer.WriteHeader(200)
 				})
-				srv := http.Server{
-					Addr:    addr,
-					Handler: mux,
-				}
-				ln, err := net.Listen("tcp", addr)
 				require.NoError(t, err)
-				go func() {
-					_ = srv.Serve(ln)
-				}()
+				defer srv.Close()
 
 				cfg := &Config{
 					LogsEndpoint: fmt.Sprintf("http://%s/v1/logs", addr),
@@ -687,4 +651,232 @@ func TestUserAgent(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestPartialSuccess(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	set := exportertest.NewNopCreateSettings()
+
+	t.Run("traces", func(t *testing.T) {
+		srv, err := createBackend(addr, "/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+			response := ptraceotlp.NewExportResponse()
+			partial := response.PartialSuccess()
+			partial.SetErrorMessage("hello")
+			partial.SetRejectedSpans(1)
+			bytes, err := response.MarshalProto()
+			require.NoError(t, err)
+			_, err = writer.Write(bytes)
+			require.NoError(t, err)
+		})
+		require.NoError(t, err)
+		defer srv.Close()
+
+		cfg := &Config{
+			TracesEndpoint:     fmt.Sprintf("http://%s/v1/traces", addr),
+			HTTPClientSettings: confighttp.HTTPClientSettings{},
+		}
+		exp, err := createTracesExporter(context.Background(), set, cfg)
+		require.NoError(t, err)
+
+		// start the exporter
+		err = exp.Start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, exp.Shutdown(context.Background()))
+		})
+
+		// generate data
+		traces := ptrace.NewTraces()
+		err = exp.ConsumeTraces(context.Background(), traces)
+		require.Error(t, err)
+	})
+
+	t.Run("metrics", func(t *testing.T) {
+		srv, err := createBackend(addr, "/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
+			response := pmetricotlp.NewExportResponse()
+			partial := response.PartialSuccess()
+			partial.SetErrorMessage("hello")
+			partial.SetRejectedDataPoints(1)
+			bytes, err := response.MarshalProto()
+			require.NoError(t, err)
+			_, err = writer.Write(bytes)
+			require.NoError(t, err)
+		})
+		require.NoError(t, err)
+		defer srv.Close()
+
+		cfg := &Config{
+			MetricsEndpoint:    fmt.Sprintf("http://%s/v1/metrics", addr),
+			HTTPClientSettings: confighttp.HTTPClientSettings{},
+		}
+		exp, err := createMetricsExporter(context.Background(), set, cfg)
+		require.NoError(t, err)
+
+		// start the exporter
+		err = exp.Start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, exp.Shutdown(context.Background()))
+		})
+
+		// generate data
+		metrics := pmetric.NewMetrics()
+		err = exp.ConsumeMetrics(context.Background(), metrics)
+		require.Error(t, err)
+	})
+
+	t.Run("logs", func(t *testing.T) {
+		srv, err := createBackend(addr, "/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
+			response := plogotlp.NewExportResponse()
+			partial := response.PartialSuccess()
+			partial.SetErrorMessage("hello")
+			partial.SetRejectedLogRecords(1)
+			bytes, err := response.MarshalProto()
+			require.NoError(t, err)
+			_, err = writer.Write(bytes)
+			require.NoError(t, err)
+		})
+		require.NoError(t, err)
+		defer srv.Close()
+
+		cfg := &Config{
+			LogsEndpoint:       fmt.Sprintf("http://%s/v1/logs", addr),
+			HTTPClientSettings: confighttp.HTTPClientSettings{},
+		}
+		exp, err := createLogsExporter(context.Background(), set, cfg)
+		require.NoError(t, err)
+
+		// start the exporter
+		err = exp.Start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, exp.Shutdown(context.Background()))
+		})
+
+		// generate data
+		logs := plog.NewLogs()
+		err = exp.ConsumeLogs(context.Background(), logs)
+		require.Error(t, err)
+	})
+
+	t.Run("Response is missing a Content-Length header but includes a partial success object", func(t *testing.T) {
+		response := ptraceotlp.NewExportResponse()
+		partial := response.PartialSuccess()
+		partial.SetErrorMessage("hello")
+		partial.SetRejectedSpans(1)
+		data, err := response.MarshalProto()
+		require.NoError(t, err)
+		resp := &http.Response{
+			// `-1` indicates a missing Content-Length header in the Go http standard library
+			ContentLength: -1,
+			Body:          io.NopCloser(bytes.NewReader(data)),
+		}
+		err = handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
+		assert.True(t, consumererror.IsPermanent(err))
+	})
+
+	t.Run("Response is missing a Content-Length header and a body", func(t *testing.T) {
+		resp := &http.Response{
+			// `-1` indicates a missing Content-Length header in the Go http standard library
+			ContentLength: -1,
+			Body:          io.NopCloser(bytes.NewReader([]byte{})),
+		}
+		err := handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Reading the response body returns an error other than ErrUnexpectedEOF", func(t *testing.T) {
+		resp := &http.Response{
+			// `-1` indicates a missing Content-Length header in the Go http standard library
+			ContentLength: -1,
+			Body:          io.NopCloser(badReader{}),
+		}
+		err := handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
+		assert.Error(t, err)
+	})
+
+	t.Run("Response has short Content-Length header", func(t *testing.T) {
+		response := ptraceotlp.NewExportResponse()
+		partial := response.PartialSuccess()
+		partial.SetErrorMessage("hello")
+		partial.SetRejectedSpans(1)
+		data, err := response.MarshalProto()
+		require.NoError(t, err)
+		resp := &http.Response{
+			ContentLength: 3,
+			Body:          io.NopCloser(bytes.NewReader(data)),
+		}
+		err = handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
+		assert.Error(t, err)
+	})
+
+	t.Run("Response has long Content-Length header", func(t *testing.T) {
+		response := ptraceotlp.NewExportResponse()
+		partial := response.PartialSuccess()
+		partial.SetErrorMessage("hello")
+		partial.SetRejectedSpans(1)
+		data, err := response.MarshalProto()
+		require.NoError(t, err)
+		resp := &http.Response{
+			ContentLength: 4096,
+			Body:          io.NopCloser(bytes.NewReader(data)),
+		}
+		err = handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
+		assert.Error(t, err)
+	})
+
+	invalidBodyCases := []struct {
+		telemetryType string
+		handler       partialSuccessHandler
+	}{
+		{
+			telemetryType: "traces",
+			handler:       tracesPartialSuccessHandler,
+		},
+		{
+			telemetryType: "metrics",
+			handler:       metricsPartialSuccessHandler,
+		},
+		{
+			telemetryType: "logs",
+			handler:       logsPartialSuccessHandler,
+		},
+	}
+	for _, tt := range invalidBodyCases {
+		t.Run("Invalid response body: "+tt.telemetryType, func(t *testing.T) {
+			str := "invalid proto"
+			body := bytes.NewBufferString(str)
+			resp := &http.Response{
+				ContentLength: int64(len(str)),
+				Body:          io.NopCloser(body),
+			}
+			err := handlePartialSuccessResponse(resp, tt.handler)
+			assert.Error(t, err)
+		})
+	}
+
+}
+
+func createBackend(addr string, endpoint string, handler func(writer http.ResponseWriter, request *http.Request)) (*http.Server, error) {
+	mux := http.NewServeMux()
+	mux.HandleFunc(endpoint, handler)
+	srv := http.Server{
+		Addr:    addr,
+		Handler: mux,
+	}
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return &http.Server{}, err
+	}
+	go func() {
+		_ = srv.Serve(ln)
+	}()
+
+	return &srv, nil
+}
+
+type badReader struct{}
+
+func (b badReader) Read([]byte) (int, error) {
+	return 0, errors.New("Bad read")
 }

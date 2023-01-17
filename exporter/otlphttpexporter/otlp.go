@@ -90,7 +90,7 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 		return consumererror.NewPermanent(err)
 	}
 
-	return e.export(ctx, e.tracesURL, request)
+	return e.export(ctx, e.tracesURL, request, tracesPartialSuccessHandler)
 }
 
 func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
@@ -99,7 +99,7 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	return e.export(ctx, e.metricsURL, request)
+	return e.export(ctx, e.metricsURL, request, metricsPartialSuccessHandler)
 }
 
 func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
@@ -109,10 +109,10 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 		return consumererror.NewPermanent(err)
 	}
 
-	return e.export(ctx, e.logsURL, request)
+	return e.export(ctx, e.logsURL, request, logsPartialSuccessHandler)
 }
 
-func (e *baseExporter) export(ctx context.Context, url string, request []byte) error {
+func (e *baseExporter) export(ctx context.Context, url string, request []byte, partialSuccessHandler partialSuccessHandler) error {
 	e.logger.Debug("Preparing to make HTTP request", zap.String("url", url))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
@@ -133,6 +133,10 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte) e
 	}()
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+		if err := handlePartialSuccessResponse(resp, partialSuccessHandler); err != nil {
+			return err
+		}
+
 		// Request is successful.
 		return nil
 	}
@@ -213,4 +217,82 @@ func readResponse(resp *http.Response) *status.Status {
 	}
 
 	return respStatus
+}
+
+func handlePartialSuccessResponse(resp *http.Response, partialSuccessHandler partialSuccessHandler) error {
+	if resp.ContentLength == 0 {
+		return nil
+	}
+
+	maxRead := resp.ContentLength
+	needsResize := false
+	if maxRead == -1 || maxRead > maxHTTPResponseReadBytes {
+		maxRead = maxHTTPResponseReadBytes
+		needsResize = true
+	}
+	protoBytes := make([]byte, maxRead)
+	n, err := io.ReadFull(resp.Body, protoBytes)
+
+	// No bytes read and an EOF error indicates there is no body to read.
+	if n == 0 && (err == nil || errors.Is(err, io.EOF)) {
+		return nil
+	}
+
+	// io.ReadFull will return io.ErrorUnexpectedEOF if the Content-Length header
+	// wasn't set, since we will try to read past the length of the body. If this
+	// is the case, the body will still have the full message in it, so we want to
+	// ignore the error and parse the message.
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
+		return err
+	}
+
+	// The pdata unmarshaling methods check for the length of the slice
+	// when unmarshaling it, so we have to trim down the length to the
+	// actual size of the data.
+	if needsResize {
+		protoBytes = protoBytes[:n]
+	}
+
+	return partialSuccessHandler(protoBytes)
+}
+
+type partialSuccessHandler func(protoBytes []byte) error
+
+func tracesPartialSuccessHandler(protoBytes []byte) error {
+	exportResponse := ptraceotlp.NewExportResponse()
+	err := exportResponse.UnmarshalProto(protoBytes)
+	if err != nil {
+		return err
+	}
+	partialSuccess := exportResponse.PartialSuccess()
+	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
+		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: %s (%d rejected)", partialSuccess.ErrorMessage(), partialSuccess.RejectedSpans()))
+	}
+	return nil
+}
+
+func metricsPartialSuccessHandler(protoBytes []byte) error {
+	exportResponse := pmetricotlp.NewExportResponse()
+	err := exportResponse.UnmarshalProto(protoBytes)
+	if err != nil {
+		return err
+	}
+	partialSuccess := exportResponse.PartialSuccess()
+	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
+		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: %s (%d rejected)", partialSuccess.ErrorMessage(), partialSuccess.RejectedDataPoints()))
+	}
+	return nil
+}
+
+func logsPartialSuccessHandler(protoBytes []byte) error {
+	exportResponse := plogotlp.NewExportResponse()
+	err := exportResponse.UnmarshalProto(protoBytes)
+	if err != nil {
+		return err
+	}
+	partialSuccess := exportResponse.PartialSuccess()
+	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
+		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: %s (%d rejected)", partialSuccess.ErrorMessage(), partialSuccess.RejectedLogRecords()))
+	}
+	return nil
 }
