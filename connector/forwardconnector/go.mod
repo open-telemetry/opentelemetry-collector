@@ -55,6 +55,4 @@ replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
-retract (
-	v0.69.0 // Release failed, use v0.69.1 
-)
+retract v0.69.0 // Release failed, use v0.69.1

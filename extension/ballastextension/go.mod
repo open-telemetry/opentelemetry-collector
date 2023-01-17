@@ -50,6 +50,4 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../zpagesexte
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
-retract (
-	v0.69.0 // Release failed, use v0.69.1 
-)
+retract v0.69.0 // Release failed, use v0.69.1
