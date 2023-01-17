@@ -114,7 +114,6 @@ configuration is provided, ocb will generate a default Collector.
 	if err := cmd.Flags().MarkDeprecated(distributionModuleFlag, "use config distribution::module"); err != nil {
 		return nil, err
 	}
-
 	// version of this binary
 	cmd.AddCommand(versionCommand())
 
@@ -196,4 +195,5 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 	if !flags.Changed(distributionModuleFlag) && cfgFromFile.Distribution.Module != "" {
 		cfg.Distribution.Module = cfgFromFile.Distribution.Module
 	}
+	cfg.Distribution.DebugCompilation = cfgFromFile.Distribution.DebugCompilation
 }

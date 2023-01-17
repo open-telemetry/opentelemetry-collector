@@ -66,6 +66,17 @@ $ ocb --config=builder-config.yaml
 
 Use `ocb --help` to learn about which flags are available.
 
+## Debug
+
+To keep the debug symbols in the resulting OpenTelemetry Collector binary, set the configuration property `debug_compilation` to true.
+
+Then install `go-delve` and run OpenTelemetry Collector with `dlv` command as the following example:
+```bash
+# go install github.com/go-delve/delve/cmd/dlv@latest
+# ~/go/bin/dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient --log exec .otel-collector-binary -- --config otel-collector-config.yaml
+```
+Finally, load the OpenTelemetry Collector as a project in the IDE, configure debug for Go
+
 ## Configuration
 
 The configuration file is composed of two main parts: `dist` and module types. All `dist` options can be specified via command line flags:
@@ -91,6 +102,7 @@ dist:
     output_path: /tmp/otelcol-distributionNNN # the path to write the output (sources and binary). Optional.
     version: "1.0.0" # the version for your custom OpenTelemetry Collector. Optional.
     go: "/usr/bin/go" # which Go binary to use to compile the generated sources. Optional.
+    debug_compilation: false # enabling this causes the builder to keep the debug symbols in the resulting binary. Optional.
 exporters:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.40.0" # the Go module for the component. Required.
     import: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter" # the import path for the component. Optional.

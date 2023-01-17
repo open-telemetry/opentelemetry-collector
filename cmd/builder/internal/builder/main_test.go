@@ -79,3 +79,27 @@ func TestGenerateAndCompileDefault(t *testing.T) {
 	// (on Windows fail to delete temp dir otherwise).
 	time.Sleep(1 * time.Second)
 }
+
+func TestGenerateAndCompileWithDebugCompilation(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping the test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/5403")
+	}
+	cfg := NewDefaultConfig()
+	cfg.Distribution.OutputPath = t.TempDir()
+	cfg.Distribution.DebugCompilation = true
+
+	// This test is dependent on the current file structure.
+	// The goal is find the root of the repo so we can replace the root module.
+	_, thisFile, _, _ := runtime.Caller(0)
+	workspaceDir := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile)))))
+	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector => %s", workspaceDir))
+	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/component => %s/component", workspaceDir))
+
+	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, cfg.SetGoPath())
+	require.NoError(t, GenerateAndCompile(cfg))
+
+	// Sleep for 1 second to make sure all processes using the files are completed
+	// (on Windows fail to delete temp dir otherwise).
+	time.Sleep(1 * time.Second)
+}
