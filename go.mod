@@ -96,7 +96,7 @@ replace go.opentelemetry.io/collector/pdata => ./pdata
 replace go.opentelemetry.io/collector/extension/zpagesextension => ./extension/zpagesextension
 
 retract (
-	v0.69.0 // Release failed, use v0.69.1 + v1.0.0-rc3
+	v0.69.0 // Release failed, use v0.69.1 
 	v0.57.1 // Release failed, use v0.57.2
 	v0.57.0 // Release failed, use v0.57.2
 	v0.32.0 // Contains incomplete metrics transition to proto 0.9.0, random components are not working.
