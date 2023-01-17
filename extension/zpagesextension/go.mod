@@ -44,3 +44,5 @@ replace go.opentelemetry.io/collector/pdata => ../../pdata
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
+
+retract v0.69.0 // Release failed, use v0.69.1

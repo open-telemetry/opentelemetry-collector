@@ -11,6 +11,7 @@ require (
 )
 
 retract (
+	v0.69.0 // Release failed, use v0.69.1
 	v0.57.1 // Release failed, use v0.57.2
 	v0.57.0 // Release failed, use v0.57.2
 )
