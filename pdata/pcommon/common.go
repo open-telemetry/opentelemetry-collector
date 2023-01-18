@@ -18,7 +18,6 @@ package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
 // such as timestamps, attributes, etc.
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -363,72 +362,6 @@ func (v Value) CopyTo(dest Value) {
 		// Primitive immutable type, no need for deep copy.
 		destOrig.Value = ov
 	}
-}
-
-// Equal checks for equality, it returns true if the objects are equal otherwise false.
-// Deprecated: [1.0.0-rc2] Use reflect.DeepEqual(v1.AsRaw(), v2.AsRaw()) in tests.
-// If you need this method where performance is critical, please share your use case in
-// https://github.com/open-telemetry/opentelemetry-collector/issues/6811
-func (v Value) Equal(av Value) bool {
-	if v.getOrig() == av.getOrig() {
-		return true
-	}
-
-	if v.getOrig().Value == nil || av.getOrig().Value == nil {
-		return v.getOrig().Value == av.getOrig().Value
-	}
-
-	if v.Type() != av.Type() {
-		return false
-	}
-
-	switch v := v.getOrig().Value.(type) {
-	case *otlpcommon.AnyValue_StringValue:
-		return v.StringValue == av.getOrig().GetStringValue()
-	case *otlpcommon.AnyValue_BoolValue:
-		return v.BoolValue == av.getOrig().GetBoolValue()
-	case *otlpcommon.AnyValue_IntValue:
-		return v.IntValue == av.getOrig().GetIntValue()
-	case *otlpcommon.AnyValue_DoubleValue:
-		return v.DoubleValue == av.getOrig().GetDoubleValue()
-	case *otlpcommon.AnyValue_ArrayValue:
-		vv := v.ArrayValue.GetValues()
-		avv := av.getOrig().GetArrayValue().GetValues()
-		if len(vv) != len(avv) {
-			return false
-		}
-
-		for i := range avv {
-			if !newValue(&vv[i]).Equal(newValue(&avv[i])) {
-				return false
-			}
-		}
-		return true
-	case *otlpcommon.AnyValue_KvlistValue:
-		cc := v.KvlistValue.GetValues()
-		avv := av.getOrig().GetKvlistValue().GetValues()
-		if len(cc) != len(avv) {
-			return false
-		}
-
-		m := newMap(&avv)
-
-		for i := range cc {
-			newAv, ok := m.Get(cc[i].Key)
-			if !ok {
-				return false
-			}
-
-			if !newAv.Equal(newValue(&cc[i].Value)) {
-				return false
-			}
-		}
-		return true
-	case *otlpcommon.AnyValue_BytesValue:
-		return bytes.Equal(v.BytesValue, av.getOrig().GetBytesValue())
-	}
-
-	return false
 }
 
 // AsString converts an OTLP Value object of any type to its equivalent string
