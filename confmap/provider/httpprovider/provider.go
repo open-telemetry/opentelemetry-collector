@@ -23,7 +23,7 @@ import (
 //
 // This Provider supports "http" scheme.
 //
-// One example for http-uri be: http://localhost:3333/getConfig
+// One example for HTTP URI is: http://localhost:3333/getConfig
 func New() confmap.Provider {
 	return configurablehttpprovider.New(configurablehttpprovider.PlainText)
 }
