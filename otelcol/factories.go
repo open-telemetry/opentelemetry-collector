@@ -16,6 +16,7 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/processor"
@@ -36,4 +37,7 @@ type Factories struct {
 
 	// Extensions maps extension type names in the config to the respective factory.
 	Extensions map[component.Type]extension.Factory
+
+	// Connectors maps connector type names in the config to the respective factory.
+	Connectors map[component.Type]connector.Factory
 }

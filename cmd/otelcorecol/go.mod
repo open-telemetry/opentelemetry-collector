@@ -8,6 +8,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.69.1
 	go.opentelemetry.io/collector/component v0.69.1
+	go.opentelemetry.io/collector/connector/forwardconnector v0.69.1
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.69.1
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.69.1
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.69.1
@@ -97,6 +98,8 @@ replace go.opentelemetry.io/collector/component => ../../component
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
+
+replace go.opentelemetry.io/collector/connector/forwardconnector => ../../connector/forwardconnector
 
 replace go.opentelemetry.io/collector/exporter/loggingexporter => ../../exporter/loggingexporter
 

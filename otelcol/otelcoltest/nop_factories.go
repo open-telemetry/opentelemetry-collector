@@ -13,7 +13,10 @@
 // limitations under the License.
 
 package otelcoltest // import "go.opentelemetry.io/collector/otelcol/otelcoltest"
+
 import (
+	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
@@ -43,6 +46,10 @@ func NopFactories() (otelcol.Factories, error) {
 	}
 
 	if factories.Processors, err = processor.MakeFactoryMap(processortest.NewNopFactory()); err != nil {
+		return otelcol.Factories{}, err
+	}
+
+	if factories.Connectors, err = connector.MakeFactoryMap(connectortest.NewNopFactory()); err != nil {
 		return otelcol.Factories{}, err
 	}
 
