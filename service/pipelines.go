@@ -461,7 +461,7 @@ func (bps *builtPipelines) getPipelinesSummaryTableData() zpages.SummaryPipeline
 		}
 		row := zpages.SummaryPipelinesTableRowData{
 			FullName:    c.String(),
-			InputType:   string(c.Type()),
+			InputType:   c.Type(),
 			MutatesData: p.lastConsumer.Capabilities().MutatesData,
 			Receivers:   recvs,
 			Processors:  procs,

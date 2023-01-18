@@ -47,7 +47,7 @@ type customRoundTripper struct {
 
 var _ http.RoundTripper = (*customRoundTripper)(nil)
 
-func (c *customRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
+func (c *customRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
 	return nil, nil
 }
 
@@ -743,7 +743,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 		ext: map[component.ID]component.Component{
 			component.NewID("mock"): auth.NewServer(
 				auth.WithServerAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
-					return ctx, errors.New("Settings failed")
+					return ctx, errors.New("settings failed")
 				}),
 			),
 		},
@@ -983,7 +983,7 @@ func TestFailedServerAuth(t *testing.T) {
 		ext: map[component.ID]component.Component{
 			component.NewID("mock"): auth.NewServer(
 				auth.WithServerAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
-					return ctx, errors.New("Settings failed")
+					return ctx, errors.New("settings failed")
 				}),
 			),
 		},

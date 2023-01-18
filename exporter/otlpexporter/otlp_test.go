@@ -92,7 +92,7 @@ func (r *mockTracesReceiver) getLastRequest() ptrace.Traces {
 }
 
 func otlpTracesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockTracesReceiver, error) {
-	sopts := []grpc.ServerOption{}
+	var sopts []grpc.ServerOption
 
 	if useTLS {
 		_, currentFile, _, _ := runtime.Caller(0)

@@ -143,7 +143,7 @@ func toStorageClient(ctx context.Context, storageID component.ID, host component
 		return nil, err
 	}
 
-	client, err := extension.GetClient(ctx, component.KindExporter, ownerID, string(signal))
+	client, err := extension.GetClient(ctx, component.KindExporter, ownerID, signal)
 	if err != nil {
 		return nil, err
 	}
@@ -433,7 +433,7 @@ func (rs *retrySender) send(req internal.Request) error {
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
 		case <-req.Context().Done():
-			return fmt.Errorf("Request is cancelled or timed out %w", err)
+			return fmt.Errorf("request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
 			return rs.onTemporaryFailure(rs.logger, req, fmt.Errorf("interrupted due to shutdown %w", err))
 		case <-time.After(backoffDelay):

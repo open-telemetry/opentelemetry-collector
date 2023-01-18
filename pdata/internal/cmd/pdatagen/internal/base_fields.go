@@ -514,7 +514,7 @@ func (psf *primitiveSliceField) generateSetWithTestValue(sb *bytes.Buffer) {
 	sb.WriteString("\ttv.orig." + psf.fieldName + " = " + psf.testVal)
 }
 
-func (psf *primitiveSliceField) generateCopyToValue(ms baseStruct, sb *bytes.Buffer) {
+func (psf *primitiveSliceField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
 	sb.WriteString("\tms." + psf.fieldName + "().CopyTo(dest." + psf.fieldName + "())")
 }
 

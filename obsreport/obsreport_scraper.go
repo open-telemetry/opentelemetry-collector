@@ -101,23 +101,23 @@ func (s *Scraper) createOtelMetrics(cfg ScraperSettings) error {
 	}
 	meter := cfg.ReceiverCreateSettings.MeterProvider.Meter(scraperScope)
 
-	var errors, err error
+	var errs, err error
 
 	s.scrapedMetricsPoints, err = meter.SyncInt64().Counter(
 		obsmetrics.ScraperPrefix+obsmetrics.ScrapedMetricPointsKey,
 		instrument.WithDescription("Number of metric points successfully scraped."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
-	errors = multierr.Append(errors, err)
+	errs = multierr.Append(errs, err)
 
 	s.erroredMetricsPoints, err = meter.SyncInt64().Counter(
 		obsmetrics.ScraperPrefix+obsmetrics.ErroredMetricPointsKey,
 		instrument.WithDescription("Number of metric points that were unable to be scraped."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
-	errors = multierr.Append(errors, err)
+	errs = multierr.Append(errs, err)
 
-	return errors
+	return errs
 }
 
 // StartMetricsOp is called when a scrape operation is started. The
@@ -158,7 +158,7 @@ func (s *Scraper) EndMetricsOp(
 	// end span according to errors
 	if span.IsRecording() {
 		span.SetAttributes(
-			attribute.String(obsmetrics.FormatKey, string(component.DataTypeMetrics)),
+			attribute.String(obsmetrics.FormatKey, component.DataTypeMetrics),
 			attribute.Int64(obsmetrics.ScrapedMetricPointsKey, int64(numScrapedMetrics)),
 			attribute.Int64(obsmetrics.ErroredMetricPointsKey, int64(numErroredMetrics)),
 		)

@@ -55,7 +55,7 @@ func createDefaultConfig() component.Config {
 // createTracesToTraces creates a trace receiver based on provided config.
 func (f *forwardFactory) createTracesToTraces(
 	_ context.Context,
-	set connector.CreateSettings,
+	_ connector.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (connector.Traces, error) {
@@ -71,7 +71,7 @@ func (f *forwardFactory) createTracesToTraces(
 // createMetricsToMetrics creates a metrics receiver based on provided config.
 func (f *forwardFactory) createMetricsToMetrics(
 	_ context.Context,
-	set connector.CreateSettings,
+	_ connector.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (connector.Metrics, error) {
@@ -87,7 +87,7 @@ func (f *forwardFactory) createMetricsToMetrics(
 // createLogsToLogs creates a log receiver based on provided config.
 func (f *forwardFactory) createLogsToLogs(
 	_ context.Context,
-	set connector.CreateSettings,
+	_ connector.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (connector.Logs, error) {

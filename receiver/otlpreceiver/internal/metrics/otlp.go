@@ -24,7 +24,6 @@ import (
 
 const (
 	dataFormatProtobuf = "protobuf"
-	receiverTransport  = "grpc"
 )
 
 // Receiver is the type used to handle metrics from OpenTelemetry exporters.

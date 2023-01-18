@@ -63,7 +63,7 @@ func (id *ID) UnmarshalText(text []byte) error {
 	idStr := string(text)
 	items := strings.SplitN(idStr, typeAndNameSeparator, 2)
 	if len(items) >= 1 {
-		id.typeVal = Type(strings.TrimSpace(items[0]))
+		id.typeVal = strings.TrimSpace(items[0])
 	}
 
 	if len(items) == 1 && id.typeVal == "" {
@@ -88,7 +88,7 @@ func (id *ID) UnmarshalText(text []byte) error {
 // String returns the ID string representation as "type[/name]" format.
 func (id ID) String() string {
 	if id.nameVal == "" {
-		return string(id.typeVal)
+		return id.typeVal
 	}
 
 	return string(id.typeVal) + typeAndNameSeparator + id.nameVal

@@ -450,15 +450,15 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguou
 
 type mockStorageExtension struct{}
 
-func (m mockStorageExtension) Start(_ context.Context, _ component.Host) error {
+func (m mockStorageExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (m mockStorageExtension) Shutdown(_ context.Context) error {
+func (m mockStorageExtension) Shutdown(context.Context) error {
 	return nil
 }
 
-func (m mockStorageExtension) GetClient(ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error) {
+func (m mockStorageExtension) GetClient(context.Context, component.Kind, component.ID, string) (storage.Client, error) {
 	return newMockStorageClient(), nil
 }
 
