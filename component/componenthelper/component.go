@@ -51,12 +51,12 @@ func (bc *baseComponent) Start(ctx context.Context, host component.Host) error {
 	if previous := bc.current.Swap(lifecycleRunning); previous != lifecycleShutdown {
 		return nil
 	}
-	return bc.startFn(ctx, host)
+	return bc.startFn.Start(ctx, host)
 }
 
 func (bc *baseComponent) Shutdown(ctx context.Context) error {
 	if previous := bc.current.Swap(lifecycleShutdown); previous != lifecycleRunning {
 		return nil
 	}
-	return bc.shutdownFn(ctx)
+	return bc.shutdownFn.Shutdown(ctx)
 }
