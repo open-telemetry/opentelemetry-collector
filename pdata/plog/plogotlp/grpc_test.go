@@ -102,6 +102,7 @@ func TestGrpcError(t *testing.T) {
 }
 
 type fakeLogsServer struct {
+	UnimplementedGRPCServer
 	t   *testing.T
 	err error
 }

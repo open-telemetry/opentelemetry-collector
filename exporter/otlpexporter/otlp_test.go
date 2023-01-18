@@ -70,6 +70,7 @@ func (r *mockReceiver) setExportError(err error) {
 }
 
 type mockTracesReceiver struct {
+	ptraceotlp.UnimplementedGRPCServer
 	mockReceiver
 	lastRequest ptrace.Traces
 }
@@ -125,6 +126,7 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockTracesRe
 }
 
 type mockLogsReceiver struct {
+	plogotlp.UnimplementedGRPCServer
 	mockReceiver
 	lastRequest plog.Logs
 }
@@ -165,6 +167,7 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 }
 
 type mockMetricsReceiver struct {
+	pmetricotlp.UnimplementedGRPCServer
 	mockReceiver
 	lastRequest pmetric.Metrics
 }

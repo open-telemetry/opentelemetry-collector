@@ -28,6 +28,7 @@ const (
 
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
 type Receiver struct {
+	plogotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Logs
 	obsrecv      *obsreport.Receiver
 }
