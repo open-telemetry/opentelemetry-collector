@@ -5,7 +5,7 @@ change_type: bug_fix
 component: loggingexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix undefined symbol errors on building otelcorecol for Plan 9
+note: Fix undefined symbol errors on building otelcorecol for other platforms than darwin, linux, windows.
 
 # One or more tracking issues or pull requests related to the change
 issues: [6924]

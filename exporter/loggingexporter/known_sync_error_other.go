@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build plan9
-// +build plan9
+//go:build !linux && !darwin && !windows
+// +build !linux,!darwin,!windows
 
 package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggingexporter"
 
