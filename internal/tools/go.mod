@@ -11,11 +11,11 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.16.0
 	github.com/wadey/gocovmerge v0.0.0-20160331181800-b5bfa59ec0ad
-	go.opentelemetry.io/build-tools/checkdoc v0.4.0
-	go.opentelemetry.io/build-tools/chloggen v0.4.0
-	go.opentelemetry.io/build-tools/crosslink v0.4.0
-	go.opentelemetry.io/build-tools/multimod v0.4.0
-	go.opentelemetry.io/build-tools/semconvgen v0.4.0
+	go.opentelemetry.io/build-tools/checkdoc v0.5.0
+	go.opentelemetry.io/build-tools/chloggen v0.5.0
+	go.opentelemetry.io/build-tools/crosslink v0.5.0
+	go.opentelemetry.io/build-tools/multimod v0.5.0
+	go.opentelemetry.io/build-tools/semconvgen v0.5.0
 	golang.org/x/exp v0.0.0-20221004215720-b9f4876ce741
 	golang.org/x/tools v0.5.0
 )
@@ -198,7 +198,7 @@ require (
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.2.0 // indirect
 	gitlab.com/bosi/decorder v0.2.3 // indirect
-	go.opentelemetry.io/build-tools v0.4.0 // indirect
+	go.opentelemetry.io/build-tools v0.5.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
