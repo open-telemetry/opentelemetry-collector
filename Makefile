@@ -15,7 +15,6 @@ ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
 ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
 
 CMD?=
-TOOLS_MOD_DIR := ./internal/tools
 
 # TODO: Find a way to configure this in the generated code, currently no effect.
 BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
@@ -26,11 +25,6 @@ RUN_CONFIG?=examples/local/otel-config.yaml
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
 COMP_REL_PATH=cmd/otelcorecol/components.go
 MOD_NAME=go.opentelemetry.io/collector
-
-ADDLICENSE=addlicense
-GOCOVMERGE=gocovmerge
-MISSPELL=misspell -error
-MISSPELL_CORRECTION=misspell -w
 
 # Function to execute a command. Note the empty line before endef to make sure each command
 # gets executed separately instead of concatenated with previous one.
@@ -94,7 +88,7 @@ gogenerate:
 	@$(MAKE) for-all-target TARGET="generate"
 
 .PHONY: addlicense
-addlicense:
+addlicense: $(ADDLICENSE)
 	@ADDLICENSEOUT=`$(ADDLICENSE) -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENSEOUT" ]; then \
 			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
@@ -105,7 +99,7 @@ addlicense:
 		fi
 
 .PHONY: checklicense
-checklicense:
+checklicense: $(ADDLICENSE)
 	@ADDLICENSEOUT=`$(ADDLICENSE) -check $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENSEOUT" ]; then \
 			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
@@ -117,30 +111,12 @@ checklicense:
 		fi
 
 .PHONY: misspell
-misspell:
-	$(MISSPELL) $(ALL_DOC)
+misspell: $(MISSPELL)
+	$(MISSPELL) -error $(ALL_DOC)
 
 .PHONY: misspell-correction
-misspell-correction:
-	$(MISSPELL_CORRECTION) $(ALL_DOC)
-
-.PHONY: install-tools
-install-tools:
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/client9/misspell/cmd/misspell
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/google/addlicense
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/ory/go-acc
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/pavius/impi/cmd/impi
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/tcnksm/ghr
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/wadey/gocovmerge
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/checkdoc
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/chloggen
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/semconvgen
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install golang.org/x/exp/cmd/apidiff
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install golang.org/x/tools/cmd/goimports
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jcchavezs/porto/cmd/porto
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/multimod
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/crosslink
+misspell-correction: $(MISSPELL)
+	$(MISSPELL) -w $(ALL_DOC)
 
 .PHONY: run
 run: otelcorecol
@@ -379,14 +355,14 @@ apidiff-compare:
 	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
 
 .PHONY: multimod-verify
-multimod-verify: install-tools
+multimod-verify: $(MULTIMOD)
 	@echo "Validating versions.yaml"
-	multimod verify
+	$(MULTIMOD) verify
 
 MODSET?=stable
 .PHONY: multimod-prerelease
-multimod-prerelease: install-tools
-	multimod prerelease -s=true -b=false -v ./versions.yaml -m ${MODSET}
+multimod-prerelease: $(MULTIMOD)
+	$(MULTIMOD) prerelease -s=true -b=false -v ./versions.yaml -m ${MODSET}
 	$(MAKE) gotidy
 
 COMMIT?=HEAD
@@ -459,27 +435,24 @@ checklinks:
 # error message "failed to sync logger:  sync /dev/stderr: inappropriate ioctl for device"
 # is a known issue but does not affect function.
 .PHONY: crosslink
-crosslink:
+crosslink: $(CROSSLINK)
 	@echo "Executing crosslink"
-	crosslink --root=$(shell pwd) --prune
+	$(CROSSLINK) --root=$(shell pwd) --prune
 
-.PHONY: chlog-install
-chlog-install:
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/chloggen
 
 FILENAME?=$(shell git branch --show-current).yaml
 .PHONY: chlog-new
-chlog-new: chlog-install
-	chloggen new --filename $(FILENAME)
+chlog-new: $(CHLOG)
+	$(CHLOG) new --filename $(FILENAME)
 
 .PHONY: chlog-validate
-chlog-validate: chlog-install
-	chloggen validate
+chlog-validate: $(CHLOG)
+	$(CHLOG) validate
 
 .PHONY: chlog-preview
-chlog-preview: chlog-install
-	chloggen update --dry
+chlog-preview: $(CHLOG)
+	$(CHLOG) update --dry
 
 .PHONY: chlog-update
-chlog-update: chlog-install
-	chloggen update --version $(VERSION)
+chlog-update: $(CHLOG)
+	$(CHLOG) update --version $(VERSION)
