@@ -14,7 +14,7 @@ usage() {
 dry_run=false
 package=""
 output_dir="./internal/data/apidiff"
-apidiff_cmd="${APIDIFF:-apidiff}"
+apidiff_cmd="$(dirname $(realpath ${BASH_SOURCE:-$0}))/../../.tools/apidiff"
 
 
 while getopts "dp:o:" o; do

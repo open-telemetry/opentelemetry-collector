@@ -340,7 +340,7 @@ checkdoc:
 # Construct new API state snapshots
 .PHONY: apidiff-build
 apidiff-build: $(APIDIFF)
-	APIDIFF=$(APIDIFF) @$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/gen-apidiff.sh -p $(pkg)))
+	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/gen-apidiff.sh -p $(pkg)))
 
 # If we are running in CI, change input directory
 ifeq ($(CI), true)
@@ -352,7 +352,7 @@ endif
 # Compare API state snapshots
 .PHONY: apidiff-compare
 apidiff-compare: $(APIDIFF)
-	APIDIFF=$(APIDIFF) @$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
+	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
 
 .PHONY: multimod-verify
 multimod-verify: $(MULTIMOD)
