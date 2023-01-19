@@ -17,6 +17,8 @@ package featuregate // import "go.opentelemetry.io/collector/featuregate"
 import (
 	"fmt"
 	"sync"
+
+	"go.uber.org/atomic"
 )
 
 var reg = NewRegistry()
@@ -27,13 +29,12 @@ func GetRegistry() *Registry {
 }
 
 type Registry struct {
-	mu    sync.RWMutex
-	gates map[string]*Gate
+	gates sync.Map
 }
 
 // NewRegistry returns a new empty Registry.
 func NewRegistry() *Registry {
-	return &Registry{gates: make(map[string]*Gate)}
+	return &Registry{}
 }
 
 // RegistryOption allows to configure additional information about a Gate during registration.
@@ -72,27 +73,28 @@ func WithRegisterRemovalVersion(version string) RegistryOption {
 // Apply a configuration in the form of a map of Gate identifiers to boolean values.
 // Sets only those values provided in the map, other gate values are not changed.
 func (r *Registry) Apply(cfg map[string]bool) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
 	for id, val := range cfg {
-		g, ok := r.gates[id]
+		v, ok := r.gates.Load(id)
 		if !ok {
 			return fmt.Errorf("feature gate %s is unregistered", id)
 		}
+		g := v.(*Gate)
 		if g.stage == StageStable {
 			return fmt.Errorf("feature gate %s is stable, can not be modified", id)
 		}
-		g.enabled = val
+		g.enabled.Store(val)
 	}
 	return nil
 }
 
 // IsEnabled returns true if a registered feature gate is enabled and false otherwise.
 func (r *Registry) IsEnabled(id string) bool {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	g, ok := r.gates[id]
-	return ok && g.enabled
+	v, ok := r.gates.Load(id)
+	if !ok {
+		return false
+	}
+	g := v.(*Gate)
+	return g.enabled.Load()
 }
 
 // MustRegisterID like RegisterID but panics if an invalid ID or gate options are provided.
@@ -103,11 +105,6 @@ func (r *Registry) MustRegisterID(id string, stage Stage, opts ...RegistryOption
 }
 
 func (r *Registry) RegisterID(id string, stage Stage, opts ...RegistryOption) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	if _, ok := r.gates[id]; ok {
-		return fmt.Errorf("attempted to add pre-existing gate %q", id)
-	}
 	g := &Gate{
 		id:    id,
 		stage: stage,
@@ -117,29 +114,27 @@ func (r *Registry) RegisterID(id string, stage Stage, opts ...RegistryOption) er
 	}
 	switch g.stage {
 	case StageAlpha:
-		g.enabled = false
+		g.enabled = atomic.NewBool(false)
 	case StageBeta, StageStable:
-		g.enabled = true
+		g.enabled = atomic.NewBool(true)
 	default:
 		return fmt.Errorf("unknown stage value %q for gate %q", stage, id)
 	}
 	if g.stage == StageStable && g.removalVersion == "" {
 		return fmt.Errorf("no removal version set for stable gate %q", id)
 	}
-	r.gates[id] = g
+	if _, loaded := r.gates.LoadOrStore(id, g); loaded {
+		return fmt.Errorf("attempted to add pre-existing gate %q", id)
+	}
 	return nil
 }
 
 // List returns a slice of copies of all registered Gates.
 func (r *Registry) List() []Gate {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	ret := make([]Gate, len(r.gates))
-	i := 0
-	for _, gate := range r.gates {
-		ret[i] = *gate
-		i++
-	}
-
+	var ret []Gate
+	r.gates.Range(func(key, value any) bool {
+		ret = append(ret, *(value.(*Gate)))
+		return true
+	})
 	return ret
 }

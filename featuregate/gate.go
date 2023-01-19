@@ -14,6 +14,8 @@
 
 package featuregate // import "go.opentelemetry.io/collector/featuregate"
 
+import "go.uber.org/atomic"
+
 // Gate is an immutable object that is owned by the Registry and represents an individual feature that
 // may be enabled or disabled based on the lifecycle state of the feature and CLI flags specified by the user.
 type Gate struct {
@@ -22,7 +24,7 @@ type Gate struct {
 	referenceURL   string
 	removalVersion string
 	stage          Stage
-	enabled        bool
+	enabled        *atomic.Bool
 }
 
 // ID returns the id of the Gate.
@@ -32,7 +34,7 @@ func (g *Gate) ID() string {
 
 // IsEnabled returns true if the feature described by the Gate is enabled.
 func (g *Gate) IsEnabled() bool {
-	return g.enabled
+	return g.enabled.Load()
 }
 
 // Description returns the description for the Gate.
