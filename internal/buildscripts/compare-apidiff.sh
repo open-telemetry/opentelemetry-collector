@@ -14,7 +14,7 @@ usage() {
 package=""
 input_dir="./internal/data/apidiff"
 check_only=false
-apidiff_cmd="$(dirname $(realpath ${BASH_SOURCE:-$0}))/../../.tools/apidiff"
+apidiff_cmd="$(git rev-parse --show-toplevel)/.tools/apidiff"
 
 while getopts "cp:d:" o; do
     case "${o}" in
