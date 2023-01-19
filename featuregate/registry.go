@@ -41,40 +41,32 @@ type RegistryOption interface {
 	apply(g *Gate)
 }
 
-type registerOption struct {
-	applyFunc func(g *Gate)
-}
+type registerOptionFunc func(g *Gate)
 
-func (ro registerOption) apply(g *Gate) {
-	ro.applyFunc(g)
+func (ro registerOptionFunc) apply(g *Gate) {
+	ro(g)
 }
 
 // WithRegisterDescription adds description for the Gate.
 func WithRegisterDescription(description string) RegistryOption {
-	return registerOption{
-		applyFunc: func(g *Gate) {
-			g.description = description
-		},
-	}
+	return registerOptionFunc(func(g *Gate) {
+		g.description = description
+	})
 }
 
 // WithRegisterReferenceURL adds an URL that has all the contextual information about the Gate.
 func WithRegisterReferenceURL(url string) RegistryOption {
-	return registerOption{
-		applyFunc: func(g *Gate) {
-			g.referenceURL = url
-		},
-	}
+	return registerOptionFunc(func(g *Gate) {
+		g.referenceURL = url
+	})
 }
 
 // WithRegisterRemovalVersion is used when the Gate is considered StageStable,
 // to inform users that referencing the gate is no longer needed.
 func WithRegisterRemovalVersion(version string) RegistryOption {
-	return registerOption{
-		applyFunc: func(g *Gate) {
-			g.removalVersion = version
-		},
-	}
+	return registerOptionFunc(func(g *Gate) {
+		g.removalVersion = version
+	})
 }
 
 // Apply a configuration in the form of a map of Gate identifiers to boolean values.
