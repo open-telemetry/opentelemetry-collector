@@ -64,15 +64,15 @@ gotest-with-cover: $(GOCOVMERGE)
 	$(GOCOVMERGE) $$(find . -name coverage.out) > coverage.txt
 
 .PHONY: goporto
-goporto: install-tools
-	porto -w --include-internal ./
+goporto: $(PORTO)
+	$(PORTO) -w --include-internal ./
 
 .PHONY: golint
 golint:
 	@$(MAKE) for-all-target TARGET="lint"
 
 .PHONY: goimpi
-goimpi: install-tools
+goimpi:
 	@$(MAKE) for-all-target TARGET="impi"
 
 .PHONY: gofmt

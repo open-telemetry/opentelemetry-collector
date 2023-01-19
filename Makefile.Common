@@ -23,18 +23,19 @@ $(TOOLS_BIN_DIR):
 $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
 
+ADDLICENSE  := $(TOOLS_BIN_DIR)/addlicense
+APIDIFF     := $(TOOLS_BIN_DIR)/apidiff
+CHECKDOC    := $(TOOLS_BIN_DIR)/checkdoc
+CHLOG       := $(TOOLS_BIN_DIR)/chloggen
+CROSSLINK   := $(TOOLS_BIN_DIR)/crosslink
 GO_ACC      := $(TOOLS_BIN_DIR)/go-acc
+GOCOVMERGE  := $(TOOLS_BIN_DIR)/gocovmerge
+GOIMPORTS   := $(TOOLS_BIN_DIR)/goimports
 LINT        := $(TOOLS_BIN_DIR)/golangci-lint
 IMPI        := $(TOOLS_BIN_DIR)/impi
-ADDLICENSE  := $(TOOLS_BIN_DIR)/addlicense
-GOCOVMERGE  := $(TOOLS_BIN_DIR)/gocovmerge
 MISSPELL    := $(TOOLS_BIN_DIR)/misspell 
-GOIMPORTS   := $(TOOLS_BIN_DIR)/goimports
 MULTIMOD    := $(TOOLS_BIN_DIR)/multimod
-CROSSLINK   := $(TOOLS_BIN_DIR)/crosslink
-CHLOG       := $(TOOLS_BIN_DIR)/chloggen
-CHECKDOC    := $(TOOLS_BIN_DIR)/checkdoc
-APIDIFF     := $(TOOLS_BIN_DIR)/apidiff
+PORTO       := $(TOOLS_BIN_DIR)/porto
 
 GH := $(shell which gh)
 
