@@ -83,7 +83,7 @@ type ProcessorSettings struct {
 
 // NewProcessor creates a new Processor.
 func NewProcessor(cfg ProcessorSettings) (*Processor, error) {
-	return newProcessor(cfg, featuregate.GetRegistry())
+	return newProcessor(cfg, featuregate.GlobalRegistry())
 }
 
 func newProcessor(cfg ProcessorSettings, registry *featuregate.Registry) (*Processor, error) {

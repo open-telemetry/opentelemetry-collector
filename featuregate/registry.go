@@ -19,11 +19,14 @@ import (
 	"sync"
 )
 
-var reg = NewRegistry()
+var globalRegistry = NewRegistry()
 
-// GetRegistry returns the global Registry.
-func GetRegistry() *Registry {
-	return reg
+// Deprecated: [v0.70.0] use GlobalRegistry.
+var GetRegistry = GlobalRegistry
+
+// GlobalRegistry returns the global Registry.
+func GlobalRegistry() *Registry {
+	return globalRegistry
 }
 
 type Registry struct {
