@@ -14,7 +14,7 @@ usage() {
 package=""
 input_dir="./internal/data/apidiff"
 check_only=false
-
+apidiff_cmd="${APIDIFF:-apidiff}"
 
 while getopts "cp:d:" o; do
     case "${o}" in
@@ -41,7 +41,7 @@ fi
 set -e
 
 if [ -e $input_dir/$package/apidiff.state ]; then
-  changes=$(apidiff $input_dir/$package/apidiff.state $package)
+  changes=$(${apidiff_cmd} $input_dir/$package/apidiff.state $package)
   if [ ! -z "$changes" -a "$changes"!=" " ]; then
     SUB='Incompatible changes:'
     if [ $check_only = true ] && [[ "$changes" =~ .*"$SUB".* ]]; then

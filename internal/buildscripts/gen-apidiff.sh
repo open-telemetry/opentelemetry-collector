@@ -14,6 +14,7 @@ usage() {
 dry_run=false
 package=""
 output_dir="./internal/data/apidiff"
+apidiff_cmd="${APIDIFF:-apidiff}"
 
 
 while getopts "dp:o:" o; do
@@ -55,7 +56,7 @@ trap clean_up EXIT
 
 mkdir -p $tmp_dir/$package
 
-apidiff -w $tmp_dir/$package/apidiff.state $package
+${apidiff_cmd} -w $tmp_dir/$package/apidiff.state $package
 
 # Copy files if not in dry-run mode.
 if [ $dry_run = false ]; then
