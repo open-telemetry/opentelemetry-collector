@@ -22,7 +22,7 @@ import (
 )
 
 func TestRegistry(t *testing.T) {
-	r := Registry{gates: map[string]Gate{}}
+	r := NewRegistry()
 
 	id := "foo"
 
@@ -43,7 +43,7 @@ func TestRegistry(t *testing.T) {
 }
 
 func TestRegistryWithErrorApply(t *testing.T) {
-	r := Registry{gates: map[string]Gate{}}
+	r := NewRegistry()
 
 	assert.NoError(t, r.RegisterID("foo", StageAlpha, WithRegisterDescription("Test Gate")))
 	assert.NoError(t, r.RegisterID("stable-foo", StageStable, WithRegisterDescription("Test Gate"), WithRegisterRemovalVersion("next")))

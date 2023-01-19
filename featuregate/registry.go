@@ -28,12 +28,12 @@ func GetRegistry() *Registry {
 
 type Registry struct {
 	mu    sync.RWMutex
-	gates map[string]Gate
+	gates map[string]*Gate
 }
 
 // NewRegistry returns a new empty Registry.
 func NewRegistry() *Registry {
-	return &Registry{gates: make(map[string]Gate)}
+	return &Registry{gates: make(map[string]*Gate)}
 }
 
 // RegistryOption allows to configure additional information about a Gate during registration.
@@ -83,7 +83,6 @@ func (r *Registry) Apply(cfg map[string]bool) error {
 			return fmt.Errorf("feature gate %s is stable, can not be modified", id)
 		}
 		g.enabled = val
-		r.gates[g.id] = g
 	}
 	return nil
 }
@@ -109,12 +108,12 @@ func (r *Registry) RegisterID(id string, stage Stage, opts ...RegistryOption) er
 	if _, ok := r.gates[id]; ok {
 		return fmt.Errorf("attempted to add pre-existing gate %q", id)
 	}
-	g := Gate{
+	g := &Gate{
 		id:    id,
 		stage: stage,
 	}
 	for _, opt := range opts {
-		opt.apply(&g)
+		opt.apply(g)
 	}
 	switch g.stage {
 	case StageAlpha:
@@ -138,7 +137,7 @@ func (r *Registry) List() []Gate {
 	ret := make([]Gate, len(r.gates))
 	i := 0
 	for _, gate := range r.gates {
-		ret[i] = gate
+		ret[i] = *gate
 		i++
 	}
 
