@@ -74,8 +74,6 @@ func (*UnimplementedGRPCServer) Export(context.Context, ExportRequest) (ExportRe
 	return ExportResponse{}, status.Errorf(codes.Unimplemented, "method Export not implemented")
 }
 
-func (*UnimplementedGRPCServer) unexported() {}
-
 // RegisterGRPCServer registers the Server to the grpc.Server.
 func RegisterGRPCServer(s *grpc.Server, srv GRPCServer) {
 	otlpcollectorlog.RegisterLogsServiceServer(s, &rawLogsServer{srv: srv})
