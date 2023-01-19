@@ -21,6 +21,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestGlobalRegistry(t *testing.T) {
+	assert.Same(t, globalRegistry, GlobalRegistry())
+}
+
 func TestRegistry(t *testing.T) {
 	r := NewRegistry()
 

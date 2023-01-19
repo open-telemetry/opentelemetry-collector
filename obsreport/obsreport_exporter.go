@@ -67,7 +67,7 @@ type ExporterSettings struct {
 
 // NewExporter creates a new Exporter.
 func NewExporter(cfg ExporterSettings) (*Exporter, error) {
-	return newExporter(cfg, featuregate.GetRegistry())
+	return newExporter(cfg, featuregate.GlobalRegistry())
 }
 
 func newExporter(cfg ExporterSettings, registry *featuregate.Registry) (*Exporter, error) {

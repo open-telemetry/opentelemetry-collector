@@ -67,7 +67,7 @@ type ScraperSettings struct {
 
 // NewScraper creates a new Scraper.
 func NewScraper(cfg ScraperSettings) (*Scraper, error) {
-	return newScraper(cfg, featuregate.GetRegistry())
+	return newScraper(cfg, featuregate.GlobalRegistry())
 }
 
 func newScraper(cfg ScraperSettings, registry *featuregate.Registry) (*Scraper, error) {

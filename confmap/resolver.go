@@ -43,7 +43,7 @@ const expandEnabled = "confmap.expandEnabled"
 
 func init() {
 	// TODO: Remove this if by v0.64.0 no complains from distros.
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		expandEnabled,
 		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("controls whether expending embedded external config providers URIs"),
@@ -162,7 +162,7 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		}
 	}
 
-	if featuregate.GetRegistry().IsEnabled(expandEnabled) {
+	if featuregate.GlobalRegistry().IsEnabled(expandEnabled) {
 		cfgMap := make(map[string]interface{})
 		for _, k := range retMap.AllKeys() {
 			val, err := mr.expandValueRecursively(ctx, retMap.Get(k))

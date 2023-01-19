@@ -32,7 +32,7 @@ const (
 
 func init() {
 	// register feature gate
-	RegisterInternalMetricFeatureGate(featuregate.GetRegistry())
+	RegisterInternalMetricFeatureGate(featuregate.GlobalRegistry())
 }
 
 // RegisterInternalMetricFeatureGate registers the Internal Metric feature gate to the passed in registry
@@ -99,7 +99,7 @@ func AllViews(level configtelemetry.Level) []*view.View {
 }
 
 func receiverViews() []*view.View {
-	if featuregate.GetRegistry().IsEnabled(UseOtelForInternalMetricsfeatureGateID) {
+	if featuregate.GlobalRegistry().IsEnabled(UseOtelForInternalMetricsfeatureGateID) {
 		return nil
 	}
 
@@ -119,7 +119,7 @@ func receiverViews() []*view.View {
 }
 
 func scraperViews() []*view.View {
-	if featuregate.GetRegistry().IsEnabled(UseOtelForInternalMetricsfeatureGateID) {
+	if featuregate.GlobalRegistry().IsEnabled(UseOtelForInternalMetricsfeatureGateID) {
 		return nil
 	}
 
