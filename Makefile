@@ -59,7 +59,7 @@ gobenchmark:
 	@$(MAKE) for-all-target TARGET="benchmark"
 
 .PHONY: gotest-with-cover
-gotest-with-cover:
+gotest-with-cover: $(GOCOVMERGE)
 	@$(MAKE) for-all-target TARGET="test-with-cover"
 	$(GOCOVMERGE) $$(find . -name coverage.out) > coverage.txt
 
