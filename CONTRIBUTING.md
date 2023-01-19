@@ -168,12 +168,8 @@ $ git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opentelemetry-collecto
 Run tests, fmt and lint:
 
 ```shell
-$ make install-tools # Only first time.
 $ make
 ```
-
-*Note:* the default build target requires tools that are installed at `$(go env
-GOPATH)/bin`, ensure that `$(go env GOPATH)/bin` is included in your `PATH`.
 
 ## Creating a PR
 

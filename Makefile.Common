@@ -33,6 +33,7 @@ GOIMPORTS   := $(TOOLS_BIN_DIR)/goimports
 MULTIMOD    := $(TOOLS_BIN_DIR)/multimod
 CROSSLINK   := $(TOOLS_BIN_DIR)/crosslink
 CHLOG       := $(TOOLS_BIN_DIR)/chloggen
+APIDIFF     := $(TOOLS_BIN_DIR)/apidiff
 
 GH := $(shell which gh)
 

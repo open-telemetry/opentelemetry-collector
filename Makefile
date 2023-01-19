@@ -59,7 +59,7 @@ gobenchmark:
 	@$(MAKE) for-all-target TARGET="benchmark"
 
 .PHONY: gotest-with-cover
-gotest-with-cover:
+gotest-with-cover: $(GOCOVMERGE)
 	@$(MAKE) for-all-target TARGET="test-with-cover"
 	$(GOCOVMERGE) $$(find . -name coverage.out) > coverage.txt
 
@@ -339,7 +339,7 @@ checkdoc:
 
 # Construct new API state snapshots
 .PHONY: apidiff-build
-apidiff-build:
+apidiff-build: $(APIDIFF)
 	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/gen-apidiff.sh -p $(pkg)))
 
 # If we are running in CI, change input directory
@@ -351,7 +351,7 @@ endif
 
 # Compare API state snapshots
 .PHONY: apidiff-compare
-apidiff-compare:
+apidiff-compare: $(APIDIFF)
 	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
 
 .PHONY: multimod-verify
@@ -368,9 +368,9 @@ multimod-prerelease: $(MULTIMOD)
 COMMIT?=HEAD
 REMOTE?=git@github.com:open-telemetry/opentelemetry-collector.git
 .PHONY: push-tags
-push-tags:
-	multimod verify
-	set -e; for tag in `multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+push-tags: $(MULTIMOD)
+	$(MULTIMOD) verify
+	set -e; for tag in `$(MULTIMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
 		echo "pushing tag $${tag}"; \
 		git push ${REMOTE} $${tag}; \
 	done;
