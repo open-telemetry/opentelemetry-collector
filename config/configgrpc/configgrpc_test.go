@@ -1057,6 +1057,7 @@ func (m *mockServerStream) Context() context.Context {
 }
 
 type grpcTraceServer struct {
+	ptraceotlp.UnimplementedGRPCServer
 	recordedContext context.Context
 }
 
