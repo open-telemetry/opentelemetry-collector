@@ -78,7 +78,7 @@ type Service struct {
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	reg := set.registry
 	if reg == nil {
-		reg = featuregate.GetRegistry()
+		reg = featuregate.GlobalRegistry()
 	}
 	srv := &Service{
 		buildInfo: set.BuildInfo,

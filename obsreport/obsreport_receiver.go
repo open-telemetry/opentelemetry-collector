@@ -79,7 +79,7 @@ type ReceiverSettings struct {
 
 // NewReceiver creates a new Receiver.
 func NewReceiver(cfg ReceiverSettings) (*Receiver, error) {
-	return newReceiver(cfg, featuregate.GetRegistry())
+	return newReceiver(cfg, featuregate.GlobalRegistry())
 }
 
 func newReceiver(cfg ReceiverSettings, registry *featuregate.Registry) (*Receiver, error) {

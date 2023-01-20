@@ -94,7 +94,7 @@ func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 		return err
 	}
 
-	if err := featuregate.GetRegistry().Apply(getFeatureGatesFlag(s.flags)); err != nil {
+	if err := featuregate.GlobalRegistry().Apply(getFeatureGatesFlag(s.flags)); err != nil {
 		return err
 	}
 	var err error
