@@ -44,60 +44,64 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to create output path")
 }
 
-func TestGenerateAndCompileDefault(t *testing.T) {
+func TestGenerateAndCompile(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping the test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/5403")
 	}
-	cfg := NewDefaultConfig()
-	cfg.Distribution.OutputPath = t.TempDir()
-
 	// This test is dependent on the current file structure.
 	// The goal is find the root of the repo so we can replace the root module.
 	_, thisFile, _, _ := runtime.Caller(0)
 	workspaceDir := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile)))))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector => %s", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/component => %s/component", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/confmap => %s/confmap", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/consumer => %s/consumer", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/exporter/loggingexporter => %s/exporter/loggingexporter", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/exporter/otlpexporter => %s/exporter/otlpexporter", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/exporter/otlphttpexporter => %s/exporter/otlphttpexporter", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/extension/ballastextension => %s/extension/ballastextension", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/extension/zpagesextension => %s/extension/zpagesextension", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/featuregate => %s/featuregate", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/processor/batchprocessor => %s/processor/batchprocessor", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/processor/memorylimiterprocessor => %s/processor/memorylimiterprocessor", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/receiver/otlpreceiver => %s/receiver/otlpreceiver", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/pdata => %s/pdata", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/semconv => %s/semconv", workspaceDir))
-
-	assert.NoError(t, cfg.Validate())
-	assert.NoError(t, cfg.SetGoPath())
-	require.NoError(t, GenerateAndCompile(cfg))
-
-	// Sleep for 1 second to make sure all processes using the files are completed
-	// (on Windows fail to delete temp dir otherwise).
-	time.Sleep(1 * time.Second)
-}
-
-func TestGenerateAndCompileWithDebugCompilation(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping the test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/5403")
+	replaces := []string{fmt.Sprintf("go.opentelemetry.io/collector => %s", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/component => %s/component", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/confmap => %s/confmap", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/consumer => %s/consumer", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/exporter/loggingexporter => %s/exporter/loggingexporter", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/exporter/otlpexporter => %s/exporter/otlpexporter", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/exporter/otlphttpexporter => %s/exporter/otlphttpexporter", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/extension/ballastextension => %s/extension/ballastextension", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/extension/zpagesextension => %s/extension/zpagesextension", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/featuregate => %s/featuregate", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/processor/batchprocessor => %s/processor/batchprocessor", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/processor/memorylimiterprocessor => %s/processor/memorylimiterprocessor", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/receiver/otlpreceiver => %s/receiver/otlpreceiver", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/pdata => %s/pdata", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/semconv => %s/semconv", workspaceDir),
 	}
-	cfg := NewDefaultConfig()
-	cfg.Distribution.OutputPath = t.TempDir()
-	cfg.Distribution.DebugCompilation = true
 
-	// This test is dependent on the current file structure.
-	// The goal is find the root of the repo so we can replace the root module.
-	_, thisFile, _, _ := runtime.Caller(0)
-	workspaceDir := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile)))))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector => %s", workspaceDir))
-	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/component => %s/component", workspaceDir))
+	testCases := []struct {
+		testCase   string
+		cfgBuilder func(t *testing.T) Config
+	}{
+		{
+			testCase: "Default Configuration Compilation",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				return cfg
+			},
+		},
+		{
+			testCase: "Debug Compilation",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.Distribution.DebugCompilation = true
+				return cfg
+			},
+		},
+	}
 
-	assert.NoError(t, cfg.Validate())
-	assert.NoError(t, cfg.SetGoPath())
-	require.NoError(t, GenerateAndCompile(cfg))
+	for _, tt := range testCases {
+		t.Run(tt.testCase, func(t *testing.T) {
+			cfg := tt.cfgBuilder(t)
+			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, cfg.SetGoPath())
+			require.NoError(t, GenerateAndCompile(cfg))
+		})
+	}
 
 	// Sleep for 1 second to make sure all processes using the files are completed
 	// (on Windows fail to delete temp dir otherwise).
