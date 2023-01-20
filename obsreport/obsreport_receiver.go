@@ -30,7 +30,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/receiver"
@@ -79,10 +78,10 @@ type ReceiverSettings struct {
 
 // NewReceiver creates a new Receiver.
 func NewReceiver(cfg ReceiverSettings) (*Receiver, error) {
-	return newReceiver(cfg, featuregate.GlobalRegistry())
+	return newReceiver(cfg, obsreportconfig.UseOtel())
 }
 
-func newReceiver(cfg ReceiverSettings, registry *featuregate.Registry) (*Receiver, error) {
+func newReceiver(cfg ReceiverSettings, useOtel bool) (*Receiver, error) {
 	rec := &Receiver{
 		level:          cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
@@ -96,7 +95,7 @@ func newReceiver(cfg ReceiverSettings, registry *featuregate.Registry) (*Receive
 		meter:  cfg.ReceiverCreateSettings.MeterProvider.Meter(receiverScope),
 		logger: cfg.ReceiverCreateSettings.Logger,
 
-		useOtelForMetrics: registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
+		useOtelForMetrics: useOtel,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
 			attribute.String(obsmetrics.TransportKey, cfg.Transport),

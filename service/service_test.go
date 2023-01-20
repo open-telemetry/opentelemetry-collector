@@ -37,8 +37,6 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -219,7 +217,7 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 func TestServiceTelemetryWithOpenCensusMetrics(t *testing.T) {
 	for _, tc := range ownMetricsTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			testCollectorStartHelper(t, featuregate.NewRegistry(), tc)
+			testCollectorStartHelper(t, false, tc)
 		})
 	}
 }
@@ -227,16 +225,12 @@ func TestServiceTelemetryWithOpenCensusMetrics(t *testing.T) {
 func TestServiceTelemetryWithOpenTelemetryMetrics(t *testing.T) {
 	for _, tc := range ownMetricsTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			registry := featuregate.NewRegistry()
-			obsreportconfig.RegisterInternalMetricFeatureGate(registry)
-			colTel := newColTelemetry(registry)
-			require.NoError(t, colTel.registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: true}))
-			testCollectorStartHelper(t, registry, tc)
+			testCollectorStartHelper(t, true, tc)
 		})
 	}
 }
 
-func testCollectorStartHelper(t *testing.T, reg *featuregate.Registry, tc ownMetricsTestCase) {
+func testCollectorStartHelper(t *testing.T, useOtel bool, tc ownMetricsTestCase) {
 	var once sync.Once
 	loggingHookCalled := false
 	hook := func(entry zapcore.Entry) error {
@@ -255,7 +249,7 @@ func testCollectorStartHelper(t *testing.T, reg *featuregate.Registry, tc ownMet
 		map[component.ID]component.Config{component.NewID("zpages"): &zpagesextension.Config{TCPAddr: confignet.TCPAddr{Endpoint: zpagesAddr}}},
 		map[component.Type]extension.Factory{"zpages": zpagesextension.NewFactory()})
 	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
-	set.registry = reg
+	set.useOtel = &useOtel
 
 	cfg := newNopConfig()
 	cfg.Extensions = []component.ID{component.NewID("zpages")}

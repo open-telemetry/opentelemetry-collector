@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
@@ -63,7 +63,7 @@ type Settings struct {
 	LoggingOptions []zap.Option
 
 	// For testing purpose only.
-	registry *featuregate.Registry
+	useOtel *bool
 }
 
 // Service represents the implementation of a component.Host.
@@ -76,9 +76,9 @@ type Service struct {
 }
 
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
-	reg := set.registry
-	if reg == nil {
-		reg = featuregate.GlobalRegistry()
+	useOtel := obsreportconfig.UseOtel()
+	if set.useOtel != nil {
+		useOtel = *set.useOtel
 	}
 	srv := &Service{
 		buildInfo: set.BuildInfo,
@@ -91,7 +91,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
-		telemetryInitializer: newColTelemetry(reg),
+		telemetryInitializer: newColTelemetry(useOtel),
 	}
 	var err error
 	srv.telemetry, err = telemetry.New(ctx, telemetry.Settings{ZapOptions: set.LoggingOptions}, cfg.Telemetry)

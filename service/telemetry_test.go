@@ -33,8 +33,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -144,11 +142,7 @@ func TestTelemetryInit(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			registry := featuregate.NewRegistry()
-			obsreportconfig.RegisterInternalMetricFeatureGate(registry)
-			require.NoError(t, registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: tc.useOtel}))
-
-			tel := newColTelemetry(registry)
+			tel := newColTelemetry(tc.useOtel)
 			buildInfo := component.NewDefaultBuildInfo()
 			cfg := telemetry.Config{
 				Resource: map[string]*string{

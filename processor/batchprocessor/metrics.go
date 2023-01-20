@@ -27,8 +27,6 @@ import (
 	"go.opentelemetry.io/otel/metric/unit"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
@@ -118,14 +116,14 @@ type batchProcessorTelemetry struct {
 	batchSendSizeBytes   syncint64.Histogram
 }
 
-func newBatchProcessorTelemetry(set processor.CreateSettings, registry *featuregate.Registry) (*batchProcessorTelemetry, error) {
+func newBatchProcessorTelemetry(set processor.CreateSettings, useOtel bool) (*batchProcessorTelemetry, error) {
 	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, set.ID.String()))
 	if err != nil {
 		return nil, err
 	}
 
 	bpt := &batchProcessorTelemetry{
-		useOtel:       registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
+		useOtel:       useOtel,
 		processorAttr: []attribute.KeyValue{attribute.String(obsmetrics.ProcessorKey, set.ID.String())},
 		exportCtx:     exportCtx,
 		level:         set.MetricsLevel,

@@ -29,7 +29,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/processor"
@@ -83,15 +82,15 @@ type ProcessorSettings struct {
 
 // NewProcessor creates a new Processor.
 func NewProcessor(cfg ProcessorSettings) (*Processor, error) {
-	return newProcessor(cfg, featuregate.GlobalRegistry())
+	return newProcessor(cfg, obsreportconfig.UseOtel())
 }
 
-func newProcessor(cfg ProcessorSettings, registry *featuregate.Registry) (*Processor, error) {
+func newProcessor(cfg ProcessorSettings, useOtel bool) (*Processor, error) {
 	proc := &Processor{
 		level:             cfg.ProcessorCreateSettings.MetricsLevel,
 		mutators:          []tag.Mutator{tag.Upsert(obsmetrics.TagKeyProcessor, cfg.ProcessorID.String(), tag.WithTTL(tag.TTLNoPropagation))},
 		logger:            cfg.ProcessorCreateSettings.Logger,
-		useOtelForMetrics: registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
+		useOtelForMetrics: useOtel,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ProcessorKey, cfg.ProcessorID.String()),
 		},
