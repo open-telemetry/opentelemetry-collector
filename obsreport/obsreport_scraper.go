@@ -30,7 +30,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/receiver"
@@ -67,10 +66,10 @@ type ScraperSettings struct {
 
 // NewScraper creates a new Scraper.
 func NewScraper(cfg ScraperSettings) (*Scraper, error) {
-	return newScraper(cfg, featuregate.GlobalRegistry())
+	return newScraper(cfg, obsreportconfig.UseOtel())
 }
 
-func newScraper(cfg ScraperSettings, registry *featuregate.Registry) (*Scraper, error) {
+func newScraper(cfg ScraperSettings, useOtel bool) (*Scraper, error) {
 	scraper := &Scraper{
 		level:      cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
 		receiverID: cfg.ReceiverID,
@@ -81,7 +80,7 @@ func newScraper(cfg ScraperSettings, registry *featuregate.Registry) (*Scraper, 
 		tracer: cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.Scraper.String()),
 
 		logger:            cfg.ReceiverCreateSettings.Logger,
-		useOtelForMetrics: registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
+		useOtelForMetrics: useOtel,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
 			attribute.String(obsmetrics.ScraperKey, cfg.Scraper.String()),

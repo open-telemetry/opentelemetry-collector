@@ -25,20 +25,20 @@ import (
 )
 
 const (
-	// UseOtelForInternalMetricsfeatureGateID is the feature gate ID that controls whether the collector uses open
+	// useOtelForInternalMetricsfeatureGateID is the feature gate ID that controls whether the collector uses open
 	// telemetrySettings for internal metrics.
-	UseOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
+	useOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
 )
+
+// UseOtel returns true if OpenTelemetry should be used for internal metrics.
+func UseOtel() bool {
+	return featuregate.GlobalRegistry().IsEnabled(useOtelForInternalMetricsfeatureGateID)
+}
 
 func init() {
 	// register feature gate
-	RegisterInternalMetricFeatureGate(featuregate.GlobalRegistry())
-}
-
-// RegisterInternalMetricFeatureGate registers the Internal Metric feature gate to the passed in registry
-func RegisterInternalMetricFeatureGate(registry *featuregate.Registry) {
-	registry.MustRegisterID(
-		UseOtelForInternalMetricsfeatureGateID,
+	featuregate.GlobalRegistry().MustRegisterID(
+		useOtelForInternalMetricsfeatureGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("controls whether the collector uses OpenTelemetry for internal metrics"),
 	)
@@ -99,7 +99,7 @@ func AllViews(level configtelemetry.Level) []*view.View {
 }
 
 func receiverViews() []*view.View {
-	if featuregate.GlobalRegistry().IsEnabled(UseOtelForInternalMetricsfeatureGateID) {
+	if UseOtel() {
 		return nil
 	}
 
@@ -119,7 +119,7 @@ func receiverViews() []*view.View {
 }
 
 func scraperViews() []*view.View {
-	if featuregate.GlobalRegistry().IsEnabled(UseOtelForInternalMetricsfeatureGateID) {
+	if UseOtel() {
 		return nil
 	}
 

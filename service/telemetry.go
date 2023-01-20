@@ -42,7 +42,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/obsreport"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
@@ -63,19 +62,18 @@ var (
 )
 
 type telemetryInitializer struct {
-	registry *featuregate.Registry
-	views    []*view.View
-
+	views      []*view.View
 	ocRegistry *ocmetric.Registry
 	mp         metric.MeterProvider
+	server     *http.Server
 
-	server *http.Server
+	useOtel bool
 }
 
-func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
+func newColTelemetry(useOtel bool) *telemetryInitializer {
 	return &telemetryInitializer{
-		registry: registry,
-		mp:       metric.NewNoopMeterProvider(),
+		mp:      metric.NewNoopMeterProvider(),
+		useOtel: useOtel,
 	}
 }
 
@@ -105,7 +103,7 @@ func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap
 	// This is used as a path to migrate the existing OpenCensus instrumentation
 	// to the OpenTelemetry Go SDK without breaking existing metrics.
 	promRegistry := prometheus.NewRegistry()
-	if tel.registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID) {
+	if tel.useOtel {
 		if err := tel.initOpenTelemetry(telAttrs, promRegistry); err != nil {
 			return err
 		}

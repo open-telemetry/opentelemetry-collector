@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
@@ -67,10 +66,10 @@ type ExporterSettings struct {
 
 // NewExporter creates a new Exporter.
 func NewExporter(cfg ExporterSettings) (*Exporter, error) {
-	return newExporter(cfg, featuregate.GlobalRegistry())
+	return newExporter(cfg, obsreportconfig.UseOtel())
 }
 
-func newExporter(cfg ExporterSettings, registry *featuregate.Registry) (*Exporter, error) {
+func newExporter(cfg ExporterSettings, useOtel bool) (*Exporter, error) {
 	exp := &Exporter{
 		level:          cfg.ExporterCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
@@ -78,7 +77,7 @@ func newExporter(cfg ExporterSettings, registry *featuregate.Registry) (*Exporte
 		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
 		logger:         cfg.ExporterCreateSettings.Logger,
 
-		useOtelForMetrics: registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
+		useOtelForMetrics: useOtel,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ExporterKey, cfg.ExporterID.String()),
 		},

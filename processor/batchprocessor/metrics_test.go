@@ -36,8 +36,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -77,17 +75,13 @@ type expectedMetrics struct {
 	timeoutTrigger float64
 }
 
-func telemetryTest(t *testing.T, testFunc func(t *testing.T, tel testTelemetry, registry *featuregate.Registry)) {
+func telemetryTest(t *testing.T, testFunc func(t *testing.T, tel testTelemetry, useOtel bool)) {
 	t.Run("WithOC", func(t *testing.T) {
-		testFunc(t, setupTelemetry(t, false), featuregate.NewRegistry())
+		testFunc(t, setupTelemetry(t, false), false)
 	})
 
 	t.Run("WithOTel", func(t *testing.T) {
-		registry := featuregate.NewRegistry()
-		obsreportconfig.RegisterInternalMetricFeatureGate(registry)
-		require.NoError(t, registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: true}))
-
-		testFunc(t, setupTelemetry(t, true), registry)
+		testFunc(t, setupTelemetry(t, true), true)
 	})
 }
 
