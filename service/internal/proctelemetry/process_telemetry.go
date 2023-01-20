@@ -80,15 +80,13 @@ func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProv
 		useOtelForMetrics: registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
 	}
 
-	if pm.useOtelForMetrics {
-		pm.meter = mp.Meter(scopeName)
-	}
 	pm.proc, err = process.NewProcess(int32(os.Getpid()))
 	if err != nil {
 		return err
 	}
 
 	if pm.useOtelForMetrics {
+		pm.meter = mp.Meter(scopeName)
 		return pm.recordWithOtel()
 	}
 	return pm.recordWithOC(ocRegistry)
