@@ -654,8 +654,16 @@ func (m Map) PutEmptySlice(k string) Slice {
 
 // Sort sorts the entries in the Map so two instances can be compared.
 //
-// IMPORTANT: Sort mutates the data, if you call this function in a consumer,
-// the consumer must be configured that it mutates data.
+// Deprecated: [1.0.0-rc4] This method will be removed as it leaks the underlying implementation.
+// Please use one of the following alternatives depending on your use case:
+//   - Map.AsRaw() if you need to compare two maps in tests.
+//   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest module if you use Sort()
+//     to prepare other pdata objects for comparison.
+//   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil module if you use Sort()
+//     to create Map identifiers.
+//
+// If your use case is not covered by the above alternatives, please comment on the issue
+// https://github.com/open-telemetry/opentelemetry-collector/issues/6688.
 func (m Map) Sort() {
 	// Intention is to move the nil values at the end.
 	sort.SliceStable(*m.getOrig(), func(i, j int) bool {
