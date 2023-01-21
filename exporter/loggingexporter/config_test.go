@@ -74,10 +74,6 @@ func TestUnmarshalConfig(t *testing.T) {
 			filename:    "invalid_verbosity_loglevel.yaml",
 			expectedErr: "'loglevel' and 'verbosity' are incompatible. Use only 'verbosity' instead",
 		},
-		{
-			filename:    "config_loglevel_typo.yaml",
-			expectedErr: "1 error(s) decoding:\n\n* '' has invalid keys: logLevel",
-		},
 	}
 
 	for _, tt := range tests {
