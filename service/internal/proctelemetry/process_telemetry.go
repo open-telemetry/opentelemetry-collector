@@ -29,9 +29,6 @@ import (
 	"go.opentelemetry.io/otel/metric/instrument/asyncfloat64"
 	"go.opentelemetry.io/otel/metric/instrument/asyncint64"
 	"go.opentelemetry.io/otel/metric/unit"
-
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
 const (
@@ -71,13 +68,13 @@ type processMetrics struct {
 
 // RegisterProcessMetrics creates a new set of processMetrics (mem, cpu) that can be used to measure
 // basic information about this process.
-func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProvider, registry *featuregate.Registry, ballastSizeBytes uint64) error {
+func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProvider, useOtel bool, ballastSizeBytes uint64) error {
 	var err error
 	pm := &processMetrics{
 		startTimeUnixNano: time.Now().UnixNano(),
 		ballastSizeBytes:  ballastSizeBytes,
 		ms:                &runtime.MemStats{},
-		useOtelForMetrics: registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
+		useOtelForMetrics: useOtel,
 	}
 
 	pm.proc, err = process.NewProcess(int32(os.Getpid()))

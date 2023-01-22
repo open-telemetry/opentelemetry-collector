@@ -39,7 +39,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
@@ -116,11 +115,8 @@ func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_cli
 
 func TestOtelProcessTelemetry(t *testing.T) {
 	tel := setupTelemetry(t)
-	registry := featuregate.NewRegistry()
-	obsreportconfig.RegisterInternalMetricFeatureGate(registry)
-	require.NoError(t, registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: true}))
 
-	require.NoError(t, RegisterProcessMetrics(nil, tel.MeterProvider, registry, 0))
+	require.NoError(t, RegisterProcessMetrics(nil, tel.MeterProvider, true, 0))
 
 	mp, err := fetchPrometheusMetrics(tel.promHandler)
 	require.NoError(t, err)
@@ -152,11 +148,8 @@ func TestOtelProcessTelemetry(t *testing.T) {
 
 func TestOCProcessTelemetry(t *testing.T) {
 	ocRegistry := metric.NewRegistry()
-	registry := featuregate.NewRegistry()
-	obsreportconfig.RegisterInternalMetricFeatureGate(registry)
-	require.NoError(t, registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: false}))
 
-	require.NoError(t, RegisterProcessMetrics(ocRegistry, otelmetric.NewNoopMeterProvider(), registry, 0))
+	require.NoError(t, RegisterProcessMetrics(ocRegistry, otelmetric.NewNoopMeterProvider(), false, 0))
 
 	// Check that the metrics are actually filled.
 	<-time.After(200 * time.Millisecond)
@@ -189,15 +182,12 @@ func TestOCProcessTelemetry(t *testing.T) {
 }
 
 func TestProcessTelemetryFailToRegister(t *testing.T) {
-	registry := featuregate.NewRegistry()
-	obsreportconfig.RegisterInternalMetricFeatureGate(registry)
-	require.NoError(t, registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: false}))
 	for _, metricName := range expectedMetrics {
 		t.Run(metricName, func(t *testing.T) {
 			ocRegistry := metric.NewRegistry()
 			_, err := ocRegistry.AddFloat64Gauge(metricName)
 			require.NoError(t, err)
-			assert.Error(t, RegisterProcessMetrics(ocRegistry, otelmetric.NewNoopMeterProvider(), registry, 0))
+			assert.Error(t, RegisterProcessMetrics(ocRegistry, otelmetric.NewNoopMeterProvider(), false, 0))
 		})
 	}
 }
