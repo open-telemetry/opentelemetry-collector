@@ -33,7 +33,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CANDIDATE_BETA: ${{ inputs.candidate-beta }}
           CANDIDATE_STABLE: ${{ inputs.candidate-stable }}
-          REPO: codeboten/opentelemetry-collector
+          REPO: open-telemetry/opentelemetry-collector
         run: |
           EXISTING_ISSUE=$( gh issue list --search "Release v${CANDIDATE_BETA}/v${CANDIDATE_STABLE}" --json url --jq '.[].url' --repo ${REPO} )
           if [ "${EXISTING_ISSUE}" != "" ]; then
@@ -132,7 +132,6 @@ jobs:
           CURRENT_BETA: ${{ inputs.current-beta }}
           CURRENT_STABLE: ${{ inputs.current-stable }}
         run: |
-          make chlog-install
           make chlog-update VERSION=${CANDIDATE_STABLE}/${CANDIDATE_BETA}
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
