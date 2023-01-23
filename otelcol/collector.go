@@ -29,6 +29,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
@@ -165,6 +166,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		Receivers:         receiver.NewBuilder(cfg.Receivers, col.set.Factories.Receivers),
 		Processors:        processor.NewBuilder(cfg.Processors, col.set.Factories.Processors),
 		Exporters:         exporter.NewBuilder(cfg.Exporters, col.set.Factories.Exporters),
+		Connectors:        connector.NewBuilder(cfg.Connectors, col.set.Factories.Connectors),
 		Extensions:        extension.NewBuilder(cfg.Extensions, col.set.Factories.Extensions),
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,

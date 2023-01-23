@@ -20,10 +20,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -32,6 +34,7 @@ var (
 	errInvalidRecvConfig = errors.New("invalid receiver config")
 	errInvalidExpConfig  = errors.New("invalid exporter config")
 	errInvalidProcConfig = errors.New("invalid processor config")
+	errInvalidConnConfig = errors.New("invalid connector config")
 	errInvalidExtConfig  = errors.New("invalid extension config")
 )
 
@@ -56,6 +59,14 @@ type nopProcConfig struct {
 }
 
 func (nc *nopProcConfig) Validate() error {
+	return nc.validateErr
+}
+
+type nopConnConfig struct {
+	validateErr error
+}
+
+func (nc *nopConnConfig) Validate() error {
 	return nc.validateErr
 }
 
@@ -189,6 +200,83 @@ func TestConfigValidate(t *testing.T) {
 			expected: fmt.Errorf(`extensions::nop: %w`, errInvalidExtConfig),
 		},
 		{
+			name: "invalid-connector-config",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Connectors[component.NewIDWithName("nop", "conn")] = &nopConnConfig{
+					validateErr: errInvalidConnConfig,
+				}
+				return cfg
+			},
+			expected: fmt.Errorf(`connectors::nop/conn: %w`, errInvalidConnConfig),
+		},
+		{
+			name: "ambiguous-connector-name-as-receiver",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Receivers[component.NewID("nop/2")] = &nopRecvConfig{}
+				cfg.Connectors[component.NewID("nop/2")] = &nopConnConfig{}
+				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "2"))
+				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
+				return cfg
+			},
+			expected: errors.New(`connectors::nop/2: cannot have same id as receiver`),
+		},
+		{
+			name: "ambiguous-connector-name-as-exporter",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Exporters[component.NewID("nop/2")] = &nopExpConfig{}
+				cfg.Connectors[component.NewID("nop/2")] = &nopConnConfig{}
+				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "2"))
+				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
+				return cfg
+			},
+			expected: errors.New(`connectors::nop/2: cannot have same id as exporter`),
+		},
+		{
+			name: "invalid-connector-reference-as-receiver",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "conn2"))
+				return cfg
+			},
+			expected: errors.New(`service::pipeline::traces: references receiver "nop/conn2" which is not configured`),
+		},
+		{
+			name: "invalid-connector-reference-as-receiver",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "conn2"))
+				return cfg
+			},
+			expected: errors.New(`service::pipeline::traces: references exporter "nop/conn2" which is not configured`),
+		},
+		{
+			name: "missing-connector-as-receiver",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "conn"))
+				return cfg
+			},
+			expected: errors.New(`connectors::nop/conn: must be used as both receiver and exporter but is not used as receiver`),
+		},
+		{
+			name: "missing-connector-as-exporter",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "conn"))
+				return cfg
+			},
+			expected: errors.New(`connectors::nop/conn: must be used as both receiver and exporter but is not used as exporter`),
+		},
+		{
 			name: "invalid-service-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
@@ -199,6 +287,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 	}
 
+	require.NoError(t, featuregate.GlobalRegistry().Apply(map[string]bool{connectorsFeatureGateID: true}))
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := test.cfgFn()
@@ -217,6 +306,9 @@ func generateConfig() *Config {
 		},
 		Processors: map[component.ID]component.Config{
 			component.NewID("nop"): &nopProcConfig{},
+		},
+		Connectors: map[component.ID]component.Config{
+			component.NewIDWithName("nop", "conn"): &nopConnConfig{},
 		},
 		Extensions: map[component.ID]component.Config{
 			component.NewID("nop"): &nopExtConfig{},
