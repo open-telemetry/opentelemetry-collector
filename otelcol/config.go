@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service"
 )
 
@@ -26,6 +27,20 @@ var (
 	errMissingExporters = errors.New("no exporter configuration specified in config")
 	errMissingReceivers = errors.New("no receiver configuration specified in config")
 )
+
+const (
+	connectorsFeatureGateID = "otelcol.enableConnectors"
+	connectorsFeatureStage  = featuregate.StageAlpha
+)
+
+func init() {
+	featuregate.GlobalRegistry().MustRegisterID(
+		connectorsFeatureGateID,
+		connectorsFeatureStage,
+		featuregate.WithRegisterDescription("Enables 'connectors', a new type of component for transmitting signals between pipelines."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/2336"),
+	)
+}
 
 // Config defines the configuration for the various elements of collector or agent.
 type Config struct {
@@ -37,6 +52,9 @@ type Config struct {
 
 	// Processors is a map of ComponentID to Processors.
 	Processors map[component.ID]component.Config
+
+	// Connectors is a map of ComponentID to connectors.
+	Connectors map[component.ID]component.Config
 
 	// Extensions is a map of ComponentID to extensions.
 	Extensions map[component.ID]component.Config
@@ -88,6 +106,10 @@ func (cfg *Config) Validate() error {
 		if err := component.ValidateConfig(extCfg); err != nil {
 			return fmt.Errorf("extensions::%s: %w", extID, err)
 		}
+	}
+
+	if len(cfg.Connectors) != 0 && !featuregate.GlobalRegistry().IsEnabled(connectorsFeatureGateID) {
+		return fmt.Errorf("connectors require feature gate: %s", connectorsFeatureGateID)
 	}
 
 	if err := cfg.Service.Validate(); err != nil {

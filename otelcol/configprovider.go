@@ -102,6 +102,7 @@ func (cm *configProvider) Get(ctx context.Context, factories Factories) (*Config
 		Receivers:  cfg.Receivers.Configs(),
 		Processors: cfg.Processors.Configs(),
 		Exporters:  cfg.Exporters.Configs(),
+		Connectors: cfg.Connectors.Configs(),
 		Extensions: cfg.Extensions.Configs(),
 		Service:    cfg.Service,
 	}, nil
