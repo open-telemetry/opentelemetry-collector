@@ -28,19 +28,11 @@ var (
 	errMissingReceivers = errors.New("no receiver configuration specified in config")
 )
 
-const (
-	connectorsFeatureGateID = "otelcol.enableConnectors"
-	connectorsFeatureStage  = featuregate.StageAlpha
-)
-
-func init() {
-	featuregate.GlobalRegistry().MustRegisterID(
-		connectorsFeatureGateID,
-		connectorsFeatureStage,
-		featuregate.WithRegisterDescription("Enables 'connectors', a new type of component for transmitting signals between pipelines."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/2336"),
-	)
-}
+var connectorsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"otelcol.enableConnectors",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Enables 'connectors', a new type of component for transmitting signals between pipelines."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/2336"))
 
 // Config defines the configuration for the various elements of collector or agent.
 type Config struct {
@@ -122,8 +114,8 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if len(cfg.Connectors) != 0 && !featuregate.GlobalRegistry().IsEnabled(connectorsFeatureGateID) {
-		return fmt.Errorf("connectors require feature gate: %s", connectorsFeatureGateID)
+	if len(cfg.Connectors) != 0 && !connectorsFeatureGate.IsEnabled() {
+		return fmt.Errorf("connectors require feature gate: %s", connectorsFeatureGate.ID())
 	}
 
 	if err := cfg.Service.Validate(); err != nil {

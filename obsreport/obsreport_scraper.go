@@ -66,7 +66,7 @@ type ScraperSettings struct {
 
 // NewScraper creates a new Scraper.
 func NewScraper(cfg ScraperSettings) (*Scraper, error) {
-	return newScraper(cfg, obsreportconfig.UseOtel())
+	return newScraper(cfg, obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
 }
 
 func newScraper(cfg ScraperSettings, useOtel bool) (*Scraper, error) {

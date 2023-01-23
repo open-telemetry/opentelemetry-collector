@@ -78,7 +78,7 @@ type ReceiverSettings struct {
 
 // NewReceiver creates a new Receiver.
 func NewReceiver(cfg ReceiverSettings) (*Receiver, error) {
-	return newReceiver(cfg, obsreportconfig.UseOtel())
+	return newReceiver(cfg, obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
 }
 
 func newReceiver(cfg ReceiverSettings, useOtel bool) (*Receiver, error) {

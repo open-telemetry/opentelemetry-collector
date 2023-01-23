@@ -76,7 +76,7 @@ type Service struct {
 }
 
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
-	useOtel := obsreportconfig.UseOtel()
+	useOtel := obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled()
 	if set.useOtel != nil {
 		useOtel = *set.useOtel
 	}
