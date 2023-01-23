@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/component v0.69.1
 	go.opentelemetry.io/collector/confmap v0.69.1
 	go.opentelemetry.io/collector/consumer v0.69.1
-	go.opentelemetry.io/collector/pdata v1.0.0-rc3
+	go.opentelemetry.io/collector/pdata v1.0.0-rc4
 	go.opentelemetry.io/collector/semconv v0.69.1
 	go.uber.org/zap v1.24.0
 	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6
