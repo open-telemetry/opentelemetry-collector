@@ -18,7 +18,7 @@ module-sets:
     modules:
       - go.opentelemetry.io/collector/pdata
   beta:
-    version: v0.69.1
+    version: v0.70.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/component
