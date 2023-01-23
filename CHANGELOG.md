@@ -4,6 +4,33 @@
 
 <!-- next version -->
 
+## v1.0.0-RC4/v0.70.0
+
+### 🛑 Breaking changes 🛑
+
+- `pdata`: Start enforcing grpc server implementation to embed UnimplementedGRPCServer, dissallow client implementation (#6966)
+- `config/configgrpc`: Change configgrpc.GRPCClientSettings.Headers type to map[string]configopaque.String (#6852)
+  Use `configopaque.String(str)` and `string(opaque)` to turn a string opaque/clear.
+- `pdata`: Remove deprecated pcommon.Value.Equal (#6860)
+
+### 🚩 Deprecations 🚩
+
+- `pdata`: Deprecate pcommon.Map.Sort(). (#6688)
+- `featuregate`: Deprecate GetRegistry in favor of GlobalRegistry (#6979)
+
+### 💡 Enhancements 💡
+
+- `builder`: Add remote debug option for otel-collector to builder (#6149)
+- `connector`: Add Builder (#6867)
+- `cmd/builder`: Add support for connector configurations (#6789)
+- `exporter/otlphttp`: Retry only on status code 429/502/503/504 (#6845)
+- `featuregate`: Reduce contention in featuregate by using sync.Map instead of mutex. (#6980)
+
+### 🧰 Bug fixes 🧰
+
+- `loggingexporter`: Fix undefined symbol errors on building otelcorecol for other platforms than darwin, linux, windows. (#6924)
+- `otlpexporter`: Fix a dataloss bug in persistent storage when collector shuts down or restarts (#6771)
+
 ## v0.69.1
 
 ### 🧰 Bug fixes 🧰
