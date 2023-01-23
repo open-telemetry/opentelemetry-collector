@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/confmap
 go 1.18
 
 require (
-	github.com/knadh/koanf v1.4.5
+	github.com/knadh/koanf v1.5.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector/featuregate v0.69.1
