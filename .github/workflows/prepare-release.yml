@@ -105,15 +105,6 @@ jobs:
               echo "$(gh run list --branch main --json status,url --jq '[.[] | select(.status != "queued" and .status != "in_progress")][0].url' --workflow build-and-test --repo ${REPO} )"
               exit 1
           fi
-      # Update Contrib to use the latest in development version of Core. Run make update-otel in
-      # Contrib root directory and if it results in any changes, submit a PR. Open this PR as draft.
-      # This is to ensure that the latest core does not break contrib in any way. We’ll update it
-      # once more to the final release number later.
-      - name: Make update-otel in contrib
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: open-telemetry/opentelemetry-collector-contrib
-        run: "echo TODO" # TODO: This may require a webhook in contrib
       - uses: actions/checkout@v3
       - name: Setup Go
         uses: actions/setup-go@v3
@@ -148,9 +139,3 @@ jobs:
           - make prepare-release GH=none PREVIOUS_VERSION=${CURRENT_STABLE} RELEASE_CANDIDATE=${CANDIDATE_STABLE} MODSET=stable
           - make prepare-release GH=none PREVIOUS_VERSION=${CURRENT_BETA} RELEASE_CANDIDATE=${CANDIDATE_BETA} MODSET=beta
           "
-
-# Still TODO manually:
-#     Create a branch named release/<release-series> (e.g. release/v0.45.x) from the changelog update commit and push to open-telemetry/opentelemetry-collector.
-#     Tag all the module groups (stable, beta) with the new release version by running the make push-tags command (e.g. make push-tags MODSET=stable and make push-tags MODSET=beta). Wait for the new tag build to pass successfully.
-#     The release script for the collector builder should create a new GitHub release for the builder. This is a separate release from the core, but we might join them in the future if it makes sense.
-#     A new v0.55.0 release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md as the release's description. At the top of the release's changelog, add a link to the releases repository where the binaries and other artifacts are landing, like:
