@@ -181,7 +181,7 @@ func TestBuildPipelines(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Build the pipeline
-			pipelines, err := buildPipelines(context.Background(), pipelinesSettings{
+			pips, err := buildPipelines(context.Background(), pipelinesSettings{
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
 				Receivers: receiver.NewBuilder(
@@ -211,7 +211,9 @@ func TestBuildPipelines(t *testing.T) {
 				PipelineConfigs: test.pipelineConfigs,
 			})
 			assert.NoError(t, err)
+			assert.IsType(t, &builtPipelines{}, pips)
 
+			pipelines := pips.(*builtPipelines)
 			assert.NoError(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 
 			for dt, pipeline := range test.pipelineConfigs {
