@@ -108,7 +108,7 @@ func (cfg *Config) Validate() error {
 		}
 
 		if _, ok := cfg.Exporters[connID]; ok {
-			return fmt.Errorf("connectors::%s: cannot have same id as exporter", connID)
+			return fmt.Errorf("connectors::%s: there's already an exporter named %q", connID, connID)
 		}
 		if _, ok := cfg.Receivers[connID]; ok {
 			return fmt.Errorf("connectors::%s: cannot have same id as receiver", connID)
