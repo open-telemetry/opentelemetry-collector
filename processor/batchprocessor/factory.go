@@ -55,7 +55,7 @@ func createTraces(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
-	return newBatchTracesProcessor(set, nextConsumer, cfg.(*Config), obsreportconfig.UseOtel())
+	return newBatchTracesProcessor(set, nextConsumer, cfg.(*Config), obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
 }
 
 func createMetrics(
@@ -64,7 +64,7 @@ func createMetrics(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-	return newBatchMetricsProcessor(set, nextConsumer, cfg.(*Config), obsreportconfig.UseOtel())
+	return newBatchMetricsProcessor(set, nextConsumer, cfg.(*Config), obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
 }
 
 func createLogs(
@@ -73,5 +73,5 @@ func createLogs(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
-	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config), obsreportconfig.UseOtel())
+	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config), obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
 }

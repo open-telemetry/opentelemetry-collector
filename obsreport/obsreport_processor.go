@@ -82,7 +82,7 @@ type ProcessorSettings struct {
 
 // NewProcessor creates a new Processor.
 func NewProcessor(cfg ProcessorSettings) (*Processor, error) {
-	return newProcessor(cfg, obsreportconfig.UseOtel())
+	return newProcessor(cfg, obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
 }
 
 func newProcessor(cfg ProcessorSettings, useOtel bool) (*Processor, error) {

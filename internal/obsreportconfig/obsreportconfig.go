@@ -24,25 +24,12 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
-const (
-	// useOtelForInternalMetricsfeatureGateID is the feature gate ID that controls whether the collector uses open
-	// telemetrySettings for internal metrics.
-	useOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
-)
-
-// UseOtel returns true if OpenTelemetry should be used for internal metrics.
-func UseOtel() bool {
-	return featuregate.GlobalRegistry().IsEnabled(useOtelForInternalMetricsfeatureGateID)
-}
-
-func init() {
-	// register feature gate
-	featuregate.GlobalRegistry().MustRegisterID(
-		useOtelForInternalMetricsfeatureGateID,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("controls whether the collector uses OpenTelemetry for internal metrics"),
-	)
-}
+// UseOtelForInternalMetricsfeatureGate is the feature gate that controls whether the collector uses open
+// telemetrySettings for internal metrics.
+var UseOtelForInternalMetricsfeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.useOtelForInternalMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("controls whether the collector uses OpenTelemetry for internal metrics"))
 
 // AllViews returns all the OpenCensus views requires by obsreport package.
 func AllViews(level configtelemetry.Level) []*view.View {
@@ -99,7 +86,7 @@ func AllViews(level configtelemetry.Level) []*view.View {
 }
 
 func receiverViews() []*view.View {
-	if UseOtel() {
+	if UseOtelForInternalMetricsfeatureGate.IsEnabled() {
 		return nil
 	}
 
@@ -119,7 +106,7 @@ func receiverViews() []*view.View {
 }
 
 func scraperViews() []*view.View {
-	if UseOtel() {
+	if UseOtelForInternalMetricsfeatureGate.IsEnabled() {
 		return nil
 	}
 

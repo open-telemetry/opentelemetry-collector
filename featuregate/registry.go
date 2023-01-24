@@ -90,24 +90,27 @@ func (r *Registry) Apply(cfg map[string]bool) error {
 	return nil
 }
 
-// IsEnabled returns true if a registered feature gate is enabled and false otherwise.
+// Deprecated: [v0.71.0] check the enable status on the returned Gate from Register or MustRegister.
 func (r *Registry) IsEnabled(id string) bool {
 	v, ok := r.gates.Load(id)
 	if !ok {
 		return false
 	}
 	g := v.(*Gate)
-	return g.enabled.Load()
+	return g.IsEnabled()
 }
 
-// MustRegisterID like RegisterID but panics if an invalid ID or gate options are provided.
-func (r *Registry) MustRegisterID(id string, stage Stage, opts ...RegistryOption) {
-	if err := r.RegisterID(id, stage, opts...); err != nil {
+// MustRegister like Register but panics if an invalid ID or gate options are provided.
+func (r *Registry) MustRegister(id string, stage Stage, opts ...RegistryOption) Gate {
+	g, err := r.Register(id, stage, opts...)
+	if err != nil {
 		panic(err)
 	}
+	return g
 }
 
-func (r *Registry) RegisterID(id string, stage Stage, opts ...RegistryOption) error {
+// Register a Gate and return it. The returned Gate can be used to check if is enabled or not.
+func (r *Registry) Register(id string, stage Stage, opts ...RegistryOption) (Gate, error) {
 	g := &Gate{
 		id:    id,
 		stage: stage,
@@ -121,15 +124,26 @@ func (r *Registry) RegisterID(id string, stage Stage, opts ...RegistryOption) er
 	case StageBeta, StageStable:
 		g.enabled = atomic.NewBool(true)
 	default:
-		return fmt.Errorf("unknown stage value %q for gate %q", stage, id)
+		return *g, fmt.Errorf("unknown stage value %q for gate %q", stage, id)
 	}
 	if g.stage == StageStable && g.removalVersion == "" {
-		return fmt.Errorf("no removal version set for stable gate %q", id)
+		return *g, fmt.Errorf("no removal version set for stable gate %q", id)
 	}
 	if _, loaded := r.gates.LoadOrStore(id, g); loaded {
-		return fmt.Errorf("attempted to add pre-existing gate %q", id)
+		return *g, fmt.Errorf("attempted to add pre-existing gate %q", id)
 	}
-	return nil
+	return *g, nil
+}
+
+// Deprecated: [v0.71.0] use MustRegister.
+func (r *Registry) MustRegisterID(id string, stage Stage, opts ...RegistryOption) {
+	r.MustRegister(id, stage, opts...)
+}
+
+// Deprecated: [v0.71.0] use Register.
+func (r *Registry) RegisterID(id string, stage Stage, opts ...RegistryOption) error {
+	_, err := r.Register(id, stage, opts...)
+	return err
 }
 
 // List returns a slice of copies of all registered Gates.

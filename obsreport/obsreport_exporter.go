@@ -66,7 +66,7 @@ type ExporterSettings struct {
 
 // NewExporter creates a new Exporter.
 func NewExporter(cfg ExporterSettings) (*Exporter, error) {
-	return newExporter(cfg, obsreportconfig.UseOtel())
+	return newExporter(cfg, obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
 }
 
 func newExporter(cfg ExporterSettings, useOtel bool) (*Exporter, error) {

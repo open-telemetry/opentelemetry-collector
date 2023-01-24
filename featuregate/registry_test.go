@@ -31,63 +31,37 @@ func TestRegistry(t *testing.T) {
 	id := "foo"
 
 	assert.Empty(t, r.List())
-	assert.False(t, r.IsEnabled(id))
 
-	assert.NoError(t, r.RegisterID(id, StageBeta, WithRegisterDescription("Test Gate")))
+	g, err := r.Register(id, StageBeta, WithRegisterDescription("Test Gate"))
+	assert.NoError(t, err)
 	assert.Len(t, r.List(), 1)
-	assert.True(t, r.IsEnabled(id))
+	assert.True(t, g.IsEnabled())
 
 	assert.NoError(t, r.Apply(map[string]bool{id: false}))
-	assert.False(t, r.IsEnabled(id))
+	assert.False(t, g.IsEnabled())
 
-	assert.Error(t, r.RegisterID(id, StageBeta))
+	_, err = r.Register(id, StageBeta)
+	assert.Error(t, err)
 	assert.Panics(t, func() {
-		r.MustRegisterID(id, StageBeta)
+		r.MustRegister(id, StageBeta)
 	})
 }
 
-func TestRegistryWithErrorApply(t *testing.T) {
+func TestRegistryApplyError(t *testing.T) {
 	r := NewRegistry()
+	assert.Error(t, r.Apply(map[string]bool{"foo": true}))
+	r.MustRegister("bar", StageAlpha)
+	assert.Error(t, r.Apply(map[string]bool{"foo": true}))
+	r.MustRegister("foo", StageStable, WithRegisterRemovalVersion("next"))
+	assert.Error(t, r.Apply(map[string]bool{"foo": true}))
+}
 
-	assert.NoError(t, r.RegisterID("foo", StageAlpha, WithRegisterDescription("Test Gate")))
-	assert.NoError(t, r.RegisterID("stable-foo", StageStable, WithRegisterDescription("Test Gate"), WithRegisterRemovalVersion("next")))
-
-	tests := []struct {
-		name        string
-		gate        string
-		enabled     bool
-		shouldError bool
-	}{
-		{
-			name:        "existing_gate",
-			gate:        "foo",
-			enabled:     false,
-			shouldError: false,
-		},
-		{
-			name:        "none_existing_gate",
-			gate:        "bar",
-			enabled:     false,
-			shouldError: true,
-		},
-		{
-			name:        "stable gate modified",
-			gate:        "stable-foo",
-			enabled:     false,
-			shouldError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.shouldError {
-				assert.Error(t, r.Apply(map[string]bool{tt.gate: tt.enabled}))
-				return
-			}
-			assert.NoError(t, r.Apply(map[string]bool{tt.gate: tt.enabled}))
-			assert.Equal(t, tt.enabled, r.IsEnabled(tt.gate))
-		})
-	}
+func TestRegistryApply(t *testing.T) {
+	r := NewRegistry()
+	fooGate := r.MustRegister("foo", StageAlpha, WithRegisterDescription("Test Gate"))
+	assert.False(t, fooGate.IsEnabled())
+	assert.NoError(t, r.Apply(map[string]bool{fooGate.ID(): true}))
+	assert.True(t, fooGate.IsEnabled())
 }
 
 func TestRegisterGateLifecycle(t *testing.T) {
@@ -156,16 +130,18 @@ func TestRegisterGateLifecycle(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			r := NewRegistry()
-			require.NoError(t, r.RegisterID("existing-gate", StageBeta))
+			r.MustRegister("existing-gate", StageBeta)
 			if tc.shouldErr {
-				assert.Error(t, r.RegisterID(tc.id, tc.stage, tc.opts...), "Must error when registering gate")
+				_, err := r.Register(tc.id, tc.stage, tc.opts...)
+				assert.Error(t, err)
 				assert.Panics(t, func() {
-					r.MustRegisterID(tc.id, tc.stage, tc.opts...)
+					r.MustRegister(tc.id, tc.stage, tc.opts...)
 				})
 				return
 			}
-			assert.NoError(t, r.RegisterID(tc.id, tc.stage, tc.opts...), "Must not error when registering feature gate")
-			assert.Equal(t, tc.enabled, r.IsEnabled(tc.id), "Must match the expected enabled value")
+			g, err := r.Register(tc.id, tc.stage, tc.opts...)
+			require.NoError(t, err)
+			assert.Equal(t, tc.enabled, g.IsEnabled())
 		})
 	}
 }
