@@ -221,7 +221,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
 				return cfg
 			},
-			expected: errors.New(`connectors::nop/2: cannot have same id as receiver`),
+			expected: errors.New(`connectors::nop/2: there's already a receiver named "nop/2"`),
 		},
 		{
 			name: "ambiguous-connector-name-as-exporter",
@@ -234,7 +234,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
 				return cfg
 			},
-			expected: errors.New(`connectors::nop/2: cannot have same id as exporter`),
+			expected: errors.New(`connectors::nop/2: there's already an exporter named "nop/2"`),
 		},
 		{
 			name: "invalid-connector-reference-as-receiver",
@@ -288,6 +288,9 @@ func TestConfigValidate(t *testing.T) {
 	}
 
 	require.NoError(t, featuregate.GlobalRegistry().Apply(map[string]bool{connectorsFeatureGateID: true}))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Apply(map[string]bool{connectorsFeatureGateID: false}))
+	}()
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := test.cfgFn()
