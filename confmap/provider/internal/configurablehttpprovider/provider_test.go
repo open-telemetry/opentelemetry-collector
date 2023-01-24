@@ -40,14 +40,14 @@ import (
 func answerGet(w http.ResponseWriter, r *http.Request) {
 	f, err := os.ReadFile("./testdata/otel-config.yaml")
 	if err != nil {
-		w.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 		_, innerErr := w.Write([]byte("Cannot find the config file"))
 		if innerErr != nil {
 			fmt.Println("Write failed: ", innerErr)
 		}
 		return
 	}
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(f)
 	if err != nil {
 		fmt.Println("Write failed: ", err)
@@ -250,7 +250,7 @@ func TestUnsupportedScheme(t *testing.T) {
 func TestEmptyURI(t *testing.T) {
 	fp := New(HTTPScheme)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 	}))
 	defer ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
@@ -270,7 +270,7 @@ func TestRetrieveFromShutdownServer(t *testing.T) {
 func TestNonExistent(t *testing.T) {
 	fp := New(HTTPScheme)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
@@ -281,7 +281,7 @@ func TestNonExistent(t *testing.T) {
 func TestInvalidYAML(t *testing.T) {
 	fp := New(HTTPScheme)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("wrong : ["))
 		if err != nil {
 			fmt.Println("Write failed: ", err)

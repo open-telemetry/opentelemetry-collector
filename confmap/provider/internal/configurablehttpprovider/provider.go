@@ -123,7 +123,7 @@ func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 	defer resp.Body.Close()
 
 	// check the HTTP status code
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to load resource from uri %q. status code: %d", uri, resp.StatusCode)
 	}
 
