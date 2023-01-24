@@ -83,6 +83,8 @@ type Factory interface {
 
 	// LogsProcessorStability gets the stability level of the LogsProcessor.
 	LogsProcessorStability() component.StabilityLevel
+
+	unexportedFactoryFunc()
 }
 
 // FactoryOption apply changes to Options.
@@ -148,7 +150,6 @@ func (f CreateLogsFunc) CreateLogsProcessor(
 }
 
 type factory struct {
-	component.Factory
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
 	CreateTracesFunc
@@ -163,12 +164,7 @@ func (f *factory) Type() component.Type {
 	return f.cfgType
 }
 
-// CreateDefaultConfig creates the default configuration for the Component.
-//
-// TODO: Remove this when we remove the private func from component.Factory and add it to every specialized Factory.
-func (f *factory) CreateDefaultConfig() component.Config {
-	return f.CreateDefaultConfigFunc()
-}
+func (f *factory) unexportedFactoryFunc() {}
 
 func (f factory) TracesProcessorStability() component.StabilityLevel {
 	return f.tracesStabilityLevel

@@ -70,10 +70,11 @@ type Factory interface {
 
 	// ExtensionStability gets the stability level of the Extension.
 	ExtensionStability() component.StabilityLevel
+
+	unexportedFactoryFunc()
 }
 
 type factory struct {
-	component.Factory
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
 	CreateFunc
@@ -84,12 +85,7 @@ func (f *factory) Type() component.Type {
 	return f.cfgType
 }
 
-// CreateDefaultConfig creates the default configuration for the Component.
-//
-// TODO: Remove this when we remove the private func from component.Factory and add it to every specialized Factory.
-func (f *factory) CreateDefaultConfig() component.Config {
-	return f.CreateDefaultConfigFunc()
-}
+func (f *factory) unexportedFactoryFunc() {}
 
 func (f *factory) ExtensionStability() component.StabilityLevel {
 	return f.extensionStability

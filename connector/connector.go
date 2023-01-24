@@ -122,6 +122,8 @@ type Factory interface {
 	LogsToTracesStability() component.StabilityLevel
 	LogsToMetricsStability() component.StabilityLevel
 	LogsToLogsStability() component.StabilityLevel
+
+	unexportedFactoryFunc()
 }
 
 // FactoryOption applies changes to Factory.
@@ -284,7 +286,6 @@ func (f CreateLogsToLogsFunc) CreateLogsToLogs(
 
 // factory implements Factory.
 type factory struct {
-	component.Factory
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
 
@@ -313,18 +314,12 @@ type factory struct {
 	logsToLogsStabilityLevel    component.StabilityLevel
 }
 
-var _ Factory = (*factory)(nil)
-
 // Type returns the type of component.
 func (f *factory) Type() component.Type {
 	return f.cfgType
 }
 
-// CreateDefaultConfig creates the default configuration for the Component.
-// TODO: Remove this when we remove the private func from component.Factory and add it to every specialized Factory.
-func (f *factory) CreateDefaultConfig() component.Config {
-	return f.CreateDefaultConfigFunc()
-}
+func (f *factory) unexportedFactoryFunc() {}
 
 // WithTracesToTraces overrides the default "error not supported" implementation for WithTracesToTraces and the default "undefined" stability level.
 func WithTracesToTraces(createTracesToTraces CreateTracesToTracesFunc, sl component.StabilityLevel) FactoryOption {
