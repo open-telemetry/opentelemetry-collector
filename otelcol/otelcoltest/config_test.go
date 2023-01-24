@@ -53,6 +53,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Contains(t, cfg.Processors, component.NewID("nop"))
 	assert.Contains(t, cfg.Processors, component.NewIDWithName("nop", "myprocessor"))
 
+	// Verify connectors
+	assert.Len(t, cfg.Connectors, 1)
+	assert.Contains(t, cfg.Connectors, component.NewIDWithName("nop", "myconnector"))
+
 	// Verify service.
 	require.Len(t, cfg.Service.Extensions, 1)
 	assert.Contains(t, cfg.Service.Extensions, component.NewID("nop"))
