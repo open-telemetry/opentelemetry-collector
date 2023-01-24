@@ -25,5 +25,5 @@ import (
 //
 // One example for HTTP URI is: http://localhost:3333/getConfig
 func New() confmap.Provider {
-	return configurablehttpprovider.New(configurablehttpprovider.PlainText)
+	return configurablehttpprovider.New(configurablehttpprovider.HTTPScheme)
 }

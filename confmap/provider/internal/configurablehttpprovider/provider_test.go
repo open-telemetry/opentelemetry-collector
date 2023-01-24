@@ -129,7 +129,7 @@ func generateCertificate(hostname string) (cert string, key string, err error) {
 }
 
 func TestFunctionalityDownloadFileHTTP(t *testing.T) {
-	fp := newConfigurableHTTPProvider(PlainText)
+	fp := newConfigurableHTTPProvider(HTTPScheme)
 	ts := httptest.NewServer(http.HandlerFunc(answerGet))
 	defer ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
@@ -217,7 +217,7 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			fp := newConfigurableHTTPProvider(TLS)
+			fp := newConfigurableHTTPProvider(HTTPSScheme)
 			// Parse url of the test server to get the port number.
 			tsURL, err := url.Parse(ts.URL)
 			require.NoError(t, err)
@@ -236,19 +236,19 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 }
 
 func TestUnsupportedScheme(t *testing.T) {
-	fp := New(PlainText)
+	fp := New(HTTPScheme)
 	_, err := fp.Retrieve(context.Background(), "https://...", nil)
 	assert.Error(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 
-	fp = New(TLS)
+	fp = New(HTTPSScheme)
 	_, err = fp.Retrieve(context.Background(), "http://...", nil)
 	assert.Error(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestEmptyURI(t *testing.T) {
-	fp := New(PlainText)
+	fp := New(HTTPScheme)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 	}))
@@ -259,7 +259,7 @@ func TestEmptyURI(t *testing.T) {
 }
 
 func TestRetrieveFromShutdownServer(t *testing.T) {
-	fp := New(PlainText)
+	fp := New(HTTPScheme)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
@@ -268,7 +268,7 @@ func TestRetrieveFromShutdownServer(t *testing.T) {
 }
 
 func TestNonExistent(t *testing.T) {
-	fp := New(PlainText)
+	fp := New(HTTPScheme)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 	}))
@@ -279,7 +279,7 @@ func TestNonExistent(t *testing.T) {
 }
 
 func TestInvalidYAML(t *testing.T) {
-	fp := New(PlainText)
+	fp := New(HTTPScheme)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		_, err := w.Write([]byte("wrong : ["))
@@ -294,13 +294,13 @@ func TestInvalidYAML(t *testing.T) {
 }
 
 func TestScheme(t *testing.T) {
-	fp := New(PlainText)
+	fp := New(HTTPScheme)
 	assert.Equal(t, "http", fp.Scheme())
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestValidateProviderScheme(t *testing.T) {
-	assert.NoError(t, confmaptest.ValidateProviderScheme(New(PlainText)))
+	assert.NoError(t, confmaptest.ValidateProviderScheme(New(HTTPScheme)))
 }
 
 func TestInvalidTransport(t *testing.T) {

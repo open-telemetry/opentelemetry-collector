@@ -26,5 +26,5 @@ import (
 // To add extra CA certificates you need to install certificates in the system pool. This procedure is operating system
 // dependent. E.g.: on Linux please refer to the `update-ca-trust` command.
 func New() confmap.Provider {
-	return configurablehttpprovider.New(configurablehttpprovider.TLS)
+	return configurablehttpprovider.New(configurablehttpprovider.HTTPSScheme)
 }

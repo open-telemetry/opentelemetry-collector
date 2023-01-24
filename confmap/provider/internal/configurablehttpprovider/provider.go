@@ -29,34 +29,32 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/internal"
 )
 
-type TransportType string
+type SchemeType string
 
 const (
-	PlainText TransportType = "http"
-	TLS       TransportType = "https"
+	HTTPScheme  SchemeType = "http"
+	HTTPSScheme SchemeType = "https"
 )
 
 type provider struct {
-	transport          TransportType
+	scheme             SchemeType
 	caCertPath         string // Used for tests
 	insecureSkipVerify bool   // Used for tests
 }
 
-// New returns a new provider that reads the configuration from http server using the configured transport mechanism.
-// There are two types of transport supported: PlainText (HTTP) and TLS (HTTPS).
-//
-// This internal provider supports "http" and "https" schemes based on the transport chosen, and can be called with a "uri" that
-// follows:
+// New returns a new provider that reads the configuration from http server using the configured transport mechanism
+// depending on the selected scheme.
+// There are two types of transport supported: PlainText (HTTPScheme) and TLS (HTTPSScheme).
 //
 // One example for http-uri: http://localhost:3333/getConfig
 // One example for https-uri: https://localhost:3333/getConfig
 // This is used by the http and https external implementations.
-func New(transport TransportType) confmap.Provider {
-	return newConfigurableHTTPProvider(transport)
+func New(scheme SchemeType) confmap.Provider {
+	return newConfigurableHTTPProvider(scheme)
 }
 
-func newConfigurableHTTPProvider(transport TransportType) *provider {
-	return &provider{transport: transport, caCertPath: "", insecureSkipVerify: false}
+func newConfigurableHTTPProvider(scheme SchemeType) *provider {
+	return &provider{scheme: scheme, caCertPath: "", insecureSkipVerify: false}
 }
 
 func (fmp *provider) getHTTPClient() (*http.Client, error) {
@@ -93,22 +91,22 @@ func (fmp *provider) getHTTPSClient() (*http.Client, error) {
 	}, nil
 }
 
-// Get the client based on the type of transport that was selected.
+// Get the client based on the type of scheme that was selected.
 func (fmp *provider) getClient() (*http.Client, error) {
-	switch fmp.transport {
-	case PlainText:
+	switch fmp.scheme {
+	case HTTPScheme:
 		return fmp.getHTTPClient()
-	case TLS:
+	case HTTPSScheme:
 		return fmp.getHTTPSClient()
 	default:
-		return nil, fmt.Errorf("invalid transport type: %s", fmp.transport)
+		return nil, fmt.Errorf("invalid scheme type: %s", fmp.scheme)
 	}
 }
 
 func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 
-	if !strings.HasPrefix(uri, string(fmp.transport)+":") {
-		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, string(fmp.transport))
+	if !strings.HasPrefix(uri, string(fmp.scheme)+":") {
+		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, string(fmp.scheme))
 	}
 
 	client, err := fmp.getClient()
@@ -139,7 +137,7 @@ func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 }
 
 func (fmp *provider) Scheme() string {
-	return string(fmp.transport)
+	return string(fmp.scheme)
 }
 
 func (*provider) Shutdown(context.Context) error {
