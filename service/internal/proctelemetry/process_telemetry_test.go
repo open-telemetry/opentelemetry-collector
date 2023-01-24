@@ -129,7 +129,6 @@ func TestOtelProcessTelemetry(t *testing.T) {
 		}
 		require.True(t, ok)
 		require.True(t, len(metric.Metric) == 1)
-		// require.True(t, metric.GetType() == io_prometheus_client.MetricType_COUNTER)
 		var metricValue float64
 		if metric.GetType() == io_prometheus_client.MetricType_COUNTER {
 			metricValue = metric.Metric[0].GetCounter().GetValue()
@@ -138,11 +137,11 @@ func TestOtelProcessTelemetry(t *testing.T) {
 		}
 		if strings.HasPrefix(metricName, "process_uptime") || strings.HasPrefix(metricName, "process_cpu_seconds") {
 			// This likely will still be zero when running the test.
-			assert.True(t, metricValue >= 0, metricName)
+			assert.GreaterOrEqual(t, metricValue, float64(0), metricName)
 			continue
 		}
 
-		assert.True(t, metricValue > 0, metricName)
+		assert.Greater(t, metricValue, float64(0), metricName)
 	}
 }
 
@@ -173,11 +172,11 @@ func TestOCProcessTelemetry(t *testing.T) {
 
 		if metricName == "process/uptime" || metricName == "process/cpu_seconds" {
 			// This likely will still be zero when running the test.
-			assert.True(t, value >= 0, metricName)
+			assert.GreaterOrEqual(t, value, float64(0), metricName)
 			continue
 		}
 
-		assert.True(t, value > 0, metricName)
+		assert.Greater(t, value, float64(0), metricName)
 	}
 }
 
