@@ -25,6 +25,7 @@ jobs:
   prepare-release:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       # To keep track of the progress, it might be helpful to create a tracking issue similar to #6067. You are responsible
       # for all of the steps under the "Performed by collector release manager" heading. Once the issue is created, you can
       # create the individual ones by hovering them and clicking the "Convert to issue" button on the right hand side.
@@ -34,78 +35,31 @@ jobs:
           CANDIDATE_BETA: ${{ inputs.candidate-beta }}
           CANDIDATE_STABLE: ${{ inputs.candidate-stable }}
           REPO: open-telemetry/opentelemetry-collector
-        run: |
-          EXISTING_ISSUE=$( gh issue list --search "Release v${CANDIDATE_BETA}/v${CANDIDATE_STABLE}" --json url --jq '.[].url' --repo ${REPO} )
-          if [ "${EXISTING_ISSUE}" != "" ]; then
-            echo "Issue already exists: ${EXISTING_ISSUE}"
-            exit 0
-          fi
-          gh issue create -a ${GITHUB_ACTOR} --repo ${REPO} --label release --title "Release v${CANDIDATE_BETA}/v${CANDIDATE_STABLE}" --body "Like #4522, but for v${CANDIDATE_BETA}/v${CANDIDATE_STABLE}
-          **Performed by collector release manager**
-
-          - [ ] Prepare stable core release v${CANDIDATE_STABLE}
-          - [ ] Prepare beta core release v${CANDIDATE_BETA}
-          - [ ] Tag and release stable core v${CANDIDATE_STABLE}
-          - [ ] Tag and release beta core v${CANDIDATE_BETA}
-          - [ ] Prepare contrib release v${CANDIDATE_BETA}
-          - [ ] Tag and release contrib v${CANDIDATE_BETA}
-          - [ ] Prepare otelcol-releases v${CANDIDATE_BETA}
-          - [ ] Release binaries and container images v${CANDIDATE_BETA}
-
-          **Performed by operator maintainers**
-
-          - [ ] Release the operator v${CANDIDATE_BETA}
-
-          **Performed by helm chart maintainers**
-
-          - [ ] Update the opentelemetry-collector helm chart to use v${CANDIDATE_BETA}"
+        run: ./.github/workflows/scripts/release-create-tracking-issue.sh
       # Make sure that there are no open issues with release:blocker label in Core. The release has to be delayed until they are resolved.
       - name: Check blockers in core
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: open-telemetry/opentelemetry-collector
-        run: |
-          BLOCKERS=$( gh issue list --search "label:release:blocker" --json url --jq '.[].url' --repo ${REPO} )
-          if [ "${BLOCKERS}" != "" ]; then
-              echo "Release blockers in ${REPO} repo: ${BLOCKERS}"
-              exit 1
-          fi
+        run: ./.github/workflows/scripts/release-check-blockers.sh
       # Make sure that there are no open issues with release:blocker label in Contrib. The release has to be delayed until they are resolved.
       - name: Check blockers in contrib
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: open-telemetry/opentelemetry-collector-contrib
-        run: |
-          BLOCKERS=$( gh issue list --search "label:release:blocker" --json url --jq '.[].url' --repo ${REPO} )
-          if [ "${BLOCKERS}" != "" ]; then
-              echo "Release blockers in ${REPO} repo: ${BLOCKERS}"
-              exit 1
-          fi
+        run: ./.github/workflows/scripts/release-check-blockers.sh
       # Make sure the current main branch build successfully passes (Core).
       - name: Check build status in core
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: open-telemetry/opentelemetry-collector
-        run: |
-          RESULT=$(gh run list --branch main --json status --jq '[.[] | select(.status != "queued" and .status != "in_progress")][0].status' --workflow build-and-test --repo ${REPO} )
-          if [ "${RESULT}" != "completed" ]; then
-              echo "Build status in ${REPO} is not completed: ${RESULT}"
-              echo "$(gh run list --branch main --json status,url --jq '[.[] | select(.status != "queued" and .status != "in_progress")][0].url' --workflow build-and-test --repo ${REPO} )"
-              exit 1
-          fi
+        run: ./.github/workflows/scripts/release-check-build-status.sh
       # Make sure the current main branch build successfully passes (Contrib).
       - name: Check build status in contrib
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: open-telemetry/opentelemetry-collector-contrib
-        run: |
-          RESULT=$(gh run list --branch main --json status --jq '[.[] | select(.status != "queued" and .status != "in_progress")][0].status' --workflow build-and-test --repo ${REPO} )
-          if [ "${RESULT}" != "completed" ]; then
-              echo "Build status in ${REPO} is not completed: ${RESULT}"
-              echo "$(gh run list --branch main --json status,url --jq '[.[] | select(.status != "queued" and .status != "in_progress")][0].url' --workflow build-and-test --repo ${REPO} )"
-              exit 1
-          fi
-      - uses: actions/checkout@v3
+        run: ./.github/workflows/scripts/release-check-build-status.sh
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -122,20 +76,4 @@ jobs:
           CANDIDATE_STABLE: ${{ inputs.candidate-stable }}
           CURRENT_BETA: ${{ inputs.current-beta }}
           CURRENT_STABLE: ${{ inputs.current-stable }}
-        run: |
-          make chlog-update VERSION=${CANDIDATE_STABLE}/${CANDIDATE_BETA}
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-          BRANCH="prepare-release-prs/${CANDIDATE_BETA}-${CANDIDATE_STABLE}"
-          git checkout -b ${BRANCH}
-          git add --all
-          git commit -m "Changelog update ${CANDIDATE_BETA}/${CANDIDATE_STABLE}"
-          make prepare-release GH=none PREVIOUS_VERSION=${CURRENT_STABLE} RELEASE_CANDIDATE=${CANDIDATE_STABLE} MODSET=stable
-          make prepare-release GH=none PREVIOUS_VERSION=${CURRENT_BETA} RELEASE_CANDIDATE=${CANDIDATE_BETA} MODSET=beta
-          git push origin ${BRANCH}
-          gh pr create --title "[chore] Prepare release ${CANDIDATE_BETA}/${CANDIDATE_STABLE}" --body "
-          The following commands were run to prepare this release:
-          - make chlog-update VERSION=${CANDIDATE_BETA}/${CANDIDATE_STABLE}
-          - make prepare-release GH=none PREVIOUS_VERSION=${CURRENT_STABLE} RELEASE_CANDIDATE=${CANDIDATE_STABLE} MODSET=stable
-          - make prepare-release GH=none PREVIOUS_VERSION=${CURRENT_BETA} RELEASE_CANDIDATE=${CANDIDATE_BETA} MODSET=beta
-          "
+        run: ./.github/workflows/scripts/release-prepare-release.sh
