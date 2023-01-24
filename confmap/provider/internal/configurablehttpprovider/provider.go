@@ -57,12 +57,12 @@ func newConfigurableHTTPProvider(scheme SchemeType) *provider {
 	return &provider{scheme: scheme, caCertPath: "", insecureSkipVerify: false}
 }
 
-func (fmp *provider) getHTTPClient() (*http.Client, error) {
+func (fmp *provider) createHTTPClient() (*http.Client, error) {
 	return &http.Client{}, nil
 
 }
 
-func (fmp *provider) getHTTPSClient() (*http.Client, error) {
+func (fmp *provider) createHTTPSClient() (*http.Client, error) {
 	pool, err := x509.SystemCertPool()
 
 	if err != nil {
@@ -91,13 +91,13 @@ func (fmp *provider) getHTTPSClient() (*http.Client, error) {
 	}, nil
 }
 
-// Get the client based on the type of scheme that was selected.
-func (fmp *provider) getClient() (*http.Client, error) {
+// Create the client based on the type of scheme that was selected.
+func (fmp *provider) createClient() (*http.Client, error) {
 	switch fmp.scheme {
 	case HTTPScheme:
-		return fmp.getHTTPClient()
+		return fmp.createHTTPClient()
 	case HTTPSScheme:
-		return fmp.getHTTPSClient()
+		return fmp.createHTTPSClient()
 	default:
 		return nil, fmt.Errorf("invalid scheme type: %s", fmp.scheme)
 	}
@@ -109,7 +109,7 @@ func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, string(fmp.scheme))
 	}
 
-	client, err := fmp.getClient()
+	client, err := fmp.createClient()
 
 	if err != nil {
 		return nil, fmt.Errorf("unable to configure http transport layer: %w", err)
