@@ -94,7 +94,7 @@ func Compile(cfg Config) error {
 		ldflags = cfg.LDFlags
 		args = append(args, "-gcflags=all=-N -l")
 	} else if len(cfg.LDFlags) > 0 {
-		ldflags = fmt.Sprintf("%s %s", ldflags, cfg.LDFlags)
+		ldflags += " " + cfg.LDFlags
 	}
 	args = append(args, "-ldflags="+ldflags)
 	if cfg.Distribution.BuildTags != "" {
