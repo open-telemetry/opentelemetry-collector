@@ -15,4 +15,4 @@ jobs:
       - name: Run dependabot-pr.sh
         run: ./.github/workflows/scripts/dependabot-pr.sh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
