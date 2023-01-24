@@ -23,9 +23,6 @@ import (
 
 var globalRegistry = NewRegistry()
 
-// Deprecated: [v0.70.0] use GlobalRegistry.
-var GetRegistry = GlobalRegistry
-
 // GlobalRegistry returns the global Registry.
 func GlobalRegistry() *Registry {
 	return globalRegistry
