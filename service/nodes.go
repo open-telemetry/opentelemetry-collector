@@ -19,8 +19,6 @@ import (
 	"hash/fnv"
 	"strings"
 
-	"gonum.org/v1/gonum/graph"
-
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -35,13 +33,6 @@ func newNodeID(parts ...string) nodeID {
 	h.Write([]byte(strings.Join(parts, "|")))
 	return nodeID(h.Sum64())
 }
-
-type componentNode interface {
-	component.Component
-	graph.Node
-}
-
-var _ componentNode = &receiverNode{}
 
 // A receiver instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
@@ -60,8 +51,6 @@ func newReceiverNode(pipelineID component.ID, recvID component.ID) *receiverNode
 	}
 }
 
-var _ componentNode = &processorNode{}
-
 // Every processor instance is unique to one pipeline.
 // Therefore, nodeID is derived from "pipeline ID" and "component ID".
 type processorNode struct {
@@ -79,8 +68,6 @@ func newProcessorNode(pipelineID, procID component.ID) *processorNode {
 	}
 }
 
-var _ componentNode = &exporterNode{}
-
 // An exporter instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
 type exporterNode struct {
@@ -97,8 +84,6 @@ func newExporterNode(pipelineID component.ID, exprID component.ID) *exporterNode
 		pipelineType: pipelineID.Type(),
 	}
 }
-
-var _ componentNode = &connectorNode{}
 
 // A connector instance connects one pipeline type to one other pipeline type.
 // Therefore, nodeID is derived from "exporter pipeline type", "receiver pipeline type", and "component ID".

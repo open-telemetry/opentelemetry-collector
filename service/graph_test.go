@@ -36,6 +36,8 @@ type testNode struct {
 	shutdownErr error
 }
 
+// ID satisfies the graph.Node interface, allowing
+// testNode to be used in a simple.DirectedGraph
 func (n *testNode) ID() int64 {
 	return int64(newNodeID(n.id.String()))
 }
