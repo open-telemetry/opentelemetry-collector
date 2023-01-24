@@ -38,44 +38,12 @@ var (
 	errInvalidExtConfig  = errors.New("invalid extension config")
 )
 
-type nopRecvConfig struct {
+type errConfig struct {
 	validateErr error
 }
 
-func (nc *nopRecvConfig) Validate() error {
-	return nc.validateErr
-}
-
-type nopExpConfig struct {
-	validateErr error
-}
-
-func (nc *nopExpConfig) Validate() error {
-	return nc.validateErr
-}
-
-type nopProcConfig struct {
-	validateErr error
-}
-
-func (nc *nopProcConfig) Validate() error {
-	return nc.validateErr
-}
-
-type nopConnConfig struct {
-	validateErr error
-}
-
-func (nc *nopConnConfig) Validate() error {
-	return nc.validateErr
-}
-
-type nopExtConfig struct {
-	validateErr error
-}
-
-func (nc *nopExtConfig) Validate() error {
-	return nc.validateErr
+func (c *errConfig) Validate() error {
+	return c.validateErr
 }
 
 func TestConfigValidate(t *testing.T) {
@@ -159,7 +127,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-receiver-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Receivers[component.NewID("nop")] = &nopRecvConfig{
+				cfg.Receivers[component.NewID("nop")] = &errConfig{
 					validateErr: errInvalidRecvConfig,
 				}
 				return cfg
@@ -170,7 +138,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-exporter-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Exporters[component.NewID("nop")] = &nopExpConfig{
+				cfg.Exporters[component.NewID("nop")] = &errConfig{
 					validateErr: errInvalidExpConfig,
 				}
 				return cfg
@@ -181,7 +149,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-processor-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Processors[component.NewID("nop")] = &nopProcConfig{
+				cfg.Processors[component.NewID("nop")] = &errConfig{
 					validateErr: errInvalidProcConfig,
 				}
 				return cfg
@@ -192,7 +160,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-extension-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Extensions[component.NewID("nop")] = &nopExtConfig{
+				cfg.Extensions[component.NewID("nop")] = &errConfig{
 					validateErr: errInvalidExtConfig,
 				}
 				return cfg
@@ -203,7 +171,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-connector-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Connectors[component.NewIDWithName("nop", "conn")] = &nopConnConfig{
+				cfg.Connectors[component.NewIDWithName("nop", "conn")] = &errConfig{
 					validateErr: errInvalidConnConfig,
 				}
 				return cfg
@@ -214,8 +182,8 @@ func TestConfigValidate(t *testing.T) {
 			name: "ambiguous-connector-name-as-receiver",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Receivers[component.NewID("nop/2")] = &nopRecvConfig{}
-				cfg.Connectors[component.NewID("nop/2")] = &nopConnConfig{}
+				cfg.Receivers[component.NewID("nop/2")] = &errConfig{}
+				cfg.Connectors[component.NewID("nop/2")] = &errConfig{}
 				pipe := cfg.Service.Pipelines[component.NewID("traces")]
 				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "2"))
 				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
@@ -227,8 +195,8 @@ func TestConfigValidate(t *testing.T) {
 			name: "ambiguous-connector-name-as-exporter",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Exporters[component.NewID("nop/2")] = &nopExpConfig{}
-				cfg.Connectors[component.NewID("nop/2")] = &nopConnConfig{}
+				cfg.Exporters[component.NewID("nop/2")] = &errConfig{}
+				cfg.Connectors[component.NewID("nop/2")] = &errConfig{}
 				pipe := cfg.Service.Pipelines[component.NewID("traces")]
 				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "2"))
 				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
@@ -302,19 +270,19 @@ func TestConfigValidate(t *testing.T) {
 func generateConfig() *Config {
 	return &Config{
 		Receivers: map[component.ID]component.Config{
-			component.NewID("nop"): &nopRecvConfig{},
+			component.NewID("nop"): &errConfig{},
 		},
 		Exporters: map[component.ID]component.Config{
-			component.NewID("nop"): &nopExpConfig{},
+			component.NewID("nop"): &errConfig{},
 		},
 		Processors: map[component.ID]component.Config{
-			component.NewID("nop"): &nopProcConfig{},
+			component.NewID("nop"): &errConfig{},
 		},
 		Connectors: map[component.ID]component.Config{
-			component.NewIDWithName("nop", "conn"): &nopConnConfig{},
+			component.NewIDWithName("nop", "conn"): &errConfig{},
 		},
 		Extensions: map[component.ID]component.Config{
-			component.NewID("nop"): &nopExtConfig{},
+			component.NewID("nop"): &errConfig{},
 		},
 		Service: service.Config{
 			Telemetry: telemetry.Config{
