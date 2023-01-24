@@ -34,15 +34,15 @@ type baseComponent struct {
 }
 
 func TestNewSharedComponents(t *testing.T) {
-	comps := NewSharedComponents()
+	comps := NewSharedComponents[component.ID, *baseComponent]()
 	assert.Len(t, comps.comps, 0)
 }
 
 func TestNewSharedComponentsCreateError(t *testing.T) {
-	comps := NewSharedComponents()
+	comps := NewSharedComponents[component.ID, *baseComponent]()
 	assert.Len(t, comps.comps, 0)
 	myErr := errors.New("my error")
-	_, err := comps.GetOrAdd(id, func() (component.Component, error) { return nil, myErr })
+	_, err := comps.GetOrAdd(id, func() (*baseComponent, error) { return nil, myErr })
 	assert.ErrorIs(t, err, myErr)
 	assert.Len(t, comps.comps, 0)
 }
@@ -50,19 +50,19 @@ func TestNewSharedComponentsCreateError(t *testing.T) {
 func TestSharedComponentsGetOrAdd(t *testing.T) {
 	nop := &baseComponent{}
 
-	comps := NewSharedComponents()
-	got, err := comps.GetOrAdd(id, func() (component.Component, error) { return nop, nil })
+	comps := NewSharedComponents[component.ID, *baseComponent]()
+	got, err := comps.GetOrAdd(id, func() (*baseComponent, error) { return nop, nil })
 	require.NoError(t, err)
 	assert.Len(t, comps.comps, 1)
 	assert.Same(t, nop, got.Unwrap())
-	gotSecond, err := comps.GetOrAdd(id, func() (component.Component, error) { panic("should not be called") })
+	gotSecond, err := comps.GetOrAdd(id, func() (*baseComponent, error) { panic("should not be called") })
 	require.NoError(t, err)
 	assert.Same(t, got, gotSecond)
 
 	// Shutdown nop will remove
 	assert.NoError(t, got.Shutdown(context.Background()))
 	assert.Len(t, comps.comps, 0)
-	gotThird, err := comps.GetOrAdd(id, func() (component.Component, error) { return nop, nil })
+	gotThird, err := comps.GetOrAdd(id, func() (*baseComponent, error) { return nop, nil })
 	require.NoError(t, err)
 	assert.NotSame(t, got, gotThird)
 }
@@ -81,10 +81,9 @@ func TestSharedComponent(t *testing.T) {
 			return wantErr
 		}}
 
-	comps := NewSharedComponents()
-	got, err := comps.GetOrAdd(id, func() (component.Component, error) { return comp, nil })
+	comps := NewSharedComponents[component.ID, *baseComponent]()
+	got, err := comps.GetOrAdd(id, func() (*baseComponent, error) { return comp, nil })
 	require.NoError(t, err)
-
 	assert.Equal(t, wantErr, got.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, 1, calledStart)
 	// Second time is not called anymore.
