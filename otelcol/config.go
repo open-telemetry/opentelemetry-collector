@@ -101,6 +101,20 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	// Validate the connector configuration.
+	for connID, connCfg := range cfg.Connectors {
+		if err := component.ValidateConfig(connCfg); err != nil {
+			return fmt.Errorf("connectors::%s: %w", connID, err)
+		}
+
+		if _, ok := cfg.Exporters[connID]; ok {
+			return fmt.Errorf("connectors::%s: there's already an exporter named %q", connID, connID)
+		}
+		if _, ok := cfg.Receivers[connID]; ok {
+			return fmt.Errorf("connectors::%s: there's already a receiver named %q", connID, connID)
+		}
+	}
+
 	// Validate the extension configuration.
 	for extID, extCfg := range cfg.Extensions {
 		if err := component.ValidateConfig(extCfg); err != nil {
@@ -124,14 +138,24 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	// Keep track of whether connectors are used as receivers and exporters
+	connectorsAsReceivers := make(map[component.ID]struct{}, len(cfg.Connectors))
+	connectorsAsExporters := make(map[component.ID]struct{}, len(cfg.Connectors))
+
 	// Check that all pipelines reference only configured components.
 	for pipelineID, pipeline := range cfg.Service.Pipelines {
 		// Validate pipeline receiver name references.
 		for _, ref := range pipeline.Receivers {
 			// Check that the name referenced in the pipeline's receivers exists in the top-level receivers.
-			if cfg.Receivers[ref] == nil {
-				return fmt.Errorf("service::pipeline::%s: references receiver %q which is not configured", pipelineID, ref)
+			if _, ok := cfg.Receivers[ref]; ok {
+				continue
 			}
+
+			if _, ok := cfg.Connectors[ref]; ok {
+				connectorsAsReceivers[ref] = struct{}{}
+				continue
+			}
+			return fmt.Errorf("service::pipeline::%s: references receiver %q which is not configured", pipelineID, ref)
 		}
 
 		// Validate pipeline processor name references.
@@ -145,9 +169,26 @@ func (cfg *Config) Validate() error {
 		// Validate pipeline exporter name references.
 		for _, ref := range pipeline.Exporters {
 			// Check that the name referenced in the pipeline's Exporters exists in the top-level Exporters.
-			if cfg.Exporters[ref] == nil {
-				return fmt.Errorf("service::pipeline::%s: references exporter %q which is not configured", pipelineID, ref)
+			if _, ok := cfg.Exporters[ref]; ok {
+				continue
 			}
+			if _, ok := cfg.Connectors[ref]; ok {
+				connectorsAsExporters[ref] = struct{}{}
+				continue
+			}
+			return fmt.Errorf("service::pipeline::%s: references exporter %q which is not configured", pipelineID, ref)
+		}
+	}
+
+	// Validate that connectors are used as both receiver and exporter
+	for connID := range cfg.Connectors {
+		_, recOK := connectorsAsReceivers[connID]
+		_, expOK := connectorsAsExporters[connID]
+		if recOK && !expOK {
+			return fmt.Errorf("connectors::%s: must be used as both receiver and exporter but is not used as exporter", connID)
+		}
+		if !recOK && expOK {
+			return fmt.Errorf("connectors::%s: must be used as both receiver and exporter but is not used as receiver", connID)
 		}
 	}
 
