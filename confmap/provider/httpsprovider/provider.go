@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httpprovider // import "go.opentelemetry.io/collector/confmap/provider/httpprovider"
+package httpsprovider // import "go.opentelemetry.io/collector/confmap/provider/httpsprovider"
 
 import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider"
 )
 
-// New returns a new confmap.Provider that reads the configuration from a http server.
+// New returns a new confmap.Provider that reads the configuration from a https server.
 //
-// This Provider supports "http" scheme.
+// This Provider supports "https" scheme. One example of an HTTPS URI is: https://localhost:3333/getConfig
 //
-// One example for HTTP URI is: http://localhost:3333/getConfig
+// To add extra CA certificates you need to install certificates in the system pool. This procedure is operating system
+// dependent. E.g.: on Linux please refer to the `update-ca-trust` command.
 func New() confmap.Provider {
-	return configurablehttpprovider.New(configurablehttpprovider.HTTPScheme)
+	return configurablehttpprovider.New(configurablehttpprovider.HTTPSScheme)
 }

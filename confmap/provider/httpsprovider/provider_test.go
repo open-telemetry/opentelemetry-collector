@@ -12,18 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httpprovider // import "go.opentelemetry.io/collector/confmap/provider/httpprovider"
+package httpsprovider
 
 import (
-	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// New returns a new confmap.Provider that reads the configuration from a http server.
-//
-// This Provider supports "http" scheme.
-//
-// One example for HTTP URI is: http://localhost:3333/getConfig
-func New() confmap.Provider {
-	return configurablehttpprovider.New(configurablehttpprovider.HTTPScheme)
+func TestSupportedScheme(t *testing.T) {
+	fp := New()
+	assert.Equal(t, "https", fp.Scheme())
 }
