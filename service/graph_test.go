@@ -146,6 +146,7 @@ func TestGraphStartStop(t *testing.T) {
 				assert.Greater(t, ctx.order[edge[0]], ctx.order[edge[1]])
 			}
 
+			ctx.order = map[component.ID]int{}
 			require.NoError(t, pg.ShutdownAll(ctx))
 			for _, edge := range tt.edges {
 				assert.Less(t, ctx.order[edge[0]], ctx.order[edge[1]])

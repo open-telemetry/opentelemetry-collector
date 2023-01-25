@@ -54,9 +54,7 @@ func (g *pipelinesGraph) ShutdownAll(ctx context.Context) error {
 	// Stop receivers first, and work towards exporters
 	var errs error
 	for i := 0; i < len(nodes); i++ {
-		if compErr := nodes[i].(component.Component).Shutdown(ctx); compErr != nil {
-			errs = multierr.Append(errs, compErr)
-		}
+		errs = multierr.Append(errs, nodes[i].(component.Component).Shutdown(ctx))
 	}
 	return errs
 }
