@@ -15,8 +15,6 @@
 package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
 
 import (
-	"sort"
-
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/pdata/internal"
@@ -192,25 +190,6 @@ func (m Map) PutEmptySlice(k string) Slice {
 		*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &vl}})
 	}
 	return Slice(internal.NewSlice(&vl.ArrayValue.Values))
-}
-
-// Sort sorts the entries in the Map so two instances can be compared.
-//
-// Deprecated: [1.0.0-rc4] This method will be removed as it leaks the underlying implementation.
-// Please use one of the following alternatives depending on your use case:
-//   - Map.AsRaw() if you need to compare two maps in tests.
-//   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest module if you use Sort()
-//     to prepare other pdata objects for comparison.
-//   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil module if you use Sort()
-//     to create Map identifiers.
-//
-// If your use case is not covered by the above alternatives, please comment on the issue
-// https://github.com/open-telemetry/opentelemetry-collector/issues/6688.
-func (m Map) Sort() {
-	// Intention is to move the nil values at the end.
-	sort.SliceStable(*m.getOrig(), func(i, j int) bool {
-		return (*m.getOrig())[i].Key < (*m.getOrig())[j].Key
-	})
 }
 
 // Len returns the length of this map.
