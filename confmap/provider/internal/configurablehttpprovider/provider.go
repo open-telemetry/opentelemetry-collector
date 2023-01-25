@@ -50,7 +50,7 @@ type provider struct {
 // One example for https-uri: https://localhost:3333/getConfig
 // This is used by the http and https external implementations.
 func New(scheme SchemeType) confmap.Provider {
-	return &provider{scheme: scheme, caCertPath: "", insecureSkipVerify: false}
+	return &provider{scheme: scheme}
 }
 
 // Create the client based on the type of scheme that was selected.

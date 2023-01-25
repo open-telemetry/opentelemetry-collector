@@ -38,7 +38,7 @@ import (
 )
 
 func newConfigurableHTTPProvider(scheme SchemeType) *provider {
-	return &provider{scheme: scheme, caCertPath: "", insecureSkipVerify: false}
+	return New(scheme).(*provider)
 }
 
 func answerGet(w http.ResponseWriter, r *http.Request) {
