@@ -8,9 +8,7 @@ package main
 import (
 	"fmt"
 	"os"
-
 	"golang.org/x/sys/windows/svc"
-
 	"go.opentelemetry.io/collector/otelcol"
 )
 
