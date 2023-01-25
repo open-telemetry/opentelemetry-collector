@@ -18,21 +18,45 @@ import (
 	"context"
 	"net/http"
 
+	"go.uber.org/multierr"
+	"gonum.org/v1/gonum/graph/simple"
+	"gonum.org/v1/gonum/graph/topo"
+
 	"go.opentelemetry.io/collector/component"
 )
 
 var _ pipelines = (*pipelinesGraph)(nil)
 
-type pipelinesGraph struct{}
+type pipelinesGraph struct {
+	// All component instances represented as nodes, with directed edges indicating data flow.
+	componentGraph *simple.DirectedGraph
+}
 
 func (g *pipelinesGraph) StartAll(ctx context.Context, host component.Host) error {
-	// TODO actual implementation
+	nodes, err := topo.Sort(g.componentGraph)
+	if err != nil {
+		return err
+	}
+	// Start exporters first, and work towards receivers
+	for i := len(nodes) - 1; i >= 0; i-- {
+		if compErr := nodes[i].(component.Component).Start(ctx, host); compErr != nil {
+			return compErr
+		}
+	}
 	return nil
 }
 
 func (g *pipelinesGraph) ShutdownAll(ctx context.Context) error {
-	// TODO actual implementation
-	return nil
+	nodes, err := topo.Sort(g.componentGraph)
+	if err != nil {
+		return err
+	}
+	// Stop receivers first, and work towards exporters
+	var errs error
+	for i := 0; i < len(nodes); i++ {
+		errs = multierr.Append(errs, nodes[i].(component.Component).Shutdown(ctx))
+	}
+	return errs
 }
 
 func (g *pipelinesGraph) GetExporters() map[component.DataType]map[component.ID]component.Component {
