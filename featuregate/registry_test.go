@@ -69,7 +69,7 @@ func TestRegisterGateLifecycle(t *testing.T) {
 		name      string
 		id        string
 		stage     Stage
-		opts      []RegistryOption
+		opts      []RegisterOption
 		enabled   bool
 		shouldErr bool
 	}{
@@ -84,7 +84,7 @@ func TestRegisterGateLifecycle(t *testing.T) {
 			name:  "StageAlpha Flag with all options",
 			id:    "test-gate",
 			stage: StageAlpha,
-			opts: []RegistryOption{
+			opts: []RegisterOption{
 				WithRegisterDescription("test-gate"),
 				WithRegisterReferenceURL("http://example.com/issue/1"),
 				WithRegisterRemovalVersion(""),
@@ -103,7 +103,7 @@ func TestRegisterGateLifecycle(t *testing.T) {
 			name:  "StageStable Flag",
 			id:    "test-gate",
 			stage: StageStable,
-			opts: []RegistryOption{
+			opts: []RegisterOption{
 				WithRegisterRemovalVersion("next"),
 			},
 			enabled:   true,
