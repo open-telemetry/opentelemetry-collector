@@ -142,13 +142,13 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 var _ zapcore.Core = (*windowsEventLogCore)(nil)
 
 type windowsEventLogCore struct {
-	core    zapcore.Core
-	elog    *eventlog.Log
-	encoder zapcore.Encoder
+	levelEnabled func(zapcore.Level) bool
+	elog         *eventlog.Log
+	encoder      zapcore.Encoder
 }
 
 func (w windowsEventLogCore) Enabled(level zapcore.Level) bool {
-	return w.core.Enabled(level)
+	return w.levelEnabled(level)
 }
 
 func (w windowsEventLogCore) With(fields []zapcore.Field) zapcore.Core {
@@ -157,9 +157,9 @@ func (w windowsEventLogCore) With(fields []zapcore.Field) zapcore.Core {
 		field.AddTo(enc)
 	}
 	return windowsEventLogCore{
-		core:    w.core,
-		elog:    w.elog,
-		encoder: enc,
+		levelEnabled: w.levelEnabled,
+		elog:         w.elog,
+		encoder:      enc,
 	}
 }
 
@@ -195,13 +195,14 @@ func (w windowsEventLogCore) Write(ent zapcore.Entry, fields []zapcore.Field) er
 }
 
 func (w windowsEventLogCore) Sync() error {
-	return w.core.Sync()
+	//flushing is not supported by windows/svc/eventlog
+	return nil
 }
 
-func withWindowsCore(elog *eventlog.Log) func(zapcore.Core) zapcore.Core {
+func withEventViewer(elog *eventlog.Log) func(zapcore.Core) zapcore.Core {
 	return func(core zapcore.Core) zapcore.Core {
 		encoderConfig := zap.NewProductionEncoderConfig()
 		encoderConfig.LineEnding = "\r\n"
-		return windowsEventLogCore{core, elog, zapcore.NewConsoleEncoder(encoderConfig)}
+		return zapcore.NewTee(core, windowsEventLogCore{core.Enabled, elog, zapcore.NewConsoleEncoder(encoderConfig)})
 	}
 }
