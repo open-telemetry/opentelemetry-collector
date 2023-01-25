@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/internal/sharedgate"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
@@ -194,10 +195,18 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 		Receivers:       set.Receivers,
 		Processors:      set.Processors,
 		Exporters:       set.Exporters,
+		Connectors:      set.Connectors,
 		PipelineConfigs: cfg.Pipelines,
 	}
-	if srv.host.pipelines, err = buildPipelines(ctx, pSet); err != nil {
-		return fmt.Errorf("cannot build pipelines: %w", err)
+
+	if sharedgate.ConnectorsFeatureGate.IsEnabled() {
+		if srv.host.pipelines, err = buildPipelinesGraph(ctx, pSet); err != nil {
+			return fmt.Errorf("cannot build pipelines: %w", err)
+		}
+	} else {
+		if srv.host.pipelines, err = buildPipelines(ctx, pSet); err != nil {
+			return fmt.Errorf("cannot build pipelines: %w", err)
+		}
 	}
 
 	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
