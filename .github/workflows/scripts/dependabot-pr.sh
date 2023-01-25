@@ -41,4 +41,4 @@ git commit -m "dependabot updates $(date)
 $message"
 git push origin "$PR_NAME"
 
-gh pr create --title "[chore] dependabot updates $(date)" --body "$message" -l "dependencies"
+gh pr create --title "[chore] dependabot updates $(date)" --body "$message"
