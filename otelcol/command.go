@@ -44,8 +44,10 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 }
 
 func newCollectorWithFlags(set CollectorSettings, flags *flag.FlagSet) (*Collector, error) {
-	if err := featuregate.GlobalRegistry().Apply(getFeatureGatesFlag(flags)); err != nil {
-		return nil, err
+	for id, enabled := range getFeatureGatesFlag(flags) {
+		if err := featuregate.GlobalRegistry().Set(id, enabled); err != nil {
+			return nil, err
+		}
 	}
 	if set.ConfigProvider == nil {
 		configFlags := getConfigFlag(flags)

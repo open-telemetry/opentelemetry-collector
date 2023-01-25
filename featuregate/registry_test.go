@@ -28,7 +28,7 @@ func TestGlobalRegistry(t *testing.T) {
 func TestRegistry(t *testing.T) {
 	r := NewRegistry()
 
-	id := "foo"
+	const id = "foo"
 
 	assert.Empty(t, r.List())
 
@@ -37,7 +37,7 @@ func TestRegistry(t *testing.T) {
 	assert.Len(t, r.List(), 1)
 	assert.True(t, g.IsEnabled())
 
-	assert.NoError(t, r.Apply(map[string]bool{id: false}))
+	assert.NoError(t, r.Set(id, false))
 	assert.False(t, g.IsEnabled())
 
 	_, err = r.Register(id, StageBeta)
@@ -49,18 +49,18 @@ func TestRegistry(t *testing.T) {
 
 func TestRegistryApplyError(t *testing.T) {
 	r := NewRegistry()
-	assert.Error(t, r.Apply(map[string]bool{"foo": true}))
+	assert.Error(t, r.Set("foo", true))
 	r.MustRegister("bar", StageAlpha)
-	assert.Error(t, r.Apply(map[string]bool{"foo": true}))
+	assert.Error(t, r.Set("foo", true))
 	r.MustRegister("foo", StageStable, WithRegisterRemovalVersion("next"))
-	assert.Error(t, r.Apply(map[string]bool{"foo": true}))
+	assert.Error(t, r.Set("foo", true))
 }
 
 func TestRegistryApply(t *testing.T) {
 	r := NewRegistry()
 	fooGate := r.MustRegister("foo", StageAlpha, WithRegisterDescription("Test Gate"))
 	assert.False(t, fooGate.IsEnabled())
-	assert.NoError(t, r.Apply(map[string]bool{fooGate.ID(): true}))
+	assert.NoError(t, r.Set(fooGate.ID(), true))
 	assert.True(t, fooGate.IsEnabled())
 }
 

@@ -255,9 +255,9 @@ func TestConfigValidate(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, featuregate.GlobalRegistry().Apply(map[string]bool{connectorsFeatureGate.ID(): true}))
+	require.NoError(t, featuregate.GlobalRegistry().Set(connectorsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Apply(map[string]bool{connectorsFeatureGate.ID(): false}))
+		require.NoError(t, featuregate.GlobalRegistry().Set(connectorsFeatureGate.ID(), false))
 	}()
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {

@@ -73,19 +73,12 @@ func WithRegisterRemovalVersion(version string) RegistryOption {
 	})
 }
 
-// Apply a configuration in the form of a map of Gate identifiers to boolean values.
-// Sets only those values provided in the map, other gate values are not changed.
+// Deprecated: [v0.71.0] use Set.
 func (r *Registry) Apply(cfg map[string]bool) error {
-	for id, val := range cfg {
-		v, ok := r.gates.Load(id)
-		if !ok {
-			return fmt.Errorf("feature gate %s is unregistered", id)
+	for id, enabled := range cfg {
+		if err := r.Set(id, enabled); err != nil {
+			return err
 		}
-		g := v.(*Gate)
-		if g.stage == StageStable {
-			return fmt.Errorf("feature gate %s is stable, can not be modified", id)
-		}
-		g.enabled.Store(val)
 	}
 	return nil
 }
@@ -144,6 +137,20 @@ func (r *Registry) MustRegisterID(id string, stage Stage, opts ...RegistryOption
 func (r *Registry) RegisterID(id string, stage Stage, opts ...RegistryOption) error {
 	_, err := r.Register(id, stage, opts...)
 	return err
+}
+
+// Set the enabled valued for a Gate identified by the given id.
+func (r *Registry) Set(id string, enabled bool) error {
+	v, ok := r.gates.Load(id)
+	if !ok {
+		return fmt.Errorf("no such feature gate -%v", id)
+	}
+	g := v.(*Gate)
+	if g.stage == StageStable {
+		return fmt.Errorf("feature gate %s is stable, can not be modified", id)
+	}
+	g.enabled.Store(enabled)
+	return nil
 }
 
 // List returns a slice of copies of all registered Gates.
