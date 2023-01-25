@@ -37,6 +37,10 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
+func newConfigurableHTTPProvider(scheme SchemeType) *provider {
+	return &provider{scheme: scheme, caCertPath: "", insecureSkipVerify: false}
+}
+
 func answerGet(w http.ResponseWriter, r *http.Request) {
 	f, err := os.ReadFile("./testdata/otel-config.yaml")
 	if err != nil {

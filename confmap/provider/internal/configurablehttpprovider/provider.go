@@ -50,54 +50,41 @@ type provider struct {
 // One example for https-uri: https://localhost:3333/getConfig
 // This is used by the http and https external implementations.
 func New(scheme SchemeType) confmap.Provider {
-	return newConfigurableHTTPProvider(scheme)
-}
-
-func newConfigurableHTTPProvider(scheme SchemeType) *provider {
 	return &provider{scheme: scheme, caCertPath: "", insecureSkipVerify: false}
-}
-
-func (fmp *provider) createHTTPClient() (*http.Client, error) {
-	return &http.Client{}, nil
-
-}
-
-func (fmp *provider) createHTTPSClient() (*http.Client, error) {
-	pool, err := x509.SystemCertPool()
-
-	if err != nil {
-		return nil, fmt.Errorf("unable to create a cert pool: %w", err)
-	}
-
-	if fmp.caCertPath != "" {
-		cert, err := os.ReadFile(filepath.Clean(fmp.caCertPath))
-
-		if err != nil {
-			return nil, fmt.Errorf("unable to read CA from %q URI: %w", fmp.caCertPath, err)
-		}
-
-		if ok := pool.AppendCertsFromPEM(cert); !ok {
-			return nil, fmt.Errorf("unable to add CA from uri: %s into the cert pool", fmp.caCertPath)
-		}
-	}
-
-	return &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: fmp.insecureSkipVerify,
-				RootCAs:            pool,
-			},
-		},
-	}, nil
 }
 
 // Create the client based on the type of scheme that was selected.
 func (fmp *provider) createClient() (*http.Client, error) {
 	switch fmp.scheme {
 	case HTTPScheme:
-		return fmp.createHTTPClient()
+		return &http.Client{}, nil
 	case HTTPSScheme:
-		return fmp.createHTTPSClient()
+		pool, err := x509.SystemCertPool()
+
+		if err != nil {
+			return nil, fmt.Errorf("unable to create a cert pool: %w", err)
+		}
+
+		if fmp.caCertPath != "" {
+			cert, err := os.ReadFile(filepath.Clean(fmp.caCertPath))
+
+			if err != nil {
+				return nil, fmt.Errorf("unable to read CA from %q URI: %w", fmp.caCertPath, err)
+			}
+
+			if ok := pool.AppendCertsFromPEM(cert); !ok {
+				return nil, fmt.Errorf("unable to add CA from uri: %s into the cert pool", fmp.caCertPath)
+			}
+		}
+
+		return &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: fmp.insecureSkipVerify,
+					RootCAs:            pool,
+				},
+			},
+		}, nil
 	default:
 		return nil, fmt.Errorf("invalid scheme type: %s", fmp.scheme)
 	}
