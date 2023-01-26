@@ -11,6 +11,25 @@ Currently, the OpenTelemetry Collector supports the following providers `scheme`
 
 For more technical details about how configuration is resolved you can read the [configuration resolving design](../confmap/README.md#configuration-resolving).
 
+One configuration file can also make references to other config providers, like the following:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+exporters: ${file:otlp-exporter.yaml}
+
+service:
+  extensions: [ ]
+  pipelines:
+    traces:
+      receivers:  [ otlp ]
+      processors: [  ]
+      exporters:  [ otlp ]
+```
+
 ### Single Config Source
 
 1. Simple local file:
