@@ -16,6 +16,7 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"go.uber.org/multierr"
@@ -30,6 +31,11 @@ var _ pipelines = (*pipelinesGraph)(nil)
 type pipelinesGraph struct {
 	// All component instances represented as nodes, with directed edges indicating data flow.
 	componentGraph *simple.DirectedGraph
+}
+
+func buildPipelinesGraph(_ context.Context, _ pipelinesSettings) (pipelines, error) {
+	err := errors.New("not yet implemented")
+	return &pipelinesGraph{componentGraph: simple.NewDirectedGraph()}, err
 }
 
 func (g *pipelinesGraph) StartAll(ctx context.Context, host component.Host) error {

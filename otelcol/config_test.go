@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/sharedgate"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -255,9 +256,9 @@ func TestConfigValidate(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(connectorsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(sharedgate.ConnectorsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(connectorsFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(sharedgate.ConnectorsFeatureGate.ID(), false))
 	}()
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {

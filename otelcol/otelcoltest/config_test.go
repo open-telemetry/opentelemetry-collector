@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/sharedgate"
 	"go.opentelemetry.io/collector/service"
 )
 
@@ -75,9 +76,9 @@ func TestLoadConfigAndValidate(t *testing.T) {
 	factories, err := NopFactories()
 	assert.NoError(t, err)
 
-	require.NoError(t, featuregate.GlobalRegistry().Set("otelcol.enableConnectors", true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(sharedgate.ConnectorsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set("otelcol.enableConnectors", false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(sharedgate.ConnectorsFeatureGate.ID(), false))
 	}()
 	cfgValidate, errValidate := LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, errValidate)
