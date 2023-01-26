@@ -86,8 +86,6 @@ func createReceiver(cfg component.Config) *ExampleReceiver {
 	return er
 }
 
-var _ StatefulComponent = &ExampleReceiver{}
-
 // ExampleReceiver allows producing traces and metrics for testing purposes.
 type ExampleReceiver struct {
 	componentState

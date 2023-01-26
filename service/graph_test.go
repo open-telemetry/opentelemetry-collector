@@ -17,6 +17,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -264,17 +265,17 @@ func (psSlice pipelineSpecSlice) toMap() map[component.ID]*pipelineSpec {
 }
 
 type statefulComponentPipeline struct {
-	receivers  map[int64]testcomponents.StatefulComponent
-	processors map[int64]testcomponents.StatefulComponent
-	exporters  map[int64]testcomponents.StatefulComponent
+	receivers  map[int64]component.Component
+	processors map[int64]component.Component
+	exporters  map[int64]component.Component
 }
 
 // Extract the component from each node in the pipeline and make it available as StatefulComponent
 func (p *pipelineNodes) toStatefulComponentPipeline() *statefulComponentPipeline {
 	statefulPipeline := &statefulComponentPipeline{
-		receivers:  make(map[int64]testcomponents.StatefulComponent),
-		processors: make(map[int64]testcomponents.StatefulComponent),
-		exporters:  make(map[int64]testcomponents.StatefulComponent),
+		receivers:  make(map[int64]component.Component),
+		processors: make(map[int64]component.Component),
+		exporters:  make(map[int64]component.Component),
 	}
 
 	for _, r := range p.receivers {
@@ -1018,25 +1019,34 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				// This gets a representation where all components are testcomponent.StatefulComponent
 				actualPipeline := pipeline.toStatefulComponentPipeline()
 
-				for expNodeID := range pipeSpec.exporterIDs {
-					exp, ok := actualPipeline.exporters[expNodeID]
-					require.True(t, ok)
-					require.True(t, exp.Started())
-					require.Equal(t, 0, len(exp.RecallTraces()))
-					require.Equal(t, 0, len(exp.RecallMetrics()))
-					require.Equal(t, 0, len(exp.RecallLogs()))
+				for id := range pipeSpec.exporterIDs {
+					switch c := actualPipeline.exporters[id].(type) {
+					case *testcomponents.ExampleConnector:
+						require.True(t, c.Started())
+					case *testcomponents.ExampleExporter:
+						require.True(t, c.Started())
+						require.Equal(t, 0, len(c.Traces))
+						require.Equal(t, 0, len(c.Metrics))
+						require.Equal(t, 0, len(c.Logs))
+					default:
+						require.Fail(t, fmt.Sprintf("component %q is unexpected type %T", id, c))
+					}
 				}
 
-				for procNodeID := range pipeSpec.processorIDs {
-					proc, ok := actualPipeline.processors[procNodeID]
-					require.True(t, ok)
-					require.True(t, proc.Started())
+				for id := range pipeSpec.processorIDs {
+					c := actualPipeline.processors[id].(*testcomponents.ExampleProcessor)
+					require.True(t, c.Started())
 				}
 
-				for rcvrNodeID := range pipeSpec.receiverIDs {
-					rcvr, ok := actualPipeline.receivers[rcvrNodeID]
-					require.True(t, ok)
-					require.True(t, rcvr.Started())
+				for id := range pipeSpec.receiverIDs {
+					switch c := actualPipeline.receivers[id].(type) {
+					case *testcomponents.ExampleConnector:
+						require.True(t, c.Started())
+					case *testcomponents.ExampleReceiver:
+						require.True(t, c.Started())
+					default:
+						require.Fail(t, fmt.Sprintf("component %q is unexpected type %T", id, c))
+					}
 				}
 			}
 
@@ -1045,16 +1055,16 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			// shared between pipelines. The `allReceivers` function also excludes connectors, which we do
 			// not want to directly inject with signals.
 			allReceivers := pg.getReceivers()
-			for _, rcvr := range allReceivers[component.DataTypeTraces] {
-				tracesReceiver := rcvr.(*testcomponents.ExampleReceiver)
+			for _, c := range allReceivers[component.DataTypeTraces] {
+				tracesReceiver := c.(*testcomponents.ExampleReceiver)
 				assert.NoError(t, tracesReceiver.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
 			}
-			for _, rcvr := range allReceivers[component.DataTypeMetrics] {
-				metricsReceiver := rcvr.(*testcomponents.ExampleReceiver)
+			for _, c := range allReceivers[component.DataTypeMetrics] {
+				metricsReceiver := c.(*testcomponents.ExampleReceiver)
 				assert.NoError(t, metricsReceiver.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
 			}
-			for _, rcvr := range allReceivers[component.DataTypeLogs] {
-				logsReceiver := rcvr.(*testcomponents.ExampleReceiver)
+			for _, c := range allReceivers[component.DataTypeLogs] {
+				logsReceiver := c.(*testcomponents.ExampleReceiver)
 				assert.NoError(t, logsReceiver.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
 			}
 
@@ -1068,47 +1078,56 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 
 				actualPipeline := pipeline.toStatefulComponentPipeline()
 
-				for rcvrNodeID := range pipeSpec.receiverIDs {
-					rcvr, ok := actualPipeline.receivers[rcvrNodeID]
-					require.True(t, ok)
-					require.True(t, rcvr.Stopped())
+				for id := range pipeSpec.receiverIDs {
+					switch c := actualPipeline.receivers[id].(type) {
+					case *testcomponents.ExampleConnector:
+						require.True(t, c.Started())
+					case *testcomponents.ExampleReceiver:
+						require.True(t, c.Started())
+					default:
+						require.Fail(t, fmt.Sprintf("component %q is unexpected type %T", id, c))
+					}
 				}
 
-				for procNodeID := range pipeSpec.processorIDs {
-					proc, ok := actualPipeline.processors[procNodeID]
-					require.True(t, ok)
-					require.True(t, proc.Stopped())
+				for id := range pipeSpec.processorIDs {
+					c := actualPipeline.processors[id].(*testcomponents.ExampleProcessor)
+					require.True(t, c.Stopped())
 				}
 
-				for expNodeID := range pipeSpec.exporterIDs {
-					exp, ok := actualPipeline.exporters[expNodeID]
-					require.True(t, ok)
-					require.True(t, exp.Stopped())
+				for id := range pipeSpec.exporterIDs {
+					switch c := actualPipeline.exporters[id].(type) {
+					case *testcomponents.ExampleConnector:
+						require.True(t, c.Started())
+					case *testcomponents.ExampleExporter:
+						require.True(t, c.Started())
+					default:
+						require.Fail(t, fmt.Sprintf("component %q is unexpected type %T", id, c))
+					}
 				}
 			}
 
 			// Get the list of exporters directly from the overall component graph. Like receivers,
 			// exclude connectors and validate each exporter once regardless of sharing between pipelines.
 			allExporters := pg.GetExporters()
-			for _, exp := range allExporters[component.DataTypeTraces] {
-				tracesExporter := exp.(*testcomponents.ExampleExporter)
-				assert.Equal(t, test.expectedPerExporter, len(tracesExporter.RecallTraces()))
+			for _, e := range allExporters[component.DataTypeTraces] {
+				tracesExporter := e.(*testcomponents.ExampleExporter)
+				assert.Equal(t, test.expectedPerExporter, len(tracesExporter.Traces))
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, testdata.GenerateTraces(1), tracesExporter.RecallTraces()[0])
+					assert.EqualValues(t, testdata.GenerateTraces(1), tracesExporter.Traces[0])
 				}
 			}
-			for _, exp := range allExporters[component.DataTypeMetrics] {
-				metricsExporter := exp.(*testcomponents.ExampleExporter)
-				assert.Equal(t, test.expectedPerExporter, len(metricsExporter.RecallMetrics()))
+			for _, e := range allExporters[component.DataTypeMetrics] {
+				metricsExporter := e.(*testcomponents.ExampleExporter)
+				assert.Equal(t, test.expectedPerExporter, len(metricsExporter.Metrics))
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, testdata.GenerateMetrics(1), metricsExporter.RecallMetrics()[0])
+					assert.EqualValues(t, testdata.GenerateMetrics(1), metricsExporter.Metrics[0])
 				}
 			}
-			for _, exp := range allExporters[component.DataTypeLogs] {
-				logsExporter := exp.(*testcomponents.ExampleExporter)
-				assert.Equal(t, test.expectedPerExporter, len(logsExporter.RecallLogs()))
+			for _, e := range allExporters[component.DataTypeLogs] {
+				logsExporter := e.(*testcomponents.ExampleExporter)
+				assert.Equal(t, test.expectedPerExporter, len(logsExporter.Logs))
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, testdata.GenerateLogs(1), logsExporter.RecallLogs()[0])
+					assert.EqualValues(t, testdata.GenerateLogs(1), logsExporter.Logs[0])
 				}
 			}
 		})

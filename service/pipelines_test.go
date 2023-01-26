@@ -224,11 +224,11 @@ func TestBuildPipelines(t *testing.T) {
 					assert.True(t, exp.Started())
 					switch dt.Type() {
 					case component.DataTypeTraces:
-						assert.Len(t, exp.RecallTraces(), 0)
+						assert.Len(t, exp.Traces, 0)
 					case component.DataTypeMetrics:
-						assert.Len(t, exp.RecallMetrics(), 0)
+						assert.Len(t, exp.Metrics, 0)
 					case component.DataTypeLogs:
-						assert.Len(t, exp.RecallLogs(), 0)
+						assert.Len(t, exp.Logs, 0)
 					}
 				}
 
@@ -281,14 +281,14 @@ func TestBuildPipelines(t *testing.T) {
 					exp := pipelines.GetExporters()[dt.Type()][expID].(*testcomponents.ExampleExporter)
 					switch dt.Type() {
 					case component.DataTypeTraces:
-						require.Len(t, exp.RecallTraces(), test.expectedRequests)
-						assert.EqualValues(t, testdata.GenerateTraces(1), exp.RecallTraces()[0])
+						require.Len(t, exp.Traces, test.expectedRequests)
+						assert.EqualValues(t, testdata.GenerateTraces(1), exp.Traces[0])
 					case component.DataTypeMetrics:
-						require.Len(t, exp.RecallMetrics(), test.expectedRequests)
-						assert.EqualValues(t, testdata.GenerateMetrics(1), exp.RecallMetrics()[0])
+						require.Len(t, exp.Metrics, test.expectedRequests)
+						assert.EqualValues(t, testdata.GenerateMetrics(1), exp.Metrics[0])
 					case component.DataTypeLogs:
-						require.Len(t, exp.RecallLogs(), test.expectedRequests)
-						assert.EqualValues(t, testdata.GenerateLogs(1), exp.RecallLogs()[0])
+						require.Len(t, exp.Logs, test.expectedRequests)
+						assert.EqualValues(t, testdata.GenerateLogs(1), exp.Logs[0])
 					}
 					assert.True(t, exp.Stopped())
 				}

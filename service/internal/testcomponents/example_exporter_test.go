@@ -33,17 +33,17 @@ func TestExampleExporter(t *testing.T) {
 	assert.NoError(t, exp.Start(context.Background(), host))
 	assert.True(t, exp.Started())
 
-	assert.Equal(t, 0, len(exp.traces))
+	assert.Equal(t, 0, len(exp.Traces))
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), ptrace.Traces{}))
-	assert.Equal(t, 1, len(exp.traces))
+	assert.Equal(t, 1, len(exp.Traces))
 
-	assert.Equal(t, 0, len(exp.metrics))
+	assert.Equal(t, 0, len(exp.Metrics))
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), pmetric.Metrics{}))
-	assert.Equal(t, 1, len(exp.metrics))
+	assert.Equal(t, 1, len(exp.Metrics))
 
-	assert.Equal(t, 0, len(exp.logs))
+	assert.Equal(t, 0, len(exp.Logs))
 	assert.NoError(t, exp.ConsumeLogs(context.Background(), plog.Logs{}))
-	assert.Equal(t, 1, len(exp.logs))
+	assert.Equal(t, 1, len(exp.Logs))
 
 	assert.False(t, exp.Stopped())
 	assert.NoError(t, exp.Shutdown(context.Background()))
