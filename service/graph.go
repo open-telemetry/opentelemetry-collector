@@ -33,9 +33,26 @@ type pipelinesGraph struct {
 	componentGraph *simple.DirectedGraph
 }
 
-func buildPipelinesGraph(_ context.Context, _ pipelinesSettings) (pipelines, error) {
-	err := errors.New("not yet implemented")
-	return &pipelinesGraph{componentGraph: simple.NewDirectedGraph()}, err
+func buildPipelinesGraph(ctx context.Context, set pipelinesSettings) (pipelines, error) {
+	pipelines := &pipelinesGraph{componentGraph: simple.NewDirectedGraph()}
+	if err := pipelines.addNodes(set); err != nil {
+		return nil, err
+	}
+	pipelines.addEdges()
+	if err := pipelines.buildNodes(ctx, set); err != nil {
+		return nil, err
+	}
+	return pipelines, nil
+}
+
+func (g *pipelinesGraph) addNodes(set pipelinesSettings) error {
+	return errors.New("not yet implemented")
+}
+
+func (g *pipelinesGraph) addEdges() {}
+
+func (g *pipelinesGraph) buildNodes(ctx context.Context, set pipelinesSettings) error {
+	return errors.New("not yet implemented")
 }
 
 func (g *pipelinesGraph) StartAll(ctx context.Context, host component.Host) error {
