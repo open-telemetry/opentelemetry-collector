@@ -235,8 +235,10 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 	_, err = io.Copy(tmpCa, secondCa)
 	assert.NoError(t, err)
 
-	// Wait some to ensure file watcher is notified
-	time.Sleep(100 * time.Millisecond)
+	assert.Eventually(t, func() bool {
+		_, loadError := tlsCfg.GetConfigForClient(nil)
+		return loadError == nil
+	}, 2*time.Second, 10*time.Millisecond)
 
 	secondClient, err := tlsCfg.GetConfigForClient(nil)
 	assert.NoError(t, err)

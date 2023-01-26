@@ -24,7 +24,7 @@ import (
 )
 
 type clientCAsFileReloader struct {
-	ClientCAsFile   string
+	clientCAsFile   string
 	certPool        *x509.CertPool
 	lastReloadError error
 	lock            sync.RWMutex
@@ -44,7 +44,7 @@ func newClientCAsReloader(clientCAsFile string, loader clientCAsFileLoader) (*cl
 	}
 
 	reloader := &clientCAsFileReloader{
-		ClientCAsFile: clientCAsFile,
+		clientCAsFile: clientCAsFile,
 		certPool:      certPool,
 		loader:        loader,
 		shutdownCH:    nil,
@@ -54,7 +54,7 @@ func newClientCAsReloader(clientCAsFile string, loader clientCAsFileLoader) (*cl
 	return reloader, nil
 }
 
-func (r *clientCAsFileReloader) GetClientConfig(original *tls.Config) (*tls.Config, error) {
+func (r *clientCAsFileReloader) getClientConfig(original *tls.Config) (*tls.Config, error) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 	return &tls.Config{
@@ -74,7 +74,6 @@ func (r *clientCAsFileReloader) reload() {
 	defer r.lock.Unlock()
 	certPool, err := r.loader.loadClientCAFile()
 	if err != nil {
-		r.certPool = nil
 		r.lastReloadError = fmt.Errorf("%w", err)
 	} else {
 		r.certPool = certPool
@@ -82,7 +81,7 @@ func (r *clientCAsFileReloader) reload() {
 	}
 }
 
-func (r *clientCAsFileReloader) StartWatching() error {
+func (r *clientCAsFileReloader) startWatching() error {
 	if r.shutdownCH != nil {
 		return fmt.Errorf("client CA file watcher already started")
 	}
@@ -93,7 +92,7 @@ func (r *clientCAsFileReloader) StartWatching() error {
 	}
 	r.watcher = watcher
 
-	err = watcher.Add(r.ClientCAsFile)
+	err = watcher.Add(r.clientCAsFile)
 	if err != nil {
 		return fmt.Errorf("failed to add client CA file to watcher: %w", err)
 	}
@@ -125,7 +124,7 @@ func (r *clientCAsFileReloader) handleWatcherEvents() {
 					r.lastReloadError = err
 				}
 				// add a new watcher pointing to the new symlink/file
-				if err := r.watcher.Add(r.ClientCAsFile); err != nil {
+				if err := r.watcher.Add(r.clientCAsFile); err != nil {
 					r.lastReloadError = err
 				}
 				r.reload()
@@ -135,14 +134,4 @@ func (r *clientCAsFileReloader) handleWatcherEvents() {
 			}
 		}
 	}
-}
-
-func (r *clientCAsFileReloader) Shutdown() error {
-	if r.shutdownCH == nil {
-		return fmt.Errorf("client CAs file watcher is not running")
-	}
-	r.shutdownCH <- true
-	close(r.shutdownCH)
-	r.shutdownCH = nil
-	return nil
 }

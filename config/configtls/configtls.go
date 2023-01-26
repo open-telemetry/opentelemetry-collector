@@ -240,11 +240,11 @@ func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = reloader.StartWatching()
+		err = reloader.startWatching()
 		if err != nil {
 			return nil, err
 		}
-		tlsCfg.GetConfigForClient = func(t *tls.ClientHelloInfo) (*tls.Config, error) { return reloader.GetClientConfig(tlsCfg) }
+		tlsCfg.GetConfigForClient = func(t *tls.ClientHelloInfo) (*tls.Config, error) { return reloader.getClientConfig(tlsCfg) }
 		tlsCfg.ClientCAs = reloader.certPool
 		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
 	}
