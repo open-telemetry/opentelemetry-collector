@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 make chlog-update VERSION="${CANDIDATE_STABLE}/${CANDIDATE_BETA}"
 git config user.name opentelemetrybot
