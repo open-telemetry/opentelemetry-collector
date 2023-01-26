@@ -63,6 +63,9 @@ type GRPCServer interface {
 	// For performance reasons, it is recommended to keep this RPC
 	// alive for the entire life of the application.
 	Export(context.Context, ExportRequest) (ExportResponse, error)
+
+	// unexported disallow implementation of the GRPCServer.
+	unexported()
 }
 
 var _ GRPCServer = (*UnimplementedGRPCServer)(nil)
@@ -73,6 +76,8 @@ type UnimplementedGRPCServer struct{}
 func (*UnimplementedGRPCServer) Export(context.Context, ExportRequest) (ExportResponse, error) {
 	return ExportResponse{}, status.Errorf(codes.Unimplemented, "method Export not implemented")
 }
+
+func (*UnimplementedGRPCServer) unexported() {}
 
 // RegisterGRPCServer registers the Server to the grpc.Server.
 func RegisterGRPCServer(s *grpc.Server, srv GRPCServer) {
