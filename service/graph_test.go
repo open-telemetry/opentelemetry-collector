@@ -206,120 +206,6 @@ func TestGraphStartStopComponentError(t *testing.T) {
 	assert.EqualError(t, pg.ShutdownAll(context.Background()), "bar")
 }
 
-// pipelineSpec is designed for easy definition of expected pipeline structure
-// It represents the structure of an individual pipeline, including instanced connectors
-type pipelineSpec struct {
-	id           component.ID
-	receiverIDs  map[int64]component.ID
-	processorIDs map[int64]component.ID
-	exporterIDs  map[int64]component.ID
-}
-
-func newPipelineSpec(id component.ID) *pipelineSpec {
-	return &pipelineSpec{
-		id:           id,
-		receiverIDs:  make(map[int64]component.ID),
-		processorIDs: make(map[int64]component.ID),
-		exporterIDs:  make(map[int64]component.ID),
-	}
-}
-
-func (ps *pipelineSpec) withExampleReceiver(name string) *pipelineSpec {
-	rID := component.NewIDWithName(component.Type("examplereceiver"), name)
-	ps.receiverIDs[newReceiverNode(ps.id, rID).ID()] = rID
-	return ps
-}
-
-func (ps *pipelineSpec) withExampleProcessor(name string) *pipelineSpec {
-	pID := component.NewIDWithName(component.Type("exampleprocessor"), name)
-	ps.processorIDs[newProcessorNode(ps.id, pID).ID()] = pID
-	return ps
-}
-
-func (ps *pipelineSpec) withExampleExporter(name string) *pipelineSpec {
-	eID := component.NewIDWithName(component.Type("exampleexporter"), name)
-	ps.exporterIDs[newExporterNode(ps.id, eID).ID()] = eID
-	return ps
-}
-
-func (ps *pipelineSpec) withExampleConnectorAsReceiver(name string, fromType component.Type) *pipelineSpec {
-	cID := component.NewIDWithName(component.Type("exampleconnector"), name)
-	ps.receiverIDs[newConnectorNode(fromType, ps.id.Type(), cID).ID()] = cID
-	return ps
-}
-
-func (ps *pipelineSpec) withExampleConnectorAsExporter(name string, toType component.Type) *pipelineSpec {
-	cID := component.NewIDWithName(component.Type("exampleconnector"), name)
-	ps.exporterIDs[newConnectorNode(ps.id.Type(), toType, cID).ID()] = cID
-	return ps
-}
-
-type pipelineSpecSlice []*pipelineSpec
-
-func (psSlice pipelineSpecSlice) toMap() map[component.ID]*pipelineSpec {
-	psMap := make(map[component.ID]*pipelineSpec, len(psSlice))
-	for _, ps := range psSlice {
-		psMap[ps.id] = ps
-	}
-	return psMap
-}
-
-type statefulComponentPipeline struct {
-	receivers  map[int64]component.Component
-	processors map[int64]component.Component
-	exporters  map[int64]component.Component
-}
-
-// Extract the component from each node in the pipeline and make it available as StatefulComponent
-func (p *pipelineNodes) toStatefulComponentPipeline() *statefulComponentPipeline {
-	statefulPipeline := &statefulComponentPipeline{
-		receivers:  make(map[int64]component.Component),
-		processors: make(map[int64]component.Component),
-		exporters:  make(map[int64]component.Component),
-	}
-
-	for _, r := range p.receivers {
-		switch c := r.(type) {
-		case *receiverNode:
-			statefulPipeline.receivers[c.ID()] = c.Component.(*testcomponents.ExampleReceiver)
-		case *connectorNode:
-			// connector needs to be unwrapped to access component as ExampleConnector
-			switch ct := c.Component.(type) {
-			case connector.Traces:
-				statefulPipeline.receivers[c.ID()] = ct.(*testcomponents.ExampleConnector)
-			case connector.Metrics:
-				statefulPipeline.receivers[c.ID()] = ct.(*testcomponents.ExampleConnector)
-			case connector.Logs:
-				statefulPipeline.receivers[c.ID()] = ct.(*testcomponents.ExampleConnector)
-			}
-		}
-	}
-
-	for _, p := range p.processors {
-		pn := p.(*processorNode)
-		statefulPipeline.processors[pn.ID()] = pn.Component.(*testcomponents.ExampleProcessor)
-	}
-
-	for _, e := range p.exporters {
-		switch c := e.(type) {
-		case *exporterNode:
-			statefulPipeline.exporters[c.ID()] = c.Component.(*testcomponents.ExampleExporter)
-		case *connectorNode:
-			// connector needs to be unwrapped to access component as ExampleConnector
-			switch ct := c.Component.(type) {
-			case connector.Traces:
-				statefulPipeline.exporters[c.ID()] = ct.(*testcomponents.ExampleConnector)
-			case connector.Metrics:
-				statefulPipeline.exporters[c.ID()] = ct.(*testcomponents.ExampleConnector)
-			case connector.Logs:
-				statefulPipeline.exporters[c.ID()] = ct.(*testcomponents.ExampleConnector)
-			}
-		}
-	}
-
-	return statefulPipeline
-}
-
 func TestConnectorPipelinesGraph(t *testing.T) {
 	// Even though we have a graph of nodes, it is very important that the notion of
 	// pipelines is fully respected. Therefore, test expectations are defined on a
@@ -327,27 +213,12 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 	// effect is that the entire graph is carefully validated.
 	tests := []struct {
 		name                string
-		pipelines           pipelineSpecSlice
 		pipelineConfigs     map[component.ID]*PipelineConfig
 		expectedPerExporter int // requires symmetry in pipelines
 	}{
 		// Same test cases as old test
 		{
 			name: "pipelines_simple.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleExporter(""),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
@@ -369,20 +240,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_simple_multi_proc.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "")).
-					withExampleReceiver("").
-					withExampleProcessor("").withExampleProcessor("1").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "")).
-					withExampleReceiver("").
-					withExampleProcessor("").withExampleProcessor("1").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "")).
-					withExampleReceiver("").
-					withExampleProcessor("").withExampleProcessor("1").
-					withExampleExporter(""),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
@@ -404,17 +261,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_simple_no_proc.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "")).
-					withExampleReceiver("").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "")).
-					withExampleReceiver("").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "")).
-					withExampleReceiver("").
-					withExampleExporter(""),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers: []component.ID{component.NewID("examplereceiver")},
@@ -433,20 +279,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_multi.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "")).
-					withExampleReceiver("").withExampleReceiver("1").
-					withExampleProcessor("").withExampleProcessor("1").
-					withExampleExporter("").withExampleExporter("1"),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "")).
-					withExampleReceiver("").withExampleReceiver("1").
-					withExampleProcessor("").withExampleProcessor("1").
-					withExampleExporter("").withExampleExporter("1"),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "")).
-					withExampleReceiver("").withExampleReceiver("1").
-					withExampleProcessor("").withExampleProcessor("1").
-					withExampleExporter("").withExampleExporter("1"),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
@@ -468,17 +300,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_multi_no_proc.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "")).
-					withExampleReceiver("").withExampleReceiver("1").
-					withExampleExporter("").withExampleExporter("1"),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "")).
-					withExampleReceiver("").withExampleReceiver("1").
-					withExampleExporter("").withExampleExporter("1"),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "")).
-					withExampleReceiver("").withExampleReceiver("1").
-					withExampleExporter("").withExampleExporter("1"),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers: []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
@@ -497,29 +318,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_exporter_multi_pipeline.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "1")).
-					withExampleReceiver("").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "1")).
-					withExampleReceiver("").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "1")).
-					withExampleReceiver("").
-					withExampleExporter(""),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
@@ -554,16 +352,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		// New test cases involving connectors
 		{
 			name: "pipelines_conn_simple_traces.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "in")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("", component.DataTypeTraces),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "out")).
-					withExampleConnectorAsReceiver("", component.DataTypeTraces).
-					withExampleProcessor("").
-					withExampleExporter(""),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
@@ -580,16 +368,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_simple_metrics.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "in")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("", component.DataTypeMetrics),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "out")).
-					withExampleConnectorAsReceiver("", component.DataTypeMetrics).
-					withExampleProcessor("").
-					withExampleExporter(""),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewIDWithName("metrics", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
@@ -606,16 +384,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_simple_logs.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "in")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("", component.DataTypeLogs),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "out")).
-					withExampleConnectorAsReceiver("", component.DataTypeLogs).
-					withExampleProcessor("").
-					withExampleExporter(""),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewIDWithName("logs", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
@@ -632,24 +400,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_fork_merge_traces.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "in")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("fork", component.DataTypeTraces),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "type0")).
-					withExampleConnectorAsReceiver("fork", component.DataTypeTraces).
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("merge", component.DataTypeTraces),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "type1")).
-					withExampleConnectorAsReceiver("fork", component.DataTypeTraces).
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("merge", component.DataTypeTraces),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "out")).
-					withExampleConnectorAsReceiver("merge", component.DataTypeTraces).
-					withExampleProcessor("").
-					withExampleExporter(""),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
@@ -676,24 +426,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_fork_merge_metrics.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "in")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("fork", component.DataTypeMetrics),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "type0")).
-					withExampleConnectorAsReceiver("fork", component.DataTypeMetrics).
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("merge", component.DataTypeMetrics),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "type1")).
-					withExampleConnectorAsReceiver("fork", component.DataTypeMetrics).
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("merge", component.DataTypeMetrics),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "out")).
-					withExampleConnectorAsReceiver("merge", component.DataTypeMetrics).
-					withExampleProcessor("").
-					withExampleExporter(""),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewIDWithName("metrics", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
@@ -720,24 +452,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_fork_merge_logs.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "in")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("fork", component.DataTypeLogs),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "type0")).
-					withExampleConnectorAsReceiver("fork", component.DataTypeLogs).
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("merge", component.DataTypeLogs),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "type1")).
-					withExampleConnectorAsReceiver("fork", component.DataTypeLogs).
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("merge", component.DataTypeLogs),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "out")).
-					withExampleConnectorAsReceiver("merge", component.DataTypeLogs).
-					withExampleProcessor("").
-					withExampleExporter(""),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewIDWithName("logs", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
@@ -764,21 +478,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_translate_from_traces.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("", component.DataTypeMetrics).
-					withExampleConnectorAsExporter("", component.DataTypeLogs),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "")).
-					withExampleConnectorAsReceiver("", component.DataTypeTraces).
-					withExampleProcessor("").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "")).
-					withExampleConnectorAsReceiver("", component.DataTypeTraces).
-					withExampleProcessor("").
-					withExampleExporter(""),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
@@ -800,21 +499,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_translate_from_metrics.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("", component.DataTypeTraces).
-					withExampleConnectorAsExporter("", component.DataTypeLogs),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "")).
-					withExampleConnectorAsReceiver("", component.DataTypeMetrics).
-					withExampleProcessor("").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "")).
-					withExampleConnectorAsReceiver("", component.DataTypeMetrics).
-					withExampleProcessor("").
-					withExampleExporter(""),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("metrics"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
@@ -836,21 +520,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_translate_from_logs.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("", component.DataTypeTraces).
-					withExampleConnectorAsExporter("", component.DataTypeMetrics),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "")).
-					withExampleConnectorAsReceiver("", component.DataTypeLogs).
-					withExampleProcessor("").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "")).
-					withExampleConnectorAsReceiver("", component.DataTypeLogs).
-					withExampleProcessor("").
-					withExampleExporter(""),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("logs"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
@@ -872,44 +541,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 		},
 		{
 			name: "pipelines_conn_matrix.yaml",
-			pipelines: pipelineSpecSlice{
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "in")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("", component.DataTypeTraces).
-					withExampleConnectorAsExporter("", component.DataTypeMetrics).
-					withExampleConnectorAsExporter("", component.DataTypeLogs),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "in")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("", component.DataTypeTraces).
-					withExampleConnectorAsExporter("", component.DataTypeMetrics).
-					withExampleConnectorAsExporter("", component.DataTypeLogs),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "in")).
-					withExampleReceiver("").
-					withExampleProcessor("").
-					withExampleConnectorAsExporter("", component.DataTypeTraces).
-					withExampleConnectorAsExporter("", component.DataTypeMetrics).
-					withExampleConnectorAsExporter("", component.DataTypeLogs),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeTraces, "out")).
-					withExampleConnectorAsReceiver("", component.DataTypeTraces).
-					withExampleConnectorAsReceiver("", component.DataTypeMetrics).
-					withExampleConnectorAsReceiver("", component.DataTypeLogs).
-					withExampleProcessor("").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeMetrics, "out")).
-					withExampleConnectorAsReceiver("", component.DataTypeTraces).
-					withExampleConnectorAsReceiver("", component.DataTypeMetrics).
-					withExampleConnectorAsReceiver("", component.DataTypeLogs).
-					withExampleProcessor("").
-					withExampleExporter(""),
-				newPipelineSpec(component.NewIDWithName(component.DataTypeLogs, "out")).
-					withExampleConnectorAsReceiver("", component.DataTypeTraces).
-					withExampleConnectorAsReceiver("", component.DataTypeMetrics).
-					withExampleConnectorAsReceiver("", component.DataTypeLogs).
-					withExampleProcessor("").
-					withExampleExporter(""),
-			},
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
@@ -998,54 +629,64 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			pg, ok := pipelinesInterface.(*pipelinesGraph)
 			require.True(t, ok)
 
-			assert.Equal(t, len(test.pipelines), len(pg.pipelines))
+			assert.Equal(t, len(test.pipelineConfigs), len(pg.pipelines))
 
-			// The entire graph of components is started topologically
 			assert.NoError(t, pg.StartAll(context.Background(), componenttest.NewNopHost()))
 
 			// Check each pipeline individually, ensuring that all components are started
 			// and that they have observed no signals yet.
-			for pipelineID, pipeSpec := range test.pipelines.toMap() {
+			for pipelineID, pipelineCfg := range test.pipelineConfigs {
 				pipeline, ok := pg.pipelines[pipelineID]
 				require.True(t, ok, "expected to find pipeline: %s", pipelineID.String())
 
-				require.Equal(t, len(pipeSpec.receiverIDs), len(pipeline.receivers))
-				require.Equal(t, len(pipeSpec.processorIDs), len(pipeline.processors))
-				require.Equal(t, len(pipeSpec.exporterIDs), len(pipeline.exporters))
+				expectedReceivers, expectedExporters := expectedInstances(test.pipelineConfigs, pipelineID)
+				require.Equal(t, expectedReceivers, len(pipeline.receivers))
+				require.Equal(t, len(pipelineCfg.Processors), len(pipeline.processors))
+				require.Equal(t, expectedExporters, len(pipeline.exporters))
 
-				// The pipelineNodes is cumbersome to work with in this context because
-				// several type assertions & switches are necessary in order to access the
-				// validation functions included on the example components (Started, Stopped, etc)
-				// This gets a representation where all components are testcomponent.StatefulComponent
-				actualPipeline := pipeline.toStatefulComponentPipeline()
-
-				for id := range pipeSpec.exporterIDs {
-					switch c := actualPipeline.exporters[id].(type) {
-					case *testcomponents.ExampleConnector:
-						require.True(t, c.Started())
-					case *testcomponents.ExampleExporter:
-						require.True(t, c.Started())
-						require.Equal(t, 0, len(c.Traces))
-						require.Equal(t, 0, len(c.Metrics))
-						require.Equal(t, 0, len(c.Logs))
+				for _, n := range pipeline.exporters {
+					switch c := n.(type) {
+					case *exporterNode:
+						e := c.Component.(*testcomponents.ExampleExporter)
+						require.True(t, e.Started())
+						require.Equal(t, 0, len(e.Traces))
+						require.Equal(t, 0, len(e.Metrics))
+						require.Equal(t, 0, len(e.Logs))
+					case *connectorNode:
+						// connector needs to be unwrapped to access component as ExampleConnector
+						switch ct := c.Component.(type) {
+						case connector.Traces:
+							require.True(t, ct.(*testcomponents.ExampleConnector).Started())
+						case connector.Metrics:
+							require.True(t, ct.(*testcomponents.ExampleConnector).Started())
+						case connector.Logs:
+							require.True(t, ct.(*testcomponents.ExampleConnector).Started())
+						}
 					default:
-						require.Fail(t, fmt.Sprintf("component %q is unexpected type %T", id, c))
+						require.Fail(t, fmt.Sprintf("unexpected type %T", c))
 					}
 				}
 
-				for id := range pipeSpec.processorIDs {
-					c := actualPipeline.processors[id].(*testcomponents.ExampleProcessor)
-					require.True(t, c.Started())
+				for _, n := range pipeline.processors {
+					require.True(t, n.(*processorNode).Component.(*testcomponents.ExampleProcessor).Started())
 				}
 
-				for id := range pipeSpec.receiverIDs {
-					switch c := actualPipeline.receivers[id].(type) {
-					case *testcomponents.ExampleConnector:
-						require.True(t, c.Started())
-					case *testcomponents.ExampleReceiver:
-						require.True(t, c.Started())
+				for _, n := range pipeline.receivers {
+					switch c := n.(type) {
+					case *receiverNode:
+						require.True(t, c.Component.(*testcomponents.ExampleReceiver).Started())
+					case *connectorNode:
+						// connector needs to be unwrapped to access component as ExampleConnector
+						switch ct := c.Component.(type) {
+						case connector.Traces:
+							require.True(t, ct.(*testcomponents.ExampleConnector).Started())
+						case connector.Metrics:
+							require.True(t, ct.(*testcomponents.ExampleConnector).Started())
+						case connector.Logs:
+							require.True(t, ct.(*testcomponents.ExampleConnector).Started())
+						}
 					default:
-						require.Fail(t, fmt.Sprintf("component %q is unexpected type %T", id, c))
+						require.Fail(t, fmt.Sprintf("unexpected type %T", c))
 					}
 				}
 			}
@@ -1072,36 +713,50 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			assert.NoError(t, pg.ShutdownAll(context.Background()))
 
 			// Check each pipeline individually, ensuring that all components are stopped.
-			for pipelineID, pipeSpec := range test.pipelines.toMap() {
+			for pipelineID := range test.pipelineConfigs {
 				pipeline, ok := pg.pipelines[pipelineID]
 				require.True(t, ok, "expected to find pipeline: %s", pipelineID.String())
 
-				actualPipeline := pipeline.toStatefulComponentPipeline()
-
-				for id := range pipeSpec.receiverIDs {
-					switch c := actualPipeline.receivers[id].(type) {
-					case *testcomponents.ExampleConnector:
-						require.True(t, c.Started())
-					case *testcomponents.ExampleReceiver:
-						require.True(t, c.Started())
+				for _, n := range pipeline.receivers {
+					switch c := n.(type) {
+					case *receiverNode:
+						require.True(t, c.Component.(*testcomponents.ExampleReceiver).Stopped())
+					case *connectorNode:
+						// connector needs to be unwrapped to access component as ExampleConnector
+						switch ct := c.Component.(type) {
+						case connector.Traces:
+							require.True(t, ct.(*testcomponents.ExampleConnector).Stopped())
+						case connector.Metrics:
+							require.True(t, ct.(*testcomponents.ExampleConnector).Stopped())
+						case connector.Logs:
+							require.True(t, ct.(*testcomponents.ExampleConnector).Stopped())
+						}
 					default:
-						require.Fail(t, fmt.Sprintf("component %q is unexpected type %T", id, c))
+						require.Fail(t, fmt.Sprintf("unexpected type %T", c))
 					}
 				}
 
-				for id := range pipeSpec.processorIDs {
-					c := actualPipeline.processors[id].(*testcomponents.ExampleProcessor)
-					require.True(t, c.Stopped())
+				for _, n := range pipeline.processors {
+					require.True(t, n.(*processorNode).Component.(*testcomponents.ExampleProcessor).Stopped())
 				}
 
-				for id := range pipeSpec.exporterIDs {
-					switch c := actualPipeline.exporters[id].(type) {
-					case *testcomponents.ExampleConnector:
-						require.True(t, c.Started())
-					case *testcomponents.ExampleExporter:
-						require.True(t, c.Started())
+				for _, n := range pipeline.exporters {
+					switch c := n.(type) {
+					case *exporterNode:
+						e := c.Component.(*testcomponents.ExampleExporter)
+						require.True(t, e.Stopped())
+					case *connectorNode:
+						// connector needs to be unwrapped to access component as ExampleConnector
+						switch ct := c.Component.(type) {
+						case connector.Traces:
+							require.True(t, ct.(*testcomponents.ExampleConnector).Stopped())
+						case connector.Metrics:
+							require.True(t, ct.(*testcomponents.ExampleConnector).Stopped())
+						case connector.Logs:
+							require.True(t, ct.(*testcomponents.ExampleConnector).Stopped())
+						}
 					default:
-						require.Fail(t, fmt.Sprintf("component %q is unexpected type %T", id, c))
+						require.Fail(t, fmt.Sprintf("unexpected type %T", c))
 					}
 				}
 			}
@@ -2205,4 +1860,56 @@ func (g *pipelinesGraph) getReceivers() map[component.DataType]map[component.ID]
 		}
 	}
 	return receiversMap
+}
+
+// Calculates the expected number of receiver and exporter instances in the specified pipeline.
+//
+// Expect one instance of each receiver and exporter, unless it is a connector.
+//
+// For connectors:
+// - Let E equal the number of pipeline types in which the connector is used as an exporter.
+// - Let R equal the number of pipeline types in which the connector is used as a receiver.
+//
+// Within the graph as a whole, we expect E*R instances, i.e. one per combination of data types.
+//
+// However, within an individual pipeline, we expect:
+// - E instances of the connector as a receiver.
+// - R instances of the connector as a exporter.
+func expectedInstances(m map[component.ID]*PipelineConfig, pID component.ID) (int, int) {
+	var r, e int
+	for _, rID := range m[pID].Receivers {
+		if rID.Type() != "exampleconnector" {
+			r++
+			continue
+		}
+
+		// This is a connector. Count the pipeline types where it is an exporter.
+		typeMap := map[component.DataType]bool{}
+		for pID, pCfg := range m {
+			for _, eID := range pCfg.Exporters {
+				if eID == rID {
+					typeMap[pID.Type()] = true
+				}
+			}
+		}
+		r += len(typeMap)
+	}
+	for _, eID := range m[pID].Exporters {
+		if eID.Type() != "exampleconnector" {
+			e++
+			continue
+		}
+
+		// This is a connector. Count the pipeline types where it is a receiver.
+		typeMap := map[component.DataType]bool{}
+		for pID, pCfg := range m {
+			for _, rID := range pCfg.Receivers {
+				if rID == eID {
+					typeMap[pID.Type()] = true
+				}
+			}
+		}
+		e += len(typeMap)
+	}
+	return r, e
 }

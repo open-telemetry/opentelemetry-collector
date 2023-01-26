@@ -136,6 +136,7 @@ func (cfg *Config) Validate() error {
 			if _, ok := cfg.Receivers[ref]; ok {
 				continue
 			}
+
 			if _, ok := cfg.Connectors[ref]; ok {
 				connectorsAsReceivers[ref] = struct{}{}
 				continue
