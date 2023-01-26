@@ -11,7 +11,7 @@ Currently, the OpenTelemetry Collector supports the following providers `scheme`
 
 For more technical details about how configuration is resolved you can read the [configuration resolving design](../confmap/README.md#configuration-resolving).
 
-One configuration file can also make references to other config providers, like the following:
+One configuration provider can also make references to other config providers, like the following:
 
 ```yaml
 receivers:
