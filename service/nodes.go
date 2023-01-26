@@ -24,6 +24,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
@@ -57,6 +60,23 @@ func newReceiverNode(pipelineID component.ID, recvID component.ID) *receiverNode
 	}
 }
 
+func (n *receiverNode) build(
+	ctx context.Context,
+	tel component.TelemetrySettings,
+	info component.BuildInfo,
+	builder *receiver.Builder,
+	nexts []baseConsumer,
+) error {
+	if len(nexts) == 0 {
+		return fmt.Errorf("receiver %q has no next consumer", n.componentID)
+	}
+	set := receiver.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set.TelemetrySettings.Logger = components.ReceiverLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineType)
+	r, err := buildReceiver(ctx, set, builder, component.NewIDWithName(n.pipelineType, "*"), nexts)
+	n.Component = r
+	return err
+}
+
 // Every processor instance is unique to one pipeline.
 // Therefore, nodeID is derived from "pipeline ID" and "component ID".
 type processorNode struct {
@@ -74,6 +94,26 @@ func newProcessorNode(pipelineID, procID component.ID) *processorNode {
 	}
 }
 
+func (n *processorNode) build(
+	ctx context.Context,
+	tel component.TelemetrySettings,
+	info component.BuildInfo,
+	builder *processor.Builder,
+	nexts []baseConsumer,
+) error {
+	if len(nexts) == 0 {
+		return fmt.Errorf("processor %q has no next consumer", n.componentID)
+	}
+	if len(nexts) > 1 {
+		return fmt.Errorf("processor %q has multiple consumers", n.componentID)
+	}
+	set := processor.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set.TelemetrySettings.Logger = components.ProcessorLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineID)
+	p, err := buildProcessor(ctx, set, builder, n.pipelineID, nexts[0])
+	n.Component = p
+	return err
+}
+
 // An exporter instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
 type exporterNode struct {
@@ -89,6 +129,19 @@ func newExporterNode(pipelineID component.ID, exprID component.ID) *exporterNode
 		componentID:  exprID,
 		pipelineType: pipelineID.Type(),
 	}
+}
+
+func (n *exporterNode) build(
+	ctx context.Context,
+	tel component.TelemetrySettings,
+	info component.BuildInfo,
+	builder *exporter.Builder,
+) error {
+	set := exporter.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set.TelemetrySettings.Logger = components.ExporterLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineType)
+	e, err := buildExporter(ctx, set, builder, component.NewIDWithName(n.pipelineType, "*"))
+	n.Component = e
+	return err
 }
 
 // A connector instance connects one pipeline type to one other pipeline type.
