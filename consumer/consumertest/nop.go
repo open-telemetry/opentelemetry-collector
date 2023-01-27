@@ -22,29 +22,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var (
-	nopInstance = &nopConsumer{}
-)
-
-type nopConsumer struct {
-	nonMutatingConsumer
-}
-
-func (nc *nopConsumer) unexported() {}
-
-func (nc *nopConsumer) ConsumeTraces(context.Context, ptrace.Traces) error {
-	return nil
-}
-
-func (nc *nopConsumer) ConsumeMetrics(context.Context, pmetric.Metrics) error {
-	return nil
-}
-
-func (nc *nopConsumer) ConsumeLogs(context.Context, plog.Logs) error {
-	return nil
-}
-
 // NewNop returns a Consumer that just drops all received data and returns no error.
 func NewNop() Consumer {
-	return nopInstance
+	return &baseConsumer{
+		ConsumeTracesFunc:  func(ctx context.Context, td ptrace.Traces) error { return nil },
+		ConsumeMetricsFunc: func(ctx context.Context, md pmetric.Metrics) error { return nil },
+		ConsumeLogsFunc:    func(ctx context.Context, ld plog.Logs) error { return nil },
+	}
 }
