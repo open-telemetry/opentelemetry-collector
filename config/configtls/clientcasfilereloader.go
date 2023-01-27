@@ -40,7 +40,7 @@ type clientCAsFileLoader interface {
 func newClientCAsReloader(clientCAsFile string, loader clientCAsFileLoader) (*clientCAsFileReloader, error) {
 	certPool, err := loader.loadClientCAFile()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load TLS config: failed to load client CA CertPool: %w", err)
+		return nil, fmt.Errorf("failed to load client CA CertPool: %w", err)
 	}
 
 	reloader := &clientCAsFileReloader{
