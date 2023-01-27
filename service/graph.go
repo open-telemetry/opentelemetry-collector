@@ -16,7 +16,6 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"go.uber.org/multierr"
@@ -48,22 +47,14 @@ func buildPipelinesGraph(ctx context.Context, set pipelinesSettings) (pipelines,
 			exporters: make(map[int64]graph.Node),
 		}
 	}
-
-	if err := pipelines.createNodes(set); err != nil {
-		return nil, err
-	}
+	pipelines.createNodes(set)
 	pipelines.createEdges()
-	if err := pipelines.buildNodes(ctx, set); err != nil {
-		return nil, err
-	}
-	return pipelines, nil
+	return pipelines, pipelines.buildNodes(ctx, set)
 }
 
 // Creates a node for each instance of a component and adds it to the graph
-func (g *pipelinesGraph) createNodes(set pipelinesSettings) error {
-
-	// map[connectorID]pipelineIDs
-	// Keep track of connectors and where they are used.
+func (g *pipelinesGraph) createNodes(set pipelinesSettings) {
+	// Keep track of connectors and where they are used. (map[connectorID][]pipelineID)
 	connectorsAsExporter := make(map[component.ID][]component.ID)
 	connectorsAsReceiver := make(map[component.ID][]component.ID)
 
@@ -87,21 +78,13 @@ func (g *pipelinesGraph) createNodes(set pipelinesSettings) error {
 		}
 	}
 
-	if len(connectorsAsExporter) != len(connectorsAsReceiver) {
-		return fmt.Errorf("each connector must be used as both receiver and exporter")
-	}
 	for connID, exprPipelineIDs := range connectorsAsExporter {
-		rcvrPipelineIDs, ok := connectorsAsReceiver[connID]
-		if !ok {
-			return fmt.Errorf("connector %q must be used as receiver, only found as exporter", connID)
-		}
 		for _, eID := range exprPipelineIDs {
-			for _, rID := range rcvrPipelineIDs {
+			for _, rID := range connectorsAsReceiver[connID] {
 				g.addConnector(eID, rID, connID)
 			}
 		}
 	}
-	return nil
 }
 
 func (g *pipelinesGraph) addReceiver(pipelineID, recvID component.ID) {
@@ -181,13 +164,13 @@ func (g *pipelinesGraph) buildNodes(ctx context.Context, set pipelinesSettings) 
 		case *receiverNode:
 			err = n.build(ctx, set.Telemetry, set.BuildInfo, set.Receivers, g.nextConsumers(n.ID()))
 		case *processorNode:
-			err = n.build(ctx, set.Telemetry, set.BuildInfo, set.Processors, g.nextConsumers(n.ID()))
+			err = n.build(ctx, set.Telemetry, set.BuildInfo, set.Processors, g.nextConsumers(n.ID())[0])
 		case *connectorNode:
 			err = n.build(ctx, set.Telemetry, set.BuildInfo, set.Connectors, g.nextConsumers(n.ID()))
 		case *exporterNode:
 			err = n.build(ctx, set.Telemetry, set.BuildInfo, set.Exporters)
 		case *fanInNode:
-			n.build(g.nextConsumers(n.ID()), g.nextProcessors(n.ID()))
+			n.build(g.nextConsumers(n.ID())[0], g.nextProcessors(n.ID()))
 		case *fanOutNode:
 			n.build(g.nextConsumers(n.ID()))
 		}

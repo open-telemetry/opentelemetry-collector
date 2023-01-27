@@ -29,6 +29,15 @@ import (
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
 
+const (
+	receiverSeed      = "receiver"
+	processorSeed     = "processor"
+	exporterSeed      = "exporter"
+	connectorSeed     = "connector"
+	fanInToProcessors = "fanin_to_processors"
+	fanOutToExporters = "fanout_to_exporters"
+)
+
 type nodeID int64
 
 func (n nodeID) ID() int64 {
@@ -52,7 +61,7 @@ type receiverNode struct {
 
 func newReceiverNode(pipelineID component.ID, recvID component.ID) *receiverNode {
 	return &receiverNode{
-		nodeID:       newNodeID("receiver", string(pipelineID.Type()), recvID.String()),
+		nodeID:       newNodeID(receiverSeed, string(pipelineID.Type()), recvID.String()),
 		componentID:  recvID,
 		pipelineType: pipelineID.Type(),
 	}
@@ -83,7 +92,7 @@ type processorNode struct {
 
 func newProcessorNode(pipelineID, procID component.ID) *processorNode {
 	return &processorNode{
-		nodeID:      newNodeID("processor", pipelineID.String(), procID.String()),
+		nodeID:      newNodeID(processorSeed, pipelineID.String(), procID.String()),
 		componentID: procID,
 		pipelineID:  pipelineID,
 	}
@@ -94,11 +103,11 @@ func (n *processorNode) build(
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
 	builder *processor.Builder,
-	nexts []baseConsumer,
+	next baseConsumer,
 ) error {
 	set := processor.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ProcessorLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineID)
-	p, err := buildProcessor(ctx, set, builder, n.pipelineID, nexts[0])
+	p, err := buildProcessor(ctx, set, builder, n.pipelineID, next)
 	n.Component = p
 	return err
 }
@@ -114,7 +123,7 @@ type exporterNode struct {
 
 func newExporterNode(pipelineID component.ID, exprID component.ID) *exporterNode {
 	return &exporterNode{
-		nodeID:       newNodeID("exporter", string(pipelineID.Type()), exprID.String()),
+		nodeID:       newNodeID(exporterSeed, string(pipelineID.Type()), exprID.String()),
 		componentID:  exprID,
 		pipelineType: pipelineID.Type(),
 	}
@@ -145,7 +154,7 @@ type connectorNode struct {
 
 func newConnectorNode(exprPipelineType, rcvrPipelineType component.DataType, connID component.ID) *connectorNode {
 	return &connectorNode{
-		nodeID:           newNodeID("connector", connID.String(), string(exprPipelineType), string(rcvrPipelineType)),
+		nodeID:           newNodeID(connectorSeed, connID.String(), string(exprPipelineType), string(rcvrPipelineType)),
 		componentID:      connID,
 		exprPipelineType: exprPipelineType,
 		rcvrPipelineType: rcvrPipelineType,
@@ -223,14 +232,14 @@ type fanInNode struct {
 
 func newFanInNode(pipelineID component.ID) *fanInNode {
 	return &fanInNode{
-		nodeID:       newNodeID("fanin_to_processors", pipelineID.String()),
+		nodeID:       newNodeID(fanInToProcessors, pipelineID.String()),
 		pipelineID:   pipelineID,
 		Capabilities: consumer.Capabilities{},
 	}
 }
 
-func (n *fanInNode) build(nexts []baseConsumer, processors []*processorNode) {
-	n.baseConsumer = nexts[0]
+func (n *fanInNode) build(next baseConsumer, processors []*processorNode) {
+	n.baseConsumer = next
 	for _, proc := range processors {
 		n.Capabilities.MutatesData = n.Capabilities.MutatesData ||
 			proc.Component.(baseConsumer).Capabilities().MutatesData
@@ -247,7 +256,7 @@ type fanOutNode struct {
 
 func newFanOutNode(pipelineID component.ID) *fanOutNode {
 	return &fanOutNode{
-		nodeID:     newNodeID("fanout_to_exporters", pipelineID.String()),
+		nodeID:     newNodeID(fanOutToExporters, pipelineID.String()),
 		pipelineID: pipelineID,
 	}
 }
