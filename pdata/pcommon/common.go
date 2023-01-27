@@ -365,7 +365,7 @@ func (v Value) CopyTo(dest Value) {
 }
 
 // AsString converts an OTLP Value object of any type to its equivalent string
-// representation. This differs from GetString which only returns a non-empty value
+// representation. This differs from Str which only returns a non-empty value
 // if the ValueType is ValueTypeStr.
 func (v Value) AsString() string {
 	switch v.Type() {
@@ -721,7 +721,7 @@ func (m Map) CopyTo(dest Map) {
 	*dest.getOrig() = origs
 }
 
-// AsRaw converts an OTLP Map to a standard go map
+// AsRaw returns a standard go map representation of this Map.
 func (m Map) AsRaw() map[string]any {
 	rawMap := make(map[string]any)
 	m.Range(func(k string, v Value) bool {
@@ -731,6 +731,7 @@ func (m Map) AsRaw() map[string]any {
 	return rawMap
 }
 
+// FromRaw overrides this Map instance from a standard go map.
 func (m Map) FromRaw(rawMap map[string]any) error {
 	if len(rawMap) == 0 {
 		*m.getOrig() = nil
