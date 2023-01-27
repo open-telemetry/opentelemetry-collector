@@ -94,7 +94,7 @@ func (r *Registry) IsEnabled(id string) bool {
 }
 
 // MustRegister like Register but panics if an invalid ID or gate options are provided.
-func (r *Registry) MustRegister(id string, stage Stage, opts ...RegisterOption) Gate {
+func (r *Registry) MustRegister(id string, stage Stage, opts ...RegisterOption) *Gate {
 	g, err := r.Register(id, stage, opts...)
 	if err != nil {
 		panic(err)
@@ -103,7 +103,7 @@ func (r *Registry) MustRegister(id string, stage Stage, opts ...RegisterOption) 
 }
 
 // Register a Gate and return it. The returned Gate can be used to check if is enabled or not.
-func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (Gate, error) {
+func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Gate, error) {
 	g := &Gate{
 		id:    id,
 		stage: stage,
@@ -117,15 +117,15 @@ func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (Gat
 	case StageBeta, StageStable:
 		g.enabled = atomic.NewBool(true)
 	default:
-		return *g, fmt.Errorf("unknown stage value %q for gate %q", stage, id)
+		return nil, fmt.Errorf("unknown stage value %q for gate %q", stage, id)
 	}
 	if g.stage == StageStable && g.removalVersion == "" {
-		return *g, fmt.Errorf("no removal version set for stable gate %q", id)
+		return nil, fmt.Errorf("no removal version set for stable gate %q", id)
 	}
 	if _, loaded := r.gates.LoadOrStore(id, g); loaded {
-		return *g, fmt.Errorf("attempted to add pre-existing gate %q", id)
+		return nil, fmt.Errorf("attempted to add pre-existing gate %q", id)
 	}
-	return *g, nil
+	return g, nil
 }
 
 // Deprecated: [v0.71.0] use MustRegister.
