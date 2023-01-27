@@ -70,17 +70,16 @@ func handleFeaturezRequest(w http.ResponseWriter, r *http.Request) {
 
 func getFeaturesTableData() zpages.FeatureGateTableData {
 	data := zpages.FeatureGateTableData{}
-	for _, g := range featuregate.GlobalRegistry().List() {
+	featuregate.GlobalRegistry().Visit(func(gate *featuregate.Gate) {
 		data.Rows = append(data.Rows, zpages.FeatureGateTableRowData{
-			ID:             g.ID(),
-			Enabled:        g.IsEnabled(),
-			Description:    g.Description(),
-			ReferenceURL:   g.ReferenceURL(),
-			Stage:          g.Stage().String(),
-			RemovalVersion: g.RemovalVersion(),
+			ID:             gate.ID(),
+			Enabled:        gate.IsEnabled(),
+			Description:    gate.Description(),
+			ReferenceURL:   gate.ReferenceURL(),
+			Stage:          gate.Stage().String(),
+			RemovalVersion: gate.RemovalVersion(),
 		})
-	}
-
+	})
 	return data
 }
 

@@ -16,6 +16,7 @@ package featuregate // import "go.opentelemetry.io/collector/featuregate"
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 
 	"go.uber.org/atomic"
@@ -153,12 +154,26 @@ func (r *Registry) Set(id string, enabled bool) error {
 	return nil
 }
 
-// List returns a slice of copies of all registered Gates.
+// Visit visits the gates in lexicographical order, calling fn for each.
+func (r *Registry) Visit(fn func(*Gate)) {
+	var gates []*Gate
+	r.gates.Range(func(key, value any) bool {
+		gates = append(gates, value.(*Gate))
+		return true
+	})
+	sort.Slice(gates, func(i, j int) bool {
+		return gates[i].ID() < gates[j].ID()
+	})
+	for i := range gates {
+		fn(gates[i])
+	}
+}
+
+// Deprecated: [v0.71.0] use Visit.
 func (r *Registry) List() []Gate {
 	var ret []Gate
-	r.gates.Range(func(key, value any) bool {
-		ret = append(ret, *(value.(*Gate)))
-		return true
+	r.Visit(func(gate *Gate) {
+		ret = append(ret, *gate)
 	})
 	return ret
 }
