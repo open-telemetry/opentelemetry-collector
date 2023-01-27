@@ -38,7 +38,7 @@ func TestLoadConfInvalidYAML(t *testing.T) {
 func TestLoadConf(t *testing.T) {
 	cfg, err := LoadConf(filepath.Join("testdata", "simple.yaml"))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"floating": 3.14}, cfg.ToStringMap())
+	assert.Equal(t, map[string]any{"floating": 3.14}, cfg.ToStringMap())
 }
 
 func TestValidateProviderScheme(t *testing.T) {

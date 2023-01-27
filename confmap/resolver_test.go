@@ -27,7 +27,7 @@ import (
 
 type mockProvider struct {
 	scheme string
-	retM   interface{}
+	retM   any
 	errR   error
 	errS   error
 	errW   error
@@ -148,7 +148,7 @@ func TestResolverErrors(t *testing.T) {
 			locations: []string{"mock:", "err:"},
 			providers: []Provider{
 				&mockProvider{},
-				&mockProvider{scheme: "err", retM: map[string]interface{}{}, errW: errors.New("watch_err")},
+				&mockProvider{scheme: "err", retM: map[string]any{}, errW: errors.New("watch_err")},
 			},
 			expectWatchErr: true,
 		},
@@ -157,7 +157,7 @@ func TestResolverErrors(t *testing.T) {
 			locations: []string{"mock:", "err:"},
 			providers: []Provider{
 				&mockProvider{},
-				&mockProvider{scheme: "err", retM: map[string]interface{}{}, errC: errors.New("close_err")},
+				&mockProvider{scheme: "err", retM: map[string]any{}, errC: errors.New("close_err")},
 			},
 			expectCloseErr: true,
 		},
@@ -166,7 +166,7 @@ func TestResolverErrors(t *testing.T) {
 			locations: []string{"mock:", "err:"},
 			providers: []Provider{
 				&mockProvider{},
-				&mockProvider{scheme: "err", retM: map[string]interface{}{}, errS: errors.New("close_err")},
+				&mockProvider{scheme: "err", retM: map[string]any{}, errS: errors.New("close_err")},
 			},
 			expectShutdownErr: true,
 		},
@@ -380,7 +380,7 @@ func TestResolverExpandEnvVars(t *testing.T) {
 }
 
 func TestResolverDoneNotExpandOldEnvVars(t *testing.T) {
-	expectedCfgMap := map[string]interface{}{"test.1": "${EXTRA}", "test.2": "$EXTRA", "test.3": "${EXTRA}:${EXTRA}"}
+	expectedCfgMap := map[string]any{"test.1": "${EXTRA}", "test.2": "$EXTRA", "test.3": "${EXTRA}:${EXTRA}"}
 	fileProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(expectedCfgMap)
 	})
@@ -402,9 +402,9 @@ func TestResolverDoneNotExpandOldEnvVars(t *testing.T) {
 
 func TestResolverExpandMapAndSliceValues(t *testing.T) {
 	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
-		return NewRetrieved(map[string]interface{}{
-			"test_map":   map[string]interface{}{"recv": "${test:MAP_VALUE}"},
-			"test_slice": []interface{}{"${test:MAP_VALUE}"}})
+		return NewRetrieved(map[string]any{
+			"test_map":   map[string]any{"recv": "${test:MAP_VALUE}"},
+			"test_slice": []any{"${test:MAP_VALUE}"}})
 	})
 
 	const receiverExtraMapValue = "some map value"
@@ -417,16 +417,16 @@ func TestResolverExpandMapAndSliceValues(t *testing.T) {
 
 	cfgMap, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
-	expectedMap := map[string]interface{}{
-		"test_map":   map[string]interface{}{"recv": receiverExtraMapValue},
-		"test_slice": []interface{}{receiverExtraMapValue}}
+	expectedMap := map[string]any{
+		"test_map":   map[string]any{"recv": receiverExtraMapValue},
+		"test_slice": []any{receiverExtraMapValue}}
 	assert.Equal(t, expectedMap, cfgMap.ToStringMap())
 }
 
 func TestResolverInfiniteExpand(t *testing.T) {
 	const receiverValue = "${test:VALUE}"
 	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
-		return NewRetrieved(map[string]interface{}{"test": receiverValue})
+		return NewRetrieved(map[string]any{"test": receiverValue})
 	})
 
 	testProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
@@ -442,7 +442,7 @@ func TestResolverInfiniteExpand(t *testing.T) {
 
 func TestResolverExpandSliceValueError(t *testing.T) {
 	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
-		return NewRetrieved(map[string]interface{}{"test": []interface{}{"${test:VALUE}"}})
+		return NewRetrieved(map[string]any{"test": []any{"${test:VALUE}"}})
 	})
 
 	testProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
@@ -458,7 +458,7 @@ func TestResolverExpandSliceValueError(t *testing.T) {
 
 func TestResolverExpandMapValueError(t *testing.T) {
 	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
-		return NewRetrieved(map[string]interface{}{"test": []interface{}{map[string]interface{}{"test": "${test:VALUE}"}}})
+		return NewRetrieved(map[string]any{"test": []any{map[string]any{"test": "${test:VALUE}"}}})
 	})
 
 	testProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
@@ -475,7 +475,7 @@ func TestResolverExpandMapValueError(t *testing.T) {
 func TestResolverExpandInvalidScheme(t *testing.T) {
 	const receiverValue = "${g_c_s:VALUE}"
 	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
-		return NewRetrieved(map[string]interface{}{"test": receiverValue})
+		return NewRetrieved(map[string]any{"test": receiverValue})
 	})
 
 	testProvider := newFakeProvider("g_c_s", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
@@ -493,7 +493,7 @@ func TestResolverExpandInvalidScheme(t *testing.T) {
 
 func TestResolverExpandInvalidOpaqueValue(t *testing.T) {
 	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
-		return NewRetrieved(map[string]interface{}{"test": []interface{}{map[string]interface{}{"test": "${test:$VALUE}"}}})
+		return NewRetrieved(map[string]any{"test": []any{map[string]any{"test": "${test:$VALUE}"}}})
 	})
 
 	testProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {

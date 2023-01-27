@@ -82,7 +82,7 @@ type exampleAuthData struct {
 	username string
 }
 
-func (e *exampleAuthData) GetAttribute(key string) interface{} {
+func (e *exampleAuthData) GetAttribute(key string) any {
 	if key == "username" {
 		return e.username
 	}

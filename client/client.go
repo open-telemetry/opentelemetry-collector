@@ -125,7 +125,7 @@ type AuthData interface {
 	// implementations might define different data types for different
 	// attributes. While "string" is used most of the time, a key named
 	// "membership" might return a list of strings.
-	GetAttribute(string) interface{}
+	GetAttribute(string) any
 
 	// GetAttributes returns the names of all attributes in this authentication
 	// data.

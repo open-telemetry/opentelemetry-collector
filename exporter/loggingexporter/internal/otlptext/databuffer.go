@@ -29,12 +29,12 @@ type dataBuffer struct {
 	buf bytes.Buffer
 }
 
-func (b *dataBuffer) logEntry(format string, a ...interface{}) {
+func (b *dataBuffer) logEntry(format string, a ...any) {
 	b.buf.WriteString(fmt.Sprintf(format, a...))
 	b.buf.WriteString("\n")
 }
 
-func (b *dataBuffer) logAttr(attr string, value interface{}) {
+func (b *dataBuffer) logAttr(attr string, value any) {
 	b.logEntry("    %-15s: %s", attr, value)
 }
 

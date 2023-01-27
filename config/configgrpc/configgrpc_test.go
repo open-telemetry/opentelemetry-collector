@@ -796,7 +796,7 @@ func TestStreamInterceptorEnhancesClient(t *testing.T) {
 		ctx: inCtx,
 	}
 
-	handler := func(srv interface{}, stream grpc.ServerStream) error {
+	handler := func(srv any, stream grpc.ServerStream) error {
 		outContext = stream.Context()
 		return nil
 	}
@@ -910,7 +910,7 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 
 		return ctx, nil
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		handlerCalled = true
 		cl := client.FromContext(ctx)
 		assert.Equal(t, "1.2.3.4", cl.Addr.String())
@@ -936,7 +936,7 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 		authCalled = true
 		return context.Background(), expectedErr
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		assert.FailNow(t, "the handler should not have been called on auth failure!")
 		return nil, nil
 	}
@@ -957,7 +957,7 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 		assert.FailNow(t, "the auth func should not have been called!")
 		return context.Background(), nil
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		assert.FailNow(t, "the handler should not have been called!")
 		return nil, nil
 	}
@@ -981,7 +981,7 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 		})
 		return ctx, nil
 	}
-	handler := func(srv interface{}, stream grpc.ServerStream) error {
+	handler := func(srv any, stream grpc.ServerStream) error {
 		// ensure that the client information is propagated down to the underlying stream
 		cl := client.FromContext(stream.Context())
 		assert.Equal(t, "1.2.3.4", cl.Addr.String())
@@ -1010,7 +1010,7 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 		authCalled = true
 		return context.Background(), expectedErr
 	}
-	handler := func(srv interface{}, stream grpc.ServerStream) error {
+	handler := func(srv any, stream grpc.ServerStream) error {
 		assert.FailNow(t, "the handler should not have been called on auth failure!")
 		return nil
 	}
@@ -1033,7 +1033,7 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 		assert.FailNow(t, "the auth func should not have been called!")
 		return context.Background(), nil
 	}
-	handler := func(srv interface{}, stream grpc.ServerStream) error {
+	handler := func(srv any, stream grpc.ServerStream) error {
 		assert.FailNow(t, "the handler should not have been called!")
 		return nil
 	}

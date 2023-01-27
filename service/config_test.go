@@ -128,7 +128,7 @@ func generateConfig() *Config {
 				DisableStacktrace: true,
 				OutputPaths:       []string{"stderr", "./output-logs"},
 				ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
-				InitialFields:     map[string]interface{}{"fieldKey": "filed-value"},
+				InitialFields:     map[string]any{"fieldKey": "filed-value"},
 			},
 			Metrics: telemetry.MetricsConfig{
 				Level:   configtelemetry.LevelNormal,

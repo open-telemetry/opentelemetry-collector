@@ -98,19 +98,19 @@ func compress(compressor encoding.Compressor, in []byte) ([]byte, error) {
 
 type testPayload struct {
 	name      string
-	message   interface{}
+	message   any
 	marshaler marshaler
 }
 
 type marshaler interface {
-	marshal(interface{}) ([]byte, error)
+	marshal(any) ([]byte, error)
 }
 
 type logMarshaler struct {
 	plog.Marshaler
 }
 
-func (m *logMarshaler) marshal(e interface{}) ([]byte, error) {
+func (m *logMarshaler) marshal(e any) ([]byte, error) {
 	return m.MarshalLogs(e.(plog.Logs))
 }
 
@@ -118,7 +118,7 @@ type traceMarshaler struct {
 	ptrace.Marshaler
 }
 
-func (m *traceMarshaler) marshal(e interface{}) ([]byte, error) {
+func (m *traceMarshaler) marshal(e any) ([]byte, error) {
 	return m.MarshalTraces(e.(ptrace.Traces))
 }
 
@@ -126,7 +126,7 @@ type metricsMarshaler struct {
 	pmetric.Marshaler
 }
 
-func (m *metricsMarshaler) marshal(e interface{}) ([]byte, error) {
+func (m *metricsMarshaler) marshal(e any) ([]byte, error) {
 	return m.MarshalMetrics(e.(pmetric.Metrics))
 }
 

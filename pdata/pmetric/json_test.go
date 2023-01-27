@@ -43,8 +43,7 @@ func TestMetricsJSON(t *testing.T) {
 	assert.NoError(t, err)
 
 	decoder := &JSONUnmarshaler{}
-	var got interface{}
-	got, err = decoder.UnmarshalMetrics(jsonBuf)
+	got, err := decoder.UnmarshalMetrics(jsonBuf)
 	assert.NoError(t, err)
 
 	assert.EqualValues(t, metricsOTLP, got)

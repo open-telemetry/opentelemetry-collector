@@ -31,7 +31,7 @@ type TestComplexStruct struct {
 	Slice     []TestSimpleStruct          `mapstructure:"slice,omitempty"`
 	Pointer   *TestSimpleStruct           `mapstructure:"ptr"`
 	Map       map[string]TestSimpleStruct `mapstructure:"map,omitempty"`
-	Remain    map[string]interface{}      `mapstructure:",remain"`
+	Remain    map[string]any              `mapstructure:",remain"`
 	Interface encoding.TextMarshaler
 }
 
@@ -63,8 +63,8 @@ func TestEncode(t *testing.T) {
 		EncodeHook: TextMarshalerHookFunc(),
 	})
 	testCases := map[string]struct {
-		input interface{}
-		want  interface{}
+		input any
+		want  any
 	}{
 		"WithString": {
 			input: "test",
@@ -79,11 +79,11 @@ func TestEncode(t *testing.T) {
 				TestID("nop"),
 				TestID("type_"),
 			},
-			want: []interface{}{"nop_", "type_"},
+			want: []any{"nop_", "type_"},
 		},
 		"WithSimpleStruct": {
 			input: TestSimpleStruct{Value: "test", skipped: "skipped"},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"value": "test",
 			},
 		},
@@ -104,19 +104,19 @@ func TestEncode(t *testing.T) {
 				Pointer: &TestSimpleStruct{
 					Value: "pointer",
 				},
-				Remain: map[string]interface{}{
+				Remain: map[string]any{
 					"remain1": 23,
 					"remain2": "value",
 				},
 				Interface: TestID("value"),
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"value": "nested",
-				"slice": []interface{}{map[string]interface{}{"value": "slice"}},
-				"map": map[string]interface{}{
-					"Key": map[string]interface{}{"value": "map"},
+				"slice": []any{map[string]any{"value": "slice"}},
+				"map": map[string]any{
+					"Key": map[string]any{"value": "map"},
 				},
-				"ptr":       map[string]interface{}{"value": "pointer"},
+				"ptr":       map[string]any{"value": "pointer"},
 				"interface": "value_",
 				"remain1":   23,
 				"remain2":   "value",
@@ -202,7 +202,7 @@ func TestEncodeValueError(t *testing.T) {
 	enc := New(nil)
 	testValue := reflect.ValueOf("")
 	testCases := []struct {
-		encodeFn func(value reflect.Value) (interface{}, error)
+		encodeFn func(value reflect.Value) (any, error)
 		wantErr  error
 	}{
 		{encodeFn: enc.encodeMap, wantErr: &reflect.ValueError{Method: "encodeMap", Kind: reflect.String}},
@@ -220,10 +220,10 @@ func TestEncodeValueError(t *testing.T) {
 func TestEncodeNonStringEncodedKey(t *testing.T) {
 	enc := New(nil)
 	testCase := []struct {
-		Test map[string]interface{}
+		Test map[string]any
 	}{
 		{
-			Test: map[string]interface{}{
+			Test: map[string]any{
 				"test": map[TestEmptyStruct]TestSimpleStruct{
 					{Value: "key"}: {Value: "value"},
 				},
@@ -296,7 +296,7 @@ func TestEncodeNil(t *testing.T) {
 }
 
 func testHookFunc() mapstructure.DecodeHookFuncValue {
-	return func(from reflect.Value, _ reflect.Value) (interface{}, error) {
+	return func(from reflect.Value, _ reflect.Value) (any, error) {
 		if from.Kind() != reflect.Struct {
 			return from.Interface(), nil
 		}

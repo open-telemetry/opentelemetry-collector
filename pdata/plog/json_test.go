@@ -87,8 +87,7 @@ func TestLogsJSON(t *testing.T) {
 						jsonBuf, err := encoder.MarshalLogs(ld)
 						assert.NoError(t, err)
 						decoder := &JSONUnmarshaler{}
-						var got interface{}
-						got, err = decoder.UnmarshalLogs(jsonBuf)
+						got, err := decoder.UnmarshalLogs(jsonBuf)
 						assert.NoError(t, err)
 						assert.EqualValues(t, ld, got)
 					}

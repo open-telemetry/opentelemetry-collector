@@ -29,7 +29,7 @@ import (
 // (e.g. check if a required field is present).
 //
 // A valid implementation MUST pass the check componenttest.CheckConfigStruct (return nil error).
-type Config interface{}
+type Config any
 
 // As interface types are only used for static typing, a common idiom to find the reflection Type
 // for an interface type Foo is to use a *Foo value.
