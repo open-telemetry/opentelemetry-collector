@@ -40,6 +40,17 @@ fields:
     default: 5s
     doc: |
       InitialInterval the time to wait after the first failure before retrying.
+  - name: randomization_factor
+    kind: float64
+    default: 0.5
+    doc: |
+      RandomizationFactor is a random factor used to calculate next backoffs.
+      Randomized interval = RetryInterval * (1 ± RandomizationFactor)
+  - name: multiplier
+    kind: float64
+    default: 1.5
+    doc: |
+      Multiplier is the value multiplied by the backoff interval bounds
   - name: max_interval
     type: time.Duration
     kind: int64

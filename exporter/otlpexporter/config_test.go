@@ -51,10 +51,12 @@ func TestUnmarshalConfig(t *testing.T) {
 				Timeout: 10 * time.Second,
 			},
 			RetrySettings: exporterhelper.RetrySettings{
-				Enabled:         true,
-				InitialInterval: 10 * time.Second,
-				MaxInterval:     1 * time.Minute,
-				MaxElapsedTime:  10 * time.Minute,
+				Enabled:             true,
+				InitialInterval:     10 * time.Second,
+				RandomizationFactor: 0.7,
+				Multiplier:          1.3,
+				MaxInterval:         1 * time.Minute,
+				MaxElapsedTime:      10 * time.Minute,
 			},
 			QueueSettings: exporterhelper.QueueSettings{
 				Enabled:      true,
