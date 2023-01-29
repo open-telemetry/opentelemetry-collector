@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -431,6 +432,49 @@ func TestPersistentStorage_StopShouldCloseClient(t *testing.T) {
 	require.Equal(t, uint64(1), castedClient.getCloseCount())
 }
 
+func TestPersistentStorage_StorageFull(t *testing.T) {
+	var err error
+	traces := newTraces(5, 10)
+	req := newFakeTracesRequest(traces)
+	marshalled, err := req.Marshal()
+	require.NoError(t, err)
+	maxSizeInBytes := len(marshalled) * 5
+	freeSpaceInBytes := 1
+
+	client := newMockBoundedStorageClient(maxSizeInBytes)
+	ps := createTestPersistentStorage(client)
+
+	// Put enough items in to fill the underlying storage
+	reqCount := 0
+	for {
+		err = ps.put(req)
+		if errors.Is(err, syscall.ENOSPC) {
+			break
+		}
+		require.NoError(t, err)
+		reqCount += 1
+	}
+
+	// Manually set the storage to only have a small amount of free space left
+	newMaxSize := client.GetSizeInBytes() + freeSpaceInBytes
+	client.SetMaxSizeInBytes(newMaxSize)
+
+	// Try to put an item in, should fail
+	err = ps.put(req)
+	require.Error(t, err)
+
+	// Take out all the items
+	for i := reqCount; i > 0; i-- {
+		request := <-ps.get()
+		request.OnProcessingFinished()
+	} 
+	
+	// We should be able to put a new item in
+	// However, this will fail if deleting items fails with full storage
+	err = ps.put(req)
+	require.NoError(t, err)
+}
+
 func getItemFromChannel(t *testing.T, pcs *persistentContiguousStorage) Request {
 	var readReq Request
 	require.Eventually(t, func() bool {
@@ -448,7 +492,9 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguou
 	}, 5*time.Second, 10*time.Millisecond)
 }
 
-type mockStorageExtension struct{}
+type mockStorageExtension struct{
+	clientFactory func (ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error)
+}
 
 func (m mockStorageExtension) Start(_ context.Context, _ component.Host) error {
 	return nil
@@ -459,11 +505,23 @@ func (m mockStorageExtension) Shutdown(_ context.Context) error {
 }
 
 func (m mockStorageExtension) GetClient(ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error) {
-	return newMockStorageClient(), nil
+	return m.clientFactory(ctx, kind, id, s)
 }
 
 func newMockStorageExtension() storage.Extension {
-	return &mockStorageExtension{}
+	return &mockStorageExtension{
+		clientFactory: func (ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error) {
+			return newMockStorageClient(), nil
+		},
+	}
+}
+
+func newMockBoundedStorageExtension(maxSizeInBytes int) storage.Extension {
+	return &mockStorageExtension{
+		clientFactory: func (ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error) {
+			return newMockBoundedStorageClient(maxSizeInBytes), nil
+		},
+	}
 }
 
 func newMockStorageClient() storage.Client {
@@ -533,4 +591,102 @@ func (m *mockStorageClient) Batch(_ context.Context, ops ...storage.Operation) e
 
 func (m *mockStorageClient) getCloseCount() uint64 {
 	return m.closeCounter
+}
+
+func newMockBoundedStorageClient(maxSizeInBytes int) *mockBoundedStorageClient {
+	return &mockBoundedStorageClient{
+		st: map[string][]byte{},
+		MaxSizeInBytes: maxSizeInBytes,
+	}
+}
+
+type mockBoundedStorageClient struct {
+	st           map[string][]byte
+	MaxSizeInBytes int
+	sizeInBytes int
+	mux          sync.Mutex
+}
+
+func (m *mockBoundedStorageClient) Get(ctx context.Context, key string) ([]byte, error) {
+	op := storage.GetOperation(key)
+	err := m.Batch(ctx, op)
+	if err != nil {
+		return nil, err
+	}
+
+	return op.Value, nil
+}
+
+func (m *mockBoundedStorageClient) Set(ctx context.Context, key string, value []byte) error {
+	return m.Batch(ctx, storage.SetOperation(key, value))
+}
+
+func (m *mockBoundedStorageClient) Delete(ctx context.Context, key string) error {
+	return m.Batch(ctx, storage.DeleteOperation(key))
+}
+
+func (m *mockBoundedStorageClient) Close(_ context.Context) error {
+	return nil
+}
+
+func (m *mockBoundedStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
+	totalAdded, totalRemoved := m.getTotalSizeChange(ops)
+
+	if m.sizeInBytes + totalAdded > m.MaxSizeInBytes {
+		return fmt.Errorf("insufficient space available: %w", syscall.ENOSPC)
+	}
+
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Get:
+			op.Value = m.st[op.Key]
+		case storage.Set:
+			m.st[op.Key] = op.Value
+		case storage.Delete:
+			delete(m.st, op.Key)
+		default:
+			return errors.New("wrong operation type")
+		}
+	}
+
+	m.sizeInBytes += (totalAdded - totalRemoved)
+
+	return nil
+}
+
+func (m *mockBoundedStorageClient) SetMaxSizeInBytes(newMaxSize int) {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	m.MaxSizeInBytes = newMaxSize
+}
+
+func (m *mockBoundedStorageClient) GetSizeInBytes() int {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	return m.sizeInBytes
+}
+
+func (m *mockBoundedStorageClient) getTotalSizeChange(ops []storage.Operation) (totalAdded int, totalRemoved int) {
+	totalAdded, totalRemoved = 0, 0
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Set:
+			if oldValue, ok := m.st[op.Key]; ok {
+				totalRemoved += len(oldValue)
+			} else {
+				totalAdded += len(op.Key)
+			}
+			totalAdded += len(op.Value)
+		case storage.Delete:
+			if value, ok := m.st[op.Key]; ok {
+				totalRemoved += len(op.Key)
+				totalRemoved += len(value)
+			}
+		default:
+		}
+	}
+	return totalAdded, totalRemoved
 }
