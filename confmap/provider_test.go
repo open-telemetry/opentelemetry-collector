@@ -41,3 +41,8 @@ func TestNewRetrievedWithOptions(t *testing.T) {
 	assert.Equal(t, New(), retMap)
 	assert.Equal(t, want, ret.Close(context.Background()))
 }
+
+func TestNewRetrievedUnsupportedType(t *testing.T) {
+	_, err := NewRetrieved(errors.New("my error"))
+	require.Error(t, err)
+}
