@@ -436,9 +436,9 @@ func TestPersistentStorage_StorageFull(t *testing.T) {
 	var err error
 	traces := newTraces(5, 10)
 	req := newFakeTracesRequest(traces)
-	marshalled, err := req.Marshal()
+	marshaled, err := req.Marshal()
 	require.NoError(t, err)
-	maxSizeInBytes := len(marshalled) * 5
+	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
 	freeSpaceInBytes := 1
 
 	client := newMockBoundedStorageClient(maxSizeInBytes)
@@ -452,7 +452,7 @@ func TestPersistentStorage_StorageFull(t *testing.T) {
 			break
 		}
 		require.NoError(t, err)
-		reqCount += 1
+		reqCount++
 	}
 
 	// Manually set the storage to only have a small amount of free space left
@@ -467,8 +467,8 @@ func TestPersistentStorage_StorageFull(t *testing.T) {
 	for i := reqCount; i > 0; i-- {
 		request := <-ps.get()
 		request.OnProcessingFinished()
-	} 
-	
+	}
+
 	// We should be able to put a new item in
 	// However, this will fail if deleting items fails with full storage
 	err = ps.put(req)
@@ -492,8 +492,8 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguou
 	}, 5*time.Second, 10*time.Millisecond)
 }
 
-type mockStorageExtension struct{
-	clientFactory func (ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error)
+type mockStorageExtension struct {
+	clientFactory func(ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error)
 }
 
 func (m mockStorageExtension) Start(_ context.Context, _ component.Host) error {
@@ -510,16 +510,8 @@ func (m mockStorageExtension) GetClient(ctx context.Context, kind component.Kind
 
 func newMockStorageExtension() storage.Extension {
 	return &mockStorageExtension{
-		clientFactory: func (ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error) {
+		clientFactory: func(ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error) {
 			return newMockStorageClient(), nil
-		},
-	}
-}
-
-func newMockBoundedStorageExtension(maxSizeInBytes int) storage.Extension {
-	return &mockStorageExtension{
-		clientFactory: func (ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error) {
-			return newMockBoundedStorageClient(maxSizeInBytes), nil
 		},
 	}
 }
@@ -595,16 +587,20 @@ func (m *mockStorageClient) getCloseCount() uint64 {
 
 func newMockBoundedStorageClient(maxSizeInBytes int) *mockBoundedStorageClient {
 	return &mockBoundedStorageClient{
-		st: map[string][]byte{},
+		st:             map[string][]byte{},
 		MaxSizeInBytes: maxSizeInBytes,
 	}
 }
 
+// this storage client mimics the behavior of actual storage engines with limited storage space available
+// in general, real storage engines often have a per-write-transaction storage overhead, needing to keep
+// both the old and the new value stored until the transaction is committed
+// this is useful for testing the persistent queue queue behavior with a full disk
 type mockBoundedStorageClient struct {
-	st           map[string][]byte
 	MaxSizeInBytes int
-	sizeInBytes int
-	mux          sync.Mutex
+	st             map[string][]byte
+	sizeInBytes    int
+	mux            sync.Mutex
 }
 
 func (m *mockBoundedStorageClient) Get(ctx context.Context, key string) ([]byte, error) {
@@ -635,7 +631,10 @@ func (m *mockBoundedStorageClient) Batch(_ context.Context, ops ...storage.Opera
 
 	totalAdded, totalRemoved := m.getTotalSizeChange(ops)
 
-	if m.sizeInBytes + totalAdded > m.MaxSizeInBytes {
+	// the assumption here is that the new data needs to coexist with the old data on disk
+	// for the transaction to succeed
+	// this seems to be true for the file storage extension at least
+	if m.sizeInBytes+totalAdded > m.MaxSizeInBytes {
 		return fmt.Errorf("insufficient space available: %w", syscall.ENOSPC)
 	}
 

@@ -362,6 +362,7 @@ func (pcs *persistentContiguousStorage) itemDispatchingStart(ctx context.Context
 
 // itemDispatchingFinish removes the item from the list of currently dispatched items and deletes it from the persistent queue
 func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Context, index itemIndex) {
+	var err error
 	var updatedDispatchedItems []itemIndex
 	for _, it := range pcs.currentlyDispatchedItems {
 		if it != index {
@@ -370,13 +371,38 @@ func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Contex
 	}
 	pcs.currentlyDispatchedItems = updatedDispatchedItems
 
-	_, err := newBatch(pcs).
+	_, err = newBatch(pcs).
 		setItemIndexArray(currentlyDispatchedItemsKey, pcs.currentlyDispatchedItems).
 		delete(pcs.itemKey(index)).
 		execute(ctx)
+
+	if err == nil {
+		return
+	}
+
+	// got an error, try to gracefully handle it
+	pcs.logger.Debug("Failed updating currently dispatched items, trying to delete the item first",
+		zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
+
+	_, err = newBatch(pcs).
+		delete(pcs.itemKey(index)).
+		execute(ctx)
 	if err != nil {
-		pcs.logger.Debug("Failed updating currently dispatched items",
+		// Log an error here, as this indicates an issue with the underlying storage medium
+		pcs.logger.Error("Failed deleting item from queue, got error from storage",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
+		return
+	}
+
+	_, err = newBatch(pcs).
+		setItemIndexArray(currentlyDispatchedItemsKey, pcs.currentlyDispatchedItems).
+		execute(ctx)
+	if err != nil {
+		// even if this fails, we still have the right dispatched items in memory
+		// at worst, we'll have the wrong list stored, and we'll discard the nonexistent items during startup
+		pcs.logger.Error("Failed updating currently dispatched items, but deleted item successfully",
+			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
+		return
 	}
 }
 
