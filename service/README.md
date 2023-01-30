@@ -11,25 +11,6 @@ Currently, the OpenTelemetry Collector supports the following providers `scheme`
 
 For more technical details about how configuration is resolved you can read the [configuration resolving design](../confmap/README.md#configuration-resolving).
 
-One configuration provider can also make references to other config providers, like the following:
-
-```yaml
-receivers:
-  otlp:
-    protocols:
-      grpc:
-
-exporters: ${file:otlp-exporter.yaml}
-
-service:
-  extensions: [ ]
-  pipelines:
-    traces:
-      receivers:  [ otlp ]
-      processors: [  ]
-      exporters:  [ otlp ]
-```
-
 ### Single Config Source
 
 1. Simple local file:
@@ -54,6 +35,27 @@ service:
 2. Merge a `config.yaml` file with the content of a yaml bytes configuration (overwrites the `exporters::logging::loglevel` config) and use the content as the config:
 
     `./otelcorecol --config=file:examples/local/otel-config.yaml --config="yaml:exporters::logging::loglevel: info"`
+
+### Embedding other configuration providers
+
+One configuration provider can also make references to other config providers, like the following:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+exporters: ${file:otlp-exporter.yaml}
+
+service:
+  extensions: [ ]
+  pipelines:
+    traces:
+      receivers:  [ otlp ]
+      processors: [  ]
+      exporters:  [ otlp ]
+```
 
 ## How to override config properties?
 
