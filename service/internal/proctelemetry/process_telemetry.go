@@ -26,8 +26,6 @@ import (
 	"go.opencensus.io/stats"
 	otelmetric "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/instrument/asyncfloat64"
-	"go.opentelemetry.io/otel/metric/instrument/asyncint64"
 	"go.opentelemetry.io/otel/metric/unit"
 )
 
@@ -50,12 +48,12 @@ type processMetrics struct {
 	rssMemory     *metric.Int64DerivedGauge
 
 	// otel metrics
-	otelProcessUptime asyncfloat64.Counter
-	otelAllocMem      asyncint64.Gauge
-	otelTotalAllocMem asyncint64.Counter
-	otelSysMem        asyncint64.Gauge
-	otelCPUSeconds    asyncfloat64.Counter
-	otelRSSMemory     asyncint64.Gauge
+	otelProcessUptime instrument.Float64ObservableCounter
+	otelAllocMem      instrument.Int64ObservableGauge
+	otelTotalAllocMem instrument.Int64ObservableCounter
+	otelSysMem        instrument.Int64ObservableGauge
+	otelCPUSeconds    instrument.Float64ObservableCounter 
+	otelRSSMemory     instrument.Int64ObservableGauge
 
 	meter             otelmetric.Meter
 	useOtelForMetrics bool
@@ -164,86 +162,92 @@ func (pm *processMetrics) recordWithOC(ocRegistry *metric.Registry) error {
 func (pm *processMetrics) recordWithOtel() error {
 	var err error
 
-	pm.otelProcessUptime, err = pm.meter.AsyncFloat64().Counter(
+	pm.otelProcessUptime, err = pm.meter.Float64ObservableCounter(
 		"process_uptime",
 		instrument.WithDescription("Uptime of the process"),
 		instrument.WithUnit(unit.Unit("s")))
 	if err != nil {
 		return err
 	}
-	err = pm.meter.RegisterCallback([]instrument.Asynchronous{pm.otelProcessUptime}, func(ctx context.Context) {
-		pm.otelProcessUptime.Observe(ctx, pm.updateProcessUptime())
-	})
+	_, err = pm.meter.RegisterCallback(func(_ context.Context, o otelmetric.Observer) error {
+		o.ObserveFloat64(pm.otelProcessUptime, pm.updateProcessUptime())
+		return nil
+	}, pm.otelProcessUptime)
 	if err != nil {
 		return err
 	}
 
-	pm.otelAllocMem, err = pm.meter.AsyncInt64().Gauge(
+	pm.otelAllocMem, err = pm.meter.Int64ObservableGauge(
 		"process_runtime_heap_alloc_bytes",
 		instrument.WithDescription("Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')"),
 		instrument.WithUnit(unit.Bytes))
 	if err != nil {
 		return err
 	}
-	err = pm.meter.RegisterCallback([]instrument.Asynchronous{pm.otelAllocMem}, func(ctx context.Context) {
-		pm.otelAllocMem.Observe(ctx, pm.updateAllocMem())
-	})
+	_, err = pm.meter.RegisterCallback(func(_ context.Context, o otelmetric.Observer) error {
+		o.ObserveInt64(pm.otelAllocMem, pm.updateAllocMem())
+		return nil
+	}, pm.otelAllocMem)
 	if err != nil {
 		return err
 	}
 
-	pm.otelTotalAllocMem, err = pm.meter.AsyncInt64().Counter(
+	pm.otelTotalAllocMem, err = pm.meter.Int64ObservableCounter(
 		"process_runtime_total_alloc_bytes",
 		instrument.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
 		instrument.WithUnit(unit.Bytes))
 	if err != nil {
 		return err
 	}
-	err = pm.meter.RegisterCallback([]instrument.Asynchronous{pm.otelTotalAllocMem}, func(ctx context.Context) {
-		pm.otelTotalAllocMem.Observe(ctx, pm.updateTotalAllocMem())
-	})
+	_, err = pm.meter.RegisterCallback(func(_ context.Context, o otelmetric.Observer) error {
+		o.ObserveInt64(pm.otelTotalAllocMem, pm.updateTotalAllocMem())
+		return nil
+	}, pm.otelTotalAllocMem)
 	if err != nil {
 		return err
 	}
 
-	pm.otelSysMem, err = pm.meter.AsyncInt64().Gauge(
+	pm.otelSysMem, err = pm.meter.Int64ObservableGauge(
 		"process_runtime_total_sys_memory_bytes",
 		instrument.WithDescription("Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')"),
 		instrument.WithUnit(unit.Bytes))
 	if err != nil {
 		return err
 	}
-	err = pm.meter.RegisterCallback([]instrument.Asynchronous{pm.otelSysMem}, func(ctx context.Context) {
-		pm.otelSysMem.Observe(ctx, pm.updateSysMem())
-	})
+	_, err = pm.meter.RegisterCallback(func(_ context.Context, o otelmetric.Observer) error {
+		o.ObserveInt64(pm.otelSysMem, pm.updateSysMem())
+		return nil
+	}, pm.otelSysMem)
 	if err != nil {
 		return err
 	}
 
-	pm.otelCPUSeconds, err = pm.meter.AsyncFloat64().Counter(
+	pm.otelCPUSeconds, err = pm.meter.Float64ObservableCounter(
 		"process_cpu_seconds",
 		instrument.WithDescription("Total CPU user and system time in seconds"),
 		instrument.WithUnit(unit.Unit("s")))
 	if err != nil {
 		return err
 	}
-	err = pm.meter.RegisterCallback([]instrument.Asynchronous{pm.otelCPUSeconds}, func(ctx context.Context) {
-		pm.otelCPUSeconds.Observe(ctx, pm.updateCPUSeconds())
-	})
+	_, err = pm.meter.RegisterCallback(func(_ context.Context, o otelmetric.Observer) error {
+		o.ObserveFloat64(pm.otelCPUSeconds, pm.updateCPUSeconds())
+		return nil
+	}, pm.otelCPUSeconds)
 	if err != nil {
 		return err
 	}
 
-	pm.otelRSSMemory, err = pm.meter.AsyncInt64().Gauge(
+	pm.otelRSSMemory, err = pm.meter.Int64ObservableGauge(
 		"process_memory_rss",
 		instrument.WithDescription("Total physical memory (resident set size)"),
 		instrument.WithUnit(unit.Bytes))
 	if err != nil {
 		return err
 	}
-	err = pm.meter.RegisterCallback([]instrument.Asynchronous{pm.otelRSSMemory}, func(ctx context.Context) {
-		pm.otelRSSMemory.Observe(ctx, pm.updateRSSMemory())
-	})
+	_, err = pm.meter.RegisterCallback(func(_ context.Context, o otelmetric.Observer) error {
+		o.ObserveInt64(pm.otelRSSMemory, pm.updateRSSMemory())
+		return nil
+	}, pm.otelRSSMemory)
 	if err != nil {
 		return err
 	}
