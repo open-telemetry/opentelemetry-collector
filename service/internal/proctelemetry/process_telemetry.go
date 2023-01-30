@@ -52,7 +52,7 @@ type processMetrics struct {
 	otelAllocMem      instrument.Int64ObservableGauge
 	otelTotalAllocMem instrument.Int64ObservableCounter
 	otelSysMem        instrument.Int64ObservableGauge
-	otelCPUSeconds    instrument.Float64ObservableCounter 
+	otelCPUSeconds    instrument.Float64ObservableCounter
 	otelRSSMemory     instrument.Int64ObservableGauge
 
 	meter             otelmetric.Meter
