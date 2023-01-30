@@ -116,7 +116,6 @@ func (l *Conf) Get(key string) interface{} {
 }
 
 // IsSet checks to see if the key has been set in any of the data locations.
-// IsSet is case-insensitive for a key.
 func (l *Conf) IsSet(key string) bool {
 	return l.k.Exists(key)
 }
