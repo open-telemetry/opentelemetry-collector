@@ -98,37 +98,37 @@ func (exp *Exporter) createOtelMetrics(cfg ExporterSettings) error {
 
 	var errors, err error
 
-	exp.sentSpans, err = meter.SyncInt64().Counter(
+	exp.sentSpans, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentSpansKey,
 		instrument.WithDescription("Number of spans successfully sent to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	errors = multierr.Append(errors, err)
 
-	exp.failedToSendSpans, err = meter.SyncInt64().Counter(
+	exp.failedToSendSpans, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendSpansKey,
 		instrument.WithDescription("Number of spans in failed attempts to send to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	errors = multierr.Append(errors, err)
 
-	exp.sentMetricPoints, err = meter.SyncInt64().Counter(
+	exp.sentMetricPoints, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentMetricPointsKey,
 		instrument.WithDescription("Number of metric points successfully sent to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	errors = multierr.Append(errors, err)
 
-	exp.failedToSendMetricPoints, err = meter.SyncInt64().Counter(
+	exp.failedToSendMetricPoints, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendMetricPointsKey,
 		instrument.WithDescription("Number of metric points in failed attempts to send to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	errors = multierr.Append(errors, err)
 
-	exp.sentLogRecords, err = meter.SyncInt64().Counter(
+	exp.sentLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentLogRecordsKey,
 		instrument.WithDescription("Number of log record successfully sent to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	errors = multierr.Append(errors, err)
 
-	exp.failedToSendLogRecords, err = meter.SyncInt64().Counter(
+	exp.failedToSendLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendLogRecordsKey,
 		instrument.WithDescription("Number of log records in failed attempts to send to destination."),
 		instrument.WithUnit(unit.Dimensionless))

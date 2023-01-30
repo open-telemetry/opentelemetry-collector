@@ -146,7 +146,7 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider) e
 	var err error
 	meter := mp.Meter(scopeName)
 
-	bpt.batchSizeTriggerSend, err = meter.SyncInt64().Counter(
+	bpt.batchSizeTriggerSend, err = meter.Int64Counter(
 		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_size_trigger_send"),
 		instrument.WithDescription("Number of times the batch was sent due to a size trigger"),
 		instrument.WithUnit(unit.Dimensionless),
@@ -155,7 +155,7 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider) e
 		return err
 	}
 
-	bpt.timeoutTriggerSend, err = meter.SyncInt64().Counter(
+	bpt.timeoutTriggerSend, err = meter.Int64Counter(
 		obsreport.BuildProcessorCustomMetricName(typeStr, "timeout_trigger_send"),
 		instrument.WithDescription("Number of times the batch was sent due to a timeout trigger"),
 		instrument.WithUnit(unit.Dimensionless),
@@ -164,7 +164,7 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider) e
 		return err
 	}
 
-	bpt.batchSendSize, err = meter.SyncInt64().Histogram(
+	bpt.batchSendSize, err = meter.Int64Histogram(
 		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_send_size"),
 		instrument.WithDescription("Number of units in the batch"),
 		instrument.WithUnit(unit.Dimensionless),
@@ -173,7 +173,7 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider) e
 		return err
 	}
 
-	bpt.batchSendSizeBytes, err = meter.SyncInt64().Histogram(
+	bpt.batchSendSizeBytes, err = meter.Int64Histogram(
 		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_send_size_bytes"),
 		instrument.WithDescription("Number of bytes in batch that was sent"),
 		instrument.WithUnit(unit.Bytes),
