@@ -22,7 +22,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
@@ -53,8 +52,8 @@ type Scraper struct {
 
 	useOtelForMetrics    bool
 	otelAttrs            []attribute.KeyValue
-	scrapedMetricsPoints syncint64.Counter
-	erroredMetricsPoints syncint64.Counter
+	scrapedMetricsPoints instrument.Int64Counter
+	erroredMetricsPoints instrument.Int64Counter
 }
 
 // ScraperSettings are settings for creating a Scraper.

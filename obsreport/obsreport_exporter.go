@@ -21,7 +21,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
@@ -50,12 +49,12 @@ type Exporter struct {
 
 	useOtelForMetrics        bool
 	otelAttrs                []attribute.KeyValue
-	sentSpans                syncint64.Counter
-	failedToSendSpans        syncint64.Counter
-	sentMetricPoints         syncint64.Counter
-	failedToSendMetricPoints syncint64.Counter
-	sentLogRecords           syncint64.Counter
-	failedToSendLogRecords   syncint64.Counter
+	sentSpans                instrument.Int64Counter
+	failedToSendSpans        instrument.Int64Counter
+	sentMetricPoints         instrument.Int64Counter
+	failedToSendMetricPoints instrument.Int64Counter
+	sentLogRecords           instrument.Int64Counter
+	failedToSendLogRecords   instrument.Int64Counter
 }
 
 // ExporterSettings are settings for creating an Exporter.
@@ -200,7 +199,7 @@ func (exp *Exporter) recordMetrics(ctx context.Context, dataType component.DataT
 }
 
 func (exp *Exporter) recordWithOtel(ctx context.Context, dataType component.DataType, sent int64, failed int64) {
-	var sentMeasure, failedMeasure syncint64.Counter
+	var sentMeasure, failedMeasure instrument.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
 		sentMeasure = exp.sentSpans

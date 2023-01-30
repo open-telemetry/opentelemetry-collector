@@ -22,7 +22,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/metric/unit"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -63,15 +62,15 @@ type Processor struct {
 	useOtelForMetrics bool
 	otelAttrs         []attribute.KeyValue
 
-	acceptedSpansCounter        syncint64.Counter
-	refusedSpansCounter         syncint64.Counter
-	droppedSpansCounter         syncint64.Counter
-	acceptedMetricPointsCounter syncint64.Counter
-	refusedMetricPointsCounter  syncint64.Counter
-	droppedMetricPointsCounter  syncint64.Counter
-	acceptedLogRecordsCounter   syncint64.Counter
-	refusedLogRecordsCounter    syncint64.Counter
-	droppedLogRecordsCounter    syncint64.Counter
+	acceptedSpansCounter        instrument.Int64Counter
+	refusedSpansCounter         instrument.Int64Counter
+	droppedSpansCounter         instrument.Int64Counter
+	acceptedMetricPointsCounter instrument.Int64Counter
+	refusedMetricPointsCounter  instrument.Int64Counter
+	droppedMetricPointsCounter  instrument.Int64Counter
+	acceptedLogRecordsCounter   instrument.Int64Counter
+	refusedLogRecordsCounter    instrument.Int64Counter
+	droppedLogRecordsCounter    instrument.Int64Counter
 }
 
 // ProcessorSettings are settings for creating a Processor.
@@ -177,7 +176,7 @@ func (por *Processor) createOtelMetrics(cfg ProcessorSettings) error {
 }
 
 func (por *Processor) recordWithOtel(ctx context.Context, dataType component.DataType, accepted, refused, dropped int64) {
-	var acceptedCount, refusedCount, droppedCount syncint64.Counter
+	var acceptedCount, refusedCount, droppedCount instrument.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
 		acceptedCount = por.acceptedSpansCounter
