@@ -109,6 +109,10 @@ func (f *File) GenerateTestFile() error {
 	for _, s := range f.structs {
 		sb.WriteString(newLine + newLine)
 		s.generateTests(&sb)
+		if !usedByOtherDataTypes(f.PackageName) {
+			sb.WriteString(newLine + newLine)
+			s.generateTestValueHelpers(&sb)
+		}
 	}
 
 	// ignore gosec complain about permissions being `0644`.
@@ -118,6 +122,10 @@ func (f *File) GenerateTestFile() error {
 
 // GenerateInternalFile generates the internal pdata structures for this File.
 func (f *File) GenerateInternalFile() error {
+	if !usedByOtherDataTypes(f.PackageName) {
+		return nil
+	}
+
 	var sb bytes.Buffer
 	generateHeader(&sb, "internal")
 
@@ -167,4 +175,10 @@ func generateHeader(sb *bytes.Buffer, packageName string) {
 	sb.WriteString(newLine + newLine)
 	sb.WriteString("package " + packageName)
 	sb.WriteString(newLine + newLine)
+}
+
+// usedByOtherDataTypes defines if the package is used by other data types and orig fields of the package's structs
+// need to be accessible from other pdata packages.
+func usedByOtherDataTypes(packageName string) bool {
+	return packageName == "pcommon"
 }

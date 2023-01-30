@@ -21,16 +21,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"go.opentelemetry.io/collector/pdata/internal"
 )
 
 func TestExportPartialSuccess_MoveTo(t *testing.T) {
-	ms := ExportPartialSuccess(internal.GenerateTestMetricsExportPartialSuccess())
+	ms := generateTestExportPartialSuccess()
 	dest := NewExportPartialSuccess()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewExportPartialSuccess(), ms)
-	assert.Equal(t, ExportPartialSuccess(internal.GenerateTestMetricsExportPartialSuccess()), dest)
+	assert.Equal(t, generateTestExportPartialSuccess(), dest)
 }
 
 func TestExportPartialSuccess_CopyTo(t *testing.T) {
@@ -38,7 +36,7 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	orig := NewExportPartialSuccess()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ExportPartialSuccess(internal.GenerateTestMetricsExportPartialSuccess())
+	orig = generateTestExportPartialSuccess()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -55,4 +53,15 @@ func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	assert.Equal(t, "", ms.ErrorMessage())
 	ms.SetErrorMessage("error message")
 	assert.Equal(t, "error message", ms.ErrorMessage())
+}
+
+func generateTestExportPartialSuccess() ExportPartialSuccess {
+	tv := NewExportPartialSuccess()
+	fillTestExportPartialSuccess(tv)
+	return tv
+}
+
+func fillTestExportPartialSuccess(tv ExportPartialSuccess) {
+	tv.orig.RejectedDataPoints = int64(13)
+	tv.orig.ErrorMessage = "error message"
 }

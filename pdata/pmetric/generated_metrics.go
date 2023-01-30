@@ -33,14 +33,12 @@ import (
 //
 // Must use NewResourceMetricsSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ResourceMetricsSlice internal.ResourceMetricsSlice
-
-func newResourceMetricsSlice(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetricsSlice {
-	return ResourceMetricsSlice(internal.NewResourceMetricsSlice(orig))
+type ResourceMetricsSlice struct {
+	orig *[]*otlpmetrics.ResourceMetrics
 }
 
-func (ms ResourceMetricsSlice) getOrig() *[]*otlpmetrics.ResourceMetrics {
-	return internal.GetOrigResourceMetricsSlice(internal.ResourceMetricsSlice(ms))
+func newResourceMetricsSlice(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetricsSlice {
+	return ResourceMetricsSlice{orig}
 }
 
 // NewResourceMetricsSlice creates a ResourceMetricsSlice with 0 elements.
@@ -54,7 +52,7 @@ func NewResourceMetricsSlice() ResourceMetricsSlice {
 //
 // Returns "0" for a newly instance created with "NewResourceMetricsSlice()".
 func (es ResourceMetricsSlice) Len() int {
-	return len(*es.getOrig())
+	return len(*es.orig)
 }
 
 // At returns the element at the given index.
@@ -66,27 +64,27 @@ func (es ResourceMetricsSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ResourceMetricsSlice) At(ix int) ResourceMetrics {
-	return newResourceMetrics((*es.getOrig())[ix])
+	return newResourceMetrics((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 	srcLen := es.Len()
-	destCap := cap(*dest.getOrig())
+	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
-		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
-		for i := range *es.getOrig() {
-			newResourceMetrics((*es.getOrig())[i]).CopyTo(newResourceMetrics((*dest.getOrig())[i]))
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newResourceMetrics((*es.orig)[i]).CopyTo(newResourceMetrics((*dest.orig)[i]))
 		}
 		return
 	}
 	origs := make([]otlpmetrics.ResourceMetrics, srcLen)
 	wrappers := make([]*otlpmetrics.ResourceMetrics, srcLen)
-	for i := range *es.getOrig() {
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newResourceMetrics((*es.getOrig())[i]).CopyTo(newResourceMetrics(wrappers[i]))
+		newResourceMetrics((*es.orig)[i]).CopyTo(newResourceMetrics(wrappers[i]))
 	}
-	*dest.getOrig() = wrappers
+	*dest.orig = wrappers
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -102,20 +100,20 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 //	    // Here should set all the values for e.
 //	}
 func (es ResourceMetricsSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.getOrig())
+	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.ResourceMetrics, len(*es.getOrig()), newCap)
-	copy(newOrig, *es.getOrig())
-	*es.getOrig() = newOrig
+	newOrig := make([]*otlpmetrics.ResourceMetrics, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ResourceMetrics.
 // It returns the newly added ResourceMetrics.
 func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
-	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.ResourceMetrics{})
+	*es.orig = append(*es.orig, &otlpmetrics.ResourceMetrics{})
 	return es.At(es.Len() - 1)
 }
 
@@ -123,26 +121,26 @@ func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
 // provided less function so that two instances of ResourceMetricsSlice
 // can be compared.
 func (es ResourceMetricsSlice) Sort(less func(a, b ResourceMetrics) bool) {
-	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
-	if *dest.getOrig() == nil {
+	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.getOrig() = *es.getOrig()
+		*dest.orig = *es.orig
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*es.getOrig() = nil
+	*es.orig = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.getOrig()); i++ {
+	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -151,11 +149,11 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 			newLen++
 			continue
 		}
-		(*es.getOrig())[newLen] = (*es.getOrig())[i]
+		(*es.orig)[newLen] = (*es.orig)[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.getOrig() = (*es.getOrig())[:newLen]
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // ResourceMetrics is a collection of metrics from a Resource.
@@ -165,15 +163,12 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 //
 // Must use NewResourceMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type ResourceMetrics internal.ResourceMetrics
-
-func newResourceMetrics(orig *otlpmetrics.ResourceMetrics) ResourceMetrics {
-	return ResourceMetrics(internal.NewResourceMetrics(orig))
+type ResourceMetrics struct {
+	orig *otlpmetrics.ResourceMetrics
 }
 
-func (ms ResourceMetrics) getOrig() *otlpmetrics.ResourceMetrics {
-	return internal.GetOrigResourceMetrics(internal.ResourceMetrics(ms))
+func newResourceMetrics(orig *otlpmetrics.ResourceMetrics) ResourceMetrics {
+	return ResourceMetrics{orig}
 }
 
 // NewResourceMetrics creates a new empty ResourceMetrics.
@@ -187,28 +182,28 @@ func NewResourceMetrics() ResourceMetrics {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ResourceMetrics) MoveTo(dest ResourceMetrics) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.ResourceMetrics{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.ResourceMetrics{}
 }
 
 // Resource returns the resource associated with this ResourceMetrics.
 func (ms ResourceMetrics) Resource() pcommon.Resource {
-	return pcommon.Resource(internal.NewResource(&ms.getOrig().Resource))
+	return pcommon.Resource(internal.NewResource(&ms.orig.Resource))
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceMetrics.
 func (ms ResourceMetrics) SchemaUrl() string {
-	return ms.getOrig().SchemaUrl
+	return ms.orig.SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ResourceMetrics.
 func (ms ResourceMetrics) SetSchemaUrl(v string) {
-	ms.getOrig().SchemaUrl = v
+	ms.orig.SchemaUrl = v
 }
 
 // ScopeMetrics returns the ScopeMetrics associated with this ResourceMetrics.
 func (ms ResourceMetrics) ScopeMetrics() ScopeMetricsSlice {
-	return ScopeMetricsSlice(internal.NewScopeMetricsSlice(&ms.getOrig().ScopeMetrics))
+	return newScopeMetricsSlice(&ms.orig.ScopeMetrics)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -225,14 +220,12 @@ func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
 //
 // Must use NewScopeMetricsSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ScopeMetricsSlice internal.ScopeMetricsSlice
-
-func newScopeMetricsSlice(orig *[]*otlpmetrics.ScopeMetrics) ScopeMetricsSlice {
-	return ScopeMetricsSlice(internal.NewScopeMetricsSlice(orig))
+type ScopeMetricsSlice struct {
+	orig *[]*otlpmetrics.ScopeMetrics
 }
 
-func (ms ScopeMetricsSlice) getOrig() *[]*otlpmetrics.ScopeMetrics {
-	return internal.GetOrigScopeMetricsSlice(internal.ScopeMetricsSlice(ms))
+func newScopeMetricsSlice(orig *[]*otlpmetrics.ScopeMetrics) ScopeMetricsSlice {
+	return ScopeMetricsSlice{orig}
 }
 
 // NewScopeMetricsSlice creates a ScopeMetricsSlice with 0 elements.
@@ -246,7 +239,7 @@ func NewScopeMetricsSlice() ScopeMetricsSlice {
 //
 // Returns "0" for a newly instance created with "NewScopeMetricsSlice()".
 func (es ScopeMetricsSlice) Len() int {
-	return len(*es.getOrig())
+	return len(*es.orig)
 }
 
 // At returns the element at the given index.
@@ -258,27 +251,27 @@ func (es ScopeMetricsSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ScopeMetricsSlice) At(ix int) ScopeMetrics {
-	return newScopeMetrics((*es.getOrig())[ix])
+	return newScopeMetrics((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeMetricsSlice) CopyTo(dest ScopeMetricsSlice) {
 	srcLen := es.Len()
-	destCap := cap(*dest.getOrig())
+	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
-		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
-		for i := range *es.getOrig() {
-			newScopeMetrics((*es.getOrig())[i]).CopyTo(newScopeMetrics((*dest.getOrig())[i]))
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newScopeMetrics((*es.orig)[i]).CopyTo(newScopeMetrics((*dest.orig)[i]))
 		}
 		return
 	}
 	origs := make([]otlpmetrics.ScopeMetrics, srcLen)
 	wrappers := make([]*otlpmetrics.ScopeMetrics, srcLen)
-	for i := range *es.getOrig() {
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newScopeMetrics((*es.getOrig())[i]).CopyTo(newScopeMetrics(wrappers[i]))
+		newScopeMetrics((*es.orig)[i]).CopyTo(newScopeMetrics(wrappers[i]))
 	}
-	*dest.getOrig() = wrappers
+	*dest.orig = wrappers
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -294,20 +287,20 @@ func (es ScopeMetricsSlice) CopyTo(dest ScopeMetricsSlice) {
 //	    // Here should set all the values for e.
 //	}
 func (es ScopeMetricsSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.getOrig())
+	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.ScopeMetrics, len(*es.getOrig()), newCap)
-	copy(newOrig, *es.getOrig())
-	*es.getOrig() = newOrig
+	newOrig := make([]*otlpmetrics.ScopeMetrics, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ScopeMetrics.
 // It returns the newly added ScopeMetrics.
 func (es ScopeMetricsSlice) AppendEmpty() ScopeMetrics {
-	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.ScopeMetrics{})
+	*es.orig = append(*es.orig, &otlpmetrics.ScopeMetrics{})
 	return es.At(es.Len() - 1)
 }
 
@@ -315,26 +308,26 @@ func (es ScopeMetricsSlice) AppendEmpty() ScopeMetrics {
 // provided less function so that two instances of ScopeMetricsSlice
 // can be compared.
 func (es ScopeMetricsSlice) Sort(less func(a, b ScopeMetrics) bool) {
-	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ScopeMetricsSlice) MoveAndAppendTo(dest ScopeMetricsSlice) {
-	if *dest.getOrig() == nil {
+	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.getOrig() = *es.getOrig()
+		*dest.orig = *es.orig
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*es.getOrig() = nil
+	*es.orig = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ScopeMetricsSlice) RemoveIf(f func(ScopeMetrics) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.getOrig()); i++ {
+	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -343,11 +336,11 @@ func (es ScopeMetricsSlice) RemoveIf(f func(ScopeMetrics) bool) {
 			newLen++
 			continue
 		}
-		(*es.getOrig())[newLen] = (*es.getOrig())[i]
+		(*es.orig)[newLen] = (*es.orig)[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.getOrig() = (*es.getOrig())[:newLen]
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // ScopeMetrics is a collection of metrics from a LibraryInstrumentation.
@@ -357,15 +350,12 @@ func (es ScopeMetricsSlice) RemoveIf(f func(ScopeMetrics) bool) {
 //
 // Must use NewScopeMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type ScopeMetrics internal.ScopeMetrics
-
-func newScopeMetrics(orig *otlpmetrics.ScopeMetrics) ScopeMetrics {
-	return ScopeMetrics(internal.NewScopeMetrics(orig))
+type ScopeMetrics struct {
+	orig *otlpmetrics.ScopeMetrics
 }
 
-func (ms ScopeMetrics) getOrig() *otlpmetrics.ScopeMetrics {
-	return internal.GetOrigScopeMetrics(internal.ScopeMetrics(ms))
+func newScopeMetrics(orig *otlpmetrics.ScopeMetrics) ScopeMetrics {
+	return ScopeMetrics{orig}
 }
 
 // NewScopeMetrics creates a new empty ScopeMetrics.
@@ -379,28 +369,28 @@ func NewScopeMetrics() ScopeMetrics {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ScopeMetrics) MoveTo(dest ScopeMetrics) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.ScopeMetrics{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.ScopeMetrics{}
 }
 
 // Scope returns the scope associated with this ScopeMetrics.
 func (ms ScopeMetrics) Scope() pcommon.InstrumentationScope {
-	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.getOrig().Scope))
+	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope))
 }
 
 // SchemaUrl returns the schemaurl associated with this ScopeMetrics.
 func (ms ScopeMetrics) SchemaUrl() string {
-	return ms.getOrig().SchemaUrl
+	return ms.orig.SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ScopeMetrics.
 func (ms ScopeMetrics) SetSchemaUrl(v string) {
-	ms.getOrig().SchemaUrl = v
+	ms.orig.SchemaUrl = v
 }
 
 // Metrics returns the Metrics associated with this ScopeMetrics.
 func (ms ScopeMetrics) Metrics() MetricSlice {
-	return MetricSlice(internal.NewMetricSlice(&ms.getOrig().Metrics))
+	return newMetricSlice(&ms.orig.Metrics)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -417,14 +407,12 @@ func (ms ScopeMetrics) CopyTo(dest ScopeMetrics) {
 //
 // Must use NewMetricSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type MetricSlice internal.MetricSlice
-
-func newMetricSlice(orig *[]*otlpmetrics.Metric) MetricSlice {
-	return MetricSlice(internal.NewMetricSlice(orig))
+type MetricSlice struct {
+	orig *[]*otlpmetrics.Metric
 }
 
-func (ms MetricSlice) getOrig() *[]*otlpmetrics.Metric {
-	return internal.GetOrigMetricSlice(internal.MetricSlice(ms))
+func newMetricSlice(orig *[]*otlpmetrics.Metric) MetricSlice {
+	return MetricSlice{orig}
 }
 
 // NewMetricSlice creates a MetricSlice with 0 elements.
@@ -438,7 +426,7 @@ func NewMetricSlice() MetricSlice {
 //
 // Returns "0" for a newly instance created with "NewMetricSlice()".
 func (es MetricSlice) Len() int {
-	return len(*es.getOrig())
+	return len(*es.orig)
 }
 
 // At returns the element at the given index.
@@ -450,27 +438,27 @@ func (es MetricSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es MetricSlice) At(ix int) Metric {
-	return newMetric((*es.getOrig())[ix])
+	return newMetric((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es MetricSlice) CopyTo(dest MetricSlice) {
 	srcLen := es.Len()
-	destCap := cap(*dest.getOrig())
+	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
-		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
-		for i := range *es.getOrig() {
-			newMetric((*es.getOrig())[i]).CopyTo(newMetric((*dest.getOrig())[i]))
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newMetric((*es.orig)[i]).CopyTo(newMetric((*dest.orig)[i]))
 		}
 		return
 	}
 	origs := make([]otlpmetrics.Metric, srcLen)
 	wrappers := make([]*otlpmetrics.Metric, srcLen)
-	for i := range *es.getOrig() {
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newMetric((*es.getOrig())[i]).CopyTo(newMetric(wrappers[i]))
+		newMetric((*es.orig)[i]).CopyTo(newMetric(wrappers[i]))
 	}
-	*dest.getOrig() = wrappers
+	*dest.orig = wrappers
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -486,20 +474,20 @@ func (es MetricSlice) CopyTo(dest MetricSlice) {
 //	    // Here should set all the values for e.
 //	}
 func (es MetricSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.getOrig())
+	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.Metric, len(*es.getOrig()), newCap)
-	copy(newOrig, *es.getOrig())
-	*es.getOrig() = newOrig
+	newOrig := make([]*otlpmetrics.Metric, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty Metric.
 // It returns the newly added Metric.
 func (es MetricSlice) AppendEmpty() Metric {
-	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.Metric{})
+	*es.orig = append(*es.orig, &otlpmetrics.Metric{})
 	return es.At(es.Len() - 1)
 }
 
@@ -507,26 +495,26 @@ func (es MetricSlice) AppendEmpty() Metric {
 // provided less function so that two instances of MetricSlice
 // can be compared.
 func (es MetricSlice) Sort(less func(a, b Metric) bool) {
-	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es MetricSlice) MoveAndAppendTo(dest MetricSlice) {
-	if *dest.getOrig() == nil {
+	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.getOrig() = *es.getOrig()
+		*dest.orig = *es.orig
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*es.getOrig() = nil
+	*es.orig = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es MetricSlice) RemoveIf(f func(Metric) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.getOrig()); i++ {
+	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -535,11 +523,11 @@ func (es MetricSlice) RemoveIf(f func(Metric) bool) {
 			newLen++
 			continue
 		}
-		(*es.getOrig())[newLen] = (*es.getOrig())[i]
+		(*es.orig)[newLen] = (*es.orig)[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.getOrig() = (*es.getOrig())[:newLen]
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // Metric represents one metric as a collection of datapoints.
@@ -550,15 +538,12 @@ func (es MetricSlice) RemoveIf(f func(Metric) bool) {
 //
 // Must use NewMetric function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type Metric internal.Metric
-
-func newMetric(orig *otlpmetrics.Metric) Metric {
-	return Metric(internal.NewMetric(orig))
+type Metric struct {
+	orig *otlpmetrics.Metric
 }
 
-func (ms Metric) getOrig() *otlpmetrics.Metric {
-	return internal.GetOrigMetric(internal.Metric(ms))
+func newMetric(orig *otlpmetrics.Metric) Metric {
+	return Metric{orig}
 }
 
 // NewMetric creates a new empty Metric.
@@ -572,44 +557,44 @@ func NewMetric() Metric {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Metric) MoveTo(dest Metric) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.Metric{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.Metric{}
 }
 
 // Name returns the name associated with this Metric.
 func (ms Metric) Name() string {
-	return ms.getOrig().Name
+	return ms.orig.Name
 }
 
 // SetName replaces the name associated with this Metric.
 func (ms Metric) SetName(v string) {
-	ms.getOrig().Name = v
+	ms.orig.Name = v
 }
 
 // Description returns the description associated with this Metric.
 func (ms Metric) Description() string {
-	return ms.getOrig().Description
+	return ms.orig.Description
 }
 
 // SetDescription replaces the description associated with this Metric.
 func (ms Metric) SetDescription(v string) {
-	ms.getOrig().Description = v
+	ms.orig.Description = v
 }
 
 // Unit returns the unit associated with this Metric.
 func (ms Metric) Unit() string {
-	return ms.getOrig().Unit
+	return ms.orig.Unit
 }
 
 // SetUnit replaces the unit associated with this Metric.
 func (ms Metric) SetUnit(v string) {
-	ms.getOrig().Unit = v
+	ms.orig.Unit = v
 }
 
 // Type returns the type of the data for this Metric.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Type() MetricType {
-	switch ms.getOrig().Data.(type) {
+	switch ms.orig.Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
 		return MetricTypeGauge
 	case *otlpmetrics.Metric_Sum:
@@ -631,7 +616,7 @@ func (ms Metric) Type() MetricType {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Gauge() Gauge {
-	v, ok := ms.getOrig().GetData().(*otlpmetrics.Metric_Gauge)
+	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_Gauge)
 	if !ok {
 		return Gauge{}
 	}
@@ -645,7 +630,7 @@ func (ms Metric) Gauge() Gauge {
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyGauge() Gauge {
 	val := &otlpmetrics.Gauge{}
-	ms.getOrig().Data = &otlpmetrics.Metric_Gauge{Gauge: val}
+	ms.orig.Data = &otlpmetrics.Metric_Gauge{Gauge: val}
 	return newGauge(val)
 }
 
@@ -656,7 +641,7 @@ func (ms Metric) SetEmptyGauge() Gauge {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Sum() Sum {
-	v, ok := ms.getOrig().GetData().(*otlpmetrics.Metric_Sum)
+	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_Sum)
 	if !ok {
 		return Sum{}
 	}
@@ -670,7 +655,7 @@ func (ms Metric) Sum() Sum {
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptySum() Sum {
 	val := &otlpmetrics.Sum{}
-	ms.getOrig().Data = &otlpmetrics.Metric_Sum{Sum: val}
+	ms.orig.Data = &otlpmetrics.Metric_Sum{Sum: val}
 	return newSum(val)
 }
 
@@ -681,7 +666,7 @@ func (ms Metric) SetEmptySum() Sum {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Histogram() Histogram {
-	v, ok := ms.getOrig().GetData().(*otlpmetrics.Metric_Histogram)
+	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_Histogram)
 	if !ok {
 		return Histogram{}
 	}
@@ -695,7 +680,7 @@ func (ms Metric) Histogram() Histogram {
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyHistogram() Histogram {
 	val := &otlpmetrics.Histogram{}
-	ms.getOrig().Data = &otlpmetrics.Metric_Histogram{Histogram: val}
+	ms.orig.Data = &otlpmetrics.Metric_Histogram{Histogram: val}
 	return newHistogram(val)
 }
 
@@ -706,7 +691,7 @@ func (ms Metric) SetEmptyHistogram() Histogram {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) ExponentialHistogram() ExponentialHistogram {
-	v, ok := ms.getOrig().GetData().(*otlpmetrics.Metric_ExponentialHistogram)
+	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_ExponentialHistogram)
 	if !ok {
 		return ExponentialHistogram{}
 	}
@@ -720,7 +705,7 @@ func (ms Metric) ExponentialHistogram() ExponentialHistogram {
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
 	val := &otlpmetrics.ExponentialHistogram{}
-	ms.getOrig().Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: val}
+	ms.orig.Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: val}
 	return newExponentialHistogram(val)
 }
 
@@ -731,7 +716,7 @@ func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Summary() Summary {
-	v, ok := ms.getOrig().GetData().(*otlpmetrics.Metric_Summary)
+	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_Summary)
 	if !ok {
 		return Summary{}
 	}
@@ -745,7 +730,7 @@ func (ms Metric) Summary() Summary {
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptySummary() Summary {
 	val := &otlpmetrics.Summary{}
-	ms.getOrig().Data = &otlpmetrics.Metric_Summary{Summary: val}
+	ms.orig.Data = &otlpmetrics.Metric_Summary{Summary: val}
 	return newSummary(val)
 }
 
@@ -776,15 +761,12 @@ func (ms Metric) CopyTo(dest Metric) {
 //
 // Must use NewGauge function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type Gauge internal.Gauge
-
-func newGauge(orig *otlpmetrics.Gauge) Gauge {
-	return Gauge(internal.NewGauge(orig))
+type Gauge struct {
+	orig *otlpmetrics.Gauge
 }
 
-func (ms Gauge) getOrig() *otlpmetrics.Gauge {
-	return internal.GetOrigGauge(internal.Gauge(ms))
+func newGauge(orig *otlpmetrics.Gauge) Gauge {
+	return Gauge{orig}
 }
 
 // NewGauge creates a new empty Gauge.
@@ -798,13 +780,13 @@ func NewGauge() Gauge {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Gauge) MoveTo(dest Gauge) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.Gauge{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.Gauge{}
 }
 
 // DataPoints returns the DataPoints associated with this Gauge.
 func (ms Gauge) DataPoints() NumberDataPointSlice {
-	return NumberDataPointSlice(internal.NewNumberDataPointSlice(&ms.getOrig().DataPoints))
+	return newNumberDataPointSlice(&ms.orig.DataPoints)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -819,15 +801,12 @@ func (ms Gauge) CopyTo(dest Gauge) {
 //
 // Must use NewSum function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type Sum internal.Sum
-
-func newSum(orig *otlpmetrics.Sum) Sum {
-	return Sum(internal.NewSum(orig))
+type Sum struct {
+	orig *otlpmetrics.Sum
 }
 
-func (ms Sum) getOrig() *otlpmetrics.Sum {
-	return internal.GetOrigSum(internal.Sum(ms))
+func newSum(orig *otlpmetrics.Sum) Sum {
+	return Sum{orig}
 }
 
 // NewSum creates a new empty Sum.
@@ -841,33 +820,33 @@ func NewSum() Sum {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Sum) MoveTo(dest Sum) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.Sum{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.Sum{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this Sum.
 func (ms Sum) AggregationTemporality() AggregationTemporality {
-	return AggregationTemporality(ms.getOrig().AggregationTemporality)
+	return AggregationTemporality(ms.orig.AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Sum.
 func (ms Sum) SetAggregationTemporality(v AggregationTemporality) {
-	ms.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(v)
+	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
 // IsMonotonic returns the ismonotonic associated with this Sum.
 func (ms Sum) IsMonotonic() bool {
-	return ms.getOrig().IsMonotonic
+	return ms.orig.IsMonotonic
 }
 
 // SetIsMonotonic replaces the ismonotonic associated with this Sum.
 func (ms Sum) SetIsMonotonic(v bool) {
-	ms.getOrig().IsMonotonic = v
+	ms.orig.IsMonotonic = v
 }
 
 // DataPoints returns the DataPoints associated with this Sum.
 func (ms Sum) DataPoints() NumberDataPointSlice {
-	return NumberDataPointSlice(internal.NewNumberDataPointSlice(&ms.getOrig().DataPoints))
+	return newNumberDataPointSlice(&ms.orig.DataPoints)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -884,15 +863,12 @@ func (ms Sum) CopyTo(dest Sum) {
 //
 // Must use NewHistogram function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type Histogram internal.Histogram
-
-func newHistogram(orig *otlpmetrics.Histogram) Histogram {
-	return Histogram(internal.NewHistogram(orig))
+type Histogram struct {
+	orig *otlpmetrics.Histogram
 }
 
-func (ms Histogram) getOrig() *otlpmetrics.Histogram {
-	return internal.GetOrigHistogram(internal.Histogram(ms))
+func newHistogram(orig *otlpmetrics.Histogram) Histogram {
+	return Histogram{orig}
 }
 
 // NewHistogram creates a new empty Histogram.
@@ -906,23 +882,23 @@ func NewHistogram() Histogram {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Histogram) MoveTo(dest Histogram) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.Histogram{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.Histogram{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this Histogram.
 func (ms Histogram) AggregationTemporality() AggregationTemporality {
-	return AggregationTemporality(ms.getOrig().AggregationTemporality)
+	return AggregationTemporality(ms.orig.AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Histogram.
 func (ms Histogram) SetAggregationTemporality(v AggregationTemporality) {
-	ms.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(v)
+	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
 // DataPoints returns the DataPoints associated with this Histogram.
 func (ms Histogram) DataPoints() HistogramDataPointSlice {
-	return HistogramDataPointSlice(internal.NewHistogramDataPointSlice(&ms.getOrig().DataPoints))
+	return newHistogramDataPointSlice(&ms.orig.DataPoints)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -939,15 +915,12 @@ func (ms Histogram) CopyTo(dest Histogram) {
 //
 // Must use NewExponentialHistogram function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type ExponentialHistogram internal.ExponentialHistogram
-
-func newExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) ExponentialHistogram {
-	return ExponentialHistogram(internal.NewExponentialHistogram(orig))
+type ExponentialHistogram struct {
+	orig *otlpmetrics.ExponentialHistogram
 }
 
-func (ms ExponentialHistogram) getOrig() *otlpmetrics.ExponentialHistogram {
-	return internal.GetOrigExponentialHistogram(internal.ExponentialHistogram(ms))
+func newExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) ExponentialHistogram {
+	return ExponentialHistogram{orig}
 }
 
 // NewExponentialHistogram creates a new empty ExponentialHistogram.
@@ -961,23 +934,23 @@ func NewExponentialHistogram() ExponentialHistogram {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ExponentialHistogram) MoveTo(dest ExponentialHistogram) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.ExponentialHistogram{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.ExponentialHistogram{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this ExponentialHistogram.
 func (ms ExponentialHistogram) AggregationTemporality() AggregationTemporality {
-	return AggregationTemporality(ms.getOrig().AggregationTemporality)
+	return AggregationTemporality(ms.orig.AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this ExponentialHistogram.
 func (ms ExponentialHistogram) SetAggregationTemporality(v AggregationTemporality) {
-	ms.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(v)
+	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
 // DataPoints returns the DataPoints associated with this ExponentialHistogram.
 func (ms ExponentialHistogram) DataPoints() ExponentialHistogramDataPointSlice {
-	return ExponentialHistogramDataPointSlice(internal.NewExponentialHistogramDataPointSlice(&ms.getOrig().DataPoints))
+	return newExponentialHistogramDataPointSlice(&ms.orig.DataPoints)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -993,15 +966,12 @@ func (ms ExponentialHistogram) CopyTo(dest ExponentialHistogram) {
 //
 // Must use NewSummary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type Summary internal.Summary
-
-func newSummary(orig *otlpmetrics.Summary) Summary {
-	return Summary(internal.NewSummary(orig))
+type Summary struct {
+	orig *otlpmetrics.Summary
 }
 
-func (ms Summary) getOrig() *otlpmetrics.Summary {
-	return internal.GetOrigSummary(internal.Summary(ms))
+func newSummary(orig *otlpmetrics.Summary) Summary {
+	return Summary{orig}
 }
 
 // NewSummary creates a new empty Summary.
@@ -1015,13 +985,13 @@ func NewSummary() Summary {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Summary) MoveTo(dest Summary) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.Summary{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.Summary{}
 }
 
 // DataPoints returns the DataPoints associated with this Summary.
 func (ms Summary) DataPoints() SummaryDataPointSlice {
-	return SummaryDataPointSlice(internal.NewSummaryDataPointSlice(&ms.getOrig().DataPoints))
+	return newSummaryDataPointSlice(&ms.orig.DataPoints)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -1036,14 +1006,12 @@ func (ms Summary) CopyTo(dest Summary) {
 //
 // Must use NewNumberDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type NumberDataPointSlice internal.NumberDataPointSlice
-
-func newNumberDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint) NumberDataPointSlice {
-	return NumberDataPointSlice(internal.NewNumberDataPointSlice(orig))
+type NumberDataPointSlice struct {
+	orig *[]*otlpmetrics.NumberDataPoint
 }
 
-func (ms NumberDataPointSlice) getOrig() *[]*otlpmetrics.NumberDataPoint {
-	return internal.GetOrigNumberDataPointSlice(internal.NumberDataPointSlice(ms))
+func newNumberDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint) NumberDataPointSlice {
+	return NumberDataPointSlice{orig}
 }
 
 // NewNumberDataPointSlice creates a NumberDataPointSlice with 0 elements.
@@ -1057,7 +1025,7 @@ func NewNumberDataPointSlice() NumberDataPointSlice {
 //
 // Returns "0" for a newly instance created with "NewNumberDataPointSlice()".
 func (es NumberDataPointSlice) Len() int {
-	return len(*es.getOrig())
+	return len(*es.orig)
 }
 
 // At returns the element at the given index.
@@ -1069,27 +1037,27 @@ func (es NumberDataPointSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es NumberDataPointSlice) At(ix int) NumberDataPoint {
-	return newNumberDataPoint((*es.getOrig())[ix])
+	return newNumberDataPoint((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
 	srcLen := es.Len()
-	destCap := cap(*dest.getOrig())
+	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
-		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
-		for i := range *es.getOrig() {
-			newNumberDataPoint((*es.getOrig())[i]).CopyTo(newNumberDataPoint((*dest.getOrig())[i]))
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newNumberDataPoint((*es.orig)[i]).CopyTo(newNumberDataPoint((*dest.orig)[i]))
 		}
 		return
 	}
 	origs := make([]otlpmetrics.NumberDataPoint, srcLen)
 	wrappers := make([]*otlpmetrics.NumberDataPoint, srcLen)
-	for i := range *es.getOrig() {
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newNumberDataPoint((*es.getOrig())[i]).CopyTo(newNumberDataPoint(wrappers[i]))
+		newNumberDataPoint((*es.orig)[i]).CopyTo(newNumberDataPoint(wrappers[i]))
 	}
-	*dest.getOrig() = wrappers
+	*dest.orig = wrappers
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -1105,20 +1073,20 @@ func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
 //	    // Here should set all the values for e.
 //	}
 func (es NumberDataPointSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.getOrig())
+	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.NumberDataPoint, len(*es.getOrig()), newCap)
-	copy(newOrig, *es.getOrig())
-	*es.getOrig() = newOrig
+	newOrig := make([]*otlpmetrics.NumberDataPoint, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty NumberDataPoint.
 // It returns the newly added NumberDataPoint.
 func (es NumberDataPointSlice) AppendEmpty() NumberDataPoint {
-	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.NumberDataPoint{})
+	*es.orig = append(*es.orig, &otlpmetrics.NumberDataPoint{})
 	return es.At(es.Len() - 1)
 }
 
@@ -1126,26 +1094,26 @@ func (es NumberDataPointSlice) AppendEmpty() NumberDataPoint {
 // provided less function so that two instances of NumberDataPointSlice
 // can be compared.
 func (es NumberDataPointSlice) Sort(less func(a, b NumberDataPoint) bool) {
-	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es NumberDataPointSlice) MoveAndAppendTo(dest NumberDataPointSlice) {
-	if *dest.getOrig() == nil {
+	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.getOrig() = *es.getOrig()
+		*dest.orig = *es.orig
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*es.getOrig() = nil
+	*es.orig = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es NumberDataPointSlice) RemoveIf(f func(NumberDataPoint) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.getOrig()); i++ {
+	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -1154,11 +1122,11 @@ func (es NumberDataPointSlice) RemoveIf(f func(NumberDataPoint) bool) {
 			newLen++
 			continue
 		}
-		(*es.getOrig())[newLen] = (*es.getOrig())[i]
+		(*es.orig)[newLen] = (*es.orig)[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.getOrig() = (*es.getOrig())[:newLen]
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.
@@ -1168,15 +1136,12 @@ func (es NumberDataPointSlice) RemoveIf(f func(NumberDataPoint) bool) {
 //
 // Must use NewNumberDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type NumberDataPoint internal.NumberDataPoint
-
-func newNumberDataPoint(orig *otlpmetrics.NumberDataPoint) NumberDataPoint {
-	return NumberDataPoint(internal.NewNumberDataPoint(orig))
+type NumberDataPoint struct {
+	orig *otlpmetrics.NumberDataPoint
 }
 
-func (ms NumberDataPoint) getOrig() *otlpmetrics.NumberDataPoint {
-	return internal.GetOrigNumberDataPoint(internal.NumberDataPoint(ms))
+func newNumberDataPoint(orig *otlpmetrics.NumberDataPoint) NumberDataPoint {
+	return NumberDataPoint{orig}
 }
 
 // NewNumberDataPoint creates a new empty NumberDataPoint.
@@ -1190,39 +1155,39 @@ func NewNumberDataPoint() NumberDataPoint {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms NumberDataPoint) MoveTo(dest NumberDataPoint) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.NumberDataPoint{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.NumberDataPoint{}
 }
 
 // Attributes returns the Attributes associated with this NumberDataPoint.
 func (ms NumberDataPoint) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.getOrig().Attributes))
+	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
 }
 
 // StartTimestamp returns the starttimestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) StartTimestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
+	return pcommon.Timestamp(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
-	ms.getOrig().StartTimeUnixNano = uint64(v)
+	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) Timestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
+	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetTimestamp(v pcommon.Timestamp) {
-	ms.getOrig().TimeUnixNano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // ValueType returns the type of the value for this NumberDataPoint.
 // Calling this function on zero-initialized NumberDataPoint will cause a panic.
 func (ms NumberDataPoint) ValueType() NumberDataPointValueType {
-	switch ms.getOrig().Value.(type) {
+	switch ms.orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		return NumberDataPointValueTypeDouble
 	case *otlpmetrics.NumberDataPoint_AsInt:
@@ -1233,41 +1198,41 @@ func (ms NumberDataPoint) ValueType() NumberDataPointValueType {
 
 // DoubleValue returns the double associated with this NumberDataPoint.
 func (ms NumberDataPoint) DoubleValue() float64 {
-	return ms.getOrig().GetAsDouble()
+	return ms.orig.GetAsDouble()
 }
 
 // SetDoubleValue replaces the double associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetDoubleValue(v float64) {
-	ms.getOrig().Value = &otlpmetrics.NumberDataPoint_AsDouble{
+	ms.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{
 		AsDouble: v,
 	}
 }
 
 // IntValue returns the int associated with this NumberDataPoint.
 func (ms NumberDataPoint) IntValue() int64 {
-	return ms.getOrig().GetAsInt()
+	return ms.orig.GetAsInt()
 }
 
 // SetIntValue replaces the int associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetIntValue(v int64) {
-	ms.getOrig().Value = &otlpmetrics.NumberDataPoint_AsInt{
+	ms.orig.Value = &otlpmetrics.NumberDataPoint_AsInt{
 		AsInt: v,
 	}
 }
 
 // Exemplars returns the Exemplars associated with this NumberDataPoint.
 func (ms NumberDataPoint) Exemplars() ExemplarSlice {
-	return ExemplarSlice(internal.NewExemplarSlice(&ms.getOrig().Exemplars))
+	return newExemplarSlice(&ms.orig.Exemplars)
 }
 
 // Flags returns the flags associated with this NumberDataPoint.
 func (ms NumberDataPoint) Flags() DataPointFlags {
-	return DataPointFlags(ms.getOrig().Flags)
+	return DataPointFlags(ms.orig.Flags)
 }
 
 // SetFlags replaces the flags associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetFlags(v DataPointFlags) {
-	ms.getOrig().Flags = uint32(v)
+	ms.orig.Flags = uint32(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -1293,14 +1258,12 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 //
 // Must use NewHistogramDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type HistogramDataPointSlice internal.HistogramDataPointSlice
-
-func newHistogramDataPointSlice(orig *[]*otlpmetrics.HistogramDataPoint) HistogramDataPointSlice {
-	return HistogramDataPointSlice(internal.NewHistogramDataPointSlice(orig))
+type HistogramDataPointSlice struct {
+	orig *[]*otlpmetrics.HistogramDataPoint
 }
 
-func (ms HistogramDataPointSlice) getOrig() *[]*otlpmetrics.HistogramDataPoint {
-	return internal.GetOrigHistogramDataPointSlice(internal.HistogramDataPointSlice(ms))
+func newHistogramDataPointSlice(orig *[]*otlpmetrics.HistogramDataPoint) HistogramDataPointSlice {
+	return HistogramDataPointSlice{orig}
 }
 
 // NewHistogramDataPointSlice creates a HistogramDataPointSlice with 0 elements.
@@ -1314,7 +1277,7 @@ func NewHistogramDataPointSlice() HistogramDataPointSlice {
 //
 // Returns "0" for a newly instance created with "NewHistogramDataPointSlice()".
 func (es HistogramDataPointSlice) Len() int {
-	return len(*es.getOrig())
+	return len(*es.orig)
 }
 
 // At returns the element at the given index.
@@ -1326,27 +1289,27 @@ func (es HistogramDataPointSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es HistogramDataPointSlice) At(ix int) HistogramDataPoint {
-	return newHistogramDataPoint((*es.getOrig())[ix])
+	return newHistogramDataPoint((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 	srcLen := es.Len()
-	destCap := cap(*dest.getOrig())
+	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
-		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
-		for i := range *es.getOrig() {
-			newHistogramDataPoint((*es.getOrig())[i]).CopyTo(newHistogramDataPoint((*dest.getOrig())[i]))
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newHistogramDataPoint((*es.orig)[i]).CopyTo(newHistogramDataPoint((*dest.orig)[i]))
 		}
 		return
 	}
 	origs := make([]otlpmetrics.HistogramDataPoint, srcLen)
 	wrappers := make([]*otlpmetrics.HistogramDataPoint, srcLen)
-	for i := range *es.getOrig() {
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newHistogramDataPoint((*es.getOrig())[i]).CopyTo(newHistogramDataPoint(wrappers[i]))
+		newHistogramDataPoint((*es.orig)[i]).CopyTo(newHistogramDataPoint(wrappers[i]))
 	}
-	*dest.getOrig() = wrappers
+	*dest.orig = wrappers
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -1362,20 +1325,20 @@ func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 //	    // Here should set all the values for e.
 //	}
 func (es HistogramDataPointSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.getOrig())
+	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.HistogramDataPoint, len(*es.getOrig()), newCap)
-	copy(newOrig, *es.getOrig())
-	*es.getOrig() = newOrig
+	newOrig := make([]*otlpmetrics.HistogramDataPoint, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty HistogramDataPoint.
 // It returns the newly added HistogramDataPoint.
 func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
-	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.HistogramDataPoint{})
+	*es.orig = append(*es.orig, &otlpmetrics.HistogramDataPoint{})
 	return es.At(es.Len() - 1)
 }
 
@@ -1383,26 +1346,26 @@ func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
 // provided less function so that two instances of HistogramDataPointSlice
 // can be compared.
 func (es HistogramDataPointSlice) Sort(less func(a, b HistogramDataPoint) bool) {
-	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es HistogramDataPointSlice) MoveAndAppendTo(dest HistogramDataPointSlice) {
-	if *dest.getOrig() == nil {
+	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.getOrig() = *es.getOrig()
+		*dest.orig = *es.orig
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*es.getOrig() = nil
+	*es.orig = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.getOrig()); i++ {
+	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -1411,11 +1374,11 @@ func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
 			newLen++
 			continue
 		}
-		(*es.getOrig())[newLen] = (*es.getOrig())[i]
+		(*es.orig)[newLen] = (*es.orig)[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.getOrig() = (*es.getOrig())[:newLen]
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of values.
@@ -1425,15 +1388,12 @@ func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
 //
 // Must use NewHistogramDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type HistogramDataPoint internal.HistogramDataPoint
-
-func newHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) HistogramDataPoint {
-	return HistogramDataPoint(internal.NewHistogramDataPoint(orig))
+type HistogramDataPoint struct {
+	orig *otlpmetrics.HistogramDataPoint
 }
 
-func (ms HistogramDataPoint) getOrig() *otlpmetrics.HistogramDataPoint {
-	return internal.GetOrigHistogramDataPoint(internal.HistogramDataPoint(ms))
+func newHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) HistogramDataPoint {
+	return HistogramDataPoint{orig}
 }
 
 // NewHistogramDataPoint creates a new empty HistogramDataPoint.
@@ -1447,131 +1407,131 @@ func NewHistogramDataPoint() HistogramDataPoint {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms HistogramDataPoint) MoveTo(dest HistogramDataPoint) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.HistogramDataPoint{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.HistogramDataPoint{}
 }
 
 // Attributes returns the Attributes associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.getOrig().Attributes))
+	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
 }
 
 // StartTimestamp returns the starttimestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) StartTimestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
+	return pcommon.Timestamp(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
-	ms.getOrig().StartTimeUnixNano = uint64(v)
+	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Timestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
+	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetTimestamp(v pcommon.Timestamp) {
-	ms.getOrig().TimeUnixNano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Count() uint64 {
-	return ms.getOrig().Count
+	return ms.orig.Count
 }
 
 // SetCount replaces the count associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetCount(v uint64) {
-	ms.getOrig().Count = v
+	ms.orig.Count = v
 }
 
 // Sum returns the sum associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Sum() float64 {
-	return ms.getOrig().GetSum()
+	return ms.orig.GetSum()
 }
 
 // HasSum returns true if the HistogramDataPoint contains a
 // Sum value, false otherwise.
 func (ms HistogramDataPoint) HasSum() bool {
-	return ms.getOrig().Sum_ != nil
+	return ms.orig.Sum_ != nil
 }
 
 // SetSum replaces the sum associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetSum(v float64) {
-	ms.getOrig().Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
+	ms.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
 }
 
 // RemoveSum removes the sum associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) RemoveSum() {
-	ms.getOrig().Sum_ = nil
+	ms.orig.Sum_ = nil
 }
 
 // BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) BucketCounts() pcommon.UInt64Slice {
-	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.getOrig().BucketCounts))
+	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts))
 }
 
 // ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) ExplicitBounds() pcommon.Float64Slice {
-	return pcommon.Float64Slice(internal.NewFloat64Slice(&ms.getOrig().ExplicitBounds))
+	return pcommon.Float64Slice(internal.NewFloat64Slice(&ms.orig.ExplicitBounds))
 }
 
 // Exemplars returns the Exemplars associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
-	return ExemplarSlice(internal.NewExemplarSlice(&ms.getOrig().Exemplars))
+	return newExemplarSlice(&ms.orig.Exemplars)
 }
 
 // Flags returns the flags associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Flags() DataPointFlags {
-	return DataPointFlags(ms.getOrig().Flags)
+	return DataPointFlags(ms.orig.Flags)
 }
 
 // SetFlags replaces the flags associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetFlags(v DataPointFlags) {
-	ms.getOrig().Flags = uint32(v)
+	ms.orig.Flags = uint32(v)
 }
 
 // Min returns the min associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Min() float64 {
-	return ms.getOrig().GetMin()
+	return ms.orig.GetMin()
 }
 
 // HasMin returns true if the HistogramDataPoint contains a
 // Min value, false otherwise.
 func (ms HistogramDataPoint) HasMin() bool {
-	return ms.getOrig().Min_ != nil
+	return ms.orig.Min_ != nil
 }
 
 // SetMin replaces the min associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetMin(v float64) {
-	ms.getOrig().Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: v}
+	ms.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: v}
 }
 
 // RemoveMin removes the min associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) RemoveMin() {
-	ms.getOrig().Min_ = nil
+	ms.orig.Min_ = nil
 }
 
 // Max returns the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Max() float64 {
-	return ms.getOrig().GetMax()
+	return ms.orig.GetMax()
 }
 
 // HasMax returns true if the HistogramDataPoint contains a
 // Max value, false otherwise.
 func (ms HistogramDataPoint) HasMax() bool {
-	return ms.getOrig().Max_ != nil
+	return ms.orig.Max_ != nil
 }
 
 // SetMax replaces the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetMax(v float64) {
-	ms.getOrig().Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
+	ms.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
 }
 
 // RemoveMax removes the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) RemoveMax() {
-	ms.getOrig().Max_ = nil
+	ms.orig.Max_ = nil
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -1605,14 +1565,12 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 //
 // Must use NewExponentialHistogramDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ExponentialHistogramDataPointSlice internal.ExponentialHistogramDataPointSlice
-
-func newExponentialHistogramDataPointSlice(orig *[]*otlpmetrics.ExponentialHistogramDataPoint) ExponentialHistogramDataPointSlice {
-	return ExponentialHistogramDataPointSlice(internal.NewExponentialHistogramDataPointSlice(orig))
+type ExponentialHistogramDataPointSlice struct {
+	orig *[]*otlpmetrics.ExponentialHistogramDataPoint
 }
 
-func (ms ExponentialHistogramDataPointSlice) getOrig() *[]*otlpmetrics.ExponentialHistogramDataPoint {
-	return internal.GetOrigExponentialHistogramDataPointSlice(internal.ExponentialHistogramDataPointSlice(ms))
+func newExponentialHistogramDataPointSlice(orig *[]*otlpmetrics.ExponentialHistogramDataPoint) ExponentialHistogramDataPointSlice {
+	return ExponentialHistogramDataPointSlice{orig}
 }
 
 // NewExponentialHistogramDataPointSlice creates a ExponentialHistogramDataPointSlice with 0 elements.
@@ -1626,7 +1584,7 @@ func NewExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice 
 //
 // Returns "0" for a newly instance created with "NewExponentialHistogramDataPointSlice()".
 func (es ExponentialHistogramDataPointSlice) Len() int {
-	return len(*es.getOrig())
+	return len(*es.orig)
 }
 
 // At returns the element at the given index.
@@ -1638,27 +1596,27 @@ func (es ExponentialHistogramDataPointSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ExponentialHistogramDataPointSlice) At(ix int) ExponentialHistogramDataPoint {
-	return newExponentialHistogramDataPoint((*es.getOrig())[ix])
+	return newExponentialHistogramDataPoint((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDataPointSlice) {
 	srcLen := es.Len()
-	destCap := cap(*dest.getOrig())
+	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
-		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
-		for i := range *es.getOrig() {
-			newExponentialHistogramDataPoint((*es.getOrig())[i]).CopyTo(newExponentialHistogramDataPoint((*dest.getOrig())[i]))
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newExponentialHistogramDataPoint((*es.orig)[i]).CopyTo(newExponentialHistogramDataPoint((*dest.orig)[i]))
 		}
 		return
 	}
 	origs := make([]otlpmetrics.ExponentialHistogramDataPoint, srcLen)
 	wrappers := make([]*otlpmetrics.ExponentialHistogramDataPoint, srcLen)
-	for i := range *es.getOrig() {
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newExponentialHistogramDataPoint((*es.getOrig())[i]).CopyTo(newExponentialHistogramDataPoint(wrappers[i]))
+		newExponentialHistogramDataPoint((*es.orig)[i]).CopyTo(newExponentialHistogramDataPoint(wrappers[i]))
 	}
-	*dest.getOrig() = wrappers
+	*dest.orig = wrappers
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -1674,20 +1632,20 @@ func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDat
 //	    // Here should set all the values for e.
 //	}
 func (es ExponentialHistogramDataPointSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.getOrig())
+	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.ExponentialHistogramDataPoint, len(*es.getOrig()), newCap)
-	copy(newOrig, *es.getOrig())
-	*es.getOrig() = newOrig
+	newOrig := make([]*otlpmetrics.ExponentialHistogramDataPoint, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ExponentialHistogramDataPoint.
 // It returns the newly added ExponentialHistogramDataPoint.
 func (es ExponentialHistogramDataPointSlice) AppendEmpty() ExponentialHistogramDataPoint {
-	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.ExponentialHistogramDataPoint{})
+	*es.orig = append(*es.orig, &otlpmetrics.ExponentialHistogramDataPoint{})
 	return es.At(es.Len() - 1)
 }
 
@@ -1695,26 +1653,26 @@ func (es ExponentialHistogramDataPointSlice) AppendEmpty() ExponentialHistogramD
 // provided less function so that two instances of ExponentialHistogramDataPointSlice
 // can be compared.
 func (es ExponentialHistogramDataPointSlice) Sort(less func(a, b ExponentialHistogramDataPoint) bool) {
-	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ExponentialHistogramDataPointSlice) MoveAndAppendTo(dest ExponentialHistogramDataPointSlice) {
-	if *dest.getOrig() == nil {
+	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.getOrig() = *es.getOrig()
+		*dest.orig = *es.orig
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*es.getOrig() = nil
+	*es.orig = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ExponentialHistogramDataPointSlice) RemoveIf(f func(ExponentialHistogramDataPoint) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.getOrig()); i++ {
+	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -1723,11 +1681,11 @@ func (es ExponentialHistogramDataPointSlice) RemoveIf(f func(ExponentialHistogra
 			newLen++
 			continue
 		}
-		(*es.getOrig())[newLen] = (*es.getOrig())[i]
+		(*es.orig)[newLen] = (*es.orig)[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.getOrig() = (*es.getOrig())[:newLen]
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // ExponentialHistogramDataPoint is a single data point in a timeseries that describes the
@@ -1740,15 +1698,12 @@ func (es ExponentialHistogramDataPointSlice) RemoveIf(f func(ExponentialHistogra
 //
 // Must use NewExponentialHistogramDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type ExponentialHistogramDataPoint internal.ExponentialHistogramDataPoint
-
-func newExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) ExponentialHistogramDataPoint {
-	return ExponentialHistogramDataPoint(internal.NewExponentialHistogramDataPoint(orig))
+type ExponentialHistogramDataPoint struct {
+	orig *otlpmetrics.ExponentialHistogramDataPoint
 }
 
-func (ms ExponentialHistogramDataPoint) getOrig() *otlpmetrics.ExponentialHistogramDataPoint {
-	return internal.GetOrigExponentialHistogramDataPoint(internal.ExponentialHistogramDataPoint(ms))
+func newExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) ExponentialHistogramDataPoint {
+	return ExponentialHistogramDataPoint{orig}
 }
 
 // NewExponentialHistogramDataPoint creates a new empty ExponentialHistogramDataPoint.
@@ -1762,151 +1717,151 @@ func NewExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ExponentialHistogramDataPoint) MoveTo(dest ExponentialHistogramDataPoint) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.ExponentialHistogramDataPoint{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.ExponentialHistogramDataPoint{}
 }
 
 // Attributes returns the Attributes associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.getOrig().Attributes))
+	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
 }
 
 // StartTimestamp returns the starttimestamp associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) StartTimestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
+	return pcommon.Timestamp(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
-	ms.getOrig().StartTimeUnixNano = uint64(v)
+	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Timestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
+	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetTimestamp(v pcommon.Timestamp) {
-	ms.getOrig().TimeUnixNano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Count() uint64 {
-	return ms.getOrig().Count
+	return ms.orig.Count
 }
 
 // SetCount replaces the count associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetCount(v uint64) {
-	ms.getOrig().Count = v
+	ms.orig.Count = v
 }
 
 // Sum returns the sum associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Sum() float64 {
-	return ms.getOrig().GetSum()
+	return ms.orig.GetSum()
 }
 
 // HasSum returns true if the ExponentialHistogramDataPoint contains a
 // Sum value, false otherwise.
 func (ms ExponentialHistogramDataPoint) HasSum() bool {
-	return ms.getOrig().Sum_ != nil
+	return ms.orig.Sum_ != nil
 }
 
 // SetSum replaces the sum associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetSum(v float64) {
-	ms.getOrig().Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: v}
+	ms.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: v}
 }
 
 // RemoveSum removes the sum associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) RemoveSum() {
-	ms.getOrig().Sum_ = nil
+	ms.orig.Sum_ = nil
 }
 
 // Scale returns the scale associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Scale() int32 {
-	return ms.getOrig().Scale
+	return ms.orig.Scale
 }
 
 // SetScale replaces the scale associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetScale(v int32) {
-	ms.getOrig().Scale = v
+	ms.orig.Scale = v
 }
 
 // ZeroCount returns the zerocount associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) ZeroCount() uint64 {
-	return ms.getOrig().ZeroCount
+	return ms.orig.ZeroCount
 }
 
 // SetZeroCount replaces the zerocount associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetZeroCount(v uint64) {
-	ms.getOrig().ZeroCount = v
+	ms.orig.ZeroCount = v
 }
 
 // Positive returns the positive associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Positive() ExponentialHistogramDataPointBuckets {
-	return ExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(&ms.getOrig().Positive))
+	return newExponentialHistogramDataPointBuckets(&ms.orig.Positive)
 }
 
 // Negative returns the negative associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Negative() ExponentialHistogramDataPointBuckets {
-	return ExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(&ms.getOrig().Negative))
+	return newExponentialHistogramDataPointBuckets(&ms.orig.Negative)
 }
 
 // Exemplars returns the Exemplars associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Exemplars() ExemplarSlice {
-	return ExemplarSlice(internal.NewExemplarSlice(&ms.getOrig().Exemplars))
+	return newExemplarSlice(&ms.orig.Exemplars)
 }
 
 // Flags returns the flags associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Flags() DataPointFlags {
-	return DataPointFlags(ms.getOrig().Flags)
+	return DataPointFlags(ms.orig.Flags)
 }
 
 // SetFlags replaces the flags associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetFlags(v DataPointFlags) {
-	ms.getOrig().Flags = uint32(v)
+	ms.orig.Flags = uint32(v)
 }
 
 // Min returns the min associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Min() float64 {
-	return ms.getOrig().GetMin()
+	return ms.orig.GetMin()
 }
 
 // HasMin returns true if the ExponentialHistogramDataPoint contains a
 // Min value, false otherwise.
 func (ms ExponentialHistogramDataPoint) HasMin() bool {
-	return ms.getOrig().Min_ != nil
+	return ms.orig.Min_ != nil
 }
 
 // SetMin replaces the min associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetMin(v float64) {
-	ms.getOrig().Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: v}
+	ms.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: v}
 }
 
 // RemoveMin removes the min associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) RemoveMin() {
-	ms.getOrig().Min_ = nil
+	ms.orig.Min_ = nil
 }
 
 // Max returns the max associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Max() float64 {
-	return ms.getOrig().GetMax()
+	return ms.orig.GetMax()
 }
 
 // HasMax returns true if the ExponentialHistogramDataPoint contains a
 // Max value, false otherwise.
 func (ms ExponentialHistogramDataPoint) HasMax() bool {
-	return ms.getOrig().Max_ != nil
+	return ms.orig.Max_ != nil
 }
 
 // SetMax replaces the max associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetMax(v float64) {
-	ms.getOrig().Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: v}
+	ms.orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: v}
 }
 
 // RemoveMax removes the max associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) RemoveMax() {
-	ms.getOrig().Max_ = nil
+	ms.orig.Max_ = nil
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -1942,15 +1897,12 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 //
 // Must use NewExponentialHistogramDataPointBuckets function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type ExponentialHistogramDataPointBuckets internal.ExponentialHistogramDataPointBuckets
-
-func newExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) ExponentialHistogramDataPointBuckets {
-	return ExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(orig))
+type ExponentialHistogramDataPointBuckets struct {
+	orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets
 }
 
-func (ms ExponentialHistogramDataPointBuckets) getOrig() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
-	return internal.GetOrigExponentialHistogramDataPointBuckets(internal.ExponentialHistogramDataPointBuckets(ms))
+func newExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) ExponentialHistogramDataPointBuckets {
+	return ExponentialHistogramDataPointBuckets{orig}
 }
 
 // NewExponentialHistogramDataPointBuckets creates a new empty ExponentialHistogramDataPointBuckets.
@@ -1964,23 +1916,23 @@ func NewExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuck
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ExponentialHistogramDataPointBuckets) MoveTo(dest ExponentialHistogramDataPointBuckets) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 }
 
 // Offset returns the offset associated with this ExponentialHistogramDataPointBuckets.
 func (ms ExponentialHistogramDataPointBuckets) Offset() int32 {
-	return ms.getOrig().Offset
+	return ms.orig.Offset
 }
 
 // SetOffset replaces the offset associated with this ExponentialHistogramDataPointBuckets.
 func (ms ExponentialHistogramDataPointBuckets) SetOffset(v int32) {
-	ms.getOrig().Offset = v
+	ms.orig.Offset = v
 }
 
 // BucketCounts returns the bucketcounts associated with this ExponentialHistogramDataPointBuckets.
 func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slice {
-	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.getOrig().BucketCounts))
+	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts))
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -1996,14 +1948,12 @@ func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramD
 //
 // Must use NewSummaryDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type SummaryDataPointSlice internal.SummaryDataPointSlice
-
-func newSummaryDataPointSlice(orig *[]*otlpmetrics.SummaryDataPoint) SummaryDataPointSlice {
-	return SummaryDataPointSlice(internal.NewSummaryDataPointSlice(orig))
+type SummaryDataPointSlice struct {
+	orig *[]*otlpmetrics.SummaryDataPoint
 }
 
-func (ms SummaryDataPointSlice) getOrig() *[]*otlpmetrics.SummaryDataPoint {
-	return internal.GetOrigSummaryDataPointSlice(internal.SummaryDataPointSlice(ms))
+func newSummaryDataPointSlice(orig *[]*otlpmetrics.SummaryDataPoint) SummaryDataPointSlice {
+	return SummaryDataPointSlice{orig}
 }
 
 // NewSummaryDataPointSlice creates a SummaryDataPointSlice with 0 elements.
@@ -2017,7 +1967,7 @@ func NewSummaryDataPointSlice() SummaryDataPointSlice {
 //
 // Returns "0" for a newly instance created with "NewSummaryDataPointSlice()".
 func (es SummaryDataPointSlice) Len() int {
-	return len(*es.getOrig())
+	return len(*es.orig)
 }
 
 // At returns the element at the given index.
@@ -2029,27 +1979,27 @@ func (es SummaryDataPointSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es SummaryDataPointSlice) At(ix int) SummaryDataPoint {
-	return newSummaryDataPoint((*es.getOrig())[ix])
+	return newSummaryDataPoint((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 	srcLen := es.Len()
-	destCap := cap(*dest.getOrig())
+	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
-		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
-		for i := range *es.getOrig() {
-			newSummaryDataPoint((*es.getOrig())[i]).CopyTo(newSummaryDataPoint((*dest.getOrig())[i]))
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newSummaryDataPoint((*es.orig)[i]).CopyTo(newSummaryDataPoint((*dest.orig)[i]))
 		}
 		return
 	}
 	origs := make([]otlpmetrics.SummaryDataPoint, srcLen)
 	wrappers := make([]*otlpmetrics.SummaryDataPoint, srcLen)
-	for i := range *es.getOrig() {
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newSummaryDataPoint((*es.getOrig())[i]).CopyTo(newSummaryDataPoint(wrappers[i]))
+		newSummaryDataPoint((*es.orig)[i]).CopyTo(newSummaryDataPoint(wrappers[i]))
 	}
-	*dest.getOrig() = wrappers
+	*dest.orig = wrappers
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -2065,20 +2015,20 @@ func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 //	    // Here should set all the values for e.
 //	}
 func (es SummaryDataPointSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.getOrig())
+	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.SummaryDataPoint, len(*es.getOrig()), newCap)
-	copy(newOrig, *es.getOrig())
-	*es.getOrig() = newOrig
+	newOrig := make([]*otlpmetrics.SummaryDataPoint, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty SummaryDataPoint.
 // It returns the newly added SummaryDataPoint.
 func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
-	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.SummaryDataPoint{})
+	*es.orig = append(*es.orig, &otlpmetrics.SummaryDataPoint{})
 	return es.At(es.Len() - 1)
 }
 
@@ -2086,26 +2036,26 @@ func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
 // provided less function so that two instances of SummaryDataPointSlice
 // can be compared.
 func (es SummaryDataPointSlice) Sort(less func(a, b SummaryDataPoint) bool) {
-	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SummaryDataPointSlice) MoveAndAppendTo(dest SummaryDataPointSlice) {
-	if *dest.getOrig() == nil {
+	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.getOrig() = *es.getOrig()
+		*dest.orig = *es.orig
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*es.getOrig() = nil
+	*es.orig = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es SummaryDataPointSlice) RemoveIf(f func(SummaryDataPoint) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.getOrig()); i++ {
+	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -2114,11 +2064,11 @@ func (es SummaryDataPointSlice) RemoveIf(f func(SummaryDataPoint) bool) {
 			newLen++
 			continue
 		}
-		(*es.getOrig())[newLen] = (*es.getOrig())[i]
+		(*es.orig)[newLen] = (*es.orig)[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.getOrig() = (*es.getOrig())[:newLen]
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.
@@ -2128,15 +2078,12 @@ func (es SummaryDataPointSlice) RemoveIf(f func(SummaryDataPoint) bool) {
 //
 // Must use NewSummaryDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type SummaryDataPoint internal.SummaryDataPoint
-
-func newSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) SummaryDataPoint {
-	return SummaryDataPoint(internal.NewSummaryDataPoint(orig))
+type SummaryDataPoint struct {
+	orig *otlpmetrics.SummaryDataPoint
 }
 
-func (ms SummaryDataPoint) getOrig() *otlpmetrics.SummaryDataPoint {
-	return internal.GetOrigSummaryDataPoint(internal.SummaryDataPoint(ms))
+func newSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) SummaryDataPoint {
+	return SummaryDataPoint{orig}
 }
 
 // NewSummaryDataPoint creates a new empty SummaryDataPoint.
@@ -2150,68 +2097,68 @@ func NewSummaryDataPoint() SummaryDataPoint {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms SummaryDataPoint) MoveTo(dest SummaryDataPoint) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.SummaryDataPoint{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.SummaryDataPoint{}
 }
 
 // Attributes returns the Attributes associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.getOrig().Attributes))
+	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
 }
 
 // StartTimestamp returns the starttimestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) StartTimestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
+	return pcommon.Timestamp(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
-	ms.getOrig().StartTimeUnixNano = uint64(v)
+	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Timestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
+	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetTimestamp(v pcommon.Timestamp) {
-	ms.getOrig().TimeUnixNano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Count() uint64 {
-	return ms.getOrig().Count
+	return ms.orig.Count
 }
 
 // SetCount replaces the count associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetCount(v uint64) {
-	ms.getOrig().Count = v
+	ms.orig.Count = v
 }
 
 // Sum returns the sum associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Sum() float64 {
-	return ms.getOrig().Sum
+	return ms.orig.Sum
 }
 
 // SetSum replaces the sum associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetSum(v float64) {
-	ms.getOrig().Sum = v
+	ms.orig.Sum = v
 }
 
 // QuantileValues returns the QuantileValues associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) QuantileValues() SummaryDataPointValueAtQuantileSlice {
-	return SummaryDataPointValueAtQuantileSlice(internal.NewSummaryDataPointValueAtQuantileSlice(&ms.getOrig().QuantileValues))
+	return newSummaryDataPointValueAtQuantileSlice(&ms.orig.QuantileValues)
 }
 
 // Flags returns the flags associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Flags() DataPointFlags {
-	return DataPointFlags(ms.getOrig().Flags)
+	return DataPointFlags(ms.orig.Flags)
 }
 
 // SetFlags replaces the flags associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetFlags(v DataPointFlags) {
-	ms.getOrig().Flags = uint32(v)
+	ms.orig.Flags = uint32(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -2232,14 +2179,12 @@ func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 //
 // Must use NewSummaryDataPointValueAtQuantileSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type SummaryDataPointValueAtQuantileSlice internal.SummaryDataPointValueAtQuantileSlice
-
-func newSummaryDataPointValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantileSlice {
-	return SummaryDataPointValueAtQuantileSlice(internal.NewSummaryDataPointValueAtQuantileSlice(orig))
+type SummaryDataPointValueAtQuantileSlice struct {
+	orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile
 }
 
-func (ms SummaryDataPointValueAtQuantileSlice) getOrig() *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	return internal.GetOrigSummaryDataPointValueAtQuantileSlice(internal.SummaryDataPointValueAtQuantileSlice(ms))
+func newSummaryDataPointValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantileSlice {
+	return SummaryDataPointValueAtQuantileSlice{orig}
 }
 
 // NewSummaryDataPointValueAtQuantileSlice creates a SummaryDataPointValueAtQuantileSlice with 0 elements.
@@ -2253,7 +2198,7 @@ func NewSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSl
 //
 // Returns "0" for a newly instance created with "NewSummaryDataPointValueAtQuantileSlice()".
 func (es SummaryDataPointValueAtQuantileSlice) Len() int {
-	return len(*es.getOrig())
+	return len(*es.orig)
 }
 
 // At returns the element at the given index.
@@ -2265,27 +2210,27 @@ func (es SummaryDataPointValueAtQuantileSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es SummaryDataPointValueAtQuantileSlice) At(ix int) SummaryDataPointValueAtQuantile {
-	return newSummaryDataPointValueAtQuantile((*es.getOrig())[ix])
+	return newSummaryDataPointValueAtQuantile((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValueAtQuantileSlice) {
 	srcLen := es.Len()
-	destCap := cap(*dest.getOrig())
+	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
-		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
-		for i := range *es.getOrig() {
-			newSummaryDataPointValueAtQuantile((*es.getOrig())[i]).CopyTo(newSummaryDataPointValueAtQuantile((*dest.getOrig())[i]))
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newSummaryDataPointValueAtQuantile((*es.orig)[i]).CopyTo(newSummaryDataPointValueAtQuantile((*dest.orig)[i]))
 		}
 		return
 	}
 	origs := make([]otlpmetrics.SummaryDataPoint_ValueAtQuantile, srcLen)
 	wrappers := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, srcLen)
-	for i := range *es.getOrig() {
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newSummaryDataPointValueAtQuantile((*es.getOrig())[i]).CopyTo(newSummaryDataPointValueAtQuantile(wrappers[i]))
+		newSummaryDataPointValueAtQuantile((*es.orig)[i]).CopyTo(newSummaryDataPointValueAtQuantile(wrappers[i]))
 	}
-	*dest.getOrig() = wrappers
+	*dest.orig = wrappers
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -2301,20 +2246,20 @@ func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValue
 //	    // Here should set all the values for e.
 //	}
 func (es SummaryDataPointValueAtQuantileSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.getOrig())
+	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, len(*es.getOrig()), newCap)
-	copy(newOrig, *es.getOrig())
-	*es.getOrig() = newOrig
+	newOrig := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty SummaryDataPointValueAtQuantile.
 // It returns the newly added SummaryDataPointValueAtQuantile.
 func (es SummaryDataPointValueAtQuantileSlice) AppendEmpty() SummaryDataPointValueAtQuantile {
-	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+	*es.orig = append(*es.orig, &otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 	return es.At(es.Len() - 1)
 }
 
@@ -2322,26 +2267,26 @@ func (es SummaryDataPointValueAtQuantileSlice) AppendEmpty() SummaryDataPointVal
 // provided less function so that two instances of SummaryDataPointValueAtQuantileSlice
 // can be compared.
 func (es SummaryDataPointValueAtQuantileSlice) Sort(less func(a, b SummaryDataPointValueAtQuantile) bool) {
-	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SummaryDataPointValueAtQuantileSlice) MoveAndAppendTo(dest SummaryDataPointValueAtQuantileSlice) {
-	if *dest.getOrig() == nil {
+	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.getOrig() = *es.getOrig()
+		*dest.orig = *es.orig
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*es.getOrig() = nil
+	*es.orig = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointValueAtQuantile) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.getOrig()); i++ {
+	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -2350,11 +2295,11 @@ func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointV
 			newLen++
 			continue
 		}
-		(*es.getOrig())[newLen] = (*es.getOrig())[i]
+		(*es.orig)[newLen] = (*es.orig)[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.getOrig() = (*es.getOrig())[:newLen]
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // SummaryDataPointValueAtQuantile is a quantile value within a Summary data point.
@@ -2364,15 +2309,12 @@ func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointV
 //
 // Must use NewSummaryDataPointValueAtQuantile function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type SummaryDataPointValueAtQuantile internal.SummaryDataPointValueAtQuantile
-
-func newSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantile {
-	return SummaryDataPointValueAtQuantile(internal.NewSummaryDataPointValueAtQuantile(orig))
+type SummaryDataPointValueAtQuantile struct {
+	orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile
 }
 
-func (ms SummaryDataPointValueAtQuantile) getOrig() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	return internal.GetOrigSummaryDataPointValueAtQuantile(internal.SummaryDataPointValueAtQuantile(ms))
+func newSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantile {
+	return SummaryDataPointValueAtQuantile{orig}
 }
 
 // NewSummaryDataPointValueAtQuantile creates a new empty SummaryDataPointValueAtQuantile.
@@ -2386,28 +2328,28 @@ func NewSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms SummaryDataPointValueAtQuantile) MoveTo(dest SummaryDataPointValueAtQuantile) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 }
 
 // Quantile returns the quantile associated with this SummaryDataPointValueAtQuantile.
 func (ms SummaryDataPointValueAtQuantile) Quantile() float64 {
-	return ms.getOrig().Quantile
+	return ms.orig.Quantile
 }
 
 // SetQuantile replaces the quantile associated with this SummaryDataPointValueAtQuantile.
 func (ms SummaryDataPointValueAtQuantile) SetQuantile(v float64) {
-	ms.getOrig().Quantile = v
+	ms.orig.Quantile = v
 }
 
 // Value returns the value associated with this SummaryDataPointValueAtQuantile.
 func (ms SummaryDataPointValueAtQuantile) Value() float64 {
-	return ms.getOrig().Value
+	return ms.orig.Value
 }
 
 // SetValue replaces the value associated with this SummaryDataPointValueAtQuantile.
 func (ms SummaryDataPointValueAtQuantile) SetValue(v float64) {
-	ms.getOrig().Value = v
+	ms.orig.Value = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -2423,28 +2365,26 @@ func (ms SummaryDataPointValueAtQuantile) CopyTo(dest SummaryDataPointValueAtQua
 //
 // Must use NewExemplarSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ExemplarSlice internal.ExemplarSlice
-
-func newExemplarSlice(orig *[]otlpmetrics.Exemplar) ExemplarSlice {
-	return ExemplarSlice(internal.NewExemplarSlice(orig))
+type ExemplarSlice struct {
+	orig *[]otlpmetrics.Exemplar
 }
 
-func (ms ExemplarSlice) getOrig() *[]otlpmetrics.Exemplar {
-	return internal.GetOrigExemplarSlice(internal.ExemplarSlice(ms))
+func newExemplarSlice(orig *[]otlpmetrics.Exemplar) ExemplarSlice {
+	return ExemplarSlice{orig}
 }
 
 // NewExemplarSlice creates a ExemplarSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewExemplarSlice() ExemplarSlice {
 	orig := []otlpmetrics.Exemplar(nil)
-	return ExemplarSlice(internal.NewExemplarSlice(&orig))
+	return newExemplarSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewExemplarSlice()".
 func (es ExemplarSlice) Len() int {
-	return len(*es.getOrig())
+	return len(*es.orig)
 }
 
 // At returns the element at the given index.
@@ -2456,21 +2396,21 @@ func (es ExemplarSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ExemplarSlice) At(ix int) Exemplar {
-	return newExemplar(&(*es.getOrig())[ix])
+	return newExemplar(&(*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	srcLen := es.Len()
-	destCap := cap(*dest.getOrig())
+	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
-		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 	} else {
-		(*dest.getOrig()) = make([]otlpmetrics.Exemplar, srcLen)
+		(*dest.orig) = make([]otlpmetrics.Exemplar, srcLen)
 	}
 
-	for i := range *es.getOrig() {
-		newExemplar(&(*es.getOrig())[i]).CopyTo(newExemplar(&(*dest.getOrig())[i]))
+	for i := range *es.orig {
+		newExemplar(&(*es.orig)[i]).CopyTo(newExemplar(&(*dest.orig)[i]))
 	}
 }
 
@@ -2487,40 +2427,40 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 //	    // Here should set all the values for e.
 //	}
 func (es ExemplarSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.getOrig())
+	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]otlpmetrics.Exemplar, len(*es.getOrig()), newCap)
-	copy(newOrig, *es.getOrig())
-	*es.getOrig() = newOrig
+	newOrig := make([]otlpmetrics.Exemplar, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty Exemplar.
 // It returns the newly added Exemplar.
 func (es ExemplarSlice) AppendEmpty() Exemplar {
-	*es.getOrig() = append(*es.getOrig(), otlpmetrics.Exemplar{})
+	*es.orig = append(*es.orig, otlpmetrics.Exemplar{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {
-	if *dest.getOrig() == nil {
+	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.getOrig() = *es.getOrig()
+		*dest.orig = *es.orig
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*es.getOrig() = nil
+	*es.orig = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.getOrig()); i++ {
+	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -2529,11 +2469,11 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 			newLen++
 			continue
 		}
-		(*es.getOrig())[newLen] = (*es.getOrig())[i]
+		(*es.orig)[newLen] = (*es.orig)[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.getOrig() = (*es.getOrig())[:newLen]
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // Exemplar is a sample input double measurement.
@@ -2546,15 +2486,12 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 //
 // Must use NewExemplar function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type Exemplar internal.Exemplar
-
-func newExemplar(orig *otlpmetrics.Exemplar) Exemplar {
-	return Exemplar(internal.NewExemplar(orig))
+type Exemplar struct {
+	orig *otlpmetrics.Exemplar
 }
 
-func (ms Exemplar) getOrig() *otlpmetrics.Exemplar {
-	return internal.GetOrigExemplar(internal.Exemplar(ms))
+func newExemplar(orig *otlpmetrics.Exemplar) Exemplar {
+	return Exemplar{orig}
 }
 
 // NewExemplar creates a new empty Exemplar.
@@ -2568,24 +2505,24 @@ func NewExemplar() Exemplar {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Exemplar) MoveTo(dest Exemplar) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpmetrics.Exemplar{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpmetrics.Exemplar{}
 }
 
 // Timestamp returns the timestamp associated with this Exemplar.
 func (ms Exemplar) Timestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
+	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this Exemplar.
 func (ms Exemplar) SetTimestamp(v pcommon.Timestamp) {
-	ms.getOrig().TimeUnixNano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // ValueType returns the type of the value for this Exemplar.
 // Calling this function on zero-initialized Exemplar will cause a panic.
 func (ms Exemplar) ValueType() ExemplarValueType {
-	switch ms.getOrig().Value.(type) {
+	switch ms.orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
 		return ExemplarValueTypeDouble
 	case *otlpmetrics.Exemplar_AsInt:
@@ -2596,51 +2533,51 @@ func (ms Exemplar) ValueType() ExemplarValueType {
 
 // DoubleValue returns the double associated with this Exemplar.
 func (ms Exemplar) DoubleValue() float64 {
-	return ms.getOrig().GetAsDouble()
+	return ms.orig.GetAsDouble()
 }
 
 // SetDoubleValue replaces the double associated with this Exemplar.
 func (ms Exemplar) SetDoubleValue(v float64) {
-	ms.getOrig().Value = &otlpmetrics.Exemplar_AsDouble{
+	ms.orig.Value = &otlpmetrics.Exemplar_AsDouble{
 		AsDouble: v,
 	}
 }
 
 // IntValue returns the int associated with this Exemplar.
 func (ms Exemplar) IntValue() int64 {
-	return ms.getOrig().GetAsInt()
+	return ms.orig.GetAsInt()
 }
 
 // SetIntValue replaces the int associated with this Exemplar.
 func (ms Exemplar) SetIntValue(v int64) {
-	ms.getOrig().Value = &otlpmetrics.Exemplar_AsInt{
+	ms.orig.Value = &otlpmetrics.Exemplar_AsInt{
 		AsInt: v,
 	}
 }
 
 // FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
 func (ms Exemplar) FilteredAttributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.getOrig().FilteredAttributes))
+	return pcommon.Map(internal.NewMap(&ms.orig.FilteredAttributes))
 }
 
 // TraceID returns the traceid associated with this Exemplar.
 func (ms Exemplar) TraceID() pcommon.TraceID {
-	return pcommon.TraceID(ms.getOrig().TraceId)
+	return pcommon.TraceID(ms.orig.TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this Exemplar.
 func (ms Exemplar) SetTraceID(v pcommon.TraceID) {
-	ms.getOrig().TraceId = data.TraceID(v)
+	ms.orig.TraceId = data.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this Exemplar.
 func (ms Exemplar) SpanID() pcommon.SpanID {
-	return pcommon.SpanID(ms.getOrig().SpanId)
+	return pcommon.SpanID(ms.orig.SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this Exemplar.
 func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
-	ms.getOrig().SpanId = data.SpanID(v)
+	ms.orig.SpanId = data.SpanID(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

@@ -13,10 +13,10 @@
 // limitations under the License.
 
 package ptraceotlp // import "go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+
 import (
 	"bytes"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/ptrace/internal/ptracejson"
 )
@@ -57,5 +57,5 @@ func (ms ExportResponse) UnmarshalJSON(data []byte) error {
 
 // PartialSuccess returns the ExportLogsPartialSuccess associated with this ExportResponse.
 func (ms ExportResponse) PartialSuccess() ExportPartialSuccess {
-	return ExportPartialSuccess(internal.NewTracesExportPartialSuccess(&ms.orig.PartialSuccess))
+	return newExportPartialSuccess(&ms.orig.PartialSuccess)
 }

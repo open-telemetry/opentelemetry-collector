@@ -22,7 +22,6 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
@@ -73,7 +72,7 @@ func TestResourceMetricsWireCompatibility(t *testing.T) {
 
 	// Generate ResourceMetrics as pdata struct.
 	metrics := NewMetrics()
-	internal.FillTestResourceMetricsSlice(internal.ResourceMetricsSlice(metrics.ResourceMetrics()))
+	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
 
 	// Marshal its underlying ProtoBuf to wire.
 	wire1, err := gogoproto.Marshal(metrics.getOrig())
@@ -227,11 +226,11 @@ func TestHistogramWithValidSum(t *testing.T) {
 
 func TestMetricsMoveTo(t *testing.T) {
 	metrics := NewMetrics()
-	internal.FillTestResourceMetricsSlice(internal.ResourceMetricsSlice(metrics.ResourceMetrics()))
+	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
 	dest := NewMetrics()
 	metrics.MoveTo(dest)
 	assert.EqualValues(t, NewMetrics(), metrics)
-	assert.EqualValues(t, ResourceMetricsSlice(internal.GenerateTestResourceMetricsSlice()), dest.ResourceMetrics())
+	assert.EqualValues(t, generateTestResourceMetricsSlice(), dest.ResourceMetrics())
 }
 
 func TestOtlpToInternalReadOnly(t *testing.T) {
@@ -681,7 +680,7 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 
 func TestMetricsCopyTo(t *testing.T) {
 	metrics := NewMetrics()
-	internal.FillTestResourceMetricsSlice(internal.ResourceMetricsSlice(metrics.ResourceMetrics()))
+	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
 	metricsCopy := NewMetrics()
 	metrics.CopyTo(metricsCopy)
 	assert.EqualValues(t, metrics, metricsCopy)

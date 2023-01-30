@@ -22,7 +22,6 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
@@ -90,7 +89,7 @@ func TestResourceLogsWireCompatibility(t *testing.T) {
 
 	// Generate ResourceLogs as pdata struct.
 	logs := NewLogs()
-	internal.FillTestResourceLogsSlice(internal.ResourceLogsSlice(logs.ResourceLogs()))
+	fillTestResourceLogsSlice(logs.ResourceLogs())
 
 	// Marshal its underlying ProtoBuf to wire.
 	wire1, err := gogoproto.Marshal(logs.getOrig())
@@ -119,16 +118,16 @@ func TestResourceLogsWireCompatibility(t *testing.T) {
 
 func TestLogsMoveTo(t *testing.T) {
 	logs := NewLogs()
-	internal.FillTestResourceLogsSlice(internal.ResourceLogsSlice(logs.ResourceLogs()))
+	fillTestResourceLogsSlice(logs.ResourceLogs())
 	dest := NewLogs()
 	logs.MoveTo(dest)
 	assert.EqualValues(t, NewLogs(), logs)
-	assert.EqualValues(t, ResourceLogsSlice(internal.GenerateTestResourceLogsSlice()), dest.ResourceLogs())
+	assert.EqualValues(t, generateTestResourceLogsSlice(), dest.ResourceLogs())
 }
 
 func TestLogsCopyTo(t *testing.T) {
 	logs := NewLogs()
-	internal.FillTestResourceLogsSlice(internal.ResourceLogsSlice(logs.ResourceLogs()))
+	fillTestResourceLogsSlice(logs.ResourceLogs())
 	logsCopy := NewLogs()
 	logs.CopyTo(logsCopy)
 	assert.EqualValues(t, logs, logsCopy)

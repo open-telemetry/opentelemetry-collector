@@ -13,10 +13,10 @@
 // limitations under the License.
 
 package pmetricotlp // import "go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+
 import (
 	"bytes"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pmetric/internal/pmetricjson"
 )
@@ -57,5 +57,5 @@ func (ms ExportResponse) UnmarshalJSON(data []byte) error {
 
 // PartialSuccess returns the ExportLogsPartialSuccess associated with this ExportResponse.
 func (ms ExportResponse) PartialSuccess() ExportPartialSuccess {
-	return ExportPartialSuccess(internal.NewMetricsExportPartialSuccess(&ms.orig.PartialSuccess))
+	return newExportPartialSuccess(&ms.orig.PartialSuccess)
 }
