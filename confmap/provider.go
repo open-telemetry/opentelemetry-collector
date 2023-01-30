@@ -86,7 +86,7 @@ type ChangeEvent struct {
 
 // Retrieved holds the result of a call to the Retrieve method of a Provider object.
 type Retrieved struct {
-	rawConf   interface{}
+	rawConf   any
 	closeFunc CloseFunc
 }
 
@@ -108,9 +108,9 @@ func WithRetrievedClose(closeFunc CloseFunc) RetrievedOption {
 // NewRetrieved returns a new Retrieved instance that contains the data from the raw deserialized config.
 // The rawConf can be one of the following types:
 //   - Primitives: int, int32, int64, float32, float64, bool, string;
-//   - []interface{};
-//   - map[string]interface{};
-func NewRetrieved(rawConf interface{}, opts ...RetrievedOption) (*Retrieved, error) {
+//   - []any;
+//   - map[string]any;
+func NewRetrieved(rawConf any, opts ...RetrievedOption) (*Retrieved, error) {
 	if err := checkRawConfType(rawConf); err != nil {
 		return nil, err
 	}
@@ -126,18 +126,18 @@ func (r *Retrieved) AsConf() (*Conf, error) {
 	if r.rawConf == nil {
 		return New(), nil
 	}
-	val, ok := r.rawConf.(map[string]interface{})
+	val, ok := r.rawConf.(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("retrieved value (type=%T) cannot be used as a Conf", r.rawConf)
 	}
 	return NewFromStringMap(val), nil
 }
 
-// AsRaw returns the retrieved configuration parsed as an interface{} which can be one of the following types:
+// AsRaw returns the retrieved configuration parsed as an any which can be one of the following types:
 //   - Primitives: int, int32, int64, float32, float64, bool, string;
-//   - []interface{} - every member follows the same rules as the given interface{};
-//   - map[string]interface{} - every value follows the same rules as the given interface{};
-func (r *Retrieved) AsRaw() (interface{}, error) {
+//   - []any - every member follows the same rules as the given any;
+//   - map[string]any - every value follows the same rules as the given any;
+func (r *Retrieved) AsRaw() (any, error) {
 	return r.rawConf, nil
 }
 
@@ -157,12 +157,12 @@ func (r *Retrieved) Close(ctx context.Context) error {
 // CloseFunc a function equivalent to Retrieved.Close.
 type CloseFunc func(context.Context) error
 
-func checkRawConfType(rawConf interface{}) error {
+func checkRawConfType(rawConf any) error {
 	if rawConf == nil {
 		return nil
 	}
 	switch rawConf.(type) {
-	case int, int32, int64, float32, float64, bool, string, []interface{}, map[string]interface{}:
+	case int, int32, int64, float32, float64, bool, string, []any, map[string]any:
 		return nil
 	default:
 		return fmt.Errorf("unsupported type=%T for retrieved config", rawConf)

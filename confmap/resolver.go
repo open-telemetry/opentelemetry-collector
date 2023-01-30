@@ -158,7 +158,7 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 	}
 
 	if expandEnabledGauge.IsEnabled() {
-		cfgMap := make(map[string]interface{})
+		cfgMap := make(map[string]any)
 		for _, k := range retMap.AllKeys() {
 			val, err := mr.expandValueRecursively(ctx, retMap.Get(k))
 			if err != nil {
@@ -217,7 +217,7 @@ func (mr *Resolver) closeIfNeeded(ctx context.Context) error {
 	return err
 }
 
-func (mr *Resolver) expandValueRecursively(ctx context.Context, value interface{}) (interface{}, error) {
+func (mr *Resolver) expandValueRecursively(ctx context.Context, value any) (any, error) {
 	for i := 0; i < 100; i++ {
 		val, changed, err := mr.expandValue(ctx, value)
 		if err != nil {
@@ -231,7 +231,7 @@ func (mr *Resolver) expandValueRecursively(ctx context.Context, value interface{
 	return nil, errTooManyRecursiveExpansions
 }
 
-func (mr *Resolver) expandValue(ctx context.Context, value interface{}) (interface{}, bool, error) {
+func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, error) {
 	switch v := value.(type) {
 	case string:
 		// If it doesn't have the format "${scheme:opaque}" no need to expand.
@@ -254,8 +254,8 @@ func (mr *Resolver) expandValue(ctx context.Context, value interface{}) (interfa
 		mr.closers = append(mr.closers, ret.Close)
 		val, err := ret.AsRaw()
 		return val, true, err
-	case []interface{}:
-		nslice := make([]interface{}, 0, len(v))
+	case []any:
+		nslice := make([]any, 0, len(v))
 		nchanged := false
 		for _, vint := range v {
 			val, changed, err := mr.expandValue(ctx, vint)
@@ -266,8 +266,8 @@ func (mr *Resolver) expandValue(ctx context.Context, value interface{}) (interfa
 			nchanged = nchanged || changed
 		}
 		return nslice, nchanged, nil
-	case map[string]interface{}:
-		nmap := map[string]interface{}{}
+	case map[string]any:
+		nmap := map[string]any{}
 		nchanged := false
 		for mk, mv := range v {
 			val, changed, err := mr.expandValue(ctx, mv)

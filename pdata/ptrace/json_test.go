@@ -42,8 +42,7 @@ func TestTracesJSON(t *testing.T) {
 	assert.NoError(t, err)
 
 	decoder := &JSONUnmarshaler{}
-	var got interface{}
-	got, err = decoder.UnmarshalTraces(jsonBuf)
+	got, err := decoder.UnmarshalTraces(jsonBuf)
 	assert.NoError(t, err)
 
 	assert.EqualValues(t, tracesOTLP, got)

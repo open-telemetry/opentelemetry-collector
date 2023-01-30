@@ -251,7 +251,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, 1, resourceMetrics.Len())
 
 	resourceMetric := resourceMetrics.At(0)
-	assert.EqualValues(t, map[string]interface{}{
+	assert.EqualValues(t, map[string]any{
 		"string": "string-resource",
 	}, resourceMetric.Resource().Attributes().AsRaw())
 	metrics := resourceMetric.ScopeMetrics().At(0).Metrics()
@@ -269,12 +269,12 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, startTime, gaugeDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, gaugeDataPoints.At(0).Timestamp())
 	assert.EqualValues(t, 123.1, gaugeDataPoints.At(0).DoubleValue())
-	assert.EqualValues(t, map[string]interface{}{"key0": "value0"}, gaugeDataPoints.At(0).Attributes().AsRaw())
+	assert.EqualValues(t, map[string]any{"key0": "value0"}, gaugeDataPoints.At(0).Attributes().AsRaw())
 	// Second point
 	assert.EqualValues(t, startTime, gaugeDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, gaugeDataPoints.At(1).Timestamp())
 	assert.EqualValues(t, 456.1, gaugeDataPoints.At(1).DoubleValue())
-	assert.EqualValues(t, map[string]interface{}{"key1": "value1"}, gaugeDataPoints.At(1).Attributes().AsRaw())
+	assert.EqualValues(t, map[string]any{"key1": "value1"}, gaugeDataPoints.At(1).Attributes().AsRaw())
 
 	// Check double metric
 	metricDouble := metrics.At(1)
@@ -290,12 +290,12 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, startTime, sumDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, sumDataPoints.At(0).Timestamp())
 	assert.EqualValues(t, 123.1, sumDataPoints.At(0).DoubleValue())
-	assert.EqualValues(t, map[string]interface{}{"key0": "value0"}, sumDataPoints.At(0).Attributes().AsRaw())
+	assert.EqualValues(t, map[string]any{"key0": "value0"}, sumDataPoints.At(0).Attributes().AsRaw())
 	// Second point
 	assert.EqualValues(t, startTime, sumDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, sumDataPoints.At(1).Timestamp())
 	assert.EqualValues(t, 456.1, sumDataPoints.At(1).DoubleValue())
-	assert.EqualValues(t, map[string]interface{}{"key1": "value1"}, sumDataPoints.At(1).Attributes().AsRaw())
+	assert.EqualValues(t, map[string]any{"key1": "value1"}, sumDataPoints.At(1).Attributes().AsRaw())
 
 	// Check histogram metric
 	metricHistogram := metrics.At(2)
@@ -311,13 +311,13 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, startTime, histogramDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, histogramDataPoints.At(0).Timestamp())
 	assert.EqualValues(t, []float64{1, 2}, histogramDataPoints.At(0).ExplicitBounds().AsRaw())
-	assert.EqualValues(t, map[string]interface{}{"key0": "value0"}, histogramDataPoints.At(0).Attributes().AsRaw())
+	assert.EqualValues(t, map[string]any{"key0": "value0"}, histogramDataPoints.At(0).Attributes().AsRaw())
 	assert.EqualValues(t, []uint64{10, 15, 1}, histogramDataPoints.At(0).BucketCounts().AsRaw())
 	// Second point
 	assert.EqualValues(t, startTime, histogramDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, histogramDataPoints.At(1).Timestamp())
 	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(1).ExplicitBounds().AsRaw())
-	assert.EqualValues(t, map[string]interface{}{"key1": "value1"}, histogramDataPoints.At(1).Attributes().AsRaw())
+	assert.EqualValues(t, map[string]any{"key1": "value1"}, histogramDataPoints.At(1).Attributes().AsRaw())
 	assert.EqualValues(t, []uint64{10, 1}, histogramDataPoints.At(1).BucketCounts().AsRaw())
 }
 
@@ -352,7 +352,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 }
 
 func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
-	newAttributes := map[string]interface{}{"k": "v"}
+	newAttributes := map[string]any{"k": "v"}
 
 	md := newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -434,7 +434,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 }
 
 func TestOtlpToFromInternalSumMutating(t *testing.T) {
-	newAttributes := map[string]interface{}{"k": "v"}
+	newAttributes := map[string]any{"k": "v"}
 
 	md := newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -518,7 +518,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 }
 
 func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
-	newAttributes := map[string]interface{}{"k": "v"}
+	newAttributes := map[string]any{"k": "v"}
 
 	md := newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -601,7 +601,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 }
 
 func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
-	newAttributes := map[string]interface{}{"k": "v"}
+	newAttributes := map[string]any{"k": "v"}
 
 	md := newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{

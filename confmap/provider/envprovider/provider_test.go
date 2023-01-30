@@ -71,7 +71,7 @@ func TestEnv(t *testing.T) {
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
-	expectedMap := confmap.NewFromStringMap(map[string]interface{}{
+	expectedMap := confmap.NewFromStringMap(map[string]any{
 		"processors::batch":         nil,
 		"exporters::otlp::endpoint": "localhost:4317",
 	})

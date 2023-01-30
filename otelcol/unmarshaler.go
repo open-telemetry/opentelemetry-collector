@@ -63,7 +63,7 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 					ErrorOutputPaths:  []string{"stderr"},
 					DisableCaller:     false,
 					DisableStacktrace: false,
-					InitialFields:     map[string]interface{}(nil),
+					InitialFields:     map[string]any(nil),
 				},
 				Metrics: telemetry.MetricsConfig{
 					Level:   configtelemetry.LevelBasic,

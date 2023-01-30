@@ -47,9 +47,9 @@ func TestOneValue(t *testing.T) {
 	assert.NoError(t, err)
 	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{
-		"processors": map[string]interface{}{
-			"batch": map[string]interface{}{
+	assert.Equal(t, map[string]any{
+		"processors": map[string]any{
+			"batch": map[string]any{
 				"timeout": "2s",
 			},
 		},
@@ -63,9 +63,9 @@ func TestNamedComponent(t *testing.T) {
 	assert.NoError(t, err)
 	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{
-		"processors": map[string]interface{}{
-			"batch/foo": map[string]interface{}{
+	assert.Equal(t, map[string]any{
+		"processors": map[string]any{
+			"batch/foo": map[string]any{
 				"timeout": "3s",
 			},
 		},
@@ -79,12 +79,12 @@ func TestMapEntry(t *testing.T) {
 	assert.NoError(t, err)
 	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{
-		"processors": map[string]interface{}{
-			"batch/foo": map[string]interface{}{
+	assert.Equal(t, map[string]any{
+		"processors": map[string]any{
+			"batch/foo": map[string]any{
 				"timeout": "3s",
 			},
-			"batch": map[string]interface{}{
+			"batch": map[string]any{
 				"timeout": "2s",
 			},
 		},
@@ -98,9 +98,9 @@ func TestArrayEntry(t *testing.T) {
 	assert.NoError(t, err)
 	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{
-		"service": map[string]interface{}{
-			"extensions": []interface{}{
+	assert.Equal(t, map[string]any{
+		"service": map[string]any{
+			"extensions": []any{
 				"zpages",
 				"zpages/foo",
 			},
@@ -115,12 +115,12 @@ func TestNewLine(t *testing.T) {
 	assert.NoError(t, err)
 	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{
-		"processors": map[string]interface{}{
-			"batch/foo": map[string]interface{}{
+	assert.Equal(t, map[string]any{
+		"processors": map[string]any{
+			"batch/foo": map[string]any{
 				"timeout": "3s",
 			},
-			"batch": map[string]interface{}{
+			"batch": map[string]any{
 				"timeout": "2s",
 			},
 		},
@@ -134,6 +134,6 @@ func TestDotSeparator(t *testing.T) {
 	assert.NoError(t, err)
 	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"processors.batch.timeout": "4s"}, retMap.ToStringMap())
+	assert.Equal(t, map[string]any{"processors.batch.timeout": "4s"}, retMap.ToStringMap())
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }

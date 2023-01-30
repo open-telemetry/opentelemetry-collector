@@ -38,7 +38,7 @@ func TestCheckConfigStruct(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		config           interface{}
+		config           any
 		wantErrMsgSubStr string
 	}{
 		{
