@@ -33,14 +33,12 @@ import (
 //
 // Must use NewResourceLogsSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ResourceLogsSlice internal.ResourceLogsSlice
-
-func newResourceLogsSlice(orig *[]*otlplogs.ResourceLogs) ResourceLogsSlice {
-	return ResourceLogsSlice(internal.NewResourceLogsSlice(orig))
+type ResourceLogsSlice struct {
+	orig *[]*otlplogs.ResourceLogs
 }
 
-func (ms ResourceLogsSlice) getOrig() *[]*otlplogs.ResourceLogs {
-	return internal.GetOrigResourceLogsSlice(internal.ResourceLogsSlice(ms))
+func newResourceLogsSlice(orig *[]*otlplogs.ResourceLogs) ResourceLogsSlice {
+	return ResourceLogsSlice{orig}
 }
 
 // NewResourceLogsSlice creates a ResourceLogsSlice with 0 elements.
@@ -54,7 +52,7 @@ func NewResourceLogsSlice() ResourceLogsSlice {
 //
 // Returns "0" for a newly instance created with "NewResourceLogsSlice()".
 func (es ResourceLogsSlice) Len() int {
-	return len(*es.getOrig())
+	return len(*es.orig)
 }
 
 // At returns the element at the given index.
@@ -66,27 +64,27 @@ func (es ResourceLogsSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ResourceLogsSlice) At(ix int) ResourceLogs {
-	return newResourceLogs((*es.getOrig())[ix])
+	return newResourceLogs((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 	srcLen := es.Len()
-	destCap := cap(*dest.getOrig())
+	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
-		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
-		for i := range *es.getOrig() {
-			newResourceLogs((*es.getOrig())[i]).CopyTo(newResourceLogs((*dest.getOrig())[i]))
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newResourceLogs((*es.orig)[i]).CopyTo(newResourceLogs((*dest.orig)[i]))
 		}
 		return
 	}
 	origs := make([]otlplogs.ResourceLogs, srcLen)
 	wrappers := make([]*otlplogs.ResourceLogs, srcLen)
-	for i := range *es.getOrig() {
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newResourceLogs((*es.getOrig())[i]).CopyTo(newResourceLogs(wrappers[i]))
+		newResourceLogs((*es.orig)[i]).CopyTo(newResourceLogs(wrappers[i]))
 	}
-	*dest.getOrig() = wrappers
+	*dest.orig = wrappers
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -102,20 +100,20 @@ func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 //	    // Here should set all the values for e.
 //	}
 func (es ResourceLogsSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.getOrig())
+	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlplogs.ResourceLogs, len(*es.getOrig()), newCap)
-	copy(newOrig, *es.getOrig())
-	*es.getOrig() = newOrig
+	newOrig := make([]*otlplogs.ResourceLogs, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ResourceLogs.
 // It returns the newly added ResourceLogs.
 func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
-	*es.getOrig() = append(*es.getOrig(), &otlplogs.ResourceLogs{})
+	*es.orig = append(*es.orig, &otlplogs.ResourceLogs{})
 	return es.At(es.Len() - 1)
 }
 
@@ -123,26 +121,26 @@ func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
 // provided less function so that two instances of ResourceLogsSlice
 // can be compared.
 func (es ResourceLogsSlice) Sort(less func(a, b ResourceLogs) bool) {
-	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceLogsSlice) MoveAndAppendTo(dest ResourceLogsSlice) {
-	if *dest.getOrig() == nil {
+	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.getOrig() = *es.getOrig()
+		*dest.orig = *es.orig
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*es.getOrig() = nil
+	*es.orig = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.getOrig()); i++ {
+	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -151,11 +149,11 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 			newLen++
 			continue
 		}
-		(*es.getOrig())[newLen] = (*es.getOrig())[i]
+		(*es.orig)[newLen] = (*es.orig)[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.getOrig() = (*es.getOrig())[:newLen]
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // ResourceLogs is a collection of logs from a Resource.
@@ -165,15 +163,12 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 //
 // Must use NewResourceLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type ResourceLogs internal.ResourceLogs
-
-func newResourceLogs(orig *otlplogs.ResourceLogs) ResourceLogs {
-	return ResourceLogs(internal.NewResourceLogs(orig))
+type ResourceLogs struct {
+	orig *otlplogs.ResourceLogs
 }
 
-func (ms ResourceLogs) getOrig() *otlplogs.ResourceLogs {
-	return internal.GetOrigResourceLogs(internal.ResourceLogs(ms))
+func newResourceLogs(orig *otlplogs.ResourceLogs) ResourceLogs {
+	return ResourceLogs{orig}
 }
 
 // NewResourceLogs creates a new empty ResourceLogs.
@@ -187,28 +182,28 @@ func NewResourceLogs() ResourceLogs {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlplogs.ResourceLogs{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlplogs.ResourceLogs{}
 }
 
 // Resource returns the resource associated with this ResourceLogs.
 func (ms ResourceLogs) Resource() pcommon.Resource {
-	return pcommon.Resource(internal.NewResource(&ms.getOrig().Resource))
+	return pcommon.Resource(internal.NewResource(&ms.orig.Resource))
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceLogs.
 func (ms ResourceLogs) SchemaUrl() string {
-	return ms.getOrig().SchemaUrl
+	return ms.orig.SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ResourceLogs.
 func (ms ResourceLogs) SetSchemaUrl(v string) {
-	ms.getOrig().SchemaUrl = v
+	ms.orig.SchemaUrl = v
 }
 
 // ScopeLogs returns the ScopeLogs associated with this ResourceLogs.
 func (ms ResourceLogs) ScopeLogs() ScopeLogsSlice {
-	return ScopeLogsSlice(internal.NewScopeLogsSlice(&ms.getOrig().ScopeLogs))
+	return newScopeLogsSlice(&ms.orig.ScopeLogs)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -225,14 +220,12 @@ func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
 //
 // Must use NewScopeLogsSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ScopeLogsSlice internal.ScopeLogsSlice
-
-func newScopeLogsSlice(orig *[]*otlplogs.ScopeLogs) ScopeLogsSlice {
-	return ScopeLogsSlice(internal.NewScopeLogsSlice(orig))
+type ScopeLogsSlice struct {
+	orig *[]*otlplogs.ScopeLogs
 }
 
-func (ms ScopeLogsSlice) getOrig() *[]*otlplogs.ScopeLogs {
-	return internal.GetOrigScopeLogsSlice(internal.ScopeLogsSlice(ms))
+func newScopeLogsSlice(orig *[]*otlplogs.ScopeLogs) ScopeLogsSlice {
+	return ScopeLogsSlice{orig}
 }
 
 // NewScopeLogsSlice creates a ScopeLogsSlice with 0 elements.
@@ -246,7 +239,7 @@ func NewScopeLogsSlice() ScopeLogsSlice {
 //
 // Returns "0" for a newly instance created with "NewScopeLogsSlice()".
 func (es ScopeLogsSlice) Len() int {
-	return len(*es.getOrig())
+	return len(*es.orig)
 }
 
 // At returns the element at the given index.
@@ -258,27 +251,27 @@ func (es ScopeLogsSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ScopeLogsSlice) At(ix int) ScopeLogs {
-	return newScopeLogs((*es.getOrig())[ix])
+	return newScopeLogs((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
 	srcLen := es.Len()
-	destCap := cap(*dest.getOrig())
+	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
-		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
-		for i := range *es.getOrig() {
-			newScopeLogs((*es.getOrig())[i]).CopyTo(newScopeLogs((*dest.getOrig())[i]))
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newScopeLogs((*es.orig)[i]).CopyTo(newScopeLogs((*dest.orig)[i]))
 		}
 		return
 	}
 	origs := make([]otlplogs.ScopeLogs, srcLen)
 	wrappers := make([]*otlplogs.ScopeLogs, srcLen)
-	for i := range *es.getOrig() {
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newScopeLogs((*es.getOrig())[i]).CopyTo(newScopeLogs(wrappers[i]))
+		newScopeLogs((*es.orig)[i]).CopyTo(newScopeLogs(wrappers[i]))
 	}
-	*dest.getOrig() = wrappers
+	*dest.orig = wrappers
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -294,20 +287,20 @@ func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
 //	    // Here should set all the values for e.
 //	}
 func (es ScopeLogsSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.getOrig())
+	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlplogs.ScopeLogs, len(*es.getOrig()), newCap)
-	copy(newOrig, *es.getOrig())
-	*es.getOrig() = newOrig
+	newOrig := make([]*otlplogs.ScopeLogs, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ScopeLogs.
 // It returns the newly added ScopeLogs.
 func (es ScopeLogsSlice) AppendEmpty() ScopeLogs {
-	*es.getOrig() = append(*es.getOrig(), &otlplogs.ScopeLogs{})
+	*es.orig = append(*es.orig, &otlplogs.ScopeLogs{})
 	return es.At(es.Len() - 1)
 }
 
@@ -315,26 +308,26 @@ func (es ScopeLogsSlice) AppendEmpty() ScopeLogs {
 // provided less function so that two instances of ScopeLogsSlice
 // can be compared.
 func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) {
-	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ScopeLogsSlice) MoveAndAppendTo(dest ScopeLogsSlice) {
-	if *dest.getOrig() == nil {
+	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.getOrig() = *es.getOrig()
+		*dest.orig = *es.orig
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*es.getOrig() = nil
+	*es.orig = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ScopeLogsSlice) RemoveIf(f func(ScopeLogs) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.getOrig()); i++ {
+	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -343,11 +336,11 @@ func (es ScopeLogsSlice) RemoveIf(f func(ScopeLogs) bool) {
 			newLen++
 			continue
 		}
-		(*es.getOrig())[newLen] = (*es.getOrig())[i]
+		(*es.orig)[newLen] = (*es.orig)[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.getOrig() = (*es.getOrig())[:newLen]
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // ScopeLogs is a collection of logs from a LibraryInstrumentation.
@@ -357,15 +350,12 @@ func (es ScopeLogsSlice) RemoveIf(f func(ScopeLogs) bool) {
 //
 // Must use NewScopeLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type ScopeLogs internal.ScopeLogs
-
-func newScopeLogs(orig *otlplogs.ScopeLogs) ScopeLogs {
-	return ScopeLogs(internal.NewScopeLogs(orig))
+type ScopeLogs struct {
+	orig *otlplogs.ScopeLogs
 }
 
-func (ms ScopeLogs) getOrig() *otlplogs.ScopeLogs {
-	return internal.GetOrigScopeLogs(internal.ScopeLogs(ms))
+func newScopeLogs(orig *otlplogs.ScopeLogs) ScopeLogs {
+	return ScopeLogs{orig}
 }
 
 // NewScopeLogs creates a new empty ScopeLogs.
@@ -379,28 +369,28 @@ func NewScopeLogs() ScopeLogs {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ScopeLogs) MoveTo(dest ScopeLogs) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlplogs.ScopeLogs{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlplogs.ScopeLogs{}
 }
 
 // Scope returns the scope associated with this ScopeLogs.
 func (ms ScopeLogs) Scope() pcommon.InstrumentationScope {
-	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.getOrig().Scope))
+	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope))
 }
 
 // SchemaUrl returns the schemaurl associated with this ScopeLogs.
 func (ms ScopeLogs) SchemaUrl() string {
-	return ms.getOrig().SchemaUrl
+	return ms.orig.SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ScopeLogs.
 func (ms ScopeLogs) SetSchemaUrl(v string) {
-	ms.getOrig().SchemaUrl = v
+	ms.orig.SchemaUrl = v
 }
 
 // LogRecords returns the LogRecords associated with this ScopeLogs.
 func (ms ScopeLogs) LogRecords() LogRecordSlice {
-	return LogRecordSlice(internal.NewLogRecordSlice(&ms.getOrig().LogRecords))
+	return newLogRecordSlice(&ms.orig.LogRecords)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -417,14 +407,12 @@ func (ms ScopeLogs) CopyTo(dest ScopeLogs) {
 //
 // Must use NewLogRecordSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type LogRecordSlice internal.LogRecordSlice
-
-func newLogRecordSlice(orig *[]*otlplogs.LogRecord) LogRecordSlice {
-	return LogRecordSlice(internal.NewLogRecordSlice(orig))
+type LogRecordSlice struct {
+	orig *[]*otlplogs.LogRecord
 }
 
-func (ms LogRecordSlice) getOrig() *[]*otlplogs.LogRecord {
-	return internal.GetOrigLogRecordSlice(internal.LogRecordSlice(ms))
+func newLogRecordSlice(orig *[]*otlplogs.LogRecord) LogRecordSlice {
+	return LogRecordSlice{orig}
 }
 
 // NewLogRecordSlice creates a LogRecordSlice with 0 elements.
@@ -438,7 +426,7 @@ func NewLogRecordSlice() LogRecordSlice {
 //
 // Returns "0" for a newly instance created with "NewLogRecordSlice()".
 func (es LogRecordSlice) Len() int {
-	return len(*es.getOrig())
+	return len(*es.orig)
 }
 
 // At returns the element at the given index.
@@ -450,27 +438,27 @@ func (es LogRecordSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es LogRecordSlice) At(ix int) LogRecord {
-	return newLogRecord((*es.getOrig())[ix])
+	return newLogRecord((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
 	srcLen := es.Len()
-	destCap := cap(*dest.getOrig())
+	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
-		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
-		for i := range *es.getOrig() {
-			newLogRecord((*es.getOrig())[i]).CopyTo(newLogRecord((*dest.getOrig())[i]))
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newLogRecord((*es.orig)[i]).CopyTo(newLogRecord((*dest.orig)[i]))
 		}
 		return
 	}
 	origs := make([]otlplogs.LogRecord, srcLen)
 	wrappers := make([]*otlplogs.LogRecord, srcLen)
-	for i := range *es.getOrig() {
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newLogRecord((*es.getOrig())[i]).CopyTo(newLogRecord(wrappers[i]))
+		newLogRecord((*es.orig)[i]).CopyTo(newLogRecord(wrappers[i]))
 	}
-	*dest.getOrig() = wrappers
+	*dest.orig = wrappers
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -486,20 +474,20 @@ func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
 //	    // Here should set all the values for e.
 //	}
 func (es LogRecordSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.getOrig())
+	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlplogs.LogRecord, len(*es.getOrig()), newCap)
-	copy(newOrig, *es.getOrig())
-	*es.getOrig() = newOrig
+	newOrig := make([]*otlplogs.LogRecord, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty LogRecord.
 // It returns the newly added LogRecord.
 func (es LogRecordSlice) AppendEmpty() LogRecord {
-	*es.getOrig() = append(*es.getOrig(), &otlplogs.LogRecord{})
+	*es.orig = append(*es.orig, &otlplogs.LogRecord{})
 	return es.At(es.Len() - 1)
 }
 
@@ -507,26 +495,26 @@ func (es LogRecordSlice) AppendEmpty() LogRecord {
 // provided less function so that two instances of LogRecordSlice
 // can be compared.
 func (es LogRecordSlice) Sort(less func(a, b LogRecord) bool) {
-	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es LogRecordSlice) MoveAndAppendTo(dest LogRecordSlice) {
-	if *dest.getOrig() == nil {
+	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.getOrig() = *es.getOrig()
+		*dest.orig = *es.orig
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*es.getOrig() = nil
+	*es.orig = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.getOrig()); i++ {
+	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -535,30 +523,26 @@ func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
 			newLen++
 			continue
 		}
-		(*es.getOrig())[newLen] = (*es.getOrig())[i]
+		(*es.orig)[newLen] = (*es.orig)[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.getOrig() = (*es.getOrig())[:newLen]
+	*es.orig = (*es.orig)[:newLen]
 }
 
 // LogRecord are experimental implementation of OpenTelemetry Log Data Model.
 
-//
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewLogRecord function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type LogRecord internal.LogRecord
-
-func newLogRecord(orig *otlplogs.LogRecord) LogRecord {
-	return LogRecord(internal.NewLogRecord(orig))
+type LogRecord struct {
+	orig *otlplogs.LogRecord
 }
 
-func (ms LogRecord) getOrig() *otlplogs.LogRecord {
-	return internal.GetOrigLogRecord(internal.LogRecord(ms))
+func newLogRecord(orig *otlplogs.LogRecord) LogRecord {
+	return LogRecord{orig}
 }
 
 // NewLogRecord creates a new empty LogRecord.
@@ -572,98 +556,98 @@ func NewLogRecord() LogRecord {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms LogRecord) MoveTo(dest LogRecord) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlplogs.LogRecord{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlplogs.LogRecord{}
 }
 
 // ObservedTimestamp returns the observedtimestamp associated with this LogRecord.
 func (ms LogRecord) ObservedTimestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.getOrig().ObservedTimeUnixNano)
+	return pcommon.Timestamp(ms.orig.ObservedTimeUnixNano)
 }
 
 // SetObservedTimestamp replaces the observedtimestamp associated with this LogRecord.
 func (ms LogRecord) SetObservedTimestamp(v pcommon.Timestamp) {
-	ms.getOrig().ObservedTimeUnixNano = uint64(v)
+	ms.orig.ObservedTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this LogRecord.
 func (ms LogRecord) Timestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
+	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this LogRecord.
 func (ms LogRecord) SetTimestamp(v pcommon.Timestamp) {
-	ms.getOrig().TimeUnixNano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // TraceID returns the traceid associated with this LogRecord.
 func (ms LogRecord) TraceID() pcommon.TraceID {
-	return pcommon.TraceID(ms.getOrig().TraceId)
+	return pcommon.TraceID(ms.orig.TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this LogRecord.
 func (ms LogRecord) SetTraceID(v pcommon.TraceID) {
-	ms.getOrig().TraceId = data.TraceID(v)
+	ms.orig.TraceId = data.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this LogRecord.
 func (ms LogRecord) SpanID() pcommon.SpanID {
-	return pcommon.SpanID(ms.getOrig().SpanId)
+	return pcommon.SpanID(ms.orig.SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this LogRecord.
 func (ms LogRecord) SetSpanID(v pcommon.SpanID) {
-	ms.getOrig().SpanId = data.SpanID(v)
+	ms.orig.SpanId = data.SpanID(v)
 }
 
 // Flags returns the flags associated with this LogRecord.
 func (ms LogRecord) Flags() LogRecordFlags {
-	return LogRecordFlags(ms.getOrig().Flags)
+	return LogRecordFlags(ms.orig.Flags)
 }
 
 // SetFlags replaces the flags associated with this LogRecord.
 func (ms LogRecord) SetFlags(v LogRecordFlags) {
-	ms.getOrig().Flags = uint32(v)
+	ms.orig.Flags = uint32(v)
 }
 
 // SeverityText returns the severitytext associated with this LogRecord.
 func (ms LogRecord) SeverityText() string {
-	return ms.getOrig().SeverityText
+	return ms.orig.SeverityText
 }
 
 // SetSeverityText replaces the severitytext associated with this LogRecord.
 func (ms LogRecord) SetSeverityText(v string) {
-	ms.getOrig().SeverityText = v
+	ms.orig.SeverityText = v
 }
 
 // SeverityNumber returns the severitynumber associated with this LogRecord.
 func (ms LogRecord) SeverityNumber() SeverityNumber {
-	return SeverityNumber(ms.getOrig().SeverityNumber)
+	return SeverityNumber(ms.orig.SeverityNumber)
 }
 
 // SetSeverityNumber replaces the severitynumber associated with this LogRecord.
 func (ms LogRecord) SetSeverityNumber(v SeverityNumber) {
-	ms.getOrig().SeverityNumber = otlplogs.SeverityNumber(v)
+	ms.orig.SeverityNumber = otlplogs.SeverityNumber(v)
 }
 
 // Body returns the body associated with this LogRecord.
 func (ms LogRecord) Body() pcommon.Value {
-	return pcommon.Value(internal.NewValue(&ms.getOrig().Body))
+	return pcommon.Value(internal.NewValue(&ms.orig.Body))
 }
 
 // Attributes returns the Attributes associated with this LogRecord.
 func (ms LogRecord) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.getOrig().Attributes))
+	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this LogRecord.
 func (ms LogRecord) DroppedAttributesCount() uint32 {
-	return ms.getOrig().DroppedAttributesCount
+	return ms.orig.DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this LogRecord.
 func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
-	ms.getOrig().DroppedAttributesCount = v
+	ms.orig.DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

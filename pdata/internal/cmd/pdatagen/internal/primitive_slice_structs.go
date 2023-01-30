@@ -165,6 +165,8 @@ func New${structName}(orig *[]${itemType}) ${structName} {
 	return ${structName}{orig: orig}
 }`
 
+// primitiveSliceStruct generates a struct for a slice of primitive value elements. The structs are always generated
+// in a way that they can be used as fields in structs from other packages (using the internal package).
 type primitiveSliceStruct struct {
 	structName  string
 	packageName string

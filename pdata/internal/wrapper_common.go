@@ -87,3 +87,29 @@ func GenerateTestTraceState() TraceState {
 func FillTestTraceState(dest TraceState) {
 	*dest.orig = "rojo=00f067aa0ba902b7"
 }
+
+type Slice struct {
+	orig *[]otlpcommon.AnyValue
+}
+
+func GetOrigSlice(ms Slice) *[]otlpcommon.AnyValue {
+	return ms.orig
+}
+
+func NewSlice(orig *[]otlpcommon.AnyValue) Slice {
+	return Slice{orig: orig}
+}
+
+func GenerateTestSlice() Slice {
+	orig := []otlpcommon.AnyValue{}
+	tv := NewSlice(&orig)
+	FillTestSlice(tv)
+	return tv
+}
+
+func FillTestSlice(tv Slice) {
+	*tv.orig = make([]otlpcommon.AnyValue, 7)
+	for i := 0; i < 7; i++ {
+		FillTestValue(NewValue(&(*tv.orig)[i]))
+	}
+}

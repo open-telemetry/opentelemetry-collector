@@ -18,7 +18,6 @@
 package plogotlp
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
@@ -29,15 +28,12 @@ import (
 //
 // Must use NewExportPartialSuccess function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type ExportPartialSuccess internal.LogsExportPartialSuccess
-
-func newExportPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess) ExportPartialSuccess {
-	return ExportPartialSuccess(internal.NewLogsExportPartialSuccess(orig))
+type ExportPartialSuccess struct {
+	orig *otlpcollectorlog.ExportLogsPartialSuccess
 }
 
-func (ms ExportPartialSuccess) getOrig() *otlpcollectorlog.ExportLogsPartialSuccess {
-	return internal.GetOrigLogsExportPartialSuccess(internal.LogsExportPartialSuccess(ms))
+func newExportPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess) ExportPartialSuccess {
+	return ExportPartialSuccess{orig}
 }
 
 // NewExportPartialSuccess creates a new empty ExportPartialSuccess.
@@ -51,28 +47,28 @@ func NewExportPartialSuccess() ExportPartialSuccess {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpcollectorlog.ExportLogsPartialSuccess{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpcollectorlog.ExportLogsPartialSuccess{}
 }
 
 // RejectedLogRecords returns the rejectedlogrecords associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) RejectedLogRecords() int64 {
-	return ms.getOrig().RejectedLogRecords
+	return ms.orig.RejectedLogRecords
 }
 
 // SetRejectedLogRecords replaces the rejectedlogrecords associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) SetRejectedLogRecords(v int64) {
-	ms.getOrig().RejectedLogRecords = v
+	ms.orig.RejectedLogRecords = v
 }
 
 // ErrorMessage returns the errormessage associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) ErrorMessage() string {
-	return ms.getOrig().ErrorMessage
+	return ms.orig.ErrorMessage
 }
 
 // SetErrorMessage replaces the errormessage associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) SetErrorMessage(v string) {
-	ms.getOrig().ErrorMessage = v
+	ms.orig.ErrorMessage = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

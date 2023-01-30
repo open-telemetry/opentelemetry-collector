@@ -29,15 +29,10 @@ import (
 //
 // Must use NewResource function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
 type Resource internal.Resource
 
 func newResource(orig *otlpresource.Resource) Resource {
 	return Resource(internal.NewResource(orig))
-}
-
-func (ms Resource) getOrig() *otlpresource.Resource {
-	return internal.GetOrigResource(internal.Resource(ms))
 }
 
 // NewResource creates a new empty Resource.
@@ -53,6 +48,10 @@ func NewResource() Resource {
 func (ms Resource) MoveTo(dest Resource) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpresource.Resource{}
+}
+
+func (ms Resource) getOrig() *otlpresource.Resource {
+	return internal.GetOrigResource(internal.Resource(ms))
 }
 
 // Attributes returns the Attributes associated with this Resource.

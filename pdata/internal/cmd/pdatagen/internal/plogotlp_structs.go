@@ -41,10 +41,9 @@ var logOtlpFile = &File{
 }
 
 var exportLogsPartialSuccess = &messageValueStruct{
-	structName:         "ExportPartialSuccess",
-	internalStructName: "LogsExportPartialSuccess",
-	description:        "// ExportPartialSuccess represents the details of a partially successful export request.",
-	originFullName:     "otlpcollectorlog.ExportLogsPartialSuccess",
+	structName:     "ExportPartialSuccess",
+	description:    "// ExportPartialSuccess represents the details of a partially successful export request.",
+	originFullName: "otlpcollectorlog.ExportLogsPartialSuccess",
 	fields: []baseField{
 		&primitiveField{
 			fieldName:  "RejectedLogRecords",

@@ -33,18 +33,6 @@ func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope) Instrumentat
 	return InstrumentationScope{orig: orig}
 }
 
-type Slice struct {
-	orig *[]otlpcommon.AnyValue
-}
-
-func GetOrigSlice(ms Slice) *[]otlpcommon.AnyValue {
-	return ms.orig
-}
-
-func NewSlice(orig *[]otlpcommon.AnyValue) Slice {
-	return Slice{orig: orig}
-}
-
 func GenerateTestInstrumentationScope() InstrumentationScope {
 	orig := otlpcommon.InstrumentationScope{}
 	tv := NewInstrumentationScope(&orig)
@@ -57,18 +45,4 @@ func FillTestInstrumentationScope(tv InstrumentationScope) {
 	tv.orig.Version = "test_version"
 	FillTestMap(NewMap(&tv.orig.Attributes))
 	tv.orig.DroppedAttributesCount = uint32(17)
-}
-
-func GenerateTestSlice() Slice {
-	orig := []otlpcommon.AnyValue{}
-	tv := NewSlice(&orig)
-	FillTestSlice(tv)
-	return tv
-}
-
-func FillTestSlice(tv Slice) {
-	*tv.orig = make([]otlpcommon.AnyValue, 7)
-	for i := 0; i < 7; i++ {
-		FillTestValue(NewValue(&(*tv.orig)[i]))
-	}
 }

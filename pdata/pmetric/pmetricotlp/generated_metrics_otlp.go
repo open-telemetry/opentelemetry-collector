@@ -18,7 +18,6 @@
 package pmetricotlp
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 )
 
@@ -29,15 +28,12 @@ import (
 //
 // Must use NewExportPartialSuccess function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type ExportPartialSuccess internal.MetricsExportPartialSuccess
-
-func newExportPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess) ExportPartialSuccess {
-	return ExportPartialSuccess(internal.NewMetricsExportPartialSuccess(orig))
+type ExportPartialSuccess struct {
+	orig *otlpcollectormetrics.ExportMetricsPartialSuccess
 }
 
-func (ms ExportPartialSuccess) getOrig() *otlpcollectormetrics.ExportMetricsPartialSuccess {
-	return internal.GetOrigMetricsExportPartialSuccess(internal.MetricsExportPartialSuccess(ms))
+func newExportPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess) ExportPartialSuccess {
+	return ExportPartialSuccess{orig}
 }
 
 // NewExportPartialSuccess creates a new empty ExportPartialSuccess.
@@ -51,28 +47,28 @@ func NewExportPartialSuccess() ExportPartialSuccess {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpcollectormetrics.ExportMetricsPartialSuccess{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpcollectormetrics.ExportMetricsPartialSuccess{}
 }
 
 // RejectedDataPoints returns the rejecteddatapoints associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) RejectedDataPoints() int64 {
-	return ms.getOrig().RejectedDataPoints
+	return ms.orig.RejectedDataPoints
 }
 
 // SetRejectedDataPoints replaces the rejecteddatapoints associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) SetRejectedDataPoints(v int64) {
-	ms.getOrig().RejectedDataPoints = v
+	ms.orig.RejectedDataPoints = v
 }
 
 // ErrorMessage returns the errormessage associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) ErrorMessage() string {
-	return ms.getOrig().ErrorMessage
+	return ms.orig.ErrorMessage
 }
 
 // SetErrorMessage replaces the errormessage associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) SetErrorMessage(v string) {
-	ms.getOrig().ErrorMessage = v
+	ms.orig.ErrorMessage = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

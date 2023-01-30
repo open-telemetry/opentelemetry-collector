@@ -18,7 +18,6 @@
 package ptraceotlp
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 )
 
@@ -29,15 +28,12 @@ import (
 //
 // Must use NewExportPartialSuccess function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type ExportPartialSuccess internal.TracesExportPartialSuccess
-
-func newExportPartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess) ExportPartialSuccess {
-	return ExportPartialSuccess(internal.NewTracesExportPartialSuccess(orig))
+type ExportPartialSuccess struct {
+	orig *otlpcollectortrace.ExportTracePartialSuccess
 }
 
-func (ms ExportPartialSuccess) getOrig() *otlpcollectortrace.ExportTracePartialSuccess {
-	return internal.GetOrigTracesExportPartialSuccess(internal.TracesExportPartialSuccess(ms))
+func newExportPartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess) ExportPartialSuccess {
+	return ExportPartialSuccess{orig}
 }
 
 // NewExportPartialSuccess creates a new empty ExportPartialSuccess.
@@ -51,28 +47,28 @@ func NewExportPartialSuccess() ExportPartialSuccess {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpcollectortrace.ExportTracePartialSuccess{}
+	*dest.orig = *ms.orig
+	*ms.orig = otlpcollectortrace.ExportTracePartialSuccess{}
 }
 
 // RejectedSpans returns the rejectedspans associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) RejectedSpans() int64 {
-	return ms.getOrig().RejectedSpans
+	return ms.orig.RejectedSpans
 }
 
 // SetRejectedSpans replaces the rejectedspans associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) SetRejectedSpans(v int64) {
-	ms.getOrig().RejectedSpans = v
+	ms.orig.RejectedSpans = v
 }
 
 // ErrorMessage returns the errormessage associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) ErrorMessage() string {
-	return ms.getOrig().ErrorMessage
+	return ms.orig.ErrorMessage
 }
 
 // SetErrorMessage replaces the errormessage associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) SetErrorMessage(v string) {
-	ms.getOrig().ErrorMessage = v
+	ms.orig.ErrorMessage = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
