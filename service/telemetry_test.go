@@ -188,7 +188,7 @@ func TestTelemetryInit(t *testing.T) {
 
 func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 	// Creates a OTel Go counter
-	counter, err := mp.Meter("collector_test").SyncInt64().Counter(otelPrefix+counterName, instrument.WithUnit(unit.Milliseconds))
+	counter, err := mp.Meter("collector_test").Int64Counter(otelPrefix+counterName, instrument.WithUnit(unit.Milliseconds))
 	require.NoError(t, err)
 	counter.Add(context.Background(), 13)
 

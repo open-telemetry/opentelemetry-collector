@@ -116,42 +116,42 @@ func (rec *Receiver) createOtelMetrics() error {
 
 	var errors, err error
 
-	rec.acceptedSpansCounter, err = rec.meter.SyncInt64().Counter(
+	rec.acceptedSpansCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedSpansKey,
 		instrument.WithDescription("Number of spans successfully pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
 	errors = multierr.Append(errors, err)
 
-	rec.refusedSpansCounter, err = rec.meter.SyncInt64().Counter(
+	rec.refusedSpansCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedSpansKey,
 		instrument.WithDescription("Number of spans that could not be pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
 	errors = multierr.Append(errors, err)
 
-	rec.acceptedMetricPointsCounter, err = rec.meter.SyncInt64().Counter(
+	rec.acceptedMetricPointsCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedMetricPointsKey,
 		instrument.WithDescription("Number of metric points successfully pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
 	errors = multierr.Append(errors, err)
 
-	rec.refusedMetricPointsCounter, err = rec.meter.SyncInt64().Counter(
+	rec.refusedMetricPointsCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedMetricPointsKey,
 		instrument.WithDescription("Number of metric points that could not be pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
 	errors = multierr.Append(errors, err)
 
-	rec.acceptedLogRecordsCounter, err = rec.meter.SyncInt64().Counter(
+	rec.acceptedLogRecordsCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedLogRecordsKey,
 		instrument.WithDescription("Number of log records successfully pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
 	errors = multierr.Append(errors, err)
 
-	rec.refusedLogRecordsCounter, err = rec.meter.SyncInt64().Counter(
+	rec.refusedLogRecordsCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedLogRecordsKey,
 		instrument.WithDescription("Number of log records that could not be pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
