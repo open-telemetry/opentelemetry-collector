@@ -21,7 +21,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
@@ -50,12 +49,12 @@ type Exporter struct {
 
 	useOtelForMetrics        bool
 	otelAttrs                []attribute.KeyValue
-	sentSpans                syncint64.Counter
-	failedToSendSpans        syncint64.Counter
-	sentMetricPoints         syncint64.Counter
-	failedToSendMetricPoints syncint64.Counter
-	sentLogRecords           syncint64.Counter
-	failedToSendLogRecords   syncint64.Counter
+	sentSpans                instrument.Int64Counter
+	failedToSendSpans        instrument.Int64Counter
+	sentMetricPoints         instrument.Int64Counter
+	failedToSendMetricPoints instrument.Int64Counter
+	sentLogRecords           instrument.Int64Counter
+	failedToSendLogRecords   instrument.Int64Counter
 }
 
 // ExporterSettings are settings for creating an Exporter.
@@ -98,37 +97,37 @@ func (exp *Exporter) createOtelMetrics(cfg ExporterSettings) error {
 
 	var errors, err error
 
-	exp.sentSpans, err = meter.SyncInt64().Counter(
+	exp.sentSpans, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentSpansKey,
 		instrument.WithDescription("Number of spans successfully sent to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	errors = multierr.Append(errors, err)
 
-	exp.failedToSendSpans, err = meter.SyncInt64().Counter(
+	exp.failedToSendSpans, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendSpansKey,
 		instrument.WithDescription("Number of spans in failed attempts to send to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	errors = multierr.Append(errors, err)
 
-	exp.sentMetricPoints, err = meter.SyncInt64().Counter(
+	exp.sentMetricPoints, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentMetricPointsKey,
 		instrument.WithDescription("Number of metric points successfully sent to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	errors = multierr.Append(errors, err)
 
-	exp.failedToSendMetricPoints, err = meter.SyncInt64().Counter(
+	exp.failedToSendMetricPoints, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendMetricPointsKey,
 		instrument.WithDescription("Number of metric points in failed attempts to send to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	errors = multierr.Append(errors, err)
 
-	exp.sentLogRecords, err = meter.SyncInt64().Counter(
+	exp.sentLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentLogRecordsKey,
 		instrument.WithDescription("Number of log record successfully sent to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	errors = multierr.Append(errors, err)
 
-	exp.failedToSendLogRecords, err = meter.SyncInt64().Counter(
+	exp.failedToSendLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendLogRecordsKey,
 		instrument.WithDescription("Number of log records in failed attempts to send to destination."),
 		instrument.WithUnit(unit.Dimensionless))
@@ -200,7 +199,7 @@ func (exp *Exporter) recordMetrics(ctx context.Context, dataType component.DataT
 }
 
 func (exp *Exporter) recordWithOtel(ctx context.Context, dataType component.DataType, sent int64, failed int64) {
-	var sentMeasure, failedMeasure syncint64.Counter
+	var sentMeasure, failedMeasure instrument.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
 		sentMeasure = exp.sentSpans
