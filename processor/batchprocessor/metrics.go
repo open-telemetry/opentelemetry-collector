@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/metric/unit"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -110,10 +109,10 @@ type batchProcessorTelemetry struct {
 	exportCtx context.Context
 
 	processorAttr        []attribute.KeyValue
-	batchSizeTriggerSend syncint64.Counter
-	timeoutTriggerSend   syncint64.Counter
-	batchSendSize        syncint64.Histogram
-	batchSendSizeBytes   syncint64.Histogram
+	batchSizeTriggerSend instrument.Int64Counter
+	timeoutTriggerSend   instrument.Int64Counter
+	batchSendSize        instrument.Int64Histogram
+	batchSendSizeBytes   instrument.Int64Histogram
 }
 
 func newBatchProcessorTelemetry(set processor.CreateSettings, useOtel bool) (*batchProcessorTelemetry, error) {
