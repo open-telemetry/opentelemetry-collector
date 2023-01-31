@@ -25,33 +25,47 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
-func TestResource_MoveTo(t *testing.T) {
-	ms := Resource(internal.GenerateTestResource())
-	dest := NewResource()
+func TestInstrumentationScope_MoveTo(t *testing.T) {
+	ms := InstrumentationScope(internal.GenerateTestInstrumentationScope())
+	dest := NewInstrumentationScope()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewResource(), ms)
-	assert.Equal(t, Resource(internal.GenerateTestResource()), dest)
+	assert.Equal(t, NewInstrumentationScope(), ms)
+	assert.Equal(t, InstrumentationScope(internal.GenerateTestInstrumentationScope()), dest)
 }
 
-func TestResource_CopyTo(t *testing.T) {
-	ms := NewResource()
-	orig := NewResource()
+func TestInstrumentationScope_CopyTo(t *testing.T) {
+	ms := NewInstrumentationScope()
+	orig := NewInstrumentationScope()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = Resource(internal.GenerateTestResource())
+	orig = InstrumentationScope(internal.GenerateTestInstrumentationScope())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
 
-func TestResource_Attributes(t *testing.T) {
-	ms := NewResource()
+func TestInstrumentationScope_Name(t *testing.T) {
+	ms := NewInstrumentationScope()
+	assert.Equal(t, "", ms.Name())
+	ms.SetName("test_name")
+	assert.Equal(t, "test_name", ms.Name())
+}
+
+func TestInstrumentationScope_Version(t *testing.T) {
+	ms := NewInstrumentationScope()
+	assert.Equal(t, "", ms.Version())
+	ms.SetVersion("test_version")
+	assert.Equal(t, "test_version", ms.Version())
+}
+
+func TestInstrumentationScope_Attributes(t *testing.T) {
+	ms := NewInstrumentationScope()
 	assert.Equal(t, NewMap(), ms.Attributes())
 	internal.FillTestMap(internal.Map(ms.Attributes()))
 	assert.Equal(t, Map(internal.GenerateTestMap()), ms.Attributes())
 }
 
-func TestResource_DroppedAttributesCount(t *testing.T) {
-	ms := NewResource()
+func TestInstrumentationScope_DroppedAttributesCount(t *testing.T) {
+	ms := NewInstrumentationScope()
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
 	ms.SetDroppedAttributesCount(uint32(17))
 	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())

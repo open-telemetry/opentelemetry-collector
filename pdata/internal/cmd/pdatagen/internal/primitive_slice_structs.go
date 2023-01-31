@@ -223,39 +223,3 @@ func (iss *primitiveSliceStruct) generateInternal(sb *bytes.Buffer) {
 		}
 	}))
 }
-
-var primitiveSliceFile = &File{
-	Path:        "pdata",
-	Name:        "primitive_slice",
-	PackageName: "pcommon",
-	testImports: []string{
-		`"testing"`,
-		``,
-		`"github.com/stretchr/testify/assert"`,
-		``,
-		`"go.opentelemetry.io/collector/pdata/internal"`,
-	},
-	structs: []baseStruct{
-		byteSliceStruct,
-		float64SliceStruct,
-		uInt64SliceStruct,
-	},
-}
-
-var byteSliceStruct = &primitiveSliceStruct{
-	structName:  "ByteSlice",
-	packageName: "pcommon",
-	itemType:    "byte",
-}
-
-var float64SliceStruct = &primitiveSliceStruct{
-	structName:  "Float64Slice",
-	packageName: "pcommon",
-	itemType:    "float64",
-}
-
-var uInt64SliceStruct = &primitiveSliceStruct{
-	structName:  "UInt64Slice",
-	packageName: "pcommon",
-	itemType:    "uint64",
-}
