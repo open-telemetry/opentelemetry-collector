@@ -18,29 +18,31 @@
 package internal
 
 import (
-	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
-type Resource struct {
-	orig *otlpresource.Resource
+type InstrumentationScope struct {
+	orig *otlpcommon.InstrumentationScope
 }
 
-func GetOrigResource(ms Resource) *otlpresource.Resource {
+func GetOrigInstrumentationScope(ms InstrumentationScope) *otlpcommon.InstrumentationScope {
 	return ms.orig
 }
 
-func NewResource(orig *otlpresource.Resource) Resource {
-	return Resource{orig: orig}
+func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope) InstrumentationScope {
+	return InstrumentationScope{orig: orig}
 }
 
-func GenerateTestResource() Resource {
-	orig := otlpresource.Resource{}
-	tv := NewResource(&orig)
-	FillTestResource(tv)
+func GenerateTestInstrumentationScope() InstrumentationScope {
+	orig := otlpcommon.InstrumentationScope{}
+	tv := NewInstrumentationScope(&orig)
+	FillTestInstrumentationScope(tv)
 	return tv
 }
 
-func FillTestResource(tv Resource) {
+func FillTestInstrumentationScope(tv InstrumentationScope) {
+	tv.orig.Name = "test_name"
+	tv.orig.Version = "test_version"
 	FillTestMap(NewMap(&tv.orig.Attributes))
 	tv.orig.DroppedAttributesCount = uint32(17)
 }
