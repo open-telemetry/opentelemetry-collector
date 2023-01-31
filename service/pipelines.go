@@ -21,6 +21,7 @@ import (
 	"sort"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
@@ -89,6 +90,7 @@ func (bps *builtPipelines) StartAll(ctx context.Context, host component.Host) er
 			expLogger := components.ExporterLogger(bps.telemetry.Logger, expID, dt)
 			expLogger.Info("Exporter is starting...")
 			if err := exp.Start(ctx, components.NewHostWrapper(host, expLogger)); err != nil {
+				expLogger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).Error("Failed to start exporter", zap.Error(err))
 				return err
 			}
 			expLogger.Info("Exporter started.")
@@ -101,6 +103,7 @@ func (bps *builtPipelines) StartAll(ctx context.Context, host component.Host) er
 			procLogger := components.ProcessorLogger(bps.telemetry.Logger, bp.processors[i].id, pipelineID)
 			procLogger.Info("Processor is starting...")
 			if err := bp.processors[i].comp.Start(ctx, components.NewHostWrapper(host, procLogger)); err != nil {
+				procLogger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).Error("Failed to start processor", zap.Error(err))
 				return err
 			}
 			procLogger.Info("Processor started.")
@@ -113,6 +116,7 @@ func (bps *builtPipelines) StartAll(ctx context.Context, host component.Host) er
 			recvLogger := components.ReceiverLogger(bps.telemetry.Logger, recvID, dt)
 			recvLogger.Info("Receiver is starting...")
 			if err := recv.Start(ctx, components.NewHostWrapper(host, recvLogger)); err != nil {
+				recvLogger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).Error("Failed to start receiver", zap.Error(err))
 				return err
 			}
 			recvLogger.Info("Receiver started.")

@@ -21,6 +21,7 @@ import (
 	"sort"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -43,6 +44,7 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 		extLogger := components.ExtensionLogger(bes.telemetry.Logger, extID)
 		extLogger.Info("Extension is starting...")
 		if err := ext.Start(ctx, components.NewHostWrapper(host, extLogger)); err != nil {
+			extLogger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).Error("Failed to start extension", zap.Error(err))
 			return err
 		}
 		extLogger.Info("Extension started.")
