@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
@@ -423,6 +424,12 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host, reporter stat
 				instanceID,
 				component.NewPermanentErrorEvent(compErr),
 			)
+			g.telemetry.Logger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).
+				Error("Failed to start component",
+					zap.Error(compErr),
+					zap.String("type", instanceID.Kind.String()),
+					zap.String("id", instanceID.ID.String()),
+				)
 			return compErr
 		}
 
