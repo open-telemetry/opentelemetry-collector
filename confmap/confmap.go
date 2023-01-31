@@ -116,7 +116,6 @@ func (l *Conf) Get(key string) any {
 }
 
 // IsSet checks to see if the key has been set in any of the data locations.
-// IsSet is case-insensitive for a key.
 func (l *Conf) IsSet(key string) bool {
 	return l.k.Exists(key)
 }
@@ -161,6 +160,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool) error {
 		Result:           result,
 		TagName:          "mapstructure",
 		WeaklyTypedInput: true,
+		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			expandNilStructPointersHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),
@@ -187,6 +187,13 @@ func encoderConfig(rawVal any) *encoder.EncoderConfig {
 			marshalerHookFunc(rawVal),
 		),
 	}
+}
+
+// case-sensitive version of the callback to be used in the MatchName property
+// of the DecoderConfig. The default for MatchEqual is to use strings.EqualFold,
+// which is case-insensitive.
+func caseSensitiveMatchName(a, b string) bool {
+	return a == b
 }
 
 // In cases where a config has a mapping of something to a struct pointers
