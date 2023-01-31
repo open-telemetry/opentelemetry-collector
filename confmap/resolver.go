@@ -18,7 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"go.uber.org/multierr"
@@ -26,15 +28,21 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+// schemePattern defines the regexp pattern for scheme names.
+// Scheme name consist of a sequence of characters beginning with a letter and followed by any
+// combination of letters, digits, plus ("+"), period ("."), or hyphen ("-").
+const schemePattern = `[A-Za-z][A-Za-z0-9+.-]+`
+
 var (
 	// follows drive-letter specification:
 	// https://datatracker.ietf.org/doc/html/draft-kerwin-file-scheme-07.html#section-2.2
 	driverLetterRegexp = regexp.MustCompile("^[A-z]:")
 
-	// Scheme name consist of a sequence of characters beginning with a letter and followed by any
-	// combination of letters, digits, plus ("+"), period ("."), or hyphen ("-").
 	// Need to match new line as well in the OpaqueValue, so setting the "s" flag. See https://pkg.go.dev/regexp/syntax.
-	locationRegexp = regexp.MustCompile(`(?s:^(?P<Scheme>[A-Za-z][A-Za-z0-9+.-]+):(?P<OpaqueValue>.*)$)`)
+	uriRegexp = regexp.MustCompile(`(?s:^(?P<Scheme>` + schemePattern + `):(?P<OpaqueValue>.*)$)`)
+
+	// embeddedURI matches "embedded" provider uris into a string value.
+	embeddedURI = regexp.MustCompile(`\${` + schemePattern + `:.*?}`)
 
 	errTooManyRecursiveExpansions = errors.New("too many recursive expansions")
 )
@@ -43,7 +51,7 @@ var (
 var expandEnabledGauge = featuregate.GlobalRegistry().MustRegister(
 	"confmap.expandEnabled",
 	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("controls whether expending embedded external config providers URIs"))
+	featuregate.WithRegisterDescription("controls whether expanding embedded external config providers URIs"))
 
 // Resolver resolves a configuration as a Conf.
 type Resolver struct {
@@ -168,6 +176,7 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		}
 		retMap = NewFromStringMap(cfgMap)
 	}
+
 	// Apply the converters in the given order.
 	for _, confConv := range mr.converters {
 		if err := confConv.Convert(ctx, retMap); err != nil {
@@ -234,26 +243,44 @@ func (mr *Resolver) expandValueRecursively(ctx context.Context, value any) (any,
 func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, error) {
 	switch v := value.(type) {
 	case string:
-		// If it doesn't have the format "${scheme:opaque}" no need to expand.
-		if !strings.HasPrefix(v, "${") || !strings.HasSuffix(v, "}") || !strings.Contains(v, ":") {
+		// If no embedded "uris" no need to expand. embeddedURI regexp matches uriRegexp as well.
+		if !embeddedURI.MatchString(v) {
 			return value, false, nil
 		}
-		lURI, err := newLocation(v[2 : len(v)-1])
-		if err != nil {
-			// Cannot return error, since a case like "${HOST}:${PORT}" is invalid location,
-			// but is supported in the legacy implementation.
-			return value, false, nil
+
+		// If the value is a single URI, then the return value can be anything.
+		// This is the case `foo: ${file:some_extra_config.yml}`.
+		if embeddedURI.FindString(v) == v {
+			return mr.expandStringURI(ctx, v)
 		}
-		if strings.Contains(lURI.opaqueValue, "$") {
-			return nil, false, fmt.Errorf("the uri %q contains unsupported characters ('$')", lURI.asString())
-		}
-		ret, err := mr.retrieveValue(ctx, lURI)
-		if err != nil {
-			return nil, false, err
-		}
-		mr.closers = append(mr.closers, ret.Close)
-		val, err := ret.AsRaw()
-		return val, true, err
+
+		// If the URI is embedded into the string, return value must be a string, and we have to concatenate all strings.
+		var nerr error
+		var nchanged bool
+		nv := embeddedURI.ReplaceAllStringFunc(v, func(s string) string {
+			ret, changed, err := mr.expandStringURI(ctx, s)
+			nchanged = nchanged || changed
+			nerr = multierr.Append(nerr, err)
+			if err != nil {
+				return ""
+			}
+			// This list must be kept in sync with checkRawConfType.
+			val := reflect.ValueOf(ret)
+			switch val.Kind() {
+			case reflect.String:
+				return val.String()
+			case reflect.Int, reflect.Int32, reflect.Int64:
+				return strconv.FormatInt(val.Int(), 10)
+			case reflect.Float32, reflect.Float64:
+				return strconv.FormatFloat(val.Float(), 'f', -1, 64)
+			case reflect.Bool:
+				return strconv.FormatBool(val.Bool())
+			default:
+				nerr = multierr.Append(nerr, fmt.Errorf("expanding %v, expected string value type, got %T", s, ret))
+				return v
+			}
+		})
+		return nv, nchanged, nerr
 	case []any:
 		nslice := make([]any, 0, len(v))
 		nchanged := false
@@ -282,6 +309,23 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 	return value, false, nil
 }
 
+func (mr *Resolver) expandStringURI(ctx context.Context, uri string) (any, bool, error) {
+	lURI, err := newLocation(uri[2 : len(uri)-1])
+	if err != nil {
+		return nil, false, err
+	}
+	if strings.Contains(lURI.opaqueValue, "$") {
+		return nil, false, fmt.Errorf("the uri %q contains unsupported characters ('$')", lURI.asString())
+	}
+	ret, err := mr.retrieveValue(ctx, lURI)
+	if err != nil {
+		return nil, false, err
+	}
+	mr.closers = append(mr.closers, ret.Close)
+	val, err := ret.AsRaw()
+	return val, true, err
+}
+
 type location struct {
 	scheme      string
 	opaqueValue string
@@ -292,7 +336,7 @@ func (c location) asString() string {
 }
 
 func newLocation(uri string) (location, error) {
-	submatches := locationRegexp.FindStringSubmatch(uri)
+	submatches := uriRegexp.FindStringSubmatch(uri)
 	if len(submatches) != 3 {
 		return location{}, fmt.Errorf("invalid uri: %q", uri)
 	}
