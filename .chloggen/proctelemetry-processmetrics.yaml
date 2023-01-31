@@ -9,3 +9,4 @@ note: "Instrument `proctelemetry.ProcessMetrics` metrics with otel-go"
 
 # One or more tracking issues or pull requests related to the change
 issues: [6886]
+
