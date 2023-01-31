@@ -59,70 +59,68 @@ func (g *pipelinesGraph) createNodes(set pipelinesSettings) {
 	connectorsAsReceiver := make(map[component.ID][]component.ID)
 
 	for pipelineID, pipelineCfg := range set.PipelineConfigs {
+		pipe := g.pipelines[pipelineID]
 		for _, recvID := range pipelineCfg.Receivers {
 			if set.Connectors.IsConfigured(recvID) {
 				connectorsAsReceiver[recvID] = append(connectorsAsReceiver[recvID], pipelineID)
 				continue
 			}
-			g.addReceiver(pipelineID, recvID)
+			pipe.addReceiver(g.createReceiver(pipelineID, recvID))
 		}
 		for _, procID := range pipelineCfg.Processors {
-			g.addProcessor(pipelineID, procID)
+			pipe.addProcessor(g.createProcessor(pipelineID, procID))
 		}
 		for _, exprID := range pipelineCfg.Exporters {
 			if set.Connectors.IsConfigured(exprID) {
 				connectorsAsExporter[exprID] = append(connectorsAsExporter[exprID], pipelineID)
 				continue
 			}
-			g.addExporter(pipelineID, exprID)
+			pipe.addExporter(g.createExporter(pipelineID, exprID))
 		}
 	}
 
 	for connID, exprPipelineIDs := range connectorsAsExporter {
 		for _, eID := range exprPipelineIDs {
 			for _, rID := range connectorsAsReceiver[connID] {
-				g.addConnector(eID, rID, connID)
+				connNode := g.createConnector(eID, rID, connID)
+				g.pipelines[eID].addExporter(connNode)
+				g.pipelines[rID].addReceiver(connNode)
 			}
 		}
 	}
 }
 
-func (g *pipelinesGraph) addReceiver(pipelineID, recvID component.ID) {
-	node := newReceiverNode(pipelineID, recvID)
-	if rcvrNode := g.componentGraph.Node(node.ID()); rcvrNode != nil {
-		g.pipelines[pipelineID].addReceiver(rcvrNode)
-		return
+func (g *pipelinesGraph) createReceiver(pipelineID, recvID component.ID) *receiverNode {
+	rcvrNode := newReceiverNode(pipelineID, recvID)
+	if node := g.componentGraph.Node(rcvrNode.ID()); node != nil {
+		return node.(*receiverNode)
 	}
-	g.pipelines[pipelineID].addReceiver(node)
-	g.componentGraph.AddNode(node)
+	g.componentGraph.AddNode(rcvrNode)
+	return rcvrNode
 }
 
-func (g *pipelinesGraph) addProcessor(pipelineID, procID component.ID) {
-	node := newProcessorNode(pipelineID, procID)
-	g.pipelines[pipelineID].addProcessor(node)
-	g.componentGraph.AddNode(node)
+func (g *pipelinesGraph) createProcessor(pipelineID, procID component.ID) *processorNode {
+	procNode := newProcessorNode(pipelineID, procID)
+	g.componentGraph.AddNode(procNode)
+	return procNode
 }
 
-func (g *pipelinesGraph) addExporter(pipelineID, exprID component.ID) {
-	node := newExporterNode(pipelineID, exprID)
-	if expNode := g.componentGraph.Node(node.ID()); expNode != nil {
-		g.pipelines[pipelineID].addExporter(expNode)
-		return
+func (g *pipelinesGraph) createExporter(pipelineID, exprID component.ID) *exporterNode {
+	expNode := newExporterNode(pipelineID, exprID)
+	if node := g.componentGraph.Node(expNode.ID()); node != nil {
+		return node.(*exporterNode)
 	}
-	g.pipelines[pipelineID].addExporter(node)
-	g.componentGraph.AddNode(node)
+	g.componentGraph.AddNode(expNode)
+	return expNode
 }
 
-func (g *pipelinesGraph) addConnector(exprPipelineID, rcvrPipelineID, connID component.ID) {
-	node := newConnectorNode(exprPipelineID.Type(), rcvrPipelineID.Type(), connID)
-	if connNode := g.componentGraph.Node(node.ID()); connNode != nil {
-		g.pipelines[exprPipelineID].addExporter(connNode)
-		g.pipelines[rcvrPipelineID].addReceiver(connNode)
-		return
+func (g *pipelinesGraph) createConnector(exprPipelineID, rcvrPipelineID, connID component.ID) *connectorNode {
+	connNode := newConnectorNode(exprPipelineID.Type(), rcvrPipelineID.Type(), connID)
+	if node := g.componentGraph.Node(connNode.ID()); node != nil {
+		return node.(*connectorNode)
 	}
-	g.pipelines[exprPipelineID].addExporter(node)
-	g.pipelines[rcvrPipelineID].addReceiver(node)
-	g.componentGraph.AddNode(node)
+	g.componentGraph.AddNode(connNode)
+	return connNode
 }
 
 func (g *pipelinesGraph) createEdges() {
