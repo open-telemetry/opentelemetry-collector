@@ -1,6 +1,7 @@
 #!/bin/bash
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-export WORKSPACE_DIR=$( cd -- "$( dirname $(dirname $(dirname -- "${SCRIPT_DIR}")) )" &> /dev/null && pwd )
+WORKSPACE_DIR=$( cd -- "$( dirname "$(dirname "$(dirname -- "${SCRIPT_DIR}")")" )" &> /dev/null && pwd )
+export WORKSPACE_DIR
 
 GOBIN=$(go env GOBIN)
 if [[ "$GO" == "" ]]; then
@@ -19,19 +20,16 @@ test_build_config() {
     local build_config="$2"
 
     out="${base}/${test}"
-    mkdir -p "${out}"
-    if [ $? != 0 ]; then
+    if ! mkdir -p "${out}"; then
         echo "❌ FAIL ${test}. Failed to create test directory for the test. Aborting tests."
         exit 2
     fi
 
-    echo "Starting test '${test}' at `date`" >> "${out}/test.log"
+    echo "Starting test '${test}' at $(date)" >> "${out}/test.log"
 
-    final_build_config=$(basename ${build_config})
+    final_build_config=$(basename "${build_config}")
     envsubst < "$build_config" > "${out}/${final_build_config}"
-    go run . --go "${GOBIN}" --config "${out}/${final_build_config}" --output-path "${out}" --name otelcol-built-test > "${out}/builder.log" 2>&1
-
-    if [ $? != 0 ]; then
+    if ! go run . --go "${GOBIN}" --config "${out}/${final_build_config}" --output-path "${out}" --name otelcol-built-test > "${out}/builder.log" 2>&1; then
         echo "❌ FAIL ${test}. Failed to compile the test ${test}. Build logs:"
         cat "${out}/builder.log"
         failed=true
@@ -58,8 +56,7 @@ test_build_config() {
     retries=0
     while true
     do
-        kill -0 "${pid}" >/dev/null 2>&1
-        if [ $? != 0 ]; then
+        if ! kill -0 "${pid}" >/dev/null 2>&1; then
             echo "❌ FAIL ${test}. The OpenTelemetry Collector isn't running. Startup log:"
             cat "${out}/otelcol.log"
             failed=true
@@ -69,13 +66,13 @@ test_build_config() {
         # Since the content of the servicez page depend on which extensions are
         # built into the collector, we depend only on the zpages extension
         # being present and serving something.
-        curl --fail --silent --output /dev/null http://localhost:55679/debug/servicez
-        if [ $? == 0 ]; then
+        if curl --fail --silent --output /dev/null http://localhost:55679/debug/servicez; then
             echo "✅ PASS ${test}"
 
             kill "${pid}"
-            if [ $? != 0 ]; then
-                echo "Failed to stop the running instance for test ${test}. Return code: $? . Skipping tests."
+            ret=$?
+            if [ $ret -ne 0 ]; then
+                echo "Failed to stop the running instance for test ${test}. Return code: ${ret} . Skipping tests."
                 exit 4
             fi
             break
@@ -83,14 +80,15 @@ test_build_config() {
 
         echo "Server still unavailable for test '${test}'" >> "${out}/test.log"
 
-        let "retries++"
+        ((retries++))
         if [ "$retries" -gt "$max_retries" ]; then
             echo "❌ FAIL ${test}. Server wasn't up after about 5s."
             failed=true
 
             kill "${pid}"
-            if [ $? != 0 ]; then
-                echo "Failed to stop the running instance for test ${test}. Return code: $? . Skipping tests."
+            ret=$?
+            if [ $ret -ne 0 ]; then
+                echo "Failed to stop the running instance for test ${test}. Return code: ${ret} . Skipping tests."
                 exit 8
             fi
             break
@@ -107,7 +105,7 @@ max_retries=50
 
 tests="core"
 
-base=`mktemp -d`
+base=$(mktemp -d)
 echo "Running the tests in ${base}"
 
 failed=false

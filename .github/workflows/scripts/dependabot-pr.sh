@@ -3,7 +3,6 @@
 git config user.name opentelemetrybot
 git config user.email 107717825+opentelemetrybot@users.noreply.github.com
 
-# shellcheck disable=SC2006
 PR_NAME=dependabot-prs/$(date +'%Y-%m-%dT%H%M%S')
 git checkout -b "$PR_NAME"
 
@@ -27,7 +26,7 @@ for line in $requests; do
     for dir in $dirs; do
         echo "checking $dir"
         cd "$dir" && if grep -q "$module " go.mod; then go get "$module"@v"$version"; fi
-        cd $topdir
+        cd "$topdir"
     done
     message+=$line
     message+=$'\n'
