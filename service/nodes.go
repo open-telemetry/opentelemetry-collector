@@ -34,7 +34,7 @@ const (
 	processorSeed     = "processor"
 	exporterSeed      = "exporter"
 	connectorSeed     = "connector"
-	fanInToProcessors = "fanin_to_processors"
+	capabilitiesSeed  = "capabilities"
 	fanOutToExporters = "fanout_to_exporters"
 )
 
@@ -48,6 +48,10 @@ func newNodeID(parts ...string) nodeID {
 	h := fnv.New64a()
 	h.Write([]byte(strings.Join(parts, "|")))
 	return nodeID(h.Sum64())
+}
+
+type nextConsumer interface {
+	nextConsumer() baseConsumer
 }
 
 // A receiver instance can be shared by multiple pipelines of the same type.
@@ -219,26 +223,27 @@ func (n *connectorNode) build(
 	return err
 }
 
-// If a pipeline has any processors, a fan-in is added before the first one.
-// The main purpose of this node is to present aggregated capabilities to receivers,
-// such as whether the pipeline mutates data.
+// Every pipeline has a "virtual" capabilities node immediately after the receiver(s).
+// There are two purposes for this node:
+// 1. Present aggregated capabilities to receivers, such as whether the pipeline mutates data.
+// 2. Present a consistent "first consumer" for each pipeline.
 // The nodeID is derived from "pipeline ID".
-type fanInNode struct {
+type capabilitiesNode struct {
 	nodeID
 	pipelineID component.ID
 	baseConsumer
 	consumer.Capabilities
 }
 
-func newFanInNode(pipelineID component.ID) *fanInNode {
-	return &fanInNode{
-		nodeID:       newNodeID(fanInToProcessors, pipelineID.String()),
+func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {
+	return &capabilitiesNode{
+		nodeID:       newNodeID(capabilitiesSeed, pipelineID.String()),
 		pipelineID:   pipelineID,
 		Capabilities: consumer.Capabilities{},
 	}
 }
 
-func (n *fanInNode) build(next baseConsumer, processors []*processorNode) {
+func (n *capabilitiesNode) build(next baseConsumer, processors []*processorNode) {
 	n.baseConsumer = next
 	for _, proc := range processors {
 		n.Capabilities.MutatesData = n.Capabilities.MutatesData ||

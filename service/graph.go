@@ -137,7 +137,7 @@ func (g *pipelinesGraph) createEdges() {
 			continue
 		}
 
-		fanInToProcessors := newFanInNode(pipelineID)
+		fanInToProcessors := newCapabilitiesNode(pipelineID)
 		for _, receiver := range pg.receivers {
 			g.componentGraph.SetEdge(g.componentGraph.NewEdge(receiver, fanInToProcessors))
 		}
@@ -167,7 +167,7 @@ func (g *pipelinesGraph) buildNodes(ctx context.Context, set pipelinesSettings) 
 			err = n.build(ctx, set.Telemetry, set.BuildInfo, set.Connectors, g.nextConsumers(n.ID()))
 		case *exporterNode:
 			err = n.build(ctx, set.Telemetry, set.BuildInfo, set.Exporters)
-		case *fanInNode:
+		case *capabilitiesNode:
 			n.build(g.nextConsumers(n.ID())[0], g.nextProcessors(n.ID()))
 		case *fanOutNode:
 			n.build(g.nextConsumers(n.ID()))
@@ -191,7 +191,7 @@ func (g *pipelinesGraph) nextConsumers(nodeID int64) []baseConsumer {
 			nexts = append(nexts, next.Component.(baseConsumer))
 		case *connectorNode:
 			nexts = append(nexts, next.Component.(baseConsumer))
-		case *fanInNode:
+		case *capabilitiesNode:
 			nexts = append(nexts, next.baseConsumer)
 		case *fanOutNode:
 			nexts = append(nexts, next.baseConsumer)
