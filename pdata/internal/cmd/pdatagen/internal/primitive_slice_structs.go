@@ -165,6 +165,8 @@ func New${structName}(orig *[]${itemType}) ${structName} {
 	return ${structName}{orig: orig}
 }`
 
+// primitiveSliceStruct generates a struct for a slice of primitive value elements. The structs are always generated
+// in a way that they can be used as fields in structs from other packages (using the internal package).
 type primitiveSliceStruct struct {
 	structName  string
 	packageName string
@@ -220,40 +222,4 @@ func (iss *primitiveSliceStruct) generateInternal(sb *bytes.Buffer) {
 			panic(name)
 		}
 	}))
-}
-
-var primitiveSliceFile = &File{
-	Path:        "pdata",
-	Name:        "primitive_slice",
-	PackageName: "pcommon",
-	testImports: []string{
-		`"testing"`,
-		``,
-		`"github.com/stretchr/testify/assert"`,
-		``,
-		`"go.opentelemetry.io/collector/pdata/internal"`,
-	},
-	structs: []baseStruct{
-		byteSliceStruct,
-		float64SliceStruct,
-		uInt64SliceStruct,
-	},
-}
-
-var byteSliceStruct = &primitiveSliceStruct{
-	structName:  "ByteSlice",
-	packageName: "pcommon",
-	itemType:    "byte",
-}
-
-var float64SliceStruct = &primitiveSliceStruct{
-	structName:  "Float64Slice",
-	packageName: "pcommon",
-	itemType:    "float64",
-}
-
-var uInt64SliceStruct = &primitiveSliceStruct{
-	structName:  "UInt64Slice",
-	packageName: "pcommon",
-	itemType:    "uint64",
 }

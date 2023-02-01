@@ -86,11 +86,19 @@ func Compile(cfg Config) error {
 
 	cfg.Logger.Info("Compiling")
 
-	args := []string{"build", "-ldflags=-s -w", "-trimpath", "-o", cfg.Distribution.Name}
+	var ldflags = "-s -w"
+
+	args := []string{"build", "-trimpath", "-o", cfg.Distribution.Name}
+	if cfg.Distribution.DebugCompilation {
+		cfg.Logger.Info("Debug compilation is enabled, the debug symbols will be left on the resulting binary")
+		ldflags = ""
+		args = append(args, "-gcflags=all=-N -l")
+	}
+	args = append(args, "-ldflags="+ldflags)
 	if cfg.Distribution.BuildTags != "" {
 		args = append(args, "-tags", cfg.Distribution.BuildTags)
 	}
-	// #nosec G204
+	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path and the caller is  assumed to have carried out necessary input validation
 	cmd := exec.Command(cfg.Distribution.Go, args...)
 	cmd.Dir = cfg.Distribution.OutputPath
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -108,7 +116,7 @@ func GetModules(cfg Config) error {
 		return nil
 	}
 
-	// #nosec G204
+	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path
 	cmd := exec.Command(cfg.Distribution.Go, "mod", "tidy", "-compat=1.18")
 	cmd.Dir = cfg.Distribution.OutputPath
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -135,7 +143,7 @@ func GetModules(cfg Config) error {
 	return fmt.Errorf("failed to download go modules: %s", failReason)
 }
 
-func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplParams interface{}) error {
+func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplParams any) error {
 	out, err := os.Create(filepath.Clean(filepath.Join(cfg.Distribution.OutputPath, outFile)))
 	if err != nil {
 		return err

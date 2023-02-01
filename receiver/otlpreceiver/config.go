@@ -18,7 +18,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
@@ -38,8 +37,6 @@ type Protocols struct {
 
 // Config defines configuration for OTLP receiver.
 type Config struct {
-	// Deprecated: [v0.68.0] will be removed soon.
-	config.ReceiverSettings `mapstructure:",squash"`
 	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
 	Protocols `mapstructure:"protocols"`
 }

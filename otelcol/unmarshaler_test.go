@@ -39,10 +39,11 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 	factories, err := nopFactories()
 	assert.NoError(t, err)
 
-	conf := confmap.NewFromStringMap(map[string]interface{}{
+	conf := confmap.NewFromStringMap(map[string]any{
 		"receivers":  nil,
 		"processors": nil,
 		"exporters":  nil,
+		"connectors": nil,
 		"extensions": nil,
 		"service":    nil,
 	})
@@ -70,7 +71,7 @@ func TestUnmarshalUnknownTopLevel(t *testing.T) {
 	factories, err := nopFactories()
 	assert.NoError(t, err)
 
-	conf := confmap.NewFromStringMap(map[string]interface{}{
+	conf := confmap.NewFromStringMap(map[string]any{
 		"unknown_section": nil,
 	})
 	_, err = unmarshal(conf, factories)
@@ -78,7 +79,7 @@ func TestUnmarshalUnknownTopLevel(t *testing.T) {
 	assert.Contains(t, err.Error(), "'' has invalid keys: unknown_section")
 }
 
-func TestConfigServicePipelineUnmarshalError(t *testing.T) {
+func TestPipelineConfigUnmarshalError(t *testing.T) {
 	var testCases = []struct {
 		// test case name (also file name containing config yaml)
 		name string
@@ -88,7 +89,7 @@ func TestConfigServicePipelineUnmarshalError(t *testing.T) {
 	}{
 		{
 			name: "duplicate-pipeline",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
+			conf: confmap.NewFromStringMap(map[string]any{
 				"traces/ pipe": nil,
 				"traces /pipe": nil,
 			}),
@@ -96,15 +97,15 @@ func TestConfigServicePipelineUnmarshalError(t *testing.T) {
 		},
 		{
 			name: "invalid-pipeline-name-after-slash",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
+			conf: confmap.NewFromStringMap(map[string]any{
 				"metrics/": nil,
 			}),
 			expectError: "in \"metrics/\" id: the part after / should not be empty",
 		},
 		{
 			name: "invalid-pipeline-section",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
-				"traces": map[string]interface{}{
+			conf: confmap.NewFromStringMap(map[string]any{
+				"traces": map[string]any{
 					"unknown_section": nil,
 				},
 			}),
@@ -112,24 +113,24 @@ func TestConfigServicePipelineUnmarshalError(t *testing.T) {
 		},
 		{
 			name: "invalid-pipeline-sub-config",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
+			conf: confmap.NewFromStringMap(map[string]any{
 				"traces": "string",
 			}),
 			expectError: "'[traces]' expected a map, got 'string'",
 		},
 		{
 			name: "invalid-pipeline-type",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
+			conf: confmap.NewFromStringMap(map[string]any{
 				"/metrics": nil,
 			}),
 			expectError: "in \"/metrics\" id: the part before / should not be empty",
 		},
 		{
 			name: "invalid-sequence-value",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
-				"traces": map[string]interface{}{
-					"receivers": map[string]interface{}{
-						"nop": map[string]interface{}{
+			conf: confmap.NewFromStringMap(map[string]any{
+				"traces": map[string]any{
+					"receivers": map[string]any{
+						"nop": map[string]any{
 							"some": "config",
 						},
 					},
@@ -141,7 +142,7 @@ func TestConfigServicePipelineUnmarshalError(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			pipelines := make(map[component.ID]service.ConfigServicePipeline)
+			pipelines := make(map[component.ID]service.PipelineConfig)
 			err := tt.conf.Unmarshal(&pipelines, confmap.WithErrorUnused())
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectError)
@@ -159,9 +160,9 @@ func TestServiceUnmarshalError(t *testing.T) {
 	}{
 		{
 			name: "invalid-logs-level",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
-				"telemetry": map[string]interface{}{
-					"logs": map[string]interface{}{
+			conf: confmap.NewFromStringMap(map[string]any{
+				"telemetry": map[string]any{
+					"logs": map[string]any{
 						"level": "UNKNOWN",
 					},
 				},
@@ -170,9 +171,9 @@ func TestServiceUnmarshalError(t *testing.T) {
 		},
 		{
 			name: "invalid-metrics-level",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
-				"telemetry": map[string]interface{}{
-					"metrics": map[string]interface{}{
+			conf: confmap.NewFromStringMap(map[string]any{
+				"telemetry": map[string]any{
+					"metrics": map[string]any{
 						"level": "unknown",
 					},
 				},
@@ -181,10 +182,10 @@ func TestServiceUnmarshalError(t *testing.T) {
 		},
 		{
 			name: "invalid-service-extensions-section",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
-				"extensions": []interface{}{
-					map[string]interface{}{
-						"nop": map[string]interface{}{
+			conf: confmap.NewFromStringMap(map[string]any{
+				"extensions": []any{
+					map[string]any{
+						"nop": map[string]any{
 							"some": "config",
 						},
 					},
@@ -194,14 +195,14 @@ func TestServiceUnmarshalError(t *testing.T) {
 		},
 		{
 			name: "invalid-service-section",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
+			conf: confmap.NewFromStringMap(map[string]any{
 				"unknown_section": "string",
 			}),
 			expectError: "'' has invalid keys: unknown_section",
 		},
 		{
 			name: "invalid-pipelines-config",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
+			conf: confmap.NewFromStringMap(map[string]any{
 				"pipelines": "string",
 			}),
 			expectError: "'pipelines' expected a map, got 'string'",
@@ -210,7 +211,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.conf.Unmarshal(&service.ConfigService{}, confmap.WithErrorUnused())
+			err := tt.conf.Unmarshal(&service.Config{}, confmap.WithErrorUnused())
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectError)
 		})

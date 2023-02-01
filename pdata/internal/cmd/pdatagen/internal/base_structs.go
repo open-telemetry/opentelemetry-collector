@@ -26,15 +26,10 @@ const messageValueTemplate = `${description}
 //
 // Must use New${structName} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-
-type ${structName} internal.${internalStructName}
+${typeDeclaration}
 
 func new${structName}(orig *${originName}) ${structName} {
-	return ${structName}(internal.New${internalStructName}(orig))
-}
-
-func (ms ${structName}) getOrig() *${originName} {
-	return internal.GetOrig${internalStructName}(internal.${internalStructName}(ms))
+	return ${newFuncValue}
 }
 
 // New${structName} creates a new empty ${structName}.
@@ -48,8 +43,12 @@ func New${structName}() ${structName} {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ${structName}) MoveTo(dest ${structName}) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = ${originName}{}
+	*dest.${origAccessor} = *ms.${origAccessor}
+	*ms.${origAccessor} = ${originName}{}
+}`
+
+const messageValueGetOrigTemplate = `func (ms ${structName}) getOrig() *${originName} {
+	return internal.GetOrig${structName}(internal.${structName}(ms))
 }`
 
 const messageValueCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct overriding the destination.
@@ -59,11 +58,11 @@ const messageValueCopyToFooterTemplate = `}`
 
 const messageValueTestTemplate = `
 func Test${structName}_MoveTo(t *testing.T) {
-	ms := ${structName}(internal.GenerateTest${internalStructName}())
+	ms := ${generateTestData}
 	dest := New${structName}()
 	ms.MoveTo(dest)
 	assert.Equal(t, New${structName}(), ms)
-	assert.Equal(t, ${structName}(internal.GenerateTest${internalStructName}()), dest)
+	assert.Equal(t, ${generateTestData}, dest)
 }
 
 func Test${structName}_CopyTo(t *testing.T) {
@@ -71,67 +70,59 @@ func Test${structName}_CopyTo(t *testing.T) {
 	orig := New${structName}()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ${structName}(internal.GenerateTest${internalStructName}())
+	orig = ${generateTestData}
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }`
 
-const messageValueGenerateTestTemplate = `func GenerateTest${internalStructName}() ${internalStructName} {
-	orig := ${originName}{}
-	tv := New${internalStructName}(&orig)
-	FillTest${internalStructName}(tv)
+const messageValueGenerateTestTemplate = `func generateTest${structName}() ${structName} {
+	tv := New${structName}()
+	fillTest${structName}(tv)
 	return tv
 }`
 
-const messageValueFillTestHeaderTemplate = `func FillTest${internalStructName}(tv ${internalStructName}) {`
-const messageValueFillTestFooterTemplate = `}`
+const messageValueGenerateTestTemplateCommon = `func GenerateTest${structName}() ${structName} {
+	orig := ${originName}{}
+	tv := New${structName}(&orig)
+	FillTest${structName}(tv)
+	return tv
+}`
 
 const messageValueAliasTemplate = `
-type ${internalStructName} struct {
+type ${structName} struct {
 	orig *${originName}
 }
 
-func GetOrig${internalStructName}(ms ${internalStructName}) *${originName} {
+func GetOrig${structName}(ms ${structName}) *${originName} {
 	return ms.orig
 }
 
-func New${internalStructName}(orig *${originName}) ${internalStructName} {
-	return ${internalStructName}{orig: orig}
+func New${structName}(orig *${originName}) ${structName} {
+	return ${structName}{orig: orig}
 }`
 
 const newLine = "\n"
 
 type baseStruct interface {
 	getName() string
-
 	getPackageName() string
-
 	generateStruct(sb *bytes.Buffer)
-
 	generateTests(sb *bytes.Buffer)
-
 	generateTestValueHelpers(sb *bytes.Buffer)
-
 	generateInternal(sb *bytes.Buffer)
 }
 
+// messageValueStruct generates a struct for a proto message. The struct can be generated both as a common struct
+// that can be used as a field in struct from other packages and as an isolated struct with depending on a package name.
 type messageValueStruct struct {
-	structName         string
-	internalStructName string
-	packageName        string
-	description        string
-	originFullName     string
-	fields             []baseField
+	structName     string
+	packageName    string
+	description    string
+	originFullName string
+	fields         []baseField
 }
 
 func (ms *messageValueStruct) getName() string {
-	return ms.structName
-}
-
-func (ms *messageValueStruct) getInternalName() string {
-	if ms.internalStructName != "" {
-		return ms.internalStructName
-	}
 	return ms.structName
 }
 
@@ -144,16 +135,39 @@ func (ms *messageValueStruct) generateStruct(sb *bytes.Buffer) {
 		switch name {
 		case "structName":
 			return ms.structName
-		case "internalStructName":
-			return ms.getInternalName()
 		case "originName":
 			return ms.originFullName
 		case "description":
 			return ms.description
+		case "typeDeclaration":
+			if usedByOtherDataTypes(ms.packageName) {
+				return "type " + ms.structName + " internal." + ms.structName
+			}
+			return "type " + ms.structName + " struct {\n\torig *" + ms.originFullName + "\n}"
+		case "newFuncValue":
+			if usedByOtherDataTypes(ms.packageName) {
+				return ms.structName + "(internal.New" + ms.structName + "(orig))"
+			}
+			return ms.structName + "{orig}"
+		case "origAccessor":
+			return origAccessor(ms)
 		default:
 			panic(name)
 		}
 	}))
+	if usedByOtherDataTypes(ms.packageName) {
+		sb.WriteString(newLine + newLine)
+		sb.WriteString(os.Expand(messageValueGetOrigTemplate, func(name string) string {
+			switch name {
+			case "structName":
+				return ms.structName
+			case "originName":
+				return ms.originFullName
+			default:
+				panic(name)
+			}
+		}))
+	}
 	// Write accessors for the struct
 	for _, f := range ms.fields {
 		sb.WriteString(newLine + newLine)
@@ -184,8 +198,11 @@ func (ms *messageValueStruct) generateTests(sb *bytes.Buffer) {
 		switch name {
 		case "structName":
 			return ms.structName
-		case "internalStructName":
-			return ms.getInternalName()
+		case "generateTestData":
+			if usedByOtherDataTypes(ms.packageName) {
+				return ms.structName + "(internal.GenerateTest" + ms.structName + "())"
+			}
+			return "generateTest" + ms.structName + "()"
 		default:
 			panic(name)
 		}
@@ -199,41 +216,42 @@ func (ms *messageValueStruct) generateTests(sb *bytes.Buffer) {
 }
 
 func (ms *messageValueStruct) generateTestValueHelpers(sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(messageValueGenerateTestTemplate, func(name string) string {
+	// Write generateTest func for the struct
+	template := messageValueGenerateTestTemplate
+	if usedByOtherDataTypes(ms.packageName) {
+		template = messageValueGenerateTestTemplateCommon
+	}
+	sb.WriteString(os.Expand(template, func(name string) string {
 		switch name {
-		case "internalStructName":
-			return ms.getInternalName()
+		case "structName":
+			return ms.structName
 		case "originName":
 			return ms.originFullName
 		default:
 			panic(name)
 		}
 	}))
-	sb.WriteString(newLine + newLine)
-	sb.WriteString(os.Expand(messageValueFillTestHeaderTemplate, func(name string) string {
-		switch name {
-		case "internalStructName":
-			return ms.getInternalName()
-		default:
-			panic(name)
-		}
-	}))
-	// Write accessors test value for the struct
+
+	// Write fillTest func for the struct
+	sb.WriteString(newLine + newLine + "func ")
+	if usedByOtherDataTypes(ms.packageName) {
+		sb.WriteString("FillTest")
+	} else {
+		sb.WriteString("fillTest")
+	}
+	sb.WriteString(ms.structName + "(tv " + ms.structName + ") {")
 	for _, f := range ms.fields {
 		sb.WriteString(newLine)
-		f.generateSetWithTestValue(sb)
+		f.generateSetWithTestValue(ms, sb)
 	}
-	sb.WriteString(newLine)
-	sb.WriteString(os.Expand(messageValueFillTestFooterTemplate, func(name string) string {
-		panic(name)
-	}))
+	sb.WriteString(newLine + "}" + newLine)
 }
 
 func (ms *messageValueStruct) generateInternal(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(messageValueAliasTemplate, func(name string) string {
 		switch name {
-		case "internalStructName":
-			return ms.getInternalName()
+		case "structName":
+			return ms.structName
 		case "originName":
 			return ms.originFullName
 		default:

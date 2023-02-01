@@ -22,7 +22,6 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
@@ -91,7 +90,7 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 
 	// Generate ResourceSpans as pdata struct.
 	traces := NewTraces()
-	internal.FillTestResourceSpansSlice(internal.ResourceSpansSlice(traces.ResourceSpans()))
+	fillTestResourceSpansSlice(traces.ResourceSpans())
 
 	// Marshal its underlying ProtoBuf to wire.
 	wire1, err := gogoproto.Marshal(traces.getOrig())
@@ -120,16 +119,16 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 
 func TestTracesMoveTo(t *testing.T) {
 	traces := NewTraces()
-	internal.FillTestResourceSpansSlice(internal.ResourceSpansSlice(traces.ResourceSpans()))
+	fillTestResourceSpansSlice(traces.ResourceSpans())
 	dest := NewTraces()
 	traces.MoveTo(dest)
 	assert.EqualValues(t, NewTraces(), traces)
-	assert.EqualValues(t, ResourceSpansSlice(internal.GenerateTestResourceSpansSlice()), dest.ResourceSpans())
+	assert.EqualValues(t, generateTestResourceSpansSlice(), dest.ResourceSpans())
 }
 
 func TestTracesCopyTo(t *testing.T) {
 	traces := NewTraces()
-	internal.FillTestResourceSpansSlice(internal.ResourceSpansSlice(traces.ResourceSpans()))
+	fillTestResourceSpansSlice(traces.ResourceSpans())
 	tracesCopy := NewTraces()
 	traces.CopyTo(tracesCopy)
 	assert.EqualValues(t, traces, tracesCopy)

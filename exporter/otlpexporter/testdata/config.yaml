@@ -10,6 +10,8 @@ sending_queue:
 retry_on_failure:
   enabled: true
   initial_interval: 10s
+  randomization_factor: 0.7
+  multiplier: 1.3
   max_interval: 60s
   max_elapsed_time: 10m
 auth:

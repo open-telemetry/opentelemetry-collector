@@ -22,9 +22,10 @@ import (
 )
 
 func TestStringMarshalText(t *testing.T) {
-	var example String = "opaque"
-
-	opaque, err := example.MarshalText()
-	require.NoError(t, err)
-	assert.Equal(t, "******", string(opaque))
+	examples := []String{"opaque", "s", "veryveryveryveryveryveryveryveryveryverylong"}
+	for _, example := range examples {
+		opaque, err := example.MarshalText()
+		require.NoError(t, err)
+		assert.Equal(t, "[REDACTED]", string(opaque))
+	}
 }

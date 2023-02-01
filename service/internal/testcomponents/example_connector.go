@@ -117,23 +117,10 @@ func createExampleLogsToLogs(_ context.Context, _ connector.CreateSettings, _ co
 }
 
 type ExampleConnector struct {
+	componentState
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
-	Started bool
-	Stopped bool
-}
-
-// Start tells the Connector to start.
-func (c *ExampleConnector) Start(_ context.Context, _ component.Host) error {
-	c.Started = true
-	return nil
-}
-
-// Shutdown is invoked during shutdown.
-func (c *ExampleConnector) Shutdown(context.Context) error {
-	c.Stopped = true
-	return nil
 }
 
 func (c *ExampleConnector) Capabilities() consumer.Capabilities {

@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.67.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1
+	go.opentelemetry.io/collector v0.70.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc4
 )
 
 require (
@@ -18,11 +18,11 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/net v0.0.0-20220805013720-a33c5aa5df48 // indirect
-	golang.org/x/sys v0.3.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
-	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	google.golang.org/grpc v1.51.0 // indirect
+	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
+	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6 // indirect
+	google.golang.org/grpc v1.52.3 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
@@ -40,3 +40,5 @@ replace go.opentelemetry.io/collector/component => ../component
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/confmap => ../confmap
+
+retract v0.69.0 // Release failed, use v0.69.1

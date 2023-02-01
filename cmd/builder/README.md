@@ -8,17 +8,21 @@ This program generates a custom OpenTelemetry Collector binary based on a given 
 ```console
 $ GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@latest
 $ cat > otelcol-builder.yaml <<EOF
+dist:
+  name: otelcol-custom
+  description: Local OpenTelemetry Collector binary
+  output_path: /tmp/dist
 exporters:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.64.0
-  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.64.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.69.0
+  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.69.1
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.64.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.69.1
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.64.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.69.1
 EOF
-$ builder --config=otelcol-builder.yaml --output-path=/tmp/dist
+$ builder --config=otelcol-builder.yaml
 $ cat > /tmp/otelcol.yaml <<EOF
 receivers:
   otlp:
@@ -62,6 +66,17 @@ $ ocb --config=builder-config.yaml
 
 Use `ocb --help` to learn about which flags are available.
 
+## Debug
+
+To keep the debug symbols in the resulting OpenTelemetry Collector binary, set the configuration property `debug_compilation` to true.
+
+Then install `go-delve` and run OpenTelemetry Collector with `dlv` command as the following example:
+```bash
+# go install github.com/go-delve/delve/cmd/dlv@latest
+# ~/go/bin/dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient --log exec .otel-collector-binary -- --config otel-collector-config.yaml
+```
+Finally, load the OpenTelemetry Collector as a project in the IDE, configure debug for Go
+
 ## Configuration
 
 The configuration file is composed of two main parts: `dist` and module types. All `dist` options can be specified via command line flags:
@@ -87,6 +102,7 @@ dist:
     output_path: /tmp/otelcol-distributionNNN # the path to write the output (sources and binary). Optional.
     version: "1.0.0" # the version for your custom OpenTelemetry Collector. Optional.
     go: "/usr/bin/go" # which Go binary to use to compile the generated sources. Optional.
+    debug_compilation: false # enabling this causes the builder to keep the debug symbols in the resulting binary. Optional.
 exporters:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.40.0" # the Go module for the component. Required.
     import: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter" # the import path for the component. Optional.

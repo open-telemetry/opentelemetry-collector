@@ -21,7 +21,6 @@ import (
 	"sort"
 
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -41,7 +40,7 @@ type Extensions struct {
 func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 	bes.telemetry.Logger.Info("Starting extensions...")
 	for extID, ext := range bes.extMap {
-		extLogger := extensionLogger(bes.telemetry.Logger, extID)
+		extLogger := components.ExtensionLogger(bes.telemetry.Logger, extID)
 		extLogger.Info("Extension is starting...")
 		if err := ext.Start(ctx, components.NewHostWrapper(host, extLogger)); err != nil {
 			return err
@@ -123,38 +122,34 @@ type Settings struct {
 	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
-	// Configs is a map of component.ID to component.Config.
+	// Drepecated: [v0.68.0] use Extensions.
 	Configs map[component.ID]component.Config
 
-	// Factories maps extension type names in the config to the respective extension.Factory.
+	// Drepecated: [v0.68.0] use Extensions.
 	Factories map[component.Type]extension.Factory
+
+	// Extensions builder for extensions.
+	Extensions *extension.Builder
 }
 
 // New creates a new Extensions from Config.
 func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
+	if set.Extensions == nil {
+		set.Extensions = extension.NewBuilder(set.Configs, set.Factories)
+	}
 	exts := &Extensions{
 		telemetry: set.Telemetry,
 		extMap:    make(map[component.ID]extension.Extension),
 	}
 	for _, extID := range cfg {
-		extCfg, existsCfg := set.Configs[extID]
-		if !existsCfg {
-			return nil, fmt.Errorf("extension %q is not configured", extID)
-		}
-
-		factory, existsFactory := set.Factories[extID.Type()]
-		if !existsFactory {
-			return nil, fmt.Errorf("extension factory for type %q is not configured", extID.Type())
-		}
-
 		extSet := extension.CreateSettings{
 			ID:                extID,
 			TelemetrySettings: set.Telemetry,
 			BuildInfo:         set.BuildInfo,
 		}
-		extSet.TelemetrySettings.Logger = extensionLogger(set.Telemetry.Logger, extID)
+		extSet.TelemetrySettings.Logger = components.ExtensionLogger(set.Telemetry.Logger, extID)
 
-		ext, err := factory.CreateExtension(ctx, extSet, extCfg)
+		ext, err := set.Extensions.Create(ctx, extSet)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create extension %q: %w", extID, err)
 		}
@@ -168,10 +163,4 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 	}
 
 	return exts, nil
-}
-
-func extensionLogger(logger *zap.Logger, id component.ID) *zap.Logger {
-	return logger.With(
-		zap.String(components.ZapKindKey, components.ZapKindExtension),
-		zap.String(components.ZapNameKey, id.String()))
 }

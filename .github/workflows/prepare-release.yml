@@ -1,0 +1,79 @@
+name: Automation - Prepare Release
+
+on:
+  workflow_dispatch:
+    # Determine the version number that will be assigned to the release. During the beta phase, we increment
+    # the minor version number and set the patch number to 0.
+    inputs:
+      candidate-stable:
+        required: true
+        description: Release candidate version (stable, like 1.0.0-rc4)
+
+      current-stable:
+        required: true
+        description: Current version (stable, like 1.0.0-rc3)
+
+      candidate-beta:
+        required: true
+        description: Release candidate version (beta, like 0.70.0)
+
+      current-beta:
+        required: true
+        description: Current version (beta, like 0.69.1)
+jobs:
+  # Releasing opentelemetry-collector
+  prepare-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      # To keep track of the progress, it might be helpful to create a tracking issue similar to #6067. You are responsible
+      # for all of the steps under the "Performed by collector release manager" heading. Once the issue is created, you can
+      # create the individual ones by hovering them and clicking the "Convert to issue" button on the right hand side.
+      - name: Create issue for tracking release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CANDIDATE_BETA: ${{ inputs.candidate-beta }}
+          CANDIDATE_STABLE: ${{ inputs.candidate-stable }}
+          REPO: open-telemetry/opentelemetry-collector
+        run: ./.github/workflows/scripts/release-create-tracking-issue.sh
+      # Make sure that there are no open issues with release:blocker label in Core. The release has to be delayed until they are resolved.
+      - name: Check blockers in core
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: open-telemetry/opentelemetry-collector
+        run: ./.github/workflows/scripts/release-check-blockers.sh
+      # Make sure that there are no open issues with release:blocker label in Contrib. The release has to be delayed until they are resolved.
+      - name: Check blockers in contrib
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: open-telemetry/opentelemetry-collector-contrib
+        run: ./.github/workflows/scripts/release-check-blockers.sh
+      # Make sure the current main branch build successfully passes (Core).
+      - name: Check build status in core
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: open-telemetry/opentelemetry-collector
+        run: ./.github/workflows/scripts/release-check-build-status.sh
+      # Make sure the current main branch build successfully passes (Contrib).
+      - name: Check build status in contrib
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: open-telemetry/opentelemetry-collector-contrib
+        run: ./.github/workflows/scripts/release-check-build-status.sh
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+      # Prepare Core for release.
+      #   - Update CHANGELOG.md file, this is done via chloggen
+      #   - Run make prepare-release PREVIOUS_VERSION=1.0.0 RELEASE_CANDIDATE=1.1.0 MODSET=stable
+      #   - Run make prepare-release PREVIOUS_VERSION=0.52.0 RELEASE_CANDIDATE=0.53.0 MODSET=beta
+      - name: Prepare release for core
+        env:
+          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          REPO: open-telemetry/opentelemetry-collector
+          CANDIDATE_BETA: ${{ inputs.candidate-beta }}
+          CANDIDATE_STABLE: ${{ inputs.candidate-stable }}
+          CURRENT_BETA: ${{ inputs.current-beta }}
+          CURRENT_STABLE: ${{ inputs.current-stable }}
+        run: ./.github/workflows/scripts/release-prepare-release.sh

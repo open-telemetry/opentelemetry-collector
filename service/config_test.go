@@ -30,7 +30,7 @@ import (
 func TestConfigValidate(t *testing.T) {
 	var testCases = []struct {
 		name     string // test case name (also file name containing config yaml)
-		cfgFn    func() *ConfigService
+		cfgFn    func() *Config
 		expected error
 	}{
 		{
@@ -40,7 +40,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "custom-service-telemetrySettings-encoding",
-			cfgFn: func() *ConfigService {
+			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Telemetry.Logs.Encoding = "json"
 				return cfg
@@ -49,7 +49,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "duplicate-processor-reference",
-			cfgFn: func() *ConfigService {
+			cfgFn: func() *Config {
 				cfg := generateConfig()
 				pipe := cfg.Pipelines[component.NewID("traces")]
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
@@ -59,7 +59,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "missing-pipeline-receivers",
-			cfgFn: func() *ConfigService {
+			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Pipelines[component.NewID("traces")].Receivers = nil
 				return cfg
@@ -68,7 +68,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "missing-pipeline-exporters",
-			cfgFn: func() *ConfigService {
+			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Pipelines[component.NewID("traces")].Exporters = nil
 				return cfg
@@ -77,7 +77,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "missing-pipelines",
-			cfgFn: func() *ConfigService {
+			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Pipelines = nil
 				return cfg
@@ -86,9 +86,9 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "invalid-service-pipeline-type",
-			cfgFn: func() *ConfigService {
+			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Pipelines[component.NewID("wrongtype")] = &ConfigServicePipeline{
+				cfg.Pipelines[component.NewID("wrongtype")] = &PipelineConfig{
 					Receivers:  []component.ID{component.NewID("nop")},
 					Processors: []component.ID{component.NewID("nop")},
 					Exporters:  []component.ID{component.NewID("nop")},
@@ -99,7 +99,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "invalid-telemetry-metric-config",
-			cfgFn: func() *ConfigService {
+			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Telemetry.Metrics.Level = configtelemetry.LevelBasic
 				cfg.Telemetry.Metrics.Address = ""
@@ -117,8 +117,8 @@ func TestConfigValidate(t *testing.T) {
 	}
 }
 
-func generateConfig() *ConfigService {
-	return &ConfigService{
+func generateConfig() *Config {
+	return &Config{
 		Telemetry: telemetry.Config{
 			Logs: telemetry.LogsConfig{
 				Level:             zapcore.DebugLevel,
@@ -128,7 +128,7 @@ func generateConfig() *ConfigService {
 				DisableStacktrace: true,
 				OutputPaths:       []string{"stderr", "./output-logs"},
 				ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
-				InitialFields:     map[string]interface{}{"fieldKey": "filed-value"},
+				InitialFields:     map[string]any{"fieldKey": "filed-value"},
 			},
 			Metrics: telemetry.MetricsConfig{
 				Level:   configtelemetry.LevelNormal,
@@ -136,7 +136,7 @@ func generateConfig() *ConfigService {
 			},
 		},
 		Extensions: []component.ID{component.NewID("nop")},
-		Pipelines: map[component.ID]*ConfigServicePipeline{
+		Pipelines: map[component.ID]*PipelineConfig{
 			component.NewID("traces"): {
 				Receivers:  []component.ID{component.NewID("nop")},
 				Processors: []component.ID{component.NewID("nop")},

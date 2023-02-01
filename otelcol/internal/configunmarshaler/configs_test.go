@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -51,6 +52,12 @@ var testKinds = []struct {
 		},
 	},
 	{
+		kind: "connector",
+		factories: map[component.Type]component.Factory{
+			"nop": connectortest.NewNopFactory(),
+		},
+	},
+	{
 		kind: "extension",
 		factories: map[component.Type]component.Factory{
 			"nop": extensiontest.NewNopFactory(),
@@ -62,7 +69,7 @@ func TestUnmarshal(t *testing.T) {
 	for _, tk := range testKinds {
 		t.Run(tk.kind, func(t *testing.T) {
 			cfgs := NewConfigs(tk.factories)
-			conf := confmap.NewFromStringMap(map[string]interface{}{
+			conf := confmap.NewFromStringMap(map[string]any{
 				"nop":              nil,
 				"nop/my" + tk.kind: nil,
 			})
@@ -87,7 +94,7 @@ func TestUnmarshalError(t *testing.T) {
 			}{
 				{
 					name: "invalid-type",
-					conf: confmap.NewFromStringMap(map[string]interface{}{
+					conf: confmap.NewFromStringMap(map[string]any{
 						"nop":     nil,
 						"/custom": nil,
 					}),
@@ -95,7 +102,7 @@ func TestUnmarshalError(t *testing.T) {
 				},
 				{
 					name: "invalid-name-after-slash",
-					conf: confmap.NewFromStringMap(map[string]interface{}{
+					conf: confmap.NewFromStringMap(map[string]any{
 						"nop":  nil,
 						"nop/": nil,
 					}),
@@ -103,14 +110,14 @@ func TestUnmarshalError(t *testing.T) {
 				},
 				{
 					name: "unknown-type",
-					conf: confmap.NewFromStringMap(map[string]interface{}{
+					conf: confmap.NewFromStringMap(map[string]any{
 						"nosuch" + tk.kind: nil,
 					}),
 					expectedError: "unknown type: \"nosuch" + tk.kind + "\"",
 				},
 				{
 					name: "duplicate",
-					conf: confmap.NewFromStringMap(map[string]interface{}{
+					conf: confmap.NewFromStringMap(map[string]any{
 						"nop /my" + tk.kind + " ": nil,
 						" nop/ my" + tk.kind:      nil,
 					}),
@@ -118,8 +125,8 @@ func TestUnmarshalError(t *testing.T) {
 				},
 				{
 					name: "invalid-section",
-					conf: confmap.NewFromStringMap(map[string]interface{}{
-						"nop": map[string]interface{}{
+					conf: confmap.NewFromStringMap(map[string]any{
+						"nop": map[string]any{
 							"unknown_section": tk.kind,
 						},
 					}),
@@ -127,7 +134,7 @@ func TestUnmarshalError(t *testing.T) {
 				},
 				{
 					name: "invalid-sub-config",
-					conf: confmap.NewFromStringMap(map[string]interface{}{
+					conf: confmap.NewFromStringMap(map[string]any{
 						"nop": "tests",
 					}),
 					expectedError: "'[nop]' expected a map, got 'string'",

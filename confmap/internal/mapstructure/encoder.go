@@ -64,12 +64,12 @@ func New(cfg *EncoderConfig) *Encoder {
 
 // Encode takes the input and uses reflection to encode it to
 // an interface based on the mapstructure spec.
-func (e *Encoder) Encode(input interface{}) (interface{}, error) {
+func (e *Encoder) Encode(input any) (any, error) {
 	return e.encode(reflect.ValueOf(input))
 }
 
 // encode processes the value based on the reflect.Kind.
-func (e *Encoder) encode(value reflect.Value) (interface{}, error) {
+func (e *Encoder) encode(value reflect.Value) (any, error) {
 	if value.IsValid() {
 		switch value.Kind() {
 		case reflect.Interface, reflect.Ptr:
@@ -89,7 +89,7 @@ func (e *Encoder) encode(value reflect.Value) (interface{}, error) {
 
 // encodeHook calls the EncodeHook in the EncoderConfig with the value passed in.
 // This is called before processing structs and for primitive data types.
-func (e *Encoder) encodeHook(value reflect.Value) (interface{}, error) {
+func (e *Encoder) encodeHook(value reflect.Value) (any, error) {
 	if e.config != nil && e.config.EncodeHook != nil {
 		out, err := mapstructure.DecodeHookExec(e.config.EncodeHook, value, value)
 		if err != nil {
@@ -102,7 +102,7 @@ func (e *Encoder) encodeHook(value reflect.Value) (interface{}, error) {
 
 // encodeStruct encodes the struct by iterating over the fields, getting the
 // mapstructure tagInfo for each exported field, and encoding the value.
-func (e *Encoder) encodeStruct(value reflect.Value) (interface{}, error) {
+func (e *Encoder) encodeStruct(value reflect.Value) (any, error) {
 	if value.Kind() != reflect.Struct {
 		return nil, &reflect.ValueError{
 			Method: "encodeStruct",
@@ -119,7 +119,7 @@ func (e *Encoder) encodeStruct(value reflect.Value) (interface{}, error) {
 	if value.Kind() != reflect.Struct {
 		return e.encode(value)
 	}
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 	for i := 0; i < value.NumField(); i++ {
 		field := value.Field(i)
 		if field.CanInterface() {
@@ -132,7 +132,7 @@ func (e *Encoder) encodeStruct(value reflect.Value) (interface{}, error) {
 				return nil, fmt.Errorf("error encoding field %q: %w", info.name, err)
 			}
 			if info.squash {
-				if m, ok := encoded.(map[string]interface{}); ok {
+				if m, ok := encoded.(map[string]any); ok {
 					for k, v := range m {
 						result[k] = v
 					}
@@ -146,14 +146,14 @@ func (e *Encoder) encodeStruct(value reflect.Value) (interface{}, error) {
 }
 
 // encodeSlice iterates over the slice and encodes each of the elements.
-func (e *Encoder) encodeSlice(value reflect.Value) (interface{}, error) {
+func (e *Encoder) encodeSlice(value reflect.Value) (any, error) {
 	if value.Kind() != reflect.Slice {
 		return nil, &reflect.ValueError{
 			Method: "encodeSlice",
 			Kind:   value.Kind(),
 		}
 	}
-	result := make([]interface{}, value.Len())
+	result := make([]any, value.Len())
 	for i := 0; i < value.Len(); i++ {
 		var err error
 		if result[i], err = e.encode(value.Index(i)); err != nil {
@@ -165,14 +165,14 @@ func (e *Encoder) encodeSlice(value reflect.Value) (interface{}, error) {
 
 // encodeMap encodes a map by encoding the key and value. Returns errNonStringEncodedKey
 // if the key is not encoded into a string.
-func (e *Encoder) encodeMap(value reflect.Value) (interface{}, error) {
+func (e *Encoder) encodeMap(value reflect.Value) (any, error) {
 	if value.Kind() != reflect.Map {
 		return nil, &reflect.ValueError{
 			Method: "encodeMap",
 			Kind:   value.Kind(),
 		}
 	}
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 	iterator := value.MapRange()
 	for iterator.Next() {
 		encoded, err := e.encode(iterator.Key())
@@ -220,7 +220,7 @@ func getTagInfo(field reflect.StructField) *tagInfo {
 // for the encoding.TextMarshaler interface and calls the MarshalText
 // function if found.
 func TextMarshalerHookFunc() mapstructure.DecodeHookFuncValue {
-	return func(from reflect.Value, _ reflect.Value) (interface{}, error) {
+	return func(from reflect.Value, _ reflect.Value) (any, error) {
 		marshaler, ok := from.Interface().(encoding.TextMarshaler)
 		if !ok {
 			return from.Interface(), nil

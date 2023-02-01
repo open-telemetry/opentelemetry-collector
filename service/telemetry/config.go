@@ -93,7 +93,7 @@ type LogsConfig struct {
 	//	   		foo: "bar"
 	//
 	// By default, there is no initial field.
-	InitialFields map[string]interface{} `mapstructure:"initial_fields"`
+	InitialFields map[string]any `mapstructure:"initial_fields"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the

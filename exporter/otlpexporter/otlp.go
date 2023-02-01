@@ -81,7 +81,11 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
-	e.metadata = metadata.New(e.config.GRPCClientSettings.Headers)
+	headers := map[string]string{}
+	for k, v := range e.config.GRPCClientSettings.Headers {
+		headers[k] = string(v)
+	}
+	e.metadata = metadata.New(headers)
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.GRPCClientSettings.WaitForReady),
 	}

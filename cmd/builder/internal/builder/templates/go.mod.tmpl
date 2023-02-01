@@ -5,6 +5,9 @@ module {{.Distribution.Module}}
 go 1.18
 
 require (
+	{{- range .Connectors}}
+	{{if .GoMod}}{{.GoMod}}{{end}}
+	{{- end}}
 	{{- range .Extensions}}
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}
@@ -20,6 +23,9 @@ require (
 	go.opentelemetry.io/collector v{{.Distribution.OtelColVersion}}
 )
 
+{{- range .Connectors}}
+{{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
+{{- end}}
 {{- range .Extensions}}
 {{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
 {{- end}}

@@ -26,11 +26,11 @@ import (
 func TestExampleProcessor(t *testing.T) {
 	prc := &ExampleProcessor{}
 	host := componenttest.NewNopHost()
-	assert.False(t, prc.Started)
+	assert.False(t, prc.Started())
 	assert.NoError(t, prc.Start(context.Background(), host))
-	assert.True(t, prc.Started)
+	assert.True(t, prc.Started())
 
-	assert.False(t, prc.Stopped)
+	assert.False(t, prc.Stopped())
 	assert.NoError(t, prc.Shutdown(context.Background()))
-	assert.True(t, prc.Stopped)
+	assert.True(t, prc.Stopped())
 }

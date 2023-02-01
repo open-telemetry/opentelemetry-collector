@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/build-and-test.yml?query=branch%3Amain">
-    <img alt="Build Status" src="https://img.shields.io/github/workflow/status/open-telemetry/opentelemetry-collector/build-and-test/main?style=for-the-badge">
+    <img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/open-telemetry/opentelemetry-collector/build-and-test.yml?branch=main&style=for-the-badge">
   </a>
   <a href="https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-collector">
     <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-collector?style=for-the-badge">
@@ -127,6 +127,7 @@ Here is a list of community roles with current and previous members:
 - Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
    - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
+   - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
    - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
    - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 

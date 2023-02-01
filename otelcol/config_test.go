@@ -20,10 +20,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/sharedgate"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -32,39 +35,16 @@ var (
 	errInvalidRecvConfig = errors.New("invalid receiver config")
 	errInvalidExpConfig  = errors.New("invalid exporter config")
 	errInvalidProcConfig = errors.New("invalid processor config")
+	errInvalidConnConfig = errors.New("invalid connector config")
 	errInvalidExtConfig  = errors.New("invalid extension config")
 )
 
-type nopRecvConfig struct {
+type errConfig struct {
 	validateErr error
 }
 
-func (nc *nopRecvConfig) Validate() error {
-	return nc.validateErr
-}
-
-type nopExpConfig struct {
-	validateErr error
-}
-
-func (nc *nopExpConfig) Validate() error {
-	return nc.validateErr
-}
-
-type nopProcConfig struct {
-	validateErr error
-}
-
-func (nc *nopProcConfig) Validate() error {
-	return nc.validateErr
-}
-
-type nopExtConfig struct {
-	validateErr error
-}
-
-func (nc *nopExtConfig) Validate() error {
-	return nc.validateErr
+func (c *errConfig) Validate() error {
+	return c.validateErr
 }
 
 func TestConfigValidate(t *testing.T) {
@@ -148,7 +128,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-receiver-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Receivers[component.NewID("nop")] = &nopRecvConfig{
+				cfg.Receivers[component.NewID("nop")] = &errConfig{
 					validateErr: errInvalidRecvConfig,
 				}
 				return cfg
@@ -159,7 +139,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-exporter-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Exporters[component.NewID("nop")] = &nopExpConfig{
+				cfg.Exporters[component.NewID("nop")] = &errConfig{
 					validateErr: errInvalidExpConfig,
 				}
 				return cfg
@@ -170,7 +150,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-processor-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Processors[component.NewID("nop")] = &nopProcConfig{
+				cfg.Processors[component.NewID("nop")] = &errConfig{
 					validateErr: errInvalidProcConfig,
 				}
 				return cfg
@@ -181,12 +161,89 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-extension-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Extensions[component.NewID("nop")] = &nopExtConfig{
+				cfg.Extensions[component.NewID("nop")] = &errConfig{
 					validateErr: errInvalidExtConfig,
 				}
 				return cfg
 			},
 			expected: fmt.Errorf(`extensions::nop: %w`, errInvalidExtConfig),
+		},
+		{
+			name: "invalid-connector-config",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Connectors[component.NewIDWithName("nop", "conn")] = &errConfig{
+					validateErr: errInvalidConnConfig,
+				}
+				return cfg
+			},
+			expected: fmt.Errorf(`connectors::nop/conn: %w`, errInvalidConnConfig),
+		},
+		{
+			name: "ambiguous-connector-name-as-receiver",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Receivers[component.NewID("nop/2")] = &errConfig{}
+				cfg.Connectors[component.NewID("nop/2")] = &errConfig{}
+				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "2"))
+				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
+				return cfg
+			},
+			expected: errors.New(`connectors::nop/2: there's already a receiver named "nop/2"`),
+		},
+		{
+			name: "ambiguous-connector-name-as-exporter",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Exporters[component.NewID("nop/2")] = &errConfig{}
+				cfg.Connectors[component.NewID("nop/2")] = &errConfig{}
+				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "2"))
+				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
+				return cfg
+			},
+			expected: errors.New(`connectors::nop/2: there's already an exporter named "nop/2"`),
+		},
+		{
+			name: "invalid-connector-reference-as-receiver",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "conn2"))
+				return cfg
+			},
+			expected: errors.New(`service::pipeline::traces: references receiver "nop/conn2" which is not configured`),
+		},
+		{
+			name: "invalid-connector-reference-as-receiver",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "conn2"))
+				return cfg
+			},
+			expected: errors.New(`service::pipeline::traces: references exporter "nop/conn2" which is not configured`),
+		},
+		{
+			name: "missing-connector-as-receiver",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "conn"))
+				return cfg
+			},
+			expected: errors.New(`connectors::nop/conn: must be used as both receiver and exporter but is not used as receiver`),
+		},
+		{
+			name: "missing-connector-as-exporter",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "conn"))
+				return cfg
+			},
+			expected: errors.New(`connectors::nop/conn: must be used as both receiver and exporter but is not used as exporter`),
 		},
 		{
 			name: "invalid-service-config",
@@ -199,6 +256,10 @@ func TestConfigValidate(t *testing.T) {
 		},
 	}
 
+	require.NoError(t, featuregate.GlobalRegistry().Set(sharedgate.ConnectorsFeatureGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(sharedgate.ConnectorsFeatureGate.ID(), false))
+	}()
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := test.cfgFn()
@@ -210,18 +271,21 @@ func TestConfigValidate(t *testing.T) {
 func generateConfig() *Config {
 	return &Config{
 		Receivers: map[component.ID]component.Config{
-			component.NewID("nop"): &nopRecvConfig{},
+			component.NewID("nop"): &errConfig{},
 		},
 		Exporters: map[component.ID]component.Config{
-			component.NewID("nop"): &nopExpConfig{},
+			component.NewID("nop"): &errConfig{},
 		},
 		Processors: map[component.ID]component.Config{
-			component.NewID("nop"): &nopProcConfig{},
+			component.NewID("nop"): &errConfig{},
+		},
+		Connectors: map[component.ID]component.Config{
+			component.NewIDWithName("nop", "conn"): &errConfig{},
 		},
 		Extensions: map[component.ID]component.Config{
-			component.NewID("nop"): &nopExtConfig{},
+			component.NewID("nop"): &errConfig{},
 		},
-		Service: service.ConfigService{
+		Service: service.Config{
 			Telemetry: telemetry.Config{
 				Logs: telemetry.LogsConfig{
 					Level:             zapcore.DebugLevel,
@@ -231,7 +295,7 @@ func generateConfig() *Config {
 					DisableStacktrace: true,
 					OutputPaths:       []string{"stderr", "./output-logs"},
 					ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
-					InitialFields:     map[string]interface{}{"fieldKey": "filed-value"},
+					InitialFields:     map[string]any{"fieldKey": "filed-value"},
 				},
 				Metrics: telemetry.MetricsConfig{
 					Level:   configtelemetry.LevelNormal,
@@ -239,7 +303,7 @@ func generateConfig() *Config {
 				},
 			},
 			Extensions: []component.ID{component.NewID("nop")},
-			Pipelines: map[component.ID]*service.ConfigServicePipeline{
+			Pipelines: map[component.ID]*service.PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("nop")},
 					Processors: []component.ID{component.NewID("nop")},

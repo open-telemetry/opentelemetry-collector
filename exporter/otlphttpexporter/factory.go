@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -51,7 +52,7 @@ func createDefaultConfig() component.Config {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "",
 			Timeout:  30 * time.Second,
-			Headers:  map[string]string{},
+			Headers:  map[string]configopaque.String{},
 			// Default to gzip compression
 			Compression: configcompression.Gzip,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.

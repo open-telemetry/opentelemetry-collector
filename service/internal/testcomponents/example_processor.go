@@ -38,33 +38,22 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
-	return &ExampleProcessor{Traces: nextConsumer}, nil
+	return &ExampleProcessor{ConsumeTracesFunc: nextConsumer.ConsumeTraces}, nil
 }
 
 func createMetricsProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
-	return &ExampleProcessor{Metrics: nextConsumer}, nil
+	return &ExampleProcessor{ConsumeMetricsFunc: nextConsumer.ConsumeMetrics}, nil
 }
 
 func createLogsProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
-	return &ExampleProcessor{Logs: nextConsumer}, nil
+	return &ExampleProcessor{ConsumeLogsFunc: nextConsumer.ConsumeLogs}, nil
 }
 
 type ExampleProcessor struct {
-	consumer.Traces
-	consumer.Metrics
-	consumer.Logs
-	Started bool
-	Stopped bool
-}
-
-func (ep *ExampleProcessor) Start(_ context.Context, _ component.Host) error {
-	ep.Started = true
-	return nil
-}
-
-func (ep *ExampleProcessor) Shutdown(_ context.Context) error {
-	ep.Stopped = true
-	return nil
+	componentState
+	consumer.ConsumeTracesFunc
+	consumer.ConsumeMetricsFunc
+	consumer.ConsumeLogsFunc
 }
 
 func (ep *ExampleProcessor) Capabilities() consumer.Capabilities {

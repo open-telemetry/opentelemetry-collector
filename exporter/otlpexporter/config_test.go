@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -50,10 +51,12 @@ func TestUnmarshalConfig(t *testing.T) {
 				Timeout: 10 * time.Second,
 			},
 			RetrySettings: exporterhelper.RetrySettings{
-				Enabled:         true,
-				InitialInterval: 10 * time.Second,
-				MaxInterval:     1 * time.Minute,
-				MaxElapsedTime:  10 * time.Minute,
+				Enabled:             true,
+				InitialInterval:     10 * time.Second,
+				RandomizationFactor: 0.7,
+				Multiplier:          1.3,
+				MaxInterval:         1 * time.Minute,
+				MaxElapsedTime:      10 * time.Minute,
 			},
 			QueueSettings: exporterhelper.QueueSettings{
 				Enabled:      true,
@@ -61,7 +64,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				QueueSize:    10,
 			},
 			GRPCClientSettings: configgrpc.GRPCClientSettings{
-				Headers: map[string]string{
+				Headers: map[string]configopaque.String{
 					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
 					"header1":                "234",
 					"another":                "somevalue",

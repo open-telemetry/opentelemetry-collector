@@ -3,7 +3,8 @@
 package main
 
 import (
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
+	forwardconnector "go.opentelemetry.io/collector/connector/forwardconnector"
 	"go.opentelemetry.io/collector/exporter"
 	loggingexporter "go.opentelemetry.io/collector/exporter/loggingexporter"
 	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -11,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	ballastextension "go.opentelemetry.io/collector/extension/ballastextension"
 	zpagesextension "go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
 	batchprocessor "go.opentelemetry.io/collector/processor/batchprocessor"
 	memorylimiterprocessor "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
@@ -18,23 +20,23 @@ import (
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
-func components() (component.Factories, error) {
+func components() (otelcol.Factories, error) {
 	var err error
-	factories := component.Factories{}
+	factories := otelcol.Factories{}
 
 	factories.Extensions, err = extension.MakeFactoryMap(
 		ballastextension.NewFactory(),
 		zpagesextension.NewFactory(),
 	)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
 	factories.Receivers, err = receiver.MakeFactoryMap(
 		otlpreceiver.NewFactory(),
 	)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
 	factories.Exporters, err = exporter.MakeFactoryMap(
@@ -43,7 +45,7 @@ func components() (component.Factories, error) {
 		otlphttpexporter.NewFactory(),
 	)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
 	factories.Processors, err = processor.MakeFactoryMap(
@@ -51,7 +53,14 @@ func components() (component.Factories, error) {
 		memorylimiterprocessor.NewFactory(),
 	)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
+	}
+
+	factories.Connectors, err = connector.MakeFactoryMap(
+		forwardconnector.NewFactory(),
+	)
+	if err != nil {
+		return otelcol.Factories{}, err
 	}
 
 	return factories, nil

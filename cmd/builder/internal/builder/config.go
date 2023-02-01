@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.67.0"
+const defaultOtelColVersion = "0.70.0"
 
 // ErrInvalidGoMod indicates an invalid gomod
 var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
@@ -42,20 +42,22 @@ type Config struct {
 	Extensions   []Module     `mapstructure:"extensions"`
 	Receivers    []Module     `mapstructure:"receivers"`
 	Processors   []Module     `mapstructure:"processors"`
+	Connectors   []Module     `mapstructure:"connectors"`
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
 }
 
 // Distribution holds the parameters for the final binary
 type Distribution struct {
-	Module         string `mapstructure:"module"`
-	Name           string `mapstructure:"name"`
-	Go             string `mapstructure:"go"`
-	Description    string `mapstructure:"description"`
-	OtelColVersion string `mapstructure:"otelcol_version"`
-	OutputPath     string `mapstructure:"output_path"`
-	Version        string `mapstructure:"version"`
-	BuildTags      string `mapstructure:"build_tags"`
+	Module           string `mapstructure:"module"`
+	Name             string `mapstructure:"name"`
+	Go               string `mapstructure:"go"`
+	Description      string `mapstructure:"description"`
+	OtelColVersion   string `mapstructure:"otelcol_version"`
+	OutputPath       string `mapstructure:"output_path"`
+	Version          string `mapstructure:"version"`
+	BuildTags        string `mapstructure:"build_tags"`
+	DebugCompilation bool   `mapstructure:"debug_compilation"`
 }
 
 // Module represents a receiver, exporter, processor or extension for the distribution
@@ -90,7 +92,13 @@ func NewDefaultConfig() Config {
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
-	return multierr.Combine(validateModules(c.Extensions), validateModules(c.Receivers), validateModules(c.Exporters), validateModules(c.Processors))
+	return multierr.Combine(
+		validateModules(c.Extensions),
+		validateModules(c.Receivers),
+		validateModules(c.Exporters),
+		validateModules(c.Processors),
+		validateModules(c.Connectors),
+	)
 }
 
 // SetGoPath sets go path
@@ -129,6 +137,11 @@ func (c *Config) ParseModules() error {
 	}
 
 	c.Processors, err = parseModules(c.Processors)
+	if err != nil {
+		return err
+	}
+
+	c.Connectors, err = parseModules(c.Connectors)
 	if err != nil {
 		return err
 	}

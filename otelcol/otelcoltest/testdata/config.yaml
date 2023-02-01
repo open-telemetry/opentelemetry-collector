@@ -10,6 +10,9 @@ exporters:
     nop:
     nop/myexporter:
 
+connectors:
+    nop/myconnector:
+
 extensions:
     nop:
     nop/myextension:

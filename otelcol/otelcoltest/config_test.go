@@ -22,6 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/sharedgate"
 	"go.opentelemetry.io/collector/service"
 )
 
@@ -52,12 +54,16 @@ func TestLoadConfig(t *testing.T) {
 	assert.Contains(t, cfg.Processors, component.NewID("nop"))
 	assert.Contains(t, cfg.Processors, component.NewIDWithName("nop", "myprocessor"))
 
+	// Verify connectors
+	assert.Len(t, cfg.Connectors, 1)
+	assert.Contains(t, cfg.Connectors, component.NewIDWithName("nop", "myconnector"))
+
 	// Verify service.
 	require.Len(t, cfg.Service.Extensions, 1)
 	assert.Contains(t, cfg.Service.Extensions, component.NewID("nop"))
 	require.Len(t, cfg.Service.Pipelines, 1)
 	assert.Equal(t,
-		&service.ConfigServicePipeline{
+		&service.PipelineConfig{
 			Receivers:  []component.ID{component.NewID("nop")},
 			Processors: []component.ID{component.NewID("nop")},
 			Exporters:  []component.ID{component.NewID("nop")},
@@ -70,6 +76,10 @@ func TestLoadConfigAndValidate(t *testing.T) {
 	factories, err := NopFactories()
 	assert.NoError(t, err)
 
+	require.NoError(t, featuregate.GlobalRegistry().Set(sharedgate.ConnectorsFeatureGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(sharedgate.ConnectorsFeatureGate.ID(), false))
+	}()
 	cfgValidate, errValidate := LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, errValidate)
 

@@ -15,16 +15,17 @@
 package configopaque // import "go.opentelemetry.io/collector/config/configopaque"
 
 import (
-	"bytes"
 	"encoding"
 )
 
 // String alias that is marshaled in an opaque way.
 type String string
 
+const maskedString = "[REDACTED]"
+
 var _ encoding.TextMarshaler = String("")
 
-// MarshalText marshals into a string of '*' of length equal to the opaque string.
+// MarshalText marshals the string as `[REDACTED]`.
 func (s String) MarshalText() ([]byte, error) {
-	return bytes.Repeat([]byte("*"), len(s)), nil
+	return []byte(maskedString), nil
 }

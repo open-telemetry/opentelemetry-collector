@@ -31,25 +31,25 @@ func New() confmap.Converter {
 }
 
 func (converter) Convert(_ context.Context, conf *confmap.Conf) error {
-	out := make(map[string]interface{})
+	out := make(map[string]any)
 	for _, k := range conf.AllKeys() {
 		out[k] = expandStringValues(conf.Get(k))
 	}
 	return conf.Merge(confmap.NewFromStringMap(out))
 }
 
-func expandStringValues(value interface{}) interface{} {
+func expandStringValues(value any) any {
 	switch v := value.(type) {
 	case string:
 		return expandEnv(v)
-	case []interface{}:
-		nslice := make([]interface{}, 0, len(v))
+	case []any:
+		nslice := make([]any, 0, len(v))
 		for _, vint := range v {
 			nslice = append(nslice, expandStringValues(vint))
 		}
 		return nslice
-	case map[string]interface{}:
-		nmap := map[string]interface{}{}
+	case map[string]any:
+		nmap := map[string]any{}
 		for mk, mv := range v {
 			nmap[mk] = expandStringValues(mv)
 		}

@@ -37,8 +37,8 @@ func New() *Conf {
 	return &Conf{k: koanf.New(KeyDelimiter)}
 }
 
-// NewFromStringMap creates a confmap.Conf from a map[string]interface{}.
-func NewFromStringMap(data map[string]interface{}) *Conf {
+// NewFromStringMap creates a confmap.Conf from a map[string]any.
+func NewFromStringMap(data map[string]any) *Conf {
 	p := New()
 	// Cannot return error because the koanf instance is empty.
 	_ = p.k.Load(confmap.Provider(data, KeyDelimiter), nil)
@@ -82,7 +82,7 @@ func (fn unmarshalOptionFunc) apply(set *unmarshalOption) {
 
 // Unmarshal unmarshalls the config into a struct using the given options.
 // Tags on the fields of the structure must be properly set.
-func (l *Conf) Unmarshal(result interface{}, opts ...UnmarshalOption) error {
+func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
 	set := unmarshalOption{}
 	for _, opt := range opts {
 		opt.apply(&set)
@@ -97,13 +97,13 @@ type MarshalOption interface {
 }
 
 // Marshal encodes the config and merges it into the Conf.
-func (l *Conf) Marshal(rawVal interface{}, _ ...MarshalOption) error {
+func (l *Conf) Marshal(rawVal any, _ ...MarshalOption) error {
 	enc := encoder.New(encoderConfig(rawVal))
 	data, err := enc.Encode(rawVal)
 	if err != nil {
 		return err
 	}
-	out, ok := data.(map[string]interface{})
+	out, ok := data.(map[string]any)
 	if !ok {
 		return fmt.Errorf("invalid config encoding")
 	}
@@ -111,12 +111,11 @@ func (l *Conf) Marshal(rawVal interface{}, _ ...MarshalOption) error {
 }
 
 // Get can retrieve any value given the key to use.
-func (l *Conf) Get(key string) interface{} {
+func (l *Conf) Get(key string) any {
 	return l.k.Get(key)
 }
 
 // IsSet checks to see if the key has been set in any of the data locations.
-// IsSet is case-insensitive for a key.
 func (l *Conf) IsSet(key string) bool {
 	return l.k.Exists(key)
 }
@@ -128,7 +127,7 @@ func (l *Conf) Merge(in *Conf) error {
 }
 
 // Sub returns new Conf instance representing a sub-config of this instance.
-// It returns an error is the sub-config is not a map[string]interface{} (use Get()), and an empty Map if none exists.
+// It returns an error is the sub-config is not a map[string]any (use Get()), and an empty Map if none exists.
 func (l *Conf) Sub(key string) (*Conf, error) {
 	// Code inspired by the koanf "Cut" func, but returns an error instead of empty map for unsupported sub-config type.
 	data := l.Get(key)
@@ -136,15 +135,15 @@ func (l *Conf) Sub(key string) (*Conf, error) {
 		return New(), nil
 	}
 
-	if v, ok := data.(map[string]interface{}); ok {
+	if v, ok := data.(map[string]any); ok {
 		return NewFromStringMap(v), nil
 	}
 
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v)", key, data, reflect.TypeOf(data).Kind())
 }
 
-// ToStringMap creates a map[string]interface{} from a Parser.
-func (l *Conf) ToStringMap() map[string]interface{} {
+// ToStringMap creates a map[string]any from a Parser.
+func (l *Conf) ToStringMap() map[string]any {
 	return maps.Unflatten(l.k.All(), KeyDelimiter)
 }
 
@@ -155,12 +154,13 @@ func (l *Conf) ToStringMap() map[string]interface{} {
 // uniqueness of component IDs (see mapKeyStringToMapKeyTextUnmarshalerHookFunc).
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
-func decodeConfig(m *Conf, result interface{}, errorUnused bool) error {
+func decodeConfig(m *Conf, result any, errorUnused bool) error {
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      errorUnused,
 		Result:           result,
 		TagName:          "mapstructure",
 		WeaklyTypedInput: true,
+		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			expandNilStructPointersHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),
@@ -180,13 +180,20 @@ func decodeConfig(m *Conf, result interface{}, errorUnused bool) error {
 // encoderConfig returns a default encoder.EncoderConfig that includes
 // an EncodeHook that handles both TextMarshaller and Marshaler
 // interfaces.
-func encoderConfig(rawVal interface{}) *encoder.EncoderConfig {
+func encoderConfig(rawVal any) *encoder.EncoderConfig {
 	return &encoder.EncoderConfig{
 		EncodeHook: mapstructure.ComposeDecodeHookFunc(
 			encoder.TextMarshalerHookFunc(),
 			marshalerHookFunc(rawVal),
 		),
 	}
+}
+
+// case-sensitive version of the callback to be used in the MatchName property
+// of the DecoderConfig. The default for MatchEqual is to use strings.EqualFold,
+// which is case-insensitive.
+func caseSensitiveMatchName(a, b string) bool {
+	return a == b
 }
 
 // In cases where a config has a mapping of something to a struct pointers
@@ -205,7 +212,7 @@ func encoderConfig(rawVal interface{}) *encoder.EncoderConfig {
 // we want an unmarshaled Config to be equivalent to
 // Config{Thing: &SomeStruct{}} instead of Config{Thing: nil}
 func expandNilStructPointersHookFunc() mapstructure.DecodeHookFuncValue {
-	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
+	return func(from reflect.Value, to reflect.Value) (any, error) {
 		// ensure we are dealing with map to map comparison
 		if from.Kind() == reflect.Map && to.Kind() == reflect.Map {
 			toElem := to.Type().Elem()
@@ -229,13 +236,13 @@ func expandNilStructPointersHookFunc() mapstructure.DecodeHookFuncValue {
 }
 
 // mapKeyStringToMapKeyTextUnmarshalerHookFunc returns a DecodeHookFuncType that checks that a conversion from
-// map[string]interface{} to map[encoding.TextUnmarshaler]interface{} does not overwrite keys,
+// map[string]any to map[encoding.TextUnmarshaler]any does not overwrite keys,
 // when UnmarshalText produces equal elements from different strings (e.g. trims whitespaces).
 //
 // This is needed in combination with ComponentID, which may produce equal IDs for different strings,
 // and an error needs to be returned in that case, otherwise the last equivalent ID overwrites the previous one.
 func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncType {
-	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+	return func(f reflect.Type, t reflect.Type, data any) (any, error) {
 		if f.Kind() != reflect.Map || f.Key().Kind() != reflect.String {
 			return data, nil
 		}
@@ -249,7 +256,7 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 		}
 
 		m := reflect.MakeMap(reflect.MapOf(t.Key(), reflect.TypeOf(true)))
-		for k := range data.(map[string]interface{}) {
+		for k := range data.(map[string]any) {
 			tKey := reflect.New(t.Key())
 			if err := tKey.Interface().(encoding.TextUnmarshaler).UnmarshalText([]byte(k)); err != nil {
 				return nil, err
@@ -266,8 +273,8 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 
 // Provides a mechanism for individual structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface.
-func unmarshalerHookFunc(result interface{}) mapstructure.DecodeHookFuncValue {
-	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
+func unmarshalerHookFunc(result any) mapstructure.DecodeHookFuncValue {
+	return func(from reflect.Value, to reflect.Value) (any, error) {
 		if !to.CanAddr() {
 			return from.Interface(), nil
 		}
@@ -283,7 +290,7 @@ func unmarshalerHookFunc(result interface{}) mapstructure.DecodeHookFuncValue {
 			return from.Interface(), nil
 		}
 
-		if _, ok = from.Interface().(map[string]interface{}); !ok {
+		if _, ok = from.Interface().(map[string]any); !ok {
 			return from.Interface(), nil
 		}
 
@@ -292,7 +299,7 @@ func unmarshalerHookFunc(result interface{}) mapstructure.DecodeHookFuncValue {
 			unmarshaler = reflect.New(to.Type()).Interface().(Unmarshaler)
 		}
 
-		if err := unmarshaler.Unmarshal(NewFromStringMap(from.Interface().(map[string]interface{}))); err != nil {
+		if err := unmarshaler.Unmarshal(NewFromStringMap(from.Interface().(map[string]any))); err != nil {
 			return nil, err
 		}
 
@@ -302,9 +309,9 @@ func unmarshalerHookFunc(result interface{}) mapstructure.DecodeHookFuncValue {
 
 // marshalerHookFunc returns a DecodeHookFuncValue that checks structs that aren't
 // the original to see if they implement the Marshaler interface.
-func marshalerHookFunc(orig interface{}) mapstructure.DecodeHookFuncValue {
+func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
 	origType := reflect.TypeOf(orig)
-	return func(from reflect.Value, _ reflect.Value) (interface{}, error) {
+	return func(from reflect.Value, _ reflect.Value) (any, error) {
 		if from.Kind() != reflect.Struct {
 			return from.Interface(), nil
 		}

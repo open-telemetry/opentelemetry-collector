@@ -18,13 +18,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 )
 
 func TestGate(t *testing.T) {
 	g := &Gate{
 		id:             "test",
 		description:    "test gate",
-		enabled:        false,
+		enabled:        atomic.NewBool(true),
 		stage:          StageAlpha,
 		referenceURL:   "http://example.com",
 		removalVersion: "v0.64.0",
@@ -32,7 +33,7 @@ func TestGate(t *testing.T) {
 
 	assert.Equal(t, "test", g.ID())
 	assert.Equal(t, "test gate", g.Description())
-	assert.Equal(t, false, g.IsEnabled())
+	assert.True(t, g.IsEnabled())
 	assert.Equal(t, StageAlpha, g.Stage())
 	assert.Equal(t, "http://example.com", g.ReferenceURL())
 	assert.Equal(t, "v0.64.0", g.RemovalVersion())

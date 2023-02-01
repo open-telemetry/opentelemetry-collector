@@ -16,6 +16,7 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"errors"
+	"flag"
 
 	"github.com/spf13/cobra"
 
@@ -30,23 +31,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 		Version:      set.BuildInfo.Version,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := featuregate.GetRegistry().Apply(getFeatureGatesFlag(flagSet)); err != nil {
-				return err
-			}
-			if set.ConfigProvider == nil {
-				var err error
-
-				configFlags := getConfigFlag(flagSet)
-				if len(configFlags) == 0 {
-					return errors.New("at least one config flag must be provided")
-				}
-
-				set.ConfigProvider, err = NewConfigProvider(newDefaultConfigProviderSettings(configFlags))
-				if err != nil {
-					return err
-				}
-			}
-			col, err := NewCollector(set)
+			col, err := newCollectorWithFlags(set, flagSet)
 			if err != nil {
 				return err
 			}
@@ -56,4 +41,25 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 	rootCmd.AddCommand(newBuildSubCommand(set))
 	rootCmd.Flags().AddGoFlagSet(flagSet)
 	return rootCmd
+}
+
+func newCollectorWithFlags(set CollectorSettings, flags *flag.FlagSet) (*Collector, error) {
+	for id, enabled := range getFeatureGatesFlag(flags) {
+		if err := featuregate.GlobalRegistry().Set(id, enabled); err != nil {
+			return nil, err
+		}
+	}
+	if set.ConfigProvider == nil {
+		configFlags := getConfigFlag(flags)
+		if len(configFlags) == 0 {
+			return nil, errors.New("at least one config flag must be provided")
+		}
+
+		var err error
+		set.ConfigProvider, err = NewConfigProvider(newDefaultConfigProviderSettings(configFlags))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return NewCollector(set)
 }

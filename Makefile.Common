@@ -4,12 +4,39 @@ ALL_PKGS := $(sort $(shell go list ./...))
 GOTEST_OPT?= -race -timeout 120s
 GOCMD?= go
 GOTEST=$(GOCMD) test
-GO_ACC=go-acc
-LINT=golangci-lint
-IMPI=impi
-
 GOOS := $(shell $(GOCMD) env GOOS)
 GOARCH := $(shell $(GOCMD) env GOARCH)
+
+TOOLS_MOD_DIR   := $(PWD)/internal/tools
+TOOLS_BIN_DIR   := $(PWD)/.tools
+TOOLS_MOD_REGEX := "\s+_\s+\".*\""
+TOOLS_PKG_NAMES := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"")
+TOOLS_BIN_NAMES := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(TOOLS_PKG_NAMES)))
+
+
+.PHONY: install-tools
+install-tools: $(TOOLS_BIN_NAMES)
+
+$(TOOLS_BIN_DIR):
+	mkdir -p $@
+
+$(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
+
+ADDLICENSE  := $(TOOLS_BIN_DIR)/addlicense
+APIDIFF     := $(TOOLS_BIN_DIR)/apidiff
+CHECKDOC    := $(TOOLS_BIN_DIR)/checkdoc
+CHLOG       := $(TOOLS_BIN_DIR)/chloggen
+CROSSLINK   := $(TOOLS_BIN_DIR)/crosslink
+GO_ACC      := $(TOOLS_BIN_DIR)/go-acc
+GOCOVMERGE  := $(TOOLS_BIN_DIR)/gocovmerge
+GOIMPORTS   := $(TOOLS_BIN_DIR)/goimports
+LINT        := $(TOOLS_BIN_DIR)/golangci-lint
+IMPI        := $(TOOLS_BIN_DIR)/impi
+MISSPELL    := $(TOOLS_BIN_DIR)/misspell 
+MULTIMOD    := $(TOOLS_BIN_DIR)/multimod
+PORTO       := $(TOOLS_BIN_DIR)/porto
+
 GH := $(shell which gh)
 
 .PHONY: test
@@ -17,7 +44,7 @@ test:
 	$(GOTEST) $(GOTEST_OPT) ./...
 
 .PHONY: test-with-cover
-test-with-cover:
+test-with-cover: $(GO_ACC)
 	$(GO_ACC) --output=coverage.out ./...
 
 .PHONY: benchmark
@@ -25,9 +52,9 @@ benchmark:
 	$(GOTEST) -bench=. -run=notests ./...
 
 .PHONY: fmt
-fmt:
+fmt: $(GOIMPORTS)
 	gofmt -w -s ./
-	goimports -w  -local go.opentelemetry.io/collector ./
+	$(GOIMPORTS) -w  -local go.opentelemetry.io/collector ./
 
 .PHONY: tidy
 tidy:
@@ -35,7 +62,7 @@ tidy:
 	$(GOCMD) mod tidy -compat=1.18
 
 .PHONY: lint
-lint:
+lint: $(LINT)
 	$(LINT) run
 
 .PHONY: generate
@@ -43,7 +70,7 @@ generate:
 	$(GOCMD) generate ./...
 
 .PHONY: impi
-impi:
+impi: $(IMPI)
 	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal ./...
 
 .PHONY: moddownload

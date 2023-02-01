@@ -27,47 +27,47 @@ import (
 )
 
 func TestToStringMapFlatten(t *testing.T) {
-	conf := NewFromStringMap(map[string]interface{}{"key::embedded": int64(123)})
-	assert.Equal(t, map[string]interface{}{"key": map[string]interface{}{"embedded": int64(123)}}, conf.ToStringMap())
+	conf := NewFromStringMap(map[string]any{"key::embedded": int64(123)})
+	assert.Equal(t, map[string]any{"key": map[string]any{"embedded": int64(123)}}, conf.ToStringMap())
 }
 
 func TestToStringMap(t *testing.T) {
 	tests := []struct {
 		name      string
 		fileName  string
-		stringMap map[string]interface{}
+		stringMap map[string]any
 	}{
 		{
 			name:     "Sample Collector configuration",
 			fileName: filepath.Join("testdata", "config.yaml"),
-			stringMap: map[string]interface{}{
-				"receivers": map[string]interface{}{
+			stringMap: map[string]any{
+				"receivers": map[string]any{
 					"nop":            nil,
 					"nop/myreceiver": nil,
 				},
 
-				"processors": map[string]interface{}{
+				"processors": map[string]any{
 					"nop":             nil,
 					"nop/myprocessor": nil,
 				},
 
-				"exporters": map[string]interface{}{
+				"exporters": map[string]any{
 					"nop":            nil,
 					"nop/myexporter": nil,
 				},
 
-				"extensions": map[string]interface{}{
+				"extensions": map[string]any{
 					"nop":             nil,
 					"nop/myextension": nil,
 				},
 
-				"service": map[string]interface{}{
-					"extensions": []interface{}{"nop"},
-					"pipelines": map[string]interface{}{
-						"traces": map[string]interface{}{
-							"receivers":  []interface{}{"nop"},
-							"processors": []interface{}{"nop"},
-							"exporters":  []interface{}{"nop"},
+				"service": map[string]any{
+					"extensions": []any{"nop"},
+					"pipelines": map[string]any{
+						"traces": map[string]any{
+							"receivers":  []any{"nop"},
+							"processors": []any{"nop"},
+							"exporters":  []any{"nop"},
 						},
 					},
 				},
@@ -76,8 +76,8 @@ func TestToStringMap(t *testing.T) {
 		{
 			name:     "Sample types",
 			fileName: filepath.Join("testdata", "basic_types.yaml"),
-			stringMap: map[string]interface{}{
-				"typed.options": map[string]interface{}{
+			stringMap: map[string]any{
+				"typed.options": map[string]any{
 					"floating.point.example": 3.14,
 					"integer.example":        1234,
 					"bool.example":           false,
@@ -89,13 +89,13 @@ func TestToStringMap(t *testing.T) {
 		{
 			name:     "Embedded keys",
 			fileName: filepath.Join("testdata", "embedded_keys.yaml"),
-			stringMap: map[string]interface{}{
-				"typed": map[string]interface{}{"options": map[string]interface{}{
-					"floating": map[string]interface{}{"point": map[string]interface{}{"example": 3.14}},
-					"integer":  map[string]interface{}{"example": 1234},
-					"bool":     map[string]interface{}{"example": false},
-					"string":   map[string]interface{}{"example": "this is a string"},
-					"nil":      map[string]interface{}{"example": nil},
+			stringMap: map[string]any{
+				"typed": map[string]any{"options": map[string]any{
+					"floating": map[string]any{"point": map[string]any{"example": 3.14}},
+					"integer":  map[string]any{"example": 1234},
+					"bool":     map[string]any{"example": false},
+					"string":   map[string]any{"example": "this is a string"},
+					"nil":      map[string]any{"example": nil},
 				}},
 			},
 		},
@@ -108,10 +108,10 @@ func TestToStringMap(t *testing.T) {
 }
 
 func TestExpandNilStructPointersHookFunc(t *testing.T) {
-	stringMap := map[string]interface{}{
+	stringMap := map[string]any{
 		"boolean": nil,
 		"struct":  nil,
-		"map_struct": map[string]interface{}{
+		"map_struct": map[string]any{
 			"struct": nil,
 		},
 	}
@@ -128,10 +128,10 @@ func TestExpandNilStructPointersHookFunc(t *testing.T) {
 }
 
 func TestExpandNilStructPointersHookFuncDefaultNotNilConfigNil(t *testing.T) {
-	stringMap := map[string]interface{}{
+	stringMap := map[string]any{
 		"boolean": nil,
 		"struct":  nil,
-		"map_struct": map[string]interface{}{
+		"map_struct": map[string]any{
 			"struct": nil,
 		},
 	}
@@ -155,7 +155,7 @@ func TestExpandNilStructPointersHookFuncDefaultNotNilConfigNil(t *testing.T) {
 }
 
 func TestUnmarshalWithErrorUnused(t *testing.T) {
-	stringMap := map[string]interface{}{
+	stringMap := map[string]any{
 		"boolean": true,
 		"string":  "this is a string",
 	}
@@ -176,7 +176,7 @@ func (t TestConfig) Marshal(conf *Conf) error {
 	if err := conf.Marshal(t); err != nil {
 		return err
 	}
-	return conf.Merge(NewFromStringMap(map[string]interface{}{
+	return conf.Merge(NewFromStringMap(map[string]any{
 		"additional": "field",
 	}))
 }
@@ -209,9 +209,9 @@ type TestIDConfig struct {
 }
 
 func TestMapKeyStringToMapKeyTextUnmarshalerHookFunc(t *testing.T) {
-	stringMap := map[string]interface{}{
+	stringMap := map[string]any{
 		"bool": true,
-		"map": map[string]interface{}{
+		"map": map[string]any{
 			"string": "this is a string",
 		},
 	}
@@ -224,9 +224,9 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFunc(t *testing.T) {
 }
 
 func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
-	stringMap := map[string]interface{}{
+	stringMap := map[string]any{
 		"bool": true,
-		"map": map[string]interface{}{
+		"map": map[string]any{
 			"string":  "this is a string",
 			"string_": "this is another string",
 		},
@@ -238,9 +238,9 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
 }
 
 func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncErrorUnmarshal(t *testing.T) {
-	stringMap := map[string]interface{}{
+	stringMap := map[string]any{
 		"bool": true,
-		"map": map[string]interface{}{
+		"map": map[string]any{
 			"error": "this is a string",
 		},
 	}
@@ -260,7 +260,7 @@ func TestMarshal(t *testing.T) {
 	}
 	assert.NoError(t, conf.Marshal(cfg))
 	assert.Equal(t, true, conf.Get("bool"))
-	assert.Equal(t, map[string]interface{}{"string_": "this is a string"}, conf.Get("map"))
+	assert.Equal(t, map[string]any{"string_": "this is a string"}, conf.Get("map"))
 }
 
 func TestMarshalDuplicateID(t *testing.T) {
@@ -308,11 +308,11 @@ func TestMarshaler(t *testing.T) {
 }
 
 // newConfFromFile creates a new Conf by reading the given file.
-func newConfFromFile(t testing.TB, fileName string) map[string]interface{} {
+func newConfFromFile(t testing.TB, fileName string) map[string]any {
 	content, err := os.ReadFile(filepath.Clean(fileName))
 	require.NoErrorf(t, err, "unable to read the file %v", fileName)
 
-	var data map[string]interface{}
+	var data map[string]any
 	require.NoError(t, yaml.Unmarshal(content, &data), "unable to parse yaml")
 
 	return NewFromStringMap(data).ToStringMap()
@@ -345,8 +345,8 @@ func (nc *nextConfig) Unmarshal(component *Conf) error {
 }
 
 func TestUnmarshaler(t *testing.T) {
-	cfgMap := NewFromStringMap(map[string]interface{}{
-		"next": map[string]interface{}{
+	cfgMap := NewFromStringMap(map[string]any{
+		"next": map[string]any{
 			"string": "make sure this",
 		},
 		"another": "make sure this",
@@ -359,8 +359,8 @@ func TestUnmarshaler(t *testing.T) {
 }
 
 func TestUnmarshalerKeepAlreadyInitialized(t *testing.T) {
-	cfgMap := NewFromStringMap(map[string]interface{}{
-		"next": map[string]interface{}{
+	cfgMap := NewFromStringMap(map[string]any{
+		"next": map[string]any{
 			"string": "make sure this",
 		},
 		"another": "make sure this",
@@ -376,8 +376,8 @@ func TestUnmarshalerKeepAlreadyInitialized(t *testing.T) {
 }
 
 func TestDirectUnmarshaler(t *testing.T) {
-	cfgMap := NewFromStringMap(map[string]interface{}{
-		"next": map[string]interface{}{
+	cfgMap := NewFromStringMap(map[string]any{
+		"next": map[string]any{
 			"string": "make sure this",
 		},
 		"another": "make sure this",
@@ -409,8 +409,8 @@ func (tc *errConfig) Unmarshal(component *Conf) error {
 }
 
 func TestUnmarshalerErr(t *testing.T) {
-	cfgMap := NewFromStringMap(map[string]interface{}{
-		"err": map[string]interface{}{
+	cfgMap := NewFromStringMap(map[string]any{
+		"err": map[string]any{
 			"foo": "will not unmarshal due to error",
 		},
 	})

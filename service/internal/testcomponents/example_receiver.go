@@ -44,7 +44,7 @@ func createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
 	tr := createReceiver(cfg)
-	tr.Traces = nextConsumer
+	tr.ConsumeTracesFunc = nextConsumer.ConsumeTraces
 	return tr, nil
 }
 
@@ -56,7 +56,7 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	mr := createReceiver(cfg)
-	mr.Metrics = nextConsumer
+	mr.ConsumeMetricsFunc = nextConsumer.ConsumeMetrics
 	return mr, nil
 }
 
@@ -67,7 +67,7 @@ func createLogsReceiver(
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
 	lr := createReceiver(cfg)
-	lr.Logs = nextConsumer
+	lr.ConsumeLogsFunc = nextConsumer.ConsumeLogs
 	return lr, nil
 }
 
@@ -88,23 +88,10 @@ func createReceiver(cfg component.Config) *ExampleReceiver {
 
 // ExampleReceiver allows producing traces and metrics for testing purposes.
 type ExampleReceiver struct {
-	consumer.Traces
-	consumer.Metrics
-	consumer.Logs
-	Started bool
-	Stopped bool
-}
-
-// Start tells the receiver to start its processing.
-func (erp *ExampleReceiver) Start(_ context.Context, _ component.Host) error {
-	erp.Started = true
-	return nil
-}
-
-// Shutdown tells the receiver that should stop reception,
-func (erp *ExampleReceiver) Shutdown(context.Context) error {
-	erp.Stopped = true
-	return nil
+	componentState
+	consumer.ConsumeTracesFunc
+	consumer.ConsumeMetricsFunc
+	consumer.ConsumeLogsFunc
 }
 
 // This is the map of already created example receivers for particular configurations.

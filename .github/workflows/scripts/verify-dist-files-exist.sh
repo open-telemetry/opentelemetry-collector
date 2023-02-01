@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 files=(
     bin/otelcol_darwin_amd64
     bin/otelcol_darwin_arm64
@@ -11,8 +13,8 @@ do
     if [[ ! -f $f ]]
     then
         echo "$f does not exist."
-        echo "passed=false" >> $GITHUB_OUTPUT
+        echo "passed=false" >> "$GITHUB_OUTPUT"
         exit 0 
     fi
 done
-echo "passed=true" >> $GITHUB_OUTPUT
+echo "passed=true" >> "$GITHUB_OUTPUT"

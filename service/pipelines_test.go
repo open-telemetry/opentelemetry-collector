@@ -42,12 +42,12 @@ func TestBuildPipelines(t *testing.T) {
 		receiverIDs      []component.ID
 		processorIDs     []component.ID
 		exporterIDs      []component.ID
-		pipelineConfigs  map[component.ID]*ConfigServicePipeline
+		pipelineConfigs  map[component.ID]*PipelineConfig
 		expectedRequests int
 	}{
 		{
 			name: "pipelines_simple",
-			pipelineConfigs: map[component.ID]*ConfigServicePipeline{
+			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
 					Processors: []component.ID{component.NewID("exampleprocessor")},
@@ -68,7 +68,7 @@ func TestBuildPipelines(t *testing.T) {
 		},
 		{
 			name: "pipelines_simple_multi_proc",
-			pipelineConfigs: map[component.ID]*ConfigServicePipeline{
+			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
 					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
@@ -89,7 +89,7 @@ func TestBuildPipelines(t *testing.T) {
 		},
 		{
 			name: "pipelines_simple_no_proc",
-			pipelineConfigs: map[component.ID]*ConfigServicePipeline{
+			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers: []component.ID{component.NewID("examplereceiver")},
 					Exporters: []component.ID{component.NewID("exampleexporter")},
@@ -107,7 +107,7 @@ func TestBuildPipelines(t *testing.T) {
 		},
 		{
 			name: "pipelines_multi",
-			pipelineConfigs: map[component.ID]*ConfigServicePipeline{
+			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
 					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
@@ -128,7 +128,7 @@ func TestBuildPipelines(t *testing.T) {
 		},
 		{
 			name: "pipelines_multi_no_proc",
-			pipelineConfigs: map[component.ID]*ConfigServicePipeline{
+			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers: []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
 					Exporters: []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
@@ -148,7 +148,7 @@ func TestBuildPipelines(t *testing.T) {
 			name:        "pipelines_exporter_multi_pipeline",
 			receiverIDs: []component.ID{component.NewID("examplereceiver")},
 			exporterIDs: []component.ID{component.NewID("exampleexporter")},
-			pipelineConfigs: map[component.ID]*ConfigServicePipeline{
+			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers: []component.ID{component.NewID("examplereceiver")},
 					Exporters: []component.ID{component.NewID("exampleexporter")},
@@ -181,41 +181,46 @@ func TestBuildPipelines(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Build the pipeline
-			pipelines, err := buildPipelines(context.Background(), pipelinesSettings{
+			pips, err := buildPipelines(context.Background(), pipelinesSettings{
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
-				ReceiverFactories: map[component.Type]receiver.Factory{
-					testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
-				},
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("examplereceiver"):              testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
-					component.NewIDWithName("examplereceiver", "1"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
-				},
-				ProcessorFactories: map[component.Type]processor.Factory{
-					testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
-				},
-				ProcessorConfigs: map[component.ID]component.Config{
-					component.NewID("exampleprocessor"):              testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
-					component.NewIDWithName("exampleprocessor", "1"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
-				},
-				ExporterFactories: map[component.Type]exporter.Factory{
-					testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("exampleexporter"):              testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
-					component.NewIDWithName("exampleexporter", "1"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
-				},
+				Receivers: receiver.NewBuilder(
+					map[component.ID]component.Config{
+						component.NewID("examplereceiver"):              testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+						component.NewIDWithName("examplereceiver", "1"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+					},
+					map[component.Type]receiver.Factory{
+						testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+					}),
+				Processors: processor.NewBuilder(
+					map[component.ID]component.Config{
+						component.NewID("exampleprocessor"):              testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+						component.NewIDWithName("exampleprocessor", "1"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+					},
+					map[component.Type]processor.Factory{
+						testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
+					}),
+				Exporters: exporter.NewBuilder(
+					map[component.ID]component.Config{
+						component.NewID("exampleexporter"):              testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+						component.NewIDWithName("exampleexporter", "1"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+					},
+					map[component.Type]exporter.Factory{
+						testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
+					}),
 				PipelineConfigs: test.pipelineConfigs,
 			})
 			assert.NoError(t, err)
+			assert.IsType(t, &builtPipelines{}, pips)
 
+			pipelines := pips.(*builtPipelines)
 			assert.NoError(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 
 			for dt, pipeline := range test.pipelineConfigs {
 				// Verify exporters created, started and empty.
 				for _, expID := range pipeline.Exporters {
 					exp := pipelines.GetExporters()[dt.Type()][expID].(*testcomponents.ExampleExporter)
-					assert.True(t, exp.Started)
+					assert.True(t, exp.Started())
 					switch dt.Type() {
 					case component.DataTypeTraces:
 						assert.Len(t, exp.Traces, 0)
@@ -230,13 +235,13 @@ func TestBuildPipelines(t *testing.T) {
 				for i, procID := range pipeline.Processors {
 					processor := pipelines.pipelines[dt].processors[i]
 					assert.Equal(t, procID, processor.id)
-					assert.True(t, processor.comp.(*testcomponents.ExampleProcessor).Started)
+					assert.True(t, processor.comp.(*testcomponents.ExampleProcessor).Started())
 				}
 
 				// Verify receivers created, started and send data to confirm pipelines correctly connected.
 				for _, recvID := range pipeline.Receivers {
 					receiver := pipelines.allReceivers[dt.Type()][recvID].(*testcomponents.ExampleReceiver)
-					assert.True(t, receiver.Started)
+					assert.True(t, receiver.Started())
 				}
 			}
 
@@ -261,13 +266,13 @@ func TestBuildPipelines(t *testing.T) {
 				// Verify receivers shutdown.
 				for _, recvID := range pipeline.Receivers {
 					receiver := pipelines.allReceivers[dt.Type()][recvID].(*testcomponents.ExampleReceiver)
-					assert.True(t, receiver.Stopped)
+					assert.True(t, receiver.Stopped())
 				}
 
 				// Verify processors shutdown.
 				for i := range pipeline.Processors {
 					processor := pipelines.pipelines[dt].processors[i]
-					assert.True(t, processor.comp.(*testcomponents.ExampleProcessor).Stopped)
+					assert.True(t, processor.comp.(*testcomponents.ExampleProcessor).Stopped())
 				}
 
 				// Now verify that exporters received data, and are shutdown.
@@ -284,7 +289,7 @@ func TestBuildPipelines(t *testing.T) {
 						require.Len(t, exp.Logs, test.expectedRequests)
 						assert.EqualValues(t, testdata.GenerateLogs(1), exp.Logs[0])
 					}
-					assert.True(t, exp.Stopped)
+					assert.True(t, exp.Stopped())
 				}
 			}
 		})
@@ -300,318 +305,299 @@ func TestBuildErrors(t *testing.T) {
 	badExporterFactory := newBadExporterFactory()
 
 	tests := []struct {
-		name     string
-		settings pipelinesSettings
-		expected string
+		name             string
+		ReceiverConfigs  map[component.ID]component.Config
+		ProcessorConfigs map[component.ID]component.Config
+		ExporterConfigs  map[component.ID]component.Config
+		PipelineConfigs  map[component.ID]*PipelineConfig
+		expected         string
 	}{
 		{
 			name: "not_supported_exporter_logs",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("bf"): badExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("logs"): {
-						Receivers: []component.ID{component.NewID("nop")},
-						Exporters: []component.ID{component.NewID("bf")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("bf"): badExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("logs"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("bf")},
 				},
 			},
 			expected: "failed to create \"bf\" exporter, in pipeline \"logs\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_exporter_metrics",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("bf"): badExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("metrics"): {
-						Receivers: []component.ID{component.NewID("nop")},
-						Exporters: []component.ID{component.NewID("bf")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("bf"): badExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("metrics"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("bf")},
 				},
 			},
 			expected: "failed to create \"bf\" exporter, in pipeline \"metrics\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_exporter_traces",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("bf"): badExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("traces"): {
-						Receivers: []component.ID{component.NewID("nop")},
-						Exporters: []component.ID{component.NewID("bf")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("bf"): badExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("traces"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("bf")},
 				},
 			},
 			expected: "failed to create \"bf\" exporter, in pipeline \"traces\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_processor_logs",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
-				},
-				ProcessorConfigs: map[component.ID]component.Config{
-					component.NewID("bf"): badProcessorFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("logs"): {
-						Receivers:  []component.ID{component.NewID("nop")},
-						Processors: []component.ID{component.NewID("bf")},
-						Exporters:  []component.ID{component.NewID("nop")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			ProcessorConfigs: map[component.ID]component.Config{
+				component.NewID("bf"): badProcessorFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("logs"): {
+					Receivers:  []component.ID{component.NewID("nop")},
+					Processors: []component.ID{component.NewID("bf")},
+					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
 			expected: "failed to create \"bf\" processor, in pipeline \"logs\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_processor_metrics",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
-				},
-				ProcessorConfigs: map[component.ID]component.Config{
-					component.NewID("bf"): badProcessorFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("metrics"): {
-						Receivers:  []component.ID{component.NewID("nop")},
-						Processors: []component.ID{component.NewID("bf")},
-						Exporters:  []component.ID{component.NewID("nop")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			ProcessorConfigs: map[component.ID]component.Config{
+				component.NewID("bf"): badProcessorFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("metrics"): {
+					Receivers:  []component.ID{component.NewID("nop")},
+					Processors: []component.ID{component.NewID("bf")},
+					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
 			expected: "failed to create \"bf\" processor, in pipeline \"metrics\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_processor_traces",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
-				},
-				ProcessorConfigs: map[component.ID]component.Config{
-					component.NewID("bf"): badProcessorFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("traces"): {
-						Receivers:  []component.ID{component.NewID("nop")},
-						Processors: []component.ID{component.NewID("bf")},
-						Exporters:  []component.ID{component.NewID("nop")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			ProcessorConfigs: map[component.ID]component.Config{
+				component.NewID("bf"): badProcessorFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("traces"): {
+					Receivers:  []component.ID{component.NewID("nop")},
+					Processors: []component.ID{component.NewID("bf")},
+					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
 			expected: "failed to create \"bf\" processor, in pipeline \"traces\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_receiver_logs",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("bf"): badReceiverFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("logs"): {
-						Receivers: []component.ID{component.NewID("bf")},
-						Exporters: []component.ID{component.NewID("nop")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("bf"): badReceiverFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("logs"): {
+					Receivers: []component.ID{component.NewID("bf")},
+					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
 			expected: "failed to create \"bf\" receiver, in pipeline \"logs\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_receiver_metrics",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("bf"): badReceiverFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("metrics"): {
-						Receivers: []component.ID{component.NewID("bf")},
-						Exporters: []component.ID{component.NewID("nop")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("bf"): badReceiverFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("metrics"): {
+					Receivers: []component.ID{component.NewID("bf")},
+					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
 			expected: "failed to create \"bf\" receiver, in pipeline \"metrics\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_receiver_traces",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("bf"): badReceiverFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("traces"): {
-						Receivers: []component.ID{component.NewID("bf")},
-						Exporters: []component.ID{component.NewID("nop")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("bf"): badReceiverFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("traces"): {
+					Receivers: []component.ID{component.NewID("bf")},
+					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
 			expected: "failed to create \"bf\" receiver, in pipeline \"traces\": telemetry type is not supported",
 		},
 		{
 			name: "unknown_exporter_config",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("traces"): {
-						Receivers: []component.ID{component.NewID("nop")},
-						Exporters: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "1")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("traces"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "1")},
 				},
 			},
-			expected: "exporter \"nop/1\" is not configured",
+			expected: "failed to create \"nop/1\" exporter, in pipeline \"traces\": exporter \"nop/1\" is not configured",
 		},
 		{
 			name: "unknown_exporter_factory",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("unknown"): nopExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("traces"): {
-						Receivers: []component.ID{component.NewID("nop")},
-						Exporters: []component.ID{component.NewID("unknown")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("unknown"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("traces"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("unknown")},
 				},
 			},
-			expected: "exporter factory not available for: \"unknown\"",
+			expected: "failed to create \"unknown\" exporter, in pipeline \"traces\": exporter factory not available for: \"unknown\"",
 		},
 		{
 			name: "unknown_processor_config",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
-				},
-				ProcessorConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopProcessorFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("metrics"): {
-						Receivers:  []component.ID{component.NewID("nop")},
-						Processors: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "1")},
-						Exporters:  []component.ID{component.NewID("nop")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			ProcessorConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopProcessorFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("metrics"): {
+					Receivers:  []component.ID{component.NewID("nop")},
+					Processors: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "1")},
+					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "processor \"nop/1\" is not configured",
+			expected: "failed to create \"nop/1\" processor, in pipeline \"metrics\": processor \"nop/1\" is not configured",
 		},
 		{
 			name: "unknown_processor_factory",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
-				},
-				ProcessorConfigs: map[component.ID]component.Config{
-					component.NewID("unknown"): nopProcessorFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("metrics"): {
-						Receivers:  []component.ID{component.NewID("nop")},
-						Processors: []component.ID{component.NewID("unknown")},
-						Exporters:  []component.ID{component.NewID("nop")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			ProcessorConfigs: map[component.ID]component.Config{
+				component.NewID("unknown"): nopProcessorFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("metrics"): {
+					Receivers:  []component.ID{component.NewID("nop")},
+					Processors: []component.ID{component.NewID("unknown")},
+					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "processor factory not available for: \"unknown\"",
+			expected: "failed to create \"unknown\" processor, in pipeline \"metrics\": processor factory not available for: \"unknown\"",
 		},
 		{
 			name: "unknown_receiver_config",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("logs"): {
-						Receivers: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "1")},
-						Exporters: []component.ID{component.NewID("nop")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("logs"): {
+					Receivers: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "1")},
+					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "receiver \"nop/1\" is not configured",
+			expected: "failed to create \"nop/1\" receiver, in pipeline \"logs\": receiver \"nop/1\" is not configured",
 		},
 		{
 			name: "unknown_receiver_factory",
-			settings: pipelinesSettings{
-				ReceiverConfigs: map[component.ID]component.Config{
-					component.NewID("unknown"): nopReceiverFactory.CreateDefaultConfig(),
-				},
-				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
-				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
-					component.NewID("logs"): {
-						Receivers: []component.ID{component.NewID("unknown")},
-						Exporters: []component.ID{component.NewID("nop")},
-					},
+			ReceiverConfigs: map[component.ID]component.Config{
+				component.NewID("unknown"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			ExporterConfigs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			PipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("logs"): {
+					Receivers: []component.ID{component.NewID("unknown")},
+					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "receiver factory not available for: \"unknown\"",
+			expected: "failed to create \"unknown\" receiver, in pipeline \"logs\": receiver factory not available for: \"unknown\"",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			set := test.settings
-			set.BuildInfo = component.NewDefaultBuildInfo()
-			set.Telemetry = componenttest.NewNopTelemetrySettings()
-			set.ReceiverFactories = map[component.Type]receiver.Factory{
-				nopReceiverFactory.Type(): nopReceiverFactory,
-				badReceiverFactory.Type(): badReceiverFactory,
-			}
-			set.ProcessorFactories = map[component.Type]processor.Factory{
-				nopProcessorFactory.Type(): nopProcessorFactory,
-				badProcessorFactory.Type(): badProcessorFactory,
-			}
-			set.ExporterFactories = map[component.Type]exporter.Factory{
-				nopExporterFactory.Type(): nopExporterFactory,
-				badExporterFactory.Type(): badExporterFactory,
+			set := pipelinesSettings{
+				Telemetry: componenttest.NewNopTelemetrySettings(),
+				BuildInfo: component.NewDefaultBuildInfo(),
+				Receivers: receiver.NewBuilder(
+					test.ReceiverConfigs,
+					map[component.Type]receiver.Factory{
+						nopReceiverFactory.Type(): nopReceiverFactory,
+						badReceiverFactory.Type(): badReceiverFactory,
+					}),
+				Processors: processor.NewBuilder(
+					test.ProcessorConfigs,
+					map[component.Type]processor.Factory{
+						nopProcessorFactory.Type(): nopProcessorFactory,
+						badProcessorFactory.Type(): badProcessorFactory,
+					}),
+				Exporters: exporter.NewBuilder(
+					test.ExporterConfigs,
+					map[component.Type]exporter.Factory{
+						nopExporterFactory.Type(): nopExporterFactory,
+						badExporterFactory.Type(): badExporterFactory,
+					}),
+				PipelineConfigs: test.PipelineConfigs,
 			}
 
 			_, err := buildPipelines(context.Background(), set)
@@ -631,35 +617,38 @@ func TestFailToStartAndShutdown(t *testing.T) {
 	set := pipelinesSettings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
-		ReceiverFactories: map[component.Type]receiver.Factory{
-			nopReceiverFactory.Type(): nopReceiverFactory,
-			errReceiverFactory.Type(): errReceiverFactory,
-		},
-		ReceiverConfigs: map[component.ID]component.Config{
-			component.NewID(nopReceiverFactory.Type()): nopReceiverFactory.CreateDefaultConfig(),
-			component.NewID(errReceiverFactory.Type()): errReceiverFactory.CreateDefaultConfig(),
-		},
-		ProcessorFactories: map[component.Type]processor.Factory{
-			nopProcessorFactory.Type(): nopProcessorFactory,
-			errProcessorFactory.Type(): errProcessorFactory,
-		},
-		ProcessorConfigs: map[component.ID]component.Config{
-			component.NewID(nopProcessorFactory.Type()): nopProcessorFactory.CreateDefaultConfig(),
-			component.NewID(errProcessorFactory.Type()): errProcessorFactory.CreateDefaultConfig(),
-		},
-		ExporterFactories: map[component.Type]exporter.Factory{
-			nopExporterFactory.Type(): nopExporterFactory,
-			errExporterFactory.Type(): errExporterFactory,
-		},
-		ExporterConfigs: map[component.ID]component.Config{
-			component.NewID(nopExporterFactory.Type()): nopExporterFactory.CreateDefaultConfig(),
-			component.NewID(errExporterFactory.Type()): errExporterFactory.CreateDefaultConfig(),
-		},
+		Receivers: receiver.NewBuilder(
+			map[component.ID]component.Config{
+				component.NewID(nopReceiverFactory.Type()): nopReceiverFactory.CreateDefaultConfig(),
+				component.NewID(errReceiverFactory.Type()): errReceiverFactory.CreateDefaultConfig(),
+			},
+			map[component.Type]receiver.Factory{
+				nopReceiverFactory.Type(): nopReceiverFactory,
+				errReceiverFactory.Type(): errReceiverFactory,
+			}),
+		Processors: processor.NewBuilder(
+			map[component.ID]component.Config{
+				component.NewID(nopProcessorFactory.Type()): nopProcessorFactory.CreateDefaultConfig(),
+				component.NewID(errProcessorFactory.Type()): errProcessorFactory.CreateDefaultConfig(),
+			},
+			map[component.Type]processor.Factory{
+				nopProcessorFactory.Type(): nopProcessorFactory,
+				errProcessorFactory.Type(): errProcessorFactory,
+			}),
+		Exporters: exporter.NewBuilder(
+			map[component.ID]component.Config{
+				component.NewID(nopExporterFactory.Type()): nopExporterFactory.CreateDefaultConfig(),
+				component.NewID(errExporterFactory.Type()): errExporterFactory.CreateDefaultConfig(),
+			},
+			map[component.Type]exporter.Factory{
+				nopExporterFactory.Type(): nopExporterFactory,
+				errExporterFactory.Type(): errExporterFactory,
+			}),
 	}
 
 	for _, dt := range []component.DataType{component.DataTypeTraces, component.DataTypeMetrics, component.DataTypeLogs} {
 		t.Run(string(dt)+"/receiver", func(t *testing.T) {
-			set.PipelineConfigs = map[component.ID]*ConfigServicePipeline{
+			set.PipelineConfigs = map[component.ID]*PipelineConfig{
 				component.NewID(dt): {
 					Receivers:  []component.ID{component.NewID("nop"), component.NewID("err")},
 					Processors: []component.ID{component.NewID("nop")},
@@ -673,7 +662,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 		})
 
 		t.Run(string(dt)+"/processor", func(t *testing.T) {
-			set.PipelineConfigs = map[component.ID]*ConfigServicePipeline{
+			set.PipelineConfigs = map[component.ID]*PipelineConfig{
 				component.NewID(dt): {
 					Receivers:  []component.ID{component.NewID("nop")},
 					Processors: []component.ID{component.NewID("nop"), component.NewID("err")},
@@ -687,7 +676,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 		})
 
 		t.Run(string(dt)+"/exporter", func(t *testing.T) {
-			set.PipelineConfigs = map[component.ID]*ConfigServicePipeline{
+			set.PipelineConfigs = map[component.ID]*PipelineConfig{
 				component.NewID(dt): {
 					Receivers:  []component.ID{component.NewID("nop")},
 					Processors: []component.ID{component.NewID("nop")},

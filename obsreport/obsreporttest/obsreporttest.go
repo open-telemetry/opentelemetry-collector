@@ -154,9 +154,6 @@ func (tts *TestTelemetry) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-// Deprecated: [v0.68.0] use SetupTelemetry.
-var SetupTelemetryWithID = SetupTelemetry
-
 // SetupTelemetry does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
 // The caller must pass the ID of the component that intends to test, so the CreateSettings and Check methods will use.
 // The caller should defer a call to Shutdown the returned TestTelemetry.

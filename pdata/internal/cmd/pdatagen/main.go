@@ -25,9 +25,9 @@ func check(e error) {
 }
 
 func main() {
-	for _, fp := range internal.AllFiles {
-		check(fp.GenerateFile())
-		check(fp.GenerateTestFile())
-		check(fp.GenerateInternalFile())
+	for _, fp := range internal.AllPackages {
+		check(fp.GenerateFiles())
+		check(fp.GenerateTestFiles())
+		check(fp.GenerateInternalFiles())
 	}
 }

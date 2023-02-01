@@ -13,10 +13,10 @@
 // limitations under the License.
 
 package plogotlp // import "go.opentelemetry.io/collector/pdata/plog/plogotlp"
+
 import (
 	"bytes"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/pdata/plog/internal/plogjson"
 )
@@ -57,5 +57,5 @@ func (lr ExportResponse) UnmarshalJSON(data []byte) error {
 
 // PartialSuccess returns the ExportPartialSuccess associated with this ExportResponse.
 func (lr ExportResponse) PartialSuccess() ExportPartialSuccess {
-	return ExportPartialSuccess(internal.NewLogsExportPartialSuccess(&lr.orig.PartialSuccess))
+	return newExportPartialSuccess(&lr.orig.PartialSuccess)
 }

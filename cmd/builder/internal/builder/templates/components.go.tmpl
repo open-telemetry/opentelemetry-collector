@@ -3,11 +3,15 @@
 package main
 
 import (
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	{{- range .Connectors}}
+	{{.Name}} "{{.Import}}"
+	{{- end}}
 	{{- range .Exporters}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}
@@ -22,9 +26,9 @@ import (
 	{{- end}}
 )
 
-func components() (component.Factories, error) {
+func components() (otelcol.Factories, error) {
 	var err error
-	factories := component.Factories{}
+	factories := otelcol.Factories{}
 
 	factories.Extensions, err = extension.MakeFactoryMap(
 		{{- range .Extensions}}
@@ -32,7 +36,7 @@ func components() (component.Factories, error) {
 		{{- end}}
 	)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
 	factories.Receivers, err = receiver.MakeFactoryMap(
@@ -41,7 +45,7 @@ func components() (component.Factories, error) {
 		{{- end}}
 	)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
 	factories.Exporters, err = exporter.MakeFactoryMap(
@@ -50,7 +54,7 @@ func components() (component.Factories, error) {
 		{{- end}}
 	)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
 	factories.Processors, err = processor.MakeFactoryMap(
@@ -59,7 +63,16 @@ func components() (component.Factories, error) {
 		{{- end}}
 	)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
+	}
+
+	factories.Connectors, err = connector.MakeFactoryMap(
+		{{- range .Connectors}}
+		{{.Name}}.NewFactory(),
+		{{- end}}
+	)
+	if err != nil {
+		return otelcol.Factories{}, err
 	}
 
 	return factories, nil

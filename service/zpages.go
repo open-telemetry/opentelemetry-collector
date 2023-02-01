@@ -34,7 +34,7 @@ const (
 func (host *serviceHost) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
 	mux.HandleFunc(path.Join(pathPrefix, servicezPath), host.zPagesRequest)
 	mux.HandleFunc(path.Join(pathPrefix, pipelinezPath), host.pipelines.HandleZPages)
-	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), host.extensions.HandleZPages)
+	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), host.serviceExtensions.HandleZPages)
 	mux.HandleFunc(path.Join(pathPrefix, featurezPath), handleFeaturezRequest)
 }
 
@@ -70,17 +70,16 @@ func handleFeaturezRequest(w http.ResponseWriter, r *http.Request) {
 
 func getFeaturesTableData() zpages.FeatureGateTableData {
 	data := zpages.FeatureGateTableData{}
-	for _, g := range featuregate.GetRegistry().List() {
+	featuregate.GlobalRegistry().Visit(func(gate *featuregate.Gate) {
 		data.Rows = append(data.Rows, zpages.FeatureGateTableRowData{
-			ID:             g.ID(),
-			Enabled:        g.IsEnabled(),
-			Description:    g.Description(),
-			ReferenceURL:   g.ReferenceURL(),
-			Stage:          g.Stage().String(),
-			RemovalVersion: g.RemovalVersion(),
+			ID:             gate.ID(),
+			Enabled:        gate.IsEnabled(),
+			Description:    gate.Description(),
+			ReferenceURL:   gate.ReferenceURL(),
+			Stage:          gate.Stage().String(),
+			RemovalVersion: gate.RemovalVersion(),
 		})
-	}
-
+	})
 	return data
 }
 

@@ -21,9 +21,9 @@ import (
 	"sort"
 
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/processor"
@@ -39,6 +39,15 @@ const (
 	zComponentName = "zcomponentname"
 	zComponentKind = "zcomponentkind"
 )
+
+type pipelines interface {
+	StartAll(ctx context.Context, host component.Host) error
+	ShutdownAll(ctx context.Context) error
+	GetExporters() map[component.DataType]map[component.ID]component.Component
+	HandleZPages(w http.ResponseWriter, r *http.Request)
+}
+
+var _ pipelines = (*builtPipelines)(nil)
 
 // baseConsumer redeclared here since not public in consumer package. May consider to make that public.
 type baseConsumer interface {
@@ -77,7 +86,7 @@ func (bps *builtPipelines) StartAll(ctx context.Context, host component.Host) er
 	bps.telemetry.Logger.Info("Starting exporters...")
 	for dt, expByID := range bps.allExporters {
 		for expID, exp := range expByID {
-			expLogger := exporterLogger(bps.telemetry.Logger, expID, dt)
+			expLogger := components.ExporterLogger(bps.telemetry.Logger, expID, dt)
 			expLogger.Info("Exporter is starting...")
 			if err := exp.Start(ctx, components.NewHostWrapper(host, expLogger)); err != nil {
 				return err
@@ -89,7 +98,7 @@ func (bps *builtPipelines) StartAll(ctx context.Context, host component.Host) er
 	bps.telemetry.Logger.Info("Starting processors...")
 	for pipelineID, bp := range bps.pipelines {
 		for i := len(bp.processors) - 1; i >= 0; i-- {
-			procLogger := processorLogger(bps.telemetry.Logger, bp.processors[i].id, pipelineID)
+			procLogger := components.ProcessorLogger(bps.telemetry.Logger, bp.processors[i].id, pipelineID)
 			procLogger.Info("Processor is starting...")
 			if err := bp.processors[i].comp.Start(ctx, components.NewHostWrapper(host, procLogger)); err != nil {
 				return err
@@ -101,7 +110,7 @@ func (bps *builtPipelines) StartAll(ctx context.Context, host component.Host) er
 	bps.telemetry.Logger.Info("Starting receivers...")
 	for dt, recvByID := range bps.allReceivers {
 		for recvID, recv := range recvByID {
-			recvLogger := receiverLogger(bps.telemetry.Logger, recvID, dt)
+			recvLogger := components.ReceiverLogger(bps.telemetry.Logger, recvID, dt)
 			recvLogger.Info("Receiver is starting...")
 			if err := recv.Start(ctx, components.NewHostWrapper(host, recvLogger)); err != nil {
 				return err
@@ -185,30 +194,17 @@ type pipelinesSettings struct {
 	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
-	// ReceiverFactories maps receiver type names in the config to the respective receiver.Factory.
-	ReceiverFactories map[component.Type]receiver.Factory
+	Receivers  *receiver.Builder
+	Processors *processor.Builder
+	Exporters  *exporter.Builder
+	Connectors *connector.Builder
 
-	// ReceiverConfigs is a map of component.ID to component.Config.
-	ReceiverConfigs map[component.ID]component.Config
-
-	// ProcessorFactories maps processor type names in the config to the respective component.ProcessorFactory.
-	ProcessorFactories map[component.Type]processor.Factory
-
-	// ProcessorConfigs is a map of component.ID to component.Config.
-	ProcessorConfigs map[component.ID]component.Config
-
-	// ExporterFactories maps exporter type names in the config to the respective exporter.Factory.
-	ExporterFactories map[component.Type]exporter.Factory
-
-	// ExporterConfigs is a map of component.ID to component.Config.
-	ExporterConfigs map[component.ID]component.Config
-
-	// PipelineConfigs is a map of component.ID to ConfigServicePipeline.
-	PipelineConfigs map[component.ID]*ConfigServicePipeline
+	// PipelineConfigs is a map of component.ID to PipelineConfig.
+	PipelineConfigs map[component.ID]*PipelineConfig
 }
 
 // buildPipelines builds all pipelines from config.
-func buildPipelines(ctx context.Context, set pipelinesSettings) (*builtPipelines, error) {
+func buildPipelines(ctx context.Context, set pipelinesSettings) (pipelines, error) {
 	exps := &builtPipelines{
 		telemetry:    set.Telemetry,
 		allReceivers: make(map[component.DataType]map[component.ID]component.Component),
@@ -243,7 +239,13 @@ func buildPipelines(ctx context.Context, set pipelinesSettings) (*builtPipelines
 				continue
 			}
 
-			exp, err := buildExporter(ctx, set.Telemetry, set.BuildInfo, set.ExporterConfigs, set.ExporterFactories, expID, pipelineID)
+			cSet := exporter.CreateSettings{
+				ID:                expID,
+				TelemetrySettings: set.Telemetry,
+				BuildInfo:         set.BuildInfo,
+			}
+			cSet.TelemetrySettings.Logger = components.ExporterLogger(set.Telemetry.Logger, expID, pipelineID.Type())
+			exp, err := buildExporter(ctx, cSet, set.Exporters, pipelineID)
 			if err != nil {
 				return nil, err
 			}
@@ -271,7 +273,13 @@ func buildPipelines(ctx context.Context, set pipelinesSettings) (*builtPipelines
 		for i := len(pipeline.Processors) - 1; i >= 0; i-- {
 			procID := pipeline.Processors[i]
 
-			proc, err := buildProcessor(ctx, set.Telemetry, set.BuildInfo, set.ProcessorConfigs, set.ProcessorFactories, procID, pipelineID, bp.lastConsumer)
+			cSet := processor.CreateSettings{
+				ID:                procID,
+				TelemetrySettings: set.Telemetry,
+				BuildInfo:         set.BuildInfo,
+			}
+			cSet.TelemetrySettings.Logger = components.ProcessorLogger(set.Telemetry.Logger, procID, pipelineID)
+			proc, err := buildProcessor(ctx, cSet, set.Processors, pipelineID, bp.lastConsumer)
 			if err != nil {
 				return nil, err
 			}
@@ -322,7 +330,13 @@ func buildPipelines(ctx context.Context, set pipelinesSettings) (*builtPipelines
 				continue
 			}
 
-			recv, err := buildReceiver(ctx, set.Telemetry, set.BuildInfo, set.ReceiverConfigs, set.ReceiverFactories, recvID, pipelineID, receiversConsumers[pipelineID.Type()][recvID])
+			cSet := receiver.CreateSettings{
+				ID:                recvID,
+				TelemetrySettings: set.Telemetry,
+				BuildInfo:         set.BuildInfo,
+			}
+			cSet.TelemetrySettings.Logger = components.ReceiverLogger(set.Telemetry.Logger, recvID, pipelineID.Type())
+			recv, err := buildReceiver(ctx, cSet, set.Receivers, pipelineID, receiversConsumers[pipelineID.Type()][recvID])
 			if err != nil {
 				return nil, err
 			}
@@ -336,51 +350,24 @@ func buildPipelines(ctx context.Context, set pipelinesSettings) (*builtPipelines
 
 func buildExporter(
 	ctx context.Context,
-	settings component.TelemetrySettings,
-	buildInfo component.BuildInfo,
-	cfgs map[component.ID]component.Config,
-	factories map[component.Type]exporter.Factory,
-	id component.ID,
+	set exporter.CreateSettings,
+	builder *exporter.Builder,
 	pipelineID component.ID,
-) (component.Component, error) {
-	cfg, existsCfg := cfgs[id]
-	if !existsCfg {
-		return nil, fmt.Errorf("exporter %q is not configured", id)
-	}
-
-	factory, existsFactory := factories[id.Type()]
-	if !existsFactory {
-		return nil, fmt.Errorf("exporter factory not available for: %q", id)
-	}
-
-	set := exporter.CreateSettings{
-		ID:                id,
-		TelemetrySettings: settings,
-		BuildInfo:         buildInfo,
-	}
-	set.TelemetrySettings.Logger = exporterLogger(settings.Logger, id, pipelineID.Type())
-	components.LogStabilityLevel(set.TelemetrySettings.Logger, getExporterStabilityLevel(factory, pipelineID.Type()))
-
-	exp, err := createExporter(ctx, set, cfg, id, pipelineID, factory)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create %q exporter, in pipeline %q: %w", id, pipelineID, err)
-	}
-
-	return exp, nil
-}
-
-func createExporter(ctx context.Context, set exporter.CreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, factory exporter.Factory) (component.Component, error) {
+) (exp component.Component, err error) {
 	switch pipelineID.Type() {
 	case component.DataTypeTraces:
-		return factory.CreateTracesExporter(ctx, set, cfg)
-
+		exp, err = builder.CreateTraces(ctx, set)
 	case component.DataTypeMetrics:
-		return factory.CreateMetricsExporter(ctx, set, cfg)
-
+		exp, err = builder.CreateMetrics(ctx, set)
 	case component.DataTypeLogs:
-		return factory.CreateLogsExporter(ctx, set, cfg)
+		exp, err = builder.CreateLogs(ctx, set)
+	default:
+		return nil, fmt.Errorf("error creating exporter %q in pipeline %q, data type %q is not supported", set.ID, pipelineID, pipelineID.Type())
 	}
-	return nil, fmt.Errorf("error creating exporter %q in pipeline %q, data type %q is not supported", id, pipelineID, pipelineID.Type())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create %q exporter, in pipeline %q: %w", set.ID, pipelineID, err)
+	}
+	return exp, nil
 }
 
 func buildFanOutExportersTracesConsumer(exporters []builtComponent) consumer.Traces {
@@ -410,168 +397,60 @@ func buildFanOutExportersLogsConsumer(exporters []builtComponent) consumer.Logs 
 	return fanoutconsumer.NewLogs(consumers)
 }
 
-func exporterLogger(logger *zap.Logger, id component.ID, dt component.DataType) *zap.Logger {
-	return logger.With(
-		zap.String(components.ZapKindKey, components.ZapKindExporter),
-		zap.String(components.ZapDataTypeKey, string(dt)),
-		zap.String(components.ZapNameKey, id.String()))
-}
-
-func getExporterStabilityLevel(factory exporter.Factory, dt component.DataType) component.StabilityLevel {
-	switch dt {
-	case component.DataTypeTraces:
-		return factory.TracesExporterStability()
-	case component.DataTypeMetrics:
-		return factory.MetricsExporterStability()
-	case component.DataTypeLogs:
-		return factory.LogsExporterStability()
-	}
-	return component.StabilityLevelUndefined
-}
-
 func buildProcessor(ctx context.Context,
-	settings component.TelemetrySettings,
-	buildInfo component.BuildInfo,
-	cfgs map[component.ID]component.Config,
-	factories map[component.Type]processor.Factory,
-	id component.ID,
+	set processor.CreateSettings,
+	builder *processor.Builder,
 	pipelineID component.ID,
 	next baseConsumer,
-) (component.Component, error) {
-	procCfg, existsCfg := cfgs[id]
-	if !existsCfg {
-		return nil, fmt.Errorf("processor %q is not configured", id)
+) (proc component.Component, err error) {
+	switch pipelineID.Type() {
+	case component.DataTypeTraces:
+		proc, err = builder.CreateTraces(ctx, set, next.(consumer.Traces))
+	case component.DataTypeMetrics:
+		proc, err = builder.CreateMetrics(ctx, set, next.(consumer.Metrics))
+	case component.DataTypeLogs:
+		proc, err = builder.CreateLogs(ctx, set, next.(consumer.Logs))
+	default:
+		return nil, fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, pipelineID, pipelineID.Type())
 	}
-
-	factory, existsFactory := factories[id.Type()]
-	if !existsFactory {
-		return nil, fmt.Errorf("processor factory not available for: %q", id)
-	}
-
-	set := processor.CreateSettings{
-		ID:                id,
-		TelemetrySettings: settings,
-		BuildInfo:         buildInfo,
-	}
-	set.TelemetrySettings.Logger = processorLogger(settings.Logger, id, pipelineID)
-	components.LogStabilityLevel(set.TelemetrySettings.Logger, getProcessorStabilityLevel(factory, pipelineID.Type()))
-
-	proc, err := createProcessor(ctx, set, procCfg, id, pipelineID, next, factory)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create %q processor, in pipeline %q: %w", id, pipelineID, err)
+		return nil, fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, pipelineID, err)
 	}
 	return proc, nil
 }
 
-func createProcessor(ctx context.Context, set processor.CreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, next baseConsumer, factory processor.Factory) (component.Component, error) {
-	switch pipelineID.Type() {
-	case component.DataTypeTraces:
-		return factory.CreateTracesProcessor(ctx, set, cfg, next.(consumer.Traces))
-
-	case component.DataTypeMetrics:
-		return factory.CreateMetricsProcessor(ctx, set, cfg, next.(consumer.Metrics))
-
-	case component.DataTypeLogs:
-		return factory.CreateLogsProcessor(ctx, set, cfg, next.(consumer.Logs))
-	}
-	return nil, fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", id, pipelineID, pipelineID.Type())
-}
-
-func processorLogger(logger *zap.Logger, procID component.ID, pipelineID component.ID) *zap.Logger {
-	return logger.With(
-		zap.String(components.ZapKindKey, components.ZapKindProcessor),
-		zap.String(components.ZapNameKey, procID.String()),
-		zap.String(components.ZapKindPipeline, pipelineID.String()))
-}
-
-func getProcessorStabilityLevel(factory processor.Factory, dt component.DataType) component.StabilityLevel {
-	switch dt {
-	case component.DataTypeTraces:
-		return factory.TracesProcessorStability()
-	case component.DataTypeMetrics:
-		return factory.MetricsProcessorStability()
-	case component.DataTypeLogs:
-		return factory.LogsProcessorStability()
-	}
-	return component.StabilityLevelUndefined
-}
-
 func buildReceiver(ctx context.Context,
-	settings component.TelemetrySettings,
-	buildInfo component.BuildInfo,
-	cfgs map[component.ID]component.Config,
-	factories map[component.Type]receiver.Factory,
-	id component.ID,
+	set receiver.CreateSettings,
+	builder *receiver.Builder,
 	pipelineID component.ID,
 	nexts []baseConsumer,
-) (component.Component, error) {
-	cfg, existsCfg := cfgs[id]
-	if !existsCfg {
-		return nil, fmt.Errorf("receiver %q is not configured", id)
-	}
-
-	factory, existsFactory := factories[id.Type()]
-	if !existsFactory {
-		return nil, fmt.Errorf("receiver factory not available for: %q", id)
-	}
-
-	set := receiver.CreateSettings{
-		ID:                id,
-		TelemetrySettings: settings,
-		BuildInfo:         buildInfo,
-	}
-	set.TelemetrySettings.Logger = receiverLogger(settings.Logger, id, pipelineID.Type())
-	components.LogStabilityLevel(set.TelemetrySettings.Logger, getReceiverStabilityLevel(factory, pipelineID.Type()))
-
-	recv, err := createReceiver(ctx, set, cfg, id, pipelineID, nexts, factory)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create %q receiver, in pipeline %q: %w", id, pipelineID, err)
-	}
-
-	return recv, nil
-}
-
-func createReceiver(ctx context.Context, set receiver.CreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, nexts []baseConsumer, factory receiver.Factory) (component.Component, error) {
+) (recv component.Component, err error) {
 	switch pipelineID.Type() {
 	case component.DataTypeTraces:
 		var consumers []consumer.Traces
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Traces))
 		}
-		return factory.CreateTracesReceiver(ctx, set, cfg, fanoutconsumer.NewTraces(consumers))
+		recv, err = builder.CreateTraces(ctx, set, fanoutconsumer.NewTraces(consumers))
 	case component.DataTypeMetrics:
 		var consumers []consumer.Metrics
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Metrics))
 		}
-		return factory.CreateMetricsReceiver(ctx, set, cfg, fanoutconsumer.NewMetrics(consumers))
+		recv, err = builder.CreateMetrics(ctx, set, fanoutconsumer.NewMetrics(consumers))
 	case component.DataTypeLogs:
 		var consumers []consumer.Logs
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Logs))
 		}
-		return factory.CreateLogsReceiver(ctx, set, cfg, fanoutconsumer.NewLogs(consumers))
+		recv, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
+	default:
+		return nil, fmt.Errorf("error creating receiver %q in pipeline %q, data type %q is not supported", set.ID, pipelineID, pipelineID.Type())
 	}
-	return nil, fmt.Errorf("error creating receiver %q in pipeline %q, data type %q is not supported", id, pipelineID, pipelineID.Type())
-}
-
-func receiverLogger(logger *zap.Logger, id component.ID, dt component.DataType) *zap.Logger {
-	return logger.With(
-		zap.String(components.ZapKindKey, components.ZapKindReceiver),
-		zap.String(components.ZapNameKey, id.String()),
-		zap.String(components.ZapKindPipeline, string(dt)))
-}
-
-func getReceiverStabilityLevel(factory receiver.Factory, dt component.DataType) component.StabilityLevel {
-	switch dt {
-	case component.DataTypeTraces:
-		return factory.TracesReceiverStability()
-	case component.DataTypeMetrics:
-		return factory.MetricsReceiverStability()
-	case component.DataTypeLogs:
-		return factory.LogsReceiverStability()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create %q receiver, in pipeline %q: %w", set.ID, pipelineID, err)
 	}
-	return component.StabilityLevelUndefined
+	return recv, nil
 }
 
 func (bps *builtPipelines) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableData {

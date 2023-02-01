@@ -29,6 +29,7 @@ const (
 
 // Receiver is the type used to handle metrics from OpenTelemetry exporters.
 type Receiver struct {
+	pmetricotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Metrics
 	obsrecv      *obsreport.Receiver
 }

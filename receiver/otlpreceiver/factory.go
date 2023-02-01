@@ -69,14 +69,15 @@ func createTraces(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-	r, err := receivers.GetOrAdd(cfg, func() (component.Component, error) {
-		return newOtlpReceiver(cfg.(*Config), set)
+	oCfg := cfg.(*Config)
+	r, err := receivers.GetOrAdd(oCfg, func() (*otlpReceiver, error) {
+		return newOtlpReceiver(oCfg, set)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.Unwrap().(*otlpReceiver).registerTraceConsumer(nextConsumer); err != nil {
+	if err = r.Unwrap().registerTraceConsumer(nextConsumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -89,14 +90,15 @@ func createMetrics(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	r, err := receivers.GetOrAdd(cfg, func() (component.Component, error) {
-		return newOtlpReceiver(cfg.(*Config), set)
+	oCfg := cfg.(*Config)
+	r, err := receivers.GetOrAdd(oCfg, func() (*otlpReceiver, error) {
+		return newOtlpReceiver(oCfg, set)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.Unwrap().(*otlpReceiver).registerMetricsConsumer(consumer); err != nil {
+	if err = r.Unwrap().registerMetricsConsumer(consumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -109,14 +111,15 @@ func createLog(
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
-	r, err := receivers.GetOrAdd(cfg, func() (component.Component, error) {
-		return newOtlpReceiver(cfg.(*Config), set)
+	oCfg := cfg.(*Config)
+	r, err := receivers.GetOrAdd(oCfg, func() (*otlpReceiver, error) {
+		return newOtlpReceiver(oCfg, set)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.Unwrap().(*otlpReceiver).registerLogsConsumer(consumer); err != nil {
+	if err = r.Unwrap().registerLogsConsumer(consumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -128,4 +131,4 @@ func createLog(
 // create separate objects, they must use one otlpReceiver object per configuration.
 // When the receiver is shutdown it should be removed from this map so the same configuration
 // can be recreated successfully.
-var receivers = sharedcomponent.NewSharedComponents()
+var receivers = sharedcomponent.NewSharedComponents[*Config, *otlpReceiver]()

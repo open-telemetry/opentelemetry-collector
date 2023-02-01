@@ -16,27 +16,19 @@ the issue and report any additional problems or understand the context of the `G
 Once a `Gate` has been marked as `Stable`, it must have a `RemovalVersion` set.
 
 ```go
-const (
-	myFeatureGateID = "namespaced.uniqueIdentifier"
-	myFeatureStage  = featuregate.Stable
-)
-
-func init() {
-	featuregate.MustRegisterID(
-		myFeatureGateID, 
-		myFeatureStage, 
-		featuregate.WithRegisterDescription("A brief description of what the gate controls"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/6167"),
-		featuregate.WithRegisterRemovalVersion("v0.70.0"),
-	)
-}
+var myFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"namespaced.uniqueIdentifier",
+	featuregate.Stable, 
+	featuregate.WithRegisterDescription("A brief description of what the gate controls"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/6167"),
+	featuregate.WithRegisterRemovalVersion("v0.70.0"))
 ```
 
 The status of the gate may later be checked by interrogating the global 
 feature gate registry:
 
 ```go
-if featuregate.IsEnabled(myFeatureGateID) {
+if myFeatureGate.IsEnabled() {
 	setupNewFeature()
 }
 ```

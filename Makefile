@@ -15,7 +15,6 @@ ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
 ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
 
 CMD?=
-TOOLS_MOD_DIR := ./internal/tools
 
 # TODO: Find a way to configure this in the generated code, currently no effect.
 BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
@@ -26,11 +25,6 @@ RUN_CONFIG?=examples/local/otel-config.yaml
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
 COMP_REL_PATH=cmd/otelcorecol/components.go
 MOD_NAME=go.opentelemetry.io/collector
-
-ADDLICENSE=addlicense
-GOCOVMERGE=gocovmerge
-MISSPELL=misspell -error
-MISSPELL_CORRECTION=misspell -w
 
 # Function to execute a command. Note the empty line before endef to make sure each command
 # gets executed separately instead of concatenated with previous one.
@@ -65,20 +59,20 @@ gobenchmark:
 	@$(MAKE) for-all-target TARGET="benchmark"
 
 .PHONY: gotest-with-cover
-gotest-with-cover:
+gotest-with-cover: $(GOCOVMERGE)
 	@$(MAKE) for-all-target TARGET="test-with-cover"
 	$(GOCOVMERGE) $$(find . -name coverage.out) > coverage.txt
 
 .PHONY: goporto
-goporto: install-tools
-	porto -w --include-internal ./
+goporto: $(PORTO)
+	$(PORTO) -w --include-internal ./
 
 .PHONY: golint
 golint:
 	@$(MAKE) for-all-target TARGET="lint"
 
 .PHONY: goimpi
-goimpi: install-tools
+goimpi:
 	@$(MAKE) for-all-target TARGET="impi"
 
 .PHONY: gofmt
@@ -94,7 +88,7 @@ gogenerate:
 	@$(MAKE) for-all-target TARGET="generate"
 
 .PHONY: addlicense
-addlicense:
+addlicense: $(ADDLICENSE)
 	@ADDLICENSEOUT=`$(ADDLICENSE) -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENSEOUT" ]; then \
 			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
@@ -105,7 +99,7 @@ addlicense:
 		fi
 
 .PHONY: checklicense
-checklicense:
+checklicense: $(ADDLICENSE)
 	@ADDLICENSEOUT=`$(ADDLICENSE) -check $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENSEOUT" ]; then \
 			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
@@ -117,30 +111,12 @@ checklicense:
 		fi
 
 .PHONY: misspell
-misspell:
-	$(MISSPELL) $(ALL_DOC)
+misspell: $(MISSPELL)
+	$(MISSPELL) -error $(ALL_DOC)
 
 .PHONY: misspell-correction
-misspell-correction:
-	$(MISSPELL_CORRECTION) $(ALL_DOC)
-
-.PHONY: install-tools
-install-tools:
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/client9/misspell/cmd/misspell
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/google/addlicense
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/ory/go-acc
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/pavius/impi/cmd/impi
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/tcnksm/ghr
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/wadey/gocovmerge
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/checkdoc
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/chloggen
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/semconvgen
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install golang.org/x/exp/cmd/apidiff
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install golang.org/x/tools/cmd/goimports
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jcchavezs/porto/cmd/porto
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/multimod
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/crosslink
+misspell-correction: $(MISSPELL)
+	$(MISSPELL) -w $(ALL_DOC)
 
 .PHONY: run
 run: otelcorecol
@@ -287,8 +263,8 @@ gensemconv:
 	@[ "${SPECPATH}" ] || ( echo ">> env var SPECPATH is not set"; exit 1 )
 	@[ "${SPECTAG}" ] || ( echo ">> env var SPECTAG is not set"; exit 1 )
 	@echo "Generating semantic convention constants from specification version ${SPECTAG} at ${SPECPATH}"
-	semconvgen -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/resource -p conventionType=resource -f generated_resource.go
-	semconvgen -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/trace -p conventionType=trace -f generated_trace.go
+	semconvgen -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/. --only=resource -p conventionType=resource -f generated_resource.go
+	semconvgen -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/. --only=span -p conventionType=trace -f generated_trace.go
 
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
 # against the current version of this repo.
@@ -358,12 +334,12 @@ certs-dryrun:
 
 # Verify existence of READMEs for components specified as default components in the collector.
 .PHONY: checkdoc
-checkdoc:
-	checkdoc --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
+checkdoc: $(CHECKDOC)
+	$(CHECKDOC) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
 
 # Construct new API state snapshots
 .PHONY: apidiff-build
-apidiff-build:
+apidiff-build: $(APIDIFF)
 	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/gen-apidiff.sh -p $(pkg)))
 
 # If we are running in CI, change input directory
@@ -375,26 +351,26 @@ endif
 
 # Compare API state snapshots
 .PHONY: apidiff-compare
-apidiff-compare:
+apidiff-compare: $(APIDIFF)
 	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
 
 .PHONY: multimod-verify
-multimod-verify: install-tools
+multimod-verify: $(MULTIMOD)
 	@echo "Validating versions.yaml"
-	multimod verify
+	$(MULTIMOD) verify
 
 MODSET?=stable
 .PHONY: multimod-prerelease
-multimod-prerelease: install-tools
-	multimod prerelease -s=true -b=false -v ./versions.yaml -m ${MODSET}
+multimod-prerelease: $(MULTIMOD)
+	$(MULTIMOD) prerelease -s=true -b=false -v ./versions.yaml -m ${MODSET}
 	$(MAKE) gotidy
 
 COMMIT?=HEAD
 REMOTE?=git@github.com:open-telemetry/opentelemetry-collector.git
 .PHONY: push-tags
-push-tags:
-	multimod verify
-	set -e; for tag in `multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+push-tags: $(MULTIMOD)
+	$(MULTIMOD) verify
+	set -e; for tag in `$(MULTIMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
 		echo "pushing tag $${tag}"; \
 		git push ${REMOTE} $${tag}; \
 	done;
@@ -422,15 +398,13 @@ else
 endif
 	# ensure a clean branch
 	git diff -s --exit-code || (echo "local repository not clean"; exit 1)
-	# TODO: update changelog
-	# update versions.yaml config.go builder-config.yaml
 	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' versions.yaml
 	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' ./cmd/builder/internal/builder/config.go
+	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' ./cmd/builder/test/core.builder.yaml
 	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' ./cmd/otelcorecol/builder-config.yaml
 	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' examples/k8s/otel-config.yaml
 	find . -name "*.bak" -type f -delete
 	# commit changes before running multimod
-	git checkout -b opentelemetry-collector-bot/release-$(RELEASE_CANDIDATE)
 	git add .
 	git commit -m "prepare release $(RELEASE_CANDIDATE)"
 	$(MAKE) multimod-prerelease
@@ -438,13 +412,7 @@ endif
 	$(MAKE) -C cmd/builder config
 	$(MAKE) genotelcorecol
 	git add .
-	git commit -m "add multimod changes" || (echo "no multimod changes to commit")
-	git push fork opentelemetry-collector-bot/release-$(RELEASE_CANDIDATE)
-	@if [ -z "$(GH)" ]; then \
-		echo "'gh' command not found, can't submit the PR on your behalf."; \
-		exit 1; \
-	fi
-	$(GH) pr create --title "[chore] prepare release $(RELEASE_CANDIDATE)"
+	git commit -m "add multimod changes $(RELEASE_CANDIDATE)" || (echo "no multimod changes to commit")
 
 .PHONY: clean
 clean:
@@ -459,27 +427,24 @@ checklinks:
 # error message "failed to sync logger:  sync /dev/stderr: inappropriate ioctl for device"
 # is a known issue but does not affect function.
 .PHONY: crosslink
-crosslink:
+crosslink: $(CROSSLINK)
 	@echo "Executing crosslink"
-	crosslink --root=$(shell pwd) --prune
+	$(CROSSLINK) --root=$(shell pwd) --prune
 
-.PHONY: chlog-install
-chlog-install:
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/chloggen
 
 FILENAME?=$(shell git branch --show-current).yaml
 .PHONY: chlog-new
-chlog-new: chlog-install
-	chloggen new --filename $(FILENAME)
+chlog-new: $(CHLOG)
+	$(CHLOG) new --filename $(FILENAME)
 
 .PHONY: chlog-validate
-chlog-validate: chlog-install
-	chloggen validate
+chlog-validate: $(CHLOG)
+	$(CHLOG) validate
 
 .PHONY: chlog-preview
-chlog-preview: chlog-install
-	chloggen update --dry
+chlog-preview: $(CHLOG)
+	$(CHLOG) update --dry
 
 .PHONY: chlog-update
-chlog-update: chlog-install
-	chloggen update --version $(VERSION)
+chlog-update: $(CHLOG)
+	$(CHLOG) update --version $(VERSION)

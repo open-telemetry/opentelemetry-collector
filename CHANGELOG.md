@@ -4,6 +4,113 @@
 
 <!-- next version -->
 
+## v1.0.0-RC4/v0.70.0
+
+### 🛑 Breaking changes 🛑
+
+- `pdata`: Start enforcing grpc server implementation to embed UnimplementedGRPCServer, dissallow client implementation (#6966)
+- `config/configgrpc`: Change configgrpc.GRPCClientSettings.Headers type to map[string]configopaque.String (#6852)
+  Use `configopaque.String(str)` and `string(opaque)` to turn a string opaque/clear.
+- `pdata`: Remove deprecated pcommon.Value.Equal (#6860)
+
+### 🚩 Deprecations 🚩
+
+- `pdata`: Deprecate pcommon.Map.Sort(). (#6688)
+- `featuregate`: Deprecate GetRegistry in favor of GlobalRegistry (#6979)
+
+### 💡 Enhancements 💡
+
+- `builder`: Add remote debug option for otel-collector to builder (#6149)
+- `connector`: Add Builder (#6867)
+- `cmd/builder`: Add support for connector configurations (#6789)
+- `exporter/otlphttp`: Retry only on status code 429/502/503/504 (#6845)
+- `featuregate`: Reduce contention in featuregate by using sync.Map instead of mutex. (#6980)
+
+### 🧰 Bug fixes 🧰
+
+- `loggingexporter`: Fix undefined symbol errors on building otelcorecol for other platforms than darwin, linux, windows. (#6924)
+- `otlpexporter`: Fix a dataloss bug in persistent storage when collector shuts down or restarts (#6771)
+
+## v0.69.1
+
+### 🧰 Bug fixes 🧰
+
+- `various modules`: Fix issue where some collector modules imported previous version of other modules (#6929)
+
+## v1.0.0-RC3/v0.69.0
+
+### 🛑 Breaking changes 🛑
+
+- `component`: Remove deprecated Exporter types (#6880)
+- `component`: Remove deprecated Extension types (#6865)
+- `component`: Remove deprecated ProcessorFactoryOptions (#6881)
+- `component`: Remove deprecated Receiver types (#6882)
+- `componenttest`: Remove deprecated funcs from componenttest (#6836)
+- `batchprocessor`: Remove deprecated batchprocessor.MetricViews and batchprocessor.OtelMetricViews (#6861)
+- `component`: Remove deprecated component.[Factories|MakePorcessorFactoryMap] and componenttest.NewNopFactories (#6835)
+- `config`: Remove deprecated cofig.*Settings (#6837)
+- `obsereporttest`: Remove deprecated obsereporttest.SetupTelemetryWithID (#6861)
+- `component`: Remove deprecated component [Traces|Metrics|Logs]Processor and ProcessorFactory (#6884)
+- `service`: Remove deprecated service service.ConfigService and service.ConfigServicePipeline (#6859)
+
+### 💡 Enhancements 💡
+
+- `connector`: Add MakeFactoryMap (#6889)
+- `semconv`: Add semantic conventions for specification v1.16.0 (#6714)
+
+### 🧰 Bug fixes 🧰
+
+- `config`: use [REDACTED] when marshaling to text a configopaque.String, instead of disclosing secret length. (#6868)
+
+## v1.0.0-RC2/v0.68.0
+
+### 🛑 Breaking changes 🛑
+
+- `componenttest`: Move NopFactories to otelcoltest (#6792)
+- `config/confighttp`: Change confighttp.HTTPClientSettings.Headers type to map[string]configopaque.String (#5653)
+- `config`: Remove deprecated `component.Config.[ID|SetIDName]`. (#4714)
+- `configauth`: Remove deprecated funcs/types from `configauth` (#6719)
+- `component`: Remove deprecated funcs/types from component package (#6769)
+  - `component.[Exporter|Processor|Receiver|Extension]Config`
+  - `component.Unmarshal[Exporter|Processor|Receiver|Extension]Config`
+  - `component.[Exporter|Processor|Receiver|Extension]CreateDefaultConfigFunc`
+  - `component.[Exporter|Receiver|Extension]FactoryOption`
+  - `component.New[Exporter|Receiver|Extension]Factory`
+  - `component.With[Traces|Metrics|Logs][Exporter|Receiver]`
+  - `component.Create[Traces|Metrics|Logs][Exporter|Receiver]Func`
+  - `component.CreateExtensionFunc`
+- `componenttest`: Remove deprecated componenttest.NewNop*CreateSettings (#6761)
+- `service`: Remove deprecated `service.[Collector|New|CollectorSettings|ConfigProvider]` (#5564)
+- `service`: Remove deprecated funcs `service.NewCommand` and `service.NewSvcHandler`. (#5564)
+- `obsreporttest`: Remove deprecate obsreporttest.Check* (#6720)
+- `service`: Remove deprecated `service.Config`. (#6774)
+- `servicetest`: Remove deprecated `servicetest` package. (#5564)
+
+### 🚩 Deprecations 🚩
+
+- `service`: Deprecate `service.ConfigService` in favor of `service.Config` and `service.ConfigServicePipeline` in favor of `service.PipelineConfig`. (#6787)
+- `pdata`: Deprecate `pcommon.Value.Equal` method (#6811)
+- `component`: Deprecate `Processor` related structs and functions in favor of `processor` package (#6709)
+- `component`: Deprecate component.Factories in favor of otelcol.Factories (#6723)
+- `config`: Deprecate `config.[Extension|Exporter|Connector|Receiver|Processor]Settings`. (#6718)
+- `batchprocessor`: Deprecate metric views funcs, for OC and Otel. (#6730)
+- `obsreporttest`: Deprecate obsreporttest.SetupTelemetryWithID in favor of obsreporttest.SetupTelemetry (#6720)
+
+### 🚀 New components 🚀
+
+- `forwardconnector`: Add forward connector (#6763)
+
+### 💡 Enhancements 💡
+
+- `components`: Add [receiver|processor|exporter|extension].Builder to help with creating components form a set of configs and factories (#6803)
+- `configunmarshaler`: Consolidate package into generic implementation (#6801)
+- `service`: Shutdown internal telemetry with the Service (every time config changes). (#5564)
+
+### 🧰 Bug fixes 🧰
+
+- `configgrpc`: Fix todo to add MeterProvider to grpc instrumentation (#4030)
+- `otlpreceiver`: Fix otlpreceiver transport metrics attribute (#6695)
+
 ## v1.0.0-RC1/v0.67.0
 
 We are excited to announce that the `pdata` module is now available as a
@@ -59,7 +166,7 @@ and hope to make a v1.0.0 release soon.
   - Deprecate `component.Config.ID()` in favor of `component.[*]CreateSettings.ID`.
   - Deprecate `component.Config.SetIDName()`, no replacement needed since ID in settings is public member.
   - Deprecate `obsreporttest.SetupTelemetry` in favor of `obsreporttest.SetupTelemetryWithID`.
-  
+
 - `component`: Deprecate `component.Unmarshal[*]Config` in favor of `component.UnmarshalConfig` (#6613)
 - `component`: Deprecate Extension related types/funcs from component package in favor of extension package. (#6578)
   - `component.Extension` -> `extension.Extension`
@@ -120,14 +227,14 @@ and hope to make a v1.0.0 release soon.
   - "" is returned for integers that are out of Level enum range.
   - It also affects `Level.Marshal` output, but it's not a problem because `Unmarshal` method accepts strings in
   all cases, e.g. "normal", "Normal" and "NORMAL".
-  
+
 - `featuregate`: Make impossible to implement RegistryOption outside `featuregate` package (#6532)
 - `service/telemetry`: Remove unit suffixes from metrics exported by the otel-go prometheus exporter. (#6403)
 - `obsreport`: `obsreport.New[Receiver|Scraper|Processor|Exporter]` returns error now (#6458)
 - `configgrpc`: Remove deprecated funcs in `configgrpc`. (#6529)
   - `configgrpc.GRPCClientSettings.ToDialOptions`
   - `configgrpc.GRPCServerSettings.ToServerOption`
-  
+
 - `config/configtest`: Remove deprecated `configtest` package. (#6542)
 - `config`: Remove deprecated types and funcs from config. Use `component` package. (#6511)
   - config.ComponentID
@@ -141,20 +248,20 @@ and hope to make a v1.0.0 release soon.
   - config.UnmarshalExporter
   - config.Extension
   - config.UnmarshalExtension
-  
+
 - `featuregate`: Remove deprecated funcs and struct members from `featuregate` package (#6523)
   - featuregate.Gate.ID
   - featuregate.Gate.Description
   - featuregate.Gate.Enabled
   - featuregate.Registry.Register
   - featuregate.Registry.MustRegister
-  
+
 - `experimental`: Remove experimental configsource code. (#6558)
 - `component`: Update values returned by `StabilityLevel.String` method. (#6490)
   - All returned strings are capitalized.
   - "Undefined" is returned only for `StabilityLevelUndefined`.
   - "" is returned for integers that are out of StabilityLevel enum range.
-  
+
 
 ### 🚩 Deprecations 🚩
 
@@ -164,12 +271,12 @@ and hope to make a v1.0.0 release soon.
   - Deprecate `obsreport.MustNewScraper()` in favor of `obsreport.NewScraper()`
   - Deprecate `obsreport.MustNewProcessor()` in favor of `obsreport.NewProcessor()`
   - Deprecate `obsreport.MustNewExporter()` in favor of `obsreport.NewExporter()`
-  
+
 - `component`: Deprecate `component.Receiver`, `component.Processor`, and `component.Exporter`. (#6553)
 - `featuregate`: Deprecate Get prefix funcs for `featuregate.Gate` (#6528)
   `featuregate.Gate.GetID` -> `featuregate.Gate.ID`
   `featuregate.Gate.GetDescription` -> `featuregate.Gate.Description`
-  
+
 - `component`: Deprecate `component.Config.Validate` in favor of `component.ValidateConfig` (#6572)
 - `component`: Deprecate `StabilityLevelInDevelopment` enum const in favor of `StabilityLevelDevelopment`. (#6561)
   Also rename all mentions of "In development" stability level to "Development".
@@ -211,7 +318,7 @@ and hope to make a v1.0.0 release soon.
   - plog.SeverityNumber
   - ptrace.SpanKind
   - ptrace.StatusCode
-  
+
 - `config`: Remove already deprecates `config.Config`. (#6394)
 - `pdata`: Remove deprecated code from pdata (#6417)
   - `p[trace|metric|log]otlp.[Request|Response]`
@@ -219,25 +326,25 @@ and hope to make a v1.0.0 release soon.
   - `p[trace|metric|log]otlp.NewRequestFrom[Traces|Metrics|Logs]`
   - `p[trace|metric|log]otlp.NewClient`
   - `p[trace|metric|log]New[JSON|Proto][Marshaler|Unmarshale]`
-  
+
 - `extension`: Splitting ballast/zpages extension into their own modules (#6191)
   The import path for the extension modules can now be accessed directly:
   - `go.opentelemetry.io/collector/extension/ballastextension`
   - `go.opentelemetry.io/collector/extension/zpagesextension`
-  
+
   If using one of these extensions, modify your Collector builder configuration to use `gomod` directly, such as:
   - `gomod: go.opentelemetry.io/collector/extension/ballastextension v0.64.0`
 - `processor`: Splitting batch/memorylimiter processors into their own modules (#6188, #6192, #6193)
   The import path for the processor modules can now be access directly:
   - `go.opentelemetry.io/collector/processor/batchprocessor`
   - `go.opentelemetry.io/collector/processor/memorylimiter`
-  
+
   If using this processor, modify your Collector builder configuration to use `gomod` directly, such as:
   - `gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.64.0`
 - `otlpreceiver`: Splitting otlp receiver into its own module (#6190)
   The import path for the OTLP receiver can now be access directly:
   - `go.opentelemetry.io/collector/receiver/otlpreceiver`
-  
+
   If using this receiver, modify your Collector builder configuration to use `gomod` directly, such as:
   - `gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.64.0`
 
@@ -259,12 +366,12 @@ and hope to make a v1.0.0 release soon.
   - config.UnmarshalExporter => component.UnmarshalExporterConfig
   - config.Extension => component.ExtensionConfig
   - config.UnmarshalExtension => component.UnmarshalExtensionConfig
-  
+
 - `obsreport`: deprecate `obsreport.New[Receiver|Scraper|Processor|Exporter]` in favor of `obsreport.MustNew[Receiver|Scraper|Processor|Exporter]` (#6458)
 - `config/configgrpc`: Provide better helpers for configgrpc, consistent with confighttp (#6441)
   - Deprecate `GRPCClientSettings.ToDialOptions` in favor of `GRPCClientSettings.ToClientConn`.
   - Deprecate `GRPCServerSettings.ToServerOption` in favor of `GRPCServerSettings.ToServer`.
-  
+
 
 ### 💡 Enhancements 💡
 
@@ -305,13 +412,13 @@ and hope to make a v1.0.0 release soon.
   - Remove deprecated `pmetric.[New]?ValueAtQuantile`
   - Remove deprecated `pmetric.[New]?ValueAtQuantileSlice`
   - Remove deprecated `ptrace.[New]?SpanStatus`
-  
+
 - `exporter`: Splitting otlp, otlphttp and logging exporters into their own modules (#6343)
   The import path for these exporters can now be access directly:
   - `go.opentelemetry.io/collector/exporter/loggingexporter`
   - `go.opentelemetry.io/collector/exporter/otlpexporter`
   - `go.opentelemetry.io/collector/exporter/otlphttpexporter`
-  
+
   If using these exporters, modify your Collector builder configuration to use `gomod` directly, such as:
   - `gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.63.0`
 
@@ -321,9 +428,9 @@ and hope to make a v1.0.0 release soon.
 - `pdata`: Add `Export` prefix to `p[trace|metric|log]otlp.[Request|Response]` (#6365)
   - Deprecate `p[trace|metric|log]otlp.[Request|Response]` in favor of `p[trace|metric|log]otlp.Export[Request|Response]`
   - Deprecate `p[trace|metric|log]otlp.New[Request|Response]` in favor of `p[trace|metric|log]otlp.NewExport[Request|Response]`
-  - Deprecate `p[trace|metric|log]otlp.NewRequestFrom[Traces|Metrics|Logs]` in favor of 
+  - Deprecate `p[trace|metric|log]otlp.NewRequestFrom[Traces|Metrics|Logs]` in favor of
     `p[trace|metric|log]otlp.NewExportRequestFrom[Traces|Metrics|Logs]`
-  
+
 - `pdata`: Deprecate `p[trace|metric|log]otlp.NewClient` in favor of `p[trace|metric|log]otlp.NewGRPCClient` (#6350)
 - `exporter/logging`: Deprecate 'loglevel' in favor of 'verbosity' option (#5878)
 - `pdata`: Deprecate `New[JSON|Proto][Marshaler|Unmarshale]` in favor of exposing the underlying structs (#6340)
@@ -365,7 +472,7 @@ and hope to make a v1.0.0 release soon.
 - Delete deprecated `StringVal` and `SetStringVal` methods. (#6178)
 - Delete deprecated `ValueTypeString` method. (#6178)
 - Change AggregationTemporality.String to simpler, easier to read. (#6117)
-- Update `pcommon.ValueType.String` output to string representation of corresponding type identifiers. The following 
+- Update `pcommon.ValueType.String` output to string representation of corresponding type identifiers. The following
   values will be returned: (#6247)
   - ValueTypeEmpty.String() -> "Empty"
   - ValueTypeStr.String() -> "Str"
@@ -375,7 +482,7 @@ and hope to make a v1.0.0 release soon.
   - ValueTypeMap.String() -> "Map"
   - ValueTypeSlice.String() -> "Slice"
   - ValueTypeBytes.String() -> "Bytes"
-- Rename output of `[MetricType|NumberDataPointValueType|ExemplarValueType].String()` for zero values from `"None"` to 
+- Rename output of `[MetricType|NumberDataPointValueType|ExemplarValueType].String()` for zero values from `"None"` to
   `"Empty"` (#6270)
 
 ### 🚩 Deprecations 🚩
@@ -447,9 +554,9 @@ and hope to make a v1.0.0 release soon.
   - `pmetric.Metrics.Clone` is deprecated in favor of `pmetric.Metrics.CopyTo`
   - `ptrace.Traces.Clone` is deprecated in favor of `pmetric.Traces.CopyTo`
   - `plog.Logs.Clone` is deprecated in favor of `plogs.Logs.CopyTo`
-- Rename all `pcommon.Value` getter/setter methods by removing `Val` suffix. (#6092) 
+- Rename all `pcommon.Value` getter/setter methods by removing `Val` suffix. (#6092)
   - Old methods with `Val` suffix are deprecated.
-  - `StringVal` and `SetStringVal` are deprecated in favor of `Str` and `SetStr` to avoid implementing `fmt.Stringer` interface. 
+  - `StringVal` and `SetStringVal` are deprecated in favor of `Str` and `SetStr` to avoid implementing `fmt.Stringer` interface.
   - Therefore, `ValueTypeString` is deprecated in favour of `ValueTypeStr` for consistency.
 
 ### 💡 Enhancements 💡
@@ -457,7 +564,7 @@ and hope to make a v1.0.0 release soon.
 - Add AppendEmpty and EnsureCapacity method to primitive pdata slices (#6060)
 - Expose `AsRaw` and `FromRaw` `pcommon.Value` methods (#6090)
 - Convert `ValueTypeBytes` attributes in logging exporter (#6153)
-- service.name Resource attribute is added to Collector's own telemetry, defaults to the value of `BuildInfo.Command` and can be overridden in the config (#6152) 
+- service.name Resource attribute is added to Collector's own telemetry, defaults to the value of `BuildInfo.Command` and can be overridden in the config (#6152)
 - Updated how `telemetryInitializer` is created so it's instanced per Collector instance rather than global to the process (#6138)
 
 ## v0.60.0 Beta

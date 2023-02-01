@@ -251,6 +251,11 @@ type RetrySettings struct {
 	Enabled bool `mapstructure:"enabled"`
 	// InitialInterval the time to wait after the first failure before retrying.
 	InitialInterval time.Duration `mapstructure:"initial_interval"`
+	// RandomizationFactor is a random factor used to calculate next backoffs
+	// Randomized interval = RetryInterval * (1 ± RandomizationFactor)
+	RandomizationFactor float64 `mapstructure:"randomization_factor"`
+	// Multiplier is the value multiplied by the backoff interval bounds
+	Multiplier float64 `mapstructure:"multiplier"`
 	// MaxInterval is the upper bound on backoff interval. Once this value is reached the delay between
 	// consecutive retries will always be `MaxInterval`.
 	MaxInterval time.Duration `mapstructure:"max_interval"`
@@ -262,10 +267,12 @@ type RetrySettings struct {
 // NewDefaultRetrySettings returns the default settings for RetrySettings.
 func NewDefaultRetrySettings() RetrySettings {
 	return RetrySettings{
-		Enabled:         true,
-		InitialInterval: 5 * time.Second,
-		MaxInterval:     30 * time.Second,
-		MaxElapsedTime:  5 * time.Minute,
+		Enabled:             true,
+		InitialInterval:     5 * time.Second,
+		RandomizationFactor: backoff.DefaultRandomizationFactor,
+		Multiplier:          backoff.DefaultMultiplier,
+		MaxInterval:         30 * time.Second,
+		MaxElapsedTime:      5 * time.Minute,
 	}
 }
 
@@ -369,8 +376,8 @@ func (rs *retrySender) send(req internal.Request) error {
 	// call Reset after changing the InitialInterval (this saves an unnecessary call to Now).
 	expBackoff := backoff.ExponentialBackOff{
 		InitialInterval:     rs.cfg.InitialInterval,
-		RandomizationFactor: backoff.DefaultRandomizationFactor,
-		Multiplier:          backoff.DefaultMultiplier,
+		RandomizationFactor: rs.cfg.RandomizationFactor,
+		Multiplier:          rs.cfg.Multiplier,
 		MaxInterval:         rs.cfg.MaxInterval,
 		MaxElapsedTime:      rs.cfg.MaxElapsedTime,
 		Stop:                backoff.Stop,
@@ -435,7 +442,7 @@ func (rs *retrySender) send(req internal.Request) error {
 		case <-req.Context().Done():
 			return fmt.Errorf("Request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
-			return fmt.Errorf("interrupted due to shutdown %w", err)
+			return rs.onTemporaryFailure(rs.logger, req, fmt.Errorf("interrupted due to shutdown %w", err))
 		case <-time.After(backoffDelay):
 		}
 	}

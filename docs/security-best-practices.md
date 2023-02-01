@@ -141,7 +141,7 @@ receivers:
         endpoint: localhost:4317
 ```
 
-Generally, `localhost`-like addresses should be preferred over the 0.0.0.0 address outside of containerized environments.
+Generally, `localhost`-like addresses should be preferred over the 0.0.0.0 address.
 For more information, see [CWE-1327](https://cwe.mitre.org/data/definitions/1327.html).
 
 ## Processors

@@ -41,6 +41,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
@@ -90,7 +91,7 @@ type GRPCClientSettings struct {
 	WaitForReady bool `mapstructure:"wait_for_ready"`
 
 	// The headers associated with gRPC requests.
-	Headers map[string]string `mapstructure:"headers"`
+	Headers map[string]configopaque.String `mapstructure:"headers"`
 
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
@@ -362,10 +363,10 @@ func (gss *GRPCServerSettings) toServerOption(host component.Host, settings comp
 			return nil, err
 		}
 
-		uInterceptors = append(uInterceptors, func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+		uInterceptors = append(uInterceptors, func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 			return authUnaryServerInterceptor(ctx, req, info, handler, authenticator)
 		})
-		sInterceptors = append(sInterceptors, func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		sInterceptors = append(sInterceptors, func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 			return authStreamServerInterceptor(srv, ss, info, handler, authenticator)
 		})
 	}
@@ -405,14 +406,14 @@ func getGRPCCompressionName(compressionType configcompression.CompressionType) (
 
 // enhanceWithClientInformation intercepts the incoming RPC, replacing the incoming context with one that includes
 // a client.Info, potentially with the peer's address.
-func enhanceWithClientInformation(includeMetadata bool) func(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	return func(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func enhanceWithClientInformation(includeMetadata bool) func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		return handler(contextWithClient(ctx, includeMetadata), req)
 	}
 }
 
-func enhanceStreamWithClientInformation(includeMetadata bool) func(srv interface{}, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	return func(srv interface{}, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+func enhanceStreamWithClientInformation(includeMetadata bool) func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		return handler(srv, wrapServerStream(contextWithClient(ss.Context(), includeMetadata), ss))
 	}
 }
@@ -436,7 +437,7 @@ func contextWithClient(ctx context.Context, includeMetadata bool) context.Contex
 	return client.NewContext(ctx, cl)
 }
 
-func authUnaryServerInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler, server auth.Server) (interface{}, error) {
+func authUnaryServerInterceptor(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler, server auth.Server) (any, error) {
 	headers, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, errMetadataNotFound
@@ -450,7 +451,7 @@ func authUnaryServerInterceptor(ctx context.Context, req interface{}, _ *grpc.Un
 	return handler(ctx, req)
 }
 
-func authStreamServerInterceptor(srv interface{}, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler, server auth.Server) error {
+func authStreamServerInterceptor(srv any, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler, server auth.Server) error {
 	ctx := stream.Context()
 	headers, ok := metadata.FromIncomingContext(ctx)
 	if !ok {

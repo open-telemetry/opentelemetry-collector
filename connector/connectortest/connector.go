@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
+const typeStr = "nop"
+
 // NewNopCreateSettings returns a new nop settings for Create* functions.
 func NewNopCreateSettings() connector.CreateSettings {
 	return connector.CreateSettings{
@@ -94,4 +96,12 @@ type nopConnector struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumertest.Consumer
+}
+
+// NewNopBuilder returns a connector.Builder that constructs nop receivers.
+func NewNopBuilder() *connector.Builder {
+	nopFactory := NewNopFactory()
+	return connector.NewBuilder(
+		map[component.ID]component.Config{component.NewID(typeStr): nopFactory.CreateDefaultConfig()},
+		map[component.Type]connector.Factory{typeStr: nopFactory})
 }

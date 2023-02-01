@@ -19,7 +19,6 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -29,8 +28,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
-
-	"go.opentelemetry.io/collector/featuregate"
 )
 
 type windowsService struct {
@@ -89,16 +86,18 @@ func (s *windowsService) Execute(args []string, requests <-chan svc.ChangeReques
 }
 
 func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) error {
+	// Append to new slice instead of the already existing s.settings.LoggingOptions slice to not change that.
+	s.settings.LoggingOptions = append(
+		[]zap.Option{zap.WrapCore(withWindowsCore(elog))},
+		s.settings.LoggingOptions...,
+	)
 	// Parse all the flags manually.
 	if err := s.flags.Parse(os.Args[1:]); err != nil {
 		return err
 	}
 
-	if err := featuregate.GetRegistry().Apply(getFeatureGatesFlag(s.flags)); err != nil {
-		return err
-	}
 	var err error
-	s.col, err = newWithWindowsEventLogCore(s.settings, s.flags, elog)
+	s.col, err = newCollectorWithFlags(s.settings, s.flags)
 	if err != nil {
 		return err
 	}
@@ -138,27 +137,6 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 	}
 
 	return elog, nil
-}
-
-func newWithWindowsEventLogCore(set CollectorSettings, flags *flag.FlagSet, elog *eventlog.Log) (*Collector, error) {
-	if set.ConfigProvider == nil {
-		var err error
-
-		configFlags := getConfigFlag(flags)
-		if len(configFlags) == 0 {
-			return nil, errors.New("at least one config flag must be provided")
-		}
-
-		set.ConfigProvider, err = NewConfigProvider(newDefaultConfigProviderSettings(configFlags))
-		if err != nil {
-			return nil, err
-		}
-	}
-	set.LoggingOptions = append(
-		[]zap.Option{zap.WrapCore(withWindowsCore(elog))},
-		set.LoggingOptions...,
-	)
-	return NewCollector(set)
 }
 
 var _ zapcore.Core = (*windowsEventLogCore)(nil)

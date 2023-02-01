@@ -36,6 +36,27 @@ For more technical details about how configuration is resolved you can read the 
 
     `./otelcorecol --config=file:examples/local/otel-config.yaml --config="yaml:exporters::logging::loglevel: info"`
 
+### Embedding other configuration providers
+
+One configuration provider can also make references to other config providers, like the following:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+exporters: ${file:otlp-exporter.yaml}
+
+service:
+  extensions: [ ]
+  pipelines:
+    traces:
+      receivers:  [ otlp ]
+      processors: [  ]
+      exporters:  [ otlp ]
+```
+
 ## How to override config properties?
 
 The `--set` flag allows to set arbitrary config property. The `--set` values are merged into the final configuration

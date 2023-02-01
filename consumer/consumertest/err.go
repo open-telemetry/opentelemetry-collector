@@ -13,7 +13,6 @@
 // limitations under the License.
 
 package consumertest // import "go.opentelemetry.io/collector/consumer/consumertest"
-
 import (
 	"context"
 
@@ -22,26 +21,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type errConsumer struct {
-	nonMutatingConsumer
-	err error
-}
-
-func (er *errConsumer) unexported() {}
-
-func (er *errConsumer) ConsumeTraces(context.Context, ptrace.Traces) error {
-	return er.err
-}
-
-func (er *errConsumer) ConsumeMetrics(context.Context, pmetric.Metrics) error {
-	return er.err
-}
-
-func (er *errConsumer) ConsumeLogs(context.Context, plog.Logs) error {
-	return er.err
-}
-
 // NewErr returns a Consumer that just drops all received data and returns the specified error to Consume* callers.
 func NewErr(err error) Consumer {
-	return &errConsumer{err: err}
+	return &baseConsumer{
+		ConsumeTracesFunc:  func(ctx context.Context, td ptrace.Traces) error { return err },
+		ConsumeMetricsFunc: func(ctx context.Context, md pmetric.Metrics) error { return err },
+		ConsumeLogsFunc:    func(ctx context.Context, ld plog.Logs) error { return err },
+	}
 }

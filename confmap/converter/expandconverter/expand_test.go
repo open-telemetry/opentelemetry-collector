@@ -67,21 +67,21 @@ func TestNewExpandConverter_EscapedMaps(t *testing.T) {
 	t.Setenv("MAP_VALUE", receiverExtraMapValue)
 
 	conf := confmap.NewFromStringMap(
-		map[string]interface{}{
-			"test_string_map": map[string]interface{}{
+		map[string]any{
+			"test_string_map": map[string]any{
 				"recv": "$MAP_VALUE",
 			},
-			"test_interface_map": map[interface{}]interface{}{
+			"test_interface_map": map[any]any{
 				"recv": "$MAP_VALUE",
 			}},
 	)
 	require.NoError(t, New().Convert(context.Background(), conf))
 
-	expectedMap := map[string]interface{}{
-		"test_string_map": map[string]interface{}{
+	expectedMap := map[string]any{
+		"test_string_map": map[string]any{
 			"recv": receiverExtraMapValue,
 		},
-		"test_interface_map": map[string]interface{}{
+		"test_interface_map": map[string]any{
 			"recv": receiverExtraMapValue,
 		}}
 	assert.Equal(t, expectedMap, conf.ToStringMap())
@@ -95,8 +95,8 @@ func TestNewExpandConverter_EscapedEnvVars(t *testing.T) {
 	conf, err := confmaptest.LoadConf(filepath.Join("testdata", "expand-escaped-env.yaml"))
 	require.NoError(t, err, "Unable to get config")
 
-	expectedMap := map[string]interface{}{
-		"test_map": map[string]interface{}{
+	expectedMap := map[string]any{
+		"test_map": map[string]any{
 			// $$ -> escaped $
 			"recv.1": "$MAP_VALUE_1",
 			// $$$ -> escaped $ + substituted env var

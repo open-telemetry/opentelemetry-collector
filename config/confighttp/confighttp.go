@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
@@ -55,7 +56,8 @@ type HTTPClientSettings struct {
 
 	// Additional headers attached to each HTTP request sent by the client.
 	// Existing header values are overwritten if collision happens.
-	Headers map[string]string `mapstructure:"headers"`
+	// Header values are opaque since they may be sensitive.
+	Headers map[string]configopaque.String `mapstructure:"headers"`
 
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
@@ -188,13 +190,13 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 // Custom RoundTripper that adds headers.
 type headerRoundTripper struct {
 	transport http.RoundTripper
-	headers   map[string]string
+	headers   map[string]configopaque.String
 }
 
 // RoundTrip is a custom RoundTripper that adds headers to the request.
 func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	for k, v := range interceptor.headers {
-		req.Header.Set(k, v)
+		req.Header.Set(k, string(v))
 	}
 	// Send the request to next transport.
 	return interceptor.transport.RoundTrip(req)
