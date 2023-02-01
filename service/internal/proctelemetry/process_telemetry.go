@@ -27,6 +27,7 @@ import (
 	otelmetric "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/metric/unit"
+	"go.uber.org/multierr"
 )
 
 const (
@@ -77,8 +78,7 @@ func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProv
 	}
 
 	if useOtel {
-		meter := mp.Meter(scopeName)
-		return pm.recordWithOtel(meter)
+		return pm.recordWithOtel(mp.Meter(scopeName))
 	}
 	return pm.recordWithOC(ocRegistry)
 }
@@ -156,7 +156,7 @@ func (pm *processMetrics) recordWithOC(ocRegistry *metric.Registry) error {
 }
 
 func (pm *processMetrics) recordWithOtel(meter otelmetric.Meter) error {
-	var err error
+	var errs, err error
 
 	pm.otelProcessUptime, err = meter.Float64ObservableCounter(
 		"process_uptime",
@@ -166,9 +166,7 @@ func (pm *processMetrics) recordWithOtel(meter otelmetric.Meter) error {
 			o.Observe(pm.updateProcessUptime())
 			return nil
 		}))
-	if err != nil {
-		return err
-	}
+	errs = multierr.Append(errs, err)
 
 	pm.otelAllocMem, err = meter.Int64ObservableGauge(
 		"process_runtime_heap_alloc_bytes",
@@ -178,9 +176,7 @@ func (pm *processMetrics) recordWithOtel(meter otelmetric.Meter) error {
 			o.Observe(pm.updateAllocMem())
 			return nil
 		}))
-	if err != nil {
-		return err
-	}
+	errs = multierr.Append(errs, err)
 
 	pm.otelTotalAllocMem, err = meter.Int64ObservableCounter(
 		"process_runtime_total_alloc_bytes",
@@ -190,9 +186,7 @@ func (pm *processMetrics) recordWithOtel(meter otelmetric.Meter) error {
 			o.Observe(pm.updateTotalAllocMem())
 			return nil
 		}))
-	if err != nil {
-		return err
-	}
+	errs = multierr.Append(errs, err)
 
 	pm.otelSysMem, err = meter.Int64ObservableGauge(
 		"process_runtime_total_sys_memory_bytes",
@@ -202,9 +196,7 @@ func (pm *processMetrics) recordWithOtel(meter otelmetric.Meter) error {
 			o.Observe(pm.updateSysMem())
 			return nil
 		}))
-	if err != nil {
-		return err
-	}
+	errs = multierr.Append(errs, err)
 
 	pm.otelCPUSeconds, err = meter.Float64ObservableCounter(
 		"process_cpu_seconds",
@@ -214,9 +206,7 @@ func (pm *processMetrics) recordWithOtel(meter otelmetric.Meter) error {
 			o.Observe(pm.updateCPUSeconds())
 			return nil
 		}))
-	if err != nil {
-		return err
-	}
+	errs = multierr.Append(errs, err)
 
 	pm.otelRSSMemory, err = meter.Int64ObservableGauge(
 		"process_memory_rss",
@@ -226,11 +216,9 @@ func (pm *processMetrics) recordWithOtel(meter otelmetric.Meter) error {
 			o.Observe(pm.updateRSSMemory())
 			return nil
 		}))
-	if err != nil {
-		return err
-	}
+	errs = multierr.Append(errs, err)
 
-	return nil
+	return errs
 }
 
 func (pm *processMetrics) updateProcessUptime() float64 {
