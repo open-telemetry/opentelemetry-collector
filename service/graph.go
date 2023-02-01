@@ -49,7 +49,7 @@ func buildPipelinesGraph(ctx context.Context, set pipelinesSettings) (pipelines,
 	}
 	pipelines.createNodes(set)
 	pipelines.createEdges()
-	return pipelines, pipelines.buildNodes(ctx, set)
+	return pipelines, pipelines.buildComponents(ctx, set)
 }
 
 // Creates a node for each instance of a component and adds it to the graph
@@ -65,17 +65,25 @@ func (g *pipelinesGraph) createNodes(set pipelinesSettings) {
 				connectorsAsReceiver[recvID] = append(connectorsAsReceiver[recvID], pipelineID)
 				continue
 			}
-			pipe.addReceiver(g.createReceiver(pipelineID, recvID))
+			rcvrNode := g.createReceiver(pipelineID, recvID)
+			pipe.receivers[rcvrNode.ID()] = rcvrNode
 		}
+
+		pipe.capabilitiesNode = newCapabilitiesNode(pipelineID)
+
 		for _, procID := range pipelineCfg.Processors {
-			pipe.addProcessor(g.createProcessor(pipelineID, procID))
+			pipe.processors = append(pipe.processors, g.createProcessor(pipelineID, procID))
 		}
+
+		pipe.fanOutNode = newFanOutNode(pipelineID)
+
 		for _, exprID := range pipelineCfg.Exporters {
 			if set.Connectors.IsConfigured(exprID) {
 				connectorsAsExporter[exprID] = append(connectorsAsExporter[exprID], pipelineID)
 				continue
 			}
-			pipe.addExporter(g.createExporter(pipelineID, exprID))
+			expNode := g.createExporter(pipelineID, exprID)
+			pipe.exporters[expNode.ID()] = expNode
 		}
 	}
 
@@ -83,8 +91,8 @@ func (g *pipelinesGraph) createNodes(set pipelinesSettings) {
 		for _, eID := range exprPipelineIDs {
 			for _, rID := range connectorsAsReceiver[connID] {
 				connNode := g.createConnector(eID, rID, connID)
-				g.pipelines[eID].addExporter(connNode)
-				g.pipelines[rID].addReceiver(connNode)
+				g.pipelines[eID].exporters[connNode.ID()] = connNode
+				g.pipelines[rID].receivers[connNode.ID()] = connNode
 			}
 		}
 	}
@@ -124,33 +132,28 @@ func (g *pipelinesGraph) createConnector(exprPipelineID, rcvrPipelineID, connID 
 }
 
 func (g *pipelinesGraph) createEdges() {
-	for pipelineID, pg := range g.pipelines {
-		fanOutToExporters := newFanOutNode(pipelineID)
-		for _, exporter := range pg.exporters {
-			g.componentGraph.SetEdge(g.componentGraph.NewEdge(fanOutToExporters, exporter))
-		}
-
-		if len(pg.processors) == 0 {
-			for _, receiver := range pg.receivers {
-				g.componentGraph.SetEdge(g.componentGraph.NewEdge(receiver, fanOutToExporters))
-			}
-			continue
-		}
-
-		fanInToProcessors := newCapabilitiesNode(pipelineID)
+	for _, pg := range g.pipelines {
 		for _, receiver := range pg.receivers {
-			g.componentGraph.SetEdge(g.componentGraph.NewEdge(receiver, fanInToProcessors))
+			g.componentGraph.SetEdge(g.componentGraph.NewEdge(receiver, pg.capabilitiesNode))
 		}
 
-		g.componentGraph.SetEdge(g.componentGraph.NewEdge(fanInToProcessors, pg.processors[0]))
-		for i := 0; i+1 < len(pg.processors); i++ {
-			g.componentGraph.SetEdge(g.componentGraph.NewEdge(pg.processors[i], pg.processors[i+1]))
+		var from, to graph.Node
+		from = pg.capabilitiesNode
+		for _, processor := range pg.processors {
+			to = processor
+			g.componentGraph.SetEdge(g.componentGraph.NewEdge(from, to))
+			from = processor
 		}
-		g.componentGraph.SetEdge(g.componentGraph.NewEdge(pg.processors[len(pg.processors)-1], fanOutToExporters))
+		to = pg.fanOutNode
+		g.componentGraph.SetEdge(g.componentGraph.NewEdge(from, to))
+
+		for _, exporter := range pg.exporters {
+			g.componentGraph.SetEdge(g.componentGraph.NewEdge(pg.fanOutNode, exporter))
+		}
 	}
 }
 
-func (g *pipelinesGraph) buildNodes(ctx context.Context, set pipelinesSettings) error {
+func (g *pipelinesGraph) buildComponents(ctx context.Context, set pipelinesSettings) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
 		return err // TODO clean up error message
@@ -168,7 +171,7 @@ func (g *pipelinesGraph) buildNodes(ctx context.Context, set pipelinesSettings) 
 		case *exporterNode:
 			err = n.build(ctx, set.Telemetry, set.BuildInfo, set.Exporters)
 		case *capabilitiesNode:
-			n.build(g.nextConsumers(n.ID())[0], g.nextProcessors(n))
+			n.build(g.nextConsumers(n.ID())[0], g.pipelines[n.pipelineID].processors)
 		case *fanOutNode:
 			n.build(g.nextConsumers(n.ID()))
 		}
@@ -189,33 +192,23 @@ func (g *pipelinesGraph) nextConsumers(nodeID int64) []baseConsumer {
 	return nexts
 }
 
-// Get all processors in this pipeline
-func (g *pipelinesGraph) nextProcessors(node *capabilitiesNode) []*processorNode {
-	nexts := []*processorNode{}
-	for _, n := range g.pipelines[node.pipelineID].processors {
-		nexts = append(nexts, n.(*processorNode))
-	}
-	return nexts
-}
-
 // A node-based representation of a pipeline configuration.
 type pipelineNodes struct {
-	// Use maps for receivers and exporters to assist with deduplication of connector instances.
+	// Use map to assist with deduplication of connector instances.
 	receivers map[int64]graph.Node
-	exporters map[int64]graph.Node
+
+	// The node to which receivers emit. Passes through to processors.
+	// Easily accessible as the first node in a pipeline.
+	*capabilitiesNode
 
 	// The order of processors is very important. Therefore use a slice for processors.
-	processors []graph.Node
-}
+	processors []*processorNode
 
-func (p *pipelineNodes) addReceiver(node graph.Node) {
-	p.receivers[node.ID()] = node
-}
-func (p *pipelineNodes) addProcessor(node graph.Node) {
-	p.processors = append(p.processors, node)
-}
-func (p *pipelineNodes) addExporter(node graph.Node) {
-	p.exporters[node.ID()] = node
+	// Emits to exporters.
+	*fanOutNode
+
+	// Use map to assist with deduplication of connector instances.
+	exporters map[int64]graph.Node
 }
 
 func (g *pipelinesGraph) StartAll(ctx context.Context, host component.Host) error {
@@ -230,7 +223,7 @@ func (g *pipelinesGraph) StartAll(ctx context.Context, host component.Host) erro
 	for i := len(nodes) - 1; i >= 0; i-- {
 		comp, ok := nodes[i].(component.Component)
 		if !ok {
-			// Skip fanin/out nodes
+			// Skip capabilities/fanout nodes
 			continue
 		}
 		if compErr := comp.Start(ctx, host); compErr != nil {
@@ -254,7 +247,7 @@ func (g *pipelinesGraph) ShutdownAll(ctx context.Context) error {
 	for i := 0; i < len(nodes); i++ {
 		comp, ok := nodes[i].(component.Component)
 		if !ok {
-			// Skip fanin/out nodes
+			// Skip capabilities/fanout nodes
 			continue
 		}
 		errs = multierr.Append(errs, comp.Shutdown(ctx))
@@ -264,7 +257,7 @@ func (g *pipelinesGraph) ShutdownAll(ctx context.Context) error {
 
 func (g *pipelinesGraph) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	// TODO actual implementation
-	return nil
+	return make(map[component.DataType]map[component.ID]component.Component)
 }
 
 func (g *pipelinesGraph) HandleZPages(w http.ResponseWriter, r *http.Request) {

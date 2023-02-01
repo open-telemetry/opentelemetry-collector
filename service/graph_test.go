@@ -662,7 +662,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				}
 
 				for _, n := range pipeline.processors {
-					require.True(t, n.(*processorNode).Component.(*testcomponents.ExampleProcessor).Started())
+					require.True(t, n.Component.(*testcomponents.ExampleProcessor).Started())
 				}
 
 				for _, n := range pipeline.receivers {
@@ -731,7 +731,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				}
 
 				for _, n := range pipeline.processors {
-					require.True(t, n.(*processorNode).Component.(*testcomponents.ExampleProcessor).Stopped())
+					require.True(t, n.Component.(*testcomponents.ExampleProcessor).Stopped())
 				}
 
 				for _, n := range pipeline.exporters {
