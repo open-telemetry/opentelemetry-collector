@@ -50,8 +50,8 @@ func newNodeID(parts ...string) nodeID {
 	return nodeID(h.Sum64())
 }
 
-type nextConsumer interface {
-	nextConsumer() baseConsumer
+type consumerNode interface {
+	getConsumer() baseConsumer
 }
 
 // A receiver instance can be shared by multiple pipelines of the same type.
@@ -85,6 +85,8 @@ func (n *receiverNode) build(
 	return err
 }
 
+var _ consumerNode = &processorNode{}
+
 // Every processor instance is unique to one pipeline.
 // Therefore, nodeID is derived from "pipeline ID" and "component ID".
 type processorNode struct {
@@ -102,6 +104,10 @@ func newProcessorNode(pipelineID, procID component.ID) *processorNode {
 	}
 }
 
+func (n *processorNode) getConsumer() baseConsumer {
+	return n.Component.(baseConsumer)
+}
+
 func (n *processorNode) build(
 	ctx context.Context,
 	tel component.TelemetrySettings,
@@ -115,6 +121,8 @@ func (n *processorNode) build(
 	n.Component = p
 	return err
 }
+
+var _ consumerNode = &exporterNode{}
 
 // An exporter instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
@@ -133,6 +141,10 @@ func newExporterNode(pipelineID component.ID, exprID component.ID) *exporterNode
 	}
 }
 
+func (n *exporterNode) getConsumer() baseConsumer {
+	return n.Component.(baseConsumer)
+}
+
 func (n *exporterNode) build(
 	ctx context.Context,
 	tel component.TelemetrySettings,
@@ -145,6 +157,8 @@ func (n *exporterNode) build(
 	n.Component = e
 	return err
 }
+
+var _ consumerNode = &connectorNode{}
 
 // A connector instance connects one pipeline type to one other pipeline type.
 // Therefore, nodeID is derived from "exporter pipeline type", "receiver pipeline type", and "component ID".
@@ -163,6 +177,10 @@ func newConnectorNode(exprPipelineType, rcvrPipelineType component.DataType, con
 		exprPipelineType: exprPipelineType,
 		rcvrPipelineType: rcvrPipelineType,
 	}
+}
+
+func (n *connectorNode) getConsumer() baseConsumer {
+	return n.Component.(baseConsumer)
 }
 
 func (n *connectorNode) build(
@@ -223,6 +241,8 @@ func (n *connectorNode) build(
 	return err
 }
 
+var _ consumerNode = &capabilitiesNode{}
+
 // Every pipeline has a "virtual" capabilities node immediately after the receiver(s).
 // There are two purposes for this node:
 // 1. Present aggregated capabilities to receivers, such as whether the pipeline mutates data.
@@ -243,6 +263,10 @@ func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {
 	}
 }
 
+func (n *capabilitiesNode) getConsumer() baseConsumer {
+	return n.baseConsumer
+}
+
 func (n *capabilitiesNode) build(next baseConsumer, processors []*processorNode) {
 	n.baseConsumer = next
 	for _, proc := range processors {
@@ -250,6 +274,8 @@ func (n *capabilitiesNode) build(next baseConsumer, processors []*processorNode)
 			proc.Component.(baseConsumer).Capabilities().MutatesData
 	}
 }
+
+var _ consumerNode = &fanOutNode{}
 
 // Each pipeline has one fan-out node before exporters.
 // Therefore, nodeID is derived from "pipeline ID".
@@ -264,6 +290,10 @@ func newFanOutNode(pipelineID component.ID) *fanOutNode {
 		nodeID:     newNodeID(fanOutToExporters, pipelineID.String()),
 		pipelineID: pipelineID,
 	}
+}
+
+func (n *fanOutNode) getConsumer() baseConsumer {
+	return n.baseConsumer
 }
 
 func (n *fanOutNode) build(nexts []baseConsumer) {

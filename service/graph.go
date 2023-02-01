@@ -184,18 +184,7 @@ func (g *pipelinesGraph) nextConsumers(nodeID int64) []baseConsumer {
 	nextNodes := g.componentGraph.From(nodeID)
 	nexts := make([]baseConsumer, 0, nextNodes.Len())
 	for nextNodes.Next() {
-		switch next := nextNodes.Node().(type) {
-		case *processorNode:
-			nexts = append(nexts, next.Component.(baseConsumer))
-		case *exporterNode:
-			nexts = append(nexts, next.Component.(baseConsumer))
-		case *connectorNode:
-			nexts = append(nexts, next.Component.(baseConsumer))
-		case *capabilitiesNode:
-			nexts = append(nexts, next.baseConsumer)
-		case *fanOutNode:
-			nexts = append(nexts, next.baseConsumer)
-		}
+		nexts = append(nexts, nextNodes.Node().(consumerNode).getConsumer())
 	}
 	return nexts
 }
