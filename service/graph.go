@@ -224,7 +224,9 @@ func (g *pipelinesGraph) StartAll(ctx context.Context, host component.Host) erro
 		return err
 	}
 
-	// Start exporters first, and work towards receivers
+	// Start in reverse topological order so that downstream components
+	// are started before upstream components. This ensures that each
+	// component's consumer is ready to consume.
 	for i := len(nodes) - 1; i >= 0; i-- {
 		comp, ok := nodes[i].(component.Component)
 		if !ok {
@@ -244,7 +246,10 @@ func (g *pipelinesGraph) ShutdownAll(ctx context.Context) error {
 		return err
 	}
 
-	// Stop receivers first, and work towards exporters
+	// Stop in topological order so that upstream components
+	// are stopped before downstream components.  This ensures
+	// that each component has a chance to drain to it's consumer
+	// before the consumer is stopped.
 	var errs error
 	for i := 0; i < len(nodes); i++ {
 		comp, ok := nodes[i].(component.Component)
