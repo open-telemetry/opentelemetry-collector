@@ -24,6 +24,8 @@ import (
 	"gonum.org/v1/gonum/graph/topo"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
 
 var _ pipelines = (*pipelinesGraph)(nil)
@@ -61,7 +63,7 @@ func (g *pipelinesGraph) createNodes(set pipelinesSettings) {
 	for pipelineID, pipelineCfg := range set.PipelineConfigs {
 		pipe := g.pipelines[pipelineID]
 		for _, recvID := range pipelineCfg.Receivers {
-			if set.Connectors.IsConfigured(recvID) {
+			if set.ConnectorBuilder.IsConfigured(recvID) {
 				connectorsAsReceiver[recvID] = append(connectorsAsReceiver[recvID], pipelineID)
 				continue
 			}
@@ -78,7 +80,7 @@ func (g *pipelinesGraph) createNodes(set pipelinesSettings) {
 		pipe.fanOutNode = newFanOutNode(pipelineID)
 
 		for _, exprID := range pipelineCfg.Exporters {
-			if set.Connectors.IsConfigured(exprID) {
+			if set.ConnectorBuilder.IsConfigured(exprID) {
 				connectorsAsExporter[exprID] = append(connectorsAsExporter[exprID], pipelineID)
 				continue
 			}
@@ -163,17 +165,46 @@ func (g *pipelinesGraph) buildComponents(ctx context.Context, set pipelinesSetti
 		node := nodes[i]
 		switch n := node.(type) {
 		case *receiverNode:
-			err = n.build(ctx, set.Telemetry, set.BuildInfo, set.Receivers, g.nextConsumers(n.ID()))
+			n.Component, err = buildReceiver(ctx, n.componentID, set.Telemetry, set.BuildInfo, set.ReceiverBuilder,
+				component.NewIDWithName(n.pipelineType, "*"), g.nextConsumers(n.ID()))
 		case *processorNode:
-			err = n.build(ctx, set.Telemetry, set.BuildInfo, set.Processors, g.nextConsumers(n.ID())[0])
-		case *connectorNode:
-			err = n.build(ctx, set.Telemetry, set.BuildInfo, set.Connectors, g.nextConsumers(n.ID()))
+			n.Component, err = buildProcessor(ctx, n.componentID, set.Telemetry, set.BuildInfo, set.ProcessorBuilder,
+				n.pipelineID, g.nextConsumers(n.ID())[0])
 		case *exporterNode:
-			err = n.build(ctx, set.Telemetry, set.BuildInfo, set.Exporters)
+			n.Component, err = buildExporter(ctx, n.componentID, set.Telemetry, set.BuildInfo, set.ExporterBuilder,
+				component.NewIDWithName(n.pipelineType, "*"))
+		case *connectorNode:
+			n.Component, err = buildConnector(ctx, n.componentID, set.Telemetry, set.BuildInfo, set.ConnectorBuilder,
+				n.exprPipelineType, n.rcvrPipelineType, g.nextConsumers(n.ID()))
 		case *capabilitiesNode:
-			n.build(g.nextConsumers(n.ID())[0], g.pipelines[n.pipelineID].processors)
+			n.baseConsumer = g.nextConsumers(n.ID())[0]
+			for _, proc := range g.pipelines[n.pipelineID].processors {
+				n.Capabilities.MutatesData = n.Capabilities.MutatesData ||
+					proc.Component.(baseConsumer).Capabilities().MutatesData
+			}
 		case *fanOutNode:
-			n.build(g.nextConsumers(n.ID()))
+			nexts := g.nextConsumers(n.ID())
+			switch n.pipelineID.Type() {
+			case component.DataTypeTraces:
+				consumers := make([]consumer.Traces, 0, len(nexts))
+				for _, next := range nexts {
+					consumers = append(consumers, next.(consumer.Traces))
+				}
+				n.baseConsumer = fanoutconsumer.NewTraces(consumers)
+			case component.DataTypeMetrics:
+				consumers := make([]consumer.Metrics, 0, len(nexts))
+				for _, next := range nexts {
+
+					consumers = append(consumers, next.(consumer.Metrics))
+				}
+				n.baseConsumer = fanoutconsumer.NewMetrics(consumers)
+			case component.DataTypeLogs:
+				consumers := make([]consumer.Logs, 0, len(nexts))
+				for _, next := range nexts {
+					consumers = append(consumers, next.(consumer.Logs))
+				}
+				n.baseConsumer = fanoutconsumer.NewLogs(consumers)
+			}
 		}
 		if err != nil {
 			return err

@@ -577,7 +577,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			set := pipelinesSettings{
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
-				Receivers: receiver.NewBuilder(
+				ReceiverBuilder: receiver.NewBuilder(
 					map[component.ID]component.Config{
 						component.NewID("examplereceiver"):              testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
 						component.NewIDWithName("examplereceiver", "1"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
@@ -586,7 +586,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 						testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
 					},
 				),
-				Processors: processor.NewBuilder(
+				ProcessorBuilder: processor.NewBuilder(
 					map[component.ID]component.Config{
 						component.NewID("exampleprocessor"):              testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
 						component.NewIDWithName("exampleprocessor", "1"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
@@ -595,7 +595,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 						testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
 					},
 				),
-				Exporters: exporter.NewBuilder(
+				ExporterBuilder: exporter.NewBuilder(
 					map[component.ID]component.Config{
 						component.NewID("exampleexporter"):              testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
 						component.NewIDWithName("exampleexporter", "1"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
@@ -604,7 +604,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 						testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
 					},
 				),
-				Connectors: connector.NewBuilder(
+				ConnectorBuilder: connector.NewBuilder(
 					map[component.ID]component.Config{
 						component.NewID("exampleconnector"):                  testcomponents.ExampleConnectorFactory.CreateDefaultConfig(),
 						component.NewIDWithName("exampleconnector", "fork"):  testcomponents.ExampleConnectorFactory.CreateDefaultConfig(),
@@ -1548,25 +1548,25 @@ func TestGraphBuildErrors(t *testing.T) {
 			set := pipelinesSettings{
 				BuildInfo: component.NewDefaultBuildInfo(),
 				Telemetry: componenttest.NewNopTelemetrySettings(),
-				Receivers: receiver.NewBuilder(
+				ReceiverBuilder: receiver.NewBuilder(
 					test.receiverCfgs,
 					map[component.Type]receiver.Factory{
 						nopReceiverFactory.Type(): nopReceiverFactory,
 						badReceiverFactory.Type(): badReceiverFactory,
 					}),
-				Processors: processor.NewBuilder(
+				ProcessorBuilder: processor.NewBuilder(
 					test.processorCfgs,
 					map[component.Type]processor.Factory{
 						nopProcessorFactory.Type(): nopProcessorFactory,
 						badProcessorFactory.Type(): badProcessorFactory,
 					}),
-				Exporters: exporter.NewBuilder(
+				ExporterBuilder: exporter.NewBuilder(
 					test.exporterCfgs,
 					map[component.Type]exporter.Factory{
 						nopExporterFactory.Type(): nopExporterFactory,
 						badExporterFactory.Type(): badExporterFactory,
 					}),
-				Connectors: connector.NewBuilder(
+				ConnectorBuilder: connector.NewBuilder(
 					test.connectorCfgs,
 					map[component.Type]connector.Factory{
 						nopConnectorFactory.Type(): nopConnectorFactory,
@@ -1600,7 +1600,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 	set := pipelinesSettings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
-		Receivers: receiver.NewBuilder(
+		ReceiverBuilder: receiver.NewBuilder(
 			map[component.ID]component.Config{
 				component.NewID(nopReceiverFactory.Type()): nopReceiverFactory.CreateDefaultConfig(),
 				component.NewID(errReceiverFactory.Type()): errReceiverFactory.CreateDefaultConfig(),
@@ -1609,7 +1609,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				nopReceiverFactory.Type(): nopReceiverFactory,
 				errReceiverFactory.Type(): errReceiverFactory,
 			}),
-		Processors: processor.NewBuilder(
+		ProcessorBuilder: processor.NewBuilder(
 			map[component.ID]component.Config{
 				component.NewID(nopProcessorFactory.Type()): nopProcessorFactory.CreateDefaultConfig(),
 				component.NewID(errProcessorFactory.Type()): errProcessorFactory.CreateDefaultConfig(),
@@ -1618,7 +1618,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				nopProcessorFactory.Type(): nopProcessorFactory,
 				errProcessorFactory.Type(): errProcessorFactory,
 			}),
-		Exporters: exporter.NewBuilder(
+		ExporterBuilder: exporter.NewBuilder(
 			map[component.ID]component.Config{
 				component.NewID(nopExporterFactory.Type()): nopExporterFactory.CreateDefaultConfig(),
 				component.NewID(errExporterFactory.Type()): errExporterFactory.CreateDefaultConfig(),
@@ -1627,7 +1627,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				nopExporterFactory.Type(): nopExporterFactory,
 				errExporterFactory.Type(): errExporterFactory,
 			}),
-		Connectors: connector.NewBuilder(
+		ConnectorBuilder: connector.NewBuilder(
 			map[component.ID]component.Config{
 				component.NewIDWithName(nopConnectorFactory.Type(), "conn"): nopConnectorFactory.CreateDefaultConfig(),
 				component.NewIDWithName(errConnectorFactory.Type(), "conn"): errConnectorFactory.CreateDefaultConfig(),
