@@ -38,8 +38,8 @@ func (t *Telemetry) Logger() *zap.Logger {
 }
 
 func (t *Telemetry) Shutdown(ctx context.Context) error {
-	// TODO: Sync logger.
 	return multierr.Combine(
+		t.logger.Sync(),
 		t.tracerProvider.Shutdown(ctx),
 	)
 }
