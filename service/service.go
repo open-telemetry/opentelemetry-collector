@@ -190,13 +190,13 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 	}
 
 	pSet := pipelinesSettings{
-		Telemetry:       srv.telemetrySettings,
-		BuildInfo:       srv.buildInfo,
-		Receivers:       set.Receivers,
-		Processors:      set.Processors,
-		Exporters:       set.Exporters,
-		Connectors:      set.Connectors,
-		PipelineConfigs: cfg.Pipelines,
+		Telemetry:        srv.telemetrySettings,
+		BuildInfo:        srv.buildInfo,
+		ReceiverBuilder:  set.Receivers,
+		ProcessorBuilder: set.Processors,
+		ExporterBuilder:  set.Exporters,
+		ConnectorBuilder: set.Connectors,
+		PipelineConfigs:  cfg.Pipelines,
 	}
 
 	if sharedgate.ConnectorsFeatureGate.IsEnabled() {

@@ -194,10 +194,10 @@ type pipelinesSettings struct {
 	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
-	Receivers  *receiver.Builder
-	Processors *processor.Builder
-	Exporters  *exporter.Builder
-	Connectors *connector.Builder
+	ReceiverBuilder  *receiver.Builder
+	ProcessorBuilder *processor.Builder
+	ExporterBuilder  *exporter.Builder
+	ConnectorBuilder *connector.Builder
 
 	// PipelineConfigs is a map of component.ID to PipelineConfig.
 	PipelineConfigs map[component.ID]*PipelineConfig
@@ -245,7 +245,7 @@ func buildPipelines(ctx context.Context, set pipelinesSettings) (pipelines, erro
 				BuildInfo:         set.BuildInfo,
 			}
 			cSet.TelemetrySettings.Logger = components.ExporterLogger(set.Telemetry.Logger, expID, pipelineID.Type())
-			exp, err := buildExporter(ctx, cSet, set.Exporters, pipelineID)
+			exp, err := buildExporter(ctx, cSet, set.ExporterBuilder, pipelineID)
 			if err != nil {
 				return nil, err
 			}
@@ -279,7 +279,7 @@ func buildPipelines(ctx context.Context, set pipelinesSettings) (pipelines, erro
 				BuildInfo:         set.BuildInfo,
 			}
 			cSet.TelemetrySettings.Logger = components.ProcessorLogger(set.Telemetry.Logger, procID, pipelineID)
-			proc, err := buildProcessor(ctx, cSet, set.Processors, pipelineID, bp.lastConsumer)
+			proc, err := buildProcessor(ctx, cSet, set.ProcessorBuilder, pipelineID, bp.lastConsumer)
 			if err != nil {
 				return nil, err
 			}
@@ -336,7 +336,7 @@ func buildPipelines(ctx context.Context, set pipelinesSettings) (pipelines, erro
 				BuildInfo:         set.BuildInfo,
 			}
 			cSet.TelemetrySettings.Logger = components.ReceiverLogger(set.Telemetry.Logger, recvID, pipelineID.Type())
-			recv, err := buildReceiver(ctx, cSet, set.Receivers, pipelineID, receiversConsumers[pipelineID.Type()][recvID])
+			recv, err := buildReceiver(ctx, cSet, set.ReceiverBuilder, pipelineID, receiversConsumers[pipelineID.Type()][recvID])
 			if err != nil {
 				return nil, err
 			}

@@ -184,7 +184,7 @@ func TestBuildPipelines(t *testing.T) {
 			pips, err := buildPipelines(context.Background(), pipelinesSettings{
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
-				Receivers: receiver.NewBuilder(
+				ReceiverBuilder: receiver.NewBuilder(
 					map[component.ID]component.Config{
 						component.NewID("examplereceiver"):              testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
 						component.NewIDWithName("examplereceiver", "1"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
@@ -192,7 +192,7 @@ func TestBuildPipelines(t *testing.T) {
 					map[component.Type]receiver.Factory{
 						testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
 					}),
-				Processors: processor.NewBuilder(
+				ProcessorBuilder: processor.NewBuilder(
 					map[component.ID]component.Config{
 						component.NewID("exampleprocessor"):              testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
 						component.NewIDWithName("exampleprocessor", "1"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
@@ -200,7 +200,7 @@ func TestBuildPipelines(t *testing.T) {
 					map[component.Type]processor.Factory{
 						testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
 					}),
-				Exporters: exporter.NewBuilder(
+				ExporterBuilder: exporter.NewBuilder(
 					map[component.ID]component.Config{
 						component.NewID("exampleexporter"):              testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
 						component.NewIDWithName("exampleexporter", "1"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
@@ -579,19 +579,19 @@ func TestBuildErrors(t *testing.T) {
 			set := pipelinesSettings{
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
-				Receivers: receiver.NewBuilder(
+				ReceiverBuilder: receiver.NewBuilder(
 					test.ReceiverConfigs,
 					map[component.Type]receiver.Factory{
 						nopReceiverFactory.Type(): nopReceiverFactory,
 						badReceiverFactory.Type(): badReceiverFactory,
 					}),
-				Processors: processor.NewBuilder(
+				ProcessorBuilder: processor.NewBuilder(
 					test.ProcessorConfigs,
 					map[component.Type]processor.Factory{
 						nopProcessorFactory.Type(): nopProcessorFactory,
 						badProcessorFactory.Type(): badProcessorFactory,
 					}),
-				Exporters: exporter.NewBuilder(
+				ExporterBuilder: exporter.NewBuilder(
 					test.ExporterConfigs,
 					map[component.Type]exporter.Factory{
 						nopExporterFactory.Type(): nopExporterFactory,
@@ -617,7 +617,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 	set := pipelinesSettings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
-		Receivers: receiver.NewBuilder(
+		ReceiverBuilder: receiver.NewBuilder(
 			map[component.ID]component.Config{
 				component.NewID(nopReceiverFactory.Type()): nopReceiverFactory.CreateDefaultConfig(),
 				component.NewID(errReceiverFactory.Type()): errReceiverFactory.CreateDefaultConfig(),
@@ -626,7 +626,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 				nopReceiverFactory.Type(): nopReceiverFactory,
 				errReceiverFactory.Type(): errReceiverFactory,
 			}),
-		Processors: processor.NewBuilder(
+		ProcessorBuilder: processor.NewBuilder(
 			map[component.ID]component.Config{
 				component.NewID(nopProcessorFactory.Type()): nopProcessorFactory.CreateDefaultConfig(),
 				component.NewID(errProcessorFactory.Type()): errProcessorFactory.CreateDefaultConfig(),
@@ -635,7 +635,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 				nopProcessorFactory.Type(): nopProcessorFactory,
 				errProcessorFactory.Type(): errProcessorFactory,
 			}),
-		Exporters: exporter.NewBuilder(
+		ExporterBuilder: exporter.NewBuilder(
 			map[component.ID]component.Config{
 				component.NewID(nopExporterFactory.Type()): nopExporterFactory.CreateDefaultConfig(),
 				component.NewID(errExporterFactory.Type()): errExporterFactory.CreateDefaultConfig(),
