@@ -38,6 +38,7 @@ func NewTraces() Traces {
 
 // MoveTo moves the Traces instance overriding the destination and
 // resetting the current instance to its zero value.
+// Deprecated: [1.0.0-rc5] The method can be replaced with a plain assignment.
 func (ms Traces) MoveTo(dest Traces) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpcollectortrace.ExportTraceServiceRequest{}
