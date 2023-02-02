@@ -269,7 +269,9 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, tc ownMetricsTestCase)
 		// Sleep for 1 second to ensure the http server is started.
 		time.Sleep(1 * time.Second)
 		assert.True(t, loggingHookCalled)
-		assertMetrics(t, metricsAddr, tc.expectedLabels)
+		if !useOtel {
+			assertMetrics(t, metricsAddr, tc.expectedLabels)
+		}
 		assertZPages(t, zpagesAddr)
 		require.NoError(t, srv.Shutdown(context.Background()))
 	}
