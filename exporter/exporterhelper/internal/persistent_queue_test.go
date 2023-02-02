@@ -194,6 +194,26 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 	}
 }
 
+func TestPersistentQueue_Overflow(t *testing.T) {
+	path := t.TempDir()
+
+	ext := createStorageExtension(path)
+	t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
+
+	wq := createTestQueue(ext, 0)
+	overflowCounter := atomic.NewInt32(0)
+	wq.OnOverflow(func(item Request) {
+		overflowCounter.Add(1)
+	})
+	traces := newTraces(1, 10)
+
+	req := newFakeTracesRequest(traces)
+	require.True(t, wq.Produce(req))
+	require.Eventually(t, func() bool {
+		return overflowCounter.Load() == 1
+	}, time.Second, time.Millisecond)
+}
+
 func newTraces(numTraces int, numSpans int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	batch := traces.ResourceSpans().AppendEmpty()

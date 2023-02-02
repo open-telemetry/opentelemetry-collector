@@ -59,7 +59,8 @@ type persistentContiguousStorage struct {
 	stopOnce sync.Once
 	capacity uint64
 
-	reqChan chan Request
+	reqChan  chan Request
+	overflow RequestCallback
 
 	mu                       sync.Mutex
 	readIndex                itemIndex
@@ -219,16 +220,35 @@ func (pcs *persistentContiguousStorage) put(req Request) error {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 
+	ctx := context.Background()
+
 	if pcs.size() >= pcs.capacity {
-		pcs.logger.Warn("Maximum queue capacity reached", zap.String(zapQueueNameKey, pcs.queueName))
-		return errMaxCapacityReached
+		if pcs.overflow == nil {
+			pcs.logger.Warn("Maximum queue capacity reached", zap.String(zapQueueNameKey, pcs.queueName))
+			return errMaxCapacityReached
+		}
+		if pcs.capacity == 0 {
+			pcs.overflow(req)
+			return nil
+		}
+		itemKey := pcs.itemKey(pcs.readIndex)
+		batch, err := newBatch(pcs).get(itemKey).delete(itemKey).execute(ctx)
+		if err != nil {
+			return err
+		}
+		pcs.readIndex++
+		var old Request
+		old, err = batch.getRequestResult(itemKey)
+		if err != nil {
+			return err
+		}
+		pcs.overflow(old)
 	}
 
 	itemKey := pcs.itemKey(pcs.writeIndex)
 	pcs.writeIndex++
 	pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
 
-	ctx := context.Background()
 	_, err := newBatch(pcs).setItemIndex(writeIndexKey, pcs.writeIndex).setRequest(itemKey, req).execute(ctx)
 
 	// Inform the loop that there's some data to process

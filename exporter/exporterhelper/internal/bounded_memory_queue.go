@@ -30,6 +30,7 @@ type boundedMemoryQueue struct {
 	stopped  *atomic.Bool
 	items    chan Request
 	capacity uint32
+	overflow RequestCallback
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
@@ -45,7 +46,7 @@ func NewBoundedMemoryQueue(capacity int) ProducerConsumerQueue {
 
 // StartConsumers starts a given number of goroutines consuming items from the queue
 // and passing them into the consumer callback.
-func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item Request)) {
+func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback RequestCallback) {
 	var startWG sync.WaitGroup
 	for i := 0; i < numWorkers; i++ {
 		q.stopWG.Add(1)
@@ -72,7 +73,19 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 	// their combined size is stored in q.size, and their combined capacity
 	// should match the capacity of the new queue
 	if q.size.Load() >= q.capacity {
-		return false
+		if q.overflow == nil {
+			return false
+		}
+		if q.capacity == 0 {
+			q.overflow(item)
+		} else {
+			old := <-q.items
+			if q.overflow != nil {
+				q.overflow(old)
+			}
+			q.items <- item
+		}
+		return true
 	}
 
 	q.size.Add(1)
@@ -84,6 +97,11 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 		q.size.Add(^uint32(0))
 		return false
 	}
+}
+
+// OnOverflow sets the callback that handles queue overflow.
+func (q *boundedMemoryQueue) OnOverflow(callback RequestCallback) {
+	q.overflow = callback
 }
 
 // Stop stops all consumers, as well as the length reporter if started,

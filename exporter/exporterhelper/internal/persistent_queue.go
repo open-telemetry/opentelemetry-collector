@@ -78,6 +78,11 @@ func (pq *persistentQueue) Produce(item Request) bool {
 	return err == nil
 }
 
+// OnOverflow sets the callback that handles queue overflow.
+func (pq *persistentQueue) OnOverflow(callback RequestCallback) {
+	pq.storage.overflow = callback
+}
+
 // Stop stops accepting items, shuts down the queue and closes the persistent queue
 func (pq *persistentQueue) Stop() {
 	pq.stopOnce.Do(func() {

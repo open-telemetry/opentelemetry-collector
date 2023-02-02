@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -311,6 +312,42 @@ func TestPersistentStorage_StartWithNonDispatched(t *testing.T) {
 		defer newPs.mu.Unlock()
 		return newPs.size() == capacity-1 && len(newPs.currentlyDispatchedItems) == 1
 	}, 5*time.Second, 10*time.Millisecond)
+}
+
+func TestPersistentStorage_Overflow(t *testing.T) {
+	path := t.TempDir()
+
+	ext := createStorageExtension(path)
+	client := createTestClient(ext)
+	ps := createTestPersistentStorage(client)
+	ps.unmarshaler = newStringRequestUnmarshalerFunc
+	ps.capacity = 0
+	cs := newConsumerState(t)
+	ps.overflow = func(item Request) {
+		cs.record(item.(stringRequest).str)
+	}
+	// stop the loop first so test is deterministic
+	close(ps.stopChan)
+	time.Sleep(time.Millisecond)
+
+	require.NoError(t, ps.put(stringRequest{str: "a"}))
+	cs.assertConsumed(map[string]bool{
+		"a": true,
+	})
+	cs.consumed = map[string]bool{}
+
+	ps.capacity = 2
+	for i := 1; i <= 5; i++ {
+		err := ps.put(stringRequest{str: strings.Repeat("b", i)})
+		require.NoError(t, err)
+	}
+
+	// oldest requests in queue should overflow
+	cs.assertConsumed(map[string]bool{
+		"b":   true,
+		"bb":  true,
+		"bbb": true,
+	})
 }
 
 func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {

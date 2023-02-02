@@ -27,9 +27,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func newStringRequestUnmarshalerFunc(bytes []byte) (Request, error) {
+	return stringRequest{str: string(bytes)}, nil
+}
+
 type stringRequest struct {
 	Request
 	str string
+}
+
+func (r stringRequest) Marshal() ([]byte, error) {
+	return []byte(r.str), nil
+}
+
+func (r stringRequest) OnProcessingFinished() {
 }
 
 func newStringRequest(str string) Request {
@@ -200,6 +211,28 @@ func TestZeroSize(t *testing.T) {
 	})
 
 	assert.False(t, q.Produce(newStringRequest("a"))) // in process
+
+	cs := newConsumerState(t)
+	q.OnOverflow(func(item Request) {
+		cs.record(item.(stringRequest).str)
+	})
+	assert.True(t, q.Produce(newStringRequest("b")))
+	cs.assertConsumed(map[string]bool{
+		"b": true,
+	})
+}
+
+func TestOverflow(t *testing.T) {
+	q := NewBoundedMemoryQueue(1)
+	cs := newConsumerState(t)
+	q.OnOverflow(func(item Request) {
+		cs.record(item.(stringRequest).str)
+	})
+	assert.True(t, q.Produce(newStringRequest("a")))
+	assert.True(t, q.Produce(newStringRequest("b")))
+	cs.assertConsumed(map[string]bool{
+		"a": true,
+	})
 }
 
 func BenchmarkBoundedQueue(b *testing.B) {

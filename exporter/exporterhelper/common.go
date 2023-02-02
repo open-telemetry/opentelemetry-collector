@@ -18,6 +18,9 @@ import (
 	"context"
 	"time"
 
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -74,6 +77,7 @@ type baseSettings struct {
 	consumerOptions []consumer.Option
 	TimeoutSettings
 	QueueSettings
+	BacklogSettings QueueSettings
 	RetrySettings
 }
 
@@ -83,7 +87,8 @@ func fromOptions(options ...Option) *baseSettings {
 	opts := &baseSettings{
 		TimeoutSettings: NewDefaultTimeoutSettings(),
 		// TODO: Enable queuing by default (call DefaultQueueSettings)
-		QueueSettings: QueueSettings{Enabled: false},
+		QueueSettings:   QueueSettings{Enabled: false},
+		BacklogSettings: QueueSettings{Enabled: false},
 		// TODO: Enable retry by default (call DefaultRetrySettings)
 		RetrySettings: RetrySettings{Enabled: false},
 	}
@@ -138,6 +143,15 @@ func WithQueue(queueSettings QueueSettings) Option {
 	}
 }
 
+// WithBacklog overrides the default BacklogSettings for an exporter.
+// The default BacklogSettings is to disable the secondary backlog queue.
+// Requires QueueSettings to be enabled.
+func WithBacklog(queueSettings QueueSettings) Option {
+	return func(o *baseSettings) {
+		o.BacklogSettings = queueSettings
+	}
+}
+
 // WithCapabilities overrides the default Capabilities() function for a Consumer.
 // The default is non-mutable data.
 // TODO: Verify if we can change the default to be mutable as we do for processors.
@@ -151,9 +165,8 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 type baseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
-	obsrep   *obsExporter
-	sender   requestSender
-	qrSender *queuedRetrySender
+	obsrep *obsExporter
+	sender *tieredSender
 }
 
 func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal component.DataType, reqUnmarshaler internal.RequestUnmarshaler) (*baseExporter, error) {
@@ -165,20 +178,27 @@ func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal compo
 		return nil, err
 	}
 
-	be.qrSender = newQueuedRetrySender(set.ID, signal, bs.QueueSettings, bs.RetrySettings, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
-	be.sender = be.qrSender
+	be.sender = newTieredSender(
+		set.ID,
+		signal,
+		bs.QueueSettings,
+		bs.BacklogSettings,
+		bs.RetrySettings,
+		reqUnmarshaler,
+		&timeoutSender{cfg: bs.TimeoutSettings},
+		createSampledLogger(set.Logger),
+	)
 	be.StartFunc = func(ctx context.Context, host component.Host) error {
 		// First start the wrapped exporter.
-		if err := bs.StartFunc.Start(ctx, host); err != nil {
+		if err = bs.StartFunc.Start(ctx, host); err != nil {
 			return err
 		}
-
-		// If no error then start the queuedRetrySender.
-		return be.qrSender.start(ctx, host)
+		// If no error then start the sender.
+		return be.sender.start(ctx, host)
 	}
 	be.ShutdownFunc = func(ctx context.Context) error {
-		// First shutdown the queued retry sender
-		be.qrSender.shutdown()
+		// First shutdown the sender
+		be.sender.shutdown()
 		// Last shutdown the wrapped exporter itself.
 		return bs.ShutdownFunc.Shutdown(ctx)
 	}
@@ -188,7 +208,26 @@ func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal compo
 // wrapConsumerSender wraps the consumer sender (the sender that uses retries and timeout) with the given wrapper.
 // This can be used to wrap with observability (create spans, record metrics) the consumer sender.
 func (be *baseExporter) wrapConsumerSender(f func(consumer requestSender) requestSender) {
-	be.qrSender.consumerSender = f(be.qrSender.consumerSender)
+	be.sender.wrapConsumerSender(f)
+}
+
+func createSampledLogger(logger *zap.Logger) *zap.Logger {
+	if logger.Core().Enabled(zapcore.DebugLevel) {
+		// Debugging is enabled. Don't do any sampling.
+		return logger
+	}
+
+	// Create a logger that samples all messages to 1 per 10 seconds initially,
+	// and 1/100 of messages after that.
+	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewSamplerWithOptions(
+			core,
+			10*time.Second,
+			1,
+			100,
+		)
+	})
+	return logger.WithOptions(opts)
 }
 
 // timeoutSender is a requestSender that adds a `timeout` to every request that passes this sender.

@@ -16,12 +16,14 @@
 
 package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 
+type RequestCallback func(item Request)
+
 // ProducerConsumerQueue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
 // (boundedMemoryQueue) or via a disk-based queue (persistentQueue)
 type ProducerConsumerQueue interface {
 	// StartConsumers starts a given number of goroutines consuming items from the queue
 	// and passing them into the consumer callback.
-	StartConsumers(num int, callback func(item Request))
+	StartConsumers(num int, callback RequestCallback)
 	// Produce is used by the producer to submit new item to the queue. Returns false if the item wasn't added
 	// to the queue due to queue overflow.
 	Produce(item Request) bool
@@ -30,4 +32,7 @@ type ProducerConsumerQueue interface {
 	// Stop stops all consumers, as well as the length reporter if started,
 	// and releases the items channel. It blocks until all consumers have stopped.
 	Stop()
+	// OnOverflow sets the callback used for overflow requests when Produce is called with a full
+	// queue.
+	OnOverflow(callback RequestCallback)
 }

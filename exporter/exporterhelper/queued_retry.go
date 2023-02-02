@@ -25,13 +25,11 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 var (
@@ -86,37 +84,31 @@ type queuedRetrySender struct {
 	cfg                QueueSettings
 	consumerSender     requestSender
 	queue              internal.ProducerConsumerQueue
-	retryStopCh        chan struct{}
 	traceAttribute     attribute.KeyValue
 	logger             *zap.Logger
 	requeuingEnabled   bool
 	requestUnmarshaler internal.RequestUnmarshaler
 }
 
-func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
-	retryStopCh := make(chan struct{})
-	sampledLogger := createSampledLogger(logger)
-	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
-
+func newQueuedRetrySender(
+	fullName string,
+	id component.ID,
+	signal component.DataType,
+	traceAttr attribute.KeyValue,
+	qCfg QueueSettings,
+	reqUnmarshaler internal.RequestUnmarshaler,
+	nextSender requestSender,
+	logger *zap.Logger,
+) *queuedRetrySender {
 	qrs := &queuedRetrySender{
-		fullName:           id.String(),
+		fullName:           fullName,
 		id:                 id,
 		signal:             signal,
 		cfg:                qCfg,
-		retryStopCh:        retryStopCh,
 		traceAttribute:     traceAttr,
-		logger:             sampledLogger,
+		logger:             logger,
 		requestUnmarshaler: reqUnmarshaler,
-	}
-
-	qrs.consumerSender = &retrySender{
-		traceAttribute: traceAttr,
-		cfg:            rCfg,
-		nextSender:     nextSender,
-		stopCh:         retryStopCh,
-		logger:         sampledLogger,
-		// Following three functions actually depend on queuedRetrySender
-		onTemporaryFailure: qrs.onTemporaryFailure,
+		consumerSender:     nextSender,
 	}
 
 	if qCfg.StorageID == nil {
@@ -170,31 +162,6 @@ func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, hos
 	return nil
 }
 
-func (qrs *queuedRetrySender) onTemporaryFailure(logger *zap.Logger, req internal.Request, err error) error {
-	if !qrs.requeuingEnabled || qrs.queue == nil {
-		logger.Error(
-			"Exporting failed. No more retries left. Dropping data.",
-			zap.Error(err),
-			zap.Int("dropped_items", req.Count()),
-		)
-		return err
-	}
-
-	if qrs.queue.Produce(req) {
-		logger.Error(
-			"Exporting failed. Putting back to the end of the queue.",
-			zap.Error(err),
-		)
-	} else {
-		logger.Error(
-			"Exporting failed. Queue did not accept requeuing request. Dropping data.",
-			zap.Error(err),
-			zap.Int("dropped_items", req.Count()),
-		)
-	}
-	return err
-}
-
 // start is invoked during service startup.
 func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) error {
 	if err := qrs.initializePersistentQueue(ctx, host); err != nil {
@@ -234,9 +201,6 @@ func (qrs *queuedRetrySender) shutdown() {
 		}, metricdata.NewLabelValue(qrs.fullName))
 	}
 
-	// First Stop the retry goroutines, so that unblocks the queue numWorkers.
-	close(qrs.retryStopCh)
-
 	// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
 	if qrs.queue != nil {
@@ -274,25 +238,6 @@ func NewDefaultRetrySettings() RetrySettings {
 		MaxInterval:         30 * time.Second,
 		MaxElapsedTime:      5 * time.Minute,
 	}
-}
-
-func createSampledLogger(logger *zap.Logger) *zap.Logger {
-	if logger.Core().Enabled(zapcore.DebugLevel) {
-		// Debugging is enabled. Don't do any sampling.
-		return logger
-	}
-
-	// Create a logger that samples all messages to 1 per 10 seconds initially,
-	// and 1/100 of messages after that.
-	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		return zapcore.NewSamplerWithOptions(
-			core,
-			10*time.Second,
-			1,
-			100,
-		)
-	})
-	return logger.WithOptions(opts)
 }
 
 // send implements the requestSender interface
@@ -417,7 +362,7 @@ func (rs *retrySender) send(req internal.Request) error {
 			return rs.onTemporaryFailure(rs.logger, req, err)
 		}
 
-		throttleErr := throttleRetry{}
+		var throttleErr throttleRetry
 		isThrottle := errors.As(err, &throttleErr)
 		if isThrottle {
 			backoffDelay = max(backoffDelay, throttleErr.delay)
@@ -440,7 +385,7 @@ func (rs *retrySender) send(req internal.Request) error {
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
 		case <-req.Context().Done():
-			return fmt.Errorf("Request is cancelled or timed out %w", err)
+			return fmt.Errorf("request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
 			return rs.onTemporaryFailure(rs.logger, req, fmt.Errorf("interrupted due to shutdown %w", err))
 		case <-time.After(backoffDelay):
