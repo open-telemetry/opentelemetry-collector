@@ -134,17 +134,3 @@ func TestResourceMetricsSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
-func generateTestResourceMetricsSlice() ResourceMetricsSlice {
-	tv := NewResourceMetricsSlice()
-	fillTestResourceMetricsSlice(tv)
-	return tv
-}
-
-func fillTestResourceMetricsSlice(tv ResourceMetricsSlice) {
-	*tv.orig = make([]*otlpmetrics.ResourceMetrics, 7)
-	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlpmetrics.ResourceMetrics{}
-		fillTestResourceMetrics(newResourceMetrics((*tv.orig)[i]))
-	}
-}

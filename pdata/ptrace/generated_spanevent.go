@@ -25,74 +25,119 @@ import (
 
 // SpanEvent is a time-stamped annotation of the span, consisting of user-supplied
 // text description and key-value pairs. See OTLP for event definition.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewSpanEvent function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type SpanEvent struct {
+type SpanEvent interface {
+	commonSpanEvent
+	Attributes() pcommon.Map
+}
+
+type MutableSpanEvent interface {
+	commonSpanEvent
+	MoveTo(dest MutableSpanEvent)
+	SetTimestamp(pcommon.Timestamp)
+	SetName(string)
+	Attributes() pcommon.MutableMap
+	SetDroppedAttributesCount(uint32)
+}
+
+type commonSpanEvent interface {
+	getOrig() *otlptrace.Span_Event
+	CopyTo(dest MutableSpanEvent)
+	Timestamp() pcommon.Timestamp
+	Name() string
+	DroppedAttributesCount() uint32
+}
+
+type immutableSpanEvent struct {
 	orig *otlptrace.Span_Event
 }
 
-func newSpanEvent(orig *otlptrace.Span_Event) SpanEvent {
-	return SpanEvent{orig}
+type mutableSpanEvent struct {
+	immutableSpanEvent
+}
+
+func newImmutableSpanEvent(orig *otlptrace.Span_Event) immutableSpanEvent {
+	return immutableSpanEvent{orig}
+}
+
+func newMutableSpanEvent(orig *otlptrace.Span_Event) mutableSpanEvent {
+	return mutableSpanEvent{immutableSpanEvent{orig}}
+}
+
+func (ms immutableSpanEvent) getOrig() *otlptrace.Span_Event {
+	return ms.orig
 }
 
 // NewSpanEvent creates a new empty SpanEvent.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSpanEvent() SpanEvent {
-	return newSpanEvent(&otlptrace.Span_Event{})
+func NewSpanEvent() MutableSpanEvent {
+	return newMutableSpanEvent(&otlptrace.Span_Event{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms SpanEvent) MoveTo(dest SpanEvent) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.Span_Event{}
+func (ms mutableSpanEvent) MoveTo(dest MutableSpanEvent) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlptrace.Span_Event{}
 }
 
 // Timestamp returns the timestamp associated with this SpanEvent.
-func (ms SpanEvent) Timestamp() pcommon.Timestamp {
+func (ms immutableSpanEvent) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this SpanEvent.
-func (ms SpanEvent) SetTimestamp(v pcommon.Timestamp) {
+func (ms mutableSpanEvent) SetTimestamp(v pcommon.Timestamp) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Name returns the name associated with this SpanEvent.
-func (ms SpanEvent) Name() string {
-	return ms.orig.Name
+func (ms immutableSpanEvent) Name() string {
+	return ms.getOrig().Name
 }
 
 // SetName replaces the name associated with this SpanEvent.
-func (ms SpanEvent) SetName(v string) {
-	ms.orig.Name = v
+func (ms mutableSpanEvent) SetName(v string) {
+	ms.getOrig().Name = v
 }
 
 // Attributes returns the Attributes associated with this SpanEvent.
-func (ms SpanEvent) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+func (ms immutableSpanEvent) Attributes() pcommon.Map {
+	return internal.NewImmutableMap(&ms.getOrig().Attributes)
+}
+
+func (ms mutableSpanEvent) Attributes() pcommon.MutableMap {
+	return internal.NewMutableMap(&ms.getOrig().Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanEvent.
-func (ms SpanEvent) DroppedAttributesCount() uint32 {
-	return ms.orig.DroppedAttributesCount
+func (ms immutableSpanEvent) DroppedAttributesCount() uint32 {
+	return ms.getOrig().DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this SpanEvent.
-func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
-	ms.orig.DroppedAttributesCount = v
+func (ms mutableSpanEvent) SetDroppedAttributesCount(v uint32) {
+	ms.getOrig().DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms SpanEvent) CopyTo(dest SpanEvent) {
+func (ms immutableSpanEvent) CopyTo(dest MutableSpanEvent) {
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetName(ms.Name())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+}
+
+func generateTestSpanEvent() MutableSpanEvent {
+	tv := NewSpanEvent()
+	fillTestSpanEvent(tv)
+	return tv
+}
+
+func fillTestSpanEvent(tv MutableSpanEvent) {
+	tv.getOrig().TimeUnixNano = 1234567890
+	tv.getOrig().Name = "test_name"
+	internal.FillTestMap(internal.NewMutableMap(&tv.getOrig().Attributes))
+	tv.getOrig().DroppedAttributesCount = uint32(17)
 }

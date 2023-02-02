@@ -30,7 +30,7 @@ type JSONMarshaler struct{}
 
 func (*JSONMarshaler) MarshalTraces(td Traces) ([]byte, error) {
 	buf := bytes.Buffer{}
-	pb := internal.TracesToProto(internal.Traces(td))
+	pb := internal.TracesToProto(td.traces)
 	err := delegate.Marshal(&buf, &pb)
 	return buf.Bytes(), err
 }
@@ -42,5 +42,5 @@ func (*JSONUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	if err := ptracejson.UnmarshalTraceData(buf, &td); err != nil {
 		return Traces{}, err
 	}
-	return Traces(internal.TracesFromProto(td)), nil
+	return Traces{traces: internal.TracesFromProto(td)}, nil
 }

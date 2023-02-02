@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,43 +12,81 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
+package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
 	"go.uber.org/multierr"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
-// Slice logically represents a slice of Value.
-//
-// This is a reference type. If passed by value and callee modifies it, the
-// caller will see the modification.
-//
-// Must use NewSlice function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type Slice internal.Slice
-
-func newSlice(orig *[]otlpcommon.AnyValue) Slice {
-	return Slice(internal.NewSlice(orig))
+type commonSlice interface {
+	Len() int
+	CopyTo(dest MutableSlice)
+	AsRaw() []any
+	getOrig() *[]otlpcommon.AnyValue
 }
 
-func (es Slice) getOrig() *[]otlpcommon.AnyValue {
-	return internal.GetOrigSlice(internal.Slice(es))
+type Slice interface {
+	commonSlice
+	At(ix int) Value
+}
+
+type MutableSlice interface {
+	commonSlice
+	At(ix int) MutableValue
+	EnsureCapacity(newCap int)
+	AppendEmpty() MutableValue
+	MoveAndAppendTo(dest MutableSlice)
+	RemoveIf(f func(MutableValue) bool)
+	FromRaw(rawSlice []any) error
+}
+
+type immutableSlice struct {
+	orig *[]otlpcommon.AnyValue
+}
+
+type mutableSlice struct {
+	immutableSlice
+}
+
+func NewImmutableSlice(orig *[]otlpcommon.AnyValue) Slice {
+	return immutableSlice{orig}
+}
+
+func NewMutableSlice(orig *[]otlpcommon.AnyValue) MutableSlice {
+	return mutableSlice{immutableSlice{orig}}
+}
+
+func GenerateTestSlice() MutableSlice {
+	orig := []otlpcommon.AnyValue{}
+	tv := NewMutableSlice(&orig)
+	FillTestSlice(tv)
+	return tv
+}
+
+func FillTestSlice(tv MutableSlice) {
+	*tv.getOrig() = make([]otlpcommon.AnyValue, 7)
+	for i := 0; i < 7; i++ {
+		FillTestValue(NewMutableValue(&(*tv.getOrig())[i]))
+	}
+}
+
+func (es immutableSlice) getOrig() *[]otlpcommon.AnyValue {
+	return es.orig
 }
 
 // NewSlice creates a Slice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewSlice() Slice {
+func NewSlice() MutableSlice {
 	orig := []otlpcommon.AnyValue(nil)
-	return Slice(internal.NewSlice(&orig))
+	return NewMutableSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewSlice()".
-func (es Slice) Len() int {
+func (es immutableSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -60,12 +98,16 @@ func (es Slice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es Slice) At(ix int) Value {
-	return newValue(&(*es.getOrig())[ix])
+func (es immutableSlice) At(ix int) Value {
+	return immutableValue{&(*es.getOrig())[ix]}
+}
+
+func (es mutableSlice) At(ix int) MutableValue {
+	return mutableValue{es.immutableSlice.At(ix).(immutableValue)}
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es Slice) CopyTo(dest Slice) {
+func (es immutableSlice) CopyTo(dest MutableSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
@@ -75,7 +117,7 @@ func (es Slice) CopyTo(dest Slice) {
 	}
 
 	for i := range *es.getOrig() {
-		newValue(&(*es.getOrig())[i]).CopyTo(newValue(&(*dest.getOrig())[i]))
+		NewImmutableValue(&(*es.getOrig())[i]).CopyTo(NewMutableValue(&(*dest.getOrig())[i]))
 	}
 }
 
@@ -91,7 +133,7 @@ func (es Slice) CopyTo(dest Slice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es Slice) EnsureCapacity(newCap int) {
+func (es mutableSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -104,14 +146,14 @@ func (es Slice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty Value.
 // It returns the newly added Value.
-func (es Slice) AppendEmpty() Value {
+func (es mutableSlice) AppendEmpty() MutableValue {
 	*es.getOrig() = append(*es.getOrig(), otlpcommon.AnyValue{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es Slice) MoveAndAppendTo(dest Slice) {
+func (es mutableSlice) MoveAndAppendTo(dest MutableSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -123,7 +165,7 @@ func (es Slice) MoveAndAppendTo(dest Slice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es Slice) RemoveIf(f func(Value) bool) {
+func (es mutableSlice) RemoveIf(f func(MutableValue) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -142,7 +184,7 @@ func (es Slice) RemoveIf(f func(Value) bool) {
 }
 
 // AsRaw return []any copy of the Slice.
-func (es Slice) AsRaw() []any {
+func (es immutableSlice) AsRaw() []any {
 	rawSlice := make([]any, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		rawSlice = append(rawSlice, es.At(i).AsRaw())
@@ -151,7 +193,7 @@ func (es Slice) AsRaw() []any {
 }
 
 // FromRaw copies []any into the Slice.
-func (es Slice) FromRaw(rawSlice []any) error {
+func (es mutableSlice) FromRaw(rawSlice []any) error {
 	if len(rawSlice) == 0 {
 		*es.getOrig() = nil
 		return nil
@@ -159,7 +201,7 @@ func (es Slice) FromRaw(rawSlice []any) error {
 	var errs error
 	origs := make([]otlpcommon.AnyValue, len(rawSlice))
 	for ix, iv := range rawSlice {
-		errs = multierr.Append(errs, newValue(&origs[ix]).FromRaw(iv))
+		errs = multierr.Append(errs, NewMutableValue(&origs[ix]).FromRaw(iv))
 	}
 	*es.getOrig() = origs
 	return errs

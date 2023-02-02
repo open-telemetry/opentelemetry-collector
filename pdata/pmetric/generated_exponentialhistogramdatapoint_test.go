@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -47,7 +46,7 @@ func TestExponentialHistogramDataPoint_CopyTo(t *testing.T) {
 
 func TestExponentialHistogramDataPoint_Attributes(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
+	assert.Equal(t, pcommonNewMap(), ms.Attributes())
 	internal.FillTestMap(internal.Map(ms.Attributes()))
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
 }
@@ -144,26 +143,4 @@ func TestExponentialHistogramDataPoint_Max(t *testing.T) {
 	assert.Equal(t, float64(182.55), ms.Max())
 	ms.RemoveMax()
 	assert.False(t, ms.HasMax())
-}
-
-func generateTestExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
-	tv := NewExponentialHistogramDataPoint()
-	fillTestExponentialHistogramDataPoint(tv)
-	return tv
-}
-
-func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
-	tv.orig.StartTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Count = uint64(17)
-	tv.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(17.13)}
-	tv.orig.Scale = int32(4)
-	tv.orig.ZeroCount = uint64(201)
-	fillTestExponentialHistogramDataPointBuckets(newExponentialHistogramDataPointBuckets(&tv.orig.Positive))
-	fillTestExponentialHistogramDataPointBuckets(newExponentialHistogramDataPointBuckets(&tv.orig.Negative))
-	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars))
-	tv.orig.Flags = 1
-	tv.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(9.23)}
-	tv.orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(182.55)}
 }

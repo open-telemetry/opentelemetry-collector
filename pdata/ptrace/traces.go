@@ -17,15 +17,12 @@ package ptrace // import "go.opentelemetry.io/collector/pdata/ptrace"
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
 // Use NewTraces to create new instance, zero-initialized instance is not valid for use.
 type Traces internal.Traces
-
-func newTraces(orig *otlpcollectortrace.ExportTraceServiceRequest) Traces {
-	return Traces(internal.NewTraces(orig))
-}
 
 func (ms Traces) getOrig() *otlpcollectortrace.ExportTraceServiceRequest {
 	return internal.GetOrigTraces(internal.Traces(ms))
@@ -33,7 +30,8 @@ func (ms Traces) getOrig() *otlpcollectortrace.ExportTraceServiceRequest {
 
 // NewTraces creates a new Traces struct.
 func NewTraces() Traces {
-	return newTraces(&otlpcollectortrace.ExportTraceServiceRequest{})
+	orig := &otlpcollectortrace.ExportTraceServiceRequest{}
+	return Traces(internal.NewTraces(orig, internal.StateExclusive))
 }
 
 // MoveTo moves the Traces instance overriding the destination and
@@ -46,7 +44,7 @@ func (ms Traces) MoveTo(dest Traces) {
 
 // CopyTo copies the Traces instance overriding the destination.
 func (ms Traces) CopyTo(dest Traces) {
-	ms.ResourceSpans().CopyTo(dest.ResourceSpans())
+	ms.ResourceSpans().CopyTo(dest.MutableResourceSpans())
 }
 
 // SpanCount calculates the total number of spans.
@@ -65,5 +63,19 @@ func (ms Traces) SpanCount() int {
 
 // ResourceSpans returns the ResourceSpansSlice associated with this Metrics.
 func (ms Traces) ResourceSpans() ResourceSpansSlice {
-	return newResourceSpansSlice(&ms.getOrig().ResourceSpans)
+	return newImmutableResourceSpansSlice(&ms.getOrig().ResourceSpans)
+}
+
+// MutableResourceSpans returns the MutableResourceSpansSlice associated with this Spans object.
+// This method should be called at once per ConsumeSpans call if the slice has to be changed,
+// otherwise use ResourceSpans method.
+func (ms Traces) MutableResourceSpans() MutableResourceSpansSlice {
+	if internal.GetTracesState(internal.Traces(ms)) == pcommon.StateShared {
+		rms := NewResourceSpansSlice()
+		ms.ResourceSpans().CopyTo(rms)
+		ms.getOrig().ResourceSpans = *rms.getOrig()
+		internal.SetTracesState(internal.Traces(ms), pcommon.StateExclusive)
+		return rms
+	}
+	return newMutableResourceSpansSlice(&ms.getOrig().ResourceSpans)
 }

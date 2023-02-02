@@ -54,14 +54,3 @@ func TestExponentialHistogramDataPointBuckets_BucketCounts(t *testing.T) {
 	ms.BucketCounts().FromRaw([]uint64{1, 2, 3})
 	assert.Equal(t, []uint64{1, 2, 3}, ms.BucketCounts().AsRaw())
 }
-
-func generateTestExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
-	tv := NewExponentialHistogramDataPointBuckets()
-	fillTestExponentialHistogramDataPointBuckets(tv)
-	return tv
-}
-
-func fillTestExponentialHistogramDataPointBuckets(tv ExponentialHistogramDataPointBuckets) {
-	tv.orig.Offset = int32(909)
-	tv.orig.BucketCounts = []uint64{1, 2, 3}
-}

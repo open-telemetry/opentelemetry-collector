@@ -134,17 +134,3 @@ func TestSpanSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
-func generateTestSpanSlice() SpanSlice {
-	tv := NewSpanSlice()
-	fillTestSpanSlice(tv)
-	return tv
-}
-
-func fillTestSpanSlice(tv SpanSlice) {
-	*tv.orig = make([]*otlptrace.Span, 7)
-	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlptrace.Span{}
-		fillTestSpan(newSpan((*tv.orig)[i]))
-	}
-}

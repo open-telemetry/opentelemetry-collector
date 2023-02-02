@@ -17,15 +17,12 @@ package plog // import "go.opentelemetry.io/collector/pdata/plog"
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Logs is the top-level struct that is propagated through the logs pipeline.
 // Use NewLogs to create new instance, zero-initialized instance is not valid for use.
 type Logs internal.Logs
-
-func newLogs(orig *otlpcollectorlog.ExportLogsServiceRequest) Logs {
-	return Logs(internal.NewLogs(orig))
-}
 
 func (ms Logs) getOrig() *otlpcollectorlog.ExportLogsServiceRequest {
 	return internal.GetOrigLogs(internal.Logs(ms))
@@ -33,7 +30,8 @@ func (ms Logs) getOrig() *otlpcollectorlog.ExportLogsServiceRequest {
 
 // NewLogs creates a new Logs struct.
 func NewLogs() Logs {
-	return newLogs(&otlpcollectorlog.ExportLogsServiceRequest{})
+	orig := &otlpcollectorlog.ExportLogsServiceRequest{}
+	return Logs(internal.NewLogs(orig, pcommon.StateExclusive))
 }
 
 // MoveTo moves the Logs instance overriding the destination and
@@ -46,7 +44,7 @@ func (ms Logs) MoveTo(dest Logs) {
 
 // CopyTo copies the Logs instance overriding the destination.
 func (ms Logs) CopyTo(dest Logs) {
-	ms.ResourceLogs().CopyTo(dest.ResourceLogs())
+	ms.ResourceLogs().CopyTo(dest.MutableResourceLogs())
 }
 
 // LogRecordCount calculates the total number of log records.
@@ -66,5 +64,19 @@ func (ms Logs) LogRecordCount() int {
 
 // ResourceLogs returns the ResourceLogsSlice associated with this Logs.
 func (ms Logs) ResourceLogs() ResourceLogsSlice {
-	return newResourceLogsSlice(&ms.getOrig().ResourceLogs)
+	return newImmutableResourceLogsSlice(&ms.getOrig().ResourceLogs)
+}
+
+// MutableResourceLogs returns the MutableResourceLogsSlice associated with this Logs object.
+// This method should be called at once per ConsumeLogs call if the slice has to be changed,
+// otherwise use ResourceLogs method.
+func (ms Logs) MutableResourceLogs() MutableResourceLogsSlice {
+	if internal.GetLogsState(internal.Logs(ms)) == pcommon.StateShared {
+		rms := NewResourceLogsSlice()
+		ms.ResourceLogs().CopyTo(rms)
+		ms.getOrig().ResourceLogs = *rms.getOrig()
+		internal.SetLogsState(internal.Logs(ms), pcommon.StateExclusive)
+		return rms
+	}
+	return newMutableResourceLogsSlice(&ms.getOrig().ResourceLogs)
 }

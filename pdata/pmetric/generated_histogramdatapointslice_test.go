@@ -134,17 +134,3 @@ func TestHistogramDataPointSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
-func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
-	tv := NewHistogramDataPointSlice()
-	fillTestHistogramDataPointSlice(tv)
-	return tv
-}
-
-func fillTestHistogramDataPointSlice(tv HistogramDataPointSlice) {
-	*tv.orig = make([]*otlpmetrics.HistogramDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlpmetrics.HistogramDataPoint{}
-		fillTestHistogramDataPoint(newHistogramDataPoint((*tv.orig)[i]))
-	}
-}

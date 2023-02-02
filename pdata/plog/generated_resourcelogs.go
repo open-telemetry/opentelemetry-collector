@@ -24,58 +24,105 @@ import (
 )
 
 // ResourceLogs is a collection of logs from a Resource.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewResourceLogs function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ResourceLogs struct {
+type ResourceLogs interface {
+	commonResourceLogs
+	Resource() pcommon.Resource
+	ScopeLogs() ScopeLogsSlice
+}
+
+type MutableResourceLogs interface {
+	commonResourceLogs
+	MoveTo(dest MutableResourceLogs)
+	Resource() pcommon.MutableResource
+	SetSchemaUrl(string)
+	ScopeLogs() MutableScopeLogsSlice
+}
+
+type commonResourceLogs interface {
+	getOrig() *otlplogs.ResourceLogs
+	CopyTo(dest MutableResourceLogs)
+	SchemaUrl() string
+}
+
+type immutableResourceLogs struct {
 	orig *otlplogs.ResourceLogs
 }
 
-func newResourceLogs(orig *otlplogs.ResourceLogs) ResourceLogs {
-	return ResourceLogs{orig}
+type mutableResourceLogs struct {
+	immutableResourceLogs
+}
+
+func newImmutableResourceLogs(orig *otlplogs.ResourceLogs) immutableResourceLogs {
+	return immutableResourceLogs{orig}
+}
+
+func newMutableResourceLogs(orig *otlplogs.ResourceLogs) mutableResourceLogs {
+	return mutableResourceLogs{immutableResourceLogs{orig}}
+}
+
+func (ms immutableResourceLogs) getOrig() *otlplogs.ResourceLogs {
+	return ms.orig
 }
 
 // NewResourceLogs creates a new empty ResourceLogs.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewResourceLogs() ResourceLogs {
-	return newResourceLogs(&otlplogs.ResourceLogs{})
+func NewResourceLogs() MutableResourceLogs {
+	return newMutableResourceLogs(&otlplogs.ResourceLogs{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlplogs.ResourceLogs{}
+func (ms mutableResourceLogs) MoveTo(dest MutableResourceLogs) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlplogs.ResourceLogs{}
 }
 
 // Resource returns the resource associated with this ResourceLogs.
-func (ms ResourceLogs) Resource() pcommon.Resource {
-	return pcommon.Resource(internal.NewResource(&ms.orig.Resource))
+func (ms immutableResourceLogs) Resource() pcommon.Resource {
+	return internal.NewImmutableResource(&ms.getOrig().Resource)
+}
+
+// Resource returns the resource associated with this ResourceLogs.
+func (ms mutableResourceLogs) Resource() pcommon.MutableResource {
+	return internal.NewMutableResource(&ms.getOrig().Resource)
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceLogs.
-func (ms ResourceLogs) SchemaUrl() string {
-	return ms.orig.SchemaUrl
+func (ms immutableResourceLogs) SchemaUrl() string {
+	return ms.getOrig().SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ResourceLogs.
-func (ms ResourceLogs) SetSchemaUrl(v string) {
-	ms.orig.SchemaUrl = v
+func (ms mutableResourceLogs) SetSchemaUrl(v string) {
+	ms.getOrig().SchemaUrl = v
 }
 
 // ScopeLogs returns the ScopeLogs associated with this ResourceLogs.
-func (ms ResourceLogs) ScopeLogs() ScopeLogsSlice {
-	return newScopeLogsSlice(&ms.orig.ScopeLogs)
+func (ms immutableResourceLogs) ScopeLogs() ScopeLogsSlice {
+	return newImmutableScopeLogsSlice(&ms.getOrig().ScopeLogs)
+}
+
+func (ms mutableResourceLogs) ScopeLogs() MutableScopeLogsSlice {
+	return newMutableScopeLogsSlice(&ms.getOrig().ScopeLogs)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
+func (ms immutableResourceLogs) CopyTo(dest MutableResourceLogs) {
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.ScopeLogs().CopyTo(dest.ScopeLogs())
+}
+
+func generateTestResourceLogs() MutableResourceLogs {
+	tv := NewResourceLogs()
+	fillTestResourceLogs(tv)
+	return tv
+}
+
+func fillTestResourceLogs(tv MutableResourceLogs) {
+	internal.FillTestResource(internal.NewResource(&tv.orig.Resource))
+	tv.getOrig().SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	fillTestScopeLogsSlice(newMutableScopeLogsSlice(&tv.getOrig().ScopeLogs))
 }

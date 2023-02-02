@@ -22,21 +22,21 @@ import (
 const commonSliceTemplate = `
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ${structName}) MoveAndAppendTo(dest ${structName}) {
-	if *dest.orig == nil {
+func (es mutable${structName}) MoveAndAppendTo(dest mutable${structName}) {
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ${structName}) RemoveIf(f func(${elementName}) bool) {
+func (es mutable${structName}) RemoveIf(f func(Mutable${elementName}) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -45,7 +45,7 @@ func (es ${structName}) RemoveIf(f func(${elementName}) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
@@ -98,32 +98,57 @@ func Test${structName}_RemoveIf(t *testing.T) {
 }`
 
 const slicePtrTemplate = `// ${structName} logically represents a slice of ${elementName}.
-//
-// This is a reference type. If passed by value and callee modifies it, the
-// caller will see the modification.
-//
-// Must use New${structName} function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ${structName} struct {
+type ${structName} interface {
+	common${structName}
+	At(ix int) ${elementName}
+}
+
+type Mutable${structName} interface {
+	common${structName}
+	At(ix int) Mutable${elementName}
+	EnsureCapacity(newCap int)
+	AppendEmpty() Mutable${elementName}
+	Sort(less func(a, b Mutable${elementName}) bool)
+}
+
+type common${structName} interface {
+	Len() int
+	CopyTo(dest Mutable${structName})
+	getOrig() *[]*${originName}
+}
+
+type immutable${structName} struct {
 	orig *[]*${originName}
 }
 
-func new${structName}(orig *[]*${originName}) ${structName} {
-	return ${structName}{orig}
+type mutable${structName} struct {
+	immutable${structName}
+}
+
+func (es immutable${structName}) getOrig() *[]*${originName} {
+	return es.orig
+}
+
+func newImmutable${structName}(orig *[]*${originName}) immutable${structName} {
+	return immutable${structName}{orig}
+}
+
+func newMutable${structName}(orig *[]*${originName}) mutable${structName} {
+	return mutable${structName}{immutable${structName}{orig}}
 }
 
 // New${structName} creates a ${structName} with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func New${structName}() ${structName} {
+func New${structName}() Mutable${structName} {
 	orig := []*${originName}(nil)
-	return new${structName}(&orig)
+	return newMutable${structName}(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "New${structName}()".
-func (es ${structName}) Len() int {
-	return len(*es.orig)
+func (es immutable${structName}) Len() int {
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -133,28 +158,32 @@ func (es ${structName}) Len() int {
 //       e := es.At(i)
 //       ... // Do something with the element
 //   }
-func (es ${structName}) At(ix int) ${elementName} {
-	return new${elementName}((*es.orig)[ix])
+func (es immutable${structName}) At(ix int) ${elementName} {
+	return newImmutable${elementName}((*es.getOrig())[ix])
+}
+
+func (es mutable${structName}) At(ix int) Mutable${elementName} {
+	return newMutable${elementName}((*es.getOrig())[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ${structName}) CopyTo(dest ${structName}) {
+func (es immutable${structName}) CopyTo(dest Mutable${structName}) {
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			new${elementName}((*es.orig)[i]).CopyTo(new${elementName}((*dest.orig)[i]))
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
+		for i := range *es.getOrig() {
+			newImmutable${elementName}((*es.getOrig())[i]).CopyTo(newMutable${elementName}((*dest.getOrig())[i]))
 		}
 		return
 	}
 	origs := make([]${originName}, srcLen)
 	wrappers := make([]*${originName}, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		new${elementName}((*es.orig)[i]).CopyTo(new${elementName}(wrappers[i]))
+		newImmutable${elementName}((*es.getOrig())[i]).CopyTo(newMutable${elementName}(wrappers[i]))
 	}
-	*dest.orig = wrappers
+	*dest.getOrig() = wrappers
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -168,29 +197,29 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 //       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es ${structName}) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
+func (es mutable${structName}) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*${originName}, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*${originName}, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ${elementName}.
 // It returns the newly added ${elementName}.
-func (es ${structName}) AppendEmpty() ${elementName} {
-	*es.orig = append(*es.orig, &${originName}{})
+func (es mutable${structName}) AppendEmpty() Mutable${elementName} {
+	*es.getOrig() = append(*es.getOrig(), &${originName}{})
 	return es.At(es.Len() - 1)
 }
 
 // Sort sorts the ${elementName} elements within ${structName} given the
 // provided less function so that two instances of ${structName}
 // can be compared.
-func (es ${structName}) Sort(less func(a, b ${elementName}) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+func (es mutable${structName}) Sort(less func(a, b Mutable${elementName}) bool) {
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 `
 
@@ -263,13 +292,13 @@ func Test${structName}_EnsureCapacity(t *testing.T) {
 
 const slicePtrGenerateTest = `
 
-func generateTest${structName}() ${structName} {
+func generateTest${structName}() Mutable${structName} {
 	tv := New${structName}()
 	fillTest${structName}(tv)
 	return tv
 }
 
-func fillTest${structName}(tv ${structName}) {
+func fillTest${structName}(tv Mutable${structName}) {
 	*tv.orig = make([]*${originName}, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &${originName}{}
@@ -278,31 +307,56 @@ func fillTest${structName}(tv ${structName}) {
 }`
 
 const sliceValueTemplate = `// ${structName} logically represents a slice of ${elementName}.
-//
-// This is a reference type. If passed by value and callee modifies it, the
-// caller will see the modification.
-//
-// Must use New${structName} function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ${structName} struct {
+type ${structName} interface {
+	common${structName}
+	At(ix int) ${elementName}
+}
+
+type Mutable${structName} interface {
+	common${structName}
+	RemoveIf(f func(Mutable${elementName}) bool)
+	At(ix int) Mutable${elementName}
+	EnsureCapacity(newCap int)
+	AppendEmpty() Mutable${elementName}
+}
+
+type common${structName} interface {
+	Len() int
+	CopyTo(dest Mutable${structName})
+	getOrig() *[]${originName}
+}
+
+type immutable${structName} struct {
 	orig *[]${originName}
 }
 
-func new${structName}(orig *[]${originName}) ${structName} {
-	return ${structName}{orig}
+type mutable${structName} struct {
+	immutable${structName}
+}
+
+func newImmutable${structName}(orig *[]${originName}) immutable${structName} {
+	return immutable${structName}{orig}
+}
+
+func newMutable${structName}(orig *[]${originName}) mutable${structName} {
+	return mutable${structName}{immutable${structName}{orig}}
+}
+
+func (es immutable${structName}) getOrig() *[]${originName} {
+	return es.orig
 }
 
 // New${structName} creates a ${structName} with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func New${structName}() ${structName} {
+func New${structName}() Mutable${structName} {
 	orig := []${originName}(nil)
-	return new${structName}(&orig)
+	return newMutable${structName}(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "New${structName}()".
-func (es ${structName}) Len() int {
+func (es immutable${structName}) Len() int {
 	return len(*es.orig)
 }
 
@@ -313,22 +367,26 @@ func (es ${structName}) Len() int {
 //       e := es.At(i)
 //       ... // Do something with the element
 //   }
-func (es ${structName}) At(ix int) ${elementName} {
-	return new${elementName}(&(*es.orig)[ix])
+func (es immutable${structName}) At(ix int) ${elementName} {
+	return newImmutable${elementName}(&(*es.orig)[ix])
+}
+
+func (es mutable${structName}) At(ix int) Mutable${elementName} {
+	return newMutable${elementName}(&(*es.getOrig())[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ${structName}) CopyTo(dest ${structName}) {
+func (es immutable${structName}) CopyTo(dest Mutable${structName}) {
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 	} else {
-		(*dest.orig) = make([]${originName}, srcLen)
+		(*dest.getOrig()) = make([]${originName}, srcLen)
 	}
 
-	for i := range *es.orig {
-		new${elementName}(&(*es.orig)[i]).CopyTo(new${elementName}(&(*dest.orig)[i]))
+	for i := range *es.getOrig() {
+		newImmutable${elementName}(&(*es.getOrig())[i]).CopyTo(newMutable${elementName}(&(*dest.getOrig())[i]))
 	}
 }
 
@@ -343,21 +401,21 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 //       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es ${structName}) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
+func (es mutable${structName}) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]${originName}, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]${originName}, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ${elementName}.
 // It returns the newly added ${elementName}.
-func (es ${structName}) AppendEmpty() ${elementName} {
-	*es.orig = append(*es.orig, ${originName}{})
+func (es mutable${structName}) AppendEmpty() Mutable${elementName} {
+	*es.getOrig() = append(*es.getOrig(), ${originName}{})
 	return es.At(es.Len() - 1)
 }`
 
@@ -419,7 +477,7 @@ func Test${structName}_EnsureCapacity(t *testing.T) {
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
 }`
 
-const sliceValueGenerateTest = `func generateTest${structName}() ${structName} {
+const sliceValueGenerateTest = `func generateTest${structName}() Mutable${structName} {
 	tv := New${structName}()
 	fillTest${structName}(tv)
 	return tv
@@ -481,7 +539,7 @@ func (ss *sliceOfPtrs) templateFields() func(name string) string {
 	}
 }
 
-func (ss *sliceOfPtrs) generateInternal(_ *bytes.Buffer) {}
+func (ss *sliceOfPtrs) generateAliases(_ *bytes.Buffer) {}
 
 var _ baseStruct = (*sliceOfPtrs)(nil)
 
@@ -529,6 +587,6 @@ func (ss *sliceOfValues) templateFields() func(name string) string {
 	}
 }
 
-func (ss *sliceOfValues) generateInternal(_ *bytes.Buffer) {}
+func (ss *sliceOfValues) generateAliases(_ *bytes.Buffer) {}
 
 var _ baseStruct = (*sliceOfValues)(nil)

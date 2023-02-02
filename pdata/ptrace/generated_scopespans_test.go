@@ -63,15 +63,3 @@ func TestScopeSpans_Spans(t *testing.T) {
 	fillTestSpanSlice(ms.Spans())
 	assert.Equal(t, generateTestSpanSlice(), ms.Spans())
 }
-
-func generateTestScopeSpans() ScopeSpans {
-	tv := NewScopeSpans()
-	fillTestScopeSpans(tv)
-	return tv
-}
-
-func fillTestScopeSpans(tv ScopeSpans) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestSpanSlice(newSpanSlice(&tv.orig.Spans))
-}

@@ -134,17 +134,3 @@ func TestExponentialHistogramDataPointSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
-func generateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
-	tv := NewExponentialHistogramDataPointSlice()
-	fillTestExponentialHistogramDataPointSlice(tv)
-	return tv
-}
-
-func fillTestExponentialHistogramDataPointSlice(tv ExponentialHistogramDataPointSlice) {
-	*tv.orig = make([]*otlpmetrics.ExponentialHistogramDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlpmetrics.ExponentialHistogramDataPoint{}
-		fillTestExponentialHistogramDataPoint(newExponentialHistogramDataPoint((*tv.orig)[i]))
-	}
-}

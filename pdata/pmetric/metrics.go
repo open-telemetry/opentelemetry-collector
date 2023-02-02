@@ -17,14 +17,15 @@ package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Metrics is the top-level struct that is propagated through the metrics pipeline.
 // Use NewMetrics to create new instance, zero-initialized instance is not valid for use.
 type Metrics internal.Metrics
 
-func newMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest) Metrics {
-	return Metrics(internal.NewMetrics(orig))
+func newMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, s pcommon.State) Metrics {
+	return Metrics(internal.NewMetrics(orig, s))
 }
 
 func (ms Metrics) getOrig() *otlpcollectormetrics.ExportMetricsServiceRequest {
@@ -33,12 +34,13 @@ func (ms Metrics) getOrig() *otlpcollectormetrics.ExportMetricsServiceRequest {
 
 // NewMetrics creates a new Metrics struct.
 func NewMetrics() Metrics {
-	return newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{})
+	orig := &otlpcollectormetrics.ExportMetricsServiceRequest{}
+	return Metrics(internal.NewMetrics(orig, pcommon.StateExclusive))
 }
 
 // CopyTo copies the Metrics instance overriding the destination.
 func (ms Metrics) CopyTo(dest Metrics) {
-	ms.ResourceMetrics().CopyTo(dest.ResourceMetrics())
+	ms.ResourceMetrics().CopyTo(dest.MutableResourceMetrics())
 }
 
 // MoveTo moves the Metrics instance overriding the destination and
@@ -51,7 +53,21 @@ func (ms Metrics) MoveTo(dest Metrics) {
 
 // ResourceMetrics returns the ResourceMetricsSlice associated with this Metrics.
 func (ms Metrics) ResourceMetrics() ResourceMetricsSlice {
-	return newResourceMetricsSlice(&ms.getOrig().ResourceMetrics)
+	return newImmutableResourceMetricsSlice(&ms.getOrig().ResourceMetrics)
+}
+
+// MutableResourceMetrics returns the MutableResourceMetricsSlice associated with this Metrics object.
+// This method should be called at once per ConsumeMetrics call if the slice has to be changed,
+// otherwise use ResourceMetrics method.
+func (ms Metrics) MutableResourceMetrics() MutableResourceMetricsSlice {
+	if internal.GetMetricsState(internal.Metrics(ms)) == pcommon.StateShared {
+		rms := NewResourceMetricsSlice()
+		ms.ResourceMetrics().CopyTo(rms)
+		ms.getOrig().ResourceMetrics = *rms.getOrig()
+		internal.SetMetricsState(internal.Metrics(ms), pcommon.StateExclusive)
+		return rms
+	}
+	return newMutableResourceMetricsSlice(&ms.getOrig().ResourceMetrics)
 }
 
 // MetricCount calculates the total number of metrics.

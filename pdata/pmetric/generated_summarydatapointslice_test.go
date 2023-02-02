@@ -134,17 +134,3 @@ func TestSummaryDataPointSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
-func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
-	tv := NewSummaryDataPointSlice()
-	fillTestSummaryDataPointSlice(tv)
-	return tv
-}
-
-func fillTestSummaryDataPointSlice(tv SummaryDataPointSlice) {
-	*tv.orig = make([]*otlpmetrics.SummaryDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlpmetrics.SummaryDataPoint{}
-		fillTestSummaryDataPoint(newSummaryDataPoint((*tv.orig)[i]))
-	}
-}

@@ -66,5 +66,5 @@ func (mr ExportRequest) UnmarshalJSON(data []byte) error {
 }
 
 func (mr ExportRequest) Metrics() pmetric.Metrics {
-	return pmetric.Metrics(internal.NewMetrics(mr.orig))
+	return pmetric.Metrics(internal.NewMetrics(mr.orig, internal.StateShared))
 }

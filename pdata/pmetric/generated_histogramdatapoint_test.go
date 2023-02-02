@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -47,7 +46,7 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 
 func TestHistogramDataPoint_Attributes(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
+	assert.Equal(t, pcommonNewMap(), ms.Attributes())
 	internal.FillTestMap(internal.Map(ms.Attributes()))
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
 }
@@ -132,24 +131,4 @@ func TestHistogramDataPoint_Max(t *testing.T) {
 	assert.Equal(t, float64(182.55), ms.Max())
 	ms.RemoveMax()
 	assert.False(t, ms.HasMax())
-}
-
-func generateTestHistogramDataPoint() HistogramDataPoint {
-	tv := NewHistogramDataPoint()
-	fillTestHistogramDataPoint(tv)
-	return tv
-}
-
-func fillTestHistogramDataPoint(tv HistogramDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
-	tv.orig.StartTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Count = uint64(17)
-	tv.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(17.13)}
-	tv.orig.BucketCounts = []uint64{1, 2, 3}
-	tv.orig.ExplicitBounds = []float64{1, 2, 3}
-	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars))
-	tv.orig.Flags = 1
-	tv.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(9.23)}
-	tv.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(182.55)}
 }

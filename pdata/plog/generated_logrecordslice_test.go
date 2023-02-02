@@ -134,17 +134,3 @@ func TestLogRecordSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
-func generateTestLogRecordSlice() LogRecordSlice {
-	tv := NewLogRecordSlice()
-	fillTestLogRecordSlice(tv)
-	return tv
-}
-
-func fillTestLogRecordSlice(tv LogRecordSlice) {
-	*tv.orig = make([]*otlplogs.LogRecord, 7)
-	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlplogs.LogRecord{}
-		fillTestLogRecord(newLogRecord((*tv.orig)[i]))
-	}
-}

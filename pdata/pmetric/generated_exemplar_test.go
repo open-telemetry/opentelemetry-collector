@@ -24,7 +24,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -77,7 +76,7 @@ func TestExemplar_IntValue(t *testing.T) {
 
 func TestExemplar_FilteredAttributes(t *testing.T) {
 	ms := NewExemplar()
-	assert.Equal(t, pcommon.NewMap(), ms.FilteredAttributes())
+	assert.Equal(t, pcommonNewMap(), ms.FilteredAttributes())
 	internal.FillTestMap(internal.Map(ms.FilteredAttributes()))
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.FilteredAttributes())
 }
@@ -96,18 +95,4 @@ func TestExemplar_SpanID(t *testing.T) {
 	testValSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetSpanID(testValSpanID)
 	assert.Equal(t, testValSpanID, ms.SpanID())
-}
-
-func generateTestExemplar() Exemplar {
-	tv := NewExemplar()
-	fillTestExemplar(tv)
-	return tv
-}
-
-func fillTestExemplar(tv Exemplar) {
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(17)}
-	internal.FillTestMap(internal.NewMap(&tv.orig.FilteredAttributes))
-	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 }

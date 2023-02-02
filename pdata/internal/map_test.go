@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pcommon
+package internal
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
@@ -28,11 +27,11 @@ func TestMap(t *testing.T) {
 
 	val, exist := NewMap().Get("test_key")
 	assert.False(t, exist)
-	assert.EqualValues(t, newValue(nil), val)
+	assert.EqualValues(t, NewMutableValue(nil), val)
 
 	putString := NewMap()
 	putString.PutStr("k", "v")
-	assert.EqualValues(t, Map(internal.GenerateTestMap()), putString)
+	assert.EqualValues(t, generateTestMap(), putString)
 
 	putInt := NewMap()
 	putInt.PutInt("k", 123)
@@ -159,7 +158,7 @@ func TestMapWithEmpty(t *testing.T) {
 			Value: otlpcommon.AnyValue{Value: nil},
 		},
 	}
-	sm := newMap(&origWithNil)
+	sm := NewMutableMap(&origWithNil)
 	val, exist := sm.Get("test_key")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeStr, val.Type())
@@ -260,7 +259,7 @@ func TestMapWithEmpty(t *testing.T) {
 }
 
 func TestMapIterationNil(t *testing.T) {
-	NewMap().Range(func(k string, v Value) bool {
+	NewMap().Range(func(k string, v MutableValue) bool {
 		// Fail if any element is returned
 		t.Fail()
 		return true
@@ -280,13 +279,13 @@ func TestMap_Range(t *testing.T) {
 	assert.Equal(t, 5, am.Len())
 
 	calls := 0
-	am.Range(func(k string, v Value) bool {
+	am.Range(func(k string, v MutableValue) bool {
 		calls++
 		return false
 	})
 	assert.Equal(t, 1, calls)
 
-	am.Range(func(k string, v Value) bool {
+	am.Range(func(k string, v MutableValue) bool {
 		assert.Equal(t, rawMap[k], v.AsRaw())
 		delete(rawMap, k)
 		return true
@@ -353,17 +352,17 @@ func TestMap_CopyTo(t *testing.T) {
 	assert.EqualValues(t, 0, dest.Len())
 
 	// Test CopyTo larger slice
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.EqualValues(t, Map(internal.GenerateTestMap()), dest)
+	generateTestMap().CopyTo(dest)
+	assert.EqualValues(t, generateTestMap(), dest)
 
 	// Test CopyTo same size slice
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.EqualValues(t, Map(internal.GenerateTestMap()), dest)
+	generateTestMap().CopyTo(dest)
+	assert.EqualValues(t, generateTestMap(), dest)
 
 	// Test CopyTo with an empty Value in the destination
 	(*dest.getOrig())[0].Value = otlpcommon.AnyValue{}
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.EqualValues(t, Map(internal.GenerateTestMap()), dest)
+	generateTestMap().CopyTo(dest)
+	assert.EqualValues(t, generateTestMap(), dest)
 }
 
 func TestMap_EnsureCapacity_Zero(t *testing.T) {
@@ -407,7 +406,7 @@ func TestMap_RemoveIf(t *testing.T) {
 
 	assert.Equal(t, 5, am.Len())
 
-	am.RemoveIf(func(key string, val Value) bool {
+	am.RemoveIf(func(key string, val MutableValue) bool {
 		return key == "k_int" || val.Type() == ValueTypeBool
 	})
 	assert.Equal(t, 3, am.Len())
@@ -423,37 +422,37 @@ func TestMap_RemoveIf(t *testing.T) {
 	assert.True(t, exists)
 }
 
-func generateTestEmptyMap(t *testing.T) Map {
+func generateTestEmptyMap(t *testing.T) MutableMap {
 	m := NewMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": map[string]any(nil)}))
 	return m
 }
 
-func generateTestEmptySlice(t *testing.T) Map {
+func generateTestEmptySlice(t *testing.T) MutableMap {
 	m := NewMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": []any(nil)}))
 	return m
 }
 
-func generateTestIntMap(t *testing.T) Map {
+func generateTestIntMap(t *testing.T) MutableMap {
 	m := NewMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": 123}))
 	return m
 }
 
-func generateTestDoubleMap(t *testing.T) Map {
+func generateTestDoubleMap(t *testing.T) MutableMap {
 	m := NewMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": 12.3}))
 	return m
 }
 
-func generateTestBoolMap(t *testing.T) Map {
+func generateTestBoolMap(t *testing.T) MutableMap {
 	m := NewMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": true}))
 	return m
 }
 
-func generateTestBytesMap(t *testing.T) Map {
+func generateTestBytesMap(t *testing.T) MutableMap {
 	m := NewMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": []byte{1, 2, 3, 4, 5}}))
 	return m

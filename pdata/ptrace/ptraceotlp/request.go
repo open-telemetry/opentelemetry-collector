@@ -70,5 +70,5 @@ func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 }
 
 func (ms ExportRequest) Traces() ptrace.Traces {
-	return ptrace.Traces(internal.NewTraces(ms.orig))
+	return ptrace.Traces(internal.NewTraces(ms.orig, internal.StateShared))
 }

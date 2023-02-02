@@ -125,16 +125,3 @@ func TestExemplarSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
-func generateTestExemplarSlice() ExemplarSlice {
-	tv := NewExemplarSlice()
-	fillTestExemplarSlice(tv)
-	return tv
-}
-
-func fillTestExemplarSlice(tv ExemplarSlice) {
-	*tv.orig = make([]otlpmetrics.Exemplar, 7)
-	for i := 0; i < 7; i++ {
-		fillTestExemplar(newExemplar(&(*tv.orig)[i]))
-	}
-}

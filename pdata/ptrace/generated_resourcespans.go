@@ -24,58 +24,105 @@ import (
 )
 
 // ResourceSpans is a collection of spans from a Resource.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewResourceSpans function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ResourceSpans struct {
+type ResourceSpans interface {
+	commonResourceSpans
+	Resource() pcommon.Resource
+	ScopeSpans() ScopeSpansSlice
+}
+
+type MutableResourceSpans interface {
+	commonResourceSpans
+	MoveTo(dest MutableResourceSpans)
+	Resource() pcommon.MutableResource
+	SetSchemaUrl(string)
+	ScopeSpans() MutableScopeSpansSlice
+}
+
+type commonResourceSpans interface {
+	getOrig() *otlptrace.ResourceSpans
+	CopyTo(dest MutableResourceSpans)
+	SchemaUrl() string
+}
+
+type immutableResourceSpans struct {
 	orig *otlptrace.ResourceSpans
 }
 
-func newResourceSpans(orig *otlptrace.ResourceSpans) ResourceSpans {
-	return ResourceSpans{orig}
+type mutableResourceSpans struct {
+	immutableResourceSpans
+}
+
+func newImmutableResourceSpans(orig *otlptrace.ResourceSpans) immutableResourceSpans {
+	return immutableResourceSpans{orig}
+}
+
+func newMutableResourceSpans(orig *otlptrace.ResourceSpans) mutableResourceSpans {
+	return mutableResourceSpans{immutableResourceSpans{orig}}
+}
+
+func (ms immutableResourceSpans) getOrig() *otlptrace.ResourceSpans {
+	return ms.orig
 }
 
 // NewResourceSpans creates a new empty ResourceSpans.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewResourceSpans() ResourceSpans {
-	return newResourceSpans(&otlptrace.ResourceSpans{})
+func NewResourceSpans() MutableResourceSpans {
+	return newMutableResourceSpans(&otlptrace.ResourceSpans{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.ResourceSpans{}
+func (ms mutableResourceSpans) MoveTo(dest MutableResourceSpans) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlptrace.ResourceSpans{}
 }
 
 // Resource returns the resource associated with this ResourceSpans.
-func (ms ResourceSpans) Resource() pcommon.Resource {
-	return pcommon.Resource(internal.NewResource(&ms.orig.Resource))
+func (ms immutableResourceSpans) Resource() pcommon.Resource {
+	return internal.NewImmutableResource(&ms.getOrig().Resource)
+}
+
+// Resource returns the resource associated with this ResourceSpans.
+func (ms mutableResourceSpans) Resource() pcommon.MutableResource {
+	return internal.NewMutableResource(&ms.getOrig().Resource)
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceSpans.
-func (ms ResourceSpans) SchemaUrl() string {
-	return ms.orig.SchemaUrl
+func (ms immutableResourceSpans) SchemaUrl() string {
+	return ms.getOrig().SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ResourceSpans.
-func (ms ResourceSpans) SetSchemaUrl(v string) {
-	ms.orig.SchemaUrl = v
+func (ms mutableResourceSpans) SetSchemaUrl(v string) {
+	ms.getOrig().SchemaUrl = v
 }
 
 // ScopeSpans returns the ScopeSpans associated with this ResourceSpans.
-func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
-	return newScopeSpansSlice(&ms.orig.ScopeSpans)
+func (ms immutableResourceSpans) ScopeSpans() ScopeSpansSlice {
+	return newImmutableScopeSpansSlice(&ms.getOrig().ScopeSpans)
+}
+
+func (ms mutableResourceSpans) ScopeSpans() MutableScopeSpansSlice {
+	return newMutableScopeSpansSlice(&ms.getOrig().ScopeSpans)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
+func (ms immutableResourceSpans) CopyTo(dest MutableResourceSpans) {
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.ScopeSpans().CopyTo(dest.ScopeSpans())
+}
+
+func generateTestResourceSpans() MutableResourceSpans {
+	tv := NewResourceSpans()
+	fillTestResourceSpans(tv)
+	return tv
+}
+
+func fillTestResourceSpans(tv MutableResourceSpans) {
+	internal.FillTestResource(internal.NewResource(&tv.orig.Resource))
+	tv.getOrig().SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	fillTestScopeSpansSlice(newMutableScopeSpansSlice(&tv.getOrig().ScopeSpans))
 }

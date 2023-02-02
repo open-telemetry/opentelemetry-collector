@@ -12,22 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package pcommon
 
-import (
-	"go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
-)
+import "go.opentelemetry.io/collector/pdata/internal"
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
+type State = internal.State
 
-func main() {
-	for _, fp := range internal.AllPackages {
-		check(fp.GenerateFiles())
-		check(fp.GenerateTestFiles())
-		check(fp.GenerateAliases())
-	}
-}
+const StateShared = internal.StateShared
+
+const StateExclusive = internal.StateExclusive

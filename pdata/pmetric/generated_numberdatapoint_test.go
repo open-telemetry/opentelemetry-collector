@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -47,7 +46,7 @@ func TestNumberDataPoint_CopyTo(t *testing.T) {
 
 func TestNumberDataPoint_Attributes(t *testing.T) {
 	ms := NewNumberDataPoint()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
+	assert.Equal(t, pcommonNewMap(), ms.Attributes())
 	internal.FillTestMap(internal.Map(ms.Attributes()))
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
 }
@@ -102,19 +101,4 @@ func TestNumberDataPoint_Flags(t *testing.T) {
 	testValFlags := DataPointFlags(1)
 	ms.SetFlags(testValFlags)
 	assert.Equal(t, testValFlags, ms.Flags())
-}
-
-func generateTestNumberDataPoint() NumberDataPoint {
-	tv := NewNumberDataPoint()
-	fillTestNumberDataPoint(tv)
-	return tv
-}
-
-func fillTestNumberDataPoint(tv NumberDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
-	tv.orig.StartTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(17.13)}
-	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars))
-	tv.orig.Flags = 1
 }

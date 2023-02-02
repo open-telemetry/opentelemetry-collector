@@ -26,126 +26,176 @@ import (
 
 // LogRecord are experimental implementation of OpenTelemetry Log Data Model.
 
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewLogRecord function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type LogRecord struct {
+type LogRecord interface {
+	commonLogRecord
+	Body() pcommon.Value
+	Attributes() pcommon.Map
+}
+
+type MutableLogRecord interface {
+	commonLogRecord
+	MoveTo(dest MutableLogRecord)
+	SetObservedTimestamp(pcommon.Timestamp)
+	SetTimestamp(pcommon.Timestamp)
+	SetTraceID(pcommon.TraceID)
+	SetSpanID(pcommon.SpanID)
+	SetFlags(LogRecordFlags)
+	SetSeverityText(string)
+	SetSeverityNumber(SeverityNumber)
+	Body() pcommon.MutableValue
+	Attributes() pcommon.MutableMap
+	SetDroppedAttributesCount(uint32)
+}
+
+type commonLogRecord interface {
+	getOrig() *otlplogs.LogRecord
+	CopyTo(dest MutableLogRecord)
+	ObservedTimestamp() pcommon.Timestamp
+	Timestamp() pcommon.Timestamp
+	TraceID() pcommon.TraceID
+	SpanID() pcommon.SpanID
+	Flags() LogRecordFlags
+	SeverityText() string
+	SeverityNumber() SeverityNumber
+	DroppedAttributesCount() uint32
+}
+
+type immutableLogRecord struct {
 	orig *otlplogs.LogRecord
 }
 
-func newLogRecord(orig *otlplogs.LogRecord) LogRecord {
-	return LogRecord{orig}
+type mutableLogRecord struct {
+	immutableLogRecord
+}
+
+func newImmutableLogRecord(orig *otlplogs.LogRecord) immutableLogRecord {
+	return immutableLogRecord{orig}
+}
+
+func newMutableLogRecord(orig *otlplogs.LogRecord) mutableLogRecord {
+	return mutableLogRecord{immutableLogRecord{orig}}
+}
+
+func (ms immutableLogRecord) getOrig() *otlplogs.LogRecord {
+	return ms.orig
 }
 
 // NewLogRecord creates a new empty LogRecord.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewLogRecord() LogRecord {
-	return newLogRecord(&otlplogs.LogRecord{})
+func NewLogRecord() MutableLogRecord {
+	return newMutableLogRecord(&otlplogs.LogRecord{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms LogRecord) MoveTo(dest LogRecord) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlplogs.LogRecord{}
+func (ms mutableLogRecord) MoveTo(dest MutableLogRecord) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlplogs.LogRecord{}
 }
 
 // ObservedTimestamp returns the observedtimestamp associated with this LogRecord.
-func (ms LogRecord) ObservedTimestamp() pcommon.Timestamp {
+func (ms immutableLogRecord) ObservedTimestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.ObservedTimeUnixNano)
 }
 
 // SetObservedTimestamp replaces the observedtimestamp associated with this LogRecord.
-func (ms LogRecord) SetObservedTimestamp(v pcommon.Timestamp) {
+func (ms mutableLogRecord) SetObservedTimestamp(v pcommon.Timestamp) {
 	ms.orig.ObservedTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this LogRecord.
-func (ms LogRecord) Timestamp() pcommon.Timestamp {
+func (ms immutableLogRecord) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this LogRecord.
-func (ms LogRecord) SetTimestamp(v pcommon.Timestamp) {
+func (ms mutableLogRecord) SetTimestamp(v pcommon.Timestamp) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // TraceID returns the traceid associated with this LogRecord.
-func (ms LogRecord) TraceID() pcommon.TraceID {
+func (ms immutableLogRecord) TraceID() pcommon.TraceID {
 	return pcommon.TraceID(ms.orig.TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this LogRecord.
-func (ms LogRecord) SetTraceID(v pcommon.TraceID) {
+func (ms mutableLogRecord) SetTraceID(v pcommon.TraceID) {
 	ms.orig.TraceId = data.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this LogRecord.
-func (ms LogRecord) SpanID() pcommon.SpanID {
+func (ms immutableLogRecord) SpanID() pcommon.SpanID {
 	return pcommon.SpanID(ms.orig.SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this LogRecord.
-func (ms LogRecord) SetSpanID(v pcommon.SpanID) {
+func (ms mutableLogRecord) SetSpanID(v pcommon.SpanID) {
 	ms.orig.SpanId = data.SpanID(v)
 }
 
 // Flags returns the flags associated with this LogRecord.
-func (ms LogRecord) Flags() LogRecordFlags {
+func (ms immutableLogRecord) Flags() LogRecordFlags {
 	return LogRecordFlags(ms.orig.Flags)
 }
 
 // SetFlags replaces the flags associated with this LogRecord.
-func (ms LogRecord) SetFlags(v LogRecordFlags) {
+func (ms mutableLogRecord) SetFlags(v LogRecordFlags) {
 	ms.orig.Flags = uint32(v)
 }
 
 // SeverityText returns the severitytext associated with this LogRecord.
-func (ms LogRecord) SeverityText() string {
-	return ms.orig.SeverityText
+func (ms immutableLogRecord) SeverityText() string {
+	return ms.getOrig().SeverityText
 }
 
 // SetSeverityText replaces the severitytext associated with this LogRecord.
-func (ms LogRecord) SetSeverityText(v string) {
-	ms.orig.SeverityText = v
+func (ms mutableLogRecord) SetSeverityText(v string) {
+	ms.getOrig().SeverityText = v
 }
 
 // SeverityNumber returns the severitynumber associated with this LogRecord.
-func (ms LogRecord) SeverityNumber() SeverityNumber {
+func (ms immutableLogRecord) SeverityNumber() SeverityNumber {
 	return SeverityNumber(ms.orig.SeverityNumber)
 }
 
 // SetSeverityNumber replaces the severitynumber associated with this LogRecord.
-func (ms LogRecord) SetSeverityNumber(v SeverityNumber) {
+func (ms mutableLogRecord) SetSeverityNumber(v SeverityNumber) {
 	ms.orig.SeverityNumber = otlplogs.SeverityNumber(v)
 }
 
 // Body returns the body associated with this LogRecord.
-func (ms LogRecord) Body() pcommon.Value {
-	return pcommon.Value(internal.NewValue(&ms.orig.Body))
+func (ms immutableLogRecord) Body() pcommon.Value {
+	return internal.NewImmutableValue(&ms.getOrig().Body)
+}
+
+// Body returns the body associated with this LogRecord.
+func (ms mutableLogRecord) Body() pcommon.MutableValue {
+	return internal.NewMutableValue(&ms.getOrig().Body)
 }
 
 // Attributes returns the Attributes associated with this LogRecord.
-func (ms LogRecord) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+func (ms immutableLogRecord) Attributes() pcommon.Map {
+	return internal.NewImmutableMap(&ms.getOrig().Attributes)
+}
+
+func (ms mutableLogRecord) Attributes() pcommon.MutableMap {
+	return internal.NewMutableMap(&ms.getOrig().Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this LogRecord.
-func (ms LogRecord) DroppedAttributesCount() uint32 {
-	return ms.orig.DroppedAttributesCount
+func (ms immutableLogRecord) DroppedAttributesCount() uint32 {
+	return ms.getOrig().DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this LogRecord.
-func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
-	ms.orig.DroppedAttributesCount = v
+func (ms mutableLogRecord) SetDroppedAttributesCount(v uint32) {
+	ms.getOrig().DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms LogRecord) CopyTo(dest LogRecord) {
+func (ms immutableLogRecord) CopyTo(dest MutableLogRecord) {
 	dest.SetObservedTimestamp(ms.ObservedTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetTraceID(ms.TraceID())
@@ -156,4 +206,23 @@ func (ms LogRecord) CopyTo(dest LogRecord) {
 	ms.Body().CopyTo(dest.Body())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+}
+
+func generateTestLogRecord() MutableLogRecord {
+	tv := NewLogRecord()
+	fillTestLogRecord(tv)
+	return tv
+}
+
+func fillTestLogRecord(tv MutableLogRecord) {
+	tv.getOrig().ObservedTimeUnixNano = 1234567890
+	tv.getOrig().TimeUnixNano = 1234567890
+	tv.getOrig().TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	tv.getOrig().SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	tv.getOrig().Flags = 1
+	tv.getOrig().SeverityText = "INFO"
+	tv.getOrig().SeverityNumber = otlplogs.SeverityNumber(5)
+	internal.FillTestValue(internal.NewValue(&tv.orig.Body))
+	internal.FillTestMap(internal.NewMutableMap(&tv.getOrig().Attributes))
+	tv.getOrig().DroppedAttributesCount = uint32(17)
 }

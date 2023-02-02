@@ -42,11 +42,8 @@ const header = `// Copyright The OpenTelemetry Authors
 var AllPackages = []*Package{
 	pcommon,
 	plog,
-	plogotlp,
 	pmetric,
-	pmetricotlp,
 	ptrace,
-	ptraceotlp,
 }
 
 // Package is a struct used to generate files.
@@ -63,7 +60,11 @@ type Package struct {
 func (p *Package) GenerateFiles() error {
 	for _, s := range p.structs {
 		var sb bytes.Buffer
-		generateHeader(&sb, p.name)
+		if usedByOtherDataTypes(p.name) {
+			generateHeader(&sb, "internal")
+		} else {
+			generateHeader(&sb, p.name)
+		}
 
 		// Add imports
 		sb.WriteString("import (" + newLine)
@@ -79,9 +80,11 @@ func (p *Package) GenerateFiles() error {
 		// Write all structs
 		sb.WriteString(newLine + newLine)
 		s.generateStruct(&sb)
+		sb.WriteString(newLine + newLine)
+		s.generateTestValueHelpers(&sb)
 		sb.WriteString(newLine)
 
-		path := filepath.Join("pdata", p.path, "generated_"+strings.ToLower(s.getName())+".go")
+		path := p.filePath("generated_" + strings.ToLower(s.getName()) + ".go")
 		// ignore gosec complain about permissions being `0644`.
 		//nolint:gosec
 		if err := os.WriteFile(path, sb.Bytes(), 0644); err != nil {
@@ -95,7 +98,11 @@ func (p *Package) GenerateFiles() error {
 func (p *Package) GenerateTestFiles() error {
 	for _, s := range p.structs {
 		var sb bytes.Buffer
-		generateHeader(&sb, p.name)
+		if usedByOtherDataTypes(p.name) {
+			generateHeader(&sb, "internal")
+		} else {
+			generateHeader(&sb, p.name)
+		}
 
 		// Add imports
 		sb.WriteString("import (" + newLine)
@@ -111,12 +118,8 @@ func (p *Package) GenerateTestFiles() error {
 		// Write all tests
 		sb.WriteString(newLine + newLine)
 		s.generateTests(&sb)
-		if !usedByOtherDataTypes(p.name) {
-			sb.WriteString(newLine + newLine)
-			s.generateTestValueHelpers(&sb)
-		}
 
-		path := filepath.Join("pdata", p.path, "generated_"+strings.ToLower(s.getName())+"_test.go")
+		path := p.filePath("generated_" + strings.ToLower(s.getName()) + "_test.go")
 		// ignore gosec complain about permissions being `0644`.
 		//nolint:gosec
 		if err := os.WriteFile(path, sb.Bytes(), 0644); err != nil {
@@ -126,37 +129,22 @@ func (p *Package) GenerateTestFiles() error {
 	return nil
 }
 
-// GenerateInternalFiles generates files with internal pdata structures for this Package.
-func (p *Package) GenerateInternalFiles() error {
+// GenerateAliases generates files with internal pdata structures for this Package.
+func (p *Package) GenerateAliases() error {
 	if !usedByOtherDataTypes(p.name) {
 		return nil
 	}
 
 	for _, s := range p.structs {
 		var sb bytes.Buffer
-		generateHeader(&sb, "internal")
+		generateHeader(&sb, p.name)
 
-		// Add imports
-		sb.WriteString("import (" + newLine)
-		for _, imp := range p.imports {
-			if imp != "" {
-				sb.WriteString("\t" + imp + newLine)
-			} else {
-				sb.WriteString(newLine)
-			}
-		}
-		sb.WriteString(")")
+		sb.WriteString(`import "go.opentelemetry.io/collector/pdata/internal"` + newLine + newLine)
 
 		// Write all types and funcs
-		s.generateInternal(&sb)
-		sb.WriteString(newLine)
+		s.generateAliases(&sb)
 
-		// Write all tests generate value
-		sb.WriteString(newLine + newLine)
-		s.generateTestValueHelpers(&sb)
-		sb.WriteString(newLine)
-
-		path := filepath.Join("pdata", "internal", "generated_wrapper_"+strings.ToLower(s.getName())+".go")
+		path := filepath.Join("pdata", p.name, "generated_"+strings.ToLower(s.getName())+"_aliases.go")
 		// ignore gosec complain about permissions being `0644`.
 		//nolint:gosec
 		if err := os.WriteFile(path, sb.Bytes(), 0644); err != nil {
@@ -164,6 +152,14 @@ func (p *Package) GenerateInternalFiles() error {
 		}
 	}
 	return nil
+}
+
+func (p *Package) filePath(fileName string) string {
+	dir := p.path
+	if usedByOtherDataTypes(p.name) {
+		dir = "internal"
+	}
+	return filepath.Join("pdata", dir, fileName)
 }
 
 func generateHeader(sb *bytes.Buffer, packageName string) {

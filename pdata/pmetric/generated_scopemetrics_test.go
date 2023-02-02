@@ -63,15 +63,3 @@ func TestScopeMetrics_Metrics(t *testing.T) {
 	fillTestMetricSlice(ms.Metrics())
 	assert.Equal(t, generateTestMetricSlice(), ms.Metrics())
 }
-
-func generateTestScopeMetrics() ScopeMetrics {
-	tv := NewScopeMetrics()
-	fillTestScopeMetrics(tv)
-	return tv
-}
-
-func fillTestScopeMetrics(tv ScopeMetrics) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestMetricSlice(newMetricSlice(&tv.orig.Metrics))
-}

@@ -109,7 +109,7 @@ func TestLogRecord_Body(t *testing.T) {
 
 func TestLogRecord_Attributes(t *testing.T) {
 	ms := NewLogRecord()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
+	assert.Equal(t, pcommonNewMap(), ms.Attributes())
 	internal.FillTestMap(internal.Map(ms.Attributes()))
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
 }
@@ -119,23 +119,4 @@ func TestLogRecord_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
 	ms.SetDroppedAttributesCount(uint32(17))
 	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
-}
-
-func generateTestLogRecord() LogRecord {
-	tv := NewLogRecord()
-	fillTestLogRecord(tv)
-	return tv
-}
-
-func fillTestLogRecord(tv LogRecord) {
-	tv.orig.ObservedTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.Flags = 1
-	tv.orig.SeverityText = "INFO"
-	tv.orig.SeverityNumber = otlplogs.SeverityNumber(5)
-	internal.FillTestValue(internal.NewValue(&tv.orig.Body))
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
-	tv.orig.DroppedAttributesCount = uint32(17)
 }

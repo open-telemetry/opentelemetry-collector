@@ -55,14 +55,3 @@ func TestStatus_Message(t *testing.T) {
 	ms.SetMessage("cancelled")
 	assert.Equal(t, "cancelled", ms.Message())
 }
-
-func generateTestStatus() Status {
-	tv := NewStatus()
-	fillTestStatus(tv)
-	return tv
-}
-
-func fillTestStatus(tv Status) {
-	tv.orig.Code = 1
-	tv.orig.Message = "cancelled"
-}

@@ -22,63 +22,105 @@ import (
 )
 
 // Sum represents the type of a numeric metric that is calculated as a sum of all reported measurements over a time interval.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewSum function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type Sum struct {
+type Sum interface {
+	commonSum
+	DataPoints() NumberDataPointSlice
+}
+
+type MutableSum interface {
+	commonSum
+	MoveTo(dest MutableSum)
+	SetAggregationTemporality(AggregationTemporality)
+	SetIsMonotonic(bool)
+	DataPoints() MutableNumberDataPointSlice
+}
+
+type commonSum interface {
+	getOrig() *otlpmetrics.Sum
+	CopyTo(dest MutableSum)
+	AggregationTemporality() AggregationTemporality
+	IsMonotonic() bool
+}
+
+type immutableSum struct {
 	orig *otlpmetrics.Sum
 }
 
-func newSum(orig *otlpmetrics.Sum) Sum {
-	return Sum{orig}
+type mutableSum struct {
+	immutableSum
+}
+
+func newImmutableSum(orig *otlpmetrics.Sum) immutableSum {
+	return immutableSum{orig}
+}
+
+func newMutableSum(orig *otlpmetrics.Sum) mutableSum {
+	return mutableSum{immutableSum{orig}}
+}
+
+func (ms immutableSum) getOrig() *otlpmetrics.Sum {
+	return ms.orig
 }
 
 // NewSum creates a new empty Sum.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSum() Sum {
-	return newSum(&otlpmetrics.Sum{})
+func NewSum() MutableSum {
+	return newMutableSum(&otlpmetrics.Sum{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Sum) MoveTo(dest Sum) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Sum{}
+func (ms mutableSum) MoveTo(dest MutableSum) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.Sum{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this Sum.
-func (ms Sum) AggregationTemporality() AggregationTemporality {
+func (ms immutableSum) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.orig.AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Sum.
-func (ms Sum) SetAggregationTemporality(v AggregationTemporality) {
+func (ms mutableSum) SetAggregationTemporality(v AggregationTemporality) {
 	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
 // IsMonotonic returns the ismonotonic associated with this Sum.
-func (ms Sum) IsMonotonic() bool {
-	return ms.orig.IsMonotonic
+func (ms immutableSum) IsMonotonic() bool {
+	return ms.getOrig().IsMonotonic
 }
 
 // SetIsMonotonic replaces the ismonotonic associated with this Sum.
-func (ms Sum) SetIsMonotonic(v bool) {
-	ms.orig.IsMonotonic = v
+func (ms mutableSum) SetIsMonotonic(v bool) {
+	ms.getOrig().IsMonotonic = v
 }
 
 // DataPoints returns the DataPoints associated with this Sum.
-func (ms Sum) DataPoints() NumberDataPointSlice {
-	return newNumberDataPointSlice(&ms.orig.DataPoints)
+func (ms immutableSum) DataPoints() NumberDataPointSlice {
+	return newImmutableNumberDataPointSlice(&ms.getOrig().DataPoints)
+}
+
+func (ms mutableSum) DataPoints() MutableNumberDataPointSlice {
+	return newMutableNumberDataPointSlice(&ms.getOrig().DataPoints)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Sum) CopyTo(dest Sum) {
+func (ms immutableSum) CopyTo(dest MutableSum) {
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	dest.SetIsMonotonic(ms.IsMonotonic())
 	ms.DataPoints().CopyTo(dest.DataPoints())
+}
+
+func generateTestSum() MutableSum {
+	tv := NewSum()
+	fillTestSum(tv)
+	return tv
+}
+
+func fillTestSum(tv MutableSum) {
+	tv.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(1)
+	tv.getOrig().IsMonotonic = true
+	fillTestNumberDataPointSlice(newMutableNumberDataPointSlice(&tv.getOrig().DataPoints))
 }

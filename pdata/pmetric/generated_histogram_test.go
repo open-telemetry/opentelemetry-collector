@@ -57,14 +57,3 @@ func TestHistogram_DataPoints(t *testing.T) {
 	fillTestHistogramDataPointSlice(ms.DataPoints())
 	assert.Equal(t, generateTestHistogramDataPointSlice(), ms.DataPoints())
 }
-
-func generateTestHistogram() Histogram {
-	tv := NewHistogram()
-	fillTestHistogram(tv)
-	return tv
-}
-
-func fillTestHistogram(tv Histogram) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	fillTestHistogramDataPointSlice(newHistogramDataPointSlice(&tv.orig.DataPoints))
-}

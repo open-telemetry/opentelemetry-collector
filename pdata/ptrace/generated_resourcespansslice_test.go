@@ -134,17 +134,3 @@ func TestResourceSpansSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
-func generateTestResourceSpansSlice() ResourceSpansSlice {
-	tv := NewResourceSpansSlice()
-	fillTestResourceSpansSlice(tv)
-	return tv
-}
-
-func fillTestResourceSpansSlice(tv ResourceSpansSlice) {
-	*tv.orig = make([]*otlptrace.ResourceSpans, 7)
-	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlptrace.ResourceSpans{}
-		fillTestResourceSpans(newResourceSpans((*tv.orig)[i]))
-	}
-}

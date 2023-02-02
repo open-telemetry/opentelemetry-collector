@@ -24,32 +24,57 @@ import (
 )
 
 // ScopeSpansSlice logically represents a slice of ScopeSpans.
-//
-// This is a reference type. If passed by value and callee modifies it, the
-// caller will see the modification.
-//
-// Must use NewScopeSpansSlice function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ScopeSpansSlice struct {
+type ScopeSpansSlice interface {
+	commonScopeSpansSlice
+	At(ix int) ScopeSpans
+}
+
+type MutableScopeSpansSlice interface {
+	commonScopeSpansSlice
+	At(ix int) MutableScopeSpans
+	EnsureCapacity(newCap int)
+	AppendEmpty() MutableScopeSpans
+	Sort(less func(a, b MutableScopeSpans) bool)
+}
+
+type commonScopeSpansSlice interface {
+	Len() int
+	CopyTo(dest MutableScopeSpansSlice)
+	getOrig() *[]*otlptrace.ScopeSpans
+}
+
+type immutableScopeSpansSlice struct {
 	orig *[]*otlptrace.ScopeSpans
 }
 
-func newScopeSpansSlice(orig *[]*otlptrace.ScopeSpans) ScopeSpansSlice {
-	return ScopeSpansSlice{orig}
+type mutableScopeSpansSlice struct {
+	immutableScopeSpansSlice
+}
+
+func (es immutableScopeSpansSlice) getOrig() *[]*otlptrace.ScopeSpans {
+	return es.orig
+}
+
+func newImmutableScopeSpansSlice(orig *[]*otlptrace.ScopeSpans) immutableScopeSpansSlice {
+	return immutableScopeSpansSlice{orig}
+}
+
+func newMutableScopeSpansSlice(orig *[]*otlptrace.ScopeSpans) mutableScopeSpansSlice {
+	return mutableScopeSpansSlice{immutableScopeSpansSlice{orig}}
 }
 
 // NewScopeSpansSlice creates a ScopeSpansSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewScopeSpansSlice() ScopeSpansSlice {
+func NewScopeSpansSlice() MutableScopeSpansSlice {
 	orig := []*otlptrace.ScopeSpans(nil)
-	return newScopeSpansSlice(&orig)
+	return newMutableScopeSpansSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewScopeSpansSlice()".
-func (es ScopeSpansSlice) Len() int {
-	return len(*es.orig)
+func (es immutableScopeSpansSlice) Len() int {
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -60,28 +85,32 @@ func (es ScopeSpansSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es ScopeSpansSlice) At(ix int) ScopeSpans {
-	return newScopeSpans((*es.orig)[ix])
+func (es immutableScopeSpansSlice) At(ix int) ScopeSpans {
+	return newImmutableScopeSpans((*es.getOrig())[ix])
+}
+
+func (es mutableScopeSpansSlice) At(ix int) MutableScopeSpans {
+	return newMutableScopeSpans((*es.getOrig())[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
+func (es immutableScopeSpansSlice) CopyTo(dest MutableScopeSpansSlice) {
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newScopeSpans((*es.orig)[i]).CopyTo(newScopeSpans((*dest.orig)[i]))
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
+		for i := range *es.getOrig() {
+			newImmutableScopeSpans((*es.getOrig())[i]).CopyTo(newMutableScopeSpans((*dest.getOrig())[i]))
 		}
 		return
 	}
 	origs := make([]otlptrace.ScopeSpans, srcLen)
 	wrappers := make([]*otlptrace.ScopeSpans, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newScopeSpans((*es.orig)[i]).CopyTo(newScopeSpans(wrappers[i]))
+		newImmutableScopeSpans((*es.getOrig())[i]).CopyTo(newMutableScopeSpans(wrappers[i]))
 	}
-	*dest.orig = wrappers
+	*dest.getOrig() = wrappers
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -96,48 +125,48 @@ func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ScopeSpansSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
+func (es mutableScopeSpansSlice) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlptrace.ScopeSpans, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*otlptrace.ScopeSpans, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ScopeSpans.
 // It returns the newly added ScopeSpans.
-func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
-	*es.orig = append(*es.orig, &otlptrace.ScopeSpans{})
+func (es mutableScopeSpansSlice) AppendEmpty() MutableScopeSpans {
+	*es.getOrig() = append(*es.getOrig(), &otlptrace.ScopeSpans{})
 	return es.At(es.Len() - 1)
 }
 
 // Sort sorts the ScopeSpans elements within ScopeSpansSlice given the
 // provided less function so that two instances of ScopeSpansSlice
 // can be compared.
-func (es ScopeSpansSlice) Sort(less func(a, b ScopeSpans) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+func (es mutableScopeSpansSlice) Sort(less func(a, b MutableScopeSpans) bool) {
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ScopeSpansSlice) MoveAndAppendTo(dest ScopeSpansSlice) {
-	if *dest.orig == nil {
+func (es mutableScopeSpansSlice) MoveAndAppendTo(dest mutableScopeSpansSlice) {
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ScopeSpansSlice) RemoveIf(f func(ScopeSpans) bool) {
+func (es mutableScopeSpansSlice) RemoveIf(f func(MutableScopeSpans) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -146,9 +175,23 @@ func (es ScopeSpansSlice) RemoveIf(f func(ScopeSpans) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+func generateTestScopeSpansSlice() MutableScopeSpansSlice {
+	tv := NewScopeSpansSlice()
+	fillTestScopeSpansSlice(tv)
+	return tv
+}
+
+func fillTestScopeSpansSlice(tv MutableScopeSpansSlice) {
+	*tv.orig = make([]*otlptrace.ScopeSpans, 7)
+	for i := 0; i < 7; i++ {
+		(*tv.orig)[i] = &otlptrace.ScopeSpans{}
+		fillTestScopeSpans(newScopeSpans((*tv.orig)[i]))
+	}
 }

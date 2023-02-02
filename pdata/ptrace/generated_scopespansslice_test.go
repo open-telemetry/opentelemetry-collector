@@ -134,17 +134,3 @@ func TestScopeSpansSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
-func generateTestScopeSpansSlice() ScopeSpansSlice {
-	tv := NewScopeSpansSlice()
-	fillTestScopeSpansSlice(tv)
-	return tv
-}
-
-func fillTestScopeSpansSlice(tv ScopeSpansSlice) {
-	*tv.orig = make([]*otlptrace.ScopeSpans, 7)
-	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlptrace.ScopeSpans{}
-		fillTestScopeSpans(newScopeSpans((*tv.orig)[i]))
-	}
-}

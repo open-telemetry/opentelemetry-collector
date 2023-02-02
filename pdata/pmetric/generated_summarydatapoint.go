@@ -24,97 +24,139 @@ import (
 )
 
 // SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewSummaryDataPoint function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type SummaryDataPoint struct {
+type SummaryDataPoint interface {
+	commonSummaryDataPoint
+	Attributes() pcommon.Map
+	QuantileValues() SummaryDataPointValueAtQuantileSlice
+}
+
+type MutableSummaryDataPoint interface {
+	commonSummaryDataPoint
+	MoveTo(dest MutableSummaryDataPoint)
+	Attributes() pcommon.MutableMap
+	SetStartTimestamp(pcommon.Timestamp)
+	SetTimestamp(pcommon.Timestamp)
+	SetCount(uint64)
+	SetSum(float64)
+	QuantileValues() MutableSummaryDataPointValueAtQuantileSlice
+	SetFlags(DataPointFlags)
+}
+
+type commonSummaryDataPoint interface {
+	getOrig() *otlpmetrics.SummaryDataPoint
+	CopyTo(dest MutableSummaryDataPoint)
+	StartTimestamp() pcommon.Timestamp
+	Timestamp() pcommon.Timestamp
+	Count() uint64
+	Sum() float64
+	Flags() DataPointFlags
+}
+
+type immutableSummaryDataPoint struct {
 	orig *otlpmetrics.SummaryDataPoint
 }
 
-func newSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) SummaryDataPoint {
-	return SummaryDataPoint{orig}
+type mutableSummaryDataPoint struct {
+	immutableSummaryDataPoint
+}
+
+func newImmutableSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) immutableSummaryDataPoint {
+	return immutableSummaryDataPoint{orig}
+}
+
+func newMutableSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) mutableSummaryDataPoint {
+	return mutableSummaryDataPoint{immutableSummaryDataPoint{orig}}
+}
+
+func (ms immutableSummaryDataPoint) getOrig() *otlpmetrics.SummaryDataPoint {
+	return ms.orig
 }
 
 // NewSummaryDataPoint creates a new empty SummaryDataPoint.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSummaryDataPoint() SummaryDataPoint {
-	return newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
+func NewSummaryDataPoint() MutableSummaryDataPoint {
+	return newMutableSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms SummaryDataPoint) MoveTo(dest SummaryDataPoint) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.SummaryDataPoint{}
+func (ms mutableSummaryDataPoint) MoveTo(dest MutableSummaryDataPoint) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.SummaryDataPoint{}
 }
 
 // Attributes returns the Attributes associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+func (ms immutableSummaryDataPoint) Attributes() pcommon.Map {
+	return internal.NewImmutableMap(&ms.getOrig().Attributes)
+}
+
+func (ms mutableSummaryDataPoint) Attributes() pcommon.MutableMap {
+	return internal.NewMutableMap(&ms.getOrig().Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) StartTimestamp() pcommon.Timestamp {
+func (ms immutableSummaryDataPoint) StartTimestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
+func (ms mutableSummaryDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
 	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) Timestamp() pcommon.Timestamp {
+func (ms immutableSummaryDataPoint) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetTimestamp(v pcommon.Timestamp) {
+func (ms mutableSummaryDataPoint) SetTimestamp(v pcommon.Timestamp) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) Count() uint64 {
-	return ms.orig.Count
+func (ms immutableSummaryDataPoint) Count() uint64 {
+	return ms.getOrig().Count
 }
 
 // SetCount replaces the count associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetCount(v uint64) {
-	ms.orig.Count = v
+func (ms mutableSummaryDataPoint) SetCount(v uint64) {
+	ms.getOrig().Count = v
 }
 
 // Sum returns the sum associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) Sum() float64 {
-	return ms.orig.Sum
+func (ms immutableSummaryDataPoint) Sum() float64 {
+	return ms.getOrig().Sum
 }
 
 // SetSum replaces the sum associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetSum(v float64) {
-	ms.orig.Sum = v
+func (ms mutableSummaryDataPoint) SetSum(v float64) {
+	ms.getOrig().Sum = v
 }
 
 // QuantileValues returns the QuantileValues associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) QuantileValues() SummaryDataPointValueAtQuantileSlice {
-	return newSummaryDataPointValueAtQuantileSlice(&ms.orig.QuantileValues)
+func (ms immutableSummaryDataPoint) QuantileValues() SummaryDataPointValueAtQuantileSlice {
+	return newImmutableSummaryDataPointValueAtQuantileSlice(&ms.getOrig().QuantileValues)
+}
+
+func (ms mutableSummaryDataPoint) QuantileValues() MutableSummaryDataPointValueAtQuantileSlice {
+	return newMutableSummaryDataPointValueAtQuantileSlice(&ms.getOrig().QuantileValues)
 }
 
 // Flags returns the flags associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) Flags() DataPointFlags {
+func (ms immutableSummaryDataPoint) Flags() DataPointFlags {
 	return DataPointFlags(ms.orig.Flags)
 }
 
 // SetFlags replaces the flags associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetFlags(v DataPointFlags) {
+func (ms mutableSummaryDataPoint) SetFlags(v DataPointFlags) {
 	ms.orig.Flags = uint32(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
+func (ms immutableSummaryDataPoint) CopyTo(dest MutableSummaryDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
@@ -122,4 +164,20 @@ func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	dest.SetSum(ms.Sum())
 	ms.QuantileValues().CopyTo(dest.QuantileValues())
 	dest.SetFlags(ms.Flags())
+}
+
+func generateTestSummaryDataPoint() MutableSummaryDataPoint {
+	tv := NewSummaryDataPoint()
+	fillTestSummaryDataPoint(tv)
+	return tv
+}
+
+func fillTestSummaryDataPoint(tv MutableSummaryDataPoint) {
+	internal.FillTestMap(internal.NewMutableMap(&tv.getOrig().Attributes))
+	tv.getOrig().StartTimeUnixNano = 1234567890
+	tv.getOrig().TimeUnixNano = 1234567890
+	tv.getOrig().Count = uint64(17)
+	tv.getOrig().Sum = float64(17.13)
+	fillTestSummaryDataPointValueAtQuantileSlice(newMutableSummaryDataPointValueAtQuantileSlice(&tv.getOrig().QuantileValues))
+	tv.getOrig().Flags = 1
 }

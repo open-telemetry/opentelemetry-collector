@@ -134,17 +134,3 @@ func TestMetricSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
-func generateTestMetricSlice() MetricSlice {
-	tv := NewMetricSlice()
-	fillTestMetricSlice(tv)
-	return tv
-}
-
-func fillTestMetricSlice(tv MetricSlice) {
-	*tv.orig = make([]*otlpmetrics.Metric, 7)
-	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlpmetrics.Metric{}
-		fillTestMetric(newMetric((*tv.orig)[i]))
-	}
-}

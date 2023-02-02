@@ -22,52 +22,91 @@ import (
 )
 
 // Histogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported measurements over a time interval.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewHistogram function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type Histogram struct {
+type Histogram interface {
+	commonHistogram
+	DataPoints() HistogramDataPointSlice
+}
+
+type MutableHistogram interface {
+	commonHistogram
+	MoveTo(dest MutableHistogram)
+	SetAggregationTemporality(AggregationTemporality)
+	DataPoints() MutableHistogramDataPointSlice
+}
+
+type commonHistogram interface {
+	getOrig() *otlpmetrics.Histogram
+	CopyTo(dest MutableHistogram)
+	AggregationTemporality() AggregationTemporality
+}
+
+type immutableHistogram struct {
 	orig *otlpmetrics.Histogram
 }
 
-func newHistogram(orig *otlpmetrics.Histogram) Histogram {
-	return Histogram{orig}
+type mutableHistogram struct {
+	immutableHistogram
+}
+
+func newImmutableHistogram(orig *otlpmetrics.Histogram) immutableHistogram {
+	return immutableHistogram{orig}
+}
+
+func newMutableHistogram(orig *otlpmetrics.Histogram) mutableHistogram {
+	return mutableHistogram{immutableHistogram{orig}}
+}
+
+func (ms immutableHistogram) getOrig() *otlpmetrics.Histogram {
+	return ms.orig
 }
 
 // NewHistogram creates a new empty Histogram.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewHistogram() Histogram {
-	return newHistogram(&otlpmetrics.Histogram{})
+func NewHistogram() MutableHistogram {
+	return newMutableHistogram(&otlpmetrics.Histogram{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Histogram) MoveTo(dest Histogram) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Histogram{}
+func (ms mutableHistogram) MoveTo(dest MutableHistogram) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.Histogram{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this Histogram.
-func (ms Histogram) AggregationTemporality() AggregationTemporality {
+func (ms immutableHistogram) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.orig.AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Histogram.
-func (ms Histogram) SetAggregationTemporality(v AggregationTemporality) {
+func (ms mutableHistogram) SetAggregationTemporality(v AggregationTemporality) {
 	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
 // DataPoints returns the DataPoints associated with this Histogram.
-func (ms Histogram) DataPoints() HistogramDataPointSlice {
-	return newHistogramDataPointSlice(&ms.orig.DataPoints)
+func (ms immutableHistogram) DataPoints() HistogramDataPointSlice {
+	return newImmutableHistogramDataPointSlice(&ms.getOrig().DataPoints)
+}
+
+func (ms mutableHistogram) DataPoints() MutableHistogramDataPointSlice {
+	return newMutableHistogramDataPointSlice(&ms.getOrig().DataPoints)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Histogram) CopyTo(dest Histogram) {
+func (ms immutableHistogram) CopyTo(dest MutableHistogram) {
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	ms.DataPoints().CopyTo(dest.DataPoints())
+}
+
+func generateTestHistogram() MutableHistogram {
+	tv := NewHistogram()
+	fillTestHistogram(tv)
+	return tv
+}
+
+func fillTestHistogram(tv MutableHistogram) {
+	tv.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(1)
+	fillTestHistogramDataPointSlice(newMutableHistogramDataPointSlice(&tv.getOrig().DataPoints))
 }

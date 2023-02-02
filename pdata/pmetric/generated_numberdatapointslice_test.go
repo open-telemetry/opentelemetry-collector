@@ -134,17 +134,3 @@ func TestNumberDataPointSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
-func generateTestNumberDataPointSlice() NumberDataPointSlice {
-	tv := NewNumberDataPointSlice()
-	fillTestNumberDataPointSlice(tv)
-	return tv
-}
-
-func fillTestNumberDataPointSlice(tv NumberDataPointSlice) {
-	*tv.orig = make([]*otlpmetrics.NumberDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlpmetrics.NumberDataPoint{}
-		fillTestNumberDataPoint(newNumberDataPoint((*tv.orig)[i]))
-	}
-}

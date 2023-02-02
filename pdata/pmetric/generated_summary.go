@@ -22,41 +22,77 @@ import (
 )
 
 // Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewSummary function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type Summary struct {
+type Summary interface {
+	commonSummary
+	DataPoints() SummaryDataPointSlice
+}
+
+type MutableSummary interface {
+	commonSummary
+	MoveTo(dest MutableSummary)
+	DataPoints() MutableSummaryDataPointSlice
+}
+
+type commonSummary interface {
+	getOrig() *otlpmetrics.Summary
+	CopyTo(dest MutableSummary)
+}
+
+type immutableSummary struct {
 	orig *otlpmetrics.Summary
 }
 
-func newSummary(orig *otlpmetrics.Summary) Summary {
-	return Summary{orig}
+type mutableSummary struct {
+	immutableSummary
+}
+
+func newImmutableSummary(orig *otlpmetrics.Summary) immutableSummary {
+	return immutableSummary{orig}
+}
+
+func newMutableSummary(orig *otlpmetrics.Summary) mutableSummary {
+	return mutableSummary{immutableSummary{orig}}
+}
+
+func (ms immutableSummary) getOrig() *otlpmetrics.Summary {
+	return ms.orig
 }
 
 // NewSummary creates a new empty Summary.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSummary() Summary {
-	return newSummary(&otlpmetrics.Summary{})
+func NewSummary() MutableSummary {
+	return newMutableSummary(&otlpmetrics.Summary{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Summary) MoveTo(dest Summary) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Summary{}
+func (ms mutableSummary) MoveTo(dest MutableSummary) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.Summary{}
 }
 
 // DataPoints returns the DataPoints associated with this Summary.
-func (ms Summary) DataPoints() SummaryDataPointSlice {
-	return newSummaryDataPointSlice(&ms.orig.DataPoints)
+func (ms immutableSummary) DataPoints() SummaryDataPointSlice {
+	return newImmutableSummaryDataPointSlice(&ms.getOrig().DataPoints)
+}
+
+func (ms mutableSummary) DataPoints() MutableSummaryDataPointSlice {
+	return newMutableSummaryDataPointSlice(&ms.getOrig().DataPoints)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Summary) CopyTo(dest Summary) {
+func (ms immutableSummary) CopyTo(dest MutableSummary) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
+}
+
+func generateTestSummary() MutableSummary {
+	tv := NewSummary()
+	fillTestSummary(tv)
+	return tv
+}
+
+func fillTestSummary(tv MutableSummary) {
+	fillTestSummaryDataPointSlice(newMutableSummaryDataPointSlice(&tv.getOrig().DataPoints))
 }

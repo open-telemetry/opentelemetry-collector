@@ -24,52 +24,91 @@ import (
 )
 
 // ExponentialHistogramDataPointBuckets are a set of bucket counts, encoded in a contiguous array of counts.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewExponentialHistogramDataPointBuckets function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ExponentialHistogramDataPointBuckets struct {
+type ExponentialHistogramDataPointBuckets interface {
+	commonExponentialHistogramDataPointBuckets
+	BucketCounts() pcommon.UInt64Slice
+}
+
+type MutableExponentialHistogramDataPointBuckets interface {
+	commonExponentialHistogramDataPointBuckets
+	MoveTo(dest MutableExponentialHistogramDataPointBuckets)
+	SetOffset(int32)
+	BucketCounts() pcommon.MutableUInt64Slice
+}
+
+type commonExponentialHistogramDataPointBuckets interface {
+	getOrig() *otlpmetrics.ExponentialHistogramDataPoint_Buckets
+	CopyTo(dest MutableExponentialHistogramDataPointBuckets)
+	Offset() int32
+}
+
+type immutableExponentialHistogramDataPointBuckets struct {
 	orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets
 }
 
-func newExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) ExponentialHistogramDataPointBuckets {
-	return ExponentialHistogramDataPointBuckets{orig}
+type mutableExponentialHistogramDataPointBuckets struct {
+	immutableExponentialHistogramDataPointBuckets
+}
+
+func newImmutableExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) immutableExponentialHistogramDataPointBuckets {
+	return immutableExponentialHistogramDataPointBuckets{orig}
+}
+
+func newMutableExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) mutableExponentialHistogramDataPointBuckets {
+	return mutableExponentialHistogramDataPointBuckets{immutableExponentialHistogramDataPointBuckets{orig}}
+}
+
+func (ms immutableExponentialHistogramDataPointBuckets) getOrig() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+	return ms.orig
 }
 
 // NewExponentialHistogramDataPointBuckets creates a new empty ExponentialHistogramDataPointBuckets.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
-	return newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{})
+func NewExponentialHistogramDataPointBuckets() MutableExponentialHistogramDataPointBuckets {
+	return newMutableExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ExponentialHistogramDataPointBuckets) MoveTo(dest ExponentialHistogramDataPointBuckets) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+func (ms mutableExponentialHistogramDataPointBuckets) MoveTo(dest MutableExponentialHistogramDataPointBuckets) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 }
 
 // Offset returns the offset associated with this ExponentialHistogramDataPointBuckets.
-func (ms ExponentialHistogramDataPointBuckets) Offset() int32 {
-	return ms.orig.Offset
+func (ms immutableExponentialHistogramDataPointBuckets) Offset() int32 {
+	return ms.getOrig().Offset
 }
 
 // SetOffset replaces the offset associated with this ExponentialHistogramDataPointBuckets.
-func (ms ExponentialHistogramDataPointBuckets) SetOffset(v int32) {
-	ms.orig.Offset = v
+func (ms mutableExponentialHistogramDataPointBuckets) SetOffset(v int32) {
+	ms.getOrig().Offset = v
 }
 
 // BucketCounts returns the bucketcounts associated with this ExponentialHistogramDataPointBuckets.
-func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slice {
-	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts))
+func (ms immutableExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slice {
+	return internal.NewImmutableUInt64Slice(&ms.getOrig().BucketCounts)
+}
+
+func (ms mutableExponentialHistogramDataPointBuckets) BucketCounts() pcommon.MutableUInt64Slice {
+	return internal.NewMutableUInt64Slice(&ms.getOrig().BucketCounts)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramDataPointBuckets) {
+func (ms immutableExponentialHistogramDataPointBuckets) CopyTo(dest MutableExponentialHistogramDataPointBuckets) {
 	dest.SetOffset(ms.Offset())
 	ms.BucketCounts().CopyTo(dest.BucketCounts())
+}
+
+func generateTestExponentialHistogramDataPointBuckets() MutableExponentialHistogramDataPointBuckets {
+	tv := NewExponentialHistogramDataPointBuckets()
+	fillTestExponentialHistogramDataPointBuckets(tv)
+	return tv
+}
+
+func fillTestExponentialHistogramDataPointBuckets(tv MutableExponentialHistogramDataPointBuckets) {
+	tv.getOrig().Offset = int32(909)
+	tv.orig.BucketCounts = []uint64{1, 2, 3}
 }

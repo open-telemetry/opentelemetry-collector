@@ -20,15 +20,24 @@ import (
 )
 
 type Traces struct {
-	orig *otlpcollectortrace.ExportTraceServiceRequest
+	orig  *otlpcollectortrace.ExportTraceServiceRequest
+	state State
 }
 
 func GetOrigTraces(ms Traces) *otlpcollectortrace.ExportTraceServiceRequest {
 	return ms.orig
 }
 
-func NewTraces(orig *otlpcollectortrace.ExportTraceServiceRequest) Traces {
-	return Traces{orig: orig}
+func GetTracesState(ms Traces) State {
+	return ms.state
+}
+
+func SetTracesState(ms Traces, s State) {
+	ms.state = s
+}
+
+func NewTraces(orig *otlpcollectortrace.ExportTraceServiceRequest, s State) Traces {
+	return Traces{orig: orig, state: s}
 }
 
 // TracesToProto internal helper to convert Traces to protobuf representation.
@@ -40,7 +49,10 @@ func TracesToProto(l Traces) otlptrace.TracesData {
 
 // TracesFromProto internal helper to convert protobuf representation to Traces.
 func TracesFromProto(orig otlptrace.TracesData) Traces {
-	return Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{
-		ResourceSpans: orig.ResourceSpans,
-	}}
+	return Traces{
+		orig: &otlpcollectortrace.ExportTraceServiceRequest{
+			ResourceSpans: orig.ResourceSpans,
+		},
+		state: StateShared,
+	}
 }

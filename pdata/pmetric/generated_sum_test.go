@@ -64,15 +64,3 @@ func TestSum_DataPoints(t *testing.T) {
 	fillTestNumberDataPointSlice(ms.DataPoints())
 	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
 }
-
-func generateTestSum() Sum {
-	tv := NewSum()
-	fillTestSum(tv)
-	return tv
-}
-
-func fillTestSum(tv Sum) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	tv.orig.IsMonotonic = true
-	fillTestNumberDataPointSlice(newNumberDataPointSlice(&tv.orig.DataPoints))
-}

@@ -12,22 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
+	"go.opentelemetry.io/collector/pdata/internal"
 )
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
+// Map stores a map of string keys to elements of Value type.
+type Map = internal.Map
 
-func main() {
-	for _, fp := range internal.AllPackages {
-		check(fp.GenerateFiles())
-		check(fp.GenerateTestFiles())
-		check(fp.GenerateAliases())
-	}
-}
+type MutableMap = internal.MutableMap
+
+// NewMap creates a Map with 0 elements.
+var NewMap = internal.NewMap

@@ -24,58 +24,105 @@ import (
 )
 
 // ScopeLogs is a collection of logs from a LibraryInstrumentation.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewScopeLogs function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ScopeLogs struct {
+type ScopeLogs interface {
+	commonScopeLogs
+	Scope() pcommon.InstrumentationScope
+	LogRecords() LogRecordSlice
+}
+
+type MutableScopeLogs interface {
+	commonScopeLogs
+	MoveTo(dest MutableScopeLogs)
+	Scope() pcommon.MutableInstrumentationScope
+	SetSchemaUrl(string)
+	LogRecords() MutableLogRecordSlice
+}
+
+type commonScopeLogs interface {
+	getOrig() *otlplogs.ScopeLogs
+	CopyTo(dest MutableScopeLogs)
+	SchemaUrl() string
+}
+
+type immutableScopeLogs struct {
 	orig *otlplogs.ScopeLogs
 }
 
-func newScopeLogs(orig *otlplogs.ScopeLogs) ScopeLogs {
-	return ScopeLogs{orig}
+type mutableScopeLogs struct {
+	immutableScopeLogs
+}
+
+func newImmutableScopeLogs(orig *otlplogs.ScopeLogs) immutableScopeLogs {
+	return immutableScopeLogs{orig}
+}
+
+func newMutableScopeLogs(orig *otlplogs.ScopeLogs) mutableScopeLogs {
+	return mutableScopeLogs{immutableScopeLogs{orig}}
+}
+
+func (ms immutableScopeLogs) getOrig() *otlplogs.ScopeLogs {
+	return ms.orig
 }
 
 // NewScopeLogs creates a new empty ScopeLogs.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewScopeLogs() ScopeLogs {
-	return newScopeLogs(&otlplogs.ScopeLogs{})
+func NewScopeLogs() MutableScopeLogs {
+	return newMutableScopeLogs(&otlplogs.ScopeLogs{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ScopeLogs) MoveTo(dest ScopeLogs) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlplogs.ScopeLogs{}
+func (ms mutableScopeLogs) MoveTo(dest MutableScopeLogs) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlplogs.ScopeLogs{}
 }
 
 // Scope returns the scope associated with this ScopeLogs.
-func (ms ScopeLogs) Scope() pcommon.InstrumentationScope {
-	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope))
+func (ms immutableScopeLogs) Scope() pcommon.InstrumentationScope {
+	return internal.NewImmutableInstrumentationScope(&ms.getOrig().Scope)
+}
+
+// Scope returns the scope associated with this ScopeLogs.
+func (ms mutableScopeLogs) Scope() pcommon.MutableInstrumentationScope {
+	return internal.NewMutableInstrumentationScope(&ms.getOrig().Scope)
 }
 
 // SchemaUrl returns the schemaurl associated with this ScopeLogs.
-func (ms ScopeLogs) SchemaUrl() string {
-	return ms.orig.SchemaUrl
+func (ms immutableScopeLogs) SchemaUrl() string {
+	return ms.getOrig().SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ScopeLogs.
-func (ms ScopeLogs) SetSchemaUrl(v string) {
-	ms.orig.SchemaUrl = v
+func (ms mutableScopeLogs) SetSchemaUrl(v string) {
+	ms.getOrig().SchemaUrl = v
 }
 
 // LogRecords returns the LogRecords associated with this ScopeLogs.
-func (ms ScopeLogs) LogRecords() LogRecordSlice {
-	return newLogRecordSlice(&ms.orig.LogRecords)
+func (ms immutableScopeLogs) LogRecords() LogRecordSlice {
+	return newImmutableLogRecordSlice(&ms.getOrig().LogRecords)
+}
+
+func (ms mutableScopeLogs) LogRecords() MutableLogRecordSlice {
+	return newMutableLogRecordSlice(&ms.getOrig().LogRecords)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ScopeLogs) CopyTo(dest ScopeLogs) {
+func (ms immutableScopeLogs) CopyTo(dest MutableScopeLogs) {
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.LogRecords().CopyTo(dest.LogRecords())
+}
+
+func generateTestScopeLogs() MutableScopeLogs {
+	tv := NewScopeLogs()
+	fillTestScopeLogs(tv)
+	return tv
+}
+
+func fillTestScopeLogs(tv MutableScopeLogs) {
+	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope))
+	tv.getOrig().SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	fillTestLogRecordSlice(newMutableLogRecordSlice(&tv.getOrig().LogRecords))
 }

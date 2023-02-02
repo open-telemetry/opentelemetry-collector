@@ -57,14 +57,3 @@ func TestExponentialHistogram_DataPoints(t *testing.T) {
 	fillTestExponentialHistogramDataPointSlice(ms.DataPoints())
 	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), ms.DataPoints())
 }
-
-func generateTestExponentialHistogram() ExponentialHistogram {
-	tv := NewExponentialHistogram()
-	fillTestExponentialHistogram(tv)
-	return tv
-}
-
-func fillTestExponentialHistogram(tv ExponentialHistogram) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	fillTestExponentialHistogramDataPointSlice(newExponentialHistogramDataPointSlice(&tv.orig.DataPoints))
-}

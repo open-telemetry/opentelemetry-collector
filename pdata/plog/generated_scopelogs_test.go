@@ -63,15 +63,3 @@ func TestScopeLogs_LogRecords(t *testing.T) {
 	fillTestLogRecordSlice(ms.LogRecords())
 	assert.Equal(t, generateTestLogRecordSlice(), ms.LogRecords())
 }
-
-func generateTestScopeLogs() ScopeLogs {
-	tv := NewScopeLogs()
-	fillTestScopeLogs(tv)
-	return tv
-}
-
-func fillTestScopeLogs(tv ScopeLogs) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestLogRecordSlice(newLogRecordSlice(&tv.orig.LogRecords))
-}

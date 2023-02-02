@@ -20,49 +20,65 @@ import (
 )
 
 const messageValueTemplate = `${description}
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use New${structName} function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-${typeDeclaration}
+type ${structName} interface {
+	common${structName}
+${notMutatingMethods}}
 
-func new${structName}(orig *${originName}) ${structName} {
-	return ${newFuncValue}
+type Mutable${structName} interface {
+	common${structName}
+${mutatingMethods}}
+
+type common${structName} interface {
+	getOrig() *${originName}
+${commonMethods}}
+
+type immutable${structName} struct {
+	orig *${originName}
+}
+
+type mutable${structName} struct {
+	immutable${structName}
+}
+
+func ${newPrefix}Immutable${structName}(orig *${originName}) immutable${structName} {
+	return immutable${structName}{orig}
+}
+
+func ${newPrefix}Mutable${structName}(orig *${originName}) mutable${structName} {
+	return mutable${structName}{immutable${structName}{orig}}
+}
+
+func (ms immutable${structName}) getOrig() *${originName} {
+	return ms.orig
 }
 
 // New${structName} creates a new empty ${structName}.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func New${structName}() ${structName} {
-	return new${structName}(&${originName}{})
+func New${structName}() Mutable${structName} {
+	return ${newPrefix}Mutable${structName}(&${originName}{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ${structName}) MoveTo(dest ${structName}) {
-	*dest.${origAccessor} = *ms.${origAccessor}
-	*ms.${origAccessor} = ${originName}{}
-}`
-
-const messageValueGetOrigTemplate = `func (ms ${structName}) getOrig() *${originName} {
-	return internal.GetOrig${structName}(internal.${structName}(ms))
+func (ms mutable${structName}) MoveTo(dest Mutable${structName}) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = ${originName}{}
 }`
 
 const messageValueCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct overriding the destination.
-func (ms ${structName}) CopyTo(dest ${structName}) {`
+func (ms immutable${structName}) CopyTo(dest Mutable${structName}) {`
 
 const messageValueCopyToFooterTemplate = `}`
 
 const messageValueTestTemplate = `
 func Test${structName}_MoveTo(t *testing.T) {
-	ms := ${generateTestData}
+	ms := ${generateTestPrefix}${structName}()
 	dest := New${structName}()
 	ms.MoveTo(dest)
 	assert.Equal(t, New${structName}(), ms)
-	assert.Equal(t, ${generateTestData}, dest)
+	assert.Equal(t, ${generateTestPrefix}${structName}(), dest)
 }
 
 func Test${structName}_CopyTo(t *testing.T) {
@@ -70,36 +86,23 @@ func Test${structName}_CopyTo(t *testing.T) {
 	orig := New${structName}()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ${generateTestData}
+	orig = ${generateTestPrefix}${structName}()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }`
 
-const messageValueGenerateTestTemplate = `func generateTest${structName}() ${structName} {
+const messageValueGenerateTestTemplate = `func ${generateTestPrefix}${structName}() Mutable${structName} {
 	tv := New${structName}()
-	fillTest${structName}(tv)
+	${fillTestPrefix}${structName}(tv)
 	return tv
 }`
 
-const messageValueGenerateTestTemplateCommon = `func GenerateTest${structName}() ${structName} {
-	orig := ${originName}{}
-	tv := New${structName}(&orig)
-	FillTest${structName}(tv)
-	return tv
-}`
+const aliasTemplate = `
+type ${structName} = internal.${structName}
 
-const messageValueAliasTemplate = `
-type ${structName} struct {
-	orig *${originName}
-}
+type Mutable${structName} = internal.Mutable${structName}
 
-func GetOrig${structName}(ms ${structName}) *${originName} {
-	return ms.orig
-}
-
-func New${structName}(orig *${originName}) ${structName} {
-	return ${structName}{orig: orig}
-}`
+var New${structName} = internal.New${structName}`
 
 const newLine = "\n"
 
@@ -109,7 +112,7 @@ type baseStruct interface {
 	generateStruct(sb *bytes.Buffer)
 	generateTests(sb *bytes.Buffer)
 	generateTestValueHelpers(sb *bytes.Buffer)
-	generateInternal(sb *bytes.Buffer)
+	generateAliases(sb *bytes.Buffer)
 }
 
 // messageValueStruct generates a struct for a proto message. The struct can be generated both as a common struct
@@ -139,35 +142,19 @@ func (ms *messageValueStruct) generateStruct(sb *bytes.Buffer) {
 			return ms.originFullName
 		case "description":
 			return ms.description
-		case "typeDeclaration":
-			if usedByOtherDataTypes(ms.packageName) {
-				return "type " + ms.structName + " internal." + ms.structName
-			}
-			return "type " + ms.structName + " struct {\n\torig *" + ms.originFullName + "\n}"
-		case "newFuncValue":
-			if usedByOtherDataTypes(ms.packageName) {
-				return ms.structName + "(internal.New" + ms.structName + "(orig))"
-			}
-			return ms.structName + "{orig}"
-		case "origAccessor":
-			return origAccessor(ms)
+		case "commonMethods":
+			return ms.commonMethods()
+		case "notMutatingMethods":
+			return ms.notMutatingMethods()
+		case "mutatingMethods":
+			return ms.mutatingMethods()
+		case "newPrefix":
+			return newPrefix(ms.packageName)
 		default:
 			panic(name)
 		}
 	}))
-	if usedByOtherDataTypes(ms.packageName) {
-		sb.WriteString(newLine + newLine)
-		sb.WriteString(os.Expand(messageValueGetOrigTemplate, func(name string) string {
-			switch name {
-			case "structName":
-				return ms.structName
-			case "originName":
-				return ms.originFullName
-			default:
-				panic(name)
-			}
-		}))
-	}
+
 	// Write accessors for the struct
 	for _, f := range ms.fields {
 		sb.WriteString(newLine + newLine)
@@ -193,16 +180,39 @@ func (ms *messageValueStruct) generateStruct(sb *bytes.Buffer) {
 	}))
 }
 
+func (ms *messageValueStruct) commonMethods() string {
+	var sb bytes.Buffer
+	sb.WriteString("\tCopyTo(dest Mutable" + ms.structName + ")" + newLine)
+	for _, f := range ms.fields {
+		f.generateCommonSignatures(ms, &sb)
+	}
+	return sb.String()
+}
+
+func (ms *messageValueStruct) notMutatingMethods() string {
+	var sb bytes.Buffer
+	for _, f := range ms.fields {
+		f.generateNotMutatingSignatures(ms, &sb)
+	}
+	return sb.String()
+}
+
+func (ms *messageValueStruct) mutatingMethods() string {
+	var sb bytes.Buffer
+	sb.WriteString("\tMoveTo(dest Mutable" + ms.structName + ")" + newLine)
+	for _, f := range ms.fields {
+		f.generateMutatingSignatures(ms, &sb)
+	}
+	return sb.String()
+}
+
 func (ms *messageValueStruct) generateTests(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(messageValueTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
-		case "generateTestData":
-			if usedByOtherDataTypes(ms.packageName) {
-				return ms.structName + "(internal.GenerateTest" + ms.structName + "())"
-			}
-			return "generateTest" + ms.structName + "()"
+		case "generateTestPrefix":
+			return generateTestPrefix(ms.packageName)
 		default:
 			panic(name)
 		}
@@ -217,16 +227,16 @@ func (ms *messageValueStruct) generateTests(sb *bytes.Buffer) {
 
 func (ms *messageValueStruct) generateTestValueHelpers(sb *bytes.Buffer) {
 	// Write generateTest func for the struct
-	template := messageValueGenerateTestTemplate
-	if usedByOtherDataTypes(ms.packageName) {
-		template = messageValueGenerateTestTemplateCommon
-	}
-	sb.WriteString(os.Expand(template, func(name string) string {
+	sb.WriteString(os.Expand(messageValueGenerateTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
 		case "originName":
 			return ms.originFullName
+		case "generateTestPrefix":
+			return generateTestPrefix(ms.packageName)
+		case "fillTestPrefix":
+			return fillTestPrefix(ms.packageName)
 		default:
 			panic(name)
 		}
@@ -239,7 +249,7 @@ func (ms *messageValueStruct) generateTestValueHelpers(sb *bytes.Buffer) {
 	} else {
 		sb.WriteString("fillTest")
 	}
-	sb.WriteString(ms.structName + "(tv " + ms.structName + ") {")
+	sb.WriteString(ms.structName + "(tv Mutable" + ms.structName + ") {")
 	for _, f := range ms.fields {
 		sb.WriteString(newLine)
 		f.generateSetWithTestValue(ms, sb)
@@ -247,13 +257,11 @@ func (ms *messageValueStruct) generateTestValueHelpers(sb *bytes.Buffer) {
 	sb.WriteString(newLine + "}" + newLine)
 }
 
-func (ms *messageValueStruct) generateInternal(sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(messageValueAliasTemplate, func(name string) string {
+func (ms *messageValueStruct) generateAliases(sb *bytes.Buffer) {
+	sb.WriteString(os.Expand(aliasTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
-		case "originName":
-			return ms.originFullName
 		default:
 			panic(name)
 		}
@@ -262,3 +270,25 @@ func (ms *messageValueStruct) generateInternal(sb *bytes.Buffer) {
 }
 
 var _ baseStruct = (*messageValueStruct)(nil)
+
+func newPrefix(packageName string) string {
+	if usedByOtherDataTypes(packageName) {
+		return "New"
+	}
+	return "new"
+}
+
+func fillTestPrefix(packageName string) string {
+	if usedByOtherDataTypes(packageName) {
+		return "FillTest"
+	}
+	return "fillTest"
+}
+
+func generateTestPrefix(packageName string) string {
+	if usedByOtherDataTypes(packageName) {
+		return "GenerateTest"
+	}
+	return "generateTest"
+
+}

@@ -134,17 +134,3 @@ func TestScopeLogsSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
-func generateTestScopeLogsSlice() ScopeLogsSlice {
-	tv := NewScopeLogsSlice()
-	fillTestScopeLogsSlice(tv)
-	return tv
-}
-
-func fillTestScopeLogsSlice(tv ScopeLogsSlice) {
-	*tv.orig = make([]*otlplogs.ScopeLogs, 7)
-	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlplogs.ScopeLogs{}
-		fillTestScopeLogs(newScopeLogs((*tv.orig)[i]))
-	}
-}

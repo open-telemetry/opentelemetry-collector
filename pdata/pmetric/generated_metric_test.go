@@ -21,8 +21,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestMetric_MoveTo(t *testing.T) {
@@ -142,18 +140,4 @@ func TestMetric_CopyTo_Summary(t *testing.T) {
 	dest := NewMetric()
 	ms.CopyTo(dest)
 	assert.Equal(t, ms, dest)
-}
-
-func generateTestMetric() Metric {
-	tv := NewMetric()
-	fillTestMetric(tv)
-	return tv
-}
-
-func fillTestMetric(tv Metric) {
-	tv.orig.Name = "test_name"
-	tv.orig.Description = "test_description"
-	tv.orig.Unit = "1"
-	tv.orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
-	fillTestSum(newSum(tv.orig.GetSum()))
 }

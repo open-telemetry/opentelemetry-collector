@@ -63,15 +63,3 @@ func TestResourceSpans_ScopeSpans(t *testing.T) {
 	fillTestScopeSpansSlice(ms.ScopeSpans())
 	assert.Equal(t, generateTestScopeSpansSlice(), ms.ScopeSpans())
 }
-
-func generateTestResourceSpans() ResourceSpans {
-	tv := NewResourceSpans()
-	fillTestResourceSpans(tv)
-	return tv
-}
-
-func fillTestResourceSpans(tv ResourceSpans) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeSpansSlice(newScopeSpansSlice(&tv.orig.ScopeSpans))
-}

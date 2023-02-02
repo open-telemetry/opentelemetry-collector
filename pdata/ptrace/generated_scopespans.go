@@ -24,58 +24,105 @@ import (
 )
 
 // ScopeSpans is a collection of spans from a LibraryInstrumentation.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewScopeSpans function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ScopeSpans struct {
+type ScopeSpans interface {
+	commonScopeSpans
+	Scope() pcommon.InstrumentationScope
+	Spans() SpanSlice
+}
+
+type MutableScopeSpans interface {
+	commonScopeSpans
+	MoveTo(dest MutableScopeSpans)
+	Scope() pcommon.MutableInstrumentationScope
+	SetSchemaUrl(string)
+	Spans() MutableSpanSlice
+}
+
+type commonScopeSpans interface {
+	getOrig() *otlptrace.ScopeSpans
+	CopyTo(dest MutableScopeSpans)
+	SchemaUrl() string
+}
+
+type immutableScopeSpans struct {
 	orig *otlptrace.ScopeSpans
 }
 
-func newScopeSpans(orig *otlptrace.ScopeSpans) ScopeSpans {
-	return ScopeSpans{orig}
+type mutableScopeSpans struct {
+	immutableScopeSpans
+}
+
+func newImmutableScopeSpans(orig *otlptrace.ScopeSpans) immutableScopeSpans {
+	return immutableScopeSpans{orig}
+}
+
+func newMutableScopeSpans(orig *otlptrace.ScopeSpans) mutableScopeSpans {
+	return mutableScopeSpans{immutableScopeSpans{orig}}
+}
+
+func (ms immutableScopeSpans) getOrig() *otlptrace.ScopeSpans {
+	return ms.orig
 }
 
 // NewScopeSpans creates a new empty ScopeSpans.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewScopeSpans() ScopeSpans {
-	return newScopeSpans(&otlptrace.ScopeSpans{})
+func NewScopeSpans() MutableScopeSpans {
+	return newMutableScopeSpans(&otlptrace.ScopeSpans{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ScopeSpans) MoveTo(dest ScopeSpans) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.ScopeSpans{}
+func (ms mutableScopeSpans) MoveTo(dest MutableScopeSpans) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlptrace.ScopeSpans{}
 }
 
 // Scope returns the scope associated with this ScopeSpans.
-func (ms ScopeSpans) Scope() pcommon.InstrumentationScope {
-	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope))
+func (ms immutableScopeSpans) Scope() pcommon.InstrumentationScope {
+	return internal.NewImmutableInstrumentationScope(&ms.getOrig().Scope)
+}
+
+// Scope returns the scope associated with this ScopeSpans.
+func (ms mutableScopeSpans) Scope() pcommon.MutableInstrumentationScope {
+	return internal.NewMutableInstrumentationScope(&ms.getOrig().Scope)
 }
 
 // SchemaUrl returns the schemaurl associated with this ScopeSpans.
-func (ms ScopeSpans) SchemaUrl() string {
-	return ms.orig.SchemaUrl
+func (ms immutableScopeSpans) SchemaUrl() string {
+	return ms.getOrig().SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ScopeSpans.
-func (ms ScopeSpans) SetSchemaUrl(v string) {
-	ms.orig.SchemaUrl = v
+func (ms mutableScopeSpans) SetSchemaUrl(v string) {
+	ms.getOrig().SchemaUrl = v
 }
 
 // Spans returns the Spans associated with this ScopeSpans.
-func (ms ScopeSpans) Spans() SpanSlice {
-	return newSpanSlice(&ms.orig.Spans)
+func (ms immutableScopeSpans) Spans() SpanSlice {
+	return newImmutableSpanSlice(&ms.getOrig().Spans)
+}
+
+func (ms mutableScopeSpans) Spans() MutableSpanSlice {
+	return newMutableSpanSlice(&ms.getOrig().Spans)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ScopeSpans) CopyTo(dest ScopeSpans) {
+func (ms immutableScopeSpans) CopyTo(dest MutableScopeSpans) {
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Spans().CopyTo(dest.Spans())
+}
+
+func generateTestScopeSpans() MutableScopeSpans {
+	tv := NewScopeSpans()
+	fillTestScopeSpans(tv)
+	return tv
+}
+
+func fillTestScopeSpans(tv MutableScopeSpans) {
+	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope))
+	tv.getOrig().SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	fillTestSpanSlice(newMutableSpanSlice(&tv.getOrig().Spans))
 }

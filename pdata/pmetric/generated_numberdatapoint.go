@@ -24,64 +24,103 @@ import (
 )
 
 // NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewNumberDataPoint function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type NumberDataPoint struct {
+type NumberDataPoint interface {
+	commonNumberDataPoint
+	Attributes() pcommon.Map
+	Exemplars() ExemplarSlice
+}
+
+type MutableNumberDataPoint interface {
+	commonNumberDataPoint
+	MoveTo(dest MutableNumberDataPoint)
+	Attributes() pcommon.MutableMap
+	SetStartTimestamp(pcommon.Timestamp)
+	SetTimestamp(pcommon.Timestamp)
+	SetDoubleValue(float64)
+	SetIntValue(int64)
+	Exemplars() MutableExemplarSlice
+	SetFlags(DataPointFlags)
+}
+
+type commonNumberDataPoint interface {
+	getOrig() *otlpmetrics.NumberDataPoint
+	CopyTo(dest MutableNumberDataPoint)
+	StartTimestamp() pcommon.Timestamp
+	Timestamp() pcommon.Timestamp
+	ValueType() NumberDataPointValueType
+	DoubleValue() float64
+	IntValue() int64
+	Flags() DataPointFlags
+}
+
+type immutableNumberDataPoint struct {
 	orig *otlpmetrics.NumberDataPoint
 }
 
-func newNumberDataPoint(orig *otlpmetrics.NumberDataPoint) NumberDataPoint {
-	return NumberDataPoint{orig}
+type mutableNumberDataPoint struct {
+	immutableNumberDataPoint
+}
+
+func newImmutableNumberDataPoint(orig *otlpmetrics.NumberDataPoint) immutableNumberDataPoint {
+	return immutableNumberDataPoint{orig}
+}
+
+func newMutableNumberDataPoint(orig *otlpmetrics.NumberDataPoint) mutableNumberDataPoint {
+	return mutableNumberDataPoint{immutableNumberDataPoint{orig}}
+}
+
+func (ms immutableNumberDataPoint) getOrig() *otlpmetrics.NumberDataPoint {
+	return ms.orig
 }
 
 // NewNumberDataPoint creates a new empty NumberDataPoint.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewNumberDataPoint() NumberDataPoint {
-	return newNumberDataPoint(&otlpmetrics.NumberDataPoint{})
+func NewNumberDataPoint() MutableNumberDataPoint {
+	return newMutableNumberDataPoint(&otlpmetrics.NumberDataPoint{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms NumberDataPoint) MoveTo(dest NumberDataPoint) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.NumberDataPoint{}
+func (ms mutableNumberDataPoint) MoveTo(dest MutableNumberDataPoint) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.NumberDataPoint{}
 }
 
 // Attributes returns the Attributes associated with this NumberDataPoint.
-func (ms NumberDataPoint) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+func (ms immutableNumberDataPoint) Attributes() pcommon.Map {
+	return internal.NewImmutableMap(&ms.getOrig().Attributes)
+}
+
+func (ms mutableNumberDataPoint) Attributes() pcommon.MutableMap {
+	return internal.NewMutableMap(&ms.getOrig().Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this NumberDataPoint.
-func (ms NumberDataPoint) StartTimestamp() pcommon.Timestamp {
+func (ms immutableNumberDataPoint) StartTimestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
+func (ms mutableNumberDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
 	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this NumberDataPoint.
-func (ms NumberDataPoint) Timestamp() pcommon.Timestamp {
+func (ms immutableNumberDataPoint) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetTimestamp(v pcommon.Timestamp) {
+func (ms mutableNumberDataPoint) SetTimestamp(v pcommon.Timestamp) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // ValueType returns the type of the value for this NumberDataPoint.
 // Calling this function on zero-initialized NumberDataPoint will cause a panic.
-func (ms NumberDataPoint) ValueType() NumberDataPointValueType {
-	switch ms.orig.Value.(type) {
+func (ms immutableNumberDataPoint) ValueType() NumberDataPointValueType {
+	switch ms.getOrig().Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		return NumberDataPointValueTypeDouble
 	case *otlpmetrics.NumberDataPoint_AsInt:
@@ -91,46 +130,50 @@ func (ms NumberDataPoint) ValueType() NumberDataPointValueType {
 }
 
 // DoubleValue returns the double associated with this NumberDataPoint.
-func (ms NumberDataPoint) DoubleValue() float64 {
+func (ms immutableNumberDataPoint) DoubleValue() float64 {
 	return ms.orig.GetAsDouble()
 }
 
 // SetDoubleValue replaces the double associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetDoubleValue(v float64) {
+func (ms mutableNumberDataPoint) SetDoubleValue(v float64) {
 	ms.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{
 		AsDouble: v,
 	}
 }
 
 // IntValue returns the int associated with this NumberDataPoint.
-func (ms NumberDataPoint) IntValue() int64 {
+func (ms immutableNumberDataPoint) IntValue() int64 {
 	return ms.orig.GetAsInt()
 }
 
 // SetIntValue replaces the int associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetIntValue(v int64) {
+func (ms mutableNumberDataPoint) SetIntValue(v int64) {
 	ms.orig.Value = &otlpmetrics.NumberDataPoint_AsInt{
 		AsInt: v,
 	}
 }
 
 // Exemplars returns the Exemplars associated with this NumberDataPoint.
-func (ms NumberDataPoint) Exemplars() ExemplarSlice {
-	return newExemplarSlice(&ms.orig.Exemplars)
+func (ms immutableNumberDataPoint) Exemplars() ExemplarSlice {
+	return newImmutableExemplarSlice(&ms.getOrig().Exemplars)
+}
+
+func (ms mutableNumberDataPoint) Exemplars() MutableExemplarSlice {
+	return newMutableExemplarSlice(&ms.getOrig().Exemplars)
 }
 
 // Flags returns the flags associated with this NumberDataPoint.
-func (ms NumberDataPoint) Flags() DataPointFlags {
+func (ms immutableNumberDataPoint) Flags() DataPointFlags {
 	return DataPointFlags(ms.orig.Flags)
 }
 
 // SetFlags replaces the flags associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetFlags(v DataPointFlags) {
+func (ms mutableNumberDataPoint) SetFlags(v DataPointFlags) {
 	ms.orig.Flags = uint32(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
+func (ms immutableNumberDataPoint) CopyTo(dest MutableNumberDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
@@ -143,4 +186,19 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 
 	ms.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
+}
+
+func generateTestNumberDataPoint() MutableNumberDataPoint {
+	tv := NewNumberDataPoint()
+	fillTestNumberDataPoint(tv)
+	return tv
+}
+
+func fillTestNumberDataPoint(tv MutableNumberDataPoint) {
+	internal.FillTestMap(internal.NewMutableMap(&tv.getOrig().Attributes))
+	tv.getOrig().StartTimeUnixNano = 1234567890
+	tv.getOrig().TimeUnixNano = 1234567890
+	tv.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(17.13)}
+	fillTestExemplarSlice(newMutableExemplarSlice(&tv.getOrig().Exemplars))
+	tv.getOrig().Flags = 1
 }

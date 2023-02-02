@@ -71,5 +71,5 @@ func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 }
 
 func (ms ExportRequest) Logs() plog.Logs {
-	return plog.Logs(internal.NewLogs(ms.orig))
+	return plog.Logs(internal.NewLogs(ms.orig, internal.StateShared))
 }

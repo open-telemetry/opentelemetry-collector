@@ -22,31 +22,56 @@ import (
 )
 
 // ExemplarSlice logically represents a slice of Exemplar.
-//
-// This is a reference type. If passed by value and callee modifies it, the
-// caller will see the modification.
-//
-// Must use NewExemplarSlice function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ExemplarSlice struct {
+type ExemplarSlice interface {
+	commonExemplarSlice
+	At(ix int) Exemplar
+}
+
+type MutableExemplarSlice interface {
+	commonExemplarSlice
+	RemoveIf(f func(MutableExemplar) bool)
+	At(ix int) MutableExemplar
+	EnsureCapacity(newCap int)
+	AppendEmpty() MutableExemplar
+}
+
+type commonExemplarSlice interface {
+	Len() int
+	CopyTo(dest MutableExemplarSlice)
+	getOrig() *[]otlpmetrics.Exemplar
+}
+
+type immutableExemplarSlice struct {
 	orig *[]otlpmetrics.Exemplar
 }
 
-func newExemplarSlice(orig *[]otlpmetrics.Exemplar) ExemplarSlice {
-	return ExemplarSlice{orig}
+type mutableExemplarSlice struct {
+	immutableExemplarSlice
+}
+
+func newImmutableExemplarSlice(orig *[]otlpmetrics.Exemplar) immutableExemplarSlice {
+	return immutableExemplarSlice{orig}
+}
+
+func newMutableExemplarSlice(orig *[]otlpmetrics.Exemplar) mutableExemplarSlice {
+	return mutableExemplarSlice{immutableExemplarSlice{orig}}
+}
+
+func (es immutableExemplarSlice) getOrig() *[]otlpmetrics.Exemplar {
+	return es.orig
 }
 
 // NewExemplarSlice creates a ExemplarSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewExemplarSlice() ExemplarSlice {
+func NewExemplarSlice() MutableExemplarSlice {
 	orig := []otlpmetrics.Exemplar(nil)
-	return newExemplarSlice(&orig)
+	return newMutableExemplarSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewExemplarSlice()".
-func (es ExemplarSlice) Len() int {
+func (es immutableExemplarSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -58,22 +83,26 @@ func (es ExemplarSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es ExemplarSlice) At(ix int) Exemplar {
-	return newExemplar(&(*es.orig)[ix])
+func (es immutableExemplarSlice) At(ix int) Exemplar {
+	return newImmutableExemplar(&(*es.orig)[ix])
+}
+
+func (es mutableExemplarSlice) At(ix int) MutableExemplar {
+	return newMutableExemplar(&(*es.getOrig())[ix])
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
+func (es immutableExemplarSlice) CopyTo(dest MutableExemplarSlice) {
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 	} else {
-		(*dest.orig) = make([]otlpmetrics.Exemplar, srcLen)
+		(*dest.getOrig()) = make([]otlpmetrics.Exemplar, srcLen)
 	}
 
-	for i := range *es.orig {
-		newExemplar(&(*es.orig)[i]).CopyTo(newExemplar(&(*dest.orig)[i]))
+	for i := range *es.getOrig() {
+		newImmutableExemplar(&(*es.getOrig())[i]).CopyTo(newMutableExemplar(&(*dest.getOrig())[i]))
 	}
 }
 
@@ -89,41 +118,41 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ExemplarSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
+func (es mutableExemplarSlice) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]otlpmetrics.Exemplar, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]otlpmetrics.Exemplar, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty Exemplar.
 // It returns the newly added Exemplar.
-func (es ExemplarSlice) AppendEmpty() Exemplar {
-	*es.orig = append(*es.orig, otlpmetrics.Exemplar{})
+func (es mutableExemplarSlice) AppendEmpty() MutableExemplar {
+	*es.getOrig() = append(*es.getOrig(), otlpmetrics.Exemplar{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {
-	if *dest.orig == nil {
+func (es mutableExemplarSlice) MoveAndAppendTo(dest mutableExemplarSlice) {
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
+func (es mutableExemplarSlice) RemoveIf(f func(MutableExemplar) bool) {
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -132,9 +161,22 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+func generateTestExemplarSlice() MutableExemplarSlice {
+	tv := NewExemplarSlice()
+	fillTestExemplarSlice(tv)
+	return tv
+}
+
+func fillTestExemplarSlice(tv ExemplarSlice) {
+	*tv.orig = make([]otlpmetrics.Exemplar, 7)
+	for i := 0; i < 7; i++ {
+		fillTestExemplar(newExemplar(&(*tv.orig)[i]))
+	}
 }

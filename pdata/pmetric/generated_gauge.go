@@ -22,41 +22,77 @@ import (
 )
 
 // Gauge represents the type of a numeric metric that always exports the "current value" for every data point.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewGauge function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type Gauge struct {
+type Gauge interface {
+	commonGauge
+	DataPoints() NumberDataPointSlice
+}
+
+type MutableGauge interface {
+	commonGauge
+	MoveTo(dest MutableGauge)
+	DataPoints() MutableNumberDataPointSlice
+}
+
+type commonGauge interface {
+	getOrig() *otlpmetrics.Gauge
+	CopyTo(dest MutableGauge)
+}
+
+type immutableGauge struct {
 	orig *otlpmetrics.Gauge
 }
 
-func newGauge(orig *otlpmetrics.Gauge) Gauge {
-	return Gauge{orig}
+type mutableGauge struct {
+	immutableGauge
+}
+
+func newImmutableGauge(orig *otlpmetrics.Gauge) immutableGauge {
+	return immutableGauge{orig}
+}
+
+func newMutableGauge(orig *otlpmetrics.Gauge) mutableGauge {
+	return mutableGauge{immutableGauge{orig}}
+}
+
+func (ms immutableGauge) getOrig() *otlpmetrics.Gauge {
+	return ms.orig
 }
 
 // NewGauge creates a new empty Gauge.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewGauge() Gauge {
-	return newGauge(&otlpmetrics.Gauge{})
+func NewGauge() MutableGauge {
+	return newMutableGauge(&otlpmetrics.Gauge{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Gauge) MoveTo(dest Gauge) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Gauge{}
+func (ms mutableGauge) MoveTo(dest MutableGauge) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.Gauge{}
 }
 
 // DataPoints returns the DataPoints associated with this Gauge.
-func (ms Gauge) DataPoints() NumberDataPointSlice {
-	return newNumberDataPointSlice(&ms.orig.DataPoints)
+func (ms immutableGauge) DataPoints() NumberDataPointSlice {
+	return newImmutableNumberDataPointSlice(&ms.getOrig().DataPoints)
+}
+
+func (ms mutableGauge) DataPoints() MutableNumberDataPointSlice {
+	return newMutableNumberDataPointSlice(&ms.getOrig().DataPoints)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Gauge) CopyTo(dest Gauge) {
+func (ms immutableGauge) CopyTo(dest MutableGauge) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
+}
+
+func generateTestGauge() MutableGauge {
+	tv := NewGauge()
+	fillTestGauge(tv)
+	return tv
+}
+
+func fillTestGauge(tv MutableGauge) {
+	fillTestNumberDataPointSlice(newMutableNumberDataPointSlice(&tv.getOrig().DataPoints))
 }

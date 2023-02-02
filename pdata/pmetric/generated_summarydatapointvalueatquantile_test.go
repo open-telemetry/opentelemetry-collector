@@ -54,14 +54,3 @@ func TestSummaryDataPointValueAtQuantile_Value(t *testing.T) {
 	ms.SetValue(float64(17.13))
 	assert.Equal(t, float64(17.13), ms.Value())
 }
-
-func generateTestSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
-	tv := NewSummaryDataPointValueAtQuantile()
-	fillTestSummaryDataPointValueAtQuantile(tv)
-	return tv
-}
-
-func fillTestSummaryDataPointValueAtQuantile(tv SummaryDataPointValueAtQuantile) {
-	tv.orig.Quantile = float64(17.13)
-	tv.orig.Value = float64(17.13)
-}

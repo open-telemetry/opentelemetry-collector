@@ -24,58 +24,105 @@ import (
 )
 
 // ScopeMetrics is a collection of metrics from a LibraryInstrumentation.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewScopeMetrics function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ScopeMetrics struct {
+type ScopeMetrics interface {
+	commonScopeMetrics
+	Scope() pcommon.InstrumentationScope
+	Metrics() MetricSlice
+}
+
+type MutableScopeMetrics interface {
+	commonScopeMetrics
+	MoveTo(dest MutableScopeMetrics)
+	Scope() pcommon.MutableInstrumentationScope
+	SetSchemaUrl(string)
+	Metrics() MutableMetricSlice
+}
+
+type commonScopeMetrics interface {
+	getOrig() *otlpmetrics.ScopeMetrics
+	CopyTo(dest MutableScopeMetrics)
+	SchemaUrl() string
+}
+
+type immutableScopeMetrics struct {
 	orig *otlpmetrics.ScopeMetrics
 }
 
-func newScopeMetrics(orig *otlpmetrics.ScopeMetrics) ScopeMetrics {
-	return ScopeMetrics{orig}
+type mutableScopeMetrics struct {
+	immutableScopeMetrics
+}
+
+func newImmutableScopeMetrics(orig *otlpmetrics.ScopeMetrics) immutableScopeMetrics {
+	return immutableScopeMetrics{orig}
+}
+
+func newMutableScopeMetrics(orig *otlpmetrics.ScopeMetrics) mutableScopeMetrics {
+	return mutableScopeMetrics{immutableScopeMetrics{orig}}
+}
+
+func (ms immutableScopeMetrics) getOrig() *otlpmetrics.ScopeMetrics {
+	return ms.orig
 }
 
 // NewScopeMetrics creates a new empty ScopeMetrics.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewScopeMetrics() ScopeMetrics {
-	return newScopeMetrics(&otlpmetrics.ScopeMetrics{})
+func NewScopeMetrics() MutableScopeMetrics {
+	return newMutableScopeMetrics(&otlpmetrics.ScopeMetrics{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ScopeMetrics) MoveTo(dest ScopeMetrics) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.ScopeMetrics{}
+func (ms mutableScopeMetrics) MoveTo(dest MutableScopeMetrics) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.ScopeMetrics{}
 }
 
 // Scope returns the scope associated with this ScopeMetrics.
-func (ms ScopeMetrics) Scope() pcommon.InstrumentationScope {
-	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope))
+func (ms immutableScopeMetrics) Scope() pcommon.InstrumentationScope {
+	return internal.NewImmutableInstrumentationScope(&ms.getOrig().Scope)
+}
+
+// Scope returns the scope associated with this ScopeMetrics.
+func (ms mutableScopeMetrics) Scope() pcommon.MutableInstrumentationScope {
+	return internal.NewMutableInstrumentationScope(&ms.getOrig().Scope)
 }
 
 // SchemaUrl returns the schemaurl associated with this ScopeMetrics.
-func (ms ScopeMetrics) SchemaUrl() string {
-	return ms.orig.SchemaUrl
+func (ms immutableScopeMetrics) SchemaUrl() string {
+	return ms.getOrig().SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ScopeMetrics.
-func (ms ScopeMetrics) SetSchemaUrl(v string) {
-	ms.orig.SchemaUrl = v
+func (ms mutableScopeMetrics) SetSchemaUrl(v string) {
+	ms.getOrig().SchemaUrl = v
 }
 
 // Metrics returns the Metrics associated with this ScopeMetrics.
-func (ms ScopeMetrics) Metrics() MetricSlice {
-	return newMetricSlice(&ms.orig.Metrics)
+func (ms immutableScopeMetrics) Metrics() MetricSlice {
+	return newImmutableMetricSlice(&ms.getOrig().Metrics)
+}
+
+func (ms mutableScopeMetrics) Metrics() MutableMetricSlice {
+	return newMutableMetricSlice(&ms.getOrig().Metrics)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ScopeMetrics) CopyTo(dest ScopeMetrics) {
+func (ms immutableScopeMetrics) CopyTo(dest MutableScopeMetrics) {
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Metrics().CopyTo(dest.Metrics())
+}
+
+func generateTestScopeMetrics() MutableScopeMetrics {
+	tv := NewScopeMetrics()
+	fillTestScopeMetrics(tv)
+	return tv
+}
+
+func fillTestScopeMetrics(tv MutableScopeMetrics) {
+	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope))
+	tv.getOrig().SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	fillTestMetricSlice(newMutableMetricSlice(&tv.getOrig().Metrics))
 }

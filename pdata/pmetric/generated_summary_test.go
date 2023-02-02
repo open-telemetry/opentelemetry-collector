@@ -47,13 +47,3 @@ func TestSummary_DataPoints(t *testing.T) {
 	fillTestSummaryDataPointSlice(ms.DataPoints())
 	assert.Equal(t, generateTestSummaryDataPointSlice(), ms.DataPoints())
 }
-
-func generateTestSummary() Summary {
-	tv := NewSummary()
-	fillTestSummary(tv)
-	return tv
-}
-
-func fillTestSummary(tv Summary) {
-	fillTestSummaryDataPointSlice(newSummaryDataPointSlice(&tv.orig.DataPoints))
-}

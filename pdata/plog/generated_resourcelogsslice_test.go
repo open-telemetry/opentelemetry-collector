@@ -134,17 +134,3 @@ func TestResourceLogsSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
-
-func generateTestResourceLogsSlice() ResourceLogsSlice {
-	tv := NewResourceLogsSlice()
-	fillTestResourceLogsSlice(tv)
-	return tv
-}
-
-func fillTestResourceLogsSlice(tv ResourceLogsSlice) {
-	*tv.orig = make([]*otlplogs.ResourceLogs, 7)
-	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlplogs.ResourceLogs{}
-		fillTestResourceLogs(newResourceLogs((*tv.orig)[i]))
-	}
-}

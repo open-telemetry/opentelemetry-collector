@@ -47,13 +47,3 @@ func TestGauge_DataPoints(t *testing.T) {
 	fillTestNumberDataPointSlice(ms.DataPoints())
 	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
 }
-
-func generateTestGauge() Gauge {
-	tv := NewGauge()
-	fillTestGauge(tv)
-	return tv
-}
-
-func fillTestGauge(tv Gauge) {
-	fillTestNumberDataPointSlice(newNumberDataPointSlice(&tv.orig.DataPoints))
-}

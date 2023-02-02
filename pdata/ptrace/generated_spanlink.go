@@ -27,80 +27,133 @@ import (
 // SpanLink is a pointer from the current span to another span in the same trace or in a
 // different trace.
 // See Link definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewSpanLink function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type SpanLink struct {
+type SpanLink interface {
+	commonSpanLink
+	TraceState() pcommon.TraceState
+	Attributes() pcommon.Map
+}
+
+type MutableSpanLink interface {
+	commonSpanLink
+	MoveTo(dest MutableSpanLink)
+	SetTraceID(pcommon.TraceID)
+	SetSpanID(pcommon.SpanID)
+	TraceState() pcommon.MutableTraceState
+	Attributes() pcommon.MutableMap
+	SetDroppedAttributesCount(uint32)
+}
+
+type commonSpanLink interface {
+	getOrig() *otlptrace.Span_Link
+	CopyTo(dest MutableSpanLink)
+	TraceID() pcommon.TraceID
+	SpanID() pcommon.SpanID
+	DroppedAttributesCount() uint32
+}
+
+type immutableSpanLink struct {
 	orig *otlptrace.Span_Link
 }
 
-func newSpanLink(orig *otlptrace.Span_Link) SpanLink {
-	return SpanLink{orig}
+type mutableSpanLink struct {
+	immutableSpanLink
+}
+
+func newImmutableSpanLink(orig *otlptrace.Span_Link) immutableSpanLink {
+	return immutableSpanLink{orig}
+}
+
+func newMutableSpanLink(orig *otlptrace.Span_Link) mutableSpanLink {
+	return mutableSpanLink{immutableSpanLink{orig}}
+}
+
+func (ms immutableSpanLink) getOrig() *otlptrace.Span_Link {
+	return ms.orig
 }
 
 // NewSpanLink creates a new empty SpanLink.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSpanLink() SpanLink {
-	return newSpanLink(&otlptrace.Span_Link{})
+func NewSpanLink() MutableSpanLink {
+	return newMutableSpanLink(&otlptrace.Span_Link{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms SpanLink) MoveTo(dest SpanLink) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.Span_Link{}
+func (ms mutableSpanLink) MoveTo(dest MutableSpanLink) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlptrace.Span_Link{}
 }
 
 // TraceID returns the traceid associated with this SpanLink.
-func (ms SpanLink) TraceID() pcommon.TraceID {
+func (ms immutableSpanLink) TraceID() pcommon.TraceID {
 	return pcommon.TraceID(ms.orig.TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this SpanLink.
-func (ms SpanLink) SetTraceID(v pcommon.TraceID) {
+func (ms mutableSpanLink) SetTraceID(v pcommon.TraceID) {
 	ms.orig.TraceId = data.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this SpanLink.
-func (ms SpanLink) SpanID() pcommon.SpanID {
+func (ms immutableSpanLink) SpanID() pcommon.SpanID {
 	return pcommon.SpanID(ms.orig.SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this SpanLink.
-func (ms SpanLink) SetSpanID(v pcommon.SpanID) {
+func (ms mutableSpanLink) SetSpanID(v pcommon.SpanID) {
 	ms.orig.SpanId = data.SpanID(v)
 }
 
 // TraceState returns the tracestate associated with this SpanLink.
-func (ms SpanLink) TraceState() pcommon.TraceState {
-	return pcommon.TraceState(internal.NewTraceState(&ms.orig.TraceState))
+func (ms immutableSpanLink) TraceState() pcommon.TraceState {
+	return internal.NewImmutableTraceState(&ms.getOrig().TraceState)
+}
+
+// TraceState returns the tracestate associated with this SpanLink.
+func (ms mutableSpanLink) TraceState() pcommon.MutableTraceState {
+	return internal.NewMutableTraceState(&ms.getOrig().TraceState)
 }
 
 // Attributes returns the Attributes associated with this SpanLink.
-func (ms SpanLink) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+func (ms immutableSpanLink) Attributes() pcommon.Map {
+	return internal.NewImmutableMap(&ms.getOrig().Attributes)
+}
+
+func (ms mutableSpanLink) Attributes() pcommon.MutableMap {
+	return internal.NewMutableMap(&ms.getOrig().Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanLink.
-func (ms SpanLink) DroppedAttributesCount() uint32 {
-	return ms.orig.DroppedAttributesCount
+func (ms immutableSpanLink) DroppedAttributesCount() uint32 {
+	return ms.getOrig().DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this SpanLink.
-func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
-	ms.orig.DroppedAttributesCount = v
+func (ms mutableSpanLink) SetDroppedAttributesCount(v uint32) {
+	ms.getOrig().DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms SpanLink) CopyTo(dest SpanLink) {
+func (ms immutableSpanLink) CopyTo(dest MutableSpanLink) {
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
 	ms.TraceState().CopyTo(dest.TraceState())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+}
+
+func generateTestSpanLink() MutableSpanLink {
+	tv := NewSpanLink()
+	fillTestSpanLink(tv)
+	return tv
+}
+
+func fillTestSpanLink(tv MutableSpanLink) {
+	tv.getOrig().TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	tv.getOrig().SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	internal.FillTestTraceState(internal.NewTraceState(&tv.orig.TraceState))
+	internal.FillTestMap(internal.NewMutableMap(&tv.getOrig().Attributes))
+	tv.getOrig().DroppedAttributesCount = uint32(17)
 }
