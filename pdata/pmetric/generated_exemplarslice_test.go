@@ -60,27 +60,20 @@ func TestExemplarSlice_CopyTo(t *testing.T) {
 
 func TestExemplarSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestExemplarSlice()
+
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.Exemplar]bool)
-	for i := 0; i < es.Len(); i++ {
-		expectedEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, es.Len(), len(expectedEs))
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.Exemplar]bool, es.Len())
-	for i := 0; i < es.Len(); i++ {
-		foundEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, expectedEs, foundEs)
+	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, generateTestExemplarSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
-	oldLen := es.Len()
-	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
+	assert.Less(t, generateTestExemplarSlice().Len(), ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, generateTestExemplarSlice(), es)
 }
 
 func TestExemplarSlice_MoveAndAppendTo(t *testing.T) {

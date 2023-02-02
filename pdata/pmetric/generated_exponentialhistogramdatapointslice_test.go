@@ -60,36 +60,20 @@ func TestExponentialHistogramDataPointSlice_CopyTo(t *testing.T) {
 
 func TestExponentialHistogramDataPointSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestExponentialHistogramDataPointSlice()
+
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.ExponentialHistogramDataPoint]bool)
-	for i := 0; i < es.Len(); i++ {
-		expectedEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, es.Len(), len(expectedEs))
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.ExponentialHistogramDataPoint]bool, es.Len())
-	for i := 0; i < es.Len(); i++ {
-		foundEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, expectedEs, foundEs)
+	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
-	oldLen := es.Len()
-	expectedEs = make(map[*otlpmetrics.ExponentialHistogramDataPoint]bool, oldLen)
-	for i := 0; i < oldLen; i++ {
-		expectedEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
+	assert.Less(t, generateTestExponentialHistogramDataPointSlice().Len(), ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlpmetrics.ExponentialHistogramDataPoint]bool, oldLen)
-	for i := 0; i < oldLen; i++ {
-		foundEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, expectedEs, foundEs)
+	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), es)
 }
 
 func TestExponentialHistogramDataPointSlice_MoveAndAppendTo(t *testing.T) {

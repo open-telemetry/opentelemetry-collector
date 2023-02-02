@@ -60,36 +60,20 @@ func TestScopeSpansSlice_CopyTo(t *testing.T) {
 
 func TestScopeSpansSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestScopeSpansSlice()
+
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
-	expectedEs := make(map[*otlptrace.ScopeSpans]bool)
-	for i := 0; i < es.Len(); i++ {
-		expectedEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, es.Len(), len(expectedEs))
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlptrace.ScopeSpans]bool, es.Len())
-	for i := 0; i < es.Len(); i++ {
-		foundEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, expectedEs, foundEs)
+	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, generateTestScopeSpansSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
-	oldLen := es.Len()
-	expectedEs = make(map[*otlptrace.ScopeSpans]bool, oldLen)
-	for i := 0; i < oldLen; i++ {
-		expectedEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
+	assert.Less(t, generateTestScopeSpansSlice().Len(), ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlptrace.ScopeSpans]bool, oldLen)
-	for i := 0; i < oldLen; i++ {
-		foundEs[es.At(i).orig] = true
-	}
-	assert.Equal(t, expectedEs, foundEs)
+	assert.Equal(t, generateTestScopeSpansSlice(), es)
 }
 
 func TestScopeSpansSlice_MoveAndAppendTo(t *testing.T) {
