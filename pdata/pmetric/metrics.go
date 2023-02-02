@@ -17,7 +17,6 @@ package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 // Metrics is the top-level struct that is propagated through the metrics pipeline.
@@ -96,108 +95,4 @@ func (ms Metrics) DataPointCount() (dataPointCount int) {
 		}
 	}
 	return
-}
-
-// MetricType specifies the type of data in a Metric.
-type MetricType int32
-
-const (
-	// MetricTypeEmpty means that metric type is unset.
-	MetricTypeEmpty MetricType = iota
-	MetricTypeGauge
-	MetricTypeSum
-	MetricTypeHistogram
-	MetricTypeExponentialHistogram
-	MetricTypeSummary
-)
-
-// String returns the string representation of the MetricType.
-func (mdt MetricType) String() string {
-	switch mdt {
-	case MetricTypeEmpty:
-		return "Empty"
-	case MetricTypeGauge:
-		return "Gauge"
-	case MetricTypeSum:
-		return "Sum"
-	case MetricTypeHistogram:
-		return "Histogram"
-	case MetricTypeExponentialHistogram:
-		return "ExponentialHistogram"
-	case MetricTypeSummary:
-		return "Summary"
-	}
-	return ""
-}
-
-// AggregationTemporality defines how a metric aggregator reports aggregated values.
-// It describes how those values relate to the time interval over which they are aggregated.
-type AggregationTemporality int32
-
-const (
-	// AggregationTemporalityUnspecified is the default AggregationTemporality, it MUST NOT be used.
-	AggregationTemporalityUnspecified = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED)
-	// AggregationTemporalityDelta is a AggregationTemporality for a metric aggregator which reports changes since last report time.
-	AggregationTemporalityDelta = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA)
-	// AggregationTemporalityCumulative is a AggregationTemporality for a metric aggregator which reports changes since a fixed start time.
-	AggregationTemporalityCumulative = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE)
-)
-
-// String returns the string representation of the AggregationTemporality.
-func (at AggregationTemporality) String() string {
-	switch at {
-	case AggregationTemporalityUnspecified:
-		return "Unspecified"
-	case AggregationTemporalityDelta:
-		return "Delta"
-	case AggregationTemporalityCumulative:
-		return "Cumulative"
-	}
-	return ""
-}
-
-// NumberDataPointValueType specifies the type of NumberDataPoint value.
-type NumberDataPointValueType int32
-
-const (
-	// NumberDataPointValueTypeEmpty means that data point value is unset.
-	NumberDataPointValueTypeEmpty NumberDataPointValueType = iota
-	NumberDataPointValueTypeInt
-	NumberDataPointValueTypeDouble
-)
-
-// String returns the string representation of the NumberDataPointValueType.
-func (nt NumberDataPointValueType) String() string {
-	switch nt {
-	case NumberDataPointValueTypeEmpty:
-		return "Empty"
-	case NumberDataPointValueTypeInt:
-		return "Int"
-	case NumberDataPointValueTypeDouble:
-		return "Double"
-	}
-	return ""
-}
-
-// ExemplarValueType specifies the type of Exemplar measurement value.
-type ExemplarValueType int32
-
-const (
-	// ExemplarValueTypeEmpty means that exemplar value is unset.
-	ExemplarValueTypeEmpty ExemplarValueType = iota
-	ExemplarValueTypeInt
-	ExemplarValueTypeDouble
-)
-
-// String returns the string representation of the ExemplarValueType.
-func (nt ExemplarValueType) String() string {
-	switch nt {
-	case ExemplarValueTypeEmpty:
-		return "Empty"
-	case ExemplarValueTypeInt:
-		return "Int"
-	case ExemplarValueTypeDouble:
-		return "Double"
-	}
-	return ""
 }
