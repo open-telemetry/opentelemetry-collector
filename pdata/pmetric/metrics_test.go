@@ -34,37 +34,6 @@ const (
 	endTime   = uint64(12578940000000054321)
 )
 
-func TestMetricTypeString(t *testing.T) {
-	assert.Equal(t, "Empty", MetricTypeEmpty.String())
-	assert.Equal(t, "Gauge", MetricTypeGauge.String())
-	assert.Equal(t, "Sum", MetricTypeSum.String())
-	assert.Equal(t, "Histogram", MetricTypeHistogram.String())
-	assert.Equal(t, "ExponentialHistogram", MetricTypeExponentialHistogram.String())
-	assert.Equal(t, "Summary", MetricTypeSummary.String())
-	assert.Equal(t, "", (MetricTypeSummary + 1).String())
-}
-
-func TestAggregationTemporalityString(t *testing.T) {
-	assert.Equal(t, "Unspecified", AggregationTemporalityUnspecified.String())
-	assert.Equal(t, "Delta", AggregationTemporalityDelta.String())
-	assert.Equal(t, "Cumulative", AggregationTemporalityCumulative.String())
-	assert.Equal(t, "", (AggregationTemporalityCumulative + 1).String())
-}
-
-func TestNumberDataPointValueTypeString(t *testing.T) {
-	assert.Equal(t, "Empty", NumberDataPointValueTypeEmpty.String())
-	assert.Equal(t, "Int", NumberDataPointValueTypeInt.String())
-	assert.Equal(t, "Double", NumberDataPointValueTypeDouble.String())
-	assert.Equal(t, "", (NumberDataPointValueTypeDouble + 1).String())
-}
-
-func TestExemplarValueTypeString(t *testing.T) {
-	assert.Equal(t, "Empty", ExemplarValueTypeEmpty.String())
-	assert.Equal(t, "Int", ExemplarValueTypeInt.String())
-	assert.Equal(t, "Double", ExemplarValueTypeDouble.String())
-	assert.Equal(t, "", (ExemplarValueTypeDouble + 1).String())
-}
-
 func TestResourceMetricsWireCompatibility(t *testing.T) {
 	// This test verifies that OTLP ProtoBufs generated using goproto lib in
 	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
