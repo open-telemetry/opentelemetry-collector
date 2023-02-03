@@ -238,25 +238,7 @@ func (sf *sliceField) generateAccessors(ms baseStruct, sb *bytes.Buffer) {
 	if usedByOtherDataTypes(sf.returnSlice.getPackageName()) {
 		template = accessorSliceTemplateCommon
 	}
-	sb.WriteString(os.Expand(template, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "fieldName":
-			return sf.fieldName
-		case "packageName":
-			if sf.returnSlice.getPackageName() != ms.getPackageName() {
-				return sf.returnSlice.getPackageName() + "."
-			}
-			return ""
-		case "returnType":
-			return sf.returnSlice.getName()
-		case "origAccessor":
-			return origAccessor(ms)
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(template, sf.templateFields(ms)))
 }
 
 func (sf *sliceField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
@@ -264,23 +246,7 @@ func (sf *sliceField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
 	if usedByOtherDataTypes(sf.returnSlice.getPackageName()) {
 		template = accessorsSliceTestTemplateCommon
 	}
-	sb.WriteString(os.Expand(template, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "fieldName":
-			return sf.fieldName
-		case "packageName":
-			if sf.returnSlice.getPackageName() != ms.getPackageName() {
-				return sf.returnSlice.getPackageName() + "."
-			}
-			return ""
-		case "returnType":
-			return sf.returnSlice.getName()
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(template, sf.templateFields(ms)))
 }
 
 func (sf *sliceField) generateSetWithTestValue(ms baseStruct, sb *bytes.Buffer) {
@@ -297,6 +263,28 @@ func (sf *sliceField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
 	sb.WriteString("\tms." + sf.fieldName + "().CopyTo(dest." + sf.fieldName + "())")
 }
 
+func (sf *sliceField) templateFields(ms baseStruct) func(name string) string {
+	return func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "fieldName":
+			return sf.fieldName
+		case "packageName":
+			if sf.returnSlice.getPackageName() != ms.getPackageName() {
+				return sf.returnSlice.getPackageName() + "."
+			}
+			return ""
+		case "returnType":
+			return sf.returnSlice.getName()
+		case "origAccessor":
+			return origAccessor(ms)
+		default:
+			panic(name)
+		}
+	}
+}
+
 var _ baseField = (*sliceField)(nil)
 
 type messageValueField struct {
@@ -309,27 +297,7 @@ func (mf *messageValueField) generateAccessors(ms baseStruct, sb *bytes.Buffer) 
 	if usedByOtherDataTypes(mf.returnMessage.getPackageName()) {
 		template = accessorsMessageValueTemplateCommon
 	}
-	sb.WriteString(os.Expand(template, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "fieldName":
-			return mf.fieldName
-		case "lowerFieldName":
-			return strings.ToLower(mf.fieldName)
-		case "packageName":
-			if mf.returnMessage.getPackageName() != ms.getPackageName() {
-				return mf.returnMessage.getPackageName() + "."
-			}
-			return ""
-		case "returnType":
-			return mf.returnMessage.getName()
-		case "origAccessor":
-			return origAccessor(ms)
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(template, mf.templateFields(ms)))
 }
 
 func (mf *messageValueField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
@@ -337,23 +305,7 @@ func (mf *messageValueField) generateAccessorsTest(ms baseStruct, sb *bytes.Buff
 	if usedByOtherDataTypes(mf.returnMessage.getPackageName()) {
 		template = accessorsMessageValueTestTemplateCommon
 	}
-	sb.WriteString(os.Expand(template, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "fieldName":
-			return mf.fieldName
-		case "returnType":
-			return mf.returnMessage.getName()
-		case "packageName":
-			if mf.returnMessage.getPackageName() != ms.getPackageName() {
-				return mf.returnMessage.getPackageName() + "."
-			}
-			return ""
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(template, mf.templateFields(ms)))
 }
 
 func (mf *messageValueField) generateSetWithTestValue(ms baseStruct, sb *bytes.Buffer) {
@@ -370,6 +322,30 @@ func (mf *messageValueField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer)
 	sb.WriteString("\tms." + mf.fieldName + "().CopyTo(dest." + mf.fieldName + "())")
 }
 
+func (mf *messageValueField) templateFields(ms baseStruct) func(name string) string {
+	return func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "fieldName":
+			return mf.fieldName
+		case "lowerFieldName":
+			return strings.ToLower(mf.fieldName)
+		case "returnType":
+			return mf.returnMessage.getName()
+		case "packageName":
+			if mf.returnMessage.getPackageName() != ms.getPackageName() {
+				return mf.returnMessage.getPackageName() + "."
+			}
+			return ""
+		case "origAccessor":
+			return origAccessor(ms)
+		default:
+			panic(name)
+		}
+	}
+}
+
 var _ baseField = (*messageValueField)(nil)
 
 type primitiveField struct {
@@ -380,28 +356,23 @@ type primitiveField struct {
 }
 
 func (pf *primitiveField) generateAccessors(ms baseStruct, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(accessorsPrimitiveTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "packageName":
-			return ""
-		case "fieldName":
-			return pf.fieldName
-		case "lowerFieldName":
-			return strings.ToLower(pf.fieldName)
-		case "returnType":
-			return pf.returnType
-		case "origAccessor":
-			return origAccessor(ms)
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(accessorsPrimitiveTemplate, pf.templateFields(ms)))
 }
 
 func (pf *primitiveField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
+	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, pf.templateFields(ms)))
+}
+
+func (pf *primitiveField) generateSetWithTestValue(ms baseStruct, sb *bytes.Buffer) {
+	sb.WriteString("\ttv.orig." + pf.fieldName + " = " + pf.testVal)
+}
+
+func (pf *primitiveField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
+	sb.WriteString("\tdest.Set" + pf.fieldName + "(ms." + pf.fieldName + "())")
+}
+
+func (pf *primitiveField) templateFields(ms baseStruct) func(name string) string {
+	return func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()
@@ -411,20 +382,18 @@ func (pf *primitiveField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer)
 			return pf.defaultVal
 		case "fieldName":
 			return pf.fieldName
+		case "lowerFieldName":
+			return strings.ToLower(pf.fieldName)
 		case "testValue":
 			return pf.testVal
+		case "returnType":
+			return pf.returnType
+		case "origAccessor":
+			return origAccessor(ms)
 		default:
 			panic(name)
 		}
-	}))
-}
-
-func (pf *primitiveField) generateSetWithTestValue(ms baseStruct, sb *bytes.Buffer) {
-	sb.WriteString("\ttv.orig." + pf.fieldName + " = " + pf.testVal)
-}
-
-func (pf *primitiveField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
-	sb.WriteString("\tdest.Set" + pf.fieldName + "(ms." + pf.fieldName + "())")
+	}
 }
 
 var _ baseField = (*primitiveField)(nil)
@@ -445,36 +414,27 @@ type primitiveTypedField struct {
 }
 
 func (ptf *primitiveTypedField) generateAccessors(ms baseStruct, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(accessorsPrimitiveTypedTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "fieldName":
-			return ptf.fieldName
-		case "lowerFieldName":
-			return strings.ToLower(ptf.fieldName)
-		case "returnType":
-			return ptf.returnType.structName
-		case "packageName":
-			if ptf.returnType.packageName != ms.getPackageName() {
-				return ptf.returnType.packageName + "."
-			}
-			return ""
-		case "rawType":
-			return ptf.returnType.rawType
-		case "originFieldName":
-			if ptf.originFieldName == "" {
-				return ptf.fieldName
-			}
-			return ptf.originFieldName
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(accessorsPrimitiveTypedTemplate, ptf.templateFields(ms)))
 }
 
 func (ptf *primitiveTypedField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(accessorsPrimitiveTypedTestTemplate, func(name string) string {
+	sb.WriteString(os.Expand(accessorsPrimitiveTypedTestTemplate, ptf.templateFields(ms)))
+}
+
+func (ptf *primitiveTypedField) generateSetWithTestValue(_ baseStruct, sb *bytes.Buffer) {
+	originFieldName := ptf.fieldName
+	if ptf.originFieldName != "" {
+		originFieldName = ptf.originFieldName
+	}
+	sb.WriteString("\ttv.orig." + originFieldName + " = " + ptf.returnType.testVal)
+}
+
+func (ptf *primitiveTypedField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
+	sb.WriteString("\tdest.Set" + ptf.fieldName + "(ms." + ptf.fieldName + "())")
+}
+
+func (ptf *primitiveTypedField) templateFields(ms baseStruct) func(name string) string {
+	return func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()
@@ -489,24 +449,21 @@ func (ptf *primitiveTypedField) generateAccessorsTest(ms baseStruct, sb *bytes.B
 			return ptf.returnType.structName
 		case "fieldName":
 			return ptf.fieldName
+		case "lowerFieldName":
+			return strings.ToLower(ptf.fieldName)
 		case "testValue":
 			return ptf.returnType.testVal
+		case "rawType":
+			return ptf.returnType.rawType
+		case "originFieldName":
+			if ptf.originFieldName == "" {
+				return ptf.fieldName
+			}
+			return ptf.originFieldName
 		default:
 			panic(name)
 		}
-	}))
-}
-
-func (ptf *primitiveTypedField) generateSetWithTestValue(_ baseStruct, sb *bytes.Buffer) {
-	originFieldName := ptf.fieldName
-	if ptf.originFieldName != "" {
-		originFieldName = ptf.originFieldName
 	}
-	sb.WriteString("\ttv.orig." + originFieldName + " = " + ptf.returnType.testVal)
-}
-
-func (ptf *primitiveTypedField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
-	sb.WriteString("\tdest.Set" + ptf.fieldName + "(ms." + ptf.fieldName + "())")
 }
 
 var _ baseField = (*primitiveTypedField)(nil)
@@ -522,31 +479,23 @@ type primitiveSliceField struct {
 }
 
 func (psf *primitiveSliceField) generateAccessors(ms baseStruct, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(accessorsPrimitiveSliceTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "fieldName":
-			return psf.fieldName
-		case "lowerFieldName":
-			return strings.ToLower(psf.fieldName)
-		case "returnType":
-			return psf.returnType
-		case "packageName":
-			if psf.returnPackageName != ms.getPackageName() {
-				return psf.returnPackageName + "."
-			}
-			return ""
-		case "origAccessor":
-			return origAccessor(ms)
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(accessorsPrimitiveSliceTemplate, psf.templateFields(ms)))
 }
 
 func (psf *primitiveSliceField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(accessorsPrimitiveSliceTestTemplate, func(name string) string {
+	sb.WriteString(os.Expand(accessorsPrimitiveSliceTestTemplate, psf.templateFields(ms)))
+}
+
+func (psf *primitiveSliceField) generateSetWithTestValue(ms baseStruct, sb *bytes.Buffer) {
+	sb.WriteString("\ttv.orig." + psf.fieldName + " = " + psf.testVal)
+}
+
+func (psf *primitiveSliceField) generateCopyToValue(ms baseStruct, sb *bytes.Buffer) {
+	sb.WriteString("\tms." + psf.fieldName + "().CopyTo(dest." + psf.fieldName + "())")
+}
+
+func (psf *primitiveSliceField) templateFields(ms baseStruct) func(name string) string {
+	return func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()
@@ -561,20 +510,16 @@ func (psf *primitiveSliceField) generateAccessorsTest(ms baseStruct, sb *bytes.B
 			return psf.defaultVal
 		case "fieldName":
 			return psf.fieldName
+		case "lowerFieldName":
+			return strings.ToLower(psf.fieldName)
 		case "testValue":
 			return psf.testVal
+		case "origAccessor":
+			return origAccessor(ms)
 		default:
 			panic(name)
 		}
-	}))
-}
-
-func (psf *primitiveSliceField) generateSetWithTestValue(ms baseStruct, sb *bytes.Buffer) {
-	sb.WriteString("\ttv.orig." + psf.fieldName + " = " + psf.testVal)
-}
-
-func (psf *primitiveSliceField) generateCopyToValue(ms baseStruct, sb *bytes.Buffer) {
-	sb.WriteString("\tms." + psf.fieldName + "().CopyTo(dest." + psf.fieldName + "())")
+	}
 }
 
 var _ baseField = (*primitiveSliceField)(nil)
@@ -598,24 +543,7 @@ func (of *oneOfField) generateAccessors(ms baseStruct, sb *bytes.Buffer) {
 }
 
 func (of *oneOfField) generateTypeAccessors(ms baseStruct, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(oneOfTypeAccessorHeaderTemplate, func(name string) string {
-		switch name {
-		case "lowerOriginFieldName":
-			return strings.ToLower(of.originFieldName)
-		case "typeFuncName":
-			return of.typeFuncName()
-		case "originFieldName":
-			return of.originFieldName
-		case "structName":
-			return ms.getName()
-		case "typeName":
-			return of.typeName
-		case "origAccessor":
-			return origAccessor(ms)
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(oneOfTypeAccessorHeaderTemplate, of.templateFields(ms)))
 	sb.WriteString("\n")
 	for _, v := range of.values {
 		v.generateTypeSwitchCase(of, sb)
@@ -634,18 +562,7 @@ func (of *oneOfField) typeFuncName() string {
 }
 
 func (of *oneOfField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(oneOfTypeAccessorHeaderTestTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "typeFuncName":
-			return of.typeFuncName()
-		case "typeName":
-			return of.typeName
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(oneOfTypeAccessorHeaderTestTemplate, of.templateFields(ms)))
 	sb.WriteString("\n")
 	for _, v := range of.values {
 		v.generateTests(ms, of, sb)
@@ -663,6 +580,27 @@ func (of *oneOfField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
 		v.generateCopyToValue(of, sb)
 	}
 	sb.WriteString("\t}\n")
+}
+
+func (of *oneOfField) templateFields(ms baseStruct) func(name string) string {
+	return func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "typeFuncName":
+			return of.typeFuncName()
+		case "typeName":
+			return of.typeName
+		case "originFieldName":
+			return of.originFieldName
+		case "lowerOriginFieldName":
+			return strings.ToLower(of.originFieldName)
+		case "origAccessor":
+			return origAccessor(ms)
+		default:
+			panic(name)
+		}
+	}
 }
 
 var _ baseField = (*oneOfField)(nil)
@@ -684,50 +622,12 @@ type oneOfPrimitiveValue struct {
 }
 
 func (opv *oneOfPrimitiveValue) generateAccessors(ms baseStruct, of *oneOfField, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(accessorsOneOfPrimitiveTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "accessorFieldName":
-			return opv.accessorFieldName(of)
-		case "lowerFieldName":
-			return strings.ToLower(opv.fieldName)
-		case "returnType":
-			return opv.returnType
-		case "originFieldName":
-			return opv.originFieldName
-		case "originOneOfFieldName":
-			return of.originFieldName
-		case "originStructType":
-			return of.originTypePrefix + opv.originFieldName
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(accessorsOneOfPrimitiveTemplate, opv.templateFields(ms, of)))
 	sb.WriteString("\n")
 }
 
 func (opv *oneOfPrimitiveValue) generateTests(ms baseStruct, of *oneOfField, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(accessorsOneOfPrimitiveTestTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "defaultVal":
-			return opv.defaultVal
-		case "packageName":
-			return ""
-		case "accessorFieldName":
-			return opv.accessorFieldName(of)
-		case "testValue":
-			return opv.testVal
-		case "originOneOfTypeFuncName":
-			return of.typeFuncName()
-		case "typeName":
-			return of.typeName + opv.fieldName
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(accessorsOneOfPrimitiveTestTemplate, opv.templateFields(ms, of)))
 	sb.WriteString("\n")
 }
 
@@ -750,6 +650,39 @@ func (opv *oneOfPrimitiveValue) generateCopyToValue(of *oneOfField, sb *bytes.Bu
 func (opv *oneOfPrimitiveValue) generateTypeSwitchCase(of *oneOfField, sb *bytes.Buffer) {
 	sb.WriteString("\tcase *" + of.originTypePrefix + opv.originFieldName + ":\n")
 	sb.WriteString("\t\treturn " + of.typeName + opv.fieldName + "\n")
+}
+
+func (opv *oneOfPrimitiveValue) templateFields(ms baseStruct, of *oneOfField) func(name string) string {
+	return func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "defaultVal":
+			return opv.defaultVal
+		case "packageName":
+			return ""
+		case "accessorFieldName":
+			return opv.accessorFieldName(of)
+		case "testValue":
+			return opv.testVal
+		case "originOneOfTypeFuncName":
+			return of.typeFuncName()
+		case "typeName":
+			return of.typeName + opv.fieldName
+		case "lowerFieldName":
+			return strings.ToLower(opv.fieldName)
+		case "returnType":
+			return opv.returnType
+		case "originFieldName":
+			return opv.originFieldName
+		case "originOneOfFieldName":
+			return of.originFieldName
+		case "originStructType":
+			return of.originTypePrefix + opv.originFieldName
+		default:
+			panic(name)
+		}
+	}
 }
 
 var _ oneOfValue = (*oneOfPrimitiveValue)(nil)
@@ -789,22 +722,7 @@ func (omv *oneOfMessageValue) generateAccessors(ms baseStruct, of *oneOfField, s
 }
 
 func (omv *oneOfMessageValue) generateTests(ms baseStruct, of *oneOfField, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(accessorsOneOfMessageTestTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "fieldName":
-			return omv.fieldName
-		case "returnType":
-			return omv.returnMessage.structName
-		case "originOneOfTypeFuncName":
-			return of.typeFuncName()
-		case "typeName":
-			return of.typeName + omv.returnMessage.structName
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(accessorsOneOfMessageTestTemplate, omv.templateFields(ms, of)))
 	sb.WriteString("\n")
 }
 
@@ -814,7 +732,17 @@ func (omv *oneOfMessageValue) generateSetWithTestValue(of *oneOfField, sb *bytes
 }
 
 func (omv *oneOfMessageValue) generateCopyToValue(of *oneOfField, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(copyToValueOneOfMessageTemplate, func(name string) string {
+	sb.WriteString(os.Expand(copyToValueOneOfMessageTemplate, omv.templateFields(nil, of)))
+	sb.WriteString("\n")
+}
+
+func (omv *oneOfMessageValue) generateTypeSwitchCase(of *oneOfField, sb *bytes.Buffer) {
+	sb.WriteString("\tcase *" + of.originTypePrefix + omv.fieldName + ":\n")
+	sb.WriteString("\t\treturn " + of.typeName + omv.fieldName + "\n")
+}
+
+func (omv *oneOfMessageValue) templateFields(ms baseStruct, of *oneOfField) func(name string) string {
+	return func(name string) string {
 		switch name {
 		case "fieldName":
 			return omv.fieldName
@@ -822,16 +750,16 @@ func (omv *oneOfMessageValue) generateCopyToValue(of *oneOfField, sb *bytes.Buff
 			return of.originFieldName
 		case "typeName":
 			return of.typeName + omv.fieldName
+		case "structName":
+			return ms.getName()
+		case "returnType":
+			return omv.returnMessage.structName
+		case "originOneOfTypeFuncName":
+			return of.typeFuncName()
 		default:
 			panic(name)
 		}
-	}))
-	sb.WriteString("\n")
-}
-
-func (omv *oneOfMessageValue) generateTypeSwitchCase(of *oneOfField, sb *bytes.Buffer) {
-	sb.WriteString("\tcase *" + of.originTypePrefix + omv.fieldName + ":\n")
-	sb.WriteString("\t\treturn " + of.typeName + omv.fieldName + "\n")
+	}
 }
 
 var _ oneOfValue = (*oneOfMessageValue)(nil)
@@ -845,42 +773,12 @@ type optionalPrimitiveValue struct {
 }
 
 func (opv *optionalPrimitiveValue) generateAccessors(ms baseStruct, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(accessorsOptionalPrimitiveValueTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "fieldName":
-			return opv.fieldName
-		case "lowerFieldName":
-			return strings.ToLower(opv.fieldName)
-		case "returnType":
-			return opv.returnType
-		case "originStructType":
-			return opv.originTypePrefix + opv.fieldName
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(accessorsOptionalPrimitiveValueTemplate, opv.templateFields(ms)))
 	sb.WriteString("\n")
 }
 
 func (opv *optionalPrimitiveValue) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(accessorsOptionalPrimitiveTestTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "packageName":
-			return ""
-		case "defaultVal":
-			return opv.defaultVal
-		case "fieldName":
-			return opv.fieldName
-		case "testValue":
-			return opv.testVal
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(accessorsOptionalPrimitiveTestTemplate, opv.templateFields(ms)))
 	sb.WriteString("\n")
 }
 
@@ -892,6 +790,31 @@ func (opv *optionalPrimitiveValue) generateCopyToValue(_ baseStruct, sb *bytes.B
 	sb.WriteString("if ms.Has" + opv.fieldName + "(){\n")
 	sb.WriteString("\tdest.Set" + opv.fieldName + "(ms." + opv.fieldName + "())\n")
 	sb.WriteString("}\n")
+}
+
+func (opv *optionalPrimitiveValue) templateFields(ms baseStruct) func(name string) string {
+	return func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "packageName":
+			return ""
+		case "defaultVal":
+			return opv.defaultVal
+		case "fieldName":
+			return opv.fieldName
+		case "lowerFieldName":
+			return strings.ToLower(opv.fieldName)
+		case "testValue":
+			return opv.testVal
+		case "returnType":
+			return opv.returnType
+		case "originStructType":
+			return opv.originTypePrefix + opv.fieldName
+		default:
+			panic(name)
+		}
+	}
 }
 
 var _ baseField = (*optionalPrimitiveValue)(nil)

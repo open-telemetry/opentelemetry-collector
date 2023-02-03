@@ -131,82 +131,31 @@ func (ms *messageValueStruct) getPackageName() string {
 }
 
 func (ms *messageValueStruct) generateStruct(sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(messageValueTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.structName
-		case "originName":
-			return ms.originFullName
-		case "description":
-			return ms.description
-		case "typeDeclaration":
-			if usedByOtherDataTypes(ms.packageName) {
-				return "type " + ms.structName + " internal." + ms.structName
-			}
-			return "type " + ms.structName + " struct {\n\torig *" + ms.originFullName + "\n}"
-		case "newFuncValue":
-			if usedByOtherDataTypes(ms.packageName) {
-				return ms.structName + "(internal.New" + ms.structName + "(orig))"
-			}
-			return ms.structName + "{orig}"
-		case "origAccessor":
-			return origAccessor(ms)
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(messageValueTemplate, ms.templateFields()))
 	if usedByOtherDataTypes(ms.packageName) {
 		sb.WriteString(newLine + newLine)
-		sb.WriteString(os.Expand(messageValueGetOrigTemplate, func(name string) string {
-			switch name {
-			case "structName":
-				return ms.structName
-			case "originName":
-				return ms.originFullName
-			default:
-				panic(name)
-			}
-		}))
+		sb.WriteString(os.Expand(messageValueGetOrigTemplate, ms.templateFields()))
 	}
+
 	// Write accessors for the struct
 	for _, f := range ms.fields {
 		sb.WriteString(newLine + newLine)
 		f.generateAccessors(ms, sb)
 	}
 	sb.WriteString(newLine + newLine)
-	sb.WriteString(os.Expand(messageValueCopyToHeaderTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.structName
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(messageValueCopyToHeaderTemplate, ms.templateFields()))
+
 	// Write accessors CopyTo for the struct
 	for _, f := range ms.fields {
 		sb.WriteString(newLine)
 		f.generateCopyToValue(ms, sb)
 	}
 	sb.WriteString(newLine)
-	sb.WriteString(os.Expand(messageValueCopyToFooterTemplate, func(name string) string {
-		panic(name)
-	}))
+	sb.WriteString(messageValueCopyToFooterTemplate)
 }
 
 func (ms *messageValueStruct) generateTests(sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(messageValueTestTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.structName
-		case "generateTestData":
-			if usedByOtherDataTypes(ms.packageName) {
-				return ms.structName + "(internal.GenerateTest" + ms.structName + "())"
-			}
-			return "generateTest" + ms.structName + "()"
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(messageValueTestTemplate, ms.templateFields()))
 
 	// Write accessors tests for the struct
 	for _, f := range ms.fields {
@@ -221,16 +170,7 @@ func (ms *messageValueStruct) generateTestValueHelpers(sb *bytes.Buffer) {
 	if usedByOtherDataTypes(ms.packageName) {
 		template = messageValueGenerateTestTemplateCommon
 	}
-	sb.WriteString(os.Expand(template, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.structName
-		case "originName":
-			return ms.originFullName
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString(os.Expand(template, ms.templateFields()))
 
 	// Write fillTest func for the struct
 	sb.WriteString(newLine + newLine + "func ")
@@ -248,17 +188,40 @@ func (ms *messageValueStruct) generateTestValueHelpers(sb *bytes.Buffer) {
 }
 
 func (ms *messageValueStruct) generateInternal(sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(messageValueAliasTemplate, func(name string) string {
+	sb.WriteString(os.Expand(messageValueAliasTemplate, ms.templateFields()))
+	sb.WriteString(newLine + newLine)
+}
+
+func (ms *messageValueStruct) templateFields() func(name string) string {
+	return func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
 		case "originName":
 			return ms.originFullName
+		case "generateTestData":
+			if usedByOtherDataTypes(ms.packageName) {
+				return ms.structName + "(internal.GenerateTest" + ms.structName + "())"
+			}
+			return "generateTest" + ms.structName + "()"
+		case "description":
+			return ms.description
+		case "typeDeclaration":
+			if usedByOtherDataTypes(ms.packageName) {
+				return "type " + ms.structName + " internal." + ms.structName
+			}
+			return "type " + ms.structName + " struct {\n\torig *" + ms.originFullName + "\n}"
+		case "newFuncValue":
+			if usedByOtherDataTypes(ms.packageName) {
+				return ms.structName + "(internal.New" + ms.structName + "(orig))"
+			}
+			return ms.structName + "{orig}"
+		case "origAccessor":
+			return origAccessor(ms)
 		default:
 			panic(name)
 		}
-	}))
-	sb.WriteString(newLine + newLine)
+	}
 }
 
 var _ baseStruct = (*messageValueStruct)(nil)
