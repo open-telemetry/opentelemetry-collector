@@ -26,6 +26,3 @@ coverage.html
 # Wix
 *.wixobj
 *.wixpdb
-
-# OpenTelemetry proto files which are normally cleaned up
-model/internal/opentelemetry-proto
