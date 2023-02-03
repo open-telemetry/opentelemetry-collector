@@ -40,6 +40,7 @@
 package cgroups // import "go.opentelemetry.io/collector/internal/cgroups"
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -88,22 +89,27 @@ func NewCGroups(procPathMountInfo, procPathCGroup string) (CGroups, error) {
 		return nil, err
 	}
 
+	fmt.Println("cgroupsSubsystems", cgroupSubsystems)
 	cgroups := make(CGroups)
 	newMountPoint := func(mp *MountPoint) error {
 		if mp.FSType != _cgroupFSType {
 			return nil
 		}
 
+		fmt.Println("mountPoint", mp)
 		for _, opt := range mp.SuperOptions {
 			subsys, exists := cgroupSubsystems[opt]
 			if !exists {
 				continue
 			}
 
+			fmt.Println("sybsys", opt)
 			cgroupPath, err := mp.Translate(subsys.Name)
 			if err != nil {
 				return err
 			}
+
+			fmt.Println("cgroupPath", cgroupPath)
 			cgroups[opt] = NewCGroup(cgroupPath)
 		}
 
