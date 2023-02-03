@@ -101,7 +101,11 @@ type nopConnector struct {
 // NewNopBuilder returns a connector.Builder that constructs nop receivers.
 func NewNopBuilder() *connector.Builder {
 	nopFactory := NewNopFactory()
+	// Use a different ID than receivertest and exportertest to avoid ambiguous
+	// configuration scenarios. Ambiguous IDs are detected in the 'otelcol' package,
+	// but lower level packages such as 'service' assume that IDs are disambiguated.
+	connID := component.NewIDWithName(typeStr, "conn")
 	return connector.NewBuilder(
-		map[component.ID]component.Config{component.NewID(typeStr): nopFactory.CreateDefaultConfig()},
+		map[component.ID]component.Config{connID: nopFactory.CreateDefaultConfig()},
 		map[component.Type]connector.Factory{typeStr: nopFactory})
 }
