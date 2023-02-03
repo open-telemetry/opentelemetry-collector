@@ -16,12 +16,14 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"context"
+	"regexp"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"moul.io/zapfilter"
 )
 
 type Telemetry struct {
@@ -89,8 +91,38 @@ func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	if err != nil {
 		return nil, err
 	}
+	if cfg.FilterRules == "" && cfg.FilterRegex == "" {
+		return logger, nil
+	}
+	var filters []zapfilter.FilterFunc
+	if cfg.FilterRules != "" {
+		rules, err := zapfilter.ParseRules(cfg.FilterRules)
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, rules)
+	}
+	if cfg.FilterRegex != "" {
+		r, err := regexp.Compile(cfg.FilterRegex)
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, func(entry zapcore.Entry, fields []zapcore.Field) bool {
+			return !r.MatchString(entry.Message)
+		})
+	}
 
-	return logger, nil
+	filteredLogger := logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapfilter.NewFilteringCore(core, func(entry zapcore.Entry, fields []zapcore.Field) bool {
+			for _, f := range filters {
+				if !f(entry, fields) {
+					return false
+				}
+			}
+			return true
+		})
+	}))
+	return filteredLogger, nil
 }
 
 func toSamplingConfig(sc *LogsSamplingConfig) *zap.SamplingConfig {

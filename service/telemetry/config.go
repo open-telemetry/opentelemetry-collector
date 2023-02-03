@@ -94,6 +94,23 @@ type LogsConfig struct {
 	//
 	// By default, there is no initial field.
 	InitialFields map[string]any `mapstructure:"initial_fields"`
+
+	// Filtering rules to exclude log statements. See https://github.com/moul/zapfilter
+	// for documentation.
+	//
+	// Example:
+	//
+	//      filter_rules: "*:myns info,warn:myns.* error:*"
+	// By default, there is no filter.
+	FilterRules string `mapstructure:"filter_rules"`
+
+	// Filtering regular expression to exclude log statements.
+	//
+	// Example:
+	//
+	//      filter_regex: "partition.*"
+	// By default, there is no regular expression filter.
+	FilterRegex string `mapstructure:"filter_regex"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the

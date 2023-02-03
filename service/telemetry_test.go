@@ -16,9 +16,13 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
+	"time"
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
@@ -30,6 +34,7 @@ import (
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/metric/unit"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -87,6 +92,116 @@ func TestBuildTelAttrs(t *testing.T) {
 	assert.Equal(t, "a", telAttrs[semconv.AttributeServiceName])
 	assert.Equal(t, "b", telAttrs[semconv.AttributeServiceVersion])
 	assert.Equal(t, "c", telAttrs[semconv.AttributeServiceInstanceID])
+}
+
+func TestTelemetryLoggerSetup(t *testing.T) {
+	for _, tc := range []struct {
+		rules string
+		name  string
+		regex string
+		match func(string) bool
+	}{
+		{
+			name:  "no rules",
+			rules: "",
+			match: func(s string) bool {
+				return strings.Contains(s, "this is an info message") && strings.Contains(s, "this is an error message")
+			},
+		},
+		{
+			name:  "anything",
+			rules: "*",
+			match: func(s string) bool {
+				return strings.Contains(s, "this is an info message") && strings.Contains(s, "this is an error message")
+			},
+		},
+		{
+			name:  "errors only",
+			rules: "error:*",
+			match: func(s string) bool {
+				return !strings.Contains(s, "this is an info message") && strings.Contains(s, "this is an error message")
+			},
+		},
+		{
+			name:  "named only",
+			rules: "named",
+			match: func(s string) bool {
+				return strings.Contains(s, "named only") && !strings.Contains(s, "this is an error message")
+			},
+		},
+		{
+			name:  "regex only",
+			rules: "",
+			regex: ".*only",
+			match: func(s string) bool {
+				return !strings.Contains(s, "named only") && strings.Contains(s, "this is an error message")
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f, err := os.CreateTemp("", "log")
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				_ = os.Remove(f.Name())
+			})
+			cfg := telemetry.Config{
+				Logs: telemetry.LogsConfig{
+					Level:       zapcore.DebugLevel,
+					Encoding:    "json",
+					OutputPaths: []string{f.Name()},
+					Development: true,
+					FilterRules: tc.rules,
+					FilterRegex: tc.regex,
+				},
+			}
+			tel, err := telemetry.New(context.Background(), telemetry.Settings{}, cfg)
+			require.NoError(t, err)
+			defer func() {
+				require.NoError(t, tel.Shutdown(context.Background()))
+			}()
+			l := tel.Logger()
+			l.Info("this is an info message")
+			l.Error("this is an error message")
+			l.Named("named").Info("named only")
+			err = l.Sync()
+			require.NoError(t, err)
+			assert.Eventuallyf(t, func() bool {
+				b, err := os.ReadFile(f.Name())
+				require.NoError(t, err)
+				fmt.Println(string(b))
+				return tc.match(string(b))
+			}, 2*time.Second, 100*time.Millisecond, "log never written")
+
+		})
+	}
+}
+
+func TestInvalidLoggerSetup(t *testing.T) {
+	invalidRules := telemetry.Config{
+		Logs: telemetry.LogsConfig{
+			Level:       zapcore.DebugLevel,
+			Encoding:    "json",
+			OutputPaths: []string{"stderr"},
+			Development: true,
+			FilterRules: ":foo nope",
+			FilterRegex: "",
+		},
+	}
+	_, err := telemetry.New(context.Background(), telemetry.Settings{}, invalidRules)
+	require.ErrorContains(t, err, "bad syntax")
+
+	invalidRegexp := telemetry.Config{
+		Logs: telemetry.LogsConfig{
+			Level:       zapcore.DebugLevel,
+			Encoding:    "json",
+			OutputPaths: []string{"stderr"},
+			Development: true,
+			FilterRules: "",
+			FilterRegex: "**.*",
+		},
+	}
+	_, err = telemetry.New(context.Background(), telemetry.Settings{}, invalidRegexp)
+	require.ErrorContains(t, err, "error parsing regexp")
 }
 
 func TestTelemetryInit(t *testing.T) {

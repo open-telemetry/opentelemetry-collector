@@ -41,6 +41,7 @@ require (
 	gonum.org/v1/gonum v0.12.0
 	google.golang.org/grpc v1.53.0
 	gopkg.in/yaml.v3 v3.0.1
+	moul.io/zapfilter v1.7.0
 )
 
 require (
