@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:unused
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
-	"fmt"
 	"hash/fnv"
 	"strings"
 
@@ -26,6 +24,15 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
+)
+
+const (
+	receiverSeed      = "receiver"
+	processorSeed     = "processor"
+	exporterSeed      = "exporter"
+	connectorSeed     = "connector"
+	capabilitiesSeed  = "capabilities"
+	fanOutToExporters = "fanout_to_exporters"
 )
 
 type nodeID int64
@@ -40,6 +47,10 @@ func newNodeID(parts ...string) nodeID {
 	return nodeID(h.Sum64())
 }
 
+type consumerNode interface {
+	getConsumer() baseConsumer
+}
+
 // A receiver instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
 type receiverNode struct {
@@ -51,11 +62,13 @@ type receiverNode struct {
 
 func newReceiverNode(pipelineID component.ID, recvID component.ID) *receiverNode {
 	return &receiverNode{
-		nodeID:       newNodeID("receiver", string(pipelineID.Type()), recvID.String()),
+		nodeID:       newNodeID(receiverSeed, string(pipelineID.Type()), recvID.String()),
 		componentID:  recvID,
 		pipelineType: pipelineID.Type(),
 	}
 }
+
+var _ consumerNode = &processorNode{}
 
 // Every processor instance is unique to one pipeline.
 // Therefore, nodeID is derived from "pipeline ID" and "component ID".
@@ -68,11 +81,17 @@ type processorNode struct {
 
 func newProcessorNode(pipelineID, procID component.ID) *processorNode {
 	return &processorNode{
-		nodeID:      newNodeID("processor", pipelineID.String(), procID.String()),
+		nodeID:      newNodeID(processorSeed, pipelineID.String(), procID.String()),
 		componentID: procID,
 		pipelineID:  pipelineID,
 	}
 }
+
+func (n *processorNode) getConsumer() baseConsumer {
+	return n.Component.(baseConsumer)
+}
+
+var _ consumerNode = &exporterNode{}
 
 // An exporter instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
@@ -85,11 +104,17 @@ type exporterNode struct {
 
 func newExporterNode(pipelineID component.ID, exprID component.ID) *exporterNode {
 	return &exporterNode{
-		nodeID:       newNodeID("exporter", string(pipelineID.Type()), exprID.String()),
+		nodeID:       newNodeID(exporterSeed, string(pipelineID.Type()), exprID.String()),
 		componentID:  exprID,
 		pipelineType: pipelineID.Type(),
 	}
 }
+
+func (n *exporterNode) getConsumer() baseConsumer {
+	return n.Component.(baseConsumer)
+}
+
+var _ consumerNode = &connectorNode{}
 
 // A connector instance connects one pipeline type to one other pipeline type.
 // Therefore, nodeID is derived from "exporter pipeline type", "receiver pipeline type", and "component ID".
@@ -103,82 +128,118 @@ type connectorNode struct {
 
 func newConnectorNode(exprPipelineType, rcvrPipelineType component.DataType, connID component.ID) *connectorNode {
 	return &connectorNode{
-		nodeID:           newNodeID("connector", connID.String(), string(exprPipelineType), string(rcvrPipelineType)),
+		nodeID:           newNodeID(connectorSeed, connID.String(), string(exprPipelineType), string(rcvrPipelineType)),
 		componentID:      connID,
 		exprPipelineType: exprPipelineType,
 		rcvrPipelineType: rcvrPipelineType,
 	}
 }
 
-func (n *connectorNode) build(
+func (n *connectorNode) getConsumer() baseConsumer {
+	return n.Component.(baseConsumer)
+}
+
+func buildConnector(
 	ctx context.Context,
+	componentID component.ID,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
 	builder *connector.Builder,
+	exprPipelineType component.Type,
+	rcvrPipelineType component.Type,
 	nexts []baseConsumer,
-) error {
-	if len(nexts) == 0 {
-		return fmt.Errorf("connector %q has no next consumer", n.componentID)
-	}
-	set := connector.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ConnectorLogger(set.TelemetrySettings.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
+) (conn component.Component, err error) {
+	set := connector.CreateSettings{ID: componentID, TelemetrySettings: tel, BuildInfo: info}
+	set.TelemetrySettings.Logger = components.ConnectorLogger(set.TelemetrySettings.Logger, componentID, exprPipelineType, rcvrPipelineType)
 
-	var err error
-	switch n.rcvrPipelineType {
+	switch rcvrPipelineType {
 	case component.DataTypeTraces:
 		var consumers []consumer.Traces
 		for _, next := range nexts {
-			tracesConsumer, ok := next.(consumer.Traces)
-			if !ok {
-				return fmt.Errorf("next component is not a traces consumer: %s", n.componentID)
-			}
-			consumers = append(consumers, tracesConsumer)
+			consumers = append(consumers, next.(consumer.Traces))
 		}
 		fanoutConsumer := fanoutconsumer.NewTraces(consumers)
-		switch n.exprPipelineType {
+		switch exprPipelineType {
 		case component.DataTypeTraces:
-			n.Component, err = builder.CreateTracesToTraces(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateTracesToTraces(ctx, set, fanoutConsumer)
 		case component.DataTypeMetrics:
-			n.Component, err = builder.CreateMetricsToTraces(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateMetricsToTraces(ctx, set, fanoutConsumer)
 		case component.DataTypeLogs:
-			n.Component, err = builder.CreateLogsToTraces(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateLogsToTraces(ctx, set, fanoutConsumer)
 		}
 	case component.DataTypeMetrics:
 		var consumers []consumer.Metrics
 		for _, next := range nexts {
-			metricsConsumer, ok := next.(consumer.Metrics)
-			if !ok {
-				return fmt.Errorf("next component is not a metrics consumer: %s", n.componentID)
-			}
-			consumers = append(consumers, metricsConsumer)
+			consumers = append(consumers, next.(consumer.Metrics))
 		}
 		fanoutConsumer := fanoutconsumer.NewMetrics(consumers)
-		switch n.exprPipelineType {
+		switch exprPipelineType {
 		case component.DataTypeTraces:
-			n.Component, err = builder.CreateTracesToMetrics(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateTracesToMetrics(ctx, set, fanoutConsumer)
 		case component.DataTypeMetrics:
-			n.Component, err = builder.CreateMetricsToMetrics(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateMetricsToMetrics(ctx, set, fanoutConsumer)
 		case component.DataTypeLogs:
-			n.Component, err = builder.CreateLogsToMetrics(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateLogsToMetrics(ctx, set, fanoutConsumer)
 		}
 	case component.DataTypeLogs:
 		var consumers []consumer.Logs
 		for _, next := range nexts {
-			logsConsumer, ok := next.(consumer.Logs)
-			if !ok {
-				return fmt.Errorf("next component is not a logs consumer: %s", n.componentID)
-			}
-			consumers = append(consumers, logsConsumer)
+			consumers = append(consumers, next.(consumer.Logs))
 		}
 		fanoutConsumer := fanoutconsumer.NewLogs(consumers)
-		switch n.exprPipelineType {
+		switch exprPipelineType {
 		case component.DataTypeTraces:
-			n.Component, err = builder.CreateTracesToLogs(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateTracesToLogs(ctx, set, fanoutConsumer)
 		case component.DataTypeMetrics:
-			n.Component, err = builder.CreateMetricsToLogs(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateMetricsToLogs(ctx, set, fanoutConsumer)
 		case component.DataTypeLogs:
-			n.Component, err = builder.CreateLogsToLogs(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateLogsToLogs(ctx, set, fanoutConsumer)
 		}
 	}
-	return err
+	return
+}
+
+var _ consumerNode = &capabilitiesNode{}
+
+// Every pipeline has a "virtual" capabilities node immediately after the receiver(s).
+// There are two purposes for this node:
+// 1. Present aggregated capabilities to receivers, such as whether the pipeline mutates data.
+// 2. Present a consistent "first consumer" for each pipeline.
+// The nodeID is derived from "pipeline ID".
+type capabilitiesNode struct {
+	nodeID
+	pipelineID component.ID
+	baseConsumer
+}
+
+func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {
+	return &capabilitiesNode{
+		nodeID:     newNodeID(capabilitiesSeed, pipelineID.String()),
+		pipelineID: pipelineID,
+	}
+}
+
+func (n *capabilitiesNode) getConsumer() baseConsumer {
+	return n.baseConsumer
+}
+
+var _ consumerNode = &fanOutNode{}
+
+// Each pipeline has one fan-out node before exporters.
+// Therefore, nodeID is derived from "pipeline ID".
+type fanOutNode struct {
+	nodeID
+	pipelineID component.ID
+	baseConsumer
+}
+
+func newFanOutNode(pipelineID component.ID) *fanOutNode {
+	return &fanOutNode{
+		nodeID:     newNodeID(fanOutToExporters, pipelineID.String()),
+		pipelineID: pipelineID,
+	}
+}
+
+func (n *fanOutNode) getConsumer() baseConsumer {
+	return n.baseConsumer
 }

@@ -37,16 +37,25 @@ func createDefaultConfig() component.Config {
 	return &struct{}{}
 }
 
-func createTracesProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
-	return &ExampleProcessor{ConsumeTracesFunc: nextConsumer.ConsumeTraces}, nil
+func createTracesProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
+	return &ExampleProcessor{
+		ConsumeTracesFunc: nextConsumer.ConsumeTraces,
+		mutatesData:       set.ID.Name() == "mutate",
+	}, nil
 }
 
-func createMetricsProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
-	return &ExampleProcessor{ConsumeMetricsFunc: nextConsumer.ConsumeMetrics}, nil
+func createMetricsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
+	return &ExampleProcessor{
+		ConsumeMetricsFunc: nextConsumer.ConsumeMetrics,
+		mutatesData:        set.ID.Name() == "mutate",
+	}, nil
 }
 
-func createLogsProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
-	return &ExampleProcessor{ConsumeLogsFunc: nextConsumer.ConsumeLogs}, nil
+func createLogsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
+	return &ExampleProcessor{
+		ConsumeLogsFunc: nextConsumer.ConsumeLogs,
+		mutatesData:     set.ID.Name() == "mutate",
+	}, nil
 }
 
 type ExampleProcessor struct {
@@ -54,8 +63,9 @@ type ExampleProcessor struct {
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
+	mutatesData bool
 }
 
 func (ep *ExampleProcessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	return consumer.Capabilities{MutatesData: ep.mutatesData}
 }
