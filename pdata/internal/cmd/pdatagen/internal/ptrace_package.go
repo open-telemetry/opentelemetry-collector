@@ -27,6 +27,7 @@ var ptrace = &Package{
 	},
 	testImports: []string{
 		`"testing"`,
+		`"unsafe"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,

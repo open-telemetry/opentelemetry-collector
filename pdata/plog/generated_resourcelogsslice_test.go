@@ -19,6 +19,7 @@ package plog
 
 import (
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 
@@ -116,6 +117,22 @@ func TestResourceLogsSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestResourceLogsSlice_Sort(t *testing.T) {
+	es := generateTestResourceLogsSlice()
+	es.Sort(func(a, b ResourceLogs) bool {
+		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+	es.Sort(func(a, b ResourceLogs) bool {
+		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
 }
 
 func generateTestResourceLogsSlice() ResourceLogsSlice {

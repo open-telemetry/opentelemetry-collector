@@ -240,6 +240,23 @@ func (es ${structName}) Sort(less func(a, b ${elementName}) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }`
 
+// TODO: Use assert.Less once https://github.com/stretchr/testify/pull/1339 is merged.
+const slicePtrTestTemplate = `func Test${structName}_Sort(t *testing.T) {
+	es := generateTest${structName}()
+	es.Sort(func(a, b ${elementName}) bool {
+		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+	es.Sort(func(a, b ${elementName}) bool {
+		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+}`
+
 const sliceValueTemplate = `// CopyTo copies all elements from the current slice overriding the destination.
 func (es ${structName}) CopyTo(dest ${structName}) {
 	srcLen := es.Len()
@@ -295,7 +312,8 @@ func (ss *sliceOfPtrs) generateStruct(sb *bytes.Buffer) {
 }
 
 func (ss *sliceOfPtrs) generateTests(sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(commonSliceTestTemplate, ss.templateFields()))
+	sb.WriteString(os.Expand(commonSliceTestTemplate, ss.templateFields()) + newLine + newLine)
+	sb.WriteString(os.Expand(slicePtrTestTemplate, ss.templateFields()))
 }
 
 func (ss *sliceOfPtrs) generateTestValueHelpers(sb *bytes.Buffer) {

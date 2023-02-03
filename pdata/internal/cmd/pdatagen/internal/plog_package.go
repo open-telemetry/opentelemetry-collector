@@ -27,6 +27,7 @@ var plog = &Package{
 	},
 	testImports: []string{
 		`"testing"`,
+		`"unsafe"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,
