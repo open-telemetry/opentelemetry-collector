@@ -31,16 +31,15 @@ func TestScopeLogsSlice(t *testing.T) {
 	es = newScopeLogsSlice(&[]*otlplogs.ScopeLogs{})
 	assert.Equal(t, 0, es.Len())
 
-	es.EnsureCapacity(7)
-	emptyVal := newScopeLogs(&otlplogs.ScopeLogs{})
+	emptyVal := NewScopeLogs()
 	testVal := generateTestScopeLogs()
-	assert.Equal(t, 7, cap(*es.orig))
-	for i := 0; i < es.Len(); i++ {
+	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
-		assert.Equal(t, emptyVal, el)
+		assert.Equal(t, emptyVal, es.At(i))
 		fillTestScopeLogs(el)
-		assert.Equal(t, testVal, el)
+		assert.Equal(t, testVal, es.At(i))
 	}
+	assert.Equal(t, 7, es.Len())
 }
 
 func TestScopeLogsSlice_CopyTo(t *testing.T) {

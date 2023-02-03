@@ -31,16 +31,15 @@ func TestExemplarSlice(t *testing.T) {
 	es = newExemplarSlice(&[]otlpmetrics.Exemplar{})
 	assert.Equal(t, 0, es.Len())
 
-	es.EnsureCapacity(7)
-	emptyVal := newExemplar(&otlpmetrics.Exemplar{})
+	emptyVal := NewExemplar()
 	testVal := generateTestExemplar()
-	assert.Equal(t, 7, cap(*es.orig))
-	for i := 0; i < es.Len(); i++ {
+	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
-		assert.Equal(t, emptyVal, el)
+		assert.Equal(t, emptyVal, es.At(i))
 		fillTestExemplar(el)
-		assert.Equal(t, testVal, el)
+		assert.Equal(t, testVal, es.At(i))
 	}
+	assert.Equal(t, 7, es.Len())
 }
 
 func TestExemplarSlice_CopyTo(t *testing.T) {
