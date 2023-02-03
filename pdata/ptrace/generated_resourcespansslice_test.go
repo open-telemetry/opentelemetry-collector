@@ -31,16 +31,15 @@ func TestResourceSpansSlice(t *testing.T) {
 	es = newResourceSpansSlice(&[]*otlptrace.ResourceSpans{})
 	assert.Equal(t, 0, es.Len())
 
-	es.EnsureCapacity(7)
-	emptyVal := newResourceSpans(&otlptrace.ResourceSpans{})
+	emptyVal := NewResourceSpans()
 	testVal := generateTestResourceSpans()
-	assert.Equal(t, 7, cap(*es.orig))
-	for i := 0; i < es.Len(); i++ {
+	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
-		assert.Equal(t, emptyVal, el)
+		assert.Equal(t, emptyVal, es.At(i))
 		fillTestResourceSpans(el)
-		assert.Equal(t, testVal, el)
+		assert.Equal(t, testVal, es.At(i))
 	}
+	assert.Equal(t, 7, es.Len())
 }
 
 func TestResourceSpansSlice_CopyTo(t *testing.T) {
