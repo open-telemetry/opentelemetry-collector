@@ -17,6 +17,7 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"net/http"
 	"path"
+	"sort"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
@@ -89,4 +90,50 @@ func getBuildInfoProperties(buildInfo component.BuildInfo) [][2]string {
 		{"Description", buildInfo.Description},
 		{"Version", buildInfo.Version},
 	}
+}
+
+type zpagesPipeline interface {
+	receiverIDs() []string
+	processorIDs() []string
+	exporterIDs() []string
+	mutatesData() bool
+}
+
+func handleZPages(w http.ResponseWriter, r *http.Request, pipes map[component.ID]zpagesPipeline) {
+	qValues := r.URL.Query()
+	pipelineName := qValues.Get(zPipelineName)
+	componentName := qValues.Get(zComponentName)
+	componentKind := qValues.Get(zComponentKind)
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "builtPipelines"})
+
+	sumData := zpages.SummaryPipelinesTableData{}
+	sumData.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(pipes))
+	for c, p := range pipes {
+		sumData.Rows = append(sumData.Rows, zpages.SummaryPipelinesTableRowData{
+			FullName:    c.String(),
+			InputType:   string(c.Type()),
+			MutatesData: p.mutatesData(),
+			Receivers:   p.receiverIDs(),
+			Processors:  p.processorIDs(),
+			Exporters:   p.exporterIDs(),
+		})
+	}
+	sort.Slice(sumData.Rows, func(i, j int) bool {
+		return sumData.Rows[i].FullName < sumData.Rows[j].FullName
+	})
+	zpages.WriteHTMLPipelinesSummaryTable(w, sumData)
+
+	if pipelineName != "" && componentName != "" && componentKind != "" {
+		fullName := componentName
+		if componentKind == "processor" {
+			fullName = pipelineName + "/" + componentName
+		}
+		zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
+			Name: componentKind + ": " + fullName,
+		})
+		// TODO: Add config + status info.
+	}
+	zpages.WriteHTMLPageFooter(w)
 }

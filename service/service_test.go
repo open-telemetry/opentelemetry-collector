@@ -37,6 +37,8 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/sharedgate"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -217,7 +219,11 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 func TestServiceTelemetryWithOpenCensusMetrics(t *testing.T) {
 	for _, tc := range ownMetricsTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			testCollectorStartHelper(t, false, tc)
+			testCollectorStartHelper(t, false, false, tc)
+		})
+
+		t.Run(tc.name+"/connectors", func(t *testing.T) {
+			testCollectorStartHelper(t, false, true, tc)
 		})
 	}
 }
@@ -225,12 +231,16 @@ func TestServiceTelemetryWithOpenCensusMetrics(t *testing.T) {
 func TestServiceTelemetryWithOpenTelemetryMetrics(t *testing.T) {
 	for _, tc := range ownMetricsTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			testCollectorStartHelper(t, true, tc)
+			testCollectorStartHelper(t, true, false, tc)
+		})
+
+		t.Run(tc.name+"/connectors", func(t *testing.T) {
+			testCollectorStartHelper(t, true, true, tc)
 		})
 	}
 }
 
-func testCollectorStartHelper(t *testing.T, useOtel bool, tc ownMetricsTestCase) {
+func testCollectorStartHelper(t *testing.T, useOtel bool, useConnectors bool, tc ownMetricsTestCase) {
 	var once sync.Once
 	loggingHookCalled := false
 	hook := func(entry zapcore.Entry) error {
@@ -252,6 +262,13 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, tc ownMetricsTestCase)
 	set.useOtel = &useOtel
 
 	cfg := newNopConfig()
+	if useConnectors {
+		cfg = newNopConfigWithConnectors()
+		require.NoError(t, featuregate.GlobalRegistry().Set(sharedgate.ConnectorsFeatureGate.ID(), true))
+		defer func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set(sharedgate.ConnectorsFeatureGate.ID(), false))
+		}()
+	}
 	cfg.Extensions = []component.ID{component.NewID("zpages")}
 	cfg.Telemetry.Metrics.Address = metricsAddr
 	cfg.Telemetry.Resource = make(map[string]*string)
@@ -399,25 +416,61 @@ func newNopSettings() Settings {
 }
 
 func newNopConfig() Config {
+	return newNopConfigPipelineConfigs(map[component.ID]*PipelineConfig{
+		component.NewID("traces"): {
+			Receivers:  []component.ID{component.NewID("nop")},
+			Processors: []component.ID{component.NewID("nop")},
+			Exporters:  []component.ID{component.NewID("nop")},
+		},
+		component.NewID("metrics"): {
+			Receivers:  []component.ID{component.NewID("nop")},
+			Processors: []component.ID{component.NewID("nop")},
+			Exporters:  []component.ID{component.NewID("nop")},
+		},
+		component.NewID("logs"): {
+			Receivers:  []component.ID{component.NewID("nop")},
+			Processors: []component.ID{component.NewID("nop")},
+			Exporters:  []component.ID{component.NewID("nop")},
+		},
+	})
+}
+
+func newNopConfigWithConnectors() Config {
+	return newNopConfigPipelineConfigs(map[component.ID]*PipelineConfig{
+		component.NewID("traces"): {
+			Receivers:  []component.ID{component.NewID("nop")},
+			Processors: []component.ID{component.NewID("nop")},
+			Exporters:  []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "conn")},
+		},
+		component.NewIDWithName("traces", "out"): {
+			Receivers: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "conn")},
+			Exporters: []component.ID{component.NewID("nop")},
+		},
+		component.NewID("metrics"): {
+			Receivers:  []component.ID{component.NewID("nop")},
+			Processors: []component.ID{component.NewID("nop")},
+			Exporters:  []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "conn")},
+		},
+		component.NewIDWithName("metrics", "out"): {
+			Receivers: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "conn")},
+			Exporters: []component.ID{component.NewID("nop")},
+		},
+		component.NewID("logs"): {
+			Receivers:  []component.ID{component.NewID("nop")},
+			Processors: []component.ID{component.NewID("nop")},
+			Exporters:  []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "conn")},
+		},
+		component.NewIDWithName("logs", "out"): {
+			Receivers: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "conn")},
+			Exporters: []component.ID{component.NewID("nop")},
+		},
+	})
+}
+
+func newNopConfigPipelineConfigs(pipelineCfgs map[component.ID]*PipelineConfig) Config {
 	return Config{
 		Extensions: []component.ID{component.NewID("nop")},
-		Pipelines: map[component.ID]*PipelineConfig{
-			component.NewID("traces"): {
-				Receivers:  []component.ID{component.NewID("nop")},
-				Processors: []component.ID{component.NewID("nop")},
-				Exporters:  []component.ID{component.NewID("nop")},
-			},
-			component.NewID("metrics"): {
-				Receivers:  []component.ID{component.NewID("nop")},
-				Processors: []component.ID{component.NewID("nop")},
-				Exporters:  []component.ID{component.NewID("nop")},
-			},
-			component.NewID("logs"): {
-				Receivers:  []component.ID{component.NewID("nop")},
-				Processors: []component.ID{component.NewID("nop")},
-				Exporters:  []component.ID{component.NewID("nop")},
-			},
-		},
+		Pipelines:  pipelineCfgs,
 		Telemetry: telemetry.Config{
 			Logs: telemetry.LogsConfig{
 				Level:       zapcore.InfoLevel,
