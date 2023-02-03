@@ -234,21 +234,42 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			expectedPerExporter: 1,
 		},
 		{
-			name: "pipelines_simple_multi_proc.yaml",
+			name: "pipelines_simple_mutate.yaml",
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
-					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewID("exampleexporter")},
 				},
 				component.NewID("metrics"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
-					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewID("exampleexporter")},
 				},
 				component.NewID("logs"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
-					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
+					Exporters:  []component.ID{component.NewID("exampleexporter")},
+				},
+			},
+			expectedPerExporter: 1,
+		},
+		{
+			name: "pipelines_simple_multi_proc.yaml",
+			pipelineConfigs: map[component.ID]*PipelineConfig{
+				component.NewID("traces"): {
+					Receivers:  []component.ID{component.NewID("examplereceiver")},
+					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "mutate")},
+					Exporters:  []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewID("metrics"): {
+					Receivers:  []component.ID{component.NewID("examplereceiver")},
+					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "mutate")},
+					Exporters:  []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewID("logs"): {
+					Receivers:  []component.ID{component.NewID("examplereceiver")},
+					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewID("exampleexporter")},
 				},
 			},
@@ -277,17 +298,17 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
-					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate"), component.NewID("exampleprocessor")},
 					Exporters:  []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
 				},
 				component.NewID("metrics"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
-					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate"), component.NewID("exampleprocessor")},
 					Exporters:  []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
 				},
 				component.NewID("logs"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
-					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate"), component.NewID("exampleprocessor")},
 					Exporters:  []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
 				},
 			},
@@ -312,11 +333,11 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			expectedPerExporter: 2,
 		},
 		{
-			name: "pipelines_exporter_multi_pipeline.yaml",
+			name: "multi_pipeline_receivers_and_exporters.yaml",
 			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewID("exampleexporter")},
 				},
 				component.NewIDWithName("traces", "1"): {
@@ -325,7 +346,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				},
 				component.NewID("metrics"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewID("exampleexporter")},
 				},
 				component.NewIDWithName("metrics", "1"): {
@@ -334,7 +355,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				},
 				component.NewID("logs"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewID("exampleexporter")},
 				},
 				component.NewIDWithName("logs", "1"): {
@@ -354,7 +375,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				},
 				component.NewIDWithName("traces", "out"): {
 					Receivers:  []component.ID{component.NewID("exampleconnector")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewID("exampleexporter")},
 				},
 			},
@@ -370,7 +391,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				},
 				component.NewIDWithName("metrics", "out"): {
 					Receivers:  []component.ID{component.NewID("exampleconnector")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewID("exampleexporter")},
 				},
 			},
@@ -386,7 +407,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				},
 				component.NewIDWithName("logs", "out"): {
 					Receivers:  []component.ID{component.NewID("exampleconnector")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewID("exampleexporter")},
 				},
 			},
@@ -407,7 +428,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				},
 				component.NewIDWithName("traces", "type1"): {
 					Receivers:  []component.ID{component.NewIDWithName("exampleconnector", "fork")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewIDWithName("exampleconnector", "merge")},
 				},
 				component.NewIDWithName("traces", "out"): {
@@ -433,7 +454,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				},
 				component.NewIDWithName("metrics", "type1"): {
 					Receivers:  []component.ID{component.NewIDWithName("exampleconnector", "fork")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewIDWithName("exampleconnector", "merge")},
 				},
 				component.NewIDWithName("metrics", "out"): {
@@ -459,7 +480,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				},
 				component.NewIDWithName("logs", "type1"): {
 					Receivers:  []component.ID{component.NewIDWithName("exampleconnector", "fork")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewIDWithName("exampleconnector", "merge")},
 				},
 				component.NewIDWithName("logs", "out"): {
@@ -543,7 +564,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				},
 				component.NewIDWithName("metrics", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewID("exampleconnector")},
 				},
 				component.NewIDWithName("logs", "in"): {
@@ -553,7 +574,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				},
 				component.NewIDWithName("traces", "out"): {
 					Receivers:  []component.ID{component.NewID("exampleconnector")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewID("exampleexporter")},
 				},
 				component.NewIDWithName("metrics", "out"): {
@@ -563,7 +584,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				},
 				component.NewIDWithName("logs", "out"): {
 					Receivers:  []component.ID{component.NewID("exampleconnector")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewID("exampleexporter")},
 				},
 			},
@@ -588,8 +609,8 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				),
 				ProcessorBuilder: processor.NewBuilder(
 					map[component.ID]component.Config{
-						component.NewID("exampleprocessor"):              testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
-						component.NewIDWithName("exampleprocessor", "1"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+						component.NewID("exampleprocessor"):                   testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+						component.NewIDWithName("exampleprocessor", "mutate"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
 					},
 					map[component.Type]processor.Factory{
 						testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
@@ -632,6 +653,15 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			for pipelineID, pipelineCfg := range test.pipelineConfigs {
 				pipeline, ok := pg.pipelines[pipelineID]
 				require.True(t, ok, "expected to find pipeline: %s", pipelineID.String())
+
+				// Determine independently if the capabilities node should report MutateData as true
+				var expectMutatesData bool
+				for _, proc := range pipelineCfg.Processors {
+					if proc.Name() == "mutate" {
+						expectMutatesData = true
+					}
+				}
+				assert.Equal(t, expectMutatesData, pipeline.capabilitiesNode.getConsumer().Capabilities().MutatesData)
 
 				expectedReceivers, expectedExporters := expectedInstances(test.pipelineConfigs, pipelineID)
 				require.Equal(t, expectedReceivers, len(pipeline.receivers))

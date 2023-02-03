@@ -210,14 +210,12 @@ type capabilitiesNode struct {
 	nodeID
 	pipelineID component.ID
 	baseConsumer
-	consumer.Capabilities
 }
 
 func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {
 	return &capabilitiesNode{
-		nodeID:       newNodeID(capabilitiesSeed, pipelineID.String()),
-		pipelineID:   pipelineID,
-		Capabilities: consumer.Capabilities{},
+		nodeID:     newNodeID(capabilitiesSeed, pipelineID.String()),
+		pipelineID: pipelineID,
 	}
 }
 

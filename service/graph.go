@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
 
@@ -158,7 +159,10 @@ func (g *pipelinesGraph) createEdges() {
 func (g *pipelinesGraph) buildComponents(ctx context.Context, set pipelinesSettings) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
-		return err // TODO clean up error message
+		// TODO When there is a cycle in the graph, there is enough information
+		// within the error to construct a better error message that indicates
+		// exactly the components that are in a cycle.
+		return err
 	}
 
 	for i := len(nodes) - 1; i >= 0; i-- {
@@ -177,10 +181,18 @@ func (g *pipelinesGraph) buildComponents(ctx context.Context, set pipelinesSetti
 			n.Component, err = buildConnector(ctx, n.componentID, set.Telemetry, set.BuildInfo, set.ConnectorBuilder,
 				n.exprPipelineType, n.rcvrPipelineType, g.nextConsumers(n.ID()))
 		case *capabilitiesNode:
-			n.baseConsumer = g.nextConsumers(n.ID())[0]
+			cap := consumer.Capabilities{}
 			for _, proc := range g.pipelines[n.pipelineID].processors {
-				n.Capabilities.MutatesData = n.Capabilities.MutatesData ||
-					proc.Component.(baseConsumer).Capabilities().MutatesData
+				cap.MutatesData = cap.MutatesData || proc.getConsumer().Capabilities().MutatesData
+			}
+			next := g.nextConsumers(n.ID())[0]
+			switch n.pipelineID.Type() {
+			case component.DataTypeTraces:
+				n.baseConsumer = capabilityconsumer.NewTraces(next.(consumer.Traces), cap)
+			case component.DataTypeMetrics:
+				n.baseConsumer = capabilityconsumer.NewMetrics(next.(consumer.Metrics), cap)
+			case component.DataTypeLogs:
+				n.baseConsumer = capabilityconsumer.NewLogs(next.(consumer.Logs), cap)
 			}
 		case *fanOutNode:
 			nexts := g.nextConsumers(n.ID())
