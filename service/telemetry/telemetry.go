@@ -66,9 +66,12 @@ func New(_ context.Context, set Settings, cfg Config) (*Telemetry, error) {
 }
 
 func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
+	if cfg.Level == NoneLevel {
+		return zap.NewNop(), nil
+	}
 	// Copied from NewProductionConfig.
 	zapCfg := &zap.Config{
-		Level:             zap.NewAtomicLevelAt(cfg.Level),
+		Level:             zap.NewAtomicLevelAt(zapcore.Level(cfg.Level)),
 		Development:       cfg.Development,
 		Sampling:          toSamplingConfig(cfg.Sampling),
 		Encoding:          cfg.Encoding,

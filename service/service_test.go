@@ -261,6 +261,8 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, useGraph bool, tc ownM
 	set.useGraph = &useGraph
 
 	cfg := newNopConfig()
+	cfg.Telemetry.Logs.Level = telemetry.InfoLevel
+	cfg.Telemetry.Logs.Encoding = "console"
 	cfg.Extensions = []component.ID{component.NewID("zpages")}
 	cfg.Telemetry.Metrics.Address = metricsAddr
 	cfg.Telemetry.Resource = make(map[string]*string)
@@ -433,15 +435,15 @@ func newNopConfigPipelineConfigs(pipelineCfgs map[component.ID]*PipelineConfig) 
 		Pipelines:  pipelineCfgs,
 		Telemetry: telemetry.Config{
 			Logs: telemetry.LogsConfig{
-				Level:       zapcore.InfoLevel,
+				Level:       telemetry.InfoLevel,
 				Development: false,
 				Encoding:    "console",
 				Sampling: &telemetry.LogsSamplingConfig{
 					Initial:    100,
 					Thereafter: 100,
 				},
-				OutputPaths:       []string{"stderr"},
-				ErrorOutputPaths:  []string{"stderr"},
+				OutputPaths:       []string{},
+				ErrorOutputPaths:  []string{},
 				DisableCaller:     false,
 				DisableStacktrace: false,
 				InitialFields:     map[string]any(nil),

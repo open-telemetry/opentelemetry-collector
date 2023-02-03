@@ -8,6 +8,8 @@ service:
   telemetry:
     metrics:
       level: none
+    logs:
+      level: none
   pipelines:
     metrics:
       receivers: [nop]

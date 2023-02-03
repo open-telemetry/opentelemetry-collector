@@ -15,8 +15,6 @@
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
-	"go.uber.org/zap/zapcore"
-
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
@@ -52,7 +50,7 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 		Service: service.Config{
 			Telemetry: telemetry.Config{
 				Logs: telemetry.LogsConfig{
-					Level:       zapcore.InfoLevel,
+					Level:       telemetry.InfoLevel,
 					Development: false,
 					Encoding:    "console",
 					Sampling: &telemetry.LogsSamplingConfig{

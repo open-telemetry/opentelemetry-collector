@@ -61,3 +61,37 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestLogLevelParsing(t *testing.T) {
+	l := LogLevel(0)
+	assert.False(t, l.unmarshalText([]byte("FOO")))
+	l.unmarshalText([]byte("DEBUG"))
+	assert.Equal(t, DebugLevel, l)
+	l.unmarshalText([]byte("INFO"))
+	assert.Equal(t, InfoLevel, l)
+	l.unmarshalText([]byte("WARN"))
+	assert.Equal(t, WarnLevel, l)
+	l.unmarshalText([]byte("ERROR"))
+	assert.Equal(t, ErrorLevel, l)
+	l.unmarshalText([]byte("FATAL"))
+	assert.Equal(t, FatalLevel, l)
+	l.unmarshalText([]byte("DPANIC"))
+	assert.Equal(t, DPanicLevel, l)
+	l.unmarshalText([]byte("PANIC"))
+	assert.Equal(t, PanicLevel, l)
+	l.unmarshalText([]byte("NONE"))
+	assert.Equal(t, NoneLevel, l)
+}
+
+func TestLogLevel_UnmarshallText(t *testing.T) {
+	var lptr *LogLevel
+	err := lptr.UnmarshalText([]byte("Debug"))
+	assert.Error(t, err)
+	l := LogLevel(0)
+	err = l.UnmarshalText([]byte("Debug"))
+	assert.NoError(t, err)
+	assert.Equal(t, DebugLevel, l)
+
+	err = l.UnmarshalText([]byte("Fooo"))
+	assert.Error(t, err)
+}

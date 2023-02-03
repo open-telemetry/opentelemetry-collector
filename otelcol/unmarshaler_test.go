@@ -52,7 +52,7 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 
 	zapProdCfg := zap.NewProductionConfig()
 	assert.Equal(t, telemetry.LogsConfig{
-		Level:       zapProdCfg.Level.Level(),
+		Level:       telemetry.LogLevel(zapProdCfg.Level.Level()),
 		Development: zapProdCfg.Development,
 		Encoding:    "console",
 		Sampling: &telemetry.LogsSamplingConfig{

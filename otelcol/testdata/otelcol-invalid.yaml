@@ -11,6 +11,8 @@ service:
   telemetry:
     metrics:
       address: localhost:8888
+    logs:
+      level: none
   pipelines:
     traces:
       receivers: [nop]

@@ -2,10 +2,10 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: Sync telemetry logger on shutdown
+component: telemetry
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note:
+note: Sync telemetry logger on shutdown
 
 # One or more tracking issues or pull requests related to the change
 issues: [7094]

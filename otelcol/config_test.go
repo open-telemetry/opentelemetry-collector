@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -288,7 +287,7 @@ func generateConfig() *Config {
 		Service: service.Config{
 			Telemetry: telemetry.Config{
 				Logs: telemetry.LogsConfig{
-					Level:             zapcore.DebugLevel,
+					Level:             telemetry.DebugLevel,
 					Development:       true,
 					Encoding:          "console",
 					DisableCaller:     true,
