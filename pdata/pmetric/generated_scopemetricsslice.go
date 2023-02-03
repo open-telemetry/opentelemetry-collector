@@ -60,28 +60,8 @@ func (es ScopeMetricsSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es ScopeMetricsSlice) At(ix int) ScopeMetrics {
-	return newScopeMetrics((*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
-func (es ScopeMetricsSlice) CopyTo(dest ScopeMetricsSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newScopeMetrics((*es.orig)[i]).CopyTo(newScopeMetrics((*dest.orig)[i]))
-		}
-		return
-	}
-	origs := make([]otlpmetrics.ScopeMetrics, srcLen)
-	wrappers := make([]*otlpmetrics.ScopeMetrics, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newScopeMetrics((*es.orig)[i]).CopyTo(newScopeMetrics(wrappers[i]))
-	}
-	*dest.orig = wrappers
+func (es ScopeMetricsSlice) At(i int) ScopeMetrics {
+	return newScopeMetrics((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -114,13 +94,6 @@ func (es ScopeMetricsSlice) AppendEmpty() ScopeMetrics {
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the ScopeMetrics elements within ScopeMetricsSlice given the
-// provided less function so that two instances of ScopeMetricsSlice
-// can be compared.
-func (es ScopeMetricsSlice) Sort(less func(a, b ScopeMetrics) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ScopeMetricsSlice) MoveAndAppendTo(dest ScopeMetricsSlice) {
@@ -151,4 +124,31 @@ func (es ScopeMetricsSlice) RemoveIf(f func(ScopeMetrics) bool) {
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es ScopeMetricsSlice) CopyTo(dest ScopeMetricsSlice) {
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newScopeMetrics((*es.orig)[i]).CopyTo(newScopeMetrics((*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.ScopeMetrics, srcLen)
+	wrappers := make([]*otlpmetrics.ScopeMetrics, srcLen)
+	for i := range *es.orig {
+		wrappers[i] = &origs[i]
+		newScopeMetrics((*es.orig)[i]).CopyTo(newScopeMetrics(wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the ScopeMetrics elements within ScopeMetricsSlice given the
+// provided less function so that two instances of ScopeMetricsSlice
+// can be compared.
+func (es ScopeMetricsSlice) Sort(less func(a, b ScopeMetrics) bool) {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

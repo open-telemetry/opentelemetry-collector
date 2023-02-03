@@ -119,15 +119,15 @@ func TestLogRecordSlice_RemoveIf(t *testing.T) {
 }
 
 func generateTestLogRecordSlice() LogRecordSlice {
-	tv := NewLogRecordSlice()
-	fillTestLogRecordSlice(tv)
-	return tv
+	es := NewLogRecordSlice()
+	fillTestLogRecordSlice(es)
+	return es
 }
 
-func fillTestLogRecordSlice(tv LogRecordSlice) {
-	*tv.orig = make([]*otlplogs.LogRecord, 7)
+func fillTestLogRecordSlice(es LogRecordSlice) {
+	*es.orig = make([]*otlplogs.LogRecord, 7)
 	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlplogs.LogRecord{}
-		fillTestLogRecord(newLogRecord((*tv.orig)[i]))
+		(*es.orig)[i] = &otlplogs.LogRecord{}
+		fillTestLogRecord(newLogRecord((*es.orig)[i]))
 	}
 }

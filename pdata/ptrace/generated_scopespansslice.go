@@ -60,28 +60,8 @@ func (es ScopeSpansSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es ScopeSpansSlice) At(ix int) ScopeSpans {
-	return newScopeSpans((*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
-func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newScopeSpans((*es.orig)[i]).CopyTo(newScopeSpans((*dest.orig)[i]))
-		}
-		return
-	}
-	origs := make([]otlptrace.ScopeSpans, srcLen)
-	wrappers := make([]*otlptrace.ScopeSpans, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newScopeSpans((*es.orig)[i]).CopyTo(newScopeSpans(wrappers[i]))
-	}
-	*dest.orig = wrappers
+func (es ScopeSpansSlice) At(i int) ScopeSpans {
+	return newScopeSpans((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -114,13 +94,6 @@ func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the ScopeSpans elements within ScopeSpansSlice given the
-// provided less function so that two instances of ScopeSpansSlice
-// can be compared.
-func (es ScopeSpansSlice) Sort(less func(a, b ScopeSpans) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ScopeSpansSlice) MoveAndAppendTo(dest ScopeSpansSlice) {
@@ -151,4 +124,31 @@ func (es ScopeSpansSlice) RemoveIf(f func(ScopeSpans) bool) {
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newScopeSpans((*es.orig)[i]).CopyTo(newScopeSpans((*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlptrace.ScopeSpans, srcLen)
+	wrappers := make([]*otlptrace.ScopeSpans, srcLen)
+	for i := range *es.orig {
+		wrappers[i] = &origs[i]
+		newScopeSpans((*es.orig)[i]).CopyTo(newScopeSpans(wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the ScopeSpans elements within ScopeSpansSlice given the
+// provided less function so that two instances of ScopeSpansSlice
+// can be compared.
+func (es ScopeSpansSlice) Sort(less func(a, b ScopeSpans) bool) {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

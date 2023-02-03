@@ -60,28 +60,8 @@ func (es SummaryDataPointValueAtQuantileSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es SummaryDataPointValueAtQuantileSlice) At(ix int) SummaryDataPointValueAtQuantile {
-	return newSummaryDataPointValueAtQuantile((*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
-func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValueAtQuantileSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newSummaryDataPointValueAtQuantile((*es.orig)[i]).CopyTo(newSummaryDataPointValueAtQuantile((*dest.orig)[i]))
-		}
-		return
-	}
-	origs := make([]otlpmetrics.SummaryDataPoint_ValueAtQuantile, srcLen)
-	wrappers := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newSummaryDataPointValueAtQuantile((*es.orig)[i]).CopyTo(newSummaryDataPointValueAtQuantile(wrappers[i]))
-	}
-	*dest.orig = wrappers
+func (es SummaryDataPointValueAtQuantileSlice) At(i int) SummaryDataPointValueAtQuantile {
+	return newSummaryDataPointValueAtQuantile((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -114,13 +94,6 @@ func (es SummaryDataPointValueAtQuantileSlice) AppendEmpty() SummaryDataPointVal
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the SummaryDataPointValueAtQuantile elements within SummaryDataPointValueAtQuantileSlice given the
-// provided less function so that two instances of SummaryDataPointValueAtQuantileSlice
-// can be compared.
-func (es SummaryDataPointValueAtQuantileSlice) Sort(less func(a, b SummaryDataPointValueAtQuantile) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SummaryDataPointValueAtQuantileSlice) MoveAndAppendTo(dest SummaryDataPointValueAtQuantileSlice) {
@@ -151,4 +124,31 @@ func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointV
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValueAtQuantileSlice) {
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newSummaryDataPointValueAtQuantile((*es.orig)[i]).CopyTo(newSummaryDataPointValueAtQuantile((*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.SummaryDataPoint_ValueAtQuantile, srcLen)
+	wrappers := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, srcLen)
+	for i := range *es.orig {
+		wrappers[i] = &origs[i]
+		newSummaryDataPointValueAtQuantile((*es.orig)[i]).CopyTo(newSummaryDataPointValueAtQuantile(wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the SummaryDataPointValueAtQuantile elements within SummaryDataPointValueAtQuantileSlice given the
+// provided less function so that two instances of SummaryDataPointValueAtQuantileSlice
+// can be compared.
+func (es SummaryDataPointValueAtQuantileSlice) Sort(less func(a, b SummaryDataPointValueAtQuantile) bool) {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

@@ -58,23 +58,8 @@ func (es ExemplarSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es ExemplarSlice) At(ix int) Exemplar {
-	return newExemplar(&(*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
-func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-	} else {
-		(*dest.orig) = make([]otlpmetrics.Exemplar, srcLen)
-	}
-
-	for i := range *es.orig {
-		newExemplar(&(*es.orig)[i]).CopyTo(newExemplar(&(*dest.orig)[i]))
-	}
+func (es ExemplarSlice) At(i int) Exemplar {
+	return newExemplar(&(*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -137,4 +122,19 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+	} else {
+		(*dest.orig) = make([]otlpmetrics.Exemplar, srcLen)
+	}
+
+	for i := range *es.orig {
+		newExemplar(&(*es.orig)[i]).CopyTo(newExemplar(&(*dest.orig)[i]))
+	}
 }

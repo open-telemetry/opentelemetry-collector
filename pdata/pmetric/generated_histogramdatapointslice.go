@@ -60,28 +60,8 @@ func (es HistogramDataPointSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es HistogramDataPointSlice) At(ix int) HistogramDataPoint {
-	return newHistogramDataPoint((*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
-func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newHistogramDataPoint((*es.orig)[i]).CopyTo(newHistogramDataPoint((*dest.orig)[i]))
-		}
-		return
-	}
-	origs := make([]otlpmetrics.HistogramDataPoint, srcLen)
-	wrappers := make([]*otlpmetrics.HistogramDataPoint, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newHistogramDataPoint((*es.orig)[i]).CopyTo(newHistogramDataPoint(wrappers[i]))
-	}
-	*dest.orig = wrappers
+func (es HistogramDataPointSlice) At(i int) HistogramDataPoint {
+	return newHistogramDataPoint((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -114,13 +94,6 @@ func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the HistogramDataPoint elements within HistogramDataPointSlice given the
-// provided less function so that two instances of HistogramDataPointSlice
-// can be compared.
-func (es HistogramDataPointSlice) Sort(less func(a, b HistogramDataPoint) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es HistogramDataPointSlice) MoveAndAppendTo(dest HistogramDataPointSlice) {
@@ -151,4 +124,31 @@ func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newHistogramDataPoint((*es.orig)[i]).CopyTo(newHistogramDataPoint((*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.HistogramDataPoint, srcLen)
+	wrappers := make([]*otlpmetrics.HistogramDataPoint, srcLen)
+	for i := range *es.orig {
+		wrappers[i] = &origs[i]
+		newHistogramDataPoint((*es.orig)[i]).CopyTo(newHistogramDataPoint(wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the HistogramDataPoint elements within HistogramDataPointSlice given the
+// provided less function so that two instances of HistogramDataPointSlice
+// can be compared.
+func (es HistogramDataPointSlice) Sort(less func(a, b HistogramDataPoint) bool) {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

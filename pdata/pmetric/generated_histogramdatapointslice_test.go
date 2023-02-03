@@ -119,15 +119,15 @@ func TestHistogramDataPointSlice_RemoveIf(t *testing.T) {
 }
 
 func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
-	tv := NewHistogramDataPointSlice()
-	fillTestHistogramDataPointSlice(tv)
-	return tv
+	es := NewHistogramDataPointSlice()
+	fillTestHistogramDataPointSlice(es)
+	return es
 }
 
-func fillTestHistogramDataPointSlice(tv HistogramDataPointSlice) {
-	*tv.orig = make([]*otlpmetrics.HistogramDataPoint, 7)
+func fillTestHistogramDataPointSlice(es HistogramDataPointSlice) {
+	*es.orig = make([]*otlpmetrics.HistogramDataPoint, 7)
 	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlpmetrics.HistogramDataPoint{}
-		fillTestHistogramDataPoint(newHistogramDataPoint((*tv.orig)[i]))
+		(*es.orig)[i] = &otlpmetrics.HistogramDataPoint{}
+		fillTestHistogramDataPoint(newHistogramDataPoint((*es.orig)[i]))
 	}
 }

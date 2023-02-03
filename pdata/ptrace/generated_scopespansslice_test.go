@@ -119,15 +119,15 @@ func TestScopeSpansSlice_RemoveIf(t *testing.T) {
 }
 
 func generateTestScopeSpansSlice() ScopeSpansSlice {
-	tv := NewScopeSpansSlice()
-	fillTestScopeSpansSlice(tv)
-	return tv
+	es := NewScopeSpansSlice()
+	fillTestScopeSpansSlice(es)
+	return es
 }
 
-func fillTestScopeSpansSlice(tv ScopeSpansSlice) {
-	*tv.orig = make([]*otlptrace.ScopeSpans, 7)
+func fillTestScopeSpansSlice(es ScopeSpansSlice) {
+	*es.orig = make([]*otlptrace.ScopeSpans, 7)
 	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlptrace.ScopeSpans{}
-		fillTestScopeSpans(newScopeSpans((*tv.orig)[i]))
+		(*es.orig)[i] = &otlptrace.ScopeSpans{}
+		fillTestScopeSpans(newScopeSpans((*es.orig)[i]))
 	}
 }

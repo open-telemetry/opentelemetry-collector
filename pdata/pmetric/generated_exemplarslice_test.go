@@ -119,14 +119,15 @@ func TestExemplarSlice_RemoveIf(t *testing.T) {
 }
 
 func generateTestExemplarSlice() ExemplarSlice {
-	tv := NewExemplarSlice()
-	fillTestExemplarSlice(tv)
-	return tv
+	es := NewExemplarSlice()
+	fillTestExemplarSlice(es)
+	return es
 }
 
-func fillTestExemplarSlice(tv ExemplarSlice) {
-	*tv.orig = make([]otlpmetrics.Exemplar, 7)
+func fillTestExemplarSlice(es ExemplarSlice) {
+	*es.orig = make([]otlpmetrics.Exemplar, 7)
 	for i := 0; i < 7; i++ {
-		fillTestExemplar(newExemplar(&(*tv.orig)[i]))
+		(*es.orig)[i] = otlpmetrics.Exemplar{}
+		fillTestExemplar(newExemplar(&(*es.orig)[i]))
 	}
 }

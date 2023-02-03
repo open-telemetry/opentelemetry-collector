@@ -119,15 +119,15 @@ func TestSpanLinkSlice_RemoveIf(t *testing.T) {
 }
 
 func generateTestSpanLinkSlice() SpanLinkSlice {
-	tv := NewSpanLinkSlice()
-	fillTestSpanLinkSlice(tv)
-	return tv
+	es := NewSpanLinkSlice()
+	fillTestSpanLinkSlice(es)
+	return es
 }
 
-func fillTestSpanLinkSlice(tv SpanLinkSlice) {
-	*tv.orig = make([]*otlptrace.Span_Link, 7)
+func fillTestSpanLinkSlice(es SpanLinkSlice) {
+	*es.orig = make([]*otlptrace.Span_Link, 7)
 	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlptrace.Span_Link{}
-		fillTestSpanLink(newSpanLink((*tv.orig)[i]))
+		(*es.orig)[i] = &otlptrace.Span_Link{}
+		fillTestSpanLink(newSpanLink((*es.orig)[i]))
 	}
 }

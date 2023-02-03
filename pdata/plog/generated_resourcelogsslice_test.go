@@ -119,15 +119,15 @@ func TestResourceLogsSlice_RemoveIf(t *testing.T) {
 }
 
 func generateTestResourceLogsSlice() ResourceLogsSlice {
-	tv := NewResourceLogsSlice()
-	fillTestResourceLogsSlice(tv)
-	return tv
+	es := NewResourceLogsSlice()
+	fillTestResourceLogsSlice(es)
+	return es
 }
 
-func fillTestResourceLogsSlice(tv ResourceLogsSlice) {
-	*tv.orig = make([]*otlplogs.ResourceLogs, 7)
+func fillTestResourceLogsSlice(es ResourceLogsSlice) {
+	*es.orig = make([]*otlplogs.ResourceLogs, 7)
 	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlplogs.ResourceLogs{}
-		fillTestResourceLogs(newResourceLogs((*tv.orig)[i]))
+		(*es.orig)[i] = &otlplogs.ResourceLogs{}
+		fillTestResourceLogs(newResourceLogs((*es.orig)[i]))
 	}
 }

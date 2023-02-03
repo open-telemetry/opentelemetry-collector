@@ -119,15 +119,15 @@ func TestNumberDataPointSlice_RemoveIf(t *testing.T) {
 }
 
 func generateTestNumberDataPointSlice() NumberDataPointSlice {
-	tv := NewNumberDataPointSlice()
-	fillTestNumberDataPointSlice(tv)
-	return tv
+	es := NewNumberDataPointSlice()
+	fillTestNumberDataPointSlice(es)
+	return es
 }
 
-func fillTestNumberDataPointSlice(tv NumberDataPointSlice) {
-	*tv.orig = make([]*otlpmetrics.NumberDataPoint, 7)
+func fillTestNumberDataPointSlice(es NumberDataPointSlice) {
+	*es.orig = make([]*otlpmetrics.NumberDataPoint, 7)
 	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlpmetrics.NumberDataPoint{}
-		fillTestNumberDataPoint(newNumberDataPoint((*tv.orig)[i]))
+		(*es.orig)[i] = &otlpmetrics.NumberDataPoint{}
+		fillTestNumberDataPoint(newNumberDataPoint((*es.orig)[i]))
 	}
 }

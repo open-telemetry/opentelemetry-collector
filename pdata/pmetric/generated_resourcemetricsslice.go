@@ -60,28 +60,8 @@ func (es ResourceMetricsSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es ResourceMetricsSlice) At(ix int) ResourceMetrics {
-	return newResourceMetrics((*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
-func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newResourceMetrics((*es.orig)[i]).CopyTo(newResourceMetrics((*dest.orig)[i]))
-		}
-		return
-	}
-	origs := make([]otlpmetrics.ResourceMetrics, srcLen)
-	wrappers := make([]*otlpmetrics.ResourceMetrics, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newResourceMetrics((*es.orig)[i]).CopyTo(newResourceMetrics(wrappers[i]))
-	}
-	*dest.orig = wrappers
+func (es ResourceMetricsSlice) At(i int) ResourceMetrics {
+	return newResourceMetrics((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -114,13 +94,6 @@ func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the ResourceMetrics elements within ResourceMetricsSlice given the
-// provided less function so that two instances of ResourceMetricsSlice
-// can be compared.
-func (es ResourceMetricsSlice) Sort(less func(a, b ResourceMetrics) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
@@ -151,4 +124,31 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newResourceMetrics((*es.orig)[i]).CopyTo(newResourceMetrics((*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.ResourceMetrics, srcLen)
+	wrappers := make([]*otlpmetrics.ResourceMetrics, srcLen)
+	for i := range *es.orig {
+		wrappers[i] = &origs[i]
+		newResourceMetrics((*es.orig)[i]).CopyTo(newResourceMetrics(wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the ResourceMetrics elements within ResourceMetricsSlice given the
+// provided less function so that two instances of ResourceMetricsSlice
+// can be compared.
+func (es ResourceMetricsSlice) Sort(less func(a, b ResourceMetrics) bool) {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

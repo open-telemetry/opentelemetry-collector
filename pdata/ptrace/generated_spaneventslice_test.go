@@ -119,15 +119,15 @@ func TestSpanEventSlice_RemoveIf(t *testing.T) {
 }
 
 func generateTestSpanEventSlice() SpanEventSlice {
-	tv := NewSpanEventSlice()
-	fillTestSpanEventSlice(tv)
-	return tv
+	es := NewSpanEventSlice()
+	fillTestSpanEventSlice(es)
+	return es
 }
 
-func fillTestSpanEventSlice(tv SpanEventSlice) {
-	*tv.orig = make([]*otlptrace.Span_Event, 7)
+func fillTestSpanEventSlice(es SpanEventSlice) {
+	*es.orig = make([]*otlptrace.Span_Event, 7)
 	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlptrace.Span_Event{}
-		fillTestSpanEvent(newSpanEvent((*tv.orig)[i]))
+		(*es.orig)[i] = &otlptrace.Span_Event{}
+		fillTestSpanEvent(newSpanEvent((*es.orig)[i]))
 	}
 }

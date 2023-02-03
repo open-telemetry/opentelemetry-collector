@@ -60,28 +60,8 @@ func (es ResourceLogsSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es ResourceLogsSlice) At(ix int) ResourceLogs {
-	return newResourceLogs((*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
-func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newResourceLogs((*es.orig)[i]).CopyTo(newResourceLogs((*dest.orig)[i]))
-		}
-		return
-	}
-	origs := make([]otlplogs.ResourceLogs, srcLen)
-	wrappers := make([]*otlplogs.ResourceLogs, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newResourceLogs((*es.orig)[i]).CopyTo(newResourceLogs(wrappers[i]))
-	}
-	*dest.orig = wrappers
+func (es ResourceLogsSlice) At(i int) ResourceLogs {
+	return newResourceLogs((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -114,13 +94,6 @@ func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the ResourceLogs elements within ResourceLogsSlice given the
-// provided less function so that two instances of ResourceLogsSlice
-// can be compared.
-func (es ResourceLogsSlice) Sort(less func(a, b ResourceLogs) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceLogsSlice) MoveAndAppendTo(dest ResourceLogsSlice) {
@@ -151,4 +124,31 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newResourceLogs((*es.orig)[i]).CopyTo(newResourceLogs((*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlplogs.ResourceLogs, srcLen)
+	wrappers := make([]*otlplogs.ResourceLogs, srcLen)
+	for i := range *es.orig {
+		wrappers[i] = &origs[i]
+		newResourceLogs((*es.orig)[i]).CopyTo(newResourceLogs(wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the ResourceLogs elements within ResourceLogsSlice given the
+// provided less function so that two instances of ResourceLogsSlice
+// can be compared.
+func (es ResourceLogsSlice) Sort(less func(a, b ResourceLogs) bool) {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

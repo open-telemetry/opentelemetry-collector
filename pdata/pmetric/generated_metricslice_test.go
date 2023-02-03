@@ -119,15 +119,15 @@ func TestMetricSlice_RemoveIf(t *testing.T) {
 }
 
 func generateTestMetricSlice() MetricSlice {
-	tv := NewMetricSlice()
-	fillTestMetricSlice(tv)
-	return tv
+	es := NewMetricSlice()
+	fillTestMetricSlice(es)
+	return es
 }
 
-func fillTestMetricSlice(tv MetricSlice) {
-	*tv.orig = make([]*otlpmetrics.Metric, 7)
+func fillTestMetricSlice(es MetricSlice) {
+	*es.orig = make([]*otlpmetrics.Metric, 7)
 	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlpmetrics.Metric{}
-		fillTestMetric(newMetric((*tv.orig)[i]))
+		(*es.orig)[i] = &otlpmetrics.Metric{}
+		fillTestMetric(newMetric((*es.orig)[i]))
 	}
 }

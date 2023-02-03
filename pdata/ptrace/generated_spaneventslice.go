@@ -60,28 +60,8 @@ func (es SpanEventSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es SpanEventSlice) At(ix int) SpanEvent {
-	return newSpanEvent((*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
-func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newSpanEvent((*es.orig)[i]).CopyTo(newSpanEvent((*dest.orig)[i]))
-		}
-		return
-	}
-	origs := make([]otlptrace.Span_Event, srcLen)
-	wrappers := make([]*otlptrace.Span_Event, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newSpanEvent((*es.orig)[i]).CopyTo(newSpanEvent(wrappers[i]))
-	}
-	*dest.orig = wrappers
+func (es SpanEventSlice) At(i int) SpanEvent {
+	return newSpanEvent((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -114,13 +94,6 @@ func (es SpanEventSlice) AppendEmpty() SpanEvent {
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the SpanEvent elements within SpanEventSlice given the
-// provided less function so that two instances of SpanEventSlice
-// can be compared.
-func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
@@ -151,4 +124,31 @@ func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newSpanEvent((*es.orig)[i]).CopyTo(newSpanEvent((*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlptrace.Span_Event, srcLen)
+	wrappers := make([]*otlptrace.Span_Event, srcLen)
+	for i := range *es.orig {
+		wrappers[i] = &origs[i]
+		newSpanEvent((*es.orig)[i]).CopyTo(newSpanEvent(wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the SpanEvent elements within SpanEventSlice given the
+// provided less function so that two instances of SpanEventSlice
+// can be compared.
+func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
