@@ -299,8 +299,20 @@ func (g *pipelinesGraph) ShutdownAll(ctx context.Context) error {
 }
 
 func (g *pipelinesGraph) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	// TODO actual implementation
-	return make(map[component.DataType]map[component.ID]component.Component)
+	exportersMap := make(map[component.DataType]map[component.ID]component.Component)
+	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Component)
+	exportersMap[component.DataTypeMetrics] = make(map[component.ID]component.Component)
+	exportersMap[component.DataTypeLogs] = make(map[component.ID]component.Component)
+
+	for _, pg := range g.pipelines {
+		for _, expNode := range pg.exporters {
+			// Skip connectors, otherwise individual components can introduce cycles
+			if expNode, ok := g.componentGraph.Node(expNode.ID()).(*exporterNode); ok {
+				exportersMap[expNode.pipelineType][expNode.componentID] = expNode.Component
+			}
+		}
+	}
+	return exportersMap
 }
 
 func (g *pipelinesGraph) HandleZPages(w http.ResponseWriter, r *http.Request) {
