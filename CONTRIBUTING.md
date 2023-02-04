@@ -235,6 +235,10 @@ To keep naming patterns consistent across the project, naming patterns are enfor
   - `func FilterAttributes(attrs []Attribute, match func(attr Attribute) bool) []Attribute` MUST only filter attributes out of the passed input
     slice and return a new slice with values that `match` returns true. It may not do more work than what the method name implies, ie, it
     must not key a global history of all the slices that have been filtered.
+- Methods that get the value of a field i.e. a getterMethod MUST use uppercase first alphabet and NOT `get` prefix. For example:
+  - `func (p *Person) Name() string {return p.name} ` Name (with an uppercase N,exported) method is used here to get the value of the name field and not `getName`.The use of upper-case names for export provides the hook to discriminate the field from the method.
+- Methods that set the value of a field i.e. a setterMethod MUST use a `set` prefix. For example:
+  - `func (p *Person) SetName(newName string) {p.name = newName}` SetName method here sets the value of the name field.
 - Variable assigned in a package's global scope that is preconfigured with a default set of values MUST use `Default` as the prefix. For example:
   - `var DefaultMarshallers = map[string]pdata.Marshallers{...}` is defined with an exporters package that allows for converting an encoding name,
     `zipkin`, and return the preconfigured marshaller to be used in the export process.
