@@ -27,6 +27,7 @@ var pmetric = &Package{
 	},
 	testImports: []string{
 		`"testing"`,
+		`"unsafe"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,
