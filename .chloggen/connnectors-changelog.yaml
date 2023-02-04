@@ -1,0 +1,26 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: 'enhancement'
+
+# The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
+component: connectors
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add "connectors", a new type of pipeline component
+
+# One or more tracking issues or pull requests related to the change
+issues: [2336]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  - Connectors connect pipelines by acting as an exporter in one or more pipelines and simultaneously
+  as a receiver of corresponding data in one or more other pipelines. For example:
+    - The `forward` connector can export data to another pipeline of the same type. This allows you
+    to merge data from multiple pipelines onto a common pipeline. Or, you can replicate data onto multiple
+    pipelines so that it may be processed in different ways and/or exported to different backends.
+    - The `count` connector can count data of any type. Regardless of the type of data that is counted, it
+    emits counts as metrics onto a metrics pipeline.
+  - Connectors are currently disabled by default but can be enabled with the `service.connectors` feature gate.
+  - See the [connectors README](https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md)
+  for more details on how to use connectors.
