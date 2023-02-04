@@ -210,7 +210,9 @@ func TestLoadTLSServerConfig(t *testing.T) {
 func TestLoadTLSServerConfigReload(t *testing.T) {
 
 	tmpCa, err := os.CreateTemp("", "ca-tmp.crt")
+	assert.NoError(t, err)
 
+	tmpCaPath, err := filepath.Abs(tmpCa.Name())
 	assert.NoError(t, err)
 
 	firstCa, err := os.Open(filepath.Join("testdata", "ca-1.crt"))
@@ -218,8 +220,11 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 	_, err = io.Copy(tmpCa, firstCa)
 	assert.NoError(t, err)
 
+	assert.NoError(t, tmpCa.Close())
+	assert.NoError(t, firstCa.Close())
+
 	tlsSetting := TLSServerSetting{
-		ClientCAFile: tmpCa.Name(),
+		ClientCAFile: tmpCaPath,
 	}
 
 	tlsCfg, err := tlsSetting.LoadTLSConfig()
@@ -230,15 +235,22 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 	assert.NoError(t, err)
 	firstClientCAs := firstClient.ClientCAs
 
+	tmpCa, err = os.OpenFile(filepath.Clean(tmpCaPath), os.O_RDWR, 0600)
+	assert.NoError(t, err)
+
 	secondCa, err := os.Open(filepath.Join("testdata", "ca-2.crt"))
 	assert.NoError(t, err)
+
 	_, err = io.Copy(tmpCa, secondCa)
 	assert.NoError(t, err)
+
+	assert.NoError(t, tmpCa.Close())
+	assert.NoError(t, secondCa.Close())
 
 	assert.Eventually(t, func() bool {
 		_, loadError := tlsCfg.GetConfigForClient(nil)
 		return loadError == nil
-	}, 2*time.Second, 10*time.Millisecond)
+	}, 5*time.Second, 10*time.Millisecond)
 
 	secondClient, err := tlsCfg.GetConfigForClient(nil)
 	assert.NoError(t, err)
