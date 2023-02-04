@@ -60,28 +60,8 @@ func (es SummaryDataPointSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es SummaryDataPointSlice) At(ix int) SummaryDataPoint {
-	return newSummaryDataPoint((*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
-func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newSummaryDataPoint((*es.orig)[i]).CopyTo(newSummaryDataPoint((*dest.orig)[i]))
-		}
-		return
-	}
-	origs := make([]otlpmetrics.SummaryDataPoint, srcLen)
-	wrappers := make([]*otlpmetrics.SummaryDataPoint, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newSummaryDataPoint((*es.orig)[i]).CopyTo(newSummaryDataPoint(wrappers[i]))
-	}
-	*dest.orig = wrappers
+func (es SummaryDataPointSlice) At(i int) SummaryDataPoint {
+	return newSummaryDataPoint((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -114,13 +94,6 @@ func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the SummaryDataPoint elements within SummaryDataPointSlice given the
-// provided less function so that two instances of SummaryDataPointSlice
-// can be compared.
-func (es SummaryDataPointSlice) Sort(less func(a, b SummaryDataPoint) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SummaryDataPointSlice) MoveAndAppendTo(dest SummaryDataPointSlice) {
@@ -151,4 +124,31 @@ func (es SummaryDataPointSlice) RemoveIf(f func(SummaryDataPoint) bool) {
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newSummaryDataPoint((*es.orig)[i]).CopyTo(newSummaryDataPoint((*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.SummaryDataPoint, srcLen)
+	wrappers := make([]*otlpmetrics.SummaryDataPoint, srcLen)
+	for i := range *es.orig {
+		wrappers[i] = &origs[i]
+		newSummaryDataPoint((*es.orig)[i]).CopyTo(newSummaryDataPoint(wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the SummaryDataPoint elements within SummaryDataPointSlice given the
+// provided less function so that two instances of SummaryDataPointSlice
+// can be compared.
+func (es SummaryDataPointSlice) Sort(less func(a, b SummaryDataPoint) bool) {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

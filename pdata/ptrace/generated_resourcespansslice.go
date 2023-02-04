@@ -60,28 +60,8 @@ func (es ResourceSpansSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es ResourceSpansSlice) At(ix int) ResourceSpans {
-	return newResourceSpans((*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
-func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newResourceSpans((*es.orig)[i]).CopyTo(newResourceSpans((*dest.orig)[i]))
-		}
-		return
-	}
-	origs := make([]otlptrace.ResourceSpans, srcLen)
-	wrappers := make([]*otlptrace.ResourceSpans, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newResourceSpans((*es.orig)[i]).CopyTo(newResourceSpans(wrappers[i]))
-	}
-	*dest.orig = wrappers
+func (es ResourceSpansSlice) At(i int) ResourceSpans {
+	return newResourceSpans((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -114,13 +94,6 @@ func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the ResourceSpans elements within ResourceSpansSlice given the
-// provided less function so that two instances of ResourceSpansSlice
-// can be compared.
-func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
@@ -151,4 +124,31 @@ func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newResourceSpans((*es.orig)[i]).CopyTo(newResourceSpans((*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlptrace.ResourceSpans, srcLen)
+	wrappers := make([]*otlptrace.ResourceSpans, srcLen)
+	for i := range *es.orig {
+		wrappers[i] = &origs[i]
+		newResourceSpans((*es.orig)[i]).CopyTo(newResourceSpans(wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the ResourceSpans elements within ResourceSpansSlice given the
+// provided less function so that two instances of ResourceSpansSlice
+// can be compared.
+func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

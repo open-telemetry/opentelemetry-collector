@@ -60,28 +60,8 @@ func (es MetricSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es MetricSlice) At(ix int) Metric {
-	return newMetric((*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
-func (es MetricSlice) CopyTo(dest MetricSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newMetric((*es.orig)[i]).CopyTo(newMetric((*dest.orig)[i]))
-		}
-		return
-	}
-	origs := make([]otlpmetrics.Metric, srcLen)
-	wrappers := make([]*otlpmetrics.Metric, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newMetric((*es.orig)[i]).CopyTo(newMetric(wrappers[i]))
-	}
-	*dest.orig = wrappers
+func (es MetricSlice) At(i int) Metric {
+	return newMetric((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -114,13 +94,6 @@ func (es MetricSlice) AppendEmpty() Metric {
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the Metric elements within MetricSlice given the
-// provided less function so that two instances of MetricSlice
-// can be compared.
-func (es MetricSlice) Sort(less func(a, b Metric) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es MetricSlice) MoveAndAppendTo(dest MetricSlice) {
@@ -151,4 +124,31 @@ func (es MetricSlice) RemoveIf(f func(Metric) bool) {
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MetricSlice) CopyTo(dest MetricSlice) {
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newMetric((*es.orig)[i]).CopyTo(newMetric((*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.Metric, srcLen)
+	wrappers := make([]*otlpmetrics.Metric, srcLen)
+	for i := range *es.orig {
+		wrappers[i] = &origs[i]
+		newMetric((*es.orig)[i]).CopyTo(newMetric(wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the Metric elements within MetricSlice given the
+// provided less function so that two instances of MetricSlice
+// can be compared.
+func (es MetricSlice) Sort(less func(a, b Metric) bool) {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

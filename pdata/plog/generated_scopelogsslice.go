@@ -60,28 +60,8 @@ func (es ScopeLogsSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es ScopeLogsSlice) At(ix int) ScopeLogs {
-	return newScopeLogs((*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
-func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newScopeLogs((*es.orig)[i]).CopyTo(newScopeLogs((*dest.orig)[i]))
-		}
-		return
-	}
-	origs := make([]otlplogs.ScopeLogs, srcLen)
-	wrappers := make([]*otlplogs.ScopeLogs, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newScopeLogs((*es.orig)[i]).CopyTo(newScopeLogs(wrappers[i]))
-	}
-	*dest.orig = wrappers
+func (es ScopeLogsSlice) At(i int) ScopeLogs {
+	return newScopeLogs((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -114,13 +94,6 @@ func (es ScopeLogsSlice) AppendEmpty() ScopeLogs {
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the ScopeLogs elements within ScopeLogsSlice given the
-// provided less function so that two instances of ScopeLogsSlice
-// can be compared.
-func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ScopeLogsSlice) MoveAndAppendTo(dest ScopeLogsSlice) {
@@ -151,4 +124,31 @@ func (es ScopeLogsSlice) RemoveIf(f func(ScopeLogs) bool) {
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newScopeLogs((*es.orig)[i]).CopyTo(newScopeLogs((*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlplogs.ScopeLogs, srcLen)
+	wrappers := make([]*otlplogs.ScopeLogs, srcLen)
+	for i := range *es.orig {
+		wrappers[i] = &origs[i]
+		newScopeLogs((*es.orig)[i]).CopyTo(newScopeLogs(wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the ScopeLogs elements within ScopeLogsSlice given the
+// provided less function so that two instances of ScopeLogsSlice
+// can be compared.
+func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

@@ -119,15 +119,15 @@ func TestScopeMetricsSlice_RemoveIf(t *testing.T) {
 }
 
 func generateTestScopeMetricsSlice() ScopeMetricsSlice {
-	tv := NewScopeMetricsSlice()
-	fillTestScopeMetricsSlice(tv)
-	return tv
+	es := NewScopeMetricsSlice()
+	fillTestScopeMetricsSlice(es)
+	return es
 }
 
-func fillTestScopeMetricsSlice(tv ScopeMetricsSlice) {
-	*tv.orig = make([]*otlpmetrics.ScopeMetrics, 7)
+func fillTestScopeMetricsSlice(es ScopeMetricsSlice) {
+	*es.orig = make([]*otlpmetrics.ScopeMetrics, 7)
 	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlpmetrics.ScopeMetrics{}
-		fillTestScopeMetrics(newScopeMetrics((*tv.orig)[i]))
+		(*es.orig)[i] = &otlpmetrics.ScopeMetrics{}
+		fillTestScopeMetrics(newScopeMetrics((*es.orig)[i]))
 	}
 }

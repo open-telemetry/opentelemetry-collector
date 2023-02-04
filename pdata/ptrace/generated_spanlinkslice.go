@@ -60,28 +60,8 @@ func (es SpanLinkSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es SpanLinkSlice) At(ix int) SpanLink {
-	return newSpanLink((*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
-func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newSpanLink((*es.orig)[i]).CopyTo(newSpanLink((*dest.orig)[i]))
-		}
-		return
-	}
-	origs := make([]otlptrace.Span_Link, srcLen)
-	wrappers := make([]*otlptrace.Span_Link, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newSpanLink((*es.orig)[i]).CopyTo(newSpanLink(wrappers[i]))
-	}
-	*dest.orig = wrappers
+func (es SpanLinkSlice) At(i int) SpanLink {
+	return newSpanLink((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -114,13 +94,6 @@ func (es SpanLinkSlice) AppendEmpty() SpanLink {
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the SpanLink elements within SpanLinkSlice given the
-// provided less function so that two instances of SpanLinkSlice
-// can be compared.
-func (es SpanLinkSlice) Sort(less func(a, b SpanLink) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {
@@ -151,4 +124,31 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newSpanLink((*es.orig)[i]).CopyTo(newSpanLink((*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlptrace.Span_Link, srcLen)
+	wrappers := make([]*otlptrace.Span_Link, srcLen)
+	for i := range *es.orig {
+		wrappers[i] = &origs[i]
+		newSpanLink((*es.orig)[i]).CopyTo(newSpanLink(wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the SpanLink elements within SpanLinkSlice given the
+// provided less function so that two instances of SpanLinkSlice
+// can be compared.
+func (es SpanLinkSlice) Sort(less func(a, b SpanLink) bool) {
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

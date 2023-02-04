@@ -119,15 +119,15 @@ func TestSummaryDataPointSlice_RemoveIf(t *testing.T) {
 }
 
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
-	tv := NewSummaryDataPointSlice()
-	fillTestSummaryDataPointSlice(tv)
-	return tv
+	es := NewSummaryDataPointSlice()
+	fillTestSummaryDataPointSlice(es)
+	return es
 }
 
-func fillTestSummaryDataPointSlice(tv SummaryDataPointSlice) {
-	*tv.orig = make([]*otlpmetrics.SummaryDataPoint, 7)
+func fillTestSummaryDataPointSlice(es SummaryDataPointSlice) {
+	*es.orig = make([]*otlpmetrics.SummaryDataPoint, 7)
 	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &otlpmetrics.SummaryDataPoint{}
-		fillTestSummaryDataPoint(newSummaryDataPoint((*tv.orig)[i]))
+		(*es.orig)[i] = &otlpmetrics.SummaryDataPoint{}
+		fillTestSummaryDataPoint(newSummaryDataPoint((*es.orig)[i]))
 	}
 }

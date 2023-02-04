@@ -19,7 +19,75 @@ import (
 	"os"
 )
 
-const commonSliceTemplate = `
+const commonSliceTemplate = `// ${structName} logically represents a slice of ${elementName}.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use New${structName} function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type ${structName} struct {
+	orig *[]${originElementType}
+}
+
+func new${structName}(orig *[]${originElementType}) ${structName} {
+	return ${structName}{orig}
+}
+
+// New${structName} creates a ${structName} with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
+func New${structName}() ${structName} {
+	orig := []${originElementType}(nil)
+	return new${structName}(&orig)
+}
+
+// Len returns the number of elements in the slice.
+//
+// Returns "0" for a newly instance created with "New${structName}()".
+func (es ${structName}) Len() int {
+	return len(*es.orig)
+}
+
+// At returns the element at the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+//   for i := 0; i < es.Len(); i++ {
+//       e := es.At(i)
+//       ... // Do something with the element
+//   }
+func (es ${structName}) At(i int) ${elementName} {
+	return ${newElement}
+}
+
+// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
+// 1. If the newCap <= cap then no change in capacity.
+// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
+//
+// Here is how a new ${structName} can be initialized:
+//   es := New${structName}()
+//   es.EnsureCapacity(4)
+//   for i := 0; i < 4; i++ {
+//       e := es.AppendEmpty()
+//       // Here should set all the values for e.
+//   }
+func (es ${structName}) EnsureCapacity(newCap int) {
+	oldCap := cap(*es.orig)
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]${originElementType}, len(*es.orig), newCap)
+	copy(newOrig, *es.orig)
+	*es.orig = newOrig
+}
+
+// AppendEmpty will append to the end of the slice an empty ${elementName}.
+// It returns the newly added ${elementName}.
+func (es ${structName}) AppendEmpty() ${elementName} {
+	*es.orig = append(*es.orig, ${emptyOriginElement})
+	return es.At(es.Len() - 1)
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ${structName}) MoveAndAppendTo(dest ${structName}) {
@@ -52,7 +120,55 @@ func (es ${structName}) RemoveIf(f func(${elementName}) bool) {
 	*es.orig = (*es.orig)[:newLen]
 }`
 
-const commonSliceTestTemplate = `
+const commonSliceTestTemplate = `func Test${structName}(t *testing.T) {
+	es := New${structName}()
+	assert.Equal(t, 0, es.Len())
+	es = new${structName}(&[]${originElementType}{})
+	assert.Equal(t, 0, es.Len())
+
+	emptyVal := New${elementName}()
+	testVal := generateTest${elementName}()
+	for i := 0; i < 7; i++ {
+		el := es.AppendEmpty()
+		assert.Equal(t, emptyVal, es.At(i))
+		fillTest${elementName}(el)
+		assert.Equal(t, testVal, es.At(i))
+	}
+	assert.Equal(t, 7, es.Len())
+}
+
+func Test${structName}_CopyTo(t *testing.T) {
+	dest := New${structName}()
+	// Test CopyTo to empty
+	New${structName}().CopyTo(dest)
+	assert.Equal(t, New${structName}(), dest)
+
+	// Test CopyTo larger slice
+	generateTest${structName}().CopyTo(dest)
+	assert.Equal(t, generateTest${structName}(), dest)
+
+	// Test CopyTo same size slice
+	generateTest${structName}().CopyTo(dest)
+	assert.Equal(t, generateTest${structName}(), dest)
+}
+
+func Test${structName}_EnsureCapacity(t *testing.T) {
+	es := generateTest${structName}()
+
+	// Test ensure smaller capacity.
+	const ensureSmallLen = 4
+	es.EnsureCapacity(ensureSmallLen)
+	assert.Less(t, ensureSmallLen, es.Len())
+	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, generateTest${structName}(), es)
+
+	// Test ensure larger capacity
+	const ensureLargeLen = 9
+	es.EnsureCapacity(ensureLargeLen)
+	assert.Less(t, generateTest${structName}().Len(), ensureLargeLen)
+	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, generateTest${structName}(), es)
+}
 
 func Test${structName}_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
@@ -97,47 +213,7 @@ func Test${structName}_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }`
 
-const slicePtrTemplate = `// ${structName} logically represents a slice of ${elementName}.
-//
-// This is a reference type. If passed by value and callee modifies it, the
-// caller will see the modification.
-//
-// Must use New${structName} function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ${structName} struct {
-	orig *[]*${originName}
-}
-
-func new${structName}(orig *[]*${originName}) ${structName} {
-	return ${structName}{orig}
-}
-
-// New${structName} creates a ${structName} with 0 elements.
-// Can use "EnsureCapacity" to initialize with a given capacity.
-func New${structName}() ${structName} {
-	orig := []*${originName}(nil)
-	return new${structName}(&orig)
-}
-
-// Len returns the number of elements in the slice.
-//
-// Returns "0" for a newly instance created with "New${structName}()".
-func (es ${structName}) Len() int {
-	return len(*es.orig)
-}
-
-// At returns the element at the given index.
-//
-// This function is used mostly for iterating over all the values in the slice:
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
-func (es ${structName}) At(ix int) ${elementName} {
-	return new${elementName}((*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
+const slicePtrTemplate = `// CopyTo copies all elements from the current slice overriding the destination.
 func (es ${structName}) CopyTo(dest ${structName}) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
@@ -157,150 +233,14 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 	*dest.orig = wrappers
 }
 
-// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
-// 1. If the newCap <= cap then no change in capacity.
-// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
-//
-// Here is how a new ${structName} can be initialized:
-//   es := New${structName}()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
-func (es ${structName}) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
-	if newCap <= oldCap {
-		return
-	}
-
-	newOrig := make([]*${originName}, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
-}
-
-// AppendEmpty will append to the end of the slice an empty ${elementName}.
-// It returns the newly added ${elementName}.
-func (es ${structName}) AppendEmpty() ${elementName} {
-	*es.orig = append(*es.orig, &${originName}{})
-	return es.At(es.Len() - 1)
-}
-
 // Sort sorts the ${elementName} elements within ${structName} given the
 // provided less function so that two instances of ${structName}
 // can be compared.
 func (es ${structName}) Sort(less func(a, b ${elementName}) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-`
-
-const slicePtrTestTemplate = `func Test${structName}(t *testing.T) {
-	es := New${structName}()
-	assert.Equal(t, 0, es.Len())
-	es = new${structName}(&[]*${originName}{})
-	assert.Equal(t, 0, es.Len())
-
-	emptyVal := New${elementName}()
-	testVal := generateTest${elementName}()
-	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
-		assert.Equal(t, emptyVal, es.At(i))
-		fillTest${elementName}(el)
-		assert.Equal(t, testVal, es.At(i))
-	}
-	assert.Equal(t, 7, es.Len())
-}
-
-func Test${structName}_CopyTo(t *testing.T) {
-	dest := New${structName}()
-	// Test CopyTo to empty
-	New${structName}().CopyTo(dest)
-	assert.Equal(t, New${structName}(), dest)
-
-	// Test CopyTo larger slice
-	generateTest${structName}().CopyTo(dest)
-	assert.Equal(t, generateTest${structName}(), dest)
-
-	// Test CopyTo same size slice
-	generateTest${structName}().CopyTo(dest)
-	assert.Equal(t, generateTest${structName}(), dest)
-}
-
-func Test${structName}_EnsureCapacity(t *testing.T) {
-	es := generateTest${structName}()
-
-	// Test ensure smaller capacity.
-	const ensureSmallLen = 4
-	es.EnsureCapacity(ensureSmallLen)
-	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
-	assert.Equal(t, generateTest${structName}(), es)
-
-	// Test ensure larger capacity
-	const ensureLargeLen = 9
-	es.EnsureCapacity(ensureLargeLen)
-	assert.Less(t, generateTest${structName}().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	assert.Equal(t, generateTest${structName}(), es)
 }`
 
-const slicePtrGenerateTest = `
-
-func generateTest${structName}() ${structName} {
-	tv := New${structName}()
-	fillTest${structName}(tv)
-	return tv
-}
-
-func fillTest${structName}(tv ${structName}) {
-	*tv.orig = make([]*${originName}, 7)
-	for i := 0; i < 7; i++ {
-		(*tv.orig)[i] = &${originName}{}
-		fillTest${elementName}(new${elementName}((*tv.orig)[i]))
-	}
-}`
-
-const sliceValueTemplate = `// ${structName} logically represents a slice of ${elementName}.
-//
-// This is a reference type. If passed by value and callee modifies it, the
-// caller will see the modification.
-//
-// Must use New${structName} function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ${structName} struct {
-	orig *[]${originName}
-}
-
-func new${structName}(orig *[]${originName}) ${structName} {
-	return ${structName}{orig}
-}
-
-// New${structName} creates a ${structName} with 0 elements.
-// Can use "EnsureCapacity" to initialize with a given capacity.
-func New${structName}() ${structName} {
-	orig := []${originName}(nil)
-	return new${structName}(&orig)
-}
-
-// Len returns the number of elements in the slice.
-//
-// Returns "0" for a newly instance created with "New${structName}()".
-func (es ${structName}) Len() int {
-	return len(*es.orig)
-}
-
-// At returns the element at the given index.
-//
-// This function is used mostly for iterating over all the values in the slice:
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
-func (es ${structName}) At(ix int) ${elementName} {
-	return new${elementName}(&(*es.orig)[ix])
-}
-
-// CopyTo copies all elements from the current slice overriding the destination.
+const sliceValueTemplate = `// CopyTo copies all elements from the current slice overriding the destination.
 func (es ${structName}) CopyTo(dest ${structName}) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
@@ -313,97 +253,19 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 	for i := range *es.orig {
 		new${elementName}(&(*es.orig)[i]).CopyTo(new${elementName}(&(*dest.orig)[i]))
 	}
-}
-
-// EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
-// 1. If the newCap <= cap then no change in capacity.
-// 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
-//
-// Here is how a new ${structName} can be initialized:
-//   es := New${structName}()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
-func (es ${structName}) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
-	if newCap <= oldCap {
-		return
-	}
-
-	newOrig := make([]${originName}, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
-}
-
-// AppendEmpty will append to the end of the slice an empty ${elementName}.
-// It returns the newly added ${elementName}.
-func (es ${structName}) AppendEmpty() ${elementName} {
-	*es.orig = append(*es.orig, ${originName}{})
-	return es.At(es.Len() - 1)
 }`
 
-const sliceValueTestTemplate = `func Test${structName}(t *testing.T) {
+const commonSliceGenerateTest = `func generateTest${structName}() ${structName} {
 	es := New${structName}()
-	assert.Equal(t, 0, es.Len())
-	es = new${structName}(&[]${originName}{})
-	assert.Equal(t, 0, es.Len())
+	fillTest${structName}(es)
+	return es
+}
 
-	emptyVal := New${elementName}()
-	testVal := generateTest${elementName}()
+func fillTest${structName}(es ${structName}) {
+	*es.orig = make([]${originElementType}, 7)
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
-		assert.Equal(t, emptyVal, es.At(i))
-		fillTest${elementName}(el)
-		assert.Equal(t, testVal, es.At(i))
-	}
-	assert.Equal(t, 7, es.Len())
-}
-
-func Test${structName}_CopyTo(t *testing.T) {
-	dest := New${structName}()
-	// Test CopyTo to empty
-	New${structName}().CopyTo(dest)
-	assert.Equal(t, New${structName}(), dest)
-
-	// Test CopyTo larger slice
-	generateTest${structName}().CopyTo(dest)
-	assert.Equal(t, generateTest${structName}(), dest)
-
-	// Test CopyTo same size slice
-	generateTest${structName}().CopyTo(dest)
-	assert.Equal(t, generateTest${structName}(), dest)
-}
-
-func Test${structName}_EnsureCapacity(t *testing.T) {
-	es := generateTest${structName}()
-
-	// Test ensure smaller capacity.
-	const ensureSmallLen = 4
-	es.EnsureCapacity(ensureSmallLen)
-	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
-	assert.Equal(t, generateTest${structName}(), es)
-
-	// Test ensure larger capacity
-	const ensureLargeLen = 9
-	es.EnsureCapacity(ensureLargeLen)
-	assert.Less(t, generateTest${structName}().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	assert.Equal(t, generateTest${structName}(), es)
-}`
-
-const sliceValueGenerateTest = `func generateTest${structName}() ${structName} {
-	tv := New${structName}()
-	fillTest${structName}(tv)
-	return tv
-}
-
-func fillTest${structName}(tv ${structName}) {
-	*tv.orig = make([]${originName}, 7)
-	for i := 0; i < 7; i++ {
-		fillTest${elementName}(new${elementName}(&(*tv.orig)[i]))
+		(*es.orig)[i] = ${emptyOriginElement}
+		fillTest${elementName}(${newElement})
 	}
 }`
 
@@ -428,17 +290,16 @@ func (ss *sliceOfPtrs) getPackageName() string {
 }
 
 func (ss *sliceOfPtrs) generateStruct(sb *bytes.Buffer) {
+	sb.WriteString(os.Expand(commonSliceTemplate, ss.templateFields()) + newLine + newLine)
 	sb.WriteString(os.Expand(slicePtrTemplate, ss.templateFields()))
-	sb.WriteString(os.Expand(commonSliceTemplate, ss.templateFields()))
 }
 
 func (ss *sliceOfPtrs) generateTests(sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(slicePtrTestTemplate, ss.templateFields()))
 	sb.WriteString(os.Expand(commonSliceTestTemplate, ss.templateFields()))
 }
 
 func (ss *sliceOfPtrs) generateTestValueHelpers(sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(slicePtrGenerateTest, ss.templateFields()))
+	sb.WriteString(os.Expand(commonSliceGenerateTest, ss.templateFields()))
 }
 
 func (ss *sliceOfPtrs) templateFields() func(name string) string {
@@ -450,6 +311,12 @@ func (ss *sliceOfPtrs) templateFields() func(name string) string {
 			return ss.element.structName
 		case "originName":
 			return ss.element.originFullName
+		case "originElementType":
+			return "*" + ss.element.originFullName
+		case "emptyOriginElement":
+			return "&" + ss.element.originFullName + "{}"
+		case "newElement":
+			return "new" + ss.element.structName + "((*es.orig)[i])"
 		default:
 			panic(name)
 		}
@@ -476,17 +343,16 @@ func (ss *sliceOfValues) getPackageName() string {
 }
 
 func (ss *sliceOfValues) generateStruct(sb *bytes.Buffer) {
+	sb.WriteString(os.Expand(commonSliceTemplate, ss.templateFields()) + newLine + newLine)
 	sb.WriteString(os.Expand(sliceValueTemplate, ss.templateFields()))
-	sb.WriteString(os.Expand(commonSliceTemplate, ss.templateFields()))
 }
 
 func (ss *sliceOfValues) generateTests(sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(sliceValueTestTemplate, ss.templateFields()))
 	sb.WriteString(os.Expand(commonSliceTestTemplate, ss.templateFields()))
 }
 
 func (ss *sliceOfValues) generateTestValueHelpers(sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(sliceValueGenerateTest, ss.templateFields()))
+	sb.WriteString(os.Expand(commonSliceGenerateTest, ss.templateFields()))
 }
 
 func (ss *sliceOfValues) templateFields() func(name string) string {
@@ -498,6 +364,12 @@ func (ss *sliceOfValues) templateFields() func(name string) string {
 			return ss.element.structName
 		case "originName":
 			return ss.element.originFullName
+		case "originElementType":
+			return ss.element.originFullName
+		case "emptyOriginElement":
+			return ss.element.originFullName + "{}"
+		case "newElement":
+			return "new" + ss.element.structName + "(&(*es.orig)[i])"
 		default:
 			panic(name)
 		}
