@@ -21,6 +21,6 @@ subtext: |
     pipelines so that it may be processed in different ways and/or exported to different backends.
     - The `count` connector can count data of any type. Regardless of the type of data that is counted, it
     emits counts as metrics onto a metrics pipeline.
-  - Connectors are currently disabled by default but can be enabled with the `connectors` feature gate.
+  - Connectors are currently disabled by default but can be enabled with the `service.connectors` feature gate.
   - See the [connectors README](https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md)
   for more details on how to use connectors.
