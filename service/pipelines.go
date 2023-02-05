@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sort"
 
 	"go.uber.org/multierr"
 
@@ -31,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
-	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
 const (
@@ -165,28 +163,6 @@ func (bps *builtPipelines) GetExporters() map[component.DataType]map[component.I
 	}
 
 	return exportersMap
-}
-
-func (bps *builtPipelines) HandleZPages(w http.ResponseWriter, r *http.Request) {
-	qValues := r.URL.Query()
-	pipelineName := qValues.Get(zPipelineName)
-	componentName := qValues.Get(zComponentName)
-	componentKind := qValues.Get(zComponentKind)
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "builtPipelines"})
-	zpages.WriteHTMLPipelinesSummaryTable(w, bps.getPipelinesSummaryTableData())
-	if pipelineName != "" && componentName != "" && componentKind != "" {
-		fullName := componentName
-		if componentKind == "processor" {
-			fullName = pipelineName + "/" + componentName
-		}
-		zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
-			Name: componentKind + ": " + fullName,
-		})
-		// TODO: Add config + status info.
-	}
-	zpages.WriteHTMLPageFooter(w)
 }
 
 // pipelinesSettings holds configuration for building builtPipelines.
@@ -446,36 +422,38 @@ func buildReceiver(ctx context.Context,
 	return recv, nil
 }
 
-func (bps *builtPipelines) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableData {
-	sumData := zpages.SummaryPipelinesTableData{}
-	sumData.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(bps.pipelines))
-	for c, p := range bps.pipelines {
-		// TODO: Change the template to use ID.
-		var recvs []string
-		for _, bRecv := range p.receivers {
-			recvs = append(recvs, bRecv.id.String())
-		}
-		var procs []string
-		for _, bProc := range p.processors {
-			procs = append(procs, bProc.id.String())
-		}
-		var exps []string
-		for _, bExp := range p.exporters {
-			exps = append(exps, bExp.id.String())
-		}
-		row := zpages.SummaryPipelinesTableRowData{
-			FullName:    c.String(),
-			InputType:   string(c.Type()),
-			MutatesData: p.lastConsumer.Capabilities().MutatesData,
-			Receivers:   recvs,
-			Processors:  procs,
-			Exporters:   exps,
-		}
-		sumData.Rows = append(sumData.Rows, row)
+func (bps *builtPipelines) HandleZPages(w http.ResponseWriter, r *http.Request) {
+	pipes := make(map[component.ID]zpagesPipeline, len(bps.pipelines))
+	for id, pipe := range bps.pipelines {
+		pipes[id] = pipe
 	}
+	handleZPages(w, r, pipes)
+}
 
-	sort.Slice(sumData.Rows, func(i, j int) bool {
-		return sumData.Rows[i].FullName < sumData.Rows[j].FullName
-	})
-	return sumData
+func (bp *builtPipeline) receiverIDs() []string {
+	ids := make([]string, 0, len(bp.receivers))
+	for _, bc := range bp.receivers {
+		ids = append(ids, bc.id.String())
+	}
+	return ids
+}
+
+func (bp *builtPipeline) processorIDs() []string {
+	ids := make([]string, 0, len(bp.processors))
+	for _, bc := range bp.processors {
+		ids = append(ids, bc.id.String())
+	}
+	return ids
+}
+
+func (bp *builtPipeline) exporterIDs() []string {
+	ids := make([]string, 0, len(bp.exporters))
+	for _, bc := range bp.exporters {
+		ids = append(ids, bc.id.String())
+	}
+	return ids
+}
+
+func (bp *builtPipeline) mutatesData() bool {
+	return bp.lastConsumer.Capabilities().MutatesData
 }
