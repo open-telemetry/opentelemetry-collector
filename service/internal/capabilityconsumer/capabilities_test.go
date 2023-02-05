@@ -30,6 +30,9 @@ func TestLogs(t *testing.T) {
 	sink := &consumertest.LogsSink{}
 	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
 
+	same := NewLogs(sink, consumer.Capabilities{MutatesData: false})
+	assert.Same(t, sink, same)
+
 	wrap := NewLogs(sink, consumer.Capabilities{MutatesData: true})
 	assert.Equal(t, consumer.Capabilities{MutatesData: true}, wrap.Capabilities())
 
@@ -42,6 +45,9 @@ func TestMetrics(t *testing.T) {
 	sink := &consumertest.MetricsSink{}
 	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
 
+	same := NewMetrics(sink, consumer.Capabilities{MutatesData: false})
+	assert.Same(t, sink, same)
+
 	wrap := NewMetrics(sink, consumer.Capabilities{MutatesData: true})
 	assert.Equal(t, consumer.Capabilities{MutatesData: true}, wrap.Capabilities())
 
@@ -53,6 +59,9 @@ func TestMetrics(t *testing.T) {
 func TestTraces(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
+
+	same := NewTraces(sink, consumer.Capabilities{MutatesData: false})
+	assert.Same(t, sink, same)
 
 	wrap := NewTraces(sink, consumer.Capabilities{MutatesData: true})
 	assert.Equal(t, consumer.Capabilities{MutatesData: true}, wrap.Capabilities())

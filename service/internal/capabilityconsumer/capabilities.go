@@ -19,6 +19,9 @@ import (
 )
 
 func NewLogs(logs consumer.Logs, cap consumer.Capabilities) consumer.Logs {
+	if logs.Capabilities() == cap {
+		return logs
+	}
 	return capLogs{Logs: logs, cap: cap}
 }
 
@@ -32,6 +35,9 @@ func (mts capLogs) Capabilities() consumer.Capabilities {
 }
 
 func NewMetrics(metrics consumer.Metrics, cap consumer.Capabilities) consumer.Metrics {
+	if metrics.Capabilities() == cap {
+		return metrics
+	}
 	return capMetrics{Metrics: metrics, cap: cap}
 }
 
@@ -45,6 +51,9 @@ func (mts capMetrics) Capabilities() consumer.Capabilities {
 }
 
 func NewTraces(traces consumer.Traces, cap consumer.Capabilities) consumer.Traces {
+	if traces.Capabilities() == cap {
+		return traces
+	}
 	return capTraces{Traces: traces, cap: cap}
 }
 
