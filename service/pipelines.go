@@ -423,11 +423,7 @@ func buildReceiver(ctx context.Context,
 }
 
 func (bps *builtPipelines) HandleZPages(w http.ResponseWriter, r *http.Request) {
-	pipes := make(map[component.ID]zpagesPipeline, len(bps.pipelines))
-	for id, pipe := range bps.pipelines {
-		pipes[id] = pipe
-	}
-	handleZPages(w, r, pipes)
+	handleZPages(w, r, bps.pipelines)
 }
 
 func (bp *builtPipeline) receiverIDs() []string {
