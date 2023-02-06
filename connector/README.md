@@ -1,6 +1,6 @@
 # Connectors
 
-A connector is both and exporter and receiver. It consumes data as an exporter in one pipeline
+A connector is both an exporter and receiver. It consumes data as an exporter in one pipeline
 and emits data as a receiver in another pipeline. It may consume and emit data of the same data
 type, or of different data types. A connector may generate and emit data to summarize the
 consumed data, or it may simply replicate or route data.
