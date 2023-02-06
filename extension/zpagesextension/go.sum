@@ -249,8 +249,8 @@ github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1
 go.etcd.io/etcd/api/v3 v3.5.4/go.mod h1:5GB2vv4A4AOn3yk7MftYGHkUfGtDHnEraIjym4dYz5A=
 go.etcd.io/etcd/client/pkg/v3 v3.5.4/go.mod h1:IJHfcCEKxYu1Os13ZdwCwIUTUVGYTSAM3YSwc9/Ac1g=
 go.etcd.io/etcd/client/v3 v3.5.4/go.mod h1:ZaRkVgBZC+L+dLCjTcF1hRXpgZXQPOvnA/Ak/gq3kiY=
-go.opentelemetry.io/contrib/zpages v0.37.0 h1:lFEw7jgrW75kZ40gkXtywV0jTJt8q7w85oTLGc1IZBU=
-go.opentelemetry.io/contrib/zpages v0.37.0/go.mod h1:eENgsW/BBmryW838vx6FVH63sPBIVnUds1oCTSuwCpA=
+go.opentelemetry.io/contrib/zpages v0.38.0 h1:VVb0JE4kGK8rq9ROoan9/i0mJb6Khmsnbzqck1fMmHg=
+go.opentelemetry.io/contrib/zpages v0.38.0/go.mod h1:qlBp3BfOcC1y0QOMDCwhDJ9sH/Um6Zg6aVQsumhC0SQ=
 go.opentelemetry.io/otel v1.12.0 h1:IgfC7kqQrRccIKuB7Cl+SRUmsKbEwSGPr0Eu+/ht1SQ=
 go.opentelemetry.io/otel v1.12.0/go.mod h1:geaoz0L0r1BEOR81k7/n9W4TCXYCJ7bPO7K374jQHG0=
 go.opentelemetry.io/otel/metric v0.35.0 h1:aPT5jk/w7F9zW51L7WgRqNKDElBdyRLGuBtI5MX34e8=
