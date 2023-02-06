@@ -99,7 +99,7 @@ type zpagesPipeline interface {
 	mutatesData() bool
 }
 
-func handleZPages(w http.ResponseWriter, r *http.Request, pipes map[component.ID]zpagesPipeline) {
+func handleZPages[V zpagesPipeline](w http.ResponseWriter, r *http.Request, pipes map[component.ID]V) {
 	qValues := r.URL.Query()
 	pipelineName := qValues.Get(zPipelineName)
 	componentName := qValues.Get(zComponentName)

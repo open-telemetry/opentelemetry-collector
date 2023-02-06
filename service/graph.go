@@ -316,11 +316,7 @@ func (g *pipelinesGraph) GetExporters() map[component.DataType]map[component.ID]
 }
 
 func (g *pipelinesGraph) HandleZPages(w http.ResponseWriter, r *http.Request) {
-	pipes := make(map[component.ID]zpagesPipeline, len(g.pipelines))
-	for id, pipe := range g.pipelines {
-		pipes[id] = pipe
-	}
-	handleZPages(w, r, pipes)
+	handleZPages(w, r, g.pipelines)
 }
 
 func (p *pipelineNodes) receiverIDs() []string {
