@@ -1,21 +1,128 @@
 # Forward Connector
 
-The `forwardconnector` can be used to chain pipelines of the same type together.
-For example, it can replicate a signal to multiple pipelines so that each pipeline
-can process the signal independently in varying ways. Alternately, it can be used to
-merge two pipelines together so they can be processed as one pipeline.
+| Status                   |                                                           |
+|------------------------- |---------------------------------------------------------- |
+| Stability                | [Alpha]                                          |
+| Supported pipeline types | See [Supported Pipeline Types](#supported-pipeline-types) |
+| Distributions            | []                                                        |
 
-## Supported connection types
+The `forward` connector can merge or fork pipelines of the same type.
 
-Connectors are always used in two or more pipelines. Therefore, support and stability
-are defined per _pair of signal types_. The pipeline in which a connector is used as
-an exporter is referred to below as the "Exporter pipeline". Likewise, the pipeline in
-which the connector is used as a receiver is referred to below as the "Receiver pipeline".
+## Supported Pipeline Types
 
-| Exporter pipeline | Receiver pipeline | Stability         |
-| ----------------- | ----------------- | ----------------- |
-| traces            | traces            | [in development]  |
-| metrics           | metrics           | [in development]  |
-| logs              | logs              | [in development]  |
+| [Exporter Pipeline Type] | [Receiver Pipeline Type] |
+| ------------------------ | ------------------------ |
+| traces                   | traces                   |
+| metrics                  | metrics                  |
+| logs                     | logs                     |
 
-[in development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
+## Configuration
+
+If you are not already familiar with connectors, you may find it helpful to first visit the [Connectors README].
+
+The `forward` connector does not have any configuration settings.
+
+```yaml
+receivers:
+  foo:
+exporters:
+  bar:
+connectors:
+  forward:
+```
+
+### Example Usage
+
+Annotate distinct log streams, then merge them together, batch, and export.
+
+```yaml
+receivers:
+  foo/blue:
+  foo/green:
+processors:
+  attributes/blue:
+  attributes/green:
+  batch:
+exporters:
+  bar:
+connectors:
+  forward:
+service:
+  pipelines:
+    logs/blue:
+      receivers: [foo/blue]
+      processors: [attributes/blue]
+      exporters: [forward]
+    logs/green:
+      receivers: [foo/green]
+      processors: [attributes/green]
+      exporters: [forward]
+    logs:
+      receivers: [forward]
+      processors: [batch]
+      exporters: [bar]
+```
+
+Preprocess data, then replicate and handle in distinct ways.
+
+```yaml
+receivers:
+  foo:
+processors:
+  resourcedetection:
+  sample:
+  attributes:
+  batch:
+exporters:
+  bar/hot:
+  bar/cold:
+connectors:
+  forward:
+service:
+  pipelines:
+    traces:
+      receivers: [foo]
+      processors: [resourcedetection]
+      exporters: [forward]
+    traces/hot:
+      receivers: [forward]
+      processors: [sample, batch]
+      exporters: [bar/hot]
+    traces/cold:
+      receivers: [forward]
+      processors: [attributes]
+      exporters: [bar/cold]
+```
+
+Add a temporary debugging exporter. (Uncomment to enable.)
+
+```yaml
+receivers:
+  foo:
+processors:
+  filter:
+  batch:
+exporters:
+  bar:
+# connectors:
+#   forward:
+service:
+  pipelines:
+    traces:
+      receivers:
+        - foo
+      processors:
+        - filter
+        - batch
+      exporters:
+        - bar
+      # - forward
+  # traces/log:
+  #   receivers: [forward]
+  #   exporters: [logging]
+```
+
+[Alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
+[Exporter Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
+[Receiver Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
