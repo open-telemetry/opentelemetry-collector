@@ -284,7 +284,7 @@ func (g *pipelinesGraph) ShutdownAll(ctx context.Context) error {
 
 	// Stop in topological order so that upstream components
 	// are stopped before downstream components.  This ensures
-	// that each component has a chance to drain to it's consumer
+	// that each component has a chance to drain to its consumer
 	// before the consumer is stopped.
 	var errs error
 	for i := 0; i < len(nodes); i++ {
