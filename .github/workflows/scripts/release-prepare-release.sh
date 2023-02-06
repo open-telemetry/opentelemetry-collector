@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 
-make chlog-update VERSION="${CANDIDATE_STABLE}/${CANDIDATE_BETA}"
+make chlog-update VERSION="v${CANDIDATE_STABLE}/v${CANDIDATE_BETA}"
 git config user.name opentelemetrybot
 git config user.email 107717825+opentelemetrybot@users.noreply.github.com
 BRANCH="prepare-release-prs/${CANDIDATE_BETA}-${CANDIDATE_STABLE}"
