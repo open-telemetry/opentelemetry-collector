@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package sharedgate exposes a featuregate that is used by multiple packages.
-package sharedgate // import "go.opentelemetry.io/collector/internal/sharedgate"
+package sharedgate // import "go.opentelemetry.io/collector/otelcol/internal/sharedgate"
 
 import "go.opentelemetry.io/collector/featuregate"
 

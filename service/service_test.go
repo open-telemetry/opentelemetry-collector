@@ -37,8 +37,6 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/sharedgate"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -240,7 +238,7 @@ func TestServiceTelemetryWithOpenTelemetryMetrics(t *testing.T) {
 	}
 }
 
-func testCollectorStartHelper(t *testing.T, useOtel bool, useConnectors bool, tc ownMetricsTestCase) {
+func testCollectorStartHelper(t *testing.T, useOtel bool, useGraph bool, tc ownMetricsTestCase) {
 	var once sync.Once
 	loggingHookCalled := false
 	hook := func(entry zapcore.Entry) error {
@@ -260,15 +258,9 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, useConnectors bool, tc
 		map[component.Type]extension.Factory{"zpages": zpagesextension.NewFactory()})
 	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
 	set.useOtel = &useOtel
+	set.useGraph = &useGraph
 
 	cfg := newNopConfig()
-	if useConnectors {
-		cfg = newNopConfigWithConnectors()
-		require.NoError(t, featuregate.GlobalRegistry().Set(sharedgate.ConnectorsFeatureGate.ID(), true))
-		defer func() {
-			require.NoError(t, featuregate.GlobalRegistry().Set(sharedgate.ConnectorsFeatureGate.ID(), false))
-		}()
-	}
 	cfg.Extensions = []component.ID{component.NewID("zpages")}
 	cfg.Telemetry.Metrics.Address = metricsAddr
 	cfg.Telemetry.Resource = make(map[string]*string)
@@ -431,38 +423,6 @@ func newNopConfig() Config {
 			Receivers:  []component.ID{component.NewID("nop")},
 			Processors: []component.ID{component.NewID("nop")},
 			Exporters:  []component.ID{component.NewID("nop")},
-		},
-	})
-}
-
-func newNopConfigWithConnectors() Config {
-	return newNopConfigPipelineConfigs(map[component.ID]*PipelineConfig{
-		component.NewID("traces"): {
-			Receivers:  []component.ID{component.NewID("nop")},
-			Processors: []component.ID{component.NewID("nop")},
-			Exporters:  []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "conn")},
-		},
-		component.NewIDWithName("traces", "out"): {
-			Receivers: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "conn")},
-			Exporters: []component.ID{component.NewID("nop")},
-		},
-		component.NewID("metrics"): {
-			Receivers:  []component.ID{component.NewID("nop")},
-			Processors: []component.ID{component.NewID("nop")},
-			Exporters:  []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "conn")},
-		},
-		component.NewIDWithName("metrics", "out"): {
-			Receivers: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "conn")},
-			Exporters: []component.ID{component.NewID("nop")},
-		},
-		component.NewID("logs"): {
-			Receivers:  []component.ID{component.NewID("nop")},
-			Processors: []component.ID{component.NewID("nop")},
-			Exporters:  []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "conn")},
-		},
-		component.NewIDWithName("logs", "out"): {
-			Receivers: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "conn")},
-			Exporters: []component.ID{component.NewID("nop")},
 		},
 	})
 }
