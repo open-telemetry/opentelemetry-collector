@@ -19,6 +19,8 @@ import (
 
 	"go.uber.org/multierr"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -77,4 +79,45 @@ func (msc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		errs = multierr.Append(errs, mc.ConsumeMetrics(ctx, md))
 	}
 	return errs
+}
+
+var _ connector.MetricsRouter = (*metricsRouter)(nil)
+
+type metricsRouter struct {
+	all       consumer.Metrics
+	consumers map[component.ID]consumer.Metrics
+}
+
+func NewMetricsRouter(cm map[component.ID]consumer.Metrics) connector.MetricsRouter {
+	consumers := make([]consumer.Metrics, 0, len(cm))
+	for _, consumer := range cm {
+		consumers = append(consumers, consumer)
+	}
+	return &metricsRouter{
+		all:       NewMetrics(consumers),
+		consumers: cm,
+	}
+}
+
+func (r *metricsRouter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	return r.all.ConsumeMetrics(ctx, md)
+}
+
+// TODO evaluate strategy to avoid constructing fanout every time
+func (r *metricsRouter) RouteMetrics(ctx context.Context, md pmetric.Metrics, pipelineIDs ...component.ID) error {
+	if len(pipelineIDs) == 0 {
+		return r.ConsumeMetrics(ctx, md)
+	}
+	consumers := make([]consumer.Metrics, 0, len(pipelineIDs))
+	for _, pipelineID := range pipelineIDs {
+		if c, ok := r.consumers[pipelineID]; ok {
+			consumers = append(consumers, c)
+		}
+		// TODO should we error on unconnected pipeline?
+	}
+	return NewMetrics(consumers).ConsumeMetrics(ctx, md)
+}
+
+func (r *metricsRouter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }

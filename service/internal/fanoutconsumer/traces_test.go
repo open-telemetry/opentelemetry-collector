@@ -17,13 +17,17 @@ package fanoutconsumer
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestTracesNotMultiplexing(t *testing.T) {
@@ -192,4 +196,82 @@ type mutatingTracesSink struct {
 
 func (mts *mutatingTracesSink) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
+}
+
+func TestTracesRouterMultiplexing(t *testing.T) {
+	var max = 20
+	for numIDs := 0; numIDs < max; numIDs++ {
+		for numCons := 1; numCons < max; numCons++ {
+			for numTraces := 1; numTraces < max; numTraces++ {
+				t.Run(
+					fmt.Sprintf("%d-ids/%d-cons/%d-logs", numIDs, numCons, numTraces),
+					fuzzTracesRouter(numIDs, numCons, numTraces),
+				)
+			}
+		}
+	}
+}
+
+func fuzzTracesRouter(numIDs, numCons, numTraces int) func(*testing.T) {
+	return func(t *testing.T) {
+		allIDs := make([]component.ID, 0, numCons)
+		allCons := make([]consumer.Traces, 0, numCons)
+		allConsMap := make(map[component.ID]consumer.Traces)
+
+		// If any consumer is mutating, the router must report mutating
+		for i := 0; i < numCons; i++ {
+			allIDs = append(allIDs, component.NewIDWithName("sink", strconv.Itoa(numCons)))
+			// Random chance for each consumer to be mutating
+			if (numCons+numTraces+i)%4 == 0 {
+				allCons = append(allCons, &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)})
+			} else {
+				allCons = append(allCons, new(consumertest.TracesSink))
+			}
+			allConsMap[allIDs[i]] = allCons[i]
+		}
+
+		r := NewTracesRouter(allConsMap)
+		assert.False(t, r.Capabilities().MutatesData)
+
+		td := testdata.GenerateTraces(1)
+
+		// Keep track of how many logs each consumer should receive.
+		// This will be validated after every call to RouteTraces.
+		expected := make(map[component.ID]int, numCons)
+
+		for i := 0; i < numTraces; i++ {
+			// Build a random set of ids (no duplicates)
+			randCons := make(map[component.ID]bool, numIDs)
+			for j := 0; j < numIDs; j++ {
+				// This number should be pretty random and less than numCons
+				conNum := (numCons + numIDs + i + j) % numCons
+				randCons[allIDs[conNum]] = true
+			}
+
+			// Convert to slice, update expectations
+			conIDs := make([]component.ID, 0, len(randCons))
+			for id := range randCons {
+				conIDs = append(conIDs, id)
+				expected[id]++
+			}
+
+			// Route to list of consumers
+			assert.NoError(t, r.RouteTraces(context.Background(), td, conIDs...))
+
+			// Validate expectations for all consumers
+			for id := range expected {
+				traces := []ptrace.Traces{}
+				switch con := allConsMap[id].(type) {
+				case *consumertest.TracesSink:
+					traces = con.AllTraces()
+				case *mutatingTracesSink:
+					traces = con.AllTraces()
+				}
+				assert.Len(t, traces, expected[id])
+				for n := 0; n < len(traces); n++ {
+					assert.EqualValues(t, td, traces[n])
+				}
+			}
+		}
+	}
 }

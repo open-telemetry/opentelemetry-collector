@@ -22,6 +22,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // A Traces connector acts as an exporter from a traces pipeline and a receiver
@@ -41,6 +44,12 @@ type Traces interface {
 	consumer.Traces
 }
 
+// TracesRouter feeds the first consumer.Traces in each of the specified pipelines.
+type TracesRouter interface {
+	consumer.Traces
+	RouteTraces(context.Context, ptrace.Traces, ...component.ID) error
+}
+
 // A Metrics connector acts as an exporter from a metrics pipeline and a receiver
 // to one or more traces, metrics, or logs pipelines.
 // Metrics feeds a consumer.Traces, consumer.Metrics, or consumer.Logs with data.
@@ -57,6 +66,12 @@ type Metrics interface {
 	consumer.Metrics
 }
 
+// MetricsRouter feeds the first consumer.Metrics in each of the specified pipelines.
+type MetricsRouter interface {
+	consumer.Metrics
+	RouteMetrics(context.Context, pmetric.Metrics, ...component.ID) error
+}
+
 // A Logs connector acts as an exporter from a logs pipeline and a receiver
 // to one or more traces, metrics, or logs pipelines.
 // Logs feeds a consumer.Traces, consumer.Metrics, or consumer.Logs with data.
@@ -70,6 +85,12 @@ type Metrics interface {
 type Logs interface {
 	component.Component
 	consumer.Logs
+}
+
+// LogsRouter feeds the first consumer.Logs in each of the specified pipelines.
+type LogsRouter interface {
+	consumer.Logs
+	RouteLogs(context.Context, plog.Logs, ...component.ID) error
 }
 
 // CreateSettings configures Connector creators.
