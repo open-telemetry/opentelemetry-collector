@@ -154,8 +154,8 @@ func (r *Registry) Set(id string, enabled bool) error {
 	return nil
 }
 
-// Visit visits the gates in lexicographical order, calling fn for each.
-func (r *Registry) Visit(fn func(*Gate)) {
+// VisitAll visits all the gates in lexicographical order, calling fn for each.
+func (r *Registry) VisitAll(fn func(*Gate)) {
 	var gates []*Gate
 	r.gates.Range(func(key, value any) bool {
 		gates = append(gates, value.(*Gate))
@@ -169,10 +169,10 @@ func (r *Registry) Visit(fn func(*Gate)) {
 	}
 }
 
-// Deprecated: [v0.71.0] use Visit.
+// Deprecated: [v0.71.0] use VisitAll.
 func (r *Registry) List() []Gate {
 	var ret []Gate
-	r.Visit(func(gate *Gate) {
+	r.VisitAll(func(gate *Gate) {
 		ret = append(ret, *gate)
 	})
 	return ret

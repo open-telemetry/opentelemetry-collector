@@ -28,14 +28,14 @@ func TestGlobalRegistry(t *testing.T) {
 func TestRegistry(t *testing.T) {
 	r := NewRegistry()
 	// Expect that no gates to visit.
-	r.Visit(func(gate *Gate) {
+	r.VisitAll(func(gate *Gate) {
 		t.FailNow()
 	})
 
 	const id = "foo"
 	g, err := r.Register(id, StageBeta, WithRegisterDescription("Test Gate"))
 	assert.NoError(t, err)
-	r.Visit(func(gate *Gate) {
+	r.VisitAll(func(gate *Gate) {
 		assert.Equal(t, id, gate.ID())
 	})
 	assert.True(t, g.IsEnabled())
