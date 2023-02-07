@@ -209,22 +209,13 @@ func TestLoadTLSServerConfig(t *testing.T) {
 
 func TestLoadTLSServerConfigReload(t *testing.T) {
 
-	tmpCa, err := os.CreateTemp("", "ca-tmp.crt")
-	assert.NoError(t, err)
+	tmpCaPath := createTempClientCaFile(t)
 
-	tmpCaPath, err := filepath.Abs(tmpCa.Name())
-	assert.NoError(t, err)
-
-	firstCa, err := os.Open(filepath.Join("testdata", "ca-1.crt"))
-	assert.NoError(t, err)
-	_, err = io.Copy(tmpCa, firstCa)
-	assert.NoError(t, err)
-
-	assert.NoError(t, tmpCa.Close())
-	assert.NoError(t, firstCa.Close())
+	overwriteClientCA(t, tmpCaPath, "ca-1.crt")
 
 	tlsSetting := TLSServerSetting{
-		ClientCAFile: tmpCaPath,
+		ClientCAFile:       tmpCaPath,
+		ReloadClientCAFile: true,
 	}
 
 	tlsCfg, err := tlsSetting.LoadTLSConfig()
@@ -233,19 +224,8 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 
 	firstClient, err := tlsCfg.GetConfigForClient(nil)
 	assert.NoError(t, err)
-	firstClientCAs := firstClient.ClientCAs
 
-	tmpCa, err = os.OpenFile(filepath.Clean(tmpCaPath), os.O_RDWR, 0600)
-	assert.NoError(t, err)
-
-	secondCa, err := os.Open(filepath.Join("testdata", "ca-2.crt"))
-	assert.NoError(t, err)
-
-	_, err = io.Copy(tmpCa, secondCa)
-	assert.NoError(t, err)
-
-	assert.NoError(t, tmpCa.Close())
-	assert.NoError(t, secondCa.Close())
+	overwriteClientCA(t, tmpCaPath, "ca-2.crt")
 
 	assert.Eventually(t, func() bool {
 		_, loadError := tlsCfg.GetConfigForClient(nil)
@@ -254,9 +234,120 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 
 	secondClient, err := tlsCfg.GetConfigForClient(nil)
 	assert.NoError(t, err)
-	secondClientCAs := secondClient.ClientCAs
 
-	assert.NotEqual(t, firstClientCAs, secondClientCAs)
+	assert.NotEqual(t, firstClient.ClientCAs, secondClient.ClientCAs)
+}
+
+func TestLoadTLSServerConfigFailingReload(t *testing.T) {
+
+	tmpCaPath := createTempClientCaFile(t)
+
+	overwriteClientCA(t, tmpCaPath, "ca-1.crt")
+
+	tlsSetting := TLSServerSetting{
+		ClientCAFile:       tmpCaPath,
+		ReloadClientCAFile: true,
+	}
+
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	assert.NoError(t, err)
+	assert.NotNil(t, tlsCfg)
+
+	firstClient, err := tlsCfg.GetConfigForClient(nil)
+	assert.NoError(t, err)
+
+	overwriteClientCA(t, tmpCaPath, "testCA-bad.txt")
+
+	assert.Eventually(t, func() bool {
+		_, loadError := tlsCfg.GetConfigForClient(nil)
+		return loadError == nil
+	}, 5*time.Second, 10*time.Millisecond)
+
+	secondClient, err := tlsCfg.GetConfigForClient(nil)
+	assert.NoError(t, err)
+
+	assert.Equal(t, firstClient.ClientCAs, secondClient.ClientCAs)
+}
+
+func TestLoadTLSServerConfigFailingInitialLoad(t *testing.T) {
+
+	tmpCaPath := createTempClientCaFile(t)
+
+	overwriteClientCA(t, tmpCaPath, "testCA-bad.txt")
+
+	tlsSetting := TLSServerSetting{
+		ClientCAFile:       tmpCaPath,
+		ReloadClientCAFile: true,
+	}
+
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	assert.Error(t, err)
+	assert.Nil(t, tlsCfg)
+}
+
+func TestLoadTLSServerConfigWrongPath(t *testing.T) {
+
+	tmpCaPath := createTempClientCaFile(t)
+
+	tlsSetting := TLSServerSetting{
+		ClientCAFile:       tmpCaPath + "wrong-path",
+		ReloadClientCAFile: true,
+	}
+
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	assert.Error(t, err)
+	assert.Nil(t, tlsCfg)
+}
+
+func TestLoadTLSServerConfigFailing(t *testing.T) {
+
+	tmpCaPath := createTempClientCaFile(t)
+
+	overwriteClientCA(t, tmpCaPath, "ca-1.crt")
+
+	tlsSetting := TLSServerSetting{
+		ClientCAFile:       tmpCaPath,
+		ReloadClientCAFile: true,
+	}
+
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	assert.NoError(t, err)
+	assert.NotNil(t, tlsCfg)
+
+	firstClient, err := tlsCfg.GetConfigForClient(nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, firstClient)
+
+	err = os.Remove(tmpCaPath)
+	assert.NoError(t, err)
+
+	firstClient, err = tlsCfg.GetConfigForClient(nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, firstClient)
+}
+
+func overwriteClientCA(t *testing.T, targetFilePath string, testdataFileName string) {
+	targetFile, err := os.OpenFile(filepath.Clean(targetFilePath), os.O_RDWR, 0600)
+	assert.NoError(t, err)
+
+	testdataFilePath := filepath.Join("testdata", testdataFileName)
+	testdataFile, err := os.OpenFile(filepath.Clean(testdataFilePath), os.O_RDONLY, 0200)
+	assert.NoError(t, err)
+
+	_, err = io.Copy(targetFile, testdataFile)
+	assert.NoError(t, err)
+
+	assert.NoError(t, targetFile.Close())
+	assert.NoError(t, testdataFile.Close())
+}
+
+func createTempClientCaFile(t *testing.T) string {
+	tmpCa, err := os.CreateTemp("", "ca-tmp.crt")
+	assert.NoError(t, err)
+	tmpCaPath, err := filepath.Abs(tmpCa.Name())
+	assert.NoError(t, err)
+	assert.NoError(t, tmpCa.Close())
+	return tmpCaPath
 }
 
 func TestEagerlyLoadCertificate(t *testing.T) {

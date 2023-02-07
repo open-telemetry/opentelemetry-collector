@@ -74,7 +74,7 @@ func (r *clientCAsFileReloader) reload() {
 	defer r.lock.Unlock()
 	certPool, err := r.loader.loadClientCAFile()
 	if err != nil {
-		r.lastReloadError = fmt.Errorf("%w", err)
+		r.lastReloadError = err
 	} else {
 		r.certPool = certPool
 		r.lastReloadError = nil

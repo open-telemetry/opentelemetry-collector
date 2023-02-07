@@ -97,6 +97,10 @@ type TLSServerSetting struct {
 	// This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to
 	// https://godoc.org/crypto/tls#Config for more information. (optional)
 	ClientCAFile string `mapstructure:"client_ca_file"`
+
+	// Reload the ClientCAs file when it is modified
+	// (optional, default false)
+	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload"`
 }
 
 // certReloader is a wrapper object for certificate reloading
@@ -240,11 +244,13 @@ func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = reloader.startWatching()
-		if err != nil {
-			return nil, err
+		if c.ReloadClientCAFile {
+			err = reloader.startWatching()
+			if err != nil {
+				return nil, err
+			}
+			tlsCfg.GetConfigForClient = func(t *tls.ClientHelloInfo) (*tls.Config, error) { return reloader.getClientConfig(tlsCfg) }
 		}
-		tlsCfg.GetConfigForClient = func(t *tls.ClientHelloInfo) (*tls.Config, error) { return reloader.getClientConfig(tlsCfg) }
 		tlsCfg.ClientCAs = reloader.certPool
 		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
 	}
