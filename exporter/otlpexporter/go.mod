@@ -36,9 +36,9 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.70.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.38.0 // indirect
-	go.opentelemetry.io/otel v1.12.0 // indirect
-	go.opentelemetry.io/otel/metric v0.35.0 // indirect
-	go.opentelemetry.io/otel/trace v1.12.0 // indirect
+	go.opentelemetry.io/otel v1.13.0 // indirect
+	go.opentelemetry.io/otel/metric v0.36.0 // indirect
+	go.opentelemetry.io/otel/trace v1.13.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
