@@ -154,11 +154,11 @@ func buildConnector(
 
 	switch rcvrPipelineType {
 	case component.DataTypeTraces:
-		var consumers []consumer.Traces
+		consumers := make(map[component.ID]consumer.Traces, len(nexts))
 		for _, next := range nexts {
-			consumers = append(consumers, next.(consumer.Traces))
+			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Traces)
 		}
-		fanoutConsumer := fanoutconsumer.NewTraces(consumers)
+		fanoutConsumer := fanoutconsumer.NewTracesRouter(consumers)
 		switch exprPipelineType {
 		case component.DataTypeTraces:
 			conn, err = builder.CreateTracesToTraces(ctx, set, fanoutConsumer)
@@ -168,11 +168,11 @@ func buildConnector(
 			conn, err = builder.CreateLogsToTraces(ctx, set, fanoutConsumer)
 		}
 	case component.DataTypeMetrics:
-		var consumers []consumer.Metrics
+		consumers := make(map[component.ID]consumer.Metrics, len(nexts))
 		for _, next := range nexts {
-			consumers = append(consumers, next.(consumer.Metrics))
+			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Metrics)
 		}
-		fanoutConsumer := fanoutconsumer.NewMetrics(consumers)
+		fanoutConsumer := fanoutconsumer.NewMetricsRouter(consumers)
 		switch exprPipelineType {
 		case component.DataTypeTraces:
 			conn, err = builder.CreateTracesToMetrics(ctx, set, fanoutConsumer)
@@ -182,11 +182,11 @@ func buildConnector(
 			conn, err = builder.CreateLogsToMetrics(ctx, set, fanoutConsumer)
 		}
 	case component.DataTypeLogs:
-		var consumers []consumer.Logs
+		consumers := make(map[component.ID]consumer.Logs, len(nexts))
 		for _, next := range nexts {
-			consumers = append(consumers, next.(consumer.Logs))
+			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Logs)
 		}
-		fanoutConsumer := fanoutconsumer.NewLogs(consumers)
+		fanoutConsumer := fanoutconsumer.NewLogsRouter(consumers)
 		switch exprPipelineType {
 		case component.DataTypeTraces:
 			conn, err = builder.CreateTracesToLogs(ctx, set, fanoutConsumer)
@@ -210,6 +210,9 @@ type capabilitiesNode struct {
 	nodeID
 	pipelineID component.ID
 	baseConsumer
+	consumer.ConsumeTracesFunc
+	consumer.ConsumeMetricsFunc
+	consumer.ConsumeLogsFunc
 }
 
 func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {
@@ -220,7 +223,7 @@ func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {
 }
 
 func (n *capabilitiesNode) getConsumer() baseConsumer {
-	return n.baseConsumer
+	return n
 }
 
 var _ consumerNode = &fanOutNode{}
