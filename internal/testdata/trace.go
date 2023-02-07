@@ -29,8 +29,8 @@ var (
 
 func GenerateTraces(spanCount int) ptrace.Traces {
 	td := ptrace.NewTraces()
-	initResource(td.ResourceSpans().AppendEmpty().Resource())
-	ss := td.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans()
+	initResource(td.MutableResourceSpans().AppendEmpty().Resource())
+	ss := td.MutableResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans()
 	ss.EnsureCapacity(spanCount)
 	for i := 0; i < spanCount; i++ {
 		switch i % 2 {
@@ -43,7 +43,7 @@ func GenerateTraces(spanCount int) ptrace.Traces {
 	return td
 }
 
-func fillSpanOne(span ptrace.Span) {
+func fillSpanOne(span ptrace.MutableSpan) {
 	span.SetName("operationA")
 	span.SetStartTimestamp(spanStartTimestamp)
 	span.SetEndTimestamp(spanEndTimestamp)
@@ -66,7 +66,7 @@ func fillSpanOne(span ptrace.Span) {
 	status.SetMessage("status-cancelled")
 }
 
-func fillSpanTwo(span ptrace.Span) {
+func fillSpanTwo(span ptrace.MutableSpan) {
 	span.SetName("operationB")
 	span.SetStartTimestamp(spanStartTimestamp)
 	span.SetEndTimestamp(spanEndTimestamp)

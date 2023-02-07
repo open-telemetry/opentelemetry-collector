@@ -23,58 +23,25 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// NewMetrics wraps multiple metrics consumers in a single one.
-// It fanouts the incoming data to all the consumers, and does smart routing:
-//   - Clones only to the consumer that needs to mutate the data.
-//   - If all consumers needs to mutate the data one will get the original data.
+// NewMetrics wraps multiple metrics consumers in a single one sending the data marked as shared.
 func NewMetrics(mcs []consumer.Metrics) consumer.Metrics {
 	if len(mcs) == 1 {
 		// Don't wrap if no need to do it.
 		return mcs[0]
 	}
-	var pass []consumer.Metrics
-	var clone []consumer.Metrics
-	for i := 0; i < len(mcs)-1; i++ {
-		if !mcs[i].Capabilities().MutatesData {
-			pass = append(pass, mcs[i])
-		} else {
-			clone = append(clone, mcs[i])
-		}
-	}
-	// Give the original data to the last consumer if no other read-only consumer,
-	// otherwise put it in the right bucket. Never share the same data between
-	// a mutating and a non-mutating consumer since the non-mutating consumer may process
-	// data async and the mutating consumer may change the data before that.
-	if len(pass) == 0 || !mcs[len(mcs)-1].Capabilities().MutatesData {
-		pass = append(pass, mcs[len(mcs)-1])
-	} else {
-		clone = append(clone, mcs[len(mcs)-1])
-	}
-	return &metricsConsumer{pass: pass, clone: clone}
+	return &metricsConsumer{consumers: mcs}
 }
 
 type metricsConsumer struct {
-	pass  []consumer.Metrics
-	clone []consumer.Metrics
-}
-
-func (msc *metricsConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	consumers []consumer.Metrics
 }
 
 // ConsumeMetrics exports the pmetric.Metrics to all consumers wrapped by the current one.
 func (msc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	var errs error
-	// Initially pass to clone exporter to avoid the case where the optimization of sending
-	// the incoming data to a mutating consumer is used that may change the incoming data before
-	// cloning.
-	for _, mc := range msc.clone {
-		clonedMetrics := pmetric.NewMetrics()
-		md.CopyTo(clonedMetrics)
-		errs = multierr.Append(errs, mc.ConsumeMetrics(ctx, clonedMetrics))
-	}
-	for _, mc := range msc.pass {
-		errs = multierr.Append(errs, mc.ConsumeMetrics(ctx, md))
+	for _, mc := range msc.consumers {
+		// Send metrics marked as shared so that they are cloned if mutation is needed.
+		errs = multierr.Append(errs, mc.ConsumeMetrics(ctx, md.AsShared()))
 	}
 	return errs
 }

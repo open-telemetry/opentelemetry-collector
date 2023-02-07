@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestMetricsNotMultiplexing(t *testing.T) {
@@ -38,7 +39,6 @@ func TestMetricsMultiplexingNonMutating(t *testing.T) {
 	p3 := new(consumertest.MetricsSink)
 
 	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
-	assert.False(t, mfc.Capabilities().MutatesData)
 	md := testdata.GenerateMetrics(1)
 
 	for i := 0; i < 2; i++ {
@@ -49,20 +49,14 @@ func TestMetricsMultiplexingNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, md == p1.AllMetrics()[0])
-	assert.True(t, md == p1.AllMetrics()[1])
-	assert.EqualValues(t, md, p1.AllMetrics()[0])
-	assert.EqualValues(t, md, p1.AllMetrics()[1])
+	assert.True(t, md.ResourceMetrics() == p1.AllMetrics()[0].ResourceMetrics())
+	assert.True(t, md.ResourceMetrics() == p1.AllMetrics()[1].ResourceMetrics())
 
-	assert.True(t, md == p2.AllMetrics()[0])
-	assert.True(t, md == p2.AllMetrics()[1])
-	assert.EqualValues(t, md, p2.AllMetrics()[0])
-	assert.EqualValues(t, md, p2.AllMetrics()[1])
+	assert.True(t, md.ResourceMetrics() == p2.AllMetrics()[0].ResourceMetrics())
+	assert.True(t, md.ResourceMetrics() == p2.AllMetrics()[1].ResourceMetrics())
 
-	assert.True(t, md == p3.AllMetrics()[0])
-	assert.True(t, md == p3.AllMetrics()[1])
-	assert.EqualValues(t, md, p3.AllMetrics()[0])
-	assert.EqualValues(t, md, p3.AllMetrics()[1])
+	assert.True(t, md.ResourceMetrics() == p3.AllMetrics()[0].ResourceMetrics())
+	assert.True(t, md.ResourceMetrics() == p3.AllMetrics()[1].ResourceMetrics())
 }
 
 func TestMetricsMultiplexingMutating(t *testing.T) {
@@ -71,7 +65,6 @@ func TestMetricsMultiplexingMutating(t *testing.T) {
 	p3 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
 
 	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
-	assert.False(t, mfc.Capabilities().MutatesData)
 	md := testdata.GenerateMetrics(1)
 
 	for i := 0; i < 2; i++ {
@@ -82,21 +75,22 @@ func TestMetricsMultiplexingMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, md != p1.AllMetrics()[0])
-	assert.True(t, md != p1.AllMetrics()[1])
+	// All the consumers receive shared metrics that are cloned by calling MutableResourceMetrics.
+
+	assert.True(t, md.ResourceMetrics() != p1.AllMetrics()[0].ResourceMetrics())
+	assert.True(t, md.ResourceMetrics() != p1.AllMetrics()[1].ResourceMetrics())
 	assert.EqualValues(t, md, p1.AllMetrics()[0])
 	assert.EqualValues(t, md, p1.AllMetrics()[1])
 
-	assert.True(t, md != p2.AllMetrics()[0])
-	assert.True(t, md != p2.AllMetrics()[1])
+	assert.True(t, md.ResourceMetrics() != p2.AllMetrics()[0].ResourceMetrics())
+	assert.True(t, md.ResourceMetrics() != p2.AllMetrics()[1].ResourceMetrics())
 	assert.EqualValues(t, md, p2.AllMetrics()[0])
 	assert.EqualValues(t, md, p2.AllMetrics()[1])
 
-	// For this consumer, will receive the initial data.
-	assert.True(t, md == p3.AllMetrics()[0])
-	assert.True(t, md == p3.AllMetrics()[1])
-	assert.EqualValues(t, md, p3.AllMetrics()[0])
-	assert.EqualValues(t, md, p3.AllMetrics()[1])
+	assert.True(t, md.ResourceMetrics() != p2.AllMetrics()[0].ResourceMetrics())
+	assert.True(t, md.ResourceMetrics() != p2.AllMetrics()[1].ResourceMetrics())
+	assert.EqualValues(t, md, p2.AllMetrics()[0])
+	assert.EqualValues(t, md, p2.AllMetrics()[1])
 }
 
 func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
@@ -105,7 +99,6 @@ func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
 	p3 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
 
 	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
-	assert.False(t, mfc.Capabilities().MutatesData)
 	md := testdata.GenerateMetrics(1)
 
 	for i := 0; i < 2; i++ {
@@ -116,20 +109,18 @@ func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, md != p1.AllMetrics()[0])
-	assert.True(t, md != p1.AllMetrics()[1])
+	assert.True(t, md.ResourceMetrics() != p1.AllMetrics()[0].ResourceMetrics())
+	assert.True(t, md.ResourceMetrics() != p1.AllMetrics()[1].ResourceMetrics())
 	assert.EqualValues(t, md, p1.AllMetrics()[0])
 	assert.EqualValues(t, md, p1.AllMetrics()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, md == p2.AllMetrics()[0])
-	assert.True(t, md == p2.AllMetrics()[1])
-	assert.EqualValues(t, md, p2.AllMetrics()[0])
-	assert.EqualValues(t, md, p2.AllMetrics()[1])
+	assert.True(t, md.ResourceMetrics() == p2.AllMetrics()[0].ResourceMetrics())
+	assert.True(t, md.ResourceMetrics() == p2.AllMetrics()[1].ResourceMetrics())
 
 	// For this consumer, will clone the initial data.
-	assert.True(t, md != p3.AllMetrics()[0])
-	assert.True(t, md != p3.AllMetrics()[1])
+	assert.True(t, md.ResourceMetrics() != p3.AllMetrics()[0].ResourceMetrics())
+	assert.True(t, md.ResourceMetrics() != p3.AllMetrics()[1].ResourceMetrics())
 	assert.EqualValues(t, md, p3.AllMetrics()[0])
 	assert.EqualValues(t, md, p3.AllMetrics()[1])
 }
@@ -140,7 +131,6 @@ func TestMetricsMultiplexingMixLastNonMutating(t *testing.T) {
 	p3 := new(consumertest.MetricsSink)
 
 	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
-	assert.False(t, mfc.Capabilities().MutatesData)
 	md := testdata.GenerateMetrics(1)
 
 	for i := 0; i < 2; i++ {
@@ -151,25 +141,23 @@ func TestMetricsMultiplexingMixLastNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, md != p1.AllMetrics()[0])
-	assert.True(t, md != p1.AllMetrics()[1])
+	assert.True(t, md.ResourceMetrics() != p1.AllMetrics()[0].ResourceMetrics())
+	assert.True(t, md.ResourceMetrics() != p1.AllMetrics()[1].ResourceMetrics())
 	assert.EqualValues(t, md, p1.AllMetrics()[0])
 	assert.EqualValues(t, md, p1.AllMetrics()[1])
 
-	assert.True(t, md != p2.AllMetrics()[0])
-	assert.True(t, md != p2.AllMetrics()[1])
+	assert.True(t, md.ResourceMetrics() != p2.AllMetrics()[0].ResourceMetrics())
+	assert.True(t, md.ResourceMetrics() != p2.AllMetrics()[1].ResourceMetrics())
 	assert.EqualValues(t, md, p2.AllMetrics()[0])
 	assert.EqualValues(t, md, p2.AllMetrics()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, md == p3.AllMetrics()[0])
-	assert.True(t, md == p3.AllMetrics()[1])
-	assert.EqualValues(t, md, p3.AllMetrics()[0])
-	assert.EqualValues(t, md, p3.AllMetrics()[1])
+	assert.True(t, md.ResourceMetrics() == p3.AllMetrics()[0].ResourceMetrics())
+	assert.True(t, md.ResourceMetrics() == p3.AllMetrics()[1].ResourceMetrics())
 }
 
 func TestMetricsWhenErrors(t *testing.T) {
-	p1 := mutatingErr{Consumer: consumertest.NewErr(errors.New("my error"))}
+	p1 := mutatingErrMetrics{errors.New("my error")}
 	p2 := consumertest.NewErr(errors.New("my error"))
 	p3 := new(consumertest.MetricsSink)
 
@@ -180,16 +168,24 @@ func TestMetricsWhenErrors(t *testing.T) {
 		assert.Error(t, mfc.ConsumeMetrics(context.Background(), md))
 	}
 
-	assert.True(t, md == p3.AllMetrics()[0])
-	assert.True(t, md == p3.AllMetrics()[1])
-	assert.EqualValues(t, md, p3.AllMetrics()[0])
-	assert.EqualValues(t, md, p3.AllMetrics()[1])
+	assert.True(t, md.ResourceMetrics() == p3.AllMetrics()[0].ResourceMetrics())
+	assert.True(t, md.ResourceMetrics() == p3.AllMetrics()[1].ResourceMetrics())
 }
 
 type mutatingMetricsSink struct {
 	*consumertest.MetricsSink
 }
 
-func (mts *mutatingMetricsSink) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
+func (m *mutatingMetricsSink) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	_ = md.MutableResourceMetrics()
+	return m.MetricsSink.ConsumeMetrics(ctx, md)
+}
+
+type mutatingErrMetrics struct {
+	err error
+}
+
+func (m mutatingErrMetrics) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	_ = md.MutableResourceMetrics()
+	return m.err
 }

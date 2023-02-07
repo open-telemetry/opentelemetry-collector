@@ -27,12 +27,12 @@ import (
 )
 
 func TestScopeSpansSlice(t *testing.T) {
-	es := NewScopeSpansSlice()
+	es := NewMutableScopeSpansSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newScopeSpansSlice(&[]*otlptrace.ScopeSpans{})
+	es = newMutableScopeSpansSliceFromOrig(&[]*otlptrace.ScopeSpans{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewScopeSpans()
+	emptyVal := NewMutableScopeSpans()
 	testVal := generateTestScopeSpans()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -44,10 +44,10 @@ func TestScopeSpansSlice(t *testing.T) {
 }
 
 func TestScopeSpansSlice_CopyTo(t *testing.T) {
-	dest := NewScopeSpansSlice()
+	dest := NewMutableScopeSpansSlice()
 	// Test CopyTo to empty
-	NewScopeSpansSlice().CopyTo(dest)
-	assert.Equal(t, NewScopeSpansSlice(), dest)
+	NewMutableScopeSpansSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableScopeSpansSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestScopeSpansSlice().CopyTo(dest)
@@ -79,7 +79,7 @@ func TestScopeSpansSlice_EnsureCapacity(t *testing.T) {
 func TestScopeSpansSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestScopeSpansSlice()
-	dest := NewScopeSpansSlice()
+	dest := NewMutableScopeSpansSlice()
 	src := generateTestScopeSpansSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestScopeSpansSlice(), dest)
@@ -103,8 +103,8 @@ func TestScopeSpansSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestScopeSpansSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewScopeSpansSlice()
-	emptySlice.RemoveIf(func(el ScopeSpans) bool {
+	emptySlice := NewMutableScopeSpansSlice()
+	emptySlice.RemoveIf(func(el MutableScopeSpans) bool {
 		t.Fail()
 		return false
 	})
@@ -112,7 +112,7 @@ func TestScopeSpansSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestScopeSpansSlice()
 	pos := 0
-	filtered.RemoveIf(func(el ScopeSpans) bool {
+	filtered.RemoveIf(func(el MutableScopeSpans) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -121,30 +121,16 @@ func TestScopeSpansSlice_RemoveIf(t *testing.T) {
 
 func TestScopeSpansSlice_Sort(t *testing.T) {
 	es := generateTestScopeSpansSlice()
-	es.Sort(func(a, b ScopeSpans) bool {
+	es.Sort(func(a, b MutableScopeSpans) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b ScopeSpans) bool {
+	es.Sort(func(a, b MutableScopeSpans) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
-	}
-}
-
-func generateTestScopeSpansSlice() ScopeSpansSlice {
-	es := NewScopeSpansSlice()
-	fillTestScopeSpansSlice(es)
-	return es
-}
-
-func fillTestScopeSpansSlice(es ScopeSpansSlice) {
-	*es.orig = make([]*otlptrace.ScopeSpans, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlptrace.ScopeSpans{}
-		fillTestScopeSpans(newScopeSpans((*es.orig)[i]))
 	}
 }

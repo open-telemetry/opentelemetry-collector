@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pcommon
+package internal
 
 import (
 	"encoding/base64"
@@ -70,7 +70,7 @@ func TestValueType(t *testing.T) {
 func TestValueMap(t *testing.T) {
 	m1 := NewValueMap()
 	assert.Equal(t, ValueTypeMap, m1.Type())
-	assert.Equal(t, NewMap(), m1.Map())
+	assert.Equal(t, NewMutableMap(), m1.Map())
 	assert.Equal(t, 0, m1.Map().Len())
 
 	m1.Map().PutDouble("double_key", 123)
@@ -139,14 +139,14 @@ func TestValueMap(t *testing.T) {
 
 	// Test nil KvlistValue case for Map() func.
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
-	m1 = newValue(orig)
-	assert.EqualValues(t, Map{}, m1.Map())
+	m1 = NewMutableValueFromOrig(orig)
+	assert.EqualValues(t, MutableMap{}, m1.Map())
 }
 
 func TestValueSlice(t *testing.T) {
 	a1 := NewValueSlice()
 	assert.EqualValues(t, ValueTypeSlice, a1.Type())
-	assert.EqualValues(t, NewSlice(), a1.Slice())
+	assert.EqualValues(t, NewMutableSlice(), a1.Slice())
 	assert.EqualValues(t, 0, a1.Slice().Len())
 
 	a1.Slice().AppendEmpty().SetDouble(123)
@@ -176,8 +176,8 @@ func TestValueSlice(t *testing.T) {
 	assert.EqualValues(t, "somestr", v.Str())
 
 	// Test nil values case for Slice() func.
-	a1 = newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}})
-	assert.EqualValues(t, newSlice(nil), a1.Slice())
+	a1 = NewMutableValueFromOrig(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}})
+	assert.EqualValues(t, NewMutableSliceFromOrig(nil), a1.Slice())
 }
 
 func TestNilOrigSetValue(t *testing.T) {
@@ -214,23 +214,23 @@ func TestValue_CopyTo(t *testing.T) {
 	// Test nil KvlistValue case for Map() func.
 	dest := NewValueEmpty()
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
-	newValue(orig).CopyTo(dest)
-	assert.Nil(t, dest.getOrig().Value.(*otlpcommon.AnyValue_KvlistValue).KvlistValue)
+	NewMutableValueFromOrig(orig).CopyTo(dest)
+	assert.Nil(t, dest.orig.Value.(*otlpcommon.AnyValue_KvlistValue).KvlistValue)
 
 	// Test nil ArrayValue case for Slice() func.
 	dest = NewValueEmpty()
 	orig = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}
-	newValue(orig).CopyTo(dest)
-	assert.Nil(t, dest.getOrig().Value.(*otlpcommon.AnyValue_ArrayValue).ArrayValue)
+	NewMutableValueFromOrig(orig).CopyTo(dest)
+	assert.Nil(t, dest.orig.Value.(*otlpcommon.AnyValue_ArrayValue).ArrayValue)
 
 	// Test copy empty value.
 	orig = &otlpcommon.AnyValue{}
-	newValue(orig).CopyTo(dest)
-	assert.Nil(t, dest.getOrig().Value)
+	NewMutableValueFromOrig(orig).CopyTo(dest)
+	assert.Nil(t, dest.orig.Value)
 
 	av := NewValueEmpty()
 	destVal := otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{}}
-	av.CopyTo(newValue(&destVal))
+	av.CopyTo(NewMutableValueFromOrig(&destVal))
 	assert.EqualValues(t, nil, destVal.Value)
 }
 
@@ -239,7 +239,7 @@ func TestSliceWithNilValues(t *testing.T) {
 		{},
 		{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
 	}
-	sm := newSlice(&origWithNil)
+	sm := NewMutableSliceFromOrig(&origWithNil)
 
 	val := sm.At(0)
 	assert.EqualValues(t, ValueTypeEmpty, val.Type())
@@ -258,7 +258,7 @@ func TestSliceWithNilValues(t *testing.T) {
 func TestValueAsString(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    Value
+		input    MutableValue
 		expected string
 	}{
 		{
@@ -333,7 +333,7 @@ func TestValueAsString(t *testing.T) {
 func TestValueAsRaw(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    Value
+		input    MutableValue
 		expected any
 	}{
 		{
@@ -392,7 +392,7 @@ func TestNewValueFromRaw(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    any
-		expected Value
+		expected MutableValue
 	}{
 		{
 			name:     "nil",
@@ -472,7 +472,7 @@ func TestNewValueFromRaw(t *testing.T) {
 		{
 			name:  "bytes",
 			input: []byte{1, 2, 3},
-			expected: func() Value {
+			expected: func() MutableValue {
 				m := NewValueBytes()
 				m.Bytes().FromRaw([]byte{1, 2, 3})
 				return m
@@ -483,7 +483,7 @@ func TestNewValueFromRaw(t *testing.T) {
 			input: map[string]any{
 				"k": "v",
 			},
-			expected: func() Value {
+			expected: func() MutableValue {
 				m := NewValueMap()
 				assert.NoError(t, m.Map().FromRaw(map[string]any{"k": "v"}))
 				return m
@@ -492,7 +492,7 @@ func TestNewValueFromRaw(t *testing.T) {
 		{
 			name:  "empty map",
 			input: map[string]any{},
-			expected: func() Value {
+			expected: func() MutableValue {
 				m := NewValueMap()
 				assert.NoError(t, m.Map().FromRaw(map[string]any{}))
 				return m
@@ -501,7 +501,7 @@ func TestNewValueFromRaw(t *testing.T) {
 		{
 			name:  "slice",
 			input: []any{"v1", "v2"},
-			expected: (func() Value {
+			expected: (func() MutableValue {
 				s := NewValueSlice()
 				assert.NoError(t, s.Slice().FromRaw([]any{"v1", "v2"}))
 				return s
@@ -510,7 +510,7 @@ func TestNewValueFromRaw(t *testing.T) {
 		{
 			name:  "empty slice",
 			input: []any{},
-			expected: (func() Value {
+			expected: (func() MutableValue {
 				s := NewValueSlice()
 				assert.NoError(t, s.Slice().FromRaw([]any{}))
 				return s
@@ -528,10 +528,10 @@ func TestNewValueFromRaw(t *testing.T) {
 
 func TestNewValueFromRawInvalid(t *testing.T) {
 	actual := NewValueEmpty()
-	assert.EqualError(t, actual.FromRaw(ValueTypeDouble), "<Invalid value type pcommon.ValueType>")
+	assert.EqualError(t, actual.FromRaw(ValueTypeDouble), "<Invalid value type internal.ValueType>")
 }
 
-func generateTestValueMap() Value {
+func generateTestValueMap() MutableValue {
 	ret := NewValueMap()
 	attrMap := ret.Map()
 	attrMap.PutStr("strKey", "strVal")
@@ -551,7 +551,7 @@ func generateTestValueMap() Value {
 	return ret
 }
 
-func generateTestValueSlice() Value {
+func generateTestValueSlice() MutableValue {
 	ret := NewValueSlice()
 	attrArr := ret.Slice()
 	attrArr.AppendEmpty().SetStr("strVal")
@@ -562,7 +562,7 @@ func generateTestValueSlice() Value {
 	return ret
 }
 
-func generateTestValueBytes() Value {
+func generateTestValueBytes() MutableValue {
 	v := NewValueBytes()
 	v.Bytes().FromRaw([]byte("String bytes"))
 	return v

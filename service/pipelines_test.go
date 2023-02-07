@@ -282,13 +282,13 @@ func TestBuildPipelines(t *testing.T) {
 					switch dt.Type() {
 					case component.DataTypeTraces:
 						require.Len(t, exp.Traces, test.expectedRequests)
-						assert.EqualValues(t, testdata.GenerateTraces(1), exp.Traces[0])
+						assert.EqualValues(t, testdata.GenerateTraces(1).ResourceSpans(), exp.Traces[0].ResourceSpans())
 					case component.DataTypeMetrics:
 						require.Len(t, exp.Metrics, test.expectedRequests)
-						assert.EqualValues(t, testdata.GenerateMetrics(1), exp.Metrics[0])
+						assert.EqualValues(t, testdata.GenerateMetrics(1).ResourceMetrics(), exp.Metrics[0].ResourceMetrics())
 					case component.DataTypeLogs:
 						require.Len(t, exp.Logs, test.expectedRequests)
-						assert.EqualValues(t, testdata.GenerateLogs(1), exp.Logs[0])
+						assert.EqualValues(t, testdata.GenerateLogs(1).ResourceLogs(), exp.Logs[0].ResourceLogs())
 					}
 					assert.True(t, exp.Stopped())
 				}
@@ -799,10 +799,6 @@ func newErrConnectorFactory() connector.Factory {
 
 type errComponent struct {
 	consumertest.Consumer
-}
-
-func (e errComponent) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
 }
 
 func (e errComponent) Start(context.Context, component.Host) error {

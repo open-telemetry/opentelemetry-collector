@@ -26,7 +26,7 @@ func splitLogs(size int, src plog.Logs) plog.Logs {
 	totalCopiedLogRecords := 0
 	dest := plog.NewLogs()
 
-	src.ResourceLogs().RemoveIf(func(srcRl plog.ResourceLogs) bool {
+	src.MutableResourceLogs().RemoveIf(func(srcRl plog.MutableResourceLogs) bool {
 		// If we are done skip everything else.
 		if totalCopiedLogRecords == size {
 			return false
@@ -36,13 +36,13 @@ func splitLogs(size int, src plog.Logs) plog.Logs {
 		srcRlLRC := resourceLRC(srcRl)
 		if (totalCopiedLogRecords + srcRlLRC) <= size {
 			totalCopiedLogRecords += srcRlLRC
-			srcRl.MoveTo(dest.ResourceLogs().AppendEmpty())
+			srcRl.MoveTo(dest.MutableResourceLogs().AppendEmpty())
 			return true
 		}
 
-		destRl := dest.ResourceLogs().AppendEmpty()
+		destRl := dest.MutableResourceLogs().AppendEmpty()
 		srcRl.Resource().CopyTo(destRl.Resource())
-		srcRl.ScopeLogs().RemoveIf(func(srcIll plog.ScopeLogs) bool {
+		srcRl.ScopeLogs().RemoveIf(func(srcIll plog.MutableScopeLogs) bool {
 			// If we are done skip everything else.
 			if totalCopiedLogRecords == size {
 				return false
@@ -58,7 +58,7 @@ func splitLogs(size int, src plog.Logs) plog.Logs {
 
 			destIll := destRl.ScopeLogs().AppendEmpty()
 			srcIll.Scope().CopyTo(destIll.Scope())
-			srcIll.LogRecords().RemoveIf(func(srcMetric plog.LogRecord) bool {
+			srcIll.LogRecords().RemoveIf(func(srcMetric plog.MutableLogRecord) bool {
 				// If we are done skip everything else.
 				if totalCopiedLogRecords == size {
 					return false
@@ -76,7 +76,7 @@ func splitLogs(size int, src plog.Logs) plog.Logs {
 }
 
 // resourceLRC calculates the total number of log records in the plog.ResourceLogs.
-func resourceLRC(rs plog.ResourceLogs) (count int) {
+func resourceLRC(rs plog.MutableResourceLogs) (count int) {
 	for k := 0; k < rs.ScopeLogs().Len(); k++ {
 		count += rs.ScopeLogs().At(k).LogRecords().Len()
 	}

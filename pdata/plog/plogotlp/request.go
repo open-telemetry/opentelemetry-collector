@@ -27,19 +27,26 @@ import (
 // ExportRequest represents the request for gRPC/HTTP client/server.
 // It's a wrapper for plog.Logs data.
 type ExportRequest struct {
-	orig *otlpcollectorlog.ExportLogsServiceRequest
+	orig  *otlpcollectorlog.ExportLogsServiceRequest
+	state internal.State
 }
 
 // NewExportRequest returns an empty ExportRequest.
 func NewExportRequest() ExportRequest {
-	return ExportRequest{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
+	return ExportRequest{
+		orig:  &otlpcollectorlog.ExportLogsServiceRequest{},
+		state: internal.StateExclusive,
+	}
 }
 
 // NewExportRequestFromLogs returns a ExportRequest from plog.Logs.
 // Because ExportRequest is a wrapper for plog.Logs,
 // any changes to the provided Logs struct will be reflected in the ExportRequest and vice versa.
 func NewExportRequestFromLogs(ld plog.Logs) ExportRequest {
-	return ExportRequest{orig: internal.GetOrigLogs(internal.Logs(ld))}
+	return ExportRequest{
+		orig:  internal.GetLogsOrig(internal.Logs(ld)),
+		state: internal.GetLogsState(internal.Logs(ld)),
+	}
 }
 
 // MarshalProto marshals ExportRequest into proto bytes.
@@ -71,5 +78,5 @@ func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 }
 
 func (ms ExportRequest) Logs() plog.Logs {
-	return plog.Logs(internal.NewLogs(ms.orig))
+	return plog.Logs(internal.NewLogs(ms.orig, ms.state))
 }

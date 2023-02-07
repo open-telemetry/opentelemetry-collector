@@ -27,12 +27,12 @@ import (
 )
 
 func TestScopeLogsSlice(t *testing.T) {
-	es := NewScopeLogsSlice()
+	es := NewMutableScopeLogsSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newScopeLogsSlice(&[]*otlplogs.ScopeLogs{})
+	es = newMutableScopeLogsSliceFromOrig(&[]*otlplogs.ScopeLogs{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewScopeLogs()
+	emptyVal := NewMutableScopeLogs()
 	testVal := generateTestScopeLogs()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -44,10 +44,10 @@ func TestScopeLogsSlice(t *testing.T) {
 }
 
 func TestScopeLogsSlice_CopyTo(t *testing.T) {
-	dest := NewScopeLogsSlice()
+	dest := NewMutableScopeLogsSlice()
 	// Test CopyTo to empty
-	NewScopeLogsSlice().CopyTo(dest)
-	assert.Equal(t, NewScopeLogsSlice(), dest)
+	NewMutableScopeLogsSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableScopeLogsSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestScopeLogsSlice().CopyTo(dest)
@@ -79,7 +79,7 @@ func TestScopeLogsSlice_EnsureCapacity(t *testing.T) {
 func TestScopeLogsSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestScopeLogsSlice()
-	dest := NewScopeLogsSlice()
+	dest := NewMutableScopeLogsSlice()
 	src := generateTestScopeLogsSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestScopeLogsSlice(), dest)
@@ -103,8 +103,8 @@ func TestScopeLogsSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestScopeLogsSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewScopeLogsSlice()
-	emptySlice.RemoveIf(func(el ScopeLogs) bool {
+	emptySlice := NewMutableScopeLogsSlice()
+	emptySlice.RemoveIf(func(el MutableScopeLogs) bool {
 		t.Fail()
 		return false
 	})
@@ -112,7 +112,7 @@ func TestScopeLogsSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestScopeLogsSlice()
 	pos := 0
-	filtered.RemoveIf(func(el ScopeLogs) bool {
+	filtered.RemoveIf(func(el MutableScopeLogs) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -121,30 +121,16 @@ func TestScopeLogsSlice_RemoveIf(t *testing.T) {
 
 func TestScopeLogsSlice_Sort(t *testing.T) {
 	es := generateTestScopeLogsSlice()
-	es.Sort(func(a, b ScopeLogs) bool {
+	es.Sort(func(a, b MutableScopeLogs) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b ScopeLogs) bool {
+	es.Sort(func(a, b MutableScopeLogs) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
-	}
-}
-
-func generateTestScopeLogsSlice() ScopeLogsSlice {
-	es := NewScopeLogsSlice()
-	fillTestScopeLogsSlice(es)
-	return es
-}
-
-func fillTestScopeLogsSlice(es ScopeLogsSlice) {
-	*es.orig = make([]*otlplogs.ScopeLogs, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlplogs.ScopeLogs{}
-		fillTestScopeLogs(newScopeLogs((*es.orig)[i]))
 	}
 }

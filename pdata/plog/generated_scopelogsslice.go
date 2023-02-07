@@ -28,27 +28,44 @@ import (
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewScopeLogsSlice function to create new instances.
+// Must use NewMutableScopeLogsSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ScopeLogsSlice struct {
+	commonScopeLogsSlice
+}
+
+type MutableScopeLogsSlice struct {
+	commonScopeLogsSlice
+	preventConversion struct{} // nolint:unused
+}
+
+type commonScopeLogsSlice struct {
 	orig *[]*otlplogs.ScopeLogs
 }
 
-func newScopeLogsSlice(orig *[]*otlplogs.ScopeLogs) ScopeLogsSlice {
-	return ScopeLogsSlice{orig}
+func newScopeLogsSliceFromOrig(orig *[]*otlplogs.ScopeLogs) ScopeLogsSlice {
+	return ScopeLogsSlice{commonScopeLogsSlice{orig}}
 }
 
-// NewScopeLogsSlice creates a ScopeLogsSlice with 0 elements.
+func newMutableScopeLogsSliceFromOrig(orig *[]*otlplogs.ScopeLogs) MutableScopeLogsSlice {
+	return MutableScopeLogsSlice{commonScopeLogsSlice: commonScopeLogsSlice{orig}}
+}
+
+// NewMutableScopeLogsSlice creates a ScopeLogsSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewScopeLogsSlice() ScopeLogsSlice {
+func NewMutableScopeLogsSlice() MutableScopeLogsSlice {
 	orig := []*otlplogs.ScopeLogs(nil)
-	return newScopeLogsSlice(&orig)
+	return newMutableScopeLogsSliceFromOrig(&orig)
+}
+
+func (es MutableScopeLogsSlice) AsImmutable() ScopeLogsSlice {
+	return ScopeLogsSlice{commonScopeLogsSlice{orig: es.orig}}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewScopeLogsSlice()".
-func (es ScopeLogsSlice) Len() int {
+// Returns "0" for a newly instance created with "NewMutableScopeLogsSlice()".
+func (es commonScopeLogsSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -61,7 +78,11 @@ func (es ScopeLogsSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ScopeLogsSlice) At(i int) ScopeLogs {
-	return newScopeLogs((*es.orig)[i])
+	return newScopeLogsFromOrig((*es.orig)[i])
+}
+
+func (es MutableScopeLogsSlice) At(i int) MutableScopeLogs {
+	return newMutableScopeLogsFromOrig((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -70,13 +91,13 @@ func (es ScopeLogsSlice) At(i int) ScopeLogs {
 //
 // Here is how a new ScopeLogsSlice can be initialized:
 //
-//	es := NewScopeLogsSlice()
+//	es := NewMutableScopeLogsSlice()
 //	es.EnsureCapacity(4)
 //	for i := 0; i < 4; i++ {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ScopeLogsSlice) EnsureCapacity(newCap int) {
+func (es MutableScopeLogsSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -89,14 +110,14 @@ func (es ScopeLogsSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty ScopeLogs.
 // It returns the newly added ScopeLogs.
-func (es ScopeLogsSlice) AppendEmpty() ScopeLogs {
+func (es MutableScopeLogsSlice) AppendEmpty() MutableScopeLogs {
 	*es.orig = append(*es.orig, &otlplogs.ScopeLogs{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ScopeLogsSlice) MoveAndAppendTo(dest ScopeLogsSlice) {
+func (es MutableScopeLogsSlice) MoveAndAppendTo(dest MutableScopeLogsSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -108,7 +129,7 @@ func (es ScopeLogsSlice) MoveAndAppendTo(dest ScopeLogsSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ScopeLogsSlice) RemoveIf(f func(ScopeLogs) bool) {
+func (es MutableScopeLogsSlice) RemoveIf(f func(MutableScopeLogs) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -127,13 +148,13 @@ func (es ScopeLogsSlice) RemoveIf(f func(ScopeLogs) bool) {
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
+func (es commonScopeLogsSlice) CopyTo(dest MutableScopeLogsSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newScopeLogs((*es.orig)[i]).CopyTo(newScopeLogs((*dest.orig)[i]))
+			newScopeLogsFromOrig((*es.orig)[i]).CopyTo(newMutableScopeLogsFromOrig((*dest.orig)[i]))
 		}
 		return
 	}
@@ -141,7 +162,7 @@ func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
 	wrappers := make([]*otlplogs.ScopeLogs, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newScopeLogs((*es.orig)[i]).CopyTo(newScopeLogs(wrappers[i]))
+		newScopeLogsFromOrig((*es.orig)[i]).CopyTo(newMutableScopeLogsFromOrig(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -149,6 +170,20 @@ func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
 // Sort sorts the ScopeLogs elements within ScopeLogsSlice given the
 // provided less function so that two instances of ScopeLogsSlice
 // can be compared.
-func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) {
+func (es MutableScopeLogsSlice) Sort(less func(a, b MutableScopeLogs) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func generateTestScopeLogsSlice() MutableScopeLogsSlice {
+	es := NewMutableScopeLogsSlice()
+	fillTestScopeLogsSlice(es)
+	return es
+}
+
+func fillTestScopeLogsSlice(es MutableScopeLogsSlice) {
+	*es.orig = make([]*otlplogs.ScopeLogs, 7)
+	for i := 0; i < 7; i++ {
+		(*es.orig)[i] = &otlplogs.ScopeLogs{}
+		fillTestScopeLogs(newMutableScopeLogsFromOrig((*es.orig)[i]))
+	}
 }

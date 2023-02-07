@@ -28,15 +28,15 @@ import (
 
 func TestSpanEvent_MoveTo(t *testing.T) {
 	ms := generateTestSpanEvent()
-	dest := NewSpanEvent()
+	dest := NewMutableSpanEvent()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewSpanEvent(), ms)
+	assert.Equal(t, NewMutableSpanEvent(), ms)
 	assert.Equal(t, generateTestSpanEvent(), dest)
 }
 
 func TestSpanEvent_CopyTo(t *testing.T) {
-	ms := NewSpanEvent()
-	orig := NewSpanEvent()
+	ms := NewMutableSpanEvent()
+	orig := NewMutableSpanEvent()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestSpanEvent()
@@ -45,7 +45,7 @@ func TestSpanEvent_CopyTo(t *testing.T) {
 }
 
 func TestSpanEvent_Timestamp(t *testing.T) {
-	ms := NewSpanEvent()
+	ms := NewMutableSpanEvent()
 	assert.Equal(t, pcommon.Timestamp(0), ms.Timestamp())
 	testValTimestamp := pcommon.Timestamp(1234567890)
 	ms.SetTimestamp(testValTimestamp)
@@ -53,35 +53,22 @@ func TestSpanEvent_Timestamp(t *testing.T) {
 }
 
 func TestSpanEvent_Name(t *testing.T) {
-	ms := NewSpanEvent()
+	ms := NewMutableSpanEvent()
 	assert.Equal(t, "", ms.Name())
 	ms.SetName("test_name")
 	assert.Equal(t, "test_name", ms.Name())
 }
 
 func TestSpanEvent_Attributes(t *testing.T) {
-	ms := NewSpanEvent()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	ms := NewMutableSpanEvent()
+	assert.Equal(t, pcommon.NewMutableMap(), ms.Attributes())
+	internal.FillTestMap(internal.MutableMap(ms.Attributes()))
+	assert.Equal(t, pcommon.MutableMap(internal.GenerateTestMap()), ms.Attributes())
 }
 
 func TestSpanEvent_DroppedAttributesCount(t *testing.T) {
-	ms := NewSpanEvent()
+	ms := NewMutableSpanEvent()
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
 	ms.SetDroppedAttributesCount(uint32(17))
 	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
-}
-
-func generateTestSpanEvent() SpanEvent {
-	tv := NewSpanEvent()
-	fillTestSpanEvent(tv)
-	return tv
-}
-
-func fillTestSpanEvent(tv SpanEvent) {
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Name = "test_name"
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
-	tv.orig.DroppedAttributesCount = uint32(17)
 }

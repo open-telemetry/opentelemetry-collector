@@ -24,27 +24,44 @@ const commonSliceTemplate = `// ${structName} logically represents a slice of ${
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use New${structName} function to create new instances.
+// Must use NewMutable${structName} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ${structName} struct {
+	common${structName}
+}
+
+type Mutable${structName} struct {
+	common${structName}
+	preventConversion struct{} // nolint:unused
+}
+
+type common${structName} struct {
 	orig *[]${originElementType}
 }
 
-func new${structName}(orig *[]${originElementType}) ${structName} {
-	return ${structName}{orig}
+func new${structName}FromOrig(orig *[]${originElementType}) ${structName} {
+	return ${structName}{common${structName}{orig}}
 }
 
-// New${structName} creates a ${structName} with 0 elements.
+func newMutable${structName}FromOrig(orig *[]${originElementType}) Mutable${structName} {
+	return Mutable${structName}{common${structName}: common${structName}{orig}}
+}
+
+// NewMutable${structName} creates a ${structName} with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func New${structName}() ${structName} {
+func NewMutable${structName}() Mutable${structName} {
 	orig := []${originElementType}(nil)
-	return new${structName}(&orig)
+	return newMutable${structName}FromOrig(&orig)
+}
+
+func (es Mutable${structName}) AsImmutable() ${structName} {
+	return ${structName}{common${structName}{orig: es.orig}}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "New${structName}()".
-func (es ${structName}) Len() int {
+// Returns "0" for a newly instance created with "NewMutable${structName}()".
+func (es common${structName}) Len() int {
 	return len(*es.orig)
 }
 
@@ -56,7 +73,11 @@ func (es ${structName}) Len() int {
 //       ... // Do something with the element
 //   }
 func (es ${structName}) At(i int) ${elementName} {
-	return ${newElement}
+	return new${elementName}FromOrig(${origElementLink})
+}
+
+func (es Mutable${structName}) At(i int) Mutable${elementName} {
+	return newMutable${elementName}FromOrig(${origElementLink})
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -64,13 +85,13 @@ func (es ${structName}) At(i int) ${elementName} {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new ${structName} can be initialized:
-//   es := New${structName}()
+//   es := NewMutable${structName}()
 //   es.EnsureCapacity(4)
 //   for i := 0; i < 4; i++ {
 //       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es ${structName}) EnsureCapacity(newCap int) {
+func (es Mutable${structName}) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -83,14 +104,14 @@ func (es ${structName}) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty ${elementName}.
 // It returns the newly added ${elementName}.
-func (es ${structName}) AppendEmpty() ${elementName} {
+func (es Mutable${structName}) AppendEmpty() Mutable${elementName} {
 	*es.orig = append(*es.orig, ${emptyOriginElement})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ${structName}) MoveAndAppendTo(dest ${structName}) {
+func (es Mutable${structName}) MoveAndAppendTo(dest Mutable${structName}) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -102,7 +123,7 @@ func (es ${structName}) MoveAndAppendTo(dest ${structName}) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ${structName}) RemoveIf(f func(${elementName}) bool) {
+func (es Mutable${structName}) RemoveIf(f func(Mutable${elementName}) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -121,12 +142,12 @@ func (es ${structName}) RemoveIf(f func(${elementName}) bool) {
 }`
 
 const commonSliceTestTemplate = `func Test${structName}(t *testing.T) {
-	es := New${structName}()
+	es := NewMutable${structName}()
 	assert.Equal(t, 0, es.Len())
-	es = new${structName}(&[]${originElementType}{})
+	es = newMutable${structName}FromOrig(&[]${originElementType}{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := New${elementName}()
+	emptyVal := NewMutable${elementName}()
 	testVal := generateTest${elementName}()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -138,10 +159,10 @@ const commonSliceTestTemplate = `func Test${structName}(t *testing.T) {
 }
 
 func Test${structName}_CopyTo(t *testing.T) {
-	dest := New${structName}()
+	dest := NewMutable${structName}()
 	// Test CopyTo to empty
-	New${structName}().CopyTo(dest)
-	assert.Equal(t, New${structName}(), dest)
+	NewMutable${structName}().CopyTo(dest)
+	assert.Equal(t, NewMutable${structName}(), dest)
 
 	// Test CopyTo larger slice
 	generateTest${structName}().CopyTo(dest)
@@ -173,7 +194,7 @@ func Test${structName}_EnsureCapacity(t *testing.T) {
 func Test${structName}_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTest${structName}()
-	dest := New${structName}()
+	dest := NewMutable${structName}()
 	src := generateTest${structName}()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTest${structName}(), dest)
@@ -197,8 +218,8 @@ func Test${structName}_MoveAndAppendTo(t *testing.T) {
 
 func Test${structName}_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := New${structName}()
-	emptySlice.RemoveIf(func(el ${elementName}) bool {
+	emptySlice := NewMutable${structName}()
+	emptySlice.RemoveIf(func(el Mutable${elementName}) bool {
 		t.Fail()
 		return false
 	})
@@ -206,7 +227,7 @@ func Test${structName}_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTest${structName}()
 	pos := 0
-	filtered.RemoveIf(func(el ${elementName}) bool {
+	filtered.RemoveIf(func(el Mutable${elementName}) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -214,13 +235,13 @@ func Test${structName}_RemoveIf(t *testing.T) {
 }`
 
 const slicePtrTemplate = `// CopyTo copies all elements from the current slice overriding the destination.
-func (es ${structName}) CopyTo(dest ${structName}) {
+func (es common${structName}) CopyTo(dest Mutable${structName}) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			new${elementName}((*es.orig)[i]).CopyTo(new${elementName}((*dest.orig)[i]))
+			new${elementName}FromOrig((*es.orig)[i]).CopyTo(newMutable${elementName}FromOrig((*dest.orig)[i]))
 		}
 		return
 	}
@@ -228,7 +249,7 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 	wrappers := make([]*${originName}, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		new${elementName}((*es.orig)[i]).CopyTo(new${elementName}(wrappers[i]))
+		new${elementName}FromOrig((*es.orig)[i]).CopyTo(newMutable${elementName}FromOrig(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -236,20 +257,20 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 // Sort sorts the ${elementName} elements within ${structName} given the
 // provided less function so that two instances of ${structName}
 // can be compared.
-func (es ${structName}) Sort(less func(a, b ${elementName}) bool) {
+func (es Mutable${structName}) Sort(less func(a, b Mutable${elementName}) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }`
 
 // TODO: Use assert.Less once https://github.com/stretchr/testify/pull/1339 is merged.
 const slicePtrTestTemplate = `func Test${structName}_Sort(t *testing.T) {
 	es := generateTest${structName}()
-	es.Sort(func(a, b ${elementName}) bool {
+	es.Sort(func(a, b Mutable${elementName}) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b ${elementName}) bool {
+	es.Sort(func(a, b Mutable${elementName}) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
@@ -258,7 +279,7 @@ const slicePtrTestTemplate = `func Test${structName}_Sort(t *testing.T) {
 }`
 
 const sliceValueTemplate = `// CopyTo copies all elements from the current slice overriding the destination.
-func (es ${structName}) CopyTo(dest ${structName}) {
+func (es common${structName}) CopyTo(dest Mutable${structName}) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
@@ -268,21 +289,21 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 	}
 
 	for i := range *es.orig {
-		new${elementName}(&(*es.orig)[i]).CopyTo(new${elementName}(&(*dest.orig)[i]))
+		new${elementName}FromOrig(&(*es.orig)[i]).CopyTo(newMutable${elementName}FromOrig(&(*dest.orig)[i]))
 	}
 }`
 
-const commonSliceGenerateTest = `func generateTest${structName}() ${structName} {
-	es := New${structName}()
+const commonSliceGenerateTest = `func generateTest${structName}() Mutable${structName} {
+	es := NewMutable${structName}()
 	fillTest${structName}(es)
 	return es
 }
 
-func fillTest${structName}(es ${structName}) {
+func fillTest${structName}(es Mutable${structName}) {
 	*es.orig = make([]${originElementType}, 7)
 	for i := 0; i < 7; i++ {
 		(*es.orig)[i] = ${emptyOriginElement}
-		fillTest${elementName}(${newElement})
+		fillTest${elementName}(newMutable${elementName}FromOrig(${origElementLink}))
 	}
 }`
 
@@ -333,15 +354,15 @@ func (ss *sliceOfPtrs) templateFields() func(name string) string {
 			return "*" + ss.element.originFullName
 		case "emptyOriginElement":
 			return "&" + ss.element.originFullName + "{}"
-		case "newElement":
-			return "new" + ss.element.structName + "((*es.orig)[i])"
+		case "origElementLink":
+			return "(*es.orig)[i]"
 		default:
 			panic(name)
 		}
 	}
 }
 
-func (ss *sliceOfPtrs) generateInternal(_ *bytes.Buffer) {}
+func (ss *sliceOfPtrs) generateAliases(_ *bytes.Buffer) {}
 
 var _ baseStruct = (*sliceOfPtrs)(nil)
 
@@ -386,14 +407,14 @@ func (ss *sliceOfValues) templateFields() func(name string) string {
 			return ss.element.originFullName
 		case "emptyOriginElement":
 			return ss.element.originFullName + "{}"
-		case "newElement":
-			return "new" + ss.element.structName + "(&(*es.orig)[i])"
+		case "origElementLink":
+			return "&(*es.orig)[i]"
 		default:
 			panic(name)
 		}
 	}
 }
 
-func (ss *sliceOfValues) generateInternal(_ *bytes.Buffer) {}
+func (ss *sliceOfValues) generateAliases(_ *bytes.Buffer) {}
 
 var _ baseStruct = (*sliceOfValues)(nil)

@@ -47,7 +47,7 @@ var metricsRequestJSON = []byte(`
 func TestRequestToPData(t *testing.T) {
 	tr := NewExportRequest()
 	assert.Equal(t, tr.Metrics().MetricCount(), 0)
-	tr.Metrics().ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	tr.Metrics().MutableResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	assert.Equal(t, tr.Metrics().MetricCount(), 1)
 }
 

@@ -30,7 +30,7 @@ func TestSplitLogs_noop(t *testing.T) {
 	assert.Equal(t, td, split)
 
 	i := 0
-	td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(_ plog.LogRecord) bool {
+	td.MutableResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(_ plog.MutableLogRecord) bool {
 		i++
 		return i > 5
 	})
@@ -39,17 +39,16 @@ func TestSplitLogs_noop(t *testing.T) {
 
 func TestSplitLogs(t *testing.T) {
 	ld := testdata.GenerateLogs(20)
-	logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	logs := ld.MutableResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetSeverityText(getTestLogSeverityText(0, i))
 	}
 	cp := plog.NewLogs()
-	cpLogs := cp.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	cpLogs := cp.MutableResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	cpLogs.EnsureCapacity(5)
-	ld.ResourceLogs().At(0).Resource().CopyTo(
-		cp.ResourceLogs().At(0).Resource())
+	ld.ResourceLogs().At(0).Resource().CopyTo(cp.MutableResourceLogs().At(0).Resource())
 	ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope().CopyTo(
-		cp.ResourceLogs().At(0).ScopeLogs().At(0).Scope())
+		cp.MutableResourceLogs().At(0).ScopeLogs().At(0).Scope())
 	logs.At(0).CopyTo(cpLogs.AppendEmpty())
 	logs.At(1).CopyTo(cpLogs.AppendEmpty())
 	logs.At(2).CopyTo(cpLogs.AppendEmpty())
@@ -82,14 +81,13 @@ func TestSplitLogs(t *testing.T) {
 
 func TestSplitLogsMultipleResourceLogs(t *testing.T) {
 	td := testdata.GenerateLogs(20)
-	logs := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	logs := td.MutableResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetSeverityText(getTestLogSeverityText(0, i))
 	}
 	// add second index to resource logs
-	testdata.GenerateLogs(20).
-		ResourceLogs().At(0).CopyTo(td.ResourceLogs().AppendEmpty())
-	logs = td.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords()
+	testdata.GenerateLogs(20).ResourceLogs().At(0).CopyTo(td.MutableResourceLogs().AppendEmpty())
+	logs = td.MutableResourceLogs().At(1).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetSeverityText(getTestLogSeverityText(1, i))
 	}
@@ -104,14 +102,14 @@ func TestSplitLogsMultipleResourceLogs(t *testing.T) {
 
 func TestSplitLogsMultipleResourceLogs_split_size_greater_than_log_size(t *testing.T) {
 	td := testdata.GenerateLogs(20)
-	logs := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	logs := td.MutableResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetSeverityText(getTestLogSeverityText(0, i))
 	}
 	// add second index to resource logs
 	testdata.GenerateLogs(20).
-		ResourceLogs().At(0).CopyTo(td.ResourceLogs().AppendEmpty())
-	logs = td.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords()
+		ResourceLogs().At(0).CopyTo(td.MutableResourceLogs().AppendEmpty())
+	logs = td.MutableResourceLogs().At(1).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetSeverityText(getTestLogSeverityText(1, i))
 	}
@@ -129,22 +127,22 @@ func TestSplitLogsMultipleResourceLogs_split_size_greater_than_log_size(t *testi
 
 func TestSplitLogsMultipleILL(t *testing.T) {
 	td := testdata.GenerateLogs(20)
-	logs := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	logs := td.MutableResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetSeverityText(getTestLogSeverityText(0, i))
 	}
 	// add second index to ILL
 	td.ResourceLogs().At(0).ScopeLogs().At(0).
-		CopyTo(td.ResourceLogs().At(0).ScopeLogs().AppendEmpty())
-	logs = td.ResourceLogs().At(0).ScopeLogs().At(1).LogRecords()
+		CopyTo(td.MutableResourceLogs().At(0).ScopeLogs().AppendEmpty())
+	logs = td.MutableResourceLogs().At(0).ScopeLogs().At(1).LogRecords()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetSeverityText(getTestLogSeverityText(1, i))
 	}
 
 	// add third index to ILL
 	td.ResourceLogs().At(0).ScopeLogs().At(0).
-		CopyTo(td.ResourceLogs().At(0).ScopeLogs().AppendEmpty())
-	logs = td.ResourceLogs().At(0).ScopeLogs().At(2).LogRecords()
+		CopyTo(td.MutableResourceLogs().At(0).ScopeLogs().AppendEmpty())
+	logs = td.MutableResourceLogs().At(0).ScopeLogs().At(2).LogRecords()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetSeverityText(getTestLogSeverityText(2, i))
 	}

@@ -27,12 +27,12 @@ import (
 )
 
 func TestSpanSlice(t *testing.T) {
-	es := NewSpanSlice()
+	es := NewMutableSpanSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSpanSlice(&[]*otlptrace.Span{})
+	es = newMutableSpanSliceFromOrig(&[]*otlptrace.Span{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewSpan()
+	emptyVal := NewMutableSpan()
 	testVal := generateTestSpan()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -44,10 +44,10 @@ func TestSpanSlice(t *testing.T) {
 }
 
 func TestSpanSlice_CopyTo(t *testing.T) {
-	dest := NewSpanSlice()
+	dest := NewMutableSpanSlice()
 	// Test CopyTo to empty
-	NewSpanSlice().CopyTo(dest)
-	assert.Equal(t, NewSpanSlice(), dest)
+	NewMutableSpanSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableSpanSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestSpanSlice().CopyTo(dest)
@@ -79,7 +79,7 @@ func TestSpanSlice_EnsureCapacity(t *testing.T) {
 func TestSpanSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestSpanSlice()
-	dest := NewSpanSlice()
+	dest := NewMutableSpanSlice()
 	src := generateTestSpanSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestSpanSlice(), dest)
@@ -103,8 +103,8 @@ func TestSpanSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestSpanSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewSpanSlice()
-	emptySlice.RemoveIf(func(el Span) bool {
+	emptySlice := NewMutableSpanSlice()
+	emptySlice.RemoveIf(func(el MutableSpan) bool {
 		t.Fail()
 		return false
 	})
@@ -112,7 +112,7 @@ func TestSpanSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestSpanSlice()
 	pos := 0
-	filtered.RemoveIf(func(el Span) bool {
+	filtered.RemoveIf(func(el MutableSpan) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -121,30 +121,16 @@ func TestSpanSlice_RemoveIf(t *testing.T) {
 
 func TestSpanSlice_Sort(t *testing.T) {
 	es := generateTestSpanSlice()
-	es.Sort(func(a, b Span) bool {
+	es.Sort(func(a, b MutableSpan) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b Span) bool {
+	es.Sort(func(a, b MutableSpan) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
-	}
-}
-
-func generateTestSpanSlice() SpanSlice {
-	es := NewSpanSlice()
-	fillTestSpanSlice(es)
-	return es
-}
-
-func fillTestSpanSlice(es SpanSlice) {
-	*es.orig = make([]*otlptrace.Span, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlptrace.Span{}
-		fillTestSpan(newSpan((*es.orig)[i]))
 	}
 }

@@ -24,21 +24,20 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestExemplar_MoveTo(t *testing.T) {
 	ms := generateTestExemplar()
-	dest := NewExemplar()
+	dest := NewMutableExemplar()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewExemplar(), ms)
+	assert.Equal(t, NewMutableExemplar(), ms)
 	assert.Equal(t, generateTestExemplar(), dest)
 }
 
 func TestExemplar_CopyTo(t *testing.T) {
-	ms := NewExemplar()
-	orig := NewExemplar()
+	ms := NewMutableExemplar()
+	orig := NewMutableExemplar()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestExemplar()
@@ -47,7 +46,7 @@ func TestExemplar_CopyTo(t *testing.T) {
 }
 
 func TestExemplar_Timestamp(t *testing.T) {
-	ms := NewExemplar()
+	ms := NewMutableExemplar()
 	assert.Equal(t, pcommon.Timestamp(0), ms.Timestamp())
 	testValTimestamp := pcommon.Timestamp(1234567890)
 	ms.SetTimestamp(testValTimestamp)
@@ -55,12 +54,12 @@ func TestExemplar_Timestamp(t *testing.T) {
 }
 
 func TestExemplar_ValueType(t *testing.T) {
-	tv := NewExemplar()
+	tv := NewMutableExemplar()
 	assert.Equal(t, ExemplarValueTypeEmpty, tv.ValueType())
 }
 
 func TestExemplar_DoubleValue(t *testing.T) {
-	ms := NewExemplar()
+	ms := NewMutableExemplar()
 	assert.Equal(t, float64(0.0), ms.DoubleValue())
 	ms.SetDoubleValue(float64(17.13))
 	assert.Equal(t, float64(17.13), ms.DoubleValue())
@@ -68,7 +67,7 @@ func TestExemplar_DoubleValue(t *testing.T) {
 }
 
 func TestExemplar_IntValue(t *testing.T) {
-	ms := NewExemplar()
+	ms := NewMutableExemplar()
 	assert.Equal(t, int64(0), ms.IntValue())
 	ms.SetIntValue(int64(17))
 	assert.Equal(t, int64(17), ms.IntValue())
@@ -76,14 +75,14 @@ func TestExemplar_IntValue(t *testing.T) {
 }
 
 func TestExemplar_FilteredAttributes(t *testing.T) {
-	ms := NewExemplar()
-	assert.Equal(t, pcommon.NewMap(), ms.FilteredAttributes())
-	internal.FillTestMap(internal.Map(ms.FilteredAttributes()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.FilteredAttributes())
+	ms := NewMutableExemplar()
+	assert.Equal(t, pcommon.NewMutableMap(), ms.FilteredAttributes())
+	internal.FillTestMap(internal.MutableMap(ms.FilteredAttributes()))
+	assert.Equal(t, pcommon.MutableMap(internal.GenerateTestMap()), ms.FilteredAttributes())
 }
 
 func TestExemplar_TraceID(t *testing.T) {
-	ms := NewExemplar()
+	ms := NewMutableExemplar()
 	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
 	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetTraceID(testValTraceID)
@@ -91,23 +90,9 @@ func TestExemplar_TraceID(t *testing.T) {
 }
 
 func TestExemplar_SpanID(t *testing.T) {
-	ms := NewExemplar()
+	ms := NewMutableExemplar()
 	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.SpanID())
 	testValSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetSpanID(testValSpanID)
 	assert.Equal(t, testValSpanID, ms.SpanID())
-}
-
-func generateTestExemplar() Exemplar {
-	tv := NewExemplar()
-	fillTestExemplar(tv)
-	return tv
-}
-
-func fillTestExemplar(tv Exemplar) {
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(17)}
-	internal.FillTestMap(internal.NewMap(&tv.orig.FilteredAttributes))
-	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 }

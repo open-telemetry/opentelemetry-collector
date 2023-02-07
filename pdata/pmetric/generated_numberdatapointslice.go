@@ -28,27 +28,44 @@ import (
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewNumberDataPointSlice function to create new instances.
+// Must use NewMutableNumberDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type NumberDataPointSlice struct {
+	commonNumberDataPointSlice
+}
+
+type MutableNumberDataPointSlice struct {
+	commonNumberDataPointSlice
+	preventConversion struct{} // nolint:unused
+}
+
+type commonNumberDataPointSlice struct {
 	orig *[]*otlpmetrics.NumberDataPoint
 }
 
-func newNumberDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint) NumberDataPointSlice {
-	return NumberDataPointSlice{orig}
+func newNumberDataPointSliceFromOrig(orig *[]*otlpmetrics.NumberDataPoint) NumberDataPointSlice {
+	return NumberDataPointSlice{commonNumberDataPointSlice{orig}}
 }
 
-// NewNumberDataPointSlice creates a NumberDataPointSlice with 0 elements.
+func newMutableNumberDataPointSliceFromOrig(orig *[]*otlpmetrics.NumberDataPoint) MutableNumberDataPointSlice {
+	return MutableNumberDataPointSlice{commonNumberDataPointSlice: commonNumberDataPointSlice{orig}}
+}
+
+// NewMutableNumberDataPointSlice creates a NumberDataPointSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewNumberDataPointSlice() NumberDataPointSlice {
+func NewMutableNumberDataPointSlice() MutableNumberDataPointSlice {
 	orig := []*otlpmetrics.NumberDataPoint(nil)
-	return newNumberDataPointSlice(&orig)
+	return newMutableNumberDataPointSliceFromOrig(&orig)
+}
+
+func (es MutableNumberDataPointSlice) AsImmutable() NumberDataPointSlice {
+	return NumberDataPointSlice{commonNumberDataPointSlice{orig: es.orig}}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewNumberDataPointSlice()".
-func (es NumberDataPointSlice) Len() int {
+// Returns "0" for a newly instance created with "NewMutableNumberDataPointSlice()".
+func (es commonNumberDataPointSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -61,7 +78,11 @@ func (es NumberDataPointSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es NumberDataPointSlice) At(i int) NumberDataPoint {
-	return newNumberDataPoint((*es.orig)[i])
+	return newNumberDataPointFromOrig((*es.orig)[i])
+}
+
+func (es MutableNumberDataPointSlice) At(i int) MutableNumberDataPoint {
+	return newMutableNumberDataPointFromOrig((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -70,13 +91,13 @@ func (es NumberDataPointSlice) At(i int) NumberDataPoint {
 //
 // Here is how a new NumberDataPointSlice can be initialized:
 //
-//	es := NewNumberDataPointSlice()
+//	es := NewMutableNumberDataPointSlice()
 //	es.EnsureCapacity(4)
 //	for i := 0; i < 4; i++ {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es NumberDataPointSlice) EnsureCapacity(newCap int) {
+func (es MutableNumberDataPointSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -89,14 +110,14 @@ func (es NumberDataPointSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty NumberDataPoint.
 // It returns the newly added NumberDataPoint.
-func (es NumberDataPointSlice) AppendEmpty() NumberDataPoint {
+func (es MutableNumberDataPointSlice) AppendEmpty() MutableNumberDataPoint {
 	*es.orig = append(*es.orig, &otlpmetrics.NumberDataPoint{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es NumberDataPointSlice) MoveAndAppendTo(dest NumberDataPointSlice) {
+func (es MutableNumberDataPointSlice) MoveAndAppendTo(dest MutableNumberDataPointSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -108,7 +129,7 @@ func (es NumberDataPointSlice) MoveAndAppendTo(dest NumberDataPointSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es NumberDataPointSlice) RemoveIf(f func(NumberDataPoint) bool) {
+func (es MutableNumberDataPointSlice) RemoveIf(f func(MutableNumberDataPoint) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -127,13 +148,13 @@ func (es NumberDataPointSlice) RemoveIf(f func(NumberDataPoint) bool) {
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
+func (es commonNumberDataPointSlice) CopyTo(dest MutableNumberDataPointSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newNumberDataPoint((*es.orig)[i]).CopyTo(newNumberDataPoint((*dest.orig)[i]))
+			newNumberDataPointFromOrig((*es.orig)[i]).CopyTo(newMutableNumberDataPointFromOrig((*dest.orig)[i]))
 		}
 		return
 	}
@@ -141,7 +162,7 @@ func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
 	wrappers := make([]*otlpmetrics.NumberDataPoint, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newNumberDataPoint((*es.orig)[i]).CopyTo(newNumberDataPoint(wrappers[i]))
+		newNumberDataPointFromOrig((*es.orig)[i]).CopyTo(newMutableNumberDataPointFromOrig(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -149,6 +170,20 @@ func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
 // Sort sorts the NumberDataPoint elements within NumberDataPointSlice given the
 // provided less function so that two instances of NumberDataPointSlice
 // can be compared.
-func (es NumberDataPointSlice) Sort(less func(a, b NumberDataPoint) bool) {
+func (es MutableNumberDataPointSlice) Sort(less func(a, b MutableNumberDataPoint) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func generateTestNumberDataPointSlice() MutableNumberDataPointSlice {
+	es := NewMutableNumberDataPointSlice()
+	fillTestNumberDataPointSlice(es)
+	return es
+}
+
+func fillTestNumberDataPointSlice(es MutableNumberDataPointSlice) {
+	*es.orig = make([]*otlpmetrics.NumberDataPoint, 7)
+	for i := 0; i < 7; i++ {
+		(*es.orig)[i] = &otlpmetrics.NumberDataPoint{}
+		fillTestNumberDataPoint(newMutableNumberDataPointFromOrig((*es.orig)[i]))
+	}
 }

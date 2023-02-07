@@ -69,7 +69,7 @@ func NewLogsProcessor(
 			return err
 		}
 		return nextConsumer.ConsumeLogs(ctx, ld)
-	}, bs.consumerOptions...)
+	})
 	if err != nil {
 		return nil, err
 	}

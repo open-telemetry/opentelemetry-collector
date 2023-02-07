@@ -216,7 +216,7 @@ func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 			}
 		}
 		scrp.EndMetricsOp(ctx, md.MetricCount(), err)
-		md.ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
+		md.MutableResourceMetrics().MoveAndAppendTo(metrics.MutableResourceMetrics())
 	}
 
 	dataPointCount := metrics.DataPointCount()

@@ -26,59 +26,97 @@ import (
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewSum function to create new instances.
+// Must use NewMutableSum function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Sum struct {
+	commonSum
+}
+
+type MutableSum struct {
+	commonSum
+	preventConversion struct{} // nolint:unused
+}
+
+type commonSum struct {
 	orig *otlpmetrics.Sum
 }
 
-func newSum(orig *otlpmetrics.Sum) Sum {
-	return Sum{orig}
+func newSumFromOrig(orig *otlpmetrics.Sum) Sum {
+	return Sum{commonSum{orig}}
 }
 
-// NewSum creates a new empty Sum.
+func newMutableSumFromOrig(orig *otlpmetrics.Sum) MutableSum {
+	return MutableSum{commonSum: commonSum{orig}}
+}
+
+// NewMutableSum creates a new empty Sum.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSum() Sum {
-	return newSum(&otlpmetrics.Sum{})
+func NewMutableSum() MutableSum {
+	return newMutableSumFromOrig(&otlpmetrics.Sum{})
+}
+
+// nolint:unused
+func (ms Sum) asMutable() MutableSum {
+	return MutableSum{commonSum: commonSum{orig: ms.orig}}
+}
+
+func (ms MutableSum) AsImmutable() Sum {
+	return Sum{commonSum{orig: ms.orig}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Sum) MoveTo(dest Sum) {
+func (ms MutableSum) MoveTo(dest MutableSum) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.Sum{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this Sum.
-func (ms Sum) AggregationTemporality() AggregationTemporality {
+func (ms commonSum) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.orig.AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Sum.
-func (ms Sum) SetAggregationTemporality(v AggregationTemporality) {
+func (ms MutableSum) SetAggregationTemporality(v AggregationTemporality) {
 	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
 // IsMonotonic returns the ismonotonic associated with this Sum.
-func (ms Sum) IsMonotonic() bool {
+func (ms commonSum) IsMonotonic() bool {
 	return ms.orig.IsMonotonic
 }
 
 // SetIsMonotonic replaces the ismonotonic associated with this Sum.
-func (ms Sum) SetIsMonotonic(v bool) {
+func (ms MutableSum) SetIsMonotonic(v bool) {
 	ms.orig.IsMonotonic = v
 }
 
 // DataPoints returns the DataPoints associated with this Sum.
 func (ms Sum) DataPoints() NumberDataPointSlice {
-	return newNumberDataPointSlice(&ms.orig.DataPoints)
+	return newNumberDataPointSliceFromOrig(&ms.orig.DataPoints)
+}
+
+func (ms MutableSum) DataPoints() MutableNumberDataPointSlice {
+	return newMutableNumberDataPointSliceFromOrig(&ms.orig.DataPoints)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Sum) CopyTo(dest Sum) {
+func (ms commonSum) CopyTo(dest MutableSum) {
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	dest.SetIsMonotonic(ms.IsMonotonic())
-	ms.DataPoints().CopyTo(dest.DataPoints())
+	Sum{ms}.DataPoints().CopyTo(dest.DataPoints())
+}
+
+func generateTestSum() MutableSum {
+	tv := NewMutableSum()
+	fillTestSum(tv)
+	return tv
+}
+
+func fillTestSum(tv MutableSum) {
+	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
+	tv.orig.IsMonotonic = true
+	fillTestNumberDataPointSlice(newMutableNumberDataPointSliceFromOrig(&tv.orig.DataPoints))
 }

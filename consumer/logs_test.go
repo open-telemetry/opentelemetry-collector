@@ -24,25 +24,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-func TestDefaultLogs(t *testing.T) {
-	cp, err := NewLogs(func(context.Context, plog.Logs) error { return nil })
-	assert.NoError(t, err)
-	assert.NoError(t, cp.ConsumeLogs(context.Background(), plog.NewLogs()))
-	assert.Equal(t, Capabilities{MutatesData: false}, cp.Capabilities())
-}
-
 func TestNilFuncLogs(t *testing.T) {
 	_, err := NewLogs(nil)
 	assert.Equal(t, errNilFunc, err)
-}
-
-func TestWithCapabilitiesLogs(t *testing.T) {
-	cp, err := NewLogs(
-		func(context.Context, plog.Logs) error { return nil },
-		WithCapabilities(Capabilities{MutatesData: true}))
-	assert.NoError(t, err)
-	assert.NoError(t, cp.ConsumeLogs(context.Background(), plog.NewLogs()))
-	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())
 }
 
 func TestConsumeLogs(t *testing.T) {

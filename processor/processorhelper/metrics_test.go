@@ -24,7 +24,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -36,7 +35,6 @@ func TestNewMetricsProcessor(t *testing.T) {
 	mp, err := NewMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(nil))
 	require.NoError(t, err)
 
-	assert.True(t, mp.Capabilities().MutatesData)
 	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, mp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 	assert.NoError(t, mp.Shutdown(context.Background()))
@@ -46,13 +44,11 @@ func TestNewMetricsProcessor_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
 	mp, err := NewMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(nil),
 		WithStart(func(context.Context, component.Host) error { return want }),
-		WithShutdown(func(context.Context) error { return want }),
-		WithCapabilities(consumer.Capabilities{MutatesData: false}))
+		WithShutdown(func(context.Context) error { return want }))
 	assert.NoError(t, err)
 
 	assert.Equal(t, want, mp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, want, mp.Shutdown(context.Background()))
-	assert.False(t, mp.Capabilities().MutatesData)
 }
 
 func TestNewMetricsProcessor_NilRequiredFields(t *testing.T) {

@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -79,8 +78,4 @@ func (exp *ExampleExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics
 func (exp *ExampleExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	exp.Logs = append(exp.Logs, ld)
 	return nil
-}
-
-func (exp *ExampleExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
 }

@@ -27,48 +27,85 @@ import (
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewExponentialHistogram function to create new instances.
+// Must use NewMutableExponentialHistogram function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExponentialHistogram struct {
+	commonExponentialHistogram
+}
+
+type MutableExponentialHistogram struct {
+	commonExponentialHistogram
+	preventConversion struct{} // nolint:unused
+}
+
+type commonExponentialHistogram struct {
 	orig *otlpmetrics.ExponentialHistogram
 }
 
-func newExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) ExponentialHistogram {
-	return ExponentialHistogram{orig}
+func newExponentialHistogramFromOrig(orig *otlpmetrics.ExponentialHistogram) ExponentialHistogram {
+	return ExponentialHistogram{commonExponentialHistogram{orig}}
 }
 
-// NewExponentialHistogram creates a new empty ExponentialHistogram.
+func newMutableExponentialHistogramFromOrig(orig *otlpmetrics.ExponentialHistogram) MutableExponentialHistogram {
+	return MutableExponentialHistogram{commonExponentialHistogram: commonExponentialHistogram{orig}}
+}
+
+// NewMutableExponentialHistogram creates a new empty ExponentialHistogram.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewExponentialHistogram() ExponentialHistogram {
-	return newExponentialHistogram(&otlpmetrics.ExponentialHistogram{})
+func NewMutableExponentialHistogram() MutableExponentialHistogram {
+	return newMutableExponentialHistogramFromOrig(&otlpmetrics.ExponentialHistogram{})
+}
+
+// nolint:unused
+func (ms ExponentialHistogram) asMutable() MutableExponentialHistogram {
+	return MutableExponentialHistogram{commonExponentialHistogram: commonExponentialHistogram{orig: ms.orig}}
+}
+
+func (ms MutableExponentialHistogram) AsImmutable() ExponentialHistogram {
+	return ExponentialHistogram{commonExponentialHistogram{orig: ms.orig}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ExponentialHistogram) MoveTo(dest ExponentialHistogram) {
+func (ms MutableExponentialHistogram) MoveTo(dest MutableExponentialHistogram) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.ExponentialHistogram{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this ExponentialHistogram.
-func (ms ExponentialHistogram) AggregationTemporality() AggregationTemporality {
+func (ms commonExponentialHistogram) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.orig.AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this ExponentialHistogram.
-func (ms ExponentialHistogram) SetAggregationTemporality(v AggregationTemporality) {
+func (ms MutableExponentialHistogram) SetAggregationTemporality(v AggregationTemporality) {
 	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
 // DataPoints returns the DataPoints associated with this ExponentialHistogram.
 func (ms ExponentialHistogram) DataPoints() ExponentialHistogramDataPointSlice {
-	return newExponentialHistogramDataPointSlice(&ms.orig.DataPoints)
+	return newExponentialHistogramDataPointSliceFromOrig(&ms.orig.DataPoints)
+}
+
+func (ms MutableExponentialHistogram) DataPoints() MutableExponentialHistogramDataPointSlice {
+	return newMutableExponentialHistogramDataPointSliceFromOrig(&ms.orig.DataPoints)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ExponentialHistogram) CopyTo(dest ExponentialHistogram) {
+func (ms commonExponentialHistogram) CopyTo(dest MutableExponentialHistogram) {
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
-	ms.DataPoints().CopyTo(dest.DataPoints())
+	ExponentialHistogram{ms}.DataPoints().CopyTo(dest.DataPoints())
+}
+
+func generateTestExponentialHistogram() MutableExponentialHistogram {
+	tv := NewMutableExponentialHistogram()
+	fillTestExponentialHistogram(tv)
+	return tv
+}
+
+func fillTestExponentialHistogram(tv MutableExponentialHistogram) {
+	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
+	fillTestExponentialHistogramDataPointSlice(newMutableExponentialHistogramDataPointSliceFromOrig(&tv.orig.DataPoints))
 }

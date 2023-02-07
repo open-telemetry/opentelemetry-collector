@@ -27,12 +27,12 @@ import (
 )
 
 func TestScopeMetricsSlice(t *testing.T) {
-	es := NewScopeMetricsSlice()
+	es := NewMutableScopeMetricsSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newScopeMetricsSlice(&[]*otlpmetrics.ScopeMetrics{})
+	es = newMutableScopeMetricsSliceFromOrig(&[]*otlpmetrics.ScopeMetrics{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewScopeMetrics()
+	emptyVal := NewMutableScopeMetrics()
 	testVal := generateTestScopeMetrics()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -44,10 +44,10 @@ func TestScopeMetricsSlice(t *testing.T) {
 }
 
 func TestScopeMetricsSlice_CopyTo(t *testing.T) {
-	dest := NewScopeMetricsSlice()
+	dest := NewMutableScopeMetricsSlice()
 	// Test CopyTo to empty
-	NewScopeMetricsSlice().CopyTo(dest)
-	assert.Equal(t, NewScopeMetricsSlice(), dest)
+	NewMutableScopeMetricsSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableScopeMetricsSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestScopeMetricsSlice().CopyTo(dest)
@@ -79,7 +79,7 @@ func TestScopeMetricsSlice_EnsureCapacity(t *testing.T) {
 func TestScopeMetricsSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestScopeMetricsSlice()
-	dest := NewScopeMetricsSlice()
+	dest := NewMutableScopeMetricsSlice()
 	src := generateTestScopeMetricsSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestScopeMetricsSlice(), dest)
@@ -103,8 +103,8 @@ func TestScopeMetricsSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestScopeMetricsSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewScopeMetricsSlice()
-	emptySlice.RemoveIf(func(el ScopeMetrics) bool {
+	emptySlice := NewMutableScopeMetricsSlice()
+	emptySlice.RemoveIf(func(el MutableScopeMetrics) bool {
 		t.Fail()
 		return false
 	})
@@ -112,7 +112,7 @@ func TestScopeMetricsSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestScopeMetricsSlice()
 	pos := 0
-	filtered.RemoveIf(func(el ScopeMetrics) bool {
+	filtered.RemoveIf(func(el MutableScopeMetrics) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -121,30 +121,16 @@ func TestScopeMetricsSlice_RemoveIf(t *testing.T) {
 
 func TestScopeMetricsSlice_Sort(t *testing.T) {
 	es := generateTestScopeMetricsSlice()
-	es.Sort(func(a, b ScopeMetrics) bool {
+	es.Sort(func(a, b MutableScopeMetrics) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b ScopeMetrics) bool {
+	es.Sort(func(a, b MutableScopeMetrics) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
-	}
-}
-
-func generateTestScopeMetricsSlice() ScopeMetricsSlice {
-	es := NewScopeMetricsSlice()
-	fillTestScopeMetricsSlice(es)
-	return es
-}
-
-func fillTestScopeMetricsSlice(es ScopeMetricsSlice) {
-	*es.orig = make([]*otlpmetrics.ScopeMetrics, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.ScopeMetrics{}
-		fillTestScopeMetrics(newScopeMetrics((*es.orig)[i]))
 	}
 }

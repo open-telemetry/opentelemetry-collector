@@ -14,29 +14,24 @@
 
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
-import (
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+// State defines an ownership state of pmetric.Metrics, plog.Logs or ptrace.Traces.
+type State int32
+
+const (
+	// StateShared indicates that the data is shared with other consumers.
+	StateShared State = iota
+
+	// StateExclusive indicates that the data is exclusive to the current consumer.
+	StateExclusive
 )
 
-type Value struct {
-	orig *otlpcommon.AnyValue
-}
-
-func GetOrigValue(ms Value) *otlpcommon.AnyValue {
-	return ms.orig
-}
-
-func NewValue(orig *otlpcommon.AnyValue) Value {
-	return Value{orig: orig}
-}
-
-func FillTestValue(dest Value) {
-	dest.orig.Value = &otlpcommon.AnyValue_StringValue{StringValue: "v"}
-}
-
-func GenerateTestValue() Value {
-	var orig otlpcommon.AnyValue
-	ms := NewValue(&orig)
-	FillTestValue(ms)
-	return ms
+// String returns the string representation of the State.
+func (s State) String() string {
+	switch s {
+	case StateShared:
+		return "Shared"
+	case StateExclusive:
+		return "Exclusive"
+	}
+	return ""
 }

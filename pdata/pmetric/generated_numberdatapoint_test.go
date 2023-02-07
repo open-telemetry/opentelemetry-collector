@@ -23,21 +23,20 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestNumberDataPoint_MoveTo(t *testing.T) {
 	ms := generateTestNumberDataPoint()
-	dest := NewNumberDataPoint()
+	dest := NewMutableNumberDataPoint()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewNumberDataPoint(), ms)
+	assert.Equal(t, NewMutableNumberDataPoint(), ms)
 	assert.Equal(t, generateTestNumberDataPoint(), dest)
 }
 
 func TestNumberDataPoint_CopyTo(t *testing.T) {
-	ms := NewNumberDataPoint()
-	orig := NewNumberDataPoint()
+	ms := NewMutableNumberDataPoint()
+	orig := NewMutableNumberDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestNumberDataPoint()
@@ -46,14 +45,14 @@ func TestNumberDataPoint_CopyTo(t *testing.T) {
 }
 
 func TestNumberDataPoint_Attributes(t *testing.T) {
-	ms := NewNumberDataPoint()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	ms := NewMutableNumberDataPoint()
+	assert.Equal(t, pcommon.NewMutableMap(), ms.Attributes())
+	internal.FillTestMap(internal.MutableMap(ms.Attributes()))
+	assert.Equal(t, pcommon.MutableMap(internal.GenerateTestMap()), ms.Attributes())
 }
 
 func TestNumberDataPoint_StartTimestamp(t *testing.T) {
-	ms := NewNumberDataPoint()
+	ms := NewMutableNumberDataPoint()
 	assert.Equal(t, pcommon.Timestamp(0), ms.StartTimestamp())
 	testValStartTimestamp := pcommon.Timestamp(1234567890)
 	ms.SetStartTimestamp(testValStartTimestamp)
@@ -61,7 +60,7 @@ func TestNumberDataPoint_StartTimestamp(t *testing.T) {
 }
 
 func TestNumberDataPoint_Timestamp(t *testing.T) {
-	ms := NewNumberDataPoint()
+	ms := NewMutableNumberDataPoint()
 	assert.Equal(t, pcommon.Timestamp(0), ms.Timestamp())
 	testValTimestamp := pcommon.Timestamp(1234567890)
 	ms.SetTimestamp(testValTimestamp)
@@ -69,12 +68,12 @@ func TestNumberDataPoint_Timestamp(t *testing.T) {
 }
 
 func TestNumberDataPoint_ValueType(t *testing.T) {
-	tv := NewNumberDataPoint()
+	tv := NewMutableNumberDataPoint()
 	assert.Equal(t, NumberDataPointValueTypeEmpty, tv.ValueType())
 }
 
 func TestNumberDataPoint_DoubleValue(t *testing.T) {
-	ms := NewNumberDataPoint()
+	ms := NewMutableNumberDataPoint()
 	assert.Equal(t, float64(0.0), ms.DoubleValue())
 	ms.SetDoubleValue(float64(17.13))
 	assert.Equal(t, float64(17.13), ms.DoubleValue())
@@ -82,7 +81,7 @@ func TestNumberDataPoint_DoubleValue(t *testing.T) {
 }
 
 func TestNumberDataPoint_IntValue(t *testing.T) {
-	ms := NewNumberDataPoint()
+	ms := NewMutableNumberDataPoint()
 	assert.Equal(t, int64(0), ms.IntValue())
 	ms.SetIntValue(int64(17))
 	assert.Equal(t, int64(17), ms.IntValue())
@@ -90,31 +89,16 @@ func TestNumberDataPoint_IntValue(t *testing.T) {
 }
 
 func TestNumberDataPoint_Exemplars(t *testing.T) {
-	ms := NewNumberDataPoint()
-	assert.Equal(t, NewExemplarSlice(), ms.Exemplars())
+	ms := NewMutableNumberDataPoint()
+	assert.Equal(t, NewMutableExemplarSlice(), ms.Exemplars())
 	fillTestExemplarSlice(ms.Exemplars())
 	assert.Equal(t, generateTestExemplarSlice(), ms.Exemplars())
 }
 
 func TestNumberDataPoint_Flags(t *testing.T) {
-	ms := NewNumberDataPoint()
+	ms := NewMutableNumberDataPoint()
 	assert.Equal(t, DataPointFlags(0), ms.Flags())
 	testValFlags := DataPointFlags(1)
 	ms.SetFlags(testValFlags)
 	assert.Equal(t, testValFlags, ms.Flags())
-}
-
-func generateTestNumberDataPoint() NumberDataPoint {
-	tv := NewNumberDataPoint()
-	fillTestNumberDataPoint(tv)
-	return tv
-}
-
-func fillTestNumberDataPoint(tv NumberDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
-	tv.orig.StartTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(17.13)}
-	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars))
-	tv.orig.Flags = 1
 }

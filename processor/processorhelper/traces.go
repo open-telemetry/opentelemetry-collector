@@ -69,7 +69,7 @@ func NewTracesProcessor(
 			return err
 		}
 		return nextConsumer.ConsumeTraces(ctx, td)
-	}, bs.consumerOptions...)
+	})
 
 	if err != nil {
 		return nil, err

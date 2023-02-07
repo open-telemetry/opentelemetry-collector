@@ -26,19 +26,26 @@ import (
 // ExportRequest represents the request for gRPC/HTTP client/server.
 // It's a wrapper for pmetric.Metrics data.
 type ExportRequest struct {
-	orig *otlpcollectormetrics.ExportMetricsServiceRequest
+	orig  *otlpcollectormetrics.ExportMetricsServiceRequest
+	state internal.State
 }
 
 // NewExportRequest returns an empty ExportRequest.
 func NewExportRequest() ExportRequest {
-	return ExportRequest{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
+	return ExportRequest{
+		orig:  &otlpcollectormetrics.ExportMetricsServiceRequest{},
+		state: internal.StateExclusive,
+	}
 }
 
 // NewExportRequestFromMetrics returns a ExportRequest from pmetric.Metrics.
 // Because ExportRequest is a wrapper for pmetric.Metrics,
 // any changes to the provided Metrics struct will be reflected in the ExportRequest and vice versa.
 func NewExportRequestFromMetrics(md pmetric.Metrics) ExportRequest {
-	return ExportRequest{orig: internal.GetOrigMetrics(internal.Metrics(md))}
+	return ExportRequest{
+		orig:  internal.GetMetricsOrig(internal.Metrics(md)),
+		state: internal.GetMetricsState(internal.Metrics(md)),
+	}
 }
 
 // MarshalProto marshals ExportRequest into proto bytes.
@@ -66,5 +73,5 @@ func (mr ExportRequest) UnmarshalJSON(data []byte) error {
 }
 
 func (mr ExportRequest) Metrics() pmetric.Metrics {
-	return pmetric.Metrics(internal.NewMetrics(mr.orig))
+	return pmetric.Metrics(internal.NewMetrics(mr.orig, mr.state))
 }

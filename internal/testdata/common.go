@@ -18,24 +18,24 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func initMetricExemplarAttributes(dest pcommon.Map) {
+func initMetricExemplarAttributes(dest pcommon.MutableMap) {
 	dest.PutStr("exemplar-attachment", "exemplar-attachment-value")
 }
 
-func initMetricAttributes1(dest pcommon.Map) {
+func initMetricAttributes1(dest pcommon.MutableMap) {
 	dest.PutStr("label-1", "label-value-1")
 }
 
-func initMetricAttributes2(dest pcommon.Map) {
+func initMetricAttributes2(dest pcommon.MutableMap) {
 	dest.PutStr("label-2", "label-value-2")
 }
 
-func initMetricAttributes12(dest pcommon.Map) {
+func initMetricAttributes12(dest pcommon.MutableMap) {
 	initMetricAttributes1(dest)
 	initMetricAttributes2(dest)
 }
 
-func initMetricAttributes13(dest pcommon.Map) {
+func initMetricAttributes13(dest pcommon.MutableMap) {
 	initMetricAttributes1(dest)
 	dest.PutStr("label-3", "label-value-3")
 }

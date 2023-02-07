@@ -25,7 +25,7 @@ import (
 
 var tracesOTLP = func() Traces {
 	td := NewTraces()
-	rs := td.ResourceSpans().AppendEmpty()
+	rs := td.MutableResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().PutStr("host.name", "testHost")
 	il := rs.ScopeSpans().AppendEmpty()
 	il.Scope().SetName("name")
@@ -45,7 +45,7 @@ func TestTracesJSON(t *testing.T) {
 	got, err := decoder.UnmarshalTraces(jsonBuf)
 	assert.NoError(t, err)
 
-	assert.EqualValues(t, tracesOTLP, got)
+	assert.EqualValues(t, tracesOTLP.ResourceSpans(), got.ResourceSpans())
 }
 
 func TestTracesJSON_Marshal(t *testing.T) {
@@ -60,7 +60,7 @@ var tracesOTLPFull = func() Traces {
 	spanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	td := NewTraces()
 	// Add ResourceSpans.
-	rs := td.ResourceSpans().AppendEmpty()
+	rs := td.MutableResourceSpans().AppendEmpty()
 	rs.SetSchemaUrl("schemaURL")
 	// Add resource.
 	rs.Resource().Attributes().PutStr("host.name", "testHost")
@@ -133,7 +133,7 @@ func TestJSONFull(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
 	got, err := decoder.UnmarshalTraces(jsonBuf)
 	assert.NoError(t, err)
-	assert.EqualValues(t, tracesOTLPFull, got)
+	assert.EqualValues(t, tracesOTLPFull.ResourceSpans(), got.ResourceSpans())
 }
 
 func BenchmarkJSONUnmarshal(b *testing.B) {

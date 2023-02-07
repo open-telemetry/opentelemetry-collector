@@ -26,7 +26,7 @@ import (
 
 var metricsOTLP = func() Metrics {
 	md := NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
+	rm := md.MutableResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().PutStr("host.name", "testHost")
 	il := rm.ScopeMetrics().AppendEmpty()
 	il.Scope().SetName("name")
@@ -46,7 +46,7 @@ func TestMetricsJSON(t *testing.T) {
 	got, err := decoder.UnmarshalMetrics(jsonBuf)
 	assert.NoError(t, err)
 
-	assert.EqualValues(t, metricsOTLP, got)
+	assert.EqualValues(t, metricsOTLP.ResourceMetrics(), got.ResourceMetrics())
 }
 
 func TestMetricsJSON_Marshal(t *testing.T) {
@@ -58,7 +58,7 @@ func TestMetricsJSON_Marshal(t *testing.T) {
 
 var metricsSumOTLPFull = func() Metrics {
 	metric := NewMetrics()
-	rs := metric.ResourceMetrics().AppendEmpty()
+	rs := metric.MutableResourceMetrics().AppendEmpty()
 	rs.SetSchemaUrl("schemaURL")
 	// Add resource.
 	rs.Resource().Attributes().PutStr("host.name", "testHost")
@@ -100,7 +100,7 @@ var metricsSumOTLPFull = func() Metrics {
 
 var metricsGaugeOTLPFull = func() Metrics {
 	metric := NewMetrics()
-	rs := metric.ResourceMetrics().AppendEmpty()
+	rs := metric.MutableResourceMetrics().AppendEmpty()
 	rs.SetSchemaUrl("schemaURL")
 	// Add resource.
 	rs.Resource().Attributes().PutStr("host.name", "testHost")
@@ -139,7 +139,7 @@ var metricsGaugeOTLPFull = func() Metrics {
 
 var metricsHistogramOTLPFull = func() Metrics {
 	metric := NewMetrics()
-	rs := metric.ResourceMetrics().AppendEmpty()
+	rs := metric.MutableResourceMetrics().AppendEmpty()
 	rs.SetSchemaUrl("schemaURL")
 	// Add resource.
 	rs.Resource().Attributes().PutStr("host.name", "testHost")
@@ -184,7 +184,7 @@ var metricsHistogramOTLPFull = func() Metrics {
 
 var metricsExponentialHistogramOTLPFull = func() Metrics {
 	metric := NewMetrics()
-	rs := metric.ResourceMetrics().AppendEmpty()
+	rs := metric.MutableResourceMetrics().AppendEmpty()
 	rs.SetSchemaUrl("schemaURL")
 	// Add resource.
 	rs.Resource().Attributes().PutStr("host.name", "testHost")
@@ -233,7 +233,7 @@ var metricsExponentialHistogramOTLPFull = func() Metrics {
 
 var metricsSummaryOTLPFull = func() Metrics {
 	metric := NewMetrics()
-	rs := metric.ResourceMetrics().AppendEmpty()
+	rs := metric.MutableResourceMetrics().AppendEmpty()
 	rs.SetSchemaUrl("schemaURL")
 	// Add resource.
 	rs.Resource().Attributes().PutStr("host.name", "testHost")
@@ -326,7 +326,7 @@ func Test_jsonUnmarshaler_UnmarshalMetrics(t *testing.T) {
 						decoder := JSONUnmarshaler{}
 						got, err := decoder.UnmarshalMetrics(jsonBuf)
 						assert.NoError(t, err)
-						assert.EqualValues(t, m, got)
+						assert.EqualValues(t, m.ResourceMetrics(), got.ResourceMetrics())
 					}
 				}
 			}

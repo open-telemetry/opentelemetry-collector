@@ -114,7 +114,7 @@ var traceJSON = []byte(`
 
 var traceOtlp = func() ptrace.Traces {
 	td := ptrace.NewTraces()
-	rs := td.ResourceSpans().AppendEmpty()
+	rs := td.MutableResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().PutStr(semconv.AttributeHostName, "testHost")
 	spans := rs.ScopeSpans().AppendEmpty().Spans()
 	span1 := spans.AppendEmpty()
@@ -1062,10 +1062,6 @@ func (esc *errOrSinkConsumer) SetConsumeError(err error) {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()
 	esc.consumeError = err
-}
-
-func (esc *errOrSinkConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
 }
 
 // ConsumeTraces stores traces to this sink.

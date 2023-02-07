@@ -114,7 +114,7 @@ func (f fakeMetricsServer) Export(_ context.Context, request ExportRequest) (Exp
 
 func generateMetricsRequest() ExportRequest {
 	md := pmetric.NewMetrics()
-	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m := md.MutableResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetName("test_metric")
 	m.SetEmptyGauge().DataPoints().AppendEmpty()
 	return NewExportRequestFromMetrics(md)

@@ -28,15 +28,15 @@ import (
 
 func TestResourceSpans_MoveTo(t *testing.T) {
 	ms := generateTestResourceSpans()
-	dest := NewResourceSpans()
+	dest := NewMutableResourceSpans()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewResourceSpans(), ms)
+	assert.Equal(t, NewMutableResourceSpans(), ms)
 	assert.Equal(t, generateTestResourceSpans(), dest)
 }
 
 func TestResourceSpans_CopyTo(t *testing.T) {
-	ms := NewResourceSpans()
-	orig := NewResourceSpans()
+	ms := NewMutableResourceSpans()
+	orig := NewMutableResourceSpans()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestResourceSpans()
@@ -45,33 +45,21 @@ func TestResourceSpans_CopyTo(t *testing.T) {
 }
 
 func TestResourceSpans_Resource(t *testing.T) {
-	ms := NewResourceSpans()
-	internal.FillTestResource(internal.Resource(ms.Resource()))
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
+	ms := NewMutableResourceSpans()
+	internal.FillTestResource(internal.MutableResource(ms.Resource()))
+	assert.Equal(t, pcommon.MutableResource(internal.GenerateTestResource()), ms.Resource())
 }
 
 func TestResourceSpans_SchemaUrl(t *testing.T) {
-	ms := NewResourceSpans()
+	ms := NewMutableResourceSpans()
 	assert.Equal(t, "", ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
 }
 
 func TestResourceSpans_ScopeSpans(t *testing.T) {
-	ms := NewResourceSpans()
-	assert.Equal(t, NewScopeSpansSlice(), ms.ScopeSpans())
+	ms := NewMutableResourceSpans()
+	assert.Equal(t, NewMutableScopeSpansSlice(), ms.ScopeSpans())
 	fillTestScopeSpansSlice(ms.ScopeSpans())
 	assert.Equal(t, generateTestScopeSpansSlice(), ms.ScopeSpans())
-}
-
-func generateTestResourceSpans() ResourceSpans {
-	tv := NewResourceSpans()
-	fillTestResourceSpans(tv)
-	return tv
-}
-
-func fillTestResourceSpans(tv ResourceSpans) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeSpansSlice(newScopeSpansSlice(&tv.orig.ScopeSpans))
 }

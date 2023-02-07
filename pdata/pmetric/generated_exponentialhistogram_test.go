@@ -27,15 +27,15 @@ import (
 
 func TestExponentialHistogram_MoveTo(t *testing.T) {
 	ms := generateTestExponentialHistogram()
-	dest := NewExponentialHistogram()
+	dest := NewMutableExponentialHistogram()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewExponentialHistogram(), ms)
+	assert.Equal(t, NewMutableExponentialHistogram(), ms)
 	assert.Equal(t, generateTestExponentialHistogram(), dest)
 }
 
 func TestExponentialHistogram_CopyTo(t *testing.T) {
-	ms := NewExponentialHistogram()
-	orig := NewExponentialHistogram()
+	ms := NewMutableExponentialHistogram()
+	orig := NewMutableExponentialHistogram()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestExponentialHistogram()
@@ -44,7 +44,7 @@ func TestExponentialHistogram_CopyTo(t *testing.T) {
 }
 
 func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
-	ms := NewExponentialHistogram()
+	ms := NewMutableExponentialHistogram()
 	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
 	testValAggregationTemporality := AggregationTemporality(otlpmetrics.AggregationTemporality(1))
 	ms.SetAggregationTemporality(testValAggregationTemporality)
@@ -52,19 +52,8 @@ func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
 }
 
 func TestExponentialHistogram_DataPoints(t *testing.T) {
-	ms := NewExponentialHistogram()
-	assert.Equal(t, NewExponentialHistogramDataPointSlice(), ms.DataPoints())
+	ms := NewMutableExponentialHistogram()
+	assert.Equal(t, NewMutableExponentialHistogramDataPointSlice(), ms.DataPoints())
 	fillTestExponentialHistogramDataPointSlice(ms.DataPoints())
 	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), ms.DataPoints())
-}
-
-func generateTestExponentialHistogram() ExponentialHistogram {
-	tv := NewExponentialHistogram()
-	fillTestExponentialHistogram(tv)
-	return tv
-}
-
-func fillTestExponentialHistogram(tv ExponentialHistogram) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	fillTestExponentialHistogramDataPointSlice(newExponentialHistogramDataPointSlice(&tv.orig.DataPoints))
 }

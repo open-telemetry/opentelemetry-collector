@@ -27,12 +27,12 @@ import (
 )
 
 func TestResourceMetricsSlice(t *testing.T) {
-	es := NewResourceMetricsSlice()
+	es := NewMutableResourceMetricsSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newResourceMetricsSlice(&[]*otlpmetrics.ResourceMetrics{})
+	es = newMutableResourceMetricsSliceFromOrig(&[]*otlpmetrics.ResourceMetrics{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewResourceMetrics()
+	emptyVal := NewMutableResourceMetrics()
 	testVal := generateTestResourceMetrics()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -44,10 +44,10 @@ func TestResourceMetricsSlice(t *testing.T) {
 }
 
 func TestResourceMetricsSlice_CopyTo(t *testing.T) {
-	dest := NewResourceMetricsSlice()
+	dest := NewMutableResourceMetricsSlice()
 	// Test CopyTo to empty
-	NewResourceMetricsSlice().CopyTo(dest)
-	assert.Equal(t, NewResourceMetricsSlice(), dest)
+	NewMutableResourceMetricsSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableResourceMetricsSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestResourceMetricsSlice().CopyTo(dest)
@@ -79,7 +79,7 @@ func TestResourceMetricsSlice_EnsureCapacity(t *testing.T) {
 func TestResourceMetricsSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestResourceMetricsSlice()
-	dest := NewResourceMetricsSlice()
+	dest := NewMutableResourceMetricsSlice()
 	src := generateTestResourceMetricsSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestResourceMetricsSlice(), dest)
@@ -103,8 +103,8 @@ func TestResourceMetricsSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestResourceMetricsSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewResourceMetricsSlice()
-	emptySlice.RemoveIf(func(el ResourceMetrics) bool {
+	emptySlice := NewMutableResourceMetricsSlice()
+	emptySlice.RemoveIf(func(el MutableResourceMetrics) bool {
 		t.Fail()
 		return false
 	})
@@ -112,7 +112,7 @@ func TestResourceMetricsSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestResourceMetricsSlice()
 	pos := 0
-	filtered.RemoveIf(func(el ResourceMetrics) bool {
+	filtered.RemoveIf(func(el MutableResourceMetrics) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -121,30 +121,16 @@ func TestResourceMetricsSlice_RemoveIf(t *testing.T) {
 
 func TestResourceMetricsSlice_Sort(t *testing.T) {
 	es := generateTestResourceMetricsSlice()
-	es.Sort(func(a, b ResourceMetrics) bool {
+	es.Sort(func(a, b MutableResourceMetrics) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b ResourceMetrics) bool {
+	es.Sort(func(a, b MutableResourceMetrics) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
-	}
-}
-
-func generateTestResourceMetricsSlice() ResourceMetricsSlice {
-	es := NewResourceMetricsSlice()
-	fillTestResourceMetricsSlice(es)
-	return es
-}
-
-func fillTestResourceMetricsSlice(es ResourceMetricsSlice) {
-	*es.orig = make([]*otlpmetrics.ResourceMetrics, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.ResourceMetrics{}
-		fillTestResourceMetrics(newResourceMetrics((*es.orig)[i]))
 	}
 }

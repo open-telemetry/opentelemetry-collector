@@ -198,7 +198,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 
 func newTraces(numTraces int, numSpans int) ptrace.Traces {
 	traces := ptrace.NewTraces()
-	batch := traces.ResourceSpans().AppendEmpty()
+	batch := traces.MutableResourceSpans().AppendEmpty()
 	batch.Resource().Attributes().PutStr("resource-attr", "some-resource")
 	batch.Resource().Attributes().PutInt("num-traces", int64(numTraces))
 	batch.Resource().Attributes().PutInt("num-spans", int64(numSpans))

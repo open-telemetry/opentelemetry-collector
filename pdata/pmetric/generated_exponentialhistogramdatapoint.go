@@ -31,177 +31,217 @@ import (
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewExponentialHistogramDataPoint function to create new instances.
+// Must use NewMutableExponentialHistogramDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExponentialHistogramDataPoint struct {
+	commonExponentialHistogramDataPoint
+}
+
+type MutableExponentialHistogramDataPoint struct {
+	commonExponentialHistogramDataPoint
+	preventConversion struct{} // nolint:unused
+}
+
+type commonExponentialHistogramDataPoint struct {
 	orig *otlpmetrics.ExponentialHistogramDataPoint
 }
 
-func newExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) ExponentialHistogramDataPoint {
-	return ExponentialHistogramDataPoint{orig}
+func newExponentialHistogramDataPointFromOrig(orig *otlpmetrics.ExponentialHistogramDataPoint) ExponentialHistogramDataPoint {
+	return ExponentialHistogramDataPoint{commonExponentialHistogramDataPoint{orig}}
 }
 
-// NewExponentialHistogramDataPoint creates a new empty ExponentialHistogramDataPoint.
+func newMutableExponentialHistogramDataPointFromOrig(orig *otlpmetrics.ExponentialHistogramDataPoint) MutableExponentialHistogramDataPoint {
+	return MutableExponentialHistogramDataPoint{commonExponentialHistogramDataPoint: commonExponentialHistogramDataPoint{orig}}
+}
+
+// NewMutableExponentialHistogramDataPoint creates a new empty ExponentialHistogramDataPoint.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
-	return newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{})
+func NewMutableExponentialHistogramDataPoint() MutableExponentialHistogramDataPoint {
+	return newMutableExponentialHistogramDataPointFromOrig(&otlpmetrics.ExponentialHistogramDataPoint{})
+}
+
+// nolint:unused
+func (ms ExponentialHistogramDataPoint) asMutable() MutableExponentialHistogramDataPoint {
+	return MutableExponentialHistogramDataPoint{commonExponentialHistogramDataPoint: commonExponentialHistogramDataPoint{orig: ms.orig}}
+}
+
+func (ms MutableExponentialHistogramDataPoint) AsImmutable() ExponentialHistogramDataPoint {
+	return ExponentialHistogramDataPoint{commonExponentialHistogramDataPoint{orig: ms.orig}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ExponentialHistogramDataPoint) MoveTo(dest ExponentialHistogramDataPoint) {
+func (ms MutableExponentialHistogramDataPoint) MoveTo(dest MutableExponentialHistogramDataPoint) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.ExponentialHistogramDataPoint{}
 }
 
 // Attributes returns the Attributes associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+	return internal.NewMapFromOrig(&ms.orig.Attributes)
+}
+
+func (ms MutableExponentialHistogramDataPoint) Attributes() pcommon.MutableMap {
+	return internal.NewMutableMapFromOrig(&ms.orig.Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) StartTimestamp() pcommon.Timestamp {
+func (ms commonExponentialHistogramDataPoint) StartTimestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
+func (ms MutableExponentialHistogramDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
 	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Timestamp() pcommon.Timestamp {
+func (ms commonExponentialHistogramDataPoint) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetTimestamp(v pcommon.Timestamp) {
+func (ms MutableExponentialHistogramDataPoint) SetTimestamp(v pcommon.Timestamp) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Count() uint64 {
+func (ms commonExponentialHistogramDataPoint) Count() uint64 {
 	return ms.orig.Count
 }
 
 // SetCount replaces the count associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetCount(v uint64) {
+func (ms MutableExponentialHistogramDataPoint) SetCount(v uint64) {
 	ms.orig.Count = v
 }
 
 // Sum returns the sum associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Sum() float64 {
+func (ms commonExponentialHistogramDataPoint) Sum() float64 {
 	return ms.orig.GetSum()
 }
 
 // HasSum returns true if the ExponentialHistogramDataPoint contains a
 // Sum value, false otherwise.
-func (ms ExponentialHistogramDataPoint) HasSum() bool {
+func (ms commonExponentialHistogramDataPoint) HasSum() bool {
 	return ms.orig.Sum_ != nil
 }
 
 // SetSum replaces the sum associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetSum(v float64) {
+func (ms MutableExponentialHistogramDataPoint) SetSum(v float64) {
 	ms.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: v}
 }
 
 // RemoveSum removes the sum associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) RemoveSum() {
+func (ms MutableExponentialHistogramDataPoint) RemoveSum() {
 	ms.orig.Sum_ = nil
 }
 
 // Scale returns the scale associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Scale() int32 {
+func (ms commonExponentialHistogramDataPoint) Scale() int32 {
 	return ms.orig.Scale
 }
 
 // SetScale replaces the scale associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetScale(v int32) {
+func (ms MutableExponentialHistogramDataPoint) SetScale(v int32) {
 	ms.orig.Scale = v
 }
 
 // ZeroCount returns the zerocount associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) ZeroCount() uint64 {
+func (ms commonExponentialHistogramDataPoint) ZeroCount() uint64 {
 	return ms.orig.ZeroCount
 }
 
 // SetZeroCount replaces the zerocount associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetZeroCount(v uint64) {
+func (ms MutableExponentialHistogramDataPoint) SetZeroCount(v uint64) {
 	ms.orig.ZeroCount = v
 }
 
 // Positive returns the positive associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Positive() ExponentialHistogramDataPointBuckets {
-	return newExponentialHistogramDataPointBuckets(&ms.orig.Positive)
+	return newExponentialHistogramDataPointBucketsFromOrig(&ms.orig.Positive)
+}
+
+// Positive returns the positive associated with this MutableExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) Positive() MutableExponentialHistogramDataPointBuckets {
+	return newMutableExponentialHistogramDataPointBucketsFromOrig(&ms.orig.Positive)
 }
 
 // Negative returns the negative associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Negative() ExponentialHistogramDataPointBuckets {
-	return newExponentialHistogramDataPointBuckets(&ms.orig.Negative)
+	return newExponentialHistogramDataPointBucketsFromOrig(&ms.orig.Negative)
+}
+
+// Negative returns the negative associated with this MutableExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) Negative() MutableExponentialHistogramDataPointBuckets {
+	return newMutableExponentialHistogramDataPointBucketsFromOrig(&ms.orig.Negative)
 }
 
 // Exemplars returns the Exemplars associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Exemplars() ExemplarSlice {
-	return newExemplarSlice(&ms.orig.Exemplars)
+	return newExemplarSliceFromOrig(&ms.orig.Exemplars)
+}
+
+func (ms MutableExponentialHistogramDataPoint) Exemplars() MutableExemplarSlice {
+	return newMutableExemplarSliceFromOrig(&ms.orig.Exemplars)
 }
 
 // Flags returns the flags associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Flags() DataPointFlags {
+func (ms commonExponentialHistogramDataPoint) Flags() DataPointFlags {
 	return DataPointFlags(ms.orig.Flags)
 }
 
 // SetFlags replaces the flags associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetFlags(v DataPointFlags) {
+func (ms MutableExponentialHistogramDataPoint) SetFlags(v DataPointFlags) {
 	ms.orig.Flags = uint32(v)
 }
 
 // Min returns the min associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Min() float64 {
+func (ms commonExponentialHistogramDataPoint) Min() float64 {
 	return ms.orig.GetMin()
 }
 
 // HasMin returns true if the ExponentialHistogramDataPoint contains a
 // Min value, false otherwise.
-func (ms ExponentialHistogramDataPoint) HasMin() bool {
+func (ms commonExponentialHistogramDataPoint) HasMin() bool {
 	return ms.orig.Min_ != nil
 }
 
 // SetMin replaces the min associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetMin(v float64) {
+func (ms MutableExponentialHistogramDataPoint) SetMin(v float64) {
 	ms.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: v}
 }
 
 // RemoveMin removes the min associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) RemoveMin() {
+func (ms MutableExponentialHistogramDataPoint) RemoveMin() {
 	ms.orig.Min_ = nil
 }
 
 // Max returns the max associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Max() float64 {
+func (ms commonExponentialHistogramDataPoint) Max() float64 {
 	return ms.orig.GetMax()
 }
 
 // HasMax returns true if the ExponentialHistogramDataPoint contains a
 // Max value, false otherwise.
-func (ms ExponentialHistogramDataPoint) HasMax() bool {
+func (ms commonExponentialHistogramDataPoint) HasMax() bool {
 	return ms.orig.Max_ != nil
 }
 
 // SetMax replaces the max associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetMax(v float64) {
+func (ms MutableExponentialHistogramDataPoint) SetMax(v float64) {
 	ms.orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: v}
 }
 
 // RemoveMax removes the max associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) RemoveMax() {
+func (ms MutableExponentialHistogramDataPoint) RemoveMax() {
 	ms.orig.Max_ = nil
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoint) {
-	ms.Attributes().CopyTo(dest.Attributes())
+func (ms commonExponentialHistogramDataPoint) CopyTo(dest MutableExponentialHistogramDataPoint) {
+	ExponentialHistogramDataPoint{ms}.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
@@ -211,9 +251,9 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 
 	dest.SetScale(ms.Scale())
 	dest.SetZeroCount(ms.ZeroCount())
-	ms.Positive().CopyTo(dest.Positive())
-	ms.Negative().CopyTo(dest.Negative())
-	ms.Exemplars().CopyTo(dest.Exemplars())
+	ExponentialHistogramDataPoint{ms}.Positive().CopyTo(dest.Positive())
+	ExponentialHistogramDataPoint{ms}.Negative().CopyTo(dest.Negative())
+	ExponentialHistogramDataPoint{ms}.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
 	if ms.HasMin() {
 		dest.SetMin(ms.Min())
@@ -223,4 +263,26 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 		dest.SetMax(ms.Max())
 	}
 
+}
+
+func generateTestExponentialHistogramDataPoint() MutableExponentialHistogramDataPoint {
+	tv := NewMutableExponentialHistogramDataPoint()
+	fillTestExponentialHistogramDataPoint(tv)
+	return tv
+}
+
+func fillTestExponentialHistogramDataPoint(tv MutableExponentialHistogramDataPoint) {
+	internal.FillTestMap(internal.NewMutableMapFromOrig(&tv.orig.Attributes))
+	tv.orig.StartTimeUnixNano = 1234567890
+	tv.orig.TimeUnixNano = 1234567890
+	tv.orig.Count = uint64(17)
+	tv.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(17.13)}
+	tv.orig.Scale = int32(4)
+	tv.orig.ZeroCount = uint64(201)
+	fillTestExponentialHistogramDataPointBuckets(newMutableExponentialHistogramDataPointBucketsFromOrig(&tv.orig.Positive))
+	fillTestExponentialHistogramDataPointBuckets(newMutableExponentialHistogramDataPointBucketsFromOrig(&tv.orig.Negative))
+	fillTestExemplarSlice(newMutableExemplarSliceFromOrig(&tv.orig.Exemplars))
+	tv.orig.Flags = 1
+	tv.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(9.23)}
+	tv.orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(182.55)}
 }

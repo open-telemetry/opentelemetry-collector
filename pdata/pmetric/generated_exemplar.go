@@ -32,44 +32,66 @@ import (
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewExemplar function to create new instances.
+// Must use NewMutableExemplar function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Exemplar struct {
+	commonExemplar
+}
+
+type MutableExemplar struct {
+	commonExemplar
+	preventConversion struct{} // nolint:unused
+}
+
+type commonExemplar struct {
 	orig *otlpmetrics.Exemplar
 }
 
-func newExemplar(orig *otlpmetrics.Exemplar) Exemplar {
-	return Exemplar{orig}
+func newExemplarFromOrig(orig *otlpmetrics.Exemplar) Exemplar {
+	return Exemplar{commonExemplar{orig}}
 }
 
-// NewExemplar creates a new empty Exemplar.
+func newMutableExemplarFromOrig(orig *otlpmetrics.Exemplar) MutableExemplar {
+	return MutableExemplar{commonExemplar: commonExemplar{orig}}
+}
+
+// NewMutableExemplar creates a new empty Exemplar.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewExemplar() Exemplar {
-	return newExemplar(&otlpmetrics.Exemplar{})
+func NewMutableExemplar() MutableExemplar {
+	return newMutableExemplarFromOrig(&otlpmetrics.Exemplar{})
+}
+
+// nolint:unused
+func (ms Exemplar) asMutable() MutableExemplar {
+	return MutableExemplar{commonExemplar: commonExemplar{orig: ms.orig}}
+}
+
+func (ms MutableExemplar) AsImmutable() Exemplar {
+	return Exemplar{commonExemplar{orig: ms.orig}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Exemplar) MoveTo(dest Exemplar) {
+func (ms MutableExemplar) MoveTo(dest MutableExemplar) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.Exemplar{}
 }
 
 // Timestamp returns the timestamp associated with this Exemplar.
-func (ms Exemplar) Timestamp() pcommon.Timestamp {
+func (ms commonExemplar) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this Exemplar.
-func (ms Exemplar) SetTimestamp(v pcommon.Timestamp) {
+func (ms MutableExemplar) SetTimestamp(v pcommon.Timestamp) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // ValueType returns the type of the value for this Exemplar.
 // Calling this function on zero-initialized Exemplar will cause a panic.
-func (ms Exemplar) ValueType() ExemplarValueType {
+func (ms commonExemplar) ValueType() ExemplarValueType {
 	switch ms.orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
 		return ExemplarValueTypeDouble
@@ -80,24 +102,24 @@ func (ms Exemplar) ValueType() ExemplarValueType {
 }
 
 // DoubleValue returns the double associated with this Exemplar.
-func (ms Exemplar) DoubleValue() float64 {
+func (ms commonExemplar) DoubleValue() float64 {
 	return ms.orig.GetAsDouble()
 }
 
 // SetDoubleValue replaces the double associated with this Exemplar.
-func (ms Exemplar) SetDoubleValue(v float64) {
+func (ms MutableExemplar) SetDoubleValue(v float64) {
 	ms.orig.Value = &otlpmetrics.Exemplar_AsDouble{
 		AsDouble: v,
 	}
 }
 
 // IntValue returns the int associated with this Exemplar.
-func (ms Exemplar) IntValue() int64 {
+func (ms commonExemplar) IntValue() int64 {
 	return ms.orig.GetAsInt()
 }
 
 // SetIntValue replaces the int associated with this Exemplar.
-func (ms Exemplar) SetIntValue(v int64) {
+func (ms MutableExemplar) SetIntValue(v int64) {
 	ms.orig.Value = &otlpmetrics.Exemplar_AsInt{
 		AsInt: v,
 	}
@@ -105,31 +127,35 @@ func (ms Exemplar) SetIntValue(v int64) {
 
 // FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
 func (ms Exemplar) FilteredAttributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.FilteredAttributes))
+	return internal.NewMapFromOrig(&ms.orig.FilteredAttributes)
+}
+
+func (ms MutableExemplar) FilteredAttributes() pcommon.MutableMap {
+	return internal.NewMutableMapFromOrig(&ms.orig.FilteredAttributes)
 }
 
 // TraceID returns the traceid associated with this Exemplar.
-func (ms Exemplar) TraceID() pcommon.TraceID {
+func (ms commonExemplar) TraceID() pcommon.TraceID {
 	return pcommon.TraceID(ms.orig.TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this Exemplar.
-func (ms Exemplar) SetTraceID(v pcommon.TraceID) {
+func (ms MutableExemplar) SetTraceID(v pcommon.TraceID) {
 	ms.orig.TraceId = data.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this Exemplar.
-func (ms Exemplar) SpanID() pcommon.SpanID {
+func (ms commonExemplar) SpanID() pcommon.SpanID {
 	return pcommon.SpanID(ms.orig.SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this Exemplar.
-func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
+func (ms MutableExemplar) SetSpanID(v pcommon.SpanID) {
 	ms.orig.SpanId = data.SpanID(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Exemplar) CopyTo(dest Exemplar) {
+func (ms commonExemplar) CopyTo(dest MutableExemplar) {
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
 	case ExemplarValueTypeDouble:
@@ -138,7 +164,21 @@ func (ms Exemplar) CopyTo(dest Exemplar) {
 		dest.SetIntValue(ms.IntValue())
 	}
 
-	ms.FilteredAttributes().CopyTo(dest.FilteredAttributes())
+	Exemplar{ms}.FilteredAttributes().CopyTo(dest.FilteredAttributes())
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
+}
+
+func generateTestExemplar() MutableExemplar {
+	tv := NewMutableExemplar()
+	fillTestExemplar(tv)
+	return tv
+}
+
+func fillTestExemplar(tv MutableExemplar) {
+	tv.orig.TimeUnixNano = 1234567890
+	tv.orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(17)}
+	internal.FillTestMap(internal.NewMutableMapFromOrig(&tv.orig.FilteredAttributes))
+	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 }

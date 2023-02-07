@@ -30,7 +30,7 @@ func TestSplitMetrics_noop(t *testing.T) {
 	assert.Equal(t, td, split)
 
 	i := 0
-	td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(_ pmetric.Metric) bool {
+	td.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(_ pmetric.MutableMetric) bool {
 		i++
 		return i > 5
 	})
@@ -39,19 +39,18 @@ func TestSplitMetrics_noop(t *testing.T) {
 
 func TestSplitMetrics(t *testing.T) {
 	md := testdata.GenerateMetrics(20)
-	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metrics := md.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
 		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 	cp := pmetric.NewMetrics()
-	cpMetrics := cp.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+	cpMetrics := cp.MutableResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	cpMetrics.EnsureCapacity(5)
 	md.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().CopyTo(
-		cp.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope())
-	md.ResourceMetrics().At(0).Resource().CopyTo(
-		cp.ResourceMetrics().At(0).Resource())
+		cp.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Scope())
+	md.ResourceMetrics().At(0).Resource().CopyTo(cp.MutableResourceMetrics().At(0).Resource())
 	metrics.At(0).CopyTo(cpMetrics.AppendEmpty())
 	metrics.At(1).CopyTo(cpMetrics.AppendEmpty())
 	metrics.At(2).CopyTo(cpMetrics.AppendEmpty())
@@ -85,16 +84,15 @@ func TestSplitMetrics(t *testing.T) {
 
 func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
 	md := testdata.GenerateMetrics(20)
-	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metrics := md.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
 		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 	// add second index to resource metrics
-	testdata.GenerateMetrics(20).
-		ResourceMetrics().At(0).CopyTo(md.ResourceMetrics().AppendEmpty())
-	metrics = md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics()
+	testdata.GenerateMetrics(20).ResourceMetrics().At(0).CopyTo(md.MutableResourceMetrics().AppendEmpty())
+	metrics = md.MutableResourceMetrics().At(1).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(1, i))
 	}
@@ -110,16 +108,15 @@ func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
 
 func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *testing.T) {
 	td := testdata.GenerateMetrics(20)
-	metrics := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metrics := td.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
 		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 	// add second index to resource metrics
-	testdata.GenerateMetrics(20).
-		ResourceMetrics().At(0).CopyTo(td.ResourceMetrics().AppendEmpty())
-	metrics = td.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics()
+	testdata.GenerateMetrics(20).ResourceMetrics().At(0).CopyTo(td.MutableResourceMetrics().AppendEmpty())
+	metrics = td.MutableResourceMetrics().At(1).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(1, i))
 	}
@@ -138,7 +135,7 @@ func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *tes
 
 func TestSplitMetricsUneven(t *testing.T) {
 	md := testdata.GenerateMetrics(10)
-	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metrics := md.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := 2
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
@@ -166,7 +163,7 @@ func TestSplitMetricsUneven(t *testing.T) {
 func TestSplitMetricsAllTypes(t *testing.T) {
 	md := testdata.GenerateMetricsAllTypes()
 	dataPointCount := 2
-	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metrics := md.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
 		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
@@ -264,7 +261,7 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 
 func TestSplitMetricsBatchSizeSmallerThanDataPointCount(t *testing.T) {
 	md := testdata.GenerateMetrics(2)
-	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metrics := md.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := 2
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
@@ -299,7 +296,7 @@ func TestSplitMetricsBatchSizeSmallerThanDataPointCount(t *testing.T) {
 
 func TestSplitMetricsMultipleILM(t *testing.T) {
 	md := testdata.GenerateMetrics(20)
-	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metrics := md.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
@@ -307,12 +304,12 @@ func TestSplitMetricsMultipleILM(t *testing.T) {
 	}
 	// add second index to ilm
 	md.ResourceMetrics().At(0).ScopeMetrics().At(0).
-		CopyTo(md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty())
+		CopyTo(md.MutableResourceMetrics().At(0).ScopeMetrics().AppendEmpty())
 
 	// add a third index to ilm
 	md.ResourceMetrics().At(0).ScopeMetrics().At(0).
-		CopyTo(md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty())
-	metrics = md.ResourceMetrics().At(0).ScopeMetrics().At(2).Metrics()
+		CopyTo(md.MutableResourceMetrics().At(0).ScopeMetrics().AppendEmpty())
+	metrics = md.MutableResourceMetrics().At(0).ScopeMetrics().At(2).Metrics()
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(2, i))
 	}

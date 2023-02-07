@@ -25,15 +25,15 @@ import (
 
 func TestGauge_MoveTo(t *testing.T) {
 	ms := generateTestGauge()
-	dest := NewGauge()
+	dest := NewMutableGauge()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewGauge(), ms)
+	assert.Equal(t, NewMutableGauge(), ms)
 	assert.Equal(t, generateTestGauge(), dest)
 }
 
 func TestGauge_CopyTo(t *testing.T) {
-	ms := NewGauge()
-	orig := NewGauge()
+	ms := NewMutableGauge()
+	orig := NewMutableGauge()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestGauge()
@@ -42,18 +42,8 @@ func TestGauge_CopyTo(t *testing.T) {
 }
 
 func TestGauge_DataPoints(t *testing.T) {
-	ms := NewGauge()
-	assert.Equal(t, NewNumberDataPointSlice(), ms.DataPoints())
+	ms := NewMutableGauge()
+	assert.Equal(t, NewMutableNumberDataPointSlice(), ms.DataPoints())
 	fillTestNumberDataPointSlice(ms.DataPoints())
 	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
-}
-
-func generateTestGauge() Gauge {
-	tv := NewGauge()
-	fillTestGauge(tv)
-	return tv
-}
-
-func fillTestGauge(tv Gauge) {
-	fillTestNumberDataPointSlice(newNumberDataPointSlice(&tv.orig.DataPoints))
 }

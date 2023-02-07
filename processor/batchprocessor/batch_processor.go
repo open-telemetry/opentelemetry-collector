@@ -91,10 +91,6 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batch batch, u
 	}, nil
 }
 
-func (bp *batchProcessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
-}
-
 // Start is invoked during service startup.
 func (bp *batchProcessor) Start(context.Context, component.Host) error {
 	bp.goroutines.Add(1)
@@ -234,7 +230,7 @@ func (bt *batchTraces) add(item any) {
 	}
 
 	bt.spanCount += newSpanCount
-	td.ResourceSpans().MoveAndAppendTo(bt.traceData.ResourceSpans())
+	td.MutableResourceSpans().MoveAndAppendTo(bt.traceData.MutableResourceSpans())
 }
 
 func (bt *batchTraces) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
@@ -304,7 +300,7 @@ func (bm *batchMetrics) add(item any) {
 		return
 	}
 	bm.dataPointCount += newDataPointCount
-	md.ResourceMetrics().MoveAndAppendTo(bm.metricData.ResourceMetrics())
+	md.MutableResourceMetrics().MoveAndAppendTo(bm.metricData.MutableResourceMetrics())
 }
 
 type batchLogs struct {
@@ -350,5 +346,5 @@ func (bl *batchLogs) add(item any) {
 		return
 	}
 	bl.logCount += newLogsCount
-	ld.ResourceLogs().MoveAndAppendTo(bl.logData.ResourceLogs())
+	ld.MutableResourceLogs().MoveAndAppendTo(bl.logData.MutableResourceLogs())
 }

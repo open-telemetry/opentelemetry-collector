@@ -27,7 +27,7 @@ import (
 
 var logsOTLP = func() Logs {
 	ld := NewLogs()
-	rl := ld.ResourceLogs().AppendEmpty()
+	rl := ld.MutableResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().PutStr("host.name", "testHost")
 	rl.Resource().SetDroppedAttributesCount(1)
 	rl.SetSchemaUrl("testSchemaURL")
@@ -89,7 +89,7 @@ func TestLogsJSON(t *testing.T) {
 						decoder := &JSONUnmarshaler{}
 						got, err := decoder.UnmarshalLogs(jsonBuf)
 						assert.NoError(t, err)
-						assert.EqualValues(t, ld, got)
+						assert.EqualValues(t, ld.ResourceLogs(), got.ResourceLogs())
 					}
 				}
 			}

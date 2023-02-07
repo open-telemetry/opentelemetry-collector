@@ -27,12 +27,12 @@ import (
 )
 
 func TestMetricSlice(t *testing.T) {
-	es := NewMetricSlice()
+	es := NewMutableMetricSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newMetricSlice(&[]*otlpmetrics.Metric{})
+	es = newMutableMetricSliceFromOrig(&[]*otlpmetrics.Metric{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewMetric()
+	emptyVal := NewMutableMetric()
 	testVal := generateTestMetric()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -44,10 +44,10 @@ func TestMetricSlice(t *testing.T) {
 }
 
 func TestMetricSlice_CopyTo(t *testing.T) {
-	dest := NewMetricSlice()
+	dest := NewMutableMetricSlice()
 	// Test CopyTo to empty
-	NewMetricSlice().CopyTo(dest)
-	assert.Equal(t, NewMetricSlice(), dest)
+	NewMutableMetricSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableMetricSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestMetricSlice().CopyTo(dest)
@@ -79,7 +79,7 @@ func TestMetricSlice_EnsureCapacity(t *testing.T) {
 func TestMetricSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestMetricSlice()
-	dest := NewMetricSlice()
+	dest := NewMutableMetricSlice()
 	src := generateTestMetricSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestMetricSlice(), dest)
@@ -103,8 +103,8 @@ func TestMetricSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestMetricSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewMetricSlice()
-	emptySlice.RemoveIf(func(el Metric) bool {
+	emptySlice := NewMutableMetricSlice()
+	emptySlice.RemoveIf(func(el MutableMetric) bool {
 		t.Fail()
 		return false
 	})
@@ -112,7 +112,7 @@ func TestMetricSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestMetricSlice()
 	pos := 0
-	filtered.RemoveIf(func(el Metric) bool {
+	filtered.RemoveIf(func(el MutableMetric) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -121,30 +121,16 @@ func TestMetricSlice_RemoveIf(t *testing.T) {
 
 func TestMetricSlice_Sort(t *testing.T) {
 	es := generateTestMetricSlice()
-	es.Sort(func(a, b Metric) bool {
+	es.Sort(func(a, b MutableMetric) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b Metric) bool {
+	es.Sort(func(a, b MutableMetric) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
-	}
-}
-
-func generateTestMetricSlice() MetricSlice {
-	es := NewMetricSlice()
-	fillTestMetricSlice(es)
-	return es
-}
-
-func fillTestMetricSlice(es MetricSlice) {
-	*es.orig = make([]*otlpmetrics.Metric, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.Metric{}
-		fillTestMetric(newMetric((*es.orig)[i]))
 	}
 }

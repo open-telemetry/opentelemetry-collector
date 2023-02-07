@@ -27,12 +27,12 @@ import (
 )
 
 const (
-	receiverSeed      = "receiver"
-	processorSeed     = "processor"
-	exporterSeed      = "exporter"
-	connectorSeed     = "connector"
-	capabilitiesSeed  = "capabilities"
-	fanOutToExporters = "fanout_to_exporters"
+	receiverSeed       = "receiver"
+	processorSeed      = "processor"
+	exporterSeed       = "exporter"
+	connectorSeed      = "connector"
+	fanOutToProcessors = "fanout_to_processors"
+	fanOutToExporters  = "fanout_to_exporters"
 )
 
 type nodeID int64
@@ -197,30 +197,6 @@ func buildConnector(
 		}
 	}
 	return
-}
-
-var _ consumerNode = &capabilitiesNode{}
-
-// Every pipeline has a "virtual" capabilities node immediately after the receiver(s).
-// There are two purposes for this node:
-// 1. Present aggregated capabilities to receivers, such as whether the pipeline mutates data.
-// 2. Present a consistent "first consumer" for each pipeline.
-// The nodeID is derived from "pipeline ID".
-type capabilitiesNode struct {
-	nodeID
-	pipelineID component.ID
-	baseConsumer
-}
-
-func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {
-	return &capabilitiesNode{
-		nodeID:     newNodeID(capabilitiesSeed, pipelineID.String()),
-		pipelineID: pipelineID,
-	}
-}
-
-func (n *capabilitiesNode) getConsumer() baseConsumer {
-	return n.baseConsumer
 }
 
 var _ consumerNode = &fanOutNode{}

@@ -65,7 +65,3 @@ type ExampleProcessor struct {
 	consumer.ConsumeLogsFunc
 	mutatesData bool
 }
-
-func (ep *ExampleProcessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: ep.mutatesData}
-}

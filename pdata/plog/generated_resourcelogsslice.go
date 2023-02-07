@@ -28,27 +28,44 @@ import (
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewResourceLogsSlice function to create new instances.
+// Must use NewMutableResourceLogsSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceLogsSlice struct {
+	commonResourceLogsSlice
+}
+
+type MutableResourceLogsSlice struct {
+	commonResourceLogsSlice
+	preventConversion struct{} // nolint:unused
+}
+
+type commonResourceLogsSlice struct {
 	orig *[]*otlplogs.ResourceLogs
 }
 
-func newResourceLogsSlice(orig *[]*otlplogs.ResourceLogs) ResourceLogsSlice {
-	return ResourceLogsSlice{orig}
+func newResourceLogsSliceFromOrig(orig *[]*otlplogs.ResourceLogs) ResourceLogsSlice {
+	return ResourceLogsSlice{commonResourceLogsSlice{orig}}
 }
 
-// NewResourceLogsSlice creates a ResourceLogsSlice with 0 elements.
+func newMutableResourceLogsSliceFromOrig(orig *[]*otlplogs.ResourceLogs) MutableResourceLogsSlice {
+	return MutableResourceLogsSlice{commonResourceLogsSlice: commonResourceLogsSlice{orig}}
+}
+
+// NewMutableResourceLogsSlice creates a ResourceLogsSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewResourceLogsSlice() ResourceLogsSlice {
+func NewMutableResourceLogsSlice() MutableResourceLogsSlice {
 	orig := []*otlplogs.ResourceLogs(nil)
-	return newResourceLogsSlice(&orig)
+	return newMutableResourceLogsSliceFromOrig(&orig)
+}
+
+func (es MutableResourceLogsSlice) AsImmutable() ResourceLogsSlice {
+	return ResourceLogsSlice{commonResourceLogsSlice{orig: es.orig}}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewResourceLogsSlice()".
-func (es ResourceLogsSlice) Len() int {
+// Returns "0" for a newly instance created with "NewMutableResourceLogsSlice()".
+func (es commonResourceLogsSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -61,7 +78,11 @@ func (es ResourceLogsSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ResourceLogsSlice) At(i int) ResourceLogs {
-	return newResourceLogs((*es.orig)[i])
+	return newResourceLogsFromOrig((*es.orig)[i])
+}
+
+func (es MutableResourceLogsSlice) At(i int) MutableResourceLogs {
+	return newMutableResourceLogsFromOrig((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -70,13 +91,13 @@ func (es ResourceLogsSlice) At(i int) ResourceLogs {
 //
 // Here is how a new ResourceLogsSlice can be initialized:
 //
-//	es := NewResourceLogsSlice()
+//	es := NewMutableResourceLogsSlice()
 //	es.EnsureCapacity(4)
 //	for i := 0; i < 4; i++ {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ResourceLogsSlice) EnsureCapacity(newCap int) {
+func (es MutableResourceLogsSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -89,14 +110,14 @@ func (es ResourceLogsSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty ResourceLogs.
 // It returns the newly added ResourceLogs.
-func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
+func (es MutableResourceLogsSlice) AppendEmpty() MutableResourceLogs {
 	*es.orig = append(*es.orig, &otlplogs.ResourceLogs{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ResourceLogsSlice) MoveAndAppendTo(dest ResourceLogsSlice) {
+func (es MutableResourceLogsSlice) MoveAndAppendTo(dest MutableResourceLogsSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -108,7 +129,7 @@ func (es ResourceLogsSlice) MoveAndAppendTo(dest ResourceLogsSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
+func (es MutableResourceLogsSlice) RemoveIf(f func(MutableResourceLogs) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -127,13 +148,13 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
+func (es commonResourceLogsSlice) CopyTo(dest MutableResourceLogsSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newResourceLogs((*es.orig)[i]).CopyTo(newResourceLogs((*dest.orig)[i]))
+			newResourceLogsFromOrig((*es.orig)[i]).CopyTo(newMutableResourceLogsFromOrig((*dest.orig)[i]))
 		}
 		return
 	}
@@ -141,7 +162,7 @@ func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 	wrappers := make([]*otlplogs.ResourceLogs, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newResourceLogs((*es.orig)[i]).CopyTo(newResourceLogs(wrappers[i]))
+		newResourceLogsFromOrig((*es.orig)[i]).CopyTo(newMutableResourceLogsFromOrig(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -149,6 +170,20 @@ func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 // Sort sorts the ResourceLogs elements within ResourceLogsSlice given the
 // provided less function so that two instances of ResourceLogsSlice
 // can be compared.
-func (es ResourceLogsSlice) Sort(less func(a, b ResourceLogs) bool) {
+func (es MutableResourceLogsSlice) Sort(less func(a, b MutableResourceLogs) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func generateTestResourceLogsSlice() MutableResourceLogsSlice {
+	es := NewMutableResourceLogsSlice()
+	fillTestResourceLogsSlice(es)
+	return es
+}
+
+func fillTestResourceLogsSlice(es MutableResourceLogsSlice) {
+	*es.orig = make([]*otlplogs.ResourceLogs, 7)
+	for i := 0; i < 7; i++ {
+		(*es.orig)[i] = &otlplogs.ResourceLogs{}
+		fillTestResourceLogs(newMutableResourceLogsFromOrig((*es.orig)[i]))
+	}
 }

@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestTracesNotMultiplexing(t *testing.T) {
@@ -38,7 +39,6 @@ func TestTracesMultiplexingNonMutating(t *testing.T) {
 	p3 := new(consumertest.TracesSink)
 
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
-	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
@@ -49,20 +49,14 @@ func TestTracesMultiplexingNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, td == p1.AllTraces()[0])
-	assert.True(t, td == p1.AllTraces()[1])
-	assert.EqualValues(t, td, p1.AllTraces()[0])
-	assert.EqualValues(t, td, p1.AllTraces()[1])
+	assert.True(t, td.ResourceSpans() == p1.AllTraces()[0].ResourceSpans())
+	assert.True(t, td.ResourceSpans() == p1.AllTraces()[1].ResourceSpans())
 
-	assert.True(t, td == p2.AllTraces()[0])
-	assert.True(t, td == p2.AllTraces()[1])
-	assert.EqualValues(t, td, p2.AllTraces()[0])
-	assert.EqualValues(t, td, p2.AllTraces()[1])
+	assert.True(t, td.ResourceSpans() == p2.AllTraces()[0].ResourceSpans())
+	assert.True(t, td.ResourceSpans() == p2.AllTraces()[1].ResourceSpans())
 
-	assert.True(t, td == p3.AllTraces()[0])
-	assert.True(t, td == p3.AllTraces()[1])
-	assert.EqualValues(t, td, p3.AllTraces()[0])
-	assert.EqualValues(t, td, p3.AllTraces()[1])
+	assert.True(t, td.ResourceSpans() == p3.AllTraces()[0].ResourceSpans())
+	assert.True(t, td.ResourceSpans() == p3.AllTraces()[1].ResourceSpans())
 }
 
 func TestTracesMultiplexingMutating(t *testing.T) {
@@ -71,7 +65,6 @@ func TestTracesMultiplexingMutating(t *testing.T) {
 	p3 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
 
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
-	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
@@ -82,19 +75,20 @@ func TestTracesMultiplexingMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, td != p1.AllTraces()[0])
-	assert.True(t, td != p1.AllTraces()[1])
+	// All the consumers receive shared traces that are cloned by calling MutableResourceSpans.
+
+	assert.True(t, td.ResourceSpans() != p1.AllTraces()[0].ResourceSpans())
+	assert.True(t, td.ResourceSpans() != p1.AllTraces()[1].ResourceSpans())
 	assert.EqualValues(t, td, p1.AllTraces()[0])
 	assert.EqualValues(t, td, p1.AllTraces()[1])
 
-	assert.True(t, td != p2.AllTraces()[0])
-	assert.True(t, td != p2.AllTraces()[1])
+	assert.True(t, td.ResourceSpans() != p2.AllTraces()[0].ResourceSpans())
+	assert.True(t, td.ResourceSpans() != p2.AllTraces()[1].ResourceSpans())
 	assert.EqualValues(t, td, p2.AllTraces()[0])
 	assert.EqualValues(t, td, p2.AllTraces()[1])
 
-	// For this consumer, will receive the initial data.
-	assert.True(t, td == p3.AllTraces()[0])
-	assert.True(t, td == p3.AllTraces()[1])
+	assert.True(t, td.ResourceSpans() != p3.AllTraces()[0].ResourceSpans())
+	assert.True(t, td.ResourceSpans() != p3.AllTraces()[1].ResourceSpans())
 	assert.EqualValues(t, td, p3.AllTraces()[0])
 	assert.EqualValues(t, td, p3.AllTraces()[1])
 }
@@ -105,7 +99,6 @@ func TestTracesMultiplexingMixLastMutating(t *testing.T) {
 	p3 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
 
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
-	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
@@ -116,20 +109,18 @@ func TestTracesMultiplexingMixLastMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, td != p1.AllTraces()[0])
-	assert.True(t, td != p1.AllTraces()[1])
+	assert.True(t, td.ResourceSpans() != p1.AllTraces()[0].ResourceSpans())
+	assert.True(t, td.ResourceSpans() != p1.AllTraces()[1].ResourceSpans())
 	assert.EqualValues(t, td, p1.AllTraces()[0])
 	assert.EqualValues(t, td, p1.AllTraces()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, td == p2.AllTraces()[0])
-	assert.True(t, td == p2.AllTraces()[1])
-	assert.EqualValues(t, td, p2.AllTraces()[0])
-	assert.EqualValues(t, td, p2.AllTraces()[1])
+	assert.True(t, td.ResourceSpans() == p2.AllTraces()[0].ResourceSpans())
+	assert.True(t, td.ResourceSpans() == p2.AllTraces()[1].ResourceSpans())
 
 	// For this consumer, will clone the initial data.
-	assert.True(t, td != p3.AllTraces()[0])
-	assert.True(t, td != p3.AllTraces()[1])
+	assert.True(t, td.ResourceSpans() != p3.AllTraces()[0].ResourceSpans())
+	assert.True(t, td.ResourceSpans() != p3.AllTraces()[1].ResourceSpans())
 	assert.EqualValues(t, td, p3.AllTraces()[0])
 	assert.EqualValues(t, td, p3.AllTraces()[1])
 }
@@ -140,7 +131,6 @@ func TestTracesMultiplexingMixLastNonMutating(t *testing.T) {
 	p3 := new(consumertest.TracesSink)
 
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
-	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
@@ -151,25 +141,23 @@ func TestTracesMultiplexingMixLastNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, td != p1.AllTraces()[0])
-	assert.True(t, td != p1.AllTraces()[1])
+	assert.True(t, td.ResourceSpans() != p1.AllTraces()[0].ResourceSpans())
+	assert.True(t, td.ResourceSpans() != p1.AllTraces()[1].ResourceSpans())
 	assert.EqualValues(t, td, p1.AllTraces()[0])
 	assert.EqualValues(t, td, p1.AllTraces()[1])
 
-	assert.True(t, td != p2.AllTraces()[0])
-	assert.True(t, td != p2.AllTraces()[1])
+	assert.True(t, td.ResourceSpans() != p2.AllTraces()[0].ResourceSpans())
+	assert.True(t, td.ResourceSpans() != p2.AllTraces()[1].ResourceSpans())
 	assert.EqualValues(t, td, p2.AllTraces()[0])
 	assert.EqualValues(t, td, p2.AllTraces()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, td == p3.AllTraces()[0])
-	assert.True(t, td == p3.AllTraces()[1])
-	assert.EqualValues(t, td, p3.AllTraces()[0])
-	assert.EqualValues(t, td, p3.AllTraces()[1])
+	assert.True(t, td.ResourceSpans() == p3.AllTraces()[0].ResourceSpans())
+	assert.True(t, td.ResourceSpans() == p3.AllTraces()[1].ResourceSpans())
 }
 
 func TestTracesWhenErrors(t *testing.T) {
-	p1 := mutatingErr{Consumer: consumertest.NewErr(errors.New("my error"))}
+	p1 := mutatingErrTraces{errors.New("my error")}
 	p2 := consumertest.NewErr(errors.New("my error"))
 	p3 := new(consumertest.TracesSink)
 
@@ -180,16 +168,24 @@ func TestTracesWhenErrors(t *testing.T) {
 		assert.Error(t, tfc.ConsumeTraces(context.Background(), td))
 	}
 
-	assert.True(t, td == p3.AllTraces()[0])
-	assert.True(t, td == p3.AllTraces()[1])
-	assert.EqualValues(t, td, p3.AllTraces()[0])
-	assert.EqualValues(t, td, p3.AllTraces()[1])
+	assert.True(t, td.ResourceSpans() == p3.AllTraces()[0].ResourceSpans())
+	assert.True(t, td.ResourceSpans() == p3.AllTraces()[1].ResourceSpans())
 }
 
 type mutatingTracesSink struct {
 	*consumertest.TracesSink
 }
 
-func (mts *mutatingTracesSink) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
+func (m *mutatingTracesSink) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+	_ = td.MutableResourceSpans()
+	return m.TracesSink.ConsumeTraces(context.Background(), td)
+}
+
+type mutatingErrTraces struct {
+	err error
+}
+
+func (m mutatingErrTraces) ConsumeTraces(_ context.Context, md ptrace.Traces) error {
+	_ = md.MutableResourceSpans()
+	return m.err
 }

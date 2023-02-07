@@ -82,7 +82,3 @@ type forward struct {
 	component.StartFunc
 	component.ShutdownFunc
 }
-
-func (c *forward) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}

@@ -82,19 +82,9 @@ func TestMetricsExporter_Default(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, me)
 
-	assert.Equal(t, consumer.Capabilities{MutatesData: false}, me.Capabilities())
 	assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, me.ConsumeMetrics(context.Background(), md))
 	assert.NoError(t, me.Shutdown(context.Background()))
-}
-
-func TestMetricsExporter_WithCapabilities(t *testing.T) {
-	capabilities := consumer.Capabilities{MutatesData: true}
-	me, err := NewMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeMetricsExporterConfig, newPushMetricsData(nil), WithCapabilities(capabilities))
-	assert.NoError(t, err)
-	assert.NotNil(t, me)
-
-	assert.Equal(t, capabilities, me.Capabilities())
 }
 
 func TestMetricsExporter_Default_ReturnError(t *testing.T) {

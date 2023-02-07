@@ -28,157 +28,195 @@ import (
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewHistogramDataPoint function to create new instances.
+// Must use NewMutableHistogramDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type HistogramDataPoint struct {
+	commonHistogramDataPoint
+}
+
+type MutableHistogramDataPoint struct {
+	commonHistogramDataPoint
+	preventConversion struct{} // nolint:unused
+}
+
+type commonHistogramDataPoint struct {
 	orig *otlpmetrics.HistogramDataPoint
 }
 
-func newHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) HistogramDataPoint {
-	return HistogramDataPoint{orig}
+func newHistogramDataPointFromOrig(orig *otlpmetrics.HistogramDataPoint) HistogramDataPoint {
+	return HistogramDataPoint{commonHistogramDataPoint{orig}}
 }
 
-// NewHistogramDataPoint creates a new empty HistogramDataPoint.
+func newMutableHistogramDataPointFromOrig(orig *otlpmetrics.HistogramDataPoint) MutableHistogramDataPoint {
+	return MutableHistogramDataPoint{commonHistogramDataPoint: commonHistogramDataPoint{orig}}
+}
+
+// NewMutableHistogramDataPoint creates a new empty HistogramDataPoint.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewHistogramDataPoint() HistogramDataPoint {
-	return newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
+func NewMutableHistogramDataPoint() MutableHistogramDataPoint {
+	return newMutableHistogramDataPointFromOrig(&otlpmetrics.HistogramDataPoint{})
+}
+
+// nolint:unused
+func (ms HistogramDataPoint) asMutable() MutableHistogramDataPoint {
+	return MutableHistogramDataPoint{commonHistogramDataPoint: commonHistogramDataPoint{orig: ms.orig}}
+}
+
+func (ms MutableHistogramDataPoint) AsImmutable() HistogramDataPoint {
+	return HistogramDataPoint{commonHistogramDataPoint{orig: ms.orig}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms HistogramDataPoint) MoveTo(dest HistogramDataPoint) {
+func (ms MutableHistogramDataPoint) MoveTo(dest MutableHistogramDataPoint) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.HistogramDataPoint{}
 }
 
 // Attributes returns the Attributes associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+	return internal.NewMapFromOrig(&ms.orig.Attributes)
+}
+
+func (ms MutableHistogramDataPoint) Attributes() pcommon.MutableMap {
+	return internal.NewMutableMapFromOrig(&ms.orig.Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) StartTimestamp() pcommon.Timestamp {
+func (ms commonHistogramDataPoint) StartTimestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
+func (ms MutableHistogramDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
 	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Timestamp() pcommon.Timestamp {
+func (ms commonHistogramDataPoint) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetTimestamp(v pcommon.Timestamp) {
+func (ms MutableHistogramDataPoint) SetTimestamp(v pcommon.Timestamp) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Count() uint64 {
+func (ms commonHistogramDataPoint) Count() uint64 {
 	return ms.orig.Count
 }
 
 // SetCount replaces the count associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetCount(v uint64) {
+func (ms MutableHistogramDataPoint) SetCount(v uint64) {
 	ms.orig.Count = v
 }
 
 // Sum returns the sum associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Sum() float64 {
+func (ms commonHistogramDataPoint) Sum() float64 {
 	return ms.orig.GetSum()
 }
 
 // HasSum returns true if the HistogramDataPoint contains a
 // Sum value, false otherwise.
-func (ms HistogramDataPoint) HasSum() bool {
+func (ms commonHistogramDataPoint) HasSum() bool {
 	return ms.orig.Sum_ != nil
 }
 
 // SetSum replaces the sum associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetSum(v float64) {
+func (ms MutableHistogramDataPoint) SetSum(v float64) {
 	ms.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
 }
 
 // RemoveSum removes the sum associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) RemoveSum() {
+func (ms MutableHistogramDataPoint) RemoveSum() {
 	ms.orig.Sum_ = nil
 }
 
 // BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) BucketCounts() pcommon.UInt64Slice {
-	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts))
+func (ms commonHistogramDataPoint) BucketCounts() pcommon.UInt64Slice {
+	return internal.NewUInt64SliceFromOrig(&ms.orig.BucketCounts)
+}
+
+func (ms MutableHistogramDataPoint) BucketCounts() pcommon.MutableUInt64Slice {
+	return internal.NewMutableUInt64SliceFromOrig(&ms.orig.BucketCounts)
 }
 
 // ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) ExplicitBounds() pcommon.Float64Slice {
-	return pcommon.Float64Slice(internal.NewFloat64Slice(&ms.orig.ExplicitBounds))
+func (ms commonHistogramDataPoint) ExplicitBounds() pcommon.Float64Slice {
+	return internal.NewFloat64SliceFromOrig(&ms.orig.ExplicitBounds)
+}
+
+func (ms MutableHistogramDataPoint) ExplicitBounds() pcommon.MutableFloat64Slice {
+	return internal.NewMutableFloat64SliceFromOrig(&ms.orig.ExplicitBounds)
 }
 
 // Exemplars returns the Exemplars associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
-	return newExemplarSlice(&ms.orig.Exemplars)
+	return newExemplarSliceFromOrig(&ms.orig.Exemplars)
+}
+
+func (ms MutableHistogramDataPoint) Exemplars() MutableExemplarSlice {
+	return newMutableExemplarSliceFromOrig(&ms.orig.Exemplars)
 }
 
 // Flags returns the flags associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Flags() DataPointFlags {
+func (ms commonHistogramDataPoint) Flags() DataPointFlags {
 	return DataPointFlags(ms.orig.Flags)
 }
 
 // SetFlags replaces the flags associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetFlags(v DataPointFlags) {
+func (ms MutableHistogramDataPoint) SetFlags(v DataPointFlags) {
 	ms.orig.Flags = uint32(v)
 }
 
 // Min returns the min associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Min() float64 {
+func (ms commonHistogramDataPoint) Min() float64 {
 	return ms.orig.GetMin()
 }
 
 // HasMin returns true if the HistogramDataPoint contains a
 // Min value, false otherwise.
-func (ms HistogramDataPoint) HasMin() bool {
+func (ms commonHistogramDataPoint) HasMin() bool {
 	return ms.orig.Min_ != nil
 }
 
 // SetMin replaces the min associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetMin(v float64) {
+func (ms MutableHistogramDataPoint) SetMin(v float64) {
 	ms.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: v}
 }
 
 // RemoveMin removes the min associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) RemoveMin() {
+func (ms MutableHistogramDataPoint) RemoveMin() {
 	ms.orig.Min_ = nil
 }
 
 // Max returns the max associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Max() float64 {
+func (ms commonHistogramDataPoint) Max() float64 {
 	return ms.orig.GetMax()
 }
 
 // HasMax returns true if the HistogramDataPoint contains a
 // Max value, false otherwise.
-func (ms HistogramDataPoint) HasMax() bool {
+func (ms commonHistogramDataPoint) HasMax() bool {
 	return ms.orig.Max_ != nil
 }
 
 // SetMax replaces the max associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetMax(v float64) {
+func (ms MutableHistogramDataPoint) SetMax(v float64) {
 	ms.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
 }
 
 // RemoveMax removes the max associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) RemoveMax() {
+func (ms MutableHistogramDataPoint) RemoveMax() {
 	ms.orig.Max_ = nil
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
-	ms.Attributes().CopyTo(dest.Attributes())
+func (ms commonHistogramDataPoint) CopyTo(dest MutableHistogramDataPoint) {
+	HistogramDataPoint{ms}.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
@@ -188,7 +226,7 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 
 	ms.BucketCounts().CopyTo(dest.BucketCounts())
 	ms.ExplicitBounds().CopyTo(dest.ExplicitBounds())
-	ms.Exemplars().CopyTo(dest.Exemplars())
+	HistogramDataPoint{ms}.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
 	if ms.HasMin() {
 		dest.SetMin(ms.Min())
@@ -198,4 +236,24 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 		dest.SetMax(ms.Max())
 	}
 
+}
+
+func generateTestHistogramDataPoint() MutableHistogramDataPoint {
+	tv := NewMutableHistogramDataPoint()
+	fillTestHistogramDataPoint(tv)
+	return tv
+}
+
+func fillTestHistogramDataPoint(tv MutableHistogramDataPoint) {
+	internal.FillTestMap(internal.NewMutableMapFromOrig(&tv.orig.Attributes))
+	tv.orig.StartTimeUnixNano = 1234567890
+	tv.orig.TimeUnixNano = 1234567890
+	tv.orig.Count = uint64(17)
+	tv.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(17.13)}
+	tv.orig.BucketCounts = []uint64{1, 2, 3}
+	tv.orig.ExplicitBounds = []float64{1, 2, 3}
+	fillTestExemplarSlice(newMutableExemplarSliceFromOrig(&tv.orig.Exemplars))
+	tv.orig.Flags = 1
+	tv.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(9.23)}
+	tv.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(182.55)}
 }

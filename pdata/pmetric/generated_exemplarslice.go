@@ -26,27 +26,44 @@ import (
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewExemplarSlice function to create new instances.
+// Must use NewMutableExemplarSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExemplarSlice struct {
+	commonExemplarSlice
+}
+
+type MutableExemplarSlice struct {
+	commonExemplarSlice
+	preventConversion struct{} // nolint:unused
+}
+
+type commonExemplarSlice struct {
 	orig *[]otlpmetrics.Exemplar
 }
 
-func newExemplarSlice(orig *[]otlpmetrics.Exemplar) ExemplarSlice {
-	return ExemplarSlice{orig}
+func newExemplarSliceFromOrig(orig *[]otlpmetrics.Exemplar) ExemplarSlice {
+	return ExemplarSlice{commonExemplarSlice{orig}}
 }
 
-// NewExemplarSlice creates a ExemplarSlice with 0 elements.
+func newMutableExemplarSliceFromOrig(orig *[]otlpmetrics.Exemplar) MutableExemplarSlice {
+	return MutableExemplarSlice{commonExemplarSlice: commonExemplarSlice{orig}}
+}
+
+// NewMutableExemplarSlice creates a ExemplarSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewExemplarSlice() ExemplarSlice {
+func NewMutableExemplarSlice() MutableExemplarSlice {
 	orig := []otlpmetrics.Exemplar(nil)
-	return newExemplarSlice(&orig)
+	return newMutableExemplarSliceFromOrig(&orig)
+}
+
+func (es MutableExemplarSlice) AsImmutable() ExemplarSlice {
+	return ExemplarSlice{commonExemplarSlice{orig: es.orig}}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewExemplarSlice()".
-func (es ExemplarSlice) Len() int {
+// Returns "0" for a newly instance created with "NewMutableExemplarSlice()".
+func (es commonExemplarSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -59,7 +76,11 @@ func (es ExemplarSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ExemplarSlice) At(i int) Exemplar {
-	return newExemplar(&(*es.orig)[i])
+	return newExemplarFromOrig(&(*es.orig)[i])
+}
+
+func (es MutableExemplarSlice) At(i int) MutableExemplar {
+	return newMutableExemplarFromOrig(&(*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -68,13 +89,13 @@ func (es ExemplarSlice) At(i int) Exemplar {
 //
 // Here is how a new ExemplarSlice can be initialized:
 //
-//	es := NewExemplarSlice()
+//	es := NewMutableExemplarSlice()
 //	es.EnsureCapacity(4)
 //	for i := 0; i < 4; i++ {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ExemplarSlice) EnsureCapacity(newCap int) {
+func (es MutableExemplarSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -87,14 +108,14 @@ func (es ExemplarSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty Exemplar.
 // It returns the newly added Exemplar.
-func (es ExemplarSlice) AppendEmpty() Exemplar {
+func (es MutableExemplarSlice) AppendEmpty() MutableExemplar {
 	*es.orig = append(*es.orig, otlpmetrics.Exemplar{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {
+func (es MutableExemplarSlice) MoveAndAppendTo(dest MutableExemplarSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -106,7 +127,7 @@ func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
+func (es MutableExemplarSlice) RemoveIf(f func(MutableExemplar) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -125,7 +146,7 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
+func (es commonExemplarSlice) CopyTo(dest MutableExemplarSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
@@ -135,6 +156,20 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	}
 
 	for i := range *es.orig {
-		newExemplar(&(*es.orig)[i]).CopyTo(newExemplar(&(*dest.orig)[i]))
+		newExemplarFromOrig(&(*es.orig)[i]).CopyTo(newMutableExemplarFromOrig(&(*dest.orig)[i]))
+	}
+}
+
+func generateTestExemplarSlice() MutableExemplarSlice {
+	es := NewMutableExemplarSlice()
+	fillTestExemplarSlice(es)
+	return es
+}
+
+func fillTestExemplarSlice(es MutableExemplarSlice) {
+	*es.orig = make([]otlpmetrics.Exemplar, 7)
+	for i := 0; i < 7; i++ {
+		(*es.orig)[i] = otlpmetrics.Exemplar{}
+		fillTestExemplar(newMutableExemplarFromOrig(&(*es.orig)[i]))
 	}
 }

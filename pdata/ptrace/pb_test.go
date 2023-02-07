@@ -33,7 +33,7 @@ func TestProtoTracesUnmarshalerError(t *testing.T) {
 func TestProtoSizer(t *testing.T) {
 	marshaler := &ProtoMarshaler{}
 	td := NewTraces()
-	rms := td.ResourceSpans()
+	rms := td.MutableResourceSpans()
 	rms.AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
 
 	size := marshaler.TracesSize(td)
@@ -81,7 +81,7 @@ func generateBenchmarkTraces(metricsCount int) Traces {
 	endTime := pcommon.NewTimestampFromTime(now)
 
 	md := NewTraces()
-	ilm := md.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	ilm := md.MutableResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 	ilm.Spans().EnsureCapacity(metricsCount)
 	for i := 0; i < metricsCount; i++ {
 		im := ilm.Spans().AppendEmpty()

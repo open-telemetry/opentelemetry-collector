@@ -27,7 +27,6 @@ import (
 // TracesSink is a consumer.Traces that acts like a sink that
 // stores all traces and allows querying them for testing.
 type TracesSink struct {
-	nonMutatingConsumer
 	mu        sync.Mutex
 	traces    []ptrace.Traces
 	spanCount int
@@ -75,7 +74,6 @@ func (ste *TracesSink) Reset() {
 // MetricsSink is a consumer.Metrics that acts like a sink that
 // stores all metrics and allows querying them for testing.
 type MetricsSink struct {
-	nonMutatingConsumer
 	mu             sync.Mutex
 	metrics        []pmetric.Metrics
 	dataPointCount int
@@ -123,7 +121,6 @@ func (sme *MetricsSink) Reset() {
 // LogsSink is a consumer.Logs that acts like a sink that
 // stores all logs and allows querying them for testing.
 type LogsSink struct {
-	nonMutatingConsumer
 	mu             sync.Mutex
 	logs           []plog.Logs
 	logRecordCount int

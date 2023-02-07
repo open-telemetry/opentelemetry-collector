@@ -26,53 +26,86 @@ import (
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewSummaryDataPointValueAtQuantile function to create new instances.
+// Must use NewMutableSummaryDataPointValueAtQuantile function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SummaryDataPointValueAtQuantile struct {
+	commonSummaryDataPointValueAtQuantile
+}
+
+type MutableSummaryDataPointValueAtQuantile struct {
+	commonSummaryDataPointValueAtQuantile
+	preventConversion struct{} // nolint:unused
+}
+
+type commonSummaryDataPointValueAtQuantile struct {
 	orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile
 }
 
-func newSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantile {
-	return SummaryDataPointValueAtQuantile{orig}
+func newSummaryDataPointValueAtQuantileFromOrig(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantile {
+	return SummaryDataPointValueAtQuantile{commonSummaryDataPointValueAtQuantile{orig}}
 }
 
-// NewSummaryDataPointValueAtQuantile creates a new empty SummaryDataPointValueAtQuantile.
+func newMutableSummaryDataPointValueAtQuantileFromOrig(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) MutableSummaryDataPointValueAtQuantile {
+	return MutableSummaryDataPointValueAtQuantile{commonSummaryDataPointValueAtQuantile: commonSummaryDataPointValueAtQuantile{orig}}
+}
+
+// NewMutableSummaryDataPointValueAtQuantile creates a new empty SummaryDataPointValueAtQuantile.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
-	return newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+func NewMutableSummaryDataPointValueAtQuantile() MutableSummaryDataPointValueAtQuantile {
+	return newMutableSummaryDataPointValueAtQuantileFromOrig(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+}
+
+// nolint:unused
+func (ms SummaryDataPointValueAtQuantile) asMutable() MutableSummaryDataPointValueAtQuantile {
+	return MutableSummaryDataPointValueAtQuantile{commonSummaryDataPointValueAtQuantile: commonSummaryDataPointValueAtQuantile{orig: ms.orig}}
+}
+
+func (ms MutableSummaryDataPointValueAtQuantile) AsImmutable() SummaryDataPointValueAtQuantile {
+	return SummaryDataPointValueAtQuantile{commonSummaryDataPointValueAtQuantile{orig: ms.orig}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms SummaryDataPointValueAtQuantile) MoveTo(dest SummaryDataPointValueAtQuantile) {
+func (ms MutableSummaryDataPointValueAtQuantile) MoveTo(dest MutableSummaryDataPointValueAtQuantile) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 }
 
 // Quantile returns the quantile associated with this SummaryDataPointValueAtQuantile.
-func (ms SummaryDataPointValueAtQuantile) Quantile() float64 {
+func (ms commonSummaryDataPointValueAtQuantile) Quantile() float64 {
 	return ms.orig.Quantile
 }
 
 // SetQuantile replaces the quantile associated with this SummaryDataPointValueAtQuantile.
-func (ms SummaryDataPointValueAtQuantile) SetQuantile(v float64) {
+func (ms MutableSummaryDataPointValueAtQuantile) SetQuantile(v float64) {
 	ms.orig.Quantile = v
 }
 
 // Value returns the value associated with this SummaryDataPointValueAtQuantile.
-func (ms SummaryDataPointValueAtQuantile) Value() float64 {
+func (ms commonSummaryDataPointValueAtQuantile) Value() float64 {
 	return ms.orig.Value
 }
 
 // SetValue replaces the value associated with this SummaryDataPointValueAtQuantile.
-func (ms SummaryDataPointValueAtQuantile) SetValue(v float64) {
+func (ms MutableSummaryDataPointValueAtQuantile) SetValue(v float64) {
 	ms.orig.Value = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms SummaryDataPointValueAtQuantile) CopyTo(dest SummaryDataPointValueAtQuantile) {
+func (ms commonSummaryDataPointValueAtQuantile) CopyTo(dest MutableSummaryDataPointValueAtQuantile) {
 	dest.SetQuantile(ms.Quantile())
 	dest.SetValue(ms.Value())
+}
+
+func generateTestSummaryDataPointValueAtQuantile() MutableSummaryDataPointValueAtQuantile {
+	tv := NewMutableSummaryDataPointValueAtQuantile()
+	fillTestSummaryDataPointValueAtQuantile(tv)
+	return tv
+}
+
+func fillTestSummaryDataPointValueAtQuantile(tv MutableSummaryDataPointValueAtQuantile) {
+	tv.orig.Quantile = float64(17.13)
+	tv.orig.Value = float64(17.13)
 }

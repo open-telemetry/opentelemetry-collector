@@ -33,7 +33,7 @@ func TestProtoMetricsUnmarshalerError(t *testing.T) {
 func TestProtoSizer(t *testing.T) {
 	marshaler := &ProtoMarshaler{}
 	md := NewMetrics()
-	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
+	md.MutableResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
 
 	size := marshaler.MetricsSize(md)
 
@@ -80,7 +80,7 @@ func generateBenchmarkMetrics(metricsCount int) Metrics {
 	endTime := pcommon.NewTimestampFromTime(now)
 
 	md := NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	ilm := md.MutableResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Metrics().EnsureCapacity(metricsCount)
 	for i := 0; i < metricsCount; i++ {
 		im := ilm.Metrics().AppendEmpty()

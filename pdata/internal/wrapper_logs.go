@@ -20,27 +20,45 @@ import (
 )
 
 type Logs struct {
-	orig *otlpcollectorlog.ExportLogsServiceRequest
+	sl *stateLogs
 }
 
-func GetOrigLogs(ms Logs) *otlpcollectorlog.ExportLogsServiceRequest {
-	return ms.orig
+type stateLogs struct {
+	orig  *otlpcollectorlog.ExportLogsServiceRequest
+	state State
 }
 
-func NewLogs(orig *otlpcollectorlog.ExportLogsServiceRequest) Logs {
-	return Logs{orig: orig}
+func GetLogsOrig(ms Logs) *otlpcollectorlog.ExportLogsServiceRequest {
+	return ms.sl.orig
+}
+
+func GetLogsState(ms Logs) State {
+	return ms.sl.state
+}
+
+// ResetStateLogs replaces the internal StateLogs with a new empty and the provided state.
+func ResetStateLogs(ms Logs, s State) {
+	ms.sl.orig = &otlpcollectorlog.ExportLogsServiceRequest{}
+	ms.sl.state = s
+}
+
+func NewLogs(orig *otlpcollectorlog.ExportLogsServiceRequest, s State) Logs {
+	return Logs{&stateLogs{orig: orig, state: s}}
 }
 
 // LogsToProto internal helper to convert Logs to protobuf representation.
 func LogsToProto(l Logs) otlplogs.LogsData {
 	return otlplogs.LogsData{
-		ResourceLogs: l.orig.ResourceLogs,
+		ResourceLogs: l.sl.orig.ResourceLogs,
 	}
 }
 
 // LogsFromProto internal helper to convert protobuf representation to Logs.
 func LogsFromProto(orig otlplogs.LogsData) Logs {
-	return Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: orig.ResourceLogs,
+	return Logs{&stateLogs{
+		orig: &otlpcollectorlog.ExportLogsServiceRequest{
+			ResourceLogs: orig.ResourceLogs,
+		},
+		state: StateExclusive,
 	}}
 }

@@ -23,14 +23,13 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
-	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
 func TestLogRecordCount(t *testing.T) {
 	logs := NewLogs()
 	assert.EqualValues(t, 0, logs.LogRecordCount())
 
-	rl := logs.ResourceLogs().AppendEmpty()
+	rl := logs.MutableResourceLogs().AppendEmpty()
 	assert.EqualValues(t, 0, logs.LogRecordCount())
 
 	ill := rl.ScopeLogs().AppendEmpty()
@@ -39,7 +38,7 @@ func TestLogRecordCount(t *testing.T) {
 	ill.LogRecords().AppendEmpty()
 	assert.EqualValues(t, 1, logs.LogRecordCount())
 
-	rms := logs.ResourceLogs()
+	rms := logs.MutableResourceLogs()
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeLogs().AppendEmpty()
 	illl := rms.AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
@@ -51,28 +50,14 @@ func TestLogRecordCount(t *testing.T) {
 }
 
 func TestLogRecordCountWithEmpty(t *testing.T) {
-	assert.Zero(t, NewLogs().LogRecordCount())
-	assert.Zero(t, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{{}},
-	}).LogRecordCount())
-	assert.Zero(t, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{
-			{
-				ScopeLogs: []*otlplogs.ScopeLogs{{}},
-			},
-		},
-	}).LogRecordCount())
-	assert.Equal(t, 1, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: []*otlplogs.ResourceLogs{
-			{
-				ScopeLogs: []*otlplogs.ScopeLogs{
-					{
-						LogRecords: []*otlplogs.LogRecord{{}},
-					},
-				},
-			},
-		},
-	}).LogRecordCount())
+	l := NewLogs()
+	assert.Zero(t, l.LogRecordCount())
+	rsl := l.MutableResourceLogs().AppendEmpty()
+	assert.Zero(t, l.LogRecordCount())
+	sls := rsl.ScopeLogs().AppendEmpty()
+	assert.Zero(t, l.LogRecordCount())
+	sls.LogRecords().AppendEmpty()
+	assert.Equal(t, 1, l.LogRecordCount())
 }
 
 func TestToFromLogOtlp(t *testing.T) {
@@ -89,7 +74,7 @@ func TestResourceLogsWireCompatibility(t *testing.T) {
 
 	// Generate ResourceLogs as pdata struct.
 	logs := NewLogs()
-	fillTestResourceLogsSlice(logs.ResourceLogs())
+	fillTestResourceLogsSlice(logs.MutableResourceLogs())
 
 	// Marshal its underlying ProtoBuf to wire.
 	wire1, err := gogoproto.Marshal(logs.getOrig())
@@ -118,7 +103,7 @@ func TestResourceLogsWireCompatibility(t *testing.T) {
 
 func TestLogsCopyTo(t *testing.T) {
 	logs := NewLogs()
-	fillTestResourceLogsSlice(logs.ResourceLogs())
+	fillTestResourceLogsSlice(logs.MutableResourceLogs())
 	logsCopy := NewLogs()
 	logs.CopyTo(logsCopy)
 	assert.EqualValues(t, logs, logsCopy)

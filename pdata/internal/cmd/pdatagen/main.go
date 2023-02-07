@@ -28,6 +28,6 @@ func main() {
 	for _, fp := range internal.AllPackages {
 		check(fp.GenerateFiles())
 		check(fp.GenerateTestFiles())
-		check(fp.GenerateInternalFiles())
+		check(fp.GenerateAliases())
 	}
 }

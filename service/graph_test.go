@@ -654,15 +654,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				pipeline, ok := pg.pipelines[pipelineID]
 				require.True(t, ok, "expected to find pipeline: %s", pipelineID.String())
 
-				// Determine independently if the capabilities node should report MutateData as true
-				var expectMutatesData bool
-				for _, proc := range pipelineCfg.Processors {
-					if proc.Name() == "mutate" {
-						expectMutatesData = true
-					}
-				}
-				assert.Equal(t, expectMutatesData, pipeline.capabilitiesNode.getConsumer().Capabilities().MutatesData)
-
 				expectedReceivers, expectedExporters := expectedInstances(test.pipelineConfigs, pipelineID)
 				require.Equal(t, expectedReceivers, len(pipeline.receivers))
 				require.Equal(t, len(pipelineCfg.Processors), len(pipeline.processors))
@@ -792,21 +783,21 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				tracesExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(tracesExporter.Traces))
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, testdata.GenerateTraces(1), tracesExporter.Traces[0])
+					assert.EqualValues(t, testdata.GenerateTraces(1).ResourceSpans(), tracesExporter.Traces[0].ResourceSpans())
 				}
 			}
 			for _, e := range allExporters[component.DataTypeMetrics] {
 				metricsExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(metricsExporter.Metrics))
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, testdata.GenerateMetrics(1), metricsExporter.Metrics[0])
+					assert.EqualValues(t, testdata.GenerateMetrics(1).ResourceMetrics(), metricsExporter.Metrics[0].ResourceMetrics())
 				}
 			}
 			for _, e := range allExporters[component.DataTypeLogs] {
 				logsExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(logsExporter.Logs))
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, testdata.GenerateLogs(1), logsExporter.Logs[0])
+					assert.EqualValues(t, testdata.GenerateLogs(1).ResourceLogs(), logsExporter.Logs[0].ResourceLogs())
 				}
 			}
 		})
@@ -1442,7 +1433,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewIDWithName("nop", "fork")}, // cannot loop back to "nop/fork"
 				},
 			},
-			expected: "topo: no topological ordering: 12 nodes in 1 cyclic components",
+			expectedStartsWith: "topo: no topological ordering: cyclic components:",
 		},
 		{
 			name: "unknown_exporter_config",

@@ -24,7 +24,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -64,7 +63,6 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewTracesExporter(ctx, set, cfg,
 		s.pushTraces,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
@@ -79,7 +77,6 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, con
 	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
 		s.pushMetrics,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
@@ -94,7 +91,6 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewLogsExporter(ctx, set, cfg,
 		s.pushLogs,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),

@@ -23,7 +23,6 @@ import (
 // Metrics is the new metrics consumer interface that receives pmetric.Metrics, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type Metrics interface {
-	baseConsumer
 	// ConsumeMetrics receives pmetric.Metrics for consumption.
 	ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error
 }
@@ -36,18 +35,10 @@ func (f ConsumeMetricsFunc) ConsumeMetrics(ctx context.Context, ld pmetric.Metri
 	return f(ctx, ld)
 }
 
-type baseMetrics struct {
-	*baseImpl
-	ConsumeMetricsFunc
-}
-
 // NewMetrics returns a Metrics configured with the provided options.
-func NewMetrics(consume ConsumeMetricsFunc, options ...Option) (Metrics, error) {
+func NewMetrics(consume ConsumeMetricsFunc, _ ...Option) (Metrics, error) {
 	if consume == nil {
 		return nil, errNilFunc
 	}
-	return &baseMetrics{
-		baseImpl:           newBaseImpl(options...),
-		ConsumeMetricsFunc: consume,
-	}, nil
+	return consume, nil
 }

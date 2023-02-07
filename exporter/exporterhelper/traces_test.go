@@ -78,19 +78,9 @@ func TestTracesExporter_Default(t *testing.T) {
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
-	assert.Equal(t, consumer.Capabilities{MutatesData: false}, te.Capabilities())
 	assert.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, te.ConsumeTraces(context.Background(), td))
 	assert.NoError(t, te.Shutdown(context.Background()))
-}
-
-func TestTracesExporter_WithCapabilities(t *testing.T) {
-	capabilities := consumer.Capabilities{MutatesData: true}
-	te, err := NewTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeTracesExporterConfig, newTraceDataPusher(nil), WithCapabilities(capabilities))
-	assert.NotNil(t, te)
-	assert.NoError(t, err)
-
-	assert.Equal(t, capabilities, te.Capabilities())
 }
 
 func TestTracesExporter_Default_ReturnError(t *testing.T) {
@@ -231,7 +221,7 @@ func checkRecordedMetricsForTracesExporter(t *testing.T, tt obsreporttest.TestTe
 
 func generateTraceTraffic(t *testing.T, tracer trace.Tracer, te exporter.Traces, numRequests int, wantError error) {
 	td := ptrace.NewTraces()
-	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	td.MutableResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	ctx, span := tracer.Start(context.Background(), fakeTraceParentSpanName)
 	defer span.End()
 	for i := 0; i < numRequests; i++ {

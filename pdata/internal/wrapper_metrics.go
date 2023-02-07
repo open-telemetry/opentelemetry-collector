@@ -20,27 +20,45 @@ import (
 )
 
 type Metrics struct {
-	orig *otlpcollectormetrics.ExportMetricsServiceRequest
+	sm *stateMetrics
 }
 
-func GetOrigMetrics(ms Metrics) *otlpcollectormetrics.ExportMetricsServiceRequest {
-	return ms.orig
+type stateMetrics struct {
+	orig  *otlpcollectormetrics.ExportMetricsServiceRequest
+	state State
 }
 
-func NewMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest) Metrics {
-	return Metrics{orig: orig}
+func GetMetricsOrig(ms Metrics) *otlpcollectormetrics.ExportMetricsServiceRequest {
+	return ms.sm.orig
+}
+
+func GetMetricsState(ms Metrics) State {
+	return ms.sm.state
+}
+
+// ResetStateMetrics replaces the internal StateMetrics with a new empty and the provided state.
+func ResetStateMetrics(ms Metrics, s State) {
+	ms.sm.orig = &otlpcollectormetrics.ExportMetricsServiceRequest{}
+	ms.sm.state = s
+}
+
+func NewMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest, s State) Metrics {
+	return Metrics{&stateMetrics{orig: orig, state: s}}
 }
 
 // MetricsToProto internal helper to convert Metrics to protobuf representation.
-func MetricsToProto(l Metrics) otlpmetrics.MetricsData {
+func MetricsToProto(ms Metrics) otlpmetrics.MetricsData {
 	return otlpmetrics.MetricsData{
-		ResourceMetrics: l.orig.ResourceMetrics,
+		ResourceMetrics: ms.sm.orig.ResourceMetrics,
 	}
 }
 
 // MetricsFromProto internal helper to convert protobuf representation to Metrics.
 func MetricsFromProto(orig otlpmetrics.MetricsData) Metrics {
-	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: orig.ResourceMetrics,
+	return Metrics{&stateMetrics{
+		orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
+			ResourceMetrics: orig.ResourceMetrics,
+		},
+		state: StateExclusive,
 	}}
 }

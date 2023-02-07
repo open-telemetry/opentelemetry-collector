@@ -26,12 +26,12 @@ import (
 )
 
 func TestExemplarSlice(t *testing.T) {
-	es := NewExemplarSlice()
+	es := NewMutableExemplarSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newExemplarSlice(&[]otlpmetrics.Exemplar{})
+	es = newMutableExemplarSliceFromOrig(&[]otlpmetrics.Exemplar{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewExemplar()
+	emptyVal := NewMutableExemplar()
 	testVal := generateTestExemplar()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -43,10 +43,10 @@ func TestExemplarSlice(t *testing.T) {
 }
 
 func TestExemplarSlice_CopyTo(t *testing.T) {
-	dest := NewExemplarSlice()
+	dest := NewMutableExemplarSlice()
 	// Test CopyTo to empty
-	NewExemplarSlice().CopyTo(dest)
-	assert.Equal(t, NewExemplarSlice(), dest)
+	NewMutableExemplarSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableExemplarSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestExemplarSlice().CopyTo(dest)
@@ -78,7 +78,7 @@ func TestExemplarSlice_EnsureCapacity(t *testing.T) {
 func TestExemplarSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestExemplarSlice()
-	dest := NewExemplarSlice()
+	dest := NewMutableExemplarSlice()
 	src := generateTestExemplarSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestExemplarSlice(), dest)
@@ -102,8 +102,8 @@ func TestExemplarSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestExemplarSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewExemplarSlice()
-	emptySlice.RemoveIf(func(el Exemplar) bool {
+	emptySlice := NewMutableExemplarSlice()
+	emptySlice.RemoveIf(func(el MutableExemplar) bool {
 		t.Fail()
 		return false
 	})
@@ -111,23 +111,9 @@ func TestExemplarSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestExemplarSlice()
 	pos := 0
-	filtered.RemoveIf(func(el Exemplar) bool {
+	filtered.RemoveIf(func(el MutableExemplar) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
-}
-
-func generateTestExemplarSlice() ExemplarSlice {
-	es := NewExemplarSlice()
-	fillTestExemplarSlice(es)
-	return es
-}
-
-func fillTestExemplarSlice(es ExemplarSlice) {
-	*es.orig = make([]otlpmetrics.Exemplar, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = otlpmetrics.Exemplar{}
-		fillTestExemplar(newExemplar(&(*es.orig)[i]))
-	}
 }

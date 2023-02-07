@@ -25,7 +25,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
 
@@ -71,8 +70,6 @@ func (g *pipelinesGraph) createNodes(set pipelinesSettings) {
 			rcvrNode := g.createReceiver(pipelineID, recvID)
 			pipe.receivers[rcvrNode.ID()] = rcvrNode
 		}
-
-		pipe.capabilitiesNode = newCapabilitiesNode(pipelineID)
 
 		for _, procID := range pipelineCfg.Processors {
 			pipe.processors = append(pipe.processors, g.createProcessor(pipelineID, procID))
@@ -136,19 +133,26 @@ func (g *pipelinesGraph) createConnector(exprPipelineID, rcvrPipelineID, connID 
 
 func (g *pipelinesGraph) createEdges() {
 	for _, pg := range g.pipelines {
+		var nextNode graph.Node = pg.fanOutNode
+		if len(pg.processors) > 0 {
+			nextNode = pg.processors[0]
+		}
 		for _, receiver := range pg.receivers {
-			g.componentGraph.SetEdge(g.componentGraph.NewEdge(receiver, pg.capabilitiesNode))
+			g.componentGraph.SetEdge(g.componentGraph.NewEdge(receiver, nextNode))
 		}
 
-		var from, to graph.Node
-		from = pg.capabilitiesNode
+		var from graph.Node
 		for _, processor := range pg.processors {
-			to = processor
-			g.componentGraph.SetEdge(g.componentGraph.NewEdge(from, to))
+			if from == nil {
+				from = processor
+				continue
+			}
+			g.componentGraph.SetEdge(g.componentGraph.NewEdge(from, processor))
 			from = processor
 		}
-		to = pg.fanOutNode
-		g.componentGraph.SetEdge(g.componentGraph.NewEdge(from, to))
+		if from != nil {
+			g.componentGraph.SetEdge(g.componentGraph.NewEdge(from, pg.fanOutNode))
+		}
 
 		for _, exporter := range pg.exporters {
 			g.componentGraph.SetEdge(g.componentGraph.NewEdge(pg.fanOutNode, exporter))
@@ -180,20 +184,6 @@ func (g *pipelinesGraph) buildComponents(ctx context.Context, set pipelinesSetti
 		case *connectorNode:
 			n.Component, err = buildConnector(ctx, n.componentID, set.Telemetry, set.BuildInfo, set.ConnectorBuilder,
 				n.exprPipelineType, n.rcvrPipelineType, g.nextConsumers(n.ID()))
-		case *capabilitiesNode:
-			cap := consumer.Capabilities{}
-			for _, proc := range g.pipelines[n.pipelineID].processors {
-				cap.MutatesData = cap.MutatesData || proc.getConsumer().Capabilities().MutatesData
-			}
-			next := g.nextConsumers(n.ID())[0]
-			switch n.pipelineID.Type() {
-			case component.DataTypeTraces:
-				n.baseConsumer = capabilityconsumer.NewTraces(next.(consumer.Traces), cap)
-			case component.DataTypeMetrics:
-				n.baseConsumer = capabilityconsumer.NewMetrics(next.(consumer.Metrics), cap)
-			case component.DataTypeLogs:
-				n.baseConsumer = capabilityconsumer.NewLogs(next.(consumer.Logs), cap)
-			}
 		case *fanOutNode:
 			nexts := g.nextConsumers(n.ID())
 			switch n.pipelineID.Type() {
@@ -239,10 +229,6 @@ func (g *pipelinesGraph) nextConsumers(nodeID int64) []baseConsumer {
 type pipelineNodes struct {
 	// Use map to assist with deduplication of connector instances.
 	receivers map[int64]graph.Node
-
-	// The node to which receivers emit. Passes through to processors.
-	// Easily accessible as the first node in a pipeline.
-	*capabilitiesNode
 
 	// The order of processors is very important. Therefore use a slice for processors.
 	processors []*processorNode
@@ -351,8 +337,4 @@ func (p *pipelineNodes) exporterIDs() []string {
 		}
 	}
 	return ids
-}
-
-func (p *pipelineNodes) mutatesData() bool {
-	return p.capabilitiesNode.getConsumer().Capabilities().MutatesData
 }

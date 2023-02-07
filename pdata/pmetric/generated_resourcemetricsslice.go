@@ -28,27 +28,44 @@ import (
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewResourceMetricsSlice function to create new instances.
+// Must use NewMutableResourceMetricsSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceMetricsSlice struct {
+	commonResourceMetricsSlice
+}
+
+type MutableResourceMetricsSlice struct {
+	commonResourceMetricsSlice
+	preventConversion struct{} // nolint:unused
+}
+
+type commonResourceMetricsSlice struct {
 	orig *[]*otlpmetrics.ResourceMetrics
 }
 
-func newResourceMetricsSlice(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetricsSlice {
-	return ResourceMetricsSlice{orig}
+func newResourceMetricsSliceFromOrig(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetricsSlice {
+	return ResourceMetricsSlice{commonResourceMetricsSlice{orig}}
 }
 
-// NewResourceMetricsSlice creates a ResourceMetricsSlice with 0 elements.
+func newMutableResourceMetricsSliceFromOrig(orig *[]*otlpmetrics.ResourceMetrics) MutableResourceMetricsSlice {
+	return MutableResourceMetricsSlice{commonResourceMetricsSlice: commonResourceMetricsSlice{orig}}
+}
+
+// NewMutableResourceMetricsSlice creates a ResourceMetricsSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewResourceMetricsSlice() ResourceMetricsSlice {
+func NewMutableResourceMetricsSlice() MutableResourceMetricsSlice {
 	orig := []*otlpmetrics.ResourceMetrics(nil)
-	return newResourceMetricsSlice(&orig)
+	return newMutableResourceMetricsSliceFromOrig(&orig)
+}
+
+func (es MutableResourceMetricsSlice) AsImmutable() ResourceMetricsSlice {
+	return ResourceMetricsSlice{commonResourceMetricsSlice{orig: es.orig}}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewResourceMetricsSlice()".
-func (es ResourceMetricsSlice) Len() int {
+// Returns "0" for a newly instance created with "NewMutableResourceMetricsSlice()".
+func (es commonResourceMetricsSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -61,7 +78,11 @@ func (es ResourceMetricsSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ResourceMetricsSlice) At(i int) ResourceMetrics {
-	return newResourceMetrics((*es.orig)[i])
+	return newResourceMetricsFromOrig((*es.orig)[i])
+}
+
+func (es MutableResourceMetricsSlice) At(i int) MutableResourceMetrics {
+	return newMutableResourceMetricsFromOrig((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -70,13 +91,13 @@ func (es ResourceMetricsSlice) At(i int) ResourceMetrics {
 //
 // Here is how a new ResourceMetricsSlice can be initialized:
 //
-//	es := NewResourceMetricsSlice()
+//	es := NewMutableResourceMetricsSlice()
 //	es.EnsureCapacity(4)
 //	for i := 0; i < 4; i++ {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ResourceMetricsSlice) EnsureCapacity(newCap int) {
+func (es MutableResourceMetricsSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -89,14 +110,14 @@ func (es ResourceMetricsSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty ResourceMetrics.
 // It returns the newly added ResourceMetrics.
-func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
+func (es MutableResourceMetricsSlice) AppendEmpty() MutableResourceMetrics {
 	*es.orig = append(*es.orig, &otlpmetrics.ResourceMetrics{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
+func (es MutableResourceMetricsSlice) MoveAndAppendTo(dest MutableResourceMetricsSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -108,7 +129,7 @@ func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
+func (es MutableResourceMetricsSlice) RemoveIf(f func(MutableResourceMetrics) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -127,13 +148,13 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
+func (es commonResourceMetricsSlice) CopyTo(dest MutableResourceMetricsSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newResourceMetrics((*es.orig)[i]).CopyTo(newResourceMetrics((*dest.orig)[i]))
+			newResourceMetricsFromOrig((*es.orig)[i]).CopyTo(newMutableResourceMetricsFromOrig((*dest.orig)[i]))
 		}
 		return
 	}
@@ -141,7 +162,7 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 	wrappers := make([]*otlpmetrics.ResourceMetrics, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newResourceMetrics((*es.orig)[i]).CopyTo(newResourceMetrics(wrappers[i]))
+		newResourceMetricsFromOrig((*es.orig)[i]).CopyTo(newMutableResourceMetricsFromOrig(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -149,6 +170,20 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 // Sort sorts the ResourceMetrics elements within ResourceMetricsSlice given the
 // provided less function so that two instances of ResourceMetricsSlice
 // can be compared.
-func (es ResourceMetricsSlice) Sort(less func(a, b ResourceMetrics) bool) {
+func (es MutableResourceMetricsSlice) Sort(less func(a, b MutableResourceMetrics) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func generateTestResourceMetricsSlice() MutableResourceMetricsSlice {
+	es := NewMutableResourceMetricsSlice()
+	fillTestResourceMetricsSlice(es)
+	return es
+}
+
+func fillTestResourceMetricsSlice(es MutableResourceMetricsSlice) {
+	*es.orig = make([]*otlpmetrics.ResourceMetrics, 7)
+	for i := 0; i < 7; i++ {
+		(*es.orig)[i] = &otlpmetrics.ResourceMetrics{}
+		fillTestResourceMetrics(newMutableResourceMetricsFromOrig((*es.orig)[i]))
+	}
 }

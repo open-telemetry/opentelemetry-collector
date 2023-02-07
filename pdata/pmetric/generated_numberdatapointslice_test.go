@@ -27,12 +27,12 @@ import (
 )
 
 func TestNumberDataPointSlice(t *testing.T) {
-	es := NewNumberDataPointSlice()
+	es := NewMutableNumberDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newNumberDataPointSlice(&[]*otlpmetrics.NumberDataPoint{})
+	es = newMutableNumberDataPointSliceFromOrig(&[]*otlpmetrics.NumberDataPoint{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewNumberDataPoint()
+	emptyVal := NewMutableNumberDataPoint()
 	testVal := generateTestNumberDataPoint()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -44,10 +44,10 @@ func TestNumberDataPointSlice(t *testing.T) {
 }
 
 func TestNumberDataPointSlice_CopyTo(t *testing.T) {
-	dest := NewNumberDataPointSlice()
+	dest := NewMutableNumberDataPointSlice()
 	// Test CopyTo to empty
-	NewNumberDataPointSlice().CopyTo(dest)
-	assert.Equal(t, NewNumberDataPointSlice(), dest)
+	NewMutableNumberDataPointSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableNumberDataPointSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestNumberDataPointSlice().CopyTo(dest)
@@ -79,7 +79,7 @@ func TestNumberDataPointSlice_EnsureCapacity(t *testing.T) {
 func TestNumberDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestNumberDataPointSlice()
-	dest := NewNumberDataPointSlice()
+	dest := NewMutableNumberDataPointSlice()
 	src := generateTestNumberDataPointSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestNumberDataPointSlice(), dest)
@@ -103,8 +103,8 @@ func TestNumberDataPointSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestNumberDataPointSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewNumberDataPointSlice()
-	emptySlice.RemoveIf(func(el NumberDataPoint) bool {
+	emptySlice := NewMutableNumberDataPointSlice()
+	emptySlice.RemoveIf(func(el MutableNumberDataPoint) bool {
 		t.Fail()
 		return false
 	})
@@ -112,7 +112,7 @@ func TestNumberDataPointSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestNumberDataPointSlice()
 	pos := 0
-	filtered.RemoveIf(func(el NumberDataPoint) bool {
+	filtered.RemoveIf(func(el MutableNumberDataPoint) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -121,30 +121,16 @@ func TestNumberDataPointSlice_RemoveIf(t *testing.T) {
 
 func TestNumberDataPointSlice_Sort(t *testing.T) {
 	es := generateTestNumberDataPointSlice()
-	es.Sort(func(a, b NumberDataPoint) bool {
+	es.Sort(func(a, b MutableNumberDataPoint) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b NumberDataPoint) bool {
+	es.Sort(func(a, b MutableNumberDataPoint) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
-	}
-}
-
-func generateTestNumberDataPointSlice() NumberDataPointSlice {
-	es := NewNumberDataPointSlice()
-	fillTestNumberDataPointSlice(es)
-	return es
-}
-
-func fillTestNumberDataPointSlice(es NumberDataPointSlice) {
-	*es.orig = make([]*otlpmetrics.NumberDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.NumberDataPoint{}
-		fillTestNumberDataPoint(newNumberDataPoint((*es.orig)[i]))
 	}
 }

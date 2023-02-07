@@ -29,8 +29,6 @@ const (
 	typeStr = "memory_limiter"
 )
 
-var processorCapabilities = consumer.Capabilities{MutatesData: false}
-
 type factory struct {
 	// memoryLimiters stores memoryLimiter instances with unique configs that multiple processors can reuse.
 	// This avoids running multiple memory checks (ie: GC) for every processor using the same processor config.
@@ -69,7 +67,6 @@ func (f *factory) createTracesProcessor(
 	}
 	return processorhelper.NewTracesProcessor(ctx, set, cfg, nextConsumer,
 		memLimiter.processTraces,
-		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
 		processorhelper.WithShutdown(memLimiter.shutdown))
 }
@@ -86,7 +83,6 @@ func (f *factory) createMetricsProcessor(
 	}
 	return processorhelper.NewMetricsProcessor(ctx, set, cfg, nextConsumer,
 		memLimiter.processMetrics,
-		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
 		processorhelper.WithShutdown(memLimiter.shutdown))
 }
@@ -103,7 +99,6 @@ func (f *factory) createLogsProcessor(
 	}
 	return processorhelper.NewLogsProcessor(ctx, set, cfg, nextConsumer,
 		memLimiter.processLogs,
-		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
 		processorhelper.WithShutdown(memLimiter.shutdown))
 }

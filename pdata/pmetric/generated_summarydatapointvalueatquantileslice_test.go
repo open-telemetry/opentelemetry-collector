@@ -27,12 +27,12 @@ import (
 )
 
 func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
-	es := NewSummaryDataPointValueAtQuantileSlice()
+	es := NewMutableSummaryDataPointValueAtQuantileSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+	es = newMutableSummaryDataPointValueAtQuantileSliceFromOrig(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewSummaryDataPointValueAtQuantile()
+	emptyVal := NewMutableSummaryDataPointValueAtQuantile()
 	testVal := generateTestSummaryDataPointValueAtQuantile()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -44,10 +44,10 @@ func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
 }
 
 func TestSummaryDataPointValueAtQuantileSlice_CopyTo(t *testing.T) {
-	dest := NewSummaryDataPointValueAtQuantileSlice()
+	dest := NewMutableSummaryDataPointValueAtQuantileSlice()
 	// Test CopyTo to empty
-	NewSummaryDataPointValueAtQuantileSlice().CopyTo(dest)
-	assert.Equal(t, NewSummaryDataPointValueAtQuantileSlice(), dest)
+	NewMutableSummaryDataPointValueAtQuantileSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableSummaryDataPointValueAtQuantileSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestSummaryDataPointValueAtQuantileSlice().CopyTo(dest)
@@ -79,7 +79,7 @@ func TestSummaryDataPointValueAtQuantileSlice_EnsureCapacity(t *testing.T) {
 func TestSummaryDataPointValueAtQuantileSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestSummaryDataPointValueAtQuantileSlice()
-	dest := NewSummaryDataPointValueAtQuantileSlice()
+	dest := NewMutableSummaryDataPointValueAtQuantileSlice()
 	src := generateTestSummaryDataPointValueAtQuantileSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
@@ -103,8 +103,8 @@ func TestSummaryDataPointValueAtQuantileSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestSummaryDataPointValueAtQuantileSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewSummaryDataPointValueAtQuantileSlice()
-	emptySlice.RemoveIf(func(el SummaryDataPointValueAtQuantile) bool {
+	emptySlice := NewMutableSummaryDataPointValueAtQuantileSlice()
+	emptySlice.RemoveIf(func(el MutableSummaryDataPointValueAtQuantile) bool {
 		t.Fail()
 		return false
 	})
@@ -112,7 +112,7 @@ func TestSummaryDataPointValueAtQuantileSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestSummaryDataPointValueAtQuantileSlice()
 	pos := 0
-	filtered.RemoveIf(func(el SummaryDataPointValueAtQuantile) bool {
+	filtered.RemoveIf(func(el MutableSummaryDataPointValueAtQuantile) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -121,30 +121,16 @@ func TestSummaryDataPointValueAtQuantileSlice_RemoveIf(t *testing.T) {
 
 func TestSummaryDataPointValueAtQuantileSlice_Sort(t *testing.T) {
 	es := generateTestSummaryDataPointValueAtQuantileSlice()
-	es.Sort(func(a, b SummaryDataPointValueAtQuantile) bool {
+	es.Sort(func(a, b MutableSummaryDataPointValueAtQuantile) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b SummaryDataPointValueAtQuantile) bool {
+	es.Sort(func(a, b MutableSummaryDataPointValueAtQuantile) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
-	}
-}
-
-func generateTestSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {
-	es := NewSummaryDataPointValueAtQuantileSlice()
-	fillTestSummaryDataPointValueAtQuantileSlice(es)
-	return es
-}
-
-func fillTestSummaryDataPointValueAtQuantileSlice(es SummaryDataPointValueAtQuantileSlice) {
-	*es.orig = make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-		fillTestSummaryDataPointValueAtQuantile(newSummaryDataPointValueAtQuantile((*es.orig)[i]))
 	}
 }

@@ -122,7 +122,3 @@ type ExampleConnector struct {
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
 }
-
-func (c *ExampleConnector) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
-}

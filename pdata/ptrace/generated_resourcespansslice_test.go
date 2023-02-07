@@ -27,12 +27,12 @@ import (
 )
 
 func TestResourceSpansSlice(t *testing.T) {
-	es := NewResourceSpansSlice()
+	es := NewMutableResourceSpansSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newResourceSpansSlice(&[]*otlptrace.ResourceSpans{})
+	es = newMutableResourceSpansSliceFromOrig(&[]*otlptrace.ResourceSpans{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewResourceSpans()
+	emptyVal := NewMutableResourceSpans()
 	testVal := generateTestResourceSpans()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -44,10 +44,10 @@ func TestResourceSpansSlice(t *testing.T) {
 }
 
 func TestResourceSpansSlice_CopyTo(t *testing.T) {
-	dest := NewResourceSpansSlice()
+	dest := NewMutableResourceSpansSlice()
 	// Test CopyTo to empty
-	NewResourceSpansSlice().CopyTo(dest)
-	assert.Equal(t, NewResourceSpansSlice(), dest)
+	NewMutableResourceSpansSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableResourceSpansSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestResourceSpansSlice().CopyTo(dest)
@@ -79,7 +79,7 @@ func TestResourceSpansSlice_EnsureCapacity(t *testing.T) {
 func TestResourceSpansSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestResourceSpansSlice()
-	dest := NewResourceSpansSlice()
+	dest := NewMutableResourceSpansSlice()
 	src := generateTestResourceSpansSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestResourceSpansSlice(), dest)
@@ -103,8 +103,8 @@ func TestResourceSpansSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestResourceSpansSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewResourceSpansSlice()
-	emptySlice.RemoveIf(func(el ResourceSpans) bool {
+	emptySlice := NewMutableResourceSpansSlice()
+	emptySlice.RemoveIf(func(el MutableResourceSpans) bool {
 		t.Fail()
 		return false
 	})
@@ -112,7 +112,7 @@ func TestResourceSpansSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestResourceSpansSlice()
 	pos := 0
-	filtered.RemoveIf(func(el ResourceSpans) bool {
+	filtered.RemoveIf(func(el MutableResourceSpans) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -121,30 +121,16 @@ func TestResourceSpansSlice_RemoveIf(t *testing.T) {
 
 func TestResourceSpansSlice_Sort(t *testing.T) {
 	es := generateTestResourceSpansSlice()
-	es.Sort(func(a, b ResourceSpans) bool {
+	es.Sort(func(a, b MutableResourceSpans) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b ResourceSpans) bool {
+	es.Sort(func(a, b MutableResourceSpans) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
-	}
-}
-
-func generateTestResourceSpansSlice() ResourceSpansSlice {
-	es := NewResourceSpansSlice()
-	fillTestResourceSpansSlice(es)
-	return es
-}
-
-func fillTestResourceSpansSlice(es ResourceSpansSlice) {
-	*es.orig = make([]*otlptrace.ResourceSpans, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlptrace.ResourceSpans{}
-		fillTestResourceSpans(newResourceSpans((*es.orig)[i]))
 	}
 }

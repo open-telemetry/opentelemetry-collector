@@ -27,64 +27,86 @@ import (
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewMetric function to create new instances.
+// Must use NewMutableMetric function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Metric struct {
+	commonMetric
+}
+
+type MutableMetric struct {
+	commonMetric
+	preventConversion struct{} // nolint:unused
+}
+
+type commonMetric struct {
 	orig *otlpmetrics.Metric
 }
 
-func newMetric(orig *otlpmetrics.Metric) Metric {
-	return Metric{orig}
+func newMetricFromOrig(orig *otlpmetrics.Metric) Metric {
+	return Metric{commonMetric{orig}}
 }
 
-// NewMetric creates a new empty Metric.
+func newMutableMetricFromOrig(orig *otlpmetrics.Metric) MutableMetric {
+	return MutableMetric{commonMetric: commonMetric{orig}}
+}
+
+// NewMutableMetric creates a new empty Metric.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewMetric() Metric {
-	return newMetric(&otlpmetrics.Metric{})
+func NewMutableMetric() MutableMetric {
+	return newMutableMetricFromOrig(&otlpmetrics.Metric{})
+}
+
+// nolint:unused
+func (ms Metric) asMutable() MutableMetric {
+	return MutableMetric{commonMetric: commonMetric{orig: ms.orig}}
+}
+
+func (ms MutableMetric) AsImmutable() Metric {
+	return Metric{commonMetric{orig: ms.orig}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Metric) MoveTo(dest Metric) {
+func (ms MutableMetric) MoveTo(dest MutableMetric) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.Metric{}
 }
 
 // Name returns the name associated with this Metric.
-func (ms Metric) Name() string {
+func (ms commonMetric) Name() string {
 	return ms.orig.Name
 }
 
 // SetName replaces the name associated with this Metric.
-func (ms Metric) SetName(v string) {
+func (ms MutableMetric) SetName(v string) {
 	ms.orig.Name = v
 }
 
 // Description returns the description associated with this Metric.
-func (ms Metric) Description() string {
+func (ms commonMetric) Description() string {
 	return ms.orig.Description
 }
 
 // SetDescription replaces the description associated with this Metric.
-func (ms Metric) SetDescription(v string) {
+func (ms MutableMetric) SetDescription(v string) {
 	ms.orig.Description = v
 }
 
 // Unit returns the unit associated with this Metric.
-func (ms Metric) Unit() string {
+func (ms commonMetric) Unit() string {
 	return ms.orig.Unit
 }
 
 // SetUnit replaces the unit associated with this Metric.
-func (ms Metric) SetUnit(v string) {
+func (ms MutableMetric) SetUnit(v string) {
 	ms.orig.Unit = v
 }
 
 // Type returns the type of the data for this Metric.
 // Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) Type() MetricType {
+func (ms commonMetric) Type() MetricType {
 	switch ms.orig.Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
 		return MetricTypeGauge
@@ -111,18 +133,22 @@ func (ms Metric) Gauge() Gauge {
 	if !ok {
 		return Gauge{}
 	}
-	return newGauge(v.Gauge)
+	return newGaugeFromOrig(v.Gauge)
+}
+
+func (ms MutableMetric) Gauge() MutableGauge {
+	return ms.AsImmutable().Gauge().asMutable()
 }
 
 // SetEmptyGauge sets an empty gauge to this Metric.
 //
 // After this, Type() function will return MetricTypeGauge".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetEmptyGauge() Gauge {
+// Calling this function on zero-initialized MutableMetric will cause a panic.
+func (ms MutableMetric) SetEmptyGauge() MutableGauge {
 	val := &otlpmetrics.Gauge{}
 	ms.orig.Data = &otlpmetrics.Metric_Gauge{Gauge: val}
-	return newGauge(val)
+	return newMutableGaugeFromOrig(val)
 }
 
 // Sum returns the sum associated with this Metric.
@@ -136,18 +162,22 @@ func (ms Metric) Sum() Sum {
 	if !ok {
 		return Sum{}
 	}
-	return newSum(v.Sum)
+	return newSumFromOrig(v.Sum)
+}
+
+func (ms MutableMetric) Sum() MutableSum {
+	return ms.AsImmutable().Sum().asMutable()
 }
 
 // SetEmptySum sets an empty sum to this Metric.
 //
 // After this, Type() function will return MetricTypeSum".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetEmptySum() Sum {
+// Calling this function on zero-initialized MutableMetric will cause a panic.
+func (ms MutableMetric) SetEmptySum() MutableSum {
 	val := &otlpmetrics.Sum{}
 	ms.orig.Data = &otlpmetrics.Metric_Sum{Sum: val}
-	return newSum(val)
+	return newMutableSumFromOrig(val)
 }
 
 // Histogram returns the histogram associated with this Metric.
@@ -161,18 +191,22 @@ func (ms Metric) Histogram() Histogram {
 	if !ok {
 		return Histogram{}
 	}
-	return newHistogram(v.Histogram)
+	return newHistogramFromOrig(v.Histogram)
+}
+
+func (ms MutableMetric) Histogram() MutableHistogram {
+	return ms.AsImmutable().Histogram().asMutable()
 }
 
 // SetEmptyHistogram sets an empty histogram to this Metric.
 //
 // After this, Type() function will return MetricTypeHistogram".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetEmptyHistogram() Histogram {
+// Calling this function on zero-initialized MutableMetric will cause a panic.
+func (ms MutableMetric) SetEmptyHistogram() MutableHistogram {
 	val := &otlpmetrics.Histogram{}
 	ms.orig.Data = &otlpmetrics.Metric_Histogram{Histogram: val}
-	return newHistogram(val)
+	return newMutableHistogramFromOrig(val)
 }
 
 // ExponentialHistogram returns the exponentialhistogram associated with this Metric.
@@ -186,18 +220,22 @@ func (ms Metric) ExponentialHistogram() ExponentialHistogram {
 	if !ok {
 		return ExponentialHistogram{}
 	}
-	return newExponentialHistogram(v.ExponentialHistogram)
+	return newExponentialHistogramFromOrig(v.ExponentialHistogram)
+}
+
+func (ms MutableMetric) ExponentialHistogram() MutableExponentialHistogram {
+	return ms.AsImmutable().ExponentialHistogram().asMutable()
 }
 
 // SetEmptyExponentialHistogram sets an empty exponentialhistogram to this Metric.
 //
 // After this, Type() function will return MetricTypeExponentialHistogram".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
+// Calling this function on zero-initialized MutableMetric will cause a panic.
+func (ms MutableMetric) SetEmptyExponentialHistogram() MutableExponentialHistogram {
 	val := &otlpmetrics.ExponentialHistogram{}
 	ms.orig.Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: val}
-	return newExponentialHistogram(val)
+	return newMutableExponentialHistogramFromOrig(val)
 }
 
 // Summary returns the summary associated with this Metric.
@@ -211,36 +249,54 @@ func (ms Metric) Summary() Summary {
 	if !ok {
 		return Summary{}
 	}
-	return newSummary(v.Summary)
+	return newSummaryFromOrig(v.Summary)
+}
+
+func (ms MutableMetric) Summary() MutableSummary {
+	return ms.AsImmutable().Summary().asMutable()
 }
 
 // SetEmptySummary sets an empty summary to this Metric.
 //
 // After this, Type() function will return MetricTypeSummary".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetEmptySummary() Summary {
+// Calling this function on zero-initialized MutableMetric will cause a panic.
+func (ms MutableMetric) SetEmptySummary() MutableSummary {
 	val := &otlpmetrics.Summary{}
 	ms.orig.Data = &otlpmetrics.Metric_Summary{Summary: val}
-	return newSummary(val)
+	return newMutableSummaryFromOrig(val)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Metric) CopyTo(dest Metric) {
+func (ms commonMetric) CopyTo(dest MutableMetric) {
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())
 	dest.SetUnit(ms.Unit())
 	switch ms.Type() {
 	case MetricTypeGauge:
-		ms.Gauge().CopyTo(dest.SetEmptyGauge())
+		Metric{ms}.Gauge().CopyTo(dest.SetEmptyGauge())
 	case MetricTypeSum:
-		ms.Sum().CopyTo(dest.SetEmptySum())
+		Metric{ms}.Sum().CopyTo(dest.SetEmptySum())
 	case MetricTypeHistogram:
-		ms.Histogram().CopyTo(dest.SetEmptyHistogram())
+		Metric{ms}.Histogram().CopyTo(dest.SetEmptyHistogram())
 	case MetricTypeExponentialHistogram:
-		ms.ExponentialHistogram().CopyTo(dest.SetEmptyExponentialHistogram())
+		Metric{ms}.ExponentialHistogram().CopyTo(dest.SetEmptyExponentialHistogram())
 	case MetricTypeSummary:
-		ms.Summary().CopyTo(dest.SetEmptySummary())
+		Metric{ms}.Summary().CopyTo(dest.SetEmptySummary())
 	}
 
+}
+
+func generateTestMetric() MutableMetric {
+	tv := NewMutableMetric()
+	fillTestMetric(tv)
+	return tv
+}
+
+func fillTestMetric(tv MutableMetric) {
+	tv.orig.Name = "test_name"
+	tv.orig.Description = "test_description"
+	tv.orig.Unit = "1"
+	tv.orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
+	fillTestSum(tv.Sum())
 }

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package ptraceotlp // import "go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+
 import (
 	"bytes"
 
@@ -26,19 +27,26 @@ import (
 // ExportRequest represents the request for gRPC/HTTP client/server.
 // It's a wrapper for ptrace.Traces data.
 type ExportRequest struct {
-	orig *otlpcollectortrace.ExportTraceServiceRequest
+	orig  *otlpcollectortrace.ExportTraceServiceRequest
+	state internal.State
 }
 
 // NewExportRequest returns an empty ExportRequest.
 func NewExportRequest() ExportRequest {
-	return ExportRequest{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
+	return ExportRequest{
+		orig:  &otlpcollectortrace.ExportTraceServiceRequest{},
+		state: internal.StateExclusive,
+	}
 }
 
 // NewExportRequestFromTraces returns a ExportRequest from ptrace.Traces.
 // Because ExportRequest is a wrapper for ptrace.Traces,
 // any changes to the provided Traces struct will be reflected in the ExportRequest and vice versa.
 func NewExportRequestFromTraces(td ptrace.Traces) ExportRequest {
-	return ExportRequest{orig: internal.GetOrigTraces(internal.Traces(td))}
+	return ExportRequest{
+		orig:  internal.GetTracesOrig(internal.Traces(td)),
+		state: internal.GetTracesState(internal.Traces(td)),
+	}
 }
 
 // MarshalProto marshals ExportRequest into proto bytes.
@@ -70,5 +78,5 @@ func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 }
 
 func (ms ExportRequest) Traces() ptrace.Traces {
-	return ptrace.Traces(internal.NewTraces(ms.orig))
+	return ptrace.Traces(internal.NewTraces(ms.orig, ms.state))
 }

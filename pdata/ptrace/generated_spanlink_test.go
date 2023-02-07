@@ -29,15 +29,15 @@ import (
 
 func TestSpanLink_MoveTo(t *testing.T) {
 	ms := generateTestSpanLink()
-	dest := NewSpanLink()
+	dest := NewMutableSpanLink()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewSpanLink(), ms)
+	assert.Equal(t, NewMutableSpanLink(), ms)
 	assert.Equal(t, generateTestSpanLink(), dest)
 }
 
 func TestSpanLink_CopyTo(t *testing.T) {
-	ms := NewSpanLink()
-	orig := NewSpanLink()
+	ms := NewMutableSpanLink()
+	orig := NewMutableSpanLink()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestSpanLink()
@@ -46,7 +46,7 @@ func TestSpanLink_CopyTo(t *testing.T) {
 }
 
 func TestSpanLink_TraceID(t *testing.T) {
-	ms := NewSpanLink()
+	ms := NewMutableSpanLink()
 	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
 	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetTraceID(testValTraceID)
@@ -54,7 +54,7 @@ func TestSpanLink_TraceID(t *testing.T) {
 }
 
 func TestSpanLink_SpanID(t *testing.T) {
-	ms := NewSpanLink()
+	ms := NewMutableSpanLink()
 	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.SpanID())
 	testValSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetSpanID(testValSpanID)
@@ -62,35 +62,21 @@ func TestSpanLink_SpanID(t *testing.T) {
 }
 
 func TestSpanLink_TraceState(t *testing.T) {
-	ms := NewSpanLink()
-	internal.FillTestTraceState(internal.TraceState(ms.TraceState()))
-	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceState())
+	ms := NewMutableSpanLink()
+	internal.FillTestTraceState(internal.MutableTraceState(ms.TraceState()))
+	assert.Equal(t, pcommon.MutableTraceState(internal.GenerateTestTraceState()), ms.TraceState())
 }
 
 func TestSpanLink_Attributes(t *testing.T) {
-	ms := NewSpanLink()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	ms := NewMutableSpanLink()
+	assert.Equal(t, pcommon.NewMutableMap(), ms.Attributes())
+	internal.FillTestMap(internal.MutableMap(ms.Attributes()))
+	assert.Equal(t, pcommon.MutableMap(internal.GenerateTestMap()), ms.Attributes())
 }
 
 func TestSpanLink_DroppedAttributesCount(t *testing.T) {
-	ms := NewSpanLink()
+	ms := NewMutableSpanLink()
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
 	ms.SetDroppedAttributesCount(uint32(17))
 	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
-}
-
-func generateTestSpanLink() SpanLink {
-	tv := NewSpanLink()
-	fillTestSpanLink(tv)
-	return tv
-}
-
-func fillTestSpanLink(tv SpanLink) {
-	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	internal.FillTestTraceState(internal.NewTraceState(&tv.orig.TraceState))
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
-	tv.orig.DroppedAttributesCount = uint32(17)
 }

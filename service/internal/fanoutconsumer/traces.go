@@ -23,58 +23,25 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// NewTraces wraps multiple trace consumers in a single one.
-// It fanouts the incoming data to all the consumers, and does smart routing:
-//   - Clones only to the consumer that needs to mutate the data.
-//   - If all consumers needs to mutate the data one will get the original data.
+// NewTraces wraps multiple trace consumers in a single one sending the data marked as shared.
 func NewTraces(tcs []consumer.Traces) consumer.Traces {
 	if len(tcs) == 1 {
 		// Don't wrap if no need to do it.
 		return tcs[0]
 	}
-	var pass []consumer.Traces
-	var clone []consumer.Traces
-	for i := 0; i < len(tcs)-1; i++ {
-		if !tcs[i].Capabilities().MutatesData {
-			pass = append(pass, tcs[i])
-		} else {
-			clone = append(clone, tcs[i])
-		}
-	}
-	// Give the original data to the last consumer if no other read-only consumer,
-	// otherwise put it in the right bucket. Never share the same data between
-	// a mutating and a non-mutating consumer since the non-mutating consumer may process
-	// data async and the mutating consumer may change the data before that.
-	if len(pass) == 0 || !tcs[len(tcs)-1].Capabilities().MutatesData {
-		pass = append(pass, tcs[len(tcs)-1])
-	} else {
-		clone = append(clone, tcs[len(tcs)-1])
-	}
-	return &tracesConsumer{pass: pass, clone: clone}
+	return &tracesConsumer{consumers: tcs}
 }
 
 type tracesConsumer struct {
-	pass  []consumer.Traces
-	clone []consumer.Traces
-}
-
-func (tsc *tracesConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	consumers []consumer.Traces
 }
 
 // ConsumeTraces exports the ptrace.Traces to all consumers wrapped by the current one.
 func (tsc *tracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	var errs error
-	// Initially pass to clone exporter to avoid the case where the optimization of sending
-	// the incoming data to a mutating consumer is used that may change the incoming data before
-	// cloning.
-	for _, tc := range tsc.clone {
-		clonedTraces := ptrace.NewTraces()
-		td.CopyTo(clonedTraces)
-		errs = multierr.Append(errs, tc.ConsumeTraces(ctx, clonedTraces))
-	}
-	for _, tc := range tsc.pass {
-		errs = multierr.Append(errs, tc.ConsumeTraces(ctx, td))
+	for _, tc := range tsc.consumers {
+		// Send traces marked as shared so that they are cloned if mutation is needed.
+		errs = multierr.Append(errs, tc.ConsumeTraces(ctx, td.AsShared()))
 	}
 	return errs
 }

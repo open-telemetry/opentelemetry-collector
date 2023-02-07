@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 func TestLogsNotMultiplexing(t *testing.T) {
@@ -38,7 +39,6 @@ func TestLogsMultiplexingNonMutating(t *testing.T) {
 	p3 := new(consumertest.LogsSink)
 
 	lfc := NewLogs([]consumer.Logs{p1, p2, p3})
-	assert.False(t, lfc.Capabilities().MutatesData)
 	ld := testdata.GenerateLogs(1)
 
 	for i := 0; i < 2; i++ {
@@ -49,20 +49,14 @@ func TestLogsMultiplexingNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, ld == p1.AllLogs()[0])
-	assert.True(t, ld == p1.AllLogs()[1])
-	assert.EqualValues(t, ld, p1.AllLogs()[0])
-	assert.EqualValues(t, ld, p1.AllLogs()[1])
+	assert.True(t, ld.ResourceLogs() == p1.AllLogs()[0].ResourceLogs())
+	assert.True(t, ld.ResourceLogs() == p1.AllLogs()[1].ResourceLogs())
 
-	assert.True(t, ld == p2.AllLogs()[0])
-	assert.True(t, ld == p2.AllLogs()[1])
-	assert.EqualValues(t, ld, p2.AllLogs()[0])
-	assert.EqualValues(t, ld, p2.AllLogs()[1])
+	assert.True(t, ld.ResourceLogs() == p2.AllLogs()[0].ResourceLogs())
+	assert.True(t, ld.ResourceLogs() == p2.AllLogs()[1].ResourceLogs())
 
-	assert.True(t, ld == p3.AllLogs()[0])
-	assert.True(t, ld == p3.AllLogs()[1])
-	assert.EqualValues(t, ld, p3.AllLogs()[0])
-	assert.EqualValues(t, ld, p3.AllLogs()[1])
+	assert.True(t, ld.ResourceLogs() == p3.AllLogs()[0].ResourceLogs())
+	assert.True(t, ld.ResourceLogs() == p3.AllLogs()[1].ResourceLogs())
 }
 
 func TestLogsMultiplexingMutating(t *testing.T) {
@@ -71,7 +65,6 @@ func TestLogsMultiplexingMutating(t *testing.T) {
 	p3 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
 
 	lfc := NewLogs([]consumer.Logs{p1, p2, p3})
-	assert.False(t, lfc.Capabilities().MutatesData)
 	ld := testdata.GenerateLogs(1)
 
 	for i := 0; i < 2; i++ {
@@ -82,19 +75,20 @@ func TestLogsMultiplexingMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, ld != p1.AllLogs()[0])
-	assert.True(t, ld != p1.AllLogs()[1])
+	// All the consumers receive shared logs that are cloned by calling MutableResourceLogs.
+
+	assert.True(t, ld.ResourceLogs() != p1.AllLogs()[0].ResourceLogs())
+	assert.True(t, ld.ResourceLogs() != p1.AllLogs()[1].ResourceLogs())
 	assert.EqualValues(t, ld, p1.AllLogs()[0])
 	assert.EqualValues(t, ld, p1.AllLogs()[1])
 
-	assert.True(t, ld != p2.AllLogs()[0])
-	assert.True(t, ld != p2.AllLogs()[1])
+	assert.True(t, ld.ResourceLogs() != p2.AllLogs()[0].ResourceLogs())
+	assert.True(t, ld.ResourceLogs() != p2.AllLogs()[1].ResourceLogs())
 	assert.EqualValues(t, ld, p2.AllLogs()[0])
 	assert.EqualValues(t, ld, p2.AllLogs()[1])
 
-	// For this consumer, will receive the initial data.
-	assert.True(t, ld == p3.AllLogs()[0])
-	assert.True(t, ld == p3.AllLogs()[1])
+	assert.True(t, ld.ResourceLogs() != p3.AllLogs()[0].ResourceLogs())
+	assert.True(t, ld.ResourceLogs() != p3.AllLogs()[1].ResourceLogs())
 	assert.EqualValues(t, ld, p3.AllLogs()[0])
 	assert.EqualValues(t, ld, p3.AllLogs()[1])
 }
@@ -105,7 +99,6 @@ func TestLogsMultiplexingMixLastMutating(t *testing.T) {
 	p3 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
 
 	lfc := NewLogs([]consumer.Logs{p1, p2, p3})
-	assert.False(t, lfc.Capabilities().MutatesData)
 	ld := testdata.GenerateLogs(1)
 
 	for i := 0; i < 2; i++ {
@@ -122,10 +115,8 @@ func TestLogsMultiplexingMixLastMutating(t *testing.T) {
 	assert.EqualValues(t, ld, p1.AllLogs()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, ld == p2.AllLogs()[0])
-	assert.True(t, ld == p2.AllLogs()[1])
-	assert.EqualValues(t, ld, p2.AllLogs()[0])
-	assert.EqualValues(t, ld, p2.AllLogs()[1])
+	assert.True(t, ld.ResourceLogs() == p2.AllLogs()[0].ResourceLogs())
+	assert.True(t, ld.ResourceLogs() == p2.AllLogs()[1].ResourceLogs())
 
 	// For this consumer, will clone the initial data.
 	assert.True(t, ld != p3.AllLogs()[0])
@@ -140,7 +131,6 @@ func TestLogsMultiplexingMixLastNonMutating(t *testing.T) {
 	p3 := new(consumertest.LogsSink)
 
 	lfc := NewLogs([]consumer.Logs{p1, p2, p3})
-	assert.False(t, lfc.Capabilities().MutatesData)
 	ld := testdata.GenerateLogs(1)
 
 	for i := 0; i < 2; i++ {
@@ -151,25 +141,23 @@ func TestLogsMultiplexingMixLastNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.True(t, ld != p1.AllLogs()[0])
-	assert.True(t, ld != p1.AllLogs()[1])
+	assert.True(t, ld.ResourceLogs() != p1.AllLogs()[0].ResourceLogs())
+	assert.True(t, ld.ResourceLogs() != p1.AllLogs()[1].ResourceLogs())
 	assert.EqualValues(t, ld, p1.AllLogs()[0])
 	assert.EqualValues(t, ld, p1.AllLogs()[1])
 
-	assert.True(t, ld != p2.AllLogs()[0])
-	assert.True(t, ld != p2.AllLogs()[1])
+	assert.True(t, ld.ResourceLogs() != p2.AllLogs()[0].ResourceLogs())
+	assert.True(t, ld.ResourceLogs() != p2.AllLogs()[1].ResourceLogs())
 	assert.EqualValues(t, ld, p2.AllLogs()[0])
 	assert.EqualValues(t, ld, p2.AllLogs()[1])
 
 	// For this consumer, will receive the initial data.
-	assert.True(t, ld == p3.AllLogs()[0])
-	assert.True(t, ld == p3.AllLogs()[1])
-	assert.EqualValues(t, ld, p3.AllLogs()[0])
-	assert.EqualValues(t, ld, p3.AllLogs()[1])
+	assert.True(t, ld.ResourceLogs() == p3.AllLogs()[0].ResourceLogs())
+	assert.True(t, ld.ResourceLogs() == p3.AllLogs()[1].ResourceLogs())
 }
 
 func TestLogsWhenErrors(t *testing.T) {
-	p1 := mutatingErr{Consumer: consumertest.NewErr(errors.New("my error"))}
+	p1 := mutatingErrLogs{errors.New("my error")}
 	p2 := consumertest.NewErr(errors.New("my error"))
 	p3 := new(consumertest.LogsSink)
 
@@ -180,24 +168,24 @@ func TestLogsWhenErrors(t *testing.T) {
 		assert.Error(t, lfc.ConsumeLogs(context.Background(), ld))
 	}
 
-	assert.True(t, ld == p3.AllLogs()[0])
-	assert.True(t, ld == p3.AllLogs()[1])
-	assert.EqualValues(t, ld, p3.AllLogs()[0])
-	assert.EqualValues(t, ld, p3.AllLogs()[1])
+	assert.True(t, ld.ResourceLogs() == p3.AllLogs()[0].ResourceLogs())
+	assert.True(t, ld.ResourceLogs() == p3.AllLogs()[1].ResourceLogs())
 }
 
 type mutatingLogsSink struct {
 	*consumertest.LogsSink
 }
 
-func (mts *mutatingLogsSink) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
+func (mts *mutatingLogsSink) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	_ = ld.MutableResourceLogs()
+	return mts.LogsSink.ConsumeLogs(ctx, ld)
 }
 
-type mutatingErr struct {
-	consumertest.Consumer
+type mutatingErrLogs struct {
+	err error
 }
 
-func (mts mutatingErr) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
+func (mts mutatingErrLogs) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+	_ = ld.MutableResourceLogs()
+	return mts.err
 }

@@ -28,54 +28,97 @@ import (
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewResourceMetrics function to create new instances.
+// Must use NewMutableResourceMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceMetrics struct {
+	commonResourceMetrics
+}
+
+type MutableResourceMetrics struct {
+	commonResourceMetrics
+	preventConversion struct{} // nolint:unused
+}
+
+type commonResourceMetrics struct {
 	orig *otlpmetrics.ResourceMetrics
 }
 
-func newResourceMetrics(orig *otlpmetrics.ResourceMetrics) ResourceMetrics {
-	return ResourceMetrics{orig}
+func newResourceMetricsFromOrig(orig *otlpmetrics.ResourceMetrics) ResourceMetrics {
+	return ResourceMetrics{commonResourceMetrics{orig}}
 }
 
-// NewResourceMetrics creates a new empty ResourceMetrics.
+func newMutableResourceMetricsFromOrig(orig *otlpmetrics.ResourceMetrics) MutableResourceMetrics {
+	return MutableResourceMetrics{commonResourceMetrics: commonResourceMetrics{orig}}
+}
+
+// NewMutableResourceMetrics creates a new empty ResourceMetrics.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewResourceMetrics() ResourceMetrics {
-	return newResourceMetrics(&otlpmetrics.ResourceMetrics{})
+func NewMutableResourceMetrics() MutableResourceMetrics {
+	return newMutableResourceMetricsFromOrig(&otlpmetrics.ResourceMetrics{})
+}
+
+// nolint:unused
+func (ms ResourceMetrics) asMutable() MutableResourceMetrics {
+	return MutableResourceMetrics{commonResourceMetrics: commonResourceMetrics{orig: ms.orig}}
+}
+
+func (ms MutableResourceMetrics) AsImmutable() ResourceMetrics {
+	return ResourceMetrics{commonResourceMetrics{orig: ms.orig}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ResourceMetrics) MoveTo(dest ResourceMetrics) {
+func (ms MutableResourceMetrics) MoveTo(dest MutableResourceMetrics) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.ResourceMetrics{}
 }
 
 // Resource returns the resource associated with this ResourceMetrics.
 func (ms ResourceMetrics) Resource() pcommon.Resource {
-	return pcommon.Resource(internal.NewResource(&ms.orig.Resource))
+	return internal.NewResourceFromOrig(&ms.orig.Resource)
+}
+
+// Resource returns the resource associated with this ResourceMetrics.
+func (ms MutableResourceMetrics) Resource() pcommon.MutableResource {
+	return internal.NewMutableResourceFromOrig(&ms.orig.Resource)
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceMetrics.
-func (ms ResourceMetrics) SchemaUrl() string {
+func (ms commonResourceMetrics) SchemaUrl() string {
 	return ms.orig.SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ResourceMetrics.
-func (ms ResourceMetrics) SetSchemaUrl(v string) {
+func (ms MutableResourceMetrics) SetSchemaUrl(v string) {
 	ms.orig.SchemaUrl = v
 }
 
 // ScopeMetrics returns the ScopeMetrics associated with this ResourceMetrics.
 func (ms ResourceMetrics) ScopeMetrics() ScopeMetricsSlice {
-	return newScopeMetricsSlice(&ms.orig.ScopeMetrics)
+	return newScopeMetricsSliceFromOrig(&ms.orig.ScopeMetrics)
+}
+
+func (ms MutableResourceMetrics) ScopeMetrics() MutableScopeMetricsSlice {
+	return newMutableScopeMetricsSliceFromOrig(&ms.orig.ScopeMetrics)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
-	ms.Resource().CopyTo(dest.Resource())
+func (ms commonResourceMetrics) CopyTo(dest MutableResourceMetrics) {
+	ResourceMetrics{ms}.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
-	ms.ScopeMetrics().CopyTo(dest.ScopeMetrics())
+	ResourceMetrics{ms}.ScopeMetrics().CopyTo(dest.ScopeMetrics())
+}
+
+func generateTestResourceMetrics() MutableResourceMetrics {
+	tv := NewMutableResourceMetrics()
+	fillTestResourceMetrics(tv)
+	return tv
+}
+
+func fillTestResourceMetrics(tv MutableResourceMetrics) {
+	internal.FillTestResource(internal.NewMutableResourceFromOrig(&tv.orig.Resource))
+	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	fillTestScopeMetricsSlice(newMutableScopeMetricsSliceFromOrig(&tv.orig.ScopeMetrics))
 }

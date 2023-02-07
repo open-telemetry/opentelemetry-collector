@@ -23,46 +23,70 @@ import (
 const primitiveSliceTemplate = `// ${structName} represents a []${itemType} slice.
 // The instance of ${structName} can be assigned to multiple objects since it's immutable.
 //
-// Must use New${structName} function to create new instances.
+// Must use NewMutable${structName} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ${structName} internal.${structName}
-
-func (ms ${structName}) getOrig() *[]${itemType} {
-	return internal.GetOrig${structName}(internal.${structName}(ms))
+type ${structName} struct {
+	common${structName}
 }
 
-// New${structName} creates a new empty ${structName}.
-func New${structName}() ${structName} {
+type Mutable${structName} struct {
+	common${structName}
+	preventConversion struct{} // nolint:unused
+}
+
+type common${structName} struct {
+	orig *[]${itemType}
+}
+
+// nolint:unused
+func (es ${structName}) asMutable() Mutable${structName} {
+	return Mutable${structName}{common${structName}: common${structName}{orig: es.orig}}
+}
+
+func (es Mutable${structName}) AsImmutable() ${structName} {
+	return ${structName}{common${structName}{orig: es.orig}}
+}
+
+func New${structName}FromOrig(orig *[]${itemType}) ${structName} {
+	return ${structName}{common${structName}{orig}}
+}
+
+func NewMutable${structName}FromOrig(orig *[]${itemType}) Mutable${structName} {
+	return Mutable${structName}{common${structName}: common${structName}{orig}}
+}
+
+// NewMutable${structName} creates a new empty ${structName}.
+func NewMutable${structName}() Mutable${structName} {
 	orig := []${itemType}(nil)
-	return ${structName}(internal.New${structName}(&orig))
+	return Mutable${structName}{common${structName}: common${structName}{&orig}}
 }
 
 // AsRaw returns a copy of the []${itemType} slice.
-func (ms ${structName}) AsRaw() []${itemType} {
-	return copy${structName}(nil, *ms.getOrig())
+func (ms common${structName}) AsRaw() []${itemType} {
+	return copy${structName}(nil, *ms.orig)
 }
 
 // FromRaw copies raw []${itemType} into the slice ${structName}.
-func (ms ${structName}) FromRaw(val []${itemType}) {
-	*ms.getOrig() = copy${structName}(*ms.getOrig(), val)
+func (ms Mutable${structName}) FromRaw(val []${itemType}) {
+	*ms.orig = copy${structName}(*ms.orig, val)
 }
 
 // Len returns length of the []${itemType} slice value.
 // Equivalent of len(${lowerStructName}).
-func (ms ${structName}) Len() int {
-	return len(*ms.getOrig())
+func (ms common${structName}) Len() int {
+	return len(*ms.orig)
 }
 
 // At returns an item from particular index.
 // Equivalent of ${lowerStructName}[i].
-func (ms ${structName}) At(i int) ${itemType} {
-	return (*ms.getOrig())[i]
+func (ms common${structName}) At(i int) ${itemType} {
+	return (*ms.orig)[i]
 }
 
 // SetAt sets ${itemType} item at particular index.
 // Equivalent of ${lowerStructName}[i] = val
-func (ms ${structName}) SetAt(i int, val ${itemType}) {
-	(*ms.getOrig())[i] = val
+func (ms Mutable${structName}) SetAt(i int, val ${itemType}) {
+	(*ms.orig)[i] = val
 }
 
 // EnsureCapacity ensures ${structName} has at least the specified capacity.
@@ -71,33 +95,33 @@ func (ms ${structName}) SetAt(i int, val ${itemType}) {
 //	buf := make([]${itemType}, len(${lowerStructName}), newCap)
 //	copy(buf, ${lowerStructName})
 //	${lowerStructName} = buf
-func (ms ${structName}) EnsureCapacity(newCap int) {
-	oldCap := cap(*ms.getOrig())
+func (ms Mutable${structName}) EnsureCapacity(newCap int) {
+	oldCap := cap(*ms.orig)
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]${itemType}, len(*ms.getOrig()), newCap)
-	copy(newOrig, *ms.getOrig())
-	*ms.getOrig() = newOrig
+	newOrig := make([]${itemType}, len(*ms.orig), newCap)
+	copy(newOrig, *ms.orig)
+	*ms.orig = newOrig
 }
 
 // Append appends extra elements to ${structName}.
 // Equivalent of ${lowerStructName} = append(${lowerStructName}, elms...) 
-func (ms ${structName}) Append(elms ...${itemType}) {
-	*ms.getOrig() = append(*ms.getOrig(), elms...)
+func (ms Mutable${structName}) Append(elms ...${itemType}) {
+	*ms.orig = append(*ms.orig, elms...)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and 
 // resetting the current instance to its zero value.
-func (ms ${structName}) MoveTo(dest ${structName}) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = nil
+func (ms Mutable${structName}) MoveTo(dest Mutable${structName}) {
+	*dest.orig = *ms.orig
+	*ms.orig = nil
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (ms ${structName}) CopyTo(dest ${structName}) {
-	*dest.getOrig() = copy${structName}(*dest.getOrig(), *ms.getOrig())
+func (ms common${structName}) CopyTo(dest Mutable${structName}) {
+	*dest.orig = copy${structName}(*dest.orig, *ms.orig)
 }
 
 func copy${structName}(dst, src []${itemType}) []${itemType} {
@@ -105,8 +129,8 @@ func copy${structName}(dst, src []${itemType}) []${itemType} {
 	return append(dst, src...)
 }`
 
-const immutableSliceTestTemplate = `func TestNew${structName}(t *testing.T) {
-	ms := New${structName}()
+const immutableSliceTestTemplate = `func TestNewMutable${structName}(t *testing.T) {
+	ms := NewMutable${structName}()
 	assert.Equal(t, 0, ms.Len())
 	ms.FromRaw([]${itemType}{1, 2, 3})
 	assert.Equal(t, 3, ms.Len())
@@ -117,7 +141,7 @@ const immutableSliceTestTemplate = `func TestNew${structName}(t *testing.T) {
 	assert.Equal(t, 1, ms.Len())
 	assert.Equal(t, ${itemType}(3), ms.At(0))
 	
-	cp := New${structName}()
+	cp := NewMutable${structName}()
 	ms.CopyTo(cp)
 	ms.SetAt(0, ${itemType}(2))
 	assert.Equal(t, ${itemType}(2), ms.At(0))
@@ -125,7 +149,7 @@ const immutableSliceTestTemplate = `func TestNew${structName}(t *testing.T) {
 	ms.CopyTo(cp)
 	assert.Equal(t, ${itemType}(2), cp.At(0))
 	
-	mv := New${structName}()
+	mv := NewMutable${structName}()
 	ms.MoveTo(mv)
 	assert.Equal(t, 0, ms.Len())
 	assert.Equal(t, 1, mv.Len())
@@ -137,7 +161,7 @@ const immutableSliceTestTemplate = `func TestNew${structName}(t *testing.T) {
 }
 
 func Test${structName}Append(t *testing.T) {
-	ms := New${structName}()
+	ms := NewMutable${structName}()
 	ms.FromRaw([]${itemType}{1, 2, 3})
 	ms.Append(4, 5)
 	assert.Equal(t, 5, ms.Len())
@@ -145,24 +169,11 @@ func Test${structName}Append(t *testing.T) {
 }
 
 func Test${structName}EnsureCapacity(t *testing.T) {
-	ms := New${structName}()
+	ms := NewMutable${structName}()
 	ms.EnsureCapacity(4)
-	assert.Equal(t, 4, cap(*ms.getOrig()))
+	assert.Equal(t, 4, cap(*ms.orig))
 	ms.EnsureCapacity(2)
-	assert.Equal(t, 4, cap(*ms.getOrig()))
-}`
-
-const primitiveSliceInternalTemplate = `
-type ${structName} struct {
-	orig *[]${itemType}
-}
-
-func GetOrig${structName}(ms ${structName}) *[]${itemType} {
-	return ms.orig
-}
-
-func New${structName}(orig *[]${itemType}) ${structName} {
-	return ${structName}{orig: orig}
+	assert.Equal(t, 4, cap(*ms.orig))
 }`
 
 // primitiveSliceStruct generates a struct for a slice of primitive value elements. The structs are always generated
@@ -211,8 +222,8 @@ func (iss *primitiveSliceStruct) generateTests(sb *bytes.Buffer) {
 
 func (iss *primitiveSliceStruct) generateTestValueHelpers(*bytes.Buffer) {}
 
-func (iss *primitiveSliceStruct) generateInternal(sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(primitiveSliceInternalTemplate, func(name string) string {
+func (iss *primitiveSliceStruct) generateAliases(sb *bytes.Buffer) {
+	sb.WriteString(os.Expand(aliasTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return iss.structName

@@ -27,15 +27,15 @@ import (
 
 func TestHistogram_MoveTo(t *testing.T) {
 	ms := generateTestHistogram()
-	dest := NewHistogram()
+	dest := NewMutableHistogram()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewHistogram(), ms)
+	assert.Equal(t, NewMutableHistogram(), ms)
 	assert.Equal(t, generateTestHistogram(), dest)
 }
 
 func TestHistogram_CopyTo(t *testing.T) {
-	ms := NewHistogram()
-	orig := NewHistogram()
+	ms := NewMutableHistogram()
+	orig := NewMutableHistogram()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestHistogram()
@@ -44,7 +44,7 @@ func TestHistogram_CopyTo(t *testing.T) {
 }
 
 func TestHistogram_AggregationTemporality(t *testing.T) {
-	ms := NewHistogram()
+	ms := NewMutableHistogram()
 	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
 	testValAggregationTemporality := AggregationTemporality(otlpmetrics.AggregationTemporality(1))
 	ms.SetAggregationTemporality(testValAggregationTemporality)
@@ -52,19 +52,8 @@ func TestHistogram_AggregationTemporality(t *testing.T) {
 }
 
 func TestHistogram_DataPoints(t *testing.T) {
-	ms := NewHistogram()
-	assert.Equal(t, NewHistogramDataPointSlice(), ms.DataPoints())
+	ms := NewMutableHistogram()
+	assert.Equal(t, NewMutableHistogramDataPointSlice(), ms.DataPoints())
 	fillTestHistogramDataPointSlice(ms.DataPoints())
 	assert.Equal(t, generateTestHistogramDataPointSlice(), ms.DataPoints())
-}
-
-func generateTestHistogram() Histogram {
-	tv := NewHistogram()
-	fillTestHistogram(tv)
-	return tv
-}
-
-func fillTestHistogram(tv Histogram) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	fillTestHistogramDataPointSlice(newHistogramDataPointSlice(&tv.orig.DataPoints))
 }

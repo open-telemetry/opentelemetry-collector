@@ -21,21 +21,19 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestMetric_MoveTo(t *testing.T) {
 	ms := generateTestMetric()
-	dest := NewMetric()
+	dest := NewMutableMetric()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewMetric(), ms)
+	assert.Equal(t, NewMutableMetric(), ms)
 	assert.Equal(t, generateTestMetric(), dest)
 }
 
 func TestMetric_CopyTo(t *testing.T) {
-	ms := NewMetric()
-	orig := NewMetric()
+	ms := NewMutableMetric()
+	orig := NewMutableMetric()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestMetric()
@@ -44,116 +42,102 @@ func TestMetric_CopyTo(t *testing.T) {
 }
 
 func TestMetric_Name(t *testing.T) {
-	ms := NewMetric()
+	ms := NewMutableMetric()
 	assert.Equal(t, "", ms.Name())
 	ms.SetName("test_name")
 	assert.Equal(t, "test_name", ms.Name())
 }
 
 func TestMetric_Description(t *testing.T) {
-	ms := NewMetric()
+	ms := NewMutableMetric()
 	assert.Equal(t, "", ms.Description())
 	ms.SetDescription("test_description")
 	assert.Equal(t, "test_description", ms.Description())
 }
 
 func TestMetric_Unit(t *testing.T) {
-	ms := NewMetric()
+	ms := NewMutableMetric()
 	assert.Equal(t, "", ms.Unit())
 	ms.SetUnit("1")
 	assert.Equal(t, "1", ms.Unit())
 }
 
 func TestMetric_Type(t *testing.T) {
-	tv := NewMetric()
+	tv := NewMutableMetric()
 	assert.Equal(t, MetricTypeEmpty, tv.Type())
 }
 
 func TestMetric_Gauge(t *testing.T) {
-	ms := NewMetric()
+	ms := NewMutableMetric()
 	fillTestGauge(ms.SetEmptyGauge())
 	assert.Equal(t, MetricTypeGauge, ms.Type())
 	assert.Equal(t, generateTestGauge(), ms.Gauge())
 }
 
 func TestMetric_CopyTo_Gauge(t *testing.T) {
-	ms := NewMetric()
+	ms := NewMutableMetric()
 	fillTestGauge(ms.SetEmptyGauge())
-	dest := NewMetric()
+	dest := NewMutableMetric()
 	ms.CopyTo(dest)
 	assert.Equal(t, ms, dest)
 }
 
 func TestMetric_Sum(t *testing.T) {
-	ms := NewMetric()
+	ms := NewMutableMetric()
 	fillTestSum(ms.SetEmptySum())
 	assert.Equal(t, MetricTypeSum, ms.Type())
 	assert.Equal(t, generateTestSum(), ms.Sum())
 }
 
 func TestMetric_CopyTo_Sum(t *testing.T) {
-	ms := NewMetric()
+	ms := NewMutableMetric()
 	fillTestSum(ms.SetEmptySum())
-	dest := NewMetric()
+	dest := NewMutableMetric()
 	ms.CopyTo(dest)
 	assert.Equal(t, ms, dest)
 }
 
 func TestMetric_Histogram(t *testing.T) {
-	ms := NewMetric()
+	ms := NewMutableMetric()
 	fillTestHistogram(ms.SetEmptyHistogram())
 	assert.Equal(t, MetricTypeHistogram, ms.Type())
 	assert.Equal(t, generateTestHistogram(), ms.Histogram())
 }
 
 func TestMetric_CopyTo_Histogram(t *testing.T) {
-	ms := NewMetric()
+	ms := NewMutableMetric()
 	fillTestHistogram(ms.SetEmptyHistogram())
-	dest := NewMetric()
+	dest := NewMutableMetric()
 	ms.CopyTo(dest)
 	assert.Equal(t, ms, dest)
 }
 
 func TestMetric_ExponentialHistogram(t *testing.T) {
-	ms := NewMetric()
+	ms := NewMutableMetric()
 	fillTestExponentialHistogram(ms.SetEmptyExponentialHistogram())
 	assert.Equal(t, MetricTypeExponentialHistogram, ms.Type())
 	assert.Equal(t, generateTestExponentialHistogram(), ms.ExponentialHistogram())
 }
 
 func TestMetric_CopyTo_ExponentialHistogram(t *testing.T) {
-	ms := NewMetric()
+	ms := NewMutableMetric()
 	fillTestExponentialHistogram(ms.SetEmptyExponentialHistogram())
-	dest := NewMetric()
+	dest := NewMutableMetric()
 	ms.CopyTo(dest)
 	assert.Equal(t, ms, dest)
 }
 
 func TestMetric_Summary(t *testing.T) {
-	ms := NewMetric()
+	ms := NewMutableMetric()
 	fillTestSummary(ms.SetEmptySummary())
 	assert.Equal(t, MetricTypeSummary, ms.Type())
 	assert.Equal(t, generateTestSummary(), ms.Summary())
 }
 
 func TestMetric_CopyTo_Summary(t *testing.T) {
-	ms := NewMetric()
+	ms := NewMutableMetric()
 	fillTestSummary(ms.SetEmptySummary())
-	dest := NewMetric()
+	dest := NewMutableMetric()
 	ms.CopyTo(dest)
 	assert.Equal(t, ms, dest)
-}
-
-func generateTestMetric() Metric {
-	tv := NewMetric()
-	fillTestMetric(tv)
-	return tv
-}
-
-func fillTestMetric(tv Metric) {
-	tv.orig.Name = "test_name"
-	tv.orig.Description = "test_description"
-	tv.orig.Unit = "1"
-	tv.orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
-	fillTestSum(newSum(tv.orig.GetSum()))
 }

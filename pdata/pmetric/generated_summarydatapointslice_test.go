@@ -27,12 +27,12 @@ import (
 )
 
 func TestSummaryDataPointSlice(t *testing.T) {
-	es := NewSummaryDataPointSlice()
+	es := NewMutableSummaryDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{})
+	es = newMutableSummaryDataPointSliceFromOrig(&[]*otlpmetrics.SummaryDataPoint{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewSummaryDataPoint()
+	emptyVal := NewMutableSummaryDataPoint()
 	testVal := generateTestSummaryDataPoint()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -44,10 +44,10 @@ func TestSummaryDataPointSlice(t *testing.T) {
 }
 
 func TestSummaryDataPointSlice_CopyTo(t *testing.T) {
-	dest := NewSummaryDataPointSlice()
+	dest := NewMutableSummaryDataPointSlice()
 	// Test CopyTo to empty
-	NewSummaryDataPointSlice().CopyTo(dest)
-	assert.Equal(t, NewSummaryDataPointSlice(), dest)
+	NewMutableSummaryDataPointSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableSummaryDataPointSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestSummaryDataPointSlice().CopyTo(dest)
@@ -79,7 +79,7 @@ func TestSummaryDataPointSlice_EnsureCapacity(t *testing.T) {
 func TestSummaryDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestSummaryDataPointSlice()
-	dest := NewSummaryDataPointSlice()
+	dest := NewMutableSummaryDataPointSlice()
 	src := generateTestSummaryDataPointSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointSlice(), dest)
@@ -103,8 +103,8 @@ func TestSummaryDataPointSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestSummaryDataPointSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewSummaryDataPointSlice()
-	emptySlice.RemoveIf(func(el SummaryDataPoint) bool {
+	emptySlice := NewMutableSummaryDataPointSlice()
+	emptySlice.RemoveIf(func(el MutableSummaryDataPoint) bool {
 		t.Fail()
 		return false
 	})
@@ -112,7 +112,7 @@ func TestSummaryDataPointSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestSummaryDataPointSlice()
 	pos := 0
-	filtered.RemoveIf(func(el SummaryDataPoint) bool {
+	filtered.RemoveIf(func(el MutableSummaryDataPoint) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -121,30 +121,16 @@ func TestSummaryDataPointSlice_RemoveIf(t *testing.T) {
 
 func TestSummaryDataPointSlice_Sort(t *testing.T) {
 	es := generateTestSummaryDataPointSlice()
-	es.Sort(func(a, b SummaryDataPoint) bool {
+	es.Sort(func(a, b MutableSummaryDataPoint) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b SummaryDataPoint) bool {
+	es.Sort(func(a, b MutableSummaryDataPoint) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
-	}
-}
-
-func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
-	es := NewSummaryDataPointSlice()
-	fillTestSummaryDataPointSlice(es)
-	return es
-}
-
-func fillTestSummaryDataPointSlice(es SummaryDataPointSlice) {
-	*es.orig = make([]*otlpmetrics.SummaryDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.SummaryDataPoint{}
-		fillTestSummaryDataPoint(newSummaryDataPoint((*es.orig)[i]))
 	}
 }

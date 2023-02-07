@@ -114,6 +114,6 @@ func (f fakeTracesServer) Export(_ context.Context, request ExportRequest) (Expo
 
 func generateTracesRequest() ExportRequest {
 	td := ptrace.NewTraces()
-	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("test_span")
+	td.MutableResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("test_span")
 	return NewExportRequestFromTraces(td)
 }

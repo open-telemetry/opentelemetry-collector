@@ -28,15 +28,15 @@ import (
 
 func TestScopeSpans_MoveTo(t *testing.T) {
 	ms := generateTestScopeSpans()
-	dest := NewScopeSpans()
+	dest := NewMutableScopeSpans()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewScopeSpans(), ms)
+	assert.Equal(t, NewMutableScopeSpans(), ms)
 	assert.Equal(t, generateTestScopeSpans(), dest)
 }
 
 func TestScopeSpans_CopyTo(t *testing.T) {
-	ms := NewScopeSpans()
-	orig := NewScopeSpans()
+	ms := NewMutableScopeSpans()
+	orig := NewMutableScopeSpans()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestScopeSpans()
@@ -45,33 +45,21 @@ func TestScopeSpans_CopyTo(t *testing.T) {
 }
 
 func TestScopeSpans_Scope(t *testing.T) {
-	ms := NewScopeSpans()
-	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
-	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
+	ms := NewMutableScopeSpans()
+	internal.FillTestInstrumentationScope(internal.MutableInstrumentationScope(ms.Scope()))
+	assert.Equal(t, pcommon.MutableInstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
 }
 
 func TestScopeSpans_SchemaUrl(t *testing.T) {
-	ms := NewScopeSpans()
+	ms := NewMutableScopeSpans()
 	assert.Equal(t, "", ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
 }
 
 func TestScopeSpans_Spans(t *testing.T) {
-	ms := NewScopeSpans()
-	assert.Equal(t, NewSpanSlice(), ms.Spans())
+	ms := NewMutableScopeSpans()
+	assert.Equal(t, NewMutableSpanSlice(), ms.Spans())
 	fillTestSpanSlice(ms.Spans())
 	assert.Equal(t, generateTestSpanSlice(), ms.Spans())
-}
-
-func generateTestScopeSpans() ScopeSpans {
-	tv := NewScopeSpans()
-	fillTestScopeSpans(tv)
-	return tv
-}
-
-func fillTestScopeSpans(tv ScopeSpans) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestSpanSlice(newSpanSlice(&tv.orig.Spans))
 }

@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
@@ -48,9 +47,7 @@ type pipelines interface {
 var _ pipelines = (*builtPipelines)(nil)
 
 // baseConsumer redeclared here since not public in consumer package. May consider to make that public.
-type baseConsumer interface {
-	Capabilities() consumer.Capabilities
-}
+type baseConsumer interface{}
 
 type builtComponent struct {
 	id   component.ID
@@ -236,7 +233,6 @@ func buildPipelines(ctx context.Context, set pipelinesSettings) (pipelines, erro
 			return nil, fmt.Errorf("create fan-out exporter in pipeline %q, data type %q is not supported", pipelineID, pipelineID.Type())
 		}
 
-		mutatesConsumedData := bp.lastConsumer.Capabilities().MutatesData
 		// Build the processors backwards, starting from the last one.
 		// The last processor points to fan out consumer to all Exporters, then the processor itself becomes a
 		// consumer for the one that precedes it in the pipeline and so on.
@@ -249,20 +245,6 @@ func buildPipelines(ctx context.Context, set pipelinesSettings) (pipelines, erro
 
 			bp.processors[i] = builtComponent{id: procID, comp: proc}
 			bp.lastConsumer = proc.(baseConsumer)
-			mutatesConsumedData = mutatesConsumedData || bp.lastConsumer.Capabilities().MutatesData
-		}
-
-		// Some consumers may not correctly implement the Capabilities, and ignore the next consumer when calculated the Capabilities.
-		// Because of this wrap the first consumer if any consumers in the pipeline mutate the data and the first says that it doesn't.
-		switch pipelineID.Type() {
-		case component.DataTypeTraces:
-			bp.lastConsumer = capabilityconsumer.NewTraces(bp.lastConsumer.(consumer.Traces), consumer.Capabilities{MutatesData: mutatesConsumedData})
-		case component.DataTypeMetrics:
-			bp.lastConsumer = capabilityconsumer.NewMetrics(bp.lastConsumer.(consumer.Metrics), consumer.Capabilities{MutatesData: mutatesConsumedData})
-		case component.DataTypeLogs:
-			bp.lastConsumer = capabilityconsumer.NewLogs(bp.lastConsumer.(consumer.Logs), consumer.Capabilities{MutatesData: mutatesConsumedData})
-		default:
-			return nil, fmt.Errorf("create cap consumer in pipeline %q, data type %q is not supported", pipelineID, pipelineID.Type())
 		}
 
 		// The data type of the pipeline defines what data type each exporter is expected to receive.
@@ -448,8 +430,4 @@ func (bp *builtPipeline) exporterIDs() []string {
 		ids = append(ids, bc.id.String())
 	}
 	return ids
-}
-
-func (bp *builtPipeline) mutatesData() bool {
-	return bp.lastConsumer.Capabilities().MutatesData
 }

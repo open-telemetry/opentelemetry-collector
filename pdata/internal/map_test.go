@@ -12,59 +12,58 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pcommon
+package internal
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 func TestMap(t *testing.T) {
-	assert.EqualValues(t, 0, NewMap().Len())
+	assert.EqualValues(t, 0, NewMutableMap().Len())
 
-	val, exist := NewMap().Get("test_key")
+	val, exist := NewMutableMap().Get("test_key")
 	assert.False(t, exist)
-	assert.EqualValues(t, newValue(nil), val)
+	assert.EqualValues(t, NewMutableValueFromOrig(nil), val)
 
-	putString := NewMap()
+	putString := NewMutableMap()
 	putString.PutStr("k", "v")
-	assert.EqualValues(t, Map(internal.GenerateTestMap()), putString)
+	assert.EqualValues(t, GenerateTestMap(), putString)
 
-	putInt := NewMap()
+	putInt := NewMutableMap()
 	putInt.PutInt("k", 123)
 	assert.EqualValues(t, generateTestIntMap(t), putInt)
 
-	putDouble := NewMap()
+	putDouble := NewMutableMap()
 	putDouble.PutDouble("k", 12.3)
 	assert.EqualValues(t, generateTestDoubleMap(t), putDouble)
 
-	putBool := NewMap()
+	putBool := NewMutableMap()
 	putBool.PutBool("k", true)
 	assert.EqualValues(t, generateTestBoolMap(t), putBool)
 
-	putBytes := NewMap()
+	putBytes := NewMutableMap()
 	putBytes.PutEmptyBytes("k").FromRaw([]byte{1, 2, 3, 4, 5})
 	assert.EqualValues(t, generateTestBytesMap(t), putBytes)
 
-	putMap := NewMap()
+	putMap := NewMutableMap()
 	putMap.PutEmptyMap("k")
 	assert.EqualValues(t, generateTestEmptyMap(t), putMap)
 
-	putSlice := NewMap()
+	putSlice := NewMutableMap()
 	putSlice.PutEmptySlice("k")
 	assert.EqualValues(t, generateTestEmptySlice(t), putSlice)
 
-	removeMap := NewMap()
+	removeMap := NewMutableMap()
 	assert.False(t, removeMap.Remove("k"))
-	assert.EqualValues(t, NewMap(), removeMap)
+	assert.EqualValues(t, NewMutableMap(), removeMap)
 }
 
 func TestMapPutEmpty(t *testing.T) {
-	m := NewMap()
+	m := NewMutableMap()
 	v := m.PutEmpty("k1")
 	assert.EqualValues(t, map[string]any{
 		"k1": nil,
@@ -83,7 +82,7 @@ func TestMapPutEmpty(t *testing.T) {
 }
 
 func TestMapPutEmptyMap(t *testing.T) {
-	m := NewMap()
+	m := NewMutableMap()
 	childMap := m.PutEmptyMap("k1")
 	assert.EqualValues(t, map[string]any{
 		"k1": map[string]any{},
@@ -104,7 +103,7 @@ func TestMapPutEmptyMap(t *testing.T) {
 }
 
 func TestMapPutEmptySlice(t *testing.T) {
-	m := NewMap()
+	m := NewMutableMap()
 	childSlice := m.PutEmptySlice("k")
 	assert.EqualValues(t, map[string]any{
 		"k": []any{},
@@ -127,7 +126,7 @@ func TestMapPutEmptySlice(t *testing.T) {
 }
 
 func TestMapPutEmptyBytes(t *testing.T) {
-	m := NewMap()
+	m := NewMutableMap()
 	b := m.PutEmptyBytes("k")
 	bv, ok := m.Get("k")
 	assert.True(t, ok)
@@ -159,7 +158,7 @@ func TestMapWithEmpty(t *testing.T) {
 			Value: otlpcommon.AnyValue{Value: nil},
 		},
 	}
-	sm := newMap(&origWithNil)
+	sm := NewMutableMapFromOrig(&origWithNil)
 	val, exist := sm.Get("test_key")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeStr, val.Type())
@@ -260,7 +259,7 @@ func TestMapWithEmpty(t *testing.T) {
 }
 
 func TestMapIterationNil(t *testing.T) {
-	NewMap().Range(func(k string, v Value) bool {
+	NewMutableMap().Range(func(k string, v MutableValue) bool {
 		// Fail if any element is returned
 		t.Fail()
 		return true
@@ -275,18 +274,18 @@ func TestMap_Range(t *testing.T) {
 		"k_bool":   true,
 		"k_empty":  nil,
 	}
-	am := NewMap()
+	am := NewMutableMap()
 	assert.NoError(t, am.FromRaw(rawMap))
 	assert.Equal(t, 5, am.Len())
 
 	calls := 0
-	am.Range(func(k string, v Value) bool {
+	am.Range(func(k string, v MutableValue) bool {
 		calls++
 		return false
 	})
 	assert.Equal(t, 1, calls)
 
-	am.Range(func(k string, v Value) bool {
+	am.Range(func(k string, v MutableValue) bool {
 		assert.Equal(t, rawMap[k], v.AsRaw())
 		delete(rawMap, k)
 		return true
@@ -295,7 +294,7 @@ func TestMap_Range(t *testing.T) {
 }
 
 func TestMap_FromRaw(t *testing.T) {
-	am := NewMap()
+	am := NewMutableMap()
 	assert.NoError(t, am.FromRaw(map[string]any{}))
 	assert.Equal(t, 0, am.Len())
 	am.PutEmpty("k")
@@ -347,58 +346,58 @@ func TestMap_FromRaw(t *testing.T) {
 }
 
 func TestMap_CopyTo(t *testing.T) {
-	dest := NewMap()
+	dest := NewMutableMap()
 	// Test CopyTo to empty
-	NewMap().CopyTo(dest)
+	NewMutableMap().CopyTo(dest)
 	assert.EqualValues(t, 0, dest.Len())
 
 	// Test CopyTo larger slice
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.EqualValues(t, Map(internal.GenerateTestMap()), dest)
+	GenerateTestMap().CopyTo(dest)
+	assert.EqualValues(t, GenerateTestMap(), dest)
 
 	// Test CopyTo same size slice
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.EqualValues(t, Map(internal.GenerateTestMap()), dest)
+	GenerateTestMap().CopyTo(dest)
+	assert.EqualValues(t, GenerateTestMap(), dest)
 
 	// Test CopyTo with an empty Value in the destination
-	(*dest.getOrig())[0].Value = otlpcommon.AnyValue{}
-	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.EqualValues(t, Map(internal.GenerateTestMap()), dest)
+	(*dest.orig)[0].Value = otlpcommon.AnyValue{}
+	GenerateTestMap().CopyTo(dest)
+	assert.EqualValues(t, GenerateTestMap(), dest)
 }
 
 func TestMap_EnsureCapacity_Zero(t *testing.T) {
-	am := NewMap()
+	am := NewMutableMap()
 	am.EnsureCapacity(0)
 	assert.Equal(t, 0, am.Len())
-	assert.Equal(t, 0, cap(*am.getOrig()))
+	assert.Equal(t, 0, cap(*am.orig))
 }
 
 func TestMap_EnsureCapacity(t *testing.T) {
-	am := NewMap()
+	am := NewMutableMap()
 	am.EnsureCapacity(5)
 	assert.Equal(t, 0, am.Len())
-	assert.Equal(t, 5, cap(*am.getOrig()))
+	assert.Equal(t, 5, cap(*am.orig))
 	am.EnsureCapacity(3)
 	assert.Equal(t, 0, am.Len())
-	assert.Equal(t, 5, cap(*am.getOrig()))
+	assert.Equal(t, 5, cap(*am.orig))
 	am.EnsureCapacity(8)
 	assert.Equal(t, 0, am.Len())
-	assert.Equal(t, 8, cap(*am.getOrig()))
+	assert.Equal(t, 8, cap(*am.orig))
 }
 
 func TestMap_Clear(t *testing.T) {
-	am := NewMap()
-	assert.Nil(t, *am.getOrig())
+	am := NewMutableMap()
+	assert.Nil(t, *am.orig)
 	am.Clear()
-	assert.Nil(t, *am.getOrig())
+	assert.Nil(t, *am.orig)
 	am.EnsureCapacity(5)
-	assert.NotNil(t, *am.getOrig())
+	assert.NotNil(t, *am.orig)
 	am.Clear()
-	assert.Nil(t, *am.getOrig())
+	assert.Nil(t, *am.orig)
 }
 
 func TestMap_RemoveIf(t *testing.T) {
-	am := NewMap()
+	am := NewMutableMap()
 	am.PutStr("k_string", "123")
 	am.PutInt("k_int", int64(123))
 	am.PutDouble("k_double", float64(1.23))
@@ -407,7 +406,7 @@ func TestMap_RemoveIf(t *testing.T) {
 
 	assert.Equal(t, 5, am.Len())
 
-	am.RemoveIf(func(key string, val Value) bool {
+	am.RemoveIf(func(key string, val MutableValue) bool {
 		return key == "k_int" || val.Type() == ValueTypeBool
 	})
 	assert.Equal(t, 3, am.Len())
@@ -423,38 +422,38 @@ func TestMap_RemoveIf(t *testing.T) {
 	assert.True(t, exists)
 }
 
-func generateTestEmptyMap(t *testing.T) Map {
-	m := NewMap()
+func generateTestEmptyMap(t *testing.T) MutableMap {
+	m := NewMutableMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": map[string]any(nil)}))
 	return m
 }
 
-func generateTestEmptySlice(t *testing.T) Map {
-	m := NewMap()
+func generateTestEmptySlice(t *testing.T) MutableMap {
+	m := NewMutableMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": []any(nil)}))
 	return m
 }
 
-func generateTestIntMap(t *testing.T) Map {
-	m := NewMap()
+func generateTestIntMap(t *testing.T) MutableMap {
+	m := NewMutableMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": 123}))
 	return m
 }
 
-func generateTestDoubleMap(t *testing.T) Map {
-	m := NewMap()
+func generateTestDoubleMap(t *testing.T) MutableMap {
+	m := NewMutableMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": 12.3}))
 	return m
 }
 
-func generateTestBoolMap(t *testing.T) Map {
-	m := NewMap()
+func generateTestBoolMap(t *testing.T) MutableMap {
+	m := NewMutableMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": true}))
 	return m
 }
 
-func generateTestBytesMap(t *testing.T) Map {
-	m := NewMap()
+func generateTestBytesMap(t *testing.T) MutableMap {
+	m := NewMutableMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": []byte{1, 2, 3, 4, 5}}))
 	return m
 }

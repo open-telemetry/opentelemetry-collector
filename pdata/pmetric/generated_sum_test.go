@@ -27,15 +27,15 @@ import (
 
 func TestSum_MoveTo(t *testing.T) {
 	ms := generateTestSum()
-	dest := NewSum()
+	dest := NewMutableSum()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewSum(), ms)
+	assert.Equal(t, NewMutableSum(), ms)
 	assert.Equal(t, generateTestSum(), dest)
 }
 
 func TestSum_CopyTo(t *testing.T) {
-	ms := NewSum()
-	orig := NewSum()
+	ms := NewMutableSum()
+	orig := NewMutableSum()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestSum()
@@ -44,7 +44,7 @@ func TestSum_CopyTo(t *testing.T) {
 }
 
 func TestSum_AggregationTemporality(t *testing.T) {
-	ms := NewSum()
+	ms := NewMutableSum()
 	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
 	testValAggregationTemporality := AggregationTemporality(otlpmetrics.AggregationTemporality(1))
 	ms.SetAggregationTemporality(testValAggregationTemporality)
@@ -52,27 +52,15 @@ func TestSum_AggregationTemporality(t *testing.T) {
 }
 
 func TestSum_IsMonotonic(t *testing.T) {
-	ms := NewSum()
+	ms := NewMutableSum()
 	assert.Equal(t, false, ms.IsMonotonic())
 	ms.SetIsMonotonic(true)
 	assert.Equal(t, true, ms.IsMonotonic())
 }
 
 func TestSum_DataPoints(t *testing.T) {
-	ms := NewSum()
-	assert.Equal(t, NewNumberDataPointSlice(), ms.DataPoints())
+	ms := NewMutableSum()
+	assert.Equal(t, NewMutableNumberDataPointSlice(), ms.DataPoints())
 	fillTestNumberDataPointSlice(ms.DataPoints())
 	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
-}
-
-func generateTestSum() Sum {
-	tv := NewSum()
-	fillTestSum(tv)
-	return tv
-}
-
-func fillTestSum(tv Sum) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	tv.orig.IsMonotonic = true
-	fillTestNumberDataPointSlice(newNumberDataPointSlice(&tv.orig.DataPoints))
 }

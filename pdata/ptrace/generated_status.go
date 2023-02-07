@@ -27,53 +27,86 @@ import (
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewStatus function to create new instances.
+// Must use NewMutableStatus function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Status struct {
+	commonStatus
+}
+
+type MutableStatus struct {
+	commonStatus
+	preventConversion struct{} // nolint:unused
+}
+
+type commonStatus struct {
 	orig *otlptrace.Status
 }
 
-func newStatus(orig *otlptrace.Status) Status {
-	return Status{orig}
+func newStatusFromOrig(orig *otlptrace.Status) Status {
+	return Status{commonStatus{orig}}
 }
 
-// NewStatus creates a new empty Status.
+func newMutableStatusFromOrig(orig *otlptrace.Status) MutableStatus {
+	return MutableStatus{commonStatus: commonStatus{orig}}
+}
+
+// NewMutableStatus creates a new empty Status.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewStatus() Status {
-	return newStatus(&otlptrace.Status{})
+func NewMutableStatus() MutableStatus {
+	return newMutableStatusFromOrig(&otlptrace.Status{})
+}
+
+// nolint:unused
+func (ms Status) asMutable() MutableStatus {
+	return MutableStatus{commonStatus: commonStatus{orig: ms.orig}}
+}
+
+func (ms MutableStatus) AsImmutable() Status {
+	return Status{commonStatus{orig: ms.orig}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Status) MoveTo(dest Status) {
+func (ms MutableStatus) MoveTo(dest MutableStatus) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlptrace.Status{}
 }
 
 // Code returns the code associated with this Status.
-func (ms Status) Code() StatusCode {
+func (ms commonStatus) Code() StatusCode {
 	return StatusCode(ms.orig.Code)
 }
 
 // SetCode replaces the code associated with this Status.
-func (ms Status) SetCode(v StatusCode) {
+func (ms MutableStatus) SetCode(v StatusCode) {
 	ms.orig.Code = otlptrace.Status_StatusCode(v)
 }
 
 // Message returns the message associated with this Status.
-func (ms Status) Message() string {
+func (ms commonStatus) Message() string {
 	return ms.orig.Message
 }
 
 // SetMessage replaces the message associated with this Status.
-func (ms Status) SetMessage(v string) {
+func (ms MutableStatus) SetMessage(v string) {
 	ms.orig.Message = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Status) CopyTo(dest Status) {
+func (ms commonStatus) CopyTo(dest MutableStatus) {
 	dest.SetCode(ms.Code())
 	dest.SetMessage(ms.Message())
+}
+
+func generateTestStatus() MutableStatus {
+	tv := NewMutableStatus()
+	fillTestStatus(tv)
+	return tv
+}
+
+func fillTestStatus(tv MutableStatus) {
+	tv.orig.Code = 1
+	tv.orig.Message = "cancelled"
 }

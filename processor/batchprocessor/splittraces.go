@@ -26,7 +26,7 @@ func splitTraces(size int, src ptrace.Traces) ptrace.Traces {
 	totalCopiedSpans := 0
 	dest := ptrace.NewTraces()
 
-	src.ResourceSpans().RemoveIf(func(srcRs ptrace.ResourceSpans) bool {
+	src.MutableResourceSpans().RemoveIf(func(srcRs ptrace.MutableResourceSpans) bool {
 		// If we are done skip everything else.
 		if totalCopiedSpans == size {
 			return false
@@ -36,13 +36,13 @@ func splitTraces(size int, src ptrace.Traces) ptrace.Traces {
 		srcRsSC := resourceSC(srcRs)
 		if (totalCopiedSpans + srcRsSC) <= size {
 			totalCopiedSpans += srcRsSC
-			srcRs.MoveTo(dest.ResourceSpans().AppendEmpty())
+			srcRs.MoveTo(dest.MutableResourceSpans().AppendEmpty())
 			return true
 		}
 
-		destRs := dest.ResourceSpans().AppendEmpty()
+		destRs := dest.MutableResourceSpans().AppendEmpty()
 		srcRs.Resource().CopyTo(destRs.Resource())
-		srcRs.ScopeSpans().RemoveIf(func(srcIls ptrace.ScopeSpans) bool {
+		srcRs.ScopeSpans().RemoveIf(func(srcIls ptrace.MutableScopeSpans) bool {
 			// If we are done skip everything else.
 			if totalCopiedSpans == size {
 				return false
@@ -58,7 +58,7 @@ func splitTraces(size int, src ptrace.Traces) ptrace.Traces {
 
 			destIls := destRs.ScopeSpans().AppendEmpty()
 			srcIls.Scope().CopyTo(destIls.Scope())
-			srcIls.Spans().RemoveIf(func(srcSpan ptrace.Span) bool {
+			srcIls.Spans().RemoveIf(func(srcSpan ptrace.MutableSpan) bool {
 				// If we are done skip everything else.
 				if totalCopiedSpans == size {
 					return false
@@ -76,7 +76,7 @@ func splitTraces(size int, src ptrace.Traces) ptrace.Traces {
 }
 
 // resourceSC calculates the total number of spans in the ptrace.ResourceSpans.
-func resourceSC(rs ptrace.ResourceSpans) (count int) {
+func resourceSC(rs ptrace.MutableResourceSpans) (count int) {
 	for k := 0; k < rs.ScopeSpans().Len(); k++ {
 		count += rs.ScopeSpans().At(k).Spans().Len()
 	}

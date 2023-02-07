@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
@@ -90,6 +91,6 @@ type rawLogsServer struct {
 
 func (s rawLogsServer) Export(ctx context.Context, request *otlpcollectorlog.ExportLogsServiceRequest) (*otlpcollectorlog.ExportLogsServiceResponse, error) {
 	otlp.MigrateLogs(request.ResourceLogs)
-	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request})
+	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request, state: internal.StateExclusive})
 	return rsp.orig, err
 }

@@ -27,7 +27,6 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -48,10 +47,10 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 
 	requestCount := 1000
 	spansPerRequest := 100
-	sentResourceSpans := ptrace.NewTraces().ResourceSpans()
+	sentResourceSpans := ptrace.NewTraces().MutableResourceSpans()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
-		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+		spans := td.MutableResourceSpans().At(0).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
@@ -93,7 +92,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	spansPerRequest := 150
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
-		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+		spans := td.MutableResourceSpans().At(0).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
@@ -320,11 +319,11 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
-	sentResourceMetrics := pmetric.NewMetrics().ResourceMetrics()
+	sentResourceMetrics := pmetric.NewMetrics().MutableResourceMetrics()
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetrics(metricsPerRequest)
-		metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+		metrics := md.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 		for metricIndex := 0; metricIndex < metricsPerRequest; metricIndex++ {
 			metrics.At(metricIndex).SetName(getTestMetricName(requestNum, metricIndex))
 		}
@@ -508,10 +507,10 @@ func getTestSpanName(requestNum, index int) string {
 	return fmt.Sprintf("test-span-%d-%d", requestNum, index)
 }
 
-func spansReceivedByName(tds []ptrace.Traces) map[string]ptrace.Span {
-	spansReceivedByName := map[string]ptrace.Span{}
+func spansReceivedByName(tds []ptrace.Traces) map[string]ptrace.MutableSpan {
+	spansReceivedByName := map[string]ptrace.MutableSpan{}
 	for i := range tds {
-		rss := tds[i].ResourceSpans()
+		rss := tds[i].MutableResourceSpans()
 		for i := 0; i < rss.Len(); i++ {
 			ilss := rss.At(i).ScopeSpans()
 			for j := 0; j < ilss.Len(); j++ {
@@ -526,10 +525,10 @@ func spansReceivedByName(tds []ptrace.Traces) map[string]ptrace.Span {
 	return spansReceivedByName
 }
 
-func metricsReceivedByName(mds []pmetric.Metrics) map[string]pmetric.Metric {
-	metricsReceivedByName := map[string]pmetric.Metric{}
+func metricsReceivedByName(mds []pmetric.Metrics) map[string]pmetric.MutableMetric {
+	metricsReceivedByName := map[string]pmetric.MutableMetric{}
 	for _, md := range mds {
-		rms := md.ResourceMetrics()
+		rms := md.MutableResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
 			ilms := rms.At(i).ScopeMetrics()
 			for j := 0; j < ilms.Len(); j++ {
@@ -598,12 +597,6 @@ type metricsSink struct {
 	metricsCount int
 }
 
-func (sme *metricsSink) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{
-		MutatesData: false,
-	}
-}
-
 func (sme *metricsSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
@@ -629,11 +622,11 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
-	sentResourceLogs := plog.NewLogs().ResourceLogs()
+	sentResourceLogs := plog.NewLogs().MutableResourceLogs()
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
-		logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+		logs := ld.MutableResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
 			logs.At(logIndex).SetSeverityText(getTestLogSeverityText(requestNum, logIndex))
 		}
@@ -796,11 +789,11 @@ func getTestLogSeverityText(requestNum, index int) string {
 	return fmt.Sprintf("test-log-int-%d-%d", requestNum, index)
 }
 
-func logsReceivedBySeverityText(lds []plog.Logs) map[string]plog.LogRecord {
-	logsReceivedBySeverityText := map[string]plog.LogRecord{}
+func logsReceivedBySeverityText(lds []plog.Logs) map[string]plog.MutableLogRecord {
+	logsReceivedBySeverityText := map[string]plog.MutableLogRecord{}
 	for i := range lds {
 		ld := lds[i]
-		rms := ld.ResourceLogs()
+		rms := ld.MutableResourceLogs()
 		for i := 0; i < rms.Len(); i++ {
 			ilms := rms.At(i).ScopeLogs()
 			for j := 0; j < ilms.Len(); j++ {

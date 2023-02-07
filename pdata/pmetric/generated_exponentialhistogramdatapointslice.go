@@ -28,27 +28,44 @@ import (
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewExponentialHistogramDataPointSlice function to create new instances.
+// Must use NewMutableExponentialHistogramDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExponentialHistogramDataPointSlice struct {
+	commonExponentialHistogramDataPointSlice
+}
+
+type MutableExponentialHistogramDataPointSlice struct {
+	commonExponentialHistogramDataPointSlice
+	preventConversion struct{} // nolint:unused
+}
+
+type commonExponentialHistogramDataPointSlice struct {
 	orig *[]*otlpmetrics.ExponentialHistogramDataPoint
 }
 
-func newExponentialHistogramDataPointSlice(orig *[]*otlpmetrics.ExponentialHistogramDataPoint) ExponentialHistogramDataPointSlice {
-	return ExponentialHistogramDataPointSlice{orig}
+func newExponentialHistogramDataPointSliceFromOrig(orig *[]*otlpmetrics.ExponentialHistogramDataPoint) ExponentialHistogramDataPointSlice {
+	return ExponentialHistogramDataPointSlice{commonExponentialHistogramDataPointSlice{orig}}
 }
 
-// NewExponentialHistogramDataPointSlice creates a ExponentialHistogramDataPointSlice with 0 elements.
+func newMutableExponentialHistogramDataPointSliceFromOrig(orig *[]*otlpmetrics.ExponentialHistogramDataPoint) MutableExponentialHistogramDataPointSlice {
+	return MutableExponentialHistogramDataPointSlice{commonExponentialHistogramDataPointSlice: commonExponentialHistogramDataPointSlice{orig}}
+}
+
+// NewMutableExponentialHistogramDataPointSlice creates a ExponentialHistogramDataPointSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
+func NewMutableExponentialHistogramDataPointSlice() MutableExponentialHistogramDataPointSlice {
 	orig := []*otlpmetrics.ExponentialHistogramDataPoint(nil)
-	return newExponentialHistogramDataPointSlice(&orig)
+	return newMutableExponentialHistogramDataPointSliceFromOrig(&orig)
+}
+
+func (es MutableExponentialHistogramDataPointSlice) AsImmutable() ExponentialHistogramDataPointSlice {
+	return ExponentialHistogramDataPointSlice{commonExponentialHistogramDataPointSlice{orig: es.orig}}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewExponentialHistogramDataPointSlice()".
-func (es ExponentialHistogramDataPointSlice) Len() int {
+// Returns "0" for a newly instance created with "NewMutableExponentialHistogramDataPointSlice()".
+func (es commonExponentialHistogramDataPointSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -61,7 +78,11 @@ func (es ExponentialHistogramDataPointSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ExponentialHistogramDataPointSlice) At(i int) ExponentialHistogramDataPoint {
-	return newExponentialHistogramDataPoint((*es.orig)[i])
+	return newExponentialHistogramDataPointFromOrig((*es.orig)[i])
+}
+
+func (es MutableExponentialHistogramDataPointSlice) At(i int) MutableExponentialHistogramDataPoint {
+	return newMutableExponentialHistogramDataPointFromOrig((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -70,13 +91,13 @@ func (es ExponentialHistogramDataPointSlice) At(i int) ExponentialHistogramDataP
 //
 // Here is how a new ExponentialHistogramDataPointSlice can be initialized:
 //
-//	es := NewExponentialHistogramDataPointSlice()
+//	es := NewMutableExponentialHistogramDataPointSlice()
 //	es.EnsureCapacity(4)
 //	for i := 0; i < 4; i++ {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ExponentialHistogramDataPointSlice) EnsureCapacity(newCap int) {
+func (es MutableExponentialHistogramDataPointSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -89,14 +110,14 @@ func (es ExponentialHistogramDataPointSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty ExponentialHistogramDataPoint.
 // It returns the newly added ExponentialHistogramDataPoint.
-func (es ExponentialHistogramDataPointSlice) AppendEmpty() ExponentialHistogramDataPoint {
+func (es MutableExponentialHistogramDataPointSlice) AppendEmpty() MutableExponentialHistogramDataPoint {
 	*es.orig = append(*es.orig, &otlpmetrics.ExponentialHistogramDataPoint{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ExponentialHistogramDataPointSlice) MoveAndAppendTo(dest ExponentialHistogramDataPointSlice) {
+func (es MutableExponentialHistogramDataPointSlice) MoveAndAppendTo(dest MutableExponentialHistogramDataPointSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -108,7 +129,7 @@ func (es ExponentialHistogramDataPointSlice) MoveAndAppendTo(dest ExponentialHis
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ExponentialHistogramDataPointSlice) RemoveIf(f func(ExponentialHistogramDataPoint) bool) {
+func (es MutableExponentialHistogramDataPointSlice) RemoveIf(f func(MutableExponentialHistogramDataPoint) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -127,13 +148,13 @@ func (es ExponentialHistogramDataPointSlice) RemoveIf(f func(ExponentialHistogra
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDataPointSlice) {
+func (es commonExponentialHistogramDataPointSlice) CopyTo(dest MutableExponentialHistogramDataPointSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newExponentialHistogramDataPoint((*es.orig)[i]).CopyTo(newExponentialHistogramDataPoint((*dest.orig)[i]))
+			newExponentialHistogramDataPointFromOrig((*es.orig)[i]).CopyTo(newMutableExponentialHistogramDataPointFromOrig((*dest.orig)[i]))
 		}
 		return
 	}
@@ -141,7 +162,7 @@ func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDat
 	wrappers := make([]*otlpmetrics.ExponentialHistogramDataPoint, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newExponentialHistogramDataPoint((*es.orig)[i]).CopyTo(newExponentialHistogramDataPoint(wrappers[i]))
+		newExponentialHistogramDataPointFromOrig((*es.orig)[i]).CopyTo(newMutableExponentialHistogramDataPointFromOrig(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -149,6 +170,20 @@ func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDat
 // Sort sorts the ExponentialHistogramDataPoint elements within ExponentialHistogramDataPointSlice given the
 // provided less function so that two instances of ExponentialHistogramDataPointSlice
 // can be compared.
-func (es ExponentialHistogramDataPointSlice) Sort(less func(a, b ExponentialHistogramDataPoint) bool) {
+func (es MutableExponentialHistogramDataPointSlice) Sort(less func(a, b MutableExponentialHistogramDataPoint) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func generateTestExponentialHistogramDataPointSlice() MutableExponentialHistogramDataPointSlice {
+	es := NewMutableExponentialHistogramDataPointSlice()
+	fillTestExponentialHistogramDataPointSlice(es)
+	return es
+}
+
+func fillTestExponentialHistogramDataPointSlice(es MutableExponentialHistogramDataPointSlice) {
+	*es.orig = make([]*otlpmetrics.ExponentialHistogramDataPoint, 7)
+	for i := 0; i < 7; i++ {
+		(*es.orig)[i] = &otlpmetrics.ExponentialHistogramDataPoint{}
+		fillTestExponentialHistogramDataPoint(newMutableExponentialHistogramDataPointFromOrig((*es.orig)[i]))
+	}
 }

@@ -273,7 +273,7 @@ func TestIssue_4221(t *testing.T) {
 	exp := startTracesExporter(t, "", svr.URL)
 
 	md := ptrace.NewTraces()
-	rms := md.ResourceSpans().AppendEmpty()
+	rms := md.MutableResourceSpans().AppendEmpty()
 	rms.Resource().Attributes().PutStr("service.name", "uop.stage-eu-1")
 	rms.Resource().Attributes().PutStr("outsystems.module.version", "903386")
 	ils := rms.ScopeSpans().AppendEmpty()

@@ -27,12 +27,12 @@ import (
 )
 
 func TestHistogramDataPointSlice(t *testing.T) {
-	es := NewHistogramDataPointSlice()
+	es := NewMutableHistogramDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newHistogramDataPointSlice(&[]*otlpmetrics.HistogramDataPoint{})
+	es = newMutableHistogramDataPointSliceFromOrig(&[]*otlpmetrics.HistogramDataPoint{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewHistogramDataPoint()
+	emptyVal := NewMutableHistogramDataPoint()
 	testVal := generateTestHistogramDataPoint()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -44,10 +44,10 @@ func TestHistogramDataPointSlice(t *testing.T) {
 }
 
 func TestHistogramDataPointSlice_CopyTo(t *testing.T) {
-	dest := NewHistogramDataPointSlice()
+	dest := NewMutableHistogramDataPointSlice()
 	// Test CopyTo to empty
-	NewHistogramDataPointSlice().CopyTo(dest)
-	assert.Equal(t, NewHistogramDataPointSlice(), dest)
+	NewMutableHistogramDataPointSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableHistogramDataPointSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestHistogramDataPointSlice().CopyTo(dest)
@@ -79,7 +79,7 @@ func TestHistogramDataPointSlice_EnsureCapacity(t *testing.T) {
 func TestHistogramDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestHistogramDataPointSlice()
-	dest := NewHistogramDataPointSlice()
+	dest := NewMutableHistogramDataPointSlice()
 	src := generateTestHistogramDataPointSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
@@ -103,8 +103,8 @@ func TestHistogramDataPointSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestHistogramDataPointSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewHistogramDataPointSlice()
-	emptySlice.RemoveIf(func(el HistogramDataPoint) bool {
+	emptySlice := NewMutableHistogramDataPointSlice()
+	emptySlice.RemoveIf(func(el MutableHistogramDataPoint) bool {
 		t.Fail()
 		return false
 	})
@@ -112,7 +112,7 @@ func TestHistogramDataPointSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestHistogramDataPointSlice()
 	pos := 0
-	filtered.RemoveIf(func(el HistogramDataPoint) bool {
+	filtered.RemoveIf(func(el MutableHistogramDataPoint) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -121,30 +121,16 @@ func TestHistogramDataPointSlice_RemoveIf(t *testing.T) {
 
 func TestHistogramDataPointSlice_Sort(t *testing.T) {
 	es := generateTestHistogramDataPointSlice()
-	es.Sort(func(a, b HistogramDataPoint) bool {
+	es.Sort(func(a, b MutableHistogramDataPoint) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b HistogramDataPoint) bool {
+	es.Sort(func(a, b MutableHistogramDataPoint) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
-	}
-}
-
-func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
-	es := NewHistogramDataPointSlice()
-	fillTestHistogramDataPointSlice(es)
-	return es
-}
-
-func fillTestHistogramDataPointSlice(es HistogramDataPointSlice) {
-	*es.orig = make([]*otlpmetrics.HistogramDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.HistogramDataPoint{}
-		fillTestHistogramDataPoint(newHistogramDataPoint((*es.orig)[i]))
 	}
 }

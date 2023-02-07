@@ -28,15 +28,15 @@ import (
 
 func TestResourceLogs_MoveTo(t *testing.T) {
 	ms := generateTestResourceLogs()
-	dest := NewResourceLogs()
+	dest := NewMutableResourceLogs()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewResourceLogs(), ms)
+	assert.Equal(t, NewMutableResourceLogs(), ms)
 	assert.Equal(t, generateTestResourceLogs(), dest)
 }
 
 func TestResourceLogs_CopyTo(t *testing.T) {
-	ms := NewResourceLogs()
-	orig := NewResourceLogs()
+	ms := NewMutableResourceLogs()
+	orig := NewMutableResourceLogs()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestResourceLogs()
@@ -45,33 +45,21 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 }
 
 func TestResourceLogs_Resource(t *testing.T) {
-	ms := NewResourceLogs()
-	internal.FillTestResource(internal.Resource(ms.Resource()))
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
+	ms := NewMutableResourceLogs()
+	internal.FillTestResource(internal.MutableResource(ms.Resource()))
+	assert.Equal(t, pcommon.MutableResource(internal.GenerateTestResource()), ms.Resource())
 }
 
 func TestResourceLogs_SchemaUrl(t *testing.T) {
-	ms := NewResourceLogs()
+	ms := NewMutableResourceLogs()
 	assert.Equal(t, "", ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
 }
 
 func TestResourceLogs_ScopeLogs(t *testing.T) {
-	ms := NewResourceLogs()
-	assert.Equal(t, NewScopeLogsSlice(), ms.ScopeLogs())
+	ms := NewMutableResourceLogs()
+	assert.Equal(t, NewMutableScopeLogsSlice(), ms.ScopeLogs())
 	fillTestScopeLogsSlice(ms.ScopeLogs())
 	assert.Equal(t, generateTestScopeLogsSlice(), ms.ScopeLogs())
-}
-
-func generateTestResourceLogs() ResourceLogs {
-	tv := NewResourceLogs()
-	fillTestResourceLogs(tv)
-	return tv
-}
-
-func fillTestResourceLogs(tv ResourceLogs) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeLogsSlice(newScopeLogsSlice(&tv.orig.ScopeLogs))
 }

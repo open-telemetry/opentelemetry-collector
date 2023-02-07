@@ -27,12 +27,12 @@ import (
 )
 
 func TestLogRecordSlice(t *testing.T) {
-	es := NewLogRecordSlice()
+	es := NewMutableLogRecordSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newLogRecordSlice(&[]*otlplogs.LogRecord{})
+	es = newMutableLogRecordSliceFromOrig(&[]*otlplogs.LogRecord{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewLogRecord()
+	emptyVal := NewMutableLogRecord()
 	testVal := generateTestLogRecord()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -44,10 +44,10 @@ func TestLogRecordSlice(t *testing.T) {
 }
 
 func TestLogRecordSlice_CopyTo(t *testing.T) {
-	dest := NewLogRecordSlice()
+	dest := NewMutableLogRecordSlice()
 	// Test CopyTo to empty
-	NewLogRecordSlice().CopyTo(dest)
-	assert.Equal(t, NewLogRecordSlice(), dest)
+	NewMutableLogRecordSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableLogRecordSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestLogRecordSlice().CopyTo(dest)
@@ -79,7 +79,7 @@ func TestLogRecordSlice_EnsureCapacity(t *testing.T) {
 func TestLogRecordSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestLogRecordSlice()
-	dest := NewLogRecordSlice()
+	dest := NewMutableLogRecordSlice()
 	src := generateTestLogRecordSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestLogRecordSlice(), dest)
@@ -103,8 +103,8 @@ func TestLogRecordSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestLogRecordSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewLogRecordSlice()
-	emptySlice.RemoveIf(func(el LogRecord) bool {
+	emptySlice := NewMutableLogRecordSlice()
+	emptySlice.RemoveIf(func(el MutableLogRecord) bool {
 		t.Fail()
 		return false
 	})
@@ -112,7 +112,7 @@ func TestLogRecordSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestLogRecordSlice()
 	pos := 0
-	filtered.RemoveIf(func(el LogRecord) bool {
+	filtered.RemoveIf(func(el MutableLogRecord) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -121,30 +121,16 @@ func TestLogRecordSlice_RemoveIf(t *testing.T) {
 
 func TestLogRecordSlice_Sort(t *testing.T) {
 	es := generateTestLogRecordSlice()
-	es.Sort(func(a, b LogRecord) bool {
+	es.Sort(func(a, b MutableLogRecord) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b LogRecord) bool {
+	es.Sort(func(a, b MutableLogRecord) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
-	}
-}
-
-func generateTestLogRecordSlice() LogRecordSlice {
-	es := NewLogRecordSlice()
-	fillTestLogRecordSlice(es)
-	return es
-}
-
-func fillTestLogRecordSlice(es LogRecordSlice) {
-	*es.orig = make([]*otlplogs.LogRecord, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlplogs.LogRecord{}
-		fillTestLogRecord(newLogRecord((*es.orig)[i]))
 	}
 }

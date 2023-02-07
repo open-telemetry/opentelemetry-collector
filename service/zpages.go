@@ -96,7 +96,6 @@ type zpagesPipeline interface {
 	receiverIDs() []string
 	processorIDs() []string
 	exporterIDs() []string
-	mutatesData() bool
 }
 
 func handleZPages[V zpagesPipeline](w http.ResponseWriter, r *http.Request, pipes map[component.ID]V) {
@@ -112,12 +111,11 @@ func handleZPages[V zpagesPipeline](w http.ResponseWriter, r *http.Request, pipe
 	sumData.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(pipes))
 	for c, p := range pipes {
 		sumData.Rows = append(sumData.Rows, zpages.SummaryPipelinesTableRowData{
-			FullName:    c.String(),
-			InputType:   string(c.Type()),
-			MutatesData: p.mutatesData(),
-			Receivers:   p.receiverIDs(),
-			Processors:  p.processorIDs(),
-			Exporters:   p.exporterIDs(),
+			FullName:   c.String(),
+			InputType:  string(c.Type()),
+			Receivers:  p.receiverIDs(),
+			Processors: p.processorIDs(),
+			Exporters:  p.exporterIDs(),
 		})
 	}
 	sort.Slice(sumData.Rows, func(i, j int) bool {

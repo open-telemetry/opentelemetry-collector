@@ -33,7 +33,7 @@ func TestProtoLogsUnmarshalerError(t *testing.T) {
 func TestProtoSizer(t *testing.T) {
 	marshaler := &ProtoMarshaler{}
 	ld := NewLogs()
-	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText("error")
+	ld.MutableResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText("error")
 
 	size := marshaler.LogsSize(ld)
 
@@ -79,7 +79,7 @@ func generateBenchmarkLogs(logsCount int) Logs {
 	endTime := pcommon.NewTimestampFromTime(time.Now())
 
 	md := NewLogs()
-	ilm := md.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+	ilm := md.MutableResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 	ilm.LogRecords().EnsureCapacity(logsCount)
 	for i := 0; i < logsCount; i++ {
 		im := ilm.LogRecords().AppendEmpty()

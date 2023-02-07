@@ -27,8 +27,8 @@ var (
 
 func GenerateLogs(count int) plog.Logs {
 	ld := plog.NewLogs()
-	initResource(ld.ResourceLogs().AppendEmpty().Resource())
-	logs := ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords()
+	initResource(ld.MutableResourceLogs().AppendEmpty().Resource())
+	logs := ld.MutableResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords()
 	logs.EnsureCapacity(count)
 	for i := 0; i < count; i++ {
 		switch i % 2 {
@@ -41,7 +41,7 @@ func GenerateLogs(count int) plog.Logs {
 	return ld
 }
 
-func fillLogOne(log plog.LogRecord) {
+func fillLogOne(log plog.MutableLogRecord) {
 	log.SetTimestamp(logTimestamp)
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberInfo)
@@ -56,7 +56,7 @@ func fillLogOne(log plog.LogRecord) {
 	log.Body().SetStr("This is a log message")
 }
 
-func fillLogTwo(log plog.LogRecord) {
+func fillLogTwo(log plog.MutableLogRecord) {
 	log.SetTimestamp(logTimestamp)
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberInfo)

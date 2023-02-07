@@ -25,15 +25,15 @@ import (
 
 func TestSummaryDataPointValueAtQuantile_MoveTo(t *testing.T) {
 	ms := generateTestSummaryDataPointValueAtQuantile()
-	dest := NewSummaryDataPointValueAtQuantile()
+	dest := NewMutableSummaryDataPointValueAtQuantile()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewSummaryDataPointValueAtQuantile(), ms)
+	assert.Equal(t, NewMutableSummaryDataPointValueAtQuantile(), ms)
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantile(), dest)
 }
 
 func TestSummaryDataPointValueAtQuantile_CopyTo(t *testing.T) {
-	ms := NewSummaryDataPointValueAtQuantile()
-	orig := NewSummaryDataPointValueAtQuantile()
+	ms := NewMutableSummaryDataPointValueAtQuantile()
+	orig := NewMutableSummaryDataPointValueAtQuantile()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestSummaryDataPointValueAtQuantile()
@@ -42,26 +42,15 @@ func TestSummaryDataPointValueAtQuantile_CopyTo(t *testing.T) {
 }
 
 func TestSummaryDataPointValueAtQuantile_Quantile(t *testing.T) {
-	ms := NewSummaryDataPointValueAtQuantile()
+	ms := NewMutableSummaryDataPointValueAtQuantile()
 	assert.Equal(t, float64(0.0), ms.Quantile())
 	ms.SetQuantile(float64(17.13))
 	assert.Equal(t, float64(17.13), ms.Quantile())
 }
 
 func TestSummaryDataPointValueAtQuantile_Value(t *testing.T) {
-	ms := NewSummaryDataPointValueAtQuantile()
+	ms := NewMutableSummaryDataPointValueAtQuantile()
 	assert.Equal(t, float64(0.0), ms.Value())
 	ms.SetValue(float64(17.13))
 	assert.Equal(t, float64(17.13), ms.Value())
-}
-
-func generateTestSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
-	tv := NewSummaryDataPointValueAtQuantile()
-	fillTestSummaryDataPointValueAtQuantile(tv)
-	return tv
-}
-
-func fillTestSummaryDataPointValueAtQuantile(tv SummaryDataPointValueAtQuantile) {
-	tv.orig.Quantile = float64(17.13)
-	tv.orig.Value = float64(17.13)
 }

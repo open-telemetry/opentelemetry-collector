@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
@@ -91,6 +92,6 @@ type rawTracesServer struct {
 
 func (s rawTracesServer) Export(ctx context.Context, request *otlpcollectortrace.ExportTraceServiceRequest) (*otlpcollectortrace.ExportTraceServiceResponse, error) {
 	otlp.MigrateTraces(request.ResourceSpans)
-	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request})
+	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request, state: internal.StateExclusive})
 	return rsp.orig, err
 }

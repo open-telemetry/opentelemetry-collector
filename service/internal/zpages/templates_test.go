@@ -61,12 +61,11 @@ func TestNoCrash(t *testing.T) {
 	assert.NotPanics(t, func() {
 		WriteHTMLPipelinesSummaryTable(buf, SummaryPipelinesTableData{
 			Rows: []SummaryPipelinesTableRowData{{
-				FullName:    "test",
-				InputType:   "metrics",
-				MutatesData: false,
-				Receivers:   []string{"oc"},
-				Processors:  []string{"nop"},
-				Exporters:   []string{"oc"},
+				FullName:   "test",
+				InputType:  "metrics",
+				Receivers:  []string{"oc"},
+				Processors: []string{"nop"},
+				Exporters:  []string{"oc"},
 			}},
 		})
 	})

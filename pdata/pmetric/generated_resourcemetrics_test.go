@@ -28,15 +28,15 @@ import (
 
 func TestResourceMetrics_MoveTo(t *testing.T) {
 	ms := generateTestResourceMetrics()
-	dest := NewResourceMetrics()
+	dest := NewMutableResourceMetrics()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewResourceMetrics(), ms)
+	assert.Equal(t, NewMutableResourceMetrics(), ms)
 	assert.Equal(t, generateTestResourceMetrics(), dest)
 }
 
 func TestResourceMetrics_CopyTo(t *testing.T) {
-	ms := NewResourceMetrics()
-	orig := NewResourceMetrics()
+	ms := NewMutableResourceMetrics()
+	orig := NewMutableResourceMetrics()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestResourceMetrics()
@@ -45,33 +45,21 @@ func TestResourceMetrics_CopyTo(t *testing.T) {
 }
 
 func TestResourceMetrics_Resource(t *testing.T) {
-	ms := NewResourceMetrics()
-	internal.FillTestResource(internal.Resource(ms.Resource()))
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
+	ms := NewMutableResourceMetrics()
+	internal.FillTestResource(internal.MutableResource(ms.Resource()))
+	assert.Equal(t, pcommon.MutableResource(internal.GenerateTestResource()), ms.Resource())
 }
 
 func TestResourceMetrics_SchemaUrl(t *testing.T) {
-	ms := NewResourceMetrics()
+	ms := NewMutableResourceMetrics()
 	assert.Equal(t, "", ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
 }
 
 func TestResourceMetrics_ScopeMetrics(t *testing.T) {
-	ms := NewResourceMetrics()
-	assert.Equal(t, NewScopeMetricsSlice(), ms.ScopeMetrics())
+	ms := NewMutableResourceMetrics()
+	assert.Equal(t, NewMutableScopeMetricsSlice(), ms.ScopeMetrics())
 	fillTestScopeMetricsSlice(ms.ScopeMetrics())
 	assert.Equal(t, generateTestScopeMetricsSlice(), ms.ScopeMetrics())
-}
-
-func generateTestResourceMetrics() ResourceMetrics {
-	tv := NewResourceMetrics()
-	fillTestResourceMetrics(tv)
-	return tv
-}
-
-func fillTestResourceMetrics(tv ResourceMetrics) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeMetricsSlice(newScopeMetricsSlice(&tv.orig.ScopeMetrics))
 }

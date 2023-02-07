@@ -23,14 +23,13 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
 func TestSpanCount(t *testing.T) {
 	traces := NewTraces()
 	assert.EqualValues(t, 0, traces.SpanCount())
 
-	rs := traces.ResourceSpans().AppendEmpty()
+	rs := traces.MutableResourceSpans().AppendEmpty()
 	assert.EqualValues(t, 0, traces.SpanCount())
 
 	ils := rs.ScopeSpans().AppendEmpty()
@@ -39,7 +38,7 @@ func TestSpanCount(t *testing.T) {
 	ils.Spans().AppendEmpty()
 	assert.EqualValues(t, 1, traces.SpanCount())
 
-	rms := traces.ResourceSpans()
+	rms := traces.MutableResourceSpans()
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeSpans().AppendEmpty()
 	ilss := rms.AppendEmpty().ScopeSpans().AppendEmpty().Spans()
@@ -51,27 +50,14 @@ func TestSpanCount(t *testing.T) {
 }
 
 func TestSpanCountWithEmpty(t *testing.T) {
-	assert.EqualValues(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
-		ResourceSpans: []*otlptrace.ResourceSpans{{}},
-	}).SpanCount())
-	assert.EqualValues(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
-		ResourceSpans: []*otlptrace.ResourceSpans{
-			{
-				ScopeSpans: []*otlptrace.ScopeSpans{{}},
-			},
-		},
-	}).SpanCount())
-	assert.EqualValues(t, 1, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
-		ResourceSpans: []*otlptrace.ResourceSpans{
-			{
-				ScopeSpans: []*otlptrace.ScopeSpans{
-					{
-						Spans: []*otlptrace.Span{{}},
-					},
-				},
-			},
-		},
-	}).SpanCount())
+	td := NewTraces()
+	assert.EqualValues(t, 0, td.SpanCount())
+	rs := td.MutableResourceSpans().AppendEmpty()
+	assert.EqualValues(t, 0, td.SpanCount())
+	ss := rs.ScopeSpans().AppendEmpty()
+	assert.EqualValues(t, 0, td.SpanCount())
+	ss.Spans().AppendEmpty()
+	assert.EqualValues(t, 1, td.SpanCount())
 }
 
 func TestToFromOtlp(t *testing.T) {
@@ -90,7 +76,7 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 
 	// Generate ResourceSpans as pdata struct.
 	traces := NewTraces()
-	fillTestResourceSpansSlice(traces.ResourceSpans())
+	fillTestResourceSpansSlice(traces.MutableResourceSpans())
 
 	// Marshal its underlying ProtoBuf to wire.
 	wire1, err := gogoproto.Marshal(traces.getOrig())
@@ -119,7 +105,7 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 
 func TestTracesCopyTo(t *testing.T) {
 	traces := NewTraces()
-	fillTestResourceSpansSlice(traces.ResourceSpans())
+	fillTestResourceSpansSlice(traces.MutableResourceSpans())
 	tracesCopy := NewTraces()
 	traces.CopyTo(tracesCopy)
 	assert.EqualValues(t, traces, tracesCopy)

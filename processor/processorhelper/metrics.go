@@ -69,7 +69,7 @@ func NewMetricsProcessor(
 			return err
 		}
 		return nextConsumer.ConsumeMetrics(ctx, md)
-	}, bs.consumerOptions...)
+	})
 	if err != nil {
 		return nil, err
 	}

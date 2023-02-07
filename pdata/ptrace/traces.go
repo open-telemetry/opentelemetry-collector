@@ -24,21 +24,28 @@ import (
 type Traces internal.Traces
 
 func newTraces(orig *otlpcollectortrace.ExportTraceServiceRequest) Traces {
-	return Traces(internal.NewTraces(orig))
+	return Traces(internal.NewTraces(orig, internal.StateExclusive))
 }
 
 func (ms Traces) getOrig() *otlpcollectortrace.ExportTraceServiceRequest {
-	return internal.GetOrigTraces(internal.Traces(ms))
+	return internal.GetTracesOrig(internal.Traces(ms))
 }
 
 // NewTraces creates a new Traces struct.
 func NewTraces() Traces {
-	return newTraces(&otlpcollectortrace.ExportTraceServiceRequest{})
+	orig := &otlpcollectortrace.ExportTraceServiceRequest{}
+	return Traces(internal.NewTraces(orig, internal.StateExclusive))
+}
+
+// AsShared returns the same Traces instance that is marked as shared.
+// It guarantees that the underlying data structure will not be modified in the downstream processing.
+func (ms Traces) AsShared() Traces {
+	return Traces(internal.NewTraces(ms.getOrig(), internal.StateShared))
 }
 
 // CopyTo copies the Traces instance overriding the destination.
 func (ms Traces) CopyTo(dest Traces) {
-	ms.ResourceSpans().CopyTo(dest.ResourceSpans())
+	ms.ResourceSpans().CopyTo(dest.MutableResourceSpans())
 }
 
 // SpanCount calculates the total number of spans.
@@ -57,5 +64,19 @@ func (ms Traces) SpanCount() int {
 
 // ResourceSpans returns the ResourceSpansSlice associated with this Metrics.
 func (ms Traces) ResourceSpans() ResourceSpansSlice {
-	return newResourceSpansSlice(&ms.getOrig().ResourceSpans)
+	return newResourceSpansSliceFromOrig(&ms.getOrig().ResourceSpans)
+}
+
+// MutableResourceSpans returns the MutableResourceSpansSlice associated with this Spans object.
+// This method should be called at once per ConsumeSpans call if the slice has to be changed,
+// otherwise use ResourceSpans method.
+func (ms Traces) MutableResourceSpans() MutableResourceSpansSlice {
+	if internal.GetTracesState(internal.Traces(ms)) == internal.StateShared {
+		rms := NewMutableResourceSpansSlice()
+		ms.ResourceSpans().CopyTo(rms)
+		internal.ResetStateTraces(internal.Traces(ms), internal.StateExclusive)
+		ms.getOrig().ResourceSpans = *rms.orig
+		return rms
+	}
+	return newMutableResourceSpansSliceFromOrig(&ms.getOrig().ResourceSpans)
 }

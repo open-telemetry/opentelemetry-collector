@@ -25,15 +25,15 @@ import (
 
 func TestSummary_MoveTo(t *testing.T) {
 	ms := generateTestSummary()
-	dest := NewSummary()
+	dest := NewMutableSummary()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewSummary(), ms)
+	assert.Equal(t, NewMutableSummary(), ms)
 	assert.Equal(t, generateTestSummary(), dest)
 }
 
 func TestSummary_CopyTo(t *testing.T) {
-	ms := NewSummary()
-	orig := NewSummary()
+	ms := NewMutableSummary()
+	orig := NewMutableSummary()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestSummary()
@@ -42,18 +42,8 @@ func TestSummary_CopyTo(t *testing.T) {
 }
 
 func TestSummary_DataPoints(t *testing.T) {
-	ms := NewSummary()
-	assert.Equal(t, NewSummaryDataPointSlice(), ms.DataPoints())
+	ms := NewMutableSummary()
+	assert.Equal(t, NewMutableSummaryDataPointSlice(), ms.DataPoints())
 	fillTestSummaryDataPointSlice(ms.DataPoints())
 	assert.Equal(t, generateTestSummaryDataPointSlice(), ms.DataPoints())
-}
-
-func generateTestSummary() Summary {
-	tv := NewSummary()
-	fillTestSummary(tv)
-	return tv
-}
-
-func fillTestSummary(tv Summary) {
-	fillTestSummaryDataPointSlice(newSummaryDataPointSlice(&tv.orig.DataPoints))
 }

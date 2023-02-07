@@ -28,27 +28,44 @@ import (
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewSpanSlice function to create new instances.
+// Must use NewMutableSpanSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanSlice struct {
+	commonSpanSlice
+}
+
+type MutableSpanSlice struct {
+	commonSpanSlice
+	preventConversion struct{} // nolint:unused
+}
+
+type commonSpanSlice struct {
 	orig *[]*otlptrace.Span
 }
 
-func newSpanSlice(orig *[]*otlptrace.Span) SpanSlice {
-	return SpanSlice{orig}
+func newSpanSliceFromOrig(orig *[]*otlptrace.Span) SpanSlice {
+	return SpanSlice{commonSpanSlice{orig}}
 }
 
-// NewSpanSlice creates a SpanSlice with 0 elements.
+func newMutableSpanSliceFromOrig(orig *[]*otlptrace.Span) MutableSpanSlice {
+	return MutableSpanSlice{commonSpanSlice: commonSpanSlice{orig}}
+}
+
+// NewMutableSpanSlice creates a SpanSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewSpanSlice() SpanSlice {
+func NewMutableSpanSlice() MutableSpanSlice {
 	orig := []*otlptrace.Span(nil)
-	return newSpanSlice(&orig)
+	return newMutableSpanSliceFromOrig(&orig)
+}
+
+func (es MutableSpanSlice) AsImmutable() SpanSlice {
+	return SpanSlice{commonSpanSlice{orig: es.orig}}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewSpanSlice()".
-func (es SpanSlice) Len() int {
+// Returns "0" for a newly instance created with "NewMutableSpanSlice()".
+func (es commonSpanSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -61,7 +78,11 @@ func (es SpanSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es SpanSlice) At(i int) Span {
-	return newSpan((*es.orig)[i])
+	return newSpanFromOrig((*es.orig)[i])
+}
+
+func (es MutableSpanSlice) At(i int) MutableSpan {
+	return newMutableSpanFromOrig((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -70,13 +91,13 @@ func (es SpanSlice) At(i int) Span {
 //
 // Here is how a new SpanSlice can be initialized:
 //
-//	es := NewSpanSlice()
+//	es := NewMutableSpanSlice()
 //	es.EnsureCapacity(4)
 //	for i := 0; i < 4; i++ {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es SpanSlice) EnsureCapacity(newCap int) {
+func (es MutableSpanSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -89,14 +110,14 @@ func (es SpanSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty Span.
 // It returns the newly added Span.
-func (es SpanSlice) AppendEmpty() Span {
+func (es MutableSpanSlice) AppendEmpty() MutableSpan {
 	*es.orig = append(*es.orig, &otlptrace.Span{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es SpanSlice) MoveAndAppendTo(dest SpanSlice) {
+func (es MutableSpanSlice) MoveAndAppendTo(dest MutableSpanSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -108,7 +129,7 @@ func (es SpanSlice) MoveAndAppendTo(dest SpanSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es SpanSlice) RemoveIf(f func(Span) bool) {
+func (es MutableSpanSlice) RemoveIf(f func(MutableSpan) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -127,13 +148,13 @@ func (es SpanSlice) RemoveIf(f func(Span) bool) {
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es SpanSlice) CopyTo(dest SpanSlice) {
+func (es commonSpanSlice) CopyTo(dest MutableSpanSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newSpan((*es.orig)[i]).CopyTo(newSpan((*dest.orig)[i]))
+			newSpanFromOrig((*es.orig)[i]).CopyTo(newMutableSpanFromOrig((*dest.orig)[i]))
 		}
 		return
 	}
@@ -141,7 +162,7 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 	wrappers := make([]*otlptrace.Span, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newSpan((*es.orig)[i]).CopyTo(newSpan(wrappers[i]))
+		newSpanFromOrig((*es.orig)[i]).CopyTo(newMutableSpanFromOrig(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -149,6 +170,20 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 // Sort sorts the Span elements within SpanSlice given the
 // provided less function so that two instances of SpanSlice
 // can be compared.
-func (es SpanSlice) Sort(less func(a, b Span) bool) {
+func (es MutableSpanSlice) Sort(less func(a, b MutableSpan) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func generateTestSpanSlice() MutableSpanSlice {
+	es := NewMutableSpanSlice()
+	fillTestSpanSlice(es)
+	return es
+}
+
+func fillTestSpanSlice(es MutableSpanSlice) {
+	*es.orig = make([]*otlptrace.Span, 7)
+	for i := 0; i < 7; i++ {
+		(*es.orig)[i] = &otlptrace.Span{}
+		fillTestSpan(newMutableSpanFromOrig((*es.orig)[i]))
+	}
 }

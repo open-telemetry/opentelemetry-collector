@@ -27,12 +27,12 @@ import (
 )
 
 func TestSpanLinkSlice(t *testing.T) {
-	es := NewSpanLinkSlice()
+	es := NewMutableSpanLinkSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSpanLinkSlice(&[]*otlptrace.Span_Link{})
+	es = newMutableSpanLinkSliceFromOrig(&[]*otlptrace.Span_Link{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewSpanLink()
+	emptyVal := NewMutableSpanLink()
 	testVal := generateTestSpanLink()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -44,10 +44,10 @@ func TestSpanLinkSlice(t *testing.T) {
 }
 
 func TestSpanLinkSlice_CopyTo(t *testing.T) {
-	dest := NewSpanLinkSlice()
+	dest := NewMutableSpanLinkSlice()
 	// Test CopyTo to empty
-	NewSpanLinkSlice().CopyTo(dest)
-	assert.Equal(t, NewSpanLinkSlice(), dest)
+	NewMutableSpanLinkSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableSpanLinkSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestSpanLinkSlice().CopyTo(dest)
@@ -79,7 +79,7 @@ func TestSpanLinkSlice_EnsureCapacity(t *testing.T) {
 func TestSpanLinkSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestSpanLinkSlice()
-	dest := NewSpanLinkSlice()
+	dest := NewMutableSpanLinkSlice()
 	src := generateTestSpanLinkSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestSpanLinkSlice(), dest)
@@ -103,8 +103,8 @@ func TestSpanLinkSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestSpanLinkSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewSpanLinkSlice()
-	emptySlice.RemoveIf(func(el SpanLink) bool {
+	emptySlice := NewMutableSpanLinkSlice()
+	emptySlice.RemoveIf(func(el MutableSpanLink) bool {
 		t.Fail()
 		return false
 	})
@@ -112,7 +112,7 @@ func TestSpanLinkSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestSpanLinkSlice()
 	pos := 0
-	filtered.RemoveIf(func(el SpanLink) bool {
+	filtered.RemoveIf(func(el MutableSpanLink) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -121,30 +121,16 @@ func TestSpanLinkSlice_RemoveIf(t *testing.T) {
 
 func TestSpanLinkSlice_Sort(t *testing.T) {
 	es := generateTestSpanLinkSlice()
-	es.Sort(func(a, b SpanLink) bool {
+	es.Sort(func(a, b MutableSpanLink) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b SpanLink) bool {
+	es.Sort(func(a, b MutableSpanLink) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
-	}
-}
-
-func generateTestSpanLinkSlice() SpanLinkSlice {
-	es := NewSpanLinkSlice()
-	fillTestSpanLinkSlice(es)
-	return es
-}
-
-func fillTestSpanLinkSlice(es SpanLinkSlice) {
-	*es.orig = make([]*otlptrace.Span_Link, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlptrace.Span_Link{}
-		fillTestSpanLink(newSpanLink((*es.orig)[i]))
 	}
 }

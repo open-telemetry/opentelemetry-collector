@@ -28,54 +28,97 @@ import (
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewResourceLogs function to create new instances.
+// Must use NewMutableResourceLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceLogs struct {
+	commonResourceLogs
+}
+
+type MutableResourceLogs struct {
+	commonResourceLogs
+	preventConversion struct{} // nolint:unused
+}
+
+type commonResourceLogs struct {
 	orig *otlplogs.ResourceLogs
 }
 
-func newResourceLogs(orig *otlplogs.ResourceLogs) ResourceLogs {
-	return ResourceLogs{orig}
+func newResourceLogsFromOrig(orig *otlplogs.ResourceLogs) ResourceLogs {
+	return ResourceLogs{commonResourceLogs{orig}}
 }
 
-// NewResourceLogs creates a new empty ResourceLogs.
+func newMutableResourceLogsFromOrig(orig *otlplogs.ResourceLogs) MutableResourceLogs {
+	return MutableResourceLogs{commonResourceLogs: commonResourceLogs{orig}}
+}
+
+// NewMutableResourceLogs creates a new empty ResourceLogs.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewResourceLogs() ResourceLogs {
-	return newResourceLogs(&otlplogs.ResourceLogs{})
+func NewMutableResourceLogs() MutableResourceLogs {
+	return newMutableResourceLogsFromOrig(&otlplogs.ResourceLogs{})
+}
+
+// nolint:unused
+func (ms ResourceLogs) asMutable() MutableResourceLogs {
+	return MutableResourceLogs{commonResourceLogs: commonResourceLogs{orig: ms.orig}}
+}
+
+func (ms MutableResourceLogs) AsImmutable() ResourceLogs {
+	return ResourceLogs{commonResourceLogs{orig: ms.orig}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
+func (ms MutableResourceLogs) MoveTo(dest MutableResourceLogs) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlplogs.ResourceLogs{}
 }
 
 // Resource returns the resource associated with this ResourceLogs.
 func (ms ResourceLogs) Resource() pcommon.Resource {
-	return pcommon.Resource(internal.NewResource(&ms.orig.Resource))
+	return internal.NewResourceFromOrig(&ms.orig.Resource)
+}
+
+// Resource returns the resource associated with this ResourceLogs.
+func (ms MutableResourceLogs) Resource() pcommon.MutableResource {
+	return internal.NewMutableResourceFromOrig(&ms.orig.Resource)
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceLogs.
-func (ms ResourceLogs) SchemaUrl() string {
+func (ms commonResourceLogs) SchemaUrl() string {
 	return ms.orig.SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ResourceLogs.
-func (ms ResourceLogs) SetSchemaUrl(v string) {
+func (ms MutableResourceLogs) SetSchemaUrl(v string) {
 	ms.orig.SchemaUrl = v
 }
 
 // ScopeLogs returns the ScopeLogs associated with this ResourceLogs.
 func (ms ResourceLogs) ScopeLogs() ScopeLogsSlice {
-	return newScopeLogsSlice(&ms.orig.ScopeLogs)
+	return newScopeLogsSliceFromOrig(&ms.orig.ScopeLogs)
+}
+
+func (ms MutableResourceLogs) ScopeLogs() MutableScopeLogsSlice {
+	return newMutableScopeLogsSliceFromOrig(&ms.orig.ScopeLogs)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
-	ms.Resource().CopyTo(dest.Resource())
+func (ms commonResourceLogs) CopyTo(dest MutableResourceLogs) {
+	ResourceLogs{ms}.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
-	ms.ScopeLogs().CopyTo(dest.ScopeLogs())
+	ResourceLogs{ms}.ScopeLogs().CopyTo(dest.ScopeLogs())
+}
+
+func generateTestResourceLogs() MutableResourceLogs {
+	tv := NewMutableResourceLogs()
+	fillTestResourceLogs(tv)
+	return tv
+}
+
+func fillTestResourceLogs(tv MutableResourceLogs) {
+	internal.FillTestResource(internal.NewMutableResourceFromOrig(&tv.orig.Resource))
+	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	fillTestScopeLogsSlice(newMutableScopeLogsSliceFromOrig(&tv.orig.ScopeLogs))
 }

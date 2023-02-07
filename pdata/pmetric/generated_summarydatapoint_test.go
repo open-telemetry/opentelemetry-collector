@@ -28,15 +28,15 @@ import (
 
 func TestSummaryDataPoint_MoveTo(t *testing.T) {
 	ms := generateTestSummaryDataPoint()
-	dest := NewSummaryDataPoint()
+	dest := NewMutableSummaryDataPoint()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewSummaryDataPoint(), ms)
+	assert.Equal(t, NewMutableSummaryDataPoint(), ms)
 	assert.Equal(t, generateTestSummaryDataPoint(), dest)
 }
 
 func TestSummaryDataPoint_CopyTo(t *testing.T) {
-	ms := NewSummaryDataPoint()
-	orig := NewSummaryDataPoint()
+	ms := NewMutableSummaryDataPoint()
+	orig := NewMutableSummaryDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestSummaryDataPoint()
@@ -45,14 +45,14 @@ func TestSummaryDataPoint_CopyTo(t *testing.T) {
 }
 
 func TestSummaryDataPoint_Attributes(t *testing.T) {
-	ms := NewSummaryDataPoint()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	ms := NewMutableSummaryDataPoint()
+	assert.Equal(t, pcommon.NewMutableMap(), ms.Attributes())
+	internal.FillTestMap(internal.MutableMap(ms.Attributes()))
+	assert.Equal(t, pcommon.MutableMap(internal.GenerateTestMap()), ms.Attributes())
 }
 
 func TestSummaryDataPoint_StartTimestamp(t *testing.T) {
-	ms := NewSummaryDataPoint()
+	ms := NewMutableSummaryDataPoint()
 	assert.Equal(t, pcommon.Timestamp(0), ms.StartTimestamp())
 	testValStartTimestamp := pcommon.Timestamp(1234567890)
 	ms.SetStartTimestamp(testValStartTimestamp)
@@ -60,7 +60,7 @@ func TestSummaryDataPoint_StartTimestamp(t *testing.T) {
 }
 
 func TestSummaryDataPoint_Timestamp(t *testing.T) {
-	ms := NewSummaryDataPoint()
+	ms := NewMutableSummaryDataPoint()
 	assert.Equal(t, pcommon.Timestamp(0), ms.Timestamp())
 	testValTimestamp := pcommon.Timestamp(1234567890)
 	ms.SetTimestamp(testValTimestamp)
@@ -68,46 +68,30 @@ func TestSummaryDataPoint_Timestamp(t *testing.T) {
 }
 
 func TestSummaryDataPoint_Count(t *testing.T) {
-	ms := NewSummaryDataPoint()
+	ms := NewMutableSummaryDataPoint()
 	assert.Equal(t, uint64(0), ms.Count())
 	ms.SetCount(uint64(17))
 	assert.Equal(t, uint64(17), ms.Count())
 }
 
 func TestSummaryDataPoint_Sum(t *testing.T) {
-	ms := NewSummaryDataPoint()
+	ms := NewMutableSummaryDataPoint()
 	assert.Equal(t, float64(0.0), ms.Sum())
 	ms.SetSum(float64(17.13))
 	assert.Equal(t, float64(17.13), ms.Sum())
 }
 
 func TestSummaryDataPoint_QuantileValues(t *testing.T) {
-	ms := NewSummaryDataPoint()
-	assert.Equal(t, NewSummaryDataPointValueAtQuantileSlice(), ms.QuantileValues())
+	ms := NewMutableSummaryDataPoint()
+	assert.Equal(t, NewMutableSummaryDataPointValueAtQuantileSlice(), ms.QuantileValues())
 	fillTestSummaryDataPointValueAtQuantileSlice(ms.QuantileValues())
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), ms.QuantileValues())
 }
 
 func TestSummaryDataPoint_Flags(t *testing.T) {
-	ms := NewSummaryDataPoint()
+	ms := NewMutableSummaryDataPoint()
 	assert.Equal(t, DataPointFlags(0), ms.Flags())
 	testValFlags := DataPointFlags(1)
 	ms.SetFlags(testValFlags)
 	assert.Equal(t, testValFlags, ms.Flags())
-}
-
-func generateTestSummaryDataPoint() SummaryDataPoint {
-	tv := NewSummaryDataPoint()
-	fillTestSummaryDataPoint(tv)
-	return tv
-}
-
-func fillTestSummaryDataPoint(tv SummaryDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
-	tv.orig.StartTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Count = uint64(17)
-	tv.orig.Sum = float64(17.13)
-	fillTestSummaryDataPointValueAtQuantileSlice(newSummaryDataPointValueAtQuantileSlice(&tv.orig.QuantileValues))
-	tv.orig.Flags = 1
 }

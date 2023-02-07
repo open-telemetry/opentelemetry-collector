@@ -27,12 +27,12 @@ import (
 )
 
 func TestResourceLogsSlice(t *testing.T) {
-	es := NewResourceLogsSlice()
+	es := NewMutableResourceLogsSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newResourceLogsSlice(&[]*otlplogs.ResourceLogs{})
+	es = newMutableResourceLogsSliceFromOrig(&[]*otlplogs.ResourceLogs{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewResourceLogs()
+	emptyVal := NewMutableResourceLogs()
 	testVal := generateTestResourceLogs()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
@@ -44,10 +44,10 @@ func TestResourceLogsSlice(t *testing.T) {
 }
 
 func TestResourceLogsSlice_CopyTo(t *testing.T) {
-	dest := NewResourceLogsSlice()
+	dest := NewMutableResourceLogsSlice()
 	// Test CopyTo to empty
-	NewResourceLogsSlice().CopyTo(dest)
-	assert.Equal(t, NewResourceLogsSlice(), dest)
+	NewMutableResourceLogsSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableResourceLogsSlice(), dest)
 
 	// Test CopyTo larger slice
 	generateTestResourceLogsSlice().CopyTo(dest)
@@ -79,7 +79,7 @@ func TestResourceLogsSlice_EnsureCapacity(t *testing.T) {
 func TestResourceLogsSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestResourceLogsSlice()
-	dest := NewResourceLogsSlice()
+	dest := NewMutableResourceLogsSlice()
 	src := generateTestResourceLogsSlice()
 	src.MoveAndAppendTo(dest)
 	assert.Equal(t, generateTestResourceLogsSlice(), dest)
@@ -103,8 +103,8 @@ func TestResourceLogsSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestResourceLogsSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewResourceLogsSlice()
-	emptySlice.RemoveIf(func(el ResourceLogs) bool {
+	emptySlice := NewMutableResourceLogsSlice()
+	emptySlice.RemoveIf(func(el MutableResourceLogs) bool {
 		t.Fail()
 		return false
 	})
@@ -112,7 +112,7 @@ func TestResourceLogsSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestResourceLogsSlice()
 	pos := 0
-	filtered.RemoveIf(func(el ResourceLogs) bool {
+	filtered.RemoveIf(func(el MutableResourceLogs) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -121,30 +121,16 @@ func TestResourceLogsSlice_RemoveIf(t *testing.T) {
 
 func TestResourceLogsSlice_Sort(t *testing.T) {
 	es := generateTestResourceLogsSlice()
-	es.Sort(func(a, b ResourceLogs) bool {
+	es.Sort(func(a, b MutableResourceLogs) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b ResourceLogs) bool {
+	es.Sort(func(a, b MutableResourceLogs) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
-	}
-}
-
-func generateTestResourceLogsSlice() ResourceLogsSlice {
-	es := NewResourceLogsSlice()
-	fillTestResourceLogsSlice(es)
-	return es
-}
-
-func fillTestResourceLogsSlice(es ResourceLogsSlice) {
-	*es.orig = make([]*otlplogs.ResourceLogs, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlplogs.ResourceLogs{}
-		fillTestResourceLogs(newResourceLogs((*es.orig)[i]))
 	}
 }

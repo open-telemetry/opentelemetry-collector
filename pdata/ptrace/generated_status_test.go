@@ -25,15 +25,15 @@ import (
 
 func TestStatus_MoveTo(t *testing.T) {
 	ms := generateTestStatus()
-	dest := NewStatus()
+	dest := NewMutableStatus()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewStatus(), ms)
+	assert.Equal(t, NewMutableStatus(), ms)
 	assert.Equal(t, generateTestStatus(), dest)
 }
 
 func TestStatus_CopyTo(t *testing.T) {
-	ms := NewStatus()
-	orig := NewStatus()
+	ms := NewMutableStatus()
+	orig := NewMutableStatus()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestStatus()
@@ -42,7 +42,7 @@ func TestStatus_CopyTo(t *testing.T) {
 }
 
 func TestStatus_Code(t *testing.T) {
-	ms := NewStatus()
+	ms := NewMutableStatus()
 	assert.Equal(t, StatusCode(0), ms.Code())
 	testValCode := StatusCode(1)
 	ms.SetCode(testValCode)
@@ -50,19 +50,8 @@ func TestStatus_Code(t *testing.T) {
 }
 
 func TestStatus_Message(t *testing.T) {
-	ms := NewStatus()
+	ms := NewMutableStatus()
 	assert.Equal(t, "", ms.Message())
 	ms.SetMessage("cancelled")
 	assert.Equal(t, "cancelled", ms.Message())
-}
-
-func generateTestStatus() Status {
-	tv := NewStatus()
-	fillTestStatus(tv)
-	return tv
-}
-
-func fillTestStatus(tv Status) {
-	tv.orig.Code = 1
-	tv.orig.Message = "cancelled"
 }

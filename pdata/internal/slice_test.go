@@ -12,64 +12,63 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pcommon
+package internal
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 func TestSlice(t *testing.T) {
-	es := NewSlice()
+	es := NewMutableSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSlice(&[]otlpcommon.AnyValue{})
+	es = NewMutableSliceFromOrig(&[]otlpcommon.AnyValue{})
 	assert.Equal(t, 0, es.Len())
 
 	es.EnsureCapacity(7)
-	emptyVal := newValue(&otlpcommon.AnyValue{})
-	testVal := Value(internal.GenerateTestValue())
-	assert.Equal(t, 7, cap(*es.getOrig()))
+	emptyVal := NewMutableValueFromOrig(&otlpcommon.AnyValue{})
+	testVal := GenerateTestValue()
+	assert.Equal(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestValue(internal.Value(el))
+		FillTestValue(el)
 		assert.Equal(t, testVal, el)
 	}
 }
 
 func TestSlice_CopyTo(t *testing.T) {
-	dest := NewSlice()
+	dest := NewMutableSlice()
 	// Test CopyTo to empty
-	NewSlice().CopyTo(dest)
-	assert.Equal(t, NewSlice(), dest)
+	NewMutableSlice().CopyTo(dest)
+	assert.Equal(t, NewMutableSlice(), dest)
 
 	// Test CopyTo larger slice
-	Slice(internal.GenerateTestSlice()).CopyTo(dest)
-	assert.Equal(t, Slice(internal.GenerateTestSlice()), dest)
+	GenerateTestSlice().CopyTo(dest)
+	assert.Equal(t, GenerateTestSlice(), dest)
 
 	// Test CopyTo same size slice
-	Slice(internal.GenerateTestSlice()).CopyTo(dest)
-	assert.Equal(t, Slice(internal.GenerateTestSlice()), dest)
+	GenerateTestSlice().CopyTo(dest)
+	assert.Equal(t, GenerateTestSlice(), dest)
 }
 
 func TestSlice_EnsureCapacity(t *testing.T) {
-	es := Slice(internal.GenerateTestSlice())
+	es := GenerateTestSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
 	expectedEs := make(map[*otlpcommon.AnyValue]bool)
 	for i := 0; i < es.Len(); i++ {
-		expectedEs[es.At(i).getOrig()] = true
+		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, es.Len(), len(expectedEs))
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
 	foundEs := make(map[*otlpcommon.AnyValue]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.At(i).getOrig()] = true
+		foundEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, expectedEs, foundEs)
 
@@ -78,27 +77,27 @@ func TestSlice_EnsureCapacity(t *testing.T) {
 	oldLen := es.Len()
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.getOrig()))
+	assert.Equal(t, ensureLargeLen, cap(*es.orig))
 }
 
 func TestSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
-	expectedSlice := Slice(internal.GenerateTestSlice())
-	dest := NewSlice()
-	src := Slice(internal.GenerateTestSlice())
+	expectedSlice := GenerateTestSlice()
+	dest := NewMutableSlice()
+	src := GenerateTestSlice()
 	src.MoveAndAppendTo(dest)
-	assert.Equal(t, Slice(internal.GenerateTestSlice()), dest)
+	assert.Equal(t, GenerateTestSlice(), dest)
 	assert.Equal(t, 0, src.Len())
 	assert.Equal(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo empty slice
 	src.MoveAndAppendTo(dest)
-	assert.Equal(t, Slice(internal.GenerateTestSlice()), dest)
+	assert.Equal(t, GenerateTestSlice(), dest)
 	assert.Equal(t, 0, src.Len())
 	assert.Equal(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo not empty slice
-	Slice(internal.GenerateTestSlice()).MoveAndAppendTo(dest)
+	GenerateTestSlice().MoveAndAppendTo(dest)
 	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.Equal(t, expectedSlice.At(i), dest.At(i))
@@ -108,16 +107,16 @@ func TestSlice_MoveAndAppendTo(t *testing.T) {
 
 func TestSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewSlice()
-	emptySlice.RemoveIf(func(el Value) bool {
+	emptySlice := NewMutableSlice()
+	emptySlice.RemoveIf(func(el MutableValue) bool {
 		t.Fail()
 		return false
 	})
 
 	// Test RemoveIf
-	filtered := Slice(internal.GenerateTestSlice())
+	filtered := GenerateTestSlice()
 	pos := 0
-	filtered.RemoveIf(func(el Value) bool {
+	filtered.RemoveIf(func(el MutableValue) bool {
 		pos++
 		return pos%3 == 0
 	})

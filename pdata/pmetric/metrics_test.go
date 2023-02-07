@@ -41,7 +41,7 @@ func TestResourceMetricsWireCompatibility(t *testing.T) {
 
 	// Generate ResourceMetrics as pdata struct.
 	metrics := NewMetrics()
-	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	fillTestResourceMetricsSlice(metrics.MutableResourceMetrics())
 
 	// Marshal its underlying ProtoBuf to wire.
 	wire1, err := gogoproto.Marshal(metrics.getOrig())
@@ -72,7 +72,7 @@ func TestMetricCount(t *testing.T) {
 	md := NewMetrics()
 	assert.EqualValues(t, 0, md.MetricCount())
 
-	rms := md.ResourceMetrics()
+	rms := md.MutableResourceMetrics()
 	rms.EnsureCapacity(3)
 	rm := rms.AppendEmpty()
 	assert.EqualValues(t, 0, md.MetricCount())
@@ -104,12 +104,12 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	dps := md.DataPointCount()
 	assert.EqualValues(t, 0, dps)
 
-	rms := md.ResourceMetrics()
+	rms := md.MutableResourceMetrics()
 	rms.AppendEmpty()
 	dps = md.DataPointCount()
 	assert.EqualValues(t, 0, dps)
 
-	ilms := md.ResourceMetrics().At(0).ScopeMetrics()
+	ilms := md.MutableResourceMetrics().At(0).ScopeMetrics()
 	ilms.AppendEmpty()
 	dps = md.DataPointCount()
 	assert.EqualValues(t, 0, dps)
@@ -124,7 +124,7 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	assert.EqualValues(t, 3, md.DataPointCount())
 
 	md = NewMetrics()
-	rms = md.ResourceMetrics()
+	rms = md.MutableResourceMetrics()
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	rms.AppendEmpty().ScopeMetrics().AppendEmpty()
@@ -161,7 +161,7 @@ func TestDataPointCountWithEmpty(t *testing.T) {
 
 func TestDataPointCountWithNilDataPoints(t *testing.T) {
 	metrics := NewMetrics()
-	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	ilm := metrics.MutableResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Metrics().AppendEmpty().SetEmptyGauge()
 	ilm.Metrics().AppendEmpty().SetEmptySum()
 	ilm.Metrics().AppendEmpty().SetEmptyHistogram()
@@ -172,7 +172,7 @@ func TestDataPointCountWithNilDataPoints(t *testing.T) {
 
 func TestHistogramWithNilSum(t *testing.T) {
 	metrics := NewMetrics()
-	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	ilm := metrics.MutableResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	histo := ilm.Metrics().AppendEmpty()
 	histogramDataPoints := histo.SetEmptyHistogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
@@ -183,7 +183,7 @@ func TestHistogramWithNilSum(t *testing.T) {
 
 func TestHistogramWithValidSum(t *testing.T) {
 	metrics := NewMetrics()
-	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	ilm := metrics.MutableResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	histo := ilm.Metrics().AppendEmpty()
 	histogramDataPoints := histo.SetEmptyHistogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
@@ -327,7 +327,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 			},
 		},
 	})
-	resourceMetrics := md.ResourceMetrics()
+	resourceMetrics := md.MutableResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
 	metric.SetName("new_my_metric_int")
@@ -409,7 +409,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 			},
 		},
 	})
-	resourceMetrics := md.ResourceMetrics()
+	resourceMetrics := md.MutableResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
 	metric.SetName("new_my_metric_double")
@@ -493,7 +493,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 			},
 		},
 	})
-	resourceMetrics := md.ResourceMetrics()
+	resourceMetrics := md.MutableResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
 	metric.SetName("new_my_metric_histogram")
@@ -576,7 +576,7 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 			},
 		},
 	})
-	resourceMetrics := md.ResourceMetrics()
+	resourceMetrics := md.MutableResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
 	metric.SetName("new_my_metric_exponential_histogram")
@@ -640,7 +640,7 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 
 func TestMetricsCopyTo(t *testing.T) {
 	metrics := NewMetrics()
-	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	fillTestResourceMetricsSlice(metrics.MutableResourceMetrics())
 	metricsCopy := NewMetrics()
 	metrics.CopyTo(metricsCopy)
 	assert.EqualValues(t, metrics, metricsCopy)
@@ -689,7 +689,7 @@ func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := newMetrics(req)
-		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().
+		md.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
 		newReq := md.getOrig()
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
@@ -716,7 +716,7 @@ func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := newMetrics(req)
-		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().
+		md.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
 		newReq := md.getOrig()
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
@@ -743,8 +743,8 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := newMetrics(req)
-		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().
-			PutStr("key0", "value2")
+		md.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).
+			Attributes().PutStr("key0", "value2")
 		newReq := md.getOrig()
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()

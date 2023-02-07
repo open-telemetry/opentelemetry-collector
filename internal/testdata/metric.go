@@ -39,14 +39,14 @@ const (
 
 func generateMetricsOneEmptyInstrumentationScope() pmetric.Metrics {
 	md := pmetric.NewMetrics()
-	initResource(md.ResourceMetrics().AppendEmpty().Resource())
-	md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty()
+	initResource(md.MutableResourceMetrics().AppendEmpty().Resource())
+	md.MutableResourceMetrics().At(0).ScopeMetrics().AppendEmpty()
 	return md
 }
 
 func GenerateMetricsAllTypesEmpty() pmetric.Metrics {
 	md := generateMetricsOneEmptyInstrumentationScope()
-	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	ms := md.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 
 	doubleGauge := ms.AppendEmpty()
 	initMetric(doubleGauge, TestGaugeDoubleMetricName, pmetric.MetricTypeGauge)
@@ -71,13 +71,14 @@ func GenerateMetricsAllTypesEmpty() pmetric.Metrics {
 
 func GenerateMetricsMetricTypeInvalid() pmetric.Metrics {
 	md := generateMetricsOneEmptyInstrumentationScope()
-	initMetric(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty(), TestSumIntMetricName, pmetric.MetricTypeEmpty)
+	initMetric(md.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty(), TestSumIntMetricName,
+		pmetric.MetricTypeEmpty)
 	return md
 }
 
 func GenerateMetricsAllTypes() pmetric.Metrics {
 	md := generateMetricsOneEmptyInstrumentationScope()
-	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	ms := md.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	initGaugeIntMetric(ms.AppendEmpty())
 	initGaugeDoubleMetric(ms.AppendEmpty())
 	initSumIntMetric(ms.AppendEmpty())
@@ -90,7 +91,7 @@ func GenerateMetricsAllTypes() pmetric.Metrics {
 
 func GenerateMetrics(count int) pmetric.Metrics {
 	md := generateMetricsOneEmptyInstrumentationScope()
-	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	ms := md.MutableResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	ms.EnsureCapacity(count)
 	for i := 0; i < count; i++ {
 		switch i % 7 {
@@ -113,7 +114,7 @@ func GenerateMetrics(count int) pmetric.Metrics {
 	return md
 }
 
-func initGaugeIntMetric(im pmetric.Metric) {
+func initGaugeIntMetric(im pmetric.MutableMetric) {
 	initMetric(im, TestGaugeIntMetricName, pmetric.MetricTypeGauge)
 
 	idps := im.Gauge().DataPoints()
@@ -129,7 +130,7 @@ func initGaugeIntMetric(im pmetric.Metric) {
 	idp1.SetIntValue(456)
 }
 
-func initGaugeDoubleMetric(im pmetric.Metric) {
+func initGaugeDoubleMetric(im pmetric.MutableMetric) {
 	initMetric(im, TestGaugeDoubleMetricName, pmetric.MetricTypeGauge)
 
 	idps := im.Gauge().DataPoints()
@@ -145,7 +146,7 @@ func initGaugeDoubleMetric(im pmetric.Metric) {
 	idp1.SetDoubleValue(4.56)
 }
 
-func initSumIntMetric(im pmetric.Metric) {
+func initSumIntMetric(im pmetric.MutableMetric) {
 	initMetric(im, TestSumIntMetricName, pmetric.MetricTypeSum)
 
 	idps := im.Sum().DataPoints()
@@ -161,7 +162,7 @@ func initSumIntMetric(im pmetric.Metric) {
 	idp1.SetIntValue(456)
 }
 
-func initSumDoubleMetric(dm pmetric.Metric) {
+func initSumDoubleMetric(dm pmetric.MutableMetric) {
 	initMetric(dm, TestSumDoubleMetricName, pmetric.MetricTypeSum)
 
 	ddps := dm.Sum().DataPoints()
@@ -178,7 +179,7 @@ func initSumDoubleMetric(dm pmetric.Metric) {
 	ddp1.SetDoubleValue(4.56)
 }
 
-func initHistogramMetric(hm pmetric.Metric) {
+func initHistogramMetric(hm pmetric.MutableMetric) {
 	initMetric(hm, TestHistogramMetricName, pmetric.MetricTypeHistogram)
 
 	hdps := hm.Histogram().DataPoints()
@@ -205,7 +206,7 @@ func initHistogramMetric(hm pmetric.Metric) {
 	hdp1.ExplicitBounds().FromRaw([]float64{1})
 }
 
-func initExponentialHistogramMetric(hm pmetric.Metric) {
+func initExponentialHistogramMetric(hm pmetric.MutableMetric) {
 	initMetric(hm, TestExponentialHistogramMetricName, pmetric.MetricTypeExponentialHistogram)
 
 	hdps := hm.ExponentialHistogram().DataPoints()
@@ -258,7 +259,7 @@ func initExponentialHistogramMetric(hm pmetric.Metric) {
 	initMetricExemplarAttributes(exemplar.FilteredAttributes())
 }
 
-func initSummaryMetric(sm pmetric.Metric) {
+func initSummaryMetric(sm pmetric.MutableMetric) {
 	initMetric(sm, TestSummaryMetricName, pmetric.MetricTypeSummary)
 
 	sdps := sm.Summary().DataPoints()
@@ -281,7 +282,7 @@ func initSummaryMetric(sm pmetric.Metric) {
 	quantile.SetValue(15)
 }
 
-func initMetric(m pmetric.Metric, name string, ty pmetric.MetricType) {
+func initMetric(m pmetric.MutableMetric, name string, ty pmetric.MetricType) {
 	m.SetName(name)
 	m.SetDescription("")
 	m.SetUnit("1")

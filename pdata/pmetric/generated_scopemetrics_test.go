@@ -28,15 +28,15 @@ import (
 
 func TestScopeMetrics_MoveTo(t *testing.T) {
 	ms := generateTestScopeMetrics()
-	dest := NewScopeMetrics()
+	dest := NewMutableScopeMetrics()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewScopeMetrics(), ms)
+	assert.Equal(t, NewMutableScopeMetrics(), ms)
 	assert.Equal(t, generateTestScopeMetrics(), dest)
 }
 
 func TestScopeMetrics_CopyTo(t *testing.T) {
-	ms := NewScopeMetrics()
-	orig := NewScopeMetrics()
+	ms := NewMutableScopeMetrics()
+	orig := NewMutableScopeMetrics()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	orig = generateTestScopeMetrics()
@@ -45,33 +45,21 @@ func TestScopeMetrics_CopyTo(t *testing.T) {
 }
 
 func TestScopeMetrics_Scope(t *testing.T) {
-	ms := NewScopeMetrics()
-	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
-	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
+	ms := NewMutableScopeMetrics()
+	internal.FillTestInstrumentationScope(internal.MutableInstrumentationScope(ms.Scope()))
+	assert.Equal(t, pcommon.MutableInstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
 }
 
 func TestScopeMetrics_SchemaUrl(t *testing.T) {
-	ms := NewScopeMetrics()
+	ms := NewMutableScopeMetrics()
 	assert.Equal(t, "", ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
 }
 
 func TestScopeMetrics_Metrics(t *testing.T) {
-	ms := NewScopeMetrics()
-	assert.Equal(t, NewMetricSlice(), ms.Metrics())
+	ms := NewMutableScopeMetrics()
+	assert.Equal(t, NewMutableMetricSlice(), ms.Metrics())
 	fillTestMetricSlice(ms.Metrics())
 	assert.Equal(t, generateTestMetricSlice(), ms.Metrics())
-}
-
-func generateTestScopeMetrics() ScopeMetrics {
-	tv := NewScopeMetrics()
-	fillTestScopeMetrics(tv)
-	return tv
-}
-
-func fillTestScopeMetrics(tv ScopeMetrics) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestMetricSlice(newMetricSlice(&tv.orig.Metrics))
 }

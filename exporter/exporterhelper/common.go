@@ -138,15 +138,6 @@ func WithQueue(queueSettings QueueSettings) Option {
 	}
 }
 
-// WithCapabilities overrides the default Capabilities() function for a Consumer.
-// The default is non-mutable data.
-// TODO: Verify if we can change the default to be mutable as we do for processors.
-func WithCapabilities(capabilities consumer.Capabilities) Option {
-	return func(o *baseSettings) {
-		o.consumerOptions = append(o.consumerOptions, consumer.WithCapabilities(capabilities))
-	}
-}
-
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
 	component.StartFunc

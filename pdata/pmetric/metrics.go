@@ -24,26 +24,47 @@ import (
 type Metrics internal.Metrics
 
 func newMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest) Metrics {
-	return Metrics(internal.NewMetrics(orig))
+	return Metrics(internal.NewMetrics(orig, internal.StateExclusive))
 }
 
 func (ms Metrics) getOrig() *otlpcollectormetrics.ExportMetricsServiceRequest {
-	return internal.GetOrigMetrics(internal.Metrics(ms))
+	return internal.GetMetricsOrig(internal.Metrics(ms))
 }
 
 // NewMetrics creates a new Metrics struct.
 func NewMetrics() Metrics {
-	return newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{})
+	orig := &otlpcollectormetrics.ExportMetricsServiceRequest{}
+	return Metrics(internal.NewMetrics(orig, internal.StateExclusive))
 }
 
 // CopyTo copies the Metrics instance overriding the destination.
 func (ms Metrics) CopyTo(dest Metrics) {
-	ms.ResourceMetrics().CopyTo(dest.ResourceMetrics())
+	ms.ResourceMetrics().CopyTo(dest.MutableResourceMetrics())
+}
+
+// AsShared returns the same Metrics instance that is marked as shared.
+// It guarantees that the underlying data structure will not be modified in the downstream processing.
+func (ms Metrics) AsShared() Metrics {
+	return Metrics(internal.NewMetrics(ms.getOrig(), internal.StateShared))
 }
 
 // ResourceMetrics returns the ResourceMetricsSlice associated with this Metrics.
 func (ms Metrics) ResourceMetrics() ResourceMetricsSlice {
-	return newResourceMetricsSlice(&ms.getOrig().ResourceMetrics)
+	return newResourceMetricsSliceFromOrig(&ms.getOrig().ResourceMetrics)
+}
+
+// MutableResourceMetrics returns the MutableResourceMetricsSlice associated with this Metrics object.
+// This method should be called at once per ConsumeMetrics call if the slice has to be changed,
+// otherwise use ResourceMetrics method.
+func (ms Metrics) MutableResourceMetrics() MutableResourceMetricsSlice {
+	if internal.GetMetricsState(internal.Metrics(ms)) == internal.StateShared {
+		rms := NewMutableResourceMetricsSlice()
+		ms.ResourceMetrics().CopyTo(rms)
+		internal.ResetStateMetrics(internal.Metrics(ms), internal.StateExclusive)
+		ms.getOrig().ResourceMetrics = *rms.orig
+		return rms
+	}
+	return newMutableResourceMetricsSliceFromOrig(&ms.getOrig().ResourceMetrics)
 }
 
 // MetricCount calculates the total number of metrics.

@@ -114,6 +114,6 @@ func (f fakeLogsServer) Export(_ context.Context, request ExportRequest) (Export
 
 func generateLogsRequest() ExportRequest {
 	ld := plog.NewLogs()
-	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("test_log_record")
+	ld.MutableResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("test_log_record")
 	return NewExportRequestFromLogs(ld)
 }

@@ -82,19 +82,9 @@ func TestLogsExporter_Default(t *testing.T) {
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
-	assert.Equal(t, consumer.Capabilities{MutatesData: false}, le.Capabilities())
 	assert.NoError(t, le.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, le.ConsumeLogs(context.Background(), ld))
 	assert.NoError(t, le.Shutdown(context.Background()))
-}
-
-func TestLogsExporter_WithCapabilities(t *testing.T) {
-	capabilities := consumer.Capabilities{MutatesData: true}
-	le, err := NewLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeLogsExporterConfig, newPushLogsData(nil), WithCapabilities(capabilities))
-	require.NoError(t, err)
-	require.NotNil(t, le)
-
-	assert.Equal(t, capabilities, le.Capabilities())
 }
 
 func TestLogsExporter_Default_ReturnError(t *testing.T) {

@@ -54,7 +54,7 @@ func TestLogsText(t *testing.T) {
 			name: "logs_with_embedded_maps",
 			in: func() plog.Logs {
 				ls := plog.NewLogs()
-				l := ls.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+				l := ls.MutableResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 				l.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)))
 				l.SetSeverityNumber(plog.SeverityNumberInfo)
 				l.SetSeverityText("INFO")
