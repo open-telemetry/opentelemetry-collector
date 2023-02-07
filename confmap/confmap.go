@@ -34,7 +34,10 @@ const (
 
 // New creates a new empty confmap.Conf instance.
 func New() *Conf {
-	return &Conf{k: koanf.New(KeyDelimiter)}
+	return &Conf{
+		k:      koanf.New(KeyDelimiter),
+		called: make(map[reflect.Type]bool),
+	}
 }
 
 // NewFromStringMap creates a confmap.Conf from a map[string]any.
@@ -48,7 +51,8 @@ func NewFromStringMap(data map[string]any) *Conf {
 // Conf represents the raw configuration map for the OpenTelemetry Collector.
 // The confmap.Conf can be unmarshalled into the Collector's config using the "service" package.
 type Conf struct {
-	k *koanf.Koanf
+	k      *koanf.Koanf
+	called map[reflect.Type]bool
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.
@@ -82,7 +86,22 @@ func (fn unmarshalOptionFunc) apply(set *unmarshalOption) {
 
 // Unmarshal unmarshalls the config into a struct using the given options.
 // Tags on the fields of the structure must be properly set.
+//
+// Only call Unmarshal once per result if result itself implememnts Unmarshaler.
+// If you need to do this, create a new Conf (or result).
 func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
+	typeof := reflect.TypeOf(result)
+	if ru, ok := result.(Unmarshaler); ok {
+		// we use the custom result's Unmarshaler
+		if !l.called[typeof] {
+			// but only if it's never been called before, to avoid
+			// a cyclic call where result.Unmarshal wishes to call
+			// l.Unmarshal in order to use the classic decodeConfig
+			// path.
+			l.called[typeof] = true
+			return ru.Unmarshal(l)
+		}
+	}
 	set := unmarshalOption{}
 	for _, opt := range opts {
 		opt.apply(&set)
