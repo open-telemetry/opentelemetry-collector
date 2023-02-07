@@ -178,18 +178,24 @@ func (g *pipelinesGraph) buildComponents(ctx context.Context, set pipelinesSetti
 			n.Component, err = buildConnector(ctx, n.componentID, set.Telemetry, set.BuildInfo, set.ConnectorBuilder,
 				n.exprPipelineType, n.rcvrPipelineType, g.nextConsumers(n.ID()))
 		case *capabilitiesNode:
-			cap := consumer.Capabilities{}
+			cap := consumer.Capabilities{MutatesData: false}
 			for _, proc := range g.pipelines[n.pipelineID].processors {
 				cap.MutatesData = cap.MutatesData || proc.getConsumer().Capabilities().MutatesData
 			}
 			next := g.nextConsumers(n.ID())[0]
 			switch n.pipelineID.Type() {
 			case component.DataTypeTraces:
-				n.baseConsumer = capabilityconsumer.NewTraces(next.(consumer.Traces), cap)
+				cc := capabilityconsumer.NewTraces(next.(consumer.Traces), cap)
+				n.baseConsumer = cc
+				n.ConsumeTracesFunc = cc.ConsumeTraces
 			case component.DataTypeMetrics:
-				n.baseConsumer = capabilityconsumer.NewMetrics(next.(consumer.Metrics), cap)
+				cc := capabilityconsumer.NewMetrics(next.(consumer.Metrics), cap)
+				n.baseConsumer = cc
+				n.ConsumeMetricsFunc = cc.ConsumeMetrics
 			case component.DataTypeLogs:
-				n.baseConsumer = capabilityconsumer.NewLogs(next.(consumer.Logs), cap)
+				cc := capabilityconsumer.NewLogs(next.(consumer.Logs), cap)
+				n.baseConsumer = cc
+				n.ConsumeLogsFunc = cc.ConsumeLogs
 			}
 		case *fanOutNode:
 			nexts := g.nextConsumers(n.ID())
