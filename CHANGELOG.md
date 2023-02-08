@@ -4,6 +4,52 @@
 
 <!-- next version -->
 
+## v1.0.0-rc5/v0.71.0
+
+### 🛑 Breaking changes 🛑
+
+- `pdata`: Add private method to GrpcServer interface, disallow direct implementation (#6966)
+- `featuregate`: Remove deprecated GetRegistry (#7011)
+- `pcommon`: Remove deprecated Map.Sort (#6688)
+
+### 🚩 Deprecations 🚩
+
+- `featuregate`: Deprecate Registry.List in favor of Registry.VisitAll. (#7041)
+- `featuregate`: Deprecate Apply in favor of Set (#7018)
+- `pdata`: Deprecate [Metrics|Logs|Traces].MoveTo methods. (#7091)
+- `featuregate`: Deprecate RegistryOption in favor of RegisterOption (#7012)
+- `featuregate`: Deprecate featuregate.Registry.[IsEnabled, RegisterID, MustRegister] (#6998)
+
+### 🚀 New components 🚀
+
+- `httpsprovider`: Add the httpsprovider. This component allows the collector to fetch configurations from web servers using the HTTPS protocol. (#6683)
+
+### 💡 Enhancements 💡
+
+- `exporter`: Allow configuration of fields, `RandomizationFactor` and `Multiplier`, for exponential backoff algorithm when retry on failure is enabled (#6610)
+- `connectors`: Add "connectors", a new type of pipeline component (#2336)
+  - Connectors connect pipelines by acting as an exporter in one or more pipelines and simultaneously
+  as a receiver of corresponding data in one or more other pipelines. For example:
+    - The `forward` connector can export data to another pipeline of the same type. This allows you
+    to merge data from multiple pipelines onto a common pipeline. Or, you can replicate data onto multiple
+    pipelines so that it may be processed in different ways and/or exported to different backends.
+    - The `count` connector can count data of any type. Regardless of the type of data that is counted, it
+    emits counts as metrics onto a metrics pipeline.
+  - Connectors are currently disabled by default but can be enabled with the `service.connectors` feature gate.
+  - See the [connectors README](https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md)
+  for more details on how to use connectors.
+  
+- `service`: Enable new pipelines implementation using graphs. Controlled by the `service.graph` featuregate. (#2336)
+- `builder`: added ldflags command option (#6940)
+- `proctelemetry`: Instrument `proctelemetry.ProcessMetrics` metrics with otel-go (#6886)
+- `capabilityconsumer`: If the consumer has already the desired capability, don't wrap (#7116)
+- `confmap`: Add support to resolve embedded uris inside a string, concatenate results. (#6932)
+
+### 🧰 Bug fixes 🧰
+
+- `confmap`: Fix bug in confmap validation that allowed the usage of case-insensitive keys in the configurations, despite them failing silently. (#6876)
+- `logging`: Fix the attribute key used to identify the receiver data type in logging configuration (#7033)
+
 ## v1.0.0-RC4/v0.70.0
 
 ### 🛑 Breaking changes 🛑
