@@ -58,10 +58,10 @@ service
 | :---:             | :---:           | :---:       | :---:             | :---:                  |
 | OpenTelemetry        | 1               | 2           | ~9K               | 8K                     |
 | OpenTelemetry        | 2               | 4           | ~18K              | 16K                    |
-| Jaeger Thrift     | 1               | 6           | ~11.5K            | 10K                    |
-| Jaeger Thrift     | 2               | 8           | ~23K              | 20K                    |
-| Zipkin v2 JSON    | 1               | 6           | ~8.5K             | 7K                     |
-| Zipkin v2 JSON    | 2               | 8           | ~16K              | 14K                    |
+| Jaeger Thrift     | 1               | 2           | ~11.5K            | 10K                    |
+| Jaeger Thrift     | 2               | 4           | ~23K              | 20K                    |
+| Zipkin v2 JSON    | 1               | 2           | ~8.5K             | 7K                     |
+| Zipkin v2 JSON    | 2               | 4           | ~16K              | 14K                    |
 
 If you are using tail-based sampling and you need higher rates then you can
 either:
