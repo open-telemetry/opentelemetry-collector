@@ -15,6 +15,7 @@
 package otelcol
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -56,4 +57,22 @@ func TestNewCommandInvalidComponent(t *testing.T) {
 
 	cmd := NewCommand(CollectorSettings{Factories: factories, ConfigProvider: cfgProvider})
 	require.Error(t, cmd.Execute())
+}
+
+// simple sanity check to verify that it succeeds with a basic default config
+func TestNewCollectorWithFlags(t *testing.T) {
+	factories, err := nopFactories()
+	require.NoError(t, err)
+
+	cmdLineArgs := []string{fmt.Sprintf("--%s=%s", configFlag, "someconfig.yaml")}
+	flgs := flags()
+	err = flgs.Parse(cmdLineArgs)
+	require.NoError(t, err)
+	set := CollectorSettings{
+		BuildInfo: component.BuildInfo{Version: "test_version"},
+		Factories: factories,
+	}
+
+	_, err = newCollectorWithFlags(set, flgs)
+	require.NoError(t, err)
 }
