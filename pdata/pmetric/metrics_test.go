@@ -193,15 +193,6 @@ func TestHistogramWithValidSum(t *testing.T) {
 	assert.EqualValues(t, histo, dest)
 }
 
-func TestMetricsMoveTo(t *testing.T) {
-	metrics := NewMetrics()
-	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
-	dest := NewMetrics()
-	metrics.MoveTo(dest)
-	assert.EqualValues(t, NewMetrics(), metrics)
-	assert.EqualValues(t, generateTestResourceMetricsSlice(), dest.ResourceMetrics())
-}
-
 func TestOtlpToInternalReadOnly(t *testing.T) {
 	md := newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{

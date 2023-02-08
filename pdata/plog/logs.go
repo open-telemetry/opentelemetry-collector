@@ -36,14 +36,6 @@ func NewLogs() Logs {
 	return newLogs(&otlpcollectorlog.ExportLogsServiceRequest{})
 }
 
-// MoveTo moves the Logs instance overriding the destination and
-// resetting the current instance to its zero value.
-// Deprecated: [1.0.0-rc5] The method can be replaced with a plain assignment.
-func (ms Logs) MoveTo(dest Logs) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpcollectorlog.ExportLogsServiceRequest{}
-}
-
 // CopyTo copies the Logs instance overriding the destination.
 func (ms Logs) CopyTo(dest Logs) {
 	ms.ResourceLogs().CopyTo(dest.ResourceLogs())
