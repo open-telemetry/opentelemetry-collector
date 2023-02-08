@@ -22,11 +22,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 )
 
-const (
-	dataFormatProtobuf = "protobuf"
-)
+const dataFormatProtobuf = "protobuf"
 
-// Receiver is the type used to handle spans from OpenTelemetry exporters.
+// Receiver is the type used to handle logs from OpenTelemetry exporters.
 type Receiver struct {
 	plogotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Logs
