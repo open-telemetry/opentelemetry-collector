@@ -14,7 +14,7 @@
 
 module go.opentelemetry.io/collector/cmd/builder
 
-go 1.18
+go 1.19
 
 require (
 	github.com/knadh/koanf v1.5.0
