@@ -418,6 +418,13 @@ and hope to make a v1.0.0 release soon.
   - Deprecate `GRPCClientSettings.ToDialOptions` in favor of `GRPCClientSettings.ToClientConn`.
   - Deprecate `GRPCServerSettings.ToServerOption` in favor of `GRPCServerSettings.ToServer`.
 
+- `featuregates`: Removing Gates being configurable externally to the Registry (#6167)
+  - Deprecate `Gate.ID` in favour of `Registry.RegisterID`
+  - Deprecate `Gate.Enabled` in favour of `Gate.IsEnabled()`
+  - Deprecate `Gate.Description` in favour of `WithRegisterDescription` to be used with `Registry.RegisterID`
+  - Deprecate `Registry.Register` in favour of `Registry.RegisterID`
+  - Deprecate `Registry.MustRegister` in favour of `Registry.MustRegisterID`
+
 
 ### 💡 Enhancements 💡
 
