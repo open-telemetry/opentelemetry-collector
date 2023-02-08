@@ -22,10 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 )
 
-const (
-	dataFormatProtobuf = "protobuf"
-	receiverTransport  = "grpc"
-)
+const dataFormatProtobuf = "protobuf"
 
 // Receiver is the type used to handle metrics from OpenTelemetry exporters.
 type Receiver struct {
