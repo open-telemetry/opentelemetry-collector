@@ -117,15 +117,6 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 	assert.EqualValues(t, traces.getOrig(), &gogoprotoRS2)
 }
 
-func TestTracesMoveTo(t *testing.T) {
-	traces := NewTraces()
-	fillTestResourceSpansSlice(traces.ResourceSpans())
-	dest := NewTraces()
-	traces.MoveTo(dest)
-	assert.EqualValues(t, NewTraces(), traces)
-	assert.EqualValues(t, generateTestResourceSpansSlice(), dest.ResourceSpans())
-}
-
 func TestTracesCopyTo(t *testing.T) {
 	traces := NewTraces()
 	fillTestResourceSpansSlice(traces.ResourceSpans())

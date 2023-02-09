@@ -116,15 +116,6 @@ func TestResourceLogsWireCompatibility(t *testing.T) {
 	assert.EqualValues(t, logs.getOrig(), &gogoprotoRS2)
 }
 
-func TestLogsMoveTo(t *testing.T) {
-	logs := NewLogs()
-	fillTestResourceLogsSlice(logs.ResourceLogs())
-	dest := NewLogs()
-	logs.MoveTo(dest)
-	assert.EqualValues(t, NewLogs(), logs)
-	assert.EqualValues(t, generateTestResourceLogsSlice(), dest.ResourceLogs())
-}
-
 func TestLogsCopyTo(t *testing.T) {
 	logs := NewLogs()
 	fillTestResourceLogsSlice(logs.ResourceLogs())

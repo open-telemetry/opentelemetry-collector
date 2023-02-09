@@ -41,14 +41,6 @@ func (ms Metrics) CopyTo(dest Metrics) {
 	ms.ResourceMetrics().CopyTo(dest.ResourceMetrics())
 }
 
-// MoveTo moves the Metrics instance overriding the destination and
-// resetting the current instance to its zero value.
-// Deprecated: [1.0.0-rc5] The method can be replaced with a plain assignment.
-func (ms Metrics) MoveTo(dest Metrics) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = otlpcollectormetrics.ExportMetricsServiceRequest{}
-}
-
 // ResourceMetrics returns the ResourceMetricsSlice associated with this Metrics.
 func (ms Metrics) ResourceMetrics() ResourceMetricsSlice {
 	return newResourceMetricsSlice(&ms.getOrig().ResourceMetrics)
