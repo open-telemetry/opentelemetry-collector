@@ -350,6 +350,27 @@ func TestPersistentStorage_Overflow(t *testing.T) {
 	})
 }
 
+func TestPersistentStorage_OverflowErrors(t *testing.T) {
+	path := t.TempDir()
+
+	ext := createStorageExtension(path)
+	client := createTestClient(ext)
+	ps := createTestPersistentStorage(client)
+	ps.capacity = 1
+
+	// stop the loop first so test is deterministic
+	close(ps.stopChan)
+	time.Sleep(time.Millisecond)
+
+	ps.overflow = func(item Request) {
+		// should never successfully overflow
+		t.FailNow()
+	}
+	require.NoError(t, ps.put(stringRequest{str: "a"}))
+	// should fail to unmarshal "a" using newFakeTracesRequestUnmarshalerFunc
+	require.Error(t, ps.put(stringRequest{str: "b"}))
+}
+
 func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 	path := t.TempDir()
 

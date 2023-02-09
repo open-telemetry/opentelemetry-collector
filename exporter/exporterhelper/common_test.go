@@ -22,6 +22,8 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -66,6 +68,20 @@ func TestBaseExporterWithOptions(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, want, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.Equal(t, want, be.Shutdown(context.Background()))
+}
+
+func TestCreateSampledLogger(t *testing.T) {
+	core, observed := observer.New(zap.DebugLevel)
+	logger := createSampledLogger(zap.New(core))
+	logger.Info("message")
+	logger.Info("message")
+	require.Equal(t, 2, len(observed.TakeAll()))
+
+	core, observed = observer.New(zap.InfoLevel)
+	logger = createSampledLogger(zap.New(core))
+	logger.Info("message")
+	logger.Info("message")
+	require.Equal(t, 1, len(observed.TakeAll()))
 }
 
 func checkStatus(t *testing.T, sd sdktrace.ReadOnlySpan, err error) {

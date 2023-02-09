@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
@@ -163,6 +164,25 @@ func TestTiered_BacklogProduceError(t *testing.T) {
 	})
 	backlogObserver.awaitAsyncProcessing()
 	backlogObserver.checkDroppedItemsCount(t, 1)
+}
+
+func TestTiered_BacklogStartError(t *testing.T) {
+	storageError := errors.New("could not get storage client")
+
+	qCfg := NewDefaultQueueSettings()
+	bCfg := NewDefaultQueueSettings()
+	storageID := component.NewIDWithName("file_storage", "storage")
+	bCfg.StorageID = &storageID // enable persistence
+	be, err := newBaseExporter(defaultSettings, fromOptions(WithQueue(qCfg), WithBacklog(bCfg)), "", nopRequestUnmarshaler())
+	require.NoError(t, err)
+
+	var extensions = map[component.ID]component.Component{
+		storageID: &mockStorageExtension{GetClientError: storageError},
+	}
+	host := &mockHost{ext: extensions}
+
+	// we fail to start if we get an error creating the storage client
+	require.Error(t, be.Start(context.Background(), host), "could not get storage client")
 }
 
 func TestTiered_BacklogEnabledWithoutPrimary(t *testing.T) {

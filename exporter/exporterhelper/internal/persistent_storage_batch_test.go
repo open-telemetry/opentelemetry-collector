@@ -16,10 +16,15 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 func TestPersistentStorageBatch_Operations(t *testing.T) {
@@ -65,4 +70,33 @@ func TestPersistentStorageBatch_Operations(t *testing.T) {
 	retrievedItemIndexArrayValue, err = batch.getItemIndexArrayResult("arr")
 	require.NoError(t, err)
 	assert.Nil(t, retrievedItemIndexArrayValue)
+}
+
+func TestPersistentStorageBatch_Errors(t *testing.T) {
+	path := t.TempDir()
+
+	ext := createStorageExtension(path)
+	client := createTestClient(ext)
+	ps := createTestPersistentStorage(client)
+
+	marshal := func(_ interface{}) ([]byte, error) {
+		return nil, errors.New("marshal error")
+	}
+	core, observed := observer.New(zap.DebugLevel)
+	ps.logger = zap.New(core)
+	batch := newBatch(ps).set("marshal-error", 1, marshal)
+	require.Len(t, observed.FilterLevelExact(zap.DebugLevel).TakeAll(), 1)
+
+	invalidOperation := storage.GetOperation("invalid")
+	invalidOperation.Type = -1
+	batch.operations = append(batch.operations, invalidOperation)
+	_, err := batch.execute(context.Background())
+	require.Error(t, err)
+
+	_, err = batch.getRequestResult("not-present")
+	require.Equal(t, errKeyNotPresentInBatch, err)
+
+	batch = batch.get("value-not-set")
+	_, err = batch.getRequestResult("value-not-set")
+	require.Equal(t, errValueNotSet, err)
 }
