@@ -35,8 +35,8 @@ func NewTraces(err error, failed ptrace.Traces) error {
 	}
 }
 
-// GetTraces returns failed traces from the associated error.
-func (err Traces) GetTraces() ptrace.Traces {
+// Traces returns failed traces from the associated error.
+func (err Traces) Traces() ptrace.Traces {
 	return err.failed
 }
 
@@ -60,8 +60,8 @@ func NewLogs(err error, failed plog.Logs) error {
 	}
 }
 
-// GetLogs returns failed logs from the associated error.
-func (err Logs) GetLogs() plog.Logs {
+// Logs returns failed logs from the associated error.
+func (err Logs) Logs() plog.Logs {
 	return err.failed
 }
 
@@ -85,8 +85,8 @@ func NewMetrics(err error, failed pmetric.Metrics) error {
 	}
 }
 
-// GetMetrics returns failed metrics from the associated error.
-func (err Metrics) GetMetrics() pmetric.Metrics {
+// Metrics returns failed metrics from the associated error.
+func (err Metrics) Metrics() pmetric.Metrics {
 	return err.failed
 }
 
