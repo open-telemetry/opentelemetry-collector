@@ -35,6 +35,11 @@ func NewTraces(err error, failed ptrace.Traces) error {
 	}
 }
 
+// Deprecated: [v0.72.0] Use `Traces` instead.
+func (err Traces) GetTraces() ptrace.Traces {
+	return err.Traces()
+}
+
 // Traces returns failed traces from the associated error.
 func (err Traces) Traces() ptrace.Traces {
 	return err.failed
@@ -60,6 +65,11 @@ func NewLogs(err error, failed plog.Logs) error {
 	}
 }
 
+// Deprecated: [v0.72.0] Use `Logs` instead.
+func (err Logs) GetLogs() plog.Logs {
+	return err.Logs()
+}
+
 // Logs returns failed logs from the associated error.
 func (err Logs) Logs() plog.Logs {
 	return err.failed
@@ -83,6 +93,11 @@ func NewMetrics(err error, failed pmetric.Metrics) error {
 		error:  err,
 		failed: failed,
 	}
+}
+
+// Deprecated: [v0.72.0] Use `Metrics` instead.
+func (err Metrics) GetMetrics() pmetric.Metrics {
+	return err.Metrics()
 }
 
 // Metrics returns failed metrics from the associated error.
