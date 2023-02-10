@@ -24,7 +24,7 @@ import (
 
 func TestAllSemConvFilesAreCrated(t *testing.T) {
 	// Files that have to be present in each semconv package
-	var expectedFiles = []string{"generated_resource.go", "generated_trace.go", "nonstandard.go", "schema.go"}
+	var expectedFiles = []string{"generated_resource.go", "generated_trace.go", "schema.go", "nonstandard.go"}
 
 	files, err := os.ReadDir(".")
 	assert.NoError(t, err)
@@ -32,7 +32,13 @@ func TestAllSemConvFilesAreCrated(t *testing.T) {
 		if !f.IsDir() {
 			continue
 		}
-		for _, ef := range expectedFiles {
+
+		end := len(expectedFiles)
+		if f.Name() == "v1.17.0" { // no nonstandard.go file requiered.
+			end--
+		}
+
+		for _, ef := range expectedFiles[0:end] {
 			assert.FileExists(t, filepath.Join(".", f.Name(), ef))
 		}
 	}
