@@ -38,9 +38,6 @@ func NewRegistry() *Registry {
 	return &Registry{}
 }
 
-// Deprecated: [v0.71.0] use RegisterOption.
-type RegistryOption = RegisterOption
-
 // RegisterOption allows to configure additional information about a Gate during registration.
 type RegisterOption interface {
 	apply(g *Gate)
@@ -72,26 +69,6 @@ func WithRegisterRemovalVersion(version string) RegisterOption {
 	return registerOptionFunc(func(g *Gate) {
 		g.removalVersion = version
 	})
-}
-
-// Deprecated: [v0.71.0] use Set.
-func (r *Registry) Apply(cfg map[string]bool) error {
-	for id, enabled := range cfg {
-		if err := r.Set(id, enabled); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// Deprecated: [v0.71.0] check the enable status on the returned Gate from Register or MustRegister.
-func (r *Registry) IsEnabled(id string) bool {
-	v, ok := r.gates.Load(id)
-	if !ok {
-		return false
-	}
-	g := v.(*Gate)
-	return g.IsEnabled()
 }
 
 // MustRegister like Register but panics if an invalid ID or gate options are provided.
@@ -129,17 +106,6 @@ func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Ga
 	return g, nil
 }
 
-// Deprecated: [v0.71.0] use MustRegister.
-func (r *Registry) MustRegisterID(id string, stage Stage, opts ...RegisterOption) {
-	r.MustRegister(id, stage, opts...)
-}
-
-// Deprecated: [v0.71.0] use Register.
-func (r *Registry) RegisterID(id string, stage Stage, opts ...RegisterOption) error {
-	_, err := r.Register(id, stage, opts...)
-	return err
-}
-
 // Set the enabled valued for a Gate identified by the given id.
 func (r *Registry) Set(id string, enabled bool) error {
 	v, ok := r.gates.Load(id)
@@ -167,13 +133,4 @@ func (r *Registry) VisitAll(fn func(*Gate)) {
 	for i := range gates {
 		fn(gates[i])
 	}
-}
-
-// Deprecated: [v0.71.0] use VisitAll.
-func (r *Registry) List() []Gate {
-	var ret []Gate
-	r.VisitAll(func(gate *Gate) {
-		ret = append(ret, *gate)
-	})
-	return ret
 }
