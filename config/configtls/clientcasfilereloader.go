@@ -97,6 +97,7 @@ func (r *clientCAsFileReloader) startWatching() error {
 		return fmt.Errorf("failed to add client CA file to watcher: %w", err)
 	}
 
+	r.shutdownCH = make(chan bool)
 	go r.handleWatcherEvents()
 
 	return nil
@@ -104,12 +105,10 @@ func (r *clientCAsFileReloader) startWatching() error {
 
 func (r *clientCAsFileReloader) handleWatcherEvents() {
 	defer r.watcher.Close()
-	r.shutdownCH = make(chan bool)
 	for {
 		select {
 		case _, ok := <-r.shutdownCH:
 			_ = ok
-			r.shutdownCH = nil
 			return
 		case event, ok := <-r.watcher.Events:
 			if !ok {
@@ -134,4 +133,14 @@ func (r *clientCAsFileReloader) handleWatcherEvents() {
 			}
 		}
 	}
+}
+
+func (r *clientCAsFileReloader) shutdown() error {
+	if r.shutdownCH == nil {
+		return fmt.Errorf("client CAs file watcher is not running")
+	}
+	r.shutdownCH <- true
+	close(r.shutdownCH)
+	r.shutdownCH = nil
+	return nil
 }
