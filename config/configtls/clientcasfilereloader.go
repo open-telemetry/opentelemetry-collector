@@ -81,6 +81,12 @@ func (r *clientCAsFileReloader) reload() {
 	}
 }
 
+func (r *clientCAsFileReloader) getLastError() error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	return r.lastReloadError
+}
+
 func (r *clientCAsFileReloader) startWatching() error {
 	if r.shutdownCH != nil {
 		return fmt.Errorf("client CA file watcher already started")
