@@ -37,7 +37,7 @@ require (
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/net v0.5.0
-	golang.org/x/sys v0.4.0
+	golang.org/x/sys v0.5.0
 	gonum.org/v1/gonum v0.12.0
 	google.golang.org/grpc v1.52.3
 	gopkg.in/yaml.v3 v3.0.1
