@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.72.0
 	go.opentelemetry.io/collector/consumer v0.72.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc6
+	go.opentelemetry.io/collector/receiver v0.72.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.0
 	go.uber.org/zap v1.24.0
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f
@@ -60,6 +61,8 @@ replace go.opentelemetry.io/collector/confmap => ../../confmap
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
+
+replace go.opentelemetry.io/collector/receiver => ../../receiver
 
 replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
 

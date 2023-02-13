@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/extension/zpagesextension v0.72.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.72.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.72.0
+	go.opentelemetry.io/collector/receiver v0.72.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.0
 	golang.org/x/sys v0.5.0
 )
@@ -115,6 +116,8 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extensi
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
+
+replace go.opentelemetry.io/collector/receiver => ../../receiver
 
 replace go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
 
