@@ -16,6 +16,7 @@ package fanoutconsumer // import "go.opentelemetry.io/collector/service/internal
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/multierr"
 
@@ -84,7 +85,7 @@ func (msc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 var _ connector.MetricsRouter = (*metricsRouter)(nil)
 
 type metricsRouter struct {
-	all       consumer.Metrics
+	consumer.ConsumeMetricsFunc
 	consumers map[component.ID]consumer.Metrics
 }
 
@@ -94,28 +95,30 @@ func NewMetricsRouter(cm map[component.ID]consumer.Metrics) connector.MetricsRou
 		consumers = append(consumers, consumer)
 	}
 	return &metricsRouter{
-		all:       NewMetrics(consumers),
-		consumers: cm,
+		ConsumeMetricsFunc: NewMetrics(consumers).ConsumeMetrics,
+		consumers:          cm,
 	}
 }
 
-func (r *metricsRouter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return r.all.ConsumeMetrics(ctx, md)
-}
-
-// TODO evaluate strategy to avoid constructing fanout every time
-func (r *metricsRouter) RouteMetrics(ctx context.Context, md pmetric.Metrics, pipelineIDs ...component.ID) error {
+func (r *metricsRouter) Consumer(pipelineIDs ...component.ID) (consumer.Metrics, error) {
 	if len(pipelineIDs) == 0 {
-		return r.ConsumeMetrics(ctx, md)
+		return nil, fmt.Errorf("missing consumers")
 	}
 	consumers := make([]consumer.Metrics, 0, len(pipelineIDs))
+	var errors error
 	for _, pipelineID := range pipelineIDs {
-		if c, ok := r.consumers[pipelineID]; ok {
+		c, ok := r.consumers[pipelineID]
+		if ok {
 			consumers = append(consumers, c)
+		} else {
+			errors = multierr.Append(errors, fmt.Errorf("missing consumer: %q", pipelineID))
 		}
-		// TODO should we error on unconnected pipeline?
 	}
-	return NewMetrics(consumers).ConsumeMetrics(ctx, md)
+	if errors != nil {
+		// TODO potentially this could return a NewMetrics with the valid consumers
+		return nil, errors
+	}
+	return NewMetrics(consumers), nil
 }
 
 func (r *metricsRouter) Capabilities() consumer.Capabilities {

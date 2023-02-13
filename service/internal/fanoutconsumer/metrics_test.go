@@ -200,7 +200,7 @@ func (mts *mutatingMetricsSink) Capabilities() consumer.Capabilities {
 
 func TestMetricsRouterMultiplexing(t *testing.T) {
 	var max = 20
-	for numIDs := 0; numIDs < max; numIDs++ {
+	for numIDs := 1; numIDs < max; numIDs++ {
 		for numCons := 1; numCons < max; numCons++ {
 			for numMetrics := 1; numMetrics < max; numMetrics++ {
 				t.Run(
@@ -256,7 +256,9 @@ func fuzzMetricsRouter(numIDs, numCons, numMetrics int) func(*testing.T) {
 			}
 
 			// Route to list of consumers
-			assert.NoError(t, r.RouteMetrics(context.Background(), md, conIDs...))
+			fanout, err := r.Consumer(conIDs...)
+			assert.NoError(t, err)
+			assert.NoError(t, fanout.ConsumeMetrics(context.Background(), md))
 
 			// Validate expectations for all consumers
 			for id := range expected {
@@ -274,4 +276,50 @@ func fuzzMetricsRouter(numIDs, numCons, numMetrics int) func(*testing.T) {
 			}
 		}
 	}
+}
+
+func TestMetricsRouterGetConsumer(t *testing.T) {
+	ctx := context.Background()
+	md := testdata.GenerateMetrics(1)
+
+	fooID := component.NewID("foo")
+	barID := component.NewID("bar")
+
+	foo := new(consumertest.MetricsSink)
+	bar := new(consumertest.MetricsSink)
+	r := NewMetricsRouter(map[component.ID]consumer.Metrics{fooID: foo, barID: bar})
+	assert.Len(t, foo.AllMetrics(), 0)
+	assert.Len(t, bar.AllMetrics(), 0)
+
+	both, err := r.Consumer(fooID, barID)
+	assert.NotNil(t, both)
+	assert.NoError(t, err)
+
+	assert.NoError(t, both.ConsumeMetrics(ctx, md))
+	assert.Len(t, foo.AllMetrics(), 1)
+	assert.Len(t, bar.AllMetrics(), 1)
+
+	fooOnly, err := r.Consumer(fooID)
+	assert.NotNil(t, fooOnly)
+	assert.NoError(t, err)
+
+	assert.NoError(t, fooOnly.ConsumeMetrics(ctx, md))
+	assert.Len(t, foo.AllMetrics(), 2)
+	assert.Len(t, bar.AllMetrics(), 1)
+
+	barOnly, err := r.Consumer(barID)
+	assert.NotNil(t, barOnly)
+	assert.NoError(t, err)
+
+	assert.NoError(t, barOnly.ConsumeMetrics(ctx, md))
+	assert.Len(t, foo.AllMetrics(), 2)
+	assert.Len(t, bar.AllMetrics(), 2)
+
+	none, err := r.Consumer()
+	assert.Nil(t, none)
+	assert.Error(t, err)
+
+	fake, err := r.Consumer(component.NewID("fake"))
+	assert.Nil(t, fake)
+	assert.Error(t, err)
 }

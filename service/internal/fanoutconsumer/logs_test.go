@@ -208,7 +208,7 @@ func (mts mutatingErr) Capabilities() consumer.Capabilities {
 
 func TestLogsRouterMultiplexing(t *testing.T) {
 	var max = 20
-	for numIDs := 0; numIDs < max; numIDs++ {
+	for numIDs := 1; numIDs < max; numIDs++ {
 		for numCons := 1; numCons < max; numCons++ {
 			for numLogs := 1; numLogs < max; numLogs++ {
 				t.Run(
@@ -264,7 +264,9 @@ func fuzzLogsRouter(numIDs, numCons, numLogs int) func(*testing.T) {
 			}
 
 			// Route to list of consumers
-			assert.NoError(t, r.RouteLogs(context.Background(), ld, conIDs...))
+			fanout, err := r.Consumer(conIDs...)
+			assert.NoError(t, err)
+			assert.NoError(t, fanout.ConsumeLogs(context.Background(), ld))
 
 			// Validate expectations for all consumers
 			for id := range expected {
@@ -282,4 +284,50 @@ func fuzzLogsRouter(numIDs, numCons, numLogs int) func(*testing.T) {
 			}
 		}
 	}
+}
+
+func TestLogsRouterGetConsumer(t *testing.T) {
+	ctx := context.Background()
+	ld := testdata.GenerateLogs(1)
+
+	fooID := component.NewID("foo")
+	barID := component.NewID("bar")
+
+	foo := new(consumertest.LogsSink)
+	bar := new(consumertest.LogsSink)
+	r := NewLogsRouter(map[component.ID]consumer.Logs{fooID: foo, barID: bar})
+	assert.Len(t, foo.AllLogs(), 0)
+	assert.Len(t, bar.AllLogs(), 0)
+
+	both, err := r.Consumer(fooID, barID)
+	assert.NotNil(t, both)
+	assert.NoError(t, err)
+
+	assert.NoError(t, both.ConsumeLogs(ctx, ld))
+	assert.Len(t, foo.AllLogs(), 1)
+	assert.Len(t, bar.AllLogs(), 1)
+
+	fooOnly, err := r.Consumer(fooID)
+	assert.NotNil(t, fooOnly)
+	assert.NoError(t, err)
+
+	assert.NoError(t, fooOnly.ConsumeLogs(ctx, ld))
+	assert.Len(t, foo.AllLogs(), 2)
+	assert.Len(t, bar.AllLogs(), 1)
+
+	barOnly, err := r.Consumer(barID)
+	assert.NotNil(t, barOnly)
+	assert.NoError(t, err)
+
+	assert.NoError(t, barOnly.ConsumeLogs(ctx, ld))
+	assert.Len(t, foo.AllLogs(), 2)
+	assert.Len(t, bar.AllLogs(), 2)
+
+	none, err := r.Consumer()
+	assert.Nil(t, none)
+	assert.Error(t, err)
+
+	fake, err := r.Consumer(component.NewID("fake"))
+	assert.Nil(t, fake)
+	assert.Error(t, err)
 }
