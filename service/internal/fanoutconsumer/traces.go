@@ -16,6 +16,7 @@ package fanoutconsumer // import "go.opentelemetry.io/collector/service/internal
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/multierr"
 
@@ -84,40 +85,46 @@ func (tsc *tracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 var _ connector.TracesRouter = (*tracesRouter)(nil)
 
 type tracesRouter struct {
-	all       consumer.Traces
+	consumer.Traces
 	consumers map[component.ID]consumer.Traces
 }
 
-func NewTracesRouter(cm map[component.ID]consumer.Traces) connector.TracesRouter {
+func NewTracesRouter(cm map[component.ID]consumer.Traces) consumer.Traces {
 	consumers := make([]consumer.Traces, 0, len(cm))
 	for _, consumer := range cm {
 		consumers = append(consumers, consumer)
 	}
 	return &tracesRouter{
-		all:       NewTraces(consumers),
+		Traces:    NewTraces(consumers),
 		consumers: cm,
 	}
 }
 
-func (r *tracesRouter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	return r.all.ConsumeTraces(ctx, td)
+func (r *tracesRouter) PipelineIDs() []component.ID {
+	ids := make([]component.ID, 0, len(r.consumers))
+	for id := range r.consumers {
+		ids = append(ids, id)
+	}
+	return ids
 }
 
-// TODO evaluate strategy to avoid constructing fanout every time
-func (r *tracesRouter) RouteTraces(ctx context.Context, td ptrace.Traces, pipelineIDs ...component.ID) error {
+func (r *tracesRouter) Consumer(pipelineIDs ...component.ID) (consumer.Traces, error) {
 	if len(pipelineIDs) == 0 {
-		return r.ConsumeTraces(ctx, td)
+		return nil, fmt.Errorf("missing consumers")
 	}
 	consumers := make([]consumer.Traces, 0, len(pipelineIDs))
+	var errors error
 	for _, pipelineID := range pipelineIDs {
-		if c, ok := r.consumers[pipelineID]; ok {
+		c, ok := r.consumers[pipelineID]
+		if ok {
 			consumers = append(consumers, c)
+		} else {
+			errors = multierr.Append(errors, fmt.Errorf("missing consumer: %q", pipelineID))
 		}
-		// TODO should we error on unconnected pipeline?
 	}
-	return NewTraces(consumers).ConsumeTraces(ctx, td)
-}
-
-func (r *tracesRouter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	if errors != nil {
+		// TODO potentially this could return a NewTraces with the valid consumers
+		return nil, errors
+	}
+	return NewTraces(consumers), nil
 }

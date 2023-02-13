@@ -916,11 +916,8 @@ func TestConnectorRouter(t *testing.T) {
 		},
 	}
 
-	pipelinesInterface, err := buildPipelinesGraph(ctx, set)
+	pg, err := buildPipelinesGraph(ctx, set)
 	require.NoError(t, err)
-
-	pg, ok := pipelinesInterface.(*pipelinesGraph)
-	require.True(t, ok)
 
 	allReceivers := pg.getReceivers()
 	allExporters := pg.GetExporters()

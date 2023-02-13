@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -200,7 +201,7 @@ func (mts *mutatingTracesSink) Capabilities() consumer.Capabilities {
 
 func TestTracesRouterMultiplexing(t *testing.T) {
 	var max = 20
-	for numIDs := 0; numIDs < max; numIDs++ {
+	for numIDs := 1; numIDs < max; numIDs++ {
 		for numCons := 1; numCons < max; numCons++ {
 			for numTraces := 1; numTraces < max; numTraces++ {
 				t.Run(
@@ -230,9 +231,7 @@ func fuzzTracesRouter(numIDs, numCons, numTraces int) func(*testing.T) {
 			allConsMap[allIDs[i]] = allCons[i]
 		}
 
-		r := NewTracesRouter(allConsMap)
-		assert.False(t, r.Capabilities().MutatesData)
-
+		r := NewTracesRouter(allConsMap).(connector.TracesRouter)
 		td := testdata.GenerateTraces(1)
 
 		// Keep track of how many logs each consumer should receive.
@@ -256,7 +255,9 @@ func fuzzTracesRouter(numIDs, numCons, numTraces int) func(*testing.T) {
 			}
 
 			// Route to list of consumers
-			assert.NoError(t, r.RouteTraces(context.Background(), td, conIDs...))
+			fanout, err := r.Consumer(conIDs...)
+			assert.NoError(t, err)
+			assert.NoError(t, fanout.ConsumeTraces(context.Background(), td))
 
 			// Validate expectations for all consumers
 			for id := range expected {
@@ -274,4 +275,55 @@ func fuzzTracesRouter(numIDs, numCons, numTraces int) func(*testing.T) {
 			}
 		}
 	}
+}
+
+func TestTracesRouterGetConsumer(t *testing.T) {
+	ctx := context.Background()
+	td := testdata.GenerateTraces(1)
+
+	fooID := component.NewID("foo")
+	barID := component.NewID("bar")
+
+	foo := new(consumertest.TracesSink)
+	bar := new(consumertest.TracesSink)
+	r := NewTracesRouter(map[component.ID]consumer.Traces{fooID: foo, barID: bar}).(connector.TracesRouter)
+
+	rcs := r.PipelineIDs()
+	assert.Len(t, rcs, 2)
+	assert.ElementsMatch(t, []component.ID{fooID, barID}, rcs)
+
+	assert.Len(t, foo.AllTraces(), 0)
+	assert.Len(t, bar.AllTraces(), 0)
+
+	both, err := r.Consumer(fooID, barID)
+	assert.NotNil(t, both)
+	assert.NoError(t, err)
+
+	assert.NoError(t, both.ConsumeTraces(ctx, td))
+	assert.Len(t, foo.AllTraces(), 1)
+	assert.Len(t, bar.AllTraces(), 1)
+
+	fooOnly, err := r.Consumer(fooID)
+	assert.NotNil(t, fooOnly)
+	assert.NoError(t, err)
+
+	assert.NoError(t, fooOnly.ConsumeTraces(ctx, td))
+	assert.Len(t, foo.AllTraces(), 2)
+	assert.Len(t, bar.AllTraces(), 1)
+
+	barOnly, err := r.Consumer(barID)
+	assert.NotNil(t, barOnly)
+	assert.NoError(t, err)
+
+	assert.NoError(t, barOnly.ConsumeTraces(ctx, td))
+	assert.Len(t, foo.AllTraces(), 2)
+	assert.Len(t, bar.AllTraces(), 2)
+
+	none, err := r.Consumer()
+	assert.Nil(t, none)
+	assert.Error(t, err)
+
+	fake, err := r.Consumer(component.NewID("fake"))
+	assert.Nil(t, fake)
+	assert.Error(t, err)
 }

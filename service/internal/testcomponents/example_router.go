@@ -53,72 +53,75 @@ func createExampleRouterDefaultConfig() component.Config {
 
 func createExampleTracesRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, traces consumer.Traces) (connector.Traces, error) {
 	c := cfg.(ExampleRouterConfig)
+	r := traces.(connector.TracesRouter)
+	left, _ := r.Consumer(c.Traces.Left)
+	right, _ := r.Consumer(c.Traces.Right)
 	return &ExampleRouter{
-		traces:      traces.(connector.TracesRouter),
-		tracesRight: c.Traces.Right,
-		tracesLeft:  c.Traces.Left,
+		tracesRight: right,
+		tracesLeft:  left,
 	}, nil
 }
 
 func createExampleMetricsRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, metrics consumer.Metrics) (connector.Metrics, error) {
 	c := cfg.(ExampleRouterConfig)
+	r := metrics.(connector.MetricsRouter)
+	left, _ := r.Consumer(c.Metrics.Left)
+	right, _ := r.Consumer(c.Metrics.Right)
 	return &ExampleRouter{
-		metrics:      metrics.(connector.MetricsRouter),
-		metricsRight: c.Metrics.Right,
-		metricsLeft:  c.Metrics.Left,
+		metricsRight: right,
+		metricsLeft:  left,
 	}, nil
 }
 
 func createExampleLogsRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, logs consumer.Logs) (connector.Logs, error) {
 	c := cfg.(ExampleRouterConfig)
+	r := logs.(connector.LogsRouter)
+	left, _ := r.Consumer(c.Logs.Left)
+	right, _ := r.Consumer(c.Logs.Right)
 	return &ExampleRouter{
-		logs:      logs.(connector.LogsRouter),
-		logsRight: c.Logs.Right,
-		logsLeft:  c.Logs.Left,
+		logsRight: right,
+		logsLeft:  left,
 	}, nil
 }
 
 type ExampleRouter struct {
 	componentState
 
-	traces      connector.TracesRouter
-	tracesRight component.ID
-	tracesLeft  component.ID
+	tracesRight consumer.Traces
+	tracesLeft  consumer.Traces
 	tracesNum   int
 
-	metrics      connector.MetricsRouter
-	metricsRight component.ID
-	metricsLeft  component.ID
+	metricsRight consumer.Metrics
+	metricsLeft  consumer.Metrics
 	metricsNum   int
 
-	logs      connector.LogsRouter
-	logsRight component.ID
-	logsLeft  component.ID
+	logsRight consumer.Logs
+	logsLeft  consumer.Logs
 	logsNum   int
 }
 
 func (r *ExampleRouter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	r.tracesNum++
 	if r.tracesNum%2 == 0 {
-		return r.traces.RouteTraces(ctx, td, r.tracesLeft)
+		return r.tracesLeft.ConsumeTraces(ctx, td)
 	}
-	return r.traces.RouteTraces(ctx, td, r.tracesRight)
+	return r.tracesRight.ConsumeTraces(ctx, td)
 }
 
 func (r *ExampleRouter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	r.metricsNum++
 	if r.metricsNum%2 == 0 {
-		return r.metrics.RouteMetrics(ctx, md, r.metricsLeft)
+		return r.metricsLeft.ConsumeMetrics(ctx, md)
 	}
-	return r.metrics.RouteMetrics(ctx, md, r.metricsRight)
+	return r.metricsRight.ConsumeMetrics(ctx, md)
 }
 
 func (r *ExampleRouter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	r.logsNum++
 	if r.logsNum%2 == 0 {
-		return r.logs.RouteLogs(ctx, ld, r.logsLeft)
+		return r.logsLeft.ConsumeLogs(ctx, ld)
 	}
-	return r.logs.RouteLogs(ctx, ld, r.logsRight)
+	return r.logsRight.ConsumeLogs(ctx, ld)
 }
 
 func (r *ExampleRouter) Capabilities() consumer.Capabilities {

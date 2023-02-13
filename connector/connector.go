@@ -22,9 +22,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // A Traces connector acts as an exporter from a traces pipeline and a receiver
@@ -45,9 +42,10 @@ type Traces interface {
 }
 
 // TracesRouter feeds the first consumer.Traces in each of the specified pipelines.
+// The router will create a fanout consumer for the set of pipelines and return a uuid
 type TracesRouter interface {
-	consumer.Traces
-	RouteTraces(context.Context, ptrace.Traces, ...component.ID) error
+	Consumer(...component.ID) (consumer.Traces, error)
+	PipelineIDs() []component.ID
 }
 
 // A Metrics connector acts as an exporter from a metrics pipeline and a receiver
@@ -68,13 +66,13 @@ type Metrics interface {
 
 // MetricsRouter feeds the first consumer.Metrics in each of the specified pipelines.
 type MetricsRouter interface {
-	consumer.Metrics
-	RouteMetrics(context.Context, pmetric.Metrics, ...component.ID) error
+	Consumer(...component.ID) (consumer.Metrics, error)
+	PipelineIDs() []component.ID
 }
 
 // A Logs connector acts as an exporter from a logs pipeline and a receiver
 // to one or more traces, metrics, or logs pipelines.
-// Logs feeds a consumer.Traces, consumer.Metrics, or consumer.Logs with data.
+// Logs feeds a consumer.Logs, consumer.Metrics, or consumer.Logs with data.
 //
 // Examples:
 //   - Structured logs containing span information could be consumed and emitted as traces.
@@ -89,8 +87,8 @@ type Logs interface {
 
 // LogsRouter feeds the first consumer.Logs in each of the specified pipelines.
 type LogsRouter interface {
-	consumer.Logs
-	RouteLogs(context.Context, plog.Logs, ...component.ID) error
+	Consumer(...component.ID) (consumer.Logs, error)
+	PipelineIDs() []component.ID
 }
 
 // CreateSettings configures Connector creators.
