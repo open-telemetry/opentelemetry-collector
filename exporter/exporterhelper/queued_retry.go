@@ -84,9 +84,11 @@ type queuedRetrySender struct {
 	cfg                QueueSettings
 	consumerSender     requestSender
 	queue              internal.ProducerConsumerQueue
+	retryStopCh        chan struct{}
 	traceAttribute     attribute.KeyValue
 	logger             *zap.Logger
 	requeuingEnabled   bool
+	requeueSender      *queuedRetrySender
 	requestUnmarshaler internal.RequestUnmarshaler
 }
 
@@ -96,19 +98,32 @@ func newQueuedRetrySender(
 	signal component.DataType,
 	traceAttr attribute.KeyValue,
 	qCfg QueueSettings,
+	rCfg RetrySettings,
 	reqUnmarshaler internal.RequestUnmarshaler,
 	nextSender requestSender,
 	logger *zap.Logger,
 ) *queuedRetrySender {
+	retryStopCh := make(chan struct{})
+
 	qrs := &queuedRetrySender{
 		fullName:           fullName,
 		id:                 id,
 		signal:             signal,
 		cfg:                qCfg,
+		retryStopCh:        retryStopCh,
 		traceAttribute:     traceAttr,
 		logger:             logger,
 		requestUnmarshaler: reqUnmarshaler,
 		consumerSender:     nextSender,
+	}
+
+	qrs.consumerSender = &retrySender{
+		traceAttribute:     traceAttr,
+		cfg:                rCfg,
+		nextSender:         nextSender,
+		stopCh:             retryStopCh,
+		logger:             logger,
+		onTemporaryFailure: qrs.onTemporaryFailure,
 	}
 
 	if qCfg.StorageID == nil {
@@ -162,6 +177,36 @@ func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, hos
 	return nil
 }
 
+func (qrs *queuedRetrySender) onTemporaryFailure(logger *zap.Logger, req internal.Request, err error) error {
+	if !qrs.requeuingEnabled || qrs.queue == nil {
+		logger.Error(
+			"Exporting failed. No more retries left. Dropping data.",
+			zap.Error(err),
+			zap.Int("dropped_items", req.Count()),
+		)
+		return err
+	}
+
+	sender := qrs
+	if qrs.requeueSender != nil {
+		sender = qrs.requeueSender
+	}
+
+	if sender.queue.Produce(req) {
+		logger.Error(
+			"Exporting failed. Putting back to the end of the queue.",
+			zap.Error(err),
+		)
+	} else {
+		logger.Error(
+			"Exporting failed. Queue did not accept requeuing request. Dropping data.",
+			zap.Error(err),
+			zap.Int("dropped_items", req.Count()),
+		)
+	}
+	return err
+}
+
 // start is invoked during service startup.
 func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) error {
 	if err := qrs.initializePersistentQueue(ctx, host); err != nil {
@@ -200,6 +245,9 @@ func (qrs *queuedRetrySender) shutdown() {
 			return int64(0)
 		}, metricdata.NewLabelValue(qrs.fullName))
 	}
+
+	// First Stop the retry goroutines, so that unblocks the queue numWorkers.
+	close(qrs.retryStopCh)
 
 	// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.

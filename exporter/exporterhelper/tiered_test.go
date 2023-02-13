@@ -17,11 +17,12 @@ package exporterhelper
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -29,6 +30,37 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
+
+func TestTiered_QueuesDisabled(t *testing.T) {
+	qCfg := QueueSettings{Enabled: false}
+	bCfg := QueueSettings{Enabled: false}
+	be, err := newBaseExporter(defaultSettings, fromOptions(WithQueue(qCfg), WithBacklog(bCfg)), "", nopRequestUnmarshaler())
+	require.NoError(t, err)
+	require.NotNil(t, be.sender.primary)
+	assert.Nil(t, be.sender.backlog)
+
+	primaryObserver := newObservabilityConsumerSender(be.sender.primary.consumerSender)
+	be.sender.primary.consumerSender = primaryObserver
+
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	primaryCounter := &atomic.Uint32{}
+	be.sender.primary.queue = &producerConsumerQueueWithCounter{
+		ProducerConsumerQueue: be.sender.primary.queue,
+		produceCounter:        primaryCounter,
+	}
+
+	req := newMockRequest(context.Background(), 1, nil)
+	for i := 0; i < 5; i++ {
+		primaryObserver.run(func() {
+			require.NoError(t, be.sender.send(req))
+		})
+	}
+
+	// received by consumer sender, but not by queue
+	primaryObserver.awaitAsyncProcessing()
+	primaryObserver.checkSendItemsCount(t, 5)
+	assert.EqualValues(t, 0, primaryCounter.Load())
+}
 
 func TestTiered_PrimaryQueueFull(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
@@ -56,8 +88,8 @@ func TestTiered_PrimaryQueueFull(t *testing.T) {
 	})
 	backlogObserver.awaitAsyncProcessing()
 
-	require.Zero(t, be.sender.primary.queue.Size())
-	require.Zero(t, be.sender.backlog.queue.Size())
+	assert.Zero(t, be.sender.primary.queue.Size())
+	assert.Zero(t, be.sender.backlog.queue.Size())
 
 	// only the backlog actually gets sent
 	mockR.checkNumRequests(t, 1)
@@ -96,8 +128,8 @@ func TestTiered_PrimaryQueueOnError(t *testing.T) {
 	require.NoError(t, be.sender.send(mockR))
 	backlogObserver.awaitAsyncProcessing()
 
-	require.Zero(t, be.sender.primary.queue.Size())
-	require.Zero(t, be.sender.backlog.queue.Size())
+	assert.Zero(t, be.sender.primary.queue.Size())
+	assert.Zero(t, be.sender.backlog.queue.Size())
 
 	// error on primary, success on backlog
 	mockR.checkNumRequests(t, 2)
@@ -129,12 +161,12 @@ func TestTiered_BacklogQueueFull(t *testing.T) {
 	require.NoError(t, be.sender.send(mockR))
 
 	// replace overflow function to add counter
-	overflowCounter := atomic.NewUint32(0)
+	overflowCounter := &atomic.Uint32{}
 	be.sender.backlog.queue.OnOverflow(func(item internal.Request) {
 		overflowCounter.Add(1)
 	})
 	require.NoError(t, be.sender.send(mockR))
-	require.Eventually(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return overflowCounter.Load() == uint32(1)
 	}, time.Second, 1*time.Millisecond)
 }
@@ -182,7 +214,7 @@ func TestTiered_BacklogStartError(t *testing.T) {
 	host := &mockHost{ext: extensions}
 
 	// we fail to start if we get an error creating the storage client
-	require.Error(t, be.Start(context.Background(), host), "could not get storage client")
+	assert.Error(t, be.Start(context.Background(), host), "could not get storage client")
 }
 
 func TestTiered_BacklogEnabledWithoutPrimary(t *testing.T) {
@@ -191,8 +223,8 @@ func TestTiered_BacklogEnabledWithoutPrimary(t *testing.T) {
 	bCfg.QueueSize = 0
 	be, err := newBaseExporter(defaultSettings, fromOptions(WithBacklog(bCfg)), "", nopRequestUnmarshaler())
 	require.NoError(t, err)
-	require.NotNil(t, be.sender.primary)
-	require.Nil(t, be.sender.backlog)
+	assert.NotNil(t, be.sender.primary)
+	assert.Nil(t, be.sender.backlog)
 }
 
 func TestTiered_Shutdown_PrimaryRequestsFlushedToBacklog(t *testing.T) {
@@ -208,17 +240,18 @@ func TestTiered_Shutdown_PrimaryRequestsFlushedToBacklog(t *testing.T) {
 	require.NotNil(t, be.sender.backlog)
 
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-	primaryCounter := atomic.NewUint32(0)
+	primaryCounter := &atomic.Uint32{}
 	be.sender.primary.queue = &producerConsumerQueueWithCounter{
 		ProducerConsumerQueue: be.sender.primary.queue,
 		produceCounter:        primaryCounter,
 	}
 	be.sender.primary.requeuingEnabled = true
-	backlogCounter := atomic.NewUint32(0)
+	backlogCounter := &atomic.Uint32{}
 	be.sender.backlog.queue = &producerConsumerQueueWithCounter{
 		ProducerConsumerQueue: be.sender.backlog.queue,
 		produceCounter:        backlogCounter,
 	}
+	be.sender.backlog.requeuingEnabled = true
 
 	// replace nextSender inside retrySender to always return error so it doesn't exit send loop
 	be.sender.wrapConsumerSender(func(consumer requestSender) requestSender {
@@ -228,21 +261,19 @@ func TestTiered_Shutdown_PrimaryRequestsFlushedToBacklog(t *testing.T) {
 		return consumer
 	})
 
-	req := newMockRequest(context.Background(), 3, errors.New("some error"))
-	require.NoError(t, be.sender.send(req))
+	for i := 0; i < 5; i++ {
+		req := newMockRequest(context.Background(), i, errors.New("some error"))
+		require.NoError(t, be.sender.send(req))
+	}
 
 	// first wait for all the items to be produced to the queue initially
-	require.Eventually(t, func() bool {
-		return primaryCounter.Load() == uint32(1)
+	assert.Eventually(t, func() bool {
+		return primaryCounter.Load() == uint32(5)
 	}, time.Second, 1*time.Millisecond)
 
 	// shuts down and ensure the item is produced in the backlog queue again
 	require.NoError(t, be.Shutdown(context.Background()))
-	require.Eventually(t, func() bool {
-		// double the count due to the backlog receiving the primary
-		// requests and then shutting down itself, which results in
-		// requeuing on backlog
-		// primary -> retry -> backlog -> retry -> backlog
-		return backlogCounter.Load() == uint32(2)
+	assert.Eventually(t, func() bool {
+		return backlogCounter.Load() == uint32(5)
 	}, time.Second, 1*time.Millisecond)
 }

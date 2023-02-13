@@ -201,9 +201,9 @@ func TestPersistentQueue_Overflow(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
 
 	wq := createTestQueue(ext, 0)
-	overflowCounter := atomic.NewInt32(0)
+	overflowCounter := &atomic.Int32{}
 	wq.OnOverflow(func(item Request) {
-		overflowCounter.Add(1)
+		overflowCounter.Add(int32(1))
 	})
 	traces := newTraces(1, 10)
 

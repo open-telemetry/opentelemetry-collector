@@ -583,7 +583,6 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 }
 
 func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
-
 	produceCounter := &atomic.Uint32{}
 
 	qCfg := NewDefaultQueueSettings()
@@ -600,14 +599,14 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	require.NoError(t, be.Start(context.Background(), &mockHost{}))
 
 	// wraps original queue so we can count operations
-	be.qrSender.queue = &producerConsumerQueueWithCounter{
-		ProducerConsumerQueue: be.qrSender.queue,
+	be.sender.primary.queue = &producerConsumerQueueWithCounter{
+		ProducerConsumerQueue: be.sender.primary.queue,
 		produceCounter:        produceCounter,
 	}
-	be.qrSender.requeuingEnabled = true
+	be.sender.primary.requeuingEnabled = true
 
 	// replace nextSender inside retrySender to always return error so it doesn't exit send loop
-	castedSender, ok := be.qrSender.consumerSender.(*retrySender)
+	castedSender, ok := be.sender.primary.consumerSender.(*retrySender)
 	require.True(t, ok, "consumerSender should be a retrySender type")
 	castedSender.nextSender = &errorRequestSender{
 		errToReturn: errors.New("some error"),

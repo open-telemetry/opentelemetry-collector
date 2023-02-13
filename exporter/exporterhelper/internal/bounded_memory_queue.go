@@ -76,16 +76,14 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 		if q.overflow == nil {
 			return false
 		}
-		if q.capacity == 0 {
+		select {
+		case old := <-q.items:
+			q.size.Add(^uint32(0))
+			q.overflow(old)
+		default:
 			q.overflow(item)
-		} else {
-			old := <-q.items
-			if q.overflow != nil {
-				q.overflow(old)
-			}
-			q.items <- item
+			return true
 		}
-		return true
 	}
 
 	q.size.Add(1)

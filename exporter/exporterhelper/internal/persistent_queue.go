@@ -55,7 +55,7 @@ func NewPersistentQueue(ctx context.Context, name string, signal component.DataT
 }
 
 // StartConsumers starts the given number of consumers which will be consuming items
-func (pq *persistentQueue) StartConsumers(numWorkers int, callback func(item Request)) {
+func (pq *persistentQueue) StartConsumers(numWorkers int, callback RequestCallback) {
 	for i := 0; i < numWorkers; i++ {
 		pq.stopWG.Add(1)
 		go func() {

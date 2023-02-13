@@ -27,13 +27,12 @@ import (
 )
 
 type tieredSender struct {
-	name        string
-	id          component.ID
-	signal      component.DataType
-	logger      *zap.Logger
-	primary     *queuedRetrySender
-	backlog     *queuedRetrySender
-	retryStopCh chan struct{}
+	name    string
+	id      component.ID
+	signal  component.DataType
+	logger  *zap.Logger
+	primary *queuedRetrySender
+	backlog *queuedRetrySender
 }
 
 func newTieredSender(
@@ -46,31 +45,21 @@ func newTieredSender(
 	nextSender requestSender,
 	logger *zap.Logger,
 ) *tieredSender {
-	retryStopCh := make(chan struct{})
 	name := id.String()
 	traceAttr := attribute.String(obsmetrics.ExporterKey, name)
 
 	ts := &tieredSender{
-		name:        name,
-		id:          id,
-		signal:      signal,
-		logger:      logger,
-		retryStopCh: retryStopCh,
+		name:   name,
+		id:     id,
+		signal: signal,
+		logger: logger,
 	}
 
-	rs := &retrySender{
-		traceAttribute:     traceAttr,
-		cfg:                rCfg,
-		nextSender:         nextSender,
-		stopCh:             retryStopCh,
-		logger:             logger,
-		onTemporaryFailure: ts.onTemporaryFailure,
-	}
-
-	ts.primary = newQueuedRetrySender(name, id, signal, traceAttr, qCfg, reqUnmarshaler, rs, logger)
+	ts.primary = newQueuedRetrySender(name, id, signal, traceAttr, qCfg, rCfg, reqUnmarshaler, nextSender, logger)
 	if qCfg.Enabled && bCfg.Enabled {
 		name = fmt.Sprintf("%s:backlog", name)
-		ts.backlog = newQueuedRetrySender(name, id, signal, traceAttr, bCfg, reqUnmarshaler, rs, logger)
+		ts.backlog = newQueuedRetrySender(name, id, signal, traceAttr, bCfg, rCfg, reqUnmarshaler, nextSender, logger)
+		ts.primary.requeueSender = ts.backlog
 	}
 	return ts
 }
@@ -105,11 +94,9 @@ func (ts *tieredSender) start(ctx context.Context, host component.Host) error {
 
 // shutdown is invoked during service shutdown.
 func (ts *tieredSender) shutdown() {
-	// First Stop the retry goroutines, so that unblocks the queues.
-	close(ts.retryStopCh)
-
 	ts.primary.shutdown()
 	if ts.backlog != nil {
+		ts.backlog.requeuingEnabled = false
 		ts.backlog.shutdown()
 	}
 }
@@ -119,45 +106,11 @@ func (ts *tieredSender) send(req internal.Request) error {
 	return ts.primary.send(req)
 }
 
-// onTemporaryFailure tries to requeue the request if possible. Will send
-// to backlog if enabled.
-func (ts *tieredSender) onTemporaryFailure(logger *zap.Logger, req internal.Request, err error) error {
-	if !ts.primary.requeuingEnabled || ts.primary.queue == nil {
-		logger.Error(
-			"Exporting failed. No more retries left. Dropping data.",
-			zap.Error(err),
-			zap.Int("dropped_items", req.Count()),
-		)
-		return err
-	}
-
-	sender := ts.primary
-	if ts.backlog != nil {
-		sender = ts.backlog
-	}
-
-	if sendErr := sender.send(req); sendErr != nil {
-		logger.Error(
-			"Exporting failed. Queue did not accept requeuing request. Dropping data.",
-			zap.Error(err),
-			zap.String("sender_name", sender.fullName),
-			zap.Int("dropped_items", req.Count()),
-		)
-	} else {
-		logger.Error(
-			"Exporting failed. Putting back to the end of the queue.",
-			zap.String("sender_name", sender.fullName),
-			zap.Error(err),
-		)
-	}
-	return err
-}
-
 // wrapConsumerSender calls the wrap function on the primary's consumer sender
 // and sets it as the consumer sender for both primary and backlog if it is enabled.
 func (ts *tieredSender) wrapConsumerSender(wrap func(consumer requestSender) requestSender) {
 	ts.primary.consumerSender = wrap(ts.primary.consumerSender)
 	if ts.backlog != nil {
-		ts.backlog.consumerSender = ts.primary.consumerSender
+		ts.backlog.consumerSender = wrap(ts.backlog.consumerSender)
 	}
 }
