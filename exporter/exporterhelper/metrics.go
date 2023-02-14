@@ -79,7 +79,7 @@ type metricsExporter struct {
 	consumer.Metrics
 }
 
-// NewMetricsExporter creates a exporter.Metrics that records observability metrics and wraps every request with a Span.
+// NewMetricsExporter creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
 func NewMetricsExporter(
 	_ context.Context,
 	set exporter.CreateSettings,
