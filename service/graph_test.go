@@ -1766,7 +1766,7 @@ func (g *pipelinesGraph) getReceivers() map[component.DataType]map[component.ID]
 //
 // However, within an individual pipeline, we expect:
 // - E instances of the connector as a receiver.
-// - R instances of the connector as a exporter.
+// - R instances of the connector as an exporter.
 func expectedInstances(m map[component.ID]*PipelineConfig, pID component.ID) (int, int) {
 	var r, e int
 	for _, rID := range m[pID].Receivers {

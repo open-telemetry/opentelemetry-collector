@@ -78,7 +78,7 @@ type logsExporter struct {
 	consumer.Logs
 }
 
-// NewLogsExporter creates a exporter.Logs that records observability metrics and wraps every request with a Span.
+// NewLogsExporter creates an exporter.Logs that records observability metrics and wraps every request with a Span.
 func NewLogsExporter(
 	_ context.Context,
 	set exporter.CreateSettings,

@@ -69,7 +69,7 @@ type nopExporter struct {
 	consumertest.Consumer
 }
 
-// NewNopBuilder returns a exporter.Builder that constructs nop receivers.
+// NewNopBuilder returns an exporter.Builder that constructs nop receivers.
 func NewNopBuilder() *exporter.Builder {
 	nopFactory := NewNopFactory()
 	return exporter.NewBuilder(
