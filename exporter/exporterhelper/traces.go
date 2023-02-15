@@ -43,19 +43,20 @@ func newTracesRequest(ctx context.Context, td ptrace.Traces, pusher consumer.Con
 	}
 }
 
-func newTraceRequestUnmarshalerFunc(pusher consumer.ConsumeTracesFunc) internal.RequestUnmarshaler {
-	return func(bytes []byte) (internal.Request, error) {
-		traces, err := tracesUnmarshaler.UnmarshalTraces(bytes)
-		if err != nil {
-			return nil, err
-		}
-		return newTracesRequest(context.Background(), traces, pusher), nil
-	}
+type tracesRequestMarshaler struct {
+	pusher consumer.ConsumeTracesFunc
 }
 
-// Marshal provides serialization capabilities required by persistent queue
-func (req *tracesRequest) Marshal() ([]byte, error) {
-	return tracesMarshaler.MarshalTraces(req.td)
+func (trm tracesRequestMarshaler) Marshal(req internal.Request) ([]byte, error) {
+	return tracesMarshaler.MarshalTraces(req.(*tracesRequest).td)
+}
+
+func (trm tracesRequestMarshaler) Unmarshal(bytes []byte) (internal.Request, error) {
+	traces, err := tracesUnmarshaler.UnmarshalTraces(bytes)
+	if err != nil {
+		return nil, err
+	}
+	return newTracesRequest(context.Background(), traces, trm.pusher), nil
 }
 
 func (req *tracesRequest) OnError(err error) internal.Request {
@@ -100,7 +101,7 @@ func NewTracesExporter(
 	}
 
 	bs := fromOptions(options...)
-	be, err := newBaseExporter(set, bs, component.DataTypeTraces, newTraceRequestUnmarshalerFunc(pusher))
+	be, err := newBaseExporter(set, bs, component.DataTypeTraces, tracesRequestMarshaler{pusher: pusher})
 	if err != nil {
 		return nil, err
 	}

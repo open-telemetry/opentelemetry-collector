@@ -43,14 +43,20 @@ func newLogsRequest(ctx context.Context, ld plog.Logs, pusher consumer.ConsumeLo
 	}
 }
 
-func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) internal.RequestUnmarshaler {
-	return func(bytes []byte) (internal.Request, error) {
-		logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
-		if err != nil {
-			return nil, err
-		}
-		return newLogsRequest(context.Background(), logs, pusher), nil
+type logsRequestMarshaler struct {
+	pusher consumer.ConsumeLogsFunc
+}
+
+func (lrm logsRequestMarshaler) Marshal(req internal.Request) ([]byte, error) {
+	return logsMarshaler.MarshalLogs(req.(*logsRequest).ld)
+}
+
+func (lrm logsRequestMarshaler) Unmarshal(bytes []byte) (internal.Request, error) {
+	logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
+	if err != nil {
+		return nil, err
 	}
+	return newLogsRequest(context.Background(), logs, lrm.pusher), nil
 }
 
 func (req *logsRequest) OnError(err error) internal.Request {
@@ -63,10 +69,6 @@ func (req *logsRequest) OnError(err error) internal.Request {
 
 func (req *logsRequest) Export(ctx context.Context) error {
 	return req.pusher(ctx, req.ld)
-}
-
-func (req *logsRequest) Marshal() ([]byte, error) {
-	return logsMarshaler.MarshalLogs(req.ld)
 }
 
 func (req *logsRequest) Count() int {
@@ -99,7 +101,7 @@ func NewLogsExporter(
 	}
 
 	bs := fromOptions(options...)
-	be, err := newBaseExporter(set, bs, component.DataTypeLogs, newLogsRequestUnmarshalerFunc(pusher))
+	be, err := newBaseExporter(set, bs, component.DataTypeLogs, logsRequestMarshaler{pusher: pusher})
 	if err != nil {
 		return nil, err
 	}

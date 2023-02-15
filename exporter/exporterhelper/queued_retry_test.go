@@ -41,17 +41,23 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func mockRequestUnmarshaler(mr *mockRequest) internal.RequestUnmarshaler {
-	return func(bytes []byte) (internal.Request, error) {
-		return mr, nil
-	}
+type mockRequestMarshaler struct {
+	mr *mockRequest
+}
+
+func (mrm mockRequestMarshaler) Marshal(internal.Request) ([]byte, error) {
+	return tracesMarshaler.MarshalTraces(ptrace.NewTraces())
+}
+
+func (mrm mockRequestMarshaler) Unmarshal(bytes []byte) (internal.Request, error) {
+	return mrm.mr, nil
 }
 
 func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	rCfg := NewDefaultRetrySettings()
 	mockR := newMockRequest(context.Background(), 2, consumererror.NewPermanent(errors.New("bad data")))
-	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", mockRequestUnmarshaler(mockR))
+	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", mockRequestMarshaler{mr: mockR})
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -672,11 +678,6 @@ func (m *mockRequest) Export(ctx context.Context) error {
 	}
 	// Respond like gRPC/HTTP, if context is cancelled, return error
 	return ctx.Err()
-}
-
-func (m *mockRequest) Marshal() ([]byte, error) {
-	marshaler := &ptrace.ProtoMarshaler{}
-	return marshaler.MarshalTraces(ptrace.NewTraces())
 }
 
 func (m *mockRequest) OnError(error) internal.Request {

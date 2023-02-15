@@ -33,9 +33,6 @@ type Request interface {
 	// Count returns the count of spans/metric points or log records.
 	Count() int
 
-	// Marshal serializes the current request into a byte stream
-	Marshal() ([]byte, error)
-
 	// OnProcessingFinished calls the optional callback function to handle cleanup after all processing is finished
 	OnProcessingFinished()
 
@@ -43,5 +40,9 @@ type Request interface {
 	SetOnProcessingFinished(callback func())
 }
 
-// RequestUnmarshaler defines a function which takes a byte slice and unmarshals it into a relevant request
-type RequestUnmarshaler func([]byte) (Request, error)
+type RequestMarshaler interface {
+	// Marshal defines a function which takes a request marshals it into a byte slice.
+	Marshal(Request) ([]byte, error)
+	// Unmarshal defines a function which takes a byte slice and unmarshals it into a relevant request
+	Unmarshal([]byte) (Request, error)
+}

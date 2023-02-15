@@ -80,33 +80,33 @@ func (qCfg *QueueSettings) Validate() error {
 }
 
 type queuedRetrySender struct {
-	fullName           string
-	id                 component.ID
-	signal             component.DataType
-	cfg                QueueSettings
-	consumerSender     requestSender
-	queue              internal.ProducerConsumerQueue
-	retryStopCh        chan struct{}
-	traceAttribute     attribute.KeyValue
-	logger             *zap.Logger
-	requeuingEnabled   bool
-	requestUnmarshaler internal.RequestUnmarshaler
+	fullName         string
+	id               component.ID
+	signal           component.DataType
+	cfg              QueueSettings
+	consumerSender   requestSender
+	queue            internal.ProducerConsumerQueue
+	retryStopCh      chan struct{}
+	traceAttribute   attribute.KeyValue
+	logger           *zap.Logger
+	requeuingEnabled bool
+	reqMarshaler     internal.RequestMarshaler
 }
 
-func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg QueueSettings, rCfg RetrySettings, reqMarshaler internal.RequestMarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
 
 	qrs := &queuedRetrySender{
-		fullName:           id.String(),
-		id:                 id,
-		signal:             signal,
-		cfg:                qCfg,
-		retryStopCh:        retryStopCh,
-		traceAttribute:     traceAttr,
-		logger:             sampledLogger,
-		requestUnmarshaler: reqUnmarshaler,
+		fullName:       id.String(),
+		id:             id,
+		signal:         signal,
+		cfg:            qCfg,
+		retryStopCh:    retryStopCh,
+		traceAttribute: traceAttr,
+		logger:         sampledLogger,
+		reqMarshaler:   reqMarshaler,
 	}
 
 	qrs.consumerSender = &retrySender{
@@ -162,7 +162,7 @@ func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, hos
 		return err
 	}
 
-	qrs.queue = internal.NewPersistentQueue(ctx, qrs.fullName, qrs.signal, qrs.cfg.QueueSize, qrs.logger, storageClient, qrs.requestUnmarshaler)
+	qrs.queue = internal.NewPersistentQueue(ctx, qrs.fullName, qrs.signal, qrs.cfg.QueueSize, qrs.logger, storageClient, qrs.reqMarshaler)
 
 	// TODO: this can be further exposed as a config param rather than relying on a type of queue
 	qrs.requeuingEnabled = true

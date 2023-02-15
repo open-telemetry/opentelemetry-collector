@@ -49,10 +49,10 @@ import (
 //	 index          index   x
 //	                        xxxx deleted
 type persistentContiguousStorage struct {
-	logger      *zap.Logger
-	queueName   string
-	client      storage.Client
-	unmarshaler RequestUnmarshaler
+	logger    *zap.Logger
+	queueName string
+	client    storage.Client
+	marshaler RequestMarshaler
 
 	putChan  chan struct{}
 	stopChan chan struct{}
@@ -91,17 +91,17 @@ var (
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
 // queueName parameter must be a unique value that identifies the queue.
 // The queue needs to be initialized separately using initPersistentContiguousStorage.
-func newPersistentContiguousStorage(ctx context.Context, queueName string, capacity uint64, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) *persistentContiguousStorage {
+func newPersistentContiguousStorage(ctx context.Context, queueName string, capacity uint64, logger *zap.Logger, client storage.Client, marshaler RequestMarshaler) *persistentContiguousStorage {
 	pcs := &persistentContiguousStorage{
-		logger:      logger,
-		client:      client,
-		queueName:   queueName,
-		unmarshaler: unmarshaler,
-		capacity:    capacity,
-		putChan:     make(chan struct{}, capacity),
-		reqChan:     make(chan Request),
-		stopChan:    make(chan struct{}),
-		itemsCount:  atomic.NewUint64(0),
+		logger:     logger,
+		client:     client,
+		queueName:  queueName,
+		marshaler:  marshaler,
+		capacity:   capacity,
+		putChan:    make(chan struct{}, capacity),
+		reqChan:    make(chan Request),
+		stopChan:   make(chan struct{}),
+		itemsCount: atomic.NewUint64(0),
 	}
 
 	initPersistentContiguousStorage(ctx, pcs)

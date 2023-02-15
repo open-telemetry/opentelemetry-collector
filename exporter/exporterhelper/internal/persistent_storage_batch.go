@@ -148,7 +148,7 @@ func (bof *batchStruct) getItemIndexArrayResult(key string) ([]itemIndex, error)
 
 // setRequest adds Set operation over a given request to the batch
 func (bof *batchStruct) setRequest(key string, value Request) *batchStruct {
-	return bof.set(key, value, requestToBytes)
+	return bof.set(key, value, bof.requestToBytes)
 }
 
 // setItemIndex adds Set operation over a given itemIndex to the batch
@@ -217,10 +217,10 @@ func bytesToItemIndexArray(b []byte) (any, error) {
 	return val, err
 }
 
-func requestToBytes(req any) ([]byte, error) {
-	return req.(Request).Marshal()
+func (bof *batchStruct) requestToBytes(req any) ([]byte, error) {
+	return bof.pcs.marshaler.Marshal(req.(Request))
 }
 
 func (bof *batchStruct) bytesToRequest(b []byte) (any, error) {
-	return bof.pcs.unmarshaler(b)
+	return bof.pcs.marshaler.Unmarshal(b)
 }

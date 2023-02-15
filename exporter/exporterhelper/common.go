@@ -156,7 +156,7 @@ type baseExporter struct {
 	qrSender *queuedRetrySender
 }
 
-func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal component.DataType, reqUnmarshaler internal.RequestUnmarshaler) (*baseExporter, error) {
+func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal component.DataType, reqMarshaler internal.RequestMarshaler) (*baseExporter, error) {
 	be := &baseExporter{}
 
 	var err error
@@ -165,7 +165,7 @@ func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal compo
 		return nil, err
 	}
 
-	be.qrSender = newQueuedRetrySender(set.ID, signal, bs.QueueSettings, bs.RetrySettings, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
+	be.qrSender = newQueuedRetrySender(set.ID, signal, bs.QueueSettings, bs.RetrySettings, reqMarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
 	be.sender = be.qrSender
 	be.StartFunc = func(ctx context.Context, host component.Host) error {
 		// First start the wrapped exporter.

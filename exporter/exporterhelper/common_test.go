@@ -83,6 +83,6 @@ func nopTracePusher() consumer.ConsumeTracesFunc {
 	}
 }
 
-func nopRequestUnmarshaler() internal.RequestUnmarshaler {
-	return newTraceRequestUnmarshalerFunc(nopTracePusher())
+func nopRequestUnmarshaler() internal.RequestMarshaler {
+	return tracesRequestMarshaler{pusher: nopTracePusher()}
 }

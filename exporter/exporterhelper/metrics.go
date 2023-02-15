@@ -43,14 +43,20 @@ func newMetricsRequest(ctx context.Context, md pmetric.Metrics, pusher consumer.
 	}
 }
 
-func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) internal.RequestUnmarshaler {
-	return func(bytes []byte) (internal.Request, error) {
-		metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
-		if err != nil {
-			return nil, err
-		}
-		return newMetricsRequest(context.Background(), metrics, pusher), nil
+type metricsRequestMarshaler struct {
+	pusher consumer.ConsumeMetricsFunc
+}
+
+func (mrm metricsRequestMarshaler) Marshal(req internal.Request) ([]byte, error) {
+	return metricsMarshaler.MarshalMetrics(req.(*metricsRequest).md)
+}
+
+func (mrm metricsRequestMarshaler) Unmarshal(bytes []byte) (internal.Request, error) {
+	metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
+	if err != nil {
+		return nil, err
 	}
+	return newMetricsRequest(context.Background(), metrics, mrm.pusher), nil
 }
 
 func (req *metricsRequest) OnError(err error) internal.Request {
@@ -63,11 +69,6 @@ func (req *metricsRequest) OnError(err error) internal.Request {
 
 func (req *metricsRequest) Export(ctx context.Context) error {
 	return req.pusher(ctx, req.md)
-}
-
-// Marshal provides serialization capabilities required by persistent queue
-func (req *metricsRequest) Marshal() ([]byte, error) {
-	return metricsMarshaler.MarshalMetrics(req.md)
 }
 
 func (req *metricsRequest) Count() int {
@@ -100,7 +101,7 @@ func NewMetricsExporter(
 	}
 
 	bs := fromOptions(options...)
-	be, err := newBaseExporter(set, bs, component.DataTypeMetrics, newMetricsRequestUnmarshalerFunc(pusher))
+	be, err := newBaseExporter(set, bs, component.DataTypeMetrics, metricsRequestMarshaler{pusher: pusher})
 	if err != nil {
 		return nil, err
 	}
