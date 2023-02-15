@@ -88,7 +88,7 @@ func (s *windowsService) Execute(args []string, requests <-chan svc.ChangeReques
 func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) error {
 	// Append to new slice instead of the already existing s.settings.LoggingOptions slice to not change that.
 	s.settings.LoggingOptions = append(
-		[]zap.Option{zap.WrapCore(withWindowsCore(elog))},
+		[]zap.Option{zap.WrapCore(withEventViewer(elog))},
 		s.settings.LoggingOptions...,
 	)
 	// Parse all the flags manually.
