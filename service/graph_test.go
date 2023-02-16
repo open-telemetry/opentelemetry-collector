@@ -824,14 +824,13 @@ func TestGraphBuildErrors(t *testing.T) {
 	badConnectorFactory := newBadConnectorFactory()
 
 	tests := []struct {
-		name               string
-		receiverCfgs       map[component.ID]component.Config
-		processorCfgs      map[component.ID]component.Config
-		exporterCfgs       map[component.ID]component.Config
-		connectorCfgs      map[component.ID]component.Config
-		pipelineCfgs       map[component.ID]*PipelineConfig
-		expected           string
-		expectedStartsWith string
+		name          string
+		receiverCfgs  map[component.ID]component.Config
+		processorCfgs map[component.ID]component.Config
+		exporterCfgs  map[component.ID]component.Config
+		connectorCfgs map[component.ID]component.Config
+		pipelineCfgs  map[component.ID]*PipelineConfig
+		expected      string
 	}{
 		{
 			name: "not_supported_exporter_logs",
@@ -1217,7 +1216,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewIDWithName("nop", "conn")},
 				},
 			},
-			expectedStartsWith: "topo: no topological ordering: cyclic components:",
+			expected: `cycle detected: connector "nop/conn" -> processor "nop" -> connector "nop/conn"`,
 		},
 		{
 			name: "not_allowed_simple_cycle_metrics.yaml",
@@ -1240,7 +1239,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewIDWithName("nop", "conn")},
 				},
 			},
-			expectedStartsWith: "topo: no topological ordering: cyclic components:",
+			expected: `cycle detected: connector "nop/conn" -> processor "nop" -> connector "nop/conn"`,
 		},
 		{
 			name: "not_allowed_simple_cycle_logs.yaml",
@@ -1263,7 +1262,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewIDWithName("nop", "conn")},
 				},
 			},
-			expectedStartsWith: "topo: no topological ordering: cyclic components:",
+			expected: `cycle detected: connector "nop/conn" -> processor "nop" -> connector "nop/conn"`,
 		},
 		{
 			name: "not_allowed_deep_cycle_traces.yaml",
@@ -1303,8 +1302,8 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
-			expectedStartsWith: "topo: no topological ordering: cyclic components:",
-			// TODO rebuild cycle in order
+			expected: `cycle detected: connector "nop/conn1" -> connector "nop/conn" -> processor "nop" -> ` +
+				`processor "nop" -> connector "nop/conn1"`,
 		},
 		{
 			name: "not_allowed_deep_cycle_metrics.yaml",
@@ -1344,8 +1343,8 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
-			expectedStartsWith: "topo: no topological ordering: cyclic components:",
-			// TODO rebuild cycle in order
+			expected: `cycle detected: connector "nop/conn1" -> processor "nop" -> connector "nop/conn" -> ` +
+				`processor "nop" -> connector "nop/conn1"`,
 		},
 		{
 			name: "not_allowed_deep_cycle_logs.yaml",
@@ -1385,8 +1384,8 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
-			expectedStartsWith: "topo: no topological ordering: cyclic components:",
-			// TODO rebuild cycle in order
+			expected: `cycle detected: connector "nop/conn1" -> processor "nop" -> connector "nop/conn" -> ` +
+				`processor "nop" -> connector "nop/conn1"`,
 		},
 		{
 			name: "not_allowed_deep_cycle_multi_signal.yaml",
@@ -1442,7 +1441,8 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewIDWithName("nop", "fork")}, // cannot loop back to "nop/fork"
 				},
 			},
-			expected: "topo: no topological ordering: 12 nodes in 1 cyclic components",
+			expected: `cycle detected: connector "nop/rawlog" -> processor "nop" -> processor "nop" -> ` +
+				`processor "nop" -> connector "nop/forkagain" -> connector "nop/fork" -> connector "nop/rawlog"`,
 		},
 		{
 			name: "unknown_exporter_config",
@@ -1605,12 +1605,7 @@ func TestGraphBuildErrors(t *testing.T) {
 				PipelineConfigs: test.pipelineCfgs,
 			}
 			_, err := buildPipelinesGraph(context.Background(), set)
-			if test.expected != "" {
-				assert.EqualError(t, err, test.expected)
-			} else {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), test.expectedStartsWith)
-			}
+			assert.EqualError(t, err, test.expected)
 		})
 	}
 }

@@ -16,7 +16,10 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"go.uber.org/multierr"
 	"gonum.org/v1/gonum/graph"
@@ -159,10 +162,7 @@ func (g *pipelinesGraph) createEdges() {
 func (g *pipelinesGraph) buildComponents(ctx context.Context, set pipelinesSettings) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
-		// TODO When there is a cycle in the graph, there is enough information
-		// within the error to construct a better error message that indicates
-		// exactly the components that are in a cycle.
-		return err
+		return cycleErr(err)
 	}
 
 	for i := len(nodes) - 1; i >= 0; i-- {
@@ -355,4 +355,37 @@ func (p *pipelineNodes) exporterIDs() []string {
 
 func (p *pipelineNodes) mutatesData() bool {
 	return p.capabilitiesNode.getConsumer().Capabilities().MutatesData
+}
+
+func cycleErr(err error) error {
+	var topoErr topo.Unorderable
+	if !errors.As(err, &topoErr) {
+		return err
+	}
+
+	// There may be multiple cycles, but report only the first one.
+	cycle := topoErr[0]
+
+	// A cycle always contains a connector. For the sake of consistent
+	// error messages report the cycle starting from a connector.
+	for i := 0; i < len(cycle); i++ {
+		if _, ok := cycle[i].(*connectorNode); ok {
+			cycle = append(cycle[i:], cycle[:i]...)
+			break
+		}
+	}
+
+	var sb strings.Builder
+	sb.WriteString("cycle detected: ")
+	for _, node := range cycle {
+		switch n := node.(type) {
+		case *processorNode:
+			sb.WriteString(fmt.Sprintf("processor %q -> ", n.componentID))
+		case *connectorNode:
+			sb.WriteString(fmt.Sprintf("connector %q -> ", n.componentID))
+		}
+	}
+	// Repeat the first node at the end to clarify the cycle
+	sb.WriteString(fmt.Sprintf("connector %q", cycle[0].(*connectorNode).componentID))
+	return errors.New(sb.String())
 }
