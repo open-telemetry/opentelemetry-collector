@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
@@ -50,7 +51,7 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 		t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
 
 		wq := createTestQueue(ext, 5)
-		require.Equal(t, 0, wq.Size())
+		assert.Equal(t, 0, wq.Size())
 
 		traces := newTraces(1, 10)
 		req := newFakeTracesRequest(traces)
@@ -58,20 +59,20 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			result := wq.Produce(req)
 			if i < 6 {
-				require.True(t, result)
+				assert.True(t, result)
 			} else {
-				require.False(t, result)
+				assert.False(t, result)
 			}
 
 			// Let's make sure the loop picks the first element into the channel,
 			// so the capacity could be used in full
 			if i == 0 {
-				require.Eventually(t, func() bool {
+				assert.Eventually(t, func() bool {
 					return wq.Size() == 0
 				}, 5*time.Second, 10*time.Millisecond)
 			}
 		}
-		require.Equal(t, 5, wq.Size())
+		assert.Equal(t, 5, wq.Size())
 	}
 }
 
@@ -79,7 +80,7 @@ func TestPersistentQueue_Close(t *testing.T) {
 	path := t.TempDir()
 
 	ext := createStorageExtension(path)
-	t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
+	t.Cleanup(func() { assert.NoError(t, ext.Shutdown(context.Background())) })
 
 	wq := createTestQueue(ext, 1001)
 	traces := newTraces(1, 10)
@@ -91,15 +92,13 @@ func TestPersistentQueue_Close(t *testing.T) {
 		wq.Produce(req)
 	}
 	// This will close the queue very quickly, consumers might not be able to consume anything and should finish gracefully
-	require.Eventually(t, func() bool {
+	assert.NotPanics(t, func() {
 		wq.Stop()
-		return true
-	}, 5*time.Second, 10*time.Millisecond)
+	})
 	// The additional stop should not panic
-	require.Eventually(t, func() bool {
+	assert.NotPanics(t, func() {
 		wq.Stop()
-		return true
-	}, 5*time.Second, 10*time.Millisecond)
+	})
 }
 
 // Verify storage closes after queue consumers. If not in this order, successfully consumed items won't be updated in storage
@@ -107,7 +106,7 @@ func TestPersistentQueue_Close_StorageCloseAfterConsumers(t *testing.T) {
 	path := t.TempDir()
 
 	ext := createStorageExtension(path)
-	t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
+	t.Cleanup(func() { assert.NoError(t, ext.Shutdown(context.Background())) })
 
 	wq := createTestQueue(ext, 1001)
 	traces := newTraces(1, 10)
@@ -130,11 +129,10 @@ func TestPersistentQueue_Close_StorageCloseAfterConsumers(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		wq.Produce(req)
 	}
-	require.Eventually(t, func() bool {
+	assert.NotPanics(t, func() {
 		wq.Stop()
-		return true
-	}, 5*time.Second, 10*time.Millisecond)
-	require.True(t, stopStorageTime.After(lastRequestProcessedTime), "storage stop time should be after last request processed time")
+	})
+	assert.True(t, stopStorageTime.After(lastRequestProcessedTime), "storage stop time should be after last request processed time")
 	stopStorage = fnBefore
 }
 
@@ -176,7 +174,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			tq := createTestQueue(ext, 5000)
 
 			defer tq.Stop()
-			t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
+			t.Cleanup(func() { assert.NoError(t, ext.Shutdown(context.Background())) })
 
 			numMessagesConsumed := atomic.NewInt32(0)
 			tq.StartConsumers(c.numConsumers, func(item Request) {
@@ -189,7 +187,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 				tq.Produce(req)
 			}
 
-			require.Eventually(t, func() bool {
+			assert.Eventually(t, func() bool {
 				return c.numMessagesProduced == int(numMessagesConsumed.Load())
 			}, 5*time.Second, 10*time.Millisecond)
 		})

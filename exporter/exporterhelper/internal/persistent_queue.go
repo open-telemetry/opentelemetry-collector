@@ -34,12 +34,10 @@ var (
 
 // persistentQueue holds the queue backed by file storage
 type persistentQueue struct {
-	logger     *zap.Logger
-	stopWG     sync.WaitGroup
-	stopOnce   sync.Once
-	stopChan   chan struct{}
-	numWorkers int
-	storage    *persistentContiguousStorage
+	stopWG   sync.WaitGroup
+	stopOnce sync.Once
+	stopChan chan struct{}
+	storage  *persistentContiguousStorage
 }
 
 // buildPersistentStorageName returns a name that is constructed out of queue name and signal type. This is done
@@ -51,21 +49,17 @@ func buildPersistentStorageName(name string, signal component.DataType) string {
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
 func NewPersistentQueue(ctx context.Context, name string, signal component.DataType, capacity int, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
 	return &persistentQueue{
-		logger:   logger,
 		stopChan: make(chan struct{}),
 		storage:  newPersistentContiguousStorage(ctx, buildPersistentStorageName(name, signal), uint64(capacity), logger, client, unmarshaler),
 	}
 }
 
 // StartConsumers starts the given number of consumers which will be consuming items
-func (pq *persistentQueue) StartConsumers(num int, callback func(item Request)) {
-	pq.numWorkers = num
-
-	for i := 0; i < pq.numWorkers; i++ {
+func (pq *persistentQueue) StartConsumers(numWorkers int, callback func(item Request)) {
+	for i := 0; i < numWorkers; i++ {
 		pq.stopWG.Add(1)
 		go func() {
 			defer pq.stopWG.Done()
-
 			for {
 				select {
 				case req := <-pq.storage.get():

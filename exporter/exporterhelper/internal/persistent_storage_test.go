@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -226,12 +227,12 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0})
 
 	// Now, this will take item 0 and pull item 1 into the unbuffered channel
-	readReq := getItemFromChannel(t, ps)
-	require.Equal(t, req.td, readReq.(*fakeTracesRequest).td)
+	readReq := <-ps.get()
+	assert.Equal(t, req.td, readReq.(*fakeTracesRequest).td)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 1})
 
 	// This takes item 1 from channel and pulls another one (item 2) into the unbuffered channel
-	secondReadReq := getItemFromChannel(t, ps)
+	secondReadReq := <-ps.get()
 	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 1, 2})
 
 	// Lets mark item 1 as finished, it will remove it from the currently dispatched items list
@@ -242,7 +243,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	// The queue should be essentially {3,4,0,2} out of which item "3" should be pulled right away into
 	// the unbuffered channel. Check how many items are there, which, after the current one is fetched should go to 3.
 	newPs := createTestPersistentStorage(client)
-	require.Eventually(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return newPs.size() == 3
 	}, 5*time.Second, 10*time.Millisecond)
 
@@ -250,13 +251,13 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 
 	// We should be able to pull all remaining items now
 	for i := 0; i < 4; i++ {
-		req := getItemFromChannel(t, newPs)
+		req := <-newPs.get()
 		req.OnProcessingFinished()
 	}
 
 	// The queue should be now empty
 	requireCurrentlyDispatchedItemsEqual(t, newPs, nil)
-	require.Eventually(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return newPs.size() == 0
 	}, 5*time.Second, 10*time.Millisecond)
 
@@ -302,10 +303,10 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 		}, 5*time.Second, 10*time.Millisecond)
 
 		// Lets read both of the elements we put
-		readReq := getItemFromChannel(t, ps)
+		readReq := <-ps.get()
 		require.Equal(t, req.td, readReq.(*fakeTracesRequest).td)
 
-		readReq = getItemFromChannel(t, ps)
+		readReq = <-ps.get()
 		require.Equal(t, req.td, readReq.(*fakeTracesRequest).td)
 		require.Equal(t, uint64(0), ps.size())
 
@@ -431,15 +432,6 @@ func TestPersistentStorage_StopShouldCloseClient(t *testing.T) {
 	require.Equal(t, uint64(1), castedClient.getCloseCount())
 }
 
-func getItemFromChannel(t *testing.T, pcs *persistentContiguousStorage) Request {
-	var readReq Request
-	require.Eventually(t, func() bool {
-		readReq = <-pcs.get()
-		return true
-	}, 5*time.Second, 10*time.Millisecond)
-	return readReq
-}
-
 func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguousStorage, compare []itemIndex) {
 	require.Eventually(t, func() bool {
 		pcs.mu.Lock()
@@ -448,28 +440,17 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguou
 	}, 5*time.Second, 10*time.Millisecond)
 }
 
-type mockStorageExtension struct{}
-
-func (m mockStorageExtension) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (m mockStorageExtension) Shutdown(_ context.Context) error {
-	return nil
+type mockStorageExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
 }
 
 func (m mockStorageExtension) GetClient(ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error) {
-	return newMockStorageClient(), nil
+	return &mockStorageClient{st: map[string][]byte{}}, nil
 }
 
 func newMockStorageExtension() storage.Extension {
 	return &mockStorageExtension{}
-}
-
-func newMockStorageClient() storage.Client {
-	return &mockStorageClient{
-		st: map[string][]byte{},
-	}
 }
 
 type mockStorageClient struct {
