@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,7 +36,6 @@ func TestPersistentStorageBatch_Operations(t *testing.T) {
 		setItemIndex("index", itemIndexValue).
 		setItemIndexArray("arr", itemIndexArrayValue).
 		execute(context.Background())
-
 	require.NoError(t, err)
 
 	batch, err := newBatch(ps).
@@ -45,11 +45,11 @@ func TestPersistentStorageBatch_Operations(t *testing.T) {
 
 	retrievedItemIndexValue, err := batch.getItemIndexResult("index")
 	require.NoError(t, err)
-	require.Equal(t, itemIndexValue, retrievedItemIndexValue)
+	assert.Equal(t, itemIndexValue, retrievedItemIndexValue)
 
 	retrievedItemIndexArrayValue, err := batch.getItemIndexArrayResult("arr")
 	require.NoError(t, err)
-	require.Equal(t, itemIndexArrayValue, retrievedItemIndexArrayValue)
+	assert.Equal(t, itemIndexArrayValue, retrievedItemIndexArrayValue)
 
 	_, err = newBatch(ps).delete("index", "arr").execute(context.Background())
 	require.NoError(t, err)
@@ -60,9 +60,9 @@ func TestPersistentStorageBatch_Operations(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = batch.getItemIndexResult("index")
-	require.Error(t, err, errValueNotSet)
+	assert.Error(t, err, errValueNotSet)
 
 	retrievedItemIndexArrayValue, err = batch.getItemIndexArrayResult("arr")
 	require.NoError(t, err)
-	require.Nil(t, retrievedItemIndexArrayValue)
+	assert.Nil(t, retrievedItemIndexArrayValue)
 }
