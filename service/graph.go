@@ -162,7 +162,7 @@ func (g *pipelinesGraph) createEdges() {
 func (g *pipelinesGraph) buildComponents(ctx context.Context, set pipelinesSettings) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
-		return cycleErr(err)
+		return cycleErr(err, topo.DirectedCyclesIn(g.componentGraph))
 	}
 
 	for i := len(nodes) - 1; i >= 0; i-- {
@@ -357,14 +357,18 @@ func (p *pipelineNodes) mutatesData() bool {
 	return p.capabilitiesNode.getConsumer().Capabilities().MutatesData
 }
 
-func cycleErr(err error) error {
+func cycleErr(err error, cycles [][]graph.Node) error {
 	var topoErr topo.Unorderable
-	if !errors.As(err, &topoErr) {
+	if !errors.As(err, &topoErr) || len(cycles) == 0 || len(cycles[0]) == 0 {
 		return err
 	}
 
 	// There may be multiple cycles, but report only the first one.
-	cycle := topoErr[0]
+	cycle := cycles[0]
+
+	// The last node is a duplicate of the first node.
+	// Remove it because we may start from a different node.
+	cycle = cycle[:len(cycle)-1]
 
 	// A cycle always contains a connector. For the sake of consistent
 	// error messages report the cycle starting from a connector.
@@ -375,17 +379,20 @@ func cycleErr(err error) error {
 		}
 	}
 
-	var sb strings.Builder
-	sb.WriteString("cycle detected: ")
+	// Repeat the first node at the end to clarify the cycle
+	cycle = append(cycle, cycle[0])
+
+	// Build the error message
+	componentDetails := make([]string, 0, len(cycle))
 	for _, node := range cycle {
 		switch n := node.(type) {
 		case *processorNode:
-			sb.WriteString(fmt.Sprintf("processor %q -> ", n.componentID))
+			componentDetails = append(componentDetails, fmt.Sprintf("processor %q in pipeline %q", n.componentID, n.pipelineID))
 		case *connectorNode:
-			sb.WriteString(fmt.Sprintf("connector %q -> ", n.componentID))
+			componentDetails = append(componentDetails, fmt.Sprintf("connector %q (%s to %s)", n.componentID, n.exprPipelineType, n.rcvrPipelineType))
+		default:
+			continue // skip capabilities/fanout nodes
 		}
 	}
-	// Repeat the first node at the end to clarify the cycle
-	sb.WriteString(fmt.Sprintf("connector %q", cycle[0].(*connectorNode).componentID))
-	return errors.New(sb.String())
+	return fmt.Errorf("cycle detected: %s", strings.Join(componentDetails, " -> "))
 }

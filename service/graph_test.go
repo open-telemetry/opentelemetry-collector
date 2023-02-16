@@ -1216,7 +1216,10 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewIDWithName("nop", "conn")},
 				},
 			},
-			expected: `cycle detected: connector "nop/conn" -> processor "nop" -> connector "nop/conn"`,
+			expected: `cycle detected: ` +
+				`connector "nop/conn" (traces to traces) -> ` +
+				`processor "nop" in pipeline "traces" -> ` +
+				`connector "nop/conn" (traces to traces)`,
 		},
 		{
 			name: "not_allowed_simple_cycle_metrics.yaml",
@@ -1239,7 +1242,10 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewIDWithName("nop", "conn")},
 				},
 			},
-			expected: `cycle detected: connector "nop/conn" -> processor "nop" -> connector "nop/conn"`,
+			expected: `cycle detected: ` +
+				`connector "nop/conn" (metrics to metrics) -> ` +
+				`processor "nop" in pipeline "metrics" -> ` +
+				`connector "nop/conn" (metrics to metrics)`,
 		},
 		{
 			name: "not_allowed_simple_cycle_logs.yaml",
@@ -1262,7 +1268,10 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewIDWithName("nop", "conn")},
 				},
 			},
-			expected: `cycle detected: connector "nop/conn" -> processor "nop" -> connector "nop/conn"`,
+			expected: `cycle detected: ` +
+				`connector "nop/conn" (logs to logs) -> ` +
+				`processor "nop" in pipeline "logs" -> ` +
+				`connector "nop/conn" (logs to logs)`,
 		},
 		{
 			name: "not_allowed_deep_cycle_traces.yaml",
@@ -1302,8 +1311,12 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: `cycle detected: connector "nop/conn1" -> connector "nop/conn" -> processor "nop" -> ` +
-				`processor "nop" -> connector "nop/conn1"`,
+			expected: `cycle detected: ` +
+				`connector "nop/conn1" (traces to traces) -> ` +
+				`processor "nop" in pipeline "traces/2" -> ` +
+				`connector "nop/conn" (traces to traces) -> ` +
+				`processor "nop" in pipeline "traces/1" -> ` +
+				`connector "nop/conn1" (traces to traces)`,
 		},
 		{
 			name: "not_allowed_deep_cycle_metrics.yaml",
@@ -1343,8 +1356,12 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: `cycle detected: connector "nop/conn1" -> processor "nop" -> connector "nop/conn" -> ` +
-				`processor "nop" -> connector "nop/conn1"`,
+			expected: `cycle detected: ` +
+				`connector "nop/conn1" (metrics to metrics) -> ` +
+				`processor "nop" in pipeline "metrics/2" -> ` +
+				`connector "nop/conn" (metrics to metrics) -> ` +
+				`processor "nop" in pipeline "metrics/1" -> ` +
+				`connector "nop/conn1" (metrics to metrics)`,
 		},
 		{
 			name: "not_allowed_deep_cycle_logs.yaml",
@@ -1384,8 +1401,12 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: `cycle detected: connector "nop/conn1" -> processor "nop" -> connector "nop/conn" -> ` +
-				`processor "nop" -> connector "nop/conn1"`,
+			expected: `cycle detected: ` +
+				`connector "nop/conn1" (logs to logs) -> ` +
+				`processor "nop" in pipeline "logs/2" -> ` +
+				`connector "nop/conn" (logs to logs) -> ` +
+				`processor "nop" in pipeline "logs/1" -> ` +
+				`connector "nop/conn1" (logs to logs)`,
 		},
 		{
 			name: "not_allowed_deep_cycle_multi_signal.yaml",
@@ -1441,8 +1462,14 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewIDWithName("nop", "fork")}, // cannot loop back to "nop/fork"
 				},
 			},
-			expected: `cycle detected: connector "nop/rawlog" -> processor "nop" -> processor "nop" -> ` +
-				`processor "nop" -> connector "nop/forkagain" -> connector "nop/fork" -> connector "nop/rawlog"`,
+			expected: `cycle detected: ` +
+				`connector "nop/rawlog" (traces to logs) -> ` +
+				`processor "nop" in pipeline "logs/raw" -> ` +
+				`connector "nop/fork" (logs to traces) -> ` +
+				`processor "nop" in pipeline "traces/copy2" -> ` +
+				`connector "nop/forkagain" (traces to traces) -> ` +
+				`processor "nop" in pipeline "traces/copy2b" -> ` +
+				`connector "nop/rawlog" (traces to logs)`,
 		},
 		{
 			name: "unknown_exporter_config",
