@@ -201,26 +201,27 @@ func (ms ExponentialHistogramDataPoint) RemoveMax() {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoint) {
-	ms.Attributes().CopyTo(dest.Attributes())
-	dest.SetStartTimestamp(ms.StartTimestamp())
-	dest.SetTimestamp(ms.Timestamp())
-	dest.SetCount(ms.Count())
-	if ms.HasSum() {
-		dest.SetSum(ms.Sum())
-	}
+	copyOrigExponentialHistogramDataPoint(dest.orig, ms.orig)
+}
 
-	dest.SetScale(ms.Scale())
-	dest.SetZeroCount(ms.ZeroCount())
-	ms.Positive().CopyTo(dest.Positive())
-	ms.Negative().CopyTo(dest.Negative())
-	ms.Exemplars().CopyTo(dest.Exemplars())
-	dest.SetFlags(ms.Flags())
-	if ms.HasMin() {
-		dest.SetMin(ms.Min())
+func copyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHistogramDataPoint) {
+	internal.CopyOrigMap(&dest.Attributes, &src.Attributes)
+	dest.StartTimeUnixNano = src.StartTimeUnixNano
+	dest.TimeUnixNano = src.TimeUnixNano
+	dest.Count = src.Count
+	if src.Sum_ != nil {
+		dest.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: src.GetSum()}
 	}
-
-	if ms.HasMax() {
-		dest.SetMax(ms.Max())
+	dest.Scale = src.Scale
+	dest.ZeroCount = src.ZeroCount
+	copyOrigExponentialHistogramDataPointBuckets(&dest.Positive, &src.Positive)
+	copyOrigExponentialHistogramDataPointBuckets(&dest.Negative, &src.Negative)
+	copyOrigExemplarSlice(&dest.Exemplars, &src.Exemplars)
+	dest.Flags = src.Flags
+	if src.Min_ != nil {
+		dest.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: src.GetMin()}
 	}
-
+	if src.Max_ != nil {
+		dest.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: src.GetMax()}
+	}
 }

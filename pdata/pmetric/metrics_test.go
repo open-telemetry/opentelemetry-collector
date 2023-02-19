@@ -646,6 +646,27 @@ func TestMetricsCopyTo(t *testing.T) {
 	assert.EqualValues(t, metrics, metricsCopy)
 }
 
+func BenchmarkMetricsCopyTo(b *testing.B) {
+	metrics := NewMetrics()
+	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		metrics.CopyTo(NewMetrics())
+	}
+}
+
+func BenchmarkMetricsCopyToReuseDest(b *testing.B) {
+	metrics := NewMetrics()
+	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	dest := NewMetrics()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		metrics.CopyTo(dest)
+	}
+}
+
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{

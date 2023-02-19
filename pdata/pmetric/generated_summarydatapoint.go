@@ -115,11 +115,15 @@ func (ms SummaryDataPoint) SetFlags(v DataPointFlags) {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
-	ms.Attributes().CopyTo(dest.Attributes())
-	dest.SetStartTimestamp(ms.StartTimestamp())
-	dest.SetTimestamp(ms.Timestamp())
-	dest.SetCount(ms.Count())
-	dest.SetSum(ms.Sum())
-	ms.QuantileValues().CopyTo(dest.QuantileValues())
-	dest.SetFlags(ms.Flags())
+	copyOrigSummaryDataPoint(dest.orig, ms.orig)
+}
+
+func copyOrigSummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {
+	internal.CopyOrigMap(&dest.Attributes, &src.Attributes)
+	dest.StartTimeUnixNano = src.StartTimeUnixNano
+	dest.TimeUnixNano = src.TimeUnixNano
+	dest.Count = src.Count
+	dest.Sum = src.Sum
+	copyOrigSummaryDataPointValueAtQuantileSlice(&dest.QuantileValues, &src.QuantileValues)
+	dest.Flags = src.Flags
 }

@@ -218,28 +218,7 @@ func (m Map) Range(f func(k string, v Value) bool) {
 
 // CopyTo copies all elements from the current map overriding the destination.
 func (m Map) CopyTo(dest Map) {
-	newLen := len(*m.getOrig())
-	oldCap := cap(*dest.getOrig())
-	if newLen <= oldCap {
-		// New slice fits in existing slice, no need to reallocate.
-		*dest.getOrig() = (*dest.getOrig())[:newLen:oldCap]
-		for i := range *m.getOrig() {
-			akv := &(*m.getOrig())[i]
-			destAkv := &(*dest.getOrig())[i]
-			destAkv.Key = akv.Key
-			newValue(&akv.Value).CopyTo(newValue(&destAkv.Value))
-		}
-		return
-	}
-
-	// New slice is bigger than exist slice. Allocate new space.
-	origs := make([]otlpcommon.KeyValue, len(*m.getOrig()))
-	for i := range *m.getOrig() {
-		akv := &(*m.getOrig())[i]
-		origs[i].Key = akv.Key
-		newValue(&akv.Value).CopyTo(newValue(&origs[i].Value))
-	}
-	*dest.getOrig() = origs
+	internal.CopyOrigMap(dest.getOrig(), m.getOrig())
 }
 
 // AsRaw returns a standard go map representation of this Map.

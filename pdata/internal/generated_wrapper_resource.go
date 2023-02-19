@@ -33,6 +33,11 @@ func NewResource(orig *otlpresource.Resource) Resource {
 	return Resource{orig: orig}
 }
 
+func CopyOrigResource(dest, src *otlpresource.Resource) {
+	CopyOrigMap(&dest.Attributes, &src.Attributes)
+	dest.DroppedAttributesCount = src.DroppedAttributesCount
+}
+
 func GenerateTestResource() Resource {
 	orig := otlpresource.Resource{}
 	tv := NewResource(&orig)

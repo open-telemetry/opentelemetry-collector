@@ -128,22 +128,26 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigSpanLinkSlice(dest.orig, es.orig)
+}
+
+func copyOrigSpanLinkSlice(dest, src *[]*otlptrace.Span_Link) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newSpanLink((*es.orig)[i]).CopyTo(newSpanLink((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrigSpanLink((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]otlptrace.Span_Link, srcLen)
 	wrappers := make([]*otlptrace.Span_Link, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		newSpanLink((*es.orig)[i]).CopyTo(newSpanLink(wrappers[i]))
+		copyOrigSpanLink(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the SpanLink elements within SpanLinkSlice given the

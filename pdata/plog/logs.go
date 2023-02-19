@@ -38,7 +38,7 @@ func NewLogs() Logs {
 
 // CopyTo copies the Logs instance overriding the destination.
 func (ms Logs) CopyTo(dest Logs) {
-	ms.ResourceLogs().CopyTo(dest.ResourceLogs())
+	copyOrigResourceLogsSlice(dest.ResourceLogs().orig, ms.ResourceLogs().orig)
 }
 
 // LogRecordCount calculates the total number of log records.

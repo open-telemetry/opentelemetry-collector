@@ -128,22 +128,26 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigResourceMetricsSlice(dest.orig, es.orig)
+}
+
+func copyOrigResourceMetricsSlice(dest, src *[]*otlpmetrics.ResourceMetrics) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newResourceMetrics((*es.orig)[i]).CopyTo(newResourceMetrics((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrigResourceMetrics((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]otlpmetrics.ResourceMetrics, srcLen)
 	wrappers := make([]*otlpmetrics.ResourceMetrics, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		newResourceMetrics((*es.orig)[i]).CopyTo(newResourceMetrics(wrappers[i]))
+		copyOrigResourceMetrics(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the ResourceMetrics elements within ResourceMetricsSlice given the

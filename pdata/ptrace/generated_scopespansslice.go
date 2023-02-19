@@ -128,22 +128,26 @@ func (es ScopeSpansSlice) RemoveIf(f func(ScopeSpans) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigScopeSpansSlice(dest.orig, es.orig)
+}
+
+func copyOrigScopeSpansSlice(dest, src *[]*otlptrace.ScopeSpans) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newScopeSpans((*es.orig)[i]).CopyTo(newScopeSpans((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrigScopeSpans((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]otlptrace.ScopeSpans, srcLen)
 	wrappers := make([]*otlptrace.ScopeSpans, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		newScopeSpans((*es.orig)[i]).CopyTo(newScopeSpans(wrappers[i]))
+		copyOrigScopeSpans(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the ScopeSpans elements within ScopeSpansSlice given the

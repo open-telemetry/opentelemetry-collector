@@ -128,22 +128,26 @@ func (es SummaryDataPointSlice) RemoveIf(f func(SummaryDataPoint) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigSummaryDataPointSlice(dest.orig, es.orig)
+}
+
+func copyOrigSummaryDataPointSlice(dest, src *[]*otlpmetrics.SummaryDataPoint) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newSummaryDataPoint((*es.orig)[i]).CopyTo(newSummaryDataPoint((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrigSummaryDataPoint((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]otlpmetrics.SummaryDataPoint, srcLen)
 	wrappers := make([]*otlpmetrics.SummaryDataPoint, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		newSummaryDataPoint((*es.orig)[i]).CopyTo(newSummaryDataPoint(wrappers[i]))
+		copyOrigSummaryDataPoint(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the SummaryDataPoint elements within SummaryDataPointSlice given the

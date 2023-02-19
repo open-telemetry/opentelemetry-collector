@@ -28,3 +28,8 @@ func GetOrigUInt64Slice(ms UInt64Slice) *[]uint64 {
 func NewUInt64Slice(orig *[]uint64) UInt64Slice {
 	return UInt64Slice{orig: orig}
 }
+
+func CopyOrigUInt64Slice(dst, src []uint64) []uint64 {
+	dst = dst[:0]
+	return append(dst, src...)
+}

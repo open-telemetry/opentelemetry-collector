@@ -58,5 +58,9 @@ func (ms Summary) DataPoints() SummaryDataPointSlice {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Summary) CopyTo(dest Summary) {
-	ms.DataPoints().CopyTo(dest.DataPoints())
+	copyOrigSummary(dest.orig, ms.orig)
+}
+
+func copyOrigSummary(dest, src *otlpmetrics.Summary) {
+	copyOrigSummaryDataPointSlice(&dest.DataPoints, &src.DataPoints)
 }

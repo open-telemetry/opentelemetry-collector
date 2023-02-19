@@ -39,12 +39,12 @@ func New${structName}() ${structName} {
 
 // AsRaw returns a copy of the []${itemType} slice.
 func (ms ${structName}) AsRaw() []${itemType} {
-	return copy${structName}(nil, *ms.getOrig())
+	return internal.CopyOrig${structName}(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []${itemType} into the slice ${structName}.
 func (ms ${structName}) FromRaw(val []${itemType}) {
-	*ms.getOrig() = copy${structName}(*ms.getOrig(), val)
+	*ms.getOrig() = internal.CopyOrig${structName}(*ms.getOrig(), val)
 }
 
 // Len returns length of the []${itemType} slice value.
@@ -97,12 +97,7 @@ func (ms ${structName}) MoveTo(dest ${structName}) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (ms ${structName}) CopyTo(dest ${structName}) {
-	*dest.getOrig() = copy${structName}(*dest.getOrig(), *ms.getOrig())
-}
-
-func copy${structName}(dst, src []${itemType}) []${itemType} {
-	dst = dst[:0]
-	return append(dst, src...)
+	*dest.getOrig() = internal.CopyOrig${structName}(*dest.getOrig(), *ms.getOrig())
 }`
 
 const immutableSliceTestTemplate = `func TestNew${structName}(t *testing.T) {
@@ -163,6 +158,11 @@ func GetOrig${structName}(ms ${structName}) *[]${itemType} {
 
 func New${structName}(orig *[]${itemType}) ${structName} {
 	return ${structName}{orig: orig}
+}
+
+func CopyOrig${structName}(dst, src []${itemType}) []${itemType} {
+	dst = dst[:0]
+	return append(dst, src...)
 }`
 
 // primitiveSliceStruct generates a struct for a slice of primitive value elements. The structs are always generated

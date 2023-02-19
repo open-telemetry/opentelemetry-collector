@@ -51,8 +51,10 @@ const messageValueGetOrigTemplate = `func (ms ${structName}) getOrig() *${origin
 	return internal.GetOrig${structName}(internal.${structName}(ms))
 }`
 
-const messageValueCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct overriding the destination.
-func (ms ${structName}) CopyTo(dest ${structName}) {`
+const messageValueCopyToTemplate = `// CopyTo copies all properties from the current struct overriding the destination.
+func (ms ${structName}) CopyTo(dest ${structName}) {
+	${copyPrefix}Orig${structName}(dest.${origAccessor}, ms.${origAccessor})
+}`
 
 const messageValueCopyToFooterTemplate = `}`
 
@@ -143,9 +145,15 @@ func (ms *messageValueStruct) generateStruct(sb *bytes.Buffer) {
 		f.generateAccessors(ms, sb)
 	}
 	sb.WriteString(newLine + newLine)
-	sb.WriteString(os.Expand(messageValueCopyToHeaderTemplate, ms.templateFields()))
+	sb.WriteString(os.Expand(messageValueCopyToTemplate, ms.templateFields()))
+	sb.WriteString(newLine + newLine)
+	if !usedByOtherDataTypes(ms.packageName) {
+		ms.generateCopyTo(sb, "copy")
+	}
+}
 
-	// Write accessors CopyTo for the struct
+func (ms *messageValueStruct) generateCopyTo(sb *bytes.Buffer, copyPrefix string) {
+	sb.WriteString("func " + copyPrefix + "Orig" + ms.structName + "(dest, src *" + ms.originFullName + ") {")
 	for _, f := range ms.fields {
 		sb.WriteString(newLine)
 		f.generateCopyToValue(ms, sb)
@@ -190,6 +198,9 @@ func (ms *messageValueStruct) generateTestValueHelpers(sb *bytes.Buffer) {
 func (ms *messageValueStruct) generateInternal(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(messageValueAliasTemplate, ms.templateFields()))
 	sb.WriteString(newLine + newLine)
+	if usedByOtherDataTypes(ms.packageName) {
+		ms.generateCopyTo(sb, "Copy")
+	}
 }
 
 func (ms *messageValueStruct) templateFields() func(name string) string {
@@ -218,6 +229,11 @@ func (ms *messageValueStruct) templateFields() func(name string) string {
 			return ms.structName + "{orig}"
 		case "origAccessor":
 			return origAccessor(ms)
+		case "copyPrefix":
+			if usedByOtherDataTypes(ms.packageName) {
+				return "internal.Copy"
+			}
+			return "copy"
 		default:
 			panic(name)
 		}

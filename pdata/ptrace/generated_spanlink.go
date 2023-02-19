@@ -98,9 +98,13 @@ func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanLink) CopyTo(dest SpanLink) {
-	dest.SetTraceID(ms.TraceID())
-	dest.SetSpanID(ms.SpanID())
-	ms.TraceState().CopyTo(dest.TraceState())
-	ms.Attributes().CopyTo(dest.Attributes())
-	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+	copyOrigSpanLink(dest.orig, ms.orig)
+}
+
+func copyOrigSpanLink(dest, src *otlptrace.Span_Link) {
+	dest.TraceId = src.TraceId
+	dest.SpanId = src.SpanId
+	internal.CopyOrigTraceState(&dest.TraceState, &src.TraceState)
+	internal.CopyOrigMap(&dest.Attributes, &src.Attributes)
+	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }

@@ -28,3 +28,8 @@ func GetOrigFloat64Slice(ms Float64Slice) *[]float64 {
 func NewFloat64Slice(orig *[]float64) Float64Slice {
 	return Float64Slice{orig: orig}
 }
+
+func CopyOrigFloat64Slice(dst, src []float64) []float64 {
+	dst = dst[:0]
+	return append(dst, src...)
+}

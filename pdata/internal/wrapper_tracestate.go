@@ -26,6 +26,10 @@ func NewTraceState(orig *string) TraceState {
 	return TraceState{orig: orig}
 }
 
+func CopyOrigTraceState(dest, src *string) {
+	*dest = *src
+}
+
 func GenerateTestTraceState() TraceState {
 	var orig string
 	ms := NewTraceState(&orig)

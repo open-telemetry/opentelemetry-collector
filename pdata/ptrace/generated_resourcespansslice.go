@@ -128,22 +128,26 @@ func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigResourceSpansSlice(dest.orig, es.orig)
+}
+
+func copyOrigResourceSpansSlice(dest, src *[]*otlptrace.ResourceSpans) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newResourceSpans((*es.orig)[i]).CopyTo(newResourceSpans((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrigResourceSpans((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]otlptrace.ResourceSpans, srcLen)
 	wrappers := make([]*otlptrace.ResourceSpans, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		newResourceSpans((*es.orig)[i]).CopyTo(newResourceSpans(wrappers[i]))
+		copyOrigResourceSpans(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the ResourceSpans elements within ResourceSpansSlice given the

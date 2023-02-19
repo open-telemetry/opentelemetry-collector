@@ -28,3 +28,8 @@ func GetOrigByteSlice(ms ByteSlice) *[]byte {
 func NewByteSlice(orig *[]byte) ByteSlice {
 	return ByteSlice{orig: orig}
 }
+
+func CopyOrigByteSlice(dst, src []byte) []byte {
+	dst = dst[:0]
+	return append(dst, src...)
+}

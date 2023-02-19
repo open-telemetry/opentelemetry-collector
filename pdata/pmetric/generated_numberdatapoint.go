@@ -131,16 +131,19 @@ func (ms NumberDataPoint) SetFlags(v DataPointFlags) {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
-	ms.Attributes().CopyTo(dest.Attributes())
-	dest.SetStartTimestamp(ms.StartTimestamp())
-	dest.SetTimestamp(ms.Timestamp())
-	switch ms.ValueType() {
-	case NumberDataPointValueTypeDouble:
-		dest.SetDoubleValue(ms.DoubleValue())
-	case NumberDataPointValueTypeInt:
-		dest.SetIntValue(ms.IntValue())
-	}
+	copyOrigNumberDataPoint(dest.orig, ms.orig)
+}
 
-	ms.Exemplars().CopyTo(dest.Exemplars())
-	dest.SetFlags(ms.Flags())
+func copyOrigNumberDataPoint(dest, src *otlpmetrics.NumberDataPoint) {
+	internal.CopyOrigMap(&dest.Attributes, &src.Attributes)
+	dest.StartTimeUnixNano = src.StartTimeUnixNano
+	dest.TimeUnixNano = src.TimeUnixNano
+	switch v := src.Value.(type) {
+	case *otlpmetrics.NumberDataPoint_AsDouble:
+		dest.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: v.AsDouble}
+	case *otlpmetrics.NumberDataPoint_AsInt:
+		dest.Value = &otlpmetrics.NumberDataPoint_AsInt{AsInt: v.AsInt}
+	}
+	copyOrigExemplarSlice(&dest.Exemplars, &src.Exemplars)
+	dest.Flags = src.Flags
 }

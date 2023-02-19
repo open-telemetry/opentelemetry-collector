@@ -48,5 +48,5 @@ func (ms TraceState) MoveTo(dest TraceState) {
 
 // CopyTo copies the TraceState instance overriding the destination.
 func (ms TraceState) CopyTo(dest TraceState) {
-	*dest.getOrig() = *ms.getOrig()
+	internal.CopyOrigTraceState(dest.getOrig(), ms.getOrig())
 }

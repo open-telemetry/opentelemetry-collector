@@ -128,22 +128,26 @@ func (es ScopeLogsSlice) RemoveIf(f func(ScopeLogs) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigScopeLogsSlice(dest.orig, es.orig)
+}
+
+func copyOrigScopeLogsSlice(dest, src *[]*otlplogs.ScopeLogs) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newScopeLogs((*es.orig)[i]).CopyTo(newScopeLogs((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrigScopeLogs((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]otlplogs.ScopeLogs, srcLen)
 	wrappers := make([]*otlplogs.ScopeLogs, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		newScopeLogs((*es.orig)[i]).CopyTo(newScopeLogs(wrappers[i]))
+		copyOrigScopeLogs(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the ScopeLogs elements within ScopeLogsSlice given the

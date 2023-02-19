@@ -178,24 +178,25 @@ func (ms HistogramDataPoint) RemoveMax() {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
-	ms.Attributes().CopyTo(dest.Attributes())
-	dest.SetStartTimestamp(ms.StartTimestamp())
-	dest.SetTimestamp(ms.Timestamp())
-	dest.SetCount(ms.Count())
-	if ms.HasSum() {
-		dest.SetSum(ms.Sum())
-	}
+	copyOrigHistogramDataPoint(dest.orig, ms.orig)
+}
 
-	ms.BucketCounts().CopyTo(dest.BucketCounts())
-	ms.ExplicitBounds().CopyTo(dest.ExplicitBounds())
-	ms.Exemplars().CopyTo(dest.Exemplars())
-	dest.SetFlags(ms.Flags())
-	if ms.HasMin() {
-		dest.SetMin(ms.Min())
+func copyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
+	internal.CopyOrigMap(&dest.Attributes, &src.Attributes)
+	dest.StartTimeUnixNano = src.StartTimeUnixNano
+	dest.TimeUnixNano = src.TimeUnixNano
+	dest.Count = src.Count
+	if src.Sum_ != nil {
+		dest.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: src.GetSum()}
 	}
-
-	if ms.HasMax() {
-		dest.SetMax(ms.Max())
+	dest.BucketCounts = internal.CopyOrigUInt64Slice(dest.BucketCounts, src.BucketCounts)
+	dest.ExplicitBounds = internal.CopyOrigFloat64Slice(dest.ExplicitBounds, src.ExplicitBounds)
+	copyOrigExemplarSlice(&dest.Exemplars, &src.Exemplars)
+	dest.Flags = src.Flags
+	if src.Min_ != nil {
+		dest.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: src.GetMin()}
 	}
-
+	if src.Max_ != nil {
+		dest.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: src.GetMax()}
+	}
 }

@@ -215,22 +215,26 @@ func Test${structName}_RemoveIf(t *testing.T) {
 
 const slicePtrTemplate = `// CopyTo copies all elements from the current slice overriding the destination.
 func (es ${structName}) CopyTo(dest ${structName}) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrig${structName}(dest.orig, es.orig)
+}
+
+func copyOrig${structName}(dest, src *[]*${originName}) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			new${elementName}((*es.orig)[i]).CopyTo(new${elementName}((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrig${elementName}((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]${originName}, srcLen)
 	wrappers := make([]*${originName}, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		new${elementName}((*es.orig)[i]).CopyTo(new${elementName}(wrappers[i]))
+		copyOrig${elementName}(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the ${elementName} elements within ${structName} given the
@@ -259,16 +263,20 @@ const slicePtrTestTemplate = `func Test${structName}_Sort(t *testing.T) {
 
 const sliceValueTemplate = `// CopyTo copies all elements from the current slice overriding the destination.
 func (es ${structName}) CopyTo(dest ${structName}) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrig${structName}(dest.orig, es.orig)
+}
+
+func copyOrig${structName}(dest, src *[]${originName}) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		*dest = (*dest)[:srcLen:destCap]
 	} else {
-		(*dest.orig) = make([]${originName}, srcLen)
+		*dest = make([]${originName}, srcLen)
 	}
 
-	for i := range *es.orig {
-		new${elementName}(&(*es.orig)[i]).CopyTo(new${elementName}(&(*dest.orig)[i]))
+	for i := range *src {
+		copyOrig${elementName}(&(*dest)[i], &(*src)[i])
 	}
 }`
 

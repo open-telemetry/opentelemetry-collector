@@ -146,14 +146,18 @@ func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms LogRecord) CopyTo(dest LogRecord) {
-	dest.SetObservedTimestamp(ms.ObservedTimestamp())
-	dest.SetTimestamp(ms.Timestamp())
-	dest.SetTraceID(ms.TraceID())
-	dest.SetSpanID(ms.SpanID())
-	dest.SetFlags(ms.Flags())
-	dest.SetSeverityText(ms.SeverityText())
-	dest.SetSeverityNumber(ms.SeverityNumber())
-	ms.Body().CopyTo(dest.Body())
-	ms.Attributes().CopyTo(dest.Attributes())
-	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+	copyOrigLogRecord(dest.orig, ms.orig)
+}
+
+func copyOrigLogRecord(dest, src *otlplogs.LogRecord) {
+	dest.ObservedTimeUnixNano = src.ObservedTimeUnixNano
+	dest.TimeUnixNano = src.TimeUnixNano
+	dest.TraceId = src.TraceId
+	dest.SpanId = src.SpanId
+	dest.Flags = src.Flags
+	dest.SeverityText = src.SeverityText
+	dest.SeverityNumber = src.SeverityNumber
+	internal.CopyOrigValue(&dest.Body, &src.Body)
+	internal.CopyOrigMap(&dest.Attributes, &src.Attributes)
+	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }

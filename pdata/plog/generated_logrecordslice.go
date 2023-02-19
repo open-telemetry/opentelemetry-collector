@@ -128,22 +128,26 @@ func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigLogRecordSlice(dest.orig, es.orig)
+}
+
+func copyOrigLogRecordSlice(dest, src *[]*otlplogs.LogRecord) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newLogRecord((*es.orig)[i]).CopyTo(newLogRecord((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrigLogRecord((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]otlplogs.LogRecord, srcLen)
 	wrappers := make([]*otlplogs.LogRecord, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		newLogRecord((*es.orig)[i]).CopyTo(newLogRecord(wrappers[i]))
+		copyOrigLogRecord(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the LogRecord elements within LogRecordSlice given the

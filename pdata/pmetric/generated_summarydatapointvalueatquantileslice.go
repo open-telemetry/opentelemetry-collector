@@ -128,22 +128,26 @@ func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointV
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValueAtQuantileSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigSummaryDataPointValueAtQuantileSlice(dest.orig, es.orig)
+}
+
+func copyOrigSummaryDataPointValueAtQuantileSlice(dest, src *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newSummaryDataPointValueAtQuantile((*es.orig)[i]).CopyTo(newSummaryDataPointValueAtQuantile((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrigSummaryDataPointValueAtQuantile((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]otlpmetrics.SummaryDataPoint_ValueAtQuantile, srcLen)
 	wrappers := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		newSummaryDataPointValueAtQuantile((*es.orig)[i]).CopyTo(newSummaryDataPointValueAtQuantile(wrappers[i]))
+		copyOrigSummaryDataPointValueAtQuantile(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the SummaryDataPointValueAtQuantile elements within SummaryDataPointValueAtQuantileSlice given the

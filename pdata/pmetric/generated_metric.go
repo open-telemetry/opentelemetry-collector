@@ -227,20 +227,33 @@ func (ms Metric) SetEmptySummary() Summary {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Metric) CopyTo(dest Metric) {
-	dest.SetName(ms.Name())
-	dest.SetDescription(ms.Description())
-	dest.SetUnit(ms.Unit())
-	switch ms.Type() {
-	case MetricTypeGauge:
-		ms.Gauge().CopyTo(dest.SetEmptyGauge())
-	case MetricTypeSum:
-		ms.Sum().CopyTo(dest.SetEmptySum())
-	case MetricTypeHistogram:
-		ms.Histogram().CopyTo(dest.SetEmptyHistogram())
-	case MetricTypeExponentialHistogram:
-		ms.ExponentialHistogram().CopyTo(dest.SetEmptyExponentialHistogram())
-	case MetricTypeSummary:
-		ms.Summary().CopyTo(dest.SetEmptySummary())
-	}
+	copyOrigMetric(dest.orig, ms.orig)
+}
 
+func copyOrigMetric(dest, src *otlpmetrics.Metric) {
+	dest.Name = src.Name
+	dest.Description = src.Description
+	dest.Unit = src.Unit
+	switch v := src.Data.(type) {
+	case *otlpmetrics.Metric_Gauge:
+		destGauge := &otlpmetrics.Gauge{}
+		copyOrigGauge(destGauge, v.Gauge)
+		dest.Data = &otlpmetrics.Metric_Gauge{Gauge: destGauge}
+	case *otlpmetrics.Metric_Sum:
+		destSum := &otlpmetrics.Sum{}
+		copyOrigSum(destSum, v.Sum)
+		dest.Data = &otlpmetrics.Metric_Sum{Sum: destSum}
+	case *otlpmetrics.Metric_Histogram:
+		destHistogram := &otlpmetrics.Histogram{}
+		copyOrigHistogram(destHistogram, v.Histogram)
+		dest.Data = &otlpmetrics.Metric_Histogram{Histogram: destHistogram}
+	case *otlpmetrics.Metric_ExponentialHistogram:
+		destExponentialHistogram := &otlpmetrics.ExponentialHistogram{}
+		copyOrigExponentialHistogram(destExponentialHistogram, v.ExponentialHistogram)
+		dest.Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: destExponentialHistogram}
+	case *otlpmetrics.Metric_Summary:
+		destSummary := &otlpmetrics.Summary{}
+		copyOrigSummary(destSummary, v.Summary)
+		dest.Data = &otlpmetrics.Metric_Summary{Summary: destSummary}
+	}
 }

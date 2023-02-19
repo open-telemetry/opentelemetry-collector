@@ -128,22 +128,26 @@ func (es ScopeMetricsSlice) RemoveIf(f func(ScopeMetrics) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeMetricsSlice) CopyTo(dest ScopeMetricsSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigScopeMetricsSlice(dest.orig, es.orig)
+}
+
+func copyOrigScopeMetricsSlice(dest, src *[]*otlpmetrics.ScopeMetrics) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newScopeMetrics((*es.orig)[i]).CopyTo(newScopeMetrics((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrigScopeMetrics((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]otlpmetrics.ScopeMetrics, srcLen)
 	wrappers := make([]*otlpmetrics.ScopeMetrics, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		newScopeMetrics((*es.orig)[i]).CopyTo(newScopeMetrics(wrappers[i]))
+		copyOrigScopeMetrics(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the ScopeMetrics elements within ScopeMetricsSlice given the

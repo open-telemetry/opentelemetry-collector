@@ -30,6 +30,31 @@ func NewMap(orig *[]otlpcommon.KeyValue) Map {
 	return Map{orig: orig}
 }
 
+func CopyOrigMap(dst, src *[]otlpcommon.KeyValue) {
+	newLen := len(*src)
+	oldCap := cap(*dst)
+	if newLen <= oldCap {
+		// New slice fits in existing slice, no need to reallocate.
+		*dst = (*dst)[:newLen:oldCap]
+		for i := range *src {
+			akv := &(*src)[i]
+			destAkv := &(*dst)[i]
+			destAkv.Key = akv.Key
+			CopyOrigValue(&destAkv.Value, &akv.Value)
+		}
+		return
+	}
+
+	// New slice is bigger than exist slice. Allocate new space.
+	origs := make([]otlpcommon.KeyValue, len(*src))
+	for i := range *src {
+		akv := &(*src)[i]
+		origs[i].Key = akv.Key
+		CopyOrigValue(&origs[i].Value, &akv.Value)
+	}
+	*dst = origs
+}
+
 func GenerateTestMap() Map {
 	var orig []otlpcommon.KeyValue
 	ms := NewMap(&orig)

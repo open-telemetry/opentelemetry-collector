@@ -38,7 +38,7 @@ func NewMetrics() Metrics {
 
 // CopyTo copies the Metrics instance overriding the destination.
 func (ms Metrics) CopyTo(dest Metrics) {
-	ms.ResourceMetrics().CopyTo(dest.ResourceMetrics())
+	copyOrigResourceMetricsSlice(dest.ResourceMetrics().orig, ms.ResourceMetrics().orig)
 }
 
 // ResourceMetrics returns the ResourceMetricsSlice associated with this Metrics.

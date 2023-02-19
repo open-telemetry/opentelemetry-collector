@@ -128,22 +128,26 @@ func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigSpanEventSlice(dest.orig, es.orig)
+}
+
+func copyOrigSpanEventSlice(dest, src *[]*otlptrace.Span_Event) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newSpanEvent((*es.orig)[i]).CopyTo(newSpanEvent((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrigSpanEvent((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]otlptrace.Span_Event, srcLen)
 	wrappers := make([]*otlptrace.Span_Event, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		newSpanEvent((*es.orig)[i]).CopyTo(newSpanEvent(wrappers[i]))
+		copyOrigSpanEvent(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the SpanEvent elements within SpanEventSlice given the

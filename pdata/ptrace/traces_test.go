@@ -124,3 +124,24 @@ func TestTracesCopyTo(t *testing.T) {
 	traces.CopyTo(tracesCopy)
 	assert.EqualValues(t, traces, tracesCopy)
 }
+
+func BenchmarkTracesCopyTo(b *testing.B) {
+	traces := NewTraces()
+	fillTestResourceSpansSlice(traces.ResourceSpans())
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		traces.CopyTo(NewTraces())
+	}
+}
+
+func BenchmarkTracesCopyToReuseDest(b *testing.B) {
+	traces := NewTraces()
+	fillTestResourceSpansSlice(traces.ResourceSpans())
+	dest := NewTraces()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		traces.CopyTo(dest)
+	}
+}

@@ -30,6 +30,19 @@ func NewSlice(orig *[]otlpcommon.AnyValue) Slice {
 	return Slice{orig: orig}
 }
 
+func CopyOrigSlice(dst, src *[]otlpcommon.AnyValue) {
+	srcLen := len(*src)
+	destCap := cap(*dst)
+	if srcLen <= destCap {
+		*dst = (*dst)[:srcLen:destCap]
+	} else {
+		*dst = make([]otlpcommon.AnyValue, srcLen)
+	}
+	for i := range *src {
+		CopyOrigValue(&(*dst)[i], &(*src)[i])
+	}
+}
+
 func GenerateTestSlice() Slice {
 	orig := []otlpcommon.AnyValue{}
 	tv := NewSlice(&orig)

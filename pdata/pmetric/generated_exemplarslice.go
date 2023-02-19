@@ -126,15 +126,19 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigExemplarSlice(dest.orig, es.orig)
+}
+
+func copyOrigExemplarSlice(dest, src *[]otlpmetrics.Exemplar) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		*dest = (*dest)[:srcLen:destCap]
 	} else {
-		(*dest.orig) = make([]otlpmetrics.Exemplar, srcLen)
+		*dest = make([]otlpmetrics.Exemplar, srcLen)
 	}
 
-	for i := range *es.orig {
-		newExemplar(&(*es.orig)[i]).CopyTo(newExemplar(&(*dest.orig)[i]))
+	for i := range *src {
+		copyOrigExemplar(&(*dest)[i], &(*src)[i])
 	}
 }

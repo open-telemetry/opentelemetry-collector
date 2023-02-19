@@ -128,22 +128,26 @@ func (es ExponentialHistogramDataPointSlice) RemoveIf(f func(ExponentialHistogra
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDataPointSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigExponentialHistogramDataPointSlice(dest.orig, es.orig)
+}
+
+func copyOrigExponentialHistogramDataPointSlice(dest, src *[]*otlpmetrics.ExponentialHistogramDataPoint) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newExponentialHistogramDataPoint((*es.orig)[i]).CopyTo(newExponentialHistogramDataPoint((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrigExponentialHistogramDataPoint((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]otlpmetrics.ExponentialHistogramDataPoint, srcLen)
 	wrappers := make([]*otlpmetrics.ExponentialHistogramDataPoint, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		newExponentialHistogramDataPoint((*es.orig)[i]).CopyTo(newExponentialHistogramDataPoint(wrappers[i]))
+		copyOrigExponentialHistogramDataPoint(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the ExponentialHistogramDataPoint elements within ExponentialHistogramDataPointSlice given the

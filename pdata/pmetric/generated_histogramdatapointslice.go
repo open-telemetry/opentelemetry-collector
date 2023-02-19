@@ -128,22 +128,26 @@ func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigHistogramDataPointSlice(dest.orig, es.orig)
+}
+
+func copyOrigHistogramDataPointSlice(dest, src *[]*otlpmetrics.HistogramDataPoint) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newHistogramDataPoint((*es.orig)[i]).CopyTo(newHistogramDataPoint((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrigHistogramDataPoint((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]otlpmetrics.HistogramDataPoint, srcLen)
 	wrappers := make([]*otlpmetrics.HistogramDataPoint, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		newHistogramDataPoint((*es.orig)[i]).CopyTo(newHistogramDataPoint(wrappers[i]))
+		copyOrigHistogramDataPoint(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the HistogramDataPoint elements within HistogramDataPointSlice given the

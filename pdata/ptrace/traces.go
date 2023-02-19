@@ -38,7 +38,7 @@ func NewTraces() Traces {
 
 // CopyTo copies the Traces instance overriding the destination.
 func (ms Traces) CopyTo(dest Traces) {
-	ms.ResourceSpans().CopyTo(dest.ResourceSpans())
+	copyOrigResourceSpansSlice(dest.ResourceSpans().orig, ms.ResourceSpans().orig)
 }
 
 // SpanCount calculates the total number of spans.

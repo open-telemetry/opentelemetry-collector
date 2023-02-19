@@ -123,3 +123,24 @@ func TestLogsCopyTo(t *testing.T) {
 	logs.CopyTo(logsCopy)
 	assert.EqualValues(t, logs, logsCopy)
 }
+
+func BenchmarkLogsCopyTo(b *testing.B) {
+	logs := NewLogs()
+	fillTestResourceLogsSlice(logs.ResourceLogs())
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		logs.CopyTo(NewLogs())
+	}
+}
+
+func BenchmarkLogsCopyToReuseDest(b *testing.B) {
+	logs := NewLogs()
+	fillTestResourceLogsSlice(logs.ResourceLogs())
+	dest := NewLogs()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		logs.CopyTo(dest)
+	}
+}

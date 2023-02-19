@@ -91,8 +91,5 @@ func (ms InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms InstrumentationScope) CopyTo(dest InstrumentationScope) {
-	dest.SetName(ms.Name())
-	dest.SetVersion(ms.Version())
-	ms.Attributes().CopyTo(dest.Attributes())
-	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+	internal.CopyOrigInstrumentationScope(dest.getOrig(), ms.getOrig())
 }

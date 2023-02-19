@@ -128,22 +128,26 @@ func (es MetricSlice) RemoveIf(f func(Metric) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es MetricSlice) CopyTo(dest MetricSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigMetricSlice(dest.orig, es.orig)
+}
+
+func copyOrigMetricSlice(dest, src *[]*otlpmetrics.Metric) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newMetric((*es.orig)[i]).CopyTo(newMetric((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrigMetric((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]otlpmetrics.Metric, srcLen)
 	wrappers := make([]*otlpmetrics.Metric, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		newMetric((*es.orig)[i]).CopyTo(newMetric(wrappers[i]))
+		copyOrigMetric(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the Metric elements within MetricSlice given the

@@ -128,22 +128,26 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	copyOrigResourceLogsSlice(dest.orig, es.orig)
+}
+
+func copyOrigResourceLogsSlice(dest, src *[]*otlplogs.ResourceLogs) {
+	srcLen := len(*src)
+	destCap := cap(*dest)
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newResourceLogs((*es.orig)[i]).CopyTo(newResourceLogs((*dest.orig)[i]))
+		*dest = (*dest)[:srcLen:destCap]
+		for i := range *src {
+			copyOrigResourceLogs((*dest)[i], (*src)[i])
 		}
 		return
 	}
 	origs := make([]otlplogs.ResourceLogs, srcLen)
 	wrappers := make([]*otlplogs.ResourceLogs, srcLen)
-	for i := range *es.orig {
+	for i := range *src {
 		wrappers[i] = &origs[i]
-		newResourceLogs((*es.orig)[i]).CopyTo(newResourceLogs(wrappers[i]))
+		copyOrigResourceLogs(wrappers[i], (*src)[i])
 	}
-	*dest.orig = wrappers
+	*dest = wrappers
 }
 
 // Sort sorts the ResourceLogs elements within ResourceLogsSlice given the
