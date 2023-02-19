@@ -764,7 +764,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 }
 
 func verifyCorsResp(t *testing.T, url string, origin string, maxAge int, extraHeader bool, wantStatus int, wantAllowed bool) {
-	req, err := http.NewRequest("OPTIONS", url, nil)
+	req, err := http.NewRequest(http.MethodOptions, url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
 	if extraHeader {
@@ -853,7 +853,7 @@ func TestHttpHeaders(t *testing.T) {
 				Headers:         tt.headers,
 			}
 			client, _ := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-			req, err := http.NewRequest("GET", setting.Endpoint, nil)
+			req, err := http.NewRequest(http.MethodGet, setting.Endpoint, nil)
 			assert.NoError(t, err)
 			_, err = client.Do(req)
 			assert.NoError(t, err)
