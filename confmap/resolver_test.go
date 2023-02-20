@@ -23,15 +23,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 )
 
 type mockProvider struct {
-	scheme string
-	retM   any
-	errR   error
-	errS   error
-	errW   error
-	errC   error
+	scheme    string
+	retM      any
+	errR      error
+	errS      error
+	errW      error
+	closeFunc func(ctx context.Context) error
 }
 
 func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher WatcherFunc) (*Retrieved, error) {
@@ -43,7 +44,7 @@ func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher WatcherFunc
 	}
 
 	watcher(&ChangeEvent{Error: m.errW})
-	return NewRetrieved(m.retM, WithRetrievedClose(func(ctx context.Context) error { return m.errC }))
+	return NewRetrieved(m.retM, WithRetrievedClose(m.closeFunc))
 }
 
 func (m *mockProvider) Scheme() string {
@@ -157,7 +158,7 @@ func TestResolverErrors(t *testing.T) {
 			locations: []string{"mock:", "err:"},
 			providers: []Provider{
 				&mockProvider{},
-				&mockProvider{scheme: "err", retM: map[string]any{}, errC: errors.New("close_err")},
+				&mockProvider{scheme: "err", retM: map[string]any{}, closeFunc: func(ctx context.Context) error { return errors.New("close_err") }},
 			},
 			expectCloseErr: true,
 		},
@@ -269,13 +270,18 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 }
 
 func TestResolver(t *testing.T) {
+	numCalls := atomic.NewInt32(0)
 	resolver, err := NewResolver(ResolverSettings{
-		URIs:       []string{"mock:"},
-		Providers:  makeMapProvidersMap(&mockProvider{retM: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}),
+		URIs: []string{"mock:"},
+		Providers: makeMapProvidersMap(&mockProvider{retM: map[string]any{}, closeFunc: func(ctx context.Context) error {
+			numCalls.Add(1)
+			return nil
+		}}),
 		Converters: nil})
 	require.NoError(t, err)
 	_, errN := resolver.Resolve(context.Background())
 	assert.NoError(t, errN)
+	assert.Equal(t, int32(0), numCalls.Load())
 
 	errW := <-resolver.Watch()
 	assert.NoError(t, errW)
@@ -284,18 +290,24 @@ func TestResolver(t *testing.T) {
 
 	_, errN = resolver.Resolve(context.Background())
 	assert.NoError(t, errN)
+	assert.Equal(t, int32(1), numCalls.Load())
 
 	errW = <-resolver.Watch()
 	assert.NoError(t, errW)
 
+	_, errN = resolver.Resolve(context.Background())
+	assert.NoError(t, errN)
+	assert.Equal(t, int32(2), numCalls.Load())
+
 	errC := resolver.Shutdown(context.Background())
 	assert.NoError(t, errC)
+	assert.Equal(t, int32(3), numCalls.Load())
 }
 
 func TestResolverNewLinesInOpaqueValue(t *testing.T) {
 	_, err := NewResolver(ResolverSettings{
 		URIs:       []string{"mock:receivers:\n nop:\n"},
-		Providers:  makeMapProvidersMap(&mockProvider{retM: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}),
+		Providers:  makeMapProvidersMap(&mockProvider{retM: map[string]any{}}),
 		Converters: nil})
 	assert.NoError(t, err)
 }
