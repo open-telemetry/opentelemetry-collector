@@ -117,7 +117,7 @@ func TestHTTPClientCompression(t *testing.T) {
 			serverURL := fmt.Sprintf("http://%s", ln.Addr().String())
 			reqBody := bytes.NewBuffer(testBody)
 
-			req, err := http.NewRequest("GET", serverURL, reqBody)
+			req, err := http.NewRequest(http.MethodGet, serverURL, reqBody)
 			require.NoError(t, err, "failed to create request to test handler")
 
 			client := http.Client{}
@@ -216,7 +216,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			reqBody, err := tt.reqBodyFunc()
 			require.NoError(t, err, "failed to generate request body: %v", err)
 
-			req, err := http.NewRequest("GET", serverURL, reqBody)
+			req, err := http.NewRequest(http.MethodGet, serverURL, reqBody)
 			require.NoError(t, err, "failed to create request to test handler")
 			req.Header.Set("Content-Encoding", tt.encoding)
 
@@ -245,7 +245,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	}))
 	defer server.Close()
 
-	req, err := http.NewRequest("GET", server.URL, nil)
+	req, err := http.NewRequest(http.MethodGet, server.URL, nil)
 	require.NoError(t, err, "failed to create request to test handler")
 
 	client := http.Client{}
