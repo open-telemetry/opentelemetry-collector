@@ -223,6 +223,7 @@ func (mr *Resolver) closeIfNeeded(ctx context.Context) error {
 	for _, ret := range mr.closers {
 		err = multierr.Append(err, ret(ctx))
 	}
+	mr.closers = nil
 	return err
 }
 
