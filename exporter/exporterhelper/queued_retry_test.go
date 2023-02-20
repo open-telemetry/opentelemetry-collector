@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -28,7 +29,6 @@ import (
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/tag"
-	"go.uber.org/atomic"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -583,7 +583,8 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 }
 
 func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
-	produceCounter := atomic.NewUint32(0)
+
+	produceCounter := &atomic.Uint32{}
 
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
@@ -662,7 +663,7 @@ type mockRequest struct {
 }
 
 func (m *mockRequest) Export(ctx context.Context) error {
-	m.requestCount.Inc()
+	m.requestCount.Add(int64(1))
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	err := m.consumeError
@@ -703,7 +704,7 @@ func newMockRequest(ctx context.Context, cnt int, consumeError error) *mockReque
 		baseRequest:  baseRequest{ctx: ctx},
 		cnt:          cnt,
 		consumeError: consumeError,
-		requestCount: atomic.NewInt64(0),
+		requestCount: &atomic.Int64{},
 	}
 }
 
@@ -718,8 +719,8 @@ func newObservabilityConsumerSender(nextSender requestSender) *observabilityCons
 	return &observabilityConsumerSender{
 		waitGroup:         new(sync.WaitGroup),
 		nextSender:        nextSender,
-		droppedItemsCount: atomic.NewInt64(0),
-		sentItemsCount:    atomic.NewInt64(0),
+		droppedItemsCount: &atomic.Int64{},
+		sentItemsCount:    &atomic.Int64{},
 	}
 }
 

@@ -17,12 +17,12 @@ package internal
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -176,10 +176,10 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			defer tq.Stop()
 			t.Cleanup(func() { assert.NoError(t, ext.Shutdown(context.Background())) })
 
-			numMessagesConsumed := atomic.NewInt32(0)
+			numMessagesConsumed := &atomic.Int32{}
 			tq.StartConsumers(c.numConsumers, func(item Request) {
 				if item != nil {
-					numMessagesConsumed.Inc()
+					numMessagesConsumed.Add(int32(1))
 				}
 			})
 

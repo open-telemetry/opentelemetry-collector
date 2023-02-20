@@ -14,7 +14,7 @@
 
 package featuregate // import "go.opentelemetry.io/collector/featuregate"
 
-import "go.uber.org/atomic"
+import "sync/atomic"
 
 // Gate is an immutable object that is owned by the Registry and represents an individual feature that
 // may be enabled or disabled based on the lifecycle state of the feature and CLI flags specified by the user.

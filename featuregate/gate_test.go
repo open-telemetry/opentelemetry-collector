@@ -15,17 +15,19 @@
 package featuregate
 
 import (
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/atomic"
 )
 
 func TestGate(t *testing.T) {
+	enabled := &atomic.Bool{}
+	enabled.Store(true)
 	g := &Gate{
 		id:             "test",
 		description:    "test gate",
-		enabled:        atomic.NewBool(true),
+		enabled:        enabled,
 		stage:          StageAlpha,
 		referenceURL:   "http://example.com",
 		removalVersion: "v0.64.0",

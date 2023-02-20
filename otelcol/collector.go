@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 
-	"go.uber.org/atomic"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -119,9 +119,11 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		return nil, errors.New("invalid nil config provider")
 	}
 
+	state := &atomic.Int32{}
+	state.Store(int32(StateStarting))
 	return &Collector{
 		set:          set,
-		state:        atomic.NewInt32(int32(StateStarting)),
+		state:        state,
 		shutdownChan: make(chan struct{}),
 		// Per signal.Notify documentation, a size of the channel equaled with
 		// the number of signals getting notified on is recommended.

@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -129,7 +129,7 @@ func newMemoryLimiter(set processor.CreateSettings, cfg *Config) (*memoryLimiter
 		ticker:         time.NewTicker(cfg.CheckInterval),
 		readMemStatsFn: runtime.ReadMemStats,
 		logger:         logger,
-		forceDrop:      atomic.NewBool(false),
+		forceDrop:      &atomic.Bool{},
 		obsrep:         obsrep,
 	}
 
