@@ -27,7 +27,6 @@ import (
 	"go.uber.org/atomic"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
@@ -177,7 +176,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	if !col.set.SkipSettingGRPCLogger {
-		grpclog.SetLogger(col.service.Logger(), zapcore.Level(cfg.Service.Telemetry.Logs.Level))
+		grpclog.SetLogger(col.service.Logger(), cfg.Service.Telemetry.Logs.Level)
 	}
 
 	if err = col.service.Start(ctx); err != nil {

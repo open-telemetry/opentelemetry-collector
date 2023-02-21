@@ -31,8 +31,11 @@ func TestUnmarshalEmpty(t *testing.T) {
 	factories, err := nopFactories()
 	assert.NoError(t, err)
 
-	_, err = unmarshal(confmap.New(), factories)
+	cfg, err := unmarshal(confmap.New(), factories)
 	assert.NoError(t, err)
+	assert.True(t, *cfg.Service.Telemetry.Logs.Enabled)
+	assert.True(t, *cfg.Service.Telemetry.Metrics.Enabled)
+	assert.True(t, *cfg.Service.Telemetry.Traces.Enabled)
 }
 
 func TestUnmarshalEmptyAllSections(t *testing.T) {
@@ -52,7 +55,11 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 
 	zapProdCfg := zap.NewProductionConfig()
 	assert.Equal(t, telemetry.LogsConfig{
-		Level:       telemetry.LogLevel(zapProdCfg.Level.Level()),
+		Enabled: func() *bool {
+			truePtr := true
+			return &truePtr
+		}(),
+		Level:       zapProdCfg.Level.Level(),
 		Development: zapProdCfg.Development,
 		Encoding:    "console",
 		Sampling: &telemetry.LogsSamplingConfig{

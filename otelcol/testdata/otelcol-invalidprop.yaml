@@ -10,13 +10,14 @@ exporters:
 service:
   telemetry:
     traces:
+      enabled: true
       propagators:
       - "unknown"
       - "tracecontext"
     metrics:
       address: localhost:8888
     logs:
-      level: none
+      enabled: false
   pipelines:
     traces:
       receivers: [nop]

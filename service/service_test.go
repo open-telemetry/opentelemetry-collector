@@ -261,10 +261,22 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, useGraph bool, tc ownM
 	set.useGraph = &useGraph
 
 	cfg := newNopConfig()
-	cfg.Telemetry.Logs.Level = telemetry.InfoLevel
+	cfg.Telemetry.Logs.Level = zapcore.InfoLevel
 	cfg.Telemetry.Logs.Encoding = "console"
+	cfg.Telemetry.Logs.Enabled = func() *bool {
+		falsePtr := true
+		return &falsePtr
+	}()
+	cfg.Telemetry.Logs.ErrorOutputPaths = []string{}
+	cfg.Telemetry.Logs.OutputPaths = []string{}
+
 	cfg.Extensions = []component.ID{component.NewID("zpages")}
 	cfg.Telemetry.Metrics.Address = metricsAddr
+	cfg.Telemetry.Metrics.Enabled = func() *bool {
+		truePtr := true
+		return &truePtr
+	}()
+
 	cfg.Telemetry.Resource = make(map[string]*string)
 	// Include resource attributes under the service::telemetry::resource key.
 	for k, v := range tc.userDefinedResource {
@@ -291,7 +303,12 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, useGraph bool, tc ownM
 // TestServiceTelemetryRestart tests that the service correctly restarts the telemetry server.
 func TestServiceTelemetryRestart(t *testing.T) {
 	// Create a service
-	srvOne, err := New(context.Background(), newNopSettings(), newNopConfig())
+	cfg := newNopConfig()
+	cfg.Telemetry.Metrics.Enabled = func() *bool {
+		truePtr := true
+		return &truePtr
+	}()
+	srvOne, err := New(context.Background(), newNopSettings(), cfg)
 	require.NoError(t, err)
 
 	// URL of the telemetry service metrics endpoint
@@ -312,7 +329,7 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	require.NoError(t, srvOne.Shutdown(context.Background()))
 
 	// Create a new service with the same telemetry
-	srvTwo, err := New(context.Background(), newNopSettings(), newNopConfig())
+	srvTwo, err := New(context.Background(), newNopSettings(), cfg)
 	require.NoError(t, err)
 
 	// Start the new service
@@ -430,27 +447,33 @@ func newNopConfig() Config {
 }
 
 func newNopConfigPipelineConfigs(pipelineCfgs map[component.ID]*PipelineConfig) Config {
+	enabledPtr := false
 	return Config{
 		Extensions: []component.ID{component.NewID("nop")},
 		Pipelines:  pipelineCfgs,
 		Telemetry: telemetry.Config{
 			Logs: telemetry.LogsConfig{
-				Level:       telemetry.InfoLevel,
+				Enabled:     &enabledPtr,
+				Level:       zapcore.InfoLevel,
 				Development: false,
 				Encoding:    "console",
 				Sampling: &telemetry.LogsSamplingConfig{
 					Initial:    100,
 					Thereafter: 100,
 				},
-				OutputPaths:       []string{},
-				ErrorOutputPaths:  []string{},
+				OutputPaths:       []string{"stderr"},
+				ErrorOutputPaths:  []string{"stderr"},
 				DisableCaller:     false,
 				DisableStacktrace: false,
 				InitialFields:     map[string]any(nil),
 			},
 			Metrics: telemetry.MetricsConfig{
+				Enabled: &enabledPtr,
 				Level:   configtelemetry.LevelBasic,
 				Address: "localhost:8888",
+			},
+			Traces: telemetry.TracesConfig{
+				Enabled: &enabledPtr,
 			},
 		},
 	}

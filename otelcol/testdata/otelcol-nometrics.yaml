@@ -9,7 +9,7 @@ service:
     metrics:
       level: none
     logs:
-      level: none
+      enabled: false
   pipelines:
     metrics:
       receivers: [nop]
