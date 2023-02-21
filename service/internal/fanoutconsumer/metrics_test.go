@@ -233,6 +233,8 @@ func fuzzMetricsRouter(numIDs, numCons, numMetrics int) func(*testing.T) {
 		r := NewMetricsRouter(allConsMap)
 		assert.False(t, r.Capabilities().MutatesData)
 
+		consumers := r.Consumers()
+
 		md := testdata.GenerateMetrics(1)
 
 		// Keep track of how many logs each consumer should receive.
@@ -248,17 +250,14 @@ func fuzzMetricsRouter(numIDs, numCons, numMetrics int) func(*testing.T) {
 				randCons[allIDs[conNum]] = true
 			}
 
-			// Convert to slice, update expectations
-			conIDs := make([]component.ID, 0, len(randCons))
+			mcs := make([]consumer.Metrics, 0, len(randCons))
 			for id := range randCons {
-				conIDs = append(conIDs, id)
+				mcs = append(mcs, consumers[id])
 				expected[id]++
 			}
 
 			// Route to list of consumers
-			fanout, err := r.Consumer(conIDs...)
-			assert.NoError(t, err)
-			assert.NoError(t, fanout.ConsumeMetrics(context.Background(), md))
+			assert.NoError(t, NewMetrics(mcs).ConsumeMetrics(context.Background(), md))
 
 			// Validate expectations for all consumers
 			for id := range expected {
@@ -280,7 +279,7 @@ func fuzzMetricsRouter(numIDs, numCons, numMetrics int) func(*testing.T) {
 
 func TestMetricsRouterGetConsumer(t *testing.T) {
 	ctx := context.Background()
-	md := testdata.GenerateMetrics(1)
+	ld := testdata.GenerateMetrics(1)
 
 	fooID := component.NewID("foo")
 	barID := component.NewID("bar")
@@ -291,35 +290,20 @@ func TestMetricsRouterGetConsumer(t *testing.T) {
 	assert.Len(t, foo.AllMetrics(), 0)
 	assert.Len(t, bar.AllMetrics(), 0)
 
-	both, err := r.Consumer(fooID, barID)
-	assert.NotNil(t, both)
-	assert.NoError(t, err)
+	cons := r.Consumers()
 
-	assert.NoError(t, both.ConsumeMetrics(ctx, md))
+	both := NewMetrics([]consumer.Metrics{cons[fooID], cons[barID]})
+	assert.NoError(t, both.ConsumeMetrics(ctx, ld))
 	assert.Len(t, foo.AllMetrics(), 1)
 	assert.Len(t, bar.AllMetrics(), 1)
 
-	fooOnly, err := r.Consumer(fooID)
-	assert.NotNil(t, fooOnly)
-	assert.NoError(t, err)
-
-	assert.NoError(t, fooOnly.ConsumeMetrics(ctx, md))
+	fooOnly := NewMetrics([]consumer.Metrics{cons[fooID]})
+	assert.NoError(t, fooOnly.ConsumeMetrics(ctx, ld))
 	assert.Len(t, foo.AllMetrics(), 2)
 	assert.Len(t, bar.AllMetrics(), 1)
 
-	barOnly, err := r.Consumer(barID)
-	assert.NotNil(t, barOnly)
-	assert.NoError(t, err)
-
-	assert.NoError(t, barOnly.ConsumeMetrics(ctx, md))
+	barOnly := NewMetrics([]consumer.Metrics{cons[barID]})
+	assert.NoError(t, barOnly.ConsumeMetrics(ctx, ld))
 	assert.Len(t, foo.AllMetrics(), 2)
 	assert.Len(t, bar.AllMetrics(), 2)
-
-	none, err := r.Consumer()
-	assert.Nil(t, none)
-	assert.Error(t, err)
-
-	fake, err := r.Consumer(component.NewID("fake"))
-	assert.Nil(t, fake)
-	assert.Error(t, err)
 }

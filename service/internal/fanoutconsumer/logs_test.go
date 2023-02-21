@@ -241,6 +241,8 @@ func fuzzLogsRouter(numIDs, numCons, numLogs int) func(*testing.T) {
 		r := NewLogsRouter(allConsMap)
 		assert.False(t, r.Capabilities().MutatesData)
 
+		consumers := r.Consumers()
+
 		ld := testdata.GenerateLogs(1)
 
 		// Keep track of how many logs each consumer should receive.
@@ -256,17 +258,14 @@ func fuzzLogsRouter(numIDs, numCons, numLogs int) func(*testing.T) {
 				randCons[allIDs[conNum]] = true
 			}
 
-			// Convert to slice, update expectations
-			conIDs := make([]component.ID, 0, len(randCons))
+			lcs := make([]consumer.Logs, 0, len(randCons))
 			for id := range randCons {
-				conIDs = append(conIDs, id)
+				lcs = append(lcs, consumers[id])
 				expected[id]++
 			}
 
 			// Route to list of consumers
-			fanout, err := r.Consumer(conIDs...)
-			assert.NoError(t, err)
-			assert.NoError(t, fanout.ConsumeLogs(context.Background(), ld))
+			assert.NoError(t, NewLogs(lcs).ConsumeLogs(context.Background(), ld))
 
 			// Validate expectations for all consumers
 			for id := range expected {
@@ -299,35 +298,20 @@ func TestLogsRouterGetConsumer(t *testing.T) {
 	assert.Len(t, foo.AllLogs(), 0)
 	assert.Len(t, bar.AllLogs(), 0)
 
-	both, err := r.Consumer(fooID, barID)
-	assert.NotNil(t, both)
-	assert.NoError(t, err)
+	cons := r.Consumers()
 
+	both := NewLogs([]consumer.Logs{cons[fooID], cons[barID]})
 	assert.NoError(t, both.ConsumeLogs(ctx, ld))
 	assert.Len(t, foo.AllLogs(), 1)
 	assert.Len(t, bar.AllLogs(), 1)
 
-	fooOnly, err := r.Consumer(fooID)
-	assert.NotNil(t, fooOnly)
-	assert.NoError(t, err)
-
+	fooOnly := NewLogs([]consumer.Logs{cons[fooID]})
 	assert.NoError(t, fooOnly.ConsumeLogs(ctx, ld))
 	assert.Len(t, foo.AllLogs(), 2)
 	assert.Len(t, bar.AllLogs(), 1)
 
-	barOnly, err := r.Consumer(barID)
-	assert.NotNil(t, barOnly)
-	assert.NoError(t, err)
-
+	barOnly := NewLogs([]consumer.Logs{cons[barID]})
 	assert.NoError(t, barOnly.ConsumeLogs(ctx, ld))
 	assert.Len(t, foo.AllLogs(), 2)
 	assert.Len(t, bar.AllLogs(), 2)
-
-	none, err := r.Consumer()
-	assert.Nil(t, none)
-	assert.Error(t, err)
-
-	fake, err := r.Consumer(component.NewID("fake"))
-	assert.Nil(t, fake)
-	assert.Error(t, err)
 }

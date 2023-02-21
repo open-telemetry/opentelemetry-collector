@@ -45,7 +45,7 @@ type Traces interface {
 // The router will create a fanout consumer for the set of pipelines and return a uuid
 type TracesRouter interface {
 	consumer.Traces
-	Consumer(...component.ID) (consumer.Traces, error)
+	Consumers() map[component.ID]consumer.Traces
 }
 
 // A Metrics connector acts as an exporter from a metrics pipeline and a receiver
@@ -67,7 +67,7 @@ type Metrics interface {
 // MetricsRouter feeds the first consumer.Metrics in each of the specified pipelines.
 type MetricsRouter interface {
 	consumer.Metrics
-	Consumer(...component.ID) (consumer.Metrics, error)
+	Consumers() map[component.ID]consumer.Metrics
 }
 
 // A Logs connector acts as an exporter from a logs pipeline and a receiver
@@ -88,7 +88,7 @@ type Logs interface {
 // LogsRouter feeds the first consumer.Logs in each of the specified pipelines.
 type LogsRouter interface {
 	consumer.Logs
-	Consumer(...component.ID) (consumer.Logs, error)
+	Consumers() map[component.ID]consumer.Logs
 }
 
 // CreateSettings configures Connector creators.

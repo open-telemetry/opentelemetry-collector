@@ -53,37 +53,31 @@ func createExampleRouterDefaultConfig() component.Config {
 
 func createExampleTracesRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, traces consumer.Traces) (connector.Traces, error) {
 	c := cfg.(ExampleRouterConfig)
-	r := traces.(connector.TracesRouter)
-	left, _ := r.Consumer(c.Traces.Left)
-	right, _ := r.Consumer(c.Traces.Right)
+	cons := traces.(connector.TracesRouter).Consumers()
 	return &ExampleRouter{
 		traces:      traces.(connector.TracesRouter),
-		tracesRight: right,
-		tracesLeft:  left,
+		tracesRight: cons[c.Traces.Right],
+		tracesLeft:  cons[c.Traces.Left],
 	}, nil
 }
 
 func createExampleMetricsRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, metrics consumer.Metrics) (connector.Metrics, error) {
 	c := cfg.(ExampleRouterConfig)
-	r := metrics.(connector.MetricsRouter)
-	left, _ := r.Consumer(c.Metrics.Left)
-	right, _ := r.Consumer(c.Metrics.Right)
+	cons := metrics.(connector.MetricsRouter).Consumers()
 	return &ExampleRouter{
 		metrics:      metrics.(connector.MetricsRouter),
-		metricsRight: right,
-		metricsLeft:  left,
+		metricsRight: cons[c.Metrics.Right],
+		metricsLeft:  cons[c.Metrics.Left],
 	}, nil
 }
 
 func createExampleLogsRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, logs consumer.Logs) (connector.Logs, error) {
 	c := cfg.(ExampleRouterConfig)
-	r := logs.(connector.LogsRouter)
-	left, _ := r.Consumer(c.Logs.Left)
-	right, _ := r.Consumer(c.Logs.Right)
+	cons := logs.(connector.LogsRouter).Consumers()
 	return &ExampleRouter{
 		logs:      logs.(connector.LogsRouter),
-		logsRight: right,
-		logsLeft:  left,
+		logsRight: cons[c.Logs.Right],
+		logsLeft:  cons[c.Logs.Left],
 	}, nil
 }
 
