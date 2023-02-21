@@ -138,6 +138,7 @@ func BenchmarkLogsCopyToReuseDest(b *testing.B) {
 	logs := NewLogs()
 	fillTestResourceLogsSlice(logs.ResourceLogs())
 	dest := NewLogs()
+	logs.CopyTo(dest)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

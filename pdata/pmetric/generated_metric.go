@@ -236,24 +236,29 @@ func copyOrigMetric(dest, src *otlpmetrics.Metric) {
 	dest.Unit = src.Unit
 	switch v := src.Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
-		destGauge := &otlpmetrics.Gauge{}
-		copyOrigGauge(destGauge, v.Gauge)
-		dest.Data = &otlpmetrics.Metric_Gauge{Gauge: destGauge}
+		if _, ok := dest.Data.(*otlpmetrics.Metric_Gauge); !ok {
+			dest.Data = &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
+		}
+		copyOrigGauge(dest.Data.(*otlpmetrics.Metric_Gauge).Gauge, v.Gauge)
 	case *otlpmetrics.Metric_Sum:
-		destSum := &otlpmetrics.Sum{}
-		copyOrigSum(destSum, v.Sum)
-		dest.Data = &otlpmetrics.Metric_Sum{Sum: destSum}
+		if _, ok := dest.Data.(*otlpmetrics.Metric_Sum); !ok {
+			dest.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
+		}
+		copyOrigSum(dest.Data.(*otlpmetrics.Metric_Sum).Sum, v.Sum)
 	case *otlpmetrics.Metric_Histogram:
-		destHistogram := &otlpmetrics.Histogram{}
-		copyOrigHistogram(destHistogram, v.Histogram)
-		dest.Data = &otlpmetrics.Metric_Histogram{Histogram: destHistogram}
+		if _, ok := dest.Data.(*otlpmetrics.Metric_Histogram); !ok {
+			dest.Data = &otlpmetrics.Metric_Histogram{Histogram: &otlpmetrics.Histogram{}}
+		}
+		copyOrigHistogram(dest.Data.(*otlpmetrics.Metric_Histogram).Histogram, v.Histogram)
 	case *otlpmetrics.Metric_ExponentialHistogram:
-		destExponentialHistogram := &otlpmetrics.ExponentialHistogram{}
-		copyOrigExponentialHistogram(destExponentialHistogram, v.ExponentialHistogram)
-		dest.Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: destExponentialHistogram}
+		if _, ok := dest.Data.(*otlpmetrics.Metric_ExponentialHistogram); !ok {
+			dest.Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: &otlpmetrics.ExponentialHistogram{}}
+		}
+		copyOrigExponentialHistogram(dest.Data.(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram, v.ExponentialHistogram)
 	case *otlpmetrics.Metric_Summary:
-		destSummary := &otlpmetrics.Summary{}
-		copyOrigSummary(destSummary, v.Summary)
-		dest.Data = &otlpmetrics.Metric_Summary{Summary: destSummary}
+		if _, ok := dest.Data.(*otlpmetrics.Metric_Summary); !ok {
+			dest.Data = &otlpmetrics.Metric_Summary{Summary: &otlpmetrics.Summary{}}
+		}
+		copyOrigSummary(dest.Data.(*otlpmetrics.Metric_Summary).Summary, v.Summary)
 	}
 }

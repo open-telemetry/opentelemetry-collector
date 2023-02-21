@@ -133,9 +133,16 @@ func Test${structName}_CopyTo_${fieldName}(t *testing.T) {
 }`
 
 const copyToValueOneOfMessageTemplate = `	case *${originOneOfFieldType}:
-		dest${fieldName} := &${originFieldPackageName}.${fieldName}{}
-		copyOrig${fieldName}(dest${fieldName}, v.${fieldName})
-		dest.${originOneOfFieldName} = &${originOneOfFieldType}{${fieldName}: dest${fieldName}}`
+		if _, ok := dest.${originOneOfFieldName}.(*${originOneOfFieldType}); !ok {
+			dest.${originOneOfFieldName} = &${originOneOfFieldType}{${fieldName}: &${originFieldPackageName}.${fieldName}{}}
+		}
+		copyOrig${fieldName}(dest.${originOneOfFieldName}.(*${originOneOfFieldType}).${fieldName}, v.${fieldName})`
+
+const copyToValueOneOfPrimitiveValueTemplate = `	case *${originStructType}:
+		if _, ok := dest.${originOneOfFieldName}.(*${originStructType}); !ok {
+			dest.${originOneOfFieldName} = &${originStructType}{}
+		}
+		dest.${originOneOfFieldName}.(*${originStructType}).${originFieldName} = v.${originFieldName}`
 
 const accessorsOneOfPrimitiveTemplate = `// ${accessorFieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${accessorFieldName}() ${returnType} {
@@ -659,8 +666,8 @@ func (opv *oneOfPrimitiveValue) generateSetWithTestValue(of *oneOfField, sb *byt
 }
 
 func (opv *oneOfPrimitiveValue) generateCopyToValue(of *oneOfField, sb *bytes.Buffer) {
-	sb.WriteString("\tcase *" + of.originTypePrefix + opv.originFieldName + ":\n")
-	sb.WriteString("\t\tdest." + of.originFieldName + " = &" + of.originTypePrefix + opv.originFieldName + "{" + opv.originFieldName + ": v." + opv.originFieldName + "}\n")
+	sb.WriteString(os.Expand(copyToValueOneOfPrimitiveValueTemplate, opv.templateFields(nil, of)))
+	sb.WriteString("\n")
 }
 
 func (opv *oneOfPrimitiveValue) generateTypeSwitchCase(of *oneOfField, sb *bytes.Buffer) {

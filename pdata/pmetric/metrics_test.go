@@ -660,6 +660,7 @@ func BenchmarkMetricsCopyToReuseDest(b *testing.B) {
 	metrics := NewMetrics()
 	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
 	dest := NewMetrics()
+	metrics.CopyTo(dest)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

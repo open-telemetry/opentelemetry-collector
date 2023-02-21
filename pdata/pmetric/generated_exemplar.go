@@ -137,9 +137,15 @@ func copyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
 	dest.TimeUnixNano = src.TimeUnixNano
 	switch v := src.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
-		dest.Value = &otlpmetrics.Exemplar_AsDouble{AsDouble: v.AsDouble}
+		if _, ok := dest.Value.(*otlpmetrics.Exemplar_AsDouble); !ok {
+			dest.Value = &otlpmetrics.Exemplar_AsDouble{}
+		}
+		dest.Value.(*otlpmetrics.Exemplar_AsDouble).AsDouble = v.AsDouble
 	case *otlpmetrics.Exemplar_AsInt:
-		dest.Value = &otlpmetrics.Exemplar_AsInt{AsInt: v.AsInt}
+		if _, ok := dest.Value.(*otlpmetrics.Exemplar_AsInt); !ok {
+			dest.Value = &otlpmetrics.Exemplar_AsInt{}
+		}
+		dest.Value.(*otlpmetrics.Exemplar_AsInt).AsInt = v.AsInt
 	}
 	internal.CopyOrigMap(&dest.FilteredAttributes, &src.FilteredAttributes)
 	dest.TraceId = src.TraceId

@@ -139,6 +139,7 @@ func BenchmarkTracesCopyToReuseDest(b *testing.B) {
 	traces := NewTraces()
 	fillTestResourceSpansSlice(traces.ResourceSpans())
 	dest := NewTraces()
+	traces.CopyTo(dest)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
