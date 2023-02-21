@@ -14,15 +14,13 @@
 
 // Package fanoutconsumer contains implementations of Traces/Metrics/Logs consumers
 // that fan out the data to multiple other consumers.
-package fanoutconsumer // import "go.opentelemetry.io/collector/service/internal/fanoutconsumer"
+package fanoutconsumer // import "go.opentelemetry.io/collector/consumer/fanoutconsumer"
 
 import (
 	"context"
 
 	"go.uber.org/multierr"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -81,34 +79,4 @@ func (lsc *logsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		errs = multierr.Append(errs, lc.ConsumeLogs(ctx, ld))
 	}
 	return errs
-}
-
-var _ connector.LogsRouter = (*logsRouter)(nil)
-
-type logsRouter struct {
-	consumer.ConsumeLogsFunc
-	consumers map[component.ID]consumer.Logs
-}
-
-func NewLogsRouter(cm map[component.ID]consumer.Logs) connector.LogsRouter {
-	consumers := make([]consumer.Logs, 0, len(cm))
-	for _, consumer := range cm {
-		consumers = append(consumers, consumer)
-	}
-	return &logsRouter{
-		ConsumeLogsFunc: NewLogs(consumers).ConsumeLogs,
-		consumers:       cm,
-	}
-}
-
-func (r *logsRouter) Consumers() map[component.ID]consumer.Logs {
-	consumers := make(map[component.ID]consumer.Logs, len(r.consumers))
-	for k, v := range r.consumers {
-		consumers[k] = v
-	}
-	return consumers
-}
-
-func (r *logsRouter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
 }

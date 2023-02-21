@@ -17,17 +17,13 @@ package fanoutconsumer
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestMetricsNotMultiplexing(t *testing.T) {
@@ -196,114 +192,4 @@ type mutatingMetricsSink struct {
 
 func (mts *mutatingMetricsSink) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
-}
-
-func TestMetricsRouterMultiplexing(t *testing.T) {
-	var max = 20
-	for numIDs := 1; numIDs < max; numIDs++ {
-		for numCons := 1; numCons < max; numCons++ {
-			for numMetrics := 1; numMetrics < max; numMetrics++ {
-				t.Run(
-					fmt.Sprintf("%d-ids/%d-cons/%d-logs", numIDs, numCons, numMetrics),
-					fuzzMetricsRouter(numIDs, numCons, numMetrics),
-				)
-			}
-		}
-	}
-}
-
-func fuzzMetricsRouter(numIDs, numCons, numMetrics int) func(*testing.T) {
-	return func(t *testing.T) {
-		allIDs := make([]component.ID, 0, numCons)
-		allCons := make([]consumer.Metrics, 0, numCons)
-		allConsMap := make(map[component.ID]consumer.Metrics)
-
-		// If any consumer is mutating, the router must report mutating
-		for i := 0; i < numCons; i++ {
-			allIDs = append(allIDs, component.NewIDWithName("sink", strconv.Itoa(numCons)))
-			// Random chance for each consumer to be mutating
-			if (numCons+numMetrics+i)%4 == 0 {
-				allCons = append(allCons, &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)})
-			} else {
-				allCons = append(allCons, new(consumertest.MetricsSink))
-			}
-			allConsMap[allIDs[i]] = allCons[i]
-		}
-
-		r := NewMetricsRouter(allConsMap)
-		assert.False(t, r.Capabilities().MutatesData)
-
-		consumers := r.Consumers()
-
-		md := testdata.GenerateMetrics(1)
-
-		// Keep track of how many logs each consumer should receive.
-		// This will be validated after every call to RouteMetrics.
-		expected := make(map[component.ID]int, numCons)
-
-		for i := 0; i < numMetrics; i++ {
-			// Build a random set of ids (no duplicates)
-			randCons := make(map[component.ID]bool, numIDs)
-			for j := 0; j < numIDs; j++ {
-				// This number should be pretty random and less than numCons
-				conNum := (numCons + numIDs + i + j) % numCons
-				randCons[allIDs[conNum]] = true
-			}
-
-			mcs := make([]consumer.Metrics, 0, len(randCons))
-			for id := range randCons {
-				mcs = append(mcs, consumers[id])
-				expected[id]++
-			}
-
-			// Route to list of consumers
-			assert.NoError(t, NewMetrics(mcs).ConsumeMetrics(context.Background(), md))
-
-			// Validate expectations for all consumers
-			for id := range expected {
-				metrics := []pmetric.Metrics{}
-				switch con := allConsMap[id].(type) {
-				case *consumertest.MetricsSink:
-					metrics = con.AllMetrics()
-				case *mutatingMetricsSink:
-					metrics = con.AllMetrics()
-				}
-				assert.Len(t, metrics, expected[id])
-				for n := 0; n < len(metrics); n++ {
-					assert.EqualValues(t, md, metrics[n])
-				}
-			}
-		}
-	}
-}
-
-func TestMetricsRouterGetConsumer(t *testing.T) {
-	ctx := context.Background()
-	ld := testdata.GenerateMetrics(1)
-
-	fooID := component.NewID("foo")
-	barID := component.NewID("bar")
-
-	foo := new(consumertest.MetricsSink)
-	bar := new(consumertest.MetricsSink)
-	r := NewMetricsRouter(map[component.ID]consumer.Metrics{fooID: foo, barID: bar})
-	assert.Len(t, foo.AllMetrics(), 0)
-	assert.Len(t, bar.AllMetrics(), 0)
-
-	cons := r.Consumers()
-
-	both := NewMetrics([]consumer.Metrics{cons[fooID], cons[barID]})
-	assert.NoError(t, both.ConsumeMetrics(ctx, ld))
-	assert.Len(t, foo.AllMetrics(), 1)
-	assert.Len(t, bar.AllMetrics(), 1)
-
-	fooOnly := NewMetrics([]consumer.Metrics{cons[fooID]})
-	assert.NoError(t, fooOnly.ConsumeMetrics(ctx, ld))
-	assert.Len(t, foo.AllMetrics(), 2)
-	assert.Len(t, bar.AllMetrics(), 1)
-
-	barOnly := NewMetrics([]consumer.Metrics{cons[barID]})
-	assert.NoError(t, barOnly.ConsumeMetrics(ctx, ld))
-	assert.Len(t, foo.AllMetrics(), 2)
-	assert.Len(t, bar.AllMetrics(), 2)
 }

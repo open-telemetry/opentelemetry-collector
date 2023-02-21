@@ -53,9 +53,9 @@ func createExampleRouterDefaultConfig() component.Config {
 
 func createExampleTracesRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, traces consumer.Traces) (connector.Traces, error) {
 	c := cfg.(ExampleRouterConfig)
-	cons := traces.(connector.TracesRouter).Consumers()
+	cons := traces.(connector.TracesConsumer).Consumers()
 	return &ExampleRouter{
-		traces:      traces.(connector.TracesRouter),
+		traces:      traces.(connector.TracesConsumer),
 		tracesRight: cons[c.Traces.Right],
 		tracesLeft:  cons[c.Traces.Left],
 	}, nil
@@ -63,9 +63,9 @@ func createExampleTracesRouter(_ context.Context, _ connector.CreateSettings, cf
 
 func createExampleMetricsRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, metrics consumer.Metrics) (connector.Metrics, error) {
 	c := cfg.(ExampleRouterConfig)
-	cons := metrics.(connector.MetricsRouter).Consumers()
+	cons := metrics.(connector.MetricsConsumer).Consumers()
 	return &ExampleRouter{
-		metrics:      metrics.(connector.MetricsRouter),
+		metrics:      metrics.(connector.MetricsConsumer),
 		metricsRight: cons[c.Metrics.Right],
 		metricsLeft:  cons[c.Metrics.Left],
 	}, nil
@@ -73,9 +73,9 @@ func createExampleMetricsRouter(_ context.Context, _ connector.CreateSettings, c
 
 func createExampleLogsRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, logs consumer.Logs) (connector.Logs, error) {
 	c := cfg.(ExampleRouterConfig)
-	cons := logs.(connector.LogsRouter).Consumers()
+	cons := logs.(connector.LogsConsumer).Consumers()
 	return &ExampleRouter{
-		logs:      logs.(connector.LogsRouter),
+		logs:      logs.(connector.LogsConsumer),
 		logsRight: cons[c.Logs.Right],
 		logsLeft:  cons[c.Logs.Left],
 	}, nil
@@ -84,17 +84,17 @@ func createExampleLogsRouter(_ context.Context, _ connector.CreateSettings, cfg 
 type ExampleRouter struct {
 	componentState
 
-	traces      connector.TracesRouter
+	traces      connector.TracesConsumer
 	tracesRight consumer.Traces
 	tracesLeft  consumer.Traces
 	tracesNum   int
 
-	metrics      connector.MetricsRouter
+	metrics      connector.MetricsConsumer
 	metricsRight consumer.Metrics
 	metricsLeft  consumer.Metrics
 	metricsNum   int
 
-	logs      connector.LogsRouter
+	logs      connector.LogsConsumer
 	logsRight consumer.Logs
 	logsLeft  consumer.Logs
 	logsNum   int

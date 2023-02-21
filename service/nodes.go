@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/service/internal/components"
-	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
 
 const (
@@ -158,42 +157,42 @@ func buildConnector(
 		for _, next := range nexts {
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Traces)
 		}
-		fanoutConsumer := fanoutconsumer.NewTracesRouter(consumers)
+		connectorConsumer := connector.NewTracesConsumer(consumers)
 		switch exprPipelineType {
 		case component.DataTypeTraces:
-			conn, err = builder.CreateTracesToTraces(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateTracesToTraces(ctx, set, connectorConsumer)
 		case component.DataTypeMetrics:
-			conn, err = builder.CreateMetricsToTraces(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateMetricsToTraces(ctx, set, connectorConsumer)
 		case component.DataTypeLogs:
-			conn, err = builder.CreateLogsToTraces(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateLogsToTraces(ctx, set, connectorConsumer)
 		}
 	case component.DataTypeMetrics:
 		consumers := make(map[component.ID]consumer.Metrics, len(nexts))
 		for _, next := range nexts {
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Metrics)
 		}
-		fanoutConsumer := fanoutconsumer.NewMetricsRouter(consumers)
+		connectorConsumer := connector.NewMetricsConsumer(consumers)
 		switch exprPipelineType {
 		case component.DataTypeTraces:
-			conn, err = builder.CreateTracesToMetrics(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateTracesToMetrics(ctx, set, connectorConsumer)
 		case component.DataTypeMetrics:
-			conn, err = builder.CreateMetricsToMetrics(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateMetricsToMetrics(ctx, set, connectorConsumer)
 		case component.DataTypeLogs:
-			conn, err = builder.CreateLogsToMetrics(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateLogsToMetrics(ctx, set, connectorConsumer)
 		}
 	case component.DataTypeLogs:
 		consumers := make(map[component.ID]consumer.Logs, len(nexts))
 		for _, next := range nexts {
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Logs)
 		}
-		fanoutConsumer := fanoutconsumer.NewLogsRouter(consumers)
+		connectorConsumer := connector.NewLogsConsumer(consumers)
 		switch exprPipelineType {
 		case component.DataTypeTraces:
-			conn, err = builder.CreateTracesToLogs(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateTracesToLogs(ctx, set, connectorConsumer)
 		case component.DataTypeMetrics:
-			conn, err = builder.CreateMetricsToLogs(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateMetricsToLogs(ctx, set, connectorConsumer)
 		case component.DataTypeLogs:
-			conn, err = builder.CreateLogsToLogs(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateLogsToLogs(ctx, set, connectorConsumer)
 		}
 	}
 	return

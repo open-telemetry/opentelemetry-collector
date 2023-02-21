@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fanoutconsumer // import "go.opentelemetry.io/collector/service/internal/fanoutconsumer"
+package fanoutconsumer // import "go.opentelemetry.io/collector/consumer/fanoutconsumer"
 
 import (
 	"context"
 
 	"go.uber.org/multierr"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -79,34 +77,4 @@ func (msc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		errs = multierr.Append(errs, mc.ConsumeMetrics(ctx, md))
 	}
 	return errs
-}
-
-var _ connector.MetricsRouter = (*metricsRouter)(nil)
-
-type metricsRouter struct {
-	consumer.ConsumeMetricsFunc
-	consumers map[component.ID]consumer.Metrics
-}
-
-func NewMetricsRouter(cm map[component.ID]consumer.Metrics) connector.MetricsRouter {
-	consumers := make([]consumer.Metrics, 0, len(cm))
-	for _, consumer := range cm {
-		consumers = append(consumers, consumer)
-	}
-	return &metricsRouter{
-		ConsumeMetricsFunc: NewMetrics(consumers).ConsumeMetrics,
-		consumers:          cm,
-	}
-}
-
-func (r *metricsRouter) Consumers() map[component.ID]consumer.Metrics {
-	consumers := make(map[component.ID]consumer.Metrics, len(r.consumers))
-	for k, v := range r.consumers {
-		consumers[k] = v
-	}
-	return consumers
-}
-
-func (r *metricsRouter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
 }
