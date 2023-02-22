@@ -46,7 +46,7 @@ func NewTraces(err error, failed ptrace.Traces) error {
 	}
 }
 
-// Deprecated: [v0.72.0] Use `Traces` instead.
+// Deprecated: [v0.73.0] Use `Traces` instead.
 func (err Traces) GetTraces() ptrace.Traces {
 	return err.Traces()
 }
@@ -72,7 +72,7 @@ func NewLogs(err error, failed plog.Logs) error {
 	}
 }
 
-// Deprecated: [v0.72.0] Use `Logs` instead.
+// Deprecated: [v0.73.0] Use `Logs` instead.
 func (err Logs) GetLogs() plog.Logs {
 	return err.Logs()
 }
@@ -98,7 +98,7 @@ func NewMetrics(err error, failed pmetric.Metrics) error {
 	}
 }
 
-// Deprecated: [v0.72.0] Use `Metrics` instead.
+// Deprecated: [v0.73.0] Use `Metrics` instead.
 func (err Metrics) GetMetrics() pmetric.Metrics {
 	return err.Metrics()
 }
