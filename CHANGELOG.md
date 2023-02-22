@@ -4,6 +4,24 @@
 
 <!-- next version -->
 
+## v1.0.0-rc6/v0.72.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Remove go 1.18 support, bump minimum to go 1.19 and add testing for 1.20 (#7151)
+- `pdata`: Remove deprecated `[Metrics|Traces|Logs]MoveTo` methods. (#7165)
+- `featuregate`: Remove deprecated funcs in featuregate. (#7173)
+
+### 💡 Enhancements 💡
+
+- `semconv`: Generated Semantic conventions 1.17 that now contains the `event` type. (#7170)
+- `semconv`: Generated Semantic conventions 1.18. (#7168)
+
+### 🧰 Bug fixes 🧰
+
+- `memorylimiterprocessor`: Fix incorrect parsing of cgroups when running Collector with host mount (#6826)
+- `confmap`: Clear list of old already closed closers. (#7215)
+
 ## v1.0.0-rc5/v0.71.0
 
 ### 🛑 Breaking changes 🛑
