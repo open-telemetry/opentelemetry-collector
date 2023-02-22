@@ -212,7 +212,7 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 }
 
 func getMetricsFromPrometheus(t *testing.T, handler http.Handler) map[string]*io_prometheus_client.MetricFamily {
-	req, err := http.NewRequest("GET", "/metrics", nil)
+	req, err := http.NewRequest(http.MethodGet, "/metrics", nil)
 	require.NoError(t, err)
 
 	rr := httptest.NewRecorder()

@@ -101,7 +101,7 @@ func setupTelemetry(t *testing.T) testTelemetry {
 }
 
 func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_client.MetricFamily, error) {
-	req, err := http.NewRequest("GET", "/metrics", nil)
+	req, err := http.NewRequest(http.MethodGet, "/metrics", nil)
 	if err != nil {
 		return nil, err
 	}
