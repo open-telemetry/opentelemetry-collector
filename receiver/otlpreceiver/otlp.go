@@ -201,6 +201,10 @@ func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 	httpTracesReceiver := trace.New(tc, r.obsrepHTTP)
 	if r.httpMux != nil {
 		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodOptions {
+				handleCorsPreflightRequest(resp)
+				return
+			}
 			if req.Method != http.MethodPost {
 				handleUnmatchedMethod(resp)
 				return
@@ -226,6 +230,10 @@ func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 	httpMetricsReceiver := metrics.New(mc, r.obsrepHTTP)
 	if r.httpMux != nil {
 		r.httpMux.HandleFunc("/v1/metrics", func(resp http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodOptions {
+				handleCorsPreflightRequest(resp)
+				return
+			}
 			if req.Method != http.MethodPost {
 				handleUnmatchedMethod(resp)
 				return
@@ -251,6 +259,10 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 	httpLogsReceiver := logs.New(lc, r.obsrepHTTP)
 	if r.httpMux != nil {
 		r.httpMux.HandleFunc("/v1/logs", func(resp http.ResponseWriter, req *http.Request) {
+			if req.Method == http.MethodOptions {
+				handleCorsPreflightRequest(resp)
+				return
+			}
 			if req.Method != http.MethodPost {
 				handleUnmatchedMethod(resp)
 				return
@@ -276,4 +288,9 @@ func handleUnmatchedMethod(resp http.ResponseWriter) {
 func handleUnmatchedContentType(resp http.ResponseWriter) {
 	status := http.StatusUnsupportedMediaType
 	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v unsupported media type, supported: [%s, %s]", status, jsonContentType, pbContentType)))
+}
+
+func handleCorsPreflightRequest(resp http.ResponseWriter) {
+	status := http.StatusNoContent
+	writeResponse(resp, "text/plain", status, []byte(""))
 }

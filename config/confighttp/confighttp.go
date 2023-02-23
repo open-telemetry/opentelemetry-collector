@@ -294,6 +294,7 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 			AllowCredentials: true,
 			AllowedHeaders:   hss.CORS.AllowedHeaders,
 			MaxAge:           hss.CORS.MaxAge,
+			AllowedMethods:   []string{http.MethodOptions, http.MethodPost},
 		}
 		handler = cors.New(co).Handler(handler)
 	}
