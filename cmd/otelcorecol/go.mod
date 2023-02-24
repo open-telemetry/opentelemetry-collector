@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector v0.72.0
 	go.opentelemetry.io/collector/component v0.72.0
 	go.opentelemetry.io/collector/connector/forwardconnector v0.72.0
+	go.opentelemetry.io/collector/exporter v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.72.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.72.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.72.0
@@ -103,6 +104,8 @@ replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/connector/forwardconnector => ../../connector/forwardconnector
 
+replace go.opentelemetry.io/collector/exporter => ../../exporter
+
 replace go.opentelemetry.io/collector/exporter/loggingexporter => ../../exporter/loggingexporter
 
 replace go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/otlpexporter
@@ -119,10 +122,10 @@ replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/receiver => ../../receiver
 
+replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
+
 replace go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
 
 replace go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
-
-replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
