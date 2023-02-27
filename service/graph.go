@@ -16,7 +16,10 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"go.uber.org/multierr"
 	"gonum.org/v1/gonum/graph"
@@ -159,10 +162,7 @@ func (g *pipelinesGraph) createEdges() {
 func (g *pipelinesGraph) buildComponents(ctx context.Context, set pipelinesSettings) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
-		// TODO When there is a cycle in the graph, there is enough information
-		// within the error to construct a better error message that indicates
-		// exactly the components that are in a cycle.
-		return err
+		return cycleErr(err, topo.DirectedCyclesIn(g.componentGraph))
 	}
 
 	for i := len(nodes) - 1; i >= 0; i-- {
@@ -355,4 +355,44 @@ func (p *pipelineNodes) exporterIDs() []string {
 
 func (p *pipelineNodes) mutatesData() bool {
 	return p.capabilitiesNode.getConsumer().Capabilities().MutatesData
+}
+
+func cycleErr(err error, cycles [][]graph.Node) error {
+	var topoErr topo.Unorderable
+	if !errors.As(err, &topoErr) || len(cycles) == 0 || len(cycles[0]) == 0 {
+		return err
+	}
+
+	// There may be multiple cycles, but report only the first one.
+	cycle := cycles[0]
+
+	// The last node is a duplicate of the first node.
+	// Remove it because we may start from a different node.
+	cycle = cycle[:len(cycle)-1]
+
+	// A cycle always contains a connector. For the sake of consistent
+	// error messages report the cycle starting from a connector.
+	for i := 0; i < len(cycle); i++ {
+		if _, ok := cycle[i].(*connectorNode); ok {
+			cycle = append(cycle[i:], cycle[:i]...)
+			break
+		}
+	}
+
+	// Repeat the first node at the end to clarify the cycle
+	cycle = append(cycle, cycle[0])
+
+	// Build the error message
+	componentDetails := make([]string, 0, len(cycle))
+	for _, node := range cycle {
+		switch n := node.(type) {
+		case *processorNode:
+			componentDetails = append(componentDetails, fmt.Sprintf("processor %q in pipeline %q", n.componentID, n.pipelineID))
+		case *connectorNode:
+			componentDetails = append(componentDetails, fmt.Sprintf("connector %q (%s to %s)", n.componentID, n.exprPipelineType, n.rcvrPipelineType))
+		default:
+			continue // skip capabilities/fanout nodes
+		}
+	}
+	return fmt.Errorf("cycle detected: %s", strings.Join(componentDetails, " -> "))
 }
