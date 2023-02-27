@@ -11,7 +11,7 @@ require (
 	github.com/mostynb/go-grpc-compression v1.1.17
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0
-	github.com/prometheus/common v0.39.0
+	github.com/prometheus/common v0.40.0
 	github.com/rs/cors v1.8.3
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/spf13/cobra v1.6.1
