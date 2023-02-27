@@ -133,7 +133,6 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	} else {
 		(*dest.orig) = make([]otlpmetrics.Exemplar, srcLen)
 	}
-
 	for i := range *es.orig {
 		newExemplar(&(*es.orig)[i]).CopyTo(newExemplar(&(*dest.orig)[i]))
 	}
