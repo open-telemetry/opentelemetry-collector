@@ -37,7 +37,7 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-var graphFeatureGate = featuregate.GlobalRegistry().MustRegister( // nolint:unused
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"service.graph",
 	featuregate.StageStable,
 	featuregate.WithRegisterRemovalVersion("v0.74.0"),
@@ -71,8 +71,7 @@ type Settings struct {
 	LoggingOptions []zap.Option
 
 	// For testing purpose only.
-	useOtel  *bool
-	useGraph *bool
+	useOtel *bool
 }
 
 // Service represents the implementation of a component.Host.

@@ -38,15 +38,6 @@ const (
 	zComponentKind = "zcomponentkind"
 )
 
-type pipelines interface {
-	StartAll(ctx context.Context, host component.Host) error
-	ShutdownAll(ctx context.Context) error
-	GetExporters() map[component.DataType]map[component.ID]component.Component
-	HandleZPages(w http.ResponseWriter, r *http.Request)
-}
-
-var _ pipelines = (*builtPipelines)(nil)
-
 // baseConsumer redeclared here since not public in consumer package. May consider to make that public.
 type baseConsumer interface {
 	Capabilities() consumer.Capabilities
@@ -180,7 +171,7 @@ type pipelinesSettings struct {
 }
 
 // buildPipelines builds all pipelines from config.
-func buildPipelines(ctx context.Context, set pipelinesSettings) (pipelines, error) {
+func buildPipelines(ctx context.Context, set pipelinesSettings) (*builtPipelines, error) {
 	exps := &builtPipelines{
 		telemetry:    set.Telemetry,
 		allReceivers: make(map[component.DataType]map[component.ID]component.Component),

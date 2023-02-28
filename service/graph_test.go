@@ -638,11 +638,8 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				PipelineConfigs: test.pipelineConfigs,
 			}
 
-			pipelinesInterface, err := buildPipelinesGraph(context.Background(), set)
+			pg, err := buildPipelinesGraph(context.Background(), set)
 			require.NoError(t, err)
-
-			pg, ok := pipelinesInterface.(*pipelinesGraph)
-			require.True(t, ok)
 
 			assert.Equal(t, len(test.pipelineConfigs), len(pg.pipelines))
 
