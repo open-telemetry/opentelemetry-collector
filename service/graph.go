@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"go.uber.org/multierr"
@@ -313,48 +312,6 @@ func (g *pipelinesGraph) GetExporters() map[component.DataType]map[component.ID]
 		}
 	}
 	return exportersMap
-}
-
-func (g *pipelinesGraph) HandleZPages(w http.ResponseWriter, r *http.Request) {
-	handleZPages(w, r, g.pipelines)
-}
-
-func (p *pipelineNodes) receiverIDs() []string {
-	ids := make([]string, 0, len(p.receivers))
-	for _, c := range p.receivers {
-		switch n := c.(type) {
-		case *receiverNode:
-			ids = append(ids, n.componentID.String())
-		case *connectorNode:
-			ids = append(ids, n.componentID.String()+" (connector)")
-		}
-	}
-	return ids
-}
-
-func (p *pipelineNodes) processorIDs() []string {
-	ids := make([]string, 0, len(p.processors))
-	for _, c := range p.processors {
-		ids = append(ids, c.componentID.String())
-	}
-	return ids
-}
-
-func (p *pipelineNodes) exporterIDs() []string {
-	ids := make([]string, 0, len(p.exporters))
-	for _, c := range p.exporters {
-		switch n := c.(type) {
-		case *exporterNode:
-			ids = append(ids, n.componentID.String())
-		case *connectorNode:
-			ids = append(ids, n.componentID.String()+" (connector)")
-		}
-	}
-	return ids
-}
-
-func (p *pipelineNodes) mutatesData() bool {
-	return p.capabilitiesNode.getConsumer().Capabilities().MutatesData
 }
 
 func cycleErr(err error, cycles [][]graph.Node) error {
