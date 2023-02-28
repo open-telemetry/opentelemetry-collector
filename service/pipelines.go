@@ -422,34 +422,4 @@ func buildReceiver(ctx context.Context,
 	return recv, nil
 }
 
-func (bps *builtPipelines) HandleZPages(w http.ResponseWriter, r *http.Request) {
-	handleZPages(w, r, bps.pipelines)
-}
-
-func (bp *builtPipeline) receiverIDs() []string {
-	ids := make([]string, 0, len(bp.receivers))
-	for _, bc := range bp.receivers {
-		ids = append(ids, bc.id.String())
-	}
-	return ids
-}
-
-func (bp *builtPipeline) processorIDs() []string {
-	ids := make([]string, 0, len(bp.processors))
-	for _, bc := range bp.processors {
-		ids = append(ids, bc.id.String())
-	}
-	return ids
-}
-
-func (bp *builtPipeline) exporterIDs() []string {
-	ids := make([]string, 0, len(bp.exporters))
-	for _, bc := range bp.exporters {
-		ids = append(ids, bc.id.String())
-	}
-	return ids
-}
-
-func (bp *builtPipeline) mutatesData() bool {
-	return bp.lastConsumer.Capabilities().MutatesData
-}
+func (bps *builtPipelines) HandleZPages(_ http.ResponseWriter, _ *http.Request) {}
