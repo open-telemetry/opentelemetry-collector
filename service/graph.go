@@ -31,8 +31,6 @@ import (
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
 
-var _ pipelines = (*pipelinesGraph)(nil)
-
 type pipelinesGraph struct {
 	// All component instances represented as nodes, with directed edges indicating data flow.
 	componentGraph *simple.DirectedGraph
@@ -41,7 +39,7 @@ type pipelinesGraph struct {
 	pipelines map[component.ID]*pipelineNodes
 }
 
-func buildPipelinesGraph(ctx context.Context, set pipelinesSettings) (pipelines, error) {
+func buildPipelinesGraph(ctx context.Context, set pipelinesSettings) (*pipelinesGraph, error) {
 	pipelines := &pipelinesGraph{
 		componentGraph: simple.NewDirectedGraph(),
 		pipelines:      make(map[component.ID]*pipelineNodes, len(set.PipelineConfigs)),
