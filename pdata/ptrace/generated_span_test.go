@@ -65,7 +65,7 @@ func TestSpan_SpanID(t *testing.T) {
 func TestSpan_TraceState(t *testing.T) {
 	ms := NewSpan()
 	internal.FillTestTraceState(internal.TraceState(ms.TraceState()))
-	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceState())
+	assert.Equal(t, internal.GenerateTestTraceState().GetOrig(), internal.TraceState(ms.TraceState()).GetOrig())
 }
 
 func TestSpan_ParentSpanID(t *testing.T) {
@@ -109,9 +109,9 @@ func TestSpan_EndTimestamp(t *testing.T) {
 
 func TestSpan_Attributes(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
+	assert.Equal(t, internal.Map(pcommon.NewMap()).GetOrig(), internal.Map(ms.Attributes()).GetOrig())
 	internal.FillTestMap(internal.Map(ms.Attributes()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	assert.Equal(t, internal.GenerateTestMap().GetOrig(), internal.Map(ms.Attributes()).GetOrig())
 }
 
 func TestSpan_DroppedAttributesCount(t *testing.T) {
@@ -123,9 +123,9 @@ func TestSpan_DroppedAttributesCount(t *testing.T) {
 
 func TestSpan_Events(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, NewSpanEventSlice(), ms.Events())
+	assert.Equal(t, NewSpanEventSlice().getOrig(), ms.Events().getOrig())
 	fillTestSpanEventSlice(ms.Events())
-	assert.Equal(t, generateTestSpanEventSlice(), ms.Events())
+	assert.Equal(t, generateTestSpanEventSlice().getOrig(), ms.Events().getOrig())
 }
 
 func TestSpan_DroppedEventsCount(t *testing.T) {
@@ -137,9 +137,9 @@ func TestSpan_DroppedEventsCount(t *testing.T) {
 
 func TestSpan_Links(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, NewSpanLinkSlice(), ms.Links())
+	assert.Equal(t, NewSpanLinkSlice().getOrig(), ms.Links().getOrig())
 	fillTestSpanLinkSlice(ms.Links())
-	assert.Equal(t, generateTestSpanLinkSlice(), ms.Links())
+	assert.Equal(t, generateTestSpanLinkSlice().getOrig(), ms.Links().getOrig())
 }
 
 func TestSpan_DroppedLinksCount(t *testing.T) {
@@ -152,7 +152,7 @@ func TestSpan_DroppedLinksCount(t *testing.T) {
 func TestSpan_Status(t *testing.T) {
 	ms := NewSpan()
 	fillTestStatus(ms.Status())
-	assert.Equal(t, generateTestStatus(), ms.Status())
+	assert.Equal(t, generateTestStatus().getOrig(), ms.Status().getOrig())
 }
 
 func generateTestSpan() Span {
@@ -162,19 +162,20 @@ func generateTestSpan() Span {
 }
 
 func fillTestSpan(tv Span) {
-	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	internal.FillTestTraceState(internal.NewTraceState(&tv.orig.TraceState))
-	tv.orig.ParentSpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.Name = "test_name"
-	tv.orig.Kind = otlptrace.Span_SpanKind(3)
-	tv.orig.StartTimeUnixNano = 1234567890
-	tv.orig.EndTimeUnixNano = 1234567890
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
-	tv.orig.DroppedAttributesCount = uint32(17)
-	fillTestSpanEventSlice(newSpanEventSlice(&tv.orig.Events))
-	tv.orig.DroppedEventsCount = uint32(17)
-	fillTestSpanLinkSlice(newSpanLinkSlice(&tv.orig.Links))
-	tv.orig.DroppedLinksCount = uint32(17)
-	fillTestStatus(newStatus(&tv.orig.Status))
+	tv.getOrig().TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	tv.getOrig().SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	internal.FillTestTraceState(internal.NewTraceState(&tv.getOrig().TraceState,
+		wrappedSpanTraceState{Span: tv}))
+	tv.getOrig().ParentSpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	tv.getOrig().Name = "test_name"
+	tv.getOrig().Kind = otlptrace.Span_SpanKind(3)
+	tv.getOrig().StartTimeUnixNano = 1234567890
+	tv.getOrig().EndTimeUnixNano = 1234567890
+	internal.FillTestMap(internal.NewMap(&tv.getOrig().Attributes, wrappedSpanAttributes{Span: tv}))
+	tv.getOrig().DroppedAttributesCount = uint32(17)
+	fillTestSpanEventSlice(newSpanEventSlice(&tv.getOrig().Events, tv))
+	tv.getOrig().DroppedEventsCount = uint32(17)
+	fillTestSpanLinkSlice(newSpanLinkSlice(&tv.getOrig().Links, tv))
+	tv.getOrig().DroppedLinksCount = uint32(17)
+	fillTestStatus(newStatus(&tv.getOrig().Status, tv))
 }

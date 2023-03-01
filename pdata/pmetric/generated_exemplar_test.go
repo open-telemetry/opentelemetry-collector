@@ -77,9 +77,9 @@ func TestExemplar_IntValue(t *testing.T) {
 
 func TestExemplar_FilteredAttributes(t *testing.T) {
 	ms := NewExemplar()
-	assert.Equal(t, pcommon.NewMap(), ms.FilteredAttributes())
+	assert.Equal(t, internal.Map(pcommon.NewMap()).GetOrig(), internal.Map(ms.FilteredAttributes()).GetOrig())
 	internal.FillTestMap(internal.Map(ms.FilteredAttributes()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.FilteredAttributes())
+	assert.Equal(t, internal.GenerateTestMap().GetOrig(), internal.Map(ms.FilteredAttributes()).GetOrig())
 }
 
 func TestExemplar_TraceID(t *testing.T) {
@@ -105,9 +105,9 @@ func generateTestExemplar() Exemplar {
 }
 
 func fillTestExemplar(tv Exemplar) {
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(17)}
-	internal.FillTestMap(internal.NewMap(&tv.orig.FilteredAttributes))
-	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	tv.getOrig().TimeUnixNano = 1234567890
+	tv.getOrig().Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(17)}
+	internal.FillTestMap(internal.NewMap(&tv.getOrig().FilteredAttributes, wrappedExemplarFilteredAttributes{Exemplar: tv}))
+	tv.getOrig().TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	tv.getOrig().SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 }

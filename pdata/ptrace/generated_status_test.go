@@ -63,6 +63,6 @@ func generateTestStatus() Status {
 }
 
 func fillTestStatus(tv Status) {
-	tv.orig.Code = 1
-	tv.orig.Message = "cancelled"
+	tv.getOrig().Code = 1
+	tv.getOrig().Message = "cancelled"
 }

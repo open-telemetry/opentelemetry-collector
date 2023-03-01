@@ -20,6 +20,7 @@ package plog
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
@@ -31,25 +32,57 @@ import (
 // Must use NewResourceLogsSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceLogsSlice struct {
-	orig *[]*otlplogs.ResourceLogs
+	*pResourceLogsSlice
 }
 
-func newResourceLogsSlice(orig *[]*otlplogs.ResourceLogs) ResourceLogsSlice {
-	return ResourceLogsSlice{orig}
+type pResourceLogsSlice struct {
+	orig   *[]*otlplogs.ResourceLogs
+	state  *internal.State
+	parent Logs
+}
+
+func newResourceLogsSlice(orig *[]*otlplogs.ResourceLogs, parent Logs) ResourceLogsSlice {
+	return ResourceLogsSlice{&pResourceLogsSlice{
+		orig:   orig,
+		state:  parent.getState(),
+		parent: parent,
+	}}
+}
+
+func (es ResourceLogsSlice) getOrig() *[]*otlplogs.ResourceLogs {
+	if *es.state == internal.StateDirty {
+		es.orig, es.state = es.parent.refreshResourceLogsOrigState()
+	}
+	return es.orig
+}
+
+func (es ResourceLogsSlice) ensureMutability() {
+	if *es.state == internal.StateShared {
+		es.parent.ensureMutability()
+	}
+}
+
+func (es ResourceLogsSlice) getState() *internal.State {
+	return es.state
+}
+
+func (es ResourceLogsSlice) refreshElementOrigState(i int) (*otlplogs.ResourceLogs, *internal.State) {
+	return (*es.getOrig())[i], es.state
 }
 
 // NewResourceLogsSlice creates a ResourceLogsSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceLogsSlice() ResourceLogsSlice {
 	orig := []*otlplogs.ResourceLogs(nil)
-	return newResourceLogsSlice(&orig)
+	state := internal.StateExclusive
+	return ResourceLogsSlice{&pResourceLogsSlice{orig: &orig, state: &state}}
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewResourceLogsSlice()".
 func (es ResourceLogsSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -61,7 +94,7 @@ func (es ResourceLogsSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ResourceLogsSlice) At(i int) ResourceLogs {
-	return newResourceLogs((*es.orig)[i])
+	return newResourceLogs((*es.getOrig())[i], es, i)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -77,40 +110,45 @@ func (es ResourceLogsSlice) At(i int) ResourceLogs {
 //	    // Here should set all the values for e.
 //	}
 func (es ResourceLogsSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
+	es.ensureMutability()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlplogs.ResourceLogs, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*otlplogs.ResourceLogs, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ResourceLogs.
 // It returns the newly added ResourceLogs.
 func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
-	*es.orig = append(*es.orig, &otlplogs.ResourceLogs{})
+	es.ensureMutability()
+	*es.getOrig() = append(*es.getOrig(), &otlplogs.ResourceLogs{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceLogsSlice) MoveAndAppendTo(dest ResourceLogsSlice) {
+	es.ensureMutability()
+	dest.ensureMutability()
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.orig = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.orig = append(*dest.orig, *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
+	es.ensureMutability()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -119,29 +157,35 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
+	dest.ensureMutability()
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
+	exclState := internal.StateExclusive
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newResourceLogs((*es.orig)[i]).CopyTo(newResourceLogs((*dest.orig)[i]))
+		for i := range *es.getOrig() {
+			srcResourceLogs := ResourceLogs{&pResourceLogs{orig: (*es.getOrig())[i], state: &exclState}}
+			destResourceLogs := ResourceLogs{&pResourceLogs{orig: (*dest.orig)[i], state: &exclState}}
+			srcResourceLogs.CopyTo(destResourceLogs)
 		}
 		return
 	}
 	origs := make([]otlplogs.ResourceLogs, srcLen)
 	wrappers := make([]*otlplogs.ResourceLogs, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newResourceLogs((*es.orig)[i]).CopyTo(newResourceLogs(wrappers[i]))
+		srcResourceLogs := ResourceLogs{&pResourceLogs{orig: (*es.getOrig())[i], state: &exclState}}
+		destResourceLogs := ResourceLogs{&pResourceLogs{orig: wrappers[i], state: &exclState}}
+		srcResourceLogs.CopyTo(destResourceLogs)
 	}
 	*dest.orig = wrappers
 }
@@ -150,5 +194,6 @@ func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 // provided less function so that two instances of ResourceLogsSlice
 // can be compared.
 func (es ResourceLogsSlice) Sort(less func(a, b ResourceLogs) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.ensureMutability()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

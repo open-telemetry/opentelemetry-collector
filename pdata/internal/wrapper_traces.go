@@ -20,15 +20,39 @@ import (
 )
 
 type Traces struct {
-	orig *otlpcollectortrace.ExportTraceServiceRequest
+	*pTraces
 }
 
-func GetOrigTraces(ms Traces) *otlpcollectortrace.ExportTraceServiceRequest {
+type pTraces struct {
+	orig  *otlpcollectortrace.ExportTraceServiceRequest
+	state *State
+}
+
+func (ms Traces) AsShared() Traces {
+	*ms.state = StateShared
+	state := StateShared
+	return Traces{&pTraces{orig: ms.orig, state: &state}}
+}
+
+func (ms Traces) GetState() *State {
+	return ms.state
+}
+
+func (ms Traces) SetState(state *State) {
+	ms.state = state
+}
+
+func (ms Traces) GetOrig() *otlpcollectortrace.ExportTraceServiceRequest {
 	return ms.orig
 }
 
+func (ms Traces) SetOrig(orig *otlpcollectortrace.ExportTraceServiceRequest) {
+	ms.orig = orig
+}
+
 func NewTraces(orig *otlpcollectortrace.ExportTraceServiceRequest) Traces {
-	return Traces{orig: orig}
+	state := StateExclusive
+	return Traces{&pTraces{orig: orig, state: &state}}
 }
 
 // TracesToProto internal helper to convert Traces to protobuf representation.
@@ -40,7 +64,11 @@ func TracesToProto(l Traces) otlptrace.TracesData {
 
 // TracesFromProto internal helper to convert protobuf representation to Traces.
 func TracesFromProto(orig otlptrace.TracesData) Traces {
-	return Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{
-		ResourceSpans: orig.ResourceSpans,
+	state := StateExclusive
+	return Traces{&pTraces{
+		orig: &otlpcollectortrace.ExportTraceServiceRequest{
+			ResourceSpans: orig.ResourceSpans,
+		},
+		state: &state,
 	}}
 }

@@ -29,13 +29,17 @@ import (
 type ByteSlice internal.ByteSlice
 
 func (ms ByteSlice) getOrig() *[]byte {
-	return internal.GetOrigByteSlice(internal.ByteSlice(ms))
+	return internal.ByteSlice(ms).GetOrig()
 }
 
 // NewByteSlice creates a new empty ByteSlice.
 func NewByteSlice() ByteSlice {
 	orig := []byte(nil)
-	return ByteSlice(internal.NewByteSlice(&orig))
+	return ByteSlice(internal.NewByteSlice(&orig, nil))
+}
+
+func (ms ByteSlice) ensureMutability() {
+	internal.ByteSlice(ms).EnsureMutability()
 }
 
 // AsRaw returns a copy of the []byte slice.
@@ -45,6 +49,7 @@ func (ms ByteSlice) AsRaw() []byte {
 
 // FromRaw copies raw []byte into the slice ByteSlice.
 func (ms ByteSlice) FromRaw(val []byte) {
+	ms.ensureMutability()
 	*ms.getOrig() = copyByteSlice(*ms.getOrig(), val)
 }
 
@@ -63,6 +68,7 @@ func (ms ByteSlice) At(i int) byte {
 // SetAt sets byte item at particular index.
 // Equivalent of byteSlice[i] = val
 func (ms ByteSlice) SetAt(i int, val byte) {
+	ms.ensureMutability()
 	(*ms.getOrig())[i] = val
 }
 
@@ -73,6 +79,7 @@ func (ms ByteSlice) SetAt(i int, val byte) {
 //     copy(buf, byteSlice)
 //     byteSlice = buf
 func (ms ByteSlice) EnsureCapacity(newCap int) {
+	ms.ensureMutability()
 	oldCap := cap(*ms.getOrig())
 	if newCap <= oldCap {
 		return
@@ -86,18 +93,22 @@ func (ms ByteSlice) EnsureCapacity(newCap int) {
 // Append appends extra elements to ByteSlice.
 // Equivalent of byteSlice = append(byteSlice, elms...)
 func (ms ByteSlice) Append(elms ...byte) {
+	ms.ensureMutability()
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and
 // resetting the current instance to its zero value.
 func (ms ByteSlice) MoveTo(dest ByteSlice) {
+	ms.ensureMutability()
+	dest.ensureMutability()
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (ms ByteSlice) CopyTo(dest ByteSlice) {
+	dest.ensureMutability()
 	*dest.getOrig() = copyByteSlice(*dest.getOrig(), *ms.getOrig())
 }
 

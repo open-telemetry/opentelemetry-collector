@@ -29,16 +29,14 @@ import (
 func TestMetricSlice(t *testing.T) {
 	es := NewMetricSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newMetricSlice(&[]*otlpmetrics.Metric{})
-	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewMetric()
 	testVal := generateTestMetric()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
-		assert.Equal(t, emptyVal, es.At(i))
+		assert.Equal(t, emptyVal.getOrig(), es.At(i).getOrig())
 		fillTestMetric(el)
-		assert.Equal(t, testVal, es.At(i))
+		assert.Equal(t, testVal.getOrig(), es.At(i).getOrig())
 	}
 	assert.Equal(t, 7, es.Len())
 }
@@ -65,14 +63,14 @@ func TestMetricSlice_EnsureCapacity(t *testing.T) {
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, es.Len(), cap(*es.getOrig()))
 	assert.Equal(t, generateTestMetricSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Less(t, generateTestMetricSlice().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, ensureLargeLen, cap(*es.getOrig()))
 	assert.Equal(t, generateTestMetricSlice(), es)
 }
 
@@ -96,8 +94,8 @@ func TestMetricSlice_MoveAndAppendTo(t *testing.T) {
 	generateTestMetricSlice().MoveAndAppendTo(dest)
 	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.Equal(t, expectedSlice.At(i), dest.At(i))
-		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i).getOrig())
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i+expectedSlice.Len()).getOrig())
 	}
 }
 
@@ -142,9 +140,9 @@ func generateTestMetricSlice() MetricSlice {
 }
 
 func fillTestMetricSlice(es MetricSlice) {
-	*es.orig = make([]*otlpmetrics.Metric, 7)
+	*es.getOrig() = make([]*otlpmetrics.Metric, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.Metric{}
-		fillTestMetric(newMetric((*es.orig)[i]))
+		(*es.getOrig())[i] = &otlpmetrics.Metric{}
+		fillTestMetric(newMetric((*es.getOrig())[i], es, i))
 	}
 }

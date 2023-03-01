@@ -18,13 +18,29 @@
 package internal
 
 type UInt64Slice struct {
-	orig *[]uint64
+	*pUInt64Slice
 }
 
-func GetOrigUInt64Slice(ms UInt64Slice) *[]uint64 {
+type pUInt64Slice struct {
+	orig   *[]uint64
+	state  *State
+	parent Parent[*[]uint64]
+}
+
+func (ms UInt64Slice) GetOrig() *[]uint64 {
 	return ms.orig
 }
 
-func NewUInt64Slice(orig *[]uint64) UInt64Slice {
-	return UInt64Slice{orig: orig}
+func (ms UInt64Slice) EnsureMutability() {
+	if *ms.state == StateShared {
+		ms.parent.EnsureMutability()
+	}
+}
+
+func NewUInt64Slice(orig *[]uint64, parent Parent[*[]uint64]) UInt64Slice {
+	if parent == nil {
+		state := StateExclusive
+		return UInt64Slice{&pUInt64Slice{orig: orig, state: &state}}
+	}
+	return UInt64Slice{&pUInt64Slice{orig: orig, state: parent.GetState(), parent: parent}}
 }

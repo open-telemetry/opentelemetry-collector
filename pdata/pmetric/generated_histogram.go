@@ -18,6 +18,7 @@
 package pmetric
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
@@ -29,11 +30,42 @@ import (
 // Must use NewHistogram function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Histogram struct {
-	orig *otlpmetrics.Histogram
+	*pHistogram
 }
 
-func newHistogram(orig *otlpmetrics.Histogram) Histogram {
-	return Histogram{orig}
+type pHistogram struct {
+	orig   *otlpmetrics.Histogram
+	state  *internal.State
+	parent Metric
+}
+
+func (ms Histogram) getOrig() *otlpmetrics.Histogram {
+	if *ms.state == internal.StateDirty {
+		ms.orig, ms.state = ms.parent.refreshHistogramOrigState()
+	}
+	return ms.orig
+}
+
+func (ms Histogram) ensureMutability() {
+	if *ms.state == internal.StateShared {
+		ms.parent.ensureMutability()
+	}
+}
+
+func (ms Histogram) getState() *internal.State {
+	return ms.state
+}
+
+func (ms Histogram) refreshDataPointsOrigState() (*[]*otlpmetrics.HistogramDataPoint, *internal.State) {
+	return &ms.getOrig().DataPoints, ms.state
+}
+
+func newHistogram(orig *otlpmetrics.Histogram, parent Metric) Histogram {
+	return Histogram{&pHistogram{
+		orig:   orig,
+		state:  parent.getState(),
+		parent: parent,
+	}}
 }
 
 // NewHistogram creates a new empty Histogram.
@@ -41,33 +73,38 @@ func newHistogram(orig *otlpmetrics.Histogram) Histogram {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewHistogram() Histogram {
-	return newHistogram(&otlpmetrics.Histogram{})
+	state := internal.StateExclusive
+	return Histogram{&pHistogram{orig: &otlpmetrics.Histogram{}, state: &state}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Histogram) MoveTo(dest Histogram) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Histogram{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.Histogram{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this Histogram.
 func (ms Histogram) AggregationTemporality() AggregationTemporality {
-	return AggregationTemporality(ms.orig.AggregationTemporality)
+	return AggregationTemporality(ms.getOrig().AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Histogram.
 func (ms Histogram) SetAggregationTemporality(v AggregationTemporality) {
-	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
+	ms.ensureMutability()
+	ms.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
-// DataPoints returns the DataPoints associated with this Histogram.
+// DataPoints returns the <no value> associated with this Histogram.
 func (ms Histogram) DataPoints() HistogramDataPointSlice {
-	return newHistogramDataPointSlice(&ms.orig.DataPoints)
+	return newHistogramDataPointSlice(&ms.getOrig().DataPoints, ms)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Histogram) CopyTo(dest Histogram) {
+	dest.ensureMutability()
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }

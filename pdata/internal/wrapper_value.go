@@ -19,15 +19,54 @@ import (
 )
 
 type Value struct {
-	orig *otlpcommon.AnyValue
+	*pValue
 }
 
-func GetOrigValue(ms Value) *otlpcommon.AnyValue {
+type pValue struct {
+	orig   *otlpcommon.AnyValue
+	state  *State
+	parent Parent[*otlpcommon.AnyValue]
+}
+
+func (ms Value) EnsureMutability() {
+	if *ms.state == StateShared {
+		ms.parent.EnsureMutability()
+	}
+}
+
+func (ms Value) GetState() *State {
+	return ms.state
+}
+
+func (ms Value) GetOrig() *otlpcommon.AnyValue {
+	if *ms.state == StateDirty {
+		ms.orig, ms.state = ms.parent.RefreshOrigState()
+	}
 	return ms.orig
 }
 
-func NewValue(orig *otlpcommon.AnyValue) Value {
-	return Value{orig: orig}
+type ValueMap struct {
+	Value
+}
+
+func (ms ValueMap) RefreshOrigState() (*[]otlpcommon.KeyValue, *State) {
+	return &ms.Value.GetOrig().GetKvlistValue().Values, ms.Value.GetState()
+}
+
+type ValueSlice struct {
+	Value
+}
+
+func (ms ValueSlice) RefreshOrigState() (*[]otlpcommon.AnyValue, *State) {
+	return &ms.Value.GetOrig().GetArrayValue().Values, ms.Value.GetState()
+}
+
+func NewValue(orig *otlpcommon.AnyValue, parent Parent[*otlpcommon.AnyValue]) Value {
+	if parent == nil {
+		state := StateExclusive
+		return Value{&pValue{orig: orig, state: &state, parent: parent}}
+	}
+	return Value{&pValue{orig: orig, state: parent.GetState(), parent: parent}}
 }
 
 func FillTestValue(dest Value) {
@@ -36,7 +75,7 @@ func FillTestValue(dest Value) {
 
 func GenerateTestValue() Value {
 	var orig otlpcommon.AnyValue
-	ms := NewValue(&orig)
+	ms := NewValue(&orig, nil)
 	FillTestValue(ms)
 	return ms
 }

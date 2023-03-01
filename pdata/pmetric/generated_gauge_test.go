@@ -43,9 +43,9 @@ func TestGauge_CopyTo(t *testing.T) {
 
 func TestGauge_DataPoints(t *testing.T) {
 	ms := NewGauge()
-	assert.Equal(t, NewNumberDataPointSlice(), ms.DataPoints())
+	assert.Equal(t, NewNumberDataPointSlice().getOrig(), ms.DataPoints().getOrig())
 	fillTestNumberDataPointSlice(ms.DataPoints())
-	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
+	assert.Equal(t, generateTestNumberDataPointSlice().getOrig(), ms.DataPoints().getOrig())
 }
 
 func generateTestGauge() Gauge {
@@ -55,5 +55,5 @@ func generateTestGauge() Gauge {
 }
 
 func fillTestGauge(tv Gauge) {
-	fillTestNumberDataPointSlice(newNumberDataPointSlice(&tv.orig.DataPoints))
+	fillTestNumberDataPointSlice(newNumberDataPointSlice(&tv.getOrig().DataPoints, wrappedGaugeDataPoints{Gauge: tv}))
 }

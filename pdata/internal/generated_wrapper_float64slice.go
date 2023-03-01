@@ -18,13 +18,29 @@
 package internal
 
 type Float64Slice struct {
-	orig *[]float64
+	*pFloat64Slice
 }
 
-func GetOrigFloat64Slice(ms Float64Slice) *[]float64 {
+type pFloat64Slice struct {
+	orig   *[]float64
+	state  *State
+	parent Parent[*[]float64]
+}
+
+func (ms Float64Slice) GetOrig() *[]float64 {
 	return ms.orig
 }
 
-func NewFloat64Slice(orig *[]float64) Float64Slice {
-	return Float64Slice{orig: orig}
+func (ms Float64Slice) EnsureMutability() {
+	if *ms.state == StateShared {
+		ms.parent.EnsureMutability()
+	}
+}
+
+func NewFloat64Slice(orig *[]float64, parent Parent[*[]float64]) Float64Slice {
+	if parent == nil {
+		state := StateExclusive
+		return Float64Slice{&pFloat64Slice{orig: orig, state: &state}}
+	}
+	return Float64Slice{&pFloat64Slice{orig: orig, state: parent.GetState(), parent: parent}}
 }

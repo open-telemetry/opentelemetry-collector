@@ -38,7 +38,7 @@ func NewExportRequest() ExportRequest {
 // Because ExportRequest is a wrapper for ptrace.Traces,
 // any changes to the provided Traces struct will be reflected in the ExportRequest and vice versa.
 func NewExportRequestFromTraces(td ptrace.Traces) ExportRequest {
-	return ExportRequest{orig: internal.GetOrigTraces(internal.Traces(td))}
+	return ExportRequest{orig: internal.Traces(td).GetOrig()}
 }
 
 // MarshalProto marshals ExportRequest into proto bytes.

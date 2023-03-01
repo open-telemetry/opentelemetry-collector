@@ -104,14 +104,14 @@ func TestLogRecord_SeverityNumber(t *testing.T) {
 func TestLogRecord_Body(t *testing.T) {
 	ms := NewLogRecord()
 	internal.FillTestValue(internal.Value(ms.Body()))
-	assert.Equal(t, pcommon.Value(internal.GenerateTestValue()), ms.Body())
+	assert.Equal(t, internal.GenerateTestValue().GetOrig(), internal.Value(ms.Body()).GetOrig())
 }
 
 func TestLogRecord_Attributes(t *testing.T) {
 	ms := NewLogRecord()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
+	assert.Equal(t, internal.Map(pcommon.NewMap()).GetOrig(), internal.Map(ms.Attributes()).GetOrig())
 	internal.FillTestMap(internal.Map(ms.Attributes()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	assert.Equal(t, internal.GenerateTestMap().GetOrig(), internal.Map(ms.Attributes()).GetOrig())
 }
 
 func TestLogRecord_DroppedAttributesCount(t *testing.T) {
@@ -128,14 +128,15 @@ func generateTestLogRecord() LogRecord {
 }
 
 func fillTestLogRecord(tv LogRecord) {
-	tv.orig.ObservedTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.Flags = 1
-	tv.orig.SeverityText = "INFO"
-	tv.orig.SeverityNumber = otlplogs.SeverityNumber(5)
-	internal.FillTestValue(internal.NewValue(&tv.orig.Body))
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
-	tv.orig.DroppedAttributesCount = uint32(17)
+	tv.getOrig().ObservedTimeUnixNano = 1234567890
+	tv.getOrig().TimeUnixNano = 1234567890
+	tv.getOrig().TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	tv.getOrig().SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	tv.getOrig().Flags = 1
+	tv.getOrig().SeverityText = "INFO"
+	tv.getOrig().SeverityNumber = otlplogs.SeverityNumber(5)
+	internal.FillTestValue(internal.NewValue(&tv.getOrig().Body,
+		wrappedLogRecordBody{LogRecord: tv}))
+	internal.FillTestMap(internal.NewMap(&tv.getOrig().Attributes, wrappedLogRecordAttributes{LogRecord: tv}))
+	tv.getOrig().DroppedAttributesCount = uint32(17)
 }

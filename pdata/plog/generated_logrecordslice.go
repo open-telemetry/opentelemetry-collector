@@ -20,6 +20,7 @@ package plog
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
@@ -31,25 +32,57 @@ import (
 // Must use NewLogRecordSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type LogRecordSlice struct {
-	orig *[]*otlplogs.LogRecord
+	*pLogRecordSlice
 }
 
-func newLogRecordSlice(orig *[]*otlplogs.LogRecord) LogRecordSlice {
-	return LogRecordSlice{orig}
+type pLogRecordSlice struct {
+	orig   *[]*otlplogs.LogRecord
+	state  *internal.State
+	parent ScopeLogs
+}
+
+func newLogRecordSlice(orig *[]*otlplogs.LogRecord, parent ScopeLogs) LogRecordSlice {
+	return LogRecordSlice{&pLogRecordSlice{
+		orig:   orig,
+		state:  parent.getState(),
+		parent: parent,
+	}}
+}
+
+func (es LogRecordSlice) getOrig() *[]*otlplogs.LogRecord {
+	if *es.state == internal.StateDirty {
+		es.orig, es.state = es.parent.refreshLogRecordsOrigState()
+	}
+	return es.orig
+}
+
+func (es LogRecordSlice) ensureMutability() {
+	if *es.state == internal.StateShared {
+		es.parent.ensureMutability()
+	}
+}
+
+func (es LogRecordSlice) getState() *internal.State {
+	return es.state
+}
+
+func (es LogRecordSlice) refreshElementOrigState(i int) (*otlplogs.LogRecord, *internal.State) {
+	return (*es.getOrig())[i], es.state
 }
 
 // NewLogRecordSlice creates a LogRecordSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLogRecordSlice() LogRecordSlice {
 	orig := []*otlplogs.LogRecord(nil)
-	return newLogRecordSlice(&orig)
+	state := internal.StateExclusive
+	return LogRecordSlice{&pLogRecordSlice{orig: &orig, state: &state}}
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewLogRecordSlice()".
 func (es LogRecordSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -61,7 +94,7 @@ func (es LogRecordSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es LogRecordSlice) At(i int) LogRecord {
-	return newLogRecord((*es.orig)[i])
+	return newLogRecord((*es.getOrig())[i], es, i)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -77,40 +110,45 @@ func (es LogRecordSlice) At(i int) LogRecord {
 //	    // Here should set all the values for e.
 //	}
 func (es LogRecordSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
+	es.ensureMutability()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlplogs.LogRecord, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*otlplogs.LogRecord, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty LogRecord.
 // It returns the newly added LogRecord.
 func (es LogRecordSlice) AppendEmpty() LogRecord {
-	*es.orig = append(*es.orig, &otlplogs.LogRecord{})
+	es.ensureMutability()
+	*es.getOrig() = append(*es.getOrig(), &otlplogs.LogRecord{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es LogRecordSlice) MoveAndAppendTo(dest LogRecordSlice) {
+	es.ensureMutability()
+	dest.ensureMutability()
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.orig = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.orig = append(*dest.orig, *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
+	es.ensureMutability()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -119,29 +157,35 @@ func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
+	dest.ensureMutability()
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
+	exclState := internal.StateExclusive
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newLogRecord((*es.orig)[i]).CopyTo(newLogRecord((*dest.orig)[i]))
+		for i := range *es.getOrig() {
+			srcLogRecord := LogRecord{&pLogRecord{orig: (*es.getOrig())[i], state: &exclState}}
+			destLogRecord := LogRecord{&pLogRecord{orig: (*dest.orig)[i], state: &exclState}}
+			srcLogRecord.CopyTo(destLogRecord)
 		}
 		return
 	}
 	origs := make([]otlplogs.LogRecord, srcLen)
 	wrappers := make([]*otlplogs.LogRecord, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newLogRecord((*es.orig)[i]).CopyTo(newLogRecord(wrappers[i]))
+		srcLogRecord := LogRecord{&pLogRecord{orig: (*es.getOrig())[i], state: &exclState}}
+		destLogRecord := LogRecord{&pLogRecord{orig: wrappers[i], state: &exclState}}
+		srcLogRecord.CopyTo(destLogRecord)
 	}
 	*dest.orig = wrappers
 }
@@ -150,5 +194,6 @@ func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
 // provided less function so that two instances of LogRecordSlice
 // can be compared.
 func (es LogRecordSlice) Sort(less func(a, b LogRecord) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.ensureMutability()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

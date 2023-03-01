@@ -29,16 +29,14 @@ import (
 func TestSpanSlice(t *testing.T) {
 	es := NewSpanSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSpanSlice(&[]*otlptrace.Span{})
-	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSpan()
 	testVal := generateTestSpan()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
-		assert.Equal(t, emptyVal, es.At(i))
+		assert.Equal(t, emptyVal.getOrig(), es.At(i).getOrig())
 		fillTestSpan(el)
-		assert.Equal(t, testVal, es.At(i))
+		assert.Equal(t, testVal.getOrig(), es.At(i).getOrig())
 	}
 	assert.Equal(t, 7, es.Len())
 }
@@ -65,14 +63,14 @@ func TestSpanSlice_EnsureCapacity(t *testing.T) {
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, es.Len(), cap(*es.getOrig()))
 	assert.Equal(t, generateTestSpanSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Less(t, generateTestSpanSlice().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, ensureLargeLen, cap(*es.getOrig()))
 	assert.Equal(t, generateTestSpanSlice(), es)
 }
 
@@ -96,8 +94,8 @@ func TestSpanSlice_MoveAndAppendTo(t *testing.T) {
 	generateTestSpanSlice().MoveAndAppendTo(dest)
 	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.Equal(t, expectedSlice.At(i), dest.At(i))
-		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i).getOrig())
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i+expectedSlice.Len()).getOrig())
 	}
 }
 
@@ -142,9 +140,9 @@ func generateTestSpanSlice() SpanSlice {
 }
 
 func fillTestSpanSlice(es SpanSlice) {
-	*es.orig = make([]*otlptrace.Span, 7)
+	*es.getOrig() = make([]*otlptrace.Span, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlptrace.Span{}
-		fillTestSpan(newSpan((*es.orig)[i]))
+		(*es.getOrig())[i] = &otlptrace.Span{}
+		fillTestSpan(newSpan((*es.getOrig())[i], es, i))
 	}
 }

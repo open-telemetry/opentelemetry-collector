@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestScopeSpans_MoveTo(t *testing.T) {
@@ -47,7 +46,7 @@ func TestScopeSpans_CopyTo(t *testing.T) {
 func TestScopeSpans_Scope(t *testing.T) {
 	ms := NewScopeSpans()
 	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
-	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
+	assert.Equal(t, internal.GenerateTestInstrumentationScope().GetOrig(), internal.InstrumentationScope(ms.Scope()).GetOrig())
 }
 
 func TestScopeSpans_SchemaUrl(t *testing.T) {
@@ -59,9 +58,9 @@ func TestScopeSpans_SchemaUrl(t *testing.T) {
 
 func TestScopeSpans_Spans(t *testing.T) {
 	ms := NewScopeSpans()
-	assert.Equal(t, NewSpanSlice(), ms.Spans())
+	assert.Equal(t, NewSpanSlice().getOrig(), ms.Spans().getOrig())
 	fillTestSpanSlice(ms.Spans())
-	assert.Equal(t, generateTestSpanSlice(), ms.Spans())
+	assert.Equal(t, generateTestSpanSlice().getOrig(), ms.Spans().getOrig())
 }
 
 func generateTestScopeSpans() ScopeSpans {
@@ -71,7 +70,8 @@ func generateTestScopeSpans() ScopeSpans {
 }
 
 func fillTestScopeSpans(tv ScopeSpans) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestSpanSlice(newSpanSlice(&tv.orig.Spans))
+	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.getOrig().Scope,
+		wrappedScopeSpansScope{ScopeSpans: tv}))
+	tv.getOrig().SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	fillTestSpanSlice(newSpanSlice(&tv.getOrig().Spans, tv))
 }

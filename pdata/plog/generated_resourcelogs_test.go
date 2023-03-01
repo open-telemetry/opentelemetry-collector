@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestResourceLogs_MoveTo(t *testing.T) {
@@ -47,7 +46,7 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 func TestResourceLogs_Resource(t *testing.T) {
 	ms := NewResourceLogs()
 	internal.FillTestResource(internal.Resource(ms.Resource()))
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
+	assert.Equal(t, internal.GenerateTestResource().GetOrig(), internal.Resource(ms.Resource()).GetOrig())
 }
 
 func TestResourceLogs_SchemaUrl(t *testing.T) {
@@ -59,9 +58,9 @@ func TestResourceLogs_SchemaUrl(t *testing.T) {
 
 func TestResourceLogs_ScopeLogs(t *testing.T) {
 	ms := NewResourceLogs()
-	assert.Equal(t, NewScopeLogsSlice(), ms.ScopeLogs())
+	assert.Equal(t, NewScopeLogsSlice().getOrig(), ms.ScopeLogs().getOrig())
 	fillTestScopeLogsSlice(ms.ScopeLogs())
-	assert.Equal(t, generateTestScopeLogsSlice(), ms.ScopeLogs())
+	assert.Equal(t, generateTestScopeLogsSlice().getOrig(), ms.ScopeLogs().getOrig())
 }
 
 func generateTestResourceLogs() ResourceLogs {
@@ -71,7 +70,8 @@ func generateTestResourceLogs() ResourceLogs {
 }
 
 func fillTestResourceLogs(tv ResourceLogs) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeLogsSlice(newScopeLogsSlice(&tv.orig.ScopeLogs))
+	internal.FillTestResource(internal.NewResource(&tv.getOrig().Resource,
+		wrappedResourceLogsResource{ResourceLogs: tv}))
+	tv.getOrig().SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	fillTestScopeLogsSlice(newScopeLogsSlice(&tv.getOrig().ScopeLogs, tv))
 }

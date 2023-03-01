@@ -29,16 +29,14 @@ import (
 func TestNumberDataPointSlice(t *testing.T) {
 	es := NewNumberDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newNumberDataPointSlice(&[]*otlpmetrics.NumberDataPoint{})
-	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewNumberDataPoint()
 	testVal := generateTestNumberDataPoint()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
-		assert.Equal(t, emptyVal, es.At(i))
+		assert.Equal(t, emptyVal.getOrig(), es.At(i).getOrig())
 		fillTestNumberDataPoint(el)
-		assert.Equal(t, testVal, es.At(i))
+		assert.Equal(t, testVal.getOrig(), es.At(i).getOrig())
 	}
 	assert.Equal(t, 7, es.Len())
 }
@@ -65,14 +63,14 @@ func TestNumberDataPointSlice_EnsureCapacity(t *testing.T) {
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, es.Len(), cap(*es.getOrig()))
 	assert.Equal(t, generateTestNumberDataPointSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Less(t, generateTestNumberDataPointSlice().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, ensureLargeLen, cap(*es.getOrig()))
 	assert.Equal(t, generateTestNumberDataPointSlice(), es)
 }
 
@@ -96,8 +94,8 @@ func TestNumberDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	generateTestNumberDataPointSlice().MoveAndAppendTo(dest)
 	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.Equal(t, expectedSlice.At(i), dest.At(i))
-		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i).getOrig())
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i+expectedSlice.Len()).getOrig())
 	}
 }
 
@@ -142,9 +140,9 @@ func generateTestNumberDataPointSlice() NumberDataPointSlice {
 }
 
 func fillTestNumberDataPointSlice(es NumberDataPointSlice) {
-	*es.orig = make([]*otlpmetrics.NumberDataPoint, 7)
+	*es.getOrig() = make([]*otlpmetrics.NumberDataPoint, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.NumberDataPoint{}
-		fillTestNumberDataPoint(newNumberDataPoint((*es.orig)[i]))
+		(*es.getOrig())[i] = &otlpmetrics.NumberDataPoint{}
+		fillTestNumberDataPoint(newNumberDataPoint((*es.getOrig())[i], es, i))
 	}
 }

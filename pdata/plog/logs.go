@@ -17,6 +17,7 @@ package plog // import "go.opentelemetry.io/collector/pdata/plog"
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
 // Logs is the top-level struct that is propagated through the logs pipeline.
@@ -28,12 +29,37 @@ func newLogs(orig *otlpcollectorlog.ExportLogsServiceRequest) Logs {
 }
 
 func (ms Logs) getOrig() *otlpcollectorlog.ExportLogsServiceRequest {
-	return internal.GetOrigLogs(internal.Logs(ms))
+	return internal.Logs(ms).GetOrig()
 }
 
 // NewLogs creates a new Logs struct.
 func NewLogs() Logs {
 	return newLogs(&otlpcollectorlog.ExportLogsServiceRequest{})
+}
+
+func (ms Logs) AsShared() Logs {
+	return Logs(internal.Logs(ms).AsShared())
+}
+
+func (ms Logs) ensureMutability() {
+	if *internal.Logs(ms).GetState() == internal.StateShared {
+		*internal.Logs(ms).GetState() = internal.StateDirty
+		newRL := newResourceLogsSlice(&[]*otlplogs.ResourceLogs{}, ms)
+		ms.ResourceLogs().CopyTo(newRL)
+		newState := internal.StateExclusive
+		internal.Logs(ms).SetState(&newState)
+		internal.Logs(ms).SetOrig(&otlpcollectorlog.ExportLogsServiceRequest{
+			ResourceLogs: *newRL.getOrig(),
+		})
+	}
+}
+
+func (ms Logs) getState() *internal.State {
+	return internal.Logs(ms).GetState()
+}
+
+func (ms Logs) refreshResourceLogsOrigState() (*[]*otlplogs.ResourceLogs, *internal.State) {
+	return &internal.Logs(ms).GetOrig().ResourceLogs, ms.getState()
 }
 
 // CopyTo copies the Logs instance overriding the destination.
@@ -58,5 +84,5 @@ func (ms Logs) LogRecordCount() int {
 
 // ResourceLogs returns the ResourceLogsSlice associated with this Logs.
 func (ms Logs) ResourceLogs() ResourceLogsSlice {
-	return newResourceLogsSlice(&ms.getOrig().ResourceLogs)
+	return newResourceLogsSlice(&ms.getOrig().ResourceLogs, ms)
 }

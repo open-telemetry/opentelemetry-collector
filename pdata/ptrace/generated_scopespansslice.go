@@ -20,6 +20,7 @@ package ptrace
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
@@ -31,25 +32,57 @@ import (
 // Must use NewScopeSpansSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ScopeSpansSlice struct {
-	orig *[]*otlptrace.ScopeSpans
+	*pScopeSpansSlice
 }
 
-func newScopeSpansSlice(orig *[]*otlptrace.ScopeSpans) ScopeSpansSlice {
-	return ScopeSpansSlice{orig}
+type pScopeSpansSlice struct {
+	orig   *[]*otlptrace.ScopeSpans
+	state  *internal.State
+	parent ResourceSpans
+}
+
+func newScopeSpansSlice(orig *[]*otlptrace.ScopeSpans, parent ResourceSpans) ScopeSpansSlice {
+	return ScopeSpansSlice{&pScopeSpansSlice{
+		orig:   orig,
+		state:  parent.getState(),
+		parent: parent,
+	}}
+}
+
+func (es ScopeSpansSlice) getOrig() *[]*otlptrace.ScopeSpans {
+	if *es.state == internal.StateDirty {
+		es.orig, es.state = es.parent.refreshScopeSpansOrigState()
+	}
+	return es.orig
+}
+
+func (es ScopeSpansSlice) ensureMutability() {
+	if *es.state == internal.StateShared {
+		es.parent.ensureMutability()
+	}
+}
+
+func (es ScopeSpansSlice) getState() *internal.State {
+	return es.state
+}
+
+func (es ScopeSpansSlice) refreshElementOrigState(i int) (*otlptrace.ScopeSpans, *internal.State) {
+	return (*es.getOrig())[i], es.state
 }
 
 // NewScopeSpansSlice creates a ScopeSpansSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeSpansSlice() ScopeSpansSlice {
 	orig := []*otlptrace.ScopeSpans(nil)
-	return newScopeSpansSlice(&orig)
+	state := internal.StateExclusive
+	return ScopeSpansSlice{&pScopeSpansSlice{orig: &orig, state: &state}}
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewScopeSpansSlice()".
 func (es ScopeSpansSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -61,7 +94,7 @@ func (es ScopeSpansSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ScopeSpansSlice) At(i int) ScopeSpans {
-	return newScopeSpans((*es.orig)[i])
+	return newScopeSpans((*es.getOrig())[i], es, i)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -77,40 +110,45 @@ func (es ScopeSpansSlice) At(i int) ScopeSpans {
 //	    // Here should set all the values for e.
 //	}
 func (es ScopeSpansSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
+	es.ensureMutability()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlptrace.ScopeSpans, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*otlptrace.ScopeSpans, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ScopeSpans.
 // It returns the newly added ScopeSpans.
 func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
-	*es.orig = append(*es.orig, &otlptrace.ScopeSpans{})
+	es.ensureMutability()
+	*es.getOrig() = append(*es.getOrig(), &otlptrace.ScopeSpans{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ScopeSpansSlice) MoveAndAppendTo(dest ScopeSpansSlice) {
+	es.ensureMutability()
+	dest.ensureMutability()
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.orig = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.orig = append(*dest.orig, *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ScopeSpansSlice) RemoveIf(f func(ScopeSpans) bool) {
+	es.ensureMutability()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -119,29 +157,35 @@ func (es ScopeSpansSlice) RemoveIf(f func(ScopeSpans) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
+	dest.ensureMutability()
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
+	exclState := internal.StateExclusive
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newScopeSpans((*es.orig)[i]).CopyTo(newScopeSpans((*dest.orig)[i]))
+		for i := range *es.getOrig() {
+			srcScopeSpans := ScopeSpans{&pScopeSpans{orig: (*es.getOrig())[i], state: &exclState}}
+			destScopeSpans := ScopeSpans{&pScopeSpans{orig: (*dest.orig)[i], state: &exclState}}
+			srcScopeSpans.CopyTo(destScopeSpans)
 		}
 		return
 	}
 	origs := make([]otlptrace.ScopeSpans, srcLen)
 	wrappers := make([]*otlptrace.ScopeSpans, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newScopeSpans((*es.orig)[i]).CopyTo(newScopeSpans(wrappers[i]))
+		srcScopeSpans := ScopeSpans{&pScopeSpans{orig: (*es.getOrig())[i], state: &exclState}}
+		destScopeSpans := ScopeSpans{&pScopeSpans{orig: wrappers[i], state: &exclState}}
+		srcScopeSpans.CopyTo(destScopeSpans)
 	}
 	*dest.orig = wrappers
 }
@@ -150,5 +194,6 @@ func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 // provided less function so that two instances of ScopeSpansSlice
 // can be compared.
 func (es ScopeSpansSlice) Sort(less func(a, b ScopeSpans) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.ensureMutability()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

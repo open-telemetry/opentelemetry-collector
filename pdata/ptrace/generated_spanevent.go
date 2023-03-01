@@ -19,6 +19,7 @@ package ptrace
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -32,11 +33,56 @@ import (
 // Must use NewSpanEvent function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanEvent struct {
-	orig *otlptrace.Span_Event
+	*pSpanEvent
 }
 
-func newSpanEvent(orig *otlptrace.Span_Event) SpanEvent {
-	return SpanEvent{orig}
+type pSpanEvent struct {
+	orig   *otlptrace.Span_Event
+	state  *internal.State
+	parent SpanEventSlice
+	idx    int
+}
+
+func (ms SpanEvent) getOrig() *otlptrace.Span_Event {
+	if *ms.state == internal.StateDirty {
+		ms.orig, ms.state = ms.parent.refreshElementOrigState(ms.idx)
+	}
+	return ms.orig
+}
+
+func (ms SpanEvent) ensureMutability() {
+	if *ms.state == internal.StateShared {
+		ms.parent.ensureMutability()
+	}
+}
+
+func (ms SpanEvent) getState() *internal.State {
+	return ms.state
+}
+
+type wrappedSpanEventAttributes struct {
+	SpanEvent
+}
+
+func (es wrappedSpanEventAttributes) RefreshOrigState() (*[]otlpcommon.KeyValue, *internal.State) {
+	return &es.getOrig().Attributes, es.getState()
+}
+
+func (es wrappedSpanEventAttributes) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func (es wrappedSpanEventAttributes) GetState() *internal.State {
+	return es.getState()
+}
+
+func newSpanEvent(orig *otlptrace.Span_Event, parent SpanEventSlice, idx int) SpanEvent {
+	return SpanEvent{&pSpanEvent{
+		orig:   orig,
+		state:  parent.getState(),
+		parent: parent,
+		idx:    idx,
+	}}
 }
 
 // NewSpanEvent creates a new empty SpanEvent.
@@ -44,53 +90,60 @@ func newSpanEvent(orig *otlptrace.Span_Event) SpanEvent {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSpanEvent() SpanEvent {
-	return newSpanEvent(&otlptrace.Span_Event{})
+	state := internal.StateExclusive
+	return SpanEvent{&pSpanEvent{orig: &otlptrace.Span_Event{}, state: &state}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms SpanEvent) MoveTo(dest SpanEvent) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.Span_Event{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlptrace.Span_Event{}
 }
 
 // Timestamp returns the timestamp associated with this SpanEvent.
 func (ms SpanEvent) Timestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.TimeUnixNano)
+	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this SpanEvent.
 func (ms SpanEvent) SetTimestamp(v pcommon.Timestamp) {
-	ms.orig.TimeUnixNano = uint64(v)
+	ms.ensureMutability()
+	ms.getOrig().TimeUnixNano = uint64(v)
 }
 
 // Name returns the name associated with this SpanEvent.
 func (ms SpanEvent) Name() string {
-	return ms.orig.Name
+	return ms.getOrig().Name
 }
 
 // SetName replaces the name associated with this SpanEvent.
 func (ms SpanEvent) SetName(v string) {
-	ms.orig.Name = v
+	ms.ensureMutability()
+	ms.getOrig().Name = v
 }
 
-// Attributes returns the Attributes associated with this SpanEvent.
+// Attributes returns the <no value> associated with this SpanEvent.
 func (ms SpanEvent) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+	return pcommon.Map(internal.NewMap(&ms.getOrig().Attributes, wrappedSpanEventAttributes{SpanEvent: ms}))
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanEvent.
 func (ms SpanEvent) DroppedAttributesCount() uint32 {
-	return ms.orig.DroppedAttributesCount
+	return ms.getOrig().DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this SpanEvent.
 func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
-	ms.orig.DroppedAttributesCount = v
+	ms.ensureMutability()
+	ms.getOrig().DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanEvent) CopyTo(dest SpanEvent) {
+	dest.ensureMutability()
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetName(ms.Name())
 	ms.Attributes().CopyTo(dest.Attributes())

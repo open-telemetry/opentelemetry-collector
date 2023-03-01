@@ -38,7 +38,7 @@ func NewExportRequest() ExportRequest {
 // Because ExportRequest is a wrapper for pmetric.Metrics,
 // any changes to the provided Metrics struct will be reflected in the ExportRequest and vice versa.
 func NewExportRequestFromMetrics(md pmetric.Metrics) ExportRequest {
-	return ExportRequest{orig: internal.GetOrigMetrics(internal.Metrics(md))}
+	return ExportRequest{orig: internal.Metrics(md).GetOrig()}
 }
 
 // MarshalProto marshals ExportRequest into proto bytes.

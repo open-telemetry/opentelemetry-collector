@@ -29,16 +29,14 @@ import (
 func TestScopeMetricsSlice(t *testing.T) {
 	es := NewScopeMetricsSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newScopeMetricsSlice(&[]*otlpmetrics.ScopeMetrics{})
-	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewScopeMetrics()
 	testVal := generateTestScopeMetrics()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
-		assert.Equal(t, emptyVal, es.At(i))
+		assert.Equal(t, emptyVal.getOrig(), es.At(i).getOrig())
 		fillTestScopeMetrics(el)
-		assert.Equal(t, testVal, es.At(i))
+		assert.Equal(t, testVal.getOrig(), es.At(i).getOrig())
 	}
 	assert.Equal(t, 7, es.Len())
 }
@@ -65,14 +63,14 @@ func TestScopeMetricsSlice_EnsureCapacity(t *testing.T) {
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, es.Len(), cap(*es.getOrig()))
 	assert.Equal(t, generateTestScopeMetricsSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Less(t, generateTestScopeMetricsSlice().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, ensureLargeLen, cap(*es.getOrig()))
 	assert.Equal(t, generateTestScopeMetricsSlice(), es)
 }
 
@@ -96,8 +94,8 @@ func TestScopeMetricsSlice_MoveAndAppendTo(t *testing.T) {
 	generateTestScopeMetricsSlice().MoveAndAppendTo(dest)
 	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.Equal(t, expectedSlice.At(i), dest.At(i))
-		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i).getOrig())
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i+expectedSlice.Len()).getOrig())
 	}
 }
 
@@ -142,9 +140,9 @@ func generateTestScopeMetricsSlice() ScopeMetricsSlice {
 }
 
 func fillTestScopeMetricsSlice(es ScopeMetricsSlice) {
-	*es.orig = make([]*otlpmetrics.ScopeMetrics, 7)
+	*es.getOrig() = make([]*otlpmetrics.ScopeMetrics, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.ScopeMetrics{}
-		fillTestScopeMetrics(newScopeMetrics((*es.orig)[i]))
+		(*es.getOrig())[i] = &otlpmetrics.ScopeMetrics{}
+		fillTestScopeMetrics(newScopeMetrics((*es.getOrig())[i], es, i))
 	}
 }

@@ -17,6 +17,7 @@ package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
+	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 // Metrics is the top-level struct that is propagated through the metrics pipeline.
@@ -28,7 +29,28 @@ func newMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest) Metrics 
 }
 
 func (ms Metrics) getOrig() *otlpcollectormetrics.ExportMetricsServiceRequest {
-	return internal.GetOrigMetrics(internal.Metrics(ms))
+	return internal.Metrics(ms).GetOrig()
+}
+
+func (ms Metrics) ensureMutability() {
+	if *internal.Metrics(ms).GetState() == internal.StateShared {
+		*internal.Metrics(ms).GetState() = internal.StateDirty
+		newRSS := newResourceMetricsSlice(&[]*otlpmetrics.ResourceMetrics{}, ms)
+		ms.ResourceMetrics().CopyTo(newRSS)
+		newState := internal.StateExclusive
+		internal.Metrics(ms).SetState(&newState)
+		internal.Metrics(ms).SetOrig(&otlpcollectormetrics.ExportMetricsServiceRequest{
+			ResourceMetrics: *newRSS.orig,
+		})
+	}
+}
+
+func (ms Metrics) getState() *internal.State {
+	return internal.Metrics(ms).GetState()
+}
+
+func (ms Metrics) refreshResourceMetricsOrigState() (*[]*otlpmetrics.ResourceMetrics, *internal.State) {
+	return &internal.Metrics(ms).GetOrig().ResourceMetrics, ms.getState()
 }
 
 // NewMetrics creates a new Metrics struct.
@@ -36,14 +58,20 @@ func NewMetrics() Metrics {
 	return newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{})
 }
 
+// AsShared returns the Metrics instance marked as shared so that it won't be mutated by any downstream components.
+func (ms Metrics) AsShared() Metrics {
+	return Metrics(internal.Metrics(ms).AsShared())
+}
+
 // CopyTo copies the Metrics instance overriding the destination.
 func (ms Metrics) CopyTo(dest Metrics) {
+	dest.ensureMutability()
 	ms.ResourceMetrics().CopyTo(dest.ResourceMetrics())
 }
 
 // ResourceMetrics returns the ResourceMetricsSlice associated with this Metrics.
 func (ms Metrics) ResourceMetrics() ResourceMetricsSlice {
-	return newResourceMetricsSlice(&ms.getOrig().ResourceMetrics)
+	return newResourceMetricsSlice(&ms.getOrig().ResourceMetrics, ms)
 }
 
 // MetricCount calculates the total number of metrics.

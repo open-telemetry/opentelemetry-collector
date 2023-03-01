@@ -22,7 +22,9 @@ var pmetric = &Package{
 		``,
 		`"go.opentelemetry.io/collector/pdata/internal"`,
 		`"go.opentelemetry.io/collector/pdata/internal/data"`,
+		`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
 		`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
+		`otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"`,
 		`"go.opentelemetry.io/collector/pdata/pcommon"`,
 	},
 	testImports: []string{
@@ -65,14 +67,17 @@ var pmetric = &Package{
 }
 
 var resourceMetricsSlice = &sliceOfPtrs{
-	structName: "ResourceMetricsSlice",
-	element:    resourceMetrics,
+	structName:  "ResourceMetricsSlice",
+	parent:      "Metrics",
+	parentField: "ResourceMetrics",
+	element:     resourceMetrics,
 }
 
 var resourceMetrics = &messageValueStruct{
 	structName:     "ResourceMetrics",
 	description:    "// ResourceMetrics is a collection of metrics from a Resource.",
 	originFullName: "otlpmetrics.ResourceMetrics",
+	parent:         "ResourceMetricsSlice",
 	fields: []baseField{
 		resourceField,
 		schemaURLField,
@@ -84,14 +89,17 @@ var resourceMetrics = &messageValueStruct{
 }
 
 var scopeMetricsSlice = &sliceOfPtrs{
-	structName: "ScopeMetricsSlice",
-	element:    scopeMetrics,
+	structName:  "ScopeMetricsSlice",
+	parent:      "ResourceMetrics",
+	parentField: "ScopeMetrics",
+	element:     scopeMetrics,
 }
 
 var scopeMetrics = &messageValueStruct{
 	structName:     "ScopeMetrics",
 	description:    "// ScopeMetrics is a collection of metrics from a LibraryInstrumentation.",
 	originFullName: "otlpmetrics.ScopeMetrics",
+	parent:         "ScopeMetricsSlice",
 	fields: []baseField{
 		scopeField,
 		schemaURLField,
@@ -103,8 +111,10 @@ var scopeMetrics = &messageValueStruct{
 }
 
 var metricSlice = &sliceOfPtrs{
-	structName: "MetricSlice",
-	element:    metric,
+	structName:  "MetricSlice",
+	parent:      "ScopeMetrics",
+	parentField: "Metrics",
+	element:     metric,
 }
 
 var metric = &messageValueStruct{
@@ -112,6 +122,7 @@ var metric = &messageValueStruct{
 	description: "// Metric represents one metric as a collection of datapoints.\n" +
 		"// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto",
 	originFullName: "otlpmetrics.Metric",
+	parent:         "MetricSlice",
 	fields: []baseField{
 		nameField,
 		&primitiveField{
@@ -167,6 +178,7 @@ var gauge = &messageValueStruct{
 	structName:     "Gauge",
 	description:    "// Gauge represents the type of a numeric metric that always exports the \"current value\" for every data point.",
 	originFullName: "otlpmetrics.Gauge",
+	parent:         "Metric",
 	fields: []baseField{
 		&sliceField{
 			fieldName:   "DataPoints",
@@ -179,6 +191,7 @@ var sum = &messageValueStruct{
 	structName:     "Sum",
 	description:    "// Sum represents the type of a numeric metric that is calculated as a sum of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.Sum",
+	parent:         "Metric",
 	fields: []baseField{
 		aggregationTemporalityField,
 		isMonotonicField,
@@ -193,6 +206,7 @@ var histogram = &messageValueStruct{
 	structName:     "Histogram",
 	description:    "// Histogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.Histogram",
+	parent:         "Metric",
 	fields: []baseField{
 		aggregationTemporalityField,
 		&sliceField{
@@ -207,6 +221,7 @@ var exponentialHistogram = &messageValueStruct{
 	description: `// ExponentialHistogram represents the type of a metric that is calculated by aggregating
 	// as a ExponentialHistogram of all reported double measurements over a time interval.`,
 	originFullName: "otlpmetrics.ExponentialHistogram",
+	parent:         "Metric",
 	fields: []baseField{
 		aggregationTemporalityField,
 		&sliceField{
@@ -220,6 +235,7 @@ var summary = &messageValueStruct{
 	structName:     "Summary",
 	description:    "// Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.",
 	originFullName: "otlpmetrics.Summary",
+	parent:         "Metric",
 	fields: []baseField{
 		&sliceField{
 			fieldName:   "DataPoints",
@@ -237,6 +253,7 @@ var numberDataPoint = &messageValueStruct{
 	structName:     "NumberDataPoint",
 	description:    "// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.",
 	originFullName: "otlpmetrics.NumberDataPoint",
+	parent:         "NumberDataPointSlice",
 	fields: []baseField{
 		attributes,
 		startTimeField,
@@ -269,14 +286,17 @@ var numberDataPoint = &messageValueStruct{
 }
 
 var histogramDataPointSlice = &sliceOfPtrs{
-	structName: "HistogramDataPointSlice",
-	element:    histogramDataPoint,
+	structName:  "HistogramDataPointSlice",
+	parent:      "Histogram",
+	parentField: "DataPoints",
+	element:     histogramDataPoint,
 }
 
 var histogramDataPoint = &messageValueStruct{
 	structName:     "HistogramDataPoint",
 	description:    "// HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of values.",
 	originFullName: "otlpmetrics.HistogramDataPoint",
+	parent:         "HistogramDataPointSlice",
 	fields: []baseField{
 		attributes,
 		startTimeField,
@@ -305,8 +325,10 @@ var histogramDataPoint = &messageValueStruct{
 }
 
 var exponentialHistogramDataPointSlice = &sliceOfPtrs{
-	structName: "ExponentialHistogramDataPointSlice",
-	element:    exponentialHistogramDataPoint,
+	structName:  "ExponentialHistogramDataPointSlice",
+	parent:      "ExponentialHistogram",
+	parentField: "DataPoints",
+	element:     exponentialHistogramDataPoint,
 }
 
 var exponentialHistogramDataPoint = &messageValueStruct{
@@ -316,6 +338,7 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 	// summary statistics for a population of values, it may optionally contain the
 	// distribution of those values across a set of buckets.`,
 	originFullName: "otlpmetrics.ExponentialHistogramDataPoint",
+	parent:         "ExponentialHistogramDataPointSlice",
 	fields: []baseField{
 		attributes,
 		startTimeField,
@@ -383,14 +406,17 @@ var bucketsValues = &messageValueStruct{
 }
 
 var summaryDataPointSlice = &sliceOfPtrs{
-	structName: "SummaryDataPointSlice",
-	element:    summaryDataPoint,
+	structName:  "SummaryDataPointSlice",
+	parent:      "Summary",
+	parentField: "DataPoints",
+	element:     summaryDataPoint,
 }
 
 var summaryDataPoint = &messageValueStruct{
 	structName:     "SummaryDataPoint",
 	description:    "// SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.",
 	originFullName: "otlpmetrics.SummaryDataPoint",
+	parent:         "SummaryDataPointSlice",
 	fields: []baseField{
 		attributes,
 		startTimeField,
@@ -406,14 +432,17 @@ var summaryDataPoint = &messageValueStruct{
 }
 
 var quantileValuesSlice = &sliceOfPtrs{
-	structName: "SummaryDataPointValueAtQuantileSlice",
-	element:    quantileValues,
+	structName:  "SummaryDataPointValueAtQuantileSlice",
+	parent:      "SummaryDataPoint",
+	parentField: "QuantileValues",
+	element:     quantileValues,
 }
 
 var quantileValues = &messageValueStruct{
 	structName:     "SummaryDataPointValueAtQuantile",
 	description:    "// SummaryDataPointValueAtQuantile is a quantile value within a Summary data point.",
 	originFullName: "otlpmetrics.SummaryDataPoint_ValueAtQuantile",
+	parent:         "SummaryDataPointValueAtQuantileSlice",
 	fields: []baseField{
 		quantileField,
 		valueFloat64Field,
@@ -430,8 +459,8 @@ var exemplar = &messageValueStruct{
 	description: "// Exemplar is a sample input double measurement.\n//\n" +
 		"// Exemplars also hold information about the environment when the measurement was recorded,\n" +
 		"// for example the span and trace ID of the active span when the exemplar was recorded.",
-
 	originFullName: "otlpmetrics.Exemplar",
+	parent:         "ExemplarSlice",
 	fields: []baseField{
 		timeField,
 		&oneOfField{

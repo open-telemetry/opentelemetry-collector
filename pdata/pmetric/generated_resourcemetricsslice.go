@@ -20,6 +20,7 @@ package pmetric
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
@@ -31,25 +32,57 @@ import (
 // Must use NewResourceMetricsSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceMetricsSlice struct {
-	orig *[]*otlpmetrics.ResourceMetrics
+	*pResourceMetricsSlice
 }
 
-func newResourceMetricsSlice(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetricsSlice {
-	return ResourceMetricsSlice{orig}
+type pResourceMetricsSlice struct {
+	orig   *[]*otlpmetrics.ResourceMetrics
+	state  *internal.State
+	parent Metrics
+}
+
+func newResourceMetricsSlice(orig *[]*otlpmetrics.ResourceMetrics, parent Metrics) ResourceMetricsSlice {
+	return ResourceMetricsSlice{&pResourceMetricsSlice{
+		orig:   orig,
+		state:  parent.getState(),
+		parent: parent,
+	}}
+}
+
+func (es ResourceMetricsSlice) getOrig() *[]*otlpmetrics.ResourceMetrics {
+	if *es.state == internal.StateDirty {
+		es.orig, es.state = es.parent.refreshResourceMetricsOrigState()
+	}
+	return es.orig
+}
+
+func (es ResourceMetricsSlice) ensureMutability() {
+	if *es.state == internal.StateShared {
+		es.parent.ensureMutability()
+	}
+}
+
+func (es ResourceMetricsSlice) getState() *internal.State {
+	return es.state
+}
+
+func (es ResourceMetricsSlice) refreshElementOrigState(i int) (*otlpmetrics.ResourceMetrics, *internal.State) {
+	return (*es.getOrig())[i], es.state
 }
 
 // NewResourceMetricsSlice creates a ResourceMetricsSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceMetricsSlice() ResourceMetricsSlice {
 	orig := []*otlpmetrics.ResourceMetrics(nil)
-	return newResourceMetricsSlice(&orig)
+	state := internal.StateExclusive
+	return ResourceMetricsSlice{&pResourceMetricsSlice{orig: &orig, state: &state}}
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewResourceMetricsSlice()".
 func (es ResourceMetricsSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -61,7 +94,7 @@ func (es ResourceMetricsSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ResourceMetricsSlice) At(i int) ResourceMetrics {
-	return newResourceMetrics((*es.orig)[i])
+	return newResourceMetrics((*es.getOrig())[i], es, i)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -77,40 +110,45 @@ func (es ResourceMetricsSlice) At(i int) ResourceMetrics {
 //	    // Here should set all the values for e.
 //	}
 func (es ResourceMetricsSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
+	es.ensureMutability()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.ResourceMetrics, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*otlpmetrics.ResourceMetrics, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ResourceMetrics.
 // It returns the newly added ResourceMetrics.
 func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
-	*es.orig = append(*es.orig, &otlpmetrics.ResourceMetrics{})
+	es.ensureMutability()
+	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.ResourceMetrics{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
+	es.ensureMutability()
+	dest.ensureMutability()
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.orig = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.orig = append(*dest.orig, *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
+	es.ensureMutability()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -119,29 +157,35 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
+	dest.ensureMutability()
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
+	exclState := internal.StateExclusive
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newResourceMetrics((*es.orig)[i]).CopyTo(newResourceMetrics((*dest.orig)[i]))
+		for i := range *es.getOrig() {
+			srcResourceMetrics := ResourceMetrics{&pResourceMetrics{orig: (*es.getOrig())[i], state: &exclState}}
+			destResourceMetrics := ResourceMetrics{&pResourceMetrics{orig: (*dest.orig)[i], state: &exclState}}
+			srcResourceMetrics.CopyTo(destResourceMetrics)
 		}
 		return
 	}
 	origs := make([]otlpmetrics.ResourceMetrics, srcLen)
 	wrappers := make([]*otlpmetrics.ResourceMetrics, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newResourceMetrics((*es.orig)[i]).CopyTo(newResourceMetrics(wrappers[i]))
+		srcResourceMetrics := ResourceMetrics{&pResourceMetrics{orig: (*es.getOrig())[i], state: &exclState}}
+		destResourceMetrics := ResourceMetrics{&pResourceMetrics{orig: wrappers[i], state: &exclState}}
+		srcResourceMetrics.CopyTo(destResourceMetrics)
 	}
 	*dest.orig = wrappers
 }
@@ -150,5 +194,6 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 // provided less function so that two instances of ResourceMetricsSlice
 // can be compared.
 func (es ResourceMetricsSlice) Sort(less func(a, b ResourceMetrics) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.ensureMutability()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

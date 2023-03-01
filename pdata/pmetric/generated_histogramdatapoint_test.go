@@ -47,9 +47,9 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 
 func TestHistogramDataPoint_Attributes(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
+	assert.Equal(t, internal.Map(pcommon.NewMap()).GetOrig(), internal.Map(ms.Attributes()).GetOrig())
 	internal.FillTestMap(internal.Map(ms.Attributes()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	assert.Equal(t, internal.GenerateTestMap().GetOrig(), internal.Map(ms.Attributes()).GetOrig())
 }
 
 func TestHistogramDataPoint_StartTimestamp(t *testing.T) {
@@ -101,9 +101,9 @@ func TestHistogramDataPoint_ExplicitBounds(t *testing.T) {
 
 func TestHistogramDataPoint_Exemplars(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.Equal(t, NewExemplarSlice(), ms.Exemplars())
+	assert.Equal(t, NewExemplarSlice().getOrig(), ms.Exemplars().getOrig())
 	fillTestExemplarSlice(ms.Exemplars())
-	assert.Equal(t, generateTestExemplarSlice(), ms.Exemplars())
+	assert.Equal(t, generateTestExemplarSlice().getOrig(), ms.Exemplars().getOrig())
 }
 
 func TestHistogramDataPoint_Flags(t *testing.T) {
@@ -141,15 +141,15 @@ func generateTestHistogramDataPoint() HistogramDataPoint {
 }
 
 func fillTestHistogramDataPoint(tv HistogramDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
-	tv.orig.StartTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Count = uint64(17)
-	tv.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(17.13)}
-	tv.orig.BucketCounts = []uint64{1, 2, 3}
-	tv.orig.ExplicitBounds = []float64{1, 2, 3}
-	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars))
-	tv.orig.Flags = 1
-	tv.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(9.23)}
-	tv.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(182.55)}
+	internal.FillTestMap(internal.NewMap(&tv.getOrig().Attributes, wrappedHistogramDataPointAttributes{HistogramDataPoint: tv}))
+	tv.getOrig().StartTimeUnixNano = 1234567890
+	tv.getOrig().TimeUnixNano = 1234567890
+	tv.getOrig().Count = uint64(17)
+	tv.getOrig().Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(17.13)}
+	tv.getOrig().BucketCounts = []uint64{1, 2, 3}
+	tv.getOrig().ExplicitBounds = []float64{1, 2, 3}
+	fillTestExemplarSlice(newExemplarSlice(&tv.getOrig().Exemplars, wrappedHistogramDataPointExemplars{HistogramDataPoint: tv}))
+	tv.getOrig().Flags = 1
+	tv.getOrig().Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(9.23)}
+	tv.getOrig().Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(182.55)}
 }

@@ -26,18 +26,18 @@ import (
 func TestSlice(t *testing.T) {
 	es := NewSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSlice(&[]otlpcommon.AnyValue{})
+	es = newSlice(&[]otlpcommon.AnyValue{}, nil)
 	assert.Equal(t, 0, es.Len())
 
 	es.EnsureCapacity(7)
-	emptyVal := newValue(&otlpcommon.AnyValue{})
+	emptyVal := newValue(&otlpcommon.AnyValue{}, nil)
 	testVal := Value(internal.GenerateTestValue())
 	assert.Equal(t, 7, cap(*es.getOrig()))
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
-		assert.Equal(t, emptyVal, el)
+		assert.Equal(t, emptyVal.getOrig(), el.getOrig())
 		internal.FillTestValue(internal.Value(el))
-		assert.Equal(t, testVal, el)
+		assert.Equal(t, testVal.getOrig(), el.getOrig())
 	}
 }
 
@@ -101,8 +101,8 @@ func TestSlice_MoveAndAppendTo(t *testing.T) {
 	Slice(internal.GenerateTestSlice()).MoveAndAppendTo(dest)
 	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.Equal(t, expectedSlice.At(i), dest.At(i))
-		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i).getOrig())
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i+expectedSlice.Len()).getOrig())
 	}
 }
 

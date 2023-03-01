@@ -20,6 +20,7 @@ package pmetric
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
@@ -31,25 +32,57 @@ import (
 // Must use NewNumberDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type NumberDataPointSlice struct {
-	orig *[]*otlpmetrics.NumberDataPoint
+	*pNumberDataPointSlice
 }
 
-func newNumberDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint) NumberDataPointSlice {
-	return NumberDataPointSlice{orig}
+type pNumberDataPointSlice struct {
+	orig   *[]*otlpmetrics.NumberDataPoint
+	state  *internal.State
+	parent internal.Parent[*[]*otlpmetrics.NumberDataPoint]
+}
+
+func newNumberDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint, parent internal.Parent[*[]*otlpmetrics.NumberDataPoint]) NumberDataPointSlice {
+	return NumberDataPointSlice{&pNumberDataPointSlice{
+		orig:   orig,
+		state:  parent.GetState(),
+		parent: parent,
+	}}
+}
+
+func (es NumberDataPointSlice) getOrig() *[]*otlpmetrics.NumberDataPoint {
+	if *es.state == internal.StateDirty {
+		es.orig, es.state = es.parent.RefreshOrigState()
+	}
+	return es.orig
+}
+
+func (es NumberDataPointSlice) ensureMutability() {
+	if *es.state == internal.StateShared {
+		es.parent.EnsureMutability()
+	}
+}
+
+func (es NumberDataPointSlice) getState() *internal.State {
+	return es.state
+}
+
+func (es NumberDataPointSlice) refreshElementOrigState(i int) (*otlpmetrics.NumberDataPoint, *internal.State) {
+	return (*es.getOrig())[i], es.state
 }
 
 // NewNumberDataPointSlice creates a NumberDataPointSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewNumberDataPointSlice() NumberDataPointSlice {
 	orig := []*otlpmetrics.NumberDataPoint(nil)
-	return newNumberDataPointSlice(&orig)
+	state := internal.StateExclusive
+	return NumberDataPointSlice{&pNumberDataPointSlice{orig: &orig, state: &state}}
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewNumberDataPointSlice()".
 func (es NumberDataPointSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -61,7 +94,7 @@ func (es NumberDataPointSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es NumberDataPointSlice) At(i int) NumberDataPoint {
-	return newNumberDataPoint((*es.orig)[i])
+	return newNumberDataPoint((*es.getOrig())[i], es, i)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -77,40 +110,45 @@ func (es NumberDataPointSlice) At(i int) NumberDataPoint {
 //	    // Here should set all the values for e.
 //	}
 func (es NumberDataPointSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
+	es.ensureMutability()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.NumberDataPoint, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*otlpmetrics.NumberDataPoint, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty NumberDataPoint.
 // It returns the newly added NumberDataPoint.
 func (es NumberDataPointSlice) AppendEmpty() NumberDataPoint {
-	*es.orig = append(*es.orig, &otlpmetrics.NumberDataPoint{})
+	es.ensureMutability()
+	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.NumberDataPoint{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es NumberDataPointSlice) MoveAndAppendTo(dest NumberDataPointSlice) {
+	es.ensureMutability()
+	dest.ensureMutability()
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.orig = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.orig = append(*dest.orig, *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es NumberDataPointSlice) RemoveIf(f func(NumberDataPoint) bool) {
+	es.ensureMutability()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -119,29 +157,35 @@ func (es NumberDataPointSlice) RemoveIf(f func(NumberDataPoint) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
+	dest.ensureMutability()
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
+	exclState := internal.StateExclusive
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newNumberDataPoint((*es.orig)[i]).CopyTo(newNumberDataPoint((*dest.orig)[i]))
+		for i := range *es.getOrig() {
+			srcNumberDataPoint := NumberDataPoint{&pNumberDataPoint{orig: (*es.getOrig())[i], state: &exclState}}
+			destNumberDataPoint := NumberDataPoint{&pNumberDataPoint{orig: (*dest.orig)[i], state: &exclState}}
+			srcNumberDataPoint.CopyTo(destNumberDataPoint)
 		}
 		return
 	}
 	origs := make([]otlpmetrics.NumberDataPoint, srcLen)
 	wrappers := make([]*otlpmetrics.NumberDataPoint, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newNumberDataPoint((*es.orig)[i]).CopyTo(newNumberDataPoint(wrappers[i]))
+		srcNumberDataPoint := NumberDataPoint{&pNumberDataPoint{orig: (*es.getOrig())[i], state: &exclState}}
+		destNumberDataPoint := NumberDataPoint{&pNumberDataPoint{orig: wrappers[i], state: &exclState}}
+		srcNumberDataPoint.CopyTo(destNumberDataPoint)
 	}
 	*dest.orig = wrappers
 }
@@ -150,5 +194,6 @@ func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
 // provided less function so that two instances of NumberDataPointSlice
 // can be compared.
 func (es NumberDataPointSlice) Sort(less func(a, b NumberDataPoint) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.ensureMutability()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

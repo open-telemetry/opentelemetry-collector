@@ -18,6 +18,7 @@
 package pmetric
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
@@ -29,11 +30,54 @@ import (
 // Must use NewGauge function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Gauge struct {
-	orig *otlpmetrics.Gauge
+	*pGauge
 }
 
-func newGauge(orig *otlpmetrics.Gauge) Gauge {
-	return Gauge{orig}
+type pGauge struct {
+	orig   *otlpmetrics.Gauge
+	state  *internal.State
+	parent Metric
+}
+
+func (ms Gauge) getOrig() *otlpmetrics.Gauge {
+	if *ms.state == internal.StateDirty {
+		ms.orig, ms.state = ms.parent.refreshGaugeOrigState()
+	}
+	return ms.orig
+}
+
+func (ms Gauge) ensureMutability() {
+	if *ms.state == internal.StateShared {
+		ms.parent.ensureMutability()
+	}
+}
+
+func (ms Gauge) getState() *internal.State {
+	return ms.state
+}
+
+type wrappedGaugeDataPoints struct {
+	Gauge
+}
+
+func (es wrappedGaugeDataPoints) RefreshOrigState() (*[]*otlpmetrics.NumberDataPoint, *internal.State) {
+	return &es.getOrig().DataPoints, es.getState()
+}
+
+func (es wrappedGaugeDataPoints) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func (es wrappedGaugeDataPoints) GetState() *internal.State {
+	return es.getState()
+}
+
+func newGauge(orig *otlpmetrics.Gauge, parent Metric) Gauge {
+	return Gauge{&pGauge{
+		orig:   orig,
+		state:  parent.getState(),
+		parent: parent,
+	}}
 }
 
 // NewGauge creates a new empty Gauge.
@@ -41,22 +85,26 @@ func newGauge(orig *otlpmetrics.Gauge) Gauge {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewGauge() Gauge {
-	return newGauge(&otlpmetrics.Gauge{})
+	state := internal.StateExclusive
+	return Gauge{&pGauge{orig: &otlpmetrics.Gauge{}, state: &state}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Gauge) MoveTo(dest Gauge) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Gauge{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.Gauge{}
 }
 
-// DataPoints returns the DataPoints associated with this Gauge.
+// DataPoints returns the <no value> associated with this Gauge.
 func (ms Gauge) DataPoints() NumberDataPointSlice {
-	return newNumberDataPointSlice(&ms.orig.DataPoints)
+	return NumberDataPointSlice(newNumberDataPointSlice(&ms.getOrig().DataPoints, wrappedGaugeDataPoints{Gauge: ms}))
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Gauge) CopyTo(dest Gauge) {
+	dest.ensureMutability()
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }

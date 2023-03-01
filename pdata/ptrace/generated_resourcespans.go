@@ -19,6 +19,7 @@ package ptrace
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -31,11 +32,60 @@ import (
 // Must use NewResourceSpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceSpans struct {
-	orig *otlptrace.ResourceSpans
+	*pResourceSpans
 }
 
-func newResourceSpans(orig *otlptrace.ResourceSpans) ResourceSpans {
-	return ResourceSpans{orig}
+type pResourceSpans struct {
+	orig   *otlptrace.ResourceSpans
+	state  *internal.State
+	parent ResourceSpansSlice
+	idx    int
+}
+
+func (ms ResourceSpans) getOrig() *otlptrace.ResourceSpans {
+	if *ms.state == internal.StateDirty {
+		ms.orig, ms.state = ms.parent.refreshElementOrigState(ms.idx)
+	}
+	return ms.orig
+}
+
+func (ms ResourceSpans) ensureMutability() {
+	if *ms.state == internal.StateShared {
+		ms.parent.ensureMutability()
+	}
+}
+
+func (ms ResourceSpans) getState() *internal.State {
+	return ms.state
+}
+
+type wrappedResourceSpansResource struct {
+	ResourceSpans
+}
+
+func (es wrappedResourceSpansResource) RefreshOrigState() (*otlpresource.Resource, *internal.State) {
+	return &es.getOrig().Resource, es.getState()
+}
+
+func (es wrappedResourceSpansResource) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func (es wrappedResourceSpansResource) GetState() *internal.State {
+	return es.getState()
+}
+
+func (ms ResourceSpans) refreshScopeSpansOrigState() (*[]*otlptrace.ScopeSpans, *internal.State) {
+	return &ms.getOrig().ScopeSpans, ms.state
+}
+
+func newResourceSpans(orig *otlptrace.ResourceSpans, parent ResourceSpansSlice, idx int) ResourceSpans {
+	return ResourceSpans{&pResourceSpans{
+		orig:   orig,
+		state:  parent.getState(),
+		parent: parent,
+		idx:    idx,
+	}}
 }
 
 // NewResourceSpans creates a new empty ResourceSpans.
@@ -43,38 +93,43 @@ func newResourceSpans(orig *otlptrace.ResourceSpans) ResourceSpans {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceSpans() ResourceSpans {
-	return newResourceSpans(&otlptrace.ResourceSpans{})
+	state := internal.StateExclusive
+	return ResourceSpans{&pResourceSpans{orig: &otlptrace.ResourceSpans{}, state: &state}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.ResourceSpans{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlptrace.ResourceSpans{}
 }
 
 // Resource returns the resource associated with this ResourceSpans.
 func (ms ResourceSpans) Resource() pcommon.Resource {
-	return pcommon.Resource(internal.NewResource(&ms.orig.Resource))
+	return pcommon.Resource(internal.NewResource(&ms.getOrig().Resource, wrappedResourceSpansResource{ResourceSpans: ms}))
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceSpans.
 func (ms ResourceSpans) SchemaUrl() string {
-	return ms.orig.SchemaUrl
+	return ms.getOrig().SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ResourceSpans.
 func (ms ResourceSpans) SetSchemaUrl(v string) {
-	ms.orig.SchemaUrl = v
+	ms.ensureMutability()
+	ms.getOrig().SchemaUrl = v
 }
 
-// ScopeSpans returns the ScopeSpans associated with this ResourceSpans.
+// ScopeSpans returns the <no value> associated with this ResourceSpans.
 func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
-	return newScopeSpansSlice(&ms.orig.ScopeSpans)
+	return newScopeSpansSlice(&ms.getOrig().ScopeSpans, ms)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
+	dest.ensureMutability()
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.ScopeSpans().CopyTo(dest.ScopeSpans())

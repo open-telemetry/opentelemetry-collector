@@ -20,6 +20,7 @@ package pmetric
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
@@ -31,25 +32,57 @@ import (
 // Must use NewSummaryDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SummaryDataPointSlice struct {
-	orig *[]*otlpmetrics.SummaryDataPoint
+	*pSummaryDataPointSlice
 }
 
-func newSummaryDataPointSlice(orig *[]*otlpmetrics.SummaryDataPoint) SummaryDataPointSlice {
-	return SummaryDataPointSlice{orig}
+type pSummaryDataPointSlice struct {
+	orig   *[]*otlpmetrics.SummaryDataPoint
+	state  *internal.State
+	parent Summary
+}
+
+func newSummaryDataPointSlice(orig *[]*otlpmetrics.SummaryDataPoint, parent Summary) SummaryDataPointSlice {
+	return SummaryDataPointSlice{&pSummaryDataPointSlice{
+		orig:   orig,
+		state:  parent.getState(),
+		parent: parent,
+	}}
+}
+
+func (es SummaryDataPointSlice) getOrig() *[]*otlpmetrics.SummaryDataPoint {
+	if *es.state == internal.StateDirty {
+		es.orig, es.state = es.parent.refreshDataPointsOrigState()
+	}
+	return es.orig
+}
+
+func (es SummaryDataPointSlice) ensureMutability() {
+	if *es.state == internal.StateShared {
+		es.parent.ensureMutability()
+	}
+}
+
+func (es SummaryDataPointSlice) getState() *internal.State {
+	return es.state
+}
+
+func (es SummaryDataPointSlice) refreshElementOrigState(i int) (*otlpmetrics.SummaryDataPoint, *internal.State) {
+	return (*es.getOrig())[i], es.state
 }
 
 // NewSummaryDataPointSlice creates a SummaryDataPointSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSummaryDataPointSlice() SummaryDataPointSlice {
 	orig := []*otlpmetrics.SummaryDataPoint(nil)
-	return newSummaryDataPointSlice(&orig)
+	state := internal.StateExclusive
+	return SummaryDataPointSlice{&pSummaryDataPointSlice{orig: &orig, state: &state}}
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewSummaryDataPointSlice()".
 func (es SummaryDataPointSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -61,7 +94,7 @@ func (es SummaryDataPointSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es SummaryDataPointSlice) At(i int) SummaryDataPoint {
-	return newSummaryDataPoint((*es.orig)[i])
+	return newSummaryDataPoint((*es.getOrig())[i], es, i)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -77,40 +110,45 @@ func (es SummaryDataPointSlice) At(i int) SummaryDataPoint {
 //	    // Here should set all the values for e.
 //	}
 func (es SummaryDataPointSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
+	es.ensureMutability()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.SummaryDataPoint, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*otlpmetrics.SummaryDataPoint, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty SummaryDataPoint.
 // It returns the newly added SummaryDataPoint.
 func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
-	*es.orig = append(*es.orig, &otlpmetrics.SummaryDataPoint{})
+	es.ensureMutability()
+	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.SummaryDataPoint{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SummaryDataPointSlice) MoveAndAppendTo(dest SummaryDataPointSlice) {
+	es.ensureMutability()
+	dest.ensureMutability()
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.orig = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.orig = append(*dest.orig, *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es SummaryDataPointSlice) RemoveIf(f func(SummaryDataPoint) bool) {
+	es.ensureMutability()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -119,29 +157,35 @@ func (es SummaryDataPointSlice) RemoveIf(f func(SummaryDataPoint) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
+	dest.ensureMutability()
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
+	exclState := internal.StateExclusive
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newSummaryDataPoint((*es.orig)[i]).CopyTo(newSummaryDataPoint((*dest.orig)[i]))
+		for i := range *es.getOrig() {
+			srcSummaryDataPoint := SummaryDataPoint{&pSummaryDataPoint{orig: (*es.getOrig())[i], state: &exclState}}
+			destSummaryDataPoint := SummaryDataPoint{&pSummaryDataPoint{orig: (*dest.orig)[i], state: &exclState}}
+			srcSummaryDataPoint.CopyTo(destSummaryDataPoint)
 		}
 		return
 	}
 	origs := make([]otlpmetrics.SummaryDataPoint, srcLen)
 	wrappers := make([]*otlpmetrics.SummaryDataPoint, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newSummaryDataPoint((*es.orig)[i]).CopyTo(newSummaryDataPoint(wrappers[i]))
+		srcSummaryDataPoint := SummaryDataPoint{&pSummaryDataPoint{orig: (*es.getOrig())[i], state: &exclState}}
+		destSummaryDataPoint := SummaryDataPoint{&pSummaryDataPoint{orig: wrappers[i], state: &exclState}}
+		srcSummaryDataPoint.CopyTo(destSummaryDataPoint)
 	}
 	*dest.orig = wrappers
 }
@@ -150,5 +194,6 @@ func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 // provided less function so that two instances of SummaryDataPointSlice
 // can be compared.
 func (es SummaryDataPointSlice) Sort(less func(a, b SummaryDataPoint) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.ensureMutability()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

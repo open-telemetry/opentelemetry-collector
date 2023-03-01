@@ -29,16 +29,14 @@ import (
 func TestSummaryDataPointSlice(t *testing.T) {
 	es := NewSummaryDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{})
-	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSummaryDataPoint()
 	testVal := generateTestSummaryDataPoint()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
-		assert.Equal(t, emptyVal, es.At(i))
+		assert.Equal(t, emptyVal.getOrig(), es.At(i).getOrig())
 		fillTestSummaryDataPoint(el)
-		assert.Equal(t, testVal, es.At(i))
+		assert.Equal(t, testVal.getOrig(), es.At(i).getOrig())
 	}
 	assert.Equal(t, 7, es.Len())
 }
@@ -65,14 +63,14 @@ func TestSummaryDataPointSlice_EnsureCapacity(t *testing.T) {
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, es.Len(), cap(*es.getOrig()))
 	assert.Equal(t, generateTestSummaryDataPointSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Less(t, generateTestSummaryDataPointSlice().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, ensureLargeLen, cap(*es.getOrig()))
 	assert.Equal(t, generateTestSummaryDataPointSlice(), es)
 }
 
@@ -96,8 +94,8 @@ func TestSummaryDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	generateTestSummaryDataPointSlice().MoveAndAppendTo(dest)
 	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.Equal(t, expectedSlice.At(i), dest.At(i))
-		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i).getOrig())
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i+expectedSlice.Len()).getOrig())
 	}
 }
 
@@ -142,9 +140,9 @@ func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
 }
 
 func fillTestSummaryDataPointSlice(es SummaryDataPointSlice) {
-	*es.orig = make([]*otlpmetrics.SummaryDataPoint, 7)
+	*es.getOrig() = make([]*otlpmetrics.SummaryDataPoint, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.SummaryDataPoint{}
-		fillTestSummaryDataPoint(newSummaryDataPoint((*es.orig)[i]))
+		(*es.getOrig())[i] = &otlpmetrics.SummaryDataPoint{}
+		fillTestSummaryDataPoint(newSummaryDataPoint((*es.getOrig())[i], es, i))
 	}
 }
