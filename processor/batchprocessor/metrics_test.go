@@ -139,7 +139,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 		_, _ = view.RetrieveData(v.Name)
 	}
 
-	req, err := http.NewRequest("GET", "/metrics", nil)
+	req, err := http.NewRequest(http.MethodGet, "/metrics", nil)
 	require.NoError(t, err)
 
 	rr := httptest.NewRecorder()
