@@ -18,6 +18,7 @@
 package ptrace
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
@@ -30,11 +31,38 @@ import (
 // Must use NewStatus function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Status struct {
-	orig *otlptrace.Status
+	*pStatus
 }
 
-func newStatus(orig *otlptrace.Status) Status {
-	return Status{orig}
+type pStatus struct {
+	orig   *otlptrace.Status
+	state  *internal.State
+	parent Span
+}
+
+func (ms Status) getOrig() *otlptrace.Status {
+	if *ms.state == internal.StateDirty {
+		ms.orig, ms.state = ms.parent.refreshStatusOrigState()
+	}
+	return ms.orig
+}
+
+func (ms Status) ensureMutability() {
+	if *ms.state == internal.StateShared {
+		ms.parent.ensureMutability()
+	}
+}
+
+func (ms Status) getState() *internal.State {
+	return ms.state
+}
+
+func newStatus(orig *otlptrace.Status, parent Span) Status {
+	return Status{&pStatus{
+		orig:   orig,
+		state:  parent.getState(),
+		parent: parent,
+	}}
 }
 
 // NewStatus creates a new empty Status.
@@ -42,38 +70,44 @@ func newStatus(orig *otlptrace.Status) Status {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewStatus() Status {
-	return newStatus(&otlptrace.Status{})
+	state := internal.StateExclusive
+	return Status{&pStatus{orig: &otlptrace.Status{}, state: &state}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Status) MoveTo(dest Status) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.Status{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlptrace.Status{}
 }
 
 // Code returns the code associated with this Status.
 func (ms Status) Code() StatusCode {
-	return StatusCode(ms.orig.Code)
+	return StatusCode(ms.getOrig().Code)
 }
 
 // SetCode replaces the code associated with this Status.
 func (ms Status) SetCode(v StatusCode) {
-	ms.orig.Code = otlptrace.Status_StatusCode(v)
+	ms.ensureMutability()
+	ms.getOrig().Code = otlptrace.Status_StatusCode(v)
 }
 
 // Message returns the message associated with this Status.
 func (ms Status) Message() string {
-	return ms.orig.Message
+	return ms.getOrig().Message
 }
 
 // SetMessage replaces the message associated with this Status.
 func (ms Status) SetMessage(v string) {
-	ms.orig.Message = v
+	ms.ensureMutability()
+	ms.getOrig().Message = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Status) CopyTo(dest Status) {
+	dest.ensureMutability()
 	dest.SetCode(ms.Code())
 	dest.SetMessage(ms.Message())
 }

@@ -73,7 +73,7 @@ func TestMetric_Gauge(t *testing.T) {
 	ms := NewMetric()
 	fillTestGauge(ms.SetEmptyGauge())
 	assert.Equal(t, MetricTypeGauge, ms.Type())
-	assert.Equal(t, generateTestGauge(), ms.Gauge())
+	assert.Equal(t, generateTestGauge().getOrig(), ms.Gauge().getOrig())
 }
 
 func TestMetric_CopyTo_Gauge(t *testing.T) {
@@ -88,7 +88,7 @@ func TestMetric_Sum(t *testing.T) {
 	ms := NewMetric()
 	fillTestSum(ms.SetEmptySum())
 	assert.Equal(t, MetricTypeSum, ms.Type())
-	assert.Equal(t, generateTestSum(), ms.Sum())
+	assert.Equal(t, generateTestSum().getOrig(), ms.Sum().getOrig())
 }
 
 func TestMetric_CopyTo_Sum(t *testing.T) {
@@ -103,7 +103,7 @@ func TestMetric_Histogram(t *testing.T) {
 	ms := NewMetric()
 	fillTestHistogram(ms.SetEmptyHistogram())
 	assert.Equal(t, MetricTypeHistogram, ms.Type())
-	assert.Equal(t, generateTestHistogram(), ms.Histogram())
+	assert.Equal(t, generateTestHistogram().getOrig(), ms.Histogram().getOrig())
 }
 
 func TestMetric_CopyTo_Histogram(t *testing.T) {
@@ -118,7 +118,7 @@ func TestMetric_ExponentialHistogram(t *testing.T) {
 	ms := NewMetric()
 	fillTestExponentialHistogram(ms.SetEmptyExponentialHistogram())
 	assert.Equal(t, MetricTypeExponentialHistogram, ms.Type())
-	assert.Equal(t, generateTestExponentialHistogram(), ms.ExponentialHistogram())
+	assert.Equal(t, generateTestExponentialHistogram().getOrig(), ms.ExponentialHistogram().getOrig())
 }
 
 func TestMetric_CopyTo_ExponentialHistogram(t *testing.T) {
@@ -133,7 +133,7 @@ func TestMetric_Summary(t *testing.T) {
 	ms := NewMetric()
 	fillTestSummary(ms.SetEmptySummary())
 	assert.Equal(t, MetricTypeSummary, ms.Type())
-	assert.Equal(t, generateTestSummary(), ms.Summary())
+	assert.Equal(t, generateTestSummary().getOrig(), ms.Summary().getOrig())
 }
 
 func TestMetric_CopyTo_Summary(t *testing.T) {
@@ -151,9 +151,9 @@ func generateTestMetric() Metric {
 }
 
 func fillTestMetric(tv Metric) {
-	tv.orig.Name = "test_name"
-	tv.orig.Description = "test_description"
-	tv.orig.Unit = "1"
-	tv.orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
-	fillTestSum(newSum(tv.orig.GetSum()))
+	tv.getOrig().Name = "test_name"
+	tv.getOrig().Description = "test_description"
+	tv.getOrig().Unit = "1"
+	tv.getOrig().Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
+	fillTestSum(newSum(tv.getOrig().GetSum(), tv))
 }

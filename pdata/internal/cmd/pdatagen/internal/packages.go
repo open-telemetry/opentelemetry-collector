@@ -42,11 +42,8 @@ const header = `// Copyright The OpenTelemetry Authors
 var AllPackages = []*Package{
 	pcommon,
 	plog,
-	plogotlp,
 	pmetric,
-	pmetricotlp,
 	ptrace,
-	ptraceotlp,
 }
 
 // Package is a struct used to generate files.
@@ -141,6 +138,9 @@ func (p *Package) GenerateInternalFiles() error {
 		// Add imports
 		sb.WriteString("import (" + newLine)
 		for _, imp := range p.imports {
+			if imp == `"go.opentelemetry.io/collector/pdata/internal"` {
+				continue
+			}
 			if imp != "" {
 				sb.WriteString("\t" + imp + newLine)
 			} else {

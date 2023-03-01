@@ -20,15 +20,49 @@ import (
 )
 
 type Logs struct {
-	orig *otlpcollectorlog.ExportLogsServiceRequest
+	*pLogs
 }
 
-func GetOrigLogs(ms Logs) *otlpcollectorlog.ExportLogsServiceRequest {
+type pLogs struct {
+	orig  *otlpcollectorlog.ExportLogsServiceRequest
+	state *State
+}
+
+func (ms Logs) AsShared() Logs {
+	*ms.state = StateShared
+	state := StateShared
+	return Logs{&pLogs{orig: ms.orig, state: &state}}
+}
+
+func (ms Logs) GetState() *State {
+	return ms.state
+}
+
+func (ms Logs) SetState(state *State) {
+	ms.state = state
+}
+
+func (ms Logs) GetOrig() *otlpcollectorlog.ExportLogsServiceRequest {
 	return ms.orig
 }
 
+func (ms Logs) SetOrig(orig *otlpcollectorlog.ExportLogsServiceRequest) {
+	ms.orig = orig
+}
+
 func NewLogs(orig *otlpcollectorlog.ExportLogsServiceRequest) Logs {
-	return Logs{orig: orig}
+	state := StateExclusive
+	return Logs{&pLogs{orig: orig, state: &state}}
+}
+
+func NewLogsFromResourceLogsOrig(orig *[]*otlplogs.ResourceLogs) Logs {
+	state := StateExclusive
+	return Logs{&pLogs{
+		orig: &otlpcollectorlog.ExportLogsServiceRequest{
+			ResourceLogs: *orig,
+		},
+		state: &state,
+	}}
 }
 
 // LogsToProto internal helper to convert Logs to protobuf representation.
@@ -40,7 +74,11 @@ func LogsToProto(l Logs) otlplogs.LogsData {
 
 // LogsFromProto internal helper to convert protobuf representation to Logs.
 func LogsFromProto(orig otlplogs.LogsData) Logs {
-	return Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: orig.ResourceLogs,
+	state := StateExclusive
+	return Logs{&pLogs{
+		orig: &otlpcollectorlog.ExportLogsServiceRequest{
+			ResourceLogs: orig.ResourceLogs,
+		},
+		state: &state,
 	}}
 }

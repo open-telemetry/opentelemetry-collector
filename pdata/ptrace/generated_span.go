@@ -20,6 +20,7 @@ package ptrace
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -33,11 +34,104 @@ import (
 // Must use NewSpan function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Span struct {
-	orig *otlptrace.Span
+	*pSpan
 }
 
-func newSpan(orig *otlptrace.Span) Span {
-	return Span{orig}
+type pSpan struct {
+	orig   *otlptrace.Span
+	state  *internal.State
+	parent SpanSlice
+	idx    int
+}
+
+func (ms Span) getOrig() *otlptrace.Span {
+	if *ms.state == internal.StateDirty {
+		ms.orig, ms.state = ms.parent.refreshElementOrigState(ms.idx)
+	}
+	return ms.orig
+}
+
+func (ms Span) ensureMutability() {
+	if *ms.state == internal.StateShared {
+		ms.parent.ensureMutability()
+	}
+}
+
+func (ms Span) getState() *internal.State {
+	return ms.state
+}
+
+type wrappedSpanTraceState struct {
+	Span
+}
+
+func (es wrappedSpanTraceState) RefreshOrigState() (*string, *internal.State) {
+	return &es.getOrig().TraceState, es.getState()
+}
+
+func (es wrappedSpanTraceState) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func (es wrappedSpanTraceState) GetState() *internal.State {
+	return es.getState()
+}
+
+type wrappedSpanAttributes struct {
+	Span
+}
+
+func (es wrappedSpanAttributes) GetChildOrig() *[]otlpcommon.KeyValue {
+	return &es.getOrig().Attributes
+}
+
+func (es wrappedSpanAttributes) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func (es wrappedSpanAttributes) GetState() *internal.State {
+	return es.getState()
+}
+
+func (ms Span) getEventsOrig() *[]*otlptrace.Span_Event {
+	return &ms.getOrig().Events
+}
+
+func newSpanFromEventsOrig(childOrig *[]*otlptrace.Span_Event) Span {
+	state := internal.StateExclusive
+	return Span{&pSpan{
+		state: &state,
+		orig: &otlptrace.Span{
+			Events: *childOrig,
+		},
+	}}
+}
+
+func (ms Span) getLinksOrig() *[]*otlptrace.Span_Link {
+	return &ms.getOrig().Links
+}
+
+func newSpanFromLinksOrig(childOrig *[]*otlptrace.Span_Link) Span {
+	state := internal.StateExclusive
+	return Span{&pSpan{
+		state: &state,
+		orig: &otlptrace.Span{
+			Links: *childOrig,
+		},
+	}}
+}
+
+func (ms Span) refreshStatusOrigState() (*otlptrace.Status, *internal.State) {
+	return &ms.getOrig().Status, ms.state
+}
+
+func newSpan(orig *otlptrace.Span, parent SpanSlice, idx int) Span {
+	return Span{&pSpan{
+		orig:   orig,
+		state:  parent.getState(),
+		parent: parent,
+		idx:    idx,
+	}}
 }
 
 // NewSpan creates a new empty Span.
@@ -45,143 +139,157 @@ func newSpan(orig *otlptrace.Span) Span {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSpan() Span {
-	return newSpan(&otlptrace.Span{})
+	state := internal.StateExclusive
+	return Span{&pSpan{orig: &otlptrace.Span{}, state: &state}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Span) MoveTo(dest Span) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.Span{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlptrace.Span{}
 }
 
 // TraceID returns the traceid associated with this Span.
 func (ms Span) TraceID() pcommon.TraceID {
-	return pcommon.TraceID(ms.orig.TraceId)
+	return pcommon.TraceID(ms.getOrig().TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this Span.
 func (ms Span) SetTraceID(v pcommon.TraceID) {
-	ms.orig.TraceId = data.TraceID(v)
+	ms.ensureMutability()
+	ms.getOrig().TraceId = data.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this Span.
 func (ms Span) SpanID() pcommon.SpanID {
-	return pcommon.SpanID(ms.orig.SpanId)
+	return pcommon.SpanID(ms.getOrig().SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this Span.
 func (ms Span) SetSpanID(v pcommon.SpanID) {
-	ms.orig.SpanId = data.SpanID(v)
+	ms.ensureMutability()
+	ms.getOrig().SpanId = data.SpanID(v)
 }
 
 // TraceState returns the tracestate associated with this Span.
 func (ms Span) TraceState() pcommon.TraceState {
-	return pcommon.TraceState(internal.NewTraceState(&ms.orig.TraceState))
+	return pcommon.TraceState(internal.NewTraceState(&ms.getOrig().TraceState, wrappedSpanTraceState{Span: ms}))
 }
 
 // ParentSpanID returns the parentspanid associated with this Span.
 func (ms Span) ParentSpanID() pcommon.SpanID {
-	return pcommon.SpanID(ms.orig.ParentSpanId)
+	return pcommon.SpanID(ms.getOrig().ParentSpanId)
 }
 
 // SetParentSpanID replaces the parentspanid associated with this Span.
 func (ms Span) SetParentSpanID(v pcommon.SpanID) {
-	ms.orig.ParentSpanId = data.SpanID(v)
+	ms.ensureMutability()
+	ms.getOrig().ParentSpanId = data.SpanID(v)
 }
 
 // Name returns the name associated with this Span.
 func (ms Span) Name() string {
-	return ms.orig.Name
+	return ms.getOrig().Name
 }
 
 // SetName replaces the name associated with this Span.
 func (ms Span) SetName(v string) {
-	ms.orig.Name = v
+	ms.ensureMutability()
+	ms.getOrig().Name = v
 }
 
 // Kind returns the kind associated with this Span.
 func (ms Span) Kind() SpanKind {
-	return SpanKind(ms.orig.Kind)
+	return SpanKind(ms.getOrig().Kind)
 }
 
 // SetKind replaces the kind associated with this Span.
 func (ms Span) SetKind(v SpanKind) {
-	ms.orig.Kind = otlptrace.Span_SpanKind(v)
+	ms.ensureMutability()
+	ms.getOrig().Kind = otlptrace.Span_SpanKind(v)
 }
 
 // StartTimestamp returns the starttimestamp associated with this Span.
 func (ms Span) StartTimestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.StartTimeUnixNano)
+	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this Span.
 func (ms Span) SetStartTimestamp(v pcommon.Timestamp) {
-	ms.orig.StartTimeUnixNano = uint64(v)
+	ms.ensureMutability()
+	ms.getOrig().StartTimeUnixNano = uint64(v)
 }
 
 // EndTimestamp returns the endtimestamp associated with this Span.
 func (ms Span) EndTimestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.EndTimeUnixNano)
+	return pcommon.Timestamp(ms.getOrig().EndTimeUnixNano)
 }
 
 // SetEndTimestamp replaces the endtimestamp associated with this Span.
 func (ms Span) SetEndTimestamp(v pcommon.Timestamp) {
-	ms.orig.EndTimeUnixNano = uint64(v)
+	ms.ensureMutability()
+	ms.getOrig().EndTimeUnixNano = uint64(v)
 }
 
-// Attributes returns the Attributes associated with this Span.
+// Attributes returns the <no value> associated with this Span.
 func (ms Span) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+	return pcommon.Map(internal.NewMapFromParent(wrappedSpanAttributes{Span: ms}))
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this Span.
 func (ms Span) DroppedAttributesCount() uint32 {
-	return ms.orig.DroppedAttributesCount
+	return ms.getOrig().DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this Span.
 func (ms Span) SetDroppedAttributesCount(v uint32) {
-	ms.orig.DroppedAttributesCount = v
+	ms.ensureMutability()
+	ms.getOrig().DroppedAttributesCount = v
 }
 
-// Events returns the Events associated with this Span.
+// Events returns the <no value> associated with this Span.
 func (ms Span) Events() SpanEventSlice {
-	return newSpanEventSlice(&ms.orig.Events)
+	return newSpanEventSliceFromParent(ms)
 }
 
 // DroppedEventsCount returns the droppedeventscount associated with this Span.
 func (ms Span) DroppedEventsCount() uint32 {
-	return ms.orig.DroppedEventsCount
+	return ms.getOrig().DroppedEventsCount
 }
 
 // SetDroppedEventsCount replaces the droppedeventscount associated with this Span.
 func (ms Span) SetDroppedEventsCount(v uint32) {
-	ms.orig.DroppedEventsCount = v
+	ms.ensureMutability()
+	ms.getOrig().DroppedEventsCount = v
 }
 
-// Links returns the Links associated with this Span.
+// Links returns the <no value> associated with this Span.
 func (ms Span) Links() SpanLinkSlice {
-	return newSpanLinkSlice(&ms.orig.Links)
+	return newSpanLinkSliceFromParent(ms)
 }
 
 // DroppedLinksCount returns the droppedlinkscount associated with this Span.
 func (ms Span) DroppedLinksCount() uint32 {
-	return ms.orig.DroppedLinksCount
+	return ms.getOrig().DroppedLinksCount
 }
 
 // SetDroppedLinksCount replaces the droppedlinkscount associated with this Span.
 func (ms Span) SetDroppedLinksCount(v uint32) {
-	ms.orig.DroppedLinksCount = v
+	ms.ensureMutability()
+	ms.getOrig().DroppedLinksCount = v
 }
 
 // Status returns the status associated with this Span.
 func (ms Span) Status() Status {
-	return newStatus(&ms.orig.Status)
+	return newStatus(&ms.getOrig().Status, ms)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Span) CopyTo(dest Span) {
+	dest.ensureMutability()
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
 	ms.TraceState().CopyTo(dest.TraceState())

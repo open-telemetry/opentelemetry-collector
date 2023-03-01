@@ -62,6 +62,6 @@ func generateTestExponentialHistogramDataPointBuckets() ExponentialHistogramData
 }
 
 func fillTestExponentialHistogramDataPointBuckets(tv ExponentialHistogramDataPointBuckets) {
-	tv.orig.Offset = int32(909)
-	tv.orig.BucketCounts = []uint64{1, 2, 3}
+	tv.getOrig().Offset = int32(909)
+	tv.getOrig().BucketCounts = []uint64{1, 2, 3}
 }

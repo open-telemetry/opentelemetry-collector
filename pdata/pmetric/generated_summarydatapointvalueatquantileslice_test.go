@@ -29,16 +29,14 @@ import (
 func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
 	es := NewSummaryDataPointValueAtQuantileSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
-	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSummaryDataPointValueAtQuantile()
 	testVal := generateTestSummaryDataPointValueAtQuantile()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
-		assert.Equal(t, emptyVal, es.At(i))
+		assert.Equal(t, emptyVal.getOrig(), es.At(i).getOrig())
 		fillTestSummaryDataPointValueAtQuantile(el)
-		assert.Equal(t, testVal, es.At(i))
+		assert.Equal(t, testVal.getOrig(), es.At(i).getOrig())
 	}
 	assert.Equal(t, 7, es.Len())
 }
@@ -65,14 +63,14 @@ func TestSummaryDataPointValueAtQuantileSlice_EnsureCapacity(t *testing.T) {
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, es.Len(), cap(*es.getOrig()))
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Less(t, generateTestSummaryDataPointValueAtQuantileSlice().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, ensureLargeLen, cap(*es.getOrig()))
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), es)
 }
 
@@ -96,8 +94,8 @@ func TestSummaryDataPointValueAtQuantileSlice_MoveAndAppendTo(t *testing.T) {
 	generateTestSummaryDataPointValueAtQuantileSlice().MoveAndAppendTo(dest)
 	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.Equal(t, expectedSlice.At(i), dest.At(i))
-		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i).getOrig())
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i+expectedSlice.Len()).getOrig())
 	}
 }
 
@@ -122,16 +120,16 @@ func TestSummaryDataPointValueAtQuantileSlice_RemoveIf(t *testing.T) {
 func TestSummaryDataPointValueAtQuantileSlice_Sort(t *testing.T) {
 	es := generateTestSummaryDataPointValueAtQuantileSlice()
 	es.Sort(func(a, b SummaryDataPointValueAtQuantile) bool {
-		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+		return uintptr(unsafe.Pointer(a.getOrig())) < uintptr(unsafe.Pointer(b.getOrig()))
 	})
 	for i := 1; i < es.Len(); i++ {
-		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
+		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).getOrig())) < uintptr(unsafe.Pointer(es.At(i).getOrig())))
 	}
 	es.Sort(func(a, b SummaryDataPointValueAtQuantile) bool {
-		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+		return uintptr(unsafe.Pointer(a.getOrig())) > uintptr(unsafe.Pointer(b.getOrig()))
 	})
 	for i := 1; i < es.Len(); i++ {
-		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
+		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).getOrig())) > uintptr(unsafe.Pointer(es.At(i).getOrig())))
 	}
 }
 
@@ -142,9 +140,9 @@ func generateTestSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQ
 }
 
 func fillTestSummaryDataPointValueAtQuantileSlice(es SummaryDataPointValueAtQuantileSlice) {
-	*es.orig = make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, 7)
+	*es.getOrig() = make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-		fillTestSummaryDataPointValueAtQuantile(newSummaryDataPointValueAtQuantile((*es.orig)[i]))
+		(*es.getOrig())[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+		fillTestSummaryDataPointValueAtQuantile(newSummaryDataPointValueAtQuantile((*es.getOrig())[i], es, i))
 	}
 }

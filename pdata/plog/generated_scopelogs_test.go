@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestScopeLogs_MoveTo(t *testing.T) {
@@ -47,7 +46,7 @@ func TestScopeLogs_CopyTo(t *testing.T) {
 func TestScopeLogs_Scope(t *testing.T) {
 	ms := NewScopeLogs()
 	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
-	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
+	assert.Equal(t, internal.GenerateTestInstrumentationScope().GetOrig(), internal.InstrumentationScope(ms.Scope()).GetOrig())
 }
 
 func TestScopeLogs_SchemaUrl(t *testing.T) {
@@ -59,9 +58,9 @@ func TestScopeLogs_SchemaUrl(t *testing.T) {
 
 func TestScopeLogs_LogRecords(t *testing.T) {
 	ms := NewScopeLogs()
-	assert.Equal(t, NewLogRecordSlice(), ms.LogRecords())
+	assert.Equal(t, NewLogRecordSlice().getOrig(), ms.LogRecords().getOrig())
 	fillTestLogRecordSlice(ms.LogRecords())
-	assert.Equal(t, generateTestLogRecordSlice(), ms.LogRecords())
+	assert.Equal(t, generateTestLogRecordSlice().getOrig(), ms.LogRecords().getOrig())
 }
 
 func generateTestScopeLogs() ScopeLogs {
@@ -71,7 +70,8 @@ func generateTestScopeLogs() ScopeLogs {
 }
 
 func fillTestScopeLogs(tv ScopeLogs) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestLogRecordSlice(newLogRecordSlice(&tv.orig.LogRecords))
+	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.getOrig().Scope,
+		wrappedScopeLogsScope{ScopeLogs: tv}))
+	tv.getOrig().SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	fillTestLogRecordSlice(newLogRecordSliceFromParent(tv))
 }

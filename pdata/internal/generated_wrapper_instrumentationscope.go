@@ -22,27 +22,58 @@ import (
 )
 
 type InstrumentationScope struct {
-	orig *otlpcommon.InstrumentationScope
+	*pInstrumentationScope
 }
 
-func GetOrigInstrumentationScope(ms InstrumentationScope) *otlpcommon.InstrumentationScope {
+type pInstrumentationScope struct {
+	orig   *otlpcommon.InstrumentationScope
+	state  *State
+	parent Parent[*otlpcommon.InstrumentationScope]
+}
+
+func (ms InstrumentationScope) GetOrig() *otlpcommon.InstrumentationScope {
+	if *ms.state == StateDirty {
+		ms.orig, ms.state = ms.parent.RefreshOrigState()
+	}
 	return ms.orig
 }
 
-func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope) InstrumentationScope {
-	return InstrumentationScope{orig: orig}
+func (ms InstrumentationScope) EnsureMutability() {
+	if *ms.state == StateShared {
+		ms.parent.EnsureMutability()
+	}
+}
+
+func (ms InstrumentationScope) GetState() *State {
+	return ms.state
+}
+
+func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope, parent Parent[*otlpcommon.InstrumentationScope]) InstrumentationScope {
+	if parent == nil {
+		state := StateExclusive
+		return InstrumentationScope{&pInstrumentationScope{orig: orig, state: &state}}
+	}
+	return InstrumentationScope{&pInstrumentationScope{orig: orig, state: parent.GetState(), parent: parent}}
+}
+
+type WrappedInstrumentationScopeAttributes struct {
+	InstrumentationScope
+}
+
+func (es WrappedInstrumentationScopeAttributes) GetChildOrig() *[]otlpcommon.KeyValue {
+	return &es.GetOrig().Attributes
 }
 
 func GenerateTestInstrumentationScope() InstrumentationScope {
 	orig := otlpcommon.InstrumentationScope{}
-	tv := NewInstrumentationScope(&orig)
+	tv := NewInstrumentationScope(&orig, nil)
 	FillTestInstrumentationScope(tv)
 	return tv
 }
 
 func FillTestInstrumentationScope(tv InstrumentationScope) {
-	tv.orig.Name = "test_name"
-	tv.orig.Version = "test_version"
-	FillTestMap(NewMap(&tv.orig.Attributes))
-	tv.orig.DroppedAttributesCount = uint32(17)
+	tv.GetOrig().Name = "test_name"
+	tv.GetOrig().Version = "test_version"
+	FillTestMap(NewMapFromParent(WrappedInstrumentationScopeAttributes{InstrumentationScope: tv}))
+	tv.GetOrig().DroppedAttributesCount = uint32(17)
 }

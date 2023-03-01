@@ -18,6 +18,7 @@
 package pmetric
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
@@ -29,11 +30,52 @@ import (
 // Must use NewSummary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Summary struct {
-	orig *otlpmetrics.Summary
+	*pSummary
 }
 
-func newSummary(orig *otlpmetrics.Summary) Summary {
-	return Summary{orig}
+type pSummary struct {
+	orig   *otlpmetrics.Summary
+	state  *internal.State
+	parent Metric
+}
+
+func (ms Summary) getOrig() *otlpmetrics.Summary {
+	if *ms.state == internal.StateDirty {
+		ms.orig, ms.state = ms.parent.refreshSummaryOrigState()
+	}
+	return ms.orig
+}
+
+func (ms Summary) ensureMutability() {
+	if *ms.state == internal.StateShared {
+		ms.parent.ensureMutability()
+	}
+}
+
+func (ms Summary) getState() *internal.State {
+	return ms.state
+}
+
+func (ms Summary) getDataPointsOrig() *[]*otlpmetrics.SummaryDataPoint {
+	return &ms.getOrig().DataPoints
+}
+
+func newSummaryFromDataPointsOrig(childOrig *[]*otlpmetrics.SummaryDataPoint) Summary {
+	state := internal.StateExclusive
+	return Summary{&pSummary{
+		state: &state,
+		orig: &otlpmetrics.Summary{
+			DataPoints: *childOrig,
+		},
+	}}
+}
+
+func newSummary(orig *otlpmetrics.Summary, parent Metric) Summary {
+	return Summary{&pSummary{
+		orig:   orig,
+		state:  parent.getState(),
+		parent: parent,
+	}}
 }
 
 // NewSummary creates a new empty Summary.
@@ -41,22 +83,26 @@ func newSummary(orig *otlpmetrics.Summary) Summary {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSummary() Summary {
-	return newSummary(&otlpmetrics.Summary{})
+	state := internal.StateExclusive
+	return Summary{&pSummary{orig: &otlpmetrics.Summary{}, state: &state}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Summary) MoveTo(dest Summary) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Summary{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.Summary{}
 }
 
-// DataPoints returns the DataPoints associated with this Summary.
+// DataPoints returns the <no value> associated with this Summary.
 func (ms Summary) DataPoints() SummaryDataPointSlice {
-	return newSummaryDataPointSlice(&ms.orig.DataPoints)
+	return newSummaryDataPointSliceFromParent(ms)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Summary) CopyTo(dest Summary) {
+	dest.ensureMutability()
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }

@@ -18,6 +18,7 @@
 package pmetric
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
@@ -30,11 +31,60 @@ import (
 // Must use NewMetric function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Metric struct {
-	orig *otlpmetrics.Metric
+	*pMetric
 }
 
-func newMetric(orig *otlpmetrics.Metric) Metric {
-	return Metric{orig}
+type pMetric struct {
+	orig   *otlpmetrics.Metric
+	state  *internal.State
+	parent MetricSlice
+	idx    int
+}
+
+func (ms Metric) getOrig() *otlpmetrics.Metric {
+	if *ms.state == internal.StateDirty {
+		ms.orig, ms.state = ms.parent.refreshElementOrigState(ms.idx)
+	}
+	return ms.orig
+}
+
+func (ms Metric) ensureMutability() {
+	if *ms.state == internal.StateShared {
+		ms.parent.ensureMutability()
+	}
+}
+
+func (ms Metric) getState() *internal.State {
+	return ms.state
+}
+
+func (es Metric) refreshGaugeOrigState() (*otlpmetrics.Gauge, *internal.State) {
+	return es.getOrig().GetData().(*otlpmetrics.Metric_Gauge).Gauge, es.getState()
+}
+
+func (es Metric) refreshSumOrigState() (*otlpmetrics.Sum, *internal.State) {
+	return es.getOrig().GetData().(*otlpmetrics.Metric_Sum).Sum, es.getState()
+}
+
+func (es Metric) refreshHistogramOrigState() (*otlpmetrics.Histogram, *internal.State) {
+	return es.getOrig().GetData().(*otlpmetrics.Metric_Histogram).Histogram, es.getState()
+}
+
+func (es Metric) refreshExponentialHistogramOrigState() (*otlpmetrics.ExponentialHistogram, *internal.State) {
+	return es.getOrig().GetData().(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram, es.getState()
+}
+
+func (es Metric) refreshSummaryOrigState() (*otlpmetrics.Summary, *internal.State) {
+	return es.getOrig().GetData().(*otlpmetrics.Metric_Summary).Summary, es.getState()
+}
+
+func newMetric(orig *otlpmetrics.Metric, parent MetricSlice, idx int) Metric {
+	return Metric{&pMetric{
+		orig:   orig,
+		state:  parent.getState(),
+		parent: parent,
+		idx:    idx,
+	}}
 }
 
 // NewMetric creates a new empty Metric.
@@ -42,50 +92,56 @@ func newMetric(orig *otlpmetrics.Metric) Metric {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewMetric() Metric {
-	return newMetric(&otlpmetrics.Metric{})
+	state := internal.StateExclusive
+	return Metric{&pMetric{orig: &otlpmetrics.Metric{}, state: &state}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Metric) MoveTo(dest Metric) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Metric{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.Metric{}
 }
 
 // Name returns the name associated with this Metric.
 func (ms Metric) Name() string {
-	return ms.orig.Name
+	return ms.getOrig().Name
 }
 
 // SetName replaces the name associated with this Metric.
 func (ms Metric) SetName(v string) {
-	ms.orig.Name = v
+	ms.ensureMutability()
+	ms.getOrig().Name = v
 }
 
 // Description returns the description associated with this Metric.
 func (ms Metric) Description() string {
-	return ms.orig.Description
+	return ms.getOrig().Description
 }
 
 // SetDescription replaces the description associated with this Metric.
 func (ms Metric) SetDescription(v string) {
-	ms.orig.Description = v
+	ms.ensureMutability()
+	ms.getOrig().Description = v
 }
 
 // Unit returns the unit associated with this Metric.
 func (ms Metric) Unit() string {
-	return ms.orig.Unit
+	return ms.getOrig().Unit
 }
 
 // SetUnit replaces the unit associated with this Metric.
 func (ms Metric) SetUnit(v string) {
-	ms.orig.Unit = v
+	ms.ensureMutability()
+	ms.getOrig().Unit = v
 }
 
 // Type returns the type of the data for this Metric.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Type() MetricType {
-	switch ms.orig.Data.(type) {
+	switch ms.getOrig().Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
 		return MetricTypeGauge
 	case *otlpmetrics.Metric_Sum:
@@ -107,11 +163,11 @@ func (ms Metric) Type() MetricType {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Gauge() Gauge {
-	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_Gauge)
+	v, ok := ms.getOrig().GetData().(*otlpmetrics.Metric_Gauge)
 	if !ok {
 		return Gauge{}
 	}
-	return newGauge(v.Gauge)
+	return newGauge(v.Gauge, ms)
 }
 
 // SetEmptyGauge sets an empty gauge to this Metric.
@@ -120,9 +176,10 @@ func (ms Metric) Gauge() Gauge {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyGauge() Gauge {
+	ms.ensureMutability()
 	val := &otlpmetrics.Gauge{}
-	ms.orig.Data = &otlpmetrics.Metric_Gauge{Gauge: val}
-	return newGauge(val)
+	ms.getOrig().Data = &otlpmetrics.Metric_Gauge{Gauge: val}
+	return newGauge(val, ms)
 }
 
 // Sum returns the sum associated with this Metric.
@@ -132,11 +189,11 @@ func (ms Metric) SetEmptyGauge() Gauge {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Sum() Sum {
-	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_Sum)
+	v, ok := ms.getOrig().GetData().(*otlpmetrics.Metric_Sum)
 	if !ok {
 		return Sum{}
 	}
-	return newSum(v.Sum)
+	return newSum(v.Sum, ms)
 }
 
 // SetEmptySum sets an empty sum to this Metric.
@@ -145,9 +202,10 @@ func (ms Metric) Sum() Sum {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptySum() Sum {
+	ms.ensureMutability()
 	val := &otlpmetrics.Sum{}
-	ms.orig.Data = &otlpmetrics.Metric_Sum{Sum: val}
-	return newSum(val)
+	ms.getOrig().Data = &otlpmetrics.Metric_Sum{Sum: val}
+	return newSum(val, ms)
 }
 
 // Histogram returns the histogram associated with this Metric.
@@ -157,11 +215,11 @@ func (ms Metric) SetEmptySum() Sum {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Histogram() Histogram {
-	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_Histogram)
+	v, ok := ms.getOrig().GetData().(*otlpmetrics.Metric_Histogram)
 	if !ok {
 		return Histogram{}
 	}
-	return newHistogram(v.Histogram)
+	return newHistogram(v.Histogram, ms)
 }
 
 // SetEmptyHistogram sets an empty histogram to this Metric.
@@ -170,9 +228,10 @@ func (ms Metric) Histogram() Histogram {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyHistogram() Histogram {
+	ms.ensureMutability()
 	val := &otlpmetrics.Histogram{}
-	ms.orig.Data = &otlpmetrics.Metric_Histogram{Histogram: val}
-	return newHistogram(val)
+	ms.getOrig().Data = &otlpmetrics.Metric_Histogram{Histogram: val}
+	return newHistogram(val, ms)
 }
 
 // ExponentialHistogram returns the exponentialhistogram associated with this Metric.
@@ -182,11 +241,11 @@ func (ms Metric) SetEmptyHistogram() Histogram {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) ExponentialHistogram() ExponentialHistogram {
-	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_ExponentialHistogram)
+	v, ok := ms.getOrig().GetData().(*otlpmetrics.Metric_ExponentialHistogram)
 	if !ok {
 		return ExponentialHistogram{}
 	}
-	return newExponentialHistogram(v.ExponentialHistogram)
+	return newExponentialHistogram(v.ExponentialHistogram, ms)
 }
 
 // SetEmptyExponentialHistogram sets an empty exponentialhistogram to this Metric.
@@ -195,9 +254,10 @@ func (ms Metric) ExponentialHistogram() ExponentialHistogram {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
+	ms.ensureMutability()
 	val := &otlpmetrics.ExponentialHistogram{}
-	ms.orig.Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: val}
-	return newExponentialHistogram(val)
+	ms.getOrig().Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: val}
+	return newExponentialHistogram(val, ms)
 }
 
 // Summary returns the summary associated with this Metric.
@@ -207,11 +267,11 @@ func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Summary() Summary {
-	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_Summary)
+	v, ok := ms.getOrig().GetData().(*otlpmetrics.Metric_Summary)
 	if !ok {
 		return Summary{}
 	}
-	return newSummary(v.Summary)
+	return newSummary(v.Summary, ms)
 }
 
 // SetEmptySummary sets an empty summary to this Metric.
@@ -220,13 +280,15 @@ func (ms Metric) Summary() Summary {
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptySummary() Summary {
+	ms.ensureMutability()
 	val := &otlpmetrics.Summary{}
-	ms.orig.Data = &otlpmetrics.Metric_Summary{Summary: val}
-	return newSummary(val)
+	ms.getOrig().Data = &otlpmetrics.Metric_Summary{Summary: val}
+	return newSummary(val, ms)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Metric) CopyTo(dest Metric) {
+	dest.ensureMutability()
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())
 	dest.SetUnit(ms.Unit())

@@ -19,6 +19,7 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -31,11 +32,70 @@ import (
 // Must use NewSummaryDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SummaryDataPoint struct {
-	orig *otlpmetrics.SummaryDataPoint
+	*pSummaryDataPoint
 }
 
-func newSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) SummaryDataPoint {
-	return SummaryDataPoint{orig}
+type pSummaryDataPoint struct {
+	orig   *otlpmetrics.SummaryDataPoint
+	state  *internal.State
+	parent SummaryDataPointSlice
+	idx    int
+}
+
+func (ms SummaryDataPoint) getOrig() *otlpmetrics.SummaryDataPoint {
+	if *ms.state == internal.StateDirty {
+		ms.orig, ms.state = ms.parent.refreshElementOrigState(ms.idx)
+	}
+	return ms.orig
+}
+
+func (ms SummaryDataPoint) ensureMutability() {
+	if *ms.state == internal.StateShared {
+		ms.parent.ensureMutability()
+	}
+}
+
+func (ms SummaryDataPoint) getState() *internal.State {
+	return ms.state
+}
+
+type wrappedSummaryDataPointAttributes struct {
+	SummaryDataPoint
+}
+
+func (es wrappedSummaryDataPointAttributes) GetChildOrig() *[]otlpcommon.KeyValue {
+	return &es.getOrig().Attributes
+}
+
+func (es wrappedSummaryDataPointAttributes) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func (es wrappedSummaryDataPointAttributes) GetState() *internal.State {
+	return es.getState()
+}
+
+func (ms SummaryDataPoint) getQuantileValuesOrig() *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return &ms.getOrig().QuantileValues
+}
+
+func newSummaryDataPointFromQuantileValuesOrig(childOrig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPoint {
+	state := internal.StateExclusive
+	return SummaryDataPoint{&pSummaryDataPoint{
+		state: &state,
+		orig: &otlpmetrics.SummaryDataPoint{
+			QuantileValues: *childOrig,
+		},
+	}}
+}
+
+func newSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, parent SummaryDataPointSlice, idx int) SummaryDataPoint {
+	return SummaryDataPoint{&pSummaryDataPoint{
+		orig:   orig,
+		state:  parent.getState(),
+		parent: parent,
+		idx:    idx,
+	}}
 }
 
 // NewSummaryDataPoint creates a new empty SummaryDataPoint.
@@ -43,78 +103,87 @@ func newSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) SummaryDataPoint {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSummaryDataPoint() SummaryDataPoint {
-	return newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
+	state := internal.StateExclusive
+	return SummaryDataPoint{&pSummaryDataPoint{orig: &otlpmetrics.SummaryDataPoint{}, state: &state}}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms SummaryDataPoint) MoveTo(dest SummaryDataPoint) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.SummaryDataPoint{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.SummaryDataPoint{}
 }
 
-// Attributes returns the Attributes associated with this SummaryDataPoint.
+// Attributes returns the <no value> associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+	return pcommon.Map(internal.NewMapFromParent(wrappedSummaryDataPointAttributes{SummaryDataPoint: ms}))
 }
 
 // StartTimestamp returns the starttimestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) StartTimestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.StartTimeUnixNano)
+	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
-	ms.orig.StartTimeUnixNano = uint64(v)
+	ms.ensureMutability()
+	ms.getOrig().StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Timestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.TimeUnixNano)
+	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetTimestamp(v pcommon.Timestamp) {
-	ms.orig.TimeUnixNano = uint64(v)
+	ms.ensureMutability()
+	ms.getOrig().TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Count() uint64 {
-	return ms.orig.Count
+	return ms.getOrig().Count
 }
 
 // SetCount replaces the count associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetCount(v uint64) {
-	ms.orig.Count = v
+	ms.ensureMutability()
+	ms.getOrig().Count = v
 }
 
 // Sum returns the sum associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Sum() float64 {
-	return ms.orig.Sum
+	return ms.getOrig().Sum
 }
 
 // SetSum replaces the sum associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetSum(v float64) {
-	ms.orig.Sum = v
+	ms.ensureMutability()
+	ms.getOrig().Sum = v
 }
 
-// QuantileValues returns the QuantileValues associated with this SummaryDataPoint.
+// QuantileValues returns the <no value> associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) QuantileValues() SummaryDataPointValueAtQuantileSlice {
-	return newSummaryDataPointValueAtQuantileSlice(&ms.orig.QuantileValues)
+	return newSummaryDataPointValueAtQuantileSliceFromParent(ms)
 }
 
 // Flags returns the flags associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Flags() DataPointFlags {
-	return DataPointFlags(ms.orig.Flags)
+	return DataPointFlags(ms.getOrig().Flags)
 }
 
 // SetFlags replaces the flags associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetFlags(v DataPointFlags) {
-	ms.orig.Flags = uint32(v)
+	ms.ensureMutability()
+	ms.getOrig().Flags = uint32(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
+	dest.ensureMutability()
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())

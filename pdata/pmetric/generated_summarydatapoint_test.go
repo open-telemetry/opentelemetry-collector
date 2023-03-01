@@ -46,9 +46,9 @@ func TestSummaryDataPoint_CopyTo(t *testing.T) {
 
 func TestSummaryDataPoint_Attributes(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
+	assert.Equal(t, internal.Map(pcommon.NewMap()).GetOrig(), internal.Map(ms.Attributes()).GetOrig())
 	internal.FillTestMap(internal.Map(ms.Attributes()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	assert.Equal(t, internal.GenerateTestMap().GetOrig(), internal.Map(ms.Attributes()).GetOrig())
 }
 
 func TestSummaryDataPoint_StartTimestamp(t *testing.T) {
@@ -83,9 +83,9 @@ func TestSummaryDataPoint_Sum(t *testing.T) {
 
 func TestSummaryDataPoint_QuantileValues(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	assert.Equal(t, NewSummaryDataPointValueAtQuantileSlice(), ms.QuantileValues())
+	assert.Equal(t, NewSummaryDataPointValueAtQuantileSlice().getOrig(), ms.QuantileValues().getOrig())
 	fillTestSummaryDataPointValueAtQuantileSlice(ms.QuantileValues())
-	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), ms.QuantileValues())
+	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice().getOrig(), ms.QuantileValues().getOrig())
 }
 
 func TestSummaryDataPoint_Flags(t *testing.T) {
@@ -103,11 +103,11 @@ func generateTestSummaryDataPoint() SummaryDataPoint {
 }
 
 func fillTestSummaryDataPoint(tv SummaryDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
-	tv.orig.StartTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Count = uint64(17)
-	tv.orig.Sum = float64(17.13)
-	fillTestSummaryDataPointValueAtQuantileSlice(newSummaryDataPointValueAtQuantileSlice(&tv.orig.QuantileValues))
-	tv.orig.Flags = 1
+	internal.FillTestMap(internal.NewMapFromParent(wrappedSummaryDataPointAttributes{SummaryDataPoint: tv}))
+	tv.getOrig().StartTimeUnixNano = 1234567890
+	tv.getOrig().TimeUnixNano = 1234567890
+	tv.getOrig().Count = uint64(17)
+	tv.getOrig().Sum = float64(17.13)
+	fillTestSummaryDataPointValueAtQuantileSlice(newSummaryDataPointValueAtQuantileSliceFromParent(tv))
+	tv.getOrig().Flags = 1
 }

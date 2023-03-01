@@ -47,9 +47,9 @@ func TestNumberDataPoint_CopyTo(t *testing.T) {
 
 func TestNumberDataPoint_Attributes(t *testing.T) {
 	ms := NewNumberDataPoint()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
+	assert.Equal(t, internal.Map(pcommon.NewMap()).GetOrig(), internal.Map(ms.Attributes()).GetOrig())
 	internal.FillTestMap(internal.Map(ms.Attributes()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	assert.Equal(t, internal.GenerateTestMap().GetOrig(), internal.Map(ms.Attributes()).GetOrig())
 }
 
 func TestNumberDataPoint_StartTimestamp(t *testing.T) {
@@ -91,9 +91,9 @@ func TestNumberDataPoint_IntValue(t *testing.T) {
 
 func TestNumberDataPoint_Exemplars(t *testing.T) {
 	ms := NewNumberDataPoint()
-	assert.Equal(t, NewExemplarSlice(), ms.Exemplars())
+	assert.Equal(t, NewExemplarSlice().getOrig(), ms.Exemplars().getOrig())
 	fillTestExemplarSlice(ms.Exemplars())
-	assert.Equal(t, generateTestExemplarSlice(), ms.Exemplars())
+	assert.Equal(t, generateTestExemplarSlice().getOrig(), ms.Exemplars().getOrig())
 }
 
 func TestNumberDataPoint_Flags(t *testing.T) {
@@ -111,10 +111,10 @@ func generateTestNumberDataPoint() NumberDataPoint {
 }
 
 func fillTestNumberDataPoint(tv NumberDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
-	tv.orig.StartTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(17.13)}
-	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars))
-	tv.orig.Flags = 1
+	internal.FillTestMap(internal.NewMapFromParent(wrappedNumberDataPointAttributes{NumberDataPoint: tv}))
+	tv.getOrig().StartTimeUnixNano = 1234567890
+	tv.getOrig().TimeUnixNano = 1234567890
+	tv.getOrig().Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(17.13)}
+	fillTestExemplarSlice(newExemplarSliceFromParent(wrappedNumberDataPointExemplars{NumberDataPoint: tv}))
+	tv.getOrig().Flags = 1
 }

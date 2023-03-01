@@ -62,6 +62,6 @@ func generateTestSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuanti
 }
 
 func fillTestSummaryDataPointValueAtQuantile(tv SummaryDataPointValueAtQuantile) {
-	tv.orig.Quantile = float64(17.13)
-	tv.orig.Value = float64(17.13)
+	tv.getOrig().Quantile = float64(17.13)
+	tv.getOrig().Value = float64(17.13)
 }
