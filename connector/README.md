@@ -8,7 +8,7 @@ consumed data, or it may simply replicate or route data.
 ## Status
 
 Connectors are currently in `Alpha` stage. To enable connectors, run the collector with the
-`service.connectors` feature gate. e.g. `./otelcol --config config.yaml --feature-gates connectors`.
+`service.connectors` feature gate. e.g. `./otelcol --config config.yaml --feature-gates service.connectors`.
 
 ## Supported Data Types
 

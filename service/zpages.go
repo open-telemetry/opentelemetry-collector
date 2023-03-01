@@ -92,14 +92,7 @@ func getBuildInfoProperties(buildInfo component.BuildInfo) [][2]string {
 	}
 }
 
-type zpagesPipeline interface {
-	receiverIDs() []string
-	processorIDs() []string
-	exporterIDs() []string
-	mutatesData() bool
-}
-
-func handleZPages[V zpagesPipeline](w http.ResponseWriter, r *http.Request, pipes map[component.ID]V) {
+func (g *pipelinesGraph) HandleZPages(w http.ResponseWriter, r *http.Request) {
 	qValues := r.URL.Query()
 	pipelineName := qValues.Get(zPipelineName)
 	componentName := qValues.Get(zComponentName)
@@ -109,15 +102,38 @@ func handleZPages[V zpagesPipeline](w http.ResponseWriter, r *http.Request, pipe
 	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "builtPipelines"})
 
 	sumData := zpages.SummaryPipelinesTableData{}
-	sumData.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(pipes))
-	for c, p := range pipes {
+	sumData.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(g.pipelines))
+	for c, p := range g.pipelines {
+		recvIDs := make([]string, 0, len(p.receivers))
+		for _, c := range p.receivers {
+			switch n := c.(type) {
+			case *receiverNode:
+				recvIDs = append(recvIDs, n.componentID.String())
+			case *connectorNode:
+				recvIDs = append(recvIDs, n.componentID.String()+" (connector)")
+			}
+		}
+		procIDs := make([]string, 0, len(p.processors))
+		for _, c := range p.processors {
+			procIDs = append(procIDs, c.componentID.String())
+		}
+		exprIDs := make([]string, 0, len(p.exporters))
+		for _, c := range p.exporters {
+			switch n := c.(type) {
+			case *exporterNode:
+				exprIDs = append(exprIDs, n.componentID.String())
+			case *connectorNode:
+				exprIDs = append(exprIDs, n.componentID.String()+" (connector)")
+			}
+		}
+
 		sumData.Rows = append(sumData.Rows, zpages.SummaryPipelinesTableRowData{
 			FullName:    c.String(),
 			InputType:   string(c.Type()),
-			MutatesData: p.mutatesData(),
-			Receivers:   p.receiverIDs(),
-			Processors:  p.processorIDs(),
-			Exporters:   p.exporterIDs(),
+			MutatesData: p.capabilitiesNode.getConsumer().Capabilities().MutatesData,
+			Receivers:   recvIDs,
+			Processors:  procIDs,
+			Exporters:   exprIDs,
 		})
 	}
 	sort.Slice(sumData.Rows, func(i, j int) bool {

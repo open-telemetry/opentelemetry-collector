@@ -59,6 +59,8 @@ type Package struct {
 	structs []baseStruct
 }
 
+const newLine = "\n"
+
 // GenerateFiles generates files with the configured data structures for this Package.
 func (p *Package) GenerateFiles() error {
 	for _, s := range p.structs {

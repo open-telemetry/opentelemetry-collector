@@ -19,11 +19,11 @@ import (
 	"errors"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 )
 
 type mockProvider struct {
@@ -270,7 +270,7 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 }
 
 func TestResolver(t *testing.T) {
-	numCalls := atomic.NewInt32(0)
+	numCalls := atomic.Int32{}
 	resolver, err := NewResolver(ResolverSettings{
 		URIs: []string{"mock:"},
 		Providers: makeMapProvidersMap(&mockProvider{retM: map[string]any{}, closeFunc: func(ctx context.Context) error {
