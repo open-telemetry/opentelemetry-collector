@@ -14,9 +14,9 @@ require (
 	go.opentelemetry.io/collector/confmap v0.72.0
 	go.opentelemetry.io/collector/consumer v0.72.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc6
-	go.opentelemetry.io/otel v1.13.0
+	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.36.0
-	go.opentelemetry.io/otel/metric v0.36.0
+	go.opentelemetry.io/otel/metric v0.37.0
 	go.opentelemetry.io/otel/sdk v1.13.0
 	go.opentelemetry.io/otel/sdk/metric v0.36.0
 	go.uber.org/zap v1.24.0
@@ -46,7 +46,7 @@ require (
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	go.opentelemetry.io/collector/featuregate v0.72.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.72.0 // indirect
-	go.opentelemetry.io/otel/trace v1.13.0 // indirect
+	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
