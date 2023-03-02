@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/graph"
 )
 
 var _ component.Host = (*serviceHost)(nil)
@@ -36,7 +37,7 @@ type serviceHost struct {
 
 	buildInfo component.BuildInfo
 
-	pipelines         *pipelinesGraph
+	pipelines         *graph.Graph
 	serviceExtensions *extensions.Extensions
 }
 

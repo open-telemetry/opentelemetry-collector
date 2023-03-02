@@ -55,7 +55,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
-			expected: fmt.Errorf(`service::pipeline::traces: %w`, errors.New(`references processor "nop" multiple times`)),
+			expected: errors.New(`service::pipeline::traces: references processor "nop" multiple times`),
 		},
 		{
 			name: "missing-pipeline-receivers",

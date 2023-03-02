@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -54,8 +55,23 @@ func (cfg *Config) Validate() error {
 		}
 
 		// Validate pipeline has at least one receiver.
-		if err := pipeline.Validate(); err != nil {
-			return fmt.Errorf("service::pipeline::%s: %w", pipelineID, err)
+		if len(pipeline.Receivers) == 0 {
+			return fmt.Errorf("service::pipeline::%s: %w", pipelineID, errMissingServicePipelineReceivers)
+		}
+
+		// Validate pipeline has at least one exporter.
+		if len(pipeline.Exporters) == 0 {
+			return fmt.Errorf("service::pipeline::%s: %w", pipelineID, errMissingServicePipelineExporters)
+		}
+
+		// Validate no processors are duplicated within a pipeline.
+		procSet := make(map[component.ID]struct{}, len(pipeline.Processors))
+		for _, ref := range pipeline.Processors {
+			// Ensure no processors are duplicated within the pipeline
+			if _, exists := procSet[ref]; exists {
+				return fmt.Errorf("service::pipeline::%s: references processor %q multiple times", pipelineID, ref)
+			}
+			procSet[ref] = struct{}{}
 		}
 	}
 
@@ -67,32 +83,4 @@ func (cfg *Config) Validate() error {
 }
 
 // PipelineConfig defines the configuration of a Pipeline.
-type PipelineConfig struct {
-	Receivers  []component.ID `mapstructure:"receivers"`
-	Processors []component.ID `mapstructure:"processors"`
-	Exporters  []component.ID `mapstructure:"exporters"`
-}
-
-func (cfg *PipelineConfig) Validate() error {
-	// Validate pipeline has at least one receiver.
-	if len(cfg.Receivers) == 0 {
-		return errMissingServicePipelineReceivers
-	}
-
-	// Validate pipeline has at least one exporter.
-	if len(cfg.Exporters) == 0 {
-		return errMissingServicePipelineExporters
-	}
-
-	// Validate no processors are duplicated within a pipeline.
-	procSet := make(map[component.ID]struct{}, len(cfg.Processors))
-	for _, ref := range cfg.Processors {
-		// Ensure no processors are duplicated within the pipeline
-		if _, exists := procSet[ref]; exists {
-			return fmt.Errorf("references processor %q multiple times", ref)
-		}
-		procSet[ref] = struct{}{}
-	}
-
-	return nil
-}
+type PipelineConfig = graph.PipelineConfig

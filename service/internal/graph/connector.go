@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service // import "go.opentelemetry.io/collector/service"
+package graph // import "go.opentelemetry.io/collector/service/internal/graph"
 
 import (
 	"context"
-	"hash/fnv"
-	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
@@ -26,93 +24,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
 
-const (
-	receiverSeed      = "receiver"
-	processorSeed     = "processor"
-	exporterSeed      = "exporter"
-	connectorSeed     = "connector"
-	capabilitiesSeed  = "capabilities"
-	fanOutToExporters = "fanout_to_exporters"
-)
-
-type nodeID int64
-
-func (n nodeID) ID() int64 {
-	return int64(n)
-}
-
-func newNodeID(parts ...string) nodeID {
-	h := fnv.New64a()
-	h.Write([]byte(strings.Join(parts, "|")))
-	return nodeID(h.Sum64())
-}
-
-type consumerNode interface {
-	getConsumer() baseConsumer
-}
-
-// A receiver instance can be shared by multiple pipelines of the same type.
-// Therefore, nodeID is derived from "pipeline type" and "component ID".
-type receiverNode struct {
-	nodeID
-	componentID  component.ID
-	pipelineType component.DataType
-	component.Component
-}
-
-func newReceiverNode(pipelineID component.ID, recvID component.ID) *receiverNode {
-	return &receiverNode{
-		nodeID:       newNodeID(receiverSeed, string(pipelineID.Type()), recvID.String()),
-		componentID:  recvID,
-		pipelineType: pipelineID.Type(),
-	}
-}
-
-var _ consumerNode = &processorNode{}
-
-// Every processor instance is unique to one pipeline.
-// Therefore, nodeID is derived from "pipeline ID" and "component ID".
-type processorNode struct {
-	nodeID
-	componentID component.ID
-	pipelineID  component.ID
-	component.Component
-}
-
-func newProcessorNode(pipelineID, procID component.ID) *processorNode {
-	return &processorNode{
-		nodeID:      newNodeID(processorSeed, pipelineID.String(), procID.String()),
-		componentID: procID,
-		pipelineID:  pipelineID,
-	}
-}
-
-func (n *processorNode) getConsumer() baseConsumer {
-	return n.Component.(baseConsumer)
-}
-
-var _ consumerNode = &exporterNode{}
-
-// An exporter instance can be shared by multiple pipelines of the same type.
-// Therefore, nodeID is derived from "pipeline type" and "component ID".
-type exporterNode struct {
-	nodeID
-	componentID  component.ID
-	pipelineType component.DataType
-	component.Component
-}
-
-func newExporterNode(pipelineID component.ID, exprID component.ID) *exporterNode {
-	return &exporterNode{
-		nodeID:       newNodeID(exporterSeed, string(pipelineID.Type()), exprID.String()),
-		componentID:  exprID,
-		pipelineType: pipelineID.Type(),
-	}
-}
-
-func (n *exporterNode) getConsumer() baseConsumer {
-	return n.Component.(baseConsumer)
-}
+const connectorSeed = "connector"
 
 var _ consumerNode = &connectorNode{}
 
@@ -206,52 +118,4 @@ func buildConnector(
 		}
 	}
 	return
-}
-
-var _ consumerNode = &capabilitiesNode{}
-
-// Every pipeline has a "virtual" capabilities node immediately after the receiver(s).
-// There are two purposes for this node:
-// 1. Present aggregated capabilities to receivers, such as whether the pipeline mutates data.
-// 2. Present a consistent "first consumer" for each pipeline.
-// The nodeID is derived from "pipeline ID".
-type capabilitiesNode struct {
-	nodeID
-	pipelineID component.ID
-	baseConsumer
-	consumer.ConsumeTracesFunc
-	consumer.ConsumeMetricsFunc
-	consumer.ConsumeLogsFunc
-}
-
-func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {
-	return &capabilitiesNode{
-		nodeID:     newNodeID(capabilitiesSeed, pipelineID.String()),
-		pipelineID: pipelineID,
-	}
-}
-
-func (n *capabilitiesNode) getConsumer() baseConsumer {
-	return n
-}
-
-var _ consumerNode = &fanOutNode{}
-
-// Each pipeline has one fan-out node before exporters.
-// Therefore, nodeID is derived from "pipeline ID".
-type fanOutNode struct {
-	nodeID
-	pipelineID component.ID
-	baseConsumer
-}
-
-func newFanOutNode(pipelineID component.ID) *fanOutNode {
-	return &fanOutNode{
-		nodeID:     newNodeID(fanOutToExporters, pipelineID.String()),
-		pipelineID: pipelineID,
-	}
-}
-
-func (n *fanOutNode) getConsumer() baseConsumer {
-	return n.baseConsumer
 }
