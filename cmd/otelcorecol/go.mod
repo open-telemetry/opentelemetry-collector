@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/extension/zpagesextension v0.72.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.72.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.72.0
-	go.opentelemetry.io/collector/receiver v0.72.0
+	go.opentelemetry.io/collector/receiver v0.0.0-20230302200458-4071a47d0ee3
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.0
 	golang.org/x/sys v0.5.0
 )
