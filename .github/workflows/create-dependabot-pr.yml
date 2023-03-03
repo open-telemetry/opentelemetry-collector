@@ -1,4 +1,4 @@
-name: dependabot-pr
+name: Automation - Dependabot PR
 
 on:
   workflow_dispatch:
