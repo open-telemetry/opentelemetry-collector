@@ -56,7 +56,7 @@ func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) internal.Req
 func (req *logsRequest) OnError(err error) internal.Request {
 	var logError consumererror.Logs
 	if errors.As(err, &logError) {
-		return newLogsRequest(req.ctx, logError.GetLogs(), req.pusher)
+		return newLogsRequest(req.ctx, logError.Data(), req.pusher)
 	}
 	return req
 }

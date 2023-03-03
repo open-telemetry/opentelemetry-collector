@@ -20,77 +20,80 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// Traces is an error that may carry associated Trace data for a subset of received data
-// that failed to be processed or sent.
-type Traces struct {
+type retryable[V ptrace.Traces | pmetric.Metrics | plog.Logs] struct {
 	error
-	failed ptrace.Traces
-}
-
-// NewTraces creates a Traces that can encapsulate received data that failed to be processed or sent.
-func NewTraces(err error, failed ptrace.Traces) error {
-	return Traces{
-		error:  err,
-		failed: failed,
-	}
-}
-
-// GetTraces returns failed traces from the associated error.
-func (err Traces) GetTraces() ptrace.Traces {
-	return err.failed
+	data V
 }
 
 // Unwrap returns the wrapped error for functions Is and As in standard package errors.
-func (err Traces) Unwrap() error {
+func (err retryable[V]) Unwrap() error {
 	return err.error
+}
+
+// Data returns the telemetry data that failed to be processed or sent.
+func (err retryable[V]) Data() V {
+	return err.data
+}
+
+// Traces is an error that may carry associated Trace data for a subset of received data
+// that failed to be processed or sent.
+type Traces struct {
+	retryable[ptrace.Traces]
+}
+
+// NewTraces creates a Traces that can encapsulate received data that failed to be processed or sent.
+func NewTraces(err error, data ptrace.Traces) error {
+	return Traces{
+		retryable: retryable[ptrace.Traces]{
+			error: err,
+			data:  data,
+		},
+	}
+}
+
+// Deprecated: [v0.73.0] Use `Data` instead.
+func (err Traces) GetTraces() ptrace.Traces {
+	return err.Data()
 }
 
 // Logs is an error that may carry associated Log data for a subset of received data
 // that failed to be processed or sent.
 type Logs struct {
-	error
-	failed plog.Logs
+	retryable[plog.Logs]
 }
 
 // NewLogs creates a Logs that can encapsulate received data that failed to be processed or sent.
-func NewLogs(err error, failed plog.Logs) error {
+func NewLogs(err error, data plog.Logs) error {
 	return Logs{
-		error:  err,
-		failed: failed,
+		retryable: retryable[plog.Logs]{
+			error: err,
+			data:  data,
+		},
 	}
 }
 
-// GetLogs returns failed logs from the associated error.
+// Deprecated: [v0.73.0] Use `Data` instead.
 func (err Logs) GetLogs() plog.Logs {
-	return err.failed
-}
-
-// Unwrap returns the wrapped error for functions Is and As in standard package errors.
-func (err Logs) Unwrap() error {
-	return err.error
+	return err.Data()
 }
 
 // Metrics is an error that may carry associated Metrics data for a subset of received data
 // that failed to be processed or sent.
 type Metrics struct {
-	error
-	failed pmetric.Metrics
+	retryable[pmetric.Metrics]
 }
 
 // NewMetrics creates a Metrics that can encapsulate received data that failed to be processed or sent.
-func NewMetrics(err error, failed pmetric.Metrics) error {
+func NewMetrics(err error, data pmetric.Metrics) error {
 	return Metrics{
-		error:  err,
-		failed: failed,
+		retryable: retryable[pmetric.Metrics]{
+			error: err,
+			data:  data,
+		},
 	}
 }
 
-// GetMetrics returns failed metrics from the associated error.
+// Deprecated: [v0.73.0] Use `Data` instead.
 func (err Metrics) GetMetrics() pmetric.Metrics {
-	return err.failed
-}
-
-// Unwrap returns the wrapped error for functions Is and As in standard package errors.
-func (err Metrics) Unwrap() error {
-	return err.error
+	return err.Data()
 }

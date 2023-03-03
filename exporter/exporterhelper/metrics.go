@@ -56,7 +56,7 @@ func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) intern
 func (req *metricsRequest) OnError(err error) internal.Request {
 	var metricsError consumererror.Metrics
 	if errors.As(err, &metricsError) {
-		return newMetricsRequest(req.ctx, metricsError.GetMetrics(), req.pusher)
+		return newMetricsRequest(req.ctx, metricsError.Data(), req.pusher)
 	}
 	return req
 }

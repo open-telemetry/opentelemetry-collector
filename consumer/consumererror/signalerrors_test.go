@@ -33,7 +33,7 @@ func TestTraces(t *testing.T) {
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
 	assert.True(t, errors.As(traceErr, &target))
-	assert.Equal(t, td, target.GetTraces())
+	assert.Equal(t, td, target.Data())
 }
 
 func TestTraces_Unwrap(t *testing.T) {
@@ -57,7 +57,7 @@ func TestLogs(t *testing.T) {
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
 	assert.True(t, errors.As(logsErr, &target))
-	assert.Equal(t, td, target.GetLogs())
+	assert.Equal(t, td, target.Data())
 }
 
 func TestLogs_Unwrap(t *testing.T) {
@@ -81,7 +81,7 @@ func TestMetrics(t *testing.T) {
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
 	assert.True(t, errors.As(metricErr, &target))
-	assert.Equal(t, td, target.GetMetrics())
+	assert.Equal(t, td, target.Data())
 }
 
 func TestMetrics_Unwrap(t *testing.T) {

@@ -61,7 +61,7 @@ func (req *tracesRequest) Marshal() ([]byte, error) {
 func (req *tracesRequest) OnError(err error) internal.Request {
 	var traceError consumererror.Traces
 	if errors.As(err, &traceError) {
-		return newTracesRequest(req.ctx, traceError.GetTraces(), req.pusher)
+		return newTracesRequest(req.ctx, traceError.Data(), req.pusher)
 	}
 	return req
 }
