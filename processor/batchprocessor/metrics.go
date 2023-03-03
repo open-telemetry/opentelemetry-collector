@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/unit"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -148,7 +147,7 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider) e
 	bpt.batchSizeTriggerSend, err = meter.Int64Counter(
 		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_size_trigger_send"),
 		instrument.WithDescription("Number of times the batch was sent due to a size trigger"),
-		instrument.WithUnit(unit.Dimensionless),
+		instrument.WithUnit("1"),
 	)
 	if err != nil {
 		return err
@@ -157,7 +156,7 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider) e
 	bpt.timeoutTriggerSend, err = meter.Int64Counter(
 		obsreport.BuildProcessorCustomMetricName(typeStr, "timeout_trigger_send"),
 		instrument.WithDescription("Number of times the batch was sent due to a timeout trigger"),
-		instrument.WithUnit(unit.Dimensionless),
+		instrument.WithUnit("1"),
 	)
 	if err != nil {
 		return err
@@ -166,7 +165,7 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider) e
 	bpt.batchSendSize, err = meter.Int64Histogram(
 		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_send_size"),
 		instrument.WithDescription("Number of units in the batch"),
-		instrument.WithUnit(unit.Dimensionless),
+		instrument.WithUnit("1"),
 	)
 	if err != nil {
 		return err
@@ -175,7 +174,7 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider) e
 	bpt.batchSendSizeBytes, err = meter.Int64Histogram(
 		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_send_size_bytes"),
 		instrument.WithDescription("Number of bytes in batch that was sent"),
-		instrument.WithUnit(unit.Bytes),
+		instrument.WithUnit("By"),
 	)
 	if err != nil {
 		return err
