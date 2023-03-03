@@ -45,7 +45,7 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	go.opentelemetry.io/collector/featuregate v0.72.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.72.0 // indirect
+	go.opentelemetry.io/collector/receiver v0.0.0-20230302200458-4071a47d0ee3 // indirect
 	go.opentelemetry.io/otel/trace v1.13.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
