@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector v0.72.0
 	go.opentelemetry.io/collector/component v0.72.0
 	go.opentelemetry.io/collector/connector/forwardconnector v0.72.0
-	go.opentelemetry.io/collector/exporter v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/exporter v0.0.0-20230303211526-ec5d71fec2da
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.72.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.72.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.72.0

@@ -44,7 +44,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
-	go.opentelemetry.io/collector/exporter v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/exporter v0.0.0-20230303211526-ec5d71fec2da // indirect
 	go.opentelemetry.io/collector/featuregate v0.72.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.0.0-20230302200458-4071a47d0ee3 // indirect
 	go.opentelemetry.io/otel/trace v1.13.0 // indirect
