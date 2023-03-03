@@ -42,7 +42,7 @@ require (
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.72.0 // indirect
-	go.opentelemetry.io/collector/exporter v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/exporter v0.0.0-20230303211526-ec5d71fec2da // indirect
 	go.opentelemetry.io/collector/featuregate v0.72.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.36.0 // indirect
 	go.opentelemetry.io/otel/metric v0.36.0 // indirect
