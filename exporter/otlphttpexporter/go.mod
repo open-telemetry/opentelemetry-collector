@@ -8,6 +8,7 @@ require (
 	go.opentelemetry.io/collector/component v0.72.0
 	go.opentelemetry.io/collector/confmap v0.72.0
 	go.opentelemetry.io/collector/consumer v0.72.0
+	go.opentelemetry.io/collector/exporter v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v1.0.0-rc6
 	go.opentelemetry.io/collector/receiver v0.0.0-20230302200458-4071a47d0ee3
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.0
@@ -57,6 +58,8 @@ replace go.opentelemetry.io/collector => ../../
 replace go.opentelemetry.io/collector/component => ../../component
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
+
+replace go.opentelemetry.io/collector/exporter => ../
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 

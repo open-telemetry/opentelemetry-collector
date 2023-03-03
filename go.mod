@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2
-	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/golang/snappy v0.0.4
 	github.com/google/uuid v1.3.0
 	github.com/klauspost/compress v1.16.0
@@ -20,6 +19,7 @@ require (
 	go.opentelemetry.io/collector/component v0.72.0
 	go.opentelemetry.io/collector/confmap v0.72.0
 	go.opentelemetry.io/collector/consumer v0.72.0
+	go.opentelemetry.io/collector/exporter v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/extension/zpagesextension v0.72.0
 	go.opentelemetry.io/collector/featuregate v0.72.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc6
@@ -88,6 +88,8 @@ replace go.opentelemetry.io/collector/component => ./component
 replace go.opentelemetry.io/collector/confmap => ./confmap
 
 replace go.opentelemetry.io/collector/consumer => ./consumer
+
+replace go.opentelemetry.io/collector/exporter => ./exporter
 
 replace go.opentelemetry.io/collector/featuregate => ./featuregate
 

@@ -29,6 +29,8 @@ require (
 
 replace go.opentelemetry.io/collector => ../
 
+replace go.opentelemetry.io/collector/exporter => ../exporter
+
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
 replace go.opentelemetry.io/collector/receiver => ../receiver
