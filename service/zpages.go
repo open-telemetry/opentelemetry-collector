@@ -26,17 +26,23 @@ import (
 )
 
 const (
-	servicezPath   = "servicez"
-	pipelinezPath  = "pipelinez"
-	extensionzPath = "extensionz"
-	featurezPath   = "featurez"
+	// Paths
+	zServicePath   = "servicez"
+	zPipelinePath  = "pipelinez"
+	zExtensionPath = "extensionz"
+	zFeaturePath   = "featurez"
+
+	// URL Params
+	zPipelineName  = "pipelinenamez"
+	zComponentName = "componentnamez"
+	zComponentKind = "componentkindz"
 )
 
 func (host *serviceHost) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
-	mux.HandleFunc(path.Join(pathPrefix, servicezPath), host.zPagesRequest)
-	mux.HandleFunc(path.Join(pathPrefix, pipelinezPath), host.pipelines.HandleZPages)
-	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), host.serviceExtensions.HandleZPages)
-	mux.HandleFunc(path.Join(pathPrefix, featurezPath), handleFeaturezRequest)
+	mux.HandleFunc(path.Join(pathPrefix, zServicePath), host.zPagesRequest)
+	mux.HandleFunc(path.Join(pathPrefix, zPipelinePath), host.pipelines.HandleZPages)
+	mux.HandleFunc(path.Join(pathPrefix, zExtensionPath), host.serviceExtensions.HandleZPages)
+	mux.HandleFunc(path.Join(pathPrefix, zFeaturePath), handleFeaturezRequest)
 }
 
 func (host *serviceHost) zPagesRequest(w http.ResponseWriter, r *http.Request) {
@@ -46,17 +52,17 @@ func (host *serviceHost) zPagesRequest(w http.ResponseWriter, r *http.Request) {
 	zpages.WriteHTMLPropertiesTable(w, zpages.PropertiesTableData{Name: "Runtime Info", Properties: runtimeinfo.Info()})
 	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
 		Name:              "Pipelines",
-		ComponentEndpoint: pipelinezPath,
+		ComponentEndpoint: zPipelinePath,
 		Link:              true,
 	})
 	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
 		Name:              "Extensions",
-		ComponentEndpoint: extensionzPath,
+		ComponentEndpoint: zExtensionPath,
 		Link:              true,
 	})
 	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
 		Name:              "Features",
-		ComponentEndpoint: featurezPath,
+		ComponentEndpoint: zFeaturePath,
 		Link:              true,
 	})
 	zpages.WriteHTMLPageFooter(w)
