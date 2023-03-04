@@ -49,6 +49,8 @@ Components comprise of exporters, extensions, receivers, and processors. The key
 
 For more details on components, see the [Adding New Components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-new-components) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) which provides a detailed example of building a component.
 
+When adding a new component to the OpenTelemetry Collector, ensure that any configuration structs used by the component include fields with the `configopaque.String` type for sensitive data. This ensures that the data is stored and serialized in an opaque format that is secure and prevents accidental exposure
+
 When submitting a component to the community, consider breaking it down into separate PRs as follows:
 
 * First PR should include the overall structure of the new component:
