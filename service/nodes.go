@@ -154,46 +154,55 @@ func buildConnector(
 
 	switch rcvrPipelineType {
 	case component.DataTypeTraces:
-		var consumers []consumer.Traces
-		for _, next := range nexts {
-			consumers = append(consumers, next.(consumer.Traces))
+		next := nexts[0].(consumer.Traces)
+		if len(nexts) > 1 {
+			consumers := make(map[component.ID]consumer.Traces, len(nexts))
+			for _, next := range nexts {
+				consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Traces)
+			}
+			next = fanoutconsumer.NewTracesRouter(consumers)
 		}
-		fanoutConsumer := fanoutconsumer.NewTraces(consumers)
 		switch exprPipelineType {
 		case component.DataTypeTraces:
-			conn, err = builder.CreateTracesToTraces(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateTracesToTraces(ctx, set, next)
 		case component.DataTypeMetrics:
-			conn, err = builder.CreateMetricsToTraces(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateMetricsToTraces(ctx, set, next)
 		case component.DataTypeLogs:
-			conn, err = builder.CreateLogsToTraces(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateLogsToTraces(ctx, set, next)
 		}
 	case component.DataTypeMetrics:
-		var consumers []consumer.Metrics
-		for _, next := range nexts {
-			consumers = append(consumers, next.(consumer.Metrics))
+		next := nexts[0].(consumer.Metrics)
+		if len(nexts) > 1 {
+			consumers := make(map[component.ID]consumer.Metrics, len(nexts))
+			for _, next := range nexts {
+				consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Metrics)
+			}
+			next = fanoutconsumer.NewMetricsRouter(consumers)
 		}
-		fanoutConsumer := fanoutconsumer.NewMetrics(consumers)
 		switch exprPipelineType {
 		case component.DataTypeTraces:
-			conn, err = builder.CreateTracesToMetrics(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateTracesToMetrics(ctx, set, next)
 		case component.DataTypeMetrics:
-			conn, err = builder.CreateMetricsToMetrics(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateMetricsToMetrics(ctx, set, next)
 		case component.DataTypeLogs:
-			conn, err = builder.CreateLogsToMetrics(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateLogsToMetrics(ctx, set, next)
 		}
 	case component.DataTypeLogs:
-		var consumers []consumer.Logs
-		for _, next := range nexts {
-			consumers = append(consumers, next.(consumer.Logs))
+		next := nexts[0].(consumer.Logs)
+		if len(nexts) > 1 {
+			consumers := make(map[component.ID]consumer.Logs, len(nexts))
+			for _, next := range nexts {
+				consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Logs)
+			}
+			next = fanoutconsumer.NewLogsRouter(consumers)
 		}
-		fanoutConsumer := fanoutconsumer.NewLogs(consumers)
 		switch exprPipelineType {
 		case component.DataTypeTraces:
-			conn, err = builder.CreateTracesToLogs(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateTracesToLogs(ctx, set, next)
 		case component.DataTypeMetrics:
-			conn, err = builder.CreateMetricsToLogs(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateMetricsToLogs(ctx, set, next)
 		case component.DataTypeLogs:
-			conn, err = builder.CreateLogsToLogs(ctx, set, fanoutConsumer)
+			conn, err = builder.CreateLogsToLogs(ctx, set, next)
 		}
 	}
 	return
@@ -210,6 +219,9 @@ type capabilitiesNode struct {
 	nodeID
 	pipelineID component.ID
 	baseConsumer
+	consumer.ConsumeTracesFunc
+	consumer.ConsumeMetricsFunc
+	consumer.ConsumeLogsFunc
 }
 
 func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {
@@ -220,7 +232,7 @@ func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {
 }
 
 func (n *capabilitiesNode) getConsumer() baseConsumer {
-	return n.baseConsumer
+	return n
 }
 
 var _ consumerNode = &fanOutNode{}

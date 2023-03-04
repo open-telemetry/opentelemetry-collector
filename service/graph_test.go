@@ -810,6 +810,188 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 	}
 }
 
+func TestConnectorRouter(t *testing.T) {
+	rcvrID := component.NewID("examplereceiver")
+	routeTracesID := component.NewIDWithName("examplerouter", "traces")
+	routeMetricsID := component.NewIDWithName("examplerouter", "metrics")
+	routeLogsID := component.NewIDWithName("examplerouter", "logs")
+	expRightID := component.NewIDWithName("exampleexporter", "right")
+	expLeftID := component.NewIDWithName("exampleexporter", "left")
+
+	tracesInID := component.NewIDWithName("traces", "in")
+	tracesRightID := component.NewIDWithName("traces", "right")
+	tracesLeftID := component.NewIDWithName("traces", "left")
+
+	metricsInID := component.NewIDWithName("metrics", "in")
+	metricsRightID := component.NewIDWithName("metrics", "right")
+	metricsLeftID := component.NewIDWithName("metrics", "left")
+
+	logsInID := component.NewIDWithName("logs", "in")
+	logsRightID := component.NewIDWithName("logs", "right")
+	logsLeftID := component.NewIDWithName("logs", "left")
+
+	ctx := context.Background()
+	set := pipelinesSettings{
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		BuildInfo: component.NewDefaultBuildInfo(),
+		ReceiverBuilder: receiver.NewBuilder(
+			map[component.ID]component.Config{
+				rcvrID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+			},
+			map[component.Type]receiver.Factory{
+				testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+			},
+		),
+		ExporterBuilder: exporter.NewBuilder(
+			map[component.ID]component.Config{
+				expRightID: testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+				expLeftID:  testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+			},
+			map[component.Type]exporter.Factory{
+				testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
+			},
+		),
+		ConnectorBuilder: connector.NewBuilder(
+			map[component.ID]component.Config{
+				routeTracesID: testcomponents.ExampleRouterConfig{
+					Traces: &testcomponents.LeftRightConfig{
+						Right: tracesRightID,
+						Left:  tracesLeftID,
+					},
+				},
+				routeMetricsID: testcomponents.ExampleRouterConfig{
+					Metrics: &testcomponents.LeftRightConfig{
+						Right: metricsRightID,
+						Left:  metricsLeftID,
+					},
+				},
+				routeLogsID: testcomponents.ExampleRouterConfig{
+					Logs: &testcomponents.LeftRightConfig{
+						Right: logsRightID,
+						Left:  logsLeftID,
+					},
+				},
+			},
+			map[component.Type]connector.Factory{
+				testcomponents.ExampleRouterFactory.Type(): testcomponents.ExampleRouterFactory,
+			},
+		),
+		PipelineConfigs: map[component.ID]*PipelineConfig{
+			tracesInID: {
+				Receivers: []component.ID{rcvrID},
+				Exporters: []component.ID{routeTracesID},
+			},
+			tracesRightID: {
+				Receivers: []component.ID{routeTracesID},
+				Exporters: []component.ID{expRightID},
+			},
+			tracesLeftID: {
+				Receivers: []component.ID{routeTracesID},
+				Exporters: []component.ID{expLeftID},
+			},
+			metricsInID: {
+				Receivers: []component.ID{rcvrID},
+				Exporters: []component.ID{routeMetricsID},
+			},
+			metricsRightID: {
+				Receivers: []component.ID{routeMetricsID},
+				Exporters: []component.ID{expRightID},
+			},
+			metricsLeftID: {
+				Receivers: []component.ID{routeMetricsID},
+				Exporters: []component.ID{expLeftID},
+			},
+			logsInID: {
+				Receivers: []component.ID{rcvrID},
+				Exporters: []component.ID{routeLogsID},
+			},
+			logsRightID: {
+				Receivers: []component.ID{routeLogsID},
+				Exporters: []component.ID{expRightID},
+			},
+			logsLeftID: {
+				Receivers: []component.ID{routeLogsID},
+				Exporters: []component.ID{expLeftID},
+			},
+		},
+	}
+
+	pg, err := buildPipelinesGraph(ctx, set)
+	require.NoError(t, err)
+
+	allReceivers := pg.getReceivers()
+	allExporters := pg.GetExporters()
+
+	assert.Equal(t, len(set.PipelineConfigs), len(pg.pipelines))
+
+	// Get a handle for the traces receiver and both exporters
+	tracesReceiver := allReceivers[component.DataTypeTraces][rcvrID].(*testcomponents.ExampleReceiver)
+	tracesRight := allExporters[component.DataTypeTraces][expRightID].(*testcomponents.ExampleExporter)
+	tracesLeft := allExporters[component.DataTypeTraces][expLeftID].(*testcomponents.ExampleExporter)
+
+	// Consume 1, validate it went right
+	assert.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
+	assert.Equal(t, 1, len(tracesRight.Traces))
+	assert.Equal(t, 0, len(tracesLeft.Traces))
+
+	// Consume 1, validate it went left
+	assert.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
+	assert.Equal(t, 1, len(tracesRight.Traces))
+	assert.Equal(t, 1, len(tracesLeft.Traces))
+
+	// Consume 3, validate 2 went right, 1 went left
+	assert.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
+	assert.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
+	assert.NoError(t, tracesReceiver.ConsumeTraces(ctx, testdata.GenerateTraces(1)))
+	assert.Equal(t, 3, len(tracesRight.Traces))
+	assert.Equal(t, 2, len(tracesLeft.Traces))
+
+	// Get a handle for the metrics receiver and both exporters
+	metricsReceiver := allReceivers[component.DataTypeMetrics][rcvrID].(*testcomponents.ExampleReceiver)
+	metricsRight := allExporters[component.DataTypeMetrics][expRightID].(*testcomponents.ExampleExporter)
+	metricsLeft := allExporters[component.DataTypeMetrics][expLeftID].(*testcomponents.ExampleExporter)
+
+	// Consume 1, validate it went right
+	assert.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
+	assert.Equal(t, 1, len(metricsRight.Metrics))
+	assert.Equal(t, 0, len(metricsLeft.Metrics))
+
+	// Consume 1, validate it went left
+	assert.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
+	assert.Equal(t, 1, len(metricsRight.Metrics))
+	assert.Equal(t, 1, len(metricsLeft.Metrics))
+
+	// Consume 3, validate 2 went right, 1 went left
+	assert.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
+	assert.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
+	assert.NoError(t, metricsReceiver.ConsumeMetrics(ctx, testdata.GenerateMetrics(1)))
+	assert.Equal(t, 3, len(metricsRight.Metrics))
+	assert.Equal(t, 2, len(metricsLeft.Metrics))
+
+	// Get a handle for the logs receiver and both exporters
+	logsReceiver := allReceivers[component.DataTypeLogs][rcvrID].(*testcomponents.ExampleReceiver)
+	logsRight := allExporters[component.DataTypeLogs][expRightID].(*testcomponents.ExampleExporter)
+	logsLeft := allExporters[component.DataTypeLogs][expLeftID].(*testcomponents.ExampleExporter)
+
+	// Consume 1, validate it went right
+	assert.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
+	assert.Equal(t, 1, len(logsRight.Logs))
+	assert.Equal(t, 0, len(logsLeft.Logs))
+
+	// Consume 1, validate it went left
+	assert.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
+	assert.Equal(t, 1, len(logsRight.Logs))
+	assert.Equal(t, 1, len(logsLeft.Logs))
+
+	// Consume 3, validate 2 went right, 1 went left
+	assert.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
+	assert.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
+	assert.NoError(t, logsReceiver.ConsumeLogs(ctx, testdata.GenerateLogs(1)))
+	assert.Equal(t, 3, len(logsRight.Logs))
+	assert.Equal(t, 2, len(logsLeft.Logs))
+
+}
+
 func TestGraphBuildErrors(t *testing.T) {
 	nopReceiverFactory := receivertest.NewNopFactory()
 	nopProcessorFactory := processortest.NewNopFactory()

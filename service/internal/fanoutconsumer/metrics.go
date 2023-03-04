@@ -16,9 +16,12 @@ package fanoutconsumer // import "go.opentelemetry.io/collector/service/internal
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/multierr"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -77,4 +80,51 @@ func (msc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		errs = multierr.Append(errs, mc.ConsumeMetrics(ctx, md))
 	}
 	return errs
+}
+
+var _ connector.MetricsRouter = (*metricsRouter)(nil)
+
+type metricsRouter struct {
+	consumer.Metrics
+	consumers map[component.ID]consumer.Metrics
+}
+
+func NewMetricsRouter(cm map[component.ID]consumer.Metrics) consumer.Metrics {
+	consumers := make([]consumer.Metrics, 0, len(cm))
+	for _, consumer := range cm {
+		consumers = append(consumers, consumer)
+	}
+	return &metricsRouter{
+		Metrics:   NewMetrics(consumers),
+		consumers: cm,
+	}
+}
+
+func (r *metricsRouter) PipelineIDs() []component.ID {
+	ids := make([]component.ID, 0, len(r.consumers))
+	for id := range r.consumers {
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+func (r *metricsRouter) Consumer(pipelineIDs ...component.ID) (consumer.Metrics, error) {
+	if len(pipelineIDs) == 0 {
+		return nil, fmt.Errorf("missing consumers")
+	}
+	consumers := make([]consumer.Metrics, 0, len(pipelineIDs))
+	var errors error
+	for _, pipelineID := range pipelineIDs {
+		c, ok := r.consumers[pipelineID]
+		if ok {
+			consumers = append(consumers, c)
+		} else {
+			errors = multierr.Append(errors, fmt.Errorf("missing consumer: %q", pipelineID))
+		}
+	}
+	if errors != nil {
+		// TODO potentially this could return a NewMetrics with the valid consumers
+		return nil, errors
+	}
+	return NewMetrics(consumers), nil
 }
