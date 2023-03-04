@@ -15,7 +15,7 @@ service:
     metrics:
       address: localhost:8888
     logs:
-      enabled: false
+      disabled: true
   extensions: [nop]
   pipelines:
     traces:

@@ -58,11 +58,11 @@ func New(_ context.Context, set Settings, cfg Config) (*Telemetry, error) {
 	var sampler sdktrace.Sampler
 
 	var tp *sdktrace.TracerProvider
-	if *cfg.Traces.Enabled {
+	if cfg.Traces.Disabled {
+		sampler = sdktrace.NeverSample()
+	} else {
 		// needed for supporting the zpages extension
 		sampler = alwaysRecord()
-	} else {
-		sampler = sdktrace.NeverSample()
 	}
 	tp = sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sampler),
@@ -75,7 +75,7 @@ func New(_ context.Context, set Settings, cfg Config) (*Telemetry, error) {
 }
 
 func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
-	if !*cfg.Enabled {
+	if cfg.Disabled {
 		return zap.NewNop(), nil
 	}
 	// Copied from NewProductionConfig.

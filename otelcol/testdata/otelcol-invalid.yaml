@@ -12,7 +12,7 @@ service:
     metrics:
       address: localhost:8888
     logs:
-      enabled: false
+      disabled: true
   pipelines:
     traces:
       receivers: [nop]

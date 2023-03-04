@@ -52,10 +52,6 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 		Service: service.Config{
 			Telemetry: telemetry.Config{
 				Logs: telemetry.LogsConfig{
-					Enabled: func() *bool {
-						truePtr := true
-						return &truePtr
-					}(),
 					Level:       zapcore.InfoLevel,
 					Development: false,
 					Encoding:    "console",
@@ -70,18 +66,8 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 					InitialFields:     map[string]any(nil),
 				},
 				Metrics: telemetry.MetricsConfig{
-					Enabled: func() *bool {
-						truePtr := true
-						return &truePtr
-					}(),
 					Level:   configtelemetry.LevelBasic,
 					Address: ":8888",
-				},
-				Traces: telemetry.TracesConfig{
-					Enabled: func() *bool {
-						truePtr := true
-						return &truePtr
-					}(),
 				},
 			},
 		},

@@ -263,19 +263,13 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, useGraph bool, tc ownM
 	cfg := newNopConfig()
 	cfg.Telemetry.Logs.Level = zapcore.InfoLevel
 	cfg.Telemetry.Logs.Encoding = "console"
-	cfg.Telemetry.Logs.Enabled = func() *bool {
-		falsePtr := true
-		return &falsePtr
-	}()
+	cfg.Telemetry.Logs.Disabled = false
 	cfg.Telemetry.Logs.ErrorOutputPaths = []string{}
 	cfg.Telemetry.Logs.OutputPaths = []string{}
 
 	cfg.Extensions = []component.ID{component.NewID("zpages")}
 	cfg.Telemetry.Metrics.Address = metricsAddr
-	cfg.Telemetry.Metrics.Enabled = func() *bool {
-		truePtr := true
-		return &truePtr
-	}()
+	cfg.Telemetry.Metrics.Disabled = false
 
 	cfg.Telemetry.Resource = make(map[string]*string)
 	// Include resource attributes under the service::telemetry::resource key.
@@ -304,10 +298,7 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, useGraph bool, tc ownM
 func TestServiceTelemetryRestart(t *testing.T) {
 	// Create a service
 	cfg := newNopConfig()
-	cfg.Telemetry.Metrics.Enabled = func() *bool {
-		truePtr := true
-		return &truePtr
-	}()
+	cfg.Telemetry.Metrics.Disabled = false
 	srvOne, err := New(context.Background(), newNopSettings(), cfg)
 	require.NoError(t, err)
 
@@ -447,13 +438,12 @@ func newNopConfig() Config {
 }
 
 func newNopConfigPipelineConfigs(pipelineCfgs map[component.ID]*PipelineConfig) Config {
-	enabledPtr := false
 	return Config{
 		Extensions: []component.ID{component.NewID("nop")},
 		Pipelines:  pipelineCfgs,
 		Telemetry: telemetry.Config{
 			Logs: telemetry.LogsConfig{
-				Enabled:     &enabledPtr,
+				Disabled:    true,
 				Level:       zapcore.InfoLevel,
 				Development: false,
 				Encoding:    "console",
@@ -468,12 +458,12 @@ func newNopConfigPipelineConfigs(pipelineCfgs map[component.ID]*PipelineConfig) 
 				InitialFields:     map[string]any(nil),
 			},
 			Metrics: telemetry.MetricsConfig{
-				Enabled: &enabledPtr,
-				Level:   configtelemetry.LevelBasic,
-				Address: "localhost:8888",
+				Disabled: true,
+				Level:    configtelemetry.LevelBasic,
+				Address:  "localhost:8888",
 			},
 			Traces: telemetry.TracesConfig{
-				Enabled: &enabledPtr,
+				Disabled: true,
 			},
 		},
 	}

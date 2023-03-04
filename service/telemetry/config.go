@@ -48,9 +48,9 @@ type LogsConfig struct {
 	// (default = false)
 	Development bool `mapstructure:"development"`
 
-	// Enabled enables the logger.
-	// (default = true)
-	Enabled *bool `mapstructure:"enabled"`
+	// Disabled disables the logger.
+	// (default = false)
+	Disabled bool `mapstructure:"disabled"`
 
 	// Encoding sets the logger's encoding.
 	// Example values are "json", "console".
@@ -111,9 +111,9 @@ type LogsSamplingConfig struct {
 // MetricsConfig exposes the common Telemetry configuration for one component.
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
 type MetricsConfig struct {
-	// Enabled enables metrics collection.
-	// (default = true)
-	Enabled *bool `mapstructure:"enabled"`
+	// Disabled disables metrics collection.
+	// (default = false)
+	Disabled bool `mapstructure:"disabled"`
 
 	// Level is the level of telemetry metrics, the possible values are:
 	//  - "none" indicates that no telemetry data should be collected;
@@ -129,9 +129,9 @@ type MetricsConfig struct {
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
 type TracesConfig struct {
-	// Enabled enables trace collection.
-	// (default = true)
-	Enabled *bool `mapstructure:"enabled"`
+	// Disabled disables trace collection.
+	// (default = false)
+	Disabled bool `mapstructure:"disabled"`
 
 	// Propagators is a list of TextMapPropagators from the supported propagators list. Currently,
 	// tracecontext and  b3 are supported. By default, the value is set to empty list and

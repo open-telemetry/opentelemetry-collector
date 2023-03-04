@@ -111,7 +111,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
 	metricsLevel := cfg.Telemetry.Metrics.Level
-	if !*cfg.Telemetry.Metrics.Enabled {
+	if cfg.Telemetry.Metrics.Disabled {
 		metricsLevel = configtelemetry.LevelNone
 	}
 	srv.telemetrySettings = component.TelemetrySettings{
@@ -121,7 +121,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		MetricsLevel:   metricsLevel,
 	}
 
-	if *cfg.Telemetry.Metrics.Enabled {
+	if !cfg.Telemetry.Metrics.Disabled {
 		if err = srv.telemetryInitializer.init(set.BuildInfo, srv.telemetrySettings.Logger, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
 			return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
 		}
@@ -226,7 +226,7 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 		}
 	}
 
-	if *cfg.Telemetry.Metrics.Enabled && cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
+	if !cfg.Telemetry.Metrics.Disabled && cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
 		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
 		if err = proctelemetry.RegisterProcessMetrics(srv.telemetryInitializer.ocRegistry, srv.telemetryInitializer.mp, obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled(), getBallastSize(srv.host)); err != nil {
 			return fmt.Errorf("failed to register process metrics: %w", err)

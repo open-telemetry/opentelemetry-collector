@@ -62,10 +62,7 @@ var configNop = &Config{
 		},
 		Telemetry: telemetry.Config{
 			Logs: telemetry.LogsConfig{
-				Enabled: func() *bool {
-					falsePtr := false
-					return &falsePtr
-				}(),
+				Disabled:    true,
 				Development: false,
 				Encoding:    "console",
 				Sampling: &telemetry.LogsSamplingConfig{
@@ -79,18 +76,8 @@ var configNop = &Config{
 				InitialFields:     map[string]any(nil),
 			},
 			Metrics: telemetry.MetricsConfig{
-				Enabled: func() *bool {
-					truePtr := true
-					return &truePtr
-				}(),
 				Level:   configtelemetry.LevelBasic,
 				Address: "localhost:8888",
-			},
-			Traces: telemetry.TracesConfig{
-				Enabled: func() *bool {
-					truePtr := true
-					return &truePtr
-				}(),
 			},
 		},
 	},
@@ -118,7 +105,6 @@ func TestConfigProviderYaml(t *testing.T) {
 	cfg, err := cp.Get(context.Background(), factories)
 	require.NoError(t, err)
 	assert.EqualValues(t, configNop, cfg)
-
 }
 
 func TestConfigProviderFile(t *testing.T) {

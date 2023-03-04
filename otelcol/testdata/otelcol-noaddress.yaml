@@ -9,7 +9,7 @@ service:
     metrics:
       address: ""
     logs:
-      enabled: false
+      disabled: true
   pipelines:
     metrics:
       receivers: [nop]
