@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestResourceSpans_MoveTo(t *testing.T) {
@@ -47,7 +46,7 @@ func TestResourceSpans_CopyTo(t *testing.T) {
 func TestResourceSpans_Resource(t *testing.T) {
 	ms := NewResourceSpans()
 	internal.FillTestResource(internal.Resource(ms.Resource()))
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
+	assert.Equal(t, internal.GenerateTestResource().GetOrig(), internal.Resource(ms.Resource()).GetOrig())
 }
 
 func TestResourceSpans_SchemaUrl(t *testing.T) {
@@ -59,9 +58,9 @@ func TestResourceSpans_SchemaUrl(t *testing.T) {
 
 func TestResourceSpans_ScopeSpans(t *testing.T) {
 	ms := NewResourceSpans()
-	assert.Equal(t, NewScopeSpansSlice(), ms.ScopeSpans())
+	assert.Equal(t, NewScopeSpansSlice().getOrig(), ms.ScopeSpans().getOrig())
 	fillTestScopeSpansSlice(ms.ScopeSpans())
-	assert.Equal(t, generateTestScopeSpansSlice(), ms.ScopeSpans())
+	assert.Equal(t, generateTestScopeSpansSlice().getOrig(), ms.ScopeSpans().getOrig())
 }
 
 func generateTestResourceSpans() ResourceSpans {
@@ -71,7 +70,7 @@ func generateTestResourceSpans() ResourceSpans {
 }
 
 func fillTestResourceSpans(tv ResourceSpans) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeSpansSlice(newScopeSpansSlice(&tv.orig.ScopeSpans))
+	internal.FillTestResource(internal.NewResourceFromParent(wrappedResourceSpansResource{ResourceSpans: tv}))
+	tv.getOrig().SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	fillTestScopeSpansSlice(newScopeSpansSliceFromParent(tv))
 }

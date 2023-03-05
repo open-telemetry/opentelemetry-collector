@@ -29,11 +29,35 @@ import (
 // Must use NewSum function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Sum struct {
-	orig *otlpmetrics.Sum
+	parent Metric
 }
 
-func newSum(orig *otlpmetrics.Sum) Sum {
-	return Sum{orig}
+func (ms Sum) getOrig() *otlpmetrics.Sum {
+	return ms.parent.getSumOrig()
+}
+
+func (ms Sum) ensureMutability() {
+	ms.parent.ensureMutability()
+}
+
+type wrappedSumDataPoints struct {
+	Sum
+}
+
+func (es wrappedSumDataPoints) GetChildOrig() *[]*otlpmetrics.NumberDataPoint {
+	return &es.getOrig().DataPoints
+}
+
+func (es wrappedSumDataPoints) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func newSumFromOrig(orig *otlpmetrics.Sum) Sum {
+	return Sum{parent: newMetricFromSumOrig(orig)}
+}
+
+func newSumFromParent(parent Metric) Sum {
+	return Sum{parent: parent}
 }
 
 // NewSum creates a new empty Sum.
@@ -41,43 +65,48 @@ func newSum(orig *otlpmetrics.Sum) Sum {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSum() Sum {
-	return newSum(&otlpmetrics.Sum{})
+	return newSumFromOrig(&otlpmetrics.Sum{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Sum) MoveTo(dest Sum) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Sum{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.Sum{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this Sum.
 func (ms Sum) AggregationTemporality() AggregationTemporality {
-	return AggregationTemporality(ms.orig.AggregationTemporality)
+	return AggregationTemporality(ms.getOrig().AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Sum.
 func (ms Sum) SetAggregationTemporality(v AggregationTemporality) {
-	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
+	ms.ensureMutability()
+	ms.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
 // IsMonotonic returns the ismonotonic associated with this Sum.
 func (ms Sum) IsMonotonic() bool {
-	return ms.orig.IsMonotonic
+	return ms.getOrig().IsMonotonic
 }
 
 // SetIsMonotonic replaces the ismonotonic associated with this Sum.
 func (ms Sum) SetIsMonotonic(v bool) {
-	ms.orig.IsMonotonic = v
+	ms.ensureMutability()
+	ms.getOrig().IsMonotonic = v
 }
 
-// DataPoints returns the DataPoints associated with this Sum.
+// DataPoints returns the <no value> associated with this Sum.
 func (ms Sum) DataPoints() NumberDataPointSlice {
-	return newNumberDataPointSlice(&ms.orig.DataPoints)
+	return NumberDataPointSlice(newNumberDataPointSliceFromParent(wrappedSumDataPoints{Sum: ms}))
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Sum) CopyTo(dest Sum) {
+	dest.ensureMutability()
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	dest.SetIsMonotonic(ms.IsMonotonic())
 	ms.DataPoints().CopyTo(dest.DataPoints())

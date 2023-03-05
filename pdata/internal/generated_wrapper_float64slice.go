@@ -18,13 +18,33 @@
 package internal
 
 type Float64Slice struct {
+	parent Parent[*[]float64]
+}
+
+type stubFloat64SliceParent struct {
 	orig *[]float64
 }
 
-func GetOrigFloat64Slice(ms Float64Slice) *[]float64 {
-	return ms.orig
+func (vp stubFloat64SliceParent) EnsureMutability() {}
+
+func (vp stubFloat64SliceParent) GetChildOrig() *[]float64 {
+	return vp.orig
 }
 
-func NewFloat64Slice(orig *[]float64) Float64Slice {
-	return Float64Slice{orig: orig}
+var _ Parent[*[]float64] = (*stubFloat64SliceParent)(nil)
+
+func (ms Float64Slice) GetOrig() *[]float64 {
+	return ms.parent.GetChildOrig()
+}
+
+func (ms Float64Slice) EnsureMutability() {
+	ms.parent.EnsureMutability()
+}
+
+func NewFloat64SliceFromOrig(orig *[]float64) Float64Slice {
+	return Float64Slice{parent: &stubFloat64SliceParent{orig: orig}}
+}
+
+func NewFloat64SliceFromParent(parent Parent[*[]float64]) Float64Slice {
+	return Float64Slice{parent: parent}
 }

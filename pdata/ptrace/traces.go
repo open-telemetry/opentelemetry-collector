@@ -17,6 +17,7 @@ package ptrace // import "go.opentelemetry.io/collector/pdata/ptrace"
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
@@ -27,8 +28,12 @@ func newTraces(orig *otlpcollectortrace.ExportTraceServiceRequest) Traces {
 	return Traces(internal.NewTraces(orig))
 }
 
+func newTracesFromResourceSpansOrig(orig *[]*otlptrace.ResourceSpans) Traces {
+	return Traces(internal.NewTracesFromResourceSpansOrig(orig))
+}
+
 func (ms Traces) getOrig() *otlpcollectortrace.ExportTraceServiceRequest {
-	return internal.GetOrigTraces(internal.Traces(ms))
+	return internal.Traces(ms).GetOrig()
 }
 
 // NewTraces creates a new Traces struct.
@@ -36,8 +41,24 @@ func NewTraces() Traces {
 	return newTraces(&otlpcollectortrace.ExportTraceServiceRequest{})
 }
 
+func (ms Traces) ensureMutability() {
+	if internal.Traces(ms).IsShared() {
+		clonedRS := newResourceSpansSliceFromOrig(&[]*otlptrace.ResourceSpans{})
+		ms.ResourceSpans().CopyTo(clonedRS)
+		internal.Traces(ms).SetOrig(&otlpcollectortrace.ExportTraceServiceRequest{
+			ResourceSpans: *clonedRS.getOrig(),
+		})
+		internal.Traces(ms).MarkExclusive()
+	}
+}
+
+func (ms Traces) getResourceSpansOrig() *[]*otlptrace.ResourceSpans {
+	return &internal.Traces(ms).GetOrig().ResourceSpans
+}
+
 // CopyTo copies the Traces instance overriding the destination.
 func (ms Traces) CopyTo(dest Traces) {
+	dest.ensureMutability()
 	ms.ResourceSpans().CopyTo(dest.ResourceSpans())
 }
 
@@ -57,5 +78,5 @@ func (ms Traces) SpanCount() int {
 
 // ResourceSpans returns the ResourceSpansSlice associated with this Metrics.
 func (ms Traces) ResourceSpans() ResourceSpansSlice {
-	return newResourceSpansSlice(&ms.getOrig().ResourceSpans)
+	return newResourceSpansSliceFromParent(ms)
 }

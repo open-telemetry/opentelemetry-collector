@@ -30,11 +30,33 @@ import (
 // Must use NewExponentialHistogram function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExponentialHistogram struct {
-	orig *otlpmetrics.ExponentialHistogram
+	parent Metric
 }
 
-func newExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) ExponentialHistogram {
-	return ExponentialHistogram{orig}
+func (ms ExponentialHistogram) getOrig() *otlpmetrics.ExponentialHistogram {
+	return ms.parent.getExponentialHistogramOrig()
+}
+
+func (ms ExponentialHistogram) ensureMutability() {
+	ms.parent.ensureMutability()
+}
+
+func (ms ExponentialHistogram) getDataPointsOrig() *[]*otlpmetrics.ExponentialHistogramDataPoint {
+	return &ms.getOrig().DataPoints
+}
+
+func newExponentialHistogramFromDataPointsOrig(childOrig *[]*otlpmetrics.ExponentialHistogramDataPoint) ExponentialHistogram {
+	return newExponentialHistogramFromOrig(&otlpmetrics.ExponentialHistogram{
+		DataPoints: *childOrig,
+	})
+}
+
+func newExponentialHistogramFromOrig(orig *otlpmetrics.ExponentialHistogram) ExponentialHistogram {
+	return ExponentialHistogram{parent: newMetricFromExponentialHistogramOrig(orig)}
+}
+
+func newExponentialHistogramFromParent(parent Metric) ExponentialHistogram {
+	return ExponentialHistogram{parent: parent}
 }
 
 // NewExponentialHistogram creates a new empty ExponentialHistogram.
@@ -42,33 +64,37 @@ func newExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) Exponential
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExponentialHistogram() ExponentialHistogram {
-	return newExponentialHistogram(&otlpmetrics.ExponentialHistogram{})
+	return newExponentialHistogramFromOrig(&otlpmetrics.ExponentialHistogram{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ExponentialHistogram) MoveTo(dest ExponentialHistogram) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.ExponentialHistogram{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.ExponentialHistogram{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this ExponentialHistogram.
 func (ms ExponentialHistogram) AggregationTemporality() AggregationTemporality {
-	return AggregationTemporality(ms.orig.AggregationTemporality)
+	return AggregationTemporality(ms.getOrig().AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this ExponentialHistogram.
 func (ms ExponentialHistogram) SetAggregationTemporality(v AggregationTemporality) {
-	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
+	ms.ensureMutability()
+	ms.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
-// DataPoints returns the DataPoints associated with this ExponentialHistogram.
+// DataPoints returns the <no value> associated with this ExponentialHistogram.
 func (ms ExponentialHistogram) DataPoints() ExponentialHistogramDataPointSlice {
-	return newExponentialHistogramDataPointSlice(&ms.orig.DataPoints)
+	return newExponentialHistogramDataPointSliceFromParent(ms)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogram) CopyTo(dest ExponentialHistogram) {
+	dest.ensureMutability()
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }

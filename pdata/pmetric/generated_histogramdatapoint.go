@@ -19,6 +19,7 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -31,11 +32,72 @@ import (
 // Must use NewHistogramDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type HistogramDataPoint struct {
-	orig *otlpmetrics.HistogramDataPoint
+	parent HistogramDataPointSlice
+	idx    int
 }
 
-func newHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) HistogramDataPoint {
-	return HistogramDataPoint{orig}
+func (ms HistogramDataPoint) getOrig() *otlpmetrics.HistogramDataPoint {
+	return ms.parent.getChildOrig(ms.idx)
+}
+
+func (ms HistogramDataPoint) ensureMutability() {
+	ms.parent.ensureMutability()
+}
+
+type wrappedHistogramDataPointAttributes struct {
+	HistogramDataPoint
+}
+
+func (es wrappedHistogramDataPointAttributes) GetChildOrig() *[]otlpcommon.KeyValue {
+	return &es.getOrig().Attributes
+}
+
+func (es wrappedHistogramDataPointAttributes) EnsureMutability() {
+	es.ensureMutability()
+}
+
+type wrappedHistogramDataPointBucketCounts struct {
+	HistogramDataPoint
+}
+
+func (es wrappedHistogramDataPointBucketCounts) GetChildOrig() *[]uint64 {
+	return &es.getOrig().BucketCounts
+}
+
+func (es wrappedHistogramDataPointBucketCounts) EnsureMutability() {
+	es.ensureMutability()
+}
+
+type wrappedHistogramDataPointExplicitBounds struct {
+	HistogramDataPoint
+}
+
+func (es wrappedHistogramDataPointExplicitBounds) GetChildOrig() *[]float64 {
+	return &es.getOrig().ExplicitBounds
+}
+
+func (es wrappedHistogramDataPointExplicitBounds) EnsureMutability() {
+	es.ensureMutability()
+}
+
+type wrappedHistogramDataPointExemplars struct {
+	HistogramDataPoint
+}
+
+func (es wrappedHistogramDataPointExemplars) GetChildOrig() *[]otlpmetrics.Exemplar {
+	return &es.getOrig().Exemplars
+}
+
+func (es wrappedHistogramDataPointExemplars) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func newHistogramDataPointFromOrig(orig *otlpmetrics.HistogramDataPoint) HistogramDataPoint {
+	return HistogramDataPoint{parent: newHistogramDataPointSliceFromElementOrig(orig)}
+}
+
+func newHistogramDataPointFromParent(parent HistogramDataPointSlice, idx int) HistogramDataPoint {
+	return HistogramDataPoint{parent: parent, idx: idx}
 }
 
 // NewHistogramDataPoint creates a new empty HistogramDataPoint.
@@ -43,141 +105,154 @@ func newHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) HistogramDataPo
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewHistogramDataPoint() HistogramDataPoint {
-	return newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
+	return newHistogramDataPointFromOrig(&otlpmetrics.HistogramDataPoint{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms HistogramDataPoint) MoveTo(dest HistogramDataPoint) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.HistogramDataPoint{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.HistogramDataPoint{}
 }
 
-// Attributes returns the Attributes associated with this HistogramDataPoint.
+// Attributes returns the <no value> associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+	return pcommon.Map(internal.NewMapFromParent(wrappedHistogramDataPointAttributes{HistogramDataPoint: ms}))
 }
 
 // StartTimestamp returns the starttimestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) StartTimestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.StartTimeUnixNano)
+	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
-	ms.orig.StartTimeUnixNano = uint64(v)
+	ms.ensureMutability()
+	ms.getOrig().StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Timestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.TimeUnixNano)
+	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetTimestamp(v pcommon.Timestamp) {
-	ms.orig.TimeUnixNano = uint64(v)
+	ms.ensureMutability()
+	ms.getOrig().TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Count() uint64 {
-	return ms.orig.Count
+	return ms.getOrig().Count
 }
 
 // SetCount replaces the count associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetCount(v uint64) {
-	ms.orig.Count = v
+	ms.ensureMutability()
+	ms.getOrig().Count = v
 }
 
 // Sum returns the sum associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Sum() float64 {
-	return ms.orig.GetSum()
+	return ms.getOrig().GetSum()
 }
 
 // HasSum returns true if the HistogramDataPoint contains a
 // Sum value, false otherwise.
 func (ms HistogramDataPoint) HasSum() bool {
-	return ms.orig.Sum_ != nil
+	return ms.getOrig().Sum_ != nil
 }
 
 // SetSum replaces the sum associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetSum(v float64) {
-	ms.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
+	ms.ensureMutability()
+	ms.getOrig().Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
 }
 
 // RemoveSum removes the sum associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) RemoveSum() {
-	ms.orig.Sum_ = nil
+	ms.ensureMutability()
+	ms.getOrig().Sum_ = nil
 }
 
 // BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) BucketCounts() pcommon.UInt64Slice {
-	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts))
+	return pcommon.UInt64Slice(internal.NewUInt64SliceFromParent(wrappedHistogramDataPointBucketCounts{HistogramDataPoint: ms}))
 }
 
 // ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) ExplicitBounds() pcommon.Float64Slice {
-	return pcommon.Float64Slice(internal.NewFloat64Slice(&ms.orig.ExplicitBounds))
+	return pcommon.Float64Slice(internal.NewFloat64SliceFromParent(wrappedHistogramDataPointExplicitBounds{HistogramDataPoint: ms}))
 }
 
-// Exemplars returns the Exemplars associated with this HistogramDataPoint.
+// Exemplars returns the <no value> associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
-	return newExemplarSlice(&ms.orig.Exemplars)
+	return ExemplarSlice(newExemplarSliceFromParent(wrappedHistogramDataPointExemplars{HistogramDataPoint: ms}))
 }
 
 // Flags returns the flags associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Flags() DataPointFlags {
-	return DataPointFlags(ms.orig.Flags)
+	return DataPointFlags(ms.getOrig().Flags)
 }
 
 // SetFlags replaces the flags associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetFlags(v DataPointFlags) {
-	ms.orig.Flags = uint32(v)
+	ms.ensureMutability()
+	ms.getOrig().Flags = uint32(v)
 }
 
 // Min returns the min associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Min() float64 {
-	return ms.orig.GetMin()
+	return ms.getOrig().GetMin()
 }
 
 // HasMin returns true if the HistogramDataPoint contains a
 // Min value, false otherwise.
 func (ms HistogramDataPoint) HasMin() bool {
-	return ms.orig.Min_ != nil
+	return ms.getOrig().Min_ != nil
 }
 
 // SetMin replaces the min associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetMin(v float64) {
-	ms.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: v}
+	ms.ensureMutability()
+	ms.getOrig().Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: v}
 }
 
 // RemoveMin removes the min associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) RemoveMin() {
-	ms.orig.Min_ = nil
+	ms.ensureMutability()
+	ms.getOrig().Min_ = nil
 }
 
 // Max returns the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Max() float64 {
-	return ms.orig.GetMax()
+	return ms.getOrig().GetMax()
 }
 
 // HasMax returns true if the HistogramDataPoint contains a
 // Max value, false otherwise.
 func (ms HistogramDataPoint) HasMax() bool {
-	return ms.orig.Max_ != nil
+	return ms.getOrig().Max_ != nil
 }
 
 // SetMax replaces the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetMax(v float64) {
-	ms.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
+	ms.ensureMutability()
+	ms.getOrig().Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
 }
 
 // RemoveMax removes the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) RemoveMax() {
-	ms.orig.Max_ = nil
+	ms.ensureMutability()
+	ms.getOrig().Max_ = nil
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
+	dest.ensureMutability()
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())

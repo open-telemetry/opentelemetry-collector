@@ -15,24 +15,43 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 type TraceState struct {
+	parent Parent[*string]
+}
+
+type stubTraceStateParent struct {
 	orig *string
 }
 
-func GetOrigTraceState(ms TraceState) *string {
-	return ms.orig
+func (vp stubTraceStateParent) EnsureMutability() {}
+
+func (vp stubTraceStateParent) GetChildOrig() *string {
+	return vp.orig
 }
 
-func NewTraceState(orig *string) TraceState {
-	return TraceState{orig: orig}
+var _ Parent[*string] = (*stubTraceStateParent)(nil)
+
+func (ms TraceState) GetOrig() *string {
+	return ms.parent.GetChildOrig()
+}
+
+func (ms TraceState) EnsureMutability() {
+	ms.parent.EnsureMutability()
+}
+
+func NewTraceStateFromOrig(orig *string) TraceState {
+	return TraceState{parent: stubTraceStateParent{orig: orig}}
+}
+
+func NewTraceStateFromParent(parent Parent[*string]) TraceState {
+	return TraceState{parent: parent}
 }
 
 func GenerateTestTraceState() TraceState {
-	var orig string
-	ms := NewTraceState(&orig)
+	ms := NewTraceStateFromOrig(new(string))
 	FillTestTraceState(ms)
 	return ms
 }
 
 func FillTestTraceState(dest TraceState) {
-	*dest.orig = "rojo=00f067aa0ba902b7"
+	*dest.GetOrig() = "rojo=00f067aa0ba902b7"
 }

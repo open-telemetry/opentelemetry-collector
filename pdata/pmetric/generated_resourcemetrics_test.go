@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestResourceMetrics_MoveTo(t *testing.T) {
@@ -47,7 +46,7 @@ func TestResourceMetrics_CopyTo(t *testing.T) {
 func TestResourceMetrics_Resource(t *testing.T) {
 	ms := NewResourceMetrics()
 	internal.FillTestResource(internal.Resource(ms.Resource()))
-	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
+	assert.Equal(t, internal.GenerateTestResource().GetOrig(), internal.Resource(ms.Resource()).GetOrig())
 }
 
 func TestResourceMetrics_SchemaUrl(t *testing.T) {
@@ -59,9 +58,9 @@ func TestResourceMetrics_SchemaUrl(t *testing.T) {
 
 func TestResourceMetrics_ScopeMetrics(t *testing.T) {
 	ms := NewResourceMetrics()
-	assert.Equal(t, NewScopeMetricsSlice(), ms.ScopeMetrics())
+	assert.Equal(t, NewScopeMetricsSlice().getOrig(), ms.ScopeMetrics().getOrig())
 	fillTestScopeMetricsSlice(ms.ScopeMetrics())
-	assert.Equal(t, generateTestScopeMetricsSlice(), ms.ScopeMetrics())
+	assert.Equal(t, generateTestScopeMetricsSlice().getOrig(), ms.ScopeMetrics().getOrig())
 }
 
 func generateTestResourceMetrics() ResourceMetrics {
@@ -71,7 +70,7 @@ func generateTestResourceMetrics() ResourceMetrics {
 }
 
 func fillTestResourceMetrics(tv ResourceMetrics) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeMetricsSlice(newScopeMetricsSlice(&tv.orig.ScopeMetrics))
+	internal.FillTestResource(internal.NewResourceFromParent(wrappedResourceMetricsResource{ResourceMetrics: tv}))
+	tv.getOrig().SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	fillTestScopeMetricsSlice(newScopeMetricsSliceFromParent(tv))
 }

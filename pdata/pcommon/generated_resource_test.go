@@ -45,9 +45,9 @@ func TestResource_CopyTo(t *testing.T) {
 
 func TestResource_Attributes(t *testing.T) {
 	ms := NewResource()
-	assert.Equal(t, NewMap(), ms.Attributes())
+	assert.Equal(t, internal.Map(NewMap()).GetOrig(), internal.Map(ms.Attributes()).GetOrig())
 	internal.FillTestMap(internal.Map(ms.Attributes()))
-	assert.Equal(t, Map(internal.GenerateTestMap()), ms.Attributes())
+	assert.Equal(t, internal.GenerateTestMap().GetOrig(), internal.Map(ms.Attributes()).GetOrig())
 }
 
 func TestResource_DroppedAttributesCount(t *testing.T) {

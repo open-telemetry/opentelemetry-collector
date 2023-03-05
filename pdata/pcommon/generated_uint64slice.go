@@ -29,13 +29,17 @@ import (
 type UInt64Slice internal.UInt64Slice
 
 func (ms UInt64Slice) getOrig() *[]uint64 {
-	return internal.GetOrigUInt64Slice(internal.UInt64Slice(ms))
+	return internal.UInt64Slice(ms).GetOrig()
 }
 
 // NewUInt64Slice creates a new empty UInt64Slice.
 func NewUInt64Slice() UInt64Slice {
 	orig := []uint64(nil)
-	return UInt64Slice(internal.NewUInt64Slice(&orig))
+	return UInt64Slice(internal.NewUInt64SliceFromOrig(&orig))
+}
+
+func (ms UInt64Slice) ensureMutability() {
+	internal.UInt64Slice(ms).EnsureMutability()
 }
 
 // AsRaw returns a copy of the []uint64 slice.
@@ -45,6 +49,7 @@ func (ms UInt64Slice) AsRaw() []uint64 {
 
 // FromRaw copies raw []uint64 into the slice UInt64Slice.
 func (ms UInt64Slice) FromRaw(val []uint64) {
+	ms.ensureMutability()
 	*ms.getOrig() = copyUInt64Slice(*ms.getOrig(), val)
 }
 
@@ -63,6 +68,7 @@ func (ms UInt64Slice) At(i int) uint64 {
 // SetAt sets uint64 item at particular index.
 // Equivalent of uInt64Slice[i] = val
 func (ms UInt64Slice) SetAt(i int, val uint64) {
+	ms.ensureMutability()
 	(*ms.getOrig())[i] = val
 }
 
@@ -73,6 +79,7 @@ func (ms UInt64Slice) SetAt(i int, val uint64) {
 //     copy(buf, uInt64Slice)
 //     uInt64Slice = buf
 func (ms UInt64Slice) EnsureCapacity(newCap int) {
+	ms.ensureMutability()
 	oldCap := cap(*ms.getOrig())
 	if newCap <= oldCap {
 		return
@@ -86,18 +93,22 @@ func (ms UInt64Slice) EnsureCapacity(newCap int) {
 // Append appends extra elements to UInt64Slice.
 // Equivalent of uInt64Slice = append(uInt64Slice, elms...)
 func (ms UInt64Slice) Append(elms ...uint64) {
+	ms.ensureMutability()
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and
 // resetting the current instance to its zero value.
 func (ms UInt64Slice) MoveTo(dest UInt64Slice) {
+	ms.ensureMutability()
+	dest.ensureMutability()
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (ms UInt64Slice) CopyTo(dest UInt64Slice) {
+	dest.ensureMutability()
 	*dest.getOrig() = copyUInt64Slice(*dest.getOrig(), *ms.getOrig())
 }
 

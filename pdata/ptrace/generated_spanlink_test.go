@@ -64,14 +64,14 @@ func TestSpanLink_SpanID(t *testing.T) {
 func TestSpanLink_TraceState(t *testing.T) {
 	ms := NewSpanLink()
 	internal.FillTestTraceState(internal.TraceState(ms.TraceState()))
-	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceState())
+	assert.Equal(t, internal.GenerateTestTraceState().GetOrig(), internal.TraceState(ms.TraceState()).GetOrig())
 }
 
 func TestSpanLink_Attributes(t *testing.T) {
 	ms := NewSpanLink()
-	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
+	assert.Equal(t, internal.Map(pcommon.NewMap()).GetOrig(), internal.Map(ms.Attributes()).GetOrig())
 	internal.FillTestMap(internal.Map(ms.Attributes()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
+	assert.Equal(t, internal.GenerateTestMap().GetOrig(), internal.Map(ms.Attributes()).GetOrig())
 }
 
 func TestSpanLink_DroppedAttributesCount(t *testing.T) {
@@ -88,9 +88,9 @@ func generateTestSpanLink() SpanLink {
 }
 
 func fillTestSpanLink(tv SpanLink) {
-	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	internal.FillTestTraceState(internal.NewTraceState(&tv.orig.TraceState))
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
-	tv.orig.DroppedAttributesCount = uint32(17)
+	tv.getOrig().TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	tv.getOrig().SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	internal.FillTestTraceState(internal.NewTraceStateFromParent(wrappedSpanLinkTraceState{SpanLink: tv}))
+	internal.FillTestMap(internal.NewMapFromParent(wrappedSpanLinkAttributes{SpanLink: tv}))
+	tv.getOrig().DroppedAttributesCount = uint32(17)
 }

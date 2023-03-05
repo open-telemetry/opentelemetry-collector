@@ -20,6 +20,7 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -31,11 +32,46 @@ import (
 // Must use NewResourceMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceMetrics struct {
-	orig *otlpmetrics.ResourceMetrics
+	parent ResourceMetricsSlice
+	idx    int
 }
 
-func newResourceMetrics(orig *otlpmetrics.ResourceMetrics) ResourceMetrics {
-	return ResourceMetrics{orig}
+func (ms ResourceMetrics) getOrig() *otlpmetrics.ResourceMetrics {
+	return ms.parent.getChildOrig(ms.idx)
+}
+
+func (ms ResourceMetrics) ensureMutability() {
+	ms.parent.ensureMutability()
+}
+
+type wrappedResourceMetricsResource struct {
+	ResourceMetrics
+}
+
+func (es wrappedResourceMetricsResource) GetChildOrig() *otlpresource.Resource {
+	return &es.getOrig().Resource
+}
+
+func (es wrappedResourceMetricsResource) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func (ms ResourceMetrics) getScopeMetricsOrig() *[]*otlpmetrics.ScopeMetrics {
+	return &ms.getOrig().ScopeMetrics
+}
+
+func newResourceMetricsFromScopeMetricsOrig(childOrig *[]*otlpmetrics.ScopeMetrics) ResourceMetrics {
+	return newResourceMetricsFromOrig(&otlpmetrics.ResourceMetrics{
+		ScopeMetrics: *childOrig,
+	})
+}
+
+func newResourceMetricsFromOrig(orig *otlpmetrics.ResourceMetrics) ResourceMetrics {
+	return ResourceMetrics{parent: newResourceMetricsSliceFromElementOrig(orig)}
+}
+
+func newResourceMetricsFromParent(parent ResourceMetricsSlice, idx int) ResourceMetrics {
+	return ResourceMetrics{parent: parent, idx: idx}
 }
 
 // NewResourceMetrics creates a new empty ResourceMetrics.
@@ -43,38 +79,42 @@ func newResourceMetrics(orig *otlpmetrics.ResourceMetrics) ResourceMetrics {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceMetrics() ResourceMetrics {
-	return newResourceMetrics(&otlpmetrics.ResourceMetrics{})
+	return newResourceMetricsFromOrig(&otlpmetrics.ResourceMetrics{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ResourceMetrics) MoveTo(dest ResourceMetrics) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.ResourceMetrics{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.ResourceMetrics{}
 }
 
 // Resource returns the resource associated with this ResourceMetrics.
 func (ms ResourceMetrics) Resource() pcommon.Resource {
-	return pcommon.Resource(internal.NewResource(&ms.orig.Resource))
+	return pcommon.Resource(internal.NewResourceFromParent(wrappedResourceMetricsResource{ResourceMetrics: ms}))
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceMetrics.
 func (ms ResourceMetrics) SchemaUrl() string {
-	return ms.orig.SchemaUrl
+	return ms.getOrig().SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ResourceMetrics.
 func (ms ResourceMetrics) SetSchemaUrl(v string) {
-	ms.orig.SchemaUrl = v
+	ms.ensureMutability()
+	ms.getOrig().SchemaUrl = v
 }
 
-// ScopeMetrics returns the ScopeMetrics associated with this ResourceMetrics.
+// ScopeMetrics returns the <no value> associated with this ResourceMetrics.
 func (ms ResourceMetrics) ScopeMetrics() ScopeMetricsSlice {
-	return newScopeMetricsSlice(&ms.orig.ScopeMetrics)
+	return newScopeMetricsSliceFromParent(ms)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
+	dest.ensureMutability()
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.ScopeMetrics().CopyTo(dest.ScopeMetrics())

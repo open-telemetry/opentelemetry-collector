@@ -28,7 +28,7 @@ func TestMap(t *testing.T) {
 
 	val, exist := NewMap().Get("test_key")
 	assert.False(t, exist)
-	assert.EqualValues(t, newValue(nil), val)
+	assert.EqualValues(t, newValueFromOrig(nil), val)
 
 	putString := NewMap()
 	putString.PutStr("k", "v")
@@ -159,7 +159,7 @@ func TestMapWithEmpty(t *testing.T) {
 			Value: otlpcommon.AnyValue{Value: nil},
 		},
 	}
-	sm := newMap(&origWithNil)
+	sm := newMapFromOrig(&origWithNil)
 	val, exist := sm.Get("test_key")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeStr, val.Type())

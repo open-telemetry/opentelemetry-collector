@@ -19,24 +19,60 @@ import (
 )
 
 type Value struct {
+	parent Parent[*otlpcommon.AnyValue]
+}
+
+type stubValueParent struct {
 	orig *otlpcommon.AnyValue
 }
 
-func GetOrigValue(ms Value) *otlpcommon.AnyValue {
-	return ms.orig
+func (vp stubValueParent) EnsureMutability() {}
+
+func (vp stubValueParent) GetChildOrig() *otlpcommon.AnyValue {
+	return vp.orig
 }
 
-func NewValue(orig *otlpcommon.AnyValue) Value {
-	return Value{orig: orig}
+var _ Parent[*otlpcommon.AnyValue] = (*stubValueParent)(nil)
+
+func (ms Value) EnsureMutability() {
+	ms.parent.EnsureMutability()
+}
+
+func (ms Value) GetOrig() *otlpcommon.AnyValue {
+	return ms.parent.GetChildOrig()
+}
+
+type ValueMap struct {
+	Value
+}
+
+func (ms ValueMap) GetChildOrig() *[]otlpcommon.KeyValue {
+	return &ms.Value.GetOrig().GetKvlistValue().Values
+}
+
+type ValueSlice struct {
+	Value
+}
+
+func (ms ValueSlice) GetChildOrig() *[]otlpcommon.AnyValue {
+	return &ms.Value.GetOrig().GetArrayValue().Values
+}
+
+func NewValueFromOrig(orig *otlpcommon.AnyValue) Value {
+	return Value{parent: &stubValueParent{orig: orig}}
+}
+
+func NewValueFromParent(parent Parent[*otlpcommon.AnyValue]) Value {
+	return Value{parent: parent}
 }
 
 func FillTestValue(dest Value) {
-	dest.orig.Value = &otlpcommon.AnyValue_StringValue{StringValue: "v"}
+	dest.GetOrig().Value = &otlpcommon.AnyValue_StringValue{StringValue: "v"}
 }
 
 func GenerateTestValue() Value {
 	var orig otlpcommon.AnyValue
-	ms := NewValue(&orig)
+	ms := NewValueFromOrig(&orig)
 	FillTestValue(ms)
 	return ms
 }

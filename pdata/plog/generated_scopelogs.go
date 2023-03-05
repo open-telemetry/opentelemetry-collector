@@ -19,6 +19,7 @@ package plog
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -31,11 +32,46 @@ import (
 // Must use NewScopeLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ScopeLogs struct {
-	orig *otlplogs.ScopeLogs
+	parent ScopeLogsSlice
+	idx    int
 }
 
-func newScopeLogs(orig *otlplogs.ScopeLogs) ScopeLogs {
-	return ScopeLogs{orig}
+func (ms ScopeLogs) getOrig() *otlplogs.ScopeLogs {
+	return ms.parent.getChildOrig(ms.idx)
+}
+
+func (ms ScopeLogs) ensureMutability() {
+	ms.parent.ensureMutability()
+}
+
+type wrappedScopeLogsScope struct {
+	ScopeLogs
+}
+
+func (es wrappedScopeLogsScope) GetChildOrig() *otlpcommon.InstrumentationScope {
+	return &es.getOrig().Scope
+}
+
+func (es wrappedScopeLogsScope) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func (ms ScopeLogs) getLogRecordsOrig() *[]*otlplogs.LogRecord {
+	return &ms.getOrig().LogRecords
+}
+
+func newScopeLogsFromLogRecordsOrig(childOrig *[]*otlplogs.LogRecord) ScopeLogs {
+	return newScopeLogsFromOrig(&otlplogs.ScopeLogs{
+		LogRecords: *childOrig,
+	})
+}
+
+func newScopeLogsFromOrig(orig *otlplogs.ScopeLogs) ScopeLogs {
+	return ScopeLogs{parent: newScopeLogsSliceFromElementOrig(orig)}
+}
+
+func newScopeLogsFromParent(parent ScopeLogsSlice, idx int) ScopeLogs {
+	return ScopeLogs{parent: parent, idx: idx}
 }
 
 // NewScopeLogs creates a new empty ScopeLogs.
@@ -43,38 +79,42 @@ func newScopeLogs(orig *otlplogs.ScopeLogs) ScopeLogs {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewScopeLogs() ScopeLogs {
-	return newScopeLogs(&otlplogs.ScopeLogs{})
+	return newScopeLogsFromOrig(&otlplogs.ScopeLogs{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ScopeLogs) MoveTo(dest ScopeLogs) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlplogs.ScopeLogs{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlplogs.ScopeLogs{}
 }
 
 // Scope returns the scope associated with this ScopeLogs.
 func (ms ScopeLogs) Scope() pcommon.InstrumentationScope {
-	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope))
+	return pcommon.InstrumentationScope(internal.NewInstrumentationScopeFromParent(wrappedScopeLogsScope{ScopeLogs: ms}))
 }
 
 // SchemaUrl returns the schemaurl associated with this ScopeLogs.
 func (ms ScopeLogs) SchemaUrl() string {
-	return ms.orig.SchemaUrl
+	return ms.getOrig().SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ScopeLogs.
 func (ms ScopeLogs) SetSchemaUrl(v string) {
-	ms.orig.SchemaUrl = v
+	ms.ensureMutability()
+	ms.getOrig().SchemaUrl = v
 }
 
-// LogRecords returns the LogRecords associated with this ScopeLogs.
+// LogRecords returns the <no value> associated with this ScopeLogs.
 func (ms ScopeLogs) LogRecords() LogRecordSlice {
-	return newLogRecordSlice(&ms.orig.LogRecords)
+	return newLogRecordSliceFromParent(ms)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeLogs) CopyTo(dest ScopeLogs) {
+	dest.ensureMutability()
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.LogRecords().CopyTo(dest.LogRecords())

@@ -31,8 +31,12 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationScope internal.InstrumentationScope
 
-func newInstrumentationScope(orig *otlpcommon.InstrumentationScope) InstrumentationScope {
-	return InstrumentationScope(internal.NewInstrumentationScope(orig))
+func (ms InstrumentationScope) getOrig() *otlpcommon.InstrumentationScope {
+	return internal.InstrumentationScope(ms).GetOrig()
+}
+
+func (ms InstrumentationScope) ensureMutability() {
+	internal.InstrumentationScope(ms).EnsureMutability()
 }
 
 // NewInstrumentationScope creates a new empty InstrumentationScope.
@@ -40,18 +44,16 @@ func newInstrumentationScope(orig *otlpcommon.InstrumentationScope) Instrumentat
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewInstrumentationScope() InstrumentationScope {
-	return newInstrumentationScope(&otlpcommon.InstrumentationScope{})
+	return InstrumentationScope(internal.NewInstrumentationScopeFromOrig(&otlpcommon.InstrumentationScope{}))
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms InstrumentationScope) MoveTo(dest InstrumentationScope) {
+	ms.ensureMutability()
+	dest.ensureMutability()
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpcommon.InstrumentationScope{}
-}
-
-func (ms InstrumentationScope) getOrig() *otlpcommon.InstrumentationScope {
-	return internal.GetOrigInstrumentationScope(internal.InstrumentationScope(ms))
 }
 
 // Name returns the name associated with this InstrumentationScope.
@@ -61,6 +63,7 @@ func (ms InstrumentationScope) Name() string {
 
 // SetName replaces the name associated with this InstrumentationScope.
 func (ms InstrumentationScope) SetName(v string) {
+	ms.ensureMutability()
 	ms.getOrig().Name = v
 }
 
@@ -71,12 +74,13 @@ func (ms InstrumentationScope) Version() string {
 
 // SetVersion replaces the version associated with this InstrumentationScope.
 func (ms InstrumentationScope) SetVersion(v string) {
+	ms.ensureMutability()
 	ms.getOrig().Version = v
 }
 
-// Attributes returns the Attributes associated with this InstrumentationScope.
+// Attributes returns the <no value> associated with this InstrumentationScope.
 func (ms InstrumentationScope) Attributes() Map {
-	return Map(internal.NewMap(&ms.getOrig().Attributes))
+	return Map(internal.NewMapFromParent(internal.WrappedInstrumentationScopeAttributes{InstrumentationScope: internal.InstrumentationScope(ms)}))
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this InstrumentationScope.
@@ -86,11 +90,13 @@ func (ms InstrumentationScope) DroppedAttributesCount() uint32 {
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this InstrumentationScope.
 func (ms InstrumentationScope) SetDroppedAttributesCount(v uint32) {
+	ms.ensureMutability()
 	ms.getOrig().DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms InstrumentationScope) CopyTo(dest InstrumentationScope) {
+	dest.ensureMutability()
 	dest.SetName(ms.Name())
 	dest.SetVersion(ms.Version())
 	ms.Attributes().CopyTo(dest.Attributes())

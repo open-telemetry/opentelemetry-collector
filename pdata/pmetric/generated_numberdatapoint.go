@@ -19,6 +19,7 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -31,11 +32,48 @@ import (
 // Must use NewNumberDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type NumberDataPoint struct {
-	orig *otlpmetrics.NumberDataPoint
+	parent NumberDataPointSlice
+	idx    int
 }
 
-func newNumberDataPoint(orig *otlpmetrics.NumberDataPoint) NumberDataPoint {
-	return NumberDataPoint{orig}
+func (ms NumberDataPoint) getOrig() *otlpmetrics.NumberDataPoint {
+	return ms.parent.getChildOrig(ms.idx)
+}
+
+func (ms NumberDataPoint) ensureMutability() {
+	ms.parent.ensureMutability()
+}
+
+type wrappedNumberDataPointAttributes struct {
+	NumberDataPoint
+}
+
+func (es wrappedNumberDataPointAttributes) GetChildOrig() *[]otlpcommon.KeyValue {
+	return &es.getOrig().Attributes
+}
+
+func (es wrappedNumberDataPointAttributes) EnsureMutability() {
+	es.ensureMutability()
+}
+
+type wrappedNumberDataPointExemplars struct {
+	NumberDataPoint
+}
+
+func (es wrappedNumberDataPointExemplars) GetChildOrig() *[]otlpmetrics.Exemplar {
+	return &es.getOrig().Exemplars
+}
+
+func (es wrappedNumberDataPointExemplars) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func newNumberDataPointFromOrig(orig *otlpmetrics.NumberDataPoint) NumberDataPoint {
+	return NumberDataPoint{parent: newNumberDataPointSliceFromElementOrig(orig)}
+}
+
+func newNumberDataPointFromParent(parent NumberDataPointSlice, idx int) NumberDataPoint {
+	return NumberDataPoint{parent: parent, idx: idx}
 }
 
 // NewNumberDataPoint creates a new empty NumberDataPoint.
@@ -43,45 +81,49 @@ func newNumberDataPoint(orig *otlpmetrics.NumberDataPoint) NumberDataPoint {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewNumberDataPoint() NumberDataPoint {
-	return newNumberDataPoint(&otlpmetrics.NumberDataPoint{})
+	return newNumberDataPointFromOrig(&otlpmetrics.NumberDataPoint{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms NumberDataPoint) MoveTo(dest NumberDataPoint) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.NumberDataPoint{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.NumberDataPoint{}
 }
 
-// Attributes returns the Attributes associated with this NumberDataPoint.
+// Attributes returns the <no value> associated with this NumberDataPoint.
 func (ms NumberDataPoint) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+	return pcommon.Map(internal.NewMapFromParent(wrappedNumberDataPointAttributes{NumberDataPoint: ms}))
 }
 
 // StartTimestamp returns the starttimestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) StartTimestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.StartTimeUnixNano)
+	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
-	ms.orig.StartTimeUnixNano = uint64(v)
+	ms.ensureMutability()
+	ms.getOrig().StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) Timestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.TimeUnixNano)
+	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetTimestamp(v pcommon.Timestamp) {
-	ms.orig.TimeUnixNano = uint64(v)
+	ms.ensureMutability()
+	ms.getOrig().TimeUnixNano = uint64(v)
 }
 
 // ValueType returns the type of the value for this NumberDataPoint.
 // Calling this function on zero-initialized NumberDataPoint will cause a panic.
 func (ms NumberDataPoint) ValueType() NumberDataPointValueType {
-	switch ms.orig.Value.(type) {
+	switch ms.getOrig().Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		return NumberDataPointValueTypeDouble
 	case *otlpmetrics.NumberDataPoint_AsInt:
@@ -92,45 +134,49 @@ func (ms NumberDataPoint) ValueType() NumberDataPointValueType {
 
 // DoubleValue returns the double associated with this NumberDataPoint.
 func (ms NumberDataPoint) DoubleValue() float64 {
-	return ms.orig.GetAsDouble()
+	return ms.getOrig().GetAsDouble()
 }
 
 // SetDoubleValue replaces the double associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetDoubleValue(v float64) {
-	ms.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{
+	ms.ensureMutability()
+	ms.getOrig().Value = &otlpmetrics.NumberDataPoint_AsDouble{
 		AsDouble: v,
 	}
 }
 
 // IntValue returns the int associated with this NumberDataPoint.
 func (ms NumberDataPoint) IntValue() int64 {
-	return ms.orig.GetAsInt()
+	return ms.getOrig().GetAsInt()
 }
 
 // SetIntValue replaces the int associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetIntValue(v int64) {
-	ms.orig.Value = &otlpmetrics.NumberDataPoint_AsInt{
+	ms.ensureMutability()
+	ms.getOrig().Value = &otlpmetrics.NumberDataPoint_AsInt{
 		AsInt: v,
 	}
 }
 
-// Exemplars returns the Exemplars associated with this NumberDataPoint.
+// Exemplars returns the <no value> associated with this NumberDataPoint.
 func (ms NumberDataPoint) Exemplars() ExemplarSlice {
-	return newExemplarSlice(&ms.orig.Exemplars)
+	return ExemplarSlice(newExemplarSliceFromParent(wrappedNumberDataPointExemplars{NumberDataPoint: ms}))
 }
 
 // Flags returns the flags associated with this NumberDataPoint.
 func (ms NumberDataPoint) Flags() DataPointFlags {
-	return DataPointFlags(ms.orig.Flags)
+	return DataPointFlags(ms.getOrig().Flags)
 }
 
 // SetFlags replaces the flags associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetFlags(v DataPointFlags) {
-	ms.orig.Flags = uint32(v)
+	ms.ensureMutability()
+	ms.getOrig().Flags = uint32(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
+	dest.ensureMutability()
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())

@@ -31,25 +31,46 @@ import (
 // Must use NewMetricSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type MetricSlice struct {
-	orig *[]*otlpmetrics.Metric
+	parent ScopeMetrics
 }
 
-func newMetricSlice(orig *[]*otlpmetrics.Metric) MetricSlice {
-	return MetricSlice{orig}
+func newMetricSliceFromOrig(orig *[]*otlpmetrics.Metric) MetricSlice {
+	return MetricSlice{parent: newScopeMetricsFromMetricsOrig(orig)}
+}
+
+func newMetricSliceFromParent(parent ScopeMetrics) MetricSlice {
+	return MetricSlice{parent: parent}
+}
+
+func newMetricSliceFromElementOrig(elOrig *otlpmetrics.Metric) MetricSlice {
+	orig := []*otlpmetrics.Metric{elOrig}
+	return newMetricSliceFromOrig(&orig)
+}
+
+func (es MetricSlice) getOrig() *[]*otlpmetrics.Metric {
+	return es.parent.getMetricsOrig()
+}
+
+func (es MetricSlice) ensureMutability() {
+	es.parent.ensureMutability()
+}
+
+func (es MetricSlice) getChildOrig(i int) *otlpmetrics.Metric {
+	return (*es.getOrig())[i]
 }
 
 // NewMetricSlice creates a MetricSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewMetricSlice() MetricSlice {
 	orig := []*otlpmetrics.Metric(nil)
-	return newMetricSlice(&orig)
+	return newMetricSliceFromOrig(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewMetricSlice()".
 func (es MetricSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -61,7 +82,7 @@ func (es MetricSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es MetricSlice) At(i int) Metric {
-	return newMetric((*es.orig)[i])
+	return newMetricFromParent(es, i)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -77,40 +98,45 @@ func (es MetricSlice) At(i int) Metric {
 //	    // Here should set all the values for e.
 //	}
 func (es MetricSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
+	es.ensureMutability()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.Metric, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*otlpmetrics.Metric, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty Metric.
 // It returns the newly added Metric.
 func (es MetricSlice) AppendEmpty() Metric {
-	*es.orig = append(*es.orig, &otlpmetrics.Metric{})
+	es.ensureMutability()
+	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.Metric{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es MetricSlice) MoveAndAppendTo(dest MetricSlice) {
-	if *dest.orig == nil {
+	es.ensureMutability()
+	dest.ensureMutability()
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es MetricSlice) RemoveIf(f func(Metric) bool) {
+	es.ensureMutability()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -119,36 +145,42 @@ func (es MetricSlice) RemoveIf(f func(Metric) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es MetricSlice) CopyTo(dest MetricSlice) {
+	dest.ensureMutability()
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newMetric((*es.orig)[i]).CopyTo(newMetric((*dest.orig)[i]))
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
+		for i := range *es.getOrig() {
+			srcMetric := newMetricFromOrig((*es.getOrig())[i])
+			destMetric := newMetricFromOrig((*dest.getOrig())[i])
+			srcMetric.CopyTo(destMetric)
 		}
 		return
 	}
 	origs := make([]otlpmetrics.Metric, srcLen)
 	wrappers := make([]*otlpmetrics.Metric, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newMetric((*es.orig)[i]).CopyTo(newMetric(wrappers[i]))
+		srcMetric := newMetricFromOrig((*es.getOrig())[i])
+		destMetric := newMetricFromOrig(wrappers[i])
+		srcMetric.CopyTo(destMetric)
 	}
-	*dest.orig = wrappers
+	*dest.getOrig() = wrappers
 }
 
 // Sort sorts the Metric elements within MetricSlice given the
 // provided less function so that two instances of MetricSlice
 // can be compared.
 func (es MetricSlice) Sort(less func(a, b Metric) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.ensureMutability()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

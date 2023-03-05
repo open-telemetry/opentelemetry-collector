@@ -28,16 +28,14 @@ import (
 func TestExemplarSlice(t *testing.T) {
 	es := NewExemplarSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newExemplarSlice(&[]otlpmetrics.Exemplar{})
-	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewExemplar()
 	testVal := generateTestExemplar()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
-		assert.Equal(t, emptyVal, es.At(i))
+		assert.Equal(t, emptyVal.getOrig(), es.At(i).getOrig())
 		fillTestExemplar(el)
-		assert.Equal(t, testVal, es.At(i))
+		assert.Equal(t, testVal.getOrig(), es.At(i).getOrig())
 	}
 	assert.Equal(t, 7, es.Len())
 }
@@ -64,14 +62,14 @@ func TestExemplarSlice_EnsureCapacity(t *testing.T) {
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, es.Len(), cap(*es.getOrig()))
 	assert.Equal(t, generateTestExemplarSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Less(t, generateTestExemplarSlice().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, ensureLargeLen, cap(*es.getOrig()))
 	assert.Equal(t, generateTestExemplarSlice(), es)
 }
 
@@ -95,8 +93,8 @@ func TestExemplarSlice_MoveAndAppendTo(t *testing.T) {
 	generateTestExemplarSlice().MoveAndAppendTo(dest)
 	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.Equal(t, expectedSlice.At(i), dest.At(i))
-		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i).getOrig())
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i+expectedSlice.Len()).getOrig())
 	}
 }
 
@@ -125,9 +123,9 @@ func generateTestExemplarSlice() ExemplarSlice {
 }
 
 func fillTestExemplarSlice(es ExemplarSlice) {
-	*es.orig = make([]otlpmetrics.Exemplar, 7)
+	*es.getOrig() = make([]otlpmetrics.Exemplar, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = otlpmetrics.Exemplar{}
-		fillTestExemplar(newExemplar(&(*es.orig)[i]))
+		(*es.getOrig())[i] = otlpmetrics.Exemplar{}
+		fillTestExemplar(newExemplarFromOrig(&(*es.getOrig())[i]))
 	}
 }

@@ -585,6 +585,7 @@ func BenchmarkBatchMetricProcessor(b *testing.B) {
 		)
 	}
 	b.StartTimer()
+	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
 		require.NoError(b, batcher.ConsumeMetrics(ctx, mds[n]))
 	}

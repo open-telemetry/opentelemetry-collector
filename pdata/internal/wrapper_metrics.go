@@ -20,15 +20,41 @@ import (
 )
 
 type Metrics struct {
-	orig *otlpcollectormetrics.ExportMetricsServiceRequest
+	*pMetric
 }
 
-func GetOrigMetrics(ms Metrics) *otlpcollectormetrics.ExportMetricsServiceRequest {
+type pMetric struct {
+	orig  *otlpcollectormetrics.ExportMetricsServiceRequest
+	state State
+}
+
+func NewMetricsFromResourceMetricsOrig(orig *[]*otlpmetrics.ResourceMetrics) Metrics {
+	return Metrics{&pMetric{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{ResourceMetrics: *orig}, state: StateExclusive}}
+}
+
+func (ms Metrics) IsShared() bool {
+	return ms.pMetric != nil && ms.state == StateShared
+}
+
+func (ms Metrics) MarkExclusive() {
+	ms.state = StateExclusive
+}
+
+func (ms Metrics) AsShared() Metrics {
+	ms.state = StateShared
+	return Metrics{&pMetric{orig: ms.orig, state: StateShared}}
+}
+
+func (ms Metrics) GetOrig() *otlpcollectormetrics.ExportMetricsServiceRequest {
 	return ms.orig
 }
 
+func (ms Metrics) SetOrig(orig *otlpcollectormetrics.ExportMetricsServiceRequest) {
+	ms.orig = orig
+}
+
 func NewMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest) Metrics {
-	return Metrics{orig: orig}
+	return Metrics{&pMetric{orig: orig, state: StateExclusive}}
 }
 
 // MetricsToProto internal helper to convert Metrics to protobuf representation.
@@ -40,7 +66,10 @@ func MetricsToProto(l Metrics) otlpmetrics.MetricsData {
 
 // MetricsFromProto internal helper to convert protobuf representation to Metrics.
 func MetricsFromProto(orig otlpmetrics.MetricsData) Metrics {
-	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: orig.ResourceMetrics,
+	return Metrics{&pMetric{
+		orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
+			ResourceMetrics: orig.ResourceMetrics,
+		},
+		state: StateExclusive,
 	}}
 }

@@ -39,7 +39,7 @@ func NewExportRequest() ExportRequest {
 // Because ExportRequest is a wrapper for plog.Logs,
 // any changes to the provided Logs struct will be reflected in the ExportRequest and vice versa.
 func NewExportRequestFromLogs(ld plog.Logs) ExportRequest {
-	return ExportRequest{orig: internal.GetOrigLogs(internal.Logs(ld))}
+	return ExportRequest{orig: internal.Logs(ld).GetOrig()}
 }
 
 // MarshalProto marshals ExportRequest into proto bytes.

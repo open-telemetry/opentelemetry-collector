@@ -27,25 +27,68 @@ const sliceTemplate = `// {{ .structName }} logically represents a slice of {{ .
 // Must use New{{ .structName }} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type {{ .structName }} struct {
-	orig *[]{{ .originElementType }}
+	parent {{ .parent }}
 }
 
-func new{{ .structName }}(orig *[]{{ .originElementType }}) {{ .structName }} {
-	return {{ .structName }}{orig}
+{{ if .parentUnspecified }}
+type stub{{ .structName }}Parent struct {
+	orig *{{ .origType }}
+}
+
+func (vp stub{{ .structName }}Parent) EnsureMutability() {}
+
+func (vp stub{{ .structName }}Parent) GetChildOrig() *{{ .origType }} {
+	return vp.orig
+}
+
+var _ {{ .parent }} = (*stub{{ .structName }}Parent)(nil)
+{{- end }}
+
+func new{{ .structName }}FromOrig(orig *{{ .origType }}) {{ .structName }} {
+	{{- if .parentUnspecified }}
+	return {{ .structName }}{parent: &stub{{ .structName }}Parent{orig: orig}}
+	{{- else }}
+	return {{ .structName }}{parent: new{{ .parent }}From{{ .parentField }}Orig(orig)}
+	{{- end }}
+}
+
+func new{{ .structName }}FromParent(parent {{ .parent }}) {{ .structName }} {
+	return {{ .structName }}{parent: parent}
+}
+
+func new{{ .structName }}FromElementOrig(elOrig *{{ .originName }}) {{ .structName }} {
+	orig := {{ .origType }}{{ "{" }}{{ if eq .type "sliceOfValues" }}*{{ end }}elOrig}
+	return new{{ .structName }}FromOrig(&orig)
+}
+
+func (es {{ .structName }}) getOrig() *{{ .origType }} {
+	{{- if .parentUnspecified }}
+	return es.parent.GetChildOrig()
+	{{- else }}
+	return es.parent.get{{ .parentField }}Orig()
+	{{- end }}
+}
+
+func (es {{ .structName }}) ensureMutability() {
+	es.parent.{{ if .parentUnspecified }}E{{ else }}e{{ end }}nsureMutability()
+}
+
+func (es {{ .structName }}) getChildOrig(i int) *{{ .originName }} {
+	return {{ if eq .type "sliceOfValues" }}&{{ end }}(*es.getOrig())[i]
 }
 
 // New{{ .structName }} creates a {{ .structName }} with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func New{{ .structName }}() {{ .structName }} {
-	orig := []{{ .originElementType }}(nil)
-	return new{{ .structName }}(&orig)
+	orig := {{ .origType }}(nil)
+	return new{{ .structName }}FromOrig(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "New{{ .structName }}()".
 func (es {{ .structName }}) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -56,7 +99,7 @@ func (es {{ .structName }}) Len() int {
 //       ... // Do something with the element
 //   }
 func (es {{ .structName }}) At(i int) {{ .elementName }} {
-	return {{ .newElement }}
+	return new{{ .elementName }}FromParent(es, i)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -71,40 +114,45 @@ func (es {{ .structName }}) At(i int) {{ .elementName }} {
 //       // Here should set all the values for e.
 //   }
 func (es {{ .structName }}) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
+	es.ensureMutability()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]{{ .originElementType }}, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make({{ .origType }}, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty {{ .elementName }}.
 // It returns the newly added {{ .elementName }}.
 func (es {{ .structName }}) AppendEmpty() {{ .elementName }} {
-	*es.orig = append(*es.orig, {{ .emptyOriginElement }})
+	es.ensureMutability()
+	*es.getOrig() = append(*es.getOrig(), {{ .emptyOriginElement }})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es {{ .structName }}) MoveAndAppendTo(dest {{ .structName }}) {
-	if *dest.orig == nil {
+	es.ensureMutability()
+	dest.ensureMutability()
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
+	es.ensureMutability()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -113,41 +161,48 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
+	dest.ensureMutability()
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 
 	{{- if eq .type "sliceOfPtrs" }}
-		for i := range *es.orig {
-			new{{ .elementName }}((*es.orig)[i]).CopyTo(new{{ .elementName }}((*dest.orig)[i]))
+		for i := range *es.getOrig() {
+			src{{ .elementName }} := new{{ .elementName }}FromOrig((*es.getOrig())[i]) 
+			dest{{ .elementName }} := new{{ .elementName }}FromOrig((*dest.getOrig())[i])
+			src{{ .elementName }}.CopyTo(dest{{ .elementName }})
 		}
 		return
 	}
 	origs := make([]{{ .originName }}, srcLen)
 	wrappers := make([]*{{ .originName }}, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		new{{ .elementName }}((*es.orig)[i]).CopyTo(new{{ .elementName }}(wrappers[i]))
+		src{{ .elementName }} := new{{ .elementName }}FromOrig((*es.getOrig())[i]) 
+		dest{{ .elementName }} := new{{ .elementName }}FromOrig(wrappers[i])
+		src{{ .elementName }}.CopyTo(dest{{ .elementName }})
 	}
-	*dest.orig = wrappers
+	*dest.getOrig() = wrappers
 
 	{{- else }}
 	} else {
-		(*dest.orig) = make([]{{ .originElementType }}, srcLen)
+		(*dest.getOrig()) = make({{ .origType }}, srcLen)
 	}
-	for i := range *es.orig {
-		{{ .newElement }}.CopyTo(new{{ .elementName }}(&(*dest.orig)[i]))
+	for i := range *es.getOrig() {
+		src{{ .elementName }} := new{{ .elementName }}FromOrig(&(*es.getOrig())[i])
+		dest{{ .elementName }} := new{{ .elementName }}FromOrig(&(*dest.getOrig())[i])
+		src{{ .elementName }}.CopyTo(dest{{ .elementName }})
 	}
 	{{- end }}
 }
@@ -157,23 +212,22 @@ func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
 // provided less function so that two instances of {{ .structName }}
 // can be compared.
 func (es {{ .structName }}) Sort(less func(a, b {{ .elementName }}) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.ensureMutability()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 {{- end }}`
 
 const sliceTestTemplate = `func Test{{ .structName }}(t *testing.T) {
 	es := New{{ .structName }}()
 	assert.Equal(t, 0, es.Len())
-	es = new{{ .structName }}(&[]{{ .originElementType }}{})
-	assert.Equal(t, 0, es.Len())
 
 	emptyVal := New{{ .elementName }}()
 	testVal := generateTest{{ .elementName }}()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
-		assert.Equal(t, emptyVal, es.At(i))
+		assert.Equal(t, emptyVal.getOrig(), es.At(i).getOrig())
 		fillTest{{ .elementName }}(el)
-		assert.Equal(t, testVal, es.At(i))
+		assert.Equal(t, testVal.getOrig(), es.At(i).getOrig())
 	}
 	assert.Equal(t, 7, es.Len())
 }
@@ -200,14 +254,14 @@ func Test{{ .structName }}_EnsureCapacity(t *testing.T) {
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	assert.Equal(t, es.Len(), cap(*es.orig))
+	assert.Equal(t, es.Len(), cap(*es.getOrig()))
 	assert.Equal(t, generateTest{{ .structName }}(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Less(t, generateTest{{ .structName }}().Len(), ensureLargeLen)
-	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+	assert.Equal(t, ensureLargeLen, cap(*es.getOrig()))
 	assert.Equal(t, generateTest{{ .structName }}(), es)
 }
 
@@ -231,8 +285,8 @@ func Test{{ .structName }}_MoveAndAppendTo(t *testing.T) {
 	generateTest{{ .structName }}().MoveAndAppendTo(dest)
 	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
-		assert.Equal(t, expectedSlice.At(i), dest.At(i))
-		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i).getOrig())
+		assert.Equal(t, expectedSlice.At(i).getOrig(), dest.At(i+expectedSlice.Len()).getOrig())
 	}
 }
 
@@ -258,16 +312,16 @@ func Test{{ .structName }}_RemoveIf(t *testing.T) {
 func Test{{ .structName }}_Sort(t *testing.T) {
 	es := generateTest{{ .structName }}()
 	es.Sort(func(a, b {{ .elementName }}) bool {
-		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+		return uintptr(unsafe.Pointer(a.getOrig())) < uintptr(unsafe.Pointer(b.getOrig()))
 	})
 	for i := 1; i < es.Len(); i++ {
-		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
+		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).getOrig())) < uintptr(unsafe.Pointer(es.At(i).getOrig())))
 	}
 	es.Sort(func(a, b {{ .elementName }}) bool {
-		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+		return uintptr(unsafe.Pointer(a.getOrig())) > uintptr(unsafe.Pointer(b.getOrig()))
 	})
 	for i := 1; i < es.Len(); i++ {
-		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
+		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).getOrig())) > uintptr(unsafe.Pointer(es.At(i).getOrig())))
 	}
 }
 {{- end }}`
@@ -279,22 +333,26 @@ const sliceGenerateTest = `func generateTest{{ .structName }}() {{ .structName }
 }
 
 func fillTest{{ .structName }}(es {{ .structName }}) {
-	*es.orig = make([]{{ .originElementType }}, 7)
+	*es.getOrig() = make({{ .origType }}, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = {{ .emptyOriginElement }}
-		fillTest{{ .elementName }}({{ .newElement }})
+		(*es.getOrig())[i] = {{ .emptyOriginElement }}
+		fillTest{{ .elementName }}(new{{ .elementName }}FromOrig({{ if eq .type "sliceOfValues" }}&{{ end }}(*es.getOrig())[i]))
 	}
 }`
 
 type baseSlice interface {
 	getName() string
 	getPackageName() string
+	getParent() string
+	getOrigType() string
 }
 
 // sliceOfPtrs generates code for a slice of pointer fields. The generated structs cannot be used from other packages.
 type sliceOfPtrs struct {
 	structName  string
 	packageName string
+	parent      string
+	parentField string
 	element     *messageValueStruct
 }
 
@@ -304,6 +362,17 @@ func (ss *sliceOfPtrs) getName() string {
 
 func (ss *sliceOfPtrs) getPackageName() string {
 	return ss.packageName
+}
+
+func (ss *sliceOfPtrs) getParent() string {
+	return ss.parent
+}
+
+func (ss *sliceOfPtrs) getOrigType() string {
+	if ss.element == nil {
+		return ""
+	}
+	return "[]*" + ss.element.originFullName
 }
 
 func (ss *sliceOfPtrs) generateStruct(sb *bytes.Buffer) {
@@ -333,9 +402,16 @@ func (ss *sliceOfPtrs) templateFields() map[string]any {
 		"structName":         ss.structName,
 		"elementName":        ss.element.structName,
 		"originName":         ss.element.originFullName,
-		"originElementType":  "*" + ss.element.originFullName,
+		"origType":           ss.getOrigType(),
 		"emptyOriginElement": "&" + ss.element.originFullName + "{}",
-		"newElement":         "new" + ss.element.structName + "((*es.orig)[i])",
+		"parentUnspecified":  ss.parent == "",
+		"parent": func() string {
+			if ss.parent == "" {
+				return "internal.Parent[*[]*" + ss.element.originFullName + "]"
+			}
+			return ss.parent
+		}(),
+		"parentField": ss.parentField,
 	}
 }
 
@@ -347,6 +423,7 @@ var _ baseStruct = (*sliceOfPtrs)(nil)
 type sliceOfValues struct {
 	structName  string
 	packageName string
+	parent      string
 	element     *messageValueStruct
 }
 
@@ -356,6 +433,14 @@ func (ss *sliceOfValues) getName() string {
 
 func (ss *sliceOfValues) getPackageName() string {
 	return ss.packageName
+}
+
+func (ss *sliceOfValues) getParent() string {
+	return ss.parent
+}
+
+func (ss *sliceOfValues) getOrigType() string {
+	return "[]" + ss.element.originFullName
 }
 
 func (ss *sliceOfValues) generateStruct(sb *bytes.Buffer) {
@@ -385,9 +470,15 @@ func (ss *sliceOfValues) templateFields() map[string]any {
 		"structName":         ss.structName,
 		"elementName":        ss.element.structName,
 		"originName":         ss.element.originFullName,
-		"originElementType":  ss.element.originFullName,
+		"origType":           ss.getOrigType(),
 		"emptyOriginElement": ss.element.originFullName + "{}",
-		"newElement":         "new" + ss.element.structName + "(&(*es.orig)[i])",
+		"parentUnspecified":  ss.parent == "",
+		"parent": func() string {
+			if ss.parent == "" {
+				return "internal.Parent[*[]" + ss.element.originFullName + "]"
+			}
+			return ss.parent
+		}(),
 	}
 }
 

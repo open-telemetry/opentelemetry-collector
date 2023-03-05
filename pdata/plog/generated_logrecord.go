@@ -20,6 +20,7 @@ package plog
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -32,11 +33,48 @@ import (
 // Must use NewLogRecord function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type LogRecord struct {
-	orig *otlplogs.LogRecord
+	parent LogRecordSlice
+	idx    int
 }
 
-func newLogRecord(orig *otlplogs.LogRecord) LogRecord {
-	return LogRecord{orig}
+func (ms LogRecord) getOrig() *otlplogs.LogRecord {
+	return ms.parent.getChildOrig(ms.idx)
+}
+
+func (ms LogRecord) ensureMutability() {
+	ms.parent.ensureMutability()
+}
+
+type wrappedLogRecordBody struct {
+	LogRecord
+}
+
+func (es wrappedLogRecordBody) GetChildOrig() *otlpcommon.AnyValue {
+	return &es.getOrig().Body
+}
+
+func (es wrappedLogRecordBody) EnsureMutability() {
+	es.ensureMutability()
+}
+
+type wrappedLogRecordAttributes struct {
+	LogRecord
+}
+
+func (es wrappedLogRecordAttributes) GetChildOrig() *[]otlpcommon.KeyValue {
+	return &es.getOrig().Attributes
+}
+
+func (es wrappedLogRecordAttributes) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func newLogRecordFromOrig(orig *otlplogs.LogRecord) LogRecord {
+	return LogRecord{parent: newLogRecordSliceFromElementOrig(orig)}
+}
+
+func newLogRecordFromParent(parent LogRecordSlice, idx int) LogRecord {
+	return LogRecord{parent: parent, idx: idx}
 }
 
 // NewLogRecord creates a new empty LogRecord.
@@ -44,108 +82,119 @@ func newLogRecord(orig *otlplogs.LogRecord) LogRecord {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLogRecord() LogRecord {
-	return newLogRecord(&otlplogs.LogRecord{})
+	return newLogRecordFromOrig(&otlplogs.LogRecord{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms LogRecord) MoveTo(dest LogRecord) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlplogs.LogRecord{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlplogs.LogRecord{}
 }
 
 // ObservedTimestamp returns the observedtimestamp associated with this LogRecord.
 func (ms LogRecord) ObservedTimestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.ObservedTimeUnixNano)
+	return pcommon.Timestamp(ms.getOrig().ObservedTimeUnixNano)
 }
 
 // SetObservedTimestamp replaces the observedtimestamp associated with this LogRecord.
 func (ms LogRecord) SetObservedTimestamp(v pcommon.Timestamp) {
-	ms.orig.ObservedTimeUnixNano = uint64(v)
+	ms.ensureMutability()
+	ms.getOrig().ObservedTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this LogRecord.
 func (ms LogRecord) Timestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.TimeUnixNano)
+	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this LogRecord.
 func (ms LogRecord) SetTimestamp(v pcommon.Timestamp) {
-	ms.orig.TimeUnixNano = uint64(v)
+	ms.ensureMutability()
+	ms.getOrig().TimeUnixNano = uint64(v)
 }
 
 // TraceID returns the traceid associated with this LogRecord.
 func (ms LogRecord) TraceID() pcommon.TraceID {
-	return pcommon.TraceID(ms.orig.TraceId)
+	return pcommon.TraceID(ms.getOrig().TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this LogRecord.
 func (ms LogRecord) SetTraceID(v pcommon.TraceID) {
-	ms.orig.TraceId = data.TraceID(v)
+	ms.ensureMutability()
+	ms.getOrig().TraceId = data.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this LogRecord.
 func (ms LogRecord) SpanID() pcommon.SpanID {
-	return pcommon.SpanID(ms.orig.SpanId)
+	return pcommon.SpanID(ms.getOrig().SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this LogRecord.
 func (ms LogRecord) SetSpanID(v pcommon.SpanID) {
-	ms.orig.SpanId = data.SpanID(v)
+	ms.ensureMutability()
+	ms.getOrig().SpanId = data.SpanID(v)
 }
 
 // Flags returns the flags associated with this LogRecord.
 func (ms LogRecord) Flags() LogRecordFlags {
-	return LogRecordFlags(ms.orig.Flags)
+	return LogRecordFlags(ms.getOrig().Flags)
 }
 
 // SetFlags replaces the flags associated with this LogRecord.
 func (ms LogRecord) SetFlags(v LogRecordFlags) {
-	ms.orig.Flags = uint32(v)
+	ms.ensureMutability()
+	ms.getOrig().Flags = uint32(v)
 }
 
 // SeverityText returns the severitytext associated with this LogRecord.
 func (ms LogRecord) SeverityText() string {
-	return ms.orig.SeverityText
+	return ms.getOrig().SeverityText
 }
 
 // SetSeverityText replaces the severitytext associated with this LogRecord.
 func (ms LogRecord) SetSeverityText(v string) {
-	ms.orig.SeverityText = v
+	ms.ensureMutability()
+	ms.getOrig().SeverityText = v
 }
 
 // SeverityNumber returns the severitynumber associated with this LogRecord.
 func (ms LogRecord) SeverityNumber() SeverityNumber {
-	return SeverityNumber(ms.orig.SeverityNumber)
+	return SeverityNumber(ms.getOrig().SeverityNumber)
 }
 
 // SetSeverityNumber replaces the severitynumber associated with this LogRecord.
 func (ms LogRecord) SetSeverityNumber(v SeverityNumber) {
-	ms.orig.SeverityNumber = otlplogs.SeverityNumber(v)
+	ms.ensureMutability()
+	ms.getOrig().SeverityNumber = otlplogs.SeverityNumber(v)
 }
 
 // Body returns the body associated with this LogRecord.
 func (ms LogRecord) Body() pcommon.Value {
-	return pcommon.Value(internal.NewValue(&ms.orig.Body))
+	return pcommon.Value(internal.NewValueFromParent(wrappedLogRecordBody{LogRecord: ms}))
 }
 
-// Attributes returns the Attributes associated with this LogRecord.
+// Attributes returns the <no value> associated with this LogRecord.
 func (ms LogRecord) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+	return pcommon.Map(internal.NewMapFromParent(wrappedLogRecordAttributes{LogRecord: ms}))
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this LogRecord.
 func (ms LogRecord) DroppedAttributesCount() uint32 {
-	return ms.orig.DroppedAttributesCount
+	return ms.getOrig().DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this LogRecord.
 func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
-	ms.orig.DroppedAttributesCount = v
+	ms.ensureMutability()
+	ms.getOrig().DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms LogRecord) CopyTo(dest LogRecord) {
+	dest.ensureMutability()
 	dest.SetObservedTimestamp(ms.ObservedTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetTraceID(ms.TraceID())

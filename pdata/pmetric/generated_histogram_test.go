@@ -53,9 +53,9 @@ func TestHistogram_AggregationTemporality(t *testing.T) {
 
 func TestHistogram_DataPoints(t *testing.T) {
 	ms := NewHistogram()
-	assert.Equal(t, NewHistogramDataPointSlice(), ms.DataPoints())
+	assert.Equal(t, NewHistogramDataPointSlice().getOrig(), ms.DataPoints().getOrig())
 	fillTestHistogramDataPointSlice(ms.DataPoints())
-	assert.Equal(t, generateTestHistogramDataPointSlice(), ms.DataPoints())
+	assert.Equal(t, generateTestHistogramDataPointSlice().getOrig(), ms.DataPoints().getOrig())
 }
 
 func generateTestHistogram() Histogram {
@@ -65,6 +65,6 @@ func generateTestHistogram() Histogram {
 }
 
 func fillTestHistogram(tv Histogram) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	fillTestHistogramDataPointSlice(newHistogramDataPointSlice(&tv.orig.DataPoints))
+	tv.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(1)
+	fillTestHistogramDataPointSlice(newHistogramDataPointSliceFromParent(tv))
 }

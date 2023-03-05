@@ -31,25 +31,46 @@ import (
 // Must use NewResourceSpansSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceSpansSlice struct {
-	orig *[]*otlptrace.ResourceSpans
+	parent Traces
 }
 
-func newResourceSpansSlice(orig *[]*otlptrace.ResourceSpans) ResourceSpansSlice {
-	return ResourceSpansSlice{orig}
+func newResourceSpansSliceFromOrig(orig *[]*otlptrace.ResourceSpans) ResourceSpansSlice {
+	return ResourceSpansSlice{parent: newTracesFromResourceSpansOrig(orig)}
+}
+
+func newResourceSpansSliceFromParent(parent Traces) ResourceSpansSlice {
+	return ResourceSpansSlice{parent: parent}
+}
+
+func newResourceSpansSliceFromElementOrig(elOrig *otlptrace.ResourceSpans) ResourceSpansSlice {
+	orig := []*otlptrace.ResourceSpans{elOrig}
+	return newResourceSpansSliceFromOrig(&orig)
+}
+
+func (es ResourceSpansSlice) getOrig() *[]*otlptrace.ResourceSpans {
+	return es.parent.getResourceSpansOrig()
+}
+
+func (es ResourceSpansSlice) ensureMutability() {
+	es.parent.ensureMutability()
+}
+
+func (es ResourceSpansSlice) getChildOrig(i int) *otlptrace.ResourceSpans {
+	return (*es.getOrig())[i]
 }
 
 // NewResourceSpansSlice creates a ResourceSpansSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceSpansSlice() ResourceSpansSlice {
 	orig := []*otlptrace.ResourceSpans(nil)
-	return newResourceSpansSlice(&orig)
+	return newResourceSpansSliceFromOrig(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewResourceSpansSlice()".
 func (es ResourceSpansSlice) Len() int {
-	return len(*es.orig)
+	return len(*es.getOrig())
 }
 
 // At returns the element at the given index.
@@ -61,7 +82,7 @@ func (es ResourceSpansSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ResourceSpansSlice) At(i int) ResourceSpans {
-	return newResourceSpans((*es.orig)[i])
+	return newResourceSpansFromParent(es, i)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -77,40 +98,45 @@ func (es ResourceSpansSlice) At(i int) ResourceSpans {
 //	    // Here should set all the values for e.
 //	}
 func (es ResourceSpansSlice) EnsureCapacity(newCap int) {
-	oldCap := cap(*es.orig)
+	es.ensureMutability()
+	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
 	}
 
-	newOrig := make([]*otlptrace.ResourceSpans, len(*es.orig), newCap)
-	copy(newOrig, *es.orig)
-	*es.orig = newOrig
+	newOrig := make([]*otlptrace.ResourceSpans, len(*es.getOrig()), newCap)
+	copy(newOrig, *es.getOrig())
+	*es.getOrig() = newOrig
 }
 
 // AppendEmpty will append to the end of the slice an empty ResourceSpans.
 // It returns the newly added ResourceSpans.
 func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
-	*es.orig = append(*es.orig, &otlptrace.ResourceSpans{})
+	es.ensureMutability()
+	*es.getOrig() = append(*es.getOrig(), &otlptrace.ResourceSpans{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
-	if *dest.orig == nil {
+	es.ensureMutability()
+	dest.ensureMutability()
+	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
-		*dest.orig = *es.orig
+		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
 	}
-	*es.orig = nil
+	*es.getOrig() = nil
 }
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
+	es.ensureMutability()
 	newLen := 0
-	for i := 0; i < len(*es.orig); i++ {
+	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
 			continue
 		}
@@ -119,36 +145,42 @@ func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
 			newLen++
 			continue
 		}
-		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.getOrig())[newLen] = (*es.getOrig())[i]
 		newLen++
 	}
 	// TODO: Prevent memory leak by erasing truncated values.
-	*es.orig = (*es.orig)[:newLen]
+	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
+	dest.ensureMutability()
 	srcLen := es.Len()
-	destCap := cap(*dest.orig)
+	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newResourceSpans((*es.orig)[i]).CopyTo(newResourceSpans((*dest.orig)[i]))
+		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
+		for i := range *es.getOrig() {
+			srcResourceSpans := newResourceSpansFromOrig((*es.getOrig())[i])
+			destResourceSpans := newResourceSpansFromOrig((*dest.getOrig())[i])
+			srcResourceSpans.CopyTo(destResourceSpans)
 		}
 		return
 	}
 	origs := make([]otlptrace.ResourceSpans, srcLen)
 	wrappers := make([]*otlptrace.ResourceSpans, srcLen)
-	for i := range *es.orig {
+	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newResourceSpans((*es.orig)[i]).CopyTo(newResourceSpans(wrappers[i]))
+		srcResourceSpans := newResourceSpansFromOrig((*es.getOrig())[i])
+		destResourceSpans := newResourceSpansFromOrig(wrappers[i])
+		srcResourceSpans.CopyTo(destResourceSpans)
 	}
-	*dest.orig = wrappers
+	*dest.getOrig() = wrappers
 }
 
 // Sort sorts the ResourceSpans elements within ResourceSpansSlice given the
 // provided less function so that two instances of ResourceSpansSlice
 // can be compared.
 func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) {
-	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+	es.ensureMutability()
+	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

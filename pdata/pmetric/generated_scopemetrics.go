@@ -19,6 +19,7 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -31,11 +32,46 @@ import (
 // Must use NewScopeMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ScopeMetrics struct {
-	orig *otlpmetrics.ScopeMetrics
+	parent ScopeMetricsSlice
+	idx    int
 }
 
-func newScopeMetrics(orig *otlpmetrics.ScopeMetrics) ScopeMetrics {
-	return ScopeMetrics{orig}
+func (ms ScopeMetrics) getOrig() *otlpmetrics.ScopeMetrics {
+	return ms.parent.getChildOrig(ms.idx)
+}
+
+func (ms ScopeMetrics) ensureMutability() {
+	ms.parent.ensureMutability()
+}
+
+type wrappedScopeMetricsScope struct {
+	ScopeMetrics
+}
+
+func (es wrappedScopeMetricsScope) GetChildOrig() *otlpcommon.InstrumentationScope {
+	return &es.getOrig().Scope
+}
+
+func (es wrappedScopeMetricsScope) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func (ms ScopeMetrics) getMetricsOrig() *[]*otlpmetrics.Metric {
+	return &ms.getOrig().Metrics
+}
+
+func newScopeMetricsFromMetricsOrig(childOrig *[]*otlpmetrics.Metric) ScopeMetrics {
+	return newScopeMetricsFromOrig(&otlpmetrics.ScopeMetrics{
+		Metrics: *childOrig,
+	})
+}
+
+func newScopeMetricsFromOrig(orig *otlpmetrics.ScopeMetrics) ScopeMetrics {
+	return ScopeMetrics{parent: newScopeMetricsSliceFromElementOrig(orig)}
+}
+
+func newScopeMetricsFromParent(parent ScopeMetricsSlice, idx int) ScopeMetrics {
+	return ScopeMetrics{parent: parent, idx: idx}
 }
 
 // NewScopeMetrics creates a new empty ScopeMetrics.
@@ -43,38 +79,42 @@ func newScopeMetrics(orig *otlpmetrics.ScopeMetrics) ScopeMetrics {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewScopeMetrics() ScopeMetrics {
-	return newScopeMetrics(&otlpmetrics.ScopeMetrics{})
+	return newScopeMetricsFromOrig(&otlpmetrics.ScopeMetrics{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ScopeMetrics) MoveTo(dest ScopeMetrics) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.ScopeMetrics{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.ScopeMetrics{}
 }
 
 // Scope returns the scope associated with this ScopeMetrics.
 func (ms ScopeMetrics) Scope() pcommon.InstrumentationScope {
-	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope))
+	return pcommon.InstrumentationScope(internal.NewInstrumentationScopeFromParent(wrappedScopeMetricsScope{ScopeMetrics: ms}))
 }
 
 // SchemaUrl returns the schemaurl associated with this ScopeMetrics.
 func (ms ScopeMetrics) SchemaUrl() string {
-	return ms.orig.SchemaUrl
+	return ms.getOrig().SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ScopeMetrics.
 func (ms ScopeMetrics) SetSchemaUrl(v string) {
-	ms.orig.SchemaUrl = v
+	ms.ensureMutability()
+	ms.getOrig().SchemaUrl = v
 }
 
-// Metrics returns the Metrics associated with this ScopeMetrics.
+// Metrics returns the <no value> associated with this ScopeMetrics.
 func (ms ScopeMetrics) Metrics() MetricSlice {
-	return newMetricSlice(&ms.orig.Metrics)
+	return newMetricSliceFromParent(ms)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeMetrics) CopyTo(dest ScopeMetrics) {
+	dest.ensureMutability()
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Metrics().CopyTo(dest.Metrics())

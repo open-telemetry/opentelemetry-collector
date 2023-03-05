@@ -29,11 +29,24 @@ import (
 // Must use NewSummaryDataPointValueAtQuantile function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SummaryDataPointValueAtQuantile struct {
-	orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile
+	parent SummaryDataPointValueAtQuantileSlice
+	idx    int
 }
 
-func newSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantile {
-	return SummaryDataPointValueAtQuantile{orig}
+func (ms SummaryDataPointValueAtQuantile) getOrig() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return ms.parent.getChildOrig(ms.idx)
+}
+
+func (ms SummaryDataPointValueAtQuantile) ensureMutability() {
+	ms.parent.ensureMutability()
+}
+
+func newSummaryDataPointValueAtQuantileFromOrig(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantile {
+	return SummaryDataPointValueAtQuantile{parent: newSummaryDataPointValueAtQuantileSliceFromElementOrig(orig)}
+}
+
+func newSummaryDataPointValueAtQuantileFromParent(parent SummaryDataPointValueAtQuantileSlice, idx int) SummaryDataPointValueAtQuantile {
+	return SummaryDataPointValueAtQuantile{parent: parent, idx: idx}
 }
 
 // NewSummaryDataPointValueAtQuantile creates a new empty SummaryDataPointValueAtQuantile.
@@ -41,38 +54,43 @@ func newSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_Value
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
-	return newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+	return newSummaryDataPointValueAtQuantileFromOrig(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms SummaryDataPointValueAtQuantile) MoveTo(dest SummaryDataPointValueAtQuantile) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 }
 
 // Quantile returns the quantile associated with this SummaryDataPointValueAtQuantile.
 func (ms SummaryDataPointValueAtQuantile) Quantile() float64 {
-	return ms.orig.Quantile
+	return ms.getOrig().Quantile
 }
 
 // SetQuantile replaces the quantile associated with this SummaryDataPointValueAtQuantile.
 func (ms SummaryDataPointValueAtQuantile) SetQuantile(v float64) {
-	ms.orig.Quantile = v
+	ms.ensureMutability()
+	ms.getOrig().Quantile = v
 }
 
 // Value returns the value associated with this SummaryDataPointValueAtQuantile.
 func (ms SummaryDataPointValueAtQuantile) Value() float64 {
-	return ms.orig.Value
+	return ms.getOrig().Value
 }
 
 // SetValue replaces the value associated with this SummaryDataPointValueAtQuantile.
 func (ms SummaryDataPointValueAtQuantile) SetValue(v float64) {
-	ms.orig.Value = v
+	ms.ensureMutability()
+	ms.getOrig().Value = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SummaryDataPointValueAtQuantile) CopyTo(dest SummaryDataPointValueAtQuantile) {
+	dest.ensureMutability()
 	dest.SetQuantile(ms.Quantile())
 	dest.SetValue(ms.Value())
 }

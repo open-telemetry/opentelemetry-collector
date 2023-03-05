@@ -28,13 +28,18 @@ const primitiveSliceTemplate = `// {{ .structName }} represents a []{{ .itemType
 type {{ .structName }} internal.{{ .structName }}
 
 func (ms {{ .structName }}) getOrig() *[]{{ .itemType }} {
-	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
+	return internal.{{ .structName }}(ms).GetOrig()
 }
 
 // New{{ .structName }} creates a new empty {{ .structName }}.
 func New{{ .structName }}() {{ .structName }} {
 	orig := []{{ .itemType }}(nil)
-	return {{ .structName }}(internal.New{{ .structName }}(&orig))
+	return {{ .structName }}(internal.New{{ .structName }}FromOrig(&orig))
+}
+
+
+func (ms {{ .structName }}) ensureMutability() {
+	internal.{{ .structName }}(ms).EnsureMutability()
 }
 
 // AsRaw returns a copy of the []{{ .itemType }} slice.
@@ -44,6 +49,7 @@ func (ms {{ .structName }}) AsRaw() []{{ .itemType }} {
 
 // FromRaw copies raw []{{ .itemType }} into the slice {{ .structName }}.
 func (ms {{ .structName }}) FromRaw(val []{{ .itemType }}) {
+	ms.ensureMutability()
 	*ms.getOrig() = copy{{ .structName }}(*ms.getOrig(), val)
 }
 
@@ -62,6 +68,7 @@ func (ms {{ .structName }}) At(i int) {{ .itemType }} {
 // SetAt sets {{ .itemType }} item at particular index.
 // Equivalent of {{ .lowerStructName }}[i] = val
 func (ms {{ .structName }}) SetAt(i int, val {{ .itemType }}) {
+	ms.ensureMutability()
 	(*ms.getOrig())[i] = val
 }
 
@@ -72,6 +79,7 @@ func (ms {{ .structName }}) SetAt(i int, val {{ .itemType }}) {
 //	copy(buf, {{ .lowerStructName }})
 //	{{ .lowerStructName }} = buf
 func (ms {{ .structName }}) EnsureCapacity(newCap int) {
+	ms.ensureMutability()
 	oldCap := cap(*ms.getOrig())
 	if newCap <= oldCap {
 		return
@@ -85,18 +93,22 @@ func (ms {{ .structName }}) EnsureCapacity(newCap int) {
 // Append appends extra elements to {{ .structName }}.
 // Equivalent of {{ .lowerStructName }} = append({{ .lowerStructName }}, elms...) 
 func (ms {{ .structName }}) Append(elms ...{{ .itemType }}) {
+	ms.ensureMutability()
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and 
 // resetting the current instance to its zero value.
 func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
+	ms.ensureMutability()
+	dest.ensureMutability()
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
+	dest.ensureMutability()
 	*dest.getOrig() = copy{{ .structName }}(*dest.getOrig(), *ms.getOrig())
 }
 
@@ -154,15 +166,35 @@ func Test{{ .structName }}EnsureCapacity(t *testing.T) {
 
 const primitiveSliceInternalTemplate = `
 type {{ .structName }} struct {
+	parent Parent[*[]{{ .itemType }}]
+}
+
+type stub{{ .structName }}Parent struct {
 	orig *[]{{ .itemType }}
 }
 
-func GetOrig{{ .structName }}(ms {{ .structName }}) *[]{{ .itemType }} {
-	return ms.orig
+func (vp stub{{ .structName }}Parent) EnsureMutability() {}
+
+func (vp stub{{ .structName }}Parent) GetChildOrig() *[]{{ .itemType }} {
+	return vp.orig
 }
 
-func New{{ .structName }}(orig *[]{{ .itemType }}) {{ .structName }} {
-	return {{ .structName }}{orig: orig}
+var _ Parent[*[]{{ .itemType }}] = (*stub{{ .structName }}Parent)(nil)
+
+func (ms {{ .structName }}) GetOrig() *[]{{ .itemType }} {
+	return ms.parent.GetChildOrig()
+}
+
+func (ms {{ .structName }}) EnsureMutability() {
+	ms.parent.EnsureMutability()
+}
+
+func New{{ .structName }}FromOrig(orig *[]{{ .itemType }}) {{ .structName }} {
+	return {{ .structName }}{parent: &stub{{ .structName }}Parent{orig: orig}}
+}
+
+func New{{ .structName }}FromParent(parent Parent[*[]{{ .itemType }}]) {{ .structName }} {
+	return {{ .structName }}{parent: parent}
 }`
 
 // primitiveSliceStruct generates a struct for a slice of primitive value elements. The structs are always generated
@@ -171,6 +203,7 @@ type primitiveSliceStruct struct {
 	structName  string
 	packageName string
 	itemType    string
+	parent      string
 }
 
 func (iss *primitiveSliceStruct) getName() string {
@@ -179,6 +212,14 @@ func (iss *primitiveSliceStruct) getName() string {
 
 func (iss *primitiveSliceStruct) getPackageName() string {
 	return iss.packageName
+}
+
+func (iss *primitiveSliceStruct) getParent() string {
+	return iss.parent
+}
+
+func (iss *primitiveSliceStruct) getOrigType() string {
+	return "*[]" + iss.itemType
 }
 
 func (iss *primitiveSliceStruct) generateStruct(sb *bytes.Buffer) {

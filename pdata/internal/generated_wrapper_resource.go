@@ -18,29 +18,57 @@
 package internal
 
 import (
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 )
 
 type Resource struct {
+	parent Parent[*otlpresource.Resource]
+}
+
+type stubResourceParent struct {
 	orig *otlpresource.Resource
 }
 
-func GetOrigResource(ms Resource) *otlpresource.Resource {
-	return ms.orig
+func (vp stubResourceParent) EnsureMutability() {}
+
+func (vp stubResourceParent) GetChildOrig() *otlpresource.Resource {
+	return vp.orig
 }
 
-func NewResource(orig *otlpresource.Resource) Resource {
-	return Resource{orig: orig}
+var _ Parent[*otlpresource.Resource] = (*stubResourceParent)(nil)
+
+func (ms Resource) GetOrig() *otlpresource.Resource {
+	return ms.parent.GetChildOrig()
+}
+
+func (ms Resource) EnsureMutability() {
+	ms.parent.EnsureMutability()
+}
+
+func NewResourceFromOrig(orig *otlpresource.Resource) Resource {
+	return Resource{parent: &stubResourceParent{orig: orig}}
+}
+
+func NewResourceFromParent(parent Parent[*otlpresource.Resource]) Resource {
+	return Resource{parent: parent}
+}
+
+type WrappedResourceAttributes struct {
+	Resource
+}
+
+func (es WrappedResourceAttributes) GetChildOrig() *[]otlpcommon.KeyValue {
+	return &es.GetOrig().Attributes
 }
 
 func GenerateTestResource() Resource {
-	orig := otlpresource.Resource{}
-	tv := NewResource(&orig)
+	tv := NewResourceFromOrig(&otlpresource.Resource{})
 	FillTestResource(tv)
 	return tv
 }
 
 func FillTestResource(tv Resource) {
-	FillTestMap(NewMap(&tv.orig.Attributes))
-	tv.orig.DroppedAttributesCount = uint32(17)
+	FillTestMap(NewMapFromParent(WrappedResourceAttributes{Resource: tv}))
+	tv.GetOrig().DroppedAttributesCount = uint32(17)
 }

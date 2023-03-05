@@ -22,6 +22,8 @@ var ptrace = &Package{
 		``,
 		`"go.opentelemetry.io/collector/pdata/internal"`,
 		`"go.opentelemetry.io/collector/pdata/internal/data"`,
+		`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
+		`otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"`,
 		`otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"`,
 		`"go.opentelemetry.io/collector/pdata/pcommon"`,
 	},
@@ -52,14 +54,17 @@ var ptrace = &Package{
 }
 
 var resourceSpansSlice = &sliceOfPtrs{
-	structName: "ResourceSpansSlice",
-	element:    resourceSpans,
+	structName:  "ResourceSpansSlice",
+	parent:      "Traces",
+	parentField: "ResourceSpans",
+	element:     resourceSpans,
 }
 
 var resourceSpans = &messageValueStruct{
 	structName:     "ResourceSpans",
 	description:    "// ResourceSpans is a collection of spans from a Resource.",
 	originFullName: "otlptrace.ResourceSpans",
+	parent:         "ResourceSpansSlice",
 	fields: []baseField{
 		resourceField,
 		schemaURLField,
@@ -71,14 +76,17 @@ var resourceSpans = &messageValueStruct{
 }
 
 var scopeSpansSlice = &sliceOfPtrs{
-	structName: "ScopeSpansSlice",
-	element:    scopeSpans,
+	structName:  "ScopeSpansSlice",
+	parent:      "ResourceSpans",
+	parentField: "ScopeSpans",
+	element:     scopeSpans,
 }
 
 var scopeSpans = &messageValueStruct{
 	structName:     "ScopeSpans",
 	description:    "// ScopeSpans is a collection of spans from a LibraryInstrumentation.",
 	originFullName: "otlptrace.ScopeSpans",
+	parent:         "ScopeSpansSlice",
 	fields: []baseField{
 		scopeField,
 		schemaURLField,
@@ -90,8 +98,10 @@ var scopeSpans = &messageValueStruct{
 }
 
 var spanSlice = &sliceOfPtrs{
-	structName: "SpanSlice",
-	element:    span,
+	structName:  "SpanSlice",
+	parent:      "ScopeSpans",
+	parentField: "Spans",
+	element:     span,
 }
 
 var span = &messageValueStruct{
@@ -99,6 +109,7 @@ var span = &messageValueStruct{
 	description: "// Span represents a single operation within a trace.\n" +
 		"// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto",
 	originFullName: "otlptrace.Span",
+	parent:         "SpanSlice",
 	fields: []baseField{
 		traceIDField,
 		spanIDField,
@@ -146,8 +157,10 @@ var span = &messageValueStruct{
 }
 
 var spanEventSlice = &sliceOfPtrs{
-	structName: "SpanEventSlice",
-	element:    spanEvent,
+	structName:  "SpanEventSlice",
+	parent:      "Span",
+	parentField: "Events",
+	element:     spanEvent,
 }
 
 var spanEvent = &messageValueStruct{
@@ -155,6 +168,7 @@ var spanEvent = &messageValueStruct{
 	description: "// SpanEvent is a time-stamped annotation of the span, consisting of user-supplied\n" +
 		"// text description and key-value pairs. See OTLP for event definition.",
 	originFullName: "otlptrace.Span_Event",
+	parent:         "SpanEventSlice",
 	fields: []baseField{
 		timeField,
 		nameField,
@@ -164,8 +178,10 @@ var spanEvent = &messageValueStruct{
 }
 
 var spanLinkSlice = &sliceOfPtrs{
-	structName: "SpanLinkSlice",
-	element:    spanLink,
+	structName:  "SpanLinkSlice",
+	parent:      "Span",
+	parentField: "Links",
+	element:     spanLink,
 }
 
 var spanLink = &messageValueStruct{
@@ -174,6 +190,7 @@ var spanLink = &messageValueStruct{
 		"// different trace.\n" +
 		"// See Link definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto",
 	originFullName: "otlptrace.Span_Link",
+	parent:         "SpanLinkSlice",
 	fields: []baseField{
 		traceIDField,
 		spanIDField,
@@ -188,6 +205,7 @@ var spanStatus = &messageValueStruct{
 	description: "// Status is an optional final status for this span. Semantically, when Status was not\n" +
 		"// set, that means the span ended without errors and to assume Status.Ok (code = 0).",
 	originFullName: "otlptrace.Status",
+	parent:         "Span",
 	fields: []baseField{
 		&primitiveTypedField{
 			fieldName: "Code",

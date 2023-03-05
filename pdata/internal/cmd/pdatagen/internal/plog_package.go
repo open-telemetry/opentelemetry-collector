@@ -22,7 +22,9 @@ var plog = &Package{
 		``,
 		`"go.opentelemetry.io/collector/pdata/internal"`,
 		`"go.opentelemetry.io/collector/pdata/internal/data"`,
+		`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
 		`otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"`,
+		`otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"`,
 		`"go.opentelemetry.io/collector/pdata/pcommon"`,
 	},
 	testImports: []string{
@@ -47,14 +49,17 @@ var plog = &Package{
 }
 
 var resourceLogsSlice = &sliceOfPtrs{
-	structName: "ResourceLogsSlice",
-	element:    resourceLogs,
+	structName:  "ResourceLogsSlice",
+	parent:      "Logs",
+	parentField: "ResourceLogs",
+	element:     resourceLogs,
 }
 
 var resourceLogs = &messageValueStruct{
 	structName:     "ResourceLogs",
 	description:    "// ResourceLogs is a collection of logs from a Resource.",
 	originFullName: "otlplogs.ResourceLogs",
+	parent:         "ResourceLogsSlice",
 	fields: []baseField{
 		resourceField,
 		schemaURLField,
@@ -66,14 +71,17 @@ var resourceLogs = &messageValueStruct{
 }
 
 var scopeLogsSlice = &sliceOfPtrs{
-	structName: "ScopeLogsSlice",
-	element:    scopeLogs,
+	structName:  "ScopeLogsSlice",
+	parent:      "ResourceLogs",
+	parentField: "ScopeLogs",
+	element:     scopeLogs,
 }
 
 var scopeLogs = &messageValueStruct{
 	structName:     "ScopeLogs",
 	description:    "// ScopeLogs is a collection of logs from a LibraryInstrumentation.",
 	originFullName: "otlplogs.ScopeLogs",
+	parent:         "ScopeLogsSlice",
 	fields: []baseField{
 		scopeField,
 		schemaURLField,
@@ -85,14 +93,17 @@ var scopeLogs = &messageValueStruct{
 }
 
 var logSlice = &sliceOfPtrs{
-	structName: "LogRecordSlice",
-	element:    logRecord,
+	structName:  "LogRecordSlice",
+	parent:      "ScopeLogs",
+	parentField: "LogRecords",
+	element:     logRecord,
 }
 
 var logRecord = &messageValueStruct{
 	structName:     "LogRecord",
 	description:    "// LogRecord are experimental implementation of OpenTelemetry Log Data Model.\n",
 	originFullName: "otlplogs.LogRecord",
+	parent:         "LogRecordSlice",
 	fields: []baseField{
 		&primitiveTypedField{
 			fieldName:       "ObservedTimestamp",

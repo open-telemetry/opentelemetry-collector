@@ -31,38 +31,89 @@ const messageValueTemplate = `{{ .description }}
 type {{ .structName }} internal.{{ .structName }}
 {{- else }}
 type {{ .structName }} struct {
-	orig *{{ .originName }}
-}
-{{- end }}
-
-func new{{ .structName }}(orig *{{ .originName }}) {{ .structName }} {
-	{{- if .isCommon }}
-	return {{ .structName }}(internal.New{{ .structName }}(orig))
-	{{- else }}
-	return {{ .structName }}{orig}
+	parent {{ .parent }}
+	{{- if .isSliceElement }}
+	idx int
 	{{- end }}
 }
+
+{{ if .parentUnspecified }}
+type stub{{ .structName }}Parent struct {
+	orig *{{ .originName }}
+}
+
+func (vp stub{{ .structName }}Parent) EnsureMutability() {}
+
+func (vp stub{{ .structName }}Parent) GetChildOrig() *{{ .originName }} {
+	return vp.orig
+}
+
+var _ {{ .parent }} = (*stub{{ .structName }}Parent)(nil)
+{{- end }}
+{{- end }}
+
+func (ms {{ .structName }}) getOrig() *{{ .originName }} {
+	{{- if .isCommon }}
+	return internal.{{ .structName }}(ms).GetOrig()
+	{{- else if .isSliceElement }}
+	return ms.parent.getChildOrig(ms.idx)
+	{{- else if .parentUnspecified }}
+	return ms.parent.GetChildOrig()
+	{{- else }}
+	return ms.parent.get{{ .structName }}Orig()
+	{{- end }}
+}
+
+func (ms {{ .structName }}) ensureMutability() {
+	{{- if .isCommon }}
+	internal.{{ .structName }}(ms).EnsureMutability()
+	{{- else if .parentUnspecified }}
+	ms.parent.EnsureMutability()
+	{{- else }}
+	ms.parent.ensureMutability()
+	{{- end }}
+}
+
+{{ if not .isCommon }}
+{{- range .fields }}
+{{ .GenerateParentMethods $.messageStruct }}
+{{ end }}
+
+func new{{ .structName }}FromOrig(orig *{{ .originName }}) {{ .structName }} {
+	{{- if .parentUnspecified }}
+	return {{ .structName }}{parent: &stub{{ .structName }}Parent{orig: orig}}
+	{{- else  if .isSliceElement }}
+	return {{ .structName }}{parent: new{{ .parent }}FromElementOrig(orig)}
+	{{- else }}
+	return {{ .structName }}{parent: new{{ .parent }}From{{ .structName }}Orig(orig)}
+	{{- end }}
+}
+
+func new{{ .structName }}FromParent(parent {{ .parent }}{{- if .isSliceElement }}, idx int{{ end }}) {{ .structName }} {
+	return {{ .structName }}{parent: parent{{ if .isSliceElement }}, idx: idx{{ end }}}
+}
+{{- end }}
 
 // New{{ .structName }} creates a new empty {{ .structName }}.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func New{{ .structName }}() {{ .structName }} {
-	return new{{ .structName }}(&{{ .originName }}{})
+	{{- if .isCommon }}
+	return {{ .structName }}(internal.New{{ .structName }}FromOrig(&{{ .originName }}{}))
+	{{- else }}
+	return new{{ .structName }}FromOrig(&{{ .originName }}{})
+	{{- end }}
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
-	*dest.{{ .origAccessor }} = *ms.{{ .origAccessor }}
-	*ms.{{ .origAccessor }} = {{ .originName }}{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = {{ .originName }}{}
 }
-
-{{ if .isCommon -}}
-func (ms {{ .structName }}) getOrig() *{{ .originName }} {
-	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
-}
-{{- end }}
 
 {{ range .fields -}}
 {{ .GenerateAccessors $.messageStruct }}
@@ -70,9 +121,10 @@ func (ms {{ .structName }}) getOrig() *{{ .originName }} {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
-{{- range .fields }}
-{{ .GenerateCopyToValue $.messageStruct }}
-{{- end }}
+	dest.ensureMutability()
+	{{- range .fields }}
+	{{ .GenerateCopyToValue $.messageStruct }}
+	{{- end }}
 }`
 
 const messageValueTestTemplate = `
@@ -98,16 +150,18 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 {{ .GenerateAccessorsTest $.messageStruct }}
 {{ end }}`
 
-const messageValueGenerateTestTemplate = `func {{ upperIfInternal "g" }}enerateTest{{ .structName }}() {{ .structName }} {
+const messageValueGenerateTestTemplate = `func {{ if .isCommon }}G{{ else }}g{{ end }}enerateTest{{ .structName }}() {{ .structName }} {
 	{{- if .isCommon }}
-	orig := {{ .originName }}{}
+	tv := New{{ .structName }}FromOrig(&{{ .originName }}{}) 
+	FillTest{{ .structName }}(tv)
+	{{- else }}
+	tv := New{{ .structName }}()
+	fillTest{{ .structName }}(tv)
 	{{- end }}
-	tv := New{{ .structName }}({{ if .isCommon }}&orig{{ end }})
-	{{ upperIfInternal "f" }}illTest{{ .structName }}(tv)
 	return tv
 }
 
-func {{ upperIfInternal "f" }}illTest{{ .structName }}(tv {{ .structName }}) {
+func {{ if .isCommon }}F{{ else }}f{{ end }}illTest{{ .structName }}(tv {{ .structName }}) {
 	{{- range .fields }}
 	{{ .GenerateSetWithTestValue $.messageStruct }}
 	{{- end }}
@@ -115,20 +169,49 @@ func {{ upperIfInternal "f" }}illTest{{ .structName }}(tv {{ .structName }}) {
 
 const messageValueAliasTemplate = `
 type {{ .structName }} struct {
+	parent {{ .parent }}
+	{{- if .isSliceElement }}
+	idx int
+	{{- end }}
+}
+
+type stub{{ .structName }}Parent struct {
 	orig *{{ .originName }}
 }
 
-func GetOrig{{ .structName }}(ms {{ .structName }}) *{{ .originName }} {
-	return ms.orig
+func (vp stub{{ .structName }}Parent) EnsureMutability() {}
+
+func (vp stub{{ .structName }}Parent) GetChildOrig() *{{ .originName }} {
+	return vp.orig
 }
 
-func New{{ .structName }}(orig *{{ .originName }}) {{ .structName }} {
-	return {{ .structName }}{orig: orig}
-}`
+var _ {{ .parent }} = (*stub{{ .structName }}Parent)(nil)
+
+func (ms {{ .structName }}) GetOrig() *{{ .originName }} {
+	return ms.parent.GetChildOrig({{ if .isSliceElement }}ms.idx{{ end }})
+}
+
+func (ms {{ .structName }}) EnsureMutability() {
+	ms.parent.EnsureMutability()
+}
+
+func New{{ .structName }}FromOrig(orig *{{ .originName }}) {{ .structName }} {
+	return {{ .structName }}{parent: &stub{{ .structName }}Parent{orig: orig}}
+}
+
+func New{{ .structName }}FromParent(parent {{ .parent }}) {{ .structName }} {
+	return {{ .structName }}{parent: parent}
+}
+
+{{- range .fields }}
+{{ .GenerateParentMethods $.messageStruct }}
+{{ end }}`
 
 type baseStruct interface {
 	getName() string
 	getPackageName() string
+	getParent() string
+	getOrigType() string
 	generateStruct(sb *bytes.Buffer)
 	generateTests(sb *bytes.Buffer)
 	generateTestValueHelpers(sb *bytes.Buffer)
@@ -142,6 +225,7 @@ type messageValueStruct struct {
 	packageName    string
 	description    string
 	originFullName string
+	parent         string
 	fields         []baseField
 }
 
@@ -153,57 +237,67 @@ func (ms *messageValueStruct) getPackageName() string {
 	return ms.packageName
 }
 
+func (ms *messageValueStruct) getParent() string {
+	return ms.parent
+}
+
+func (ms *messageValueStruct) getOrigType() string {
+	return ms.originFullName
+}
+
 func (ms *messageValueStruct) generateStruct(sb *bytes.Buffer) {
 	t := template.Must(template.New("messageValueTemplate").Parse(messageValueTemplate))
-	if err := t.Execute(sb, ms.templateFields()); err != nil {
+	if err := t.Execute(sb, ms.templateFields(false)); err != nil {
 		panic(err)
 	}
 }
 
 func (ms *messageValueStruct) generateTests(sb *bytes.Buffer) {
 	t := template.Must(template.New("messageValueTestTemplate").Parse(messageValueTestTemplate))
-	if err := t.Execute(sb, ms.templateFields()); err != nil {
+	if err := t.Execute(sb, ms.templateFields(false)); err != nil {
 		panic(err)
 	}
 }
 
 func (ms *messageValueStruct) generateTestValueHelpers(sb *bytes.Buffer) {
-	funcs := template.FuncMap{
-		"upperIfInternal": func(in string) string {
-			if usedByOtherDataTypes(ms.packageName) {
-				return strings.ToUpper(in)
-			}
-			return in
-		},
-	}
-	t := template.Must(template.New("messageValueGenerateTestTemplate").Funcs(funcs).Parse(messageValueGenerateTestTemplate))
-	if err := t.Execute(sb, ms.templateFields()); err != nil {
+	t := template.Must(template.New("messageValueGenerateTestTemplate").Parse(messageValueGenerateTestTemplate))
+	if err := t.Execute(sb, ms.templateFields(false)); err != nil {
 		panic(err)
 	}
 }
 
 func (ms *messageValueStruct) generateInternal(sb *bytes.Buffer) {
 	t := template.Must(template.New("messageValueAliasTemplate").Parse(messageValueAliasTemplate))
-	if err := t.Execute(sb, ms.templateFields()); err != nil {
+	if err := t.Execute(sb, ms.templateFields(true)); err != nil {
 		panic(err)
 	}
 }
 
-func (ms *messageValueStruct) templateFields() map[string]any {
+func (ms *messageValueStruct) templateFields(forInternal bool) map[string]any {
 	return map[string]any{
 		"messageStruct": ms,
 		"fields":        ms.fields,
 		"structName":    ms.structName,
 		"originName":    ms.originFullName,
+		"parent": func() string {
+			if ms.parent == "" {
+				if forInternal {
+					return "Parent[*" + ms.originFullName + "]"
+				}
+				return "internal.Parent[*" + ms.originFullName + "]"
+			}
+			return ms.parent
+		}(),
+		"isSliceElement":    strings.HasSuffix(ms.parent, "Slice"),
+		"parentUnspecified": ms.parent == "",
 		"generateTestData": func() string {
 			if usedByOtherDataTypes(ms.packageName) {
 				return ms.structName + "(internal.GenerateTest" + ms.structName + "())"
 			}
 			return "generateTest" + ms.structName + "()"
 		}(),
-		"description":  ms.description,
-		"isCommon":     usedByOtherDataTypes(ms.packageName),
-		"origAccessor": origAccessor(ms),
+		"description": ms.description,
+		"isCommon":    usedByOtherDataTypes(ms.packageName),
 	}
 }
 

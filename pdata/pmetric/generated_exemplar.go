@@ -20,6 +20,7 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -35,11 +36,36 @@ import (
 // Must use NewExemplar function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Exemplar struct {
-	orig *otlpmetrics.Exemplar
+	parent ExemplarSlice
+	idx    int
 }
 
-func newExemplar(orig *otlpmetrics.Exemplar) Exemplar {
-	return Exemplar{orig}
+func (ms Exemplar) getOrig() *otlpmetrics.Exemplar {
+	return ms.parent.getChildOrig(ms.idx)
+}
+
+func (ms Exemplar) ensureMutability() {
+	ms.parent.ensureMutability()
+}
+
+type wrappedExemplarFilteredAttributes struct {
+	Exemplar
+}
+
+func (es wrappedExemplarFilteredAttributes) GetChildOrig() *[]otlpcommon.KeyValue {
+	return &es.getOrig().FilteredAttributes
+}
+
+func (es wrappedExemplarFilteredAttributes) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func newExemplarFromOrig(orig *otlpmetrics.Exemplar) Exemplar {
+	return Exemplar{parent: newExemplarSliceFromElementOrig(orig)}
+}
+
+func newExemplarFromParent(parent ExemplarSlice, idx int) Exemplar {
+	return Exemplar{parent: parent, idx: idx}
 }
 
 // NewExemplar creates a new empty Exemplar.
@@ -47,30 +73,33 @@ func newExemplar(orig *otlpmetrics.Exemplar) Exemplar {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExemplar() Exemplar {
-	return newExemplar(&otlpmetrics.Exemplar{})
+	return newExemplarFromOrig(&otlpmetrics.Exemplar{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Exemplar) MoveTo(dest Exemplar) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Exemplar{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.Exemplar{}
 }
 
 // Timestamp returns the timestamp associated with this Exemplar.
 func (ms Exemplar) Timestamp() pcommon.Timestamp {
-	return pcommon.Timestamp(ms.orig.TimeUnixNano)
+	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this Exemplar.
 func (ms Exemplar) SetTimestamp(v pcommon.Timestamp) {
-	ms.orig.TimeUnixNano = uint64(v)
+	ms.ensureMutability()
+	ms.getOrig().TimeUnixNano = uint64(v)
 }
 
 // ValueType returns the type of the value for this Exemplar.
 // Calling this function on zero-initialized Exemplar will cause a panic.
 func (ms Exemplar) ValueType() ExemplarValueType {
-	switch ms.orig.Value.(type) {
+	switch ms.getOrig().Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
 		return ExemplarValueTypeDouble
 	case *otlpmetrics.Exemplar_AsInt:
@@ -81,55 +110,60 @@ func (ms Exemplar) ValueType() ExemplarValueType {
 
 // DoubleValue returns the double associated with this Exemplar.
 func (ms Exemplar) DoubleValue() float64 {
-	return ms.orig.GetAsDouble()
+	return ms.getOrig().GetAsDouble()
 }
 
 // SetDoubleValue replaces the double associated with this Exemplar.
 func (ms Exemplar) SetDoubleValue(v float64) {
-	ms.orig.Value = &otlpmetrics.Exemplar_AsDouble{
+	ms.ensureMutability()
+	ms.getOrig().Value = &otlpmetrics.Exemplar_AsDouble{
 		AsDouble: v,
 	}
 }
 
 // IntValue returns the int associated with this Exemplar.
 func (ms Exemplar) IntValue() int64 {
-	return ms.orig.GetAsInt()
+	return ms.getOrig().GetAsInt()
 }
 
 // SetIntValue replaces the int associated with this Exemplar.
 func (ms Exemplar) SetIntValue(v int64) {
-	ms.orig.Value = &otlpmetrics.Exemplar_AsInt{
+	ms.ensureMutability()
+	ms.getOrig().Value = &otlpmetrics.Exemplar_AsInt{
 		AsInt: v,
 	}
 }
 
-// FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
+// FilteredAttributes returns the <no value> associated with this Exemplar.
 func (ms Exemplar) FilteredAttributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.FilteredAttributes))
+	return pcommon.Map(internal.NewMapFromParent(wrappedExemplarFilteredAttributes{Exemplar: ms}))
 }
 
 // TraceID returns the traceid associated with this Exemplar.
 func (ms Exemplar) TraceID() pcommon.TraceID {
-	return pcommon.TraceID(ms.orig.TraceId)
+	return pcommon.TraceID(ms.getOrig().TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this Exemplar.
 func (ms Exemplar) SetTraceID(v pcommon.TraceID) {
-	ms.orig.TraceId = data.TraceID(v)
+	ms.ensureMutability()
+	ms.getOrig().TraceId = data.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this Exemplar.
 func (ms Exemplar) SpanID() pcommon.SpanID {
-	return pcommon.SpanID(ms.orig.SpanId)
+	return pcommon.SpanID(ms.getOrig().SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this Exemplar.
 func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
-	ms.orig.SpanId = data.SpanID(v)
+	ms.ensureMutability()
+	ms.getOrig().SpanId = data.SpanID(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Exemplar) CopyTo(dest Exemplar) {
+	dest.ensureMutability()
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
 	case ExemplarValueTypeDouble:

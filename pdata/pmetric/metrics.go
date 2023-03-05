@@ -17,6 +17,7 @@ package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
+	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 // Metrics is the top-level struct that is propagated through the metrics pipeline.
@@ -27,8 +28,32 @@ func newMetrics(orig *otlpcollectormetrics.ExportMetricsServiceRequest) Metrics 
 	return Metrics(internal.NewMetrics(orig))
 }
 
+func newMetricsFromResourceMetricsOrig(orig *[]*otlpmetrics.ResourceMetrics) Metrics {
+	return Metrics(internal.NewMetricsFromResourceMetricsOrig(orig))
+}
+
 func (ms Metrics) getOrig() *otlpcollectormetrics.ExportMetricsServiceRequest {
-	return internal.GetOrigMetrics(internal.Metrics(ms))
+	return internal.Metrics(ms).GetOrig()
+}
+
+// AsShared returns the Metrics instance marked as shared to make sure it won't be mutated by any downstream components.
+func (ms Metrics) AsShared() Metrics {
+	return Metrics(internal.Metrics(ms).AsShared())
+}
+
+func (ms Metrics) ensureMutability() {
+	if internal.Metrics(ms).IsShared() {
+		clonedRM := newResourceMetricsSliceFromOrig(&[]*otlpmetrics.ResourceMetrics{})
+		ms.ResourceMetrics().CopyTo(clonedRM)
+		internal.Metrics(ms).SetOrig(&otlpcollectormetrics.ExportMetricsServiceRequest{
+			ResourceMetrics: *clonedRM.getOrig(),
+		})
+		internal.Metrics(ms).MarkExclusive()
+	}
+}
+
+func (ms Metrics) getResourceMetricsOrig() *[]*otlpmetrics.ResourceMetrics {
+	return &internal.Metrics(ms).GetOrig().ResourceMetrics
 }
 
 // NewMetrics creates a new Metrics struct.
@@ -43,7 +68,7 @@ func (ms Metrics) CopyTo(dest Metrics) {
 
 // ResourceMetrics returns the ResourceMetricsSlice associated with this Metrics.
 func (ms Metrics) ResourceMetrics() ResourceMetricsSlice {
-	return newResourceMetricsSlice(&ms.getOrig().ResourceMetrics)
+	return newResourceMetricsSliceFromParent(ms)
 }
 
 // MetricCount calculates the total number of metrics.

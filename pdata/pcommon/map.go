@@ -27,15 +27,19 @@ type Map internal.Map
 // NewMap creates a Map with 0 elements.
 func NewMap() Map {
 	orig := []otlpcommon.KeyValue(nil)
-	return Map(internal.NewMap(&orig))
+	return Map(internal.NewMapFromOrig(&orig))
+}
+
+func newMapFromOrig(orig *[]otlpcommon.KeyValue) Map {
+	return Map(internal.NewMapFromOrig(orig))
+}
+
+func newMapFromParent(parent internal.Parent[*[]otlpcommon.KeyValue]) Map {
+	return Map(internal.NewMapFromParent(parent))
 }
 
 func (m Map) getOrig() *[]otlpcommon.KeyValue {
-	return internal.GetOrigMap(internal.Map(m))
-}
-
-func newMap(orig *[]otlpcommon.KeyValue) Map {
-	return Map(internal.NewMap(orig))
+	return internal.Map(m).GetOrig()
 }
 
 // Clear erases any existing entries in this Map instance.
@@ -62,13 +66,8 @@ func (m Map) EnsureCapacity(capacity int) {
 // If the key does not exist returns an invalid instance of the KeyValue and false.
 // Calling any functions on the returned invalid instance will cause a panic.
 func (m Map) Get(key string) (Value, bool) {
-	for i := range *m.getOrig() {
-		akv := &(*m.getOrig())[i]
-		if akv.Key == key {
-			return newValue(&akv.Value), true
-		}
-	}
-	return newValue(nil), false
+	v, ok := internal.Map(m).Get(key)
+	return Value(v), ok
 }
 
 // Remove removes the entry associated with the key and returns true if the key
@@ -90,7 +89,7 @@ func (m Map) RemoveIf(f func(string, Value) bool) {
 	newLen := 0
 	for i := 0; i < len(*m.getOrig()); i++ {
 		akv := &(*m.getOrig())[i]
-		if f(akv.Key, newValue(&akv.Value)) {
+		if f(akv.Key, newValueFromParent(internal.Map(m).GetValueParent(akv.Key))) {
 			continue
 		}
 		if newLen == i {
@@ -109,20 +108,22 @@ func (m Map) RemoveIf(f func(string, Value) bool) {
 func (m Map) PutEmpty(k string) Value {
 	if av, existing := m.Get(k); existing {
 		av.getOrig().Value = nil
-		return newValue(av.getOrig())
+		return newValueFromParent(internal.Map(m).GetValueParent(k))
 	}
 	*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k})
-	return newValue(&(*m.getOrig())[len(*m.getOrig())-1].Value)
+	return newValueFromParent(internal.Map(m).GetValueParent(k))
 }
 
 // PutStr performs the Insert or Update action. The Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (m Map) PutStr(k string, v string) {
+	internal.Map(m).EnsureMutability()
 	if av, existing := m.Get(k); existing {
 		av.SetStr(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueString(k, v))
+		orig := otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: v}}}
+		*m.getOrig() = append(*m.getOrig(), orig)
 	}
 }
 
@@ -133,7 +134,8 @@ func (m Map) PutInt(k string, v int64) {
 	if av, existing := m.Get(k); existing {
 		av.SetInt(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueInt(k, v))
+		orig := otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: v}}}
+		*m.getOrig() = append(*m.getOrig(), orig)
 	}
 }
 
@@ -144,7 +146,8 @@ func (m Map) PutDouble(k string, v float64) {
 	if av, existing := m.Get(k); existing {
 		av.SetDouble(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueDouble(k, v))
+		orig := otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: v}}}
+		*m.getOrig() = append(*m.getOrig(), orig)
 	}
 }
 
@@ -155,7 +158,8 @@ func (m Map) PutBool(k string, v bool) {
 	if av, existing := m.Get(k); existing {
 		av.SetBool(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newKeyValueBool(k, v))
+		orig := otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BoolValue{BoolValue: v}}}
+		*m.getOrig() = append(*m.getOrig(), orig)
 	}
 }
 
@@ -167,7 +171,8 @@ func (m Map) PutEmptyBytes(k string) ByteSlice {
 	} else {
 		*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &bv}})
 	}
-	return ByteSlice(internal.NewByteSlice(&bv.BytesValue))
+	val := internal.NewValueFromParent(internal.Map(m).GetValueParent(k))
+	return ByteSlice(internal.NewByteSliceFromParent(internal.ValueBytes{Value: val}))
 }
 
 // PutEmptyMap inserts or updates an empty map under given key and returns it.
@@ -178,7 +183,8 @@ func (m Map) PutEmptyMap(k string) Map {
 	} else {
 		*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &kvl}})
 	}
-	return Map(internal.NewMap(&kvl.KvlistValue.Values))
+	val := internal.NewValueFromParent(internal.Map(m).GetValueParent(k))
+	return Map(internal.NewMapFromParent(internal.ValueMap{Value: val}))
 }
 
 // PutEmptySlice inserts or updates an empty slice under given key and returns it.
@@ -189,7 +195,8 @@ func (m Map) PutEmptySlice(k string) Slice {
 	} else {
 		*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &vl}})
 	}
-	return Slice(internal.NewSlice(&vl.ArrayValue.Values))
+	val := internal.NewValueFromParent(internal.Map(m).GetValueParent(k))
+	return Slice(internal.NewSliceFromParent(internal.ValueSlice{Value: val}))
 }
 
 // Len returns the length of this map.
@@ -210,7 +217,7 @@ func (m Map) Len() int {
 func (m Map) Range(f func(k string, v Value) bool) {
 	for i := range *m.getOrig() {
 		kv := &(*m.getOrig())[i]
-		if !f(kv.Key, Value(internal.NewValue(&kv.Value))) {
+		if !f(kv.Key, Value(internal.NewValueFromParent(internal.Map(m).GetValueParent(kv.Key)))) {
 			break
 		}
 	}
@@ -227,7 +234,7 @@ func (m Map) CopyTo(dest Map) {
 			akv := &(*m.getOrig())[i]
 			destAkv := &(*dest.getOrig())[i]
 			destAkv.Key = akv.Key
-			newValue(&akv.Value).CopyTo(newValue(&destAkv.Value))
+			newValueFromOrig(&akv.Value).CopyTo(newValueFromOrig(&destAkv.Value))
 		}
 		return
 	}
@@ -237,7 +244,7 @@ func (m Map) CopyTo(dest Map) {
 	for i := range *m.getOrig() {
 		akv := &(*m.getOrig())[i]
 		origs[i].Key = akv.Key
-		newValue(&akv.Value).CopyTo(newValue(&origs[i].Value))
+		newValueFromOrig(&akv.Value).CopyTo(newValueFromOrig(&origs[i].Value))
 	}
 	*dest.getOrig() = origs
 }
@@ -264,7 +271,7 @@ func (m Map) FromRaw(rawMap map[string]any) error {
 	ix := 0
 	for k, iv := range rawMap {
 		origs[ix].Key = k
-		errs = multierr.Append(errs, newValue(&origs[ix].Value).FromRaw(iv))
+		errs = multierr.Append(errs, newValueFromOrig(&origs[ix].Value).FromRaw(iv))
 		ix++
 	}
 	*m.getOrig() = origs

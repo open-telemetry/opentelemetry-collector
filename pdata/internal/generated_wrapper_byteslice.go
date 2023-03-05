@@ -18,13 +18,33 @@
 package internal
 
 type ByteSlice struct {
+	parent Parent[*[]byte]
+}
+
+type stubByteSliceParent struct {
 	orig *[]byte
 }
 
-func GetOrigByteSlice(ms ByteSlice) *[]byte {
-	return ms.orig
+func (vp stubByteSliceParent) EnsureMutability() {}
+
+func (vp stubByteSliceParent) GetChildOrig() *[]byte {
+	return vp.orig
 }
 
-func NewByteSlice(orig *[]byte) ByteSlice {
-	return ByteSlice{orig: orig}
+var _ Parent[*[]byte] = (*stubByteSliceParent)(nil)
+
+func (ms ByteSlice) GetOrig() *[]byte {
+	return ms.parent.GetChildOrig()
+}
+
+func (ms ByteSlice) EnsureMutability() {
+	ms.parent.EnsureMutability()
+}
+
+func NewByteSliceFromOrig(orig *[]byte) ByteSlice {
+	return ByteSlice{parent: &stubByteSliceParent{orig: orig}}
+}
+
+func NewByteSliceFromParent(parent Parent[*[]byte]) ByteSlice {
+	return ByteSlice{parent: parent}
 }

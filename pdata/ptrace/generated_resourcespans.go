@@ -19,6 +19,7 @@ package ptrace
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -31,11 +32,46 @@ import (
 // Must use NewResourceSpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceSpans struct {
-	orig *otlptrace.ResourceSpans
+	parent ResourceSpansSlice
+	idx    int
 }
 
-func newResourceSpans(orig *otlptrace.ResourceSpans) ResourceSpans {
-	return ResourceSpans{orig}
+func (ms ResourceSpans) getOrig() *otlptrace.ResourceSpans {
+	return ms.parent.getChildOrig(ms.idx)
+}
+
+func (ms ResourceSpans) ensureMutability() {
+	ms.parent.ensureMutability()
+}
+
+type wrappedResourceSpansResource struct {
+	ResourceSpans
+}
+
+func (es wrappedResourceSpansResource) GetChildOrig() *otlpresource.Resource {
+	return &es.getOrig().Resource
+}
+
+func (es wrappedResourceSpansResource) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func (ms ResourceSpans) getScopeSpansOrig() *[]*otlptrace.ScopeSpans {
+	return &ms.getOrig().ScopeSpans
+}
+
+func newResourceSpansFromScopeSpansOrig(childOrig *[]*otlptrace.ScopeSpans) ResourceSpans {
+	return newResourceSpansFromOrig(&otlptrace.ResourceSpans{
+		ScopeSpans: *childOrig,
+	})
+}
+
+func newResourceSpansFromOrig(orig *otlptrace.ResourceSpans) ResourceSpans {
+	return ResourceSpans{parent: newResourceSpansSliceFromElementOrig(orig)}
+}
+
+func newResourceSpansFromParent(parent ResourceSpansSlice, idx int) ResourceSpans {
+	return ResourceSpans{parent: parent, idx: idx}
 }
 
 // NewResourceSpans creates a new empty ResourceSpans.
@@ -43,38 +79,42 @@ func newResourceSpans(orig *otlptrace.ResourceSpans) ResourceSpans {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceSpans() ResourceSpans {
-	return newResourceSpans(&otlptrace.ResourceSpans{})
+	return newResourceSpansFromOrig(&otlptrace.ResourceSpans{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.ResourceSpans{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlptrace.ResourceSpans{}
 }
 
 // Resource returns the resource associated with this ResourceSpans.
 func (ms ResourceSpans) Resource() pcommon.Resource {
-	return pcommon.Resource(internal.NewResource(&ms.orig.Resource))
+	return pcommon.Resource(internal.NewResourceFromParent(wrappedResourceSpansResource{ResourceSpans: ms}))
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceSpans.
 func (ms ResourceSpans) SchemaUrl() string {
-	return ms.orig.SchemaUrl
+	return ms.getOrig().SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ResourceSpans.
 func (ms ResourceSpans) SetSchemaUrl(v string) {
-	ms.orig.SchemaUrl = v
+	ms.ensureMutability()
+	ms.getOrig().SchemaUrl = v
 }
 
-// ScopeSpans returns the ScopeSpans associated with this ResourceSpans.
+// ScopeSpans returns the <no value> associated with this ResourceSpans.
 func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
-	return newScopeSpansSlice(&ms.orig.ScopeSpans)
+	return newScopeSpansSliceFromParent(ms)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
+	dest.ensureMutability()
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.ScopeSpans().CopyTo(dest.ScopeSpans())

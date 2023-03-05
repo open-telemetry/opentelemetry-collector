@@ -16,11 +16,14 @@ package pmetric
 
 import (
 	"testing"
+	"time"
 
 	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	"go.opentelemetry.io/collector/pdata/internal"
 
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
@@ -178,7 +181,7 @@ func TestHistogramWithNilSum(t *testing.T) {
 	histogramDataPoints.AppendEmpty()
 	dest := ilm.Metrics().AppendEmpty()
 	histo.CopyTo(dest)
-	assert.EqualValues(t, histo, dest)
+	assert.EqualValues(t, histo.getOrig(), dest.getOrig())
 }
 
 func TestHistogramWithValidSum(t *testing.T) {
@@ -190,7 +193,7 @@ func TestHistogramWithValidSum(t *testing.T) {
 	histogramDataPoints.At(0).SetSum(10)
 	dest := ilm.Metrics().AppendEmpty()
 	histo.CopyTo(dest)
-	assert.EqualValues(t, histo, dest)
+	assert.EqualValues(t, histo.getOrig(), dest.getOrig())
 }
 
 func TestOtlpToInternalReadOnly(t *testing.T) {
@@ -638,12 +641,108 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 	}, md.getOrig())
 }
 
+func TestMetricsMutationCopyOnWrite(t *testing.T) {
+	oldMS := NewMetrics()
+	oldRS := oldMS.ResourceMetrics().AppendEmpty()
+	oldRes := oldRS.Resource()
+	oldRes.Attributes().PutStr("resource", "v")
+	oldSM := oldRS.ScopeMetrics().AppendEmpty()
+	oldScope := oldSM.Scope()
+	oldScope.SetName("scope-name")
+	oldMetric := oldSM.Metrics().AppendEmpty()
+	oldMetric.SetName("metric-name")
+	oldDP := oldMetric.SetEmptySum().DataPoints().AppendEmpty()
+	oldDP.Attributes().PutStr("dp", "v")
+	oldDP.SetIntValue(123)
+
+	assert.False(t, internal.Metrics(oldMS).IsShared())
+
+	newMS := oldMS.AsShared()
+
+	assert.True(t, internal.Metrics(oldMS).IsShared())
+	assert.True(t, internal.Metrics(newMS).IsShared())
+
+	newDP := newMS.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+
+	// Mutation of an object should not affect the metrics before marking them as shared.
+	newDP.SetIntValue(456)
+
+	assert.Equal(t, int64(123), oldDP.IntValue())
+	assert.True(t, internal.Metrics(oldMS).IsShared())
+	assert.False(t, internal.Metrics(newMS).IsShared())
+}
+
 func TestMetricsCopyTo(t *testing.T) {
 	metrics := NewMetrics()
 	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
 	metricsCopy := NewMetrics()
 	metrics.CopyTo(metricsCopy)
 	assert.EqualValues(t, metrics, metricsCopy)
+}
+
+func BenchmarkMetricsCopyTo(b *testing.B) {
+	metrics := NewMetrics()
+	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		metrics.CopyTo(NewMetrics())
+	}
+}
+
+func BenchmarkMetricsUsage(b *testing.B) {
+	metrics := NewMetrics()
+	internal.Metrics(metrics).SetOrig(&otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: *generateTestResourceMetricsSlice().getOrig(),
+	})
+	ts := pcommon.NewTimestampFromTime(time.Now())
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for bb := 0; bb < b.N; bb++ {
+		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+			rm := metrics.ResourceMetrics().At(i)
+			res := rm.Resource()
+			res.Attributes().PutStr("foo", "bar")
+			v, ok := res.Attributes().Get("foo")
+			assert.True(b, ok)
+			assert.Equal(b, "bar", v.Str())
+			v.SetStr("new-bar")
+			assert.Equal(b, "new-bar", v.Str())
+			res.Attributes().Remove("foo")
+			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+				sm := rm.ScopeMetrics().At(j)
+				for k := 0; k < sm.Metrics().Len(); k++ {
+					m := sm.Metrics().At(k)
+					m.SetName("new_metric_name")
+					assert.Equal(b, "new_metric_name", m.Name())
+					assert.Equal(b, MetricTypeSum, m.Type())
+					m.Sum().SetAggregationTemporality(AggregationTemporalityCumulative)
+					assert.Equal(b, AggregationTemporalityCumulative, m.Sum().AggregationTemporality())
+					m.Sum().SetIsMonotonic(true)
+					assert.True(b, m.Sum().IsMonotonic())
+					for l := 0; l < m.Sum().DataPoints().Len(); l++ {
+						dp := m.Sum().DataPoints().At(l)
+						dp.SetIntValue(123)
+						assert.Equal(b, int64(123), dp.IntValue())
+						assert.Equal(b, NumberDataPointValueTypeInt, dp.ValueType())
+						dp.SetStartTimestamp(ts)
+						assert.Equal(b, ts, dp.StartTimestamp())
+					}
+					dp := m.Sum().DataPoints().AppendEmpty()
+					dp.Attributes().PutStr("foo", "bar")
+					dp.SetDoubleValue(123)
+					dp.SetStartTimestamp(ts)
+					dp.SetTimestamp(ts)
+					m.Sum().DataPoints().RemoveIf(func(dp NumberDataPoint) bool {
+						_, ok := dp.Attributes().Get("foo")
+						return ok
+					})
+				}
+			}
+		}
+	}
 }
 
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {

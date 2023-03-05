@@ -19,27 +19,60 @@ import (
 )
 
 type Slice struct {
+	parent Parent[*[]otlpcommon.AnyValue]
+}
+
+type stubSliceParent struct {
 	orig *[]otlpcommon.AnyValue
 }
 
-func GetOrigSlice(ms Slice) *[]otlpcommon.AnyValue {
-	return ms.orig
+func (sp stubSliceParent) EnsureMutability() {}
+
+func (sp stubSliceParent) GetChildOrig() *[]otlpcommon.AnyValue {
+	return sp.orig
 }
 
-func NewSlice(orig *[]otlpcommon.AnyValue) Slice {
-	return Slice{orig: orig}
+var _ Parent[*[]otlpcommon.AnyValue] = (*stubSliceParent)(nil)
+
+func (ms Slice) GetOrig() *[]otlpcommon.AnyValue {
+	return ms.parent.GetChildOrig()
+}
+
+func (ms Slice) GetValueParent(idx int) SliceValueParent {
+	return SliceValueParent{Slice: ms, idx: idx}
+}
+
+type SliceValueParent struct {
+	Slice
+	idx int
+}
+
+func (ps SliceValueParent) GetChildOrig() *otlpcommon.AnyValue {
+	return &(*ps.GetOrig())[ps.idx]
+}
+
+func (ms Slice) EnsureMutability() {
+	ms.parent.EnsureMutability()
+}
+
+func NewSliceFromOrig(orig *[]otlpcommon.AnyValue) Slice {
+	return Slice{parent: &stubSliceParent{orig: orig}}
+}
+
+func NewSliceFromParent(parent Parent[*[]otlpcommon.AnyValue]) Slice {
+	return Slice{parent: parent}
 }
 
 func GenerateTestSlice() Slice {
 	orig := []otlpcommon.AnyValue{}
-	tv := NewSlice(&orig)
+	tv := NewSliceFromOrig(&orig)
 	FillTestSlice(tv)
 	return tv
 }
 
 func FillTestSlice(tv Slice) {
-	*tv.orig = make([]otlpcommon.AnyValue, 7)
+	*tv.GetOrig() = make([]otlpcommon.AnyValue, 7)
 	for i := 0; i < 7; i++ {
-		FillTestValue(NewValue(&(*tv.orig)[i]))
+		FillTestValue(NewValueFromOrig(&(*tv.GetOrig())[i]))
 	}
 }

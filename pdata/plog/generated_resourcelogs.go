@@ -20,6 +20,7 @@ package plog
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -31,11 +32,46 @@ import (
 // Must use NewResourceLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceLogs struct {
-	orig *otlplogs.ResourceLogs
+	parent ResourceLogsSlice
+	idx    int
 }
 
-func newResourceLogs(orig *otlplogs.ResourceLogs) ResourceLogs {
-	return ResourceLogs{orig}
+func (ms ResourceLogs) getOrig() *otlplogs.ResourceLogs {
+	return ms.parent.getChildOrig(ms.idx)
+}
+
+func (ms ResourceLogs) ensureMutability() {
+	ms.parent.ensureMutability()
+}
+
+type wrappedResourceLogsResource struct {
+	ResourceLogs
+}
+
+func (es wrappedResourceLogsResource) GetChildOrig() *otlpresource.Resource {
+	return &es.getOrig().Resource
+}
+
+func (es wrappedResourceLogsResource) EnsureMutability() {
+	es.ensureMutability()
+}
+
+func (ms ResourceLogs) getScopeLogsOrig() *[]*otlplogs.ScopeLogs {
+	return &ms.getOrig().ScopeLogs
+}
+
+func newResourceLogsFromScopeLogsOrig(childOrig *[]*otlplogs.ScopeLogs) ResourceLogs {
+	return newResourceLogsFromOrig(&otlplogs.ResourceLogs{
+		ScopeLogs: *childOrig,
+	})
+}
+
+func newResourceLogsFromOrig(orig *otlplogs.ResourceLogs) ResourceLogs {
+	return ResourceLogs{parent: newResourceLogsSliceFromElementOrig(orig)}
+}
+
+func newResourceLogsFromParent(parent ResourceLogsSlice, idx int) ResourceLogs {
+	return ResourceLogs{parent: parent, idx: idx}
 }
 
 // NewResourceLogs creates a new empty ResourceLogs.
@@ -43,38 +79,42 @@ func newResourceLogs(orig *otlplogs.ResourceLogs) ResourceLogs {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceLogs() ResourceLogs {
-	return newResourceLogs(&otlplogs.ResourceLogs{})
+	return newResourceLogsFromOrig(&otlplogs.ResourceLogs{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlplogs.ResourceLogs{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlplogs.ResourceLogs{}
 }
 
 // Resource returns the resource associated with this ResourceLogs.
 func (ms ResourceLogs) Resource() pcommon.Resource {
-	return pcommon.Resource(internal.NewResource(&ms.orig.Resource))
+	return pcommon.Resource(internal.NewResourceFromParent(wrappedResourceLogsResource{ResourceLogs: ms}))
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceLogs.
 func (ms ResourceLogs) SchemaUrl() string {
-	return ms.orig.SchemaUrl
+	return ms.getOrig().SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ResourceLogs.
 func (ms ResourceLogs) SetSchemaUrl(v string) {
-	ms.orig.SchemaUrl = v
+	ms.ensureMutability()
+	ms.getOrig().SchemaUrl = v
 }
 
-// ScopeLogs returns the ScopeLogs associated with this ResourceLogs.
+// ScopeLogs returns the <no value> associated with this ResourceLogs.
 func (ms ResourceLogs) ScopeLogs() ScopeLogsSlice {
-	return newScopeLogsSlice(&ms.orig.ScopeLogs)
+	return newScopeLogsSliceFromParent(ms)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
+	dest.ensureMutability()
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.ScopeLogs().CopyTo(dest.ScopeLogs())

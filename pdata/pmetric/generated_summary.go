@@ -29,11 +29,33 @@ import (
 // Must use NewSummary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Summary struct {
-	orig *otlpmetrics.Summary
+	parent Metric
 }
 
-func newSummary(orig *otlpmetrics.Summary) Summary {
-	return Summary{orig}
+func (ms Summary) getOrig() *otlpmetrics.Summary {
+	return ms.parent.getSummaryOrig()
+}
+
+func (ms Summary) ensureMutability() {
+	ms.parent.ensureMutability()
+}
+
+func (ms Summary) getDataPointsOrig() *[]*otlpmetrics.SummaryDataPoint {
+	return &ms.getOrig().DataPoints
+}
+
+func newSummaryFromDataPointsOrig(childOrig *[]*otlpmetrics.SummaryDataPoint) Summary {
+	return newSummaryFromOrig(&otlpmetrics.Summary{
+		DataPoints: *childOrig,
+	})
+}
+
+func newSummaryFromOrig(orig *otlpmetrics.Summary) Summary {
+	return Summary{parent: newMetricFromSummaryOrig(orig)}
+}
+
+func newSummaryFromParent(parent Metric) Summary {
+	return Summary{parent: parent}
 }
 
 // NewSummary creates a new empty Summary.
@@ -41,22 +63,25 @@ func newSummary(orig *otlpmetrics.Summary) Summary {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSummary() Summary {
-	return newSummary(&otlpmetrics.Summary{})
+	return newSummaryFromOrig(&otlpmetrics.Summary{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Summary) MoveTo(dest Summary) {
-	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.Summary{}
+	ms.ensureMutability()
+	dest.ensureMutability()
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = otlpmetrics.Summary{}
 }
 
-// DataPoints returns the DataPoints associated with this Summary.
+// DataPoints returns the <no value> associated with this Summary.
 func (ms Summary) DataPoints() SummaryDataPointSlice {
-	return newSummaryDataPointSlice(&ms.orig.DataPoints)
+	return newSummaryDataPointSliceFromParent(ms)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Summary) CopyTo(dest Summary) {
+	dest.ensureMutability()
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }

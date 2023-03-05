@@ -70,14 +70,14 @@ func TestValueType(t *testing.T) {
 func TestValueMap(t *testing.T) {
 	m1 := NewValueMap()
 	assert.Equal(t, ValueTypeMap, m1.Type())
-	assert.Equal(t, NewMap(), m1.Map())
+	assert.Equal(t, NewMap().getOrig(), m1.Map().getOrig())
 	assert.Equal(t, 0, m1.Map().Len())
 
 	m1.Map().PutDouble("double_key", 123)
 	assert.Equal(t, 1, m1.Map().Len())
 	got, exists := m1.Map().Get("double_key")
 	assert.True(t, exists)
-	assert.Equal(t, NewValueDouble(123), got)
+	assert.Equal(t, NewValueDouble(123).getOrig(), got.getOrig())
 
 	// Create a second map.
 	m2 := m1.Map().PutEmptyMap("child_map")
@@ -88,13 +88,13 @@ func TestValueMap(t *testing.T) {
 	assert.Equal(t, 1, m2.Len())
 	got, exists = m2.Get("key_in_child")
 	assert.True(t, exists)
-	assert.Equal(t, NewValueStr("somestr"), got)
+	assert.Equal(t, NewValueStr("somestr").getOrig(), got.getOrig())
 
 	// Insert the second map as a child. This should perform a deep copy.
 	assert.EqualValues(t, 2, m1.Map().Len())
 	got, exists = m1.Map().Get("double_key")
 	assert.True(t, exists)
-	assert.Equal(t, NewValueDouble(123), got)
+	assert.Equal(t, NewValueDouble(123).getOrig(), got.getOrig())
 	got, exists = m1.Map().Get("child_map")
 	assert.True(t, exists)
 	assert.Equal(t, m2, got.Map())
@@ -104,26 +104,26 @@ func TestValueMap(t *testing.T) {
 	assert.EqualValues(t, 1, m2.Len())
 	got, exists = m2.Get("key_in_child")
 	assert.True(t, exists)
-	assert.Equal(t, NewValueStr("somestr2"), got)
+	assert.Equal(t, NewValueStr("somestr2").getOrig(), got.getOrig())
 
 	// The child map inside m1 should be modified.
 	childMap, childMapExists := m1.Map().Get("child_map")
 	require.True(t, childMapExists)
 	got, exists = childMap.Map().Get("key_in_child")
 	require.True(t, exists)
-	assert.Equal(t, NewValueStr("somestr2"), got)
+	assert.Equal(t, NewValueStr("somestr2").getOrig(), got.getOrig())
 
 	// Now modify the inserted map (not the source)
 	childMap.Map().PutStr("key_in_child", "somestr3")
 	assert.EqualValues(t, 1, childMap.Map().Len())
 	got, exists = childMap.Map().Get("key_in_child")
 	require.True(t, exists)
-	assert.Equal(t, NewValueStr("somestr3"), got)
+	assert.Equal(t, NewValueStr("somestr3").getOrig(), got.getOrig())
 
 	// The source child map should be modified.
 	got, exists = m2.Get("key_in_child")
 	require.True(t, exists)
-	assert.Equal(t, NewValueStr("somestr3"), got)
+	assert.Equal(t, NewValueStr("somestr3").getOrig(), got.getOrig())
 
 	removed := m1.Map().Remove("double_key")
 	assert.True(t, removed)
@@ -139,32 +139,32 @@ func TestValueMap(t *testing.T) {
 
 	// Test nil KvlistValue case for Map() func.
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
-	m1 = newValue(orig)
+	m1 = newValueFromOrig(orig)
 	assert.EqualValues(t, Map{}, m1.Map())
 }
 
 func TestValueSlice(t *testing.T) {
 	a1 := NewValueSlice()
 	assert.EqualValues(t, ValueTypeSlice, a1.Type())
-	assert.EqualValues(t, NewSlice(), a1.Slice())
+	assert.EqualValues(t, NewSlice().getOrig(), a1.Slice().getOrig())
 	assert.EqualValues(t, 0, a1.Slice().Len())
 
 	a1.Slice().AppendEmpty().SetDouble(123)
 	assert.EqualValues(t, 1, a1.Slice().Len())
-	assert.EqualValues(t, NewValueDouble(123), a1.Slice().At(0))
+	assert.EqualValues(t, NewValueDouble(123).getOrig(), a1.Slice().At(0).getOrig())
 	// Create a second array.
 	a2 := NewValueSlice()
 	assert.EqualValues(t, 0, a2.Slice().Len())
 
 	a2.Slice().AppendEmpty().SetStr("somestr")
 	assert.EqualValues(t, 1, a2.Slice().Len())
-	assert.EqualValues(t, NewValueStr("somestr"), a2.Slice().At(0))
+	assert.EqualValues(t, NewValueStr("somestr").getOrig(), a2.Slice().At(0).getOrig())
 
 	// Insert the second array as a child.
 	a2.CopyTo(a1.Slice().AppendEmpty())
 	assert.EqualValues(t, 2, a1.Slice().Len())
-	assert.EqualValues(t, NewValueDouble(123), a1.Slice().At(0))
-	assert.EqualValues(t, a2, a1.Slice().At(1))
+	assert.EqualValues(t, NewValueDouble(123).getOrig(), a1.Slice().At(0).getOrig())
+	assert.EqualValues(t, a2.getOrig(), a1.Slice().At(1).getOrig())
 
 	// Check that the array was correctly inserted.
 	childArray := a1.Slice().At(1)
@@ -174,10 +174,6 @@ func TestValueSlice(t *testing.T) {
 	v := childArray.Slice().At(0)
 	assert.EqualValues(t, ValueTypeStr, v.Type())
 	assert.EqualValues(t, "somestr", v.Str())
-
-	// Test nil values case for Slice() func.
-	a1 = newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}})
-	assert.EqualValues(t, newSlice(nil), a1.Slice())
 }
 
 func TestNilOrigSetValue(t *testing.T) {
@@ -214,23 +210,23 @@ func TestValue_CopyTo(t *testing.T) {
 	// Test nil KvlistValue case for Map() func.
 	dest := NewValueEmpty()
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
-	newValue(orig).CopyTo(dest)
+	newValueFromOrig(orig).CopyTo(dest)
 	assert.Nil(t, dest.getOrig().Value.(*otlpcommon.AnyValue_KvlistValue).KvlistValue)
 
 	// Test nil ArrayValue case for Slice() func.
 	dest = NewValueEmpty()
 	orig = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}
-	newValue(orig).CopyTo(dest)
+	newValueFromOrig(orig).CopyTo(dest)
 	assert.Nil(t, dest.getOrig().Value.(*otlpcommon.AnyValue_ArrayValue).ArrayValue)
 
 	// Test copy empty value.
 	orig = &otlpcommon.AnyValue{}
-	newValue(orig).CopyTo(dest)
+	newValueFromOrig(orig).CopyTo(dest)
 	assert.Nil(t, dest.getOrig().Value)
 
 	av := NewValueEmpty()
 	destVal := otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{}}
-	av.CopyTo(newValue(&destVal))
+	av.CopyTo(newValueFromOrig(&destVal))
 	assert.EqualValues(t, nil, destVal.Value)
 }
 
@@ -239,7 +235,7 @@ func TestSliceWithNilValues(t *testing.T) {
 		{},
 		{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
 	}
-	sm := newSlice(&origWithNil)
+	sm := newSliceFromOrig(&origWithNil)
 
 	val := sm.At(0)
 	assert.EqualValues(t, ValueTypeEmpty, val.Type())
