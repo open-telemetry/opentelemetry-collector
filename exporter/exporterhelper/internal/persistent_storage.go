@@ -19,8 +19,8 @@ import (
 	"errors"
 	"strconv"
 	"sync"
+	"sync/atomic"
 
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/extension/experimental/storage"
@@ -101,7 +101,7 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, capac
 		putChan:     make(chan struct{}, capacity),
 		reqChan:     make(chan Request),
 		stopChan:    make(chan struct{}),
-		itemsCount:  atomic.NewUint64(0),
+		itemsCount:  &atomic.Uint64{},
 	}
 
 	initPersistentContiguousStorage(ctx, pcs)

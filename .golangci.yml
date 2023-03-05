@@ -103,9 +103,8 @@ linters-settings:
     list-type: denylist
     include-go-root: true
     packages-with-error-message:
-      # See https://github.com/open-telemetry/opentelemetry-collector/issues/5200 for rationale
-      - sync/atomic: "Use go.uber.org/atomic instead of sync/atomic"
       - github.com/pkg/errors: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
+      - go.uber.org/atomic: "Use 'sync/atomic' instead of go.uber.org/atomic"
     # Add a different guard rule so that we can ignore tests.
     additional-guards:
       - list-type: denylist

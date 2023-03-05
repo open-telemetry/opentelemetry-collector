@@ -18,8 +18,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
-
-	"go.uber.org/atomic"
+	"sync/atomic"
 )
 
 var globalRegistry = NewRegistry()
@@ -91,9 +90,11 @@ func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Ga
 	}
 	switch g.stage {
 	case StageAlpha:
-		g.enabled = atomic.NewBool(false)
+		g.enabled = &atomic.Bool{}
 	case StageBeta, StageStable:
-		g.enabled = atomic.NewBool(true)
+		enabled := &atomic.Bool{}
+		enabled.Store(true)
+		g.enabled = enabled
 	default:
 		return nil, fmt.Errorf("unknown stage value %q for gate %q", stage, id)
 	}

@@ -19,12 +19,12 @@ package internal
 import (
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 )
 
 type stringRequest struct {
@@ -159,7 +159,7 @@ func newConsumerState(t *testing.T) *consumerState {
 	return &consumerState{
 		t:            t,
 		consumed:     make(map[string]bool),
-		consumedOnce: atomic.NewBool(false),
+		consumedOnce: &atomic.Bool{},
 	}
 }
 
