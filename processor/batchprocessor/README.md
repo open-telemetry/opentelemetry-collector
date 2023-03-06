@@ -49,7 +49,7 @@ examples on using the processor.
 ## Batching and client metadata
 
 Batching by metadata enables support for multi-tenant OpenTelemetry
-Collector pipelines with batching over groups of data with the same
+Collector pipelines with batching over groups of data having the same
 authorization metadata.
 
 Receivers should be configured with `include_metadata: true` so that
@@ -60,7 +60,7 @@ allocation of a new background task in the Collector that runs for the
 lifetime of the process.  Users of the batching processor configured
 with metadata keys should consider use of an Auth extension to
 validate the relevant metadata-key values, otherwise a malicious user
-the collector to leak an unbounded amount memory.
+can cause the collector to leak an unbounded amount of memory.
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
