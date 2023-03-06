@@ -23,12 +23,14 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // batch_processor is a component that accepts spans and metrics, places them
@@ -41,21 +43,45 @@ import (
 // - cfg.Timeout is elapsed since the timestamp when the previous batch was sent out.
 type batchProcessor struct {
 	logger           *zap.Logger
-	exportCtx        context.Context
-	timer            *time.Timer
 	timeout          time.Duration
 	sendBatchSize    int
 	sendBatchMaxSize int
 
-	newItem chan any
-	batch   batch
+	// batchFunc is a factory for new batch objects corresponding
+	// with the appropriate signal.
+	batchFunc func() batch
+
+	// metadataKeys is the configured list of metadata keys.  When
+	// empty, the `singleton` batcher is used.  When non-empty,
+	// each distinct combination of metadata keys and values
+	// triggers a new batcher, counted in `goroutines`.
+	metadataKeys []string
 
 	shutdownC  chan struct{}
 	goroutines sync.WaitGroup
 
 	telemetry *batchProcessorTelemetry
+
+	// singleton is used when metadataKeys is empty, to avoid the
+	// additional lock and map operations.
+	singleton *batcher
+
+	lock     sync.Mutex
+	batchers map[attribute.Set]*batcher
 }
 
+// batcher is a single instance of the batcher logic.  When metadata
+// keys are in use, one of these is created per distinct combination
+// of values.
+type batcher struct {
+	processor *batchProcessor
+	exportCtx context.Context
+	timer     *time.Timer
+	newItem   chan any
+	batch     batch
+}
+
+// batch is an interface generalizing the individual signal types.
 type batch interface {
 	// export the current batch
 	export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (sentBatchSize int, sentBatchBytes int, err error)
@@ -71,24 +97,49 @@ var _ consumer.Traces = (*batchProcessor)(nil)
 var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
 
-func newBatchProcessor(set processor.CreateSettings, cfg *Config, batch batch, useOtel bool) (*batchProcessor, error) {
+func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func() batch, useOtel bool) (*batchProcessor, error) {
 	bpt, err := newBatchProcessorTelemetry(set, useOtel)
 	if err != nil {
 		return nil, fmt.Errorf("error to create batch processor telemetry %w", err)
 	}
-
 	return &batchProcessor{
 		logger:    set.Logger,
-		exportCtx: bpt.exportCtx,
 		telemetry: bpt,
 
 		sendBatchSize:    int(cfg.SendBatchSize),
 		sendBatchMaxSize: int(cfg.SendBatchMaxSize),
 		timeout:          cfg.Timeout,
-		newItem:          make(chan any, runtime.NumCPU()),
-		batch:            batch,
+		batchFunc:        batchFunc,
 		shutdownC:        make(chan struct{}, 1),
+		metadataKeys:     cfg.MetadataKeys,
 	}, nil
+}
+
+func (bp *batchProcessor) newBatcher(attrs []attribute.KeyValue) *batcher {
+	md := map[string][]string{}
+	for _, attr := range attrs {
+		switch attr.Value.Type() {
+		case attribute.STRING:
+			md[string(attr.Key)] = []string{attr.Value.AsString()}
+		case attribute.STRINGSLICE:
+			md[string(attr.Key)] = attr.Value.AsStringSlice()
+		default:
+			panic("internal error")
+		}
+	}
+	exportCtx := client.NewContext(context.Background(), client.Info{
+		Metadata: client.NewMetadata(md),
+	})
+	b := &batcher{
+		processor: bp,
+
+		newItem:   make(chan any, runtime.NumCPU()),
+		exportCtx: exportCtx,
+		batch:     bp.batchFunc(),
+	}
+	b.processor.goroutines.Add(1)
+	go b.start()
+	return b
 }
 
 func (bp *batchProcessor) Capabilities() consumer.Capabilities {
@@ -98,12 +149,19 @@ func (bp *batchProcessor) Capabilities() consumer.Capabilities {
 // Start is invoked during service startup.
 func (bp *batchProcessor) Start(context.Context, component.Host) error {
 	bp.goroutines.Add(1)
-	go bp.startProcessingCycle()
+	if len(bp.metadataKeys) == 0 {
+		bp.singleton = bp.newBatcher(nil)
+	} else {
+		bp.batchers = map[attribute.Set]*batcher{}
+	}
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
 func (bp *batchProcessor) Shutdown(context.Context) error {
+	// Done corresponds with the initial Add(1) in Start.
+	bp.goroutines.Done()
+
 	close(bp.shutdownC)
 
 	// Wait until all goroutines are done.
@@ -111,107 +169,135 @@ func (bp *batchProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (bp *batchProcessor) startProcessingCycle() {
-	defer bp.goroutines.Done()
-	bp.timer = time.NewTimer(bp.timeout)
+func (b *batcher) start() {
+	defer b.processor.goroutines.Done()
+
+	b.timer = time.NewTimer(b.processor.timeout)
 	for {
 		select {
-		case <-bp.shutdownC:
+		case <-b.processor.shutdownC:
 		DONE:
 			for {
 				select {
-				case item := <-bp.newItem:
-					bp.processItem(item)
+				case item := <-b.newItem:
+					b.processItem(item)
 				default:
 					break DONE
 				}
 			}
 			// This is the close of the channel
-			if bp.batch.itemCount() > 0 {
+			if b.batch.itemCount() > 0 {
 				// TODO: Set a timeout on sendTraces or
 				// make it cancellable using the context that Shutdown gets as a parameter
-				bp.sendItems(triggerTimeout)
+				b.sendItems(triggerTimeout)
 			}
 			return
-		case item := <-bp.newItem:
+		case item := <-b.newItem:
 			if item == nil {
 				continue
 			}
-			bp.processItem(item)
-		case <-bp.timer.C:
-			if bp.batch.itemCount() > 0 {
-				bp.sendItems(triggerTimeout)
+			b.processItem(item)
+		case <-b.timer.C:
+			if b.batch.itemCount() > 0 {
+				b.sendItems(triggerTimeout)
 			}
-			bp.resetTimer()
+			b.resetTimer()
 		}
 	}
 }
 
-func (bp *batchProcessor) processItem(item any) {
-	bp.batch.add(item)
+func (b *batcher) processItem(item any) {
+	b.batch.add(item)
 	sent := false
-	for bp.batch.itemCount() >= bp.sendBatchSize {
+	for b.batch.itemCount() >= b.processor.sendBatchSize {
 		sent = true
-		bp.sendItems(triggerBatchSize)
+		b.sendItems(triggerBatchSize)
 	}
 
 	if sent {
-		bp.stopTimer()
-		bp.resetTimer()
+		b.stopTimer()
+		b.resetTimer()
 	}
 }
 
-func (bp *batchProcessor) stopTimer() {
-	if !bp.timer.Stop() {
-		<-bp.timer.C
+func (b *batcher) stopTimer() {
+	if !b.timer.Stop() {
+		<-b.timer.C
 	}
 }
 
-func (bp *batchProcessor) resetTimer() {
-	bp.timer.Reset(bp.timeout)
+func (b *batcher) resetTimer() {
+	b.timer.Reset(b.processor.timeout)
 }
 
-func (bp *batchProcessor) sendItems(trigger trigger) {
-	sent, bytes, err := bp.batch.export(bp.exportCtx, bp.sendBatchMaxSize, bp.telemetry.detailed)
+func (b *batcher) sendItems(trigger trigger) {
+	sent, bytes, err := b.batch.export(b.exportCtx, b.processor.sendBatchMaxSize, b.processor.telemetry.detailed)
 	if err != nil {
-		bp.logger.Warn("Sender failed", zap.Error(err))
+		b.processor.logger.Warn("Sender failed", zap.Error(err))
 	} else {
-		bp.telemetry.record(trigger, int64(sent), int64(bytes))
+		b.processor.telemetry.record(trigger, int64(sent), int64(bytes))
 	}
+}
+
+func (bp *batchProcessor) findBatcher(ctx context.Context) *batcher {
+	if bp.singleton != nil {
+		return bp.singleton
+	}
+
+	info := client.FromContext(ctx)
+	var attrs []attribute.KeyValue
+	for _, k := range bp.metadataKeys {
+		vs := info.Metadata.Get(k)
+		if len(vs) == 1 {
+			attrs = append(attrs, attribute.String(k, vs[0]))
+		} else {
+			attrs = append(attrs, attribute.StringSlice(k, vs))
+		}
+	}
+	aset := attribute.NewSet(attrs...)
+
+	bp.lock.Lock()
+	defer bp.lock.Unlock()
+
+	b, ok := bp.batchers[aset]
+	if !ok {
+		b = bp.newBatcher(aset.ToSlice())
+		bp.batchers[aset] = b
+	}
+	return b
 }
 
 // ConsumeTraces implements TracesProcessor
-func (bp *batchProcessor) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
-	bp.newItem <- td
+func (bp *batchProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	bp.findBatcher(ctx).newItem <- td
 	return nil
 }
 
 // ConsumeMetrics implements MetricsProcessor
-func (bp *batchProcessor) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
-	// First thing is convert into a different internal format
-	bp.newItem <- md
+func (bp *batchProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	bp.findBatcher(ctx).newItem <- md
 	return nil
 }
 
 // ConsumeLogs implements LogsProcessor
-func (bp *batchProcessor) ConsumeLogs(_ context.Context, ld plog.Logs) error {
-	bp.newItem <- ld
+func (bp *batchProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	bp.findBatcher(ctx).newItem <- ld
 	return nil
 }
 
 // newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
 func newBatchTracesProcessor(set processor.CreateSettings, next consumer.Traces, cfg *Config, useOtel bool) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, newBatchTraces(next), useOtel)
+	return newBatchProcessor(set, cfg, func() batch { return newBatchTraces(next) }, useOtel)
 }
 
 // newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
 func newBatchMetricsProcessor(set processor.CreateSettings, next consumer.Metrics, cfg *Config, useOtel bool) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, newBatchMetrics(next), useOtel)
+	return newBatchProcessor(set, cfg, func() batch { return newBatchMetrics(next) }, useOtel)
 }
 
 // newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
 func newBatchLogsProcessor(set processor.CreateSettings, next consumer.Logs, cfg *Config, useOtel bool) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, newBatchLogs(next), useOtel)
+	return newBatchProcessor(set, cfg, func() batch { return newBatchLogs(next) }, useOtel)
 }
 
 type batchTraces struct {

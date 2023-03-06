@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"math/rand"
 	"sync"
 	"testing"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
@@ -818,4 +820,116 @@ func logsReceivedBySeverityText(lds []plog.Logs) map[string]plog.LogRecord {
 func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	processortest.VerifyShutdown(t, factory, factory.CreateDefaultConfig())
+}
+
+type metadataTracesSink struct {
+	*consumertest.TracesSink
+
+	lock               sync.Mutex
+	spanCountByToken12 map[string]int
+}
+
+func formatTwo(first, second []string) string {
+	return fmt.Sprintf("%s;%s", first, second)
+}
+
+func (mts *metadataTracesSink) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	info := client.FromContext(ctx)
+	token1 := info.Metadata.Get("token1")
+	token2 := info.Metadata.Get("token2")
+	mts.lock.Lock()
+	defer mts.lock.Unlock()
+
+	mts.spanCountByToken12[formatTwo(
+		token1,
+		token2,
+	)] += td.SpanCount()
+	return mts.TracesSink.ConsumeTraces(ctx, td)
+}
+
+func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
+	sink := &metadataTracesSink{
+		TracesSink:         &consumertest.TracesSink{},
+		spanCountByToken12: map[string]int{},
+	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.SendBatchSize = 1000
+	cfg.Timeout = 10 * time.Minute
+	cfg.MetadataKeys = []string{"token1", "token2"}
+	creationSet := processortest.NewNopCreateSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, false)
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	bg := context.Background()
+	callCtxs := []context.Context{
+		client.NewContext(bg, client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"token1": []string{"single"},
+				"token3": []string{"n/a"},
+			}),
+		}),
+		client.NewContext(bg, client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"token1": []string{"single"},
+				"token2": []string{"one", "two"},
+				"token4": []string{"n/a"},
+			}),
+		}),
+		client.NewContext(bg, client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"token1": nil,
+				"token2": []string{"single"},
+			}),
+		}),
+		client.NewContext(bg, client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"token1": []string{"one", "two", "three"},
+				"token2": []string{"single"},
+				"token3": []string{"n/a"},
+				"token4": []string{"n/a", "d/c"},
+			}),
+		}),
+	}
+	expectByContext := make([]int, len(callCtxs))
+
+	requestCount := 1000
+	spansPerRequest := 33
+	sentResourceSpans := ptrace.NewTraces().ResourceSpans()
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		td := testdata.GenerateTraces(spansPerRequest)
+		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
+			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
+		}
+		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
+		// Choose a random context
+		num := rand.Intn(len(callCtxs))
+		expectByContext[num] += spansPerRequest
+		assert.NoError(t, batcher.ConsumeTraces(callCtxs[num], td))
+	}
+
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
+	// The following tests are the same as TestBatchProcessorSpansDelivered().
+	require.Equal(t, requestCount*spansPerRequest, sink.SpanCount())
+	receivedTraces := sink.AllTraces()
+	spansReceivedByName := spansReceivedByName(receivedTraces)
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		spans := sentResourceSpans.At(requestNum).ScopeSpans().At(0).Spans()
+		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
+			require.EqualValues(t,
+				spans.At(spanIndex),
+				spansReceivedByName[getTestSpanName(requestNum, spanIndex)])
+		}
+	}
+
+	// This test ensures each context had the expected number of spans.
+	require.Equal(t, len(callCtxs), len(sink.spanCountByToken12))
+	for idx, ctx := range callCtxs {
+		md := client.FromContext(ctx).Metadata
+		exp := formatTwo(md.Get("token1"), md.Get("token2"))
+		require.Equal(t, expectByContext[idx], sink.spanCountByToken12[exp])
+	}
 }

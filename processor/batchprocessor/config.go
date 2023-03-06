@@ -33,6 +33,13 @@ type Config struct {
 	// Larger batches are split into smaller units.
 	// Default value is 0, that means no maximum size.
 	SendBatchMaxSize uint32 `mapstructure:"send_batch_max_size"`
+
+	// MetadataKeys is a list of client.Metadata keys that will be
+	// used to form distinct batchers.  If this setting is empty,
+	// a single batcher instance will be used.  When this setting
+	// is not empty, one batcher will be used per distinct
+	// combination of values for the listed metadata keys.
+	MetadataKeys []string `mapstructure:"metadata_keys"`
 }
 
 var _ component.Config = (*Config)(nil)

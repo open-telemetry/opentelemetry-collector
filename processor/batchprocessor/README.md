@@ -29,6 +29,9 @@ regardless of size.
   `0` means no upper limit of the batch size.
   This property ensures that larger batches are split into smaller units.
   It must be greater than or equal to `send_batch_size`.
+- `metadata_keys` (default = empty): When set, this processor will
+  create one batcher instance per distinct combination of values in
+  the `client.Metadata`.  See notes about metadata batching below.
 
 Examples:
 
@@ -42,6 +45,22 @@ processors:
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
+
+## Batching and client metadata
+
+Batching by metadata enables support for multi-tenant OpenTelemetry
+Collector pipelines with batching over groups of data with the same
+authorization metadata.
+
+Receivers should be configured with `include_metadata: true` so that
+metadata keys are available to the processor.
+
+Note that each distinct combination of metadata triggers the
+allocation of a new background task in the Collector that runs for the
+lifetime of the process.  Users of the batching processor configured
+with metadata keys should consider use of an Auth extension to
+validate the relevant metadata-key values, otherwise a malicious user
+the collector to leak an unbounded amount memory.
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
