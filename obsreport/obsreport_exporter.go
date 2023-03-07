@@ -21,7 +21,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -100,37 +99,37 @@ func (exp *Exporter) createOtelMetrics(cfg ExporterSettings) error {
 	exp.sentSpans, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentSpansKey,
 		instrument.WithDescription("Number of spans successfully sent to destination."),
-		instrument.WithUnit(unit.Dimensionless))
+		instrument.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	exp.failedToSendSpans, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendSpansKey,
 		instrument.WithDescription("Number of spans in failed attempts to send to destination."),
-		instrument.WithUnit(unit.Dimensionless))
+		instrument.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	exp.sentMetricPoints, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentMetricPointsKey,
 		instrument.WithDescription("Number of metric points successfully sent to destination."),
-		instrument.WithUnit(unit.Dimensionless))
+		instrument.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	exp.failedToSendMetricPoints, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendMetricPointsKey,
 		instrument.WithDescription("Number of metric points in failed attempts to send to destination."),
-		instrument.WithUnit(unit.Dimensionless))
+		instrument.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	exp.sentLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentLogRecordsKey,
 		instrument.WithDescription("Number of log record successfully sent to destination."),
-		instrument.WithUnit(unit.Dimensionless))
+		instrument.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	exp.failedToSendLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendLogRecordsKey,
 		instrument.WithDescription("Number of log records in failed attempts to send to destination."),
-		instrument.WithUnit(unit.Dimensionless))
+		instrument.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	return errors
