@@ -4,11 +4,11 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.72.0
-	go.opentelemetry.io/collector/component v0.72.0
-	go.opentelemetry.io/collector/confmap v0.72.0
-	go.opentelemetry.io/collector/consumer v0.72.0
-	go.opentelemetry.io/collector/exporter v0.0.0-20230303211526-ec5d71fec2da
+	go.opentelemetry.io/collector v0.73.0
+	go.opentelemetry.io/collector/component v0.73.0
+	go.opentelemetry.io/collector/confmap v0.73.0
+	go.opentelemetry.io/collector/consumer v0.73.0
+	go.opentelemetry.io/collector/exporter v0.73.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc7
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f
 	google.golang.org/grpc v1.53.0
@@ -34,8 +34,8 @@ require (
 	github.com/mostynb/go-grpc-compression v1.1.17 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.72.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.0.0-20230302200458-4071a47d0ee3 // indirect
+	go.opentelemetry.io/collector/featuregate v0.73.0 // indirect
+	go.opentelemetry.io/collector/receiver v0.73.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.39.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/metric v0.36.0 // indirect
