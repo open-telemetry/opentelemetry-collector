@@ -22,7 +22,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/unit"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -112,63 +111,63 @@ func (por *Processor) createOtelMetrics(cfg ProcessorSettings) error {
 	por.acceptedSpansCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.AcceptedSpansKey,
 		instrument.WithDescription("Number of spans successfully pushed into the next component in the pipeline."),
-		instrument.WithUnit(unit.Dimensionless),
+		instrument.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	por.refusedSpansCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.RefusedSpansKey,
 		instrument.WithDescription("Number of spans that were rejected by the next component in the pipeline."),
-		instrument.WithUnit(unit.Dimensionless),
+		instrument.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	por.droppedSpansCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.DroppedSpansKey,
 		instrument.WithDescription("Number of spans that were dropped."),
-		instrument.WithUnit(unit.Dimensionless),
+		instrument.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	por.acceptedMetricPointsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.AcceptedMetricPointsKey,
 		instrument.WithDescription("Number of metric points successfully pushed into the next component in the pipeline."),
-		instrument.WithUnit(unit.Dimensionless),
+		instrument.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	por.refusedMetricPointsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.RefusedMetricPointsKey,
 		instrument.WithDescription("Number of metric points that were rejected by the next component in the pipeline."),
-		instrument.WithUnit(unit.Dimensionless),
+		instrument.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	por.droppedMetricPointsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.DroppedMetricPointsKey,
 		instrument.WithDescription("Number of metric points that were dropped."),
-		instrument.WithUnit(unit.Dimensionless),
+		instrument.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	por.acceptedLogRecordsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.AcceptedLogRecordsKey,
 		instrument.WithDescription("Number of log records successfully pushed into the next component in the pipeline."),
-		instrument.WithUnit(unit.Dimensionless),
+		instrument.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	por.refusedLogRecordsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.RefusedLogRecordsKey,
 		instrument.WithDescription("Number of log records that were rejected by the next component in the pipeline."),
-		instrument.WithUnit(unit.Dimensionless),
+		instrument.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	por.droppedLogRecordsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.DroppedLogRecordsKey,
 		instrument.WithDescription("Number of log records that were dropped."),
-		instrument.WithUnit(unit.Dimensionless),
+		instrument.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 

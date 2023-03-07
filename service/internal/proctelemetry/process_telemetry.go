@@ -26,7 +26,6 @@ import (
 	"go.opencensus.io/stats"
 	otelmetric "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/unit"
 	"go.uber.org/multierr"
 )
 
@@ -161,7 +160,7 @@ func (pm *processMetrics) recordWithOtel(meter otelmetric.Meter) error {
 	pm.otelProcessUptime, err = meter.Float64ObservableCounter(
 		"process_uptime",
 		instrument.WithDescription("Uptime of the process"),
-		instrument.WithUnit(unit.Unit("s")),
+		instrument.WithUnit("s"),
 		instrument.WithFloat64Callback(func(_ context.Context, o instrument.Float64Observer) error {
 			o.Observe(pm.updateProcessUptime())
 			return nil
@@ -171,7 +170,7 @@ func (pm *processMetrics) recordWithOtel(meter otelmetric.Meter) error {
 	pm.otelAllocMem, err = meter.Int64ObservableGauge(
 		"process_runtime_heap_alloc_bytes",
 		instrument.WithDescription("Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')"),
-		instrument.WithUnit(unit.Bytes),
+		instrument.WithUnit("By"),
 		instrument.WithInt64Callback(func(_ context.Context, o instrument.Int64Observer) error {
 			o.Observe(pm.updateAllocMem())
 			return nil
@@ -181,7 +180,7 @@ func (pm *processMetrics) recordWithOtel(meter otelmetric.Meter) error {
 	pm.otelTotalAllocMem, err = meter.Int64ObservableCounter(
 		"process_runtime_total_alloc_bytes",
 		instrument.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
-		instrument.WithUnit(unit.Bytes),
+		instrument.WithUnit("By"),
 		instrument.WithInt64Callback(func(_ context.Context, o instrument.Int64Observer) error {
 			o.Observe(pm.updateTotalAllocMem())
 			return nil
@@ -191,7 +190,7 @@ func (pm *processMetrics) recordWithOtel(meter otelmetric.Meter) error {
 	pm.otelSysMem, err = meter.Int64ObservableGauge(
 		"process_runtime_total_sys_memory_bytes",
 		instrument.WithDescription("Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')"),
-		instrument.WithUnit(unit.Bytes),
+		instrument.WithUnit("By"),
 		instrument.WithInt64Callback(func(_ context.Context, o instrument.Int64Observer) error {
 			o.Observe(pm.updateSysMem())
 			return nil
@@ -201,7 +200,7 @@ func (pm *processMetrics) recordWithOtel(meter otelmetric.Meter) error {
 	pm.otelCPUSeconds, err = meter.Float64ObservableCounter(
 		"process_cpu_seconds",
 		instrument.WithDescription("Total CPU user and system time in seconds"),
-		instrument.WithUnit(unit.Unit("s")),
+		instrument.WithUnit("s"),
 		instrument.WithFloat64Callback(func(_ context.Context, o instrument.Float64Observer) error {
 			o.Observe(pm.updateCPUSeconds())
 			return nil
@@ -211,7 +210,7 @@ func (pm *processMetrics) recordWithOtel(meter otelmetric.Meter) error {
 	pm.otelRSSMemory, err = meter.Int64ObservableGauge(
 		"process_memory_rss",
 		instrument.WithDescription("Total physical memory (resident set size)"),
-		instrument.WithUnit(unit.Bytes),
+		instrument.WithUnit("By"),
 		instrument.WithInt64Callback(func(_ context.Context, o instrument.Int64Observer) error {
 			o.Observe(pm.updateRSSMemory())
 			return nil

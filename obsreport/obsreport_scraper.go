@@ -22,7 +22,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -104,14 +103,14 @@ func (s *Scraper) createOtelMetrics(cfg ScraperSettings) error {
 	s.scrapedMetricsPoints, err = meter.Int64Counter(
 		obsmetrics.ScraperPrefix+obsmetrics.ScrapedMetricPointsKey,
 		instrument.WithDescription("Number of metric points successfully scraped."),
-		instrument.WithUnit(unit.Dimensionless),
+		instrument.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	s.erroredMetricsPoints, err = meter.Int64Counter(
 		obsmetrics.ScraperPrefix+obsmetrics.ErroredMetricPointsKey,
 		instrument.WithDescription("Number of metric points that were unable to be scraped."),
-		instrument.WithUnit(unit.Dimensionless),
+		instrument.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
