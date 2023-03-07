@@ -4,6 +4,20 @@
 
 <!-- next version -->
 
+## v0.73.0/v1.0.0-rc7
+
+### 🛑 Breaking changes 🛑
+
+- `consumererror`: Remove `Get` prefix from methods returning failed signal data (#7048)
+- `service`: Feature gate `service.graph` is now stable and cannot be disabled. It will be removed in the next version. (#2336)
+
+### 💡 Enhancements 💡
+
+- `exporter`: split exporter into its own module (#7239)
+- `receiver`: split receiver into its own module (#7174)
+- `connectors`: Provide connectors with a mechanism to route data to specific pipelines (#7152)
+- `confmap`: Mark `confmap.expandEnabled` as stable (#7323)
+
 ## v1.0.0-rc6/v0.72.0
 
 ### 🛑 Breaking changes 🛑
