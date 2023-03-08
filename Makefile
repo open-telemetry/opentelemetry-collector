@@ -165,6 +165,7 @@ internal-gendependabot:
 	@echo "    directory: \"${DIR}\"" >> ${DEPENDABOT_PATH};
 	@echo "    schedule:" >> ${DEPENDABOT_PATH};
 	@echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH};
+	@echo "      day: \"wednesday\"" >> ${DEPENDABOT_PATH};
 
 # This target should run on /bin/bash since the syntax DIR=$${dir:1} is not supported by /bin/sh.
 .PHONY: gendependabot
