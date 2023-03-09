@@ -933,3 +933,11 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 		require.Equal(t, expectByContext[idx], sink.spanCountByToken12[exp])
 	}
 }
+
+func TestBatchProcessorDuplicateMetadataKeys(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetadataKeys = []string{"TOKEN", "token"}
+	err := cfg.Validate()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "duplicate")
+}

@@ -16,6 +16,7 @@ package batchprocessor // import "go.opentelemetry.io/collector/processor/batchp
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -39,6 +40,9 @@ type Config struct {
 	// a single batcher instance will be used.  When this setting
 	// is not empty, one batcher will be used per distinct
 	// combination of values for the listed metadata keys.
+	//
+	// Entries are case-insensitive.  Duplicated entries will be
+	// ignored.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
 }
 
@@ -48,6 +52,14 @@ var _ component.Config = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if cfg.SendBatchMaxSize > 0 && cfg.SendBatchMaxSize < cfg.SendBatchSize {
 		return errors.New("send_batch_max_size must be greater or equal to send_batch_size")
+	}
+	uniq := map[string]bool{}
+	for _, k := range cfg.MetadataKeys {
+		l := strings.ToLower(k)
+		if _, has := uniq[l]; has {
+			return errors.New("duplicate entry in metadata_keys")
+		}
+		uniq[l] = true
 	}
 	return nil
 }

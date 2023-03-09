@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -74,11 +75,23 @@ type batchProcessor struct {
 // keys are in use, one of these is created per distinct combination
 // of values.
 type batcher struct {
+	// processor refers to this processor, for access to common
+	// configuration.
 	processor *batchProcessor
+
+	// exportCtx is a context with the metadata key-values
+	// corresponding with this batcher set.
 	exportCtx context.Context
-	timer     *time.Timer
-	newItem   chan any
-	batch     batch
+
+	// timer informs the batcher send a batch.
+	timer *time.Timer
+
+	// newItem is used to receive data items from producers.
+	newItem chan any
+
+	// batch is an in-flight data item containing one of the
+	// underlying data types.
+	batch batch
 }
 
 // batch is an interface generalizing the individual signal types.
@@ -97,10 +110,16 @@ var _ consumer.Traces = (*batchProcessor)(nil)
 var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
 
+// newBatchProcessor returns a new batch processor component.
 func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func() batch, useOtel bool) (*batchProcessor, error) {
 	bpt, err := newBatchProcessorTelemetry(set, useOtel)
 	if err != nil {
 		return nil, fmt.Errorf("error to create batch processor telemetry %w", err)
+	}
+	// use lower-case, to be consistent with http/2 headers.
+	mks := make([]string, len(cfg.MetadataKeys))
+	for i, k := range cfg.MetadataKeys {
+		mks[i] = strings.ToLower(k)
 	}
 	return &batchProcessor{
 		logger:    set.Logger,
@@ -111,10 +130,11 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 		timeout:          cfg.Timeout,
 		batchFunc:        batchFunc,
 		shutdownC:        make(chan struct{}, 1),
-		metadataKeys:     cfg.MetadataKeys,
+		metadataKeys:     mks,
 	}, nil
 }
 
+// newBatch gets or creates a batcher corresponding with attrs.
 func (bp *batchProcessor) newBatcher(attrs []attribute.KeyValue) *batcher {
 	md := map[string][]string{}
 	for _, attr := range attrs {
@@ -132,7 +152,6 @@ func (bp *batchProcessor) newBatcher(attrs []attribute.KeyValue) *batcher {
 	})
 	b := &batcher{
 		processor: bp,
-
 		newItem:   make(chan any, runtime.NumCPU()),
 		exportCtx: exportCtx,
 		batch:     bp.batchFunc(),
@@ -244,10 +263,15 @@ func (bp *batchProcessor) findBatcher(ctx context.Context) *batcher {
 		return bp.singleton
 	}
 
+	// Get each metadata key value, form the corresponding
+	// attribute set for use as a map lookup key.
 	info := client.FromContext(ctx)
 	var attrs []attribute.KeyValue
 	for _, k := range bp.metadataKeys {
 		vs := info.Metadata.Get(k)
+		// This logic places all the values into the attribute
+		// list.  The attributes will be sorted below by the
+		// call to NewSet.
 		if len(vs) == 1 {
 			attrs = append(attrs, attribute.String(k, vs[0]))
 		} else {
@@ -261,6 +285,8 @@ func (bp *batchProcessor) findBatcher(ctx context.Context) *batcher {
 
 	b, ok := bp.batchers[aset]
 	if !ok {
+		// aset.ToSlice() returns the sorted, deduplicated,
+		// and name-downcased list of attributes.
 		b = bp.newBatcher(aset.ToSlice())
 		bp.batchers[aset] = b
 	}
