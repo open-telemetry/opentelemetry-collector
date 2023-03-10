@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -36,13 +35,6 @@ import (
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"service.graph",
-	featuregate.StageStable,
-	featuregate.WithRegisterRemovalVersion("v0.74.0"),
-	featuregate.WithRegisterDescription("Enables the new graph based implementations for pipelines."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/2336"))
 
 // Settings holds configuration for building a new service.
 type Settings struct {
