@@ -22,8 +22,7 @@ import (
 
 var _ flag.Value = (*FlagValue)(nil)
 
-// FlagValue implements the flag.Value interface and provides a mechanism for applying feature
-// gate statuses to a Registry
+// Deprecated: [v0.74.0] use NewFlag.
 type FlagValue map[string]bool
 
 // String returns a string representing the FlagValue
