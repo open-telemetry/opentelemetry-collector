@@ -26,10 +26,28 @@ import (
 	"gonum.org/v1/gonum/graph/topo"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
+
+// graphSettings holds configuration for building builtPipelines.
+type graphSettings struct {
+	Telemetry component.TelemetrySettings
+	BuildInfo component.BuildInfo
+
+	ReceiverBuilder  *receiver.Builder
+	ProcessorBuilder *processor.Builder
+	ExporterBuilder  *exporter.Builder
+	ConnectorBuilder *connector.Builder
+
+	// PipelineConfigs is a map of component.ID to PipelineConfig.
+	PipelineConfigs map[component.ID]*PipelineConfig
+}
 
 type pipelinesGraph struct {
 	// All component instances represented as nodes, with directed edges indicating data flow.
@@ -39,7 +57,7 @@ type pipelinesGraph struct {
 	pipelines map[component.ID]*pipelineNodes
 }
 
-func buildPipelinesGraph(ctx context.Context, set pipelinesSettings) (*pipelinesGraph, error) {
+func buildPipelinesGraph(ctx context.Context, set graphSettings) (*pipelinesGraph, error) {
 	pipelines := &pipelinesGraph{
 		componentGraph: simple.NewDirectedGraph(),
 		pipelines:      make(map[component.ID]*pipelineNodes, len(set.PipelineConfigs)),
@@ -56,7 +74,7 @@ func buildPipelinesGraph(ctx context.Context, set pipelinesSettings) (*pipelines
 }
 
 // Creates a node for each instance of a component and adds it to the graph
-func (g *pipelinesGraph) createNodes(set pipelinesSettings) {
+func (g *pipelinesGraph) createNodes(set graphSettings) {
 	// Keep track of connectors and where they are used. (map[connectorID][]pipelineID)
 	connectorsAsExporter := make(map[component.ID][]component.ID)
 	connectorsAsReceiver := make(map[component.ID][]component.ID)
@@ -68,7 +86,7 @@ func (g *pipelinesGraph) createNodes(set pipelinesSettings) {
 				connectorsAsReceiver[recvID] = append(connectorsAsReceiver[recvID], pipelineID)
 				continue
 			}
-			rcvrNode := g.createReceiver(pipelineID, recvID)
+			rcvrNode := g.createReceiver(pipelineID.Type(), recvID)
 			pipe.receivers[rcvrNode.ID()] = rcvrNode
 		}
 
@@ -85,7 +103,7 @@ func (g *pipelinesGraph) createNodes(set pipelinesSettings) {
 				connectorsAsExporter[exprID] = append(connectorsAsExporter[exprID], pipelineID)
 				continue
 			}
-			expNode := g.createExporter(pipelineID, exprID)
+			expNode := g.createExporter(pipelineID.Type(), exprID)
 			pipe.exporters[expNode.ID()] = expNode
 		}
 	}
@@ -101,8 +119,8 @@ func (g *pipelinesGraph) createNodes(set pipelinesSettings) {
 	}
 }
 
-func (g *pipelinesGraph) createReceiver(pipelineID, recvID component.ID) *receiverNode {
-	rcvrNode := newReceiverNode(pipelineID, recvID)
+func (g *pipelinesGraph) createReceiver(pipelineType component.DataType, recvID component.ID) *receiverNode {
+	rcvrNode := newReceiverNode(pipelineType, recvID)
 	if node := g.componentGraph.Node(rcvrNode.ID()); node != nil {
 		return node.(*receiverNode)
 	}
@@ -116,8 +134,8 @@ func (g *pipelinesGraph) createProcessor(pipelineID, procID component.ID) *proce
 	return procNode
 }
 
-func (g *pipelinesGraph) createExporter(pipelineID, exprID component.ID) *exporterNode {
-	expNode := newExporterNode(pipelineID, exprID)
+func (g *pipelinesGraph) createExporter(pipelineType component.DataType, exprID component.ID) *exporterNode {
+	expNode := newExporterNode(pipelineType, exprID)
 	if node := g.componentGraph.Node(expNode.ID()); node != nil {
 		return node.(*exporterNode)
 	}
@@ -156,7 +174,7 @@ func (g *pipelinesGraph) createEdges() {
 	}
 }
 
-func (g *pipelinesGraph) buildComponents(ctx context.Context, set pipelinesSettings) error {
+func (g *pipelinesGraph) buildComponents(ctx context.Context, set graphSettings) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
 		return cycleErr(err, topo.DirectedCyclesIn(g.componentGraph))
@@ -166,17 +184,13 @@ func (g *pipelinesGraph) buildComponents(ctx context.Context, set pipelinesSetti
 		node := nodes[i]
 		switch n := node.(type) {
 		case *receiverNode:
-			n.Component, err = buildReceiver(ctx, n.componentID, set.Telemetry, set.BuildInfo, set.ReceiverBuilder,
-				component.NewIDWithName(n.pipelineType, "*"), g.nextConsumers(n.ID()))
+			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
 		case *processorNode:
-			n.Component, err = buildProcessor(ctx, n.componentID, set.Telemetry, set.BuildInfo, set.ProcessorBuilder,
-				n.pipelineID, g.nextConsumers(n.ID())[0])
+			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
 		case *exporterNode:
-			n.Component, err = buildExporter(ctx, n.componentID, set.Telemetry, set.BuildInfo, set.ExporterBuilder,
-				component.NewIDWithName(n.pipelineType, "*"))
+			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder)
 		case *connectorNode:
-			n.Component, err = buildConnector(ctx, n.componentID, set.Telemetry, set.BuildInfo, set.ConnectorBuilder,
-				n.exprPipelineType, n.rcvrPipelineType, g.nextConsumers(n.ID()))
+			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
 		case *capabilitiesNode:
 			cap := consumer.Capabilities{MutatesData: false}
 			for _, proc := range g.pipelines[n.pipelineID].processors {
