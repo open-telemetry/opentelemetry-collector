@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -31,8 +32,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/otel/attribute"
 )
+
+// attributeSet is a stand-in for otel-go's attribute.Set.  See
+// https://github.com/open-telemetry/opentelemetry-collector/pull/7325#discussion_r1126972549.
+type attributeSet string
+
+// attributeSet is a stand-in for otel-go's attribute.KeyValue, which
+// exposes a simple API to compute attribute sets.  See
+// https://github.com/open-telemetry/opentelemetry-collector/pull/7325#discussion_r1126972549.
+type attributeKeyValue string
 
 // batch_processor is a component that accepts spans and metrics, places them
 // into batches and sends downstream.
@@ -68,7 +77,7 @@ type batchProcessor struct {
 	singleton *batcher
 
 	lock     sync.Mutex
-	batchers map[attribute.Set]*batcher
+	batchers map[attributeSet]*batcher
 }
 
 // batcher is a single instance of the batcher logic.  When metadata
@@ -121,6 +130,7 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 	for i, k := range cfg.MetadataKeys {
 		mks[i] = strings.ToLower(k)
 	}
+	sort.Strings(mks)
 	return &batchProcessor{
 		logger:    set.Logger,
 		telemetry: bpt,
@@ -135,18 +145,7 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 }
 
 // newBatch gets or creates a batcher corresponding with attrs.
-func (bp *batchProcessor) newBatcher(attrs []attribute.KeyValue) *batcher {
-	md := map[string][]string{}
-	for _, attr := range attrs {
-		switch attr.Value.Type() {
-		case attribute.STRING:
-			md[string(attr.Key)] = []string{attr.Value.AsString()}
-		case attribute.STRINGSLICE:
-			md[string(attr.Key)] = attr.Value.AsStringSlice()
-		default:
-			panic("internal error")
-		}
-	}
+func (bp *batchProcessor) newBatcher(md map[string][]string) *batcher {
 	exportCtx := client.NewContext(context.Background(), client.Info{
 		Metadata: client.NewMetadata(md),
 	})
@@ -161,6 +160,29 @@ func (bp *batchProcessor) newBatcher(attrs []attribute.KeyValue) *batcher {
 	return b
 }
 
+// newAttributeSet is like otel-go's attribute.NewSet(attrs...).
+func newAttributeSet(attrs ...attributeKeyValue) attributeSet {
+	// Note: Key uniqueness is ensured in (Config).Validate()
+	// and sorted order is ensured in newBatchProcessor().
+	var aset attributeSet
+	for _, attr := range attrs {
+		aset = attributeSet(fmt.Sprint(aset, ";", attr))
+	}
+	return aset
+}
+
+// attributeString is like otel-go's attribute.String, for input
+// to newAttributeSet.
+func attributeString(k string, v string) attributeKeyValue {
+	return attributeKeyValue(fmt.Sprint(k, "=", v))
+}
+
+// attributeStringSlice is like otel-go's attribute.StringSlice, for
+// input to newAttributeSet.
+func attributeStringSlice(k string, v []string) attributeKeyValue {
+	return attributeKeyValue(fmt.Sprint(k, "=", strings.Join(v, ",")))
+}
+
 func (bp *batchProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
@@ -171,7 +193,7 @@ func (bp *batchProcessor) Start(context.Context, component.Host) error {
 	if len(bp.metadataKeys) == 0 {
 		bp.singleton = bp.newBatcher(nil)
 	} else {
-		bp.batchers = map[attribute.Set]*batcher{}
+		bp.batchers = map[attributeSet]*batcher{}
 	}
 	return nil
 }
@@ -266,19 +288,21 @@ func (bp *batchProcessor) findBatcher(ctx context.Context) *batcher {
 	// Get each metadata key value, form the corresponding
 	// attribute set for use as a map lookup key.
 	info := client.FromContext(ctx)
-	var attrs []attribute.KeyValue
+	md := map[string][]string{}
+	var attrs []attributeKeyValue
 	for _, k := range bp.metadataKeys {
+		// Lookup the value in the incoming metadata, copy it
+		// into the outgoing metadata, and create a unique
+		// value for the attributeSet.
 		vs := info.Metadata.Get(k)
-		// This logic places all the values into the attribute
-		// list.  The attributes will be sorted below by the
-		// call to NewSet.
+		md[k] = vs
 		if len(vs) == 1 {
-			attrs = append(attrs, attribute.String(k, vs[0]))
+			attrs = append(attrs, attributeString(k, vs[0]))
 		} else {
-			attrs = append(attrs, attribute.StringSlice(k, vs))
+			attrs = append(attrs, attributeStringSlice(k, vs))
 		}
 	}
-	aset := attribute.NewSet(attrs...)
+	aset := newAttributeSet(attrs...)
 
 	bp.lock.Lock()
 	defer bp.lock.Unlock()
@@ -287,7 +311,7 @@ func (bp *batchProcessor) findBatcher(ctx context.Context) *batcher {
 	if !ok {
 		// aset.ToSlice() returns the sorted, deduplicated,
 		// and name-downcased list of attributes.
-		b = bp.newBatcher(aset.ToSlice())
+		b = bp.newBatcher(md)
 		bp.batchers[aset] = b
 	}
 	return b
