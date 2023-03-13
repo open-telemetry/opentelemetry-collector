@@ -28,10 +28,10 @@ import (
 // the items from the top of the queue until its size drops back to maxSize
 type boundedMemoryQueue struct {
 	stopWG   sync.WaitGroup
-	size     *atomic.Uint32
+	size     *atomic.Int64
 	stopped  *atomic.Bool
 	items    chan Request
-	capacity uint32
+	capacity int64
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
@@ -39,9 +39,9 @@ type boundedMemoryQueue struct {
 func NewBoundedMemoryQueue(capacity int) ProducerConsumerQueue {
 	return &boundedMemoryQueue{
 		items:    make(chan Request, capacity),
+		size:     &atomic.Int64{},
 		stopped:  &atomic.Bool{},
-		size:     &atomic.Uint32{},
-		capacity: uint32(capacity),
+		capacity: int64(capacity),
 	}
 }
 
@@ -56,7 +56,7 @@ func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item R
 			startWG.Done()
 			defer q.stopWG.Done()
 			for item := range q.items {
-				q.size.Add(^uint32(0))
+				q.size.Add(-1)
 				callback(item)
 			}
 		}()
@@ -82,8 +82,9 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 	case q.items <- item:
 		return true
 	default:
-		// should not happen, as overflows should have been captured earlier
-		q.size.Add(^uint32(0))
+		// Happens only if multiple goroutines passed the size check
+		// and then when size increased exceed the capacity.
+		q.size.Add(-1)
 		return false
 	}
 }
