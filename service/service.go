@@ -188,7 +188,7 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 		return fmt.Errorf("failed to build extensions: %w", err)
 	}
 
-	pSet := pipelinesSettings{
+	pSet := graphSettings{
 		Telemetry:        srv.telemetrySettings,
 		BuildInfo:        srv.buildInfo,
 		ReceiverBuilder:  set.Receivers,
