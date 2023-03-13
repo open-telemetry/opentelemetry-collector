@@ -25,7 +25,7 @@ import (
 
 // NewCommand constructs a new cobra.Command using the given CollectorSettings.
 func NewCommand(set CollectorSettings) *cobra.Command {
-	flagSet := flags()
+	flagSet := flags(featuregate.GlobalRegistry())
 	rootCmd := &cobra.Command{
 		Use:          set.BuildInfo.Command,
 		Version:      set.BuildInfo.Version,
@@ -44,11 +44,6 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 }
 
 func newCollectorWithFlags(set CollectorSettings, flags *flag.FlagSet) (*Collector, error) {
-	for id, enabled := range getFeatureGatesFlag(flags) {
-		if err := featuregate.GlobalRegistry().Set(id, enabled); err != nil {
-			return nil, err
-		}
-	}
 	if set.ConfigProvider == nil {
 		configFlags := getConfigFlag(flags)
 		if len(configFlags) == 0 {

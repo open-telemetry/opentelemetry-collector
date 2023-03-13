@@ -28,6 +28,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
+
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 type windowsService struct {
@@ -38,7 +40,7 @@ type windowsService struct {
 
 // NewSvcHandler constructs a new svc.Handler using the given CollectorSettings.
 func NewSvcHandler(set CollectorSettings) svc.Handler {
-	return &windowsService{settings: set, flags: flags()}
+	return &windowsService{settings: set, flags: flags(featuregate.GlobalRegistry())}
 }
 
 // Execute implements https://godoc.org/golang.org/x/sys/windows/svc#Handler
