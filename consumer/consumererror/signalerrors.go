@@ -51,11 +51,6 @@ func NewTraces(err error, data ptrace.Traces) error {
 	}
 }
 
-// Deprecated: [v0.73.0] Use `Data` instead.
-func (err Traces) GetTraces() ptrace.Traces {
-	return err.Data()
-}
-
 // Logs is an error that may carry associated Log data for a subset of received data
 // that failed to be processed or sent.
 type Logs struct {
@@ -72,11 +67,6 @@ func NewLogs(err error, data plog.Logs) error {
 	}
 }
 
-// Deprecated: [v0.73.0] Use `Data` instead.
-func (err Logs) GetLogs() plog.Logs {
-	return err.Data()
-}
-
 // Metrics is an error that may carry associated Metrics data for a subset of received data
 // that failed to be processed or sent.
 type Metrics struct {
@@ -91,9 +81,4 @@ func NewMetrics(err error, data pmetric.Metrics) error {
 			data:  data,
 		},
 	}
-}
-
-// Deprecated: [v0.73.0] Use `Data` instead.
-func (err Metrics) GetMetrics() pmetric.Metrics {
-	return err.Data()
 }
