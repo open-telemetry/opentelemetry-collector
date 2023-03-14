@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Shopify/sarama"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -201,6 +202,11 @@ func (rs *retrySender) send(req request) (int, error) {
 	if !rs.cfg.Enabled {
 		n, err := rs.nextSender.send(req)
 		if err != nil {
+			if producerErrors, ok := err.(sarama.ProducerErrors); ok {
+				for _, kafkaErr := range producerErrors  {
+					rs.logger.Error("send kafka failed.", zap.Error(kafkaErr))
+				}
+			}
 			rs.logger.Error(
 				"Exporting failed. Try enabling retry_on_failure config option.",
 				zap.Error(err),
