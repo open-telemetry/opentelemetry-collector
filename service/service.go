@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -188,17 +189,26 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 		return fmt.Errorf("failed to build extensions: %w", err)
 	}
 
-	pSet := graphSettings{
+	graphPipelinesConfigs := make(map[component.ID]*graph.PipelineConfig, len(cfg.Pipelines))
+	for id, cfg := range cfg.Pipelines {
+		graphPipelinesConfigs[id] = &graph.PipelineConfig{
+			Receivers:  cfg.Receivers,
+			Processors: cfg.Processors,
+			Exporters:  cfg.Exporters,
+		}
+	}
+
+	pSet := graph.Settings{
 		Telemetry:        srv.telemetrySettings,
 		BuildInfo:        srv.buildInfo,
 		ReceiverBuilder:  set.Receivers,
 		ProcessorBuilder: set.Processors,
 		ExporterBuilder:  set.Exporters,
 		ConnectorBuilder: set.Connectors,
-		PipelineConfigs:  cfg.Pipelines,
+		PipelineConfigs:  graphPipelinesConfigs,
 	}
 
-	if srv.host.pipelines, err = buildPipelinesGraph(ctx, pSet); err != nil {
+	if srv.host.pipelines, err = graph.Build(ctx, pSet); err != nil {
 		return fmt.Errorf("failed to build pipelines: %w", err)
 	}
 
