@@ -85,6 +85,10 @@ variable expansion.
 > [this](https://opentelemetry.io/docs/collector/configuration/#configuration-environment-variables)
 > documentation.
 
+When defining Go structs for configuration data that may contain sensitive information, use the `configopaque` package to define fields with the `configopaque.String` type. This ensures that the data is masked when serialized to prevent accidental exposure.
+
+> For more information, see the [configopaque](https://pkg.go.dev/go.opentelemetry.io/collector/config/configopaque) documentation.
+
 Component developers MUST get configuration information from the Collector's
 configuration file. Component developers SHOULD leverage [configuration helper
 functions](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config).
