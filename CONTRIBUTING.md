@@ -244,7 +244,14 @@ To keep naming patterns consistent across the project, naming patterns are enfor
 - Variable assigned in a package's global scope that is preconfigured with a default set of values MUST use `Default` as the prefix. For example:
   - `var DefaultMarshallers = map[string]pdata.Marshallers{...}` is defined with an exporters package that allows for converting an encoding name,
     `zipkin`, and return the preconfigured marshaller to be used in the export process.
-
+- Types that are specific to a signal MUST be worded with the signal used as an adjective, i.e. `SignalType`. For example:
+  - `type TracesSink interface {...}`
+- Types that deal with multiple signal types should use the relationship between the signals to describe the type, e.g. `SignalToSignalType` or `SignalAndSignalType`. For example:
+  - `type TracesToTracesFunc func(...) ...`
+- Functions dealing with specific signals or signal-specific types MUST be worded with the signal or type as a direct object, i.e. `VerbSignal`, or `VerbType` where `Type` is the full name of the type including the signal name. For example:
+  - `func ConsumeTraces(...) {...}`
+  - `func CreateTracesExport(...) {...}`
+  - `func CreateTracesToTracesFunc(...) {...}`
 
 ### Recommended Libraries / Defaults
 
