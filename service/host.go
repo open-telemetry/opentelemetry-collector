@@ -57,6 +57,7 @@ func (host *serviceHost) GetExtensions() map[component.ID]component.Component {
 	return host.serviceExtensions.GetExtensions()
 }
 
+// Deprecated: [0.74.0] Use a connector or extension to send data between pipelines.
 func (host *serviceHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return host.pipelines.GetExporters()
 }

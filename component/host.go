@@ -47,5 +47,6 @@ type Host interface {
 	//
 	// GetExporters can be called by the component anytime after Component.Start() begins and
 	// until Component.Shutdown() ends.
+	// Deprecated: [0.74.0] Use a connector or extension to send data between pipelines.
 	GetExporters() map[DataType]map[ID]Component
 }

@@ -310,6 +310,7 @@ func (g *Graph) ShutdownAll(ctx context.Context) error {
 	return errs
 }
 
+// Deprecated: [0.74.0] Use a connector or extension to send data between pipelines.
 func (g *Graph) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	exportersMap := make(map[component.DataType]map[component.ID]component.Component)
 	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Component)
