@@ -19,6 +19,6 @@ import "go.opentelemetry.io/collector/featuregate"
 
 var ConnectorsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"service.connectors",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Enables 'connectors', a new type of component for transmitting signals between pipelines."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/2336"))
