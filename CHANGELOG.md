@@ -4,6 +4,20 @@
 
 <!-- next version -->
 
+## v1.0.0-rc8/v0.74.0
+
+### 🛑 Breaking changes 🛑
+
+- `consumererror`: Remove deprecated funcs in consumererror (#7357)
+
+### 🚩 Deprecations 🚩
+
+- `featuregate`: Deprecate `FlagValue` in favor of `NewFlag`. (#7042)
+
+### 💡 Enhancements 💡
+
+- `service`: Enable connectors by default by moving service.connectors featuregate to beta (#7369)
+
 ## v0.73.0/v1.0.0-rc7
 
 ### 🛑 Breaking changes 🛑
