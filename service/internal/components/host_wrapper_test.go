@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-func Test_newHostWrapper(t *testing.T) {
+func Test_newHostWrapper(_ *testing.T) {
 	hw := NewHostWrapper(componenttest.NewNopHost(), zap.NewNop())
 	hw.ReportFatalError(errors.New("test error"))
 }

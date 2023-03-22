@@ -39,7 +39,7 @@ func (host *serviceHost) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
 	mux.HandleFunc(path.Join(pathPrefix, zFeaturePath), handleFeaturezRequest)
 }
 
-func (host *serviceHost) zPagesRequest(w http.ResponseWriter, r *http.Request) {
+func (host *serviceHost) zPagesRequest(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Service " + host.buildInfo.Command})
 	zpages.WriteHTMLPropertiesTable(w, zpages.PropertiesTableData{Name: "Build Info", Properties: getBuildInfoProperties(host.buildInfo)})
@@ -62,7 +62,7 @@ func (host *serviceHost) zPagesRequest(w http.ResponseWriter, r *http.Request) {
 	zpages.WriteHTMLPageFooter(w)
 }
 
-func handleFeaturezRequest(w http.ResponseWriter, r *http.Request) {
+func handleFeaturezRequest(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Feature Gates"})
 	zpages.WriteHTMLFeaturesTable(w, getFeaturesTableData())

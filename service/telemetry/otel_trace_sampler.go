@@ -20,7 +20,7 @@ import (
 
 type recordSampler struct{}
 
-func (r recordSampler) ShouldSample(parameters sdktrace.SamplingParameters) sdktrace.SamplingResult {
+func (r recordSampler) ShouldSample(_ sdktrace.SamplingParameters) sdktrace.SamplingResult {
 	return sdktrace.SamplingResult{Decision: sdktrace.RecordOnly}
 }
 

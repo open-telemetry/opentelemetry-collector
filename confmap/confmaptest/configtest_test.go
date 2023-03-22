@@ -65,6 +65,6 @@ func (s schemeProvider) Scheme() string {
 	return s.scheme
 }
 
-func (s schemeProvider) Shutdown(ctx context.Context) error {
+func (s schemeProvider) Shutdown(_ context.Context) error {
 	return nil
 }

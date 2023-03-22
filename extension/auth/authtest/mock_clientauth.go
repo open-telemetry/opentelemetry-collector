@@ -38,18 +38,18 @@ type MockClient struct {
 }
 
 // Start for the MockClient does nothing
-func (m *MockClient) Start(ctx context.Context, host component.Host) error {
+func (m *MockClient) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
 // Shutdown for the MockClient does nothing
-func (m *MockClient) Shutdown(ctx context.Context) error {
+func (m *MockClient) Shutdown(_ context.Context) error {
 	return nil
 }
 
 // RoundTripper for the MockClient either returns error if the mock authenticator is forced to or
 // returns the supplied resultRoundTripper.
-func (m *MockClient) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+func (m *MockClient) RoundTripper(_ http.RoundTripper) (http.RoundTripper, error) {
 	if m.MustError {
 		return nil, errMockError
 	}
