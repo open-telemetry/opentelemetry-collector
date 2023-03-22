@@ -156,6 +156,39 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	checkExporterEnqueueFailedLogsStats(t, globalInstruments, fakeLogsExporterName, int64(15))
 }
 
+func TestLogsExporter_WithRecordDroppedMetrics(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry(fakeLogsExporterName)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	rCfg := NewDefaultRetrySettings()
+	qCfg := NewDefaultQueueSettings()
+	qCfg.NumConsumers = 0
+	qCfg.QueueSize = 0
+	wantErr := errors.New("some-error")
+	te, err := NewLogsExporter(
+		context.Background(),
+		tt.ToExporterCreateSettings(),
+		&fakeLogsExporterConfig,
+		newPushLogsData(wantErr),
+		WithRetry(rCfg),
+		WithQueue(qCfg),
+		WithBacklog(qCfg),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+	require.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
+
+	md := testdata.GenerateLogs(3)
+	const numBatches = 7
+	for i := 0; i < numBatches; i++ {
+		// errors are checked in the checkExporterDroppedLogsStats function below.
+		_ = te.ConsumeLogs(context.Background(), md)
+	}
+	checkExporterDroppedLogsStats(t, globalInstruments, fakeLogsExporterName, int64(21))
+}
+
 func TestLogsExporter_WithSpan(t *testing.T) {
 	set := exportertest.NewNopCreateSettings()
 	sr := new(tracetest.SpanRecorder)

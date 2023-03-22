@@ -109,6 +109,9 @@ func NewLogsExporter(
 			nextSender: nextSender,
 		}
 	})
+	be.onDropped(func(req internal.Request) {
+		be.obsrep.recordLogsDropped(req.Context(), int64(req.Count()))
+	})
 
 	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		req := newLogsRequest(ctx, ld, pusher)

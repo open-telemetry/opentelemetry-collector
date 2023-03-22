@@ -144,8 +144,8 @@ func WithQueue(queueSettings QueueSettings) Option {
 }
 
 // WithBacklog overrides the default BacklogSettings for an exporter.
-// The default BacklogSettings is to disable the secondary backlog queue.
-// Requires QueueSettings to be enabled.
+// By default, the backlog is disabled. If configured without a queue,
+// the backlog settings are ignored.
 func WithBacklog(queueSettings QueueSettings) Option {
 	return func(o *baseSettings) {
 		o.BacklogSettings = queueSettings
@@ -190,7 +190,7 @@ func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal compo
 	)
 	be.StartFunc = func(ctx context.Context, host component.Host) error {
 		// First start the wrapped exporter.
-		if err = bs.StartFunc.Start(ctx, host); err != nil {
+		if err := bs.StartFunc.Start(ctx, host); err != nil {
 			return err
 		}
 		// If no error then start the sender.
@@ -209,6 +209,11 @@ func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal compo
 // This can be used to wrap with observability (create spans, record metrics) the consumer sender.
 func (be *baseExporter) wrapConsumerSender(f func(consumer requestSender) requestSender) {
 	be.sender.wrapConsumerSender(f)
+}
+
+// onDropped calls the callback for all dropped requests from the sender.
+func (be *baseExporter) onDropped(f internal.RequestCallback) {
+	be.sender.onDropped(f)
 }
 
 func createSampledLogger(logger *zap.Logger) *zap.Logger {

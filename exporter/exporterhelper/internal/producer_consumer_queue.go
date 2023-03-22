@@ -16,7 +16,7 @@
 
 package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 
-type RequestCallback func(item Request)
+type RequestCallback func(req Request)
 
 // ProducerConsumerQueue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
 // (boundedMemoryQueue) or via a disk-based queue (persistentQueue)

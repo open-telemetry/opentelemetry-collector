@@ -17,7 +17,6 @@ package exporterhelper
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -754,13 +753,15 @@ func (ocs *observabilityConsumerSender) checkDroppedItemsCount(t *testing.T, wan
 // checkValueForGlobalManager checks that the given metrics with wantTags is reported by one of the
 // metric producers
 func checkValueForGlobalManager(t *testing.T, wantTags []tag.Tag, value int64, vName string) {
-	producers := metricproducer.GlobalManager().GetAll()
-	for _, producer := range producers {
-		if checkValueForProducer(t, producer, wantTags, value, vName) {
-			return
+	assert.Eventually(t, func() bool {
+		producers := metricproducer.GlobalManager().GetAll()
+		for _, producer := range producers {
+			if checkValueForProducer(t, producer, wantTags, value, vName) {
+				return true
+			}
 		}
-	}
-	require.Fail(t, fmt.Sprintf("could not find metric %v with tags %s reported", vName, wantTags))
+		return false
+	}, time.Second, time.Millisecond)
 }
 
 // checkValueForProducer checks that the given metrics with wantTags is reported by the metric producer

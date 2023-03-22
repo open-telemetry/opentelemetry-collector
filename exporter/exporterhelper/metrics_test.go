@@ -156,6 +156,41 @@ func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	checkExporterEnqueueFailedMetricsStats(t, globalInstruments, fakeMetricsExporterName, int64(10))
 }
 
+func TestMetricsExporter_WithRecordDroppedMetrics(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry(fakeMetricsExporterName)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	rCfg := NewDefaultRetrySettings()
+	qCfg := NewDefaultQueueSettings()
+	qCfg.NumConsumers = 0
+	qCfg.QueueSize = 0
+	wantErr := errors.New("some-error")
+	te, err := NewMetricsExporter(
+		context.Background(),
+		tt.ToExporterCreateSettings(),
+		&fakeMetricsExporterConfig,
+		newPushMetricsData(wantErr),
+		WithRetry(rCfg),
+		WithQueue(qCfg),
+		WithBacklog(qCfg),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+	require.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
+
+	md := testdata.GenerateMetrics(1)
+	const numBatches = 7
+	for i := 0; i < numBatches; i++ {
+		// errors are checked in the checkExporterDroppedMetricsStats function below.
+		_ = te.ConsumeMetrics(context.Background(), md)
+	}
+
+	// 2 data points per metric
+	checkExporterDroppedMetricsStats(t, globalInstruments, fakeMetricsExporterName, int64(14))
+}
+
 func TestMetricsExporter_WithSpan(t *testing.T) {
 	set := exportertest.NewNopCreateSettings()
 	sr := new(tracetest.SpanRecorder)

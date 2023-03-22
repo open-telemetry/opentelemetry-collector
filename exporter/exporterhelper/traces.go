@@ -110,6 +110,9 @@ func NewTracesExporter(
 			nextSender: nextSender,
 		}
 	})
+	be.onDropped(func(req internal.Request) {
+		be.obsrep.recordTracesDropped(req.Context(), int64(req.Count()))
+	})
 
 	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		req := newTracesRequest(ctx, td, pusher)

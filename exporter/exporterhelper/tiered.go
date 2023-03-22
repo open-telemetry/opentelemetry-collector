@@ -33,6 +33,7 @@ type tieredSender struct {
 	logger  *zap.Logger
 	primary *queuedRetrySender
 	backlog *queuedRetrySender
+	dropped internal.RequestCallback
 }
 
 func newTieredSender(
@@ -78,6 +79,9 @@ func (ts *tieredSender) start(ctx context.Context, host component.Host) error {
 				"Backlog is full. Dropping data.",
 				zap.Int("dropped_items", req.Count()),
 			)
+			if ts.dropped != nil {
+				ts.dropped(req)
+			}
 		})
 		ts.primary.queue.OnOverflow(func(req internal.Request) {
 			if err := ts.backlog.send(req); err != nil {
@@ -86,6 +90,9 @@ func (ts *tieredSender) start(ctx context.Context, host component.Host) error {
 					zap.Error(err),
 					zap.Int("dropped_items", req.Count()),
 				)
+				if ts.dropped != nil {
+					ts.dropped(req)
+				}
 			}
 		})
 	}
@@ -113,4 +120,9 @@ func (ts *tieredSender) wrapConsumerSender(wrap func(consumer requestSender) req
 	if ts.backlog != nil {
 		ts.backlog.consumerSender = wrap(ts.backlog.consumerSender)
 	}
+}
+
+// onDropped calls the callback for any dropped requests from either queue.
+func (ts *tieredSender) onDropped(dropped internal.RequestCallback) {
+	ts.dropped = dropped
 }

@@ -184,6 +184,10 @@ func TestTiered_BacklogProduceError(t *testing.T) {
 
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
+	droppedCounter := &atomic.Uint32{}
+	be.onDropped(func(req internal.Request) {
+		droppedCounter.Add(1)
+	})
 	be.sender.backlog.cfg.Enabled = false
 	backlogObserver := newObservabilityConsumerSender(&errorRequestSender{
 		errToReturn: errors.New("some error"),
@@ -196,6 +200,9 @@ func TestTiered_BacklogProduceError(t *testing.T) {
 	})
 	backlogObserver.awaitAsyncProcessing()
 	backlogObserver.checkDroppedItemsCount(t, 1)
+	assert.Eventually(t, func() bool {
+		return droppedCounter.Load() == uint32(1)
+	}, time.Second, 1*time.Millisecond)
 }
 
 func TestTiered_BacklogStartError(t *testing.T) {

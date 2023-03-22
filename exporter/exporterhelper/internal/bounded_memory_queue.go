@@ -63,7 +63,8 @@ func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback RequestCall
 	startWG.Wait()
 }
 
-// Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
+// Produce is used by the producer to submit new item to the queue.
+// Returns false in case of queue overflow if callback is not set.
 func (q *boundedMemoryQueue) Produce(item Request) bool {
 	if q.stopped.Load() {
 		return false

@@ -110,6 +110,9 @@ func NewMetricsExporter(
 			nextSender: nextSender,
 		}
 	})
+	be.onDropped(func(req internal.Request) {
+		be.obsrep.recordMetricsDropped(req.Context(), int64(req.Count()))
+	})
 
 	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		req := newMetricsRequest(ctx, md, pusher)
