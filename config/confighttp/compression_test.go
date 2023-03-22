@@ -261,7 +261,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 type copyFailBody struct {
 }
 
-func (*copyFailBody) Read(p []byte) (n int, err error) {
+func (*copyFailBody) Read(_ []byte) (n int, err error) {
 	return 0, fmt.Errorf("read failed")
 }
 

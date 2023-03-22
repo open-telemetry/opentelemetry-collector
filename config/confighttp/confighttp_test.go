@@ -47,7 +47,7 @@ type customRoundTripper struct {
 
 var _ http.RoundTripper = (*customRoundTripper)(nil)
 
-func (c *customRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
+func (c *customRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error) {
 	return nil, nil
 }
 

@@ -486,7 +486,7 @@ type mockStorageExtension struct {
 	component.ShutdownFunc
 }
 
-func (m mockStorageExtension) GetClient(ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error) {
+func (m mockStorageExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, _ string) (storage.Client, error) {
 	return &mockStorageClient{st: map[string][]byte{}}, nil
 }
 

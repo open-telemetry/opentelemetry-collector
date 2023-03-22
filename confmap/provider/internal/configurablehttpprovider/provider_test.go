@@ -41,7 +41,7 @@ func newConfigurableHTTPProvider(scheme SchemeType) *provider {
 	return New(scheme).(*provider)
 }
 
-func answerGet(w http.ResponseWriter, r *http.Request) {
+func answerGet(w http.ResponseWriter, _ *http.Request) {
 	f, err := os.ReadFile("./testdata/otel-config.yaml")
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
