@@ -147,11 +147,7 @@ func (pm *processMetrics) recordWithOC(ocRegistry *metric.Registry) error {
 	if err != nil {
 		return err
 	}
-	if err = pm.rssMemory.UpsertEntry(pm.updateRSSMemory); err != nil {
-		return err
-	}
-
-	return nil
+	return pm.rssMemory.UpsertEntry(pm.updateRSSMemory)
 }
 
 func (pm *processMetrics) recordWithOtel(meter otelmetric.Meter) error {
