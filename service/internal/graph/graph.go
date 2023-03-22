@@ -198,22 +198,22 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 		case *connectorNode:
 			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
 		case *capabilitiesNode:
-			cap := consumer.Capabilities{MutatesData: false}
+			capability := consumer.Capabilities{MutatesData: false}
 			for _, proc := range g.pipelines[n.pipelineID].processors {
-				cap.MutatesData = cap.MutatesData || proc.getConsumer().Capabilities().MutatesData
+				capability.MutatesData = capability.MutatesData || proc.getConsumer().Capabilities().MutatesData
 			}
 			next := g.nextConsumers(n.ID())[0]
 			switch n.pipelineID.Type() {
 			case component.DataTypeTraces:
-				cc := capabilityconsumer.NewTraces(next.(consumer.Traces), cap)
+				cc := capabilityconsumer.NewTraces(next.(consumer.Traces), capability)
 				n.baseConsumer = cc
 				n.ConsumeTracesFunc = cc.ConsumeTraces
 			case component.DataTypeMetrics:
-				cc := capabilityconsumer.NewMetrics(next.(consumer.Metrics), cap)
+				cc := capabilityconsumer.NewMetrics(next.(consumer.Metrics), capability)
 				n.baseConsumer = cc
 				n.ConsumeMetricsFunc = cc.ConsumeMetrics
 			case component.DataTypeLogs:
-				cc := capabilityconsumer.NewLogs(next.(consumer.Logs), cap)
+				cc := capabilityconsumer.NewLogs(next.(consumer.Logs), capability)
 				n.baseConsumer = cc
 				n.ConsumeLogsFunc = cc.ConsumeLogs
 			}
