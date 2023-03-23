@@ -13,8 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
         with:
-          github-token: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
           script: |
             const milestones = await github.rest.issues.listMilestones({
               owner: context.repo.owner,
