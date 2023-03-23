@@ -1,4 +1,4 @@
-# This action adds the latest milestone to a pull request
+# This action adds the "next release" milestone to a pull request
 # when it is merged
 
 name: 'Project: Add PR to Milestone'
@@ -8,12 +8,13 @@ on:
       - closed
 
 jobs:
-  if_merged:
+  update-pr:
     if: github.event.pull_request.merged
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v6
         with:
+          github-token: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
           script: |
             const milestones = await github.rest.issues.listMilestones({
               owner: context.repo.owner,
@@ -21,11 +22,11 @@ jobs:
               state: "open"
             })
             for (const milestone of milestones.data) {
-              if (milestone.title == "next version") {
+              if (milestone.title == "next release") {
                 await github.rest.issues.update({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  issue_number: ${{ github.event.pull_request.number }},
+                  issue_number: context.issue.number,
                   milestone: milestone.number
                 });
                 return
