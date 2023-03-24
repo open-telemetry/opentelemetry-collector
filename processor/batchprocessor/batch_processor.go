@@ -38,7 +38,7 @@ import (
 // https://github.com/open-telemetry/opentelemetry-collector/pull/7325#discussion_r1126972549.
 type attributeSet string
 
-// attributeSet is a stand-in for otel-go's attribute.KeyValue, which
+// attributeKeyValue is a stand-in for otel-go's attribute.KeyValue, which
 // exposes a simple API to compute attribute sets.  See
 // https://github.com/open-telemetry/opentelemetry-collector/pull/7325#discussion_r1126972549.
 type attributeKeyValue string
