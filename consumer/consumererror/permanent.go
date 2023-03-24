@@ -14,27 +14,60 @@
 
 package consumererror // import "go.opentelemetry.io/collector/consumer/consumererror"
 
-import "errors"
+import (
+	"errors"
+	"strconv"
+)
 
-// permanent is an error that will be always returned if its source
+// NO_DATA_COUNT indicates an unknown quantity of telemetry items.
+const NO_DATA_COUNT = -1
+
+// Permanent is an error that will always be returned if its source
 // receives the same inputs.
-type permanent struct {
-	err error
+type Permanent struct {
+	error
+	successful int
+	failed     int
 }
 
-// NewPermanent wraps an error to indicate that it is a permanent error, i.e. an
-// error that will be always returned if its source receives the same inputs.
+// Deprecated [v0.75.0] Use consumererror.NewPermanentWithCounts instead.
 func NewPermanent(err error) error {
-	return permanent{err: err}
+	return Permanent{error: err, successful: NO_DATA_COUNT, failed: NO_DATA_COUNT}
 }
 
-func (p permanent) Error() string {
-	return "Permanent error: " + p.err.Error()
+// NewPermanentWithCounts wraps an error to indicate that it is a permanent error, i.e. an
+// error that will be always returned if its source receives the same inputs.
+// The error should also include the number of successful and failed telemetry items
+// if the counts are known. Unknown counts should be set to consumererror.NO_DATA_COUNT.
+func NewPermanentWithCounts(err error, successful, failed int) error {
+	return Permanent{error: err, successful: successful, failed: failed}
 }
 
-// Unwrap returns the wrapped error for functions Is and As in standard package errors.
-func (p permanent) Unwrap() error {
-	return p.err
+func (p Permanent) Error() string {
+	successful := "unknown"
+	failed := "unknown"
+
+	if p.successful != NO_DATA_COUNT {
+		successful = strconv.Itoa(p.successful)
+	}
+	if p.failed != NO_DATA_COUNT {
+		failed = strconv.Itoa(p.failed)
+	}
+
+	return "Permanent error (" + successful + " successful, " + failed + " failed): " + p.error.Error()
+}
+
+// Unwrap returns the wrapped error for use by `errors.Is` and `errors.As`.
+func (p Permanent) Unwrap() error {
+	return p.error
+}
+
+func (p Permanent) Successful() int {
+	return p.successful
+}
+
+func (p Permanent) Failed() int {
+	return p.failed
 }
 
 // IsPermanent checks if an error was wrapped with the NewPermanent function, which
@@ -44,5 +77,5 @@ func IsPermanent(err error) bool {
 	if err == nil {
 		return false
 	}
-	return errors.As(err, &permanent{})
+	return errors.As(err, &Permanent{})
 }

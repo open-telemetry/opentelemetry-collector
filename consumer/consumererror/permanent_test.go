@@ -61,3 +61,45 @@ func TestPermanent_Unwrap(t *testing.T) {
 
 	require.Equal(t, err, target)
 }
+
+func TestPermanent_WithCounts(t *testing.T) {
+	err := NewPermanentWithCounts(testErrorType{"testError"}, 1, 2)
+	require.True(t, IsPermanent(err))
+
+	permanentError, ok := err.(Permanent)
+	require.True(t, ok, "Error isn't a permanent error")
+	require.Equal(t, 1, permanentError.Successful())
+	require.Equal(t, 2, permanentError.Failed())
+}
+
+func TestPermanent_NoCounts(t *testing.T) {
+	err := NewPermanentWithCounts(testErrorType{"testError"}, NO_DATA_COUNT, NO_DATA_COUNT)
+	require.True(t, IsPermanent(err))
+
+	permanentError, ok := err.(Permanent)
+	require.True(t, ok, "Error isn't a permanent error")
+	require.Equal(t, NO_DATA_COUNT, permanentError.Successful())
+	require.Equal(t, NO_DATA_COUNT, permanentError.Failed())
+}
+
+func TestPermanent_ErrorMessageWithCounts(t *testing.T) {
+	err := NewPermanentWithCounts(testErrorType{"testError"}, 1, 2)
+	require.True(t, IsPermanent(err))
+
+	permanentError, ok := err.(Permanent)
+	require.True(t, ok, "Error isn't a permanent error")
+	require.ErrorContains(t, permanentError, "1 successful")
+	require.ErrorContains(t, permanentError, "2 failed")
+	require.ErrorContains(t, permanentError, permanentError.Unwrap().Error())
+}
+
+func TestPermanent_ErrorMessageNoCounts(t *testing.T) {
+	err := NewPermanentWithCounts(testErrorType{"testError"}, NO_DATA_COUNT, NO_DATA_COUNT)
+	require.True(t, IsPermanent(err))
+
+	permanentError, ok := err.(Permanent)
+	require.True(t, ok, "Error isn't a permanent error")
+	require.ErrorContains(t, permanentError, "unknown successful")
+	require.ErrorContains(t, permanentError, "unknown failed")
+	require.ErrorContains(t, permanentError, permanentError.Unwrap().Error())
+}

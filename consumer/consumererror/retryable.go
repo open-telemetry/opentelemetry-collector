@@ -15,6 +15,8 @@
 package consumererror // import "go.opentelemetry.io/collector/consumer/consumererror"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -22,10 +24,15 @@ import (
 
 type retryable[V ptrace.Traces | pmetric.Metrics | plog.Logs] struct {
 	error
-	data V
+	delay time.Duration
+	data  V
 }
 
-// Unwrap returns the wrapped error for functions Is and As in standard package errors.
+func (err retryable[V]) Error() string {
+	return "Retryable (after " + err.delay.String() + ") error: " + err.error.Error()
+}
+
+// Unwrap returns the wrapped error for use by `errors.Is` and `errors.As`.
 func (err retryable[V]) Unwrap() error {
 	return err.error
 }
@@ -35,20 +42,33 @@ func (err retryable[V]) Data() V {
 	return err.data
 }
 
-// Traces is an error that may carry associated Trace data for a subset of received data
+// Delay returns the duration before the request should be retried.
+func (err retryable[V]) Delay() time.Duration {
+	return err.delay
+}
+
+// RetryableTraces is an error that may carry associated Trace data for a subset of received data
 // that failed to be processed or sent.
-type Traces struct {
+type RetryableTraces struct {
 	retryable[ptrace.Traces]
 }
 
-// NewTraces creates a Traces that can encapsulate received data that failed to be processed or sent.
-func NewTraces(err error, data ptrace.Traces) error {
-	return Traces{
+// Deprecated [v0.75.0] Use `RetryableTraces` instead
+type Traces RetryableTraces
+
+// NewRetryableTraces creates a Traces that can encapsulate received data that failed to be processed or sent.
+func NewRetryableTraces(err error, data ptrace.Traces) error {
+	return RetryableTraces{
 		retryable: retryable[ptrace.Traces]{
 			error: err,
 			data:  data,
 		},
 	}
+}
+
+// Deprecated [v0.75.0] Use `NewRetryableTraces` instead
+func NewTraces(err error, data ptrace.Traces) error {
+	return NewRetryableTraces(err, data)
 }
 
 // Logs is an error that may carry associated Log data for a subset of received data

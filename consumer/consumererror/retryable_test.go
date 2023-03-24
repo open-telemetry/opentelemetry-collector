@@ -27,9 +27,8 @@ import (
 func TestTraces(t *testing.T) {
 	td := testdata.GenerateTraces(1)
 	err := errors.New("some error")
-	traceErr := NewTraces(err, td)
-	assert.Equal(t, err.Error(), traceErr.Error())
-	var target Traces
+	traceErr := NewRetryableTraces(err, td)
+	var target RetryableTraces
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
 	assert.True(t, errors.As(traceErr, &target))
@@ -40,7 +39,7 @@ func TestTraces_Unwrap(t *testing.T) {
 	td := testdata.GenerateTraces(1)
 	var err error = testErrorType{"some error"}
 	// Wrapping err with error Traces.
-	traceErr := NewTraces(err, td)
+	traceErr := NewRetryableTraces(err, td)
 	target := testErrorType{}
 	require.NotEqual(t, err, target)
 	// Unwrapping traceErr for err and assigning to target.
@@ -48,11 +47,28 @@ func TestTraces_Unwrap(t *testing.T) {
 	require.Equal(t, err, target)
 }
 
+func TestTraces_ShouldIncludeDelay(t *testing.T) {
+	td := testdata.GenerateTraces(1)
+	var err error = testErrorType{"some error"}
+
+	traceErr, ok := NewRetryableTraces(err, td).(RetryableTraces)
+	require.True(t, ok, "Error isn't a retryable error")
+	require.ErrorContains(t, traceErr, traceErr.Delay().String())
+}
+
+func TestTraces_ShouldIncludeWrappedError(t *testing.T) {
+	td := testdata.GenerateTraces(1)
+	var err error = testErrorType{"some error"}
+
+	traceErr, ok := NewRetryableTraces(err, td).(RetryableTraces)
+	require.True(t, ok, "Error isn't a retryable error")
+	require.ErrorContains(t, traceErr, traceErr.Unwrap().Error())
+}
+
 func TestLogs(t *testing.T) {
 	td := testdata.GenerateLogs(1)
 	err := errors.New("some error")
 	logsErr := NewLogs(err, td)
-	assert.Equal(t, err.Error(), logsErr.Error())
 	var target Logs
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
@@ -76,7 +92,6 @@ func TestMetrics(t *testing.T) {
 	td := testdata.GenerateMetrics(1)
 	err := errors.New("some error")
 	metricErr := NewMetrics(err, td)
-	assert.Equal(t, err.Error(), metricErr.Error())
 	var target Metrics
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
