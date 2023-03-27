@@ -936,8 +936,13 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 
 func TestBatchProcessorDuplicateMetadataKeys(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.MetadataKeys = []string{"TOKEN", "token"}
+	cfg.MetadataKeys = []string{"myTOKEN", "mytoken"}
 	err := cfg.Validate()
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "duplicate")
+	require.Contains(t, err.Error(), "mytoken")
+}
+
+func TestAttributeEmptyStringUniqueness(t *testing.T) {
+	require.NotEqual(t, attributeStringSlice("key", nil), attributeString("key", ""))
 }

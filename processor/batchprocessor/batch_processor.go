@@ -180,7 +180,7 @@ func attributeString(k string, v string) attributeKeyValue {
 // attributeStringSlice is like otel-go's attribute.StringSlice, for
 // input to newAttributeSet.
 func attributeStringSlice(k string, v []string) attributeKeyValue {
-	return attributeKeyValue(fmt.Sprint(k, "=", strings.Join(v, ",")))
+	return attributeKeyValue(fmt.Sprint(k, "∈", strings.Join(v, ",")))
 }
 
 func (bp *batchProcessor) Capabilities() consumer.Capabilities {
