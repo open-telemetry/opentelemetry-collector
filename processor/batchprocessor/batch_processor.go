@@ -144,7 +144,7 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 	}, nil
 }
 
-// newBatch gets or creates a batcher corresponding with attrs.
+// newBatcher gets or creates a batcher corresponding with attrs.
 func (bp *batchProcessor) newBatcher(md map[string][]string) *batcher {
 	exportCtx := client.NewContext(context.Background(), client.Info{
 		Metadata: client.NewMetadata(md),
