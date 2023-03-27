@@ -42,9 +42,16 @@ type Config struct {
 	// is not empty, one batcher will be used per distinct
 	// combination of values for the listed metadata keys.
 	//
+	// Empty value and unset metadata are treated as distinct cases.
+	//
 	// Entries are case-insensitive.  Duplicated entries will
 	// trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
+
+	// MetadataCardinalityLimit indicates the maximum number of
+	// batcher instances that will be created through a distinct
+	// combination of MetadataKeys.
+	MetadataCardinalityLimit uint32 `mapstructure:"metadata_cardinality_limit"`
 }
 
 var _ component.Config = (*Config)(nil)

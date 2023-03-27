@@ -44,8 +44,9 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		SendBatchSize: defaultSendBatchSize,
-		Timeout:       defaultTimeout,
+		SendBatchSize:            defaultSendBatchSize,
+		Timeout:                  defaultTimeout,
+		MetadataCardinalityLimit: 100,
 	}
 }
 

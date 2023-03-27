@@ -50,17 +50,29 @@ examples on using the processor.
 
 Batching by metadata enables support for multi-tenant OpenTelemetry
 Collector pipelines with batching over groups of data having the same
-authorization metadata.
+authorization metadata.  For example
+
+```yaml
+processors:
+  batch:
+    # batch data by tenant-id
+    metadata_keys:
+	- tenant_id
+
+    # limit to 100 batcher processes before raising errors
+    metadata_cardinality_limit: 10
+```
 
 Receivers should be configured with `include_metadata: true` so that
 metadata keys are available to the processor.
 
 Note that each distinct combination of metadata triggers the
 allocation of a new background task in the Collector that runs for the
-lifetime of the process.  Users of the batching processor configured
-with metadata keys should consider use of an Auth extension to
-validate the relevant metadata-key values, otherwise a malicious user
-can cause the collector to leak an unbounded amount of memory.
+lifetime of the process.  The maximum number of distinct combinations
+is limited to the configured `metadata_cardinality_limit`, which
+defaults to 100.  Users of the batching processor configured with
+metadata keys should consider use of an Auth extension to validate the
+relevant metadata-key values.
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

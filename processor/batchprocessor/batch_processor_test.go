@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -945,4 +946,44 @@ func TestBatchProcessorDuplicateMetadataKeys(t *testing.T) {
 
 func TestAttributeEmptyStringUniqueness(t *testing.T) {
 	require.NotEqual(t, attributeStringSlice("key", nil), attributeString("key", ""))
+}
+
+func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
+	const cardLimit = 10
+
+	sink := new(consumertest.TracesSink)
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetadataKeys = []string{"token"}
+	cfg.MetadataCardinalityLimit = cardLimit
+	creationSet := processortest.NewNopCreateSettings()
+	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, false)
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	bg := context.Background()
+	for requestNum := 0; requestNum < cardLimit; requestNum++ {
+		td := testdata.GenerateTraces(1)
+		ctx := client.NewContext(bg, client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"token": {fmt.Sprint(requestNum)},
+			}),
+		})
+
+		assert.NoError(t, batcher.ConsumeTraces(ctx, td))
+	}
+
+	td := testdata.GenerateTraces(1)
+	ctx := client.NewContext(bg, client.Info{
+		Metadata: client.NewMetadata(map[string][]string{
+			"token": {"limit_exceeded"},
+		}),
+	})
+	err = batcher.ConsumeTraces(ctx, td)
+
+	assert.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+	assert.Contains(t, err.Error(), "too many")
+
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
 }

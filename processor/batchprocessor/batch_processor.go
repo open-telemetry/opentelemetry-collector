@@ -28,11 +28,15 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 )
+
+// errTooManyBatchers is returned when the MetadataCardinalityLimit has been reached.
+var errTooManyBatchers = consumererror.NewPermanent(fmt.Errorf("too many batcher metadata-value combinations"))
 
 // attributeSet is a stand-in for otel-go's attribute.Set.  See
 // https://github.com/open-telemetry/opentelemetry-collector/pull/7325#discussion_r1126972549.
@@ -66,6 +70,9 @@ type batchProcessor struct {
 	// each distinct combination of metadata keys and values
 	// triggers a new batcher, counted in `goroutines`.
 	metadataKeys []string
+
+	// metadataLimit is the limiting size of the batchers map.
+	metadataLimit uint32
 
 	shutdownC  chan struct{}
 	goroutines sync.WaitGroup
@@ -141,6 +148,7 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 		batchFunc:        batchFunc,
 		shutdownC:        make(chan struct{}, 1),
 		metadataKeys:     mks,
+		metadataLimit:    cfg.MetadataCardinalityLimit,
 	}, nil
 }
 
@@ -280,9 +288,9 @@ func (b *batcher) sendItems(trigger trigger) {
 	}
 }
 
-func (bp *batchProcessor) findBatcher(ctx context.Context) *batcher {
+func (bp *batchProcessor) findBatcher(ctx context.Context) (*batcher, error) {
 	if bp.singleton != nil {
-		return bp.singleton
+		return bp.singleton, nil
 	}
 
 	// Get each metadata key value, form the corresponding
@@ -308,30 +316,48 @@ func (bp *batchProcessor) findBatcher(ctx context.Context) *batcher {
 	defer bp.lock.Unlock()
 
 	b, ok := bp.batchers[aset]
-	if !ok {
-		// aset.ToSlice() returns the sorted, deduplicated,
-		// and name-downcased list of attributes.
-		b = bp.newBatcher(md)
-		bp.batchers[aset] = b
+	if ok {
+		return b, nil
 	}
-	return b
+
+	if limit := bp.metadataLimit; limit != 0 && len(bp.batchers) >= int(limit) {
+		return nil, errTooManyBatchers
+	}
+
+	// aset.ToSlice() returns the sorted, deduplicated,
+	// and name-downcased list of attributes.
+	b = bp.newBatcher(md)
+	bp.batchers[aset] = b
+	return b, nil
 }
 
 // ConsumeTraces implements TracesProcessor
 func (bp *batchProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	bp.findBatcher(ctx).newItem <- td
+	b, err := bp.findBatcher(ctx)
+	if err != nil {
+		return err
+	}
+	b.newItem <- td
 	return nil
 }
 
 // ConsumeMetrics implements MetricsProcessor
 func (bp *batchProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	bp.findBatcher(ctx).newItem <- md
+	b, err := bp.findBatcher(ctx)
+	if err != nil {
+		return nil
+	}
+	b.newItem <- md
 	return nil
 }
 
 // ConsumeLogs implements LogsProcessor
 func (bp *batchProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	bp.findBatcher(ctx).newItem <- ld
+	b, err := bp.findBatcher(ctx)
+	if err != nil {
+		return nil
+	}
+	b.newItem <- ld
 	return nil
 }
 
