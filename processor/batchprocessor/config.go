@@ -16,6 +16,7 @@ package batchprocessor // import "go.opentelemetry.io/collector/processor/batchp
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -41,8 +42,8 @@ type Config struct {
 	// is not empty, one batcher will be used per distinct
 	// combination of values for the listed metadata keys.
 	//
-	// Entries are case-insensitive.  Duplicated entries will be
-	// ignored.
+	// Entries are case-insensitive.  Duplicated entries will
+	// trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
 }
 
@@ -57,7 +58,7 @@ func (cfg *Config) Validate() error {
 	for _, k := range cfg.MetadataKeys {
 		l := strings.ToLower(k)
 		if _, has := uniq[l]; has {
-			return errors.New("duplicate entry in metadata_keys")
+			return fmt.Errorf("duplicate entry in metadata_keys: %s (case-insensitive)", l)
 		}
 		uniq[l] = true
 	}
