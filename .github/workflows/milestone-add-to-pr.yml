@@ -3,7 +3,7 @@
 
 name: 'Project: Add PR to Milestone'
 on:
-  pull_request:
+  pull_request_target:
     types:
       - closed
 
@@ -13,8 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
         with:
           script: |
             const milestones = await github.rest.issues.listMilestones({
