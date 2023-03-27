@@ -141,7 +141,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 		return nil
 	}
 
-	respStatus := readResponse(resp)
+	respStatus := readResponseStatus(resp)
 
 	// Format the error message. Use the status if it is present in the response.
 	var formattedErr error
@@ -192,27 +192,49 @@ func isRetryableStatusCode(code int) bool {
 	}
 }
 
+func readResponseBody(body io.ReadCloser) ([]byte, error) {
+	// Read the maximum number of bytes allowed in a request. This avoids
+	// issues with missing or invalid Content-Length headers.
+	protoBytes := make([]byte, maxHTTPResponseReadBytes)
+	n, err := io.ReadFull(body, protoBytes)
+
+	// No bytes read and an EOF error indicates there is no body to read.
+	if n == 0 && (err == nil || errors.Is(err, io.EOF)) {
+		return nil, nil
+	}
+
+	// io.ReadFull will return io.ErrorUnexpectedEOF in most cases since there
+	// will usually be a mismatch between the length of the byte slice and the
+	// size of the body, so we ignore that error.
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
+		return nil, err
+	}
+
+	// The pdata unmarshaling methods check for the length of the slice
+	// when unmarshaling it, so we have to trim down the length to the
+	// actual size of the data.
+	return protoBytes[:n], nil
+}
+
 // Read the response and decode the status.Status from the body.
 // Returns nil if the response is empty or cannot be decoded.
-func readResponse(resp *http.Response) *status.Status {
+func readResponseStatus(resp *http.Response) *status.Status {
 	var respStatus *status.Status
 	if resp.StatusCode >= 400 && resp.StatusCode <= 599 {
 		// Request failed. Read the body. OTLP spec says:
 		// "Response body for all HTTP 4xx and HTTP 5xx responses MUST be a
 		// Protobuf-encoded Status message that describes the problem."
-		maxRead := resp.ContentLength
-		if maxRead == -1 || maxRead > maxHTTPResponseReadBytes {
-			maxRead = maxHTTPResponseReadBytes
+		respBytes, err := readResponseBody(resp.Body)
+
+		if err != nil {
+			return nil
 		}
-		respBytes := make([]byte, maxRead)
-		n, err := io.ReadFull(resp.Body, respBytes)
-		if err == nil && n > 0 {
-			// Decode it as Status struct. See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#failures
-			respStatus = &status.Status{}
-			err = proto.Unmarshal(respBytes, respStatus)
-			if err != nil {
-				respStatus = nil
-			}
+
+		// Decode it as Status struct. See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#failures
+		respStatus = &status.Status{}
+		err = proto.Unmarshal(respBytes, respStatus)
+		if err != nil {
+			return nil
 		}
 	}
 
@@ -220,40 +242,13 @@ func readResponse(resp *http.Response) *status.Status {
 }
 
 func handlePartialSuccessResponse(resp *http.Response, partialSuccessHandler partialSuccessHandler) error {
-	if resp.ContentLength == 0 {
-		return nil
-	}
+	bodyBytes, err := readResponseBody(resp.Body)
 
-	maxRead := resp.ContentLength
-	needsResize := false
-	if maxRead == -1 || maxRead > maxHTTPResponseReadBytes {
-		maxRead = maxHTTPResponseReadBytes
-		needsResize = true
-	}
-	protoBytes := make([]byte, maxRead)
-	n, err := io.ReadFull(resp.Body, protoBytes)
-
-	// No bytes read and an EOF error indicates there is no body to read.
-	if n == 0 && (err == nil || errors.Is(err, io.EOF)) {
-		return nil
-	}
-
-	// io.ReadFull will return io.ErrorUnexpectedEOF if the Content-Length header
-	// wasn't set, since we will try to read past the length of the body. If this
-	// is the case, the body will still have the full message in it, so we want to
-	// ignore the error and parse the message.
-	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
+	if err != nil {
 		return err
 	}
 
-	// The pdata unmarshaling methods check for the length of the slice
-	// when unmarshaling it, so we have to trim down the length to the
-	// actual size of the data.
-	if needsResize {
-		protoBytes = protoBytes[:n]
-	}
-
-	return partialSuccessHandler(protoBytes)
+	return partialSuccessHandler(bodyBytes)
 }
 
 type partialSuccessHandler func(protoBytes []byte) error
