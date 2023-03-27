@@ -128,19 +128,14 @@ var _ consumer.Logs = (*batchProcessor)(nil)
 
 // newBatchProcessor returns a new batch processor component.
 func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func() batch, useOtel bool) (*batchProcessor, error) {
-	bpt, err := newBatchProcessorTelemetry(set, useOtel)
-	if err != nil {
-		return nil, fmt.Errorf("error to create batch processor telemetry %w", err)
-	}
 	// use lower-case, to be consistent with http/2 headers.
 	mks := make([]string, len(cfg.MetadataKeys))
 	for i, k := range cfg.MetadataKeys {
 		mks[i] = strings.ToLower(k)
 	}
 	sort.Strings(mks)
-	return &batchProcessor{
-		logger:    set.Logger,
-		telemetry: bpt,
+	bp := &batchProcessor{
+		logger: set.Logger,
 
 		sendBatchSize:    int(cfg.SendBatchSize),
 		sendBatchMaxSize: int(cfg.SendBatchMaxSize),
@@ -149,7 +144,13 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 		shutdownC:        make(chan struct{}, 1),
 		metadataKeys:     mks,
 		metadataLimit:    cfg.MetadataCardinalityLimit,
-	}, nil
+	}
+	bpt, err := newBatchProcessorTelemetry(set, bp.currentMetadataCardinality, useOtel)
+	if err != nil {
+		return nil, fmt.Errorf("error to create batch processor telemetry %w", err)
+	}
+	bp.telemetry = bpt
+	return bp, nil
 }
 
 // newBatcher gets or creates a batcher corresponding with attrs.
@@ -329,6 +330,12 @@ func (bp *batchProcessor) findBatcher(ctx context.Context) (*batcher, error) {
 	b = bp.newBatcher(md)
 	bp.batchers[aset] = b
 	return b, nil
+}
+
+func (bp *batchProcessor) currentMetadataCardinality() int {
+	bp.lock.Lock()
+	defer bp.lock.Unlock()
+	return len(bp.batchers)
 }
 
 // ConsumeTraces implements TracesProcessor

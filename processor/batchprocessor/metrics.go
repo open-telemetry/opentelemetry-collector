@@ -107,14 +107,15 @@ type batchProcessorTelemetry struct {
 
 	exportCtx context.Context
 
-	processorAttr        []attribute.KeyValue
-	batchSizeTriggerSend instrument.Int64Counter
-	timeoutTriggerSend   instrument.Int64Counter
-	batchSendSize        instrument.Int64Histogram
-	batchSendSizeBytes   instrument.Int64Histogram
+	processorAttr            []attribute.KeyValue
+	batchSizeTriggerSend     instrument.Int64Counter
+	timeoutTriggerSend       instrument.Int64Counter
+	batchSendSize            instrument.Int64Histogram
+	batchSendSizeBytes       instrument.Int64Histogram
+	batchMetadataCardinality instrument.Int64ObservableUpDownCounter
 }
 
-func newBatchProcessorTelemetry(set processor.CreateSettings, useOtel bool) (*batchProcessorTelemetry, error) {
+func newBatchProcessorTelemetry(set processor.CreateSettings, currentMetadataCardinality func() int, useOtel bool) (*batchProcessorTelemetry, error) {
 	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, set.ID.String()))
 	if err != nil {
 		return nil, err
@@ -128,7 +129,7 @@ func newBatchProcessorTelemetry(set processor.CreateSettings, useOtel bool) (*ba
 		detailed:      set.MetricsLevel == configtelemetry.LevelDetailed,
 	}
 
-	err = bpt.createOtelMetrics(set.MeterProvider)
+	err = bpt.createOtelMetrics(set.MeterProvider, currentMetadataCardinality)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +137,7 @@ func newBatchProcessorTelemetry(set processor.CreateSettings, useOtel bool) (*ba
 	return bpt, nil
 }
 
-func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider) error {
+func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider, currentMetadataCardinality func() int) error {
 	if !bpt.useOtel {
 		return nil
 	}
@@ -180,6 +181,19 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider) e
 		return err
 	}
 
+	bpt.batchMetadataCardinality, err = meter.Int64ObservableUpDownCounter(
+		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_metadata_cardinality"),
+		instrument.WithDescription("Number of distinct metadata value combinations being processed"),
+		instrument.WithUnit("1"),
+		instrument.WithInt64Callback(func(_ context.Context, obs instrument.Int64Observer) error {
+			obs.Observe(int64(currentMetadataCardinality()))
+			return nil
+		}),
+	)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -206,7 +220,7 @@ func (bpt *batchProcessorTelemetry) recordWithOC(trigger trigger, sent, bytes in
 	}
 }
 
-func (bpt *batchProcessorTelemetry) recordWithOtel(trigger trigger, sent int64, bytes int64) {
+func (bpt *batchProcessorTelemetry) recordWithOtel(trigger trigger, sent, bytes int64) {
 	switch trigger {
 	case triggerBatchSize:
 		bpt.batchSizeTriggerSend.Add(bpt.exportCtx, 1, bpt.processorAttr...)
