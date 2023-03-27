@@ -16,6 +16,7 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"fmt"
+	"os"
 
 	"go.uber.org/zap/zapcore"
 
@@ -116,6 +117,10 @@ type MetricsConfig struct {
 
 	// Address is the [address]:port that metrics exposition should be bound to.
 	Address string `mapstructure:"address"`
+
+	// UseHostProcEnvVar when set to true, the metric server, through gopsutil,
+	// lookup for the otel process in the proc path defined in the HOST_PROC environment variable.
+	UseHostProcEnvVar bool `mapstructure:"useHostProcEnvVar"`
 }
 
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
@@ -133,6 +138,13 @@ func (c *Config) Validate() error {
 	// Check when service telemetry metric level is not none, the metrics address should not be empty
 	if c.Metrics.Level != configtelemetry.LevelNone && c.Metrics.Address == "" {
 		return fmt.Errorf("collector telemetry metric address should exist when metric level is not none")
+	}
+	// Validate that the hostproc env variable is set when metric server is enabled
+	if c.Metrics.Level != configtelemetry.LevelNone && c.Metrics.Address != "" && c.Metrics.UseHostProcEnvVar {
+		if _, exists := os.LookupEnv("HOST_PROC"); !exists {
+			return fmt.Errorf("collector telemetry metric UueHostProcEnvVar " +
+				"is set to true, but HOST_PROC env variavle is not set")
+		}
 	}
 
 	return nil
