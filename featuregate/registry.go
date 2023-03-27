@@ -111,11 +111,11 @@ func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Ga
 func (r *Registry) Set(id string, enabled bool) error {
 	v, ok := r.gates.Load(id)
 	if !ok {
-		return fmt.Errorf("no such feature gate -%v", id)
+		return fmt.Errorf("no such feature gate %q", id)
 	}
 	g := v.(*Gate)
 	if g.stage == StageStable {
-		return fmt.Errorf("feature gate %s is stable, can not be modified", id)
+		return fmt.Errorf("feature gate %q is stable, can not be modified", id)
 	}
 	g.enabled.Store(enabled)
 	return nil

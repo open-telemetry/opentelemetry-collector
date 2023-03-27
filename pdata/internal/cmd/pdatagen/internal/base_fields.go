@@ -379,7 +379,7 @@ func (pf *primitiveField) GenerateAccessorsTest(ms baseStruct) string {
 	return sb.String()
 }
 
-func (pf *primitiveField) GenerateSetWithTestValue(ms baseStruct) string {
+func (pf *primitiveField) GenerateSetWithTestValue(_ baseStruct) string {
 	return "\ttv.orig." + pf.fieldName + " = " + pf.testVal
 }
 
@@ -501,7 +501,7 @@ func (psf *primitiveSliceField) GenerateAccessorsTest(ms baseStruct) string {
 	return sb.String()
 }
 
-func (psf *primitiveSliceField) GenerateSetWithTestValue(ms baseStruct) string {
+func (psf *primitiveSliceField) GenerateSetWithTestValue(_ baseStruct) string {
 	return "\ttv.orig." + psf.fieldName + " = " + psf.testVal
 }
 
@@ -564,7 +564,7 @@ func (of *oneOfField) GenerateAccessorsTest(ms baseStruct) string {
 	return sb.String()
 }
 
-func (of *oneOfField) GenerateSetWithTestValue(ms baseStruct) string {
+func (of *oneOfField) GenerateSetWithTestValue(_ baseStruct) string {
 	return of.values[of.testValueIdx].GenerateSetWithTestValue(of)
 }
 
@@ -642,7 +642,7 @@ func (opv *oneOfPrimitiveValue) GenerateSetWithTestValue(of *oneOfField) string 
 		originFieldName + ":" + opv.testVal + "}"
 }
 
-func (opv *oneOfPrimitiveValue) GenerateCopyToValue(ms baseStruct, of *oneOfField, sb *bytes.Buffer) {
+func (opv *oneOfPrimitiveValue) GenerateCopyToValue(_ baseStruct, of *oneOfField, sb *bytes.Buffer) {
 	sb.WriteString("\tcase " + of.typeName + opv.fieldName + ":\n")
 	sb.WriteString("\tdest.Set" + opv.accessorFieldName(of) + "(ms." + opv.accessorFieldName(of) + "())\n")
 }
@@ -758,7 +758,7 @@ func (opv *optionalPrimitiveValue) GenerateAccessorsTest(ms baseStruct) string {
 	return sb.String()
 }
 
-func (opv *optionalPrimitiveValue) GenerateSetWithTestValue(ms baseStruct) string {
+func (opv *optionalPrimitiveValue) GenerateSetWithTestValue(_ baseStruct) string {
 	return "\ttv.orig." + opv.fieldName + "_ = &" + opv.originTypePrefix + opv.fieldName + "{" + opv.fieldName + ":" + opv.testVal + "}"
 }
 

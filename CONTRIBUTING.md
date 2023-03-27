@@ -49,6 +49,8 @@ Components comprise of exporters, extensions, receivers, and processors. The key
 
 For more details on components, see the [Adding New Components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-new-components) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) which provides a detailed example of building a component.
 
+When adding a new component to the OpenTelemetry Collector, ensure that any configuration structs used by the component include fields with the `configopaque.String` type for sensitive data. This ensures that the data is masked when serialized to prevent accidental exposure.
+
 When submitting a component to the community, consider breaking it down into separate PRs as follows:
 
 * First PR should include the overall structure of the new component:
@@ -242,7 +244,14 @@ To keep naming patterns consistent across the project, naming patterns are enfor
 - Variable assigned in a package's global scope that is preconfigured with a default set of values MUST use `Default` as the prefix. For example:
   - `var DefaultMarshallers = map[string]pdata.Marshallers{...}` is defined with an exporters package that allows for converting an encoding name,
     `zipkin`, and return the preconfigured marshaller to be used in the export process.
-
+- Types that are specific to a signal MUST be worded with the signal used as an adjective, i.e. `SignalType`. For example:
+  - `type TracesSink interface {...}`
+- Types that deal with multiple signal types should use the relationship between the signals to describe the type, e.g. `SignalToSignalType` or `SignalAndSignalType`. For example:
+  - `type TracesToTracesFunc func(...) ...`
+- Functions dealing with specific signals or signal-specific types MUST be worded with the signal or type as a direct object, i.e. `VerbSignal`, or `VerbType` where `Type` is the full name of the type including the signal name. For example:
+  - `func ConsumeTraces(...) {...}`
+  - `func CreateTracesExport(...) {...}`
+  - `func CreateTracesToTracesFunc(...) {...}`
 
 ### Recommended Libraries / Defaults
 
@@ -448,13 +457,13 @@ func DoFoo() {}
 
 When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it
 behind a [feature
-flag](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/)
+gate](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/)
 in a subsequent version, and eventually removing it after yet another version. This is how it would look like, considering
 that each of the following steps is done in a separate version:
 
-1. Mark the feature as deprecated, add a short lived feature flag with the feature enabled by default
-1. Change the feature flag to disable the feature by default, deprecating the flag at the same time
-1. Remove the feature and the flag
+1. Mark the feature as deprecated, add a short lived feature gate with the feature enabled by default
+1. Change the feature gate to disable the feature by default, deprecating the gate at the same time
+1. Remove the feature and the gate
 
 #### Example #1 - Renaming a function
 

@@ -28,7 +28,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/unit"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -188,7 +187,7 @@ func TestTelemetryInit(t *testing.T) {
 
 func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 	// Creates a OTel Go counter
-	counter, err := mp.Meter("collector_test").Int64Counter(otelPrefix+counterName, instrument.WithUnit(unit.Milliseconds))
+	counter, err := mp.Meter("collector_test").Int64Counter(otelPrefix+counterName, instrument.WithUnit("ms"))
 	require.NoError(t, err)
 	counter.Add(context.Background(), 13)
 

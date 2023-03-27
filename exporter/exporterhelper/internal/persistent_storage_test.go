@@ -272,6 +272,47 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	}
 }
 
+// this test attempts to check if all the invariants are kept if the queue is recreated while
+// close to full and with some items dispatched
+func TestPersistentStorage_StartWithNonDispatched(t *testing.T) {
+	var capacity uint64 = 5 // arbitrary small number
+	path := t.TempDir()
+	logger := zap.NewNop()
+
+	traces := newTraces(5, 10)
+	req := newFakeTracesRequest(traces)
+
+	ext := createStorageExtension(path)
+	client := createTestClient(ext)
+	ps := createTestPersistentStorageWithLoggingAndCapacity(client, logger, capacity)
+
+	// Put in items up to capacity
+	for i := 0; i < int(capacity); i++ {
+		err := ps.put(req)
+		require.NoError(t, err)
+	}
+
+	// get one item out, but don't mark it as processed
+	<-ps.get()
+	// put one more item in
+	err := ps.put(req)
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		return ps.size() == capacity-1
+	}, 5*time.Second, 10*time.Millisecond)
+	ps.stop()
+
+	// Reload
+	newPs := createTestPersistentStorageWithLoggingAndCapacity(client, logger, capacity)
+
+	require.Eventually(t, func() bool {
+		newPs.mu.Lock()
+		defer newPs.mu.Unlock()
+		return newPs.size() == capacity-1 && len(newPs.currentlyDispatchedItems) == 1
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
 func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 	path := t.TempDir()
 
@@ -445,7 +486,7 @@ type mockStorageExtension struct {
 	component.ShutdownFunc
 }
 
-func (m mockStorageExtension) GetClient(ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error) {
+func (m mockStorageExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, _ string) (storage.Client, error) {
 	return &mockStorageClient{st: map[string][]byte{}}, nil
 }
 

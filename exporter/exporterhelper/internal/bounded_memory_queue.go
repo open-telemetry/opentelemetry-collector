@@ -23,9 +23,7 @@ import (
 
 // boundedMemoryQueue implements a producer-consumer exchange similar to a ring buffer queue,
 // where the queue is bounded and if it fills up due to slow consumers, the new items written by
-// the producer force the earliest items to be dropped. The implementation is actually based on
-// channels, with a special Reaper goroutine that wakes up when the queue is full and consumers
-// the items from the top of the queue until its size drops back to maxSize
+// the producer are dropped.
 type boundedMemoryQueue struct {
 	stopWG   sync.WaitGroup
 	size     *atomic.Uint32

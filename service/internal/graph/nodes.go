@@ -12,16 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service // import "go.opentelemetry.io/collector/service"
+package graph // import "go.opentelemetry.io/collector/service/internal/graph"
 
 import (
 	"context"
+	"fmt"
 	"hash/fnv"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
@@ -34,6 +38,11 @@ const (
 	capabilitiesSeed  = "capabilities"
 	fanOutToExporters = "fanout_to_exporters"
 )
+
+// baseConsumer redeclared here since not public in consumer package. May consider to make that public.
+type baseConsumer interface {
+	Capabilities() consumer.Capabilities
+}
 
 type nodeID int64
 
@@ -60,12 +69,49 @@ type receiverNode struct {
 	component.Component
 }
 
-func newReceiverNode(pipelineID component.ID, recvID component.ID) *receiverNode {
+func newReceiverNode(pipelineType component.DataType, recvID component.ID) *receiverNode {
 	return &receiverNode{
-		nodeID:       newNodeID(receiverSeed, string(pipelineID.Type()), recvID.String()),
+		nodeID:       newNodeID(receiverSeed, string(pipelineType), recvID.String()),
 		componentID:  recvID,
-		pipelineType: pipelineID.Type(),
+		pipelineType: pipelineType,
 	}
+}
+
+func (n *receiverNode) buildComponent(ctx context.Context,
+	tel component.TelemetrySettings,
+	info component.BuildInfo,
+	builder *receiver.Builder,
+	nexts []baseConsumer,
+) error {
+	set := receiver.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set.TelemetrySettings.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
+	var err error
+	switch n.pipelineType {
+	case component.DataTypeTraces:
+		var consumers []consumer.Traces
+		for _, next := range nexts {
+			consumers = append(consumers, next.(consumer.Traces))
+		}
+		n.Component, err = builder.CreateTraces(ctx, set, fanoutconsumer.NewTraces(consumers))
+	case component.DataTypeMetrics:
+		var consumers []consumer.Metrics
+		for _, next := range nexts {
+			consumers = append(consumers, next.(consumer.Metrics))
+		}
+		n.Component, err = builder.CreateMetrics(ctx, set, fanoutconsumer.NewMetrics(consumers))
+	case component.DataTypeLogs:
+		var consumers []consumer.Logs
+		for _, next := range nexts {
+			consumers = append(consumers, next.(consumer.Logs))
+		}
+		n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
+	default:
+		return fmt.Errorf("error creating receiver %q for data type %q is not supported", set.ID, n.pipelineType)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to create %q receiver for data type %q: %w", set.ID, n.pipelineType, err)
+	}
+	return nil
 }
 
 var _ consumerNode = &processorNode{}
@@ -91,6 +137,31 @@ func (n *processorNode) getConsumer() baseConsumer {
 	return n.Component.(baseConsumer)
 }
 
+func (n *processorNode) buildComponent(ctx context.Context,
+	tel component.TelemetrySettings,
+	info component.BuildInfo,
+	builder *processor.Builder,
+	next baseConsumer,
+) error {
+	set := processor.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set.TelemetrySettings.Logger = components.ProcessorLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineID)
+	var err error
+	switch n.pipelineID.Type() {
+	case component.DataTypeTraces:
+		n.Component, err = builder.CreateTraces(ctx, set, next.(consumer.Traces))
+	case component.DataTypeMetrics:
+		n.Component, err = builder.CreateMetrics(ctx, set, next.(consumer.Metrics))
+	case component.DataTypeLogs:
+		n.Component, err = builder.CreateLogs(ctx, set, next.(consumer.Logs))
+	default:
+		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID, n.pipelineID.Type())
+	}
+	if err != nil {
+		return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID, err)
+	}
+	return nil
+}
+
 var _ consumerNode = &exporterNode{}
 
 // An exporter instance can be shared by multiple pipelines of the same type.
@@ -102,16 +173,41 @@ type exporterNode struct {
 	component.Component
 }
 
-func newExporterNode(pipelineID component.ID, exprID component.ID) *exporterNode {
+func newExporterNode(pipelineType component.DataType, exprID component.ID) *exporterNode {
 	return &exporterNode{
-		nodeID:       newNodeID(exporterSeed, string(pipelineID.Type()), exprID.String()),
+		nodeID:       newNodeID(exporterSeed, string(pipelineType), exprID.String()),
 		componentID:  exprID,
-		pipelineType: pipelineID.Type(),
+		pipelineType: pipelineType,
 	}
 }
 
 func (n *exporterNode) getConsumer() baseConsumer {
 	return n.Component.(baseConsumer)
+}
+
+func (n *exporterNode) buildComponent(
+	ctx context.Context,
+	tel component.TelemetrySettings,
+	info component.BuildInfo,
+	builder *exporter.Builder,
+) error {
+	set := exporter.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set.TelemetrySettings.Logger = components.ExporterLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineType)
+	var err error
+	switch n.pipelineType {
+	case component.DataTypeTraces:
+		n.Component, err = builder.CreateTraces(ctx, set)
+	case component.DataTypeMetrics:
+		n.Component, err = builder.CreateMetrics(ctx, set)
+	case component.DataTypeLogs:
+		n.Component, err = builder.CreateLogs(ctx, set)
+	default:
+		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
+	}
+	return nil
 }
 
 var _ consumerNode = &connectorNode{}
@@ -139,20 +235,18 @@ func (n *connectorNode) getConsumer() baseConsumer {
 	return n.Component.(baseConsumer)
 }
 
-func buildConnector(
+func (n *connectorNode) buildComponent(
 	ctx context.Context,
-	componentID component.ID,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
 	builder *connector.Builder,
-	exprPipelineType component.Type,
-	rcvrPipelineType component.Type,
 	nexts []baseConsumer,
-) (conn component.Component, err error) {
-	set := connector.CreateSettings{ID: componentID, TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ConnectorLogger(set.TelemetrySettings.Logger, componentID, exprPipelineType, rcvrPipelineType)
+) error {
+	set := connector.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set.TelemetrySettings.Logger = components.ConnectorLogger(set.TelemetrySettings.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
 
-	switch rcvrPipelineType {
+	var err error
+	switch n.rcvrPipelineType {
 	case component.DataTypeTraces:
 		next := nexts[0].(consumer.Traces)
 		if len(nexts) > 1 {
@@ -162,13 +256,13 @@ func buildConnector(
 			}
 			next = fanoutconsumer.NewTracesRouter(consumers)
 		}
-		switch exprPipelineType {
+		switch n.exprPipelineType {
 		case component.DataTypeTraces:
-			conn, err = builder.CreateTracesToTraces(ctx, set, next)
+			n.Component, err = builder.CreateTracesToTraces(ctx, set, next)
 		case component.DataTypeMetrics:
-			conn, err = builder.CreateMetricsToTraces(ctx, set, next)
+			n.Component, err = builder.CreateMetricsToTraces(ctx, set, next)
 		case component.DataTypeLogs:
-			conn, err = builder.CreateLogsToTraces(ctx, set, next)
+			n.Component, err = builder.CreateLogsToTraces(ctx, set, next)
 		}
 	case component.DataTypeMetrics:
 		next := nexts[0].(consumer.Metrics)
@@ -179,13 +273,13 @@ func buildConnector(
 			}
 			next = fanoutconsumer.NewMetricsRouter(consumers)
 		}
-		switch exprPipelineType {
+		switch n.exprPipelineType {
 		case component.DataTypeTraces:
-			conn, err = builder.CreateTracesToMetrics(ctx, set, next)
+			n.Component, err = builder.CreateTracesToMetrics(ctx, set, next)
 		case component.DataTypeMetrics:
-			conn, err = builder.CreateMetricsToMetrics(ctx, set, next)
+			n.Component, err = builder.CreateMetricsToMetrics(ctx, set, next)
 		case component.DataTypeLogs:
-			conn, err = builder.CreateLogsToMetrics(ctx, set, next)
+			n.Component, err = builder.CreateLogsToMetrics(ctx, set, next)
 		}
 	case component.DataTypeLogs:
 		next := nexts[0].(consumer.Logs)
@@ -196,16 +290,16 @@ func buildConnector(
 			}
 			next = fanoutconsumer.NewLogsRouter(consumers)
 		}
-		switch exprPipelineType {
+		switch n.exprPipelineType {
 		case component.DataTypeTraces:
-			conn, err = builder.CreateTracesToLogs(ctx, set, next)
+			n.Component, err = builder.CreateTracesToLogs(ctx, set, next)
 		case component.DataTypeMetrics:
-			conn, err = builder.CreateMetricsToLogs(ctx, set, next)
+			n.Component, err = builder.CreateMetricsToLogs(ctx, set, next)
 		case component.DataTypeLogs:
-			conn, err = builder.CreateLogsToLogs(ctx, set, next)
+			n.Component, err = builder.CreateLogsToLogs(ctx, set, next)
 		}
 	}
-	return
+	return err
 }
 
 var _ consumerNode = &capabilitiesNode{}

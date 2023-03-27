@@ -28,21 +28,14 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"service.graph",
-	featuregate.StageStable,
-	featuregate.WithRegisterRemovalVersion("v0.74.0"),
-	featuregate.WithRegisterDescription("Enables the new graph based implementations for pipelines."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/2336"))
 
 // Settings holds configuration for building a new service.
 type Settings struct {
@@ -196,17 +189,26 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 		return fmt.Errorf("failed to build extensions: %w", err)
 	}
 
-	pSet := pipelinesSettings{
+	graphPipelinesConfigs := make(map[component.ID]*graph.PipelineConfig, len(cfg.Pipelines))
+	for id, cfg := range cfg.Pipelines {
+		graphPipelinesConfigs[id] = &graph.PipelineConfig{
+			Receivers:  cfg.Receivers,
+			Processors: cfg.Processors,
+			Exporters:  cfg.Exporters,
+		}
+	}
+
+	pSet := graph.Settings{
 		Telemetry:        srv.telemetrySettings,
 		BuildInfo:        srv.buildInfo,
 		ReceiverBuilder:  set.Receivers,
 		ProcessorBuilder: set.Processors,
 		ExporterBuilder:  set.Exporters,
 		ConnectorBuilder: set.Connectors,
-		PipelineConfigs:  cfg.Pipelines,
+		PipelineConfigs:  graphPipelinesConfigs,
 	}
 
-	if srv.host.pipelines, err = buildPipelinesGraph(ctx, pSet); err != nil {
+	if srv.host.pipelines, err = graph.Build(ctx, pSet); err != nil {
 		return fmt.Errorf("failed to build pipelines: %w", err)
 	}
 

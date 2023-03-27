@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package graph
 
 import (
 	"context"
@@ -29,6 +29,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -148,7 +150,7 @@ func TestGraphStartStop(t *testing.T) {
 				order:   map[component.ID]int{},
 			}
 
-			pg := &pipelinesGraph{componentGraph: simple.NewDirectedGraph()}
+			pg := &Graph{componentGraph: simple.NewDirectedGraph()}
 			for _, edge := range tt.edges {
 				f, t := &testNode{id: edge[0]}, &testNode{id: edge[1]}
 				pg.componentGraph.SetEdge(simple.Edge{F: f, T: t})
@@ -169,7 +171,7 @@ func TestGraphStartStop(t *testing.T) {
 }
 
 func TestGraphStartStopCycle(t *testing.T) {
-	pg := &pipelinesGraph{componentGraph: simple.NewDirectedGraph()}
+	pg := &Graph{componentGraph: simple.NewDirectedGraph()}
 
 	r1 := &testNode{id: component.NewIDWithName("r", "1")}
 	p1 := &testNode{id: component.NewIDWithName("p", "1")}
@@ -191,7 +193,7 @@ func TestGraphStartStopCycle(t *testing.T) {
 }
 
 func TestGraphStartStopComponentError(t *testing.T) {
-	pg := &pipelinesGraph{componentGraph: simple.NewDirectedGraph()}
+	pg := &Graph{componentGraph: simple.NewDirectedGraph()}
 	pg.componentGraph.SetEdge(simple.Edge{
 		F: &testNode{
 			id:       component.NewIDWithName("r", "1"),
@@ -595,7 +597,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Build the pipeline
-			set := pipelinesSettings{
+			set := Settings{
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
 				ReceiverBuilder: receiver.NewBuilder(
@@ -638,7 +640,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				PipelineConfigs: test.pipelineConfigs,
 			}
 
-			pg, err := buildPipelinesGraph(context.Background(), set)
+			pg, err := Build(context.Background(), set)
 			require.NoError(t, err)
 
 			assert.Equal(t, len(test.pipelineConfigs), len(pg.pipelines))
@@ -831,7 +833,7 @@ func TestConnectorRouter(t *testing.T) {
 	logsLeftID := component.NewIDWithName("logs", "left")
 
 	ctx := context.Background()
-	set := pipelinesSettings{
+	set := Settings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
 		ReceiverBuilder: receiver.NewBuilder(
@@ -916,7 +918,7 @@ func TestConnectorRouter(t *testing.T) {
 		},
 	}
 
-	pg, err := buildPipelinesGraph(ctx, set)
+	pg, err := Build(ctx, set)
 	require.NoError(t, err)
 
 	allReceivers := pg.getReceivers()
@@ -1025,7 +1027,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("bf")},
 				},
 			},
-			expected: "failed to create \"bf\" exporter, in pipeline \"logs/*\": telemetry type is not supported",
+			expected: "failed to create \"bf\" exporter for data type \"logs\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_exporter_metrics",
@@ -1041,7 +1043,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("bf")},
 				},
 			},
-			expected: "failed to create \"bf\" exporter, in pipeline \"metrics/*\": telemetry type is not supported",
+			expected: "failed to create \"bf\" exporter for data type \"metrics\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_exporter_traces",
@@ -1057,7 +1059,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("bf")},
 				},
 			},
-			expected: "failed to create \"bf\" exporter, in pipeline \"traces/*\": telemetry type is not supported",
+			expected: "failed to create \"bf\" exporter for data type \"traces\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_processor_logs",
@@ -1133,7 +1135,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "failed to create \"bf\" receiver, in pipeline \"logs/*\": telemetry type is not supported",
+			expected: "failed to create \"bf\" receiver for data type \"logs\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_receiver_metrics",
@@ -1149,7 +1151,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "failed to create \"bf\" receiver, in pipeline \"metrics/*\": telemetry type is not supported",
+			expected: "failed to create \"bf\" receiver for data type \"metrics\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_receiver_traces",
@@ -1165,7 +1167,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "failed to create \"bf\" receiver, in pipeline \"traces/*\": telemetry type is not supported",
+			expected: "failed to create \"bf\" receiver for data type \"traces\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_connector_traces_traces.yaml",
@@ -1664,7 +1666,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "1")},
 				},
 			},
-			expected: "failed to create \"nop/1\" exporter, in pipeline \"traces/*\": exporter \"nop/1\" is not configured",
+			expected: "failed to create \"nop/1\" exporter for data type \"traces\": exporter \"nop/1\" is not configured",
 		},
 		{
 			name: "unknown_exporter_factory",
@@ -1680,7 +1682,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("unknown")},
 				},
 			},
-			expected: "failed to create \"unknown\" exporter, in pipeline \"traces/*\": exporter factory not available for: \"unknown\"",
+			expected: "failed to create \"unknown\" exporter for data type \"traces\": exporter factory not available for: \"unknown\"",
 		},
 		{
 			name: "unknown_processor_config",
@@ -1736,7 +1738,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "failed to create \"nop/1\" receiver, in pipeline \"logs/*\": receiver \"nop/1\" is not configured",
+			expected: "failed to create \"nop/1\" receiver for data type \"logs\": receiver \"nop/1\" is not configured",
 		},
 		{
 			name: "unknown_receiver_factory",
@@ -1752,7 +1754,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "failed to create \"unknown\" receiver, in pipeline \"logs/*\": receiver factory not available for: \"unknown\"",
+			expected: "failed to create \"unknown\" receiver for data type \"logs\": receiver factory not available for: \"unknown\"",
 		},
 		{
 			name: "unknown_connector_factory",
@@ -1781,7 +1783,7 @@ func TestGraphBuildErrors(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			set := pipelinesSettings{
+			set := Settings{
 				BuildInfo: component.NewDefaultBuildInfo(),
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				ReceiverBuilder: receiver.NewBuilder(
@@ -1810,7 +1812,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					}),
 				PipelineConfigs: test.pipelineCfgs,
 			}
-			_, err := buildPipelinesGraph(context.Background(), set)
+			_, err := Build(context.Background(), set)
 			assert.EqualError(t, err, test.expected)
 		})
 	}
@@ -1828,7 +1830,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 	nopExporterFactory := exportertest.NewNopFactory()
 	nopConnectorFactory := connectortest.NewNopFactory()
 
-	set := pipelinesSettings{
+	set := Settings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
 		ReceiverBuilder: receiver.NewBuilder(
@@ -1879,7 +1881,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			}
-			pipelines, err := buildPipelinesGraph(context.Background(), set)
+			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
 			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
@@ -1893,7 +1895,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			}
-			pipelines, err := buildPipelinesGraph(context.Background(), set)
+			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
 			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
@@ -1907,7 +1909,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop"), component.NewID("err")},
 				},
 			}
-			pipelines, err := buildPipelinesGraph(context.Background(), set)
+			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
 			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
@@ -1927,7 +1929,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 						Exporters:  []component.ID{component.NewID("nop")},
 					},
 				}
-				pipelines, err := buildPipelinesGraph(context.Background(), set)
+				pipelines, err := Build(context.Background(), set)
 				assert.NoError(t, err)
 				assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 				assert.Error(t, pipelines.ShutdownAll(context.Background()))
@@ -1936,7 +1938,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 	}
 }
 
-func (g *pipelinesGraph) getReceivers() map[component.DataType]map[component.ID]component.Component {
+func (g *Graph) getReceivers() map[component.DataType]map[component.ID]component.Component {
 	receiversMap := make(map[component.DataType]map[component.ID]component.Component)
 	receiversMap[component.DataTypeTraces] = make(map[component.ID]component.Component)
 	receiversMap[component.DataTypeMetrics] = make(map[component.ID]component.Component)
@@ -2005,4 +2007,125 @@ func expectedInstances(m map[component.ID]*PipelineConfig, pID component.ID) (in
 		e += len(typeMap)
 	}
 	return r, e
+}
+
+func newBadReceiverFactory() receiver.Factory {
+	return receiver.NewFactory("bf", func() component.Config {
+		return &struct{}{}
+	})
+}
+
+func newBadProcessorFactory() processor.Factory {
+	return processor.NewFactory("bf", func() component.Config {
+		return &struct{}{}
+	})
+}
+
+func newBadExporterFactory() exporter.Factory {
+	return exporter.NewFactory("bf", func() component.Config {
+		return &struct{}{}
+	})
+}
+
+func newBadConnectorFactory() connector.Factory {
+	return connector.NewFactory("bf", func() component.Config {
+		return &struct{}{}
+	})
+}
+
+func newErrReceiverFactory() receiver.Factory {
+	return receiver.NewFactory("err",
+		func() component.Config { return &struct{}{} },
+		receiver.WithTraces(func(context.Context, receiver.CreateSettings, component.Config, consumer.Traces) (receiver.Traces, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUndefined),
+		receiver.WithLogs(func(context.Context, receiver.CreateSettings, component.Config, consumer.Logs) (receiver.Logs, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUndefined),
+		receiver.WithMetrics(func(context.Context, receiver.CreateSettings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUndefined),
+	)
+}
+
+func newErrProcessorFactory() processor.Factory {
+	return processor.NewFactory("err",
+		func() component.Config { return &struct{}{} },
+		processor.WithTraces(func(context.Context, processor.CreateSettings, component.Config, consumer.Traces) (processor.Traces, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUndefined),
+		processor.WithLogs(func(context.Context, processor.CreateSettings, component.Config, consumer.Logs) (processor.Logs, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUndefined),
+		processor.WithMetrics(func(context.Context, processor.CreateSettings, component.Config, consumer.Metrics) (processor.Metrics, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUndefined),
+	)
+}
+
+func newErrExporterFactory() exporter.Factory {
+	return exporter.NewFactory("err",
+		func() component.Config { return &struct{}{} },
+		exporter.WithTraces(func(context.Context, exporter.CreateSettings, component.Config) (exporter.Traces, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUndefined),
+		exporter.WithLogs(func(context.Context, exporter.CreateSettings, component.Config) (exporter.Logs, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUndefined),
+		exporter.WithMetrics(func(context.Context, exporter.CreateSettings, component.Config) (exporter.Metrics, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUndefined),
+	)
+}
+
+func newErrConnectorFactory() connector.Factory {
+	return connector.NewFactory("err", func() component.Config {
+		return &struct{}{}
+	},
+		connector.WithTracesToTraces(func(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Traces, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		connector.WithTracesToMetrics(func(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Traces, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		connector.WithTracesToLogs(func(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Traces, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+
+		connector.WithMetricsToTraces(func(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Metrics, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		connector.WithMetricsToMetrics(func(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Metrics, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		connector.WithMetricsToLogs(func(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Metrics, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+
+		connector.WithLogsToTraces(func(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Logs, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		connector.WithLogsToMetrics(func(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Logs, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		connector.WithLogsToLogs(func(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Logs, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+	)
+}
+
+type errComponent struct {
+	consumertest.Consumer
+}
+
+func (e errComponent) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (e errComponent) Start(context.Context, component.Host) error {
+	return errors.New("my error")
+}
+
+func (e errComponent) Shutdown(context.Context) error {
+	return errors.New("my error")
 }

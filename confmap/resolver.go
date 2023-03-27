@@ -47,10 +47,10 @@ var (
 	errTooManyRecursiveExpansions = errors.New("too many recursive expansions")
 )
 
-// TODO: Remove this if by v0.64.0 no complains from distros.
-var expandEnabledGauge = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"confmap.expandEnabled",
-	featuregate.StageBeta,
+	featuregate.StageStable,
+	featuregate.WithRegisterRemovalVersion("v0.75.0"),
 	featuregate.WithRegisterDescription("controls whether expanding embedded external config providers URIs"))
 
 // Resolver resolves a configuration as a Conf.
@@ -165,17 +165,15 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		}
 	}
 
-	if expandEnabledGauge.IsEnabled() {
-		cfgMap := make(map[string]any)
-		for _, k := range retMap.AllKeys() {
-			val, err := mr.expandValueRecursively(ctx, retMap.Get(k))
-			if err != nil {
-				return nil, err
-			}
-			cfgMap[k] = val
+	cfgMap := make(map[string]any)
+	for _, k := range retMap.AllKeys() {
+		val, err := mr.expandValueRecursively(ctx, retMap.Get(k))
+		if err != nil {
+			return nil, err
 		}
-		retMap = NewFromStringMap(cfgMap)
+		cfgMap[k] = val
 	}
+	retMap = NewFromStringMap(cfgMap)
 
 	// Apply the converters in the given order.
 	for _, confConv := range mr.converters {

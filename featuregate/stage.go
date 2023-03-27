@@ -23,7 +23,7 @@ const (
 	//
 	// The Gate will be disabled by default.
 	StageAlpha Stage = iota
-	// StageBeta is used when the feature flag is well tested and is enabled by default,
+	// StageBeta is used when the feature gate is well tested and is enabled by default,
 	// but can be disabled by a Gate.
 	//
 	// The Gate will be enabled by default.
