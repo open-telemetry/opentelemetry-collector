@@ -7,6 +7,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -105,7 +106,7 @@ func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_cli
 func TestOtelProcessTelemetry(t *testing.T) {
 	tel := setupTelemetry(t)
 
-	require.NoError(t, RegisterProcessMetrics(nil, tel.MeterProvider, true, 0))
+	require.NoError(t, RegisterProcessMetrics(nil, tel.MeterProvider, true, 0, false))
 
 	mp, err := fetchPrometheusMetrics(tel.promHandler)
 	require.NoError(t, err)
@@ -137,7 +138,51 @@ func TestOtelProcessTelemetry(t *testing.T) {
 func TestOCProcessTelemetry(t *testing.T) {
 	ocRegistry := metric.NewRegistry()
 
-	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0))
+	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0, false))
+
+	// Check that the metrics are actually filled.
+	<-time.After(200 * time.Millisecond)
+
+	metrics := ocRegistry.Read()
+
+	for _, metricName := range expectedMetrics {
+		m := findMetric(metrics, metricName)
+		require.NotNil(t, m)
+		require.Len(t, m.TimeSeries, 1)
+		ts := m.TimeSeries[0]
+		assert.Len(t, ts.LabelValues, 0)
+		require.Len(t, ts.Points, 1)
+
+		var value float64
+		if metricName == "process/uptime" || metricName == "process/cpu_seconds" {
+			value = ts.Points[0].Value.(float64)
+		} else {
+			value = float64(ts.Points[0].Value.(int64))
+		}
+
+		if metricName == "process/uptime" || metricName == "process/cpu_seconds" {
+			// This likely will still be zero when running the test.
+			assert.GreaterOrEqual(t, value, float64(0), metricName)
+			continue
+		}
+
+		assert.Greater(t, value, float64(0), metricName)
+	}
+}
+
+func TestOCProcessTelemetryWithHostProc(t *testing.T) {
+	ocRegistry := metric.NewRegistry()
+	hostProc := "/host/proc"
+	os.Setenv("HOST_PROC", hostProc)
+
+	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0, false))
+
+	// make sure HOST_PROC is restored
+	envValue, _ := os.LookupEnv("HOST_PROC")
+	require.Equal(t, envValue, hostProc)
+
+	// unset HOST_PROC so other tests are not impacted
+	defer os.Unsetenv("HOST_PROC")
 
 	// Check that the metrics are actually filled.
 	<-time.After(200 * time.Millisecond)
@@ -175,7 +220,7 @@ func TestProcessTelemetryFailToRegister(t *testing.T) {
 			ocRegistry := metric.NewRegistry()
 			_, err := ocRegistry.AddFloat64Gauge(metricName)
 			require.NoError(t, err)
-			assert.Error(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0))
+			assert.Error(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0, false))
 		})
 	}
 }

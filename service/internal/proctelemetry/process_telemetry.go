@@ -51,7 +51,7 @@ type processMetrics struct {
 
 // RegisterProcessMetrics creates a new set of processMetrics (mem, cpu) that can be used to measure
 // basic information about this process.
-func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProvider, useOtel bool, ballastSizeBytes uint64) error {
+func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProvider, useOtel bool, ballastSizeBytes uint64, useHostProcEnvVar bool) error {
 	var err error
 	pm := &processMetrics{
 		startTimeUnixNano: time.Now().UnixNano(),
@@ -59,9 +59,18 @@ func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProv
 		ms:                &runtime.MemStats{},
 	}
 
+	hostproc, exists := os.LookupEnv("HOST_PROC")
+	// unset HOST_PROC env variable so the process search occurs locally
+	if !useHostProcEnvVar && exists {
+		os.Unsetenv("HOST_PROC")
+	}
 	pm.proc, err = process.NewProcess(int32(os.Getpid()))
 	if err != nil {
 		return err
+	}
+	// restore immediately if it was previously set, don't use defer
+	if !useHostProcEnvVar && exists {
+		os.Setenv("HOST_PROC", hostproc)
 	}
 
 	if useOtel {
