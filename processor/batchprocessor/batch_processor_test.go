@@ -867,29 +867,29 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 	callCtxs := []context.Context{
 		client.NewContext(bg, client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
-				"token1": []string{"single"},
-				"token3": []string{"n/a"},
+				"token1": {"single"},
+				"token3": {"n/a"},
 			}),
 		}),
 		client.NewContext(bg, client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
-				"token1": []string{"single"},
-				"token2": []string{"one", "two"},
-				"token4": []string{"n/a"},
+				"token1": {"single"},
+				"token2": {"one", "two"},
+				"token4": {"n/a"},
 			}),
 		}),
 		client.NewContext(bg, client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
 				"token1": nil,
-				"token2": []string{"single"},
+				"token2": {"single"},
 			}),
 		}),
 		client.NewContext(bg, client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
-				"token1": []string{"one", "two", "three"},
-				"token2": []string{"single"},
-				"token3": []string{"n/a"},
-				"token4": []string{"n/a", "d/c"},
+				"token1": {"one", "two", "three"},
+				"token2": {"single"},
+				"token3": {"n/a"},
+				"token4": {"n/a", "d/c"},
 			}),
 		}),
 	}
