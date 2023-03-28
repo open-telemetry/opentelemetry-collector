@@ -32,7 +32,7 @@ func New() confmap.Converter {
 
 func (converter) Convert(_ context.Context, conf *confmap.Conf) error {
 	out := make(map[string]any)
-	for _, k := range conf.AllKeys() {
+	for _, k := range conf.AllKeys2() {
 		out[k] = expandStringValues(conf.Get(k))
 	}
 	return conf.Merge(confmap.NewFromStringMap(out))

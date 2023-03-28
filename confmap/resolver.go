@@ -166,7 +166,7 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 	}
 
 	cfgMap := make(map[string]any)
-	for _, k := range retMap.AllKeys() {
+	for _, k := range retMap.AllKeys2() {
 		val, err := mr.expandValueRecursively(ctx, retMap.Get(k))
 		if err != nil {
 			return nil, err

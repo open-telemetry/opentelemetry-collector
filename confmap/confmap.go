@@ -51,9 +51,9 @@ type Conf struct {
 	k *koanf.Koanf
 }
 
-// AllKeys returns all keys holding a value, regardless of where they are set.
+// AllKeys2 returns all keys holding a value, regardless of where they are set.
 // Nested keys are returned with a KeyDelimiter separator.
-func (l *Conf) AllKeys() []string {
+func (l *Conf) AllKeys2() []string {
 	return l.k.Keys()
 }
 
