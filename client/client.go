@@ -96,8 +96,8 @@ import (
 
 type ctxKey struct{}
 
-// Info contains data related to the clients connecting to receivers.
-type Info struct {
+// Info2 contains data related to the clients connecting to receivers.
+type Info2 struct {
 	// Addr for the client connecting to this collector. Available in a
 	// best-effort basis, and generally reliable for receivers making use of
 	// confighttp.ToServer and configgrpc.ToServerOption.
@@ -136,16 +136,16 @@ const MetadataHostName = "Host"
 
 // NewContext takes an existing context and derives a new context with the
 // client.Info value stored on it.
-func NewContext(ctx context.Context, c Info) context.Context {
+func NewContext(ctx context.Context, c Info2) context.Context {
 	return context.WithValue(ctx, ctxKey{}, c)
 }
 
 // FromContext takes a context and returns a ClientInfo from it.
 // When a ClientInfo isn't present, a new empty one is returned.
-func FromContext(ctx context.Context) Info {
-	c, ok := ctx.Value(ctxKey{}).(Info)
+func FromContext(ctx context.Context) Info2 {
+	c, ok := ctx.Value(ctxKey{}).(Info2)
 	if !ok {
-		c = Info{}
+		c = Info2{}
 	}
 	return c
 }

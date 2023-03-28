@@ -686,21 +686,21 @@ func TestContextWithClient(t *testing.T) {
 		desc       string
 		input      context.Context
 		doMetadata bool
-		expected   client.Info
+		expected   client.Info2
 	}{
 		{
 			desc:     "no peer information, empty client",
 			input:    context.Background(),
-			expected: client.Info{},
+			expected: client.Info2{},
 		},
 		{
 			desc: "existing client with IP, no peer information",
-			input: client.NewContext(context.Background(), client.Info{
+			input: client.NewContext(context.Background(), client.Info2{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
 			}),
-			expected: client.Info{
+			expected: client.Info2{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
@@ -713,7 +713,7 @@ func TestContextWithClient(t *testing.T) {
 					IP: net.IPv4(1, 2, 3, 4),
 				},
 			}),
-			expected: client.Info{
+			expected: client.Info2{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
@@ -721,7 +721,7 @@ func TestContextWithClient(t *testing.T) {
 		},
 		{
 			desc: "existing client, existing IP gets overridden with peer information",
-			input: peer.NewContext(client.NewContext(context.Background(), client.Info{
+			input: peer.NewContext(client.NewContext(context.Background(), client.Info2{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
@@ -730,7 +730,7 @@ func TestContextWithClient(t *testing.T) {
 					IP: net.IPv4(1, 2, 3, 5),
 				},
 			}),
-			expected: client.Info{
+			expected: client.Info2{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 5),
 				},
@@ -738,41 +738,41 @@ func TestContextWithClient(t *testing.T) {
 		},
 		{
 			desc: "existing client with metadata",
-			input: client.NewContext(context.Background(), client.Info{
+			input: client.NewContext(context.Background(), client.Info2{
 				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
 			}),
 			doMetadata: true,
-			expected: client.Info{
+			expected: client.Info2{
 				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
 			},
 		},
 		{
 			desc: "existing client with metadata in context",
 			input: metadata.NewIncomingContext(
-				client.NewContext(context.Background(), client.Info{}),
+				client.NewContext(context.Background(), client.Info2{}),
 				metadata.Pairs("test-metadata-key", "test-value"),
 			),
 			doMetadata: true,
-			expected: client.Info{
+			expected: client.Info2{
 				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
 			},
 		},
 		{
 			desc: "existing client with metadata in context, no metadata processing",
 			input: metadata.NewIncomingContext(
-				client.NewContext(context.Background(), client.Info{}),
+				client.NewContext(context.Background(), client.Info2{}),
 				metadata.Pairs("test-metadata-key", "test-value"),
 			),
-			expected: client.Info{},
+			expected: client.Info2{},
 		},
 		{
 			desc: "existing client with Host and metadata",
 			input: metadata.NewIncomingContext(
-				client.NewContext(context.Background(), client.Info{}),
+				client.NewContext(context.Background(), client.Info2{}),
 				metadata.Pairs("test-metadata-key", "test-value", ":authority", "localhost:55443"),
 			),
 			doMetadata: true,
-			expected: client.Info{
+			expected: client.Info2{
 				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}, ":authority": {"localhost:55443"}, "Host": {"localhost:55443"}}),
 			},
 		},
@@ -904,7 +904,7 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	authCalled := false
 	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
 		authCalled = true
-		ctx := client.NewContext(context.Background(), client.Info{
+		ctx := client.NewContext(context.Background(), client.Info2{
 			Addr: &net.IPAddr{IP: net.IPv4(1, 2, 3, 4)},
 		})
 
@@ -976,7 +976,7 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	authCalled := false
 	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
 		authCalled = true
-		ctx := client.NewContext(context.Background(), client.Info{
+		ctx := client.NewContext(context.Background(), client.Info2{
 			Addr: &net.IPAddr{IP: net.IPv4(1, 2, 3, 4)},
 		})
 		return ctx, nil

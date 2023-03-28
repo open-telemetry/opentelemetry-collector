@@ -866,19 +866,19 @@ func TestContextWithClient(t *testing.T) {
 		desc       string
 		input      *http.Request
 		doMetadata bool
-		expected   client.Info
+		expected   client.Info2
 	}{
 		{
 			desc:     "request without client IP or headers",
 			input:    &http.Request{},
-			expected: client.Info{},
+			expected: client.Info2{},
 		},
 		{
 			desc: "request with client IP",
 			input: &http.Request{
 				RemoteAddr: "1.2.3.4:55443",
 			},
-			expected: client.Info{
+			expected: client.Info2{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
@@ -890,7 +890,7 @@ func TestContextWithClient(t *testing.T) {
 				Header: map[string][]string{"x-test-header": {"test-value"}},
 			},
 			doMetadata: false,
-			expected:   client.Info{},
+			expected:   client.Info2{},
 		},
 		{
 			desc: "request with client headers",
@@ -898,7 +898,7 @@ func TestContextWithClient(t *testing.T) {
 				Header: map[string][]string{"x-test-header": {"test-value"}},
 			},
 			doMetadata: true,
-			expected: client.Info{
+			expected: client.Info2{
 				Metadata: client.NewMetadata(map[string][]string{"x-test-header": {"test-value"}}),
 			},
 		},
@@ -909,7 +909,7 @@ func TestContextWithClient(t *testing.T) {
 				Host:   "localhost:55443",
 			},
 			doMetadata: true,
-			expected: client.Info{
+			expected: client.Info2{
 				Metadata: client.NewMetadata(map[string][]string{"x-test-header": {"test-value"}, "Host": {"localhost:55443"}}),
 			},
 		},
