@@ -162,43 +162,40 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte) e
 			url, resp.StatusCode)
 	}
 
-	// Check if the server is overwhelmed.
-	// See spec https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#throttling-1
-	if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable {
-		// Fallback to 0 if the Retry-After header is not present. This will trigger the
-		// default backoff policy by our caller (retry handler).
+	if isRetryableStatusCode(resp.StatusCode) {
+		// A retry duration of 0 seconds will trigger the default backoff policy
+		// of our caller (retry handler).
 		retryAfter := 0
-		if val := resp.Header.Get(headerRetryAfter); val != "" {
+
+		// Check if the server is overwhelmed.
+		// See spec https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#otlphttp-throttling
+		isThrottleError := resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable
+		if val := resp.Header.Get(headerRetryAfter); isThrottleError && val != "" {
 			if seconds, err2 := strconv.Atoi(val); err2 == nil {
 				retryAfter = seconds
 			}
 		}
-		// Indicate to our caller to pause for the specified number of seconds.
+
 		return exporterhelper.NewThrottleRetry(formattedErr, time.Duration(retryAfter)*time.Second)
 	}
 
-	if isPermanentClientFailure(resp.StatusCode) {
-		// Do not retry; report the failure as permanent if the server thinks the request is malformed.
-		return consumererror.NewPermanent(formattedErr)
-	}
-
-	// All other errors are retryable, so don't wrap them in consumererror.NewPermanent().
-	return formattedErr
+	return consumererror.NewPermanent(formattedErr)
 }
 
-// Does the 'code' indicate a permanent error
-func isPermanentClientFailure(code int) bool {
+// Determine if the status code is retryable according to the specification.
+// For more, see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#failures-1
+func isRetryableStatusCode(code int) bool {
 	switch code {
 	case http.StatusTooManyRequests:
-		return false
-	case http.StatusBadGateway:
-		return false
-	case http.StatusServiceUnavailable:
-		return false
-	case http.StatusGatewayTimeout:
-		return false
-	default:
 		return true
+	case http.StatusBadGateway:
+		return true
+	case http.StatusServiceUnavailable:
+		return true
+	case http.StatusGatewayTimeout:
+		return true
+	default:
+		return false
 	}
 }
 
