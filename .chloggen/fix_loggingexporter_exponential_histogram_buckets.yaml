@@ -8,4 +8,4 @@ component: loggingexporter
 note: Fix display of bucket boundaries of exponential histograms to correctly reflect inclusive/exclusive bounds.
 
 # One or more tracking issues or pull requests related to the change
-issues: []
+issues: [7445]
