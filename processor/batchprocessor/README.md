@@ -57,7 +57,7 @@ processors:
   batch:
     # batch data by tenant-id
     metadata_keys:
-	- tenant_id
+    - tenant_id
 
     # limit to 100 batcher processes before raising errors
     metadata_cardinality_limit: 10
