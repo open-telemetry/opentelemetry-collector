@@ -14,6 +14,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -446,9 +447,11 @@ func TestErrorResponses(t *testing.T) {
 			name:           "502",
 			responseStatus: http.StatusBadGateway,
 			responseBody:   status.New(codes.InvalidArgument, "Bad gateway"),
-			err: exporterhelper.NewThrottleRetry(
-				errors.New(errMsgPrefix+"502, Message=Bad gateway, Details=[]"),
-				time.Duration(0)*time.Second),
+			err: func(srv *httptest.Server) error {
+				return exporterhelper.NewThrottleRetry(
+					errors.New(errMsgPrefix(srv)+"502, Message=Bad gateway, Details=[]"),
+					time.Duration(0)*time.Second)
+			},
 		},
 		{
 			name:           "503",
@@ -475,15 +478,27 @@ func TestErrorResponses(t *testing.T) {
 			name:           "504",
 			responseStatus: http.StatusGatewayTimeout,
 			responseBody:   status.New(codes.InvalidArgument, "Gateway timeout"),
-			err: exporterhelper.NewThrottleRetry(
-				errors.New(errMsgPrefix+"504, Message=Gateway timeout, Details=[]"),
-				time.Duration(0)*time.Second),
+			err: func(srv *httptest.Server) error {
+				return exporterhelper.NewThrottleRetry(
+					errors.New(errMsgPrefix(srv)+"504, Message=Gateway timeout, Details=[]"),
+					time.Duration(0)*time.Second)
+			},
+		},
+		{
+			name:           "Bad response payload",
+			responseStatus: http.StatusServiceUnavailable,
+			responseBody:   status.New(codes.InvalidArgument, strings.Repeat("a", maxHTTPResponseReadBytes+1)),
+			err: func(srv *httptest.Server) error {
+				return exporterhelper.NewThrottleRetry(
+					errors.New(errMsgPrefix(srv)+"503"),
+					time.Duration(0)*time.Second)
+			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			srv, err := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+			srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
 				for k, v := range test.headers {
 					writer.Header().Add(k, v)
 				}
@@ -495,7 +510,6 @@ func TestErrorResponses(t *testing.T) {
 					require.NoError(t, err)
 				}
 			})
-			require.NoError(t, err)
 			defer srv.Close()
 
 			cfg := &Config{
@@ -527,6 +541,15 @@ func TestErrorResponses(t *testing.T) {
 	}
 }
 
+func TestErrorResponseInvalidResponseBody(t *testing.T) {
+	resp := &http.Response{
+		StatusCode: 400,
+		Body:       io.NopCloser(badReader{}),
+	}
+	status := readResponseStatus(resp)
+	assert.Nil(t, status)
+}
+
 func TestUserAgent(t *testing.T) {
 	set := exportertest.NewNopCreateSettings()
 	set.BuildInfo.Description = "Collector"
@@ -556,11 +579,10 @@ func TestUserAgent(t *testing.T) {
 	t.Run("traces", func(t *testing.T) {
 		for _, test := range tests {
 			t.Run(test.name, func(t *testing.T) {
-				srv, err := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+				srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
 					assert.Contains(t, request.Header.Get("user-agent"), test.expectedUA)
 					writer.WriteHeader(200)
 				})
-				require.NoError(t, err)
 				defer srv.Close()
 
 				cfg := &Config{
@@ -590,11 +612,10 @@ func TestUserAgent(t *testing.T) {
 	t.Run("metrics", func(t *testing.T) {
 		for _, test := range tests {
 			t.Run(test.name, func(t *testing.T) {
-				srv, err := createBackend("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
+				srv := createBackend("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
 					assert.Contains(t, request.Header.Get("user-agent"), test.expectedUA)
 					writer.WriteHeader(200)
 				})
-				require.NoError(t, err)
 				defer srv.Close()
 
 				cfg := &Config{
@@ -624,11 +645,10 @@ func TestUserAgent(t *testing.T) {
 	t.Run("logs", func(t *testing.T) {
 		for _, test := range tests {
 			t.Run(test.name, func(t *testing.T) {
-				srv, err := createBackend("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
+				srv := createBackend("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
 					assert.Contains(t, request.Header.Get("user-agent"), test.expectedUA)
 					writer.WriteHeader(200)
 				})
-				require.NoError(t, err)
 				defer srv.Close()
 
 				cfg := &Config{
@@ -659,7 +679,7 @@ func TestUserAgent(t *testing.T) {
 }
 
 func TestPartialSuccess_traces(t *testing.T) {
-	srv, err := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+	srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
 		response := ptraceotlp.NewExportResponse()
 		partial := response.PartialSuccess()
 		partial.SetErrorMessage("hello")
@@ -669,7 +689,6 @@ func TestPartialSuccess_traces(t *testing.T) {
 		_, err = writer.Write(bytes)
 		require.NoError(t, err)
 	})
-	require.NoError(t, err)
 	defer srv.Close()
 
 	cfg := &Config{
@@ -693,7 +712,7 @@ func TestPartialSuccess_traces(t *testing.T) {
 }
 
 func TestPartialSuccess_metrics(t *testing.T) {
-	srv, err := createBackend("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
+	srv := createBackend("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
 		response := pmetricotlp.NewExportResponse()
 		partial := response.PartialSuccess()
 		partial.SetErrorMessage("hello")
@@ -703,7 +722,6 @@ func TestPartialSuccess_metrics(t *testing.T) {
 		_, err = writer.Write(bytes)
 		require.NoError(t, err)
 	})
-	require.NoError(t, err)
 	defer srv.Close()
 
 	cfg := &Config{
@@ -727,7 +745,7 @@ func TestPartialSuccess_metrics(t *testing.T) {
 }
 
 func TestPartialSuccess_logs(t *testing.T) {
-	srv, err := createBackend("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
+	srv := createBackend("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
 		response := plogotlp.NewExportResponse()
 		partial := response.PartialSuccess()
 		partial.SetErrorMessage("hello")
@@ -737,7 +755,6 @@ func TestPartialSuccess_logs(t *testing.T) {
 		_, err = writer.Write(bytes)
 		require.NoError(t, err)
 	})
-	require.NoError(t, err)
 	defer srv.Close()
 
 	cfg := &Config{
@@ -787,26 +804,20 @@ func TestPartialSuccessInvalidBody(t *testing.T) {
 		},
 	}
 	for _, tt := range invalidBodyCases {
-		t.Run("Invalid response body: "+tt.telemetryType, func(t *testing.T) {
-			str := "invalid proto"
-			body := bytes.NewBufferString(str)
-			resp := &http.Response{
-				ContentLength: int64(len(str)),
-				Body:          io.NopCloser(body),
-			}
-			err := handlePartialSuccessResponse(resp, tt.handler)
+		t.Run("Invalid response body_"+tt.telemetryType, func(t *testing.T) {
+			err := tt.handler([]byte{1})
 			assert.Error(t, err)
 		})
 	}
 }
 
-func createBackend(endpoint string, handler func(writer http.ResponseWriter, request *http.Request)) (*httptest.Server, error) {
+func createBackend(endpoint string, handler func(writer http.ResponseWriter, request *http.Request)) *httptest.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc(endpoint, handler)
 
 	srv := httptest.NewServer(mux)
 
-	return srv, nil
+	return srv
 }
 
 type badReader struct{}
