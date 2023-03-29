@@ -28,8 +28,9 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "batch"
 
-	defaultSendBatchSize = uint32(8192)
-	defaultTimeout       = 200 * time.Millisecond
+	defaultSendBatchSize            = uint32(8192)
+	defaultTimeout                  = 200 * time.Millisecond
+	defaultMetadataCardinalityLimit = 100
 )
 
 // NewFactory returns a new factory for the Batch processor.
