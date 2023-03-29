@@ -46,7 +46,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		SendBatchSize:            defaultSendBatchSize,
 		Timeout:                  defaultTimeout,
-		MetadataCardinalityLimit: 100,
+		MetadataCardinalityLimit: defaultMetadataCardinalityLimit,
 	}
 }
 
