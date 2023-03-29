@@ -28,7 +28,7 @@ import (
 // telemetrySettings for internal metrics.
 var UseOtelForInternalMetricsfeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.useOtelForInternalMetrics",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("controls whether the collector uses OpenTelemetry for internal metrics"))
 
 // AllViews returns all the OpenCensus views requires by obsreport package.
