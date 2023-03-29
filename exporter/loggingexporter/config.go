@@ -38,10 +38,10 @@ var (
 type Config struct {
 	// LogLevel defines log level of the logging exporter; options are debug, info, warn, error.
 	// Deprecated: Use `Verbosity` instead.
-	LogLevel zapcore.Level `mapstructure:"loglevel"`
+	LogLevel zapcore.Level `mapstructure:"loglevel,omitempty"`
 
 	// Verbosity defines the logging exporter verbosity.
-	Verbosity configtelemetry.Level `mapstructure:"verbosity"`
+	Verbosity configtelemetry.Level `mapstructure:"verbosity,omitempty"`
 
 	// SamplingInitial defines how many samples are initially logged during each second.
 	SamplingInitial int `mapstructure:"sampling_initial"`
