@@ -155,11 +155,8 @@ func Test_UnmarshalMarshalled(t *testing.T) {
 			}
 			assert.Error(t, err)
 			assert.EqualError(t, err, tc.expectedErr)
-
 		})
-
 	}
-
 }
 
 func TestValidate(t *testing.T) {
