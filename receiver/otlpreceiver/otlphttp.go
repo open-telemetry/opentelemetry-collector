@@ -16,6 +16,7 @@ package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlprecei
 
 import (
 	"io"
+	"mime"
 	"net/http"
 
 	spb "google.golang.org/genproto/googleapis/rpc/status"
@@ -136,8 +137,7 @@ func writeError(w http.ResponseWriter, encoder encoder, err error, statusCode in
 // by the OTLP protocol.
 func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusCode int) {
 	s := errorMsgToStatus(errMsg, statusCode)
-	contentType := r.Header.Get("Content-Type")
-	switch contentType {
+	switch getMimeTypeFromContentType(r.Header.Get("Content-Type")) {
 	case pbContentType:
 		writeStatusResponse(w, pbEncoder, statusCode, s.Proto())
 		return
@@ -170,4 +170,12 @@ func errorMsgToStatus(errMsg string, statusCode int) *status.Status {
 		return status.New(codes.InvalidArgument, errMsg)
 	}
 	return status.New(codes.Unknown, errMsg)
+}
+
+func getMimeTypeFromContentType(contentType string) string {
+	mediatype, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		return ""
+	}
+	return mediatype
 }
