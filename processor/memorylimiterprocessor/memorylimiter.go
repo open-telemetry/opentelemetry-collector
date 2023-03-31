@@ -39,9 +39,9 @@ const (
 )
 
 var (
-	// errForcedDrop will be returned to callers of ConsumeTraceData to indicate
-	// that data is being dropped due to high memory usage.
-	errForcedDrop = errors.New("data dropped due to high memory usage")
+	// errDataRefused will be returned to callers of ConsumeTraceData to indicate
+	// that data is being refused due to high memory usage.
+	errDataRefused = errors.New("data refused due to high memory usage")
 
 	// Construction errors
 
@@ -70,8 +70,8 @@ type memoryLimiter struct {
 	memCheckWait time.Duration
 	ballastSize  uint64
 
-	// forceDrop is used atomically to indicate when data should be dropped.
-	forceDrop *atomic.Bool
+	// mustRefuse is used to indicate when data should be refused.
+	mustRefuse *atomic.Bool
 
 	ticker *time.Ticker
 
@@ -129,7 +129,7 @@ func newMemoryLimiter(set processor.CreateSettings, cfg *Config) (*memoryLimiter
 		ticker:         time.NewTicker(cfg.CheckInterval),
 		readMemStatsFn: runtime.ReadMemStats,
 		logger:         logger,
-		forceDrop:      &atomic.Bool{},
+		mustRefuse:     &atomic.Bool{},
 		obsrep:         obsrep,
 	}
 
@@ -180,15 +180,15 @@ func (ml *memoryLimiter) shutdown(context.Context) error {
 
 func (ml *memoryLimiter) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	numSpans := td.SpanCount()
-	if ml.forceDrop.Load() {
+	if ml.mustRefuse.Load() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
-		// 	callstack.
+		// 	callstack and that the receiver will correctly retry the refused data again.
 		ml.obsrep.TracesRefused(ctx, numSpans)
 
-		return td, errForcedDrop
+		return td, errDataRefused
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
@@ -199,14 +199,14 @@ func (ml *memoryLimiter) processTraces(ctx context.Context, td ptrace.Traces) (p
 
 func (ml *memoryLimiter) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	numDataPoints := md.DataPointCount()
-	if ml.forceDrop.Load() {
+	if ml.mustRefuse.Load() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
 		ml.obsrep.MetricsRefused(ctx, numDataPoints)
-		return md, errForcedDrop
+		return md, errDataRefused
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
@@ -217,7 +217,7 @@ func (ml *memoryLimiter) processMetrics(ctx context.Context, md pmetric.Metrics)
 
 func (ml *memoryLimiter) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	numRecords := ld.LogRecordCount()
-	if ml.forceDrop.Load() {
+	if ml.mustRefuse.Load() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
@@ -225,7 +225,7 @@ func (ml *memoryLimiter) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 		// 	callstack.
 		ml.obsrep.LogsRefused(ctx, numRecords)
 
-		return ld, errForcedDrop
+		return ld, errDataRefused
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
@@ -288,33 +288,33 @@ func (ml *memoryLimiter) checkMemLimits() {
 		ms = ml.doGCandReadMemStats()
 	}
 
-	// Remember current dropping state.
-	wasForcingDrop := ml.forceDrop.Load()
+	// Remember current state.
+	wasRefusing := ml.mustRefuse.Load()
 
 	// Check if the memory usage is above the soft limit.
-	mustForceDrop := ml.usageChecker.aboveSoftLimit(ms)
+	mustRefuse := ml.usageChecker.aboveSoftLimit(ms)
 
-	if wasForcingDrop && !mustForceDrop {
-		// Was previously dropping but enough memory is available now, no need to limit.
+	if wasRefusing && !mustRefuse {
+		// Was previously refusing but enough memory is available now, no need to limit.
 		ml.logger.Info("Memory usage back within limits. Resuming normal operation.", memstatToZapField(ms))
 	}
 
-	if !wasForcingDrop && mustForceDrop {
+	if !wasRefusing && mustRefuse {
 		// We are above soft limit, do a GC if it wasn't done recently and see if
 		// it brings memory usage below the soft limit.
 		if time.Since(ml.lastGCDone) > minGCIntervalWhenSoftLimited {
 			ml.logger.Info("Memory usage is above soft limit. Forcing a GC.", memstatToZapField(ms))
 			ms = ml.doGCandReadMemStats()
 			// Check the limit again to see if GC helped.
-			mustForceDrop = ml.usageChecker.aboveSoftLimit(ms)
+			mustRefuse = ml.usageChecker.aboveSoftLimit(ms)
 		}
 
-		if mustForceDrop {
-			ml.logger.Warn("Memory usage is above soft limit. Dropping data.", memstatToZapField(ms))
+		if mustRefuse {
+			ml.logger.Warn("Memory usage is above soft limit. Refusing data.", memstatToZapField(ms))
 		}
 	}
 
-	ml.forceDrop.Store(mustForceDrop)
+	ml.mustRefuse.Store(mustRefuse)
 }
 
 type memUsageChecker struct {
