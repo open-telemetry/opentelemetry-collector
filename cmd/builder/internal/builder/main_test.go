@@ -104,6 +104,14 @@ func TestGenerateAndCompile(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			testCase: "Export Components",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := NewDefaultConfig()
+				cfg.ExportComponents = true
+				return cfg
+			},
+		},
 	}
 
 	for _, tt := range testCases {

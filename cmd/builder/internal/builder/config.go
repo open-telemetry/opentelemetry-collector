@@ -38,14 +38,15 @@ type Config struct {
 	SkipGetModules  bool   `mapstructure:"-"`
 	LDFlags         string `mapstructure:"-"`
 
-	Distribution Distribution `mapstructure:"dist"`
-	Exporters    []Module     `mapstructure:"exporters"`
-	Extensions   []Module     `mapstructure:"extensions"`
-	Receivers    []Module     `mapstructure:"receivers"`
-	Processors   []Module     `mapstructure:"processors"`
-	Connectors   []Module     `mapstructure:"connectors"`
-	Replaces     []string     `mapstructure:"replaces"`
-	Excludes     []string     `mapstructure:"excludes"`
+	ExportComponents bool         `mapstructure:"export_components"`
+	Distribution     Distribution `mapstructure:"dist"`
+	Exporters        []Module     `mapstructure:"exporters"`
+	Extensions       []Module     `mapstructure:"extensions"`
+	Receivers        []Module     `mapstructure:"receivers"`
+	Processors       []Module     `mapstructure:"processors"`
+	Connectors       []Module     `mapstructure:"connectors"`
+	Replaces         []string     `mapstructure:"replaces"`
+	Excludes         []string     `mapstructure:"excludes"`
 }
 
 // Distribution holds the parameters for the final binary

@@ -153,6 +153,23 @@ func Test_applyCfgFromFile(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Export components true",
+			args: args{
+				flags: flag.NewFlagSet("version=1.0.0", 1),
+				cfgFromFile: builder.Config{
+					Logger:           zap.NewNop(),
+					ExportComponents: true,
+					Distribution:     testDistribution,
+				},
+			},
+			want: builder.Config{
+				Logger:           zap.NewNop(),
+				ExportComponents: true,
+				Distribution:     testDistribution,
+			},
+			wantErr: false,
+		},
+		{
 			name: "Skip get modules false",
 			args: args{
 				flags: flag.NewFlagSet("version=1.0.0", 1),
@@ -195,6 +212,7 @@ func Test_applyCfgFromFile(t *testing.T) {
 			applyCfgFromFile(tt.args.flags, tt.args.cfgFromFile)
 			assert.Equal(t, tt.want.Distribution, cfg.Distribution)
 			assert.Equal(t, tt.want.SkipCompilation, cfg.SkipCompilation)
+			assert.Equal(t, tt.want.ExportComponents, cfg.ExportComponents)
 			assert.Equal(t, tt.want.SkipGetModules, cfg.SkipGetModules)
 			assert.Equal(t, tt.want.Excludes, cfg.Excludes)
 			assert.Equal(t, tt.want.Exporters, cfg.Exporters)

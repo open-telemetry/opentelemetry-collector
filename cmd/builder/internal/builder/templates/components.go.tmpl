@@ -26,7 +26,7 @@ import (
 	{{- end}}
 )
 
-func components() (otelcol.Factories, error) {
+func {{ if .ExportComponents }}C{{ else }}c{{ end }}omponents() (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
 

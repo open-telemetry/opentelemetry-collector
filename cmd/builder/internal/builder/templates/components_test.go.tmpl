@@ -9,7 +9,7 @@ import (
 )
 
 func TestValidateConfigs(t *testing.T) {
-	factories, err := components()
+	factories, err := {{ if .ExportComponents }}C{{ else }}c{{ end }}omponents()
 	assert.NoError(t, err)
 
 	for k, factory := range factories.Receivers {
