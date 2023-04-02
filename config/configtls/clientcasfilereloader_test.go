@@ -19,11 +19,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/atomic"
 )
 
 func TestCannotShutdownIfNotWatching(t *testing.T) {
@@ -106,7 +106,7 @@ type testLoader struct {
 }
 
 func (r *testLoader) loadClientCAFile() (*x509.CertPool, error) {
-	r.counter.Inc()
+	r.counter.Add(1)
 	return nil, r.err
 }
 
