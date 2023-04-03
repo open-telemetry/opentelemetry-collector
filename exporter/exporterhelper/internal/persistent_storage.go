@@ -230,6 +230,10 @@ func (pcs *persistentContiguousStorage) put(req Request) error {
 
 	ctx := context.Background()
 	_, err := newBatch(pcs).setItemIndex(writeIndexKey, pcs.writeIndex).setRequest(itemKey, req).execute(ctx)
+	if err != nil {
+		pcs.logger.Warn("Failed updating write index",
+			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
+	}
 
 	// Inform the loop that there's some data to process
 	pcs.putChan <- struct{}{}
@@ -321,7 +325,7 @@ func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Co
 	}
 
 	if cleanupErr != nil {
-		pcs.logger.Debug("Failed cleaning items left by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(cleanupErr))
+		pcs.logger.Warn("Failed cleaning items left by consumers", zap.String(zapQueueNameKey, pcs.queueName), zap.Error(cleanupErr))
 	}
 
 	if retrieveErr != nil {
@@ -354,7 +358,7 @@ func (pcs *persistentContiguousStorage) itemDispatchingStart(ctx context.Context
 		setItemIndexArray(currentlyDispatchedItemsKey, pcs.currentlyDispatchedItems).
 		execute(ctx)
 	if err != nil {
-		pcs.logger.Debug("Failed updating currently dispatched items",
+		pcs.logger.Error("Failed updating currently dispatched items",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	}
 }
@@ -374,7 +378,7 @@ func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Contex
 		delete(pcs.itemKey(index)).
 		execute(ctx)
 	if err != nil {
-		pcs.logger.Debug("Failed updating currently dispatched items",
+		pcs.logger.Error("Failed updating currently dispatched items",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	}
 }
@@ -385,7 +389,7 @@ func (pcs *persistentContiguousStorage) updateReadIndex(ctx context.Context) {
 		execute(ctx)
 
 	if err != nil {
-		pcs.logger.Debug("Failed updating read index",
+		pcs.logger.Warn("Failed updating read index",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	}
 }
