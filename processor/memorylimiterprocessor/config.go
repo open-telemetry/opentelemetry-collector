@@ -13,8 +13,7 @@
 // limitations under the License.
 
 // Package memorylimiterprocessor provides a processor for OpenTelemetry Service pipeline
-// that drops data on the pipeline according to the current state of memory
-// usage.
+// that refuses data on the pipeline according to the current state of memory usage.
 package memorylimiterprocessor // import "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 
 import (
