@@ -1,0 +1,11 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
+component: featuregate
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add a new Deprecated stage for feature gates, when features are abandoned.
+
+# One or more tracking issues or pull requests related to the change
+issues: [7043]

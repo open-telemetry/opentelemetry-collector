@@ -168,12 +168,13 @@ type FeatureGateTableData struct {
 
 // FeatureGateTableRowData contains data for one row in feature gate table template.
 type FeatureGateTableRowData struct {
-	ID             string
-	Enabled        bool
-	Description    string
-	Stage          string
-	ReferenceURL   string
-	RemovalVersion string
+	ID           string
+	Enabled      bool
+	Description  string
+	Stage        string
+	FromVersion  string
+	ToVersion    string
+	ReferenceURL string
 }
 
 // WriteHTMLFeaturesTable writes a table summarizing registered feature gates.

@@ -18,10 +18,11 @@ Once a `Gate` has been marked as `Stable`, it must have a `RemovalVersion` set.
 ```go
 var myFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"namespaced.uniqueIdentifier",
-	featuregate.Stable, 
+	featuregate.Stable,
+    featuregate.WithRegisterFromVersion("v0.65.0")
 	featuregate.WithRegisterDescription("A brief description of what the gate controls"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/6167"),
-	featuregate.WithRegisterRemovalVersion("v0.70.0"))
+	featuregate.WithRegisterToVersion("v0.70.0"))
 ```
 
 The status of the gate may later be checked by interrogating the global 
