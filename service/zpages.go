@@ -73,12 +73,13 @@ func getFeaturesTableData() zpages.FeatureGateTableData {
 	data := zpages.FeatureGateTableData{}
 	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
 		data.Rows = append(data.Rows, zpages.FeatureGateTableRowData{
-			ID:             gate.ID(),
-			Enabled:        gate.IsEnabled(),
-			Description:    gate.Description(),
-			ReferenceURL:   gate.ReferenceURL(),
-			Stage:          gate.Stage().String(),
-			RemovalVersion: gate.RemovalVersion(),
+			ID:           gate.ID(),
+			Enabled:      gate.IsEnabled(),
+			Description:  gate.Description(),
+			Stage:        gate.Stage().String(),
+			FromVersion:  gate.FromVersion(),
+			ToVersion:    gate.ToVersion(),
+			ReferenceURL: gate.ReferenceURL(),
 		})
 	})
 	return data

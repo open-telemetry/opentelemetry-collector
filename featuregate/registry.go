@@ -62,11 +62,23 @@ func WithRegisterReferenceURL(url string) RegisterOption {
 	})
 }
 
-// WithRegisterRemovalVersion is used when the Gate is considered StageStable,
-// to inform users that referencing the gate is no longer needed.
-func WithRegisterRemovalVersion(version string) RegisterOption {
+// Deprecated: [v0.76.0] use WithRegisterToVersion.
+var WithRegisterRemovalVersion = WithRegisterToVersion
+
+// WithRegisterFromVersion is used to set the Gate "FromVersion".
+// The "FromVersion" contains the Collector release when a feature is introduced.
+func WithRegisterFromVersion(fromVersion string) RegisterOption {
 	return registerOptionFunc(func(g *Gate) {
-		g.removalVersion = version
+		g.fromVersion = fromVersion
+	})
+}
+
+// WithRegisterToVersion is used to set the Gate "ToVersion".
+// The "ToVersion", if not empty, contains the last Collector release in which you can still use a feature gate.
+// If the feature stage is either "Deprecated" or "Stable", the "ToVersion" is the Collector release when the feature is removed.
+func WithRegisterToVersion(toVersion string) RegisterOption {
+	return registerOptionFunc(func(g *Gate) {
+		g.toVersion = toVersion
 	})
 }
 
@@ -98,7 +110,7 @@ func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Ga
 	default:
 		return nil, fmt.Errorf("unknown stage value %q for gate %q", stage, id)
 	}
-	if g.stage == StageStable && g.removalVersion == "" {
+	if g.stage == StageStable && g.toVersion == "" {
 		return nil, fmt.Errorf("no removal version set for stable gate %q", id)
 	}
 	if _, loaded := r.gates.LoadOrStore(id, g); loaded {
