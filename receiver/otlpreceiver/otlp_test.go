@@ -415,9 +415,10 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *errOrSinkConsumer, enco
 
 func TestProtoHttp(t *testing.T) {
 	tests := []struct {
-		name     string
-		encoding string
-		err      error
+		name       string
+		encoding   string
+		err        error
+		statusCode int
 	}{
 		{
 			name:     "ProtoUncompressed",
@@ -436,6 +437,12 @@ func TestProtoHttp(t *testing.T) {
 			name:     "GRPCError",
 			encoding: "",
 			err:      status.New(codes.Internal, "").Err(),
+		},
+		{
+			name:       "Invalid argument becomes bad request",
+			encoding:   "",
+			err:        status.New(codes.InvalidArgument, "").Err(),
+			statusCode: http.StatusBadRequest,
 		},
 	}
 	addr := testutil.GetAvailableLocalAddress(t)
@@ -460,7 +467,7 @@ func TestProtoHttp(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			url := fmt.Sprintf("http://%s/v1/traces", addr)
 			tSink.Reset()
-			testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, td)
+			testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, td, test.statusCode)
 		})
 	}
 }
@@ -495,7 +502,12 @@ func testHTTPProtobufRequest(
 	traceBytes []byte,
 	expectedErr error,
 	wantData ptrace.Traces,
+	httpStatusCode int,
 ) {
+	if httpStatusCode == 0 {
+		httpStatusCode = http.StatusInternalServerError
+	}
+
 	tSink.SetConsumeError(expectedErr)
 
 	req := createHTTPProtobufRequest(t, url, encoding, traceBytes)
@@ -524,10 +536,10 @@ func testHTTPProtobufRequest(
 		errStatus := &spb.Status{}
 		assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
 		if s, ok := status.FromError(expectedErr); ok {
-			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.Equal(t, httpStatusCode, resp.StatusCode)
 			assert.True(t, proto.Equal(errStatus, s.Proto()))
 		} else {
-			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.Equal(t, httpStatusCode, resp.StatusCode)
 			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
 		}
 		require.Len(t, allTraces, 0)

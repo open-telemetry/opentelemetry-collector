@@ -372,7 +372,6 @@ func startAndCleanup(t *testing.T, cmp component.Component) {
 
 func TestErrorResponses(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	errMsgPrefix := fmt.Sprintf("error exporting items, request to http://%s/v1/traces responded with HTTP Status Code ", addr)
 
 	tests := []struct {
 		name           string
@@ -425,11 +424,11 @@ func TestErrorResponses(t *testing.T) {
 			isPermErr:      true,
 		},
 		{
-			name:           "419",
+			name:           "429",
 			responseStatus: http.StatusTooManyRequests,
 			responseBody:   status.New(codes.InvalidArgument, "Quota exceeded"),
 			err: exporterhelper.NewThrottleRetry(
-				errors.New(errMsgPrefix+"429, Message=Quota exceeded, Details=[]"),
+				status.New(codes.InvalidArgument, "Quota exceeded").Err(),
 				time.Duration(0)*time.Second),
 		},
 		{
@@ -443,7 +442,7 @@ func TestErrorResponses(t *testing.T) {
 			responseStatus: http.StatusBadGateway,
 			responseBody:   status.New(codes.InvalidArgument, "Bad gateway"),
 			err: exporterhelper.NewThrottleRetry(
-				errors.New(errMsgPrefix+"502, Message=Bad gateway, Details=[]"),
+				status.New(codes.InvalidArgument, "Bad gateway").Err(),
 				time.Duration(0)*time.Second),
 		},
 		{
@@ -451,7 +450,7 @@ func TestErrorResponses(t *testing.T) {
 			responseStatus: http.StatusServiceUnavailable,
 			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
 			err: exporterhelper.NewThrottleRetry(
-				errors.New(errMsgPrefix+"503, Message=Server overloaded, Details=[]"),
+				status.New(codes.InvalidArgument, "Server overloaded").Err(),
 				time.Duration(0)*time.Second),
 		},
 		{
@@ -460,7 +459,7 @@ func TestErrorResponses(t *testing.T) {
 			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
 			headers:        map[string]string{"Retry-After": "30"},
 			err: exporterhelper.NewThrottleRetry(
-				errors.New(errMsgPrefix+"503, Message=Server overloaded, Details=[]"),
+				status.New(codes.InvalidArgument, "Server overloaded").Err(),
 				time.Duration(30)*time.Second),
 		},
 		{
@@ -468,7 +467,7 @@ func TestErrorResponses(t *testing.T) {
 			responseStatus: http.StatusGatewayTimeout,
 			responseBody:   status.New(codes.InvalidArgument, "Gateway timeout"),
 			err: exporterhelper.NewThrottleRetry(
-				errors.New(errMsgPrefix+"504, Message=Gateway timeout, Details=[]"),
+				status.New(codes.InvalidArgument, "Gateway timeout").Err(),
 				time.Duration(0)*time.Second),
 		},
 	}
@@ -521,7 +520,7 @@ func TestErrorResponses(t *testing.T) {
 			if test.isPermErr {
 				assert.True(t, consumererror.IsPermanent(err))
 			} else {
-				assert.EqualValues(t, test.err, err)
+				assert.EqualValues(t, test.err.Error(), err.Error())
 			}
 
 			srv.Close()

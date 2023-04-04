@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/internal/errs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
@@ -36,7 +37,19 @@ func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *t
 
 	otlpResp, err := tracesReceiver.Export(req.Context(), otlpReq)
 	if err != nil {
-		writeError(resp, encoder, err, http.StatusInternalServerError)
+		httpStatus := http.StatusInternalServerError // the default status on errors
+
+		// perhaps we had a gRPC exporter for this data returning an error?
+		if s, ok := status.FromError(err); ok {
+			httpStatus = toHTTP(s)
+		}
+
+		// perhaps it was an HTTP exporter that failed?
+		if s, ok := err.(*errs.RequestError); ok {
+			httpStatus = s.StatusCode()
+		}
+
+		writeError(resp, encoder, err, httpStatus)
 		return
 	}
 

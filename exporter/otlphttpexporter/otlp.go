@@ -17,12 +17,14 @@ import (
 
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
+	gstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/errs"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -142,13 +144,9 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte) e
 	// Format the error message. Use the status if it is present in the response.
 	var formattedErr error
 	if respStatus != nil {
-		formattedErr = fmt.Errorf(
-			"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s, Details=%v",
-			url, resp.StatusCode, respStatus.Message, respStatus.Details)
+		formattedErr = gstatus.ErrorProto(respStatus)
 	} else {
-		formattedErr = fmt.Errorf(
-			"error exporting items, request to %s responded with HTTP Status Code %d",
-			url, resp.StatusCode)
+		formattedErr = errs.NewRequestError(resp.StatusCode, "error exporting items to %q", url)
 	}
 
 	if isRetryableStatusCode(resp.StatusCode) {
