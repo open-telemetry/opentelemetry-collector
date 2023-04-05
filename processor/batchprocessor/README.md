@@ -80,6 +80,9 @@ defaults to 100.  Users of the batching processor configured with
 metadata keys should consider use of an Auth extension to validate the
 relevant metadata-key values.
 
+The number of batch processors currently in use is exported as the
+`otelcol_processor_batch_metadata_cardinality` metric.
+
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol

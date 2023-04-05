@@ -182,7 +182,7 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider, c
 	}
 
 	bpt.batchMetadataCardinality, err = meter.Int64ObservableUpDownCounter(
-		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_metadata_cardinality"),
+		obsreport.BuildProcessorCustomMetricName(typeStr, "metadata_cardinality"),
 		instrument.WithDescription("Number of distinct metadata value combinations being processed"),
 		instrument.WithUnit("1"),
 		instrument.WithInt64Callback(func(_ context.Context, obs instrument.Int64Observer) error {
