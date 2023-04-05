@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"math/rand"
 	"sync"
 	"testing"
 	"time"
@@ -905,8 +904,8 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
 		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-		// Choose a random context
-		num := rand.Intn(len(callCtxs))
+		// use round-robin to assign context.
+		num := requestNum % len(callCtxs)
 		expectByContext[num] += spansPerRequest
 		assert.NoError(t, batcher.ConsumeTraces(callCtxs[num], td))
 	}
