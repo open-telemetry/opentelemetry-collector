@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/client"
@@ -34,20 +35,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 // errTooManyBatchers is returned when the MetadataCardinalityLimit has been reached.
 var errTooManyBatchers = consumererror.NewPermanent(errors.New("too many batcher metadata-value combinations"))
-
-// attributeSet is a stand-in for otel-go's attribute.Set.  See
-// https://github.com/open-telemetry/opentelemetry-collector/pull/7325#discussion_r1126972549.
-type attributeSet string
-
-// attributeKeyValue is a stand-in for otel-go's attribute.KeyValue, which
-// exposes a simple API to compute attribute sets.  See
-// https://github.com/open-telemetry/opentelemetry-collector/pull/7325#discussion_r1126972549.
-type attributeKeyValue string
 
 // batch_processor is a component that accepts spans and metrics, places them
 // into batches and sends downstream.
@@ -288,7 +279,7 @@ func (b *batcher) sendItems(trigger trigger) {
 	}
 }
 
-func (sb *singleBatcher) findBatcher(ctx context.Context) (*batcher, error) {
+func (sb *singleBatcher) findBatcher(_ context.Context) (*batcher, error) {
 	return sb.batcher, nil
 }
 
@@ -320,7 +311,7 @@ func (mb *multiBatcher) findBatcher(ctx context.Context) (*batcher, error) {
 		return b, nil
 	}
 
-	if limit := mb.metadataLimit; limit != 0 && len(mb.batchers) >= int(limit) {
+	if limit := mb.metadataLimit; limit != 0 && len(mb.batchers) >= limit {
 		return nil, errTooManyBatchers
 	}
 
