@@ -74,7 +74,7 @@ type batchProcessor struct {
 	metadataKeys []string
 
 	// metadataLimit is the limiting size of the batchers map.
-	metadataLimit uint32
+	metadataLimit int
 
 	shutdownC  chan struct{}
 	goroutines sync.WaitGroup
@@ -145,7 +145,7 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 		batchFunc:        batchFunc,
 		shutdownC:        make(chan struct{}, 1),
 		metadataKeys:     mks,
-		metadataLimit:    cfg.MetadataCardinalityLimit,
+		metadataLimit:    int(cfg.MetadataCardinalityLimit),
 	}
 	bpt, err := newBatchProcessorTelemetry(set, bp.currentMetadataCardinality, useOtel)
 	if err != nil {
