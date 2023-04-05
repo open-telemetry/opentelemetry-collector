@@ -72,3 +72,15 @@ func TestValidateConfig_InvalidBatchSize(t *testing.T) {
 	}
 	assert.Error(t, cfg.Validate())
 }
+
+func TestValidateConfig_InvalidTimeout(t *testing.T) {
+	cfg := &Config{
+		Timeout: -time.Second,
+	}
+	assert.Error(t, cfg.Validate())
+}
+
+func TestValidateConfig_ValidZero(t *testing.T) {
+	cfg := &Config{}
+	assert.NoError(t, cfg.Validate())
+}

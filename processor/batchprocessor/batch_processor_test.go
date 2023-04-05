@@ -819,3 +819,77 @@ func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	processortest.VerifyShutdown(t, factory, factory.CreateDefaultConfig())
 }
+
+func TestBatchZeroConfig(t *testing.T) {
+	// This is a no-op configuration. No need for a timer, no
+	// minimum, no mxaimum, just a pass through.
+	cfg := Config{}
+
+	require.NoError(t, cfg.Validate())
+
+	const requestCount = 5
+	const logsPerRequest = 10
+	sink := new(consumertest.LogsSink)
+	creationSet := processortest.NewNopCreateSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, false)
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	expect := 0
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		cnt := logsPerRequest + requestNum
+		expect += cnt
+		ld := testdata.GenerateLogs(cnt)
+		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+	}
+
+	// Wait for all batches.
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() == expect
+	}, time.Second, 5*time.Millisecond)
+
+	// Expect them to be the original sizes.
+	receivedMds := sink.AllLogs()
+	require.Equal(t, requestCount, len(receivedMds))
+	for i, ld := range receivedMds {
+		require.Equal(t, 1, ld.ResourceLogs().Len())
+		require.Equal(t, logsPerRequest+i, ld.LogRecordCount())
+	}
+}
+
+func TestBatchSplitOnly(t *testing.T) {
+	const maxBatch = 10
+	const requestCount = 5
+	const logsPerRequest = 100
+
+	cfg := Config{
+		SendBatchMaxSize: maxBatch,
+	}
+
+	require.NoError(t, cfg.Validate())
+
+	sink := new(consumertest.LogsSink)
+	creationSet := processortest.NewNopCreateSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, false)
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		ld := testdata.GenerateLogs(logsPerRequest)
+		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+	}
+
+	// Wait for all batches.
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() == logsPerRequest*requestCount
+	}, time.Second, 5*time.Millisecond)
+
+	// Expect them to be the limited by maxBatch.
+	receivedMds := sink.AllLogs()
+	require.Equal(t, requestCount*logsPerRequest/maxBatch, len(receivedMds))
+	for _, ld := range receivedMds {
+		require.Equal(t, maxBatch, ld.LogRecordCount())
+	}
+}
