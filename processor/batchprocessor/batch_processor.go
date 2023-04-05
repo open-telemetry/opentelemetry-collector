@@ -149,7 +149,7 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 	}
 	bpt, err := newBatchProcessorTelemetry(set, bp.currentMetadataCardinality, useOtel)
 	if err != nil {
-		return nil, fmt.Errorf("error to create batch processor telemetry %w", err)
+		return nil, fmt.Errorf("error creating batch processor telemetry: %w", err)
 	}
 	bp.telemetry = bpt
 	return bp, nil
