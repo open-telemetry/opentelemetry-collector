@@ -16,6 +16,7 @@ package batchprocessor // import "go.opentelemetry.io/collector/processor/batchp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 	"sort"
@@ -37,7 +38,7 @@ import (
 )
 
 // errTooManyBatchers is returned when the MetadataCardinalityLimit has been reached.
-var errTooManyBatchers = consumererror.NewPermanent(fmt.Errorf("too many batcher metadata-value combinations"))
+var errTooManyBatchers = consumererror.NewPermanent(errors.New("too many batcher metadata-value combinations"))
 
 // attributeSet is a stand-in for otel-go's attribute.Set.  See
 // https://github.com/open-telemetry/opentelemetry-collector/pull/7325#discussion_r1126972549.
