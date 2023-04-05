@@ -36,10 +36,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configinterceptor"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/extension/interceptor"
 )
 
 type customRoundTripper struct {
@@ -861,6 +863,59 @@ func TestHttpHeaders(t *testing.T) {
 	}
 }
 
+func TestClientInterceptors(t *testing.T) {
+	// prepare
+	count := 0
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	}))
+	defer server.Close()
+	serverURL, _ := url.Parse(server.URL)
+
+	hcs := HTTPClientSettings{
+		Endpoint: serverURL.String(),
+		Interceptors: &configinterceptor.Interceptors{
+			Interceptors: []component.ID{
+				component.NewID("mock"),
+				component.NewID("mock/2"), // this will return an error
+			},
+		},
+	}
+
+	expectedErr := errors.New("boo")
+
+	host := &mockHost{
+		ext: map[component.ID]component.Component{
+			component.NewID("mock"): interceptor.New(
+				interceptor.WithIntercept(func(md map[string][]string) error {
+					count++
+					return nil
+				}),
+			),
+			component.NewID("mock/2"): interceptor.New(
+				interceptor.WithIntercept(func(md map[string][]string) error {
+					count++
+					return expectedErr
+				}),
+			),
+		},
+	}
+
+	cl, err := hcs.ToClient(host, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	req, err := http.NewRequest(http.MethodGet, hcs.Endpoint, nil)
+	require.NoError(t, err)
+
+	// test
+	_, err = cl.Do(req)
+
+	// verify
+	assert.Equal(t, 2, count)
+	require.ErrorIs(t, err, expectedErr)
+}
+
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
 		desc       string
@@ -999,6 +1054,56 @@ func TestFailedServerAuth(t *testing.T) {
 	// verify
 	assert.Equal(t, response.Result().StatusCode, http.StatusUnauthorized)
 	assert.Equal(t, response.Result().Status, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)))
+}
+
+func TestServerInterceptor(t *testing.T) {
+	// prepare
+	count := 0
+	hss := HTTPServerSettings{
+		Endpoint: "localhost:0",
+		Interceptors: &configinterceptor.Interceptors{
+			Interceptors: []component.ID{
+				component.NewID("mock"),
+				component.NewID("mock/2"), // this will return an error
+			},
+		},
+	}
+
+	expectedErr := interceptor.Error{
+		StatusCode: http.StatusTeapot,
+	}
+	host := &mockHost{
+		ext: map[component.ID]component.Component{
+			component.NewID("mock"): interceptor.New(
+				interceptor.WithIntercept(func(md map[string][]string) error {
+					count++
+					return nil
+				}),
+			),
+			component.NewID("mock/2"): interceptor.New(
+				interceptor.WithIntercept(func(md map[string][]string) error {
+					count++
+					return expectedErr
+				}),
+			),
+		},
+	}
+	handlerCalled := false
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handlerCalled = true
+	})
+
+	srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), handler)
+	require.NoError(t, err)
+
+	// test
+	resp := &httptest.ResponseRecorder{}
+	srv.Handler.ServeHTTP(resp, httptest.NewRequest("GET", "/", nil))
+
+	// verify
+	assert.False(t, handlerCalled)
+	assert.Equal(t, http.StatusTeapot, resp.Result().StatusCode)
+	assert.Equal(t, 2, count)
 }
 
 type mockHost struct {

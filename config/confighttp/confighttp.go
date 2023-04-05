@@ -29,10 +29,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configinterceptor"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/interceptor"
 )
 
 const headerContentEncoding = "Content-Encoding"
@@ -64,6 +66,9 @@ type HTTPClientSettings struct {
 
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth"`
+
+	// Interceptors for this HTTP client.
+	Interceptors *configinterceptor.Interceptors `mapstructure:"interceptors"`
 
 	// The compression key for supported compression types within collector.
 	Compression configcompression.CompressionType `mapstructure:"compression"`
@@ -141,6 +146,16 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 			headers:   hcs.Headers,
 		}
 	}
+
+	if hcs.Interceptors != nil {
+		ins, ierr := hcs.Interceptors.GetInterceptors(host.GetExtensions())
+		if ierr != nil {
+			return nil, ierr
+		}
+
+		clientTransport = interceptorsToClientTransport(clientTransport, ins)
+	}
+
 	// wrapping http transport with otelhttp transport to enable otel instrumenetation
 	if settings.TracerProvider != nil && settings.MeterProvider != nil {
 		clientTransport = otelhttp.NewTransport(
@@ -187,6 +202,21 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 	}, nil
 }
 
+// Custom RoundTripper that intercepts the request.
+type interceptorRoundTripper struct {
+	next http.RoundTripper
+	in   interceptor.Interceptor
+}
+
+// RoundTrip is a custom RoundTripper that intercepts the request.
+func (rt *interceptorRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if err := rt.in.Intercept(req.Header); err != nil {
+		return nil, err
+	}
+
+	return rt.next.RoundTrip(req)
+}
+
 // Custom RoundTripper that adds headers.
 type headerRoundTripper struct {
 	transport http.RoundTripper
@@ -213,10 +243,13 @@ type HTTPServerSettings struct {
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
 	CORS *CORSSettings `mapstructure:"cors"`
 
-	// Auth for this receiver
+	// Auth for this receiver.
 	Auth *configauth.Authentication `mapstructure:"auth"`
 
-	// MaxRequestBodySize sets the maximum request body size in bytes
+	// Interceptors for this HTTP server.
+	Interceptors *configinterceptor.Interceptors `mapstructure:"interceptors"`
+
+	// MaxRequestBodySize sets the maximum request body size in bytes.
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
@@ -288,6 +321,14 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		handler = authInterceptor(handler, server)
 	}
 
+	if hss.Interceptors != nil {
+		ins, err := hss.Interceptors.GetInterceptors(host.GetExtensions())
+		if err != nil {
+			return nil, err
+		}
+		handler = interceptorsToHandler(handler, ins)
+	}
+
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
 		co := cors.Options{
 			AllowedOrigins:   hss.CORS.AllowedOrigins,
@@ -343,6 +384,51 @@ type CORSSettings struct {
 	// Set it to the number of seconds that browsers should cache a CORS
 	// preflight response for.
 	MaxAge int `mapstructure:"max_age"`
+}
+
+func interceptorsToClientTransport(next http.RoundTripper, ins []interceptor.Interceptor) http.RoundTripper {
+	var ret http.RoundTripper
+	for i := len(ins) - 1; i >= 0; i-- {
+		ret = interceptorToClientTransport(next, ins[i])
+		next = ret
+	}
+
+	return next
+}
+
+func interceptorToClientTransport(next http.RoundTripper, in interceptor.Interceptor) http.RoundTripper {
+	return &interceptorRoundTripper{
+		next: next,
+		in:   in,
+	}
+}
+
+func interceptorsToHandler(next http.Handler, ins []interceptor.Interceptor) http.Handler {
+	var ret http.Handler
+	// we go through the reverse order of definition, so that the first defined
+	// interceptors are added last to the chain, making them the first to be executed
+	for i := len(ins) - 1; i >= 0; i-- {
+		ret = interceptorToHandler(next, ins[i])
+		next = ret
+	}
+	return ret
+}
+
+func interceptorToHandler(next http.Handler, in interceptor.Interceptor) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// TODO(jpkroehling): enhance the headers to be intercepted with other metadata,
+		// like hostname, URL, ...
+		if err := in.Intercept(r.Header); err != nil {
+			ierr := &interceptor.Error{}
+			if errors.As(err, ierr) {
+				http.Error(w, ierr.Message, ierr.StatusCode)
+			} else {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func authInterceptor(next http.Handler, server auth.Server) http.Handler {
