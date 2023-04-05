@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // errTooManyBatchers is returned when the MetadataCardinalityLimit has been reached.
@@ -84,7 +85,7 @@ type batchProcessor struct {
 	singleton *batcher
 
 	lock     sync.Mutex
-	batchers map[attributeSet]*batcher
+	batchers map[attribute.Set]*batcher
 }
 
 // batcher is a single instance of the batcher logic.  When metadata
@@ -169,29 +170,6 @@ func (bp *batchProcessor) newBatcher(md map[string][]string) *batcher {
 	return b
 }
 
-// newAttributeSet is like otel-go's attribute.NewSet(attrs...).
-func newAttributeSet(attrs ...attributeKeyValue) attributeSet {
-	// Note: Key uniqueness is ensured in (Config).Validate()
-	// and sorted order is ensured in newBatchProcessor().
-	var aset attributeSet
-	for _, attr := range attrs {
-		aset = attributeSet(fmt.Sprint(aset, ";", attr))
-	}
-	return aset
-}
-
-// attributeString is like otel-go's attribute.String, for input
-// to newAttributeSet.
-func attributeString(k string, v string) attributeKeyValue {
-	return attributeKeyValue(fmt.Sprint(k, "=", v))
-}
-
-// attributeStringSlice is like otel-go's attribute.StringSlice, for
-// input to newAttributeSet.
-func attributeStringSlice(k string, v []string) attributeKeyValue {
-	return attributeKeyValue(fmt.Sprint(k, "∈", strings.Join(v, ",")))
-}
-
 func (bp *batchProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
@@ -202,7 +180,7 @@ func (bp *batchProcessor) Start(context.Context, component.Host) error {
 	if len(bp.metadataKeys) == 0 {
 		bp.singleton = bp.newBatcher(nil)
 	} else {
-		bp.batchers = map[attributeSet]*batcher{}
+		bp.batchers = map[attribute.Set]*batcher{}
 	}
 	return nil
 }
@@ -298,7 +276,7 @@ func (bp *batchProcessor) findBatcher(ctx context.Context) (*batcher, error) {
 	// attribute set for use as a map lookup key.
 	info := client.FromContext(ctx)
 	md := map[string][]string{}
-	var attrs []attributeKeyValue
+	var attrs []attribute.KeyValue
 	for _, k := range bp.metadataKeys {
 		// Lookup the value in the incoming metadata, copy it
 		// into the outgoing metadata, and create a unique
@@ -306,12 +284,12 @@ func (bp *batchProcessor) findBatcher(ctx context.Context) (*batcher, error) {
 		vs := info.Metadata.Get(k)
 		md[k] = vs
 		if len(vs) == 1 {
-			attrs = append(attrs, attributeString(k, vs[0]))
+			attrs = append(attrs, attribute.String(k, vs[0]))
 		} else {
-			attrs = append(attrs, attributeStringSlice(k, vs))
+			attrs = append(attrs, attribute.StringSlice(k, vs))
 		}
 	}
-	aset := newAttributeSet(attrs...)
+	aset := attribute.NewSet(attrs...)
 
 	bp.lock.Lock()
 	defer bp.lock.Unlock()

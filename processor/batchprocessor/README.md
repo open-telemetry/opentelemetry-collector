@@ -31,7 +31,13 @@ regardless of size.
   It must be greater than or equal to `send_batch_size`.
 - `metadata_keys` (default = empty): When set, this processor will
   create one batcher instance per distinct combination of values in
-  the `client.Metadata`.  See notes about metadata batching below.
+  the `client.Metadata`.
+- `metadata_cardinality_limit` (default = 100): When `metadata_keys` is 
+  not empty, this setting limits the number of unique combinations of 
+  metadata key values that will be processed over the lifetime of the
+  process.
+  
+See notes about metadata batching below.
 
 Examples:
 
@@ -50,7 +56,7 @@ examples on using the processor.
 
 Batching by metadata enables support for multi-tenant OpenTelemetry
 Collector pipelines with batching over groups of data having the same
-authorization metadata.  For example
+authorization metadata.  For example:
 
 ```yaml
 processors:

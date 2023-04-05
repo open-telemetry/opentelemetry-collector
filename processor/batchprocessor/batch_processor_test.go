@@ -944,10 +944,6 @@ func TestBatchProcessorDuplicateMetadataKeys(t *testing.T) {
 	require.Contains(t, err.Error(), "mytoken")
 }
 
-func TestAttributeEmptyStringUniqueness(t *testing.T) {
-	require.NotEqual(t, attributeStringSlice("key", nil), attributeString("key", ""))
-}
-
 func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
 	const cardLimit = 10
 
