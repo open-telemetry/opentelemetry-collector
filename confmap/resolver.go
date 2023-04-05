@@ -41,9 +41,6 @@ var (
 	// Need to match new line as well in the OpaqueValue, so setting the "s" flag. See https://pkg.go.dev/regexp/syntax.
 	uriRegexp = regexp.MustCompile(`(?s:^(?P<Scheme>` + schemePattern + `):(?P<OpaqueValue>.*)$)`)
 
-	// embeddedURI matches "embedded" provider uris into a string value.
-	embeddedURI = regexp.MustCompile(`\${` + schemePattern + `:.*?}`)
-
 	errTooManyRecursiveExpansions = errors.New("too many recursive expansions")
 )
 
@@ -242,44 +239,25 @@ func (mr *Resolver) expandValueRecursively(ctx context.Context, value any) (any,
 func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, error) {
 	switch v := value.(type) {
 	case string:
-		// If no embedded "uris" no need to expand. embeddedURI regexp matches uriRegexp as well.
-		if !embeddedURI.MatchString(v) {
+		// No URIs to expand.
+		if !strings.Contains(v, "${") || !strings.Contains(v, "}") {
 			return value, false, nil
 		}
 
+		// Don't expand. Too many closing brackets.
+		if strings.Count(v, "}") > 100 {
+			return value, false, nil
+		}
+
+		URI, expand := mr.findURI(v)
 		// If the value is a single URI, then the return value can be anything.
 		// This is the case `foo: ${file:some_extra_config.yml}`.
-		if embeddedURI.FindString(v) == v {
+		if expand && URI == value {
 			return mr.expandStringURI(ctx, v)
 		}
 
-		// If the URI is embedded into the string, return value must be a string, and we have to concatenate all strings.
-		var nerr error
-		var nchanged bool
-		nv := embeddedURI.ReplaceAllStringFunc(v, func(s string) string {
-			ret, changed, err := mr.expandStringURI(ctx, s)
-			nchanged = nchanged || changed
-			nerr = multierr.Append(nerr, err)
-			if err != nil {
-				return ""
-			}
-			// This list must be kept in sync with checkRawConfType.
-			val := reflect.ValueOf(ret)
-			switch val.Kind() {
-			case reflect.String:
-				return val.String()
-			case reflect.Int, reflect.Int32, reflect.Int64:
-				return strconv.FormatInt(val.Int(), 10)
-			case reflect.Float32, reflect.Float64:
-				return strconv.FormatFloat(val.Float(), 'f', -1, 64)
-			case reflect.Bool:
-				return strconv.FormatBool(val.Bool())
-			default:
-				nerr = multierr.Append(nerr, fmt.Errorf("expanding %v, expected string value type, got %T", s, ret))
-				return v
-			}
-		})
-		return nv, nchanged, nerr
+		// Embedded or nested URIs.
+		return mr.expandURIs(ctx, v)
 	case []any:
 		nslice := make([]any, 0, len(v))
 		nchanged := false
@@ -306,6 +284,90 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 		return nmap, nchanged, nil
 	}
 	return value, false, nil
+}
+
+// findURI will find the URI corresponding to the first closing bracket in input.
+// findURI is only called when input contains a }.
+func (mr *Resolver) findURI(input string) (string, bool) {
+	closeIndex := closeIndex(input)
+	openIndex := openIndex(input[:closeIndex+1])
+	// Should not expand because there is a missing ${.
+	if openIndex < 0 {
+		return "", false
+	}
+
+	URI := input[openIndex : closeIndex+1]
+
+	// Should not expand. This is expanded in the expandconverter.
+	if !strings.Contains(URI, ":") {
+		return "", false
+	}
+
+	return URI, true
+}
+
+func closeIndex(s string) int {
+	return strings.Index(s, "}")
+}
+
+func openIndex(s string) int {
+	return strings.LastIndex(s, "${")
+}
+
+func (mr *Resolver) expandURIs(ctx context.Context, input string) (string, bool, error) {
+	var err error
+	var changed bool
+
+	URI, expand := mr.findURI(input)
+	if expand {
+		input, changed, err = mr.expandableURI(ctx, input, URI)
+	}
+	// Check if other URIs are expandable.
+	if !expand {
+		input, changed, err = mr.nonExpandableURI(ctx, input)
+	}
+	return input, changed, err
+}
+
+func (mr *Resolver) expandableURI(ctx context.Context, input string, uri string) (string, bool, error) {
+	repl, changed, err := mr.expandURI(ctx, uri)
+	return strings.ReplaceAll(input, uri, repl), changed, err
+}
+
+// nonExpandableURI finds the next expandable URI in input and expands it.
+func (mr *Resolver) nonExpandableURI(ctx context.Context, input string) (string, bool, error) {
+	var err error
+	var expandedRemaining string
+	var changed bool
+
+	noExpand := input[:closeIndex(input)+1]
+	remaining := input[closeIndex(input)+1:]
+
+	if strings.Contains(remaining, "}") {
+		expandedRemaining, changed, err = mr.expandURIs(ctx, remaining)
+		return noExpand + expandedRemaining, changed, err
+	}
+	return input, changed, err
+}
+
+func (mr *Resolver) expandURI(ctx context.Context, value string) (string, bool, error) {
+	expanded, changed, err := mr.expandStringURI(ctx, value)
+	if err != nil {
+		return "", changed, err
+	}
+	val := reflect.ValueOf(expanded)
+	switch val.Kind() {
+	case reflect.String:
+		return val.String(), changed, err
+	case reflect.Int, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(val.Int(), 10), changed, err
+	case reflect.Float32, reflect.Float64:
+		return strconv.FormatFloat(val.Float(), 'f', -1, 64), changed, err
+	case reflect.Bool:
+		return strconv.FormatBool(val.Bool()), changed, err
+	default:
+		return value, changed, fmt.Errorf("expanding %v, expected string value type, got %T", value, expanded)
+	}
 }
 
 func (mr *Resolver) expandStringURI(ctx context.Context, uri string) (any, bool, error) {

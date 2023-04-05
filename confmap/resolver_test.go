@@ -441,6 +441,7 @@ func TestResolverExpandStringValues(t *testing.T) {
 		input  string
 		output any
 	}{
+		// Embedded.
 		{
 			name:   "test_no_match_old",
 			input:  "${HOST}:${PORT}",
@@ -506,6 +507,119 @@ func TestResolverExpandStringValues(t *testing.T) {
 			input:  "test_${env:BOOL}",
 			output: "test_true",
 		},
+		// Nested.
+		{
+			name:   "test_nested",
+			input:  "${test:localhost:${env:PORT}}",
+			output: "localhost:3044",
+		},
+		{
+			name:   "test_embedded_in_nested",
+			input:  "${test:${env:HOST}:${env:PORT}}",
+			output: "localhost:3044",
+		},
+		{
+			name:   "test_embedded_and_nested",
+			input:  "${test:localhost:${env:PORT}}?os=${env:OS}",
+			output: "localhost:3044?os=ubuntu",
+		},
+		{
+			name:   "test_nested_multiple",
+			input:  "${test:1${test:2${test:3${test:4${test:5${test:6}}}}}}",
+			output: "123456",
+		},
+		// No expand.
+		{
+			name:   "no_opening_bracket",
+			input:  "env:HOST}",
+			output: "env:HOST}",
+		},
+		{
+			name:   "no_closing_bracket",
+			input:  "${HOST",
+			output: "${HOST",
+		},
+		{
+			name:   "brackets_without_$",
+			input:  "HO{ST}",
+			output: "HO{ST}",
+		},
+		{
+			name:   "only_missing_closing",
+			input:  "${env:HOST${env:PORT?os=${env:OS",
+			output: "${env:HOST${env:PORT?os=${env:OS",
+		},
+		{
+			name:   "only_missing_opening",
+			input:  "env:HOST}env:PORT}?os=env:OS}",
+			output: "env:HOST}env:PORT}?os=env:OS}",
+		},
+		{
+			name:   "closing_bracket_limit",
+			input:  "${env:HOST}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}${env:PORT}",
+			output: "${env:HOST}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}${env:PORT}",
+		},
+		{
+			name:   "close_before_open",
+			input:  "env:HOST}${env:PORT",
+			output: "env:HOST}${env:PORT",
+		},
+		{
+			name:   "old_env_var_nested",
+			input:  "${test:localhost:${PORT}}",
+			output: "${test:localhost:${PORT}}",
+		},
+		// Partial expand.
+		{
+			name:   "missing_opening_bracket_first",
+			input:  "env:HOST}${env:PORT}",
+			output: "env:HOST}3044",
+		},
+		{
+			name:   "missing_opening_bracket_last",
+			input:  "${env:HOST}env:PORT}",
+			output: "localhostenv:PORT}",
+		},
+		{
+			name:   "missing_closing_bracket_first",
+			input:  "${env:HOST${env:PORT}",
+			output: "${env:HOST3044",
+		},
+		{
+			name:   "missing_closing_bracket_last",
+			input:  "${env:HOST}${env:PORT",
+			output: "localhost${env:PORT",
+		},
+		{
+			name:   "multiple_missing_open",
+			input:  "env:HOST}env:PORT}?os=${env:OS}",
+			output: "env:HOST}env:PORT}?os=ubuntu",
+		},
+		{
+			name:   "multiple_missing_closing",
+			input:  "${env:HOST${env:PORT?os=${env:OS}",
+			output: "${env:HOST${env:PORT?os=ubuntu",
+		},
+		{
+			name:   "more_closing_brackets",
+			input:  "${env:HOST}}}}}}${env:PORT?os=${env:OS}",
+			output: "localhost}}}}}${env:PORT?os=ubuntu",
+		},
+		{
+			name:   "more_opening_brackets",
+			input:  "${env:HOST}${${${${${env:PORT}?os=${env:OS}",
+			output: "localhost${${${${3044?os=ubuntu",
+		},
+		{
+			name:   "alternating_missing_opening",
+			input:  "env:HOST}${env:PORT}?os=env:OS}&pr=${env:PR}",
+			output: "env:HOST}3044?os=env:OS}&pr=amd",
+		},
+		{
+			name:   "alternating_missing_closing",
+			input:  "${env:HOST${env:PORT}?os=${env:OS&pr=${env:PR}",
+			output: "${env:HOST3044?os=${env:OS&pr=amd",
+		},
 	}
 
 	for _, tt := range tests {
@@ -514,12 +628,16 @@ func TestResolverExpandStringValues(t *testing.T) {
 				return NewRetrieved(map[string]any{tt.name: tt.input})
 			})
 
-			testProvider := newFakeProvider("env", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
+			envProvider := newFakeProvider("env", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
 				switch uri {
 				case "env:COMPLEX_VALUE":
 					return NewRetrieved([]any{"localhost:3042"})
 				case "env:HOST":
 					return NewRetrieved("localhost")
+				case "env:OS":
+					return NewRetrieved("ubuntu")
+				case "env:PR":
+					return NewRetrieved("amd")
 				case "env:PORT":
 					return NewRetrieved(3044)
 				case "env:INT":
@@ -538,7 +656,11 @@ func TestResolverExpandStringValues(t *testing.T) {
 				return nil, errors.New("impossible")
 			})
 
-			resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+			testProvider := newFakeProvider("test", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
+				return NewRetrieved(uri[5:])
+			})
+
+			resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, envProvider, testProvider), Converters: nil})
 			require.NoError(t, err)
 
 			cfgMap, err := resolver.Resolve(context.Background())
@@ -620,9 +742,8 @@ func TestResolverExpandInvalidScheme(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = resolver.Resolve(context.Background())
-	// TODO: Investigate how to return an error like `invalid uri: "g_c_s:VALUE"` and keep the legacy behavior
-	//  for cases like "${HOST}:${PORT}"
-	assert.NoError(t, err)
+
+	assert.EqualError(t, err, `invalid uri: "g_c_s:VALUE"`)
 }
 
 func TestResolverExpandInvalidOpaqueValue(t *testing.T) {
