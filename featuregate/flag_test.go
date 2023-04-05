@@ -110,7 +110,7 @@ func TestNewFlag(t *testing.T) {
 			reg := NewRegistry()
 			reg.MustRegister("alpha", StageAlpha)
 			reg.MustRegister("beta", StageBeta)
-			reg.MustRegister("stable", StageStable, WithRegisterRemovalVersion("1.0.0"))
+			reg.MustRegister("stable", StageStable, WithRegisterToVersion("1.0.0"))
 			v := NewFlag(reg)
 			if tt.expectedSetErr {
 				require.Error(t, v.Set(tt.input))

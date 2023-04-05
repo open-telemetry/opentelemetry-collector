@@ -13,21 +13,32 @@ on the configured processors, it is important to put checks in place regarding
 memory usage.
  
 The memory_limiter processor allows to perform periodic checks of memory
-usage if it exceeds defined limits will begin dropping data and forcing GC to reduce
+usage if it exceeds defined limits will begin refusing data and forcing GC to reduce
 memory consumption.
 
 The memory_limiter uses soft and hard memory limits. Hard limit is always above or equal
 the soft limit.
 
-When the memory usage exceeds the soft limit the processor will start dropping the data and
-return errors to the preceding component it in the pipeline (which should be normally a
-receiver).
+When the memory usage exceeds the soft limit the processor will enter the memory limited
+mode and will start refusing the data by returning errors to the preceding component
+in the pipeline that made the ConsumeLogs/Trace/Metrics function call.
+The preceding component should be normally a receiver.
 
-When the memory usage is above the hard limit in addition to dropping the data the
+In memory limited mode the error returned by ConsumeLogs/Trace/Metrics function is a
+non-permanent error. When receivers see this error they are expected to retry sending
+the same data. The receivers may also apply a backpressure to their data sources
+in order to slow down the inflow of data into the Collector and allow the memory usage
+to go below the limits.
+
+>Warning: if the component preceding the memory limiter in the pipeline does not correctly
+retry and send the data again after ConsumeLogs/Trace/Metrics functions return then that
+data will be permanently lost. We consider such components incorrectly implemented.
+
+When the memory usage is above the hard limit in addition to refusing the data the
 processor will forcedly perform garbage collection in order to try to free memory.
 
 When the memory usage drop below the soft limit, the normal operation is resumed (data
-will not longer be dropped and no forced garbage collection will be performed).
+will no longer be refused and no forced garbage collection will be performed).
 
 The difference between the soft limit and hard limits is defined via `spike_limit_mib`
 configuration option. The value of this option should be selected in a way that ensures
@@ -39,8 +50,9 @@ A good starting point for `spike_limit_mib` is 20% of the hard limit. Bigger
 Note that while the processor can help mitigate out of memory situations,
 it is not a replacement for properly sizing and configuring the
 collector. Keep in mind that if the soft limit is crossed, the collector will
-return errors to all receive operations until enough memory is freed. This will
-result in dropped data.
+return errors to all receive operations until enough memory is freed. This may
+eventually result in dropped data since the receivers may not be able to hold back
+and retry the data indefinitely.
 
 It is highly recommended to configure `ballastextension` as well as the
 `memory_limiter` processor on every collector. The ballast should be configured to

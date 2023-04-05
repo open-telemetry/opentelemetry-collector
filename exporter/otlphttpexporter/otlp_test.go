@@ -444,6 +444,20 @@ func TestErrorResponses(t *testing.T) {
 				time.Duration(0)*time.Second),
 		},
 		{
+			name:           "500",
+			responseStatus: http.StatusInternalServerError,
+			responseBody:   status.New(codes.InvalidArgument, "Internal server error"),
+			isPermErr:      true,
+		},
+		{
+			name:           "502",
+			responseStatus: http.StatusBadGateway,
+			responseBody:   status.New(codes.InvalidArgument, "Bad gateway"),
+			err: exporterhelper.NewThrottleRetry(
+				errors.New(errMsgPrefix+"502, Message=Bad gateway, Details=[]"),
+				time.Duration(0)*time.Second),
+		},
+		{
 			name:           "503",
 			responseStatus: http.StatusServiceUnavailable,
 			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
@@ -459,6 +473,14 @@ func TestErrorResponses(t *testing.T) {
 			err: exporterhelper.NewThrottleRetry(
 				errors.New(errMsgPrefix+"503, Message=Server overloaded, Details=[]"),
 				time.Duration(30)*time.Second),
+		},
+		{
+			name:           "504",
+			responseStatus: http.StatusGatewayTimeout,
+			responseBody:   status.New(codes.InvalidArgument, "Gateway timeout"),
+			err: exporterhelper.NewThrottleRetry(
+				errors.New(errMsgPrefix+"504, Message=Gateway timeout, Details=[]"),
+				time.Duration(0)*time.Second),
 		},
 	}
 

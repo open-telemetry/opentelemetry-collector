@@ -19,12 +19,13 @@ import "sync/atomic"
 // Gate is an immutable object that is owned by the Registry and represents an individual feature that
 // may be enabled or disabled based on the lifecycle state of the feature and CLI flags specified by the user.
 type Gate struct {
-	id             string
-	description    string
-	referenceURL   string
-	removalVersion string
-	stage          Stage
-	enabled        *atomic.Bool
+	id           string
+	description  string
+	referenceURL string
+	fromVersion  string
+	toVersion    string
+	stage        Stage
+	enabled      *atomic.Bool
 }
 
 // ID returns the id of the Gate.
@@ -52,7 +53,17 @@ func (g *Gate) ReferenceURL() string {
 	return g.referenceURL
 }
 
-// RemovalVersion returns the removal version information for Gate's in StageStable.
+// FromVersion returns the version information when the Gate's was added.
+func (g *Gate) FromVersion() string {
+	return g.fromVersion
+}
+
+// ToVersion returns the version information when Gate's in StageStable.
+func (g *Gate) ToVersion() string {
+	return g.toVersion
+}
+
+// Deprecated: [v0.76.0] use ToVersion().
 func (g *Gate) RemovalVersion() string {
-	return g.removalVersion
+	return g.ToVersion()
 }

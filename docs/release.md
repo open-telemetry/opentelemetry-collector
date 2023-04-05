@@ -112,10 +112,10 @@ The following documents the procedure to release a bugfix
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2023-03-20 | v0.74.0 | @jpkrohling     |
-| 2023-04-03 | v0.75.0 | @mx-psi         |
 | 2023-04-24 | v0.76.0 | @djaglowski     |
 | 2023-05-08 | v0.77.0 | @dmitryax       |
 | 2023-05-22 | v0.78.0 | @bogdandrutu    |
 | 2023-06-05 | v0.79.0 | @codeboten      |
 | 2023-06-19 | v0.80.0 | @Aneurysm9      |
+| 2023-07-03 | v0.81.0 | @jpkrohling     |
+| 2023-07-17 | v0.82.0 | @mx-psi         |

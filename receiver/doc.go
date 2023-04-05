@@ -32,7 +32,7 @@
 // receiving protocol allows to do that. In case of OTLP/HTTP for example, this means
 // that HTTP 400 response is returned to the sender.
 //
-// If the error is non-Permanent then the nextConsumer.Consume*() call may be retried
+// If the error is non-Permanent then the nextConsumer.Consume*() call should be retried
 // with the same data. This may be done by the receiver itself, however typically it is
 // done by the original sender, after the receiver returns a response to the sender
 // indicating that the Collector is currently overloaded and the request must be

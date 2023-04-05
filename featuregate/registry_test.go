@@ -55,7 +55,7 @@ func TestRegistryApplyError(t *testing.T) {
 	assert.Error(t, r.Set("foo", true))
 	r.MustRegister("bar", StageAlpha)
 	assert.Error(t, r.Set("foo", true))
-	r.MustRegister("foo", StageStable, WithRegisterRemovalVersion("next"))
+	r.MustRegister("foo", StageStable, WithRegisterToVersion("next"))
 	assert.Error(t, r.Set("foo", true))
 }
 
@@ -90,7 +90,7 @@ func TestRegisterGateLifecycle(t *testing.T) {
 			opts: []RegisterOption{
 				WithRegisterDescription("test-gate"),
 				WithRegisterReferenceURL("http://example.com/issue/1"),
-				WithRegisterRemovalVersion(""),
+				WithRegisterToVersion(""),
 			},
 			enabled:   false,
 			shouldErr: false,
@@ -107,7 +107,7 @@ func TestRegisterGateLifecycle(t *testing.T) {
 			id:    "test-gate",
 			stage: StageStable,
 			opts: []RegisterOption{
-				WithRegisterRemovalVersion("next"),
+				WithRegisterToVersion("next"),
 			},
 			enabled:   true,
 			shouldErr: false,

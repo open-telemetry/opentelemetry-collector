@@ -50,7 +50,7 @@ var (
 var _ = featuregate.GlobalRegistry().MustRegister(
 	"confmap.expandEnabled",
 	featuregate.StageStable,
-	featuregate.WithRegisterRemovalVersion("v0.75.0"),
+	featuregate.WithRegisterToVersion("v0.75.0"),
 	featuregate.WithRegisterDescription("controls whether expanding embedded external config providers URIs"))
 
 // Resolver resolves a configuration as a Conf.

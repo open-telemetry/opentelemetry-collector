@@ -453,7 +453,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "^failed to load TLS config: failed to load client CA CertPool: failed to load CA /doesnt/exist:",
+			err: "^failed to load client CA CertPool: failed to load CA /doesnt/exist:",
 			settings: GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "127.0.0.1:1234",
