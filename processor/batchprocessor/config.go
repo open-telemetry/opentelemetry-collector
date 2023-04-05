@@ -65,7 +65,7 @@ func (cfg *Config) Validate() error {
 	for _, k := range cfg.MetadataKeys {
 		l := strings.ToLower(k)
 		if _, has := uniq[l]; has {
-			return fmt.Errorf("duplicate entry in metadata_keys: %s (case-insensitive)", l)
+			return fmt.Errorf("duplicate entry in metadata_keys: %q (case-insensitive)", l)
 		}
 		uniq[l] = true
 	}
