@@ -38,8 +38,8 @@ or an individual value (partial configuration) when the `configURI` is embedded 
 the syntax `${configURI}`.
 
 **Limitation:** 
-- When embedding a `${configURI}` the uri cannot contain dollar sign ("$") character. 
-- Only URIs with a scheme can be nested (e.g. `${http://example.com/?os=${env:OS}}`)
+- When embedding a `${configURI}` the uri cannot contain dollar sign ("$") character unless it embeds another uri.
+- The number of URIs is limited to 100.
 
 ```terminal
               Resolver                   Provider
