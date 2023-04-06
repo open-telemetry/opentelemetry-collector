@@ -260,8 +260,7 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (Reques
 
 		if err != nil || req == nil {
 			// We need to make sure that currently dispatched items list is cleaned
-			err = pcs.itemDispatchingFinish(ctx, index)
-			if err != nil {
+			if err := pcs.itemDispatchingFinish(ctx, index); err != nil {
 				pcs.logger.Error("Error deleting item from queue",
 					zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 			}
@@ -273,8 +272,7 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (Reques
 		req.SetOnProcessingFinished(func() {
 			pcs.mu.Lock()
 			defer pcs.mu.Unlock()
-			err := pcs.itemDispatchingFinish(ctx, index)
-			if err != nil {
+			if err := pcs.itemDispatchingFinish(ctx, index); err != nil {
 				pcs.logger.Error("Error deleting item from queue",
 					zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 			}
@@ -370,7 +368,7 @@ func (pcs *persistentContiguousStorage) itemDispatchingStart(ctx context.Context
 
 // itemDispatchingFinish removes the item from the list of currently dispatched items and deletes it from the persistent queue
 func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Context, index itemIndex) error {
-	var err error
+	var batch *batchStruct
 	var updatedDispatchedItems []itemIndex
 	for _, it := range pcs.currentlyDispatchedItems {
 		if it != index {
@@ -379,31 +377,25 @@ func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Contex
 	}
 	pcs.currentlyDispatchedItems = updatedDispatchedItems
 
-	_, err = newBatch(pcs).
+	batch = newBatch(pcs).
 		setItemIndexArray(currentlyDispatchedItemsKey, pcs.currentlyDispatchedItems).
-		delete(pcs.itemKey(index)).
-		execute(ctx)
-
-	if err == nil {
+		delete(pcs.itemKey(index))
+	if _, err := batch.execute(ctx); err != nil {
+		// got an error, try to gracefully handle it
+		pcs.logger.Warn("Failed updating currently dispatched items, trying to delete the item first",
+			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
+	} else {
 		return nil
 	}
 
-	// got an error, try to gracefully handle it
-	pcs.logger.Debug("Failed updating currently dispatched items, trying to delete the item first",
-		zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
-
-	_, err = newBatch(pcs).
-		delete(pcs.itemKey(index)).
-		execute(ctx)
-	if err != nil {
+	if _, err := newBatch(pcs).delete(pcs.itemKey(index)).execute(ctx); err != nil {
 		// Return an error here, as this indicates an issue with the underlying storage medium
 		return fmt.Errorf("failed deleting item from queue, got error from storage: %w", err)
 	}
 
-	_, err = newBatch(pcs).
-		setItemIndexArray(currentlyDispatchedItemsKey, pcs.currentlyDispatchedItems).
-		execute(ctx)
-	if err != nil {
+	batch = newBatch(pcs).
+		setItemIndexArray(currentlyDispatchedItemsKey, pcs.currentlyDispatchedItems)
+	if _, err := batch.execute(ctx); err != nil {
 		// even if this fails, we still have the right dispatched items in memory
 		// at worst, we'll have the wrong list in storage, and we'll discard the nonexistent items during startup
 		return fmt.Errorf("failed updating currently dispatched items, but deleted item successfully: %w", err)

@@ -795,7 +795,7 @@ func (m *mockStorageClientWithErrors) Close(_ context.Context) error {
 	return nil
 }
 
-func (m *mockStorageClientWithErrors) Batch(_ context.Context, ops ...storage.Operation) error {
+func (m *mockStorageClientWithErrors) Batch(_ context.Context, _ ...storage.Operation) error {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 
