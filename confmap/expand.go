@@ -49,8 +49,8 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 			return value, false, nil
 		}
 
-		URI := findURI(v)
-		if URI != "" && URI == value {
+		uri := findURI(v)
+		if uri != "" && uri == value {
 			// If the value is a single URI, then the return value can be anything.
 			// This is the case `foo: ${file:some_extra_config.yml}`.
 			return mr.expandStringURI(ctx, v)
@@ -90,38 +90,30 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 // the URI if it is expandable, or an empty string if it is not expandable.
 // Note: findURI is only called when input contains a closing bracket.
 func findURI(input string) string {
-	closeIndex := closeIndex(input)
-	openIndex := openIndex(input[:closeIndex+1])
+	closeIndex := strings.Index(input, "}")
+	openIndex := strings.LastIndex(input[:closeIndex+1], "${")
 	if openIndex < 0 {
 		// Should not expand because there is a missing ${.
 		return ""
 	}
 
-	URI := input[openIndex : closeIndex+1]
+	uri := input[openIndex : closeIndex+1]
 
-	if !strings.Contains(URI, ":") {
+	if !strings.Contains(uri, ":") {
 		// Should not expand. This is expanded in the expandconverter.
 		return ""
 	}
 
-	return URI
-}
-
-func closeIndex(s string) int {
-	return strings.Index(s, "}")
-}
-
-func openIndex(s string) int {
-	return strings.LastIndex(s, "${")
+	return uri
 }
 
 // findAndExpandURI attempts to find and expand the first occurrence of an expandable URI in input.
 func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (output string, changed bool, err error) {
 	var repl string
-	URI := findURI(input)
-	if URI != "" {
-		repl, changed, err = mr.expandURI(ctx, URI)
-		input = strings.ReplaceAll(input, URI, repl)
+	uri := findURI(input)
+	if uri != "" {
+		repl, changed, err = mr.expandURI(ctx, uri)
+		input = strings.ReplaceAll(input, uri, repl)
 	} else {
 		// Check if the next URI in input is expandable.
 		input, changed, err = mr.nextExpandableURI(ctx, input)
@@ -136,7 +128,7 @@ func (mr *Resolver) nextExpandableURI(ctx context.Context, input string) (string
 	var expandedRemaining string
 	var changed bool
 
-	closeIndex := closeIndex(input)
+	closeIndex := strings.Index(input, "}")
 	noExpand := input[:closeIndex+1]
 	remaining := input[closeIndex+1:]
 
@@ -202,12 +194,4 @@ func newLocation(uri string) (location, error) {
 		return location{}, fmt.Errorf("invalid uri: %q", uri)
 	}
 	return location{scheme: submatches[1], opaqueValue: submatches[2]}, nil
-}
-
-func (mr *Resolver) retrieveValue(ctx context.Context, uri location) (*Retrieved, error) {
-	p, ok := mr.providers[uri.scheme]
-	if !ok {
-		return nil, fmt.Errorf("scheme %q is not supported for uri %q", uri.scheme, uri.asString())
-	}
-	return p.Retrieve(ctx, uri.asString(), mr.onChange)
 }

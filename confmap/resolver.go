@@ -219,3 +219,11 @@ func (mr *Resolver) closeIfNeeded(ctx context.Context) error {
 	mr.closers = nil
 	return err
 }
+
+func (mr *Resolver) retrieveValue(ctx context.Context, uri location) (*Retrieved, error) {
+	p, ok := mr.providers[uri.scheme]
+	if !ok {
+		return nil, fmt.Errorf("scheme %q is not supported for uri %q", uri.scheme, uri.asString())
+	}
+	return p.Retrieve(ctx, uri.asString(), mr.onChange)
+}
