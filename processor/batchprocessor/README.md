@@ -23,8 +23,9 @@ Please refer to [config.go](./config.go) for the config spec.
 The following configuration options can be modified:
 - `send_batch_size` (default = 8192): Number of spans, metric data points, or log
 records after which a batch will be sent regardless of the timeout.
-- `timeout` (default = 200ms): Time duration after which a batch will be sent
-regardless of size.
+- `timeout` (default = 200ms): Time duration after which a batch will
+be sent regardless of size.  If set to zero, `send_batch_size` is
+ignored as data will be sent immediately, subject to only `send_batch_max_size`.
 - `send_batch_max_size` (default = 0): The upper limit of the batch size.
   `0` means no upper limit of the batch size.
   This property ensures that larger batches are split into smaller units.
@@ -32,12 +33,28 @@ regardless of size.
 
 Examples:
 
+This configuration contains one default batch processor and a second
+with custom settings.  The `batch/2` processor will buffer up to 10000
+spans, metric data points, or log records for up to 10 seconds without
+splitting data items to enforce a maximum batch size.
+
 ```yaml
 processors:
   batch:
   batch/2:
     send_batch_size: 10000
     timeout: 10s
+```
+
+This configuration will enforce a maximum batch size limit of 10000
+spans, metric data points, or log records without introducing any
+artificial delays.
+
+```yaml
+processors:
+  batch:
+    send_max_batch_size: 10000
+    timeout: 0s
 ```
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed

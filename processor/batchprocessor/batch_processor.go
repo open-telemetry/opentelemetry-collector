@@ -113,7 +113,14 @@ func (bp *batchProcessor) Shutdown(context.Context) error {
 
 func (bp *batchProcessor) startProcessingCycle() {
 	defer bp.goroutines.Done()
-	bp.timer = time.NewTimer(bp.timeout)
+
+	// timerCh ensures we only block when there is a
+	// timer, since <- from a nil channel is blocking.
+	var timerCh <-chan time.Time
+	if bp.timeout != 0 && bp.sendBatchSize != 0 {
+		bp.timer = time.NewTimer(bp.timeout)
+		timerCh = bp.timer.C
+	}
 	for {
 		select {
 		case <-bp.shutdownC:
@@ -138,7 +145,7 @@ func (bp *batchProcessor) startProcessingCycle() {
 				continue
 			}
 			bp.processItem(item)
-		case <-bp.timer.C:
+		case <-timerCh:
 			if bp.batch.itemCount() > 0 {
 				bp.sendItems(triggerTimeout)
 			}
@@ -150,7 +157,7 @@ func (bp *batchProcessor) startProcessingCycle() {
 func (bp *batchProcessor) processItem(item any) {
 	bp.batch.add(item)
 	sent := false
-	for bp.batch.itemCount() >= bp.sendBatchSize {
+	for bp.batch.itemCount() > 0 && (!bp.hasTimer() || bp.batch.itemCount() >= bp.sendBatchSize) {
 		sent = true
 		bp.sendItems(triggerBatchSize)
 	}
@@ -161,14 +168,20 @@ func (bp *batchProcessor) processItem(item any) {
 	}
 }
 
+func (bp *batchProcessor) hasTimer() bool {
+	return bp.timer != nil
+}
+
 func (bp *batchProcessor) stopTimer() {
-	if !bp.timer.Stop() {
+	if bp.hasTimer() && !bp.timer.Stop() {
 		<-bp.timer.C
 	}
 }
 
 func (bp *batchProcessor) resetTimer() {
-	bp.timer.Reset(bp.timeout)
+	if bp.hasTimer() {
+		bp.timer.Reset(bp.timeout)
+	}
 }
 
 func (bp *batchProcessor) sendItems(trigger trigger) {
@@ -322,6 +335,7 @@ func (bl *batchLogs) export(ctx context.Context, sendBatchMaxSize int, returnByt
 	var req plog.Logs
 	var sent int
 	var bytes int
+
 	if sendBatchMaxSize > 0 && bl.logCount > sendBatchMaxSize {
 		req = splitLogs(sendBatchMaxSize, bl.logData)
 		bl.logCount -= sendBatchMaxSize
