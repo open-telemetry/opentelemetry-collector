@@ -113,16 +113,15 @@ func (bp *batchProcessor) Shutdown(context.Context) error {
 
 func (bp *batchProcessor) startProcessingCycle() {
 	defer bp.goroutines.Done()
+
+	// timerCh ensures we only block when there is a
+	// timer, since <- from a nil channel is blocking.
+	var timerCh <-chan time.Time
 	if bp.timeout != 0 && bp.sendBatchSize != 0 {
 		bp.timer = time.NewTimer(bp.timeout)
+		timerCh = bp.timer.C
 	}
 	for {
-		// timerCh ensures we only block when there is a
-		// timer, since <- from a nil channel is blocking.
-		var timerCh <-chan time.Time
-		if bp.timer != nil {
-			timerCh = bp.timer.C
-		}
 		select {
 		case <-bp.shutdownC:
 		DONE:
