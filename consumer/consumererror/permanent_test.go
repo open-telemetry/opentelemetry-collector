@@ -63,27 +63,25 @@ func TestPermanent_Unwrap(t *testing.T) {
 }
 
 func TestPermanent_WithCounts(t *testing.T) {
-	err := NewPermanentWithCounts(testErrorType{"testError"}, 1, 2)
+	err := NewPermanentWithCount(testErrorType{"testError"}, 1, 2)
 	require.True(t, IsPermanent(err))
 
 	permanentError, ok := err.(Permanent)
 	require.True(t, ok, "Error isn't a permanent error")
-	require.Equal(t, 1, permanentError.Successful())
-	require.Equal(t, 2, permanentError.Failed())
+	require.Equal(t, 2, permanentError.Rejected())
 }
 
 func TestPermanent_NoCounts(t *testing.T) {
-	err := NewPermanentWithCounts(testErrorType{"testError"}, NO_DATA_COUNT, NO_DATA_COUNT)
+	err := NewPermanentWithCount(testErrorType{"testError"}, noDataCount)
 	require.True(t, IsPermanent(err))
 
 	permanentError, ok := err.(Permanent)
 	require.True(t, ok, "Error isn't a permanent error")
-	require.Equal(t, NO_DATA_COUNT, permanentError.Successful())
-	require.Equal(t, NO_DATA_COUNT, permanentError.Failed())
+	require.Equal(t, noDataCount, permanentError.Rejected())
 }
 
 func TestPermanent_ErrorMessageWithCounts(t *testing.T) {
-	err := NewPermanentWithCounts(testErrorType{"testError"}, 1, 2)
+	err := NewPermanentWithCount(testErrorType{"testError"}, 1, 2)
 	require.True(t, IsPermanent(err))
 
 	permanentError, ok := err.(Permanent)
@@ -94,7 +92,7 @@ func TestPermanent_ErrorMessageWithCounts(t *testing.T) {
 }
 
 func TestPermanent_ErrorMessageNoCounts(t *testing.T) {
-	err := NewPermanentWithCounts(testErrorType{"testError"}, NO_DATA_COUNT, NO_DATA_COUNT)
+	err := NewPermanentWithCount(testErrorType{"testError"}, noDataCount)
 	require.True(t, IsPermanent(err))
 
 	permanentError, ok := err.(Permanent)

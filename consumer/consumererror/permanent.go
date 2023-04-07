@@ -19,42 +19,36 @@ import (
 	"strconv"
 )
 
-// NO_DATA_COUNT indicates an unknown quantity of telemetry items.
-const NO_DATA_COUNT = -1
+// noDataCount indicates an unknown number of records.
+const noDataCount = -1
 
 // Permanent is an error that will always be returned if its source
 // receives the same inputs.
 type Permanent struct {
 	error
-	successful int
-	failed     int
+	rejected int
 }
 
-// Deprecated [v0.75.0] Use consumererror.NewPermanentWithCounts instead.
+// Deprecated [v0.76.0] Use consumererror.NewPermanentWithCount instead.
 func NewPermanent(err error) error {
-	return Permanent{error: err, successful: NO_DATA_COUNT, failed: NO_DATA_COUNT}
+	return Permanent{error: err, rejected: noDataCount}
 }
 
-// NewPermanentWithCounts wraps an error to indicate that it is a permanent error, i.e. an
+// NewPermanentWithCount wraps an error to indicate that it is a permanent error, i.e. an
 // error that will be always returned if its source receives the same inputs.
-// The error should also include the number of successful and failed telemetry items
-// if the counts are known. Unknown counts should be set to consumererror.NO_DATA_COUNT.
-func NewPermanentWithCounts(err error, successful, failed int) error {
-	return Permanent{error: err, successful: successful, failed: failed}
+// The error should also include the number of rejected records.
+func NewPermanentWithCount(err error, rejected int) error {
+	return Permanent{error: err, rejected: rejected}
 }
 
 func (p Permanent) Error() string {
-	successful := "unknown"
-	failed := "unknown"
+	rejected := "unknown"
 
-	if p.successful != NO_DATA_COUNT {
-		successful = strconv.Itoa(p.successful)
-	}
-	if p.failed != NO_DATA_COUNT {
-		failed = strconv.Itoa(p.failed)
+	if p.rejected != noDataCount {
+		rejected = strconv.Itoa(p.rejected)
 	}
 
-	return "Permanent error (" + successful + " successful, " + failed + " failed): " + p.error.Error()
+	return "Permanent error (" + rejected + " rejected): " + p.error.Error()
 }
 
 // Unwrap returns the wrapped error for use by `errors.Is` and `errors.As`.
@@ -62,12 +56,8 @@ func (p Permanent) Unwrap() error {
 	return p.error
 }
 
-func (p Permanent) Successful() int {
-	return p.successful
-}
-
-func (p Permanent) Failed() int {
-	return p.failed
+func (p Permanent) Rejected() int {
+	return p.rejected
 }
 
 // IsPermanent checks if an error was wrapped with the NewPermanent function, which

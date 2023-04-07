@@ -27,6 +27,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -258,6 +259,10 @@ func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sen
 
 func toNumItems(numExportedItems int, err error) (int64, int64) {
 	if err != nil {
+		if e, ok := err.(consumererror.Permanent); ok {
+			rejected := int64(e.Rejected())
+			return int64(numExportedItems) - rejected, rejected
+		}
 		return 0, int64(numExportedItems)
 	}
 	return int64(numExportedItems), 0

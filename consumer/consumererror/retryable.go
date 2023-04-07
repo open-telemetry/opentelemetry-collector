@@ -53,7 +53,7 @@ type RetryableTraces struct {
 	retryable[ptrace.Traces]
 }
 
-// Deprecated [v0.75.0] Use `RetryableTraces` instead
+// Deprecated [v0.76.0] Use `RetryableTraces` instead
 type Traces RetryableTraces
 
 // NewRetryableTraces creates a Traces that can encapsulate received data that failed to be processed or sent.
@@ -66,7 +66,7 @@ func NewRetryableTraces(err error, data ptrace.Traces) error {
 	}
 }
 
-// Deprecated [v0.75.0] Use `NewRetryableTraces` instead
+// Deprecated [v0.76.0] Use `NewRetryableTraces` instead
 func NewTraces(err error, data ptrace.Traces) error {
 	return NewRetryableTraces(err, data)
 }
