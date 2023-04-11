@@ -74,6 +74,10 @@ func (qCfg *QueueSettings) Validate() error {
 		return errors.New("queue size must be positive")
 	}
 
+	if qCfg.NumConsumers <= 0 {
+		return errors.New("number of consumers must be positive")
+	}
+
 	return nil
 }
 

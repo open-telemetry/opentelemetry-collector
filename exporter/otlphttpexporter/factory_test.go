@@ -46,6 +46,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, ocfg.RetrySettings.InitialInterval, 5*time.Second, "default retry InitialInterval")
 	assert.Equal(t, ocfg.RetrySettings.MaxInterval, 30*time.Second, "default retry MaxInterval")
 	assert.Equal(t, ocfg.QueueSettings.Enabled, true, "default sending queue is enabled")
+	assert.Equal(t, ocfg.BacklogSettings.Enabled, false, "default backlog queue is disabled")
 	assert.Equal(t, ocfg.Compression, configcompression.Gzip)
 }
 

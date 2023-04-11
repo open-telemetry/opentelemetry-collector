@@ -42,6 +42,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, ocfg.RetrySettings, exporterhelper.NewDefaultRetrySettings())
 	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueSettings())
+	assert.Equal(t, ocfg.BacklogSettings, exporterhelper.QueueSettings{Enabled: false})
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutSettings())
 	assert.Equal(t, ocfg.Compression, configcompression.Gzip)
 }

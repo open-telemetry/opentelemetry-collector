@@ -47,8 +47,9 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		BacklogSettings: exporterhelper.QueueSettings{Enabled: false},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "",
 			Timeout:  30 * time.Second,
@@ -99,7 +100,9 @@ func createTracesExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
-		exporterhelper.WithQueue(oCfg.QueueSettings))
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithBacklog(oCfg.BacklogSettings),
+	)
 }
 
 func createMetricsExporter(
@@ -125,7 +128,9 @@ func createMetricsExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
-		exporterhelper.WithQueue(oCfg.QueueSettings))
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithBacklog(oCfg.BacklogSettings),
+	)
 }
 
 func createLogsExporter(
@@ -151,5 +156,7 @@ func createLogsExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
-		exporterhelper.WithQueue(oCfg.QueueSettings))
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithBacklog(oCfg.BacklogSettings),
+	)
 }

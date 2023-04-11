@@ -23,6 +23,8 @@ The following configuration options can be modified:
     - `requests_per_batch` is the average number of requests per batch (if 
       [the batch processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor)
       is used, the metric `batch_send_size` can be used for estimation)
+- `backlog_queue`
+  - Same options as `sending_queue`. The only default value is (`enabled` = false)
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
 
 ### Persistent Queue

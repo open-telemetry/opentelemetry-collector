@@ -26,6 +26,7 @@ import (
 type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	BacklogSettings                exporterhelper.QueueSettings `mapstructure:"backlog_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
 	configgrpc.GRPCClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
@@ -37,6 +38,9 @@ var _ component.Config = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if err := cfg.QueueSettings.Validate(); err != nil {
 		return fmt.Errorf("queue settings has invalid configuration: %w", err)
+	}
+	if err := cfg.BacklogSettings.Validate(); err != nil {
+		return fmt.Errorf("backlog settings has invalid configuration: %w", err)
 	}
 
 	return nil

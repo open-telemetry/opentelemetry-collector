@@ -391,6 +391,10 @@ func TestQueueSettings_Validate(t *testing.T) {
 	qCfg.QueueSize = 0
 	assert.EqualError(t, qCfg.Validate(), "queue size must be positive")
 
+	qCfg.QueueSize = 1
+	qCfg.NumConsumers = 0
+	assert.EqualError(t, qCfg.Validate(), "number of consumers must be positive")
+
 	// Confirm Validate doesn't return error with invalid config when feature is disabled
 	qCfg.Enabled = false
 	assert.NoError(t, qCfg.Validate())

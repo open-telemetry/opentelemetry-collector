@@ -46,6 +46,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cfg.(*Config).Validate())
 	assert.Equal(t,
 		&Config{
 			RetrySettings: exporterhelper.RetrySettings{
