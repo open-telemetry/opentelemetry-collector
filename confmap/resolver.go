@@ -26,21 +26,9 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-// schemePattern defines the regexp pattern for scheme names.
-// Scheme name consist of a sequence of characters beginning with a letter and followed by any
-// combination of letters, digits, plus ("+"), period ("."), or hyphen ("-").
-const schemePattern = `[A-Za-z][A-Za-z0-9+.-]+`
-
-var (
-	// follows drive-letter specification:
-	// https://datatracker.ietf.org/doc/html/draft-kerwin-file-scheme-07.html#section-2.2
-	driverLetterRegexp = regexp.MustCompile("^[A-z]:")
-
-	// Need to match new line as well in the OpaqueValue, so setting the "s" flag. See https://pkg.go.dev/regexp/syntax.
-	uriRegexp = regexp.MustCompile(`(?s:^(?P<Scheme>` + schemePattern + `):(?P<OpaqueValue>.*)$)`)
-
-	errTooManyRecursiveExpansions = errors.New("too many recursive expansions")
-)
+// follows drive-letter specification:
+// https://datatracker.ietf.org/doc/html/draft-kerwin-file-scheme-07.html#section-2.2
+var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
 
 var _ = featuregate.GlobalRegistry().MustRegister(
 	"confmap.expandEnabled",

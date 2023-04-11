@@ -228,11 +228,6 @@ func TestResolverExpandStringValues(t *testing.T) {
 			output: "env:HOST}env:PORT}?os=env:OS}",
 		},
 		{
-			name:   "closing_bracket_limit",
-			input:  "${env:HOST}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}${env:PORT}",
-			output: "${env:HOST}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}${env:PORT}",
-		},
-		{
 			name:   "close_before_open",
 			input:  "env:HOST}${env:PORT",
 			output: "env:HOST}${env:PORT",
@@ -400,6 +395,19 @@ func TestResolverInfiniteExpand(t *testing.T) {
 
 	_, err = resolver.Resolve(context.Background())
 	assert.ErrorIs(t, err, errTooManyRecursiveExpansions)
+}
+
+func TestResolverExpandURILimit(t *testing.T) {
+	input := "${env:HOST}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}${env:PORT}"
+	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
+		return NewRetrieved(map[string]any{"test": input})
+	})
+
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider), Converters: nil})
+	require.NoError(t, err)
+
+	_, err = resolver.Resolve(context.Background())
+	assert.ErrorIs(t, err, errURILimit)
 }
 
 func TestResolverExpandInvalidScheme(t *testing.T) {

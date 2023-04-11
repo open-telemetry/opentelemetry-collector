@@ -16,10 +16,26 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
+)
+
+// schemePattern defines the regexp pattern for scheme names.
+// Scheme name consist of a sequence of characters beginning with a letter and followed by any
+// combination of letters, digits, plus ("+"), period ("."), or hyphen ("-").
+const schemePattern = `[A-Za-z][A-Za-z0-9+.-]+`
+
+var (
+	// Need to match new line as well in the OpaqueValue, so setting the "s" flag. See https://pkg.go.dev/regexp/syntax.
+	uriRegexp = regexp.MustCompile(`(?s:^(?P<Scheme>` + schemePattern + `):(?P<OpaqueValue>.*)$)`)
+
+	errTooManyRecursiveExpansions = errors.New("too many recursive expansions")
+
+	errURILimit = errors.New("reached limit of 100 URIs")
 )
 
 func (mr *Resolver) expandValueRecursively(ctx context.Context, value any) (any, error) {
@@ -46,14 +62,14 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 
 		if strings.Count(v, "}") > 100 {
 			// Too many closing brackets. Don't expand to protect from too deep recursion.
-			return value, false, nil
+			return "", false, errURILimit
 		}
 
 		uri := findURI(v)
 		if uri != "" && uri == value {
 			// If the value is a single URI, then the return value can be anything.
 			// This is the case `foo: ${file:some_extra_config.yml}`.
-			return mr.expandStringURI(ctx, v)
+			return mr.expandURI(ctx, v)
 		}
 
 		// Embedded or nested URIs.
@@ -110,40 +126,33 @@ func findURI(input string) string {
 // findAndExpandURI attempts to find and expand the first occurrence of an expandable URI in input.
 func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (output string, changed bool, err error) {
 	var repl string
-	uri := findURI(input)
-	if uri != "" {
-		repl, changed, err = mr.expandURI(ctx, uri)
-		input = strings.ReplaceAll(input, uri, repl)
-	} else {
-		// Check if the next URI in input is expandable.
-		input, changed, err = mr.nextExpandableURI(ctx, input)
-	}
-	return input, changed, err
-}
-
-// nextExpandableURI attempts to find and expand the next expandable URI in input. nextExpandableURI is called
-// when the first occurrence of URI in input is not expandable.
-func (mr *Resolver) nextExpandableURI(ctx context.Context, input string) (string, bool, error) {
-	var err error
 	var expandedRemaining string
-	var changed bool
 
-	closeIndex := strings.Index(input, "}")
-	noExpand := input[:closeIndex+1]
-	remaining := input[closeIndex+1:]
+	uri := findURI(input)
+	if uri == "" {
+		// The first URI in input is not expandable. Strip the first URI from input and check if
+		// other URIs are expandable.
+		closeIndex := strings.Index(input, "}")
+		noExpand := input[:closeIndex+1]
+		remaining := input[closeIndex+1:]
 
-	// if remaining does not contain }, there are no URIs left: stop recursion.
-	if strings.Contains(remaining, "}") {
+		// if remaining does not contain }, there are no URIs left: stop recursion.
+		if !strings.Contains(remaining, "}") {
+			return input, changed, err
+		}
+
 		expandedRemaining, changed, err = mr.findAndExpandURI(ctx, remaining)
 		return noExpand + expandedRemaining, changed, err
 	}
+	repl, changed, err = mr.expandStringURI(ctx, uri)
+	input = strings.ReplaceAll(input, uri, repl)
 	return input, changed, err
 }
 
-// expandURI tries to expand uri. If an expandable URI is found, it returns the uri expanded, true and nil.
-// Otherwise, it returns the unchanged input, false and the expanding error.
-func (mr *Resolver) expandURI(ctx context.Context, uri string) (string, bool, error) {
-	expanded, changed, err := mr.expandStringURI(ctx, uri)
+// expandStringURI tries to expand uri as a string. If an expandable URI is found and it can be converted to a string,
+// it returns the expanded uris string value, true and nil. Otherwise, it returns the unchanged input, false and the expanding error.
+func (mr *Resolver) expandStringURI(ctx context.Context, uri string) (string, bool, error) {
+	expanded, changed, err := mr.expandURI(ctx, uri)
 	if err != nil {
 		return uri, changed, err
 	}
@@ -162,7 +171,7 @@ func (mr *Resolver) expandURI(ctx context.Context, uri string) (string, bool, er
 	}
 }
 
-func (mr *Resolver) expandStringURI(ctx context.Context, uri string) (any, bool, error) {
+func (mr *Resolver) expandURI(ctx context.Context, uri string) (any, bool, error) {
 	lURI, err := newLocation(uri[2 : len(uri)-1])
 	if err != nil {
 		return nil, false, err
