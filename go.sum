@@ -439,6 +439,8 @@ go.opentelemetry.io/contrib/zpages v0.40.0 h1:BDLYzPHju8GRJH2V+0CtF4WF/sDnylZnsp
 go.opentelemetry.io/contrib/zpages v0.40.0/go.mod h1:hKOEjOa1AA8kbqQRWR5gSj4WrjWjHQMFv5jeRGDgVRM=
 go.opentelemetry.io/otel v1.14.0 h1:/79Huy8wbf5DnIPhemGB+zEPVwnN6fuQybr/SRXa6hM=
 go.opentelemetry.io/otel v1.14.0/go.mod h1:o4buv+dJzx8rohcUeRmWUZhqupFvzWis188WlggnNeU=
+go.opentelemetry.io/otel/bridge/opencensus v0.37.0 h1:ieH3gw7b1eg90ARsFAlAsX5LKVZgnCYfaDwRrK6xLHU=
+go.opentelemetry.io/otel/bridge/opencensus v0.37.0/go.mod h1:ddiK+1PE68l/Xk04BGTh9Y6WIcxcLrmcVxVlS0w5WZ0=
 go.opentelemetry.io/otel/exporters/prometheus v0.37.0 h1:NQc0epfL0xItsmGgSXgfbH2C1fq2VLXkZoDFsfRNHpc=
 go.opentelemetry.io/otel/exporters/prometheus v0.37.0/go.mod h1:hB8qWjsStK36t50/R0V2ULFb4u95X/Q6zupXLgvjTh8=
 go.opentelemetry.io/otel/metric v0.37.0 h1:pHDQuLQOZwYD+Km0eb657A25NaRzy0a+eLyKfDXedEs=

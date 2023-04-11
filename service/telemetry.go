@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/bridge/opencensus"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
@@ -107,10 +108,10 @@ func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap
 		if err := tel.initOpenTelemetry(telAttrs, promRegistry); err != nil {
 			return err
 		}
-	}
-
-	if err := tel.initOpenCensus(cfg, telAttrs, promRegistry); err != nil {
-		return err
+	} else {
+		if err := tel.initOpenCensus(cfg, telAttrs, promRegistry); err != nil {
+			return err
+		}
 	}
 
 	logger.Info(
@@ -200,6 +201,7 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, promRegistry prometheus.Registerer) error {
 	// Initialize the ocRegistry, still used by the process metrics.
 	tel.ocRegistry = ocmetric.NewRegistry()
+	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 
 	var resAttrs []attribute.KeyValue
 	for k, v := range attrs {
@@ -223,6 +225,7 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, prom
 	if err != nil {
 		return fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
+	exporter.RegisterProducer(opencensus.NewMetricProducer())
 	tel.mp = sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(res),
 		sdkmetric.WithReader(exporter),
