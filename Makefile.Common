@@ -31,6 +31,7 @@ CROSSLINK   := $(TOOLS_BIN_DIR)/crosslink
 GO_ACC      := $(TOOLS_BIN_DIR)/go-acc
 GOCOVMERGE  := $(TOOLS_BIN_DIR)/gocovmerge
 GOIMPORTS   := $(TOOLS_BIN_DIR)/goimports
+GOVULNCHECK := $(TOOLS_BIN_DIR)/govulncheck
 LINT        := $(TOOLS_BIN_DIR)/golangci-lint
 IMPI        := $(TOOLS_BIN_DIR)/impi
 MISSPELL    := $(TOOLS_BIN_DIR)/misspell 
