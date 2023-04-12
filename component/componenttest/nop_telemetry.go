@@ -30,5 +30,6 @@ func NewNopTelemetrySettings() component.TelemetrySettings {
 		TracerProvider: trace.NewNoopTracerProvider(),
 		MeterProvider:  metric.NewNoopMeterProvider(),
 		MetricsLevel:   configtelemetry.LevelNone,
+		ResourceAttrs:  map[string]string{},
 	}
 }

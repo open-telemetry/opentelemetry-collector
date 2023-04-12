@@ -23,7 +23,6 @@ import (
 	"unicode"
 
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
-	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	ocmetric "go.opencensus.io/metric"
@@ -41,11 +40,9 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/obsreport"
-	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -78,7 +75,7 @@ func newColTelemetry(useOtel bool) *telemetryInitializer {
 	}
 }
 
-func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
+func (tel *telemetryInitializer) init(telAttrs map[string]string, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
 	if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
 		logger.Info(
 			"Skipping telemetry setup.",
@@ -89,9 +86,6 @@ func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap
 	}
 
 	logger.Info("Setting up own telemetry...")
-
-	// Construct telemetry attributes from build info and config's resource attributes.
-	telAttrs := buildTelAttrs(buildInfo, cfg)
 
 	if tp, err := textMapPropagatorFromConfig(cfg.Traces.Propagators); err == nil {
 		otel.SetTextMapPropagator(tp)
@@ -135,37 +129,6 @@ func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap
 	}()
 
 	return nil
-}
-
-func buildTelAttrs(buildInfo component.BuildInfo, cfg telemetry.Config) map[string]string {
-	telAttrs := map[string]string{}
-
-	for k, v := range cfg.Resource {
-		// nil value indicates that the attribute should not be included in the telemetry.
-		if v != nil {
-			telAttrs[k] = *v
-		}
-	}
-
-	if _, ok := cfg.Resource[semconv.AttributeServiceName]; !ok {
-		// AttributeServiceName is not specified in the config. Use the default service name.
-		telAttrs[semconv.AttributeServiceName] = buildInfo.Command
-	}
-
-	if _, ok := cfg.Resource[semconv.AttributeServiceInstanceID]; !ok {
-		// AttributeServiceInstanceID is not specified in the config. Auto-generate one.
-		instanceUUID, _ := uuid.NewRandom()
-		instanceID := instanceUUID.String()
-		telAttrs[semconv.AttributeServiceInstanceID] = instanceID
-	}
-
-	if _, ok := cfg.Resource[semconv.AttributeServiceVersion]; !ok {
-		// AttributeServiceVersion is not specified in the config. Use the actual
-		// build version.
-		telAttrs[semconv.AttributeServiceVersion] = buildInfo.Version
-	}
-
-	return telAttrs
 }
 
 func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs map[string]string, promRegistry *prometheus.Registry) error {

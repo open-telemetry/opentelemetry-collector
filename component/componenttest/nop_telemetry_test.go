@@ -34,4 +34,5 @@ func TestNewNopTelemetrySettings(t *testing.T) {
 		nts.MeterProvider.Meter("test")
 	})
 	assert.Equal(t, configtelemetry.LevelNone, nts.MetricsLevel)
+	assert.Len(t, nts.ResourceAttrs, 0)
 }

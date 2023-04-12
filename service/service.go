@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -31,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
@@ -99,14 +101,18 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
+
 	srv.telemetrySettings = component.TelemetrySettings{
 		Logger:         srv.telemetry.Logger(),
 		TracerProvider: srv.telemetry.TracerProvider(),
 		MeterProvider:  metric.NewNoopMeterProvider(),
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
+
+		// Construct telemetry attributes from build info and config's resource attributes.
+		ResourceAttrs: buildTelAttrs(set.BuildInfo, cfg.Telemetry),
 	}
 
-	if err = srv.telemetryInitializer.init(set.BuildInfo, srv.telemetrySettings.Logger, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
+	if err = srv.telemetryInitializer.init(srv.telemetrySettings.ResourceAttrs, srv.telemetrySettings.Logger, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
 		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
@@ -235,4 +241,35 @@ func getBallastSize(host component.Host) uint64 {
 		}
 	}
 	return 0
+}
+
+func buildTelAttrs(buildInfo component.BuildInfo, cfg telemetry.Config) map[string]string {
+	telAttrs := map[string]string{}
+
+	for k, v := range cfg.Resource {
+		// nil value indicates that the attribute should not be included in the telemetry.
+		if v != nil {
+			telAttrs[k] = *v
+		}
+	}
+
+	if _, ok := cfg.Resource[semconv.AttributeServiceName]; !ok {
+		// AttributeServiceName is not specified in the config. Use the default service name.
+		telAttrs[semconv.AttributeServiceName] = buildInfo.Command
+	}
+
+	if _, ok := cfg.Resource[semconv.AttributeServiceInstanceID]; !ok {
+		// AttributeServiceInstanceID is not specified in the config. Auto-generate one.
+		instanceUUID, _ := uuid.NewRandom()
+		instanceID := instanceUUID.String()
+		telAttrs[semconv.AttributeServiceInstanceID] = instanceID
+	}
+
+	if _, ok := cfg.Resource[semconv.AttributeServiceVersion]; !ok {
+		// AttributeServiceVersion is not specified in the config. Use the actual
+		// build version.
+		telAttrs[semconv.AttributeServiceVersion] = buildInfo.Version
+	}
+
+	return telAttrs
 }

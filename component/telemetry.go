@@ -36,4 +36,7 @@ type TelemetrySettings struct {
 	// MetricsLevel controls the level of detail for metrics emitted by the collector.
 	// Experimental: *NOTE* this field is experimental and may be changed or removed.
 	MetricsLevel configtelemetry.Level
+
+	// ResourceAttrs contains the resource attributes for the collector's telemetry.
+	ResourceAttrs map[string]string
 }

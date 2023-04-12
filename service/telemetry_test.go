@@ -148,8 +148,8 @@ func TestTelemetryInit(t *testing.T) {
 					Address: testutil.GetAvailableLocalAddress(t),
 				},
 			}
-
-			err := tel.init(buildInfo, zap.NewNop(), cfg, make(chan error))
+			telAttrs := buildTelAttrs(buildInfo, cfg)
+			err := tel.init(telAttrs, zap.NewNop(), cfg, make(chan error))
 			require.NoError(t, err)
 			defer func() {
 				require.NoError(t, tel.shutdown())
