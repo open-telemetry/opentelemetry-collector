@@ -160,7 +160,7 @@ func TestTelemetryInit(t *testing.T) {
 				view.Unregister(v)
 			}()
 
-			metrics := getMetricsFromPrometheus(t, tel.server.Handler)
+			metrics := getMetricsFromPrometheus(t, tel.servers[0].Handler)
 			require.Equal(t, len(tc.expectedMetrics), len(metrics))
 
 			for metricName, metricValue := range tc.expectedMetrics {
