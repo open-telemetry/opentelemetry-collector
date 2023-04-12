@@ -115,6 +115,7 @@ Here is a list of community roles with current and previous members:
 
 - Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triagers)):
 
+  - [Antoine Toulme](https://github.com/atoulme), Splunk
   - Actively seeking contributors to triage issues
 
 - Emeritus Triagers:
