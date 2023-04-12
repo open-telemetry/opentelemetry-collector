@@ -364,11 +364,12 @@ func assertResourceLabels(t *testing.T, resourceAttrs map[string]string, expecte
 			lookupKey = key
 		}
 		resourceAttr, ok := resourceAttrs[lookupKey]
-		if labelValue.state == labelNotPresent {
+		switch labelValue.state {
+		case labelNotPresent:
 			assert.False(t, ok)
-		} else if labelValue.state == labelAnyValue {
+		case labelAnyValue:
 			assert.True(t, ok)
-		} else {
+		default:
 			assert.Equal(t, labelValue.label, resourceAttr)
 		}
 	}
