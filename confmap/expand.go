@@ -123,8 +123,10 @@ func findURI(input string) string {
 	return uri
 }
 
-// findAndExpandURI attempts to find and expand the first occurrence of an expandable URI in input.
+// findAndExpandURI attempts to find and expand the first occurrence of an expandable URI in input. If an expandable URI is found it
+// returns the input with the URI expanded, true and nil. Otherwise, it returns the unchanged input, false and the expanding error.
 func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (output string, changed bool, err error) {
+	var expanded any
 	var repl string
 	var expandedRemaining string
 
@@ -144,30 +146,33 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (output 
 		expandedRemaining, changed, err = mr.findAndExpandURI(ctx, remaining)
 		return noExpand + expandedRemaining, changed, err
 	}
-	repl, changed, err = mr.expandStringURI(ctx, uri)
+	expanded, changed, err = mr.expandURI(ctx, uri)
+	if err != nil {
+		return input, false, err
+	}
+	repl, err = toString(ctx, uri, expanded)
+	if err != nil {
+		return input, false, err
+	}
 	input = strings.ReplaceAll(input, uri, repl)
 	return input, changed, err
 }
 
-// expandStringURI tries to expand uri as a string. If an expandable URI is found and it can be converted to a string,
-// it returns the expanded uris string value, true and nil. Otherwise, it returns the unchanged input, false and the expanding error.
-func (mr *Resolver) expandStringURI(ctx context.Context, uri string) (string, bool, error) {
-	expanded, changed, err := mr.expandURI(ctx, uri)
-	if err != nil {
-		return uri, changed, err
-	}
-	val := reflect.ValueOf(expanded)
+// toString attempts to convert input to a string.
+func toString(ctx context.Context, strURI string, input any) (string, error) {
+	// This list must be kept in sync with checkRawConfType.
+	val := reflect.ValueOf(input)
 	switch val.Kind() {
 	case reflect.String:
-		return val.String(), changed, err
+		return val.String(), nil
 	case reflect.Int, reflect.Int32, reflect.Int64:
-		return strconv.FormatInt(val.Int(), 10), changed, err
+		return strconv.FormatInt(val.Int(), 10), nil
 	case reflect.Float32, reflect.Float64:
-		return strconv.FormatFloat(val.Float(), 'f', -1, 64), changed, err
+		return strconv.FormatFloat(val.Float(), 'f', -1, 64), nil
 	case reflect.Bool:
-		return strconv.FormatBool(val.Bool()), changed, err
+		return strconv.FormatBool(val.Bool()), nil
 	default:
-		return uri, changed, fmt.Errorf("expanding %v, expected string value type, got %T", uri, expanded)
+		return "", fmt.Errorf("expanding %v, expected string value type, got %T", strURI, input)
 	}
 }
 
