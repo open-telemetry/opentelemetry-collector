@@ -155,7 +155,7 @@ func toString(strURI string, input any) (string, error) {
 	case reflect.Bool:
 		return strconv.FormatBool(val.Bool()), nil
 	default:
-		return "", fmt.Errorf("expanding %v, expected string value type, got %T", strURI, input)
+		return "", fmt.Errorf("expanding %v, expected convertable to string value type, got %q(%T)", strURI, input, input)
 	}
 }
 
