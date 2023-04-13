@@ -65,13 +65,6 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 			return "", false, errURILimit
 		}
 
-		uri := findURI(v)
-		if uri != "" && uri == value {
-			// If the value is a single URI, then the return value can be anything.
-			// This is the case `foo: ${file:some_extra_config.yml}`.
-			return mr.expandURI(ctx, v)
-		}
-
 		// Embedded or nested URIs.
 		return mr.findAndExpandURI(ctx, v)
 	case []any:
@@ -124,13 +117,18 @@ func findURI(input string) string {
 
 // findAndExpandURI attempts to find and expand the first occurrence of an expandable URI in input. If an expandable URI is found it
 // returns the input with the URI expanded, true and nil. Otherwise, it returns the unchanged input, false and the expanding error.
-func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (output string, changed bool, err error) {
+func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (output any, changed bool, err error) {
 	var expanded any
 	var repl string
 
 	uri := findURI(input)
 	if uri == "" {
 		return input, false, err
+	}
+	if uri == input {
+		// If the value is a single URI, then the return value can be anything.
+		// This is the case `foo: ${file:some_extra_config.yml}`.
+		return mr.expandURI(ctx, input)
 	}
 	expanded, changed, err = mr.expandURI(ctx, uri)
 	if err != nil {
