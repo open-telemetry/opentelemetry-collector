@@ -87,8 +87,8 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 	return value, false, nil
 }
 
-// findURI attempts to find the first expandable URI in input. It returns
-// the URI if it is expandable, or an empty string if it is not expandable.
+// findURI attempts to find the first expandable URI in input. It returns an expandable
+// URI, or an empty string if none are found.
 // Note: findURI is only called when input contains a closing bracket.
 func findURI(input string) string {
 	closeIndex := strings.Index(input, "}")
