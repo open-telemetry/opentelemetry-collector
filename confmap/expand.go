@@ -112,6 +112,7 @@ func findURI(input string) string {
 func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (output any, changed bool, err error) {
 	uri := findURI(input)
 	if uri == "" {
+		// No URI found, return.
 		return input, false, err
 	}
 	if uri == input {
