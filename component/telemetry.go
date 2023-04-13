@@ -16,6 +16,7 @@ package component // import "go.opentelemetry.io/collector/component"
 
 import (
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -37,6 +38,6 @@ type TelemetrySettings struct {
 	// Experimental: *NOTE* this field is experimental and may be changed or removed.
 	MetricsLevel configtelemetry.Level
 
-	// ResourceAttrs contains the resource attributes for the collector's telemetry.
-	ResourceAttrs map[string]string
+	// Resource contains the resource attributes for the collector's telemetry.
+	Resource *resource.Resource
 }

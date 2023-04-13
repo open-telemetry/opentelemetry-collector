@@ -26,6 +26,8 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -308,7 +310,7 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, tc ownMetricsTestCase)
 		time.Sleep(1 * time.Second)
 		assert.True(t, loggingHookCalled)
 
-		assertResourceLabels(t, srv.telemetrySettings.ResourceAttrs, tc.expectedLabels)
+		assertResourceLabels(t, srv.telemetrySettings.Resource, tc.expectedLabels)
 		if !useOtel {
 			assertMetrics(t, metricsAddr, tc.expectedLabels)
 		}
@@ -357,20 +359,20 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	require.NoError(t, srvTwo.Shutdown(context.Background()))
 }
 
-func assertResourceLabels(t *testing.T, resourceAttrs map[string]string, expectedLabels map[string]labelValue) {
+func assertResourceLabels(t *testing.T, res *resource.Resource, expectedLabels map[string]labelValue) {
 	for key, labelValue := range expectedLabels {
 		lookupKey, ok := prometheusToOtelConv[key]
 		if !ok {
 			lookupKey = key
 		}
-		resourceAttr, ok := resourceAttrs[lookupKey]
+		value, ok := res.Set().Value(attribute.Key(lookupKey))
 		switch labelValue.state {
 		case labelNotPresent:
 			assert.False(t, ok)
 		case labelAnyValue:
 			assert.True(t, ok)
 		default:
-			assert.Equal(t, labelValue.label, resourceAttr)
+			assert.Equal(t, labelValue.label, value.AsString())
 		}
 	}
 }

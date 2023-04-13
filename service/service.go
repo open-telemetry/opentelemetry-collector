@@ -20,7 +20,9 @@ import (
 	"runtime"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -109,10 +111,10 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 
 		// Construct telemetry attributes from build info and config's resource attributes.
-		ResourceAttrs: buildTelAttrs(set.BuildInfo, cfg.Telemetry),
+		Resource: buildResource(set.BuildInfo, cfg.Telemetry),
 	}
 
-	if err = srv.telemetryInitializer.init(srv.telemetrySettings.ResourceAttrs, srv.telemetrySettings.Logger, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
+	if err = srv.telemetryInitializer.init(srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
 		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
@@ -243,33 +245,33 @@ func getBallastSize(host component.Host) uint64 {
 	return 0
 }
 
-func buildTelAttrs(buildInfo component.BuildInfo, cfg telemetry.Config) map[string]string {
-	telAttrs := map[string]string{}
+func buildResource(buildInfo component.BuildInfo, cfg telemetry.Config) *resource.Resource {
+	var telAttrs []attribute.KeyValue
 
 	for k, v := range cfg.Resource {
 		// nil value indicates that the attribute should not be included in the telemetry.
 		if v != nil {
-			telAttrs[k] = *v
+			telAttrs = append(telAttrs, attribute.String(k, *v))
 		}
 	}
 
 	if _, ok := cfg.Resource[semconv.AttributeServiceName]; !ok {
 		// AttributeServiceName is not specified in the config. Use the default service name.
-		telAttrs[semconv.AttributeServiceName] = buildInfo.Command
+		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceName, buildInfo.Command))
 	}
 
 	if _, ok := cfg.Resource[semconv.AttributeServiceInstanceID]; !ok {
 		// AttributeServiceInstanceID is not specified in the config. Auto-generate one.
 		instanceUUID, _ := uuid.NewRandom()
 		instanceID := instanceUUID.String()
-		telAttrs[semconv.AttributeServiceInstanceID] = instanceID
+		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceInstanceID, instanceID))
 	}
 
 	if _, ok := cfg.Resource[semconv.AttributeServiceVersion]; !ok {
 		// AttributeServiceVersion is not specified in the config. Use the actual
 		// build version.
-		telAttrs[semconv.AttributeServiceVersion] = buildInfo.Version
+		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceVersion, buildInfo.Version))
 	}
 
-	return telAttrs
+	return resource.NewWithAttributes(semconv.SchemaURL, telAttrs...)
 }
