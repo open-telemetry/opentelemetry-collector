@@ -34,8 +34,6 @@ var (
 	uriRegexp = regexp.MustCompile(`(?s:^(?P<Scheme>` + schemePattern + `):(?P<OpaqueValue>.*)$)`)
 
 	errTooManyRecursiveExpansions = errors.New("too many recursive expansions")
-
-	errURILimit = errors.New("reached limit of 100 URIs")
 )
 
 func (mr *Resolver) expandValueRecursively(ctx context.Context, value any) (any, error) {
