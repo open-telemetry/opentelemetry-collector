@@ -261,7 +261,7 @@ func toNumItems(numExportedItems int, err error) (int64, int64) {
 	if err != nil {
 		var permErr consumererror.Permanent
 		if errors.As(err, &permErr) { {
-			rejected := int64(e.Rejected())
+			rejected := int64(permErr.Rejected())
 			return int64(numExportedItems) - rejected, rejected
 		}
 		return 0, int64(numExportedItems)
