@@ -51,7 +51,7 @@ func TestBuildres(t *testing.T) {
 	cfg := telemetry.Config{}
 	res := buildResource(buildInfo, cfg)
 
-	assert.Len(t, res, 3)
+	assert.Equal(t, res.Len(), 3)
 	value, ok := res.Set().Value(semconv.AttributeServiceName)
 	assert.True(t, ok)
 	assert.Equal(t, buildInfo.Command, value.AsString())
@@ -73,7 +73,7 @@ func TestBuildres(t *testing.T) {
 	res = buildResource(buildInfo, cfg)
 
 	// Attributes should not exist since we nil-ified all.
-	assert.Len(t, res, 0)
+	assert.Equal(t, res.Len(), 0)
 
 	// Check override values
 	strPtr := func(v string) *string { return &v }
@@ -86,7 +86,7 @@ func TestBuildres(t *testing.T) {
 	}
 	res = buildResource(buildInfo, cfg)
 
-	assert.Len(t, res, 3)
+	assert.Equal(t, res.Len(), 3)
 	value, ok = res.Set().Value(semconv.AttributeServiceName)
 	assert.True(t, ok)
 	assert.Equal(t, "a", value.AsString())
