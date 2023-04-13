@@ -59,12 +59,6 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 			// No URIs to expand.
 			return value, false, nil
 		}
-
-		if strings.Count(v, "}") > 100 {
-			// Too many closing brackets. Don't expand to protect from too deep recursion.
-			return "", false, errURILimit
-		}
-
 		// Embedded or nested URIs.
 		return mr.findAndExpandURI(ctx, v)
 	case []any:
@@ -118,9 +112,6 @@ func findURI(input string) string {
 // findAndExpandURI attempts to find and expand the first occurrence of an expandable URI in input. If an expandable URI is found it
 // returns the input with the URI expanded, true and nil. Otherwise, it returns the unchanged input, false and the expanding error.
 func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (output any, changed bool, err error) {
-	var expanded any
-	var repl string
-
 	uri := findURI(input)
 	if uri == "" {
 		return input, false, err
@@ -130,11 +121,11 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (output 
 		// This is the case `foo: ${file:some_extra_config.yml}`.
 		return mr.expandURI(ctx, input)
 	}
-	expanded, changed, err = mr.expandURI(ctx, uri)
+	expanded, changed, err := mr.expandURI(ctx, uri)
 	if err != nil {
 		return input, false, err
 	}
-	repl, err = toString(uri, expanded)
+	repl, err := toString(uri, expanded)
 	if err != nil {
 		return input, false, err
 	}
@@ -155,7 +146,7 @@ func toString(strURI string, input any) (string, error) {
 	case reflect.Bool:
 		return strconv.FormatBool(val.Bool()), nil
 	default:
-		return "", fmt.Errorf("expanding %v, expected string value type, got %T", strURI, input)
+		return "", fmt.Errorf("expanding %v, expected convertable to string value type, got %q(%T)", strURI, input, input)
 	}
 }
 
