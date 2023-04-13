@@ -483,7 +483,7 @@ func TestPersistentStorage_StorageFull(t *testing.T) {
 	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
 	freeSpaceInBytes := 1
 
-	client := newMockBoundedStorageClient(maxSizeInBytes)
+	client := newFakeBoundedStorageClient(maxSizeInBytes)
 	ps := createTestPersistentStorage(client)
 
 	// Put enough items in to fill the underlying storage
@@ -559,7 +559,7 @@ func TestPersistentStorage_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.description, func(t *testing.T) {
 			testCase := testCase
-			client := newMockStorageClientWithErrors(testCase.storageErrors)
+			client := newFakeStorageClientWithErrors(testCase.storageErrors)
 			ps := createTestPersistentStorage(client)
 			client.Reset()
 
@@ -654,8 +654,8 @@ func (m *mockStorageClient) getCloseCount() uint64 {
 	return m.closeCounter
 }
 
-func newMockBoundedStorageClient(maxSizeInBytes int) *mockBoundedStorageClient {
-	return &mockBoundedStorageClient{
+func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
+	return &fakeBoundedStorageClient{
 		st:             map[string][]byte{},
 		MaxSizeInBytes: maxSizeInBytes,
 	}
@@ -665,14 +665,14 @@ func newMockBoundedStorageClient(maxSizeInBytes int) *mockBoundedStorageClient {
 // in general, real storage engines often have a per-write-transaction storage overhead, needing to keep
 // both the old and the new value stored until the transaction is committed
 // this is useful for testing the persistent queue queue behavior with a full disk
-type mockBoundedStorageClient struct {
+type fakeBoundedStorageClient struct {
 	MaxSizeInBytes int
 	st             map[string][]byte
 	sizeInBytes    int
 	mux            sync.Mutex
 }
 
-func (m *mockBoundedStorageClient) Get(ctx context.Context, key string) ([]byte, error) {
+func (m *fakeBoundedStorageClient) Get(ctx context.Context, key string) ([]byte, error) {
 	op := storage.GetOperation(key)
 	err := m.Batch(ctx, op)
 	if err != nil {
@@ -682,19 +682,19 @@ func (m *mockBoundedStorageClient) Get(ctx context.Context, key string) ([]byte,
 	return op.Value, nil
 }
 
-func (m *mockBoundedStorageClient) Set(ctx context.Context, key string, value []byte) error {
+func (m *fakeBoundedStorageClient) Set(ctx context.Context, key string, value []byte) error {
 	return m.Batch(ctx, storage.SetOperation(key, value))
 }
 
-func (m *mockBoundedStorageClient) Delete(ctx context.Context, key string) error {
+func (m *fakeBoundedStorageClient) Delete(ctx context.Context, key string) error {
 	return m.Batch(ctx, storage.DeleteOperation(key))
 }
 
-func (m *mockBoundedStorageClient) Close(_ context.Context) error {
+func (m *fakeBoundedStorageClient) Close(_ context.Context) error {
 	return nil
 }
 
-func (m *mockBoundedStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+func (m *fakeBoundedStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 
@@ -725,19 +725,19 @@ func (m *mockBoundedStorageClient) Batch(_ context.Context, ops ...storage.Opera
 	return nil
 }
 
-func (m *mockBoundedStorageClient) SetMaxSizeInBytes(newMaxSize int) {
+func (m *fakeBoundedStorageClient) SetMaxSizeInBytes(newMaxSize int) {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 	m.MaxSizeInBytes = newMaxSize
 }
 
-func (m *mockBoundedStorageClient) GetSizeInBytes() int {
+func (m *fakeBoundedStorageClient) GetSizeInBytes() int {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 	return m.sizeInBytes
 }
 
-func (m *mockBoundedStorageClient) getTotalSizeChange(ops []storage.Operation) (totalAdded int, totalRemoved int) {
+func (m *fakeBoundedStorageClient) getTotalSizeChange(ops []storage.Operation) (totalAdded int, totalRemoved int) {
 	totalAdded, totalRemoved = 0, 0
 	for _, op := range ops {
 		switch op.Type {
@@ -759,21 +759,21 @@ func (m *mockBoundedStorageClient) getTotalSizeChange(ops []storage.Operation) (
 	return totalAdded, totalRemoved
 }
 
-func newMockStorageClientWithErrors(errors []error) *mockStorageClientWithErrors {
-	return &mockStorageClientWithErrors{
+func newFakeStorageClientWithErrors(errors []error) *fakeStorageClientWithErrors {
+	return &fakeStorageClientWithErrors{
 		errors: errors,
 	}
 }
 
 // this storage client just returns errors from a list in order
 // used for testing error handling
-type mockStorageClientWithErrors struct {
+type fakeStorageClientWithErrors struct {
 	errors         []error
 	nextErrorIndex int
 	mux            sync.Mutex
 }
 
-func (m *mockStorageClientWithErrors) Get(ctx context.Context, key string) ([]byte, error) {
+func (m *fakeStorageClientWithErrors) Get(ctx context.Context, key string) ([]byte, error) {
 	op := storage.GetOperation(key)
 	err := m.Batch(ctx, op)
 	if err != nil {
@@ -783,19 +783,19 @@ func (m *mockStorageClientWithErrors) Get(ctx context.Context, key string) ([]by
 	return op.Value, nil
 }
 
-func (m *mockStorageClientWithErrors) Set(ctx context.Context, key string, value []byte) error {
+func (m *fakeStorageClientWithErrors) Set(ctx context.Context, key string, value []byte) error {
 	return m.Batch(ctx, storage.SetOperation(key, value))
 }
 
-func (m *mockStorageClientWithErrors) Delete(ctx context.Context, key string) error {
+func (m *fakeStorageClientWithErrors) Delete(ctx context.Context, key string) error {
 	return m.Batch(ctx, storage.DeleteOperation(key))
 }
 
-func (m *mockStorageClientWithErrors) Close(_ context.Context) error {
+func (m *fakeStorageClientWithErrors) Close(_ context.Context) error {
 	return nil
 }
 
-func (m *mockStorageClientWithErrors) Batch(_ context.Context, _ ...storage.Operation) error {
+func (m *fakeStorageClientWithErrors) Batch(_ context.Context, _ ...storage.Operation) error {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 
@@ -808,7 +808,7 @@ func (m *mockStorageClientWithErrors) Batch(_ context.Context, _ ...storage.Oper
 	return err
 }
 
-func (m *mockStorageClientWithErrors) Reset() {
+func (m *fakeStorageClientWithErrors) Reset() {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 	m.nextErrorIndex = 0

@@ -385,6 +385,7 @@ func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Contex
 		pcs.logger.Warn("Failed updating currently dispatched items, trying to delete the item first",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	} else {
+		// Everything ok, exit
 		return nil
 	}
 
