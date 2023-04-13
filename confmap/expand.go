@@ -102,25 +102,24 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 	return value, false, nil
 }
 
-// findURI finds the URI corresponding to the first closing bracket in input. It returns
+// findURI attempts to find the first expandable URI in input. It returns
 // the URI if it is expandable, or an empty string if it is not expandable.
 // Note: findURI is only called when input contains a closing bracket.
 func findURI(input string) string {
 	closeIndex := strings.Index(input, "}")
+	remaining := input[closeIndex+1:]
 	openIndex := strings.LastIndex(input[:closeIndex+1], "${")
-	if openIndex < 0 {
-		// Should not expand because there is a missing ${.
-		return ""
+
+	// if there is a missing "${" or the uri does not contain ":", check the next URI.
+	if openIndex < 0 || !strings.Contains(input[openIndex:closeIndex+1], ":") {
+		// if remaining does not contain "}", there are no URIs left: stop recursion.
+		if !strings.Contains(remaining, "}") {
+			return ""
+		}
+		return findURI(remaining)
 	}
 
-	uri := input[openIndex : closeIndex+1]
-
-	if !strings.Contains(uri, ":") {
-		// Should not expand. This is expanded in the expandconverter.
-		return ""
-	}
-
-	return uri
+	return input[openIndex : closeIndex+1]
 }
 
 // findAndExpandURI attempts to find and expand the first occurrence of an expandable URI in input. If an expandable URI is found it
@@ -128,38 +127,24 @@ func findURI(input string) string {
 func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (output string, changed bool, err error) {
 	var expanded any
 	var repl string
-	var expandedRemaining string
 
 	uri := findURI(input)
 	if uri == "" {
-		// The first URI in input is not expandable. Strip the first URI from input and check if
-		// other URIs are expandable.
-		closeIndex := strings.Index(input, "}")
-		noExpand := input[:closeIndex+1]
-		remaining := input[closeIndex+1:]
-
-		// if remaining does not contain }, there are no URIs left: stop recursion.
-		if !strings.Contains(remaining, "}") {
-			return input, changed, err
-		}
-
-		expandedRemaining, changed, err = mr.findAndExpandURI(ctx, remaining)
-		return noExpand + expandedRemaining, changed, err
+		return input, false, err
 	}
 	expanded, changed, err = mr.expandURI(ctx, uri)
 	if err != nil {
 		return input, false, err
 	}
-	repl, err = toString(ctx, uri, expanded)
+	repl, err = toString(uri, expanded)
 	if err != nil {
 		return input, false, err
 	}
-	input = strings.ReplaceAll(input, uri, repl)
-	return input, changed, err
+	return strings.ReplaceAll(input, uri, repl), changed, err
 }
 
 // toString attempts to convert input to a string.
-func toString(ctx context.Context, strURI string, input any) (string, error) {
+func toString(strURI string, input any) (string, error) {
 	// This list must be kept in sync with checkRawConfType.
 	val := reflect.ValueOf(input)
 	switch val.Kind() {
