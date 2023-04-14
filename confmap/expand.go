@@ -109,11 +109,11 @@ func findURI(input string) string {
 
 // findAndExpandURI attempts to find and expand the first occurrence of an expandable URI in input. If an expandable URI is found it
 // returns the input with the URI expanded, true and nil. Otherwise, it returns the unchanged input, false and the expanding error.
-func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (output any, changed bool, err error) {
+func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bool, error) {
 	uri := findURI(input)
 	if uri == "" {
 		// No URI found, return.
-		return input, false, err
+		return input, false, nil
 	}
 	if uri == input {
 		// If the value is a single URI, then the return value can be anything.
