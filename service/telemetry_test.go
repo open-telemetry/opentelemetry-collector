@@ -44,7 +44,7 @@ const (
 	counterName  = "test_counter"
 )
 
-func TestBuildres(t *testing.T) {
+func TestBuildResource(t *testing.T) {
 	buildInfo := component.NewDefaultBuildInfo()
 
 	// Check default config
