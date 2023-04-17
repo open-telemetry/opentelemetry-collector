@@ -20,13 +20,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/otelcol/internal/sharedgate"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -256,10 +253,6 @@ func TestConfigValidate(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(sharedgate.ConnectorsFeatureGate.ID(), true))
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(sharedgate.ConnectorsFeatureGate.ID(), false))
-	}()
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := test.cfgFn()
