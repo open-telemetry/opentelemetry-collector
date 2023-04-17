@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-// Config defines configuration for OpenCensus exporter.
+// Config defines configuration for OTLP exporter.
 type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`

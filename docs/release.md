@@ -93,7 +93,9 @@ When considering making a bugfix release on the `v0.N.x` release cycle, the bug 
     - The bug produces significant data loss
     - The bug makes the Collector negatively affect its environment (e.g. significantly affects its host machine)
 
-The OpenTelemetry Collector maintainers will ultimately have the responsibility to assess if a given bug fulfills all the necessary criteria and may grant exceptions in a case-by-case basis.
+We aim to provide a release that fixes security-related issues in at most 30 days since they are publicly announced; with the current release schedule this means security issues will typically not warrant a bugfix release. An exception is critical vulnerabilities (CVSSv3 score >= 9.0), which will warrant a release within five business days.
+
+The OpenTelemetry Collector maintainers will ultimately have the responsibility to assess if a given bug or security issue fulfills all the necessary criteria and may grant exceptions in a case-by-case basis.
 
 ### Bugfix release procedure
 
