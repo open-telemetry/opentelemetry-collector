@@ -39,7 +39,7 @@
 // retried. In case of OTLP/HTTP for example, this means that HTTP 429 or 503 response
 // is returned.
 //
-// # Acknowledgment Handling
+// # Acknowledgment and Checkpointing
 //
 // The receivers that receive data via a network protocol that support acknowledgments
 // MUST follow this order of operations:
@@ -50,4 +50,8 @@
 //
 // This ensures there are strong delivery guarantees once the data is acknowledged
 // by the Collector.
+//
+// Similarly, receivers that use checkpointing to remember the position of last processed
+// data (e.g. via storage extension) MUST store the checkpoint only AFTER the Consume*()
+// call returns.
 package receiver // import "go.opentelemetry.io/collector/receiver"
