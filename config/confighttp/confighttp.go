@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
 const headerContentEncoding = "Content-Encoding"
@@ -143,11 +144,16 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 	}
 	// wrapping http transport with otelhttp transport to enable otel instrumenetation
 	if settings.TracerProvider != nil && settings.MeterProvider != nil {
+		otelOpts := []otelhttp.Option{
+			otelhttp.WithTracerProvider(settings.TracerProvider),
+			otelhttp.WithPropagators(otel.GetTextMapPropagator()),
+		}
+		if obsreportconfig.EnableHighCardinalityMetricsfeatureGate.IsEnabled() {
+			otelOpts = append(otelOpts, otelhttp.WithMeterProvider(settings.MeterProvider))
+		}
 		clientTransport = otelhttp.NewTransport(
 			clientTransport,
-			otelhttp.WithTracerProvider(settings.TracerProvider),
-			otelhttp.WithMeterProvider(settings.MeterProvider),
-			otelhttp.WithPropagators(otel.GetTextMapPropagator()),
+			otelOpts...,
 		)
 	}
 

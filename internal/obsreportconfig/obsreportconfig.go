@@ -31,6 +31,14 @@ var UseOtelForInternalMetricsfeatureGate = featuregate.GlobalRegistry().MustRegi
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("controls whether the collector uses OpenTelemetry for internal metrics"))
 
+// EnableHighCardinalityMetricsfeatureGate is the feature gate that controls whether the collecor should enable
+// potentially high cardinality metrics.
+var EnableHighCardinalityMetricsfeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.enableHighCardinalityMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("controls whether the collecor should enable potentially high"+
+		"cardinality metrics."))
+
 // AllViews returns all the OpenCensus views requires by obsreport package.
 func AllViews(level configtelemetry.Level) []*view.View {
 	if level == configtelemetry.LevelNone {
