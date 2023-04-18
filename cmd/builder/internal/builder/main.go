@@ -36,6 +36,10 @@ func GenerateAndCompile(cfg Config) error {
 
 // Generate assembles a new distribution based on the given configuration
 func Generate(cfg Config) error {
+	if cfg.SkipGenerate {
+		cfg.Logger.Info("Skipping generating source codes.")
+		return nil
+	}
 	// create a warning message for non-aligned builder and collector base
 	if cfg.Distribution.OtelColVersion != defaultOtelColVersion {
 		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", zap.String("builder-version", defaultOtelColVersion))
