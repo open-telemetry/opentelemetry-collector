@@ -7,7 +7,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/golang/snappy v0.0.4
 	github.com/google/uuid v1.3.0
-	github.com/klauspost/compress v1.16.4
+	github.com/klauspost/compress v1.16.5
 	github.com/mostynb/go-grpc-compression v1.1.17
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0
