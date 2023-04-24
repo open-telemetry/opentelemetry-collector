@@ -25,7 +25,8 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 ## Releasing opentelemetry-collector
 
-1. Determine the version number that will be assigned to the release. During the beta phase, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.55.0` as the version to be released, following `v0.54.0`.
+1. Determine the version number that will be assigned to the release. During the beta phase, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.55.0` as the version to be released, following `v0.54.0`. 
+   Check if stable modules have any changes since the last release by running `make check-changes PREVIOUS_VERSION=v1.0.0-rc9 MODSET=stable`. If there are no changes, there is no need to release new version for stable modules. 
 
 2. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). When prompted, enter the version numbers determined in Step 1, but do not include `v`. This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Core should be haulted**. **Do not** move forward until this PR is merged.
 
@@ -33,7 +34,11 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 4. Create a branch named `release/<release-series>` (e.g. `release/v0.55.x`) from the `Prepare Release` commit and push to `open-telemetry/opentelemetry-collector`.
 
-5. Make sure you are on `release/<release-series>`. Tag all the module groups (stable, beta) with the new release version by running the `make push-tags` command (e.g. `make push-tags MODSET=stable` and `make push-tags MODSET=beta`). If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector.git` in each command. Wait for the new tag build to pass successfully.
+5. Make sure you are on `release/<release-series>`. Tag the module groups with the new release version by running: 
+   - `make push-tags MODSET=beta` for beta modules group,
+   - `make push-tags MODSET=stable` beta stable modules group, only if there were changes since the last release.
+   
+   If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector.git` in each command. Wait for the new tag build to pass successfully.
 
 6. The release script for the collector builder should create a new GitHub release for the builder. This is a separate release from the core, but we might join them in the future if it makes sense.
 

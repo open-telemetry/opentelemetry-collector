@@ -27,6 +27,7 @@ import (
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/google/addlicense"
 	_ "github.com/jcchavezs/porto/cmd/porto"
+	_ "github.com/mikefarah/yq/v4"
 	_ "github.com/ory/go-acc"
 	_ "github.com/pavius/impi/cmd/impi"
 	_ "github.com/wadey/gocovmerge"

@@ -379,6 +379,36 @@ push-tags: $(MULTIMOD)
 		git push ${REMOTE} $${tag}; \
 	done;
 
+.PHONY: check-changes
+check-changes: $(YQ)
+ifndef MODSET
+	@echo "MODSET not defined"
+	@echo "usage: make check-changes PREVIOUS_VERSION=<version eg 0.52.0> MODSET=beta"
+	exit 1
+endif
+ifndef PREVIOUS_VERSION
+	@echo "PREVIOUS_VERSION not defined"
+	@echo "usage: make check-changes PREVIOUS_VERSION=<version eg 0.52.0> MODSET=beta"
+	exit 1
+endif
+	@all_submods=$$($(YQ) e '.module-sets.*.modules[] | select(. != "go.opentelemetry.io/collector")' versions.yaml | sed 's/^go\.opentelemetry\.io\/collector\///'); \
+	mods=$$($(YQ) e '.module-sets.$(MODSET).modules[]' versions.yaml | sed 's/^go\.opentelemetry\.io\/collector\///'); \
+	changed_files=""; \
+	for mod in $${mods}; do \
+		if [ "$${mod}" == "go.opentelemetry.io/collector" ]; then \
+			changed_files+=$$(git diff --name-only v$(PREVIOUS_VERSION) -- $$(printf '%s\n' $${all_submods[@]} | sed 's/^/:!/' | paste -sd' ' -) | grep -E '.+\.go$$'); \
+		else \
+			changed_files+=$$(git diff --name-only $${mod}/v$(PREVIOUS_VERSION) -- $${mod} | grep -E '.+\.go$$'); \
+		fi; \
+	done; \
+	if [ -n "$${changed_files}" ]; then \
+		echo "The following files changed in $(MODSET) modules since v$(PREVIOUS_VERSION): $${changed_files}"; \
+	else \
+		echo "No $(MODSET) modules have changed since v$(PREVIOUS_VERSION)"; \
+		echo "No need to release $(MODSET)."; \
+		exit 1; \
+	fi
+
 .PHONY: prepare-release
 prepare-release:
 ifndef MODSET
@@ -402,6 +432,9 @@ else
 endif
 	# ensure a clean branch
 	git diff -s --exit-code || (echo "local repository not clean"; exit 1)
+	# check if any modules have changed since the previous release
+	$(MAKE) check-changes
+	# update files with new version
 	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' versions.yaml
 	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' ./cmd/builder/internal/builder/config.go
 	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' ./cmd/builder/test/core.builder.yaml
