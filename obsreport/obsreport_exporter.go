@@ -16,6 +16,7 @@ package obsreport // import "go.opentelemetry.io/collector/obsreport"
 
 import (
 	"context"
+	"errors"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -260,7 +261,7 @@ func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sen
 func toNumItems(numExportedItems int, err error) (int64, int64) {
 	if err != nil {
 		var permErr consumererror.Permanent
-		if errors.As(err, &permErr) { {
+		if errors.As(err, &permErr) {
 			rejected := int64(permErr.Rejected())
 			return int64(numExportedItems) - rejected, rejected
 		}
