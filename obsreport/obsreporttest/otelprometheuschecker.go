@@ -88,23 +88,35 @@ func (pc *prometheusChecker) checkProcessorLogs(processor component.ID, accepted
 
 func (pc *prometheusChecker) checkExporterTraces(exporter component.ID, sentSpans, sendFailedSpans int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
+	if sendFailedSpans > 0 {
+		return multierr.Combine(
+			pc.checkCounter("exporter_sent_spans", sentSpans, exporterAttrs),
+			pc.checkCounter("exporter_send_failed_spans", sendFailedSpans, exporterAttrs))
+	}
 	return multierr.Combine(
-		pc.checkCounter("exporter_sent_spans", sentSpans, exporterAttrs),
-		pc.checkCounter("exporter_send_failed_spans", sendFailedSpans, exporterAttrs))
+		pc.checkCounter("exporter_sent_spans", sentSpans, exporterAttrs))
 }
 
 func (pc *prometheusChecker) checkExporterLogs(exporter component.ID, sentLogRecords, sendFailedLogRecords int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
+	if sendFailedLogRecords > 0 {
+		return multierr.Combine(
+			pc.checkCounter("exporter_sent_log_records", sentLogRecords, exporterAttrs),
+			pc.checkCounter("exporter_send_failed_log_records", sendFailedLogRecords, exporterAttrs))
+	}
 	return multierr.Combine(
-		pc.checkCounter("exporter_sent_log_records", sentLogRecords, exporterAttrs),
-		pc.checkCounter("exporter_send_failed_log_records", sendFailedLogRecords, exporterAttrs))
+		pc.checkCounter("exporter_sent_log_records", sentLogRecords, exporterAttrs))
 }
 
 func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sentMetricPoints, sendFailedMetricPoints int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
+	if sendFailedMetricPoints > 0 {
+		return multierr.Combine(
+			pc.checkCounter("exporter_sent_metric_points", sentMetricPoints, exporterAttrs),
+			pc.checkCounter("exporter_send_failed_metric_points", sendFailedMetricPoints, exporterAttrs))
+	}
 	return multierr.Combine(
-		pc.checkCounter("exporter_sent_metric_points", sentMetricPoints, exporterAttrs),
-		pc.checkCounter("exporter_send_failed_metric_points", sendFailedMetricPoints, exporterAttrs))
+		pc.checkCounter("exporter_sent_metric_points", sentMetricPoints, exporterAttrs))
 }
 
 func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, attrs []attribute.KeyValue) error {
