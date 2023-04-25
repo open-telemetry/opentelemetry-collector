@@ -39,3 +39,4 @@ protocols:
         - https://*.test.com # Wildcard subdomain. Allows domains like https://www.test.com and https://foo.test.com but not https://wwwtest.com.
         - https://test.com # Fully qualified domain name. Allows https://test.com only.
       max_age: 7200
+    path_prefix: "testprefix"

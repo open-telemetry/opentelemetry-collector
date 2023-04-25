@@ -20,6 +20,7 @@ const (
 
 	defaultGRPCEndpoint = "0.0.0.0:4317"
 	defaultHTTPEndpoint = "0.0.0.0:4318"
+	defaultPathPrefix   = ""
 )
 
 // NewFactory creates a new OTLP receiver factory.
@@ -44,8 +45,11 @@ func createDefaultConfig() component.Config {
 				// We almost write 0 bytes, so no need to tune WriteBufferSize.
 				ReadBufferSize: 512 * 1024,
 			},
-			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPEndpoint,
+			HTTP: &httpServerSettings{
+				HTTPServerSettings: &confighttp.HTTPServerSettings{
+					Endpoint: defaultHTTPEndpoint,
+				},
+				PathPrefix: defaultPathPrefix,
 			},
 		},
 	}

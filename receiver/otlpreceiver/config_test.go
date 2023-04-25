@@ -115,18 +115,21 @@ func TestUnmarshalConfig(t *testing.T) {
 						},
 					},
 				},
-				HTTP: &confighttp.HTTPServerSettings{
-					Endpoint: "0.0.0.0:4318",
-					TLSSetting: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
-							CertFile: "test.crt",
-							KeyFile:  "test.key",
+				HTTP: &httpServerSettings{
+					HTTPServerSettings: &confighttp.HTTPServerSettings{
+						Endpoint: "0.0.0.0:4318",
+						TLSSetting: &configtls.TLSServerSetting{
+							TLSSetting: configtls.TLSSetting{
+								CertFile: "test.crt",
+								KeyFile:  "test.key",
+							},
+						},
+						CORS: &confighttp.CORSSettings{
+							AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
+							MaxAge:         7200,
 						},
 					},
-					CORS: &confighttp.CORSSettings{
-						AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
-						MaxAge:         7200,
-					},
+					PathPrefix: "testprefix",
 				},
 			},
 		}, cfg)
@@ -149,9 +152,11 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 					},
 					ReadBufferSize: 512 * 1024,
 				},
-				HTTP: &confighttp.HTTPServerSettings{
-					Endpoint: "/tmp/http_otlp.sock",
-					// Transport: "unix",
+				HTTP: &httpServerSettings{
+					HTTPServerSettings: &confighttp.HTTPServerSettings{
+						Endpoint: "/tmp/http_otlp.sock",
+					},
+					PathPrefix: defaultPathPrefix,
 				},
 			},
 		}, cfg)

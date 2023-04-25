@@ -173,10 +173,11 @@ func TestJsonHttp(t *testing.T) {
 		},
 	}
 	addr := testutil.GetAvailableLocalAddress(t)
+	pathPrefix := "json"
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
-	ocr := newHTTPReceiver(t, addr, sink, nil)
+	ocr := newHTTPReceiver(t, addr, pathPrefix, sink, nil)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
@@ -187,7 +188,7 @@ func TestJsonHttp(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			url := fmt.Sprintf("http://%s/v1/traces", addr)
+			url := fmt.Sprintf("http://%s/%s/v1/traces", addr, pathPrefix)
 			sink.Reset()
 			testHTTPJSONRequest(t, url, sink, test.encoding, test.contentType, test.err)
 		})
@@ -197,7 +198,7 @@ func TestJsonHttp(t *testing.T) {
 func TestHandleInvalidRequests(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	cfg := &Config{
-		Protocols: Protocols{HTTP: &confighttp.HTTPServerSettings{Endpoint: endpoint}},
+		Protocols: Protocols{HTTP: &httpServerSettings{HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: endpoint}}},
 	}
 
 	// Traces
@@ -454,10 +455,11 @@ func TestProtoHttp(t *testing.T) {
 		},
 	}
 	addr := testutil.GetAvailableLocalAddress(t)
+	pathPrefix := "proto"
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	tSink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
-	ocr := newHTTPReceiver(t, addr, tSink, consumertest.NewNop())
+	ocr := newHTTPReceiver(t, addr, pathPrefix, tSink, consumertest.NewNop())
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
@@ -473,7 +475,7 @@ func TestProtoHttp(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			url := fmt.Sprintf("http://%s/v1/traces", addr)
+			url := fmt.Sprintf("http://%s/%s/v1/traces", addr, pathPrefix)
 			tSink.Reset()
 			testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, td)
 		})
@@ -605,7 +607,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	tSink := new(consumertest.TracesSink)
 	mSink := new(consumertest.MetricsSink)
-	ocr := newHTTPReceiver(t, addr, tSink, mSink)
+	ocr := newHTTPReceiver(t, addr, defaultPathPrefix, tSink, mSink)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
@@ -664,7 +666,7 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 		assert.NoError(t, ln.Close())
 	})
 
-	r := newHTTPReceiver(t, addr, consumertest.NewNop(), consumertest.NewNop())
+	r := newHTTPReceiver(t, addr, defaultPathPrefix, consumertest.NewNop(), consumertest.NewNop())
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -775,7 +777,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
-	ocr := newHTTPReceiver(t, addr, sink, nil)
+	ocr := newHTTPReceiver(t, addr, defaultPathPrefix, sink, nil)
 	require.NotNil(t, ocr)
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
@@ -888,11 +890,13 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
-			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint: testutil.GetAvailableLocalAddress(t),
-				TLSSetting: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
-						CertFile: "willfail",
+			HTTP: &httpServerSettings{
+				HTTPServerSettings: &confighttp.HTTPServerSettings{
+					Endpoint: testutil.GetAvailableLocalAddress(t),
+					TLSSetting: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "willfail",
+						},
 					},
 				},
 			},
@@ -916,9 +920,11 @@ func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expe
 	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
 	cfg := &Config{
 		Protocols: Protocols{
-			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint:           endpoint,
-				MaxRequestBodySize: int64(size),
+			HTTP: &httpServerSettings{
+				HTTPServerSettings: &confighttp.HTTPServerSettings{
+					Endpoint:           endpoint,
+					MaxRequestBodySize: int64(size),
+				},
 			},
 		},
 	}
@@ -962,10 +968,11 @@ func newGRPCReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consu
 	return newReceiver(t, factory, cfg, otlpReceiverID, tc, mc)
 }
 
-func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consumer.Metrics) component.Component {
+func newHTTPReceiver(t *testing.T, endpoint string, pathPrefix string, tc consumer.Traces, mc consumer.Metrics) component.Component {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTP.Endpoint = endpoint
+	cfg.HTTP.PathPrefix = pathPrefix
 	cfg.GRPC = nil
 	return newReceiver(t, factory, cfg, otlpReceiverID, tc, mc)
 }
