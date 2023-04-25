@@ -45,7 +45,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")
@@ -261,11 +260,8 @@ func (gcs *GRPCClientSettings) toDialOptions(host component.Host, settings compo
 
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
+		otelgrpc.WithMeterProvider(settings.MeterProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-	}
-
-	if obsreportconfig.EnableHighCardinalityMetricsfeatureGate.IsEnabled() {
-		otelOpts = append(otelOpts, otelgrpc.WithMeterProvider(settings.MeterProvider))
 	}
 
 	// Enable OpenTelemetry observability plugin.

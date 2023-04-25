@@ -22,6 +22,8 @@ import (
 	"strings"
 	"unicode"
 
+	"go.opentelemetry.io/otel/sdk/instrumentation"
+
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
@@ -46,7 +48,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/obsreport"
-	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -57,10 +59,29 @@ const (
 	// supported trace propagators
 	traceContextPropagator = "tracecontext"
 	b3Propagator           = "b3"
+
+	// gRPC Instrumentation Name
+	grpcInstrumentation = "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+
+	// http Instrumentation Name
+	httpInstrumentation = "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 var (
 	errUnsupportedPropagator = errors.New("unsupported trace propagator")
+
+	// grpcUnacceptableKeyValues is a list of high cardinality grpc attributes that should be filtered out.
+	grpcUnacceptableKeyValues = []attribute.KeyValue{
+		attribute.String(semconv.AttributeNetSockPeerAddr, ""),
+		attribute.String(semconv.AttributeNetSockPeerPort, ""),
+		attribute.String(semconv.AttributeNetSockPeerName, ""),
+	}
+
+	// httpUnacceptableKeyValues is a list of high cardinality http attributes that should be filtered out.
+	httpUnacceptableKeyValues = []attribute.KeyValue{
+		attribute.String(semconv.AttributeNetHostName, ""),
+		attribute.String(semconv.AttributeNetHostPort, ""),
+	}
 )
 
 type telemetryInitializer struct {
@@ -69,13 +90,15 @@ type telemetryInitializer struct {
 	mp         metric.MeterProvider
 	servers    []*http.Server
 
-	useOtel bool
+	useOtel                bool
+	disableHighCardinality bool
 }
 
-func newColTelemetry(useOtel bool) *telemetryInitializer {
+func newColTelemetry(useOtel bool, disableHighCardinality bool) *telemetryInitializer {
 	return &telemetryInitializer{
-		mp:      metric.NewNoopMeterProvider(),
-		useOtel: useOtel,
+		mp:                     metric.NewNoopMeterProvider(),
+		useOtel:                useOtel,
+		disableHighCardinality: disableHighCardinality,
 	}
 }
 
@@ -225,10 +248,27 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, prom
 		return fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
 	exporter.RegisterProducer(opencensus.NewMetricProducer())
+	views := batchViews()
+	if tel.disableHighCardinality {
+		views = append(views, sdkmetric.NewView(sdkmetric.Instrument{
+			Scope: instrumentation.Scope{
+				Name: grpcInstrumentation,
+			},
+		}, sdkmetric.Stream{
+			AttributeFilter: cardinalityFilter(grpcUnacceptableKeyValues...),
+		}))
+		views = append(views, sdkmetric.NewView(sdkmetric.Instrument{
+			Scope: instrumentation.Scope{
+				Name: httpInstrumentation,
+			},
+		}, sdkmetric.Stream{
+			AttributeFilter: cardinalityFilter(httpUnacceptableKeyValues...),
+		}))
+	}
 	tel.mp = sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(res),
 		sdkmetric.WithReader(exporter),
-		sdkmetric.WithView(batchViews()...),
+		sdkmetric.WithView(views...),
 	)
 
 	return nil
@@ -245,6 +285,13 @@ func (tel *telemetryInitializer) shutdown() error {
 		}
 	}
 	return errs
+}
+
+func cardinalityFilter(kvs ...attribute.KeyValue) attribute.Filter {
+	filter := attribute.NewSet(kvs...)
+	return func(kv attribute.KeyValue) bool {
+		return !filter.HasValue(kv.Key)
+	}
 }
 
 func sanitizePrometheusKey(str string) string {
