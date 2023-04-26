@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector v0.76.0
 	go.opentelemetry.io/collector/component v0.76.0
 	go.opentelemetry.io/collector/consumer v0.76.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc10
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9
 )
 
 require (
@@ -59,4 +59,7 @@ replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
-retract v0.69.0 // Release failed, use v0.69.1
+retract (
+	v0.76.0 // Depends on retraced pdata v1.0.0-rc10 module
+	v0.69.0 // Release failed, use v0.69.1
+)

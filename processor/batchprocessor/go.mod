@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/component v0.76.0
 	go.opentelemetry.io/collector/confmap v0.76.0
 	go.opentelemetry.io/collector/consumer v0.76.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc10
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.37.0
 	go.opentelemetry.io/otel/metric v0.37.0
@@ -80,4 +80,7 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extensi
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
-retract v0.69.0 // Release failed, use v0.69.1
+retract (
+	v0.76.0 // Depends on retraced pdata v1.0.0-rc10 module
+	v0.69.0 // Release failed, use v0.69.1
+)

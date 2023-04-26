@@ -71,7 +71,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.76.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.76.0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.76.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rc10 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9 // indirect
 	go.opentelemetry.io/collector/semconv v0.76.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.40.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.40.0 // indirect
@@ -132,3 +132,5 @@ replace go.opentelemetry.io/collector/processor/batchprocessor => ../../processo
 replace go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
+
+retract v0.76.0 // Depends on retraced pdata v1.0.0-rc10 module

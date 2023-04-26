@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.76.0
 	go.opentelemetry.io/collector/consumer v0.76.0
 	go.opentelemetry.io/collector/exporter v0.76.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc10
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f
 	google.golang.org/grpc v1.54.0
 	google.golang.org/protobuf v1.30.0
@@ -70,4 +70,7 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extensi
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
-retract v0.69.0 // Release failed, use v0.69.1
+retract (
+	v0.76.0 // Depends on retraced pdata v1.0.0-rc10 module
+	v0.69.0 // Release failed, use v0.69.1
+)

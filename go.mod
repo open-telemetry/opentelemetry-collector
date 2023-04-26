@@ -23,7 +23,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.76.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.76.0
 	go.opentelemetry.io/collector/featuregate v0.76.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc10
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9
 	go.opentelemetry.io/collector/receiver v0.76.0
 	go.opentelemetry.io/collector/semconv v0.76.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.40.0
@@ -105,6 +105,7 @@ replace go.opentelemetry.io/collector/receiver => ./receiver
 replace go.opentelemetry.io/collector/extension/zpagesextension => ./extension/zpagesextension
 
 retract (
+	v0.76.0 // Depends on retraced pdata v1.0.0-rc10 module
 	v0.69.0 // Release failed, use v0.69.1
 	v0.57.1 // Release failed, use v0.57.2
 	v0.57.0 // Release failed, use v0.57.2

@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.76.0
 	go.opentelemetry.io/collector/consumer v0.76.0
 	go.opentelemetry.io/collector/exporter v0.76.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc10
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9
 	go.opentelemetry.io/collector/receiver v0.76.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.76.0
 	go.uber.org/zap v1.24.0
@@ -76,4 +76,7 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extensi
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
-retract v0.69.0 // Release failed, use v0.69.1
+retract (
+	v0.76.0 // Depends on retraced pdata v1.0.0-rc10 module
+	v0.69.0 // Release failed, use v0.69.1
+)

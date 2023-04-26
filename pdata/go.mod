@@ -25,6 +25,7 @@ require (
 )
 
 retract (
+	v1.0.0-rc10 // RC version scheme discovered to be alphabetical, use v1.0.0-rc9 (no changes)
 	v0.57.1 // Release failed, use v0.57.2
 	v0.57.0 // Release failed, use v0.57.2
 )
