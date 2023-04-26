@@ -26,9 +26,12 @@ import (
 // Config defines configuration for batch processor.
 type Config struct {
 	// Timeout sets the time after which a batch will be sent regardless of size.
+	// When this is set to zero, batched data will be sent immediately.
 	Timeout time.Duration `mapstructure:"timeout"`
 
 	// SendBatchSize is the size of a batch which after hit, will trigger it to be sent.
+	// SendBatchSize of 0 implies ignoring timeout, data will be sent immediately
+	// subject to only send_batch_max_size.
 	SendBatchSize uint32 `mapstructure:"send_batch_size"`
 
 	// SendBatchMaxSize is the maximum size of a batch. It must be larger than SendBatchSize.
@@ -68,6 +71,9 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("duplicate entry in metadata_keys: %q (case-insensitive)", l)
 		}
 		uniq[l] = true
+	}
+	if cfg.Timeout < 0 {
+		return errors.New("timeout must be greater or equal to 0")
 	}
 	return nil
 }

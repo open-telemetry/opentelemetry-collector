@@ -41,7 +41,7 @@ reasonably fast reviews.
 
 ### When adding a new component
 
-Components comprise of exporters, extensions, receivers, and processors. The key criteria to implementing a component is to:
+Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
 
 * Implement the `component.Component` interface
 * Provide a configuration structure which defines the configuration of the component
@@ -53,18 +53,18 @@ When adding a new component to the OpenTelemetry Collector, ensure that any conf
 
 When submitting a component to the community, consider breaking it down into separate PRs as follows:
 
-* First PR should include the overall structure of the new component:
+* **First PR** should include the overall structure of the new component:
   * Readme, configuration, and factory implementation usually using the helper
     factory structs.
   * This PR is usually trivial to review, so the size limit does not apply to
     it.
-* Second PR should include the concrete implementation of the component. If the
+  * The component should use [`In Development` Stability](https://github.com/open-telemetry/opentelemetry-collector#development) in its README.
+* **Second PR** should include the concrete implementation of the component. If the
   size of this PR is larger than the recommended size consider splitting it in
   multiple PRs.
-* Last PR should enable the new component and add it to the `otelcontribcol`
-  binary by updating the `components.go` file. The component must be enabled
-  only after sufficient testing, and there is enough confidence in the
-  stability and quality of the component.
+* **Last PR** should mark the new component as `Alpha` stability and add it to the `otelcorecol`
+  binary by updating the `otelcorecol/components.go` file. The component must be enabled
+  only after sufficient testing and only when it meets [`Alpha` stability requirements.](https://github.com/open-telemetry/opentelemetry-collector#alpha)
 * Once a new component has been added to the executable, please add the component
   to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 * intra-repository `replace` statements in `go.mod` files can be automatically inserted by running `make crosslink`. For more information

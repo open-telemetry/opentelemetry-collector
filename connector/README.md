@@ -5,11 +5,6 @@ and emits data as a receiver in another pipeline. It may consume and emit data o
 type, or of different data types. A connector may generate and emit data to summarize the
 consumed data, or it may simply replicate or route data.
 
-## Status
-
-Connectors are currently in `Alpha` stage. To enable connectors, run the collector with the
-`service.connectors` feature gate. e.g. `./otelcol --config config.yaml --feature-gates service.connectors`.
-
 ## Supported Data Types
 
 Each type of connector is designed to work with one or more _pairs_ of data types and may only
