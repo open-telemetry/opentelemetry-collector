@@ -2,13 +2,15 @@ extensions:
   memory_ballast:
     size_mib: 512
   zpages:
-    endpoint: 0.0.0.0:55679
+    endpoint: localhost:55679
 
 receivers:
   otlp:
     protocols:
       grpc:
+        endpoint: localhost:4317
       http:
+        endpoint: localhost:4318
 
 processors:
   batch:
@@ -21,7 +23,7 @@ processors:
 
 exporters:
   logging:
-    loglevel: debug
+    verbosity: detailed
 
 service:
   pipelines:
