@@ -15,8 +15,12 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"net/http"
 	"strings"
 	"unicode"
@@ -35,7 +39,6 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
-	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -96,7 +99,7 @@ func (tel *telemetryInitializer) init(settings component.TelemetrySettings, cfg 
 	return tel.initPrometheus(settings.Logger, cfg.Metrics.Address, cfg.Metrics.Level, settings.Resource, asyncErrorChannel)
 }
 
-func (tel *telemetryInitializer) initPrometheus(logger *zap.Logger, address string, level configtelemetry.Level, res *resource.Resource, asyncErrorChannel chan error) error {
+func (tel *telemetryInitializer) initPrometheus(logger *zap.Logger, address string, level configtelemetry.Level, res pcommon.Resource, asyncErrorChannel chan error) error {
 	promRegistry := prometheus.NewRegistry()
 	if tel.useOtel {
 		if err := tel.initOpenTelemetry(res, promRegistry); err != nil {
@@ -129,7 +132,7 @@ func (tel *telemetryInitializer) initPrometheus(logger *zap.Logger, address stri
 	return nil
 }
 
-func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, res *resource.Resource, promRegistry *prometheus.Registry) error {
+func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, res pcommon.Resource, promRegistry *prometheus.Registry) error {
 	tel.ocRegistry = ocmetric.NewRegistry()
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 
@@ -146,9 +149,10 @@ func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, res
 
 	opts.ConstLabels = make(map[string]string)
 
-	for _, v := range res.Attributes() {
-		opts.ConstLabels[sanitizePrometheusKey(string(v.Key))] = v.Value.AsString()
-	}
+	res.Attributes().Range(func(k string, v pcommon.Value) bool {
+		opts.ConstLabels[sanitizePrometheusKey(k)] = v.AsString()
+		return true
+	})
 
 	pe, err := ocprom.NewExporter(opts)
 	if err != nil {
@@ -159,7 +163,7 @@ func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, res
 	return nil
 }
 
-func (tel *telemetryInitializer) initOpenTelemetry(res *resource.Resource, promRegistry *prometheus.Registry) error {
+func (tel *telemetryInitializer) initOpenTelemetry(res pcommon.Resource, promRegistry *prometheus.Registry) error {
 	// Initialize the ocRegistry, still used by the process metrics.
 	tel.ocRegistry = ocmetric.NewRegistry()
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
@@ -176,9 +180,19 @@ func (tel *telemetryInitializer) initOpenTelemetry(res *resource.Resource, promR
 	if err != nil {
 		return fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
+	var resAttrs []attribute.KeyValue
+	res.Attributes().Range(func(k string, v pcommon.Value) bool {
+		resAttrs = append(resAttrs, attribute.String(k, v.AsString()))
+		return true
+	})
+
+	otelRes, err := resource.New(context.Background(), resource.WithAttributes(resAttrs...))
+	if err != nil {
+		return fmt.Errorf("error creating otel resources: %w", err)
+	}
 	exporter.RegisterProducer(opencensus.NewMetricProducer())
 	tel.mp = sdkmetric.NewMeterProvider(
-		sdkmetric.WithResource(res),
+		sdkmetric.WithResource(otelRes),
 		sdkmetric.WithReader(exporter),
 		sdkmetric.WithView(batchViews()...),
 	)

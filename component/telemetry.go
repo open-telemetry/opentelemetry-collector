@@ -16,11 +16,11 @@ package component // import "go.opentelemetry.io/collector/component"
 
 import (
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type TelemetrySettings struct {
@@ -39,5 +39,5 @@ type TelemetrySettings struct {
 	MetricsLevel configtelemetry.Level
 
 	// Resource contains the resource attributes for the collector's telemetry.
-	Resource *resource.Resource
+	Resource pcommon.Resource
 }

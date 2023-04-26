@@ -17,12 +17,12 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"runtime"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -245,7 +245,7 @@ func getBallastSize(host component.Host) uint64 {
 	return 0
 }
 
-func buildResource(buildInfo component.BuildInfo, cfg telemetry.Config) *resource.Resource {
+func buildResource(buildInfo component.BuildInfo, cfg telemetry.Config) pcommon.Resource {
 	var telAttrs []attribute.KeyValue
 
 	for k, v := range cfg.Resource {
@@ -273,5 +273,5 @@ func buildResource(buildInfo component.BuildInfo, cfg telemetry.Config) *resourc
 		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceVersion, buildInfo.Version))
 	}
 
-	return resource.NewWithAttributes(semconv.SchemaURL, telAttrs...)
+	return pcommon.NewResource(semconv.SchemaURL, telAttrs...)
 }
