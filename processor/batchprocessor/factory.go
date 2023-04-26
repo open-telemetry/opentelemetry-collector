@@ -34,7 +34,7 @@ const (
 	// defaultMetadataCardinalityLimit should be set to the number
 	// of metadata configurations the user expects to submit to
 	// the collector.
-	defaultMetadataCardinalityLimit = 100
+	defaultMetadataCardinalityLimit = 1000
 )
 
 // NewFactory returns a new factory for the Batch processor.

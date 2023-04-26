@@ -33,11 +33,11 @@ ignored as data will be sent immediately, subject to only `send_batch_max_size`.
 - `metadata_keys` (default = empty): When set, this processor will
   create one batcher instance per distinct combination of values in
   the `client.Metadata`.
-- `metadata_cardinality_limit` (default = 100): When `metadata_keys` is 
+- `metadata_cardinality_limit` (default = 1000): When `metadata_keys` is 
   not empty, this setting limits the number of unique combinations of 
   metadata key values that will be processed over the lifetime of the
   process.
-  
+
 See notes about metadata batching below.
 
 Examples:
@@ -91,11 +91,18 @@ metadata keys are available to the processor.
 
 Note that each distinct combination of metadata triggers the
 allocation of a new background task in the Collector that runs for the
-lifetime of the process.  The maximum number of distinct combinations
-is limited to the configured `metadata_cardinality_limit`, which
-defaults to 100.  Users of the batching processor configured with
-metadata keys should consider use of an Auth extension to validate the
-relevant metadata-key values.
+lifetime of the process, and each background task holds one pending
+batch of up to `send_batch_size` records.  Batching by metadata can
+therefore substantially increase the amount of memory dedicated to
+batching.
+
+The maximum number of distinct combinations is limited to the
+configured `metadata_cardinality_limit`, which defaults to 1000 to
+limit memory impact.
+
+Users of the batching processor configured with metadata keys should
+consider use of an Auth extension to validate the relevant
+metadata-key values.
 
 The number of batch processors currently in use is exported as the
 `otelcol_processor_batch_metadata_cardinality` metric.
