@@ -4,14 +4,14 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.76.0
-	go.opentelemetry.io/collector/component v0.76.0
-	go.opentelemetry.io/collector/confmap v0.76.0
-	go.opentelemetry.io/collector/consumer v0.76.0
-	go.opentelemetry.io/collector/exporter v0.76.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc10
-	go.opentelemetry.io/collector/receiver v0.76.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.76.0
+	go.opentelemetry.io/collector v0.76.1
+	go.opentelemetry.io/collector/component v0.76.1
+	go.opentelemetry.io/collector/confmap v0.76.1
+	go.opentelemetry.io/collector/consumer v0.76.1
+	go.opentelemetry.io/collector/exporter v0.76.1
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
+	go.opentelemetry.io/collector/receiver v0.76.1
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.76.1
 	go.uber.org/zap v1.24.0
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f
 	google.golang.org/grpc v1.54.0
@@ -40,7 +40,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.76.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.76.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.40.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.40.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
@@ -76,4 +76,7 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extensi
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
-retract v0.69.0 // Release failed, use v0.69.1
+retract (
+	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
+	v0.69.0 // Release failed, use v0.69.1
+)
