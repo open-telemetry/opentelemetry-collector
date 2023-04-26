@@ -2,7 +2,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: observavibility
+component: service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Allows users to disable high cardinality OTLP attributes behind a feature flag.
