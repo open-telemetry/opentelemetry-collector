@@ -29,7 +29,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -39,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
