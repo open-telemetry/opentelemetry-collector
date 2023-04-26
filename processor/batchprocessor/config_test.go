@@ -45,7 +45,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			SendBatchSize:            uint32(10000),
 			SendBatchMaxSize:         uint32(11000),
 			Timeout:                  time.Second * 10,
-			MetadataCardinalityLimit: 100,
+			MetadataCardinalityLimit: 1000,
 		}, cfg)
 }
 
