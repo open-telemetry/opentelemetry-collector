@@ -51,15 +51,15 @@ func TestBuildResource(t *testing.T) {
 	cfg := telemetry.Config{}
 	res := buildResource(buildInfo, cfg)
 
-	assert.Equal(t, res.Len(), 3)
-	value, ok := res.Set().Value(semconv.AttributeServiceName)
+	assert.Equal(t, res.Attributes().Len(), 3)
+	value, ok := res.Attributes().Get(semconv.AttributeServiceName)
 	assert.True(t, ok)
 	assert.Equal(t, buildInfo.Command, value.AsString())
-	value, ok = res.Set().Value(semconv.AttributeServiceVersion)
+	value, ok = res.Attributes().Get(semconv.AttributeServiceVersion)
 	assert.True(t, ok)
 	assert.Equal(t, buildInfo.Version, value.AsString())
 
-	_, ok = res.Set().Value(semconv.AttributeServiceInstanceID)
+	_, ok = res.Attributes().Get(semconv.AttributeServiceInstanceID)
 	assert.True(t, ok)
 
 	// Check override by nil
@@ -73,7 +73,7 @@ func TestBuildResource(t *testing.T) {
 	res = buildResource(buildInfo, cfg)
 
 	// Attributes should not exist since we nil-ified all.
-	assert.Equal(t, res.Len(), 0)
+	assert.Equal(t, res.Attributes().Len(), 0)
 
 	// Check override values
 	strPtr := func(v string) *string { return &v }
@@ -86,14 +86,14 @@ func TestBuildResource(t *testing.T) {
 	}
 	res = buildResource(buildInfo, cfg)
 
-	assert.Equal(t, res.Len(), 3)
-	value, ok = res.Set().Value(semconv.AttributeServiceName)
+	assert.Equal(t, res.Attributes().Len(), 3)
+	value, ok = res.Attributes().Get(semconv.AttributeServiceName)
 	assert.True(t, ok)
 	assert.Equal(t, "a", value.AsString())
-	value, ok = res.Set().Value(semconv.AttributeServiceVersion)
+	value, ok = res.Attributes().Get(semconv.AttributeServiceVersion)
 	assert.True(t, ok)
 	assert.Equal(t, "b", value.AsString())
-	value, ok = res.Set().Value(semconv.AttributeServiceInstanceID)
+	value, ok = res.Attributes().Get(semconv.AttributeServiceInstanceID)
 	assert.True(t, ok)
 	assert.Equal(t, "c", value.AsString())
 }

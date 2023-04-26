@@ -17,11 +17,9 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"runtime"
 
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -32,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
@@ -246,32 +245,32 @@ func getBallastSize(host component.Host) uint64 {
 }
 
 func buildResource(buildInfo component.BuildInfo, cfg telemetry.Config) pcommon.Resource {
-	var telAttrs []attribute.KeyValue
+	res := pcommon.NewResource()
 
 	for k, v := range cfg.Resource {
 		// nil value indicates that the attribute should not be included in the telemetry.
 		if v != nil {
-			telAttrs = append(telAttrs, attribute.String(k, *v))
+			res.Attributes().PutStr(k, *v)
 		}
 	}
 
 	if _, ok := cfg.Resource[semconv.AttributeServiceName]; !ok {
 		// AttributeServiceName is not specified in the config. Use the default service name.
-		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceName, buildInfo.Command))
+		res.Attributes().PutStr(semconv.AttributeServiceName, buildInfo.Command)
 	}
 
 	if _, ok := cfg.Resource[semconv.AttributeServiceInstanceID]; !ok {
 		// AttributeServiceInstanceID is not specified in the config. Auto-generate one.
 		instanceUUID, _ := uuid.NewRandom()
 		instanceID := instanceUUID.String()
-		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceInstanceID, instanceID))
+		res.Attributes().PutStr(semconv.AttributeServiceInstanceID, instanceID)
 	}
 
 	if _, ok := cfg.Resource[semconv.AttributeServiceVersion]; !ok {
 		// AttributeServiceVersion is not specified in the config. Use the actual
 		// build version.
-		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceVersion, buildInfo.Version))
+		res.Attributes().PutStr(semconv.AttributeServiceVersion, buildInfo.Version)
 	}
 
-	return pcommon.NewResource(semconv.SchemaURL, telAttrs...)
+	return res
 }
