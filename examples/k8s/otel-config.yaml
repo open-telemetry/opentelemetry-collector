@@ -12,7 +12,9 @@ data:
       otlp:
         protocols:
           grpc:
+            endpoint: ${MY_POD_IP}:4317
           http:
+            endpoint: ${MY_POD_IP}:4318
     exporters:
       otlp:
         endpoint: "otel-collector.default:4317"
@@ -79,6 +81,12 @@ spec:
         - containerPort: 55679 # ZPages endpoint.
         - containerPort: 4317 # Default OpenTelemetry receiver port.
         - containerPort: 8888  # Metrics.
+        env:
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: status.podIP
         volumeMounts:
         - name: otel-agent-config-vol
           mountPath: /conf
@@ -103,7 +111,9 @@ data:
       otlp:
         protocols:
           grpc:
+            endpoint: ${MY_POD_IP}:4317
           http:
+            endpoint: ${MY_POD_IP}:4318
     processors:
       batch:
       memory_limiter:
@@ -193,6 +203,12 @@ spec:
         - containerPort: 14268 # Default endpoint for Jaeger HTTP receiver.
         - containerPort: 9411 # Default endpoint for Zipkin receiver.
         - containerPort: 8888  # Default endpoint for querying metrics.
+        env:
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: status.podIP
         volumeMounts:
         - name: otel-collector-config-vol
           mountPath: /conf
