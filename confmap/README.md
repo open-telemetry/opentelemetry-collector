@@ -37,8 +37,9 @@ that can be used by code that is oblivious to the usage of `Providers` and `Conv
 or an individual value (partial configuration) when the `configURI` is embedded into the `Conf` as a values using
 the syntax `${configURI}`.
 
-**Limitation:** when embed a `${configURI}` the uri cannot contain dollar sign ("$") character. This is to allow the
-current implementation to evolve in the future to support embedded uri within uri, e.g. `${http://my.domain.com?os=${OS}}`.
+**Limitation:** 
+- When embedding a `${configURI}` the uri cannot contain dollar sign ("$") character unless it embeds another uri.
+- The number of URIs is limited to 100.
 
 ```terminal
               Resolver                   Provider

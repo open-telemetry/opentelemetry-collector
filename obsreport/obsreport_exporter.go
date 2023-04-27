@@ -229,11 +229,18 @@ func (exp *Exporter) recordWithOC(ctx context.Context, dataType component.DataTy
 		failedMeasure = obsmetrics.ExporterFailedToSendLogRecords
 	}
 
-	_ = stats.RecordWithTags(
-		ctx,
-		exp.mutators,
-		sentMeasure.M(sent),
-		failedMeasure.M(failed))
+	if failed > 0 {
+		_ = stats.RecordWithTags(
+			ctx,
+			exp.mutators,
+			sentMeasure.M(sent),
+			failedMeasure.M(failed))
+	} else {
+		_ = stats.RecordWithTags(
+			ctx,
+			exp.mutators,
+			sentMeasure.M(sent))
+	}
 }
 
 func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sentItemsKey, failedToSendItemsKey string) {
