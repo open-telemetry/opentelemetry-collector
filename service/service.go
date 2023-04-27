@@ -245,6 +245,9 @@ func getBallastSize(host component.Host) uint64 {
 }
 
 func buildResource(buildInfo component.BuildInfo, cfg telemetry.Config) pcommon.Resource {
+	// pcommon.NewResource is the best way to generate a new resource currently and is safe to use outside of tests.
+	// Because the resource is signal agnostic, and we need a net new resource, not an existing one, this is the only
+	// method of creating it without exposing internal packages.
 	res := pcommon.NewResource()
 
 	for k, v := range cfg.Resource {
