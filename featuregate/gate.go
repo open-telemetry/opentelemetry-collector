@@ -62,8 +62,3 @@ func (g *Gate) FromVersion() string {
 func (g *Gate) ToVersion() string {
 	return g.toVersion
 }
-
-// Deprecated: [v0.76.0] use ToVersion().
-func (g *Gate) RemovalVersion() string {
-	return g.ToVersion()
-}
