@@ -27,7 +27,6 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -232,17 +231,17 @@ func TestTelemetryInit(t *testing.T) {
 
 func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 	// Creates a OTel Go counter
-	counter, err := mp.Meter("collector_test").Int64Counter(otelPrefix+counterName, instrument.WithUnit("ms"))
+	counter, err := mp.Meter("collector_test").Int64Counter(otelPrefix+counterName, metric.WithUnit("ms"))
 	require.NoError(t, err)
 	counter.Add(context.Background(), 13)
 
 	grpcExampleCounter, err := mp.Meter(grpcInstrumentation).Int64Counter(grpcPrefix + counterName)
 	require.NoError(t, err)
-	grpcExampleCounter.Add(context.Background(), 11, grpcUnacceptableKeyValues...)
+	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributes(grpcUnacceptableKeyValues...))
 
 	httpExampleCounter, err := mp.Meter(httpInstrumentation).Int64Counter(httpPrefix + counterName)
 	require.NoError(t, err)
-	httpExampleCounter.Add(context.Background(), 10, httpUnacceptableKeyValues...)
+	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributes(httpUnacceptableKeyValues...))
 
 	// Creates a OpenCensus measure
 	ocCounter := stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless)
