@@ -81,6 +81,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	if set.useOtel != nil {
 		useOtel = *set.useOtel
 	}
+	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
@@ -92,7 +93,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
-		telemetryInitializer: newColTelemetry(useOtel),
+		telemetryInitializer: newColTelemetry(useOtel, disableHighCard),
 	}
 	var err error
 	srv.telemetry, err = telemetry.New(ctx, telemetry.Settings{ZapOptions: set.LoggingOptions}, cfg.Telemetry)
