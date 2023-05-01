@@ -15,7 +15,7 @@
 package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
 
 import (
-	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -28,7 +28,7 @@ func NewNopTelemetrySettings() component.TelemetrySettings {
 	return component.TelemetrySettings{
 		Logger:         zap.NewNop(),
 		TracerProvider: trace.NewNoopTracerProvider(),
-		MeterProvider:  metric.NewNoopMeterProvider(),
+		MeterProvider:  noop.NewMeterProvider(),
 		MetricsLevel:   configtelemetry.LevelNone,
 	}
 }

@@ -21,6 +21,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -191,9 +192,9 @@ func (por *Processor) recordWithOtel(ctx context.Context, dataType component.Dat
 		droppedCount = por.droppedLogRecordsCounter
 	}
 
-	acceptedCount.Add(ctx, accepted, por.otelAttrs...)
-	refusedCount.Add(ctx, refused, por.otelAttrs...)
-	droppedCount.Add(ctx, dropped, por.otelAttrs...)
+	acceptedCount.Add(ctx, accepted, metric.WithAttributes(por.otelAttrs...))
+	refusedCount.Add(ctx, refused, metric.WithAttributes(por.otelAttrs...))
+	droppedCount.Add(ctx, dropped, metric.WithAttributes(por.otelAttrs...))
 }
 
 func (por *Processor) recordWithOC(ctx context.Context, dataType component.DataType, accepted, refused, dropped int64) {

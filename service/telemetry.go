@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/otel/bridge/opencensus"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -95,7 +96,7 @@ type telemetryInitializer struct {
 
 func newColTelemetry(useOtel bool, disableHighCardinality bool) *telemetryInitializer {
 	return &telemetryInitializer{
-		mp:                     metric.NewNoopMeterProvider(),
+		mp:                     noop.NewMeterProvider(),
 		useOtel:                useOtel,
 		disableHighCardinality: disableHighCardinality,
 	}

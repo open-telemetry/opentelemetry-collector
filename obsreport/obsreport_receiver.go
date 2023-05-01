@@ -306,8 +306,8 @@ func (rec *Receiver) recordWithOtel(receiverCtx context.Context, dataType compon
 		refusedMeasure = rec.refusedLogRecordsCounter
 	}
 
-	acceptedMeasure.Add(receiverCtx, int64(numAccepted), rec.otelAttrs...)
-	refusedMeasure.Add(receiverCtx, int64(numRefused), rec.otelAttrs...)
+	acceptedMeasure.Add(receiverCtx, int64(numAccepted), metric.WithAttributes(rec.otelAttrs...))
+	refusedMeasure.Add(receiverCtx, int64(numRefused), metric.WithAttributes(rec.otelAttrs...))
 }
 
 func (rec *Receiver) recordWithOC(receiverCtx context.Context, dataType component.DataType, numAccepted, numRefused int) {

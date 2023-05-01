@@ -20,6 +20,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
@@ -211,8 +212,8 @@ func (exp *Exporter) recordWithOtel(ctx context.Context, dataType component.Data
 		failedMeasure = exp.failedToSendLogRecords
 	}
 
-	sentMeasure.Add(ctx, sent, exp.otelAttrs...)
-	failedMeasure.Add(ctx, failed, exp.otelAttrs...)
+	sentMeasure.Add(ctx, sent, metric.WithAttributes(exp.otelAttrs...))
+	failedMeasure.Add(ctx, failed, metric.WithAttributes(exp.otelAttrs...))
 }
 
 func (exp *Exporter) recordWithOC(ctx context.Context, dataType component.DataType, sent int64, failed int64) {

@@ -209,13 +209,13 @@ func (bpt *batchProcessorTelemetry) recordWithOC(trigger trigger, sent, bytes in
 func (bpt *batchProcessorTelemetry) recordWithOtel(trigger trigger, sent int64, bytes int64) {
 	switch trigger {
 	case triggerBatchSize:
-		bpt.batchSizeTriggerSend.Add(bpt.exportCtx, 1, bpt.processorAttr...)
+		bpt.batchSizeTriggerSend.Add(bpt.exportCtx, 1, metric.WithAttributes(bpt.processorAttr...))
 	case triggerTimeout:
-		bpt.timeoutTriggerSend.Add(bpt.exportCtx, 1, bpt.processorAttr...)
+		bpt.timeoutTriggerSend.Add(bpt.exportCtx, 1, metric.WithAttributes(bpt.processorAttr...))
 	}
 
-	bpt.batchSendSize.Record(bpt.exportCtx, sent, bpt.processorAttr...)
+	bpt.batchSendSize.Record(bpt.exportCtx, sent, metric.WithAttributes(bpt.processorAttr...))
 	if bpt.detailed {
-		bpt.batchSendSizeBytes.Record(bpt.exportCtx, bytes, bpt.processorAttr...)
+		bpt.batchSendSizeBytes.Record(bpt.exportCtx, bytes, metric.WithAttributes(bpt.processorAttr...))
 	}
 }

@@ -21,6 +21,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
@@ -167,8 +168,8 @@ func (s *Scraper) EndMetricsOp(
 
 func (s *Scraper) recordMetrics(scraperCtx context.Context, numScrapedMetrics, numErroredMetrics int) {
 	if s.useOtelForMetrics {
-		s.scrapedMetricsPoints.Add(scraperCtx, int64(numScrapedMetrics), s.otelAttrs...)
-		s.erroredMetricsPoints.Add(scraperCtx, int64(numErroredMetrics), s.otelAttrs...)
+		s.scrapedMetricsPoints.Add(scraperCtx, int64(numScrapedMetrics), metric.WithAttributes(s.otelAttrs...))
+		s.erroredMetricsPoints.Add(scraperCtx, int64(numErroredMetrics), metric.WithAttributes(s.otelAttrs...))
 	} else { // OC for metrics
 		stats.Record(
 			scraperCtx,
