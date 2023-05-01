@@ -54,12 +54,20 @@ func TestRegistryApplyError(t *testing.T) {
 	r := NewRegistry()
 	assert.Error(t, r.Set("foo", true))
 	r.MustRegister("bar", StageAlpha)
+
 	assert.Error(t, r.Set("foo", true))
 	_, err := r.Register("foo", StageStable)
 	assert.Error(t, err)
 	assert.Error(t, r.Set("foo", true))
 	r.MustRegister("foo", StageStable, WithRegisterToVersion("next"))
 	assert.Error(t, r.Set("foo", false))
+
+	assert.Error(t, r.Set("foo", true))
+	_, err = r.Register("foo", StageDeprecated)
+	assert.Error(t, err)
+	assert.Error(t, r.Set("foo", true))
+	r.MustRegister("foo", StageDeprecated, WithRegisterToVersion("next"))
+	assert.Error(t, r.Set("foo", true))
 }
 
 func TestRegistryApply(t *testing.T) {
@@ -116,6 +124,16 @@ func TestRegisterGateLifecycle(t *testing.T) {
 			shouldErr: false,
 		},
 		{
+			name:  "StageDeprecated Flag",
+			id:    "test-gate",
+			stage: StageDeprecated,
+			opts: []RegisterOption{
+				WithRegisterToVersion("next"),
+			},
+			enabled:   false,
+			shouldErr: false,
+		},
+		{
 			name:      "Invalid stage",
 			id:        "test-gate",
 			stage:     Stage(-1),
@@ -125,6 +143,12 @@ func TestRegisterGateLifecycle(t *testing.T) {
 			name:      "StageStable gate missing removal version",
 			id:        "test-gate",
 			stage:     StageStable,
+			shouldErr: true,
+		},
+		{
+			name:      "StageDeprecated gate missing removal version",
+			id:        "test-gate",
+			stage:     StageDeprecated,
 			shouldErr: true,
 		},
 		{

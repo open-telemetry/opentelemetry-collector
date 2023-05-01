@@ -98,7 +98,7 @@ func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Ga
 		opt.apply(g)
 	}
 	switch g.stage {
-	case StageAlpha:
+	case StageAlpha, StageDeprecated:
 		g.enabled = &atomic.Bool{}
 	case StageBeta, StageStable:
 		enabled := &atomic.Bool{}
@@ -107,8 +107,8 @@ func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Ga
 	default:
 		return nil, fmt.Errorf("unknown stage value %q for gate %q", stage, id)
 	}
-	if g.stage == StageStable && g.toVersion == "" {
-		return nil, fmt.Errorf("no removal version set for stable gate %q", id)
+	if (g.stage == StageStable || g.stage == StageDeprecated) && g.toVersion == "" {
+		return nil, fmt.Errorf("no removal version set for %v gate %q", g.stage.String(), id)
 	}
 	if _, loaded := r.gates.LoadOrStore(id, g); loaded {
 		return nil, fmt.Errorf("attempted to add pre-existing gate %q", id)
@@ -123,13 +123,21 @@ func (r *Registry) Set(id string, enabled bool) error {
 		return fmt.Errorf("no such feature gate %q", id)
 	}
 	g := v.(*Gate)
-	if g.stage == StageStable {
+
+	switch g.stage {
+	case StageStable:
 		if !enabled {
 			return fmt.Errorf("feature gate %q is stable, can not be disabled", id)
 		}
 		fmt.Printf("Feature gate %q is stable and already enabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.\n", id, g.toVersion, g.toVersion)
+	case StageDeprecated:
+		if enabled {
+			return fmt.Errorf("feature gate %q is deprecated, can not be enabled", id)
+		}
+		fmt.Printf("Feature gate %q is deprecated and already disabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.\n", id, g.toVersion, g.toVersion)
+	default:
+		g.enabled.Store(enabled)
 	}
-	g.enabled.Store(enabled)
 	return nil
 }
 
