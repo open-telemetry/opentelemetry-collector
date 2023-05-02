@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -103,7 +103,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	srv.telemetrySettings = component.TelemetrySettings{
 		Logger:         srv.telemetry.Logger(),
 		TracerProvider: srv.telemetry.TracerProvider(),
-		MeterProvider:  metric.NewNoopMeterProvider(),
+		MeterProvider:  noop.NewMeterProvider(),
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 	}
 

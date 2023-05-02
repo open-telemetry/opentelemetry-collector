@@ -37,6 +37,7 @@ require (
 	github.com/alingse/asasalint v0.0.11 // indirect
 	github.com/ashanbrown/forbidigo v1.5.1 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bkielbasa/cyclop v1.2.0 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
@@ -67,6 +68,7 @@ require (
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.4.1 // indirect
 	github.com/go-git/go-git/v5 v5.6.1 // indirect
+	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
 	github.com/go-toolsmith/astcopy v1.1.0 // indirect
 	github.com/go-toolsmith/astequal v1.1.0 // indirect
@@ -152,6 +154,7 @@ require (
 	github.com/quasilyte/gogrep v0.5.0 // indirect
 	github.com/quasilyte/regex/syntax v0.0.0-20210819130434-b3f0c404a727 // indirect
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567 // indirect
+	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/ryancurrah/gomodguard v1.3.0 // indirect
 	github.com/ryanrolds/sqlclosecheck v0.4.0 // indirect
 	github.com/sanposhiho/wastedassign/v2 v2.0.7 // indirect
