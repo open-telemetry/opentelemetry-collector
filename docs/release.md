@@ -39,7 +39,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 7. A new `v0.55.0` release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md as the release's description.
 
-8. If you created a draft PR to Contrib in step 3, updated the PR to use the newly released Core version and set it to Ready for Review. **Do not** move forward until this PR is merged.  
+8. If you created a draft PR to Contrib in step 3, update the PR to use the newly released Core version and set it to Ready for Review. **Do not** move forward until this PR is merged.  
 
 ## Releasing opentelemetry-collector-contrib
 
