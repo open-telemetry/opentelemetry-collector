@@ -15,17 +15,11 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"unicode"
-
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/sdk/resource"
-
-	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/prometheus/client_golang/prometheus"
@@ -35,6 +29,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/bridge/opencensus"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
@@ -43,6 +38,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -104,7 +100,7 @@ func newColTelemetry(useOtel bool, disableHighCardinality bool) *telemetryInitia
 	}
 }
 
-func (tel *telemetryInitializer) init(settings component.TelemetrySettings, cfg telemetry.Config, asyncErrorChannel chan error) error {
+func (tel *telemetryInitializer) init(res *resource.Resource, settings component.TelemetrySettings, cfg telemetry.Config, asyncErrorChannel chan error) error {
 	if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
 		settings.Logger.Info(
 			"Skipping telemetry setup.",
@@ -122,10 +118,10 @@ func (tel *telemetryInitializer) init(settings component.TelemetrySettings, cfg 
 		return err
 	}
 
-	return tel.initPrometheus(settings.Logger, cfg.Metrics.Address, cfg.Metrics.Level, settings.Resource, asyncErrorChannel)
+	return tel.initPrometheus(res, settings.Logger, cfg.Metrics.Address, cfg.Metrics.Level, asyncErrorChannel)
 }
 
-func (tel *telemetryInitializer) initPrometheus(logger *zap.Logger, address string, level configtelemetry.Level, res pcommon.Resource, asyncErrorChannel chan error) error {
+func (tel *telemetryInitializer) initPrometheus(res *resource.Resource, logger *zap.Logger, address string, level configtelemetry.Level, asyncErrorChannel chan error) error {
 	promRegistry := prometheus.NewRegistry()
 	if tel.useOtel {
 		if err := tel.initOpenTelemetry(res, promRegistry); err != nil {
@@ -158,7 +154,7 @@ func (tel *telemetryInitializer) initPrometheus(logger *zap.Logger, address stri
 	return nil
 }
 
-func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, res pcommon.Resource, promRegistry *prometheus.Registry) error {
+func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, res *resource.Resource, promRegistry *prometheus.Registry) error {
 	tel.ocRegistry = ocmetric.NewRegistry()
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 
@@ -174,11 +170,9 @@ func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, res
 	}
 
 	opts.ConstLabels = make(map[string]string)
-
-	res.Attributes().Range(func(k string, v pcommon.Value) bool {
-		opts.ConstLabels[sanitizePrometheusKey(k)] = v.AsString()
-		return true
-	})
+	for _, keyValue := range res.Attributes() {
+		opts.ConstLabels[sanitizePrometheusKey(string(keyValue.Key))] = keyValue.Value.AsString()
+	}
 
 	pe, err := ocprom.NewExporter(opts)
 	if err != nil {
@@ -189,7 +183,7 @@ func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, res
 	return nil
 }
 
-func (tel *telemetryInitializer) initOpenTelemetry(res pcommon.Resource, promRegistry *prometheus.Registry) error {
+func (tel *telemetryInitializer) initOpenTelemetry(res *resource.Resource, promRegistry *prometheus.Registry) error {
 	// Initialize the ocRegistry, still used by the process metrics.
 	tel.ocRegistry = ocmetric.NewRegistry()
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
@@ -206,16 +200,7 @@ func (tel *telemetryInitializer) initOpenTelemetry(res pcommon.Resource, promReg
 	if err != nil {
 		return fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
-	var resAttrs []attribute.KeyValue
-	res.Attributes().Range(func(k string, v pcommon.Value) bool {
-		resAttrs = append(resAttrs, attribute.String(k, v.AsString()))
-		return true
-	})
 
-	otelRes, err := resource.New(context.Background(), resource.WithAttributes(resAttrs...))
-	if err != nil {
-		return fmt.Errorf("error creating otel resources: %w", err)
-	}
 	exporter.RegisterProducer(opencensus.NewMetricProducer())
 	views := batchViews()
 	if tel.disableHighCardinality {
@@ -235,7 +220,7 @@ func (tel *telemetryInitializer) initOpenTelemetry(res pcommon.Resource, promReg
 		}))
 	}
 	tel.mp = sdkmetric.NewMeterProvider(
-		sdkmetric.WithResource(otelRes),
+		sdkmetric.WithResource(res),
 		sdkmetric.WithReader(exporter),
 		sdkmetric.WithView(views...),
 	)

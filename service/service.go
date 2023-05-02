@@ -20,7 +20,9 @@ import (
 	"runtime"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -103,6 +105,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
+	res, err := buildResource(ctx, set.BuildInfo, cfg.Telemetry)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build resource: %w", err)
+	}
+	pcommonRes := pdataFromSdk(res)
 
 	srv.telemetrySettings = component.TelemetrySettings{
 		Logger:         srv.telemetry.Logger(),
@@ -111,10 +118,10 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 
 		// Construct telemetry attributes from build info and config's resource attributes.
-		Resource: buildResource(set.BuildInfo, cfg.Telemetry),
+		Resource: pcommonRes,
 	}
 
-	if err = srv.telemetryInitializer.init(srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
+	if err = srv.telemetryInitializer.init(res, srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
 		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
@@ -245,36 +252,45 @@ func getBallastSize(host component.Host) uint64 {
 	return 0
 }
 
-func buildResource(buildInfo component.BuildInfo, cfg telemetry.Config) pcommon.Resource {
-	// pcommon.NewResource is the best way to generate a new resource currently and is safe to use outside of tests.
-	// Because the resource is signal agnostic, and we need a net new resource, not an existing one, this is the only
-	// method of creating it without exposing internal packages.
-	res := pcommon.NewResource()
+func buildResource(ctx context.Context, buildInfo component.BuildInfo, cfg telemetry.Config) (*resource.Resource, error) {
+	var telAttrs []attribute.KeyValue
 
 	for k, v := range cfg.Resource {
 		// nil value indicates that the attribute should not be included in the telemetry.
 		if v != nil {
-			res.Attributes().PutStr(k, *v)
+			telAttrs = append(telAttrs, attribute.String(k, *v))
 		}
 	}
 
 	if _, ok := cfg.Resource[semconv.AttributeServiceName]; !ok {
 		// AttributeServiceName is not specified in the config. Use the default service name.
-		res.Attributes().PutStr(semconv.AttributeServiceName, buildInfo.Command)
+		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceName, buildInfo.Command))
 	}
 
 	if _, ok := cfg.Resource[semconv.AttributeServiceInstanceID]; !ok {
 		// AttributeServiceInstanceID is not specified in the config. Auto-generate one.
 		instanceUUID, _ := uuid.NewRandom()
 		instanceID := instanceUUID.String()
-		res.Attributes().PutStr(semconv.AttributeServiceInstanceID, instanceID)
+		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceInstanceID, instanceID))
 	}
 
 	if _, ok := cfg.Resource[semconv.AttributeServiceVersion]; !ok {
 		// AttributeServiceVersion is not specified in the config. Use the actual
 		// build version.
-		res.Attributes().PutStr(semconv.AttributeServiceVersion, buildInfo.Version)
+		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceVersion, buildInfo.Version))
 	}
+	return resource.New(ctx,
+		resource.WithFromEnv(),
+		resource.WithAttributes(telAttrs...))
+}
 
-	return res
+func pdataFromSdk(res *resource.Resource) pcommon.Resource {
+	// pcommon.NewResource is the best way to generate a new resource currently and is safe to use outside of tests.
+	// Because the resource is signal agnostic, and we need a net new resource, not an existing one, this is the only
+	// method of creating it without exposing internal packages.
+	pcommonRes := pcommon.NewResource()
+	for _, keyValue := range res.Attributes() {
+		pcommonRes.Attributes().PutStr(string(keyValue.Key), keyValue.Value.AsString())
+	}
+	return pcommonRes
 }

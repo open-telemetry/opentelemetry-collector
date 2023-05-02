@@ -50,7 +50,9 @@ func TestBuildResource(t *testing.T) {
 
 	// Check default config
 	cfg := telemetry.Config{}
-	res := buildResource(buildInfo, cfg)
+	otelRes, err := buildResource(context.Background(), buildInfo, cfg)
+	assert.NoError(t, err)
+	res := pdataFromSdk(otelRes)
 
 	assert.Equal(t, res.Attributes().Len(), 3)
 	value, ok := res.Attributes().Get(semconv.AttributeServiceName)
@@ -71,7 +73,9 @@ func TestBuildResource(t *testing.T) {
 			semconv.AttributeServiceInstanceID: nil,
 		},
 	}
-	res = buildResource(buildInfo, cfg)
+	otelRes, err = buildResource(context.Background(), buildInfo, cfg)
+	assert.NoError(t, err)
+	res = pdataFromSdk(otelRes)
 
 	// Attributes should not exist since we nil-ified all.
 	assert.Equal(t, res.Attributes().Len(), 0)
@@ -85,7 +89,9 @@ func TestBuildResource(t *testing.T) {
 			semconv.AttributeServiceInstanceID: strPtr("c"),
 		},
 	}
-	res = buildResource(buildInfo, cfg)
+	otelRes, err = buildResource(context.Background(), buildInfo, cfg)
+	assert.NoError(t, err)
+	res = pdataFromSdk(otelRes)
 
 	assert.Equal(t, res.Attributes().Len(), 3)
 	value, ok = res.Attributes().Get(semconv.AttributeServiceName)
@@ -206,12 +212,14 @@ func TestTelemetryInit(t *testing.T) {
 					Address: testutil.GetAvailableLocalAddress(t),
 				},
 			}
-			res := buildResource(buildInfo, cfg)
+			otelRes, err := buildResource(context.Background(), buildInfo, cfg)
+			assert.NoError(t, err)
+			res := pdataFromSdk(otelRes)
 			settings := component.TelemetrySettings{
 				Logger:   zap.NewNop(),
 				Resource: res,
 			}
-			err := tel.init(settings, cfg, make(chan error))
+			err = tel.init(otelRes, settings, cfg, make(chan error))
 			require.NoError(t, err)
 			defer func() {
 				require.NoError(t, tel.shutdown())
