@@ -34,6 +34,8 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
+const defaultQueueSize = 1000
+
 var (
 	errSendingQueueIsFull = errors.New("sending_queue is full")
 	errNoStorageClient    = errors.New("no storage client extension found")
@@ -58,11 +60,10 @@ func NewDefaultQueueSettings() QueueSettings {
 	return QueueSettings{
 		Enabled:      true,
 		NumConsumers: 10,
-		// For 5000 queue elements at 100 requests/sec gives about 50 sec of survival of destination outage.
-		// This is a pretty decent value for production.
-		// User should calculate this from the perspective of how many seconds to buffer in case of a backend outage,
-		// multiply that by the number of requests per seconds.
-		QueueSize: 5000,
+		// By default, batches are 8192 spans, for a total of up to 8 million spans in the queue
+		// This can be estimated at 1-4 GB worth of maximum memory usage
+		// This default is probably still too high, and may be adjusted further down in a future release
+		QueueSize: defaultQueueSize,
 	}
 }
 
