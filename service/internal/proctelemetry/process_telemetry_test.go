@@ -32,7 +32,7 @@ import (
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/stats/view"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
-	otelmetric "go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 
@@ -148,7 +148,7 @@ func TestOtelProcessTelemetry(t *testing.T) {
 func TestOCProcessTelemetry(t *testing.T) {
 	ocRegistry := metric.NewRegistry()
 
-	require.NoError(t, RegisterProcessMetrics(ocRegistry, otelmetric.NewNoopMeterProvider(), false, 0))
+	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0))
 
 	// Check that the metrics are actually filled.
 	<-time.After(200 * time.Millisecond)
@@ -186,7 +186,7 @@ func TestProcessTelemetryFailToRegister(t *testing.T) {
 			ocRegistry := metric.NewRegistry()
 			_, err := ocRegistry.AddFloat64Gauge(metricName)
 			require.NoError(t, err)
-			assert.Error(t, RegisterProcessMetrics(ocRegistry, otelmetric.NewNoopMeterProvider(), false, 0))
+			assert.Error(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0))
 		})
 	}
 }

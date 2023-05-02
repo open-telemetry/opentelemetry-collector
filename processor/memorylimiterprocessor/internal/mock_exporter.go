@@ -51,7 +51,7 @@ func (e *MockExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 func (e *MockExporter) SetDestAvailable(available bool) {
 	if available {
 		// Pretend we delivered all queued accepted logs.
-		atomic.AddInt64(&e.deliveredLogCount, e.acceptedLogCount)
+		atomic.AddInt64(&e.deliveredLogCount, atomic.LoadInt64(&e.acceptedLogCount))
 
 		// Get rid of the delivered logs so that memory can be collected.
 		e.Logs = nil

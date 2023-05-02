@@ -14,11 +14,11 @@
 
 module-sets:
   stable:
-    version: v1.0.0-rc9
+    version: v1.0.0-rcv0011
     modules:
       - go.opentelemetry.io/collector/pdata
   beta:
-    version: v0.75.0
+    version: v0.76.1
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/component
