@@ -53,7 +53,7 @@ artificial delays.
 ```yaml
 processors:
   batch:
-    send_max_batch_size: 10000
+    send_batch_max_size: 10000
     timeout: 0s
 ```
 
