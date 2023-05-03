@@ -36,7 +36,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
@@ -320,6 +322,34 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "with_auth_configuration_has_extension_and_headers",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("mock")},
+				Headers:  map[string]configopaque.String{"foo": "bar"},
+			},
+			shouldErr: false,
+			host: &mockHost{
+				ext: map[component.ID]component.Component{
+					component.NewID("mock"): &authtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+				},
+			},
+		},
+		{
+			name: "with_auth_configuration_has_extension_and_compression",
+			settings: HTTPClientSettings{
+				Endpoint:    "localhost:1234",
+				Auth:        &configauth.Authentication{AuthenticatorID: component.NewID("mock")},
+				Compression: configcompression.Gzip,
+			},
+			shouldErr: false,
+			host: &mockHost{
+				ext: map[component.ID]component.Component{
+					component.NewID("mock"): &authtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+				},
+			},
+		},
+		{
 			name: "with_auth_configuration_has_err_extension",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
@@ -336,15 +366,34 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(test.host, componenttest.NewNopTelemetrySettings())
+			// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
+			client, err := test.settings.ToClient(test.host, component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone})
 			if test.shouldErr {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
 			assert.NotNil(t, client)
+			transport := client.Transport
+
+			// Compression should wrap Auth, unwrap it
+			if configcompression.IsCompressed(test.settings.Compression) {
+				ct, ok := transport.(*compressRoundTripper)
+				assert.True(t, ok)
+				assert.Equal(t, test.settings.Compression, ct.compressionType)
+				transport = ct.RoundTripper
+			}
+
+			// Headers should wrap Auth, unwrap it
+			if test.settings.Headers != nil {
+				ht, ok := transport.(*headerRoundTripper)
+				assert.True(t, ok)
+				assert.Equal(t, test.settings.Headers, ht.headers)
+				transport = ht.transport
+			}
+
 			if test.settings.Auth != nil {
-				_, ok := client.Transport.(*customRoundTripper)
+				_, ok := transport.(*customRoundTripper)
 				assert.True(t, ok)
 			}
 		})

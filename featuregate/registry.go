@@ -62,9 +62,6 @@ func WithRegisterReferenceURL(url string) RegisterOption {
 	})
 }
 
-// Deprecated: [v0.76.0] use WithRegisterToVersion.
-var WithRegisterRemovalVersion = WithRegisterToVersion
-
 // WithRegisterFromVersion is used to set the Gate "FromVersion".
 // The "FromVersion" contains the Collector release when a feature is introduced.
 func WithRegisterFromVersion(fromVersion string) RegisterOption {

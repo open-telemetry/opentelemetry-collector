@@ -147,8 +147,8 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider, c
 
 	bpt.batchSizeTriggerSend, err = meter.Int64Counter(
 		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_size_trigger_send"),
-		instrument.WithDescription("Number of times the batch was sent due to a size trigger"),
-		instrument.WithUnit("1"),
+		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
+		metric.WithUnit("1"),
 	)
 	if err != nil {
 		return err
@@ -156,8 +156,8 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider, c
 
 	bpt.timeoutTriggerSend, err = meter.Int64Counter(
 		obsreport.BuildProcessorCustomMetricName(typeStr, "timeout_trigger_send"),
-		instrument.WithDescription("Number of times the batch was sent due to a timeout trigger"),
-		instrument.WithUnit("1"),
+		metric.WithDescription("Number of times the batch was sent due to a timeout trigger"),
+		metric.WithUnit("1"),
 	)
 	if err != nil {
 		return err
@@ -165,8 +165,8 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider, c
 
 	bpt.batchSendSize, err = meter.Int64Histogram(
 		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_send_size"),
-		instrument.WithDescription("Number of units in the batch"),
-		instrument.WithUnit("1"),
+		metric.WithDescription("Number of units in the batch"),
+		metric.WithUnit("1"),
 	)
 	if err != nil {
 		return err
@@ -174,8 +174,8 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider, c
 
 	bpt.batchSendSizeBytes, err = meter.Int64Histogram(
 		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_send_size_bytes"),
-		instrument.WithDescription("Number of bytes in batch that was sent"),
-		instrument.WithUnit("By"),
+		metric.WithDescription("Number of bytes in batch that was sent"),
+		metric.WithUnit("By"),
 	)
 	if err != nil {
 		return err
@@ -223,13 +223,13 @@ func (bpt *batchProcessorTelemetry) recordWithOC(trigger trigger, sent, bytes in
 func (bpt *batchProcessorTelemetry) recordWithOtel(trigger trigger, sent, bytes int64) {
 	switch trigger {
 	case triggerBatchSize:
-		bpt.batchSizeTriggerSend.Add(bpt.exportCtx, 1, bpt.processorAttr...)
+		bpt.batchSizeTriggerSend.Add(bpt.exportCtx, 1, metric.WithAttributes(bpt.processorAttr...))
 	case triggerTimeout:
-		bpt.timeoutTriggerSend.Add(bpt.exportCtx, 1, bpt.processorAttr...)
+		bpt.timeoutTriggerSend.Add(bpt.exportCtx, 1, metric.WithAttributes(bpt.processorAttr...))
 	}
 
-	bpt.batchSendSize.Record(bpt.exportCtx, sent, bpt.processorAttr...)
+	bpt.batchSendSize.Record(bpt.exportCtx, sent, metric.WithAttributes(bpt.processorAttr...))
 	if bpt.detailed {
-		bpt.batchSendSizeBytes.Record(bpt.exportCtx, bytes, bpt.processorAttr...)
+		bpt.batchSendSizeBytes.Record(bpt.exportCtx, bytes, metric.WithAttributes(bpt.processorAttr...))
 	}
 }

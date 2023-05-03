@@ -7,19 +7,19 @@ on:
     inputs:
       candidate-stable:
         required: true
-        description: Release candidate version (stable, like 1.0.0-rc4)
+        description: Release candidate version (stable, like 1.0.0-rc4). Don't include `v`.
 
       current-stable:
         required: true
-        description: Current version (stable, like 1.0.0-rc3)
+        description: Current version (stable, like 1.0.0-rc3). Don't include `v`.
 
       candidate-beta:
         required: true
-        description: Release candidate version (beta, like 0.70.0)
+        description: Release candidate version (beta, like 0.70.0). Don't include `v`.
 
       current-beta:
         required: true
-        description: Current version (beta, like 0.69.1)
+        description: Current version (beta, like 0.69.1). Don't include `v`.
 jobs:
   # Releasing opentelemetry-collector
   prepare-release:

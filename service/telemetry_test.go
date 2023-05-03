@@ -27,13 +27,12 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/testutil"
-	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -41,6 +40,8 @@ const (
 	metricPrefix = "otelcol_"
 	otelPrefix   = "otel_sdk_"
 	ocPrefix     = "oc_sdk_"
+	grpcPrefix   = "gprc_"
+	httpPrefix   = "http_"
 	counterName  = "test_counter"
 )
 
@@ -97,6 +98,7 @@ func TestTelemetryInit(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
 		useOtel         bool
+		disableHighCard bool
 		expectedMetrics map[string]metricValue
 	}{
 		{
@@ -125,6 +127,52 @@ func TestTelemetryInit(t *testing.T) {
 					value:  13,
 					labels: map[string]string{},
 				},
+				metricPrefix + grpcPrefix + counterName + "_total": {
+					value: 11,
+					labels: map[string]string{
+						"net_sock_peer_addr": "",
+						"net_sock_peer_name": "",
+						"net_sock_peer_port": "",
+					},
+				},
+				metricPrefix + httpPrefix + counterName + "_total": {
+					value: 10,
+					labels: map[string]string{
+						"net_host_name": "",
+						"net_host_port": "",
+					},
+				},
+				metricPrefix + "target_info": {
+					value: 0,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+			},
+		},
+		{
+			name:            "DisableHighCardinalityWithOtel",
+			useOtel:         true,
+			disableHighCard: true,
+			expectedMetrics: map[string]metricValue{
+				metricPrefix + ocPrefix + counterName + "_total": {
+					value:  13,
+					labels: map[string]string{},
+				},
+				metricPrefix + otelPrefix + counterName + "_total": {
+					value:  13,
+					labels: map[string]string{},
+				},
+				metricPrefix + grpcPrefix + counterName + "_total": {
+					value:  11,
+					labels: map[string]string{},
+				},
+				metricPrefix + httpPrefix + counterName + "_total": {
+					value:  10,
+					labels: map[string]string{},
+				},
 				metricPrefix + "target_info": {
 					value: 0,
 					labels: map[string]string{
@@ -137,7 +185,7 @@ func TestTelemetryInit(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			tel := newColTelemetry(tc.useOtel)
+			tel := newColTelemetry(tc.useOtel, tc.disableHighCard)
 			buildInfo := component.NewDefaultBuildInfo()
 			cfg := telemetry.Config{
 				Resource: map[string]*string{
@@ -183,9 +231,17 @@ func TestTelemetryInit(t *testing.T) {
 
 func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 	// Creates a OTel Go counter
-	counter, err := mp.Meter("collector_test").Int64Counter(otelPrefix+counterName, instrument.WithUnit("ms"))
+	counter, err := mp.Meter("collector_test").Int64Counter(otelPrefix+counterName, metric.WithUnit("ms"))
 	require.NoError(t, err)
 	counter.Add(context.Background(), 13)
+
+	grpcExampleCounter, err := mp.Meter(grpcInstrumentation).Int64Counter(grpcPrefix + counterName)
+	require.NoError(t, err)
+	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributes(grpcUnacceptableKeyValues...))
+
+	httpExampleCounter, err := mp.Meter(httpInstrumentation).Int64Counter(httpPrefix + counterName)
+	require.NoError(t, err)
+	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributes(httpUnacceptableKeyValues...))
 
 	// Creates a OpenCensus measure
 	ocCounter := stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless)

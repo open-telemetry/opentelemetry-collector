@@ -17,25 +17,25 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.2
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector/component v0.76.0
-	go.opentelemetry.io/collector/confmap v0.76.0
-	go.opentelemetry.io/collector/consumer v0.76.0
-	go.opentelemetry.io/collector/exporter v0.76.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.76.0
-	go.opentelemetry.io/collector/featuregate v0.76.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc10
-	go.opentelemetry.io/collector/receiver v0.76.0
-	go.opentelemetry.io/collector/semconv v0.76.0
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.40.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.40.0
+	go.opentelemetry.io/collector/component v0.76.1
+	go.opentelemetry.io/collector/confmap v0.76.1
+	go.opentelemetry.io/collector/consumer v0.76.1
+	go.opentelemetry.io/collector/exporter v0.76.1
+	go.opentelemetry.io/collector/extension/zpagesextension v0.76.1
+	go.opentelemetry.io/collector/featuregate v0.76.1
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
+	go.opentelemetry.io/collector/receiver v0.76.1
+	go.opentelemetry.io/collector/semconv v0.76.1
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.41.1
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1
 	go.opentelemetry.io/contrib/propagators/b3 v1.15.0
-	go.opentelemetry.io/otel v1.14.0
-	go.opentelemetry.io/otel/bridge/opencensus v0.37.0
-	go.opentelemetry.io/otel/exporters/prometheus v0.37.0
-	go.opentelemetry.io/otel/metric v0.37.0
-	go.opentelemetry.io/otel/sdk v1.14.0
-	go.opentelemetry.io/otel/sdk/metric v0.37.0
-	go.opentelemetry.io/otel/trace v1.14.0
+	go.opentelemetry.io/otel v1.15.1
+	go.opentelemetry.io/otel/bridge/opencensus v0.38.0
+	go.opentelemetry.io/otel/exporters/prometheus v0.38.1
+	go.opentelemetry.io/otel/metric v0.38.1
+	go.opentelemetry.io/otel/sdk v1.15.1
+	go.opentelemetry.io/otel/sdk/metric v0.38.1
+	go.opentelemetry.io/otel/trace v1.15.1
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/net v0.9.0
@@ -53,7 +53,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -78,8 +78,9 @@ require (
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/contrib/zpages v0.40.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.41.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
+	golang.org/x/exp v0.0.0-20221004215720-b9f4876ce741 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
@@ -105,6 +106,7 @@ replace go.opentelemetry.io/collector/receiver => ./receiver
 replace go.opentelemetry.io/collector/extension/zpagesextension => ./extension/zpagesextension
 
 retract (
+	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 	v0.57.1 // Release failed, use v0.57.2
 	v0.57.0 // Release failed, use v0.57.2

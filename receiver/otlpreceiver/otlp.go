@@ -205,7 +205,7 @@ func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 				handleUnmatchedMethod(resp)
 				return
 			}
-			switch req.Header.Get("Content-Type") {
+			switch getMimeTypeFromContentType(req.Header.Get("Content-Type")) {
 			case pbContentType:
 				handleTraces(resp, req, httpTracesReceiver, pbEncoder)
 			case jsonContentType:
@@ -230,7 +230,7 @@ func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 				handleUnmatchedMethod(resp)
 				return
 			}
-			switch req.Header.Get("Content-Type") {
+			switch getMimeTypeFromContentType(req.Header.Get("Content-Type")) {
 			case pbContentType:
 				handleMetrics(resp, req, httpMetricsReceiver, pbEncoder)
 			case jsonContentType:
@@ -255,7 +255,7 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 				handleUnmatchedMethod(resp)
 				return
 			}
-			switch req.Header.Get("Content-Type") {
+			switch getMimeTypeFromContentType(req.Header.Get("Content-Type")) {
 			case pbContentType:
 				handleLogs(resp, req, httpLogsReceiver, pbEncoder)
 			case jsonContentType:
