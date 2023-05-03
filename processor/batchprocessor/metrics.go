@@ -22,7 +22,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -108,11 +107,11 @@ type batchProcessorTelemetry struct {
 	exportCtx context.Context
 
 	processorAttr            []attribute.KeyValue
-	batchSizeTriggerSend     instrument.Int64Counter
-	timeoutTriggerSend       instrument.Int64Counter
-	batchSendSize            instrument.Int64Histogram
-	batchSendSizeBytes       instrument.Int64Histogram
-	batchMetadataCardinality instrument.Int64ObservableUpDownCounter
+	batchSizeTriggerSend     metric.Int64Counter
+	timeoutTriggerSend       metric.Int64Counter
+	batchSendSize            metric.Int64Histogram
+	batchSendSizeBytes       metric.Int64Histogram
+	batchMetadataCardinality metric.Int64ObservableUpDownCounter
 }
 
 func newBatchProcessorTelemetry(set processor.CreateSettings, currentMetadataCardinality func() int, useOtel bool) (*batchProcessorTelemetry, error) {
@@ -183,9 +182,9 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider, c
 
 	bpt.batchMetadataCardinality, err = meter.Int64ObservableUpDownCounter(
 		obsreport.BuildProcessorCustomMetricName(typeStr, "metadata_cardinality"),
-		instrument.WithDescription("Number of distinct metadata value combinations being processed"),
-		instrument.WithUnit("1"),
-		instrument.WithInt64Callback(func(_ context.Context, obs instrument.Int64Observer) error {
+		metric.WithDescription("Number of distinct metadata value combinations being processed"),
+		metric.WithUnit("1"),
+		metric.WithInt64Callback(func(_ context.Context, obs metric.Int64Observer) error {
 			obs.Observe(int64(currentMetadataCardinality()))
 			return nil
 		}),
