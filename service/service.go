@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
-	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
@@ -279,9 +279,7 @@ func buildResource(ctx context.Context, buildInfo component.BuildInfo, cfg telem
 		// build version.
 		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceVersion, buildInfo.Version))
 	}
-	return resource.New(ctx,
-		resource.WithFromEnv(),
-		resource.WithAttributes(telAttrs...))
+	return resource.New(ctx, resource.WithAttributes(telAttrs...))
 }
 
 func pdataFromSdk(res *resource.Resource) pcommon.Resource {
