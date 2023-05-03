@@ -124,7 +124,11 @@ func (r *Registry) Set(id string, enabled bool) error {
 	}
 	g := v.(*Gate)
 	if g.stage == StageStable {
-		return fmt.Errorf("feature gate %q is stable, can not be modified", id)
+		if enabled {
+			fmt.Printf("Feature gate %q is stable and already enabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.\n", id, g.toVersion, g.toVersion)
+			return nil
+		}
+		return fmt.Errorf("feature gate %q is stable, can not be disabled", id)
 	}
 	g.enabled.Store(enabled)
 	return nil
