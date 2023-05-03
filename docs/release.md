@@ -74,7 +74,7 @@ The last step of the release process creates artifacts for the new version of th
 1. `unknown revision internal/coreinternal/v0.55.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module.
 2. `commitChangesToNewBranch failed: invalid merge` -- This is a [known issue](https://github.com/open-telemetry/opentelemetry-go-build-tools/issues/47) with our release tooling. The current workaround is to clone a fresh copy of the repository and try again. Note that you may need to set up a `fork` remote pointing to your own fork for the release tooling to work properly.
 3. `could not run Go Mod Tidy: go mod tidy failed` when running `multimod` -- This is a [known issue](https://github.com/open-telemetry/opentelemetry-go-build-tools/issues/46) with our release tooling. The current workaround is to run `make gotidy` manually after the multimod tool fails and commit the result.
-4. If `make update-otel` produces errors in the CI [like these](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/runs/4812972510/jobs/8568980443?pr=21198#step:3:191), it could be because the make target was run too soon after updating Core and the goproxy hasn't update yet.  Try running `export GOPROXY=direct` and then `make update-otel`.
+4. `Incorrect version "X" of "go.opentelemetry.io/collector/component" is included in "X"` in CI after `make update-otel` -- It could be because the make target was run too soon after updating Core and the goproxy hasn't updated yet.  Try running `export GOPROXY=direct` and then `make update-otel`.
 
 ## Bugfix releases
 
