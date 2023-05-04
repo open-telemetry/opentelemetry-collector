@@ -22,7 +22,7 @@ fields:
       NumConsumers is the number of consumers from the queue.
   - name: queue_size
     kind: int
-    default: 5000
+    default: 1000
     doc: |
       QueueSize is the maximum number of batches allowed in queue at a given time.
 - name: retry_on_failure

@@ -357,7 +357,7 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 
 	// No more items
 	ext := createStorageExtension(path)
-	wq := createTestQueue(ext, 5000)
+	wq := createTestQueue(ext, 1000)
 	require.Equal(t, 0, wq.Size())
 	require.NoError(t, ext.Shutdown(context.Background()))
 }

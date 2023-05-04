@@ -171,7 +171,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			req := newFakeTracesRequest(traces)
 
 			ext := createStorageExtension(path)
-			tq := createTestQueue(ext, 5000)
+			tq := createTestQueue(ext, 1000)
 
 			defer tq.Stop()
 			t.Cleanup(func() { assert.NoError(t, ext.Shutdown(context.Background())) })
