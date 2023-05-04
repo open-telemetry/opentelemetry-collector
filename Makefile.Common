@@ -66,6 +66,10 @@ tidy:
 lint: $(LINT)
 	$(LINT) run
 
+.PHONY: govulncheck
+govulncheck: $(GOVULNCHECK)
+	$(GOVULNCHECK) ./...
+
 .PHONY: generate
 generate:
 	$(GOCMD) generate ./...
