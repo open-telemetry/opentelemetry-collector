@@ -55,8 +55,11 @@ func TestRegistryApplyError(t *testing.T) {
 	assert.Error(t, r.Set("foo", true))
 	r.MustRegister("bar", StageAlpha)
 	assert.Error(t, r.Set("foo", true))
-	r.MustRegister("foo", StageStable, WithRegisterToVersion("next"))
+	_, err := r.Register("foo", StageStable)
+	assert.Error(t, err)
 	assert.Error(t, r.Set("foo", true))
+	r.MustRegister("foo", StageStable, WithRegisterToVersion("next"))
+	assert.Error(t, r.Set("foo", false))
 }
 
 func TestRegistryApply(t *testing.T) {

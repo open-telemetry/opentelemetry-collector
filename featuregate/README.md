@@ -61,10 +61,10 @@ modeled after the [system used by Kubernetes](https://kubernetes.io/docs/referen
    through a `Gate`.
 2. A `beta` stage where the feature has been well tested and is enabled by 
    default but can be disabled through a `Gate`.
-3. A generally available or `stable` stage where the feature is permanently enabled and 
-   the `Gate` is no longer operative.
-4. A feature gate will be removed once it has been `stable` for at least two releases
-   of the collector.
+3. A generally available or `stable` stage where the feature is permanently enabled. At this stage
+   the gate should no longer be explicitly used. Disabling the gate will produce an error and
+   explicitly enabling will produce a warning log.
+4. A `stable` feature gate will be removed in the version specified by its `ToVersion` value.
 
 Features that prove unworkable in the `alpha` stage may be discontinued 
 without proceeding to the `beta` stage.  Features that make it to the `beta` 

@@ -31,7 +31,7 @@ const (
 	// StageStable is used when feature is permanently enabled and can not be disabled by a Gate.
 	// This value is used to provide feedback to the user that the gate will be removed in the next versions.
 	//
-	// The Gate will be enabled by default and will return an error if modified.
+	// The Gate will be enabled by default and will return an error if disabled.
 	StageStable
 	// StageDeprecated is used when feature is permanently disabled and can not be enabled by a Gate.
 	// This value is used to provide feedback to the user that the gate will be removed in the next versions.
