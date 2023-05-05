@@ -37,4 +37,5 @@ import (
 	_ "go.opentelemetry.io/build-tools/semconvgen"
 	_ "golang.org/x/exp/cmd/apidiff"
 	_ "golang.org/x/tools/cmd/goimports"
+	_ "golang.org/x/vuln/cmd/govulncheck"
 )

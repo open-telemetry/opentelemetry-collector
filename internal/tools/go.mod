@@ -17,6 +17,7 @@ require (
 	go.opentelemetry.io/build-tools/semconvgen v0.7.0
 	golang.org/x/exp v0.0.0-20221004215720-b9f4876ce741
 	golang.org/x/tools v0.8.0
+	golang.org/x/vuln v0.0.0-20230411201117-aaaefcd264f6
 )
 
 require (
@@ -215,7 +216,7 @@ require (
 	mvdan.cc/gofumpt v0.4.0 // indirect
 	mvdan.cc/interfacer v0.0.0-20180901003855-c20040233aed // indirect
 	mvdan.cc/lint v0.0.0-20170908181259-adc824a0674b // indirect
-	mvdan.cc/unparam v0.0.0-20221223090309-7455f1af531d // indirect
+	mvdan.cc/unparam v0.0.0-20230312165513-e84e2d14e3b8 // indirect
 )
 
 retract (

@@ -19,7 +19,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.6
+          go-version: ~1.19.9
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -41,7 +41,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.6
+          go-version: ~1.19.9
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -55,6 +55,30 @@ jobs:
       - name: goimpi
         run: make goimpi
 
+  govulncheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ~1.19.9
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Run `govulncheck`
+        run: make govulncheck
+
   checks:
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -64,7 +88,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.6
+          go-version: ~1.19.9
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -144,7 +168,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.6
+          go-version: ~1.19.9
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -204,7 +228,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.6
+          go-version: ~1.19.9
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
