@@ -105,10 +105,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
-	res, err := buildResource(ctx, set.BuildInfo, cfg.Telemetry)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build resource: %w", err)
-	}
+	res := buildResource(set.BuildInfo, cfg.Telemetry)
 	pcommonRes := pdataFromSdk(res)
 
 	srv.telemetrySettings = component.TelemetrySettings{
@@ -252,7 +249,7 @@ func getBallastSize(host component.Host) uint64 {
 	return 0
 }
 
-func buildResource(ctx context.Context, buildInfo component.BuildInfo, cfg telemetry.Config) (*resource.Resource, error) {
+func buildResource(buildInfo component.BuildInfo, cfg telemetry.Config) *resource.Resource {
 	var telAttrs []attribute.KeyValue
 
 	for k, v := range cfg.Resource {
@@ -279,7 +276,7 @@ func buildResource(ctx context.Context, buildInfo component.BuildInfo, cfg telem
 		// build version.
 		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceVersion, buildInfo.Version))
 	}
-	return resource.New(ctx, resource.WithAttributes(telAttrs...))
+	return resource.NewWithAttributes(semconv.SchemaURL, telAttrs...)
 }
 
 func pdataFromSdk(res *resource.Resource) pcommon.Resource {
