@@ -14,21 +14,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-make chlog-update VERSION="v${CANDIDATE_STABLE}/v${CANDIDATE_BETA}"
+if [ "${CANDIDATE_STABLE}" == "" ] && [ "${CANDIDATE_BETA}" == "" ]; then
+    echo "One of CANDIDATE_STABLE or CANDIDATE_BETA must be set"
+    exit 1
+fi
+
+STABLE="${CANDIDATE_STABLE}"
+if [ "${STABLE}" == "" ]; then
+    STABLE="${CURRENT_STABLE}"
+fi
+BETA="${CANDIDATE_BETA}"
+if [ "${BETA}" == "" ]; then
+    BETA="${CURRENT_BETA}"
+fi
+RELEASE_VERSION=v${STABLE}/v${BETA}
+
+make chlog-update VERSION="${RELEASE_VERSION}"
 git config user.name opentelemetrybot
 git config user.email 107717825+opentelemetrybot@users.noreply.github.com
-BRANCH="prepare-release-prs/${CANDIDATE_BETA}-${CANDIDATE_STABLE}"
+BRANCH="prepare-release-prs/${CANDIDATE_BETA}"
 git checkout -b "${BRANCH}"
 git add --all
-git commit -m "Changelog update ${CANDIDATE_BETA}/${CANDIDATE_STABLE}"
+git commit -m "Changelog update ${RELEASE_VERSION}"
 
-make prepare-release GH=none PREVIOUS_VERSION="${CURRENT_STABLE}" RELEASE_CANDIDATE="${CANDIDATE_STABLE}" MODSET=stable
-make prepare-release GH=none PREVIOUS_VERSION="${CURRENT_BETA}" RELEASE_CANDIDATE="${CANDIDATE_BETA}" MODSET=beta
+if [ "${CANDIDATE_STABLE}" != "" ]; then
+    make prepare-release GH=none PREVIOUS_VERSION="${CURRENT_STABLE}" RELEASE_CANDIDATE="${CANDIDATE_STABLE}" MODSET=stable
+fi
+if [ "${CANDIDATE_BETA}" != "" ]; then
+    make prepare-release GH=none PREVIOUS_VERSION="${CURRENT_BETA}" RELEASE_CANDIDATE="${CANDIDATE_BETA}" MODSET=beta
+fi
 git push origin "${BRANCH}"
 
-gh pr create --title "[chore] Prepare release ${CANDIDATE_BETA}/${CANDIDATE_STABLE}" --body "
+gh pr create --title "[chore] Prepare release ${RELEASE_VERSION}" --body "
 The following commands were run to prepare this release:
-- make chlog-update VERSION=v${CANDIDATE_BETA}/v${CANDIDATE_STABLE}
+- make chlog-update VERSION=${RELEASE_VERSION}
 - make prepare-release GH=none PREVIOUS_VERSION=${CURRENT_STABLE} RELEASE_CANDIDATE=${CANDIDATE_STABLE} MODSET=stable
 - make prepare-release GH=none PREVIOUS_VERSION=${CURRENT_BETA} RELEASE_CANDIDATE=${CANDIDATE_BETA} MODSET=beta
 "
