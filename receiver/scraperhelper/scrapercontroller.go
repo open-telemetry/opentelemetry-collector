@@ -174,6 +174,10 @@ func (sc *controller) startScraping() {
 			sc.tickerCh = ticker.C
 		}
 
+		// Call scrape method on initialision to ensure
+		// that scrapers start from when the component starts
+		// instead of waiting for the full duration to start.
+		sc.scrapeMetricsAndReport(context.Background())
 		for {
 			select {
 			case <-sc.tickerCh:

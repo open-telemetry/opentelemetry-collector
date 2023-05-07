@@ -108,10 +108,11 @@ func TestScrapeController(t *testing.T) {
 			scrapeErr: errors.New("err1"),
 		},
 		{
-			name:       "AddMetricsScrapersWithInitializeAndClose",
-			scrapers:   2,
-			initialize: true,
-			close:      true,
+			name:          "AddMetricsScrapersWithInitializeAndClose",
+			scrapers:      2,
+			initialize:    true,
+			expectScraped: true,
+			close:         true,
 		},
 		{
 			name:          "AddMetricsScrapersWithInitializeAndCloseErrors",
@@ -124,6 +125,7 @@ func TestScrapeController(t *testing.T) {
 	}
 
 	for _, test := range testCases {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			tt, err := obsreporttest.SetupTelemetry(component.NewID("receiver"))
 			require.NoError(t, err)
@@ -167,6 +169,10 @@ func TestScrapeController(t *testing.T) {
 
 			if test.expectScraped || test.scrapeErr != nil {
 				// validate that scrape is called at least N times for each configured scraper
+				for _, ch := range scrapeMetricsChs {
+					<-ch
+				}
+				// Consume the initial scrapes on start
 				for i := 0; i < iterations; i++ {
 					tickerCh <- time.Now()
 
@@ -178,7 +184,7 @@ func TestScrapeController(t *testing.T) {
 				// wait until all calls to scrape have completed
 				if test.scrapeErr == nil {
 					require.Eventually(t, func() bool {
-						return sink.DataPointCount() == iterations*(test.scrapers)
+						return sink.DataPointCount() == (1+iterations)*(test.scrapers)
 					}, time.Second, time.Millisecond)
 				}
 
@@ -316,7 +322,7 @@ func assertScraperViews(t *testing.T, tt obsreporttest.TestTelemetry, expectedEr
 	require.NoError(t, obsreporttest.CheckScraperMetrics(tt, component.NewID("receiver"), component.NewID("scraper"), expectedScraped, expectedErrored))
 }
 
-func TestSingleScrapePerTick(t *testing.T) {
+func TestSingleScrapePerInterval(t *testing.T) {
 	scrapeMetricsCh := make(chan int, 10)
 	tsm := &testScrapeMetrics{ch: scrapeMetricsCh}
 
@@ -341,12 +347,46 @@ func TestSingleScrapePerTick(t *testing.T) {
 
 	tickerCh <- time.Now()
 
-	assert.Equal(t, 1, <-scrapeMetricsCh)
+	assert.Eventually(
+		t,
+		func() bool {
+			return <-scrapeMetricsCh == 2
+		},
+		30*time.Millisecond,
+		10*time.Millisecond,
+		"Make sure the scraper channel is called twice",
+	)
 
 	select {
 	case <-scrapeMetricsCh:
-		assert.Fail(t, "Scrape was called more than once")
+		assert.Fail(t, "Scrape was called more than twice")
 	case <-time.After(100 * time.Millisecond):
 		return
 	}
+}
+
+func TestScrapeControllerStartsOnInit(t *testing.T) {
+	t.Parallel()
+
+	tsm := &testScrapeMetrics{
+		ch: make(chan int, 1),
+	}
+
+	scp, err := NewScraper("", tsm.scrape)
+	require.NoError(t, err, "Must not error when creating scraper")
+
+	r, err := NewScraperControllerReceiver(
+		&ScraperControllerSettings{
+			CollectionInterval: time.Hour,
+		},
+		receivertest.NewNopCreateSettings(),
+		new(consumertest.MetricsSink),
+		AddScraper(scp),
+	)
+	require.NoError(t, err, "Must not error when creating scrape controller")
+
+	assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "Must not error on start")
+	<-time.After(500 * time.Nanosecond)
+	assert.NoError(t, r.Shutdown(context.Background()), "Must not have errored on shutdown")
+	assert.Equal(t, tsm.timesScrapeCalled, 1, "Must have been called as soon as the controller started")
 }
