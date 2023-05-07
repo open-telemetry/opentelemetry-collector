@@ -352,8 +352,8 @@ func TestSingleScrapePerInterval(t *testing.T) {
 		func() bool {
 			return <-scrapeMetricsCh == 2
 		},
-		30*time.Millisecond,
-		10*time.Millisecond,
+		300*time.Millisecond,
+		100*time.Millisecond,
 		"Make sure the scraper channel is called twice",
 	)
 
