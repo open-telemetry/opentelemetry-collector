@@ -14,15 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-STABLE="${CANDIDATE_STABLE}"
-if [ "${STABLE}" == "" ]; then
-    STABLE="${CURRENT_STABLE}"
+RELEASE_VERSION=v${CANDIDATE_STABLE}/v${CANDIDATE_BETA}
+if [ "${CANDIDATE_STABLE}" == "" ]; then
+    RELEASE_VERSION="v${CANDIDATE_BETA}"
 fi
-BETA="${CANDIDATE_BETA}"
-if [ "${BETA}" == "" ]; then
-    BETA="${CURRENT_BETA}"
+if [ "${CANDIDATE_BETA}" == "" ]; then
+    RELEASE_VERSION="v${CANDIDATE_STABLE}"
 fi
-RELEASE_VERSION=v${STABLE}/v${BETA}
 
 EXISTING_ISSUE=$( gh issue list --search "Release ${RELEASE_VERSION}" --json url --jq '.[].url' --repo "${REPO}" )
 
