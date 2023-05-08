@@ -215,7 +215,7 @@ func TestTelemetryInit(t *testing.T) {
 				Logger:   zap.NewNop(),
 				Resource: res,
 			}
-			err := tel.init(otelRes, settings, cfg, make(chan error))
+			err := tel.init(context.Background(), otelRes, settings, cfg, make(chan error))
 			require.NoError(t, err)
 			defer func() {
 				require.NoError(t, tel.shutdown())

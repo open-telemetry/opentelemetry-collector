@@ -15,9 +15,12 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -47,6 +50,7 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/obsreport"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
+	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -100,8 +104,8 @@ func newColTelemetry(useOtel bool, disableHighCardinality bool) *telemetryInitia
 	}
 }
 
-func (tel *telemetryInitializer) init(res *resource.Resource, settings component.TelemetrySettings, cfg telemetry.Config, asyncErrorChannel chan error) error {
-	if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
+func (tel *telemetryInitializer) init(ctx context.Context, res *resource.Resource, settings component.TelemetrySettings, cfg telemetry.Config, asyncErrorChannel chan error) error {
+	if cfg.Metrics.Level == configtelemetry.LevelNone || (cfg.Metrics.Address == "" && len(cfg.Metrics.Readers) == 0) {
 		settings.Logger.Info(
 			"Skipping telemetry setup.",
 			zap.String(zapKeyTelemetryAddress, cfg.Metrics.Address),
@@ -118,18 +122,65 @@ func (tel *telemetryInitializer) init(res *resource.Resource, settings component
 		return err
 	}
 
-	return tel.initPrometheus(res, settings.Logger, cfg.Metrics.Address, cfg.Metrics.Level, asyncErrorChannel)
+	if !tel.useOtel {
+		// when still using opencensus, return here as there's no need to configure readers below
+		_, err := tel.initPrometheus(res, settings.Logger, cfg.Metrics.Address, cfg.Metrics.Level, asyncErrorChannel)
+		return err
+	}
+
+	if len(cfg.Metrics.Address) > 0 {
+		settings.Logger.Warn("service.telemetry.metrics.address is being deprecated in favour of service.telemetry.metrics.metric_readers")
+		// TODO: account for multiple readers trying to use the same port
+		host, port, err := net.SplitHostPort(cfg.Metrics.Address)
+		if err != nil {
+			return err
+		}
+		portInt, err := strconv.Atoi(port)
+		if err != nil {
+			return err
+		}
+		cfg.Metrics.Readers = append(cfg.Metrics.Readers, telemetry.MetricReader{
+			Type: "prometheus",
+			Args: telemetry.MetricReaderArgs{
+				Host: &host,
+				Port: &portInt,
+			},
+		})
+	}
+	readers := []sdkmetric.Option{}
+	for _, reader := range cfg.Metrics.Readers {
+		r, err := tel.initMetricReader(ctx, res, reader, settings.Logger, cfg, asyncErrorChannel)
+		if err != nil {
+			return err
+		}
+		readers = append(readers, sdkmetric.WithReader(r))
+	}
+	var err error
+	tel.mp, err = proctelemetry.InitOpenTelemetry(res, readers)
+
+	return err
 }
 
-func (tel *telemetryInitializer) initPrometheus(res *resource.Resource, logger *zap.Logger, address string, level configtelemetry.Level, asyncErrorChannel chan error) error {
+func (tel *telemetryInitializer) initMetricReader(ctx context.Context, res *resource.Resource, reader telemetry.MetricReader, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) (sdkmetric.Reader, error) {
+	switch reader.Type {
+	case proctelemetry.PrometheusMetricReader:
+		address := fmt.Sprintf("%s:%d", *reader.Args.Host, *reader.Args.Port)
+		return tel.initPrometheus(res, logger, address, cfg.Metrics.Level, asyncErrorChannel)
+	case proctelemetry.PeriodMetricReader:
+		return proctelemetry.InitPeriodicReader(ctx, reader)
+	}
+	return nil, fmt.Errorf("unsupported metric reader type: %s", reader.Type)
+}
+
+func (tel *telemetryInitializer) initPrometheus(res *resource.Resource, logger *zap.Logger, address string, level configtelemetry.Level, asyncErrorChannel chan error) (sdkmetric.Reader, error) {
 	promRegistry := prometheus.NewRegistry()
 	if tel.useOtel {
 		if err := tel.initOpenTelemetry(res, promRegistry); err != nil {
-			return err
+			return nil, err
 		}
 	} else {
 		if err := tel.initOpenCensus(level, res, promRegistry); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -151,7 +202,11 @@ func (tel *telemetryInitializer) initPrometheus(res *resource.Resource, logger *
 			asyncErrorChannel <- serveErr
 		}
 	}()
-	return nil
+	return otelprom.New(
+		otelprom.WithRegisterer(promRegistry),
+		otelprom.WithoutUnits(),
+		// Disabled for the moment until this becomes stable, and we are ready to break backwards compatibility.
+		otelprom.WithoutScopeInfo())
 }
 
 func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, res *resource.Resource, promRegistry *prometheus.Registry) error {

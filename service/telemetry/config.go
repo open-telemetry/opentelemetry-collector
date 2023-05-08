@@ -116,6 +116,10 @@ type MetricsConfig struct {
 
 	// Address is the [address]:port that metrics exposition should be bound to.
 	Address string `mapstructure:"address"`
+
+	// Readers support configuring metric readers to emit metrics to
+	// any number of supported backends.
+	Readers []MetricReader `mapstructure:"metric_readers"`
 }
 
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.

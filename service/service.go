@@ -118,7 +118,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		Resource: pcommonRes,
 	}
 
-	if err = srv.telemetryInitializer.init(res, srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
+	if err = srv.telemetryInitializer.init(ctx, res, srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
 		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
