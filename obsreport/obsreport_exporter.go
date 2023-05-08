@@ -38,7 +38,7 @@ const (
 	exporterScope = scopeName + nameSep + exporterName
 )
 
-// Exporter is a helper to add observability to a component.Exporter.
+// Exporter is a helper to add observability to an exporter.
 type Exporter struct {
 	level          configtelemetry.Level
 	spanNamePrefix string

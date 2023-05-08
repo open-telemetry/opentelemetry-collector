@@ -38,7 +38,7 @@ const (
 	receiverScope = scopeName + nameSep + receiverName
 )
 
-// Receiver is a helper to add observability to a receiver.Receiver.
+// Receiver is a helper to add observability to a receiver.
 type Receiver struct {
 	level          configtelemetry.Level
 	spanNamePrefix string
