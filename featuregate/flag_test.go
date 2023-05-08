@@ -80,7 +80,7 @@ func TestNewFlag(t *testing.T) {
 		{
 			name:        "enable stable",
 			input:       "stable",
-			expected:    map[string]bool{"alpha": false, "beta": true, "deprecated": false,  "stable": true},
+			expected:    map[string]bool{"alpha": false, "beta": true, "deprecated": false, "stable": true},
 			expectedStr: "-alpha,beta,-deprecated,stable",
 		},
 		{
@@ -98,10 +98,10 @@ func TestNewFlag(t *testing.T) {
 			expectedStr:    "-alpha,beta,-deprecated,stable",
 		},
 		{
-			name:           "disable deprecated",
-			input:          "-deprecated",
-			expected:       map[string]bool{"alpha": false, "beta": true, "deprecated": false, "stable": true},
-			expectedStr:    "-alpha,beta,-deprecated,stable",
+			name:        "disable deprecated",
+			input:       "-deprecated",
+			expected:    map[string]bool{"alpha": false, "beta": true, "deprecated": false, "stable": true},
+			expectedStr: "-alpha,beta,-deprecated,stable",
 		},
 		{
 			name:           "enable missing",
