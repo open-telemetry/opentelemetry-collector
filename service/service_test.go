@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -65,8 +66,18 @@ type ownMetricsTestCase struct {
 var testResourceAttrValue = "resource_attr_test_value"
 var testInstanceID = "test_instance_id"
 var testServiceVersion = "2022-05-20"
+var testServiceName = "test name"
+
+// prometheusToOtelConv is used to check that the expected resource labels exist as
+// part of the otel resource attributes.
+var prometheusToOtelConv = map[string]string{
+	"service_instance_id": "service.instance.id",
+	"service_name":        "service.name",
+	"service_version":     "service.version",
+}
 
 const metricsVersion = "test version"
+const otelCommand = "otelcoltest"
 
 func ownMetricsTestCases() []ownMetricsTestCase {
 	return []ownMetricsTestCase{{
@@ -80,6 +91,7 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 		// monitor the Collector in production deployments.
 		expectedLabels: map[string]labelValue{
 			"service_instance_id": {state: labelAnyValue},
+			"service_name":        {label: otelCommand, state: labelSpecificValue},
 			"service_version":     {label: metricsVersion, state: labelSpecificValue},
 		},
 	},
@@ -90,8 +102,31 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 			},
 			expectedLabels: map[string]labelValue{
 				"service_instance_id":  {state: labelAnyValue},
+				"service_name":         {label: otelCommand, state: labelSpecificValue},
 				"service_version":      {label: metricsVersion, state: labelSpecificValue},
 				"custom_resource_attr": {label: "resource_attr_test_value", state: labelSpecificValue},
+			},
+		},
+		{
+			name: "override service.name",
+			userDefinedResource: map[string]*string{
+				"service.name": &testServiceName,
+			},
+			expectedLabels: map[string]labelValue{
+				"service_instance_id": {state: labelAnyValue},
+				"service_name":        {label: testServiceName, state: labelSpecificValue},
+				"service_version":     {label: metricsVersion, state: labelSpecificValue},
+			},
+		},
+		{
+			name: "suppress service.name",
+			userDefinedResource: map[string]*string{
+				"service.name": nil,
+			},
+			expectedLabels: map[string]labelValue{
+				"service_instance_id": {state: labelAnyValue},
+				"service_name":        {state: labelNotPresent},
+				"service_version":     {label: metricsVersion, state: labelSpecificValue},
 			},
 		},
 		{
@@ -101,6 +136,7 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 			},
 			expectedLabels: map[string]labelValue{
 				"service_instance_id": {label: "test_instance_id", state: labelSpecificValue},
+				"service_name":        {label: otelCommand, state: labelSpecificValue},
 				"service_version":     {label: metricsVersion, state: labelSpecificValue},
 			},
 		},
@@ -111,6 +147,7 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 			},
 			expectedLabels: map[string]labelValue{
 				"service_instance_id": {state: labelNotPresent},
+				"service_name":        {label: otelCommand, state: labelSpecificValue},
 				"service_version":     {label: metricsVersion, state: labelSpecificValue},
 			},
 		},
@@ -121,6 +158,7 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 			},
 			expectedLabels: map[string]labelValue{
 				"service_instance_id": {state: labelAnyValue},
+				"service_name":        {label: otelCommand, state: labelSpecificValue},
 				"service_version":     {label: "2022-05-20", state: labelSpecificValue},
 			},
 		},
@@ -131,6 +169,7 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 			},
 			expectedLabels: map[string]labelValue{
 				"service_instance_id": {state: labelAnyValue},
+				"service_name":        {label: otelCommand, state: labelSpecificValue},
 				"service_version":     {state: labelNotPresent},
 			},
 		}}
@@ -244,7 +283,7 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, tc ownMetricsTestCase)
 	zpagesAddr := testutil.GetAvailableLocalAddress(t)
 
 	set := newNopSettings()
-	set.BuildInfo = component.BuildInfo{Version: "test version"}
+	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
 	set.Extensions = extension.NewBuilder(
 		map[component.ID]component.Config{component.NewID("zpages"): &zpagesextension.Config{TCPAddr: confignet.TCPAddr{Endpoint: zpagesAddr}}},
 		map[component.Type]extension.Factory{"zpages": zpagesextension.NewFactory()})
@@ -269,6 +308,8 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, tc ownMetricsTestCase)
 		// Sleep for 1 second to ensure the http server is started.
 		time.Sleep(1 * time.Second)
 		assert.True(t, loggingHookCalled)
+
+		assertResourceLabels(t, srv.telemetrySettings.Resource, tc.expectedLabels)
 		if !useOtel {
 			assertMetrics(t, metricsAddr, tc.expectedLabels)
 		}
@@ -315,6 +356,24 @@ func TestServiceTelemetryRestart(t *testing.T) {
 
 	// Shutdown the new service
 	require.NoError(t, srvTwo.Shutdown(context.Background()))
+}
+
+func assertResourceLabels(t *testing.T, res pcommon.Resource, expectedLabels map[string]labelValue) {
+	for key, labelValue := range expectedLabels {
+		lookupKey, ok := prometheusToOtelConv[key]
+		if !ok {
+			lookupKey = key
+		}
+		value, ok := res.Attributes().Get(lookupKey)
+		switch labelValue.state {
+		case labelNotPresent:
+			assert.False(t, ok)
+		case labelAnyValue:
+			assert.True(t, ok)
+		default:
+			assert.Equal(t, labelValue.label, value.AsString())
+		}
+	}
 }
 
 func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]labelValue) {

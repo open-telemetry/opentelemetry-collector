@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // NewNopTelemetrySettings returns a new nop telemetry settings for Create* functions.
@@ -30,5 +31,6 @@ func NewNopTelemetrySettings() component.TelemetrySettings {
 		TracerProvider: trace.NewNoopTracerProvider(),
 		MeterProvider:  noop.NewMeterProvider(),
 		MetricsLevel:   configtelemetry.LevelNone,
+		Resource:       pcommon.NewResource(),
 	}
 }

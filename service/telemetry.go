@@ -15,7 +15,6 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -23,7 +22,6 @@ import (
 	"unicode"
 
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
-	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	ocmetric "go.opencensus.io/metric"
@@ -102,9 +100,9 @@ func newColTelemetry(useOtel bool, disableHighCardinality bool) *telemetryInitia
 	}
 }
 
-func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
+func (tel *telemetryInitializer) init(res *resource.Resource, settings component.TelemetrySettings, cfg telemetry.Config, asyncErrorChannel chan error) error {
 	if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
-		logger.Info(
+		settings.Logger.Info(
 			"Skipping telemetry setup.",
 			zap.String(zapKeyTelemetryAddress, cfg.Metrics.Address),
 			zap.String(zapKeyTelemetryLevel, cfg.Metrics.Level.String()),
@@ -112,10 +110,7 @@ func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap
 		return nil
 	}
 
-	logger.Info("Setting up own telemetry...")
-
-	// Construct telemetry attributes from build info and config's resource attributes.
-	telAttrs := buildTelAttrs(buildInfo, cfg)
+	settings.Logger.Info("Setting up own telemetry...")
 
 	if tp, err := textMapPropagatorFromConfig(cfg.Traces.Propagators); err == nil {
 		otel.SetTextMapPropagator(tp)
@@ -123,48 +118,17 @@ func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap
 		return err
 	}
 
-	return tel.initPrometheus(logger, cfg.Metrics.Address, cfg.Metrics.Level, telAttrs, asyncErrorChannel)
+	return tel.initPrometheus(res, settings.Logger, cfg.Metrics.Address, cfg.Metrics.Level, asyncErrorChannel)
 }
 
-func buildTelAttrs(buildInfo component.BuildInfo, cfg telemetry.Config) map[string]string {
-	telAttrs := map[string]string{}
-
-	for k, v := range cfg.Resource {
-		// nil value indicates that the attribute should not be included in the telemetry.
-		if v != nil {
-			telAttrs[k] = *v
-		}
-	}
-
-	if _, ok := cfg.Resource[semconv.AttributeServiceName]; !ok {
-		// AttributeServiceName is not specified in the config. Use the default service name.
-		telAttrs[semconv.AttributeServiceName] = buildInfo.Command
-	}
-
-	if _, ok := cfg.Resource[semconv.AttributeServiceInstanceID]; !ok {
-		// AttributeServiceInstanceID is not specified in the config. Auto-generate one.
-		instanceUUID, _ := uuid.NewRandom()
-		instanceID := instanceUUID.String()
-		telAttrs[semconv.AttributeServiceInstanceID] = instanceID
-	}
-
-	if _, ok := cfg.Resource[semconv.AttributeServiceVersion]; !ok {
-		// AttributeServiceVersion is not specified in the config. Use the actual
-		// build version.
-		telAttrs[semconv.AttributeServiceVersion] = buildInfo.Version
-	}
-
-	return telAttrs
-}
-
-func (tel *telemetryInitializer) initPrometheus(logger *zap.Logger, address string, level configtelemetry.Level, telAttrs map[string]string, asyncErrorChannel chan error) error {
+func (tel *telemetryInitializer) initPrometheus(res *resource.Resource, logger *zap.Logger, address string, level configtelemetry.Level, asyncErrorChannel chan error) error {
 	promRegistry := prometheus.NewRegistry()
 	if tel.useOtel {
-		if err := tel.initOpenTelemetry(telAttrs, promRegistry); err != nil {
+		if err := tel.initOpenTelemetry(res, promRegistry); err != nil {
 			return err
 		}
 	} else {
-		if err := tel.initOpenCensus(level, telAttrs, promRegistry); err != nil {
+		if err := tel.initOpenCensus(level, res, promRegistry); err != nil {
 			return err
 		}
 	}
@@ -190,7 +154,7 @@ func (tel *telemetryInitializer) initPrometheus(logger *zap.Logger, address stri
 	return nil
 }
 
-func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, telAttrs map[string]string, promRegistry *prometheus.Registry) error {
+func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, res *resource.Resource, promRegistry *prometheus.Registry) error {
 	tel.ocRegistry = ocmetric.NewRegistry()
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 
@@ -206,9 +170,8 @@ func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, tel
 	}
 
 	opts.ConstLabels = make(map[string]string)
-
-	for k, v := range telAttrs {
-		opts.ConstLabels[sanitizePrometheusKey(k)] = v
+	for _, keyValue := range res.Attributes() {
+		opts.ConstLabels[sanitizePrometheusKey(string(keyValue.Key))] = keyValue.Value.AsString()
 	}
 
 	pe, err := ocprom.NewExporter(opts)
@@ -220,20 +183,10 @@ func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, tel
 	return nil
 }
 
-func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, promRegistry *prometheus.Registry) error {
+func (tel *telemetryInitializer) initOpenTelemetry(res *resource.Resource, promRegistry *prometheus.Registry) error {
 	// Initialize the ocRegistry, still used by the process metrics.
 	tel.ocRegistry = ocmetric.NewRegistry()
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
-
-	var resAttrs []attribute.KeyValue
-	for k, v := range attrs {
-		resAttrs = append(resAttrs, attribute.String(k, v))
-	}
-
-	res, err := resource.New(context.Background(), resource.WithAttributes(resAttrs...))
-	if err != nil {
-		return fmt.Errorf("error creating otel resources: %w", err)
-	}
 
 	wrappedRegisterer := prometheus.WrapRegistererWithPrefix("otelcol_", promRegistry)
 	// We can remove `otelprom.WithoutUnits()` when the otel-go start exposing prometheus metrics using the OpenMetrics format
@@ -247,6 +200,7 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, prom
 	if err != nil {
 		return fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
+
 	exporter.RegisterProducer(opencensus.NewMetricProducer())
 	views := batchViews()
 	if tel.disableHighCardinality {
