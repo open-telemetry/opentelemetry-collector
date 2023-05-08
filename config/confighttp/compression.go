@@ -165,13 +165,22 @@ func (d *decompressor) wrap(h http.Handler) http.Handler {
 
 func newBodyReader(r *http.Request) (io.ReadCloser, error) {
 	switch r.Header.Get("Content-Encoding") {
-	case "gzip":
+	case string(configcompression.Gzip):
 		gr, err := gzip.NewReader(r.Body)
 		if err != nil {
 			return nil, err
 		}
 		return gr, nil
-	case "deflate", "zlib":
+	case string(configcompression.Snappy):
+		sr := snappy.NewReader(r.Body)
+		return io.NopCloser(sr), nil
+	case string(configcompression.Zstd):
+		zr, err := zstd.NewReader(r.Body)
+		if err != nil {
+			return nil, err
+		}
+		return zr.IOReadCloser(), nil
+	case string(configcompression.Deflate), string(configcompression.Zlib):
 		zr, err := zlib.NewReader(r.Body)
 		if err != nil {
 			return nil, err
