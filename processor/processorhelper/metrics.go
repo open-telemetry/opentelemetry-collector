@@ -36,7 +36,7 @@ type metricsProcessor struct {
 	consumer.Metrics
 }
 
-// NewMetricsProcessor creates a component.MetricsProcessor that ensure context propagation and the right tags are set.
+// NewMetricsProcessor creates a processor.Metrics that ensure context propagation and the right tags are set.
 func NewMetricsProcessor(
 	_ context.Context,
 	set processor.CreateSettings,

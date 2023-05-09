@@ -39,7 +39,7 @@ var (
 	scraperScope = scopeName + nameSep + scraperName
 )
 
-// Scraper is a helper to add observability to a component.Scraper.
+// Scraper is a helper to add observability to a scraper.
 type Scraper struct {
 	level      configtelemetry.Level
 	receiverID component.ID

@@ -83,7 +83,7 @@ func newInstruments(registry *metric.Registry) *instruments {
 	return insts
 }
 
-// obsExporter is a helper to add observability to a component.Exporter.
+// obsExporter is a helper to add observability to an exporter.
 type obsExporter struct {
 	*obsreport.Exporter
 	failedToEnqueueTraceSpansEntry   *metric.Int64CumulativeEntry

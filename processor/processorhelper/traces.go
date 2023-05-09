@@ -36,7 +36,7 @@ type tracesProcessor struct {
 	consumer.Traces
 }
 
-// NewTracesProcessor creates a component.TracesProcessor that ensure context propagation and the right tags are set.
+// NewTracesProcessor creates a processor.Traces that ensure context propagation and the right tags are set.
 func NewTracesProcessor(
 	_ context.Context,
 	set processor.CreateSettings,

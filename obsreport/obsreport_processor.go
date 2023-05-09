@@ -51,7 +51,7 @@ func BuildProcessorCustomMetricName(configType, metric string) string {
 	return componentPrefix + configType + obsmetrics.NameSep + metric
 }
 
-// Processor is a helper to add observability to a component.Processor.
+// Processor is a helper to add observability to a processor.
 type Processor struct {
 	level    configtelemetry.Level
 	mutators []tag.Mutator
