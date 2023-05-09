@@ -20,11 +20,15 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"go.opentelemetry.io/collector/obsreport"
+	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -42,7 +46,36 @@ const (
 	// supported metric readers
 	PrometheusMetricReader = "prometheus"
 	PeriodMetricReader     = "periodic"
+
+	// gRPC Instrumentation Name
+	grpcInstrumentation = "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+
+	// http Instrumentation Name
+	httpInstrumentation = "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
+
+var (
+	// grpcUnacceptableKeyValues is a list of high cardinality grpc attributes that should be filtered out.
+	grpcUnacceptableKeyValues = []attribute.KeyValue{
+		attribute.String(semconv.AttributeNetSockPeerAddr, ""),
+		attribute.String(semconv.AttributeNetSockPeerPort, ""),
+		attribute.String(semconv.AttributeNetSockPeerName, ""),
+	}
+
+	// httpUnacceptableKeyValues is a list of high cardinality http attributes that should be filtered out.
+	httpUnacceptableKeyValues = []attribute.KeyValue{
+		attribute.String(semconv.AttributeNetHostName, ""),
+		attribute.String(semconv.AttributeNetHostPort, ""),
+	}
+)
+
+func toStringMap(in map[string]interface{}) map[string]string {
+	out := map[string]string{}
+	for k, v := range in {
+		out[k] = fmt.Sprintf("%v", v)
+	}
+	return out
+}
 
 func InitExporter(ctx context.Context, exporterType string, args any) (sdkmetric.Exporter, error) {
 	switch exporterType {
@@ -53,28 +86,43 @@ func InitExporter(ctx context.Context, exporterType string, args any) (sdkmetric
 			stdoutmetric.WithEncoder(enc),
 		)
 	case otlpmetricgrpcExporter:
+		// add case for `protocol`
 		opts := []otlpmetricgrpc.Option{}
 
-		// for k, v := range args {
-		// 	switch k {
-		// 	case "endpoint":
-		// 		opts = append(opts, otlpmetricgrpc.WithEndpoint(v))
-
-		// 	// otlpmetricgrpc.WithAggregationSelector()
-		// 	// otlpmetricgrpc.WithCompressor()
-		// 	// otlpmetricgrpc.WithDialOption()
-		// 	// otlpmetricgrpc.WithGRPCConn()
-		// 	// otlpmetricgrpc.WithInsecure()
-		// 	// otlpmetricgrpc.WithReconnectionPeriod()
-		// 	// otlpmetricgrpc.WithRetry()
-		// 	// otlpmetricgrpc.WithServiceConfig()
-		// 	// otlpmetricgrpc.WithTLSCredentials()
-		// 	// otlpmetricgrpc.WithTemporalitySelector()
-		// 	// otlpmetricgrpc.WithTimeout()
-		// 	case "headers":
-		// 		opts = append(opts, otlpmetricgrpc.WithHeaders(v))
-		// 	}
-		// }
+		switch t := args.(type) {
+		case map[string]interface{}:
+			for k, v := range t {
+				switch k {
+				case "endpoint":
+					opts = append(opts, otlpmetricgrpc.WithEndpoint(fmt.Sprintf("%s", v)))
+				case "certificate":
+				case "client_key":
+				case "client_certificate":
+				case "compression":
+					otlpmetricgrpc.WithCompressor(fmt.Sprintf("%s", v))
+				case "timeout":
+					timeout, ok := v.(int)
+					if !ok {
+						return nil, fmt.Errorf("invalid timeout for otlp exporter: %s", v)
+					}
+					opts = append(opts, otlpmetricgrpc.WithTimeout(time.Millisecond*time.Duration(timeout)))
+				case "headers":
+					headers, ok := v.(map[string]any)
+					if !ok {
+						return nil, fmt.Errorf("invalid headers for otlp exporter: %s", v)
+					}
+					opts = append(opts, otlpmetricgrpc.WithHeaders(toStringMap(headers)))
+					// otlpmetricgrpc.WithInsecure()
+					// otlpmetricgrpc.WithReconnectionPeriod()
+					// otlpmetricgrpc.WithTLSCredentials()
+					//
+				}
+			}
+		case nil:
+			// no args defaults to no options
+		default:
+			return nil, fmt.Errorf("invalid args for otlp exporter: %s", args)
+		}
 		return otlpmetricgrpc.New(ctx, opts...)
 	default:
 		return nil, fmt.Errorf("unsupported metric exporter type: %s", exporterType)
@@ -97,10 +145,10 @@ func InitPeriodicReader(ctx context.Context, reader telemetry.MetricReader) (sdk
 	return nil, errors.New("unexpected exporter configuration")
 }
 
-func InitOpenTelemetry(res *resource.Resource, options []sdkmetric.Option) (*sdkmetric.MeterProvider, error) {
+func InitOpenTelemetry(res *resource.Resource, options []sdkmetric.Option, disableHighCardinality bool) (*sdkmetric.MeterProvider, error) {
 	opts := []sdkmetric.Option{
 		sdkmetric.WithResource(res),
-		sdkmetric.WithView(batchViews()...),
+		sdkmetric.WithView(batchViews(disableHighCardinality)...),
 	}
 
 	opts = append(opts, options...)
@@ -109,8 +157,8 @@ func InitOpenTelemetry(res *resource.Resource, options []sdkmetric.Option) (*sdk
 	), nil
 }
 
-func batchViews() []sdkmetric.View {
-	return []sdkmetric.View{
+func batchViews(disableHighCardinality bool) []sdkmetric.View {
+	views := []sdkmetric.View{
 		sdkmetric.NewView(
 			sdkmetric.Instrument{Name: obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size")},
 			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
@@ -125,5 +173,29 @@ func batchViews() []sdkmetric.View {
 					1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
 			}},
 		),
+	}
+	if disableHighCardinality {
+		views = append(views, sdkmetric.NewView(sdkmetric.Instrument{
+			Scope: instrumentation.Scope{
+				Name: grpcInstrumentation,
+			},
+		}, sdkmetric.Stream{
+			AttributeFilter: cardinalityFilter(grpcUnacceptableKeyValues...),
+		}))
+		views = append(views, sdkmetric.NewView(sdkmetric.Instrument{
+			Scope: instrumentation.Scope{
+				Name: httpInstrumentation,
+			},
+		}, sdkmetric.Stream{
+			AttributeFilter: cardinalityFilter(httpUnacceptableKeyValues...),
+		}))
+	}
+	return views
+}
+
+func cardinalityFilter(kvs ...attribute.KeyValue) attribute.Filter {
+	filter := attribute.NewSet(kvs...)
+	return func(kv attribute.KeyValue) bool {
+		return !filter.HasValue(kv.Key)
 	}
 }
