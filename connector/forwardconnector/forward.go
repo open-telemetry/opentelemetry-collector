@@ -31,9 +31,9 @@ func NewFactory() connector.Factory {
 	return connector.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		connector.WithTracesToTraces(createTracesToTraces, component.StabilityLevelDevelopment),
-		connector.WithMetricsToMetrics(createMetricsToMetrics, component.StabilityLevelDevelopment),
-		connector.WithLogsToLogs(createLogsToLogs, component.StabilityLevelDevelopment),
+		connector.WithTracesToTraces(createTracesToTraces, component.StabilityLevelBeta),
+		connector.WithMetricsToMetrics(createMetricsToMetrics, component.StabilityLevelBeta),
+		connector.WithLogsToLogs(createLogsToLogs, component.StabilityLevelBeta),
 	)
 }
 
