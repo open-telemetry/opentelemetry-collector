@@ -10,7 +10,7 @@ require (
 	github.com/klauspost/compress v1.16.5
 	github.com/mostynb/go-grpc-compression v1.1.17
 	github.com/prometheus/client_golang v1.15.0
-	github.com/prometheus/client_model v0.3.0
+	github.com/prometheus/client_model v0.4.0
 	github.com/prometheus/common v0.42.0
 	github.com/rs/cors v1.9.0
 	github.com/shirou/gopsutil/v3 v3.23.3
