@@ -67,7 +67,11 @@ modeled after the [system used by Kubernetes](https://kubernetes.io/docs/referen
 4. A `stable` feature gate will be removed in the version specified by its `ToVersion` value.
 
 Features that prove unworkable in the `alpha` stage may be discontinued 
-without proceeding to the `beta` stage.  Features that make it to the `beta` 
-stage will not be dropped and will eventually reach general availability 
-where the `Gate` that allowed them to be disabled during the `beta` stage 
-will be removed.
+without proceeding to the `beta` stage. Instead, they will proceed to the
+`deprecated` stage, which will feature is permanently disabled. A feature gate will
+be removed once it has been `deprecated` for at least 2 releases of the collector.
+
+Features that make it to the `beta` stage are intended to reach general availability but may still be discontinued.
+If, after wider use, it is determined that the gate should be discontinued it will be reverted to the `alpha` stage
+for 2 releases and then proceed to the `deprecated` stage. If instead it is ready for general availability it will
+proceed to the `stable` stage.
