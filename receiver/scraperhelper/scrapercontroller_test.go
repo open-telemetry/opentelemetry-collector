@@ -64,10 +64,10 @@ func (ts *testScrapeMetrics) scrape(_ context.Context) (pmetric.Metrics, error) 
 	return md, nil
 }
 
-func testNewScrapeConfig(tick time.Duration, delay time.Duration) *ScraperControllerSettings {
+func newTestNoDelaySettings() *ScraperControllerSettings {
 	return &ScraperControllerSettings{
-		CollectionInterval: tick,
-		InitialDelay:       &delay,
+		CollectionInterval: time.Second,
+		InitialDelay:       new(time.Duration),
 	}
 }
 
@@ -151,7 +151,7 @@ func TestScrapeController(t *testing.T) {
 			if !test.nilNextConsumer {
 				nextConsumer = sink
 			}
-			cfg := testNewScrapeConfig(time.Minute, 1)
+			cfg := newTestNoDelaySettings()
 			if test.scraperControllerSettings != nil {
 				cfg = test.scraperControllerSettings
 			}
@@ -332,7 +332,7 @@ func TestSingleScrapePerInterval(t *testing.T) {
 	scrapeMetricsCh := make(chan int, 10)
 	tsm := &testScrapeMetrics{ch: scrapeMetricsCh}
 
-	cfg := testNewScrapeConfig(time.Minute, 1)
+	cfg := newTestNoDelaySettings()
 
 	tickerCh := make(chan time.Time)
 
@@ -395,4 +395,43 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 	<-time.After(500 * time.Nanosecond)
 	assert.NoError(t, r.Shutdown(context.Background()), "Must not have errored on shutdown")
 	assert.Equal(t, tsm.timesScrapeCalled, 1, "Must have been called as soon as the controller started")
+}
+
+func TestScrapeControllerInitialDelay(t *testing.T) {
+	if testing.Short() {
+		t.Skip("This requires real time to pass, skipping")
+		return
+	}
+
+	t.Parallel()
+
+	var (
+		elapsed = make(chan time.Time, 1)
+		delay   = 300 * time.Millisecond
+	)
+
+	scp, err := NewScraper("timed", func(ctx context.Context) (pmetric.Metrics, error) {
+		elapsed <- time.Now()
+		return pmetric.NewMetrics(), nil
+	})
+	require.NoError(t, err, "Must not error when creating scraper")
+
+	r, err := NewScraperControllerReceiver(
+		&ScraperControllerSettings{
+			CollectionInterval: time.Second,
+			InitialDelay:       &delay,
+		},
+		receivertest.NewNopCreateSettings(),
+		new(consumertest.MetricsSink),
+		AddScraper(scp),
+	)
+	require.NoError(t, err, "Must not error when creating receiver")
+
+	t0 := time.Now()
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "Must not error when starting")
+	t1 := <-elapsed
+
+	assert.GreaterOrEqual(t, t1.Sub(t0), 300*time.Millisecond, "Must have had 300ms pass as defined by initial delay")
+
+	assert.NoError(t, r.Shutdown(context.Background()), "Must not error closing down")
 }
