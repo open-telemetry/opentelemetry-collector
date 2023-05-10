@@ -23,7 +23,8 @@ import (
 // configuration. Scraper controller receivers can embed this struct, instead
 // of receiver.Settings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
-	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	CollectionInterval time.Duration  `mapstructure:"collection_interval"`
+	InitialDelay       *time.Duration `mapstructure:"initial_delay"`
 }
 
 // NewDefaultScraperControllerSettings returns default scraper controller
@@ -61,6 +62,7 @@ type controller struct {
 	id                 component.ID
 	logger             *zap.Logger
 	collectionInterval time.Duration
+	initialDelay       time.Duration
 	nextConsumer       consumer.Metrics
 
 	scrapers    []Scraper
@@ -90,6 +92,10 @@ func NewScraperControllerReceiver(
 	if cfg.CollectionInterval <= 0 {
 		return nil, errors.New("collection_interval must be a positive duration")
 	}
+	delay := cfg.CollectionInterval
+	if cfg.InitialDelay != nil {
+		delay = *cfg.InitialDelay
+	}
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             set.ID,
@@ -104,6 +110,7 @@ func NewScraperControllerReceiver(
 		id:                 set.ID,
 		logger:             set.Logger,
 		collectionInterval: cfg.CollectionInterval,
+		initialDelay:       delay,
 		nextConsumer:       nextConsumer,
 		done:               make(chan struct{}),
 		terminated:         make(chan struct{}),
@@ -172,6 +179,11 @@ func (sc *controller) startScraping() {
 			defer ticker.Stop()
 
 			sc.tickerCh = ticker.C
+		}
+		if sc.initialDelay > 0 {
+			timer := time.NewTimer(sc.collectionInterval)
+			<-timer.C
+			timer.Stop()
 		}
 
 		// Call scrape method on initialision to ensure

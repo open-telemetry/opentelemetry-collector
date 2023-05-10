@@ -64,6 +64,13 @@ func (ts *testScrapeMetrics) scrape(_ context.Context) (pmetric.Metrics, error) 
 	return md, nil
 }
 
+func testNewScrapeConfig(tick time.Duration) *ScraperControllerSettings {
+	return &ScraperControllerSettings{
+		CollectionInterval: tick,
+		InitialDelay:       new(time.Duration),
+	}
+}
+
 type metricsTestCase struct {
 	name string
 
@@ -144,8 +151,7 @@ func TestScrapeController(t *testing.T) {
 			if !test.nilNextConsumer {
 				nextConsumer = sink
 			}
-			defaultCfg := NewDefaultScraperControllerSettings("receiver")
-			cfg := &defaultCfg
+			cfg := testNewScrapeConfig(time.Minute)
 			if test.scraperControllerSettings != nil {
 				cfg = test.scraperControllerSettings
 			}
@@ -326,8 +332,7 @@ func TestSingleScrapePerInterval(t *testing.T) {
 	scrapeMetricsCh := make(chan int, 10)
 	tsm := &testScrapeMetrics{ch: scrapeMetricsCh}
 
-	defaultCfg := NewDefaultScraperControllerSettings("")
-	cfg := &defaultCfg
+	cfg := testNewScrapeConfig(time.Minute)
 
 	tickerCh := make(chan time.Time)
 
@@ -378,6 +383,7 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 	r, err := NewScraperControllerReceiver(
 		&ScraperControllerSettings{
 			CollectionInterval: time.Hour,
+			InitialDelay:       new(time.Duration),
 		},
 		receivertest.NewNopCreateSettings(),
 		new(consumertest.MetricsSink),
