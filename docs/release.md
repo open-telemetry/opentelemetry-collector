@@ -29,6 +29,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
    Check if stable modules have any changes since the last release by running `make check-changes PREVIOUS_VERSION=v1.0.0-rc9 MODSET=stable`. If there are no changes, there is no need to release new version for stable modules. 
 
 2. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). When prompted, enter the version numbers determined in Step 1, but do not include `v`. This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Core should be haulted**. **Do not** move forward until this PR is merged.
+   - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
 
 3. Update Contrib to use the latest in development version of Core. Run `make update-otel` in Contrib root directory and if it results in any changes submit a PR to Contrib with the changes as draft. This is to ensure that the latest core does not break contrib in any way. We’ll update it once more to the final release number later.
 
@@ -49,10 +50,11 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 ## Releasing opentelemetry-collector-contrib
 
 1. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/prepare-release.yml). When prompted, enter the version numbers determined in Step 1, but do not include `v`. This action will a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Contrib should be haulted**. Do not move forward until this PR is merged.
+   - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
 
 2. Create a branch named `release/<release-series>` (e.g. `release/v0.55.x`) in Contrib from the changelog update commit and push it to `open-telemetry/opentelemetry-collector-contrib`.
 
-3. Make sure you are on `release/<release-series>`. Tag all the module groups (`contrib-base`) with the new release version by running the `make push-tags MODSET=contrib-base` command. If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector.git` in each command. Wait for the new tag build to pass successfully.
+3. Make sure you are on `release/<release-series>`. Tag all the module groups (`contrib-base`) with the new release version by running the `make push-tags MODSET=contrib-base` command. If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-contrib.git` in each command. Wait for the new tag build to pass successfully.
 
 4. A new `v0.55.0` release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md as the release's description.
 
@@ -66,7 +68,7 @@ The last step of the release process creates artifacts for the new version of th
 
 3. Create a pull request with the change and ensure the build completes successfully. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/pull/71).
 
-4. Tag with the new release version by running the `make push-tags TAG=v0.55.0` command. If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector.git` in each command. Wait for the new tag build to pass successfully.
+4. Tag with the new release version by running the `make push-tags TAG=v0.55.0` command. If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-releases.git` in each command. Wait for the new tag build to pass successfully.
 
 5. Ensure the "Release" action passes, this will
  
@@ -80,6 +82,16 @@ The last step of the release process creates artifacts for the new version of th
 2. `commitChangesToNewBranch failed: invalid merge` -- This is a [known issue](https://github.com/open-telemetry/opentelemetry-go-build-tools/issues/47) with our release tooling. The current workaround is to clone a fresh copy of the repository and try again. Note that you may need to set up a `fork` remote pointing to your own fork for the release tooling to work properly.
 3. `could not run Go Mod Tidy: go mod tidy failed` when running `multimod` -- This is a [known issue](https://github.com/open-telemetry/opentelemetry-go-build-tools/issues/46) with our release tooling. The current workaround is to run `make gotidy` manually after the multimod tool fails and commit the result.
 4. `Incorrect version "X" of "go.opentelemetry.io/collector/component" is included in "X"` in CI after `make update-otel` -- It could be because the make target was run too soon after updating Core and the goproxy hasn't updated yet.  Try running `export GOPROXY=direct` and then `make update-otel`.
+5. `error: failed to push some refs to 'https://github.com/open-telemetry/opentelemetry-collector-contrib.git'` during `make push-tags` -- If you encounter this error the `make push-tags` target will terminate without pushing all the tags. Using the output of the `make push-tags` target, save all the un-pushed the tags in `tags.txt` and then use this make target to complete the push:
+
+   ```bash
+   .PHONY: temp-push-tags
+   temp-push-tags:
+       for tag in `cat tags.txt`; do \
+           echo "pushing tag $${tag}"; \
+           git push ${REMOTE} $${tag}; \
+       done;
+   ```
 
 ## Bugfix releases
 
