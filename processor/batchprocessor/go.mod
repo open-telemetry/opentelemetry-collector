@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2
-	github.com/prometheus/client_golang v1.15.0
+	github.com/prometheus/client_golang v1.15.1
 	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.42.0
 	github.com/stretchr/testify v1.8.2
