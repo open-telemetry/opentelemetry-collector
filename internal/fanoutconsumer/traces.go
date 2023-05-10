@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package fanoutconsumer // import "go.opentelemetry.io/collector/service/internal/fanoutconsumer"
+package fanoutconsumer // import "go.opentelemetry.io/collector/internal/fanoutconsumer"
 
 import (
 	"context"
