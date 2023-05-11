@@ -25,6 +25,7 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/klauspost/compress/zstd"
+	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -146,6 +147,7 @@ func (d *decompressor) wrap(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		newBody, err := newBodyReader(r)
 		if err != nil {
+			r.Body.Close()
 			d.errorHandler(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -164,30 +166,57 @@ func (d *decompressor) wrap(h http.Handler) http.Handler {
 }
 
 func newBodyReader(r *http.Request) (io.ReadCloser, error) {
-	switch r.Header.Get("Content-Encoding") {
-	case string(configcompression.Gzip):
+	switch configcompression.CompressionType(r.Header.Get("Content-Encoding")) {
+	case configcompression.Gzip:
 		gr, err := gzip.NewReader(r.Body)
 		if err != nil {
 			return nil, err
 		}
-		return gr, nil
-	case string(configcompression.Snappy):
+		return compressReader{
+			ReadCloser: gr,
+			body:       r.Body,
+		}, nil
+	case configcompression.Snappy:
 		sr := snappy.NewReader(r.Body)
-		return io.NopCloser(sr), nil
-	case string(configcompression.Zstd):
+		return compressReader{
+			ReadCloser: io.NopCloser(sr),
+			body:       r.Body,
+		}, nil
+	case configcompression.Zstd:
 		zr, err := zstd.NewReader(r.Body)
 		if err != nil {
 			return nil, err
 		}
-		return zr.IOReadCloser(), nil
-	case string(configcompression.Deflate), string(configcompression.Zlib):
+		return compressReader{
+			ReadCloser: zr.IOReadCloser(),
+			body:       r.Body,
+		}, nil
+	case configcompression.Deflate, configcompression.Zlib:
 		zr, err := zlib.NewReader(r.Body)
 		if err != nil {
 			return nil, err
 		}
-		return zr, nil
+		return compressReader{
+			ReadCloser: zr,
+			body:       r.Body,
+		}, nil
 	}
 	return nil, nil
+}
+
+// compressReader wrap compress reader and underlying reader
+type compressReader struct {
+	io.ReadCloser
+	body io.ReadCloser
+}
+
+// Close compress reader and underlying reader
+// by default compress reader's Close func would not close underlying reader
+func (c compressReader) Close() error {
+	var merr error
+	merr = multierr.Append(merr, c.body.Close())
+	merr = multierr.Append(merr, c.ReadCloser.Close())
+	return merr
 }
 
 // defaultErrorHandler writes the error message in plain text.

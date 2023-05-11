@@ -139,14 +139,28 @@ func TestHTTPClientCompression(t *testing.T) {
 	}
 }
 
+type closeOnceReader struct {
+	io.ReadCloser
+	closed bool
+}
+
+func (r *closeOnceReader) Close() error {
+	if r.closed {
+		return net.ErrClosed
+	}
+	r.closed = true
+	return r.ReadCloser.Close()
+}
+
 func TestHTTPContentDecompressionHandler(t *testing.T) {
 	testBody := []byte("uncompressed_text")
 	tests := []struct {
-		name        string
-		encoding    string
-		reqBodyFunc func() (*bytes.Buffer, error)
-		respCode    int
-		respBody    string
+		name          string
+		encoding      string
+		reqBodyFunc   func() (*bytes.Buffer, error)
+		respCode      int
+		respBody      string
+		readBodyError bool // the compressor would not return error when created but in reading
 	}{
 		{
 			name:     "NoCompression",
@@ -173,6 +187,22 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: 200,
 		},
 		{
+			name:     "ValidZstd",
+			encoding: "zstd",
+			reqBodyFunc: func() (*bytes.Buffer, error) {
+				return compressZstd(testBody)
+			},
+			respCode: 200,
+		},
+		{
+			name:     "ValidSnappy",
+			encoding: "snappy",
+			reqBodyFunc: func() (*bytes.Buffer, error) {
+				return compressSnappy(testBody)
+			},
+			respCode: 200,
+		},
+		{
 			name:     "InvalidGzip",
 			encoding: "gzip",
 			reqBodyFunc: func() (*bytes.Buffer, error) {
@@ -190,11 +220,36 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: 400,
 			respBody: "zlib: invalid header\n",
 		},
+		{
+			name:     "InValidZstd",
+			encoding: "zstd",
+			reqBodyFunc: func() (*bytes.Buffer, error) {
+				return bytes.NewBuffer(testBody), nil
+			},
+			respCode:      400,
+			respBody:      "invalid input: magic number mismatch\n",
+			readBodyError: true,
+		},
+		{
+			name:     "InValidSnappy",
+			encoding: "snappy",
+			reqBodyFunc: func() (*bytes.Buffer, error) {
+				return bytes.NewBuffer(testBody), nil
+			},
+			respCode:      400,
+			respBody:      "snappy: corrupt input\n",
+			readBodyError: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				defer r.Body.Close()
 				body, err := io.ReadAll(r.Body)
+				if tt.readBodyError {
+					http.Error(w, err.Error(), 400)
+					return
+				}
 				require.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, testBody, string(body))
 				w.WriteHeader(200)
@@ -204,7 +259,15 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			ln, err := net.Listen("tcp", addr)
 			require.NoError(t, err, "failed to create listener: %v", err)
 			srv := &http.Server{
-				Handler: httpContentDecompressor(handler),
+				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					body := &closeOnceReader{
+						ReadCloser: r.Body,
+						closed:     false,
+					}
+					r.Body = body
+					httpContentDecompressor(handler).ServeHTTP(w, r)
+					assert.Equal(t, net.ErrClosed, body.Close(), "http request body not closed")
+				}),
 			}
 			go func() {
 				_ = srv.Serve(ln)
