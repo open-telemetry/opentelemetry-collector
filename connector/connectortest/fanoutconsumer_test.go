@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -114,15 +115,15 @@ func TestFanoutMetricsErr(t *testing.T) {
 }
 
 func TestFanoutLogsWithNop(t *testing.T) {
-	tr, err := NewLogsRouterSink(
+	lr, err := NewLogsRouterSink(
 		WithNopLogsSink(component.NewIDWithName(component.DataTypeLogs, "0")),
 		WithNopLogsSink(component.NewIDWithName(component.DataTypeLogs, "1")),
 	)
 
 	require.NoError(t, err)
 
-	td := testdata.GenerateLogs(1)
-	err = tr.(consumer.Logs).ConsumeLogs(context.Background(), td)
+	ld := testdata.GenerateLogs(1)
+	err = lr.(consumer.Logs).ConsumeLogs(context.Background(), ld)
 
 	require.NoError(t, err)
 }
@@ -130,7 +131,7 @@ func TestFanoutLogsWithNop(t *testing.T) {
 func TestFanoutLogsWithSink(t *testing.T) {
 	var sink0, sink1 consumertest.LogsSink
 
-	tr, err := NewLogsRouterSink(
+	lr, err := NewLogsRouterSink(
 		WithLogsSink(component.NewIDWithName(component.DataTypeLogs, "0"), &sink0),
 		WithLogsSink(component.NewIDWithName(component.DataTypeLogs, "1"), &sink1),
 	)
@@ -139,8 +140,8 @@ func TestFanoutLogsWithSink(t *testing.T) {
 	require.Equal(t, 0, sink0.LogRecordCount())
 	require.Equal(t, 0, sink1.LogRecordCount())
 
-	td := testdata.GenerateLogs(1)
-	err = tr.(consumer.Logs).ConsumeLogs(context.Background(), td)
+	ld := testdata.GenerateLogs(1)
+	err = lr.(consumer.Logs).ConsumeLogs(context.Background(), ld)
 
 	require.NoError(t, err)
 	require.Equal(t, 1, sink0.LogRecordCount())
@@ -148,11 +149,11 @@ func TestFanoutLogsWithSink(t *testing.T) {
 }
 
 func TestFanoutLogsErr(t *testing.T) {
-	tr, err := NewLogsRouterSink(
+	lr, err := NewLogsRouterSink(
 		WithNopLogsSink(component.NewIDWithName(component.DataTypeLogs, "0")),
 	)
 
-	require.Nil(t, tr)
+	require.Nil(t, lr)
 	require.Error(t, err)
 	require.ErrorIs(t, err, errTooFewConsumers)
 }
