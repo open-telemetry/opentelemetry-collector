@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 )
 
-var errTooFewConsumers = errors.New("fanoutconsumer requires a mininum of 2 consumers")
+var errTooFewConsumers = errors.New("router requires a minimum of 2 consumers")
 
 type TracesRouterTestOption struct {
 	id   component.ID
