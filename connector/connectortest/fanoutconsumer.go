@@ -36,7 +36,7 @@ func WithNopTracesSink(id component.ID) tracesRouterTestOption {
 	return tracesRouterTestOption{id: id, cons: consumertest.NewNop()}
 }
 
-// WithNopTracesSink adds a consumer to a connector.TracesRouter
+// WithTracesSink adds a consumer to a connector.TracesRouter
 func WithTracesSink(id component.ID, sink *consumertest.TracesSink) tracesRouterTestOption {
 	return tracesRouterTestOption{id: id, cons: sink}
 }
@@ -63,7 +63,7 @@ func WithNopMetricsSink(id component.ID) metricsRouterTestOption {
 	return metricsRouterTestOption{id: id, cons: consumertest.NewNop()}
 }
 
-// WithNopMetricsSink adds a consumer to a connector.MetricsRouter
+// WithMetricsSink adds a consumer to a connector.MetricsRouter
 func WithMetricsSink(id component.ID, sink *consumertest.MetricsSink) metricsRouterTestOption {
 	return metricsRouterTestOption{id: id, cons: sink}
 }
@@ -90,7 +90,7 @@ func WithNopLogsSink(id component.ID) logsRouterTestOption {
 	return logsRouterTestOption{id: id, cons: consumertest.NewNop()}
 }
 
-// WithNopLogsSink adds a consumer to a connector.LogsRouter
+// WithLogsSink adds a consumer to a connector.LogsRouter
 func WithLogsSink(id component.ID, sink *consumertest.LogsSink) logsRouterTestOption {
 	return logsRouterTestOption{id: id, cons: sink}
 }
