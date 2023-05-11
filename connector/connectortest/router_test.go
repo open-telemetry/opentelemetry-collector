@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestFanoutTracesWithNop(t *testing.T) {
+func TestTracesRouterWithNop(t *testing.T) {
 	tr, err := NewTracesRouterSink(
 		WithNopTracesSink(component.NewIDWithName(component.DataTypeTraces, "0")),
 		WithNopTracesSink(component.NewIDWithName(component.DataTypeTraces, "1")),
@@ -40,7 +40,7 @@ func TestFanoutTracesWithNop(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestFanoutTracesWithSink(t *testing.T) {
+func TestTracesRouterWithSink(t *testing.T) {
 	var sink0, sink1 consumertest.TracesSink
 
 	tr, err := NewTracesRouterSink(
@@ -60,7 +60,7 @@ func TestFanoutTracesWithSink(t *testing.T) {
 	require.Equal(t, 1, sink1.SpanCount())
 }
 
-func TestFanoutTracesErr(t *testing.T) {
+func TestTracesRouterErr(t *testing.T) {
 	tr, err := NewTracesRouterSink(
 		WithNopTracesSink(component.NewIDWithName(component.DataTypeTraces, "0")),
 	)
@@ -70,7 +70,7 @@ func TestFanoutTracesErr(t *testing.T) {
 	require.ErrorIs(t, err, errTooFewConsumers)
 }
 
-func TestFanoutMetricsWithNop(t *testing.T) {
+func TestMetricsRouterWithNop(t *testing.T) {
 	mr, err := NewMetricsRouterSink(
 		WithNopMetricsSink(component.NewIDWithName(component.DataTypeMetrics, "0")),
 		WithNopMetricsSink(component.NewIDWithName(component.DataTypeMetrics, "1")),
@@ -84,7 +84,7 @@ func TestFanoutMetricsWithNop(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestFanoutMetricsWithSink(t *testing.T) {
+func TestMetricsRouterWithSink(t *testing.T) {
 	var sink0, sink1 consumertest.MetricsSink
 
 	mr, err := NewMetricsRouterSink(
@@ -104,7 +104,7 @@ func TestFanoutMetricsWithSink(t *testing.T) {
 	require.Len(t, sink1.AllMetrics(), 1)
 }
 
-func TestFanoutMetricsErr(t *testing.T) {
+func TestMetricsRouterErr(t *testing.T) {
 	mr, err := NewMetricsRouterSink(
 		WithNopMetricsSink(component.NewIDWithName(component.DataTypeMetrics, "0")),
 	)
@@ -114,7 +114,7 @@ func TestFanoutMetricsErr(t *testing.T) {
 	require.ErrorIs(t, err, errTooFewConsumers)
 }
 
-func TestFanoutLogsWithNop(t *testing.T) {
+func TestLogsRouterWithNop(t *testing.T) {
 	lr, err := NewLogsRouterSink(
 		WithNopLogsSink(component.NewIDWithName(component.DataTypeLogs, "0")),
 		WithNopLogsSink(component.NewIDWithName(component.DataTypeLogs, "1")),
@@ -128,7 +128,7 @@ func TestFanoutLogsWithNop(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestFanoutLogsWithSink(t *testing.T) {
+func TestLogsRouterWithSink(t *testing.T) {
 	var sink0, sink1 consumertest.LogsSink
 
 	lr, err := NewLogsRouterSink(
@@ -148,7 +148,7 @@ func TestFanoutLogsWithSink(t *testing.T) {
 	require.Equal(t, 1, sink1.LogRecordCount())
 }
 
-func TestFanoutLogsErr(t *testing.T) {
+func TestLogsRouterErr(t *testing.T) {
 	lr, err := NewLogsRouterSink(
 		WithNopLogsSink(component.NewIDWithName(component.DataTypeLogs, "0")),
 	)
