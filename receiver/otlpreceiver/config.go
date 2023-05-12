@@ -5,6 +5,7 @@ package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlprecei
 
 import (
 	"errors"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -60,6 +61,8 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 
 	if !conf.IsSet(protoHTTP) {
 		cfg.HTTP = nil
+	} else {
+		cfg.HTTP.PathPrefix = strings.Trim(cfg.HTTP.PathPrefix, "/")
 	}
 
 	return nil

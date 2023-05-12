@@ -1,0 +1,4 @@
+# The following entry initializes the default OTLP receiver with only http support and no-op slash path prefix. 
+protocols:
+  http:
+    path_prefix: /
