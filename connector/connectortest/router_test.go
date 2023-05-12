@@ -27,9 +27,9 @@ import (
 )
 
 func TestTracesRouterWithNop(t *testing.T) {
-	tr, err := NewTracesRouterSink(
-		WithNopTracesSink(component.NewIDWithName(component.DataTypeTraces, "0")),
-		WithNopTracesSink(component.NewIDWithName(component.DataTypeTraces, "1")),
+	tr, err := NewTracesRouter(
+		WithNopTraces(component.NewIDWithName(component.DataTypeTraces, "0")),
+		WithNopTraces(component.NewIDWithName(component.DataTypeTraces, "1")),
 	)
 
 	require.NoError(t, err)
@@ -43,7 +43,7 @@ func TestTracesRouterWithNop(t *testing.T) {
 func TestTracesRouterWithSink(t *testing.T) {
 	var sink0, sink1 consumertest.TracesSink
 
-	tr, err := NewTracesRouterSink(
+	tr, err := NewTracesRouter(
 		WithTracesSink(component.NewIDWithName(component.DataTypeTraces, "0"), &sink0),
 		WithTracesSink(component.NewIDWithName(component.DataTypeTraces, "1"), &sink1),
 	)
@@ -61,8 +61,8 @@ func TestTracesRouterWithSink(t *testing.T) {
 }
 
 func TestTracesRouterErr(t *testing.T) {
-	tr, err := NewTracesRouterSink(
-		WithNopTracesSink(component.NewIDWithName(component.DataTypeTraces, "0")),
+	tr, err := NewTracesRouter(
+		WithNopTraces(component.NewIDWithName(component.DataTypeTraces, "0")),
 	)
 
 	require.Nil(t, tr)
@@ -71,9 +71,9 @@ func TestTracesRouterErr(t *testing.T) {
 }
 
 func TestMetricsRouterWithNop(t *testing.T) {
-	mr, err := NewMetricsRouterSink(
-		WithNopMetricsSink(component.NewIDWithName(component.DataTypeMetrics, "0")),
-		WithNopMetricsSink(component.NewIDWithName(component.DataTypeMetrics, "1")),
+	mr, err := NewMetricsRouter(
+		WithNopMetrics(component.NewIDWithName(component.DataTypeMetrics, "0")),
+		WithNopMetrics(component.NewIDWithName(component.DataTypeMetrics, "1")),
 	)
 
 	require.NoError(t, err)
@@ -87,7 +87,7 @@ func TestMetricsRouterWithNop(t *testing.T) {
 func TestMetricsRouterWithSink(t *testing.T) {
 	var sink0, sink1 consumertest.MetricsSink
 
-	mr, err := NewMetricsRouterSink(
+	mr, err := NewMetricsRouter(
 		WithMetricsSink(component.NewIDWithName(component.DataTypeMetrics, "0"), &sink0),
 		WithMetricsSink(component.NewIDWithName(component.DataTypeMetrics, "1"), &sink1),
 	)
@@ -105,8 +105,8 @@ func TestMetricsRouterWithSink(t *testing.T) {
 }
 
 func TestMetricsRouterErr(t *testing.T) {
-	mr, err := NewMetricsRouterSink(
-		WithNopMetricsSink(component.NewIDWithName(component.DataTypeMetrics, "0")),
+	mr, err := NewMetricsRouter(
+		WithNopMetrics(component.NewIDWithName(component.DataTypeMetrics, "0")),
 	)
 
 	require.Nil(t, mr)
@@ -115,9 +115,9 @@ func TestMetricsRouterErr(t *testing.T) {
 }
 
 func TestLogsRouterWithNop(t *testing.T) {
-	lr, err := NewLogsRouterSink(
-		WithNopLogsSink(component.NewIDWithName(component.DataTypeLogs, "0")),
-		WithNopLogsSink(component.NewIDWithName(component.DataTypeLogs, "1")),
+	lr, err := NewLogsRouter(
+		WithNopLogs(component.NewIDWithName(component.DataTypeLogs, "0")),
+		WithNopLogs(component.NewIDWithName(component.DataTypeLogs, "1")),
 	)
 
 	require.NoError(t, err)
@@ -131,7 +131,7 @@ func TestLogsRouterWithNop(t *testing.T) {
 func TestLogsRouterWithSink(t *testing.T) {
 	var sink0, sink1 consumertest.LogsSink
 
-	lr, err := NewLogsRouterSink(
+	lr, err := NewLogsRouter(
 		WithLogsSink(component.NewIDWithName(component.DataTypeLogs, "0"), &sink0),
 		WithLogsSink(component.NewIDWithName(component.DataTypeLogs, "1"), &sink1),
 	)
@@ -149,8 +149,8 @@ func TestLogsRouterWithSink(t *testing.T) {
 }
 
 func TestLogsRouterErr(t *testing.T) {
-	lr, err := NewLogsRouterSink(
-		WithNopLogsSink(component.NewIDWithName(component.DataTypeLogs, "0")),
+	lr, err := NewLogsRouter(
+		WithNopLogs(component.NewIDWithName(component.DataTypeLogs, "0")),
 	)
 
 	require.Nil(t, lr)
