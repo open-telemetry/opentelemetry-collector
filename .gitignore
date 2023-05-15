@@ -26,3 +26,5 @@ coverage.html
 # Wix
 *.wixobj
 *.wixpdb
+
+go.work*
