@@ -104,6 +104,18 @@ type LogsSamplingConfig struct {
 	Thereafter int `mapstructure:"thereafter"`
 }
 
+// MetricReader exposes configuration of metric readers to end users.
+// TODO: replace this temporary struct w/ auto-generated struct from jsonschema
+//
+// Experimental: *NOTE* this structure is subject to change or removal in the future.
+type MetricReader struct {
+	// Args corresponds to the JSON schema field "args".
+	Args any `mapstructure:"args"`
+
+	// Type corresponds to the JSON schema field "type".
+	Type string `mapstructure:"type"`
+}
+
 // MetricsConfig exposes the common Telemetry configuration for one component.
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
 type MetricsConfig struct {
@@ -116,6 +128,10 @@ type MetricsConfig struct {
 
 	// Address is the [address]:port that metrics exposition should be bound to.
 	Address string `mapstructure:"address"`
+
+	// Readers allow configuration of metric readers to emit metrics to
+	// any number of supported backends.
+	Readers []MetricReader `mapstructure:"metric_readers"`
 }
 
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
