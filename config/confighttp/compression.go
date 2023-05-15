@@ -172,34 +172,22 @@ func newBodyReader(r *http.Request) (io.ReadCloser, error) {
 		if err != nil {
 			return nil, err
 		}
-		return compressReader{
-			ReadCloser: gr,
-			body:       r.Body,
-		}, nil
+		return newCompressReader(gr, r.Body)
 	case configcompression.Snappy:
 		sr := snappy.NewReader(r.Body)
-		return compressReader{
-			ReadCloser: io.NopCloser(sr),
-			body:       r.Body,
-		}, nil
+		return newCompressReader(io.NopCloser(sr), r.Body)
 	case configcompression.Zstd:
 		zr, err := zstd.NewReader(r.Body)
 		if err != nil {
 			return nil, err
 		}
-		return compressReader{
-			ReadCloser: zr.IOReadCloser(),
-			body:       r.Body,
-		}, nil
+		return newCompressReader(zr.IOReadCloser(), r.Body)
 	case configcompression.Deflate, configcompression.Zlib:
 		zr, err := zlib.NewReader(r.Body)
 		if err != nil {
 			return nil, err
 		}
-		return compressReader{
-			ReadCloser: zr,
-			body:       r.Body,
-		}, nil
+		return newCompressReader(zr, r.Body)
 	}
 	return nil, nil
 }
@@ -210,13 +198,17 @@ type compressReader struct {
 	body io.ReadCloser
 }
 
+func newCompressReader(reader, body io.ReadCloser) (io.ReadCloser, error) {
+	return compressReader{
+		ReadCloser: reader,
+		body:       body,
+	}, nil
+}
+
 // Close compress reader and underlying reader
 // by default compress reader's Close func would not close underlying reader
 func (c compressReader) Close() error {
-	var merr error
-	merr = multierr.Append(merr, c.body.Close())
-	merr = multierr.Append(merr, c.ReadCloser.Close())
-	return merr
+	return multierr.Combine(c.ReadCloser.Close(), c.body.Close())
 }
 
 // defaultErrorHandler writes the error message in plain text.
