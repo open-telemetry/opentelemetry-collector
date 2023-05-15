@@ -5,7 +5,7 @@ change_type: enhancement
 component: service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add feature gate `telemetry.useOtelWithExtendedConfigurationForInternalTelemetry` to start adding support for exporting internal telemetry"
+note: "Add feature gate `telemetry.useOtelWithSDKConfigurationForInternalTelemetry` that will add support for configuring the export of internal telemetry to additional destinations in future releases"
 
 # One or more tracking issues or pull requests related to the change
 issues: [7641]

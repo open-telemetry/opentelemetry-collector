@@ -106,6 +106,7 @@ type LogsSamplingConfig struct {
 
 // MetricReader exposes configuration of metric readers to end users.
 // TODO: replace this temporary struct w/ auto-generated struct from jsonschema
+// https://github.com/open-telemetry/opentelemetry-configuration/tree/main/schema
 //
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
 type MetricReader struct {

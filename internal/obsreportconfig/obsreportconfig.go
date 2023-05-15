@@ -39,10 +39,10 @@ var DisableHighCardinalityMetricsfeatureGate = featuregate.GlobalRegistry().Must
 	featuregate.WithRegisterDescription("controls whether the collector should enable potentially high"+
 		"cardinality metrics. The gate will be removed when the collector allows for view configuration."))
 
-// UseOtelWithExtendedConfigurationForInternalTelemetryFeatureGate is the feature gate that controls whether the collector
+// UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate is the feature gate that controls whether the collector
 // supports configuring the OpenTelemetry SDK via configuration
-var UseOtelWithExtendedConfigurationForInternalTelemetryFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.useOtelWithExtendedConfigurationForInternalTelemetry",
+var UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.useOtelWithSDKConfigurationForInternalTelemetry",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("controls whether the collector supports extended OpenTelemetry"+
 		"configuration for internal telemetry"))

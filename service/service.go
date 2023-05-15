@@ -87,7 +87,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		useOtel = *set.useOtel
 	}
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
-	extendedConfig := obsreportconfig.UseOtelWithExtendedConfigurationForInternalTelemetryFeatureGate.IsEnabled()
+	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
