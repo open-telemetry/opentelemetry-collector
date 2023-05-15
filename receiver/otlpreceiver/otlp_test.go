@@ -821,7 +821,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 	assert.EqualError(t,
 		r.Start(context.Background(), componenttest.NewNopHost()),
-		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
+		`failed to load TLS config: failed to load TLS cert and key: for auth via TLS, either both certificate and key must be supplied, or neither`)
 }
 
 func TestGRPCMaxRecvSize(t *testing.T) {
@@ -887,7 +887,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 	assert.EqualError(t, r.Start(context.Background(), componenttest.NewNopHost()),
-		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
+		`failed to load TLS config: failed to load TLS cert and key: for auth via TLS, either both certificate and key must be supplied, or neither`)
 }
 
 func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expectedStatusCode int) {

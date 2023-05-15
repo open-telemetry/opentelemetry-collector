@@ -223,7 +223,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 		err      string
 	}{
 		{
-			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
+			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
 			settings: HTTPClientSettings{
 				Endpoint: "",
 				TLSSetting: configtls.TLSClientSetting{
@@ -236,7 +236,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "^failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither",
+			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, either both certificate and key must be supplied, or neither",
 			settings: HTTPClientSettings{
 				Endpoint: "",
 				TLSSetting: configtls.TLSClientSetting{
@@ -406,7 +406,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		err      string
 	}{
 		{
-			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
+			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
 			settings: HTTPServerSettings{
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.TLSServerSetting{
@@ -417,7 +417,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "^failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither",
+			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, either both certificate and key must be supplied, or neither",
 			settings: HTTPServerSettings{
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.TLSServerSetting{
@@ -428,7 +428,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "failed to load client CA CertPool: failed to load CA /doesnt/exist:",
+			err: "failed to load client CA CertPool: failed to load CA /doesnt/exist: open /doesnt/exist:",
 			settings: HTTPServerSettings{
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.TLSServerSetting{
