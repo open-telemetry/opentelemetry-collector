@@ -259,6 +259,27 @@ genpdata:
 	$(GOCMD) run pdata/internal/cmd/pdatagen/main.go
 	$(MAKE) fmt
 
+# The source directory for configuration schema.
+OPENTELEMETRY_JSONSCHEMA_SRC_DIR=service/internal/proctelemetry/opentelememetry-configuration
+
+# The SHA matching the current version of the configuration schema to use
+OPENTELEMETRY_JSONSCHEMA_VERSION=main
+
+# Cleanup temporary directory
+genjsonschema-cleanup:
+	rm -Rf ${OPENTELEMETRY_JSONSCHEMA_SRC_DIR}
+
+# Generate structs for configuration from configuration schema
+genjsonschema: genjsonschema-cleanup $(GOJSONSCHEMA)
+	mkdir -p ${OPENTELEMETRY_JSONSCHEMA_SRC_DIR}
+	curl -sSL https://api.github.com/repos/open-telemetry/opentelemetry-configuration/tarball/${OPENTELEMETRY_JSONSCHEMA_VERSION} | tar xz --strip 1 -C ${OPENTELEMETRY_JSONSCHEMA_SRC_DIR}
+	$(GOJSONSCHEMA) \
+		--package telemetry \
+		--output ./service/telemetry/generated_config.go \
+		--schema-package=https://opentelemetry.io/otelconfig/opentelemetry_configuration.json=github.com/open-telemetry/opentelemetry-collector/schema \
+    	${OPENTELEMETRY_JSONSCHEMA_SRC_DIR}/schema/opentelemetry_configuration.json
+	$(MAKE) genjsonschema-cleanup
+
 # Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
 gensemconv:
 	@[ "${SPECPATH}" ] || ( echo ">> env var SPECPATH is not set"; exit 1 )

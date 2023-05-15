@@ -15,20 +15,21 @@ TOOLS_MOD_REGEX := "\s+_\s+\".*\""
 TOOLS_PKG_NAMES := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"" | grep -vE '/v[0-9]+$$')
 TOOLS_BIN_NAMES := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(shell echo $(TOOLS_PKG_NAMES))))
 
-ADDLICENSE  := $(TOOLS_BIN_DIR)/addlicense
-APIDIFF     := $(TOOLS_BIN_DIR)/apidiff
-CHECKDOC    := $(TOOLS_BIN_DIR)/checkdoc
-CHLOG       := $(TOOLS_BIN_DIR)/chloggen
-CROSSLINK   := $(TOOLS_BIN_DIR)/crosslink
-ENVSUBST    := $(TOOLS_BIN_DIR)/envsubst
-GOIMPORTS   := $(TOOLS_BIN_DIR)/goimports
-GOVULNCHECK := $(TOOLS_BIN_DIR)/govulncheck
-LINT        := $(TOOLS_BIN_DIR)/golangci-lint
-IMPI        := $(TOOLS_BIN_DIR)/impi
-MISSPELL    := $(TOOLS_BIN_DIR)/misspell
-MULTIMOD    := $(TOOLS_BIN_DIR)/multimod
-PORTO       := $(TOOLS_BIN_DIR)/porto
-YQ          := $(TOOLS_BIN_DIR)/yq
+ADDLICENSE   := $(TOOLS_BIN_DIR)/addlicense
+APIDIFF      := $(TOOLS_BIN_DIR)/apidiff
+CHECKDOC     := $(TOOLS_BIN_DIR)/checkdoc
+CHLOG        := $(TOOLS_BIN_DIR)/chloggen
+CROSSLINK    := $(TOOLS_BIN_DIR)/crosslink
+ENVSUBST     := $(TOOLS_BIN_DIR)/envsubst
+GOIMPORTS    := $(TOOLS_BIN_DIR)/goimports
+GOJSONSCHEMA := $(TOOLS_BIN_DIR)/gojsonschema
+GOVULNCHECK  := $(TOOLS_BIN_DIR)/govulncheck
+LINT         := $(TOOLS_BIN_DIR)/golangci-lint
+IMPI         := $(TOOLS_BIN_DIR)/impi
+MISSPELL     := $(TOOLS_BIN_DIR)/misspell
+MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
+PORTO        := $(TOOLS_BIN_DIR)/porto
+YQ           := $(TOOLS_BIN_DIR)/yq
 
 GH := $(shell which gh)
 
