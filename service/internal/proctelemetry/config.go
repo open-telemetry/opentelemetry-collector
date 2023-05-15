@@ -22,9 +22,6 @@ import (
 	"os"
 	"time"
 
-	"go.opentelemetry.io/collector/obsreport"
-	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
-	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
@@ -32,13 +29,13 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/resource"
+
+	"go.opentelemetry.io/collector/obsreport"
+	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 const (
-	// supported trace propagators
-	traceContextPropagator = "tracecontext"
-	b3Propagator           = "b3"
-
 	// supported exporters
 	stdoutmetricExporter   = "console"
 	otlpmetricgrpcExporter = "otlp"
@@ -48,22 +45,22 @@ const (
 	PeriodMetricReader     = "periodic"
 
 	// gRPC Instrumentation Name
-	grpcInstrumentation = "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	GRPCInstrumentation = "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
 	// http Instrumentation Name
-	httpInstrumentation = "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	HTTPInstrumentation = "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 var (
-	// grpcUnacceptableKeyValues is a list of high cardinality grpc attributes that should be filtered out.
-	grpcUnacceptableKeyValues = []attribute.KeyValue{
+	// GRPCUnacceptableKeyValues is a list of high cardinality grpc attributes that should be filtered out.
+	GRPCUnacceptableKeyValues = []attribute.KeyValue{
 		attribute.String(semconv.AttributeNetSockPeerAddr, ""),
 		attribute.String(semconv.AttributeNetSockPeerPort, ""),
 		attribute.String(semconv.AttributeNetSockPeerName, ""),
 	}
 
-	// httpUnacceptableKeyValues is a list of high cardinality http attributes that should be filtered out.
-	httpUnacceptableKeyValues = []attribute.KeyValue{
+	// HTTPUnacceptableKeyValues is a list of high cardinality http attributes that should be filtered out.
+	HTTPUnacceptableKeyValues = []attribute.KeyValue{
 		attribute.String(semconv.AttributeNetHostName, ""),
 		attribute.String(semconv.AttributeNetHostPort, ""),
 	}
@@ -177,17 +174,17 @@ func batchViews(disableHighCardinality bool) []sdkmetric.View {
 	if disableHighCardinality {
 		views = append(views, sdkmetric.NewView(sdkmetric.Instrument{
 			Scope: instrumentation.Scope{
-				Name: grpcInstrumentation,
+				Name: GRPCInstrumentation,
 			},
 		}, sdkmetric.Stream{
-			AttributeFilter: cardinalityFilter(grpcUnacceptableKeyValues...),
+			AttributeFilter: cardinalityFilter(GRPCUnacceptableKeyValues...),
 		}))
 		views = append(views, sdkmetric.NewView(sdkmetric.Instrument{
 			Scope: instrumentation.Scope{
-				Name: httpInstrumentation,
+				Name: HTTPInstrumentation,
 			},
 		}, sdkmetric.Stream{
-			AttributeFilter: cardinalityFilter(httpUnacceptableKeyValues...),
+			AttributeFilter: cardinalityFilter(HTTPUnacceptableKeyValues...),
 		}))
 	}
 	return views

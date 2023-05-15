@@ -107,7 +107,7 @@ func (tel *telemetryInitializer) init(ctx context.Context, res *resource.Resourc
 	}
 
 	if len(cfg.Metrics.Address) > 0 {
-		settings.Logger.Warn("service.telemetry.metrics.address is being deprecated in favour of service.telemetry.metrics.metric_readers")
+		settings.Logger.Warn("service.telemetry.metrics.address is being deprecated in favor of service.telemetry.metrics.metric_readers")
 		// TODO: account for multiple readers trying to use the same port
 		host, port, err := net.SplitHostPort(cfg.Metrics.Address)
 		if err != nil {
