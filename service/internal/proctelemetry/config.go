@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -37,8 +38,11 @@ import (
 
 const (
 	// supported exporters
-	stdoutmetricExporter   = "console"
-	otlpmetricgrpcExporter = "otlp"
+	consoleExporter      = "console"
+	otlpExporter         = "otlp"
+	protocolProtobufHTTP = "http/protobuf"
+	protocolProtobufGRPC = "grpc/protobuf"
+	compressionGzip      = "gzip"
 
 	// supported metric readers
 	PrometheusMetricReader = "prometheus"
@@ -74,53 +78,95 @@ func toStringMap(in map[string]interface{}) map[string]string {
 	return out
 }
 
+func newOTLPGRPCMetricExporter(ctx context.Context, args map[string]interface{}) (sdkmetric.Exporter, error) {
+	opts := []otlpmetricgrpc.Option{}
+	for k, v := range args {
+		switch k {
+		case "endpoint":
+			opts = append(opts, otlpmetricgrpc.WithEndpoint(fmt.Sprintf("%s", v)))
+		case "certificate":
+		case "client_key":
+		case "client_certificate":
+		case "compression":
+			opts = append(opts, otlpmetricgrpc.WithCompressor(fmt.Sprintf("%s", v)))
+		case "timeout":
+			timeout, ok := v.(int)
+			if !ok {
+				return nil, fmt.Errorf("invalid timeout for otlp exporter: %s", v)
+			}
+			opts = append(opts, otlpmetricgrpc.WithTimeout(time.Millisecond*time.Duration(timeout)))
+		case "headers":
+			headers, ok := v.(map[string]any)
+			if !ok {
+				return nil, fmt.Errorf("invalid headers for otlp exporter: %s", v)
+			}
+			opts = append(opts, otlpmetricgrpc.WithHeaders(toStringMap(headers)))
+			// otlpmetricgrpc.WithInsecure()
+			// otlpmetricgrpc.WithReconnectionPeriod()
+			// otlpmetricgrpc.WithTLSCredentials()
+			//
+		}
+	}
+	return otlpmetricgrpc.New(ctx, opts...)
+}
+
+func newOTLPHTTPMetricExporter(ctx context.Context, args map[string]interface{}) (sdkmetric.Exporter, error) {
+	opts := []otlpmetrichttp.Option{}
+	for k, v := range args {
+		switch k {
+		case "endpoint":
+			opts = append(opts, otlpmetrichttp.WithEndpoint(fmt.Sprintf("%s", v)))
+		case "certificate":
+		case "client_key":
+		case "client_certificate":
+		case "compression":
+			switch fmt.Sprintf("%s", v) {
+			case compressionGzip:
+				opts = append(opts, otlpmetrichttp.WithCompression(otlpmetrichttp.GzipCompression))
+			}
+		case "timeout":
+			timeout, ok := v.(int)
+			if !ok {
+				return nil, fmt.Errorf("invalid timeout for otlp exporter: %s", v)
+			}
+			opts = append(opts, otlpmetrichttp.WithTimeout(time.Millisecond*time.Duration(timeout)))
+		case "headers":
+			headers, ok := v.(map[string]any)
+			if !ok {
+				return nil, fmt.Errorf("invalid headers for otlp exporter: %s", v)
+			}
+			opts = append(opts, otlpmetrichttp.WithHeaders(toStringMap(headers)))
+			// otlpmetricgrpc.WithInsecure()
+			// otlpmetricgrpc.WithReconnectionPeriod()
+			// otlpmetricgrpc.WithTLSCredentials()
+			//
+		}
+	}
+	return otlpmetrichttp.New(ctx, opts...)
+}
+
 func InitExporter(ctx context.Context, exporterType string, args any) (sdkmetric.Exporter, error) {
 	switch exporterType {
-	case stdoutmetricExporter:
+	case consoleExporter:
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
 		return stdoutmetric.New(
 			stdoutmetric.WithEncoder(enc),
 		)
-	case otlpmetricgrpcExporter:
-		// add case for `protocol`
-		opts := []otlpmetricgrpc.Option{}
-
+	case otlpExporter:
 		switch t := args.(type) {
 		case map[string]interface{}:
-			for k, v := range t {
-				switch k {
-				case "endpoint":
-					opts = append(opts, otlpmetricgrpc.WithEndpoint(fmt.Sprintf("%s", v)))
-				case "certificate":
-				case "client_key":
-				case "client_certificate":
-				case "compression":
-					otlpmetricgrpc.WithCompressor(fmt.Sprintf("%s", v))
-				case "timeout":
-					timeout, ok := v.(int)
-					if !ok {
-						return nil, fmt.Errorf("invalid timeout for otlp exporter: %s", v)
-					}
-					opts = append(opts, otlpmetricgrpc.WithTimeout(time.Millisecond*time.Duration(timeout)))
-				case "headers":
-					headers, ok := v.(map[string]any)
-					if !ok {
-						return nil, fmt.Errorf("invalid headers for otlp exporter: %s", v)
-					}
-					opts = append(opts, otlpmetricgrpc.WithHeaders(toStringMap(headers)))
-					// otlpmetricgrpc.WithInsecure()
-					// otlpmetricgrpc.WithReconnectionPeriod()
-					// otlpmetricgrpc.WithTLSCredentials()
-					//
-				}
+			switch t["protocol"] {
+			case protocolProtobufGRPC:
+				return newOTLPGRPCMetricExporter(ctx, t)
+			case protocolProtobufHTTP:
+				return newOTLPHTTPMetricExporter(ctx, t)
+			default:
+				return nil, fmt.Errorf("unsupported protocol for otlp exporter: %s", t["protocol"])
 			}
-		case nil:
-			// no args defaults to no options
 		default:
-			return nil, fmt.Errorf("invalid args for otlp exporter: %s", args)
+			return nil, fmt.Errorf("invalid args for otlp exporter: %v", args)
 		}
-		return otlpmetricgrpc.New(ctx, opts...)
 	default:
 		return nil, fmt.Errorf("unsupported metric exporter type: %s", exporterType)
 	}

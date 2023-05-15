@@ -83,6 +83,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.15.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.38.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.38.1 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.38.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.38.1 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.38.1 // indirect
 	go.opentelemetry.io/otel/metric v0.38.1 // indirect

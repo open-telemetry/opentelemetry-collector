@@ -32,6 +32,7 @@ require (
 	go.opentelemetry.io/otel v1.15.1
 	go.opentelemetry.io/otel/bridge/opencensus v0.38.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.38.1
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.38.1
 	go.opentelemetry.io/otel/exporters/prometheus v0.38.1
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.38.1
 	go.opentelemetry.io/otel/metric v0.38.1

@@ -16,10 +16,12 @@ package proctelemetry // import "go.opentelemetry.io/collector/service/internal/
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 func TestInitExporter(t *testing.T) {
@@ -41,43 +43,89 @@ func TestInitExporter(t *testing.T) {
 		{
 			name:         "otlp exporter with no args",
 			exporterType: "otlp",
+			err:          fmt.Errorf("invalid args for otlp exporter: <nil>"),
 		},
 		{
-			name:         "otlp exporter with invalid args",
+			name:         "otlp grpc exporter with no args",
+			exporterType: "otlp",
+			args: map[string]any{
+				"protocol": "grpc/protobuf",
+			},
+		},
+		{
+			name:         "otlp grpc exporter with invalid args",
 			exporterType: "otlp",
 			args:         "string arg",
 			err:          fmt.Errorf("invalid args for otlp exporter: string arg"),
 		},
 		{
-			name:         "otlp exporter with invalid timeout",
+			name:         "otlp grpc exporter with invalid timeout",
 			exporterType: "otlp",
-			args: map[string]interface{}{
-				"timeout": "string arg",
+			args: map[string]any{
+				"protocol": "grpc/protobuf",
+				"timeout":  "string arg",
 			},
 			err: fmt.Errorf("invalid timeout for otlp exporter: string arg"),
 		},
 		{
-			name:         "otlp exporter with invalid headers",
+			name:         "otlp grpc exporter with invalid headers",
 			exporterType: "otlp",
-			args: map[string]interface{}{
-				"headers": "string arg",
+			args: map[string]any{
+				"protocol": "grpc/protobuf",
+				"headers":  "string arg",
 			},
 			err: fmt.Errorf("invalid headers for otlp exporter: string arg"),
 		},
 		{
-			name:         "otlp exporter with valid options",
+			name:         "otlp grpc exporter with valid options",
 			exporterType: "otlp",
-			args: map[string]interface{}{
+			args: map[string]any{
+				"protocol": "grpc/protobuf",
 				"headers": map[string]any{
 					"header-key": "header-val",
 				},
-				"timeout": 100,
+				"timeout":     100,
+				"endpoint":    "localhost:4318",
+				"compression": "gzip",
+			},
+		},
+		{
+			name:         "otlp http exporter with valid options",
+			exporterType: "otlp",
+			args: map[string]any{
+				"protocol": "http/protobuf",
+				"headers": map[string]any{
+					"header-key": "header-val",
+				},
+				"timeout":     100,
+				"endpoint":    "localhost:4318",
+				"compression": "gzip",
 			},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := InitExporter(context.Background(), tc.exporterType, tc.args)
+			assert.Equal(t, tc.err, err)
+		})
+	}
+}
+
+func TestInitPeriodicReader(t *testing.T) {
+	testCases := []struct {
+		name   string
+		reader telemetry.MetricReader
+		args   any
+		err    error
+	}{
+		{
+			name: "no exporter",
+			err:  errors.New("no exporter configured"),
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := InitPeriodicReader(context.Background(), tc.reader)
 			assert.Equal(t, tc.err, err)
 		})
 	}
