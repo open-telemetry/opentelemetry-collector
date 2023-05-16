@@ -27,4 +27,5 @@ coverage.html
 *.wixobj
 *.wixpdb
 
+# golang
 go.work*
