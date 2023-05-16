@@ -172,7 +172,7 @@ func TestOptionsToConfig(t *testing.T) {
 				CAFile: "testdata/ca-1.crt",
 				CAPem:  readFilePanics("testdata/ca-1.crt"),
 			},
-			expectError: "CA File and PEM cannot both be provided",
+			expectError: "provide either a CA file or the PEM-encoded string, but not both",
 		},
 		{
 			name: "should fail Cert file and PEM both provided",

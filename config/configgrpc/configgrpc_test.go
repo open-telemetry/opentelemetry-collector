@@ -255,7 +255,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, either both certificate and key must be supplied, or neither",
+			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: GRPCClientSettings{
 				Headers:     nil,
 				Endpoint:    "",
@@ -439,7 +439,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, either both certificate and key must be supplied, or neither",
+			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "127.0.0.1:1234",

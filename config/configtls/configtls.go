@@ -202,7 +202,7 @@ func (c TLSSetting) loadCACertPool() (*x509.CertPool, error) {
 
 	switch {
 	case c.hasCAFile() && c.hasCAPem():
-		return nil, fmt.Errorf("failed to load CA CertPool: CA File and PEM cannot both be provided")
+		return nil, fmt.Errorf("failed to load CA CertPool: provide either a CA file or the PEM-encoded string, but not both")
 	case c.hasCAFile():
 		// Set up user specified truststore from file
 		certPool, err = c.loadCertFile(c.CAFile)
@@ -240,13 +240,13 @@ func (c TLSSetting) loadCertPem(certPem []byte) (*x509.CertPool, error) {
 func (c TLSSetting) loadCertificate() (tls.Certificate, error) {
 	switch {
 	case c.hasCert() != c.hasKey():
-		return tls.Certificate{}, fmt.Errorf("for auth via TLS, either both certificate and key must be supplied, or neither")
+		return tls.Certificate{}, fmt.Errorf("for auth via TLS, provide both certificate and key, or neither")
 	case !c.hasCert() && !c.hasKey():
 		return tls.Certificate{}, nil
 	case c.hasCertFile() && c.hasCertPem():
-		return tls.Certificate{}, fmt.Errorf("for auth via TLS, certificate file and PEM cannot both be provided")
+		return tls.Certificate{}, fmt.Errorf("for auth via TLS, provide either a certificate or the PEM-encoded string, but not both")
 	case c.hasKeyFile() && c.hasKeyPem():
-		return tls.Certificate{}, fmt.Errorf("for auth via TLS, key file and PEM cannot both be provided")
+		return tls.Certificate{}, fmt.Errorf("for auth via TLS, provide either a key or the PEM-encoded string, but not both")
 	}
 
 	var certPem, keyPem []byte

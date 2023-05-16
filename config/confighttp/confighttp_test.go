@@ -236,7 +236,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, either both certificate and key must be supplied, or neither",
+			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: HTTPClientSettings{
 				Endpoint: "",
 				TLSSetting: configtls.TLSClientSetting{
@@ -417,7 +417,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, either both certificate and key must be supplied, or neither",
+			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: HTTPServerSettings{
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.TLSServerSetting{
