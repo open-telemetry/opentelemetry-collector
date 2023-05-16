@@ -33,7 +33,7 @@ additional metadata may be included. While some of the options are semantically
 mutually-exclusive and shouldn't be combined, any set of options can be used
 together and the package will determine which option takes precedence.
 
-### WithCount(rejected int)
+### WithRejectedCount(rejected int)
 
 Include a count of the records that were rejected (spans, datapoints, log
 records, etc.). The caller should have a full count of rejected records, so this
