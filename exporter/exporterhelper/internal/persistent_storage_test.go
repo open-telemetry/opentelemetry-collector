@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -473,6 +474,102 @@ func TestPersistentStorage_StopShouldCloseClient(t *testing.T) {
 	require.Equal(t, uint64(1), castedClient.getCloseCount())
 }
 
+func TestPersistentStorage_StorageFull(t *testing.T) {
+	var err error
+	traces := newTraces(5, 10)
+	req := newFakeTracesRequest(traces)
+	marshaled, err := req.Marshal()
+	require.NoError(t, err)
+	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
+	freeSpaceInBytes := 1
+
+	client := newFakeBoundedStorageClient(maxSizeInBytes)
+	ps := createTestPersistentStorage(client)
+
+	// Put enough items in to fill the underlying storage
+	reqCount := 0
+	for {
+		err = ps.put(req)
+		if errors.Is(err, syscall.ENOSPC) {
+			break
+		}
+		require.NoError(t, err)
+		reqCount++
+	}
+
+	// Manually set the storage to only have a small amount of free space left
+	newMaxSize := client.GetSizeInBytes() + freeSpaceInBytes
+	client.SetMaxSizeInBytes(newMaxSize)
+
+	// Try to put an item in, should fail
+	err = ps.put(req)
+	require.Error(t, err)
+
+	// Take out all the items
+	for i := reqCount; i > 0; i-- {
+		request := <-ps.get()
+		request.OnProcessingFinished()
+	}
+
+	// We should be able to put a new item in
+	// However, this will fail if deleting items fails with full storage
+	err = ps.put(req)
+	require.NoError(t, err)
+}
+
+func TestPersistentStorage_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
+	errDeletingItem := fmt.Errorf("error deleting item")
+	errUpdatingDispatched := fmt.Errorf("error updating dispatched items")
+	testCases := []struct {
+		storageErrors []error
+		expectedError error
+		description   string
+	}{
+		{
+			description:   "no errors",
+			storageErrors: []error{},
+			expectedError: nil,
+		},
+		{
+			description: "error on first transaction, success afterwards",
+			storageErrors: []error{
+				errUpdatingDispatched,
+			},
+			expectedError: nil,
+		},
+		{
+			description: "error on first and second transaction",
+			storageErrors: []error{
+				errUpdatingDispatched,
+				errDeletingItem,
+			},
+			expectedError: errDeletingItem,
+		},
+		{
+			description: "error on first and third transaction",
+			storageErrors: []error{
+				errUpdatingDispatched,
+				nil,
+				errUpdatingDispatched,
+			},
+			expectedError: errUpdatingDispatched,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.description, func(t *testing.T) {
+			testCase := testCase
+			client := newFakeStorageClientWithErrors(testCase.storageErrors)
+			ps := createTestPersistentStorage(client)
+			client.Reset()
+
+			err := ps.itemDispatchingFinish(context.Background(), 0)
+
+			require.ErrorIs(t, err, testCase.expectedError)
+		})
+	}
+}
+
 func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguousStorage, compare []itemIndex) {
 	require.Eventually(t, func() bool {
 		pcs.mu.Lock()
@@ -555,4 +652,164 @@ func (m *mockStorageClient) Batch(_ context.Context, ops ...storage.Operation) e
 
 func (m *mockStorageClient) getCloseCount() uint64 {
 	return m.closeCounter
+}
+
+func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
+	return &fakeBoundedStorageClient{
+		st:             map[string][]byte{},
+		MaxSizeInBytes: maxSizeInBytes,
+	}
+}
+
+// this storage client mimics the behavior of actual storage engines with limited storage space available
+// in general, real storage engines often have a per-write-transaction storage overhead, needing to keep
+// both the old and the new value stored until the transaction is committed
+// this is useful for testing the persistent queue queue behavior with a full disk
+type fakeBoundedStorageClient struct {
+	MaxSizeInBytes int
+	st             map[string][]byte
+	sizeInBytes    int
+	mux            sync.Mutex
+}
+
+func (m *fakeBoundedStorageClient) Get(ctx context.Context, key string) ([]byte, error) {
+	op := storage.GetOperation(key)
+	err := m.Batch(ctx, op)
+	if err != nil {
+		return nil, err
+	}
+
+	return op.Value, nil
+}
+
+func (m *fakeBoundedStorageClient) Set(ctx context.Context, key string, value []byte) error {
+	return m.Batch(ctx, storage.SetOperation(key, value))
+}
+
+func (m *fakeBoundedStorageClient) Delete(ctx context.Context, key string) error {
+	return m.Batch(ctx, storage.DeleteOperation(key))
+}
+
+func (m *fakeBoundedStorageClient) Close(_ context.Context) error {
+	return nil
+}
+
+func (m *fakeBoundedStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
+	totalAdded, totalRemoved := m.getTotalSizeChange(ops)
+
+	// the assumption here is that the new data needs to coexist with the old data on disk
+	// for the transaction to succeed
+	// this seems to be true for the file storage extension at least
+	if m.sizeInBytes+totalAdded > m.MaxSizeInBytes {
+		return fmt.Errorf("insufficient space available: %w", syscall.ENOSPC)
+	}
+
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Get:
+			op.Value = m.st[op.Key]
+		case storage.Set:
+			m.st[op.Key] = op.Value
+		case storage.Delete:
+			delete(m.st, op.Key)
+		default:
+			return errors.New("wrong operation type")
+		}
+	}
+
+	m.sizeInBytes += (totalAdded - totalRemoved)
+
+	return nil
+}
+
+func (m *fakeBoundedStorageClient) SetMaxSizeInBytes(newMaxSize int) {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	m.MaxSizeInBytes = newMaxSize
+}
+
+func (m *fakeBoundedStorageClient) GetSizeInBytes() int {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	return m.sizeInBytes
+}
+
+func (m *fakeBoundedStorageClient) getTotalSizeChange(ops []storage.Operation) (totalAdded int, totalRemoved int) {
+	totalAdded, totalRemoved = 0, 0
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Set:
+			if oldValue, ok := m.st[op.Key]; ok {
+				totalRemoved += len(oldValue)
+			} else {
+				totalAdded += len(op.Key)
+			}
+			totalAdded += len(op.Value)
+		case storage.Delete:
+			if value, ok := m.st[op.Key]; ok {
+				totalRemoved += len(op.Key)
+				totalRemoved += len(value)
+			}
+		default:
+		}
+	}
+	return totalAdded, totalRemoved
+}
+
+func newFakeStorageClientWithErrors(errors []error) *fakeStorageClientWithErrors {
+	return &fakeStorageClientWithErrors{
+		errors: errors,
+	}
+}
+
+// this storage client just returns errors from a list in order
+// used for testing error handling
+type fakeStorageClientWithErrors struct {
+	errors         []error
+	nextErrorIndex int
+	mux            sync.Mutex
+}
+
+func (m *fakeStorageClientWithErrors) Get(ctx context.Context, key string) ([]byte, error) {
+	op := storage.GetOperation(key)
+	err := m.Batch(ctx, op)
+	if err != nil {
+		return nil, err
+	}
+
+	return op.Value, nil
+}
+
+func (m *fakeStorageClientWithErrors) Set(ctx context.Context, key string, value []byte) error {
+	return m.Batch(ctx, storage.SetOperation(key, value))
+}
+
+func (m *fakeStorageClientWithErrors) Delete(ctx context.Context, key string) error {
+	return m.Batch(ctx, storage.DeleteOperation(key))
+}
+
+func (m *fakeStorageClientWithErrors) Close(_ context.Context) error {
+	return nil
+}
+
+func (m *fakeStorageClientWithErrors) Batch(_ context.Context, _ ...storage.Operation) error {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
+	if m.nextErrorIndex >= len(m.errors) {
+		return nil
+	}
+
+	err := m.errors[m.nextErrorIndex]
+	m.nextErrorIndex++
+	return err
+}
+
+func (m *fakeStorageClientWithErrors) Reset() {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	m.nextErrorIndex = 0
 }
