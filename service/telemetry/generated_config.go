@@ -2,8 +2,10 @@
 
 package telemetry
 
-import "encoding/json"
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type Attributes struct {
 	// ServiceName corresponds to the JSON schema field "service.name".

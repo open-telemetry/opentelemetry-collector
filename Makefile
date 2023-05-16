@@ -278,6 +278,7 @@ genjsonschema: genjsonschema-cleanup $(GOJSONSCHEMA)
 		--output ./service/telemetry/generated_config.go \
 		--schema-package=https://opentelemetry.io/otelconfig/opentelemetry_configuration.json=github.com/open-telemetry/opentelemetry-collector/schema \
     	${OPENTELEMETRY_JSONSCHEMA_SRC_DIR}/schema/opentelemetry_configuration.json
+	$(MAKE) fmt
 	$(MAKE) genjsonschema-cleanup
 
 # Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
