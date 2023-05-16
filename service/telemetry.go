@@ -90,13 +90,15 @@ type telemetryInitializer struct {
 
 	useOtel                bool
 	disableHighCardinality bool
+	extendedConfig         bool
 }
 
-func newColTelemetry(useOtel bool, disableHighCardinality bool) *telemetryInitializer {
+func newColTelemetry(useOtel bool, disableHighCardinality bool, extendedConfig bool) *telemetryInitializer {
 	return &telemetryInitializer{
 		mp:                     noop.NewMeterProvider(),
 		useOtel:                useOtel,
 		disableHighCardinality: disableHighCardinality,
+		extendedConfig:         extendedConfig,
 	}
 }
 

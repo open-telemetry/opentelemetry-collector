@@ -113,6 +113,7 @@ func TestTelemetryInit(t *testing.T) {
 		useOtel         bool
 		disableHighCard bool
 		expectedMetrics map[string]metricValue
+		extendedConfig  bool
 	}{
 		{
 			name:    "UseOpenCensusForInternalMetrics",
@@ -198,7 +199,7 @@ func TestTelemetryInit(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			tel := newColTelemetry(tc.useOtel, tc.disableHighCard)
+			tel := newColTelemetry(tc.useOtel, tc.disableHighCard, tc.extendedConfig)
 			buildInfo := component.NewDefaultBuildInfo()
 			cfg := telemetry.Config{
 				Resource: map[string]*string{
