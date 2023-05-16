@@ -139,5 +139,5 @@ The following documents the procedure to release a bugfix
 | 2023-06-19 | v0.80.0 | @Aneurysm9      |
 | 2023-07-03 | v0.81.0 | @jpkrohling     |
 | 2023-07-17 | v0.82.0 | @mx-psi         |
-| 2023-07-31 | v0.76.0 | @djaglowski     |
-| 2023-08-14 | v0.77.0 | @dmitryax       |
+| 2023-07-31 | v0.83.0 | @djaglowski     |
+| 2023-08-14 | v0.84.0 | @dmitryax       |
