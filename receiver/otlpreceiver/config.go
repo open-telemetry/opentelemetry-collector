@@ -5,7 +5,8 @@ package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlprecei
 
 import (
 	"errors"
-	"strings"
+	"net/url"
+	"path"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -21,7 +22,15 @@ const (
 
 type httpServerSettings struct {
 	*confighttp.HTTPServerSettings `mapstructure:",squash"`
-	PathPrefix                     string `mapstructure:"path_prefix,omitempty"`
+
+	// The URL path to receive traces on. If omitted "/v1/traces" will be used.
+	TracesUrlPath string `mapstructure:"traces_url_path,omitempty"`
+
+	// The URL path to receive metrics on. If omitted "/v1/metrics" will be used.
+	MetricsUrlPath string `mapstructure:"metrics_url_path,omitempty"`
+
+	// The URL path to receive logs on. If omitted "/v1/logs" will be used.
+	LogsUrlPath string `mapstructure:"logs_url_path,omitempty"`
 }
 
 // Protocols is the configuration for the supported protocols.
@@ -62,7 +71,19 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	if !conf.IsSet(protoHTTP) {
 		cfg.HTTP = nil
 	} else {
-		cfg.HTTP.PathPrefix = strings.Trim(cfg.HTTP.PathPrefix, "/")
+		// Verify URL path sanity
+		signalUrlPaths := []*string{&cfg.HTTP.TracesUrlPath, &cfg.HTTP.MetricsUrlPath, &cfg.HTTP.LogsUrlPath}
+		for i, urlPath := range signalUrlPaths {
+			u, err := url.Parse(*urlPath)
+			if err != nil {
+				return errors.New("Invalid HTTP URL path set for signal")
+			}
+			// Normalize URLs
+			if !path.IsAbs(u.Path) {
+				u.Path = "/" + u.Path
+			}
+			*signalUrlPaths[i] = u.Path
+		}
 	}
 
 	return nil

@@ -5,7 +5,7 @@ change_type: enhancement
 component: otlpreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add http path prefix config option to otlpreceiver 
+note: Add http url paths per signal config options to otlpreceiver 
 
 # One or more tracking issues or pull requests related to the change
 issues: [7511]

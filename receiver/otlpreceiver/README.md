@@ -45,12 +45,13 @@ The OTLP receiver can receive trace export calls via HTTP/JSON in addition to
 gRPC. The HTTP/JSON address is the same as gRPC as the protocol is recognized
 and processed accordingly. Note the serialization format needs to be [protobuf JSON](https://developers.google.com/protocol-buffers/docs/proto3#json).
 
-The HTTP/JSON configuration also provides `path_prefix` configuration to allow the URL
-path to be modified.  The defaults to an empty string and has no impact for GRPC.
+The HTTP/JSON configuration also provides `traces_endpoint`, `metrics_endpoint`, and `logs_endpoint`
+configuration to allow the endpoint for signal types to be modified.  These default to `v1/traces`,
+`v1/metrics`, and `v1/logs` respectively.
 
-To write traces with HTTP/JSON, `POST` to `[address]/[path_prefix]/v1/traces` for traces,
-to `[address]/[path_prefix]/v1/metrics` for metrics, to `[address]/[path_prefix]/v1/logs`
-for logs. The default port is `4318`.
+To write traces with HTTP/JSON, `POST` to `[address]/[traces_endpoint]` for traces,
+to `[address]/[metrics_endpoint]` for metrics, to `[address]/[logs_endpoint]` for logs.
+The default port is `4318`.
 
 ### CORS (Cross-origin resource sharing)
 

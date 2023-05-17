@@ -55,6 +55,9 @@ func TestCreateTracesReceiver(t *testing.T) {
 		HTTPServerSettings: &confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
+		TracesUrlPath:  defaultTracesUrlPath,
+		MetricsUrlPath: defaultMetricsUrlPath,
+		LogsUrlPath:    defaultLogsUrlPath,
 	}
 
 	tests := []struct {
@@ -95,6 +98,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 						HTTPServerSettings: &confighttp.HTTPServerSettings{
 							Endpoint: "localhost:112233",
 						},
+						TracesUrlPath: defaultTracesUrlPath,
 					},
 				},
 			},
@@ -132,6 +136,9 @@ func TestCreateMetricReceiver(t *testing.T) {
 		HTTPServerSettings: &confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
+		TracesUrlPath:  defaultTracesUrlPath,
+		MetricsUrlPath: defaultMetricsUrlPath,
+		LogsUrlPath:    defaultLogsUrlPath,
 	}
 
 	tests := []struct {
@@ -172,6 +179,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 						HTTPServerSettings: &confighttp.HTTPServerSettings{
 							Endpoint: "327.0.0.1:1122",
 						},
+						MetricsUrlPath: defaultMetricsUrlPath,
 					},
 				},
 			},
@@ -208,6 +216,9 @@ func TestCreateLogReceiver(t *testing.T) {
 		HTTPServerSettings: &confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
+		TracesUrlPath:  defaultTracesUrlPath,
+		MetricsUrlPath: defaultMetricsUrlPath,
+		LogsUrlPath:    defaultLogsUrlPath,
 	}
 
 	tests := []struct {
@@ -252,6 +263,7 @@ func TestCreateLogReceiver(t *testing.T) {
 						HTTPServerSettings: &confighttp.HTTPServerSettings{
 							Endpoint: "327.0.0.1:1122",
 						},
+						LogsUrlPath: defaultLogsUrlPath,
 					},
 				},
 			},

@@ -53,18 +53,6 @@ func TestUnmarshalConfigOnlyHTTP(t *testing.T) {
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
-func TestUnmarshalConfigOnlyHTTPSlashPrefixPath(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "only_http_slash_prefix.yaml"))
-	require.NoError(t, err)
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
-
-	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.GRPC = nil
-	assert.Equal(t, defaultOnlyHTTP, cfg)
-}
-
 func TestUnmarshalConfigOnlyHTTPNull(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "only_http_null.yaml"))
 	require.NoError(t, err)
@@ -141,7 +129,9 @@ func TestUnmarshalConfig(t *testing.T) {
 							MaxAge:         7200,
 						},
 					},
-					PathPrefix: "otlp",
+					TracesUrlPath:  "/traces",
+					MetricsUrlPath: "/v2/metrics",
+					LogsUrlPath:    "/log/ingest",
 				},
 			},
 		}, cfg)
@@ -168,7 +158,9 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 					HTTPServerSettings: &confighttp.HTTPServerSettings{
 						Endpoint: "/tmp/http_otlp.sock",
 					},
-					PathPrefix: defaultPathPrefix,
+					TracesUrlPath:  defaultTracesUrlPath,
+					MetricsUrlPath: defaultMetricsUrlPath,
+					LogsUrlPath:    defaultLogsUrlPath,
 				},
 			},
 		}, cfg)
