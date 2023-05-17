@@ -67,7 +67,7 @@ func (ts *testScrapeMetrics) scrape(_ context.Context) (pmetric.Metrics, error) 
 func newTestNoDelaySettings() *ScraperControllerSettings {
 	return &ScraperControllerSettings{
 		CollectionInterval: time.Second,
-		InitialDelay:       new(time.Duration),
+		InitialDelay:       0,
 	}
 }
 
@@ -383,7 +383,7 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 	r, err := NewScraperControllerReceiver(
 		&ScraperControllerSettings{
 			CollectionInterval: time.Hour,
-			InitialDelay:       new(time.Duration),
+			InitialDelay:       0,
 		},
 		receivertest.NewNopCreateSettings(),
 		new(consumertest.MetricsSink),
@@ -407,7 +407,6 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 
 	var (
 		elapsed = make(chan time.Time, 1)
-		delay   = 300 * time.Millisecond
 	)
 
 	scp, err := NewScraper("timed", func(ctx context.Context) (pmetric.Metrics, error) {
@@ -419,7 +418,7 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 	r, err := NewScraperControllerReceiver(
 		&ScraperControllerSettings{
 			CollectionInterval: time.Second,
-			InitialDelay:       &delay,
+			InitialDelay:       300 * time.Millisecond,
 		},
 		receivertest.NewNopCreateSettings(),
 		new(consumertest.MetricsSink),
