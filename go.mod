@@ -28,7 +28,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.77.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.41.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1
-	go.opentelemetry.io/contrib/propagators/b3 v1.15.0
+	go.opentelemetry.io/contrib/propagators/b3 v1.16.1
 	go.opentelemetry.io/otel v1.15.1
 	go.opentelemetry.io/otel/bridge/opencensus v0.38.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.38.1
