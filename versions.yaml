@@ -16,6 +16,7 @@ module-sets:
   stable:
     version: v1.0.0-rcv0011
     modules:
+      - go.opentelemetry.io/collector/featuregate
       - go.opentelemetry.io/collector/pdata
   beta:
     version: v0.77.0
@@ -32,7 +33,6 @@ module-sets:
       - go.opentelemetry.io/collector/exporter/otlphttpexporter
       - go.opentelemetry.io/collector/extension/ballastextension
       - go.opentelemetry.io/collector/extension/zpagesextension
-      - go.opentelemetry.io/collector/featuregate
       - go.opentelemetry.io/collector/processor/batchprocessor
       - go.opentelemetry.io/collector/processor/memorylimiterprocessor
       - go.opentelemetry.io/collector/receiver
