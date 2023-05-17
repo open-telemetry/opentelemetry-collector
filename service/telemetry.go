@@ -68,8 +68,8 @@ func newColTelemetry(useOtel bool, disableHighCardinality bool, extendedConfig b
 	}
 }
 
-func (tel *telemetryInitializer) init(res *resource.Resource, settings component.TelemetrySettings, cfg telemetry.Config, asyncErrorChannel chan error, otelMetricViews []sdkmetric.View, otelMetricReader sdkmetric.Reader) error {
-	if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
+func (tel *telemetryInitializer) init(res *resource.Resource, settings component.TelemetrySettings, cfg telemetry.Config, asyncErrorChannel chan error, otelMetricViews []sdkmetric.View, otelMetricReader sdkmetric.Reader, useExternalMetricsServer bool) error {
+	if cfg.Metrics.Level == configtelemetry.LevelNone || (!useExternalMetricsServer && cfg.Metrics.Address == "") {
 		settings.Logger.Info(
 			"Skipping telemetry setup.",
 			zap.String(zapKeyTelemetryAddress, cfg.Metrics.Address),
@@ -86,10 +86,10 @@ func (tel *telemetryInitializer) init(res *resource.Resource, settings component
 		return err
 	}
 
-	return tel.initPrometheus(res, settings.Logger, cfg.Metrics.Address, cfg.Metrics.Level, asyncErrorChannel, otelMetricViews, otelMetricReader)
+	return tel.initPrometheus(res, settings.Logger, cfg.Metrics.Address, cfg.Metrics.Level, asyncErrorChannel, otelMetricViews, otelMetricReader, useExternalMetricsServer)
 }
 
-func (tel *telemetryInitializer) initPrometheus(res *resource.Resource, logger *zap.Logger, address string, level configtelemetry.Level, asyncErrorChannel chan error, otelMetricViews []sdkmetric.View, otelMetricReader sdkmetric.Reader) error {
+func (tel *telemetryInitializer) initPrometheus(res *resource.Resource, logger *zap.Logger, address string, level configtelemetry.Level, asyncErrorChannel chan error, otelMetricViews []sdkmetric.View, otelMetricReader sdkmetric.Reader, useExternalMetricsServer bool) error {
 	promRegistry := prometheus.NewRegistry()
 	if tel.useOtel {
 		if err := tel.initOpenTelemetry(res, promRegistry, otelMetricViews, otelMetricReader); err != nil {
@@ -101,24 +101,32 @@ func (tel *telemetryInitializer) initPrometheus(res *resource.Resource, logger *
 		}
 	}
 
-	logger.Info(
-		"Serving Prometheus metrics",
-		zap.String(zapKeyTelemetryAddress, address),
-		zap.String(zapKeyTelemetryLevel, level.String()),
-	)
-
-	mux := http.NewServeMux()
-	mux.Handle("/metrics", promhttp.HandlerFor(promRegistry, promhttp.HandlerOpts{}))
-	server := &http.Server{
-		Addr:    address,
-		Handler: mux,
-	}
-	tel.servers = append(tel.servers, server)
-	go func() {
-		if serveErr := server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
-			asyncErrorChannel <- serveErr
+	if useExternalMetricsServer {
+		if address != "" {
+			logger.Sugar().Infof(
+				"Using an external metrics server - Prometheus metrics may not be served on %q", address,
+			)
 		}
-	}()
+	} else {
+		logger.Info(
+			"Serving Prometheus metrics",
+			zap.String(zapKeyTelemetryAddress, address),
+			zap.String(zapKeyTelemetryLevel, level.String()),
+		)
+
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.HandlerFor(promRegistry, promhttp.HandlerOpts{}))
+		server := &http.Server{
+			Addr:    address,
+			Handler: mux,
+		}
+		tel.servers = append(tel.servers, server)
+		go func() {
+			if serveErr := server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+				asyncErrorChannel <- serveErr
+			}
+		}()
+	}
 	return nil
 }
 
