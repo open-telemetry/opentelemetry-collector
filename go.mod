@@ -13,7 +13,7 @@ require (
 	github.com/prometheus/client_model v0.4.0
 	github.com/prometheus/common v0.43.0
 	github.com/rs/cors v1.9.0
-	github.com/shirou/gopsutil/v3 v3.23.3
+	github.com/shirou/gopsutil/v3 v3.23.4
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.2
 	go.opencensus.io v0.24.0
@@ -28,9 +28,9 @@ require (
 	go.opentelemetry.io/collector/semconv v0.77.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.41.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1
-	go.opentelemetry.io/contrib/propagators/b3 v1.15.0
+	go.opentelemetry.io/contrib/propagators/b3 v1.16.1
 	go.opentelemetry.io/otel v1.15.1
-	go.opentelemetry.io/otel/bridge/opencensus v0.38.0
+	go.opentelemetry.io/otel/bridge/opencensus v0.38.1
 	go.opentelemetry.io/otel/exporters/prometheus v0.38.1
 	go.opentelemetry.io/otel/metric v0.38.1
 	go.opentelemetry.io/otel/sdk v1.15.1
@@ -38,7 +38,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.15.1
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/net v0.9.0
+	golang.org/x/net v0.10.0
 	golang.org/x/sys v0.8.0
 	gonum.org/v1/gonum v0.13.0
 	google.golang.org/grpc v1.55.0
@@ -73,7 +73,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
-	github.com/shoenig/go-m1cpu v0.1.4 // indirect
+	github.com/shoenig/go-m1cpu v0.1.5 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
