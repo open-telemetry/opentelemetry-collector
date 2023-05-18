@@ -14,7 +14,6 @@ issues: [7635]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This change allows for components to start scraping on collector start instead of
-  waiting for scrape duration to start the scrape process.
-  The enhancement means scrapers that require an initial state to produce delta values
-  will start emitting the values start + duration instead of start + (2*duration).
+  The change allows scrapes to perform their initial scrape on component start
+  and provide an initial delay. This means that scrapes will be delayed by `initial_delay`
+  before first scrape and then run on `collection_interval` for each consecutive interval. 

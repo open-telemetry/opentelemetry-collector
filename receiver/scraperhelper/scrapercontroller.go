@@ -171,14 +171,15 @@ func (sc *controller) Shutdown(ctx context.Context) error {
 // collection interval.
 func (sc *controller) startScraping() {
 	go func() {
+		if sc.initialDelay > 0 {
+			<-time.After(sc.initialDelay)
+		}
+
 		if sc.tickerCh == nil {
 			ticker := time.NewTicker(sc.collectionInterval)
 			defer ticker.Stop()
 
 			sc.tickerCh = ticker.C
-		}
-		if sc.initialDelay > 0 {
-			<-time.After(sc.initialDelay)
 		}
 
 		// Call scrape method on initialision to ensure
