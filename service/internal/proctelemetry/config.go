@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package proctelemetry
+package proctelemetry // import "go.opentelemetry.io/collector/service/internal/proctelemetry"
 
 import (
 	"go.opentelemetry.io/otel/attribute"
