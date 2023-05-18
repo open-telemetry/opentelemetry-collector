@@ -1,0 +1,43 @@
+name: "Project: Tidy"
+on:
+  pull_request:
+    types: [labeled]
+    branches:
+      - main
+
+jobs:
+  setup-environment:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    if: ${{ github.event.label.name == 'dependencies' }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.19
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: go mod tidy
+        run: |
+          make gotidy
+          git config user.name opentelemetrybot
+          git config user.email 107717825+opentelemetrybot@users.noreply.github.com
+          echo "git diff --exit-code || (git add . && git commit -m \"go mod tidy\" && git push)"
+          git diff --exit-code || (git add . && git commit -m "go mod tidy" && git push)
+        env:
+          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
