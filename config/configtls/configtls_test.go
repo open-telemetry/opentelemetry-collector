@@ -66,7 +66,7 @@ func TestOptionsToConfig(t *testing.T) {
 				CAFile:   filepath.Join("testdata", "ca-1.crt"),
 				CertFile: filepath.Join("testdata", "server-1.crt"),
 			},
-			expectError: "both certificate and key must be supplied",
+			expectError: "provide both certificate and key, or neither",
 		},
 		{
 			name: "should fail with invalid TLS KeyFile",
@@ -83,7 +83,7 @@ func TestOptionsToConfig(t *testing.T) {
 				CAFile:  filepath.Join("testdata", "ca-1.crt"),
 				KeyFile: filepath.Join("testdata", "server-1.key"),
 			},
-			expectError: "both certificate and key must be supplied",
+			expectError: "provide both certificate and key, or neither",
 		},
 		{
 			name: "should fail with invalid TLS Cert",
@@ -181,7 +181,7 @@ func TestOptionsToConfig(t *testing.T) {
 				CertPem:  readFilePanics("testdata/server-1.crt"),
 				KeyFile:  "testdata/server-1.key",
 			},
-			expectError: "for auth via TLS, certificate file and PEM cannot both be provided",
+			expectError: "provide either a certificate or the PEM-encoded string, but not both",
 		},
 		{
 			name: "should fail Key file and PEM both provided",
@@ -190,7 +190,7 @@ func TestOptionsToConfig(t *testing.T) {
 				KeyFile:  "testdata/ca-1.crt",
 				KeyPem:   readFilePanics("testdata/server-1.key"),
 			},
-			expectError: "for auth via TLS, key file and PEM cannot both be provided",
+			expectError: "provide either a key or the PEM-encoded string, but not both",
 		},
 		{
 			name: "should fail to load valid TLS settings with bad Cert PEM",
@@ -216,7 +216,7 @@ func TestOptionsToConfig(t *testing.T) {
 				CAPem:   readFilePanics("testdata/ca-1.crt"),
 				CertPem: readFilePanics("testdata/server-1.crt"),
 			},
-			expectError: "both certificate and key must be supplied",
+			expectError: "provide both certificate and key, or neither",
 		},
 		{
 			name: "should fail with missing TLS Cert PEM",
@@ -224,7 +224,7 @@ func TestOptionsToConfig(t *testing.T) {
 				CAPem:  readFilePanics("testdata/ca-1.crt"),
 				KeyPem: readFilePanics("testdata/server-1.key"),
 			},
-			expectError: "both certificate and key must be supplied",
+			expectError: "provide both certificate and key, or neither",
 		},
 	}
 
