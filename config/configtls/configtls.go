@@ -22,6 +22,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 // We should avoid that users unknowingly use a vulnerable TLS version.
@@ -41,19 +43,19 @@ type TLSSetting struct {
 	CAFile string `mapstructure:"ca_file"`
 
 	// In memory PEM encoded cert. (optional)
-	CAPem []byte `mapstructure:"ca_pem"`
+	CAPem configopaque.String `mapstructure:"ca_pem"`
 
 	// Path to the TLS cert to use for TLS required connections. (optional)
 	CertFile string `mapstructure:"cert_file"`
 
 	// In memory PEM encoded TLS cert to use for TLS required connections. (optional)
-	CertPem []byte `mapstructure:"cert_pem"`
+	CertPem configopaque.String `mapstructure:"cert_pem"`
 
 	// Path to the TLS key to use for TLS required connections. (optional)
 	KeyFile string `mapstructure:"key_file"`
 
 	// In memory PEM encoded TLS key to use for TLS required connections. (optional)
-	KeyPem []byte `mapstructure:"key_pem"`
+	KeyPem configopaque.String `mapstructure:"key_pem"`
 
 	// MinVersion sets the minimum TLS version that is acceptable.
 	// If not set, TLS 1.2 will be used. (optional)
@@ -211,7 +213,7 @@ func (c TLSSetting) loadCACertPool() (*x509.CertPool, error) {
 		}
 	case c.hasCAPem():
 		// Set up user specified truststore from PEM
-		certPool, err = c.loadCertPem(c.CAPem)
+		certPool, err = c.loadCertPem([]byte(c.CAPem))
 		if err != nil {
 			return nil, fmt.Errorf("failed to load CA CertPool PEM: %w", err)
 		}
@@ -257,7 +259,7 @@ func (c TLSSetting) loadCertificate() (tls.Certificate, error) {
 			return tls.Certificate{}, err
 		}
 	} else {
-		certPem = c.CertPem
+		certPem = []byte(c.CertPem)
 	}
 
 	if c.hasKeyFile() {
@@ -266,7 +268,7 @@ func (c TLSSetting) loadCertificate() (tls.Certificate, error) {
 			return tls.Certificate{}, err
 		}
 	} else {
-		keyPem = c.KeyPem
+		keyPem = []byte(c.KeyPem)
 	}
 
 	certificate, err := tls.X509KeyPair(certPem, keyPem)

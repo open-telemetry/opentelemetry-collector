@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 func TestOptionsToConfig(t *testing.T) {
@@ -242,13 +243,13 @@ func TestOptionsToConfig(t *testing.T) {
 	}
 }
 
-func readFilePanics(filePath string) []byte {
+func readFilePanics(filePath string) configopaque.String {
 	fileContents, err := os.ReadFile(filepath.Clean(filePath))
 	if err != nil {
 		panic(fmt.Sprintf("failed to read file %s: %v", filePath, err))
 	}
 
-	return fileContents
+	return configopaque.String(fileContents)
 }
 
 func TestLoadTLSClientConfigError(t *testing.T) {
