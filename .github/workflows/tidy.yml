@@ -43,4 +43,4 @@ jobs:
           echo "git diff --exit-code || (git add . && git commit -m \"go mod tidy\" && git push)"
           git diff --exit-code || (git add . && git commit -m "go mod tidy" && git push)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.CODEBOTEN_COLLECTOR_TOKEN }}
