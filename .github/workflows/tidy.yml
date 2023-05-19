@@ -9,6 +9,8 @@ jobs:
   setup-environment:
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     if: ${{ github.event.label.name == 'dependencies' }}
     steps:
       - uses: actions/checkout@v3
@@ -36,9 +38,9 @@ jobs:
       - name: go mod tidy
         run: |
           make gotidy
-          git config user.name opentelemetrybot
-          git config user.email 107717825+opentelemetrybot@users.noreply.github.com
+          git config user.name "GitHub Action"
+          git config user.email github-action@users.noreply.github.com
           echo "git diff --exit-code || (git add . && git commit -m \"go mod tidy\" && git push)"
           git diff --exit-code || (git add . && git commit -m "go mod tidy" && git push)
         env:
-          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
