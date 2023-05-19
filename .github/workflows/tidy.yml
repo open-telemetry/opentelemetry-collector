@@ -38,9 +38,9 @@ jobs:
       - name: go mod tidy
         run: |
           make gotidy
-          echo 'git config user.name "GitHub Action"'
-          git config user.name "GitHub Action"
-          git config user.email github-action@users.noreply.github.com
+          echo 'git config user.name "Alex Boten"'
+          git config user.name "Alex Boten"
+          git config user.email 223565+codeboten@users.noreply.github.com
           echo "git diff --exit-code || (git add . && git commit -m \"go mod tidy\" && git push)"
           git diff --exit-code || (git add . && git commit -m "go mod tidy" && git push)
         env:
