@@ -12,8 +12,6 @@ jobs:
     if: ${{ github.event.label.name == 'dependencies' }}
     steps:
       - uses: actions/checkout@v3
-        with:
-          ref: ${{ github.head_ref }}
       - uses: actions/setup-go@v4
         with:
           go-version: 1.19
