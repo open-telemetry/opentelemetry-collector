@@ -48,6 +48,7 @@ Additionally certificates may be reloaded by setting the below configuration.
 
 - `reload_interval` (optional) : ReloadInterval specifies the duration after which the certificate will be reloaded.
    If not set, it will never be reloaded.
+   Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 
 How TLS/mTLS is configured depends on whether configuring the client or server.
 See below for examples.
