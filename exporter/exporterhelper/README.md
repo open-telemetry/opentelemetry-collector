@@ -25,8 +25,9 @@ The following configuration options can be modified:
       is used, the metric `batch_send_size` can be used for estimation)
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
 
-The `initial_interval`, `max_interval`, `max_elapsed_time`, `timeout` options accept duration strings.
-Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+The `initial_interval`, `max_interval`, `max_elapsed_time`, and `timeout` options accept 
+[duration strings](https://pkg.go.dev/time#ParseDuration),
+valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 
 ### Persistent Queue
 
