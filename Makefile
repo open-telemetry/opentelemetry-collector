@@ -398,6 +398,10 @@ endif
 	for mod in $${mods}; do \
 		if [ "$${mod}" == "go.opentelemetry.io/collector" ]; then \
 			changed_files+=$$(git diff --name-only v$(PREVIOUS_VERSION) -- $$(printf '%s\n' $${all_submods[@]} | sed 's/^/:!/' | paste -sd' ' -) | grep -E '.+\.go$$'); \
+		elif ! git rev-parse --quiet --verify $${mod}/v$(PREVIOUS_VERSION) >/dev/null; then \
+			echo "Module $${mod} does not have a v$(PREVIOUS_VERSION) tag"; \
+			echo "$(MODSET) release is required."; \
+			exit 0; \
 		else \
 			changed_files+=$$(git diff --name-only $${mod}/v$(PREVIOUS_VERSION) -- $${mod} | grep -E '.+\.go$$'); \
 		fi; \
