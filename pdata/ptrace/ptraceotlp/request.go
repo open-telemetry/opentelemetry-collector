@@ -2,15 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package ptraceotlp // import "go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+
 import (
 	"bytes"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/pdata/ptrace/internal/ptracejson"
 )
+
+var jsonUnmarshaler = &ptrace.JSONUnmarshaler{}
 
 // ExportRequest represents the request for gRPC/HTTP client/server.
 // It's a wrapper for ptrace.Traces data.
@@ -47,7 +50,7 @@ func (ms ExportRequest) UnmarshalProto(data []byte) error {
 // MarshalJSON marshals ExportRequest into JSON bytes.
 func (ms ExportRequest) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
-	if err := ptracejson.JSONMarshaler.Marshal(&buf, ms.orig); err != nil {
+	if err := json.Marshal(&buf, ms.orig); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -55,7 +58,12 @@ func (ms ExportRequest) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls ExportRequest from JSON bytes.
 func (ms ExportRequest) UnmarshalJSON(data []byte) error {
-	return ptracejson.UnmarshalExportTraceServiceRequest(data, ms.orig)
+	td, err := jsonUnmarshaler.UnmarshalTraces(data)
+	if err != nil {
+		return err
+	}
+	*ms.orig = *internal.GetOrigTraces(internal.Traces(td))
+	return nil
 }
 
 func (ms ExportRequest) Traces() ptrace.Traces {

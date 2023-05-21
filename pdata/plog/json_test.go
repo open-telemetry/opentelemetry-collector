@@ -5,26 +5,29 @@ package plog
 
 import (
 	"testing"
-	"time"
 
-	"github.com/gogo/protobuf/jsonpb"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
+
+var _ Marshaler = (*JSONMarshaler)(nil)
+var _ Unmarshaler = (*JSONUnmarshaler)(nil)
 
 var logsOTLP = func() Logs {
 	ld := NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().PutStr("host.name", "testHost")
 	rl.Resource().SetDroppedAttributesCount(1)
-	rl.SetSchemaUrl("testSchemaURL")
+	rl.SetSchemaUrl("resource_schema")
 	il := rl.ScopeLogs().AppendEmpty()
 	il.Scope().SetName("name")
 	il.Scope().SetVersion("version")
 	il.Scope().SetDroppedAttributesCount(1)
-	il.SetSchemaUrl("ScopeLogsSchemaURL")
+	il.SetSchemaUrl("scope_schema")
 	lg := il.LogRecords().AppendEmpty()
 	lg.SetSeverityNumber(SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_ERROR))
 	lg.SetSeverityText("Error")
@@ -35,83 +38,117 @@ var logsOTLP = func() Logs {
 	lg.SetTraceID(traceID)
 	lg.SetSpanID(spanID)
 	lg.Body().SetStr("hello world")
-	t := pcommon.NewTimestampFromTime(time.Now())
-	lg.SetTimestamp(t)
-	lg.SetObservedTimestamp(t)
+	lg.SetTimestamp(pcommon.Timestamp(1684617382541971000))
+	lg.SetObservedTimestamp(pcommon.Timestamp(1684623646539558000))
 	lg.Attributes().PutStr("sdkVersion", "1.0.1")
+	lg.SetFlags(DefaultLogRecordFlags.WithIsSampled(true))
 	return ld
-}
+}()
 
 func TestLogsJSON(t *testing.T) {
-	type args struct {
-		logFunc func() Logs
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			name: "otlp",
-			args: args{
-				logFunc: logsOTLP,
-			},
-		},
-	}
-	oldDelegate := delegate
-	t.Cleanup(func() {
-		delegate = oldDelegate
-	})
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			for _, opEnumsAsInts := range []bool{true, false} {
-				for _, opEmitDefaults := range []bool{true, false} {
-					for _, opOrigName := range []bool{true, false} {
-						delegate = &jsonpb.Marshaler{
-							EnumsAsInts:  opEnumsAsInts,
-							EmitDefaults: opEmitDefaults,
-							OrigName:     opOrigName,
-						}
-						encoder := &JSONMarshaler{}
-						ld := tt.args.logFunc()
-						jsonBuf, err := encoder.MarshalLogs(ld)
-						assert.NoError(t, err)
-						decoder := &JSONUnmarshaler{}
-						got, err := decoder.UnmarshalLogs(jsonBuf)
-						assert.NoError(t, err)
-						assert.EqualValues(t, ld, got)
-					}
-				}
-			}
-		})
-	}
-}
-
-var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":""}]}]}]}`
-
-func TestLogsJSON_WithoutTraceIdAndSpanId(t *testing.T) {
-	decoder := &JSONUnmarshaler{}
-	_, err := decoder.UnmarshalLogs([]byte(logsJSON))
+	encoder := &JSONMarshaler{}
+	jsonBuf, err := encoder.MarshalLogs(logsOTLP)
 	assert.NoError(t, err)
+	decoder := &JSONUnmarshaler{}
+	got, err := decoder.UnmarshalLogs(jsonBuf)
+	assert.NoError(t, err)
+	assert.EqualValues(t, logsOTLP, got)
 }
 
-var logsJSONWrongTraceID = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"--","spanId":""}]}]}]}`
+var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}],"droppedAttributesCount":1},"scopeLogs":[{"scope":{"name":"name","version":"version","droppedAttributesCount":1},"logRecords":[{"timeUnixNano":"1684617382541971000","observedTimeUnixNano":"1684623646539558000","severityNumber":17,"severityText":"Error","body":{"stringValue":"hello world"},"attributes":[{"key":"sdkVersion","value":{"stringValue":"1.0.1"}}],"droppedAttributesCount":1,"flags":1,"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"schemaUrl":"scope_schema"}],"schemaUrl":"resource_schema"}]}`
 
-func TestLogsJSON_WrongTraceID(t *testing.T) {
+func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
-	_, err := decoder.UnmarshalLogs([]byte(logsJSONWrongTraceID))
-	assert.Error(t, err)
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "parse trace_id")
-	}
+	got, err := decoder.UnmarshalLogs([]byte(logsJSON))
+	assert.NoError(t, err)
+	assert.EqualValues(t, logsOTLP, got)
 }
 
-var logsJSONWrongSpanID = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":"--"}]}]}]}`
+func TestJSONMarshal(t *testing.T) {
+	encoder := &JSONMarshaler{}
+	jsonBuf, err := encoder.MarshalLogs(logsOTLP)
+	assert.NoError(t, err)
+	assert.Equal(t, logsJSON, string(jsonBuf))
+}
 
-func TestLogsJSON_WrongSpanID(t *testing.T) {
+func TestJSONUnmarshalInvalid(t *testing.T) {
+	jsonStr := `{"extra":"", "resourceLogs": "extra"}`
 	decoder := &JSONUnmarshaler{}
-	_, err := decoder.UnmarshalLogs([]byte(logsJSONWrongSpanID))
+	_, err := decoder.UnmarshalLogs([]byte(jsonStr))
 	assert.Error(t, err)
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "parse span_id")
-	}
+}
+
+func TestUnmarshalJsoniterLogsData(t *testing.T) {
+	jsonStr := `{"extra":"", "resourceLogs": []}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	val := NewLogs()
+	val.unmarshalJsoniter(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, NewLogs(), val)
+}
+
+func TestUnmarshalJsoniterResourceLogs(t *testing.T) {
+	jsonStr := `{"extra":"", "resource": {}, "scopeLogs": []}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	val := NewResourceLogs()
+	val.unmarshalJsoniter(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, NewResourceLogs(), val)
+}
+
+func TestUnmarshalJsoniterScopeLogs(t *testing.T) {
+	jsonStr := `{"extra":"", "scope": {}, "logRecords": []}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	val := NewScopeLogs()
+	val.unmarshalJsoniter(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, NewScopeLogs(), val)
+}
+
+func TestUnmarshalJsoniterLogRecord(t *testing.T) {
+	jsonStr := `{"extra":"", "body":{}}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	val := NewLogRecord()
+	val.unmarshalJsoniter(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, NewLogRecord(), val)
+}
+
+func TestUnmarshalJsoniterLogWrongTraceID(t *testing.T) {
+	jsonStr := `{"body":{}, "traceId":"--"}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	NewLogRecord().unmarshalJsoniter(iter)
+	require.Error(t, iter.Error)
+	assert.Contains(t, iter.Error.Error(), "parse trace_id")
+}
+
+func TestUnmarshalJsoniterLogWrongSpanID(t *testing.T) {
+	jsonStr := `{"body":{}, "spanId":"--"}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	NewLogRecord().unmarshalJsoniter(iter)
+	require.Error(t, iter.Error)
+	assert.Contains(t, iter.Error.Error(), "parse span_id")
+}
+
+func BenchmarkJSONUnmarshal(b *testing.B) {
+	b.ReportAllocs()
+
+	encoder := &JSONMarshaler{}
+	jsonBuf, err := encoder.MarshalLogs(logsOTLP)
+	assert.NoError(b, err)
+	decoder := &JSONUnmarshaler{}
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_, err := decoder.UnmarshalLogs(jsonBuf)
+			assert.NoError(b, err)
+		}
+	})
 }

@@ -6,8 +6,10 @@ package plogotlp // import "go.opentelemetry.io/collector/pdata/plog/plogotlp"
 import (
 	"bytes"
 
+	jsoniter "github.com/json-iterator/go"
+
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
-	"go.opentelemetry.io/collector/pdata/plog/internal/plogjson"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ExportResponse represents the response for gRPC/HTTP client/server.
@@ -21,30 +23,59 @@ func NewExportResponse() ExportResponse {
 }
 
 // MarshalProto marshals ExportResponse into proto bytes.
-func (lr ExportResponse) MarshalProto() ([]byte, error) {
-	return lr.orig.Marshal()
+func (ms ExportResponse) MarshalProto() ([]byte, error) {
+	return ms.orig.Marshal()
 }
 
 // UnmarshalProto unmarshalls ExportResponse from proto bytes.
-func (lr ExportResponse) UnmarshalProto(data []byte) error {
-	return lr.orig.Unmarshal(data)
+func (ms ExportResponse) UnmarshalProto(data []byte) error {
+	return ms.orig.Unmarshal(data)
 }
 
 // MarshalJSON marshals ExportResponse into JSON bytes.
-func (lr ExportResponse) MarshalJSON() ([]byte, error) {
+func (ms ExportResponse) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
-	if err := plogjson.JSONMarshaler.Marshal(&buf, lr.orig); err != nil {
+	if err := json.Marshal(&buf, ms.orig); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
 // UnmarshalJSON unmarshalls ExportResponse from JSON bytes.
-func (lr ExportResponse) UnmarshalJSON(data []byte) error {
-	return plogjson.UnmarshalExportLogsServiceResponse(data, lr.orig)
+func (ms ExportResponse) UnmarshalJSON(data []byte) error {
+	iter := jsoniter.ConfigFastest.BorrowIterator(data)
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	ms.unmarshalJsoniter(iter)
+	return iter.Error
 }
 
 // PartialSuccess returns the ExportPartialSuccess associated with this ExportResponse.
-func (lr ExportResponse) PartialSuccess() ExportPartialSuccess {
-	return newExportPartialSuccess(&lr.orig.PartialSuccess)
+func (ms ExportResponse) PartialSuccess() ExportPartialSuccess {
+	return newExportPartialSuccess(&ms.orig.PartialSuccess)
+}
+
+func (ms ExportResponse) unmarshalJsoniter(iter *jsoniter.Iterator) {
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "partial_success", "partialSuccess":
+			ms.PartialSuccess().unmarshalJsoniter(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func (ms ExportPartialSuccess) unmarshalJsoniter(iter *jsoniter.Iterator) {
+	iter.ReadObjectCB(func(iterator *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "rejected_log_records", "rejectedLogRecords":
+			ms.orig.RejectedLogRecords = json.ReadInt64(iter)
+		case "error_message", "errorMessage":
+			ms.orig.ErrorMessage = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }
