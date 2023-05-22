@@ -146,7 +146,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte) e
 	if respStatus != nil {
 		formattedErr = gstatus.ErrorProto(respStatus)
 	} else {
-		formattedErr = errs.NewRequestError(resp.StatusCode, "error exporting items to %q", url)
+		formattedErr = errs.NewRequestError(resp.StatusCode, fmt.Errorf("error exporting items to %q", url))
 	}
 
 	if isRetryableStatusCode(resp.StatusCode) {
