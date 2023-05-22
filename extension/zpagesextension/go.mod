@@ -4,9 +4,9 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.77.0
-	go.opentelemetry.io/collector/component v0.77.0
-	go.opentelemetry.io/collector/confmap v0.77.0
+	go.opentelemetry.io/collector v0.78.0
+	go.opentelemetry.io/collector/component v0.78.0
+	go.opentelemetry.io/collector/confmap v0.78.0
 	go.opentelemetry.io/contrib/zpages v0.41.1
 	go.opentelemetry.io/otel/sdk v1.15.1
 	go.opentelemetry.io/otel/trace v1.15.1

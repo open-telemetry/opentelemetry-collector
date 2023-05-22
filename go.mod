@@ -17,15 +17,15 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.2
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector/component v0.77.0
-	go.opentelemetry.io/collector/confmap v0.77.0
-	go.opentelemetry.io/collector/consumer v0.77.0
-	go.opentelemetry.io/collector/exporter v0.77.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.77.0
+	go.opentelemetry.io/collector/component v0.78.0
+	go.opentelemetry.io/collector/confmap v0.78.0
+	go.opentelemetry.io/collector/consumer v0.78.0
+	go.opentelemetry.io/collector/exporter v0.78.0
+	go.opentelemetry.io/collector/extension/zpagesextension v0.78.0
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
-	go.opentelemetry.io/collector/receiver v0.77.0
-	go.opentelemetry.io/collector/semconv v0.77.0
+	go.opentelemetry.io/collector/receiver v0.78.0
+	go.opentelemetry.io/collector/semconv v0.78.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.41.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1
 	go.opentelemetry.io/contrib/propagators/b3 v1.16.1
