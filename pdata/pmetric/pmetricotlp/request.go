@@ -8,9 +8,11 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/pmetric/internal/pmetricjson"
 )
+
+var jsonUnmarshaler = &pmetric.JSONUnmarshaler{}
 
 // ExportRequest represents the request for gRPC/HTTP client/server.
 // It's a wrapper for pmetric.Metrics data.
@@ -31,29 +33,34 @@ func NewExportRequestFromMetrics(md pmetric.Metrics) ExportRequest {
 }
 
 // MarshalProto marshals ExportRequest into proto bytes.
-func (mr ExportRequest) MarshalProto() ([]byte, error) {
-	return mr.orig.Marshal()
+func (ms ExportRequest) MarshalProto() ([]byte, error) {
+	return ms.orig.Marshal()
 }
 
 // UnmarshalProto unmarshalls ExportRequest from proto bytes.
-func (mr ExportRequest) UnmarshalProto(data []byte) error {
-	return mr.orig.Unmarshal(data)
+func (ms ExportRequest) UnmarshalProto(data []byte) error {
+	return ms.orig.Unmarshal(data)
 }
 
 // MarshalJSON marshals ExportRequest into JSON bytes.
-func (mr ExportRequest) MarshalJSON() ([]byte, error) {
+func (ms ExportRequest) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
-	if err := pmetricjson.JSONMarshaler.Marshal(&buf, mr.orig); err != nil {
+	if err := json.Marshal(&buf, ms.orig); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
 // UnmarshalJSON unmarshalls ExportRequest from JSON bytes.
-func (mr ExportRequest) UnmarshalJSON(data []byte) error {
-	return pmetricjson.UnmarshalExportMetricsServiceRequest(data, mr.orig)
+func (ms ExportRequest) UnmarshalJSON(data []byte) error {
+	md, err := jsonUnmarshaler.UnmarshalMetrics(data)
+	if err != nil {
+		return err
+	}
+	*ms.orig = *internal.GetOrigMetrics(internal.Metrics(md))
+	return nil
 }
 
-func (mr ExportRequest) Metrics() pmetric.Metrics {
-	return pmetric.Metrics(internal.NewMetrics(mr.orig))
+func (ms ExportRequest) Metrics() pmetric.Metrics {
+	return pmetric.Metrics(internal.NewMetrics(ms.orig))
 }

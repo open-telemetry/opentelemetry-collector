@@ -6,8 +6,10 @@ package ptraceotlp // import "go.opentelemetry.io/collector/pdata/ptrace/ptraceo
 import (
 	"bytes"
 
+	jsoniter "github.com/json-iterator/go"
+
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
-	"go.opentelemetry.io/collector/pdata/ptrace/internal/ptracejson"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ExportResponse represents the response for gRPC/HTTP client/server.
@@ -33,7 +35,7 @@ func (ms ExportResponse) UnmarshalProto(data []byte) error {
 // MarshalJSON marshals ExportResponse into JSON bytes.
 func (ms ExportResponse) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
-	if err := ptracejson.JSONMarshaler.Marshal(&buf, ms.orig); err != nil {
+	if err := json.Marshal(&buf, ms.orig); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -41,10 +43,40 @@ func (ms ExportResponse) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls ExportResponse from JSON bytes.
 func (ms ExportResponse) UnmarshalJSON(data []byte) error {
-	return ptracejson.UnmarshalExportTraceServiceResponse(data, ms.orig)
+	iter := jsoniter.ConfigFastest.BorrowIterator(data)
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	ms.unmarshalJsoniter(iter)
+	return iter.Error
+}
+
+func (ms ExportResponse) unmarshalJsoniter(iter *jsoniter.Iterator) {
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "partial_success", "partialSuccess":
+			ms.PartialSuccess().unmarshalJsoniter(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+
 }
 
 // PartialSuccess returns the ExportLogsPartialSuccess associated with this ExportResponse.
 func (ms ExportResponse) PartialSuccess() ExportPartialSuccess {
 	return newExportPartialSuccess(&ms.orig.PartialSuccess)
+}
+
+func (ms ExportPartialSuccess) unmarshalJsoniter(iter *jsoniter.Iterator) {
+	iter.ReadObjectCB(func(iterator *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "rejected_spans", "rejectedSpans":
+			ms.orig.RejectedSpans = json.ReadInt64(iter)
+		case "error_message", "errorMessage":
+			ms.orig.ErrorMessage = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }
