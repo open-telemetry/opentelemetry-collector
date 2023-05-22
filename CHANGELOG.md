@@ -4,6 +4,12 @@
 
 <!-- next version -->
 
+## v0.78.1
+
+### 🧰 Bug fixes 🧰
+
+- `batchprocessor`: Fix start/stop logic for batch processor (#7708)
+
 ## v1.0.0-rcv0012/v0.78.0
 
 ### 💡 Enhancements 💡
