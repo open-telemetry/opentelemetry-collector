@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"go.opentelemetry.io/collector/internal/errs"
+	"go.opentelemetry.io/collector/internal/colerrs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
@@ -46,8 +46,8 @@ func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *t
 		}
 
 		// perhaps it was an HTTP exporter that failed?
-		if errors.As(err, &errs.RequestError{}) {
-			httpStatus = err.(*errs.RequestError).StatusCode()
+		if errors.As(err, &colerrs.RequestError{}) {
+			httpStatus = err.(*colerrs.RequestError).StatusCode()
 		}
 
 		writeError(resp, encoder, err, httpStatus)

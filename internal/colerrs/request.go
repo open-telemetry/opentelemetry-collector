@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package errs
+package colerrs
 
 var _ error = (*RequestError)(nil)
 
