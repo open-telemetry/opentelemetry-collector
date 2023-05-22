@@ -4,6 +4,20 @@
 
 <!-- next version -->
 
+## v1.0.0-rcv0012/v0.78.0
+
+### 💡 Enhancements 💡
+
+- `batchprocessor`: Add support for batching by metadata keys. (#4544)
+- `service`: Add feature gate `telemetry.useOtelWithSDKConfigurationForInternalTelemetry` that will add support for configuring the export of internal telemetry to additional destinations in future releases (#7641)
+- `forwardconnector`: Promote to beta (#7579)
+- `featuregate`: Promote `featuregate` to the stable module-set (#7693)
+
+### 🧰 Bug fixes 🧰
+
+- `featuregate`: Fix issue where `StageDeprecated` was not usable (#7586)
+- `exporterhelper`: Fix persistent storage behaviour with no available space on device (#7198)
+
 ## v0.77.0
 
 ### 🛑 Breaking changes 🛑
