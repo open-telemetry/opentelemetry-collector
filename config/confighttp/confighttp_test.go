@@ -428,7 +428,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err: "failed to load client CA CertPool: failed to load CA /doesnt/exist: open /doesnt/exist:",
+			err: "failed to load client CA CertPool: failed to load CA /doesnt/exist:",
 			settings: HTTPServerSettings{
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.TLSServerSetting{
