@@ -21,15 +21,13 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func toHTTP(s *status.Status) int {
+func gRPCToHTTP(s *status.Status) int {
 	switch s.Code() {
 	case codes.Aborted:
 		return http.StatusInternalServerError
 	case codes.AlreadyExists:
 		return http.StatusConflict
-	case codes.Canceled:
-		return http.StatusInternalServerError
-	case codes.DataLoss:
+	case codes.Canceled, codes.DataLoss:
 		return http.StatusInternalServerError
 	case codes.DeadlineExceeded:
 		return http.StatusRequestTimeout

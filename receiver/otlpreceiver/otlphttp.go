@@ -42,7 +42,7 @@ func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *t
 
 		// perhaps we had a gRPC exporter for this data returning an error?
 		if s, ok := status.FromError(err); ok {
-			httpStatus = toHTTP(s)
+			httpStatus = gRPCToHTTP(s)
 		}
 
 		// perhaps it was an HTTP exporter that failed?
