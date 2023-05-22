@@ -31,10 +31,9 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
-			SendBatchSize:            uint32(10000),
-			SendBatchMaxSize:         uint32(11000),
-			Timeout:                  time.Second * 10,
-			MetadataCardinalityLimit: 1000,
+			SendBatchSize:    uint32(10000),
+			SendBatchMaxSize: uint32(11000),
+			Timeout:          time.Second * 10,
 		}, cfg)
 }
 

@@ -19,11 +19,6 @@ const (
 
 	defaultSendBatchSize = uint32(8192)
 	defaultTimeout       = 200 * time.Millisecond
-
-	// defaultMetadataCardinalityLimit should be set to the number
-	// of metadata configurations the user expects to submit to
-	// the collector.
-	defaultMetadataCardinalityLimit = 1000
 )
 
 // NewFactory returns a new factory for the Batch processor.
@@ -38,9 +33,8 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		SendBatchSize:            defaultSendBatchSize,
-		Timeout:                  defaultTimeout,
-		MetadataCardinalityLimit: defaultMetadataCardinalityLimit,
+		SendBatchSize: defaultSendBatchSize,
+		Timeout:       defaultTimeout,
 	}
 }
 
