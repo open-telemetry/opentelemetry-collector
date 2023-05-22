@@ -182,15 +182,11 @@ func (bp *batchProcessor) Capabilities() consumer.Capabilities {
 
 // Start is invoked during service startup.
 func (bp *batchProcessor) Start(context.Context, component.Host) error {
-	bp.goroutines.Add(1)
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
 func (bp *batchProcessor) Shutdown(context.Context) error {
-	// Done corresponds with the initial Add(1) in Start.
-	bp.goroutines.Done()
-
 	close(bp.shutdownC)
 
 	// Wait until all goroutines are done.
