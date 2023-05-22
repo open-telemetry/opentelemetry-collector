@@ -343,7 +343,7 @@ func (bp *batchProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 func (bp *batchProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	b, err := bp.findBatcher(ctx)
 	if err != nil {
-		return nil
+		return err
 	}
 	b.newItem <- md
 	return nil
@@ -353,7 +353,7 @@ func (bp *batchProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 func (bp *batchProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	b, err := bp.findBatcher(ctx)
 	if err != nil {
-		return nil
+		return err
 	}
 	b.newItem <- ld
 	return nil
