@@ -16,6 +16,8 @@ package errs
 
 import "fmt"
 
+var _ error = (*RequestError)(nil)
+
 // RequestError represents an error returned during HTTP client operations
 type RequestError struct {
 	statusCode int

@@ -4,6 +4,7 @@
 package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 import (
+	"errors"
 	"io"
 	"mime"
 	"net/http"
@@ -45,8 +46,8 @@ func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *t
 		}
 
 		// perhaps it was an HTTP exporter that failed?
-		if s, ok := err.(*errs.RequestError); ok {
-			httpStatus = s.StatusCode()
+		if errors.As(err, &errs.RequestError{}) {
+			httpStatus = err.(*errs.RequestError).StatusCode()
 		}
 
 		writeError(resp, encoder, err, httpStatus)
