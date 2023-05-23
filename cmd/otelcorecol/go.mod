@@ -6,7 +6,7 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.77.0
+	go.opentelemetry.io/collector v0.78.2
 	go.opentelemetry.io/collector/component v0.77.0
 	go.opentelemetry.io/collector/connector/forwardconnector v0.77.0
 	go.opentelemetry.io/collector/exporter v0.77.0
