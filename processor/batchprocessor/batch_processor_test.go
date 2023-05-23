@@ -611,6 +611,20 @@ func BenchmarkBatchMetricProcessor(b *testing.B) {
 		Timeout:       100 * time.Millisecond,
 		SendBatchSize: 2000,
 	}
+	runMetricsProcessorBenchmark(b, cfg)
+}
+
+func BenchmarkMultiBatchMetricProcessor(b *testing.B) {
+	b.StopTimer()
+	cfg := Config{
+		Timeout:       100 * time.Millisecond,
+		SendBatchSize: 2000,
+		MetadataKeys:  []string{"test", "test2"},
+	}
+	runMetricsProcessorBenchmark(b, cfg)
+}
+
+func runMetricsProcessorBenchmark(b *testing.B, cfg Config) {
 	ctx := context.Background()
 	sink := new(metricsSink)
 	creationSet := processortest.NewNopCreateSettings()
