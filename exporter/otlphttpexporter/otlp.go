@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/errs"
+	"go.opentelemetry.io/collector/internal/colerrs"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -146,7 +146,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte) e
 	if respStatus != nil {
 		formattedErr = gstatus.ErrorProto(respStatus)
 	} else {
-		formattedErr = errs.NewRequestError(resp.StatusCode, fmt.Errorf("error exporting items to %q", url))
+		formattedErr = colerrs.NewRequestError(resp.StatusCode, fmt.Errorf("error exporting items to %q", url))
 	}
 
 	if isRetryableStatusCode(resp.StatusCode) {
