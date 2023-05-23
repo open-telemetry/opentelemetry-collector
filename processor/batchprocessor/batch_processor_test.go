@@ -634,16 +634,12 @@ func runMetricsProcessorBenchmark(b *testing.B, cfg Config) {
 	require.NoError(b, err)
 	require.NoError(b, batcher.Start(ctx, componenttest.NewNopHost()))
 
-	mds := make([]pmetric.Metrics, 0, b.N)
-	for n := 0; n < b.N; n++ {
-		mds = append(mds,
-			testdata.GenerateMetrics(metricsPerRequest),
-		)
-	}
 	b.StartTimer()
-	for n := 0; n < b.N; n++ {
-		require.NoError(b, batcher.ConsumeMetrics(ctx, mds[n]))
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			require.NoError(b, batcher.ConsumeMetrics(ctx, testdata.GenerateMetrics(metricsPerRequest)))
+		}
+	})
 	b.StopTimer()
 	require.NoError(b, batcher.Shutdown(ctx))
 	require.Equal(b, b.N*metricsPerRequest, sink.metricsCount)
