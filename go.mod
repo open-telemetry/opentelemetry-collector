@@ -11,7 +11,7 @@ require (
 	github.com/mostynb/go-grpc-compression v1.1.18
 	github.com/prometheus/client_golang v1.15.1
 	github.com/prometheus/client_model v0.4.0
-	github.com/prometheus/common v0.43.0
+	github.com/prometheus/common v0.44.0
 	github.com/rs/cors v1.9.0
 	github.com/shirou/gopsutil/v3 v3.23.3
 	github.com/spf13/cobra v1.7.0
@@ -38,7 +38,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.15.1
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/net v0.9.0
+	golang.org/x/net v0.10.0
 	golang.org/x/sys v0.8.0
 	gonum.org/v1/gonum v0.13.0
 	google.golang.org/grpc v1.55.0
