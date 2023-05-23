@@ -21,9 +21,9 @@ const (
 	defaultGRPCEndpoint = "0.0.0.0:4317"
 	defaultHTTPEndpoint = "0.0.0.0:4318"
 
-	defaultTracesUrlPath  = "/v1/traces"
-	defaultMetricsUrlPath = "/v1/metrics"
-	defaultLogsUrlPath    = "/v1/logs"
+	defaultTracesURLPath  = "/v1/traces"
+	defaultMetricsURLPath = "/v1/metrics"
+	defaultLogsURLPath    = "/v1/logs"
 )
 
 // NewFactory creates a new OTLP receiver factory.
@@ -52,9 +52,9 @@ func createDefaultConfig() component.Config {
 				HTTPServerSettings: &confighttp.HTTPServerSettings{
 					Endpoint: defaultHTTPEndpoint,
 				},
-				TracesUrlPath:  defaultTracesUrlPath,
-				MetricsUrlPath: defaultMetricsUrlPath,
-				LogsUrlPath:    defaultLogsUrlPath,
+				TracesURLPath:  defaultTracesURLPath,
+				MetricsURLPath: defaultMetricsURLPath,
+				LogsURLPath:    defaultLogsURLPath,
 			},
 		},
 	}

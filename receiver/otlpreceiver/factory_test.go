@@ -55,9 +55,9 @@ func TestCreateTracesReceiver(t *testing.T) {
 		HTTPServerSettings: &confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
-		TracesUrlPath:  defaultTracesUrlPath,
-		MetricsUrlPath: defaultMetricsUrlPath,
-		LogsUrlPath:    defaultLogsUrlPath,
+		TracesURLPath:  defaultTracesURLPath,
+		MetricsURLPath: defaultMetricsURLPath,
+		LogsURLPath:    defaultLogsURLPath,
 	}
 
 	tests := []struct {
@@ -98,7 +98,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 						HTTPServerSettings: &confighttp.HTTPServerSettings{
 							Endpoint: "localhost:112233",
 						},
-						TracesUrlPath: defaultTracesUrlPath,
+						TracesURLPath: defaultTracesURLPath,
 					},
 				},
 			},
@@ -136,9 +136,9 @@ func TestCreateMetricReceiver(t *testing.T) {
 		HTTPServerSettings: &confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
-		TracesUrlPath:  defaultTracesUrlPath,
-		MetricsUrlPath: defaultMetricsUrlPath,
-		LogsUrlPath:    defaultLogsUrlPath,
+		TracesURLPath:  defaultTracesURLPath,
+		MetricsURLPath: defaultMetricsURLPath,
+		LogsURLPath:    defaultLogsURLPath,
 	}
 
 	tests := []struct {
@@ -179,7 +179,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 						HTTPServerSettings: &confighttp.HTTPServerSettings{
 							Endpoint: "327.0.0.1:1122",
 						},
-						MetricsUrlPath: defaultMetricsUrlPath,
+						MetricsURLPath: defaultMetricsURLPath,
 					},
 				},
 			},
@@ -216,9 +216,9 @@ func TestCreateLogReceiver(t *testing.T) {
 		HTTPServerSettings: &confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
-		TracesUrlPath:  defaultTracesUrlPath,
-		MetricsUrlPath: defaultMetricsUrlPath,
-		LogsUrlPath:    defaultLogsUrlPath,
+		TracesURLPath:  defaultTracesURLPath,
+		MetricsURLPath: defaultMetricsURLPath,
+		LogsURLPath:    defaultLogsURLPath,
 	}
 
 	tests := []struct {
@@ -263,7 +263,7 @@ func TestCreateLogReceiver(t *testing.T) {
 						HTTPServerSettings: &confighttp.HTTPServerSettings{
 							Endpoint: "327.0.0.1:1122",
 						},
-						LogsUrlPath: defaultLogsUrlPath,
+						LogsURLPath: defaultLogsURLPath,
 					},
 				},
 			},

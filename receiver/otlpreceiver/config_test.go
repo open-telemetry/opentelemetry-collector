@@ -129,9 +129,9 @@ func TestUnmarshalConfig(t *testing.T) {
 							MaxAge:         7200,
 						},
 					},
-					TracesUrlPath:  "/traces",
-					MetricsUrlPath: "/v2/metrics",
-					LogsUrlPath:    "/log/ingest",
+					TracesURLPath:  "/traces",
+					MetricsURLPath: "/v2/metrics",
+					LogsURLPath:    "/log/ingest",
 				},
 			},
 		}, cfg)
@@ -158,9 +158,9 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 					HTTPServerSettings: &confighttp.HTTPServerSettings{
 						Endpoint: "/tmp/http_otlp.sock",
 					},
-					TracesUrlPath:  defaultTracesUrlPath,
-					MetricsUrlPath: defaultMetricsUrlPath,
-					LogsUrlPath:    defaultLogsUrlPath,
+					TracesURLPath:  defaultTracesURLPath,
+					MetricsURLPath: defaultMetricsURLPath,
+					LogsURLPath:    defaultLogsURLPath,
 				},
 			},
 		}, cfg)

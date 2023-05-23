@@ -24,13 +24,13 @@ type httpServerSettings struct {
 	*confighttp.HTTPServerSettings `mapstructure:",squash"`
 
 	// The URL path to receive traces on. If omitted "/v1/traces" will be used.
-	TracesUrlPath string `mapstructure:"traces_url_path,omitempty"`
+	TracesURLPath string `mapstructure:"traces_url_path,omitempty"`
 
 	// The URL path to receive metrics on. If omitted "/v1/metrics" will be used.
-	MetricsUrlPath string `mapstructure:"metrics_url_path,omitempty"`
+	MetricsURLPath string `mapstructure:"metrics_url_path,omitempty"`
 
 	// The URL path to receive logs on. If omitted "/v1/logs" will be used.
-	LogsUrlPath string `mapstructure:"logs_url_path,omitempty"`
+	LogsURLPath string `mapstructure:"logs_url_path,omitempty"`
 }
 
 // Protocols is the configuration for the supported protocols.
@@ -72,8 +72,8 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		cfg.HTTP = nil
 	} else {
 		// Verify URL path sanity
-		signalUrlPaths := []*string{&cfg.HTTP.TracesUrlPath, &cfg.HTTP.MetricsUrlPath, &cfg.HTTP.LogsUrlPath}
-		for i, urlPath := range signalUrlPaths {
+		signalURLPaths := []*string{&cfg.HTTP.TracesURLPath, &cfg.HTTP.MetricsURLPath, &cfg.HTTP.LogsURLPath}
+		for i, urlPath := range signalURLPaths {
 			u, err := url.Parse(*urlPath)
 			if err != nil {
 				return errors.New("Invalid HTTP URL path set for signal")
@@ -82,7 +82,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 			if !path.IsAbs(u.Path) {
 				u.Path = "/" + u.Path
 			}
-			*signalUrlPaths[i] = u.Path
+			*signalURLPaths[i] = u.Path
 		}
 	}
 
