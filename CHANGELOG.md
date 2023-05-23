@@ -4,6 +4,12 @@
 
 <!-- next version -->
 
+## v0.78.2
+
+### 🧰 Bug fixes 🧰
+
+- `batchprocessor`: Fix return error for batch processor when consuming Metrics and Logs (#7711)
+
 ## v0.78.1
 
 ### 🧰 Bug fixes 🧰
