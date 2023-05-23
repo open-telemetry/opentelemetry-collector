@@ -1,0 +1,31 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "labels": [
+      "dependencies"
+    ],
+    "extends": [
+      "config:base"
+    ],
+    "schedule": ["every tuesday"],
+    "packageRules": [
+      {
+        "matchManagers": ["dockerfile"],
+        "groupName": "dockerfile deps"
+      },
+      {
+        "matchManagers": ["docker-compose"],
+        "groupName": "docker-compose deps"
+      },
+      {
+        "matchManagers": ["github-actions"],
+        "groupName": "github-actions deps"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchUpdateTypes": ["minor", "major"]
+      }
+    ],
+    "ignoreDeps": [
+      "github.com/mattn/go-ieproxy"
+    ]
+  }
