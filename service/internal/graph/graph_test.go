@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 )
 
-var _ component.Component = &testNode{}
+var _ component.Component = (*testNode)(nil)
 
 type testNode struct {
 	id          component.ID
