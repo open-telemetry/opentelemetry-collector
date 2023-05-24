@@ -13,11 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          # currently the fork of this repo is from a personal fork
-          # because of an issue when creating multiple forks using forking renovate
-          #
-          # see https://github.com/renovatebot/renovate/discussions/21057
-          repository: "renovate-bot/codeboten-_-opentelemetry-collector"
+          repository: "renovate-bot/open-telemetry-_-opentelemetry-collector"
           ref: ${{ github.head_ref }}
           token: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
       - uses: actions/setup-go@v4
