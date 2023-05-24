@@ -191,6 +191,14 @@ func TestUnmarshalConfigEmptyProtocols(t *testing.T) {
 	assert.EqualError(t, component.ValidateConfig(cfg), "must specify at least one protocol when using the OTLP receiver")
 }
 
+func TestUnmarshalConfigInvalidSignalPath(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid_signal_path.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.EqualError(t, component.UnmarshalConfig(cm, cfg), "invalid HTTP URL path set for signal: parse \":invalid\": missing protocol scheme")
+}
+
 func TestUnmarshalConfigEmpty(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()

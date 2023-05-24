@@ -5,6 +5,7 @@ package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlprecei
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"path"
 
@@ -71,20 +72,31 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	if !conf.IsSet(protoHTTP) {
 		cfg.HTTP = nil
 	} else {
-		// Verify URL path sanity
-		signalURLPaths := []*string{&cfg.HTTP.TracesURLPath, &cfg.HTTP.MetricsURLPath, &cfg.HTTP.LogsURLPath}
-		for i, urlPath := range signalURLPaths {
-			u, err := url.Parse(*urlPath)
-			if err != nil {
-				return errors.New("Invalid HTTP URL path set for signal")
-			}
-			// Normalize URLs
-			if !path.IsAbs(u.Path) {
-				u.Path = "/" + u.Path
-			}
-			*signalURLPaths[i] = u.Path
+		var err error
+
+		if cfg.HTTP.TracesURLPath, err = sanitizeURLPath(cfg.HTTP.TracesURLPath); err != nil {
+			return err
+		}
+		if cfg.HTTP.MetricsURLPath, err = sanitizeURLPath(cfg.HTTP.MetricsURLPath); err != nil {
+			return err
+		}
+		if cfg.HTTP.LogsURLPath, err = sanitizeURLPath(cfg.HTTP.LogsURLPath); err != nil {
+			return err
 		}
 	}
 
 	return nil
+}
+
+// Verify signal URL path sanity
+func sanitizeURLPath(urlPath string) (string, error) {
+	u, err := url.Parse(urlPath)
+	if err != nil {
+		return "", fmt.Errorf("invalid HTTP URL path set for signal: %w", err)
+	}
+
+	if !path.IsAbs(u.Path) {
+		u.Path = "/" + u.Path
+	}
+	return u.Path, nil
 }
