@@ -177,7 +177,7 @@ func TestJsonHttp(t *testing.T) {
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
-	ocr := newHTTPReceiver(t, addr, tracesURLPath, defaultMetricsURLPath, sink, nil)
+	ocr := newHTTPReceiver(t, addr, tracesURLPath, defaultMetricsURLPath, defaultLogsURLPath, sink, nil)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
@@ -467,7 +467,7 @@ func TestProtoHttp(t *testing.T) {
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	tSink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
-	ocr := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, tSink, consumertest.NewNop())
+	ocr := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, defaultLogsURLPath, tSink, consumertest.NewNop())
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
@@ -615,7 +615,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	tSink := new(consumertest.TracesSink)
 	mSink := new(consumertest.MetricsSink)
-	ocr := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, tSink, mSink)
+	ocr := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, defaultLogsURLPath, tSink, mSink)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
@@ -674,7 +674,7 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 		assert.NoError(t, ln.Close())
 	})
 
-	r := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, consumertest.NewNop(), consumertest.NewNop())
+	r := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, defaultLogsURLPath, consumertest.NewNop(), consumertest.NewNop())
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -785,7 +785,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
-	ocr := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, sink, nil)
+	ocr := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, defaultLogsURLPath, sink, nil)
 	require.NotNil(t, ocr)
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
@@ -982,13 +982,13 @@ func newGRPCReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consu
 	return newReceiver(t, factory, cfg, otlpReceiverID, tc, mc)
 }
 
-func newHTTPReceiver(t *testing.T, endpoint string, tracesURLPath string, metricsURLPath string, tc consumer.Traces, mc consumer.Metrics) component.Component {
+func newHTTPReceiver(t *testing.T, endpoint string, tracesURLPath string, metricsURLPath string, logsURLPath string, tc consumer.Traces, mc consumer.Metrics) component.Component {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTP.Endpoint = endpoint
 	cfg.HTTP.TracesURLPath = tracesURLPath
 	cfg.HTTP.MetricsURLPath = metricsURLPath
-	cfg.HTTP.LogsURLPath = defaultLogsURLPath
+	cfg.HTTP.LogsURLPath = logsURLPath
 	cfg.GRPC = nil
 	return newReceiver(t, factory, cfg, otlpReceiverID, tc, mc)
 }
