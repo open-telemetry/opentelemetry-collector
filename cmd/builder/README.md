@@ -14,7 +14,7 @@ dist:
   output_path: /tmp/dist
 exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.69.0
-  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.69.1
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.69.1
 
 receivers:
   - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.69.1
@@ -34,7 +34,7 @@ processors:
   batch:
 
 exporters:
-  logging:
+  debug:
 
 service:
   pipelines:
@@ -44,7 +44,7 @@ service:
       processors:
       - batch
       exporters:
-      - logging
+      - debug
 EOF
 $ /tmp/dist/otelcol-custom --config=/tmp/otelcol.yaml
 ```
