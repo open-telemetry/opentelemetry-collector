@@ -13,7 +13,7 @@ receivers:
     path: ${WORKSPACE_DIR}
 
 exporters:
-  - import: go.opentelemetry.io/collector/exporter/loggingexporter
+  - import: go.opentelemetry.io/collector/exporter/debugexporter
     gomod: go.opentelemetry.io/collector v0.85.0
     path: ${WORKSPACE_DIR}
 
@@ -33,6 +33,7 @@ replaces:
   - go.opentelemetry.io/collector/consumer => ${WORKSPACE_DIR}/consumer
   - go.opentelemetry.io/collector/connector => ${WORKSPACE_DIR}/connector
   - go.opentelemetry.io/collector/exporter => ${WORKSPACE_DIR}/exporter
+  - go.opentelemetry.io/collector/exporter/debugexporter => ${WORKSPACE_DIR}/exporter/debugexporter
   - go.opentelemetry.io/collector/exporter/loggingexporter => ${WORKSPACE_DIR}/exporter/loggingexporter
   - go.opentelemetry.io/collector/extension => ${WORKSPACE_DIR}/extension
   - go.opentelemetry.io/collector/extension/auth => ${WORKSPACE_DIR}/extension/auth

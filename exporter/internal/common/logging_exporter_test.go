@@ -1,6 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-package loggingexporter
+package common
 
 import (
 	"context"
@@ -20,8 +20,7 @@ import (
 )
 
 func TestLoggingTracesExporterNoErrors(t *testing.T) {
-	f := NewFactory()
-	lte, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), f.CreateDefaultConfig())
+	lte, err := CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig(), &Common{})
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
@@ -32,8 +31,7 @@ func TestLoggingTracesExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	f := NewFactory()
-	lme, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), f.CreateDefaultConfig())
+	lme, err := CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig(), &Common{})
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
@@ -47,8 +45,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingLogsExporterNoErrors(t *testing.T) {
-	f := NewFactory()
-	lle, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), f.CreateDefaultConfig())
+	lle, err := CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), createDefaultConfig(), &Common{})
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
 

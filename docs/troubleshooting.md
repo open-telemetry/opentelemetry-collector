@@ -76,13 +76,13 @@ receivers:
             regex: '.*grpc_io.*'
             action: drop
 exporters:
-  logging:
+  debug:
 service:
   pipelines:
     metrics:
       receivers: [prometheus]
       processors: []
-      exporters: [logging]
+      exporters: [debug]
 ```
 
 ### zPages
@@ -109,7 +109,7 @@ extensions:
 exporters](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#general-information)
 can be configured to inspect the data being processed by the Collector.
 
-For live troubleshooting purposes consider leveraging the `logging` exporter,
+For live troubleshooting purposes consider leveraging the `debug` exporter,
 which can be used to confirm that data is being received, processed and
 exported by the Collector.
 
@@ -117,13 +117,13 @@ exported by the Collector.
 receivers:
   zipkin:
 exporters:
-  logging:
+  debug:
 service:
   pipelines:
     traces:
       receivers: [zipkin]
       processors: []
-      exporters: [logging]
+      exporters: [debug]
 ```
 
 Get a Zipkin payload to test. For example create a file called `trace.json`
@@ -161,34 +161,42 @@ $ curl -X POST localhost:9411/api/v2/spans -H'Content-Type: application/json' -d
 You should see a log entry like the following from the Collector:
 
 ```
-2020-11-11T04:12:33.089Z	INFO	loggingexporter/logging_exporter.go:296	TraceExporter	{"#spans": 1}
+2023-09-07T09:57:43.468-0700    info    TracesExporter  {"kind": "exporter", "data_type": "traces", "name": "debug", "resource spans": 1, "spans": 2}
 ```
 
-You can also configure the `logging` exporter so the entire payload is printed:
+You can also configure the `debug` exporter so the entire payload is printed:
 
 ```yaml
 exporters:
-  logging:
+  debug:
     verbosity: detailed
 ```
 
 With the modified configuration if you re-run the test above the log output should look like:
 
 ```
-2020-11-11T04:08:17.344Z	DEBUG	loggingexporter/logging_exporter.go:353	ResourceSpans #0
-Resource labels:
-     -> service.name: Str(api)
+2023-09-07T09:57:12.820-0700    info    TracesExporter  {"kind": "exporter", "data_type": "traces", "name": "debug", "resource spans": 1, "spans": 2}
+2023-09-07T09:57:12.821-0700    info    ResourceSpans #0
+Resource SchemaURL: https://opentelemetry.io/schemas/1.4.0
+Resource attributes:
+     -> service.name: Str(telemetrygen)
 ScopeSpans #0
+ScopeSpans SchemaURL: 
+InstrumentationScope telemetrygen 
 Span #0
-    Trace ID       : 5982fe77008310cc80f1da5e10147519
-    Parent ID      : 90394f6bcffb5d13
-    ID             : 67fae42571535f60
-    Name           : /m/n/2.6.1
-    Kind           : SPAN_KIND_SERVER
-    Start time     : 2018-01-24 08:16:15.726 +0000 UTC
-    End time       : 2018-01-24 08:16:15.752 +0000 UTC
+    Trace ID       : 0c636f29e29816ea76e6a5b8cd6601cf
+    Parent ID      : 1a08eba9395c5243
+    ID             : 10cebe4b63d47cae
+    Name           : okey-dokey
+    Kind           : Internal
+    Start time     : 2023-09-07 16:57:12.045933 +0000 UTC
+    End time       : 2023-09-07 16:57:12.046058 +0000 UTC
+    Status code    : Unset
+    Status message : 
 Attributes:
-     -> data.http_response_code: Str(201)
+     -> span.kind: Str(server)
+     -> net.peer.ip: Str(1.2.3.4)
+     -> peer.service: Str(telemetrygen)
 ```
 
 ### Health Check
