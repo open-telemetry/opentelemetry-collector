@@ -38,6 +38,16 @@ func NewFactory() exporter.Factory {
 	)
 }
 
+func NewFactoryWithName(s component.Type) exporter.Factory {
+	return exporter.NewFactory(
+		s,
+		createDefaultConfig,
+		exporter.WithTraces(createTracesExporter, component.StabilityLevelDevelopment),
+		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDevelopment),
+		exporter.WithLogs(createLogsExporter, component.StabilityLevelDevelopment),
+	)
+}
+
 func createDefaultConfig() component.Config {
 	return &Config{
 		LogLevel:           zapcore.InfoLevel,
