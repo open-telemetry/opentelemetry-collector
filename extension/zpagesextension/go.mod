@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector v0.78.2
 	go.opentelemetry.io/collector/component v0.78.2
 	go.opentelemetry.io/collector/confmap v0.78.2
-	go.opentelemetry.io/contrib/zpages v0.41.1
+	go.opentelemetry.io/contrib/zpages v0.42.0
 	go.opentelemetry.io/otel/sdk v1.16.0
 	go.opentelemetry.io/otel/trace v1.16.0
 	go.uber.org/zap v1.24.0
