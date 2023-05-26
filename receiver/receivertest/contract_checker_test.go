@@ -1,22 +1,10 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package receivertest
 
 import (
 	"context"
-	"strconv"
 	"sync/atomic"
 	"testing"
 
@@ -116,36 +104,21 @@ func createLog(
 // receiver and next consumer.
 func TestConsumeContract(t *testing.T) {
 
-	// Different scenarios to test for.
-	decisionFuncs := []func(ids IDSet) error{
-		// Always succeed. We expect all data to be delivered as is.
-		func(ids IDSet) error { return nil },
-
-		// Various scenarios with errors injected into the consumer's decision making.
-		RandomNonPermanentErrorConsumeDecision,
-		RandomPermanentErrorConsumeDecision,
-		RandomErrorsConsumeDecision,
-	}
-
 	// Number of log records to send per scenario.
 	const logsPerTest = 100
 
-	for i, decisionFunc := range decisionFuncs {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			generator := &exampleGenerator{t: t}
-			cfg := &exampleReceiverConfig{generator: generator}
+	generator := &exampleGenerator{t: t}
+	cfg := &exampleReceiverConfig{generator: generator}
 
-			params := CheckConsumeContractParams{
-				T:                   t,
-				Factory:             newExampleFactory(),
-				Config:              cfg,
-				Generator:           generator,
-				GenerateCount:       logsPerTest,
-				ConsumeDecisionFunc: decisionFunc,
-			}
-
-			// Run the contract checker. This will trigger test failures if any problems are found.
-			CheckConsumeContract(params)
-		})
+	params := CheckConsumeContractParams{
+		T:             t,
+		Factory:       newExampleFactory(),
+		DataType:      component.DataTypeLogs,
+		Config:        cfg,
+		Generator:     generator,
+		GenerateCount: logsPerTest,
 	}
+
+	// Run the contract checker. This will trigger test failures if any problems are found.
+	CheckConsumeContract(params)
 }

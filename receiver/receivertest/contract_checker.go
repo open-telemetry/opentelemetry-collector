@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package receivertest // import "go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -56,28 +45,74 @@ type CheckConsumeContractParams struct {
 	T *testing.T
 	// Factory that allows to create a receiver.
 	Factory receiver.Factory
+	// DataType to test for.
+	DataType component.DataType
 	// Config of the receiver to use.
 	Config component.Config
 	// Generator that can send data to the receiver.
 	Generator Generator
 	// GenerateCount specifies the number of times to call the generator.Generate().
 	GenerateCount int
-	// ConsumeDecisionFunc defines the decision function to use when the receiver calls Consume() func
-	// the next consumer. ConsumeDecisionFunc defines the testing scenario (i.e. to test for
-	// success case or for error case or a mix of both). See for example RandomErrorsConsumeDecision.
-	ConsumeDecisionFunc consumeDecisionFunc
 }
 
 // CheckConsumeContract checks the contract between the receiver and its next consumer. For the contract
-// description see ../doc.go. The checker will detect violations of contract on success, on permanent
-// and non-permanent errors based on decision-making done by consumeDecisionFunc.
-// It is advised to run CheckConsumeContract with a variety of decision-making functions.
+// description see ../doc.go. The checker will detect violations of contract on different scenarios: on success,
+// on permanent and non-permanent errors and mix of error types.
 func CheckConsumeContract(params CheckConsumeContractParams) {
-	consumer := &mockConsumer{t: params.T, consumeDecisionFunc: params.ConsumeDecisionFunc}
+	// Different scenarios to test for.
+	// The decision function defines the testing scenario (i.e. to test for
+	// success case or for error case or a mix of both). See for example randomErrorsConsumeDecision.
+	scenarios := []struct {
+		name         string
+		decisionFunc func(ids IDSet) error
+	}{
+		{
+			name: "always_succeed",
+			// Always succeed. We expect all data to be delivered as is.
+			decisionFunc: func(ids IDSet) error { return nil },
+		},
+		{
+			name:         "random_non_permanent_error",
+			decisionFunc: randomNonPermanentErrorConsumeDecision,
+		},
+		{
+			name:         "random_permanent_error",
+			decisionFunc: randomPermanentErrorConsumeDecision,
+		},
+		{
+			name:         "random_error",
+			decisionFunc: randomErrorsConsumeDecision,
+		},
+	}
+
+	for _, scenario := range scenarios {
+		params.T.Run(
+			scenario.name, func(t *testing.T) {
+				checkConsumeContractScenario(params, scenario.decisionFunc)
+			},
+		)
+	}
+}
+
+func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFunc func(ids IDSet) error) {
+	consumer := &mockConsumer{t: params.T, consumeDecisionFunc: decisionFunc}
 	ctx := context.Background()
 
 	// Create and start the receiver.
-	receiver, err := params.Factory.CreateLogsReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
+	var receiver component.Component
+	var err error
+	switch params.DataType {
+	case component.DataTypeLogs:
+		receiver, err = params.Factory.CreateLogsReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
+	case component.DataTypeTraces:
+		receiver, err = params.Factory.CreateTracesReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
+	case component.DataTypeMetrics:
+		// TODO: add metrics support to mockConsumer so that this case can be also implemented.
+		require.FailNow(params.T, "DataTypeMetrics is not implemented")
+	default:
+		require.FailNow(params.T, "must specify a valid DataType to test for")
+	}
+
 	require.NoError(params.T, err)
 
 	err = receiver.Start(ctx, componenttest.NewNopHost())
@@ -99,16 +134,12 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for {
-				if atomic.AddInt64(&generatedIndex, 1) >= int64(params.GenerateCount) {
-					// Generated as many as was requested. We are done.
-					return
-				}
-
+			for atomic.AddInt64(&generatedIndex, 1) < int64(params.GenerateCount) {
 				ids := params.Generator.Generate()
+				require.Greater(params.T, len(ids), 0)
 
 				mux.Lock()
-				duplicates := generatedIds.Merge(ids)
+				duplicates := generatedIds.merge(ids)
 				mux.Unlock()
 
 				// Check that the generator works correctly. There may not be any duplicates in the
@@ -124,24 +155,24 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 	// Wait until all data is seen by the consumer.
 	assert.Eventually(params.T, func() bool {
 		// Calculate the union of accepted and dropped data.
-		acceptedAndDropped, duplicates := consumer.acceptedIds.Union(consumer.droppedIds)
+		acceptedAndDropped, duplicates := consumer.acceptedIds.union(consumer.droppedIds)
 		if len(duplicates) != 0 {
 			assert.Failf(params.T, "found duplicate elements in received and dropped data", "keys=%v", duplicates)
 		}
 		// Compare accepted+dropped with generated. Once they are equal it means all data is seen by the consumer.
-		missingInOther, onlyInOther := generatedIds.Compare(acceptedAndDropped)
+		missingInOther, onlyInOther := generatedIds.compare(acceptedAndDropped)
 		return len(missingInOther) == 0 && len(onlyInOther) == 0
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Do some final checks. Need the union of accepted and dropped data again.
-	acceptedAndDropped, duplicates := consumer.acceptedIds.Union(consumer.droppedIds)
+	acceptedAndDropped, duplicates := consumer.acceptedIds.union(consumer.droppedIds)
 	if len(duplicates) != 0 {
 		assert.Failf(params.T, "found duplicate elements in accepted and dropped data", "keys=%v", duplicates)
 	}
 
 	// Make sure generated and accepted+dropped are exactly the same.
 
-	missingInOther, onlyInOther := generatedIds.Compare(acceptedAndDropped)
+	missingInOther, onlyInOther := generatedIds.compare(acceptedAndDropped)
 	if len(missingInOther) != 0 {
 		assert.Failf(params.T, "found elements sent that were not delivered", "keys=%v", missingInOther)
 	}
@@ -155,62 +186,58 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 	// Print some stats to help debug test failures.
 	fmt.Printf(
 		"Sent %d, accepted=%d, expected dropped=%d, non-permanent errors retried=%d\n",
-		len(generatedIds.m),
-		len(consumer.acceptedIds.m),
-		len(consumer.droppedIds.m),
+		len(generatedIds),
+		len(consumer.acceptedIds),
+		len(consumer.droppedIds),
 		consumer.nonPermanentFailures,
 	)
 }
 
 // IDSet is a set of unique ids of data elements used in the test (logs, spans or metric data points).
-type IDSet struct {
-	m map[UniqueIDAttrDataType]bool
-}
+type IDSet map[UniqueIDAttrDataType]bool
 
-// Compare to another set and calculate the differences from this set.
-func (ds *IDSet) Compare(other IDSet) (missingInOther, onlyInOther []UniqueIDAttrDataType) {
-	for k := range ds.m {
-		if _, ok := other.m[k]; !ok {
+// compare to another set and calculate the differences from this set.
+func (ds IDSet) compare(other IDSet) (missingInOther, onlyInOther []UniqueIDAttrDataType) {
+	for k := range ds {
+		if _, ok := other[k]; !ok {
 			missingInOther = append(missingInOther, k)
 		}
 	}
-	for k := range other.m {
-		if _, ok := ds.m[k]; !ok {
+	for k := range other {
+		if _, ok := ds[k]; !ok {
 			onlyInOther = append(onlyInOther, k)
 		}
 	}
 	return
 }
 
-// Merge another set into this one and return a list of duplicate ids.
-func (ds *IDSet) Merge(other IDSet) (duplicates []UniqueIDAttrDataType) {
-	if ds.m == nil {
-		ds.m = map[UniqueIDAttrDataType]bool{}
+// merge another set into this one and return a list of duplicate ids.
+func (ds *IDSet) merge(other IDSet) (duplicates []UniqueIDAttrDataType) {
+	if *ds == nil {
+		*ds = map[UniqueIDAttrDataType]bool{}
 	}
-	for k, v := range other.m {
-		if _, ok := ds.m[k]; ok {
+	for k, v := range other {
+		if _, ok := (*ds)[k]; ok {
 			duplicates = append(duplicates, k)
 		} else {
-			ds.m[k] = v
+			(*ds)[k] = v
 		}
 	}
 	return
 }
 
-// Union computes the union of this and another sets. A new set if created to return the result.
+// union computes the union of this and another sets. A new set if created to return the result.
 // Also returns a list of any duplicate ids found.
-func (ds *IDSet) Union(other IDSet) (union IDSet, duplicates []UniqueIDAttrDataType) {
-	union = IDSet{
-		m: map[UniqueIDAttrDataType]bool{},
+func (ds *IDSet) union(other IDSet) (union IDSet, duplicates []UniqueIDAttrDataType) {
+	union = map[UniqueIDAttrDataType]bool{}
+	for k, v := range *ds {
+		union[k] = v
 	}
-	for k, v := range ds.m {
-		union.m[k] = v
-	}
-	for k, v := range other.m {
-		if _, ok := union.m[k]; ok {
+	for k, v := range other {
+		if _, ok := union[k]; ok {
 			duplicates = append(duplicates, k)
 		} else {
-			union.m[k] = v
+			union[k] = v
 		}
 	}
 	return
@@ -226,28 +253,28 @@ type consumeDecisionFunc func(ids IDSet) error
 var errNonPermanent = errors.New("non permanent error")
 var errPermanent = errors.New("permanent error")
 
-// RandomNonPermanentErrorConsumeDecision is a decision function that succeeds approximately
+// randomNonPermanentErrorConsumeDecision is a decision function that succeeds approximately
 // half of the time and fails with a non-permanent error the rest of the time.
-func RandomNonPermanentErrorConsumeDecision(_ IDSet) error {
+func randomNonPermanentErrorConsumeDecision(_ IDSet) error {
 	if rand.Float32() < 0.5 {
 		return errNonPermanent
 	}
 	return nil
 }
 
-// RandomPermanentErrorConsumeDecision is a decision function that succeeds approximately
+// randomPermanentErrorConsumeDecision is a decision function that succeeds approximately
 // half of the time and fails with a permanent error the rest of the time.
-func RandomPermanentErrorConsumeDecision(_ IDSet) error {
+func randomPermanentErrorConsumeDecision(_ IDSet) error {
 	if rand.Float32() < 0.5 {
 		return consumererror.NewPermanent(errPermanent)
 	}
 	return nil
 }
 
-// RandomErrorsConsumeDecision is a decision function that succeeds approximately
+// randomErrorsConsumeDecision is a decision function that succeeds approximately
 // a third of the time, fails with a permanent error the third of the time and fails with
 // a non-permanent error the rest of the time.
-func RandomErrorsConsumeDecision(_ IDSet) error {
+func randomErrorsConsumeDecision(_ IDSet) error {
 	r := rand.Float64()
 	third := 1.0 / 3.0
 	if r < third {
@@ -284,9 +311,7 @@ func (m *mockConsumer) ConsumeTraces(_ context.Context, data ptrace.Traces) erro
 
 // IDSetFromTraces computes an IDSet from given ptrace.Traces. The IDSet will contain ids of all spans.
 func IDSetFromTraces(data ptrace.Traces) (IDSet, error) {
-	ds := IDSet{
-		m: map[UniqueIDAttrDataType]bool{},
-	}
+	ds := map[UniqueIDAttrDataType]bool{}
 	rss := data.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		ils := rss.At(i).ScopeSpans()
@@ -301,7 +326,7 @@ func IDSetFromTraces(data ptrace.Traces) (IDSet, error) {
 				if key.Type() != pcommon.ValueTypeInt {
 					return ds, fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
 				}
-				ds.m[UniqueIDAttrDataType(key.Int())] = true
+				ds[UniqueIDAttrDataType(key.Int())] = true
 			}
 		}
 	}
@@ -316,9 +341,7 @@ func (m *mockConsumer) ConsumeLogs(_ context.Context, data plog.Logs) error {
 
 // IDSetFromLogs computes an IDSet from given plog.Logs. The IDSet will contain ids of all log records.
 func IDSetFromLogs(data plog.Logs) (IDSet, error) {
-	ds := IDSet{
-		m: map[UniqueIDAttrDataType]bool{},
-	}
+	ds := map[UniqueIDAttrDataType]bool{}
 	rss := data.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
 		ils := rss.At(i).ScopeLogs()
@@ -333,7 +356,7 @@ func IDSetFromLogs(data plog.Logs) (IDSet, error) {
 				if key.Type() != pcommon.ValueTypeInt {
 					return ds, fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
 				}
-				ds.m[UniqueIDAttrDataType(key.Int())] = true
+				ds[UniqueIDAttrDataType(key.Int())] = true
 			}
 		}
 	}
@@ -354,7 +377,7 @@ func (m *mockConsumer) consume(ids IDSet) error {
 		if consumererror.IsPermanent(err) {
 			// It is a permanent error, which means we need to drop the data.
 			// Remember the ids of dropped elements.
-			duplicates := m.droppedIds.Merge(ids)
+			duplicates := m.droppedIds.merge(ids)
 			if len(duplicates) > 0 {
 				require.FailNow(m.t, "elements that were dropped previously were sent again: %v", duplicates)
 			}
@@ -368,7 +391,7 @@ func (m *mockConsumer) consume(ids IDSet) error {
 	}
 
 	// The decision is a success. Remember the ids of the data in the accepted list.
-	duplicates := m.acceptedIds.Merge(ids)
+	duplicates := m.acceptedIds.merge(ids)
 	if len(duplicates) > 0 {
 		require.FailNow(m.t, "elements that were accepted previously were sent again: %v", duplicates)
 	}
