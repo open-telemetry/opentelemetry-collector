@@ -34,3 +34,32 @@ type Request interface {
 
 // RequestUnmarshaler defines a function which takes a byte slice and unmarshals it into a relevant request
 type RequestUnmarshaler func([]byte) (Request, error)
+
+// RequestSender is an abstraction of a request sender.
+type RequestSender interface {
+	Send(req Request) error
+}
+
+// BaseRequest is a base implementation for the internal.Request.
+type BaseRequest struct {
+	Ctx                        context.Context
+	ProcessingFinishedCallback func()
+}
+
+func (req *BaseRequest) Context() context.Context {
+	return req.Ctx
+}
+
+func (req *BaseRequest) SetContext(ctx context.Context) {
+	req.Ctx = ctx
+}
+
+func (req *BaseRequest) SetOnProcessingFinished(callback func()) {
+	req.ProcessingFinishedCallback = callback
+}
+
+func (req *BaseRequest) OnProcessingFinished() {
+	if req.ProcessingFinishedCallback != nil {
+		req.ProcessingFinishedCallback()
+	}
+}

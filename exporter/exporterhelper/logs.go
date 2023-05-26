@@ -19,14 +19,14 @@ var logsMarshaler = &plog.ProtoMarshaler{}
 var logsUnmarshaler = &plog.ProtoUnmarshaler{}
 
 type logsRequest struct {
-	baseRequest
+	internal.BaseRequest
 	ld     plog.Logs
 	pusher consumer.ConsumeLogsFunc
 }
 
 func newLogsRequest(ctx context.Context, ld plog.Logs, pusher consumer.ConsumeLogsFunc) internal.Request {
 	return &logsRequest{
-		baseRequest: baseRequest{ctx: ctx},
+		BaseRequest: internal.BaseRequest{Ctx: ctx},
 		ld:          ld,
 		pusher:      pusher,
 	}
@@ -45,7 +45,7 @@ func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) internal.Req
 func (req *logsRequest) OnError(err error) internal.Request {
 	var logError consumererror.Logs
 	if errors.As(err, &logError) {
-		return newLogsRequest(req.ctx, logError.Data(), req.pusher)
+		return newLogsRequest(req.Ctx, logError.Data(), req.pusher)
 	}
 	return req
 }
@@ -92,7 +92,7 @@ func NewLogsExporter(
 	if err != nil {
 		return nil, err
 	}
-	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
+	be.wrapConsumerSender(func(nextSender internal.RequestSender) internal.RequestSender {
 		return &logsExporterWithObservability{
 			obsrep:     be.obsrep,
 			nextSender: nextSender,
@@ -101,7 +101,7 @@ func NewLogsExporter(
 
 	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		req := newLogsRequest(ctx, ld, pusher)
-		serr := be.sender.send(req)
+		serr := be.sender.Send(req)
 		if errors.Is(serr, errSendingQueueIsFull) {
 			be.obsrep.recordLogsEnqueueFailure(req.Context(), int64(req.Count()))
 		}
@@ -116,12 +116,12 @@ func NewLogsExporter(
 
 type logsExporterWithObservability struct {
 	obsrep     *obsExporter
-	nextSender requestSender
+	nextSender internal.RequestSender
 }
 
-func (lewo *logsExporterWithObservability) send(req internal.Request) error {
+func (lewo *logsExporterWithObservability) Send(req internal.Request) error {
 	req.SetContext(lewo.obsrep.StartLogsOp(req.Context()))
-	err := lewo.nextSender.send(req)
+	err := lewo.nextSender.Send(req)
 	lewo.obsrep.EndLogsOp(req.Context(), req.Count(), err)
 	return err
 }

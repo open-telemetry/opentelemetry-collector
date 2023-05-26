@@ -19,14 +19,14 @@ var metricsMarshaler = &pmetric.ProtoMarshaler{}
 var metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
 
 type metricsRequest struct {
-	baseRequest
+	internal.BaseRequest
 	md     pmetric.Metrics
 	pusher consumer.ConsumeMetricsFunc
 }
 
 func newMetricsRequest(ctx context.Context, md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) internal.Request {
 	return &metricsRequest{
-		baseRequest: baseRequest{ctx: ctx},
+		BaseRequest: internal.BaseRequest{Ctx: ctx},
 		md:          md,
 		pusher:      pusher,
 	}
@@ -45,7 +45,7 @@ func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) intern
 func (req *metricsRequest) OnError(err error) internal.Request {
 	var metricsError consumererror.Metrics
 	if errors.As(err, &metricsError) {
-		return newMetricsRequest(req.ctx, metricsError.Data(), req.pusher)
+		return newMetricsRequest(req.Ctx, metricsError.Data(), req.pusher)
 	}
 	return req
 }
@@ -93,7 +93,7 @@ func NewMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
-	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
+	be.wrapConsumerSender(func(nextSender internal.RequestSender) internal.RequestSender {
 		return &metricsSenderWithObservability{
 			obsrep:     be.obsrep,
 			nextSender: nextSender,
@@ -102,7 +102,7 @@ func NewMetricsExporter(
 
 	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		req := newMetricsRequest(ctx, md, pusher)
-		serr := be.sender.send(req)
+		serr := be.sender.Send(req)
 		if errors.Is(serr, errSendingQueueIsFull) {
 			be.obsrep.recordMetricsEnqueueFailure(req.Context(), int64(req.Count()))
 		}
@@ -117,12 +117,12 @@ func NewMetricsExporter(
 
 type metricsSenderWithObservability struct {
 	obsrep     *obsExporter
-	nextSender requestSender
+	nextSender internal.RequestSender
 }
 
-func (mewo *metricsSenderWithObservability) send(req internal.Request) error {
+func (mewo *metricsSenderWithObservability) Send(req internal.Request) error {
 	req.SetContext(mewo.obsrep.StartMetricsOp(req.Context()))
-	err := mewo.nextSender.send(req)
+	err := mewo.nextSender.Send(req)
 	mewo.obsrep.EndMetricsOp(req.Context(), req.Count(), err)
 	return err
 }

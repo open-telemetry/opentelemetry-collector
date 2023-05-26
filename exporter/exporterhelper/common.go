@@ -27,35 +27,6 @@ func NewDefaultTimeoutSettings() TimeoutSettings {
 	}
 }
 
-// requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
-type requestSender interface {
-	send(req internal.Request) error
-}
-
-// baseRequest is a base implementation for the internal.Request.
-type baseRequest struct {
-	ctx                        context.Context
-	processingFinishedCallback func()
-}
-
-func (req *baseRequest) Context() context.Context {
-	return req.ctx
-}
-
-func (req *baseRequest) SetContext(ctx context.Context) {
-	req.ctx = ctx
-}
-
-func (req *baseRequest) SetOnProcessingFinished(callback func()) {
-	req.processingFinishedCallback = callback
-}
-
-func (req *baseRequest) OnProcessingFinished() {
-	if req.processingFinishedCallback != nil {
-		req.processingFinishedCallback()
-	}
-}
-
 // baseSettings represents all the options that users can configure.
 type baseSettings struct {
 	component.StartFunc
@@ -141,7 +112,7 @@ type baseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 	obsrep   *obsExporter
-	sender   requestSender
+	sender   internal.RequestSender
 	qrSender *queuedRetrySender
 }
 
@@ -176,7 +147,7 @@ func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal compo
 
 // wrapConsumerSender wraps the consumer sender (the sender that uses retries and timeout) with the given wrapper.
 // This can be used to wrap with observability (create spans, record metrics) the consumer sender.
-func (be *baseExporter) wrapConsumerSender(f func(consumer requestSender) requestSender) {
+func (be *baseExporter) wrapConsumerSender(f func(consumer internal.RequestSender) internal.RequestSender) {
 	be.qrSender.consumerSender = f(be.qrSender.consumerSender)
 }
 
@@ -185,7 +156,7 @@ type timeoutSender struct {
 	cfg TimeoutSettings
 }
 
-func (ts *timeoutSender) send(req internal.Request) error {
+func (ts *timeoutSender) Send(req internal.Request) error {
 	// Intentionally don't overwrite the context inside the request, because in case of retries deadline will not be
 	// updated because this deadline most likely is before the next one.
 	ctx := req.Context()

@@ -19,14 +19,14 @@ var tracesMarshaler = &ptrace.ProtoMarshaler{}
 var tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
 
 type tracesRequest struct {
-	baseRequest
+	internal.BaseRequest
 	td     ptrace.Traces
 	pusher consumer.ConsumeTracesFunc
 }
 
 func newTracesRequest(ctx context.Context, td ptrace.Traces, pusher consumer.ConsumeTracesFunc) internal.Request {
 	return &tracesRequest{
-		baseRequest: baseRequest{ctx: ctx},
+		BaseRequest: internal.BaseRequest{Ctx: ctx},
 		td:          td,
 		pusher:      pusher,
 	}
@@ -50,7 +50,7 @@ func (req *tracesRequest) Marshal() ([]byte, error) {
 func (req *tracesRequest) OnError(err error) internal.Request {
 	var traceError consumererror.Traces
 	if errors.As(err, &traceError) {
-		return newTracesRequest(req.ctx, traceError.Data(), req.pusher)
+		return newTracesRequest(req.Ctx, traceError.Data(), req.pusher)
 	}
 	return req
 }
@@ -93,7 +93,7 @@ func NewTracesExporter(
 	if err != nil {
 		return nil, err
 	}
-	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
+	be.wrapConsumerSender(func(nextSender internal.RequestSender) internal.RequestSender {
 		return &tracesExporterWithObservability{
 			obsrep:     be.obsrep,
 			nextSender: nextSender,
@@ -102,7 +102,7 @@ func NewTracesExporter(
 
 	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		req := newTracesRequest(ctx, td, pusher)
-		serr := be.sender.send(req)
+		serr := be.sender.Send(req)
 		if errors.Is(serr, errSendingQueueIsFull) {
 			be.obsrep.recordTracesEnqueueFailure(req.Context(), int64(req.Count()))
 		}
@@ -117,13 +117,13 @@ func NewTracesExporter(
 
 type tracesExporterWithObservability struct {
 	obsrep     *obsExporter
-	nextSender requestSender
+	nextSender internal.RequestSender
 }
 
-func (tewo *tracesExporterWithObservability) send(req internal.Request) error {
+func (tewo *tracesExporterWithObservability) Send(req internal.Request) error {
 	req.SetContext(tewo.obsrep.StartTracesOp(req.Context()))
 	// Forward the data to the next consumer (this pusher is the next).
-	err := tewo.nextSender.send(req)
+	err := tewo.nextSender.Send(req)
 	tewo.obsrep.EndTracesOp(req.Context(), req.Count(), err)
 	return err
 }

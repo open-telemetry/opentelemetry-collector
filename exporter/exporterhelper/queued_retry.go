@@ -74,7 +74,7 @@ type queuedRetrySender struct {
 	id                 component.ID
 	signal             component.DataType
 	cfg                QueueSettings
-	consumerSender     requestSender
+	consumerSender     internal.RequestSender
 	queue              internal.ProducerConsumerQueue
 	retryStopCh        chan struct{}
 	traceAttribute     attribute.KeyValue
@@ -83,7 +83,8 @@ type queuedRetrySender struct {
 	requestUnmarshaler internal.RequestUnmarshaler
 }
 
-func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg QueueSettings, rCfg RetrySettings,
+	reqUnmarshaler internal.RequestUnmarshaler, nextSender internal.RequestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
@@ -192,7 +193,7 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 	}
 
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item internal.Request) {
-		_ = qrs.consumerSender.send(item)
+		_ = qrs.consumerSender.Send(item)
 		item.OnProcessingFinished()
 	})
 
@@ -285,10 +286,10 @@ func createSampledLogger(logger *zap.Logger) *zap.Logger {
 	return logger.WithOptions(opts)
 }
 
-// send implements the requestSender interface
-func (qrs *queuedRetrySender) send(req internal.Request) error {
+// Send implements the requestSender interface
+func (qrs *queuedRetrySender) Send(req internal.Request) error {
 	if !qrs.cfg.Enabled {
-		err := qrs.consumerSender.send(req)
+		err := qrs.consumerSender.Send(req)
 		if err != nil {
 			qrs.logger.Error(
 				"Exporting failed. Dropping data. Try enabling sending_queue to survive temporary failures.",
@@ -343,16 +344,16 @@ type onRequestHandlingFinishedFunc func(*zap.Logger, internal.Request, error) er
 type retrySender struct {
 	traceAttribute     attribute.KeyValue
 	cfg                RetrySettings
-	nextSender         requestSender
+	nextSender         internal.RequestSender
 	stopCh             chan struct{}
 	logger             *zap.Logger
 	onTemporaryFailure onRequestHandlingFinishedFunc
 }
 
-// send implements the requestSender interface
-func (rs *retrySender) send(req internal.Request) error {
+// Send implements the requestSender interface
+func (rs *retrySender) Send(req internal.Request) error {
 	if !rs.cfg.Enabled {
-		err := rs.nextSender.send(req)
+		err := rs.nextSender.Send(req)
 		if err != nil {
 			rs.logger.Error(
 				"Exporting failed. Try enabling retry_on_failure config option to retry on retryable errors",
@@ -381,7 +382,7 @@ func (rs *retrySender) send(req internal.Request) error {
 			"Sending request.",
 			trace.WithAttributes(rs.traceAttribute, attribute.Int64("retry_num", retryNum)))
 
-		err := rs.nextSender.send(req)
+		err := rs.nextSender.Send(req)
 		if err == nil {
 			return nil
 		}
