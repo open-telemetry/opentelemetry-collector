@@ -19,7 +19,7 @@ func TestNewNopHost(t *testing.T) {
 	require.IsType(t, &nopHost{}, nh)
 
 	nh.ReportFatalError(errors.New("TestError"))
-	assert.Nil(t, nh.GetExporters())
+	assert.Nil(t, nh.GetExporters()) // nolint: staticcheck
 	assert.Nil(t, nh.GetExtensions())
 	assert.Nil(t, nh.GetFactory(component.KindReceiver, "test"))
 }
