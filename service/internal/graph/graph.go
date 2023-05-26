@@ -310,7 +310,7 @@ func (g *Graph) ShutdownAll(ctx context.Context) error {
 	return errs
 }
 
-// Deprecated: [0.75.0] This function will be removed no earlier than 0.80.0.
+// Deprecated: [0.79.0] This function will be removed in the future.
 // Several components in the contrib repository use this function so it cannot be removed
 // before those cases are removed. In most cases, use of this function can be replaced by a
 // connector. See https://github.com/open-telemetry/opentelemetry-collector/issues/7370 and
