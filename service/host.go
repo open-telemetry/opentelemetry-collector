@@ -57,6 +57,12 @@ func (host *serviceHost) GetExtensions() map[component.ID]component.Component {
 	return host.serviceExtensions.GetExtensions()
 }
 
+// Deprecated: [0.79.0] This function will be removed in the future.
+// Several components in the contrib repository use this function so it cannot be removed
+// before those cases are removed. In most cases, use of this function can be replaced by a
+// connector. See https://github.com/open-telemetry/opentelemetry-collector/issues/7370 and
+// https://github.com/open-telemetry/opentelemetry-collector/pull/7390#issuecomment-1483710184
+// for additional information.
 func (host *serviceHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return host.pipelines.GetExporters()
 }

@@ -47,5 +47,12 @@ type Host interface {
 	//
 	// GetExporters can be called by the component anytime after Component.Start() begins and
 	// until Component.Shutdown() ends.
+	//
+	// Deprecated: [0.79.0] This function will be removed in the future.
+	// Several components in the contrib repository use this function so it cannot be removed
+	// before those cases are removed. In most cases, use of this function can be replaced by a
+	// connector. See https://github.com/open-telemetry/opentelemetry-collector/issues/7370 and
+	// https://github.com/open-telemetry/opentelemetry-collector/pull/7390#issuecomment-1483710184
+	// for additional information.
 	GetExporters() map[DataType]map[ID]Component
 }
