@@ -73,5 +73,6 @@ type forward struct {
 }
 
 func (c *forward) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	// forward doesn't mutate data, but the connected pipeline might.
+	return consumer.Capabilities{MutatesData: true}
 }
