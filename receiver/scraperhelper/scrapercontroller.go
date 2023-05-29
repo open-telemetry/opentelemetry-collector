@@ -47,6 +47,7 @@ type controller struct {
 	logger             *zap.Logger
 	collectionInterval time.Duration
 	initialDelay       time.Duration
+	timeout            time.Duration
 	nextConsumer       consumer.Metrics
 
 	scrapers    []Scraper
@@ -91,6 +92,7 @@ func NewScraperControllerReceiver(
 		logger:             set.Logger,
 		collectionInterval: cfg.CollectionInterval,
 		initialDelay:       cfg.InitialDelay,
+		timeout:            cfg.Timeout,
 		nextConsumer:       nextConsumer,
 		done:               make(chan struct{}),
 		terminated:         make(chan struct{}),
@@ -172,7 +174,7 @@ func (sc *controller) startScraping() {
 		for {
 			select {
 			case <-sc.tickerCh:
-				ctx, done := context.WithTimeout(context.Background(), sc.collectionInterval)
+				ctx, done := context.WithTimeout(context.Background(), sc.timeout)
 				sc.scrapeMetricsAndReport(ctx)
 				done()
 			case <-sc.done:

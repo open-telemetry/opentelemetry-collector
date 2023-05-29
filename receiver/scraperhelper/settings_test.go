@@ -23,9 +23,25 @@ func TestScrapeControllerSettings(t *testing.T) {
 			errVal: "",
 		},
 		{
-			name:   "zero collection interval",
+			name:   "zero value configuration",
 			set:    ScraperControllerSettings{},
-			errVal: `"collection_interval": requires positive value`,
+			errVal: `"collection_interval": requires positive value; "timeout": requires positive value`,
+		},
+		{
+			name: "invalid timeout",
+			set: ScraperControllerSettings{
+				CollectionInterval: 10,
+				Timeout:            -1,
+			},
+			errVal: `"timeout": requires positive value`,
+		},
+		{
+			name: "timeout exceeds scrape duration",
+			set: ScraperControllerSettings{
+				CollectionInterval: 2,
+				Timeout:            3,
+			},
+			errVal: `timeout value exceeds collection interval`,
 		},
 	} {
 		tc := tc
