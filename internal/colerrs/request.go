@@ -19,14 +19,14 @@ func NewRequestError(statusCode int, wrapped error) *RequestError {
 	}
 }
 
-func (r *RequestError) Error() string {
+func (r RequestError) Error() string {
 	return r.wrapped.Error()
 }
 
-func (r *RequestError) Unwrap() error {
+func (r RequestError) Unwrap() error {
 	return r.wrapped
 }
 
-func (r *RequestError) StatusCode() int {
+func (r RequestError) StatusCode() int {
 	return r.statusCode
 }
