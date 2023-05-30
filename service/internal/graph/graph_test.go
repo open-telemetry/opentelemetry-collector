@@ -362,7 +362,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				component.NewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
 					Processors: []component.ID{component.NewID("exampleprocessor")},
-					Exporters:  []component.ID{component.NewID("exampleconnector")},
+					Exporters:  []component.ID{component.NewID("exampleconnector")}, // wrapped w/ mutates: true
 				},
 				component.NewIDWithName("traces", "out"): {
 					Receivers:  []component.ID{component.NewID("exampleconnector")},
@@ -378,7 +378,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				component.NewIDWithName("metrics", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
 					Processors: []component.ID{component.NewID("exampleprocessor")},
-					Exporters:  []component.ID{component.NewID("exampleconnector")},
+					Exporters:  []component.ID{component.NewID("exampleconnector")}, // wrapped w/ mutates: true
 				},
 				component.NewIDWithName("metrics", "out"): {
 					Receivers:  []component.ID{component.NewID("exampleconnector")},
@@ -394,7 +394,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				component.NewIDWithName("logs", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
 					Processors: []component.ID{component.NewID("exampleprocessor")},
-					Exporters:  []component.ID{component.NewID("exampleconnector")},
+					Exporters:  []component.ID{component.NewID("exampleconnector")}, // wrapped w/ mutates: true
 				},
 				component.NewIDWithName("logs", "out"): {
 					Receivers:  []component.ID{component.NewID("exampleconnector")},
@@ -410,7 +410,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				component.NewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
 					Processors: []component.ID{component.NewID("exampleprocessor")},
-					Exporters:  []component.ID{component.NewIDWithName("exampleconnector", "fork")},
+					Exporters:  []component.ID{component.NewIDWithName("exampleconnector", "fork")}, // wrapped w/ mutates: true
 				},
 				component.NewIDWithName("traces", "type0"): {
 					Receivers:  []component.ID{component.NewIDWithName("exampleconnector", "fork")},
@@ -436,7 +436,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				component.NewIDWithName("metrics", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
 					Processors: []component.ID{component.NewID("exampleprocessor")},
-					Exporters:  []component.ID{component.NewIDWithName("exampleconnector", "fork")},
+					Exporters:  []component.ID{component.NewIDWithName("exampleconnector", "fork")}, // wrapped w/ mutates: true
 				},
 				component.NewIDWithName("metrics", "type0"): {
 					Receivers:  []component.ID{component.NewIDWithName("exampleconnector", "fork")},
@@ -462,7 +462,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				component.NewIDWithName("logs", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
 					Processors: []component.ID{component.NewID("exampleprocessor")},
-					Exporters:  []component.ID{component.NewIDWithName("exampleconnector", "fork")},
+					Exporters:  []component.ID{component.NewIDWithName("exampleconnector", "fork")}, // wrapped w/ mutates: true
 				},
 				component.NewIDWithName("logs", "type0"): {
 					Receivers:  []component.ID{component.NewIDWithName("exampleconnector", "fork")},
@@ -551,7 +551,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				component.NewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
 					Processors: []component.ID{component.NewID("exampleprocessor")},
-					Exporters:  []component.ID{component.NewID("exampleconnector")},
+					Exporters:  []component.ID{component.NewID("exampleconnector")}, // wrapped w/ mutates: true
 				},
 				component.NewIDWithName("metrics", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
@@ -561,7 +561,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				component.NewIDWithName("logs", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
 					Processors: []component.ID{component.NewID("exampleprocessor")},
-					Exporters:  []component.ID{component.NewID("exampleconnector")},
+					Exporters:  []component.ID{component.NewID("exampleconnector")}, // wrapped w/ mutates: true
 				},
 				component.NewIDWithName("traces", "out"): {
 					Receivers:  []component.ID{component.NewID("exampleconnector")},
@@ -650,6 +650,30 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					}
 				}
 				assert.Equal(t, expectMutatesData, pipeline.capabilitiesNode.getConsumer().Capabilities().MutatesData)
+
+				// A connector that acts as a receiver in a pipeline that mutates data must inherit mutability
+				if expectMutatesData {
+					for _, receiver := range pipeline.receivers {
+						r, ok := receiver.(*connectorNode)
+						if !ok {
+							continue
+						}
+						for expPipelineID, expPipeline := range pg.pipelines {
+							if expPipelineID.Type() != pipelineID.Type() {
+								continue
+							}
+							for _, exporter := range expPipeline.exporters {
+								e, ok := exporter.(*connectorNode)
+								if !ok || exporter.ID() != receiver.ID() {
+									continue
+								}
+								assert.True(t, e.getConsumer().Capabilities().MutatesData,
+									"connector %q should inherit mutatability from %q",
+									r.componentID.String(), expPipelineID)
+							}
+						}
+					}
+				}
 
 				expectedReceivers, expectedExporters := expectedInstances(test.pipelineConfigs, pipelineID)
 				require.Equal(t, expectedReceivers, len(pipeline.receivers))

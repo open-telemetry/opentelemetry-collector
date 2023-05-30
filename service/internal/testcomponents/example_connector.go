@@ -113,5 +113,5 @@ type ExampleConnector struct {
 }
 
 func (c *ExampleConnector) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
+	return consumer.Capabilities{MutatesData: false}
 }
