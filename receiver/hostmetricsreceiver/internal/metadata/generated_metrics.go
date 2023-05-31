@@ -563,6 +563,8 @@ var Labels = struct {
 	ProcessDirection string
 	// ProcessState (Breakdown of CPU usage by type.)
 	ProcessState string
+	// ProcessState (Breakdown of CPU usage by process.)
+	ProcessName string
 	// ProcessesStatus (Breakdown status of the processes.)
 	ProcessesStatus string
 }{
@@ -590,6 +592,7 @@ var Labels = struct {
 	"type",
 	"direction",
 	"state",
+	"name",
 	"status",
 }
 

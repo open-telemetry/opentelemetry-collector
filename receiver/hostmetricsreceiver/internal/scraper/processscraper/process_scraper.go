@@ -183,19 +183,25 @@ func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdat
 	if err != nil {
 		return err
 	}
+	// 取消process name tag
+	// processName := ""
 
+	processName, err := handle.Name()
+	if err != nil {
+		return err
+	}
 	startIdx := metrics.Len()
 	metrics.Resize(startIdx + cpuMetricsLen)
-	initializeCPUTimeMetric(metrics.At(startIdx), startTime, now, times)
+	initializeCPUTimeMetric(metrics.At(startIdx), startTime, now, times, processName)
 	return nil
 }
 
-func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, times *cpu.TimesStat) {
+func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, times *cpu.TimesStat, processName string) {
 	metadata.Metrics.ProcessCPUTime.Init(metric)
 
 	ddps := metric.DoubleSum().DataPoints()
 	ddps.Resize(cpuStatesLen)
-	appendCPUTimeStateDataPoints(ddps, startTime, now, times)
+	appendCPUTimeStateDataPoints(ddps, startTime, now, times, processName)
 }
 
 func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.Timestamp, handle processHandle) error {
@@ -203,23 +209,31 @@ func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.Time
 	if err != nil {
 		return err
 	}
+	processName, err := handle.Name()
+	if err != nil {
+		return err
+	}
 
 	startIdx := metrics.Len()
 	metrics.Resize(startIdx + memoryMetricsLen)
-	initializeMemoryUsageMetric(metrics.At(startIdx+0), metadata.Metrics.ProcessMemoryPhysicalUsage, now, int64(mem.RSS))
-	initializeMemoryUsageMetric(metrics.At(startIdx+1), metadata.Metrics.ProcessMemoryVirtualUsage, now, int64(mem.VMS))
+	initializeMemoryUsageMetric(metrics.At(startIdx+0), metadata.Metrics.ProcessMemoryPhysicalUsage, now, int64(mem.RSS), processName)
+	initializeMemoryUsageMetric(metrics.At(startIdx+1), metadata.Metrics.ProcessMemoryVirtualUsage, now, int64(mem.VMS), processName)
 	return nil
 }
 
-func initializeMemoryUsageMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, now pdata.Timestamp, usage int64) {
+func initializeMemoryUsageMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, now pdata.Timestamp, usage int64, processName string) {
 	metricIntf.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(1)
-	initializeMemoryUsageDataPoint(idps.At(0), now, usage)
+	initializeMemoryUsageDataPoint(idps.At(0), now, usage, processName)
 }
 
-func initializeMemoryUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, usage int64) {
+func initializeMemoryUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, usage int64, processName string) {
+	if len(processName) > 0 {
+		labelsMap := dataPoint.LabelsMap()
+		labelsMap.Insert(metadata.Labels.ProcessName, processName)
+	}
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(usage)
 }
