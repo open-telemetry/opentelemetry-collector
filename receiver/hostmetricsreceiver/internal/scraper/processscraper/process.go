@@ -37,6 +37,7 @@ type processMetadata struct {
 }
 
 type executableMetadata struct {
+	cwd  string
 	name string
 	path string
 }
@@ -98,6 +99,7 @@ type processHandles interface {
 }
 
 type processHandle interface {
+	Cwd() (string, error)
 	Name() (string, error)
 	Exe() (string, error)
 	Username() (string, error)

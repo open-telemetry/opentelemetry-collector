@@ -44,6 +44,11 @@ func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now 
 }
 
 func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
+	cwd, err := proc.Cwd()
+	if err != nil {
+		return nil, err
+	}
+
 	name, err := proc.Name()
 	if err != nil {
 		return nil, err
@@ -54,7 +59,7 @@ func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
 		return nil, err
 	}
 
-	executable := &executableMetadata{name: name, path: exe}
+	executable := &executableMetadata{cwd: cwd, name: name, path: exe}
 	return executable, nil
 }
 

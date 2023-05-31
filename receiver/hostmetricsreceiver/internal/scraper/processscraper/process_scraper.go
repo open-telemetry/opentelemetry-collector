@@ -45,6 +45,8 @@ type scraper struct {
 	includeFS filterset.FilterSet
 	excludeFS filterset.FilterSet
 
+	includeCwd filterset.FilterSet
+
 	// for mocking
 	bootTime          func() (uint64, error)
 	getProcessHandles func() (processHandles, error)
@@ -65,6 +67,13 @@ func newProcessScraper(cfg *Config) (*scraper, error) {
 
 	if len(cfg.Exclude.Names) > 0 {
 		scraper.excludeFS, err = filterset.CreateFilterSet(cfg.Exclude.Names, &cfg.Exclude.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating process exclude filters: %w", err)
+		}
+	}
+
+	if len(cfg.Include.Cwds) > 0 {
+		scraper.includeCwd, err = filterset.CreateFilterSet(cfg.Exclude.Cwds, &cfg.Exclude.Config)
 		if err != nil {
 			return nil, fmt.Errorf("error creating process exclude filters: %w", err)
 		}
@@ -145,6 +154,11 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		executable, err := getProcessExecutable(handle)
 		if err != nil {
 			errs.AddPartial(1, fmt.Errorf("error reading process name for pid %v: %w", pid, err))
+			continue
+		}
+
+		// filter processes by cwd
+		if (s.includeCwd != nil && !s.includeCwd.Matches(executable.cwd)) {
 			continue
 		}
 
