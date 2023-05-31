@@ -181,6 +181,8 @@ type processHandlesMock struct {
 	handles []*processHandleMock
 }
 
+var _ processHandle = (*processHandleMock)(nil)
+
 func (p *processHandlesMock) Pid(index int) int32 {
 	return 1
 }
@@ -195,6 +197,11 @@ func (p *processHandlesMock) Len() int {
 
 type processHandleMock struct {
 	mock.Mock
+}
+
+func (p *processHandleMock) Cwd() (string, error) {
+	args := p.MethodCalled("Cwd")
+	return args.String(0), args.Error(1)
 }
 
 func (p *processHandleMock) Name() (ret string, err error) {
