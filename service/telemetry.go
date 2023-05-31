@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	fluentobserv "go.opentelemetry.io/collector/receiver/fluentforwardreceiver/observ"
 	"go.opentelemetry.io/collector/receiver/kafkareceiver"
+	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
 // applicationTelemetry is application's own telemetry.
@@ -53,10 +54,10 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		return nil
 	}
 
-	// processMetricsViews, err := telemetry2.NewProcessMetricsViews(ballastSizeBytes)
-	// if err != nil {
-	// 	return err
-	// }
+	processMetricsViews, err := telemetry2.NewProcessMetricsViews(ballastSizeBytes)
+	if err != nil {
+		return err
+	}
 
 	var views []*view.View
 	views = append(views, batchprocessor.MetricViews()...)
@@ -64,7 +65,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	views = append(views, jaegerexporter.MetricViews()...)
 	views = append(views, kafkareceiver.MetricViews()...)
 	views = append(views, obsreport.Configure(level)...)
-	// views = append(views, processMetricsViews.Views()...)
+	views = append(views, processMetricsViews.Views()...)
 	views = append(views, processor.MetricViews()...)
 
 	tel.views = views
@@ -75,7 +76,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		return err
 	}
 
-	// processMetricsViews.StartCollection()
+	processMetricsViews.StartCollection()
 
 	// 因为启动多个application,这里可能会重复监听prometheus端口
 	// TODO 以后有时间处理

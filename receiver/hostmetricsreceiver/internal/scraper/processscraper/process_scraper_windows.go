@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
 // +build windows
 
 package processscraper
@@ -28,13 +29,16 @@ import (
 
 const cpuStatesLen = 2
 
-func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.Timestamp, cpuTime *cpu.TimesStat) {
-	initializeCPUTimeDataPoint(ddps.At(0), startTime, now, cpuTime.User, metadata.LabelProcessState.User)
-	initializeCPUTimeDataPoint(ddps.At(1), startTime, now, cpuTime.System, metadata.LabelProcessState.System)
+func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.Timestamp, cpuTime *cpu.TimesStat, processName string) {
+	initializeCPUTimeDataPoint(ddps.At(0), startTime, now, cpuTime.User, metadata.LabelProcessState.User, processName)
+	initializeCPUTimeDataPoint(ddps.At(1), startTime, now, cpuTime.System, metadata.LabelProcessState.System, processName)
 }
 
-func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now pdata.Timestamp, value float64, stateLabel string) {
+func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now pdata.Timestamp, value float64, stateLabel string, processName string) {
 	labelsMap := dataPoint.LabelsMap()
+	if len(processName) > 0 {
+		labelsMap.Insert(metadata.Labels.ProcessName, processName)
+	}
 	labelsMap.Insert(metadata.Labels.ProcessState, stateLabel)
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(now)
@@ -42,13 +46,18 @@ func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now 
 }
 
 func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
+	cwd, err := proc.Cwd()
+	if err != nil {
+		return nil, err
+	}
+
 	exe, err := proc.Exe()
 	if err != nil {
 		return nil, err
 	}
 
 	name := filepath.Base(exe)
-	executable := &executableMetadata{name: name, path: exe}
+	executable := &executableMetadata{cwd: cwd, name: name, path: exe}
 	return executable, nil
 }
 

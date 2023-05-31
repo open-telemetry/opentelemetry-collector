@@ -34,4 +34,5 @@ type MatchConfig struct {
 	filterset.Config `mapstructure:",squash"`
 
 	Names []string `mapstructure:"names"`
+	Cwds  []string `mapstructure:"cwds"`
 }

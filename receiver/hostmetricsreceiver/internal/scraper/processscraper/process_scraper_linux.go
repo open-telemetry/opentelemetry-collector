@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build linux
 // +build linux
 
 package processscraper
@@ -25,21 +26,29 @@ import (
 
 const cpuStatesLen = 3
 
-func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.Timestamp, cpuTime *cpu.TimesStat) {
-	initializeCPUTimeDataPoint(ddps.At(0), startTime, now, cpuTime.User, metadata.LabelProcessState.User)
-	initializeCPUTimeDataPoint(ddps.At(1), startTime, now, cpuTime.System, metadata.LabelProcessState.System)
-	initializeCPUTimeDataPoint(ddps.At(2), startTime, now, cpuTime.Iowait, metadata.LabelProcessState.Wait)
+func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.Timestamp, cpuTime *cpu.TimesStat, processName string) {
+	initializeCPUTimeDataPoint(ddps.At(0), startTime, now, cpuTime.User, metadata.LabelProcessState.User, processName)
+	initializeCPUTimeDataPoint(ddps.At(1), startTime, now, cpuTime.System, metadata.LabelProcessState.System, processName)
+	initializeCPUTimeDataPoint(ddps.At(2), startTime, now, cpuTime.Iowait, metadata.LabelProcessState.Wait, processName)
 }
 
-func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now pdata.Timestamp, value float64, stateLabel string) {
+func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now pdata.Timestamp, value float64, stateLabel string, processName string) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.ProcessState, stateLabel)
+	if len(processName) > 0 {
+		labelsMap.Insert(metadata.Labels.ProcessName, processName)
+	}
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }
 
 func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
+	cwd, err := proc.Cwd()
+	if err != nil {
+		return nil, err
+	}
+
 	name, err := proc.Name()
 	if err != nil {
 		return nil, err
@@ -50,7 +59,7 @@ func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
 		return nil, err
 	}
 
-	executable := &executableMetadata{name: name, path: exe}
+	executable := &executableMetadata{cwd: cwd, name: name, path: exe}
 	return executable, nil
 }
 
