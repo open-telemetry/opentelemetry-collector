@@ -419,6 +419,6 @@ func (m *mockConsumer) consume(ids IDSet) error {
 
 func CreateOneLogWithID(id UniqueIDAttrVal) plog.Logs {
 	data := plog.NewLogs()
-	data.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr(UniqueIDAttrName, string(id))
+	data.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr(UniqueIDAttrName, id)
 	return data
 }
