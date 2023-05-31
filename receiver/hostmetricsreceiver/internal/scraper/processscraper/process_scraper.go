@@ -76,9 +76,9 @@ func newProcessScraper(cfg *Config) (*scraper, error) {
 	}
 
 	if len(cfg.Include.Cwds) > 0 {
-		scraper.includeCwd, err = filterset.CreateFilterSet(cfg.Exclude.Cwds, &cfg.Exclude.Config)
+		scraper.includeCwd, err = filterset.CreateFilterSet(cfg.Include.Cwds, &cfg.Include.Config)
 		if err != nil {
-			return nil, fmt.Errorf("error creating process exclude filters: %w", err)
+			return nil, fmt.Errorf("error creating process include filters: %w", err)
 		}
 	}
 
