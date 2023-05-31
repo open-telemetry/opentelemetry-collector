@@ -36,6 +36,9 @@ const (
 	diskMetricsLen   = 1
 
 	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen
+
+	// 如果要关闭进程名tag，设为false
+	support_process_name = true
 )
 
 // scraper for Process Metrics
@@ -158,7 +161,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		}
 
 		// filter processes by cwd
-		if (s.includeCwd != nil && !s.includeCwd.Matches(executable.cwd)) {
+		if s.includeCwd != nil && !s.includeCwd.Matches(executable.cwd) {
 			continue
 		}
 
@@ -197,13 +200,14 @@ func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdat
 	if err != nil {
 		return err
 	}
-	// 取消process name tag
-	// processName := ""
-
-	processName, err := handle.Name()
-	if err != nil {
-		return err
+	processName := ""
+	if support_process_name {
+		processName, err = handle.Name()
+		if err != nil {
+			return err
+		}
 	}
+
 	startIdx := metrics.Len()
 	metrics.Resize(startIdx + cpuMetricsLen)
 	initializeCPUTimeMetric(metrics.At(startIdx), startTime, now, times, processName)
@@ -223,9 +227,12 @@ func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.Time
 	if err != nil {
 		return err
 	}
-	processName, err := handle.Name()
-	if err != nil {
-		return err
+	processName := ""
+	if support_process_name {
+		processName, err = handle.Name()
+		if err != nil {
+			return err
+		}
 	}
 
 	startIdx := metrics.Len()
