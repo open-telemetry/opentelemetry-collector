@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/featuregate
 go 1.19
 
 require (
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	go.uber.org/multierr v1.11.0
 )
 
