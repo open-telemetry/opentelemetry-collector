@@ -5,10 +5,9 @@ package receivertest
 
 import (
 	"context"
+	"strconv"
 	"sync/atomic"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -63,20 +62,21 @@ type exampleGenerator struct {
 	sequenceNum int64
 }
 
-func (g *exampleGenerator) Generate() IDSet {
+func (g *exampleGenerator) Start() {
+	g.sequenceNum = 0
+}
+
+func (g *exampleGenerator) Generate() []UniqueIDAttrVal {
 	// Make sure the id is atomically incremented. Generate() may be called concurrently.
-	id := atomic.AddInt64(&g.sequenceNum, 1)
+	id := strconv.FormatInt(atomic.AddInt64(&g.sequenceNum, 1), 10)
 
-	data := CreateOneLogWithID(UniqueIDAttrDataType(id))
+	data := CreateOneLogWithID(id)
 
-	// Send the generated data to the recever.
+	// Send the generated data to the receiver.
 	g.receiver.Receive(data)
 
 	// And return the ids for bookkeeping by the test.
-	ids, err := IDSetFromLogs(data)
-	require.NoError(g.t, err)
-
-	return ids
+	return []UniqueIDAttrVal{id}
 }
 
 func newExampleFactory() receiver.Factory {

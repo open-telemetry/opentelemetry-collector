@@ -29,16 +29,18 @@ import (
 // UniqueIDAttrName is the attribute name that is used in log records/spans/datapoints as the unique identifier.
 const UniqueIDAttrName = "test_id"
 
-// UniqueIDAttrDataType is the value type of the UniqueIDAttrName.
-type UniqueIDAttrDataType int64
+// UniqueIDAttrVal is the value type of the UniqueIDAttrName.
+type UniqueIDAttrVal = string
 
 type Generator interface {
+	Start()
+
 	// Generate must generate and send at least one data element (span, log record or metric data point)
 	// to the receiver and return a copy of generated element ids.
 	// The generated data must contain uniquely identifiable elements, each with a
 	// different value of attribute named UniqueIDAttrName.
 	// CreateOneLogWithID() can be used a helper to create such logs.
-	Generate() IDSet
+	Generate() []UniqueIDAttrVal
 }
 
 type CheckConsumeContractParams struct {
@@ -130,16 +132,18 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	// Create concurrent goroutines that use the generator.
 	// The total number of generator calls will be equal to params.GenerateCount.
 
+	params.Generator.Start()
+
 	for j := 0; j < concurrency; j++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for atomic.AddInt64(&generatedIndex, 1) < int64(params.GenerateCount) {
+			for atomic.AddInt64(&generatedIndex, 1) <= int64(params.GenerateCount) {
 				ids := params.Generator.Generate()
 				require.Greater(params.T, len(ids), 0)
 
 				mux.Lock()
-				duplicates := generatedIds.merge(ids)
+				duplicates := generatedIds.mergeSlice(ids)
 				mux.Unlock()
 
 				// Check that the generator works correctly. There may not be any duplicates in the
@@ -194,10 +198,10 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 }
 
 // IDSet is a set of unique ids of data elements used in the test (logs, spans or metric data points).
-type IDSet map[UniqueIDAttrDataType]bool
+type IDSet map[UniqueIDAttrVal]bool
 
 // compare to another set and calculate the differences from this set.
-func (ds IDSet) compare(other IDSet) (missingInOther, onlyInOther []UniqueIDAttrDataType) {
+func (ds IDSet) compare(other IDSet) (missingInOther, onlyInOther []UniqueIDAttrVal) {
 	for k := range ds {
 		if _, ok := other[k]; !ok {
 			missingInOther = append(missingInOther, k)
@@ -212,9 +216,9 @@ func (ds IDSet) compare(other IDSet) (missingInOther, onlyInOther []UniqueIDAttr
 }
 
 // merge another set into this one and return a list of duplicate ids.
-func (ds *IDSet) merge(other IDSet) (duplicates []UniqueIDAttrDataType) {
+func (ds *IDSet) merge(other IDSet) (duplicates []UniqueIDAttrVal) {
 	if *ds == nil {
-		*ds = map[UniqueIDAttrDataType]bool{}
+		*ds = map[UniqueIDAttrVal]bool{}
 	}
 	for k, v := range other {
 		if _, ok := (*ds)[k]; ok {
@@ -226,10 +230,25 @@ func (ds *IDSet) merge(other IDSet) (duplicates []UniqueIDAttrDataType) {
 	return
 }
 
+// merge another set into this one and return a list of duplicate ids.
+func (ds *IDSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrVal) {
+	if *ds == nil {
+		*ds = map[UniqueIDAttrVal]bool{}
+	}
+	for _, id := range other {
+		if _, ok := (*ds)[id]; ok {
+			duplicates = append(duplicates, id)
+		} else {
+			(*ds)[id] = true
+		}
+	}
+	return
+}
+
 // union computes the union of this and another sets. A new set if created to return the result.
 // Also returns a list of any duplicate ids found.
-func (ds *IDSet) union(other IDSet) (union IDSet, duplicates []UniqueIDAttrDataType) {
-	union = map[UniqueIDAttrDataType]bool{}
+func (ds *IDSet) union(other IDSet) (union IDSet, duplicates []UniqueIDAttrVal) {
+	union = map[UniqueIDAttrVal]bool{}
 	for k, v := range *ds {
 		union[k] = v
 	}
@@ -311,7 +330,7 @@ func (m *mockConsumer) ConsumeTraces(_ context.Context, data ptrace.Traces) erro
 
 // IDSetFromTraces computes an IDSet from given ptrace.Traces. The IDSet will contain ids of all spans.
 func IDSetFromTraces(data ptrace.Traces) (IDSet, error) {
-	ds := map[UniqueIDAttrDataType]bool{}
+	ds := map[UniqueIDAttrVal]bool{}
 	rss := data.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		ils := rss.At(i).ScopeSpans()
@@ -323,10 +342,10 @@ func IDSetFromTraces(data ptrace.Traces) (IDSet, error) {
 				if !exists {
 					return ds, fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
 				}
-				if key.Type() != pcommon.ValueTypeInt {
+				if key.Type() != pcommon.ValueTypeStr {
 					return ds, fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
 				}
-				ds[UniqueIDAttrDataType(key.Int())] = true
+				ds[key.Str()] = true
 			}
 		}
 	}
@@ -341,7 +360,7 @@ func (m *mockConsumer) ConsumeLogs(_ context.Context, data plog.Logs) error {
 
 // IDSetFromLogs computes an IDSet from given plog.Logs. The IDSet will contain ids of all log records.
 func IDSetFromLogs(data plog.Logs) (IDSet, error) {
-	ds := map[UniqueIDAttrDataType]bool{}
+	ds := map[UniqueIDAttrVal]bool{}
 	rss := data.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
 		ils := rss.At(i).ScopeLogs()
@@ -353,10 +372,10 @@ func IDSetFromLogs(data plog.Logs) (IDSet, error) {
 				if !exists {
 					return ds, fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
 				}
-				if key.Type() != pcommon.ValueTypeInt {
+				if key.Type() != pcommon.ValueTypeStr {
 					return ds, fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
 				}
-				ds[UniqueIDAttrDataType(key.Int())] = true
+				ds[key.Str()] = true
 			}
 		}
 	}
@@ -398,8 +417,8 @@ func (m *mockConsumer) consume(ids IDSet) error {
 	return nil
 }
 
-func CreateOneLogWithID(id UniqueIDAttrDataType) plog.Logs {
+func CreateOneLogWithID(id UniqueIDAttrVal) plog.Logs {
 	data := plog.NewLogs()
-	data.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutInt(UniqueIDAttrName, int64(id))
+	data.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr(UniqueIDAttrName, string(id))
 	return data
 }
