@@ -1,6 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package stanzareceiver implements a receiver that can be used by the
-// Opentelemetry collector to receive logs using the stanza log agent
+// Package storage implements an extension that can
+// persist state beyond the collector process.
 package storage // import "go.opentelemetry.io/collector/extension/experimental/storage"
