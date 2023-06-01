@@ -30,7 +30,7 @@ import (
 const UniqueIDAttrName = "test_id"
 
 // UniqueIDAttrVal is the value type of the UniqueIDAttrName.
-type UniqueIDAttrVal = string
+type UniqueIDAttrVal string
 
 type Generator interface {
 	// Start the generator and prepare to generate. Will be followed by calls to Generate().
@@ -137,6 +137,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	const concurrency = 4
 
 	params.Generator.Start()
+	defer params.Generator.Stop()
 
 	// Create concurrent goroutines that use the generator.
 	// The total number of generator calls will be equal to params.GenerateCount.
@@ -162,8 +163,6 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 
 	// Wait until all generator goroutines are done.
 	wg.Wait()
-
-	params.Generator.Stop()
 
 	// Wait until all data is seen by the consumer.
 	assert.Eventually(params.T, func() bool {
@@ -354,7 +353,7 @@ func idSetFromTraces(data ptrace.Traces) (idSet, error) {
 				if key.Type() != pcommon.ValueTypeStr {
 					return ds, fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
 				}
-				ds[key.Str()] = true
+				ds[UniqueIDAttrVal(key.Str())] = true
 			}
 		}
 	}
@@ -384,7 +383,7 @@ func idSetFromLogs(data plog.Logs) (idSet, error) {
 				if key.Type() != pcommon.ValueTypeStr {
 					return ds, fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
 				}
-				ds[key.Str()] = true
+				ds[UniqueIDAttrVal(key.Str())] = true
 			}
 		}
 	}
@@ -432,6 +431,9 @@ func (m *mockConsumer) acceptedAndDropped() (acceptedAndDropped idSet, duplicate
 
 func CreateOneLogWithID(id UniqueIDAttrVal) plog.Logs {
 	data := plog.NewLogs()
-	data.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr(UniqueIDAttrName, id)
+	data.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr(
+		UniqueIDAttrName,
+		string(id),
+	)
 	return data
 }

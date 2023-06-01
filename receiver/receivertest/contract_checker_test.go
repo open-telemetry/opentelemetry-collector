@@ -70,7 +70,7 @@ func (g *exampleGenerator) Stop() {}
 
 func (g *exampleGenerator) Generate() []UniqueIDAttrVal {
 	// Make sure the id is atomically incremented. Generate() may be called concurrently.
-	id := strconv.FormatInt(atomic.AddInt64(&g.sequenceNum, 1), 10)
+	id := UniqueIDAttrVal(strconv.FormatInt(atomic.AddInt64(&g.sequenceNum, 1), 10))
 
 	data := CreateOneLogWithID(id)
 
