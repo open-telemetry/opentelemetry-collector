@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
-const cpuStatesLen = 0
+const cpuStatesLen = 1
 
 func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.Timestamp, cpuTime *cpu.TimesStat, processName string) {
 }

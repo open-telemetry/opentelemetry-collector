@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/process"
 
@@ -214,6 +213,7 @@ func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdat
 
 	startIdx := metrics.Len()
 	metrics.Resize(startIdx + cpuMetricsLen)
+	// 记得修改 cpuStatesLen
 	// initializeCPUTimeMetric(metrics.At(startIdx), startTime, now, times, processName)
 	initializeCPUPercentMetric(metrics.At(startIdx), startTime, now, percent, processName)
 	return nil
@@ -227,13 +227,13 @@ func initializeCPUPercentMetric(metric pdata.Metric, startTime, now pdata.Timest
 	appendCPUPercentDataPoints(ddps, startTime, now, percent, processName)
 }
 
-func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, times *cpu.TimesStat, processName string) {
-	metadata.Metrics.ProcessCPUTime.Init(metric)
+// func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, times *cpu.TimesStat, processName string) {
+// 	metadata.Metrics.ProcessCPUTime.Init(metric)
 
-	ddps := metric.DoubleSum().DataPoints()
-	ddps.Resize(cpuStatesLen)
-	appendCPUTimeStateDataPoints(ddps, startTime, now, times, processName)
-}
+// 	ddps := metric.DoubleSum().DataPoints()
+// 	ddps.Resize(cpuStatesLen)
+// 	appendCPUTimeStateDataPoints(ddps, startTime, now, times, processName)
+// }
 
 func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.Timestamp, handle processHandle) error {
 	mem, err := handle.MemoryInfo()
