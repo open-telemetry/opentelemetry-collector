@@ -199,6 +199,11 @@ type processHandleMock struct {
 	mock.Mock
 }
 
+func (p *processHandleMock) CPUPercent() (float64, error) {
+	args := p.MethodCalled("CPUPercent")
+	return args.Get(0).(float64), args.Error(1)
+}
+
 func (p *processHandleMock) Cwd() (string, error) {
 	args := p.MethodCalled("Cwd")
 	return args.String(0), args.Error(1)

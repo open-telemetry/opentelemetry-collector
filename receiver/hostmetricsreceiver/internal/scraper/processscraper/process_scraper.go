@@ -196,7 +196,11 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 }
 
 func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, handle processHandle) error {
-	times, err := handle.Times()
+	// times, err := handle.Times()
+	// if err != nil {
+	// 	return err
+	// }
+	percent, err := handle.CPUPercent()
 	if err != nil {
 		return err
 	}
@@ -210,8 +214,17 @@ func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdat
 
 	startIdx := metrics.Len()
 	metrics.Resize(startIdx + cpuMetricsLen)
-	initializeCPUTimeMetric(metrics.At(startIdx), startTime, now, times, processName)
+	// initializeCPUTimeMetric(metrics.At(startIdx), startTime, now, times, processName)
+	initializeCPUPercentMetric(metrics.At(startIdx), startTime, now, percent, processName)
 	return nil
+}
+
+func initializeCPUPercentMetric(metric pdata.Metric, startTime, now pdata.Timestamp, percent float64, processName string) {
+	metadata.Metrics.ProcessCPUPercent.Init(metric)
+
+	ddps := metric.DoubleSum().DataPoints()
+	ddps.Resize(cpuStatesLen)
+	appendCPUPercentDataPoints(ddps, startTime, now, percent, processName)
 }
 
 func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, times *cpu.TimesStat, processName string) {

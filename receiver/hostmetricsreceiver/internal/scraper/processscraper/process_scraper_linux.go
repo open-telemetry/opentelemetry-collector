@@ -32,6 +32,17 @@ func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, no
 	initializeCPUTimeDataPoint(ddps.At(2), startTime, now, cpuTime.Iowait, metadata.LabelProcessState.Wait, processName)
 }
 
+func appendCPUPercentDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.Timestamp, value float64, processName string) {
+	dataPoint := ddps.At(0)
+	labelsMap := dataPoint.LabelsMap()
+	if len(processName) > 0 {
+		labelsMap.Insert(metadata.Labels.ProcessName, processName)
+	}
+	dataPoint.SetStartTime(startTime)
+	dataPoint.SetTimestamp(now)
+	dataPoint.SetValue(value)
+}
+
 func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now pdata.Timestamp, value float64, stateLabel string, processName string) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.ProcessState, stateLabel)

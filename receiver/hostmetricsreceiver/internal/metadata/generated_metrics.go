@@ -56,6 +56,7 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 
 type metricStruct struct {
 	InfoNow                     MetricIntf
+	ProcessCPUPercent           MetricIntf
 	ProcessCPUTime              MetricIntf
 	ProcessDiskIo               MetricIntf
 	ProcessMemoryPhysicalUsage  MetricIntf
@@ -90,6 +91,7 @@ type metricStruct struct {
 func (m *metricStruct) Names() []string {
 	return []string{
 		"info.now",
+		"process.cpu.percent",
 		"process.cpu.time",
 		"process.disk.io",
 		"process.memory.physical_usage",
@@ -123,6 +125,7 @@ func (m *metricStruct) Names() []string {
 
 var metricsByName = map[string]MetricIntf{
 	"info.now":                       Metrics.InfoNow,
+	"process.cpu.percent":            Metrics.ProcessCPUPercent,
 	"process.cpu.time":               Metrics.ProcessCPUTime,
 	"process.disk.io":                Metrics.ProcessDiskIo,
 	"process.memory.physical_usage":  Metrics.ProcessMemoryPhysicalUsage,
@@ -160,6 +163,7 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 	return map[string]func() pdata.Metric{
 		Metrics.InfoNow.Name():                     Metrics.InfoNow.New,
+		Metrics.ProcessCPUPercent.Name():           Metrics.ProcessCPUPercent.New,
 		Metrics.ProcessCPUTime.Name():              Metrics.ProcessCPUTime.New,
 		Metrics.ProcessDiskIo.Name():               Metrics.ProcessDiskIo.New,
 		Metrics.ProcessMemoryPhysicalUsage.Name():  Metrics.ProcessMemoryPhysicalUsage.New,
@@ -203,6 +207,17 @@ var Metrics = &metricStruct{
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(false)
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"process.cpu.percent",
+		func(metric pdata.Metric) {
+			metric.SetName("process.cpu.percent")
+			metric.SetDescription("The percent of the CPU time this process used.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+			metric.DoubleSum().SetIsMonotonic(false)
+			metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
