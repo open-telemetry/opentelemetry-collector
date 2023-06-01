@@ -19,7 +19,7 @@ type Config struct {
 	Timeout time.Duration `mapstructure:"timeout"`
 
 	// SendBatchSize is the size of a batch which after hit, will trigger it to be sent.
-	// SendBatchSize of 0 implies ignoring timeout, data will be sent immediately
+	// When this is set to zero, the batch size is ignored and data will be sent immediately
 	// subject to only send_batch_max_size.
 	SendBatchSize uint32 `mapstructure:"send_batch_size"`
 
