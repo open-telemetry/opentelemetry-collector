@@ -4,6 +4,8 @@
 package otelcol
 
 import (
+	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
@@ -17,6 +19,10 @@ import (
 func nopFactories() (Factories, error) {
 	var factories Factories
 	var err error
+
+	if factories.Connectors, err = connector.MakeFactoryMap(connectortest.NewNopFactory()); err != nil {
+		return Factories{}, err
+	}
 
 	if factories.Extensions, err = extension.MakeFactoryMap(extensiontest.NewNopFactory()); err != nil {
 		return Factories{}, err

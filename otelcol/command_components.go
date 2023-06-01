@@ -17,6 +17,7 @@ type componentsOutput struct {
 	Receivers  []component.Type
 	Processors []component.Type
 	Exporters  []component.Type
+	Connectors []component.Type
 	Extensions []component.Type
 }
 
@@ -29,6 +30,9 @@ func newBuildSubCommand(set CollectorSettings) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			components := componentsOutput{}
+			for con := range set.Factories.Connectors {
+				components.Connectors = append(components.Connectors, con)
+			}
 			for ext := range set.Factories.Extensions {
 				components.Extensions = append(components.Extensions, ext)
 			}
