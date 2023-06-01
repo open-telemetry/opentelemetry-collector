@@ -66,6 +66,8 @@ func (g *exampleGenerator) Start() {
 	g.sequenceNum = 0
 }
 
+func (g *exampleGenerator) Stop() {}
+
 func (g *exampleGenerator) Generate() []UniqueIDAttrVal {
 	// Make sure the id is atomically incremented. Generate() may be called concurrently.
 	id := strconv.FormatInt(atomic.AddInt64(&g.sequenceNum, 1), 10)

@@ -33,13 +33,19 @@ const UniqueIDAttrName = "test_id"
 type UniqueIDAttrVal = string
 
 type Generator interface {
+	// Start the generator and prepare to generate. Will be followed by calls to Generate().
+	// Start() may be called again after Stop() is called to begin a new test scenario.
 	Start()
+
+	// Stop generating. There will be no more calls to Generate() until Start() is called again.
+	Stop()
 
 	// Generate must generate and send at least one data element (span, log record or metric data point)
 	// to the receiver and return a copy of generated element ids.
 	// The generated data must contain uniquely identifiable elements, each with a
 	// different value of attribute named UniqueIDAttrName.
 	// CreateOneLogWithID() can be used a helper to create such logs.
+	// May be called concurrently from multiple goroutines.
 	Generate() []UniqueIDAttrVal
 }
 
@@ -53,7 +59,8 @@ type CheckConsumeContractParams struct {
 	Config component.Config
 	// Generator that can send data to the receiver.
 	Generator Generator
-	// GenerateCount specifies the number of times to call the generator.Generate().
+	// GenerateCount specifies the number of times to call the generator.Generate()
+	// for each test scenario.
 	GenerateCount int
 }
 
@@ -66,12 +73,12 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 	// success case or for error case or a mix of both). See for example randomErrorsConsumeDecision.
 	scenarios := []struct {
 		name         string
-		decisionFunc func(ids IDSet) error
+		decisionFunc func(ids idSet) error
 	}{
 		{
 			name: "always_succeed",
 			// Always succeed. We expect all data to be delivered as is.
-			decisionFunc: func(ids IDSet) error { return nil },
+			decisionFunc: func(ids idSet) error { return nil },
 		},
 		{
 			name:         "random_non_permanent_error",
@@ -96,7 +103,7 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 	}
 }
 
-func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFunc func(ids IDSet) error) {
+func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFunc func(ids idSet) error) {
 	consumer := &mockConsumer{t: params.T, consumeDecisionFunc: decisionFunc}
 	ctx := context.Background()
 
@@ -122,17 +129,17 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 
 	// Begin generating data to the receiver.
 
-	var generatedIds IDSet
+	var generatedIds idSet
 	var generatedIndex int64
 	var mux sync.Mutex
 	var wg sync.WaitGroup
 
 	const concurrency = 4
 
+	params.Generator.Start()
+
 	// Create concurrent goroutines that use the generator.
 	// The total number of generator calls will be equal to params.GenerateCount.
-
-	params.Generator.Start()
 
 	for j := 0; j < concurrency; j++ {
 		wg.Add(1)
@@ -156,10 +163,12 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	// Wait until all generator goroutines are done.
 	wg.Wait()
 
+	params.Generator.Stop()
+
 	// Wait until all data is seen by the consumer.
 	assert.Eventually(params.T, func() bool {
 		// Calculate the union of accepted and dropped data.
-		acceptedAndDropped, duplicates := consumer.acceptedIds.union(consumer.droppedIds)
+		acceptedAndDropped, duplicates := consumer.acceptedAndDropped()
 		if len(duplicates) != 0 {
 			assert.Failf(params.T, "found duplicate elements in received and dropped data", "keys=%v", duplicates)
 		}
@@ -169,7 +178,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Do some final checks. Need the union of accepted and dropped data again.
-	acceptedAndDropped, duplicates := consumer.acceptedIds.union(consumer.droppedIds)
+	acceptedAndDropped, duplicates := consumer.acceptedAndDropped()
 	if len(duplicates) != 0 {
 		assert.Failf(params.T, "found duplicate elements in accepted and dropped data", "keys=%v", duplicates)
 	}
@@ -197,11 +206,11 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	)
 }
 
-// IDSet is a set of unique ids of data elements used in the test (logs, spans or metric data points).
-type IDSet map[UniqueIDAttrVal]bool
+// idSet is a set of unique ids of data elements used in the test (logs, spans or metric data points).
+type idSet map[UniqueIDAttrVal]bool
 
 // compare to another set and calculate the differences from this set.
-func (ds IDSet) compare(other IDSet) (missingInOther, onlyInOther []UniqueIDAttrVal) {
+func (ds idSet) compare(other idSet) (missingInOther, onlyInOther []UniqueIDAttrVal) {
 	for k := range ds {
 		if _, ok := other[k]; !ok {
 			missingInOther = append(missingInOther, k)
@@ -216,7 +225,7 @@ func (ds IDSet) compare(other IDSet) (missingInOther, onlyInOther []UniqueIDAttr
 }
 
 // merge another set into this one and return a list of duplicate ids.
-func (ds *IDSet) merge(other IDSet) (duplicates []UniqueIDAttrVal) {
+func (ds *idSet) merge(other idSet) (duplicates []UniqueIDAttrVal) {
 	if *ds == nil {
 		*ds = map[UniqueIDAttrVal]bool{}
 	}
@@ -231,7 +240,7 @@ func (ds *IDSet) merge(other IDSet) (duplicates []UniqueIDAttrVal) {
 }
 
 // merge another set into this one and return a list of duplicate ids.
-func (ds *IDSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrVal) {
+func (ds *idSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrVal) {
 	if *ds == nil {
 		*ds = map[UniqueIDAttrVal]bool{}
 	}
@@ -247,7 +256,7 @@ func (ds *IDSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrV
 
 // union computes the union of this and another sets. A new set if created to return the result.
 // Also returns a list of any duplicate ids found.
-func (ds *IDSet) union(other IDSet) (union IDSet, duplicates []UniqueIDAttrVal) {
+func (ds *idSet) union(other idSet) (union idSet, duplicates []UniqueIDAttrVal) {
 	union = map[UniqueIDAttrVal]bool{}
 	for k, v := range *ds {
 		union[k] = v
@@ -267,14 +276,14 @@ func (ds *IDSet) union(other IDSet) (union IDSet, duplicates []UniqueIDAttrVal) 
 // The result of the decision function becomes the return value of ConsumeLogs/Trace/Metrics.
 // Supplying different decision functions allows to test different scenarios of the contract
 // between the receiver and it next consumer.
-type consumeDecisionFunc func(ids IDSet) error
+type consumeDecisionFunc func(ids idSet) error
 
 var errNonPermanent = errors.New("non permanent error")
 var errPermanent = errors.New("permanent error")
 
 // randomNonPermanentErrorConsumeDecision is a decision function that succeeds approximately
 // half of the time and fails with a non-permanent error the rest of the time.
-func randomNonPermanentErrorConsumeDecision(_ IDSet) error {
+func randomNonPermanentErrorConsumeDecision(_ idSet) error {
 	if rand.Float32() < 0.5 {
 		return errNonPermanent
 	}
@@ -283,7 +292,7 @@ func randomNonPermanentErrorConsumeDecision(_ IDSet) error {
 
 // randomPermanentErrorConsumeDecision is a decision function that succeeds approximately
 // half of the time and fails with a permanent error the rest of the time.
-func randomPermanentErrorConsumeDecision(_ IDSet) error {
+func randomPermanentErrorConsumeDecision(_ idSet) error {
 	if rand.Float32() < 0.5 {
 		return consumererror.NewPermanent(errPermanent)
 	}
@@ -293,7 +302,7 @@ func randomPermanentErrorConsumeDecision(_ IDSet) error {
 // randomErrorsConsumeDecision is a decision function that succeeds approximately
 // a third of the time, fails with a permanent error the third of the time and fails with
 // a non-permanent error the rest of the time.
-func randomErrorsConsumeDecision(_ IDSet) error {
+func randomErrorsConsumeDecision(_ idSet) error {
 	r := rand.Float64()
 	third := 1.0 / 3.0
 	if r < third {
@@ -313,8 +322,8 @@ type mockConsumer struct {
 	t                    *testing.T
 	consumeDecisionFunc  consumeDecisionFunc
 	mux                  sync.Mutex
-	acceptedIds          IDSet
-	droppedIds           IDSet
+	acceptedIds          idSet
+	droppedIds           idSet
 	nonPermanentFailures int
 }
 
@@ -323,13 +332,13 @@ func (m *mockConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (m *mockConsumer) ConsumeTraces(_ context.Context, data ptrace.Traces) error {
-	ids, err := IDSetFromTraces(data)
+	ids, err := idSetFromTraces(data)
 	require.NoError(m.t, err)
 	return m.consume(ids)
 }
 
-// IDSetFromTraces computes an IDSet from given ptrace.Traces. The IDSet will contain ids of all spans.
-func IDSetFromTraces(data ptrace.Traces) (IDSet, error) {
+// idSetFromTraces computes an idSet from given ptrace.Traces. The idSet will contain ids of all spans.
+func idSetFromTraces(data ptrace.Traces) (idSet, error) {
 	ds := map[UniqueIDAttrVal]bool{}
 	rss := data.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
@@ -353,13 +362,13 @@ func IDSetFromTraces(data ptrace.Traces) (IDSet, error) {
 }
 
 func (m *mockConsumer) ConsumeLogs(_ context.Context, data plog.Logs) error {
-	ids, err := IDSetFromLogs(data)
+	ids, err := idSetFromLogs(data)
 	require.NoError(m.t, err)
 	return m.consume(ids)
 }
 
-// IDSetFromLogs computes an IDSet from given plog.Logs. The IDSet will contain ids of all log records.
-func IDSetFromLogs(data plog.Logs) (IDSet, error) {
+// idSetFromLogs computes an idSet from given plog.Logs. The idSet will contain ids of all log records.
+func idSetFromLogs(data plog.Logs) (idSet, error) {
 	ds := map[UniqueIDAttrVal]bool{}
 	rss := data.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
@@ -385,7 +394,7 @@ func IDSetFromLogs(data plog.Logs) (IDSet, error) {
 // TODO: Implement mockConsumer.ConsumeMetrics()
 
 // consume the elements with the specified ids, regardless of the element data type.
-func (m *mockConsumer) consume(ids IDSet) error {
+func (m *mockConsumer) consume(ids idSet) error {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 
@@ -397,9 +406,7 @@ func (m *mockConsumer) consume(ids IDSet) error {
 			// It is a permanent error, which means we need to drop the data.
 			// Remember the ids of dropped elements.
 			duplicates := m.droppedIds.merge(ids)
-			if len(duplicates) > 0 {
-				require.FailNow(m.t, "elements that were dropped previously were sent again: %v", duplicates)
-			}
+			require.Empty(m.t, duplicates, "elements that were dropped previously were sent again")
 		} else {
 			// It is a non-permanent error. Don't add it to the drop list. Remember the number of
 			// failures to print at the end of the test.
@@ -411,10 +418,16 @@ func (m *mockConsumer) consume(ids IDSet) error {
 
 	// The decision is a success. Remember the ids of the data in the accepted list.
 	duplicates := m.acceptedIds.merge(ids)
-	if len(duplicates) > 0 {
-		require.FailNow(m.t, "elements that were accepted previously were sent again: %v", duplicates)
-	}
+	require.Empty(m.t, duplicates, "elements that were accepted previously were sent again")
 	return nil
+}
+
+// Calculate union of accepted and dropped ids.
+// Returns the union and the list of duplicates between the two sets (if any)
+func (m *mockConsumer) acceptedAndDropped() (acceptedAndDropped idSet, duplicates []UniqueIDAttrVal) {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	return m.acceptedIds.union(m.droppedIds)
 }
 
 func CreateOneLogWithID(id UniqueIDAttrVal) plog.Logs {
