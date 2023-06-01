@@ -107,3 +107,13 @@ see [confignet README](../confignet/README.md).
 - [`read_buffer_size`](https://godoc.org/google.golang.org/grpc#ReadBufferSize)
 - [`tls`](../configtls/README.md)
 - [`write_buffer_size`](https://godoc.org/google.golang.org/grpc#WriteBufferSize)
+
+## GRPC Status codes for authorization extensions
+
+GRPC defines a set of known [status codes](https://grpc.github.io/grpc/core/md_doc_statuscodes.html) that must be returned with all responses. Status Code `OK` should be returned on success and an appropriate code chosen for other cases.
+
+OpenTelemetry authorization extensions are handled as a GRPC interceptor and any errors encountered during an authorization check are converted to the GRPC `UNAUTHENTICATED` status.
+
+Any other code set by extensions are overwritten.
+
+**NOTE**: Authentication extensions that explicitly return an `status.Error()` will result in a duplicated error message as the result is wrapped. Extensions should use native Go error types and status codes should be added by this library.

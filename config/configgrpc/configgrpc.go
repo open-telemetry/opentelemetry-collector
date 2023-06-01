@@ -18,12 +18,14 @@ import (
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -36,7 +38,7 @@ import (
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
-var errMetadataNotFound = errors.New("no request metadata found")
+var errMetadataNotFound = status.Error(codes.Unauthenticated, "no request metadata found")
 
 // Allowed balancer names to be set in grpclb_policy to discover the servers.
 var allowedBalancerNames = []string{roundrobin.Name, grpc.PickFirstBalancerName}
@@ -434,7 +436,7 @@ func authUnaryServerInterceptor(ctx context.Context, req any, _ *grpc.UnaryServe
 
 	ctx, err := server.Authenticate(ctx, headers)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
 	return handler(ctx, req)
@@ -449,7 +451,7 @@ func authStreamServerInterceptor(srv any, stream grpc.ServerStream, _ *grpc.Stre
 
 	ctx, err := server.Authenticate(ctx, headers)
 	if err != nil {
-		return err
+		return status.Error(codes.Unauthenticated, err.Error())
 	}
 
 	return handler(srv, wrapServerStream(ctx, stream))

@@ -18,8 +18,10 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -920,10 +922,12 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 	// prepare
 	authCalled := false
-	expectedErr := errors.New("not authenticated")
+	errorMsg := "not authenticated"
+	rawErr := errors.New(errorMsg)
+	expectedGrpcErr := status.Error(codes.Unauthenticated, errorMsg)
 	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
 		authCalled = true
-		return context.Background(), expectedErr
+		return context.Background(), rawErr
 	}
 	handler := func(ctx context.Context, req any) (any, error) {
 		assert.FailNow(t, "the handler should not have been called on auth failure!")
@@ -936,7 +940,9 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 
 	// verify
 	assert.Nil(t, res)
-	assert.Equal(t, expectedErr, err)
+	// All authentication errors should result in the GRPC Unauthenticated code (16)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+	assert.Equal(t, expectedGrpcErr, err)
 	assert.True(t, authCalled)
 }
 
@@ -956,6 +962,8 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 
 	// verify
 	assert.Nil(t, res)
+	// All authentication errors should result in the GRPC Unauthenticated code (16)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
 	assert.Equal(t, errMetadataNotFound, err)
 }
 
@@ -994,10 +1002,13 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 	// prepare
 	authCalled := false
-	expectedErr := errors.New("not authenticated")
+	errorMsg := "not authenticated"
+	rawErr := errors.New(errorMsg)
+
+	expectedGrpcErr := status.Error(codes.Unauthenticated, errorMsg)
 	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
 		authCalled = true
-		return context.Background(), expectedErr
+		return context.Background(), rawErr
 	}
 	handler := func(srv any, stream grpc.ServerStream) error {
 		assert.FailNow(t, "the handler should not have been called on auth failure!")
@@ -1012,7 +1023,9 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
-	assert.Equal(t, expectedErr, err)
+	// All authentication errors should result in the GRPC Unauthenticated code (16)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+	assert.Equal(t, expectedGrpcErr, err)
 	assert.True(t, authCalled)
 }
 
@@ -1034,6 +1047,8 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
+	// All authentication errors should result in the GRPC Unauthenticated code (16)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
 	assert.Equal(t, errMetadataNotFound, err)
 }
 
