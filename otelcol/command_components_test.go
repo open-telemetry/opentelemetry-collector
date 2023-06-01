@@ -36,6 +36,7 @@ func TestNewBuildSubCommand(t *testing.T) {
 		Receivers:  []component.Type{"nop"},
 		Processors: []component.Type{"nop"},
 		Exporters:  []component.Type{"nop"},
+		Connectors: []component.Type{"nop"},
 		Extensions: []component.Type{"nop"},
 	}
 	ExpectedOutput, err := yaml.Marshal(ExpectedYamlStruct)
