@@ -5,10 +5,13 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // Config defines the configurable settings for service telemetry.
@@ -108,7 +111,7 @@ type MetricsConfig struct {
 
 	// Readers allow configuration of metric readers to emit metrics to
 	// any number of supported backends.
-	Readers []MetricReader `mapstructure:"metric_readers"`
+	Readers MeterProviderJsonMetricReaders `mapstructure:"metric_readers"`
 }
 
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
@@ -124,9 +127,45 @@ type TracesConfig struct {
 func (c *Config) Validate() error {
 
 	// Check when service telemetry metric level is not none, the metrics address should not be empty
-	if c.Metrics.Level != configtelemetry.LevelNone && c.Metrics.Address == "" {
+	if c.Metrics.Level != configtelemetry.LevelNone && c.Metrics.Address == "" && len(c.Metrics.Readers) == 0 {
 		return fmt.Errorf("collector telemetry metric address should exist when metric level is not none")
 	}
 
+	return nil
+}
+
+func (mrs *MeterProviderJsonMetricReaders) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(mrs); err != nil {
+		return err
+	}
+	if *mrs == nil {
+		*mrs = make(MeterProviderJsonMetricReaders)
+	}
+	for key, reader := range *mrs {
+		readerType := strings.Split(key, "/")[0]
+		switch readerType {
+		case "pull":
+			var r PullMetricReader
+			if err := mapstructure.Decode(reader, &r); err != nil {
+				return fmt.Errorf("invalid pull metric reader configuration: %w", err)
+			}
+			(*mrs)[key] = r
+
+			for key, exporter := range r.Exporter {
+				switch key {
+				case "prometheus":
+					var promExporter Prometheus
+					if err := mapstructure.Decode(exporter, &promExporter); err != nil {
+						return fmt.Errorf("invalid exporter configuration: %w", err)
+					}
+					r.Exporter[key] = promExporter
+				default:
+					return fmt.Errorf("unsupported metric exporter type: %s", key)
+				}
+			}
+		default:
+			return fmt.Errorf("unsupported metric reader type: %s", readerType)
+		}
+	}
 	return nil
 }

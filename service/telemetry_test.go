@@ -104,6 +104,7 @@ func TestTelemetryInit(t *testing.T) {
 		disableHighCard bool
 		expectedMetrics map[string]metricValue
 		extendedConfig  bool
+		cfg             *telemetry.Config
 	}{
 		{
 			name:    "UseOpenCensusForInternalMetrics",
@@ -187,26 +188,82 @@ func TestTelemetryInit(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:           "UseOTelWithSDKConfiguration",
+			extendedConfig: true,
+			cfg: &telemetry.Config{
+				Metrics: telemetry.MetricsConfig{
+					Level: configtelemetry.LevelDetailed,
+				},
+				Resource: map[string]*string{
+					semconv.AttributeServiceInstanceID: &testInstanceID,
+				},
+			},
+			expectedMetrics: map[string]metricValue{
+				metricPrefix + ocPrefix + counterName + "_total": {
+					value:  13,
+					labels: map[string]string{},
+				},
+				metricPrefix + otelPrefix + counterName + "_total": {
+					value:  13,
+					labels: map[string]string{},
+				},
+				metricPrefix + grpcPrefix + counterName + "_total": {
+					value: 11,
+					labels: map[string]string{
+						"net_sock_peer_addr": "",
+						"net_sock_peer_name": "",
+						"net_sock_peer_port": "",
+					},
+				},
+				metricPrefix + httpPrefix + counterName + "_total": {
+					value: 10,
+					labels: map[string]string{
+						"net_host_name": "",
+						"net_host_port": "",
+					},
+				},
+				metricPrefix + "target_info": {
+					value: 0,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			tel := newColTelemetry(tc.useOtel, tc.disableHighCard, tc.extendedConfig)
 			buildInfo := component.NewDefaultBuildInfo()
-			cfg := telemetry.Config{
-				Resource: map[string]*string{
-					semconv.AttributeServiceInstanceID: &testInstanceID,
-				},
-				Metrics: telemetry.MetricsConfig{
-					Level:   configtelemetry.LevelDetailed,
-					Address: testutil.GetAvailableLocalAddress(t),
-				},
+			if tc.extendedConfig {
+				tc.cfg.Metrics.Readers = telemetry.MeterProviderJsonMetricReaders{
+					"pull/prometheus": telemetry.PullMetricReader{
+						Exporter: telemetry.MetricExporter{
+							"prometheus": testutil.GetAvailableLocalAddressPrometheus(t),
+						},
+					},
+				}
 			}
-			otelRes := buildResource(buildInfo, cfg)
+			if tc.cfg == nil {
+				tc.cfg = &telemetry.Config{
+					Resource: map[string]*string{
+						semconv.AttributeServiceInstanceID: &testInstanceID,
+					},
+					Metrics: telemetry.MetricsConfig{
+						Level:   configtelemetry.LevelDetailed,
+						Address: testutil.GetAvailableLocalAddress(t),
+					},
+				}
+			}
+			otelRes := buildResource(buildInfo, *tc.cfg)
 			res := pdataFromSdk(otelRes)
 			settings := component.TelemetrySettings{
 				Logger:   zap.NewNop(),
 				Resource: res,
 			}
-			err := tel.init(otelRes, settings, cfg, make(chan error))
+			err := tel.init(otelRes, settings, *tc.cfg, make(chan error))
 			require.NoError(t, err)
 			defer func() {
 				require.NoError(t, tel.shutdown())
