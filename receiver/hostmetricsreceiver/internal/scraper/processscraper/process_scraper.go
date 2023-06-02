@@ -109,7 +109,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 
 		errs.AddPartial(partialErr.Failed, partialErr)
 	}
-	CPUTimeTopK := NewTopK(s.config.Top)
+	cpuTimeTopK := NewTopK(s.config.Top)
 	rms.Resize(len(metadata))
 	for i, md := range metadata {
 		rm := rms.At(i)
@@ -121,7 +121,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 
 		now := pdata.TimestampFromTime(time.Now())
 
-		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle, CPUTimeTopK); err != nil {
+		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle, cpuTimeTopK); err != nil {
 			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
