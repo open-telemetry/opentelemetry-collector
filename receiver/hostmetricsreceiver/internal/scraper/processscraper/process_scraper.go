@@ -32,13 +32,13 @@ import (
 
 const (
 	cpuMetricsLen    = 1
-	memoryMetricsLen = 2
+	memoryMetricsLen = 1
 	diskMetricsLen   = 1
 
 	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen
 
 	// 如果要关闭进程名tag，设为false
-	support_process_name = true
+	supportProcessName = true
 )
 
 // scraper for Process Metrics
@@ -201,10 +201,14 @@ func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdat
 		return err
 	}
 	processName := ""
-	if support_process_name {
+	if supportProcessName {
 		processName, err = handle.Name()
 		if err != nil {
 			return err
+		}
+		if processHandle, ok := handle.(*process.Process); ok {
+			pid := processHandle.Pid
+			processName = fmt.Sprintf("%d/%s", pid, processName)
 		}
 	}
 
@@ -228,7 +232,7 @@ func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.Time
 		return err
 	}
 	processName := ""
-	if support_process_name {
+	if supportProcessName {
 		processName, err = handle.Name()
 		if err != nil {
 			return err
@@ -238,7 +242,7 @@ func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.Time
 	startIdx := metrics.Len()
 	metrics.Resize(startIdx + memoryMetricsLen)
 	initializeMemoryUsageMetric(metrics.At(startIdx+0), metadata.Metrics.ProcessMemoryPhysicalUsage, now, int64(mem.RSS), processName)
-	initializeMemoryUsageMetric(metrics.At(startIdx+1), metadata.Metrics.ProcessMemoryVirtualUsage, now, int64(mem.VMS), processName)
+	// initializeMemoryUsageMetric(metrics.At(startIdx+1), metadata.Metrics.ProcessMemoryVirtualUsage, now, int64(mem.VMS), processName)
 	return nil
 }
 
