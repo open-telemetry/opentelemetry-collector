@@ -636,6 +636,8 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 
 			assert.NoError(t, pg.StartAll(context.Background(), componenttest.NewNopHost()))
 
+			mutatingPipelines := make(map[component.ID]bool, len(test.pipelineConfigs))
+
 			// Check each pipeline individually, ensuring that all components are started
 			// and that they have observed no signals yet.
 			for pipelineID, pipelineCfg := range test.pipelineConfigs {
@@ -650,30 +652,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					}
 				}
 				assert.Equal(t, expectMutatesData, pipeline.capabilitiesNode.getConsumer().Capabilities().MutatesData)
-
-				// A connector that acts as a receiver in a pipeline that mutates data must inherit mutability
-				if expectMutatesData {
-					for _, receiver := range pipeline.receivers {
-						r, ok := receiver.(*connectorNode)
-						if !ok {
-							continue
-						}
-						for expPipelineID, expPipeline := range pg.pipelines {
-							if expPipelineID.Type() != pipelineID.Type() {
-								continue
-							}
-							for _, exporter := range expPipeline.exporters {
-								e, ok := exporter.(*connectorNode)
-								if !ok || exporter.ID() != receiver.ID() {
-									continue
-								}
-								assert.True(t, e.getConsumer().Capabilities().MutatesData,
-									"connector %q should inherit mutatability from %q",
-									r.componentID.String(), expPipelineID)
-							}
-						}
-					}
-				}
+				mutatingPipelines[pipelineID] = expectMutatesData
 
 				expectedReceivers, expectedExporters := expectedInstances(test.pipelineConfigs, pipelineID)
 				require.Equal(t, expectedReceivers, len(pipeline.receivers))
@@ -724,6 +703,31 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					default:
 						require.Fail(t, fmt.Sprintf("unexpected type %T", c))
 					}
+				}
+			}
+
+			// Check that connectors are correctly inheriting mutability from downstream pipelines
+			for expPipelineID, expPipeline := range pg.pipelines {
+				for _, exp := range expPipeline.exporters {
+					expConn, ok := exp.(*connectorNode)
+					if !ok {
+						continue
+					}
+					// find all the pipelines of the same type where this connector is a receiver
+					var inheritMutatesData bool
+					for recPipelineID, recPipeline := range pg.pipelines {
+						if recPipelineID == expPipelineID || recPipelineID.Type() != expPipelineID.Type() {
+							continue
+						}
+						for _, rec := range recPipeline.receivers {
+							recConn, ok := rec.(*connectorNode)
+							if !ok || recConn.ID() != expConn.ID() {
+								continue
+							}
+							inheritMutatesData = inheritMutatesData || mutatingPipelines[recPipelineID]
+						}
+					}
+					assert.Equal(t, inheritMutatesData, expConn.getConsumer().Capabilities().MutatesData)
 				}
 			}
 
