@@ -24,6 +24,7 @@ import (
 // of receiver.Settings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	InitialDelay       time.Duration `mapstructure:"initial_delay"`
 }
 
 // NewDefaultScraperControllerSettings returns default scraper controller
@@ -31,6 +32,7 @@ type ScraperControllerSettings struct {
 func NewDefaultScraperControllerSettings(component.Type) ScraperControllerSettings {
 	return ScraperControllerSettings{
 		CollectionInterval: time.Minute,
+		InitialDelay:       time.Second,
 	}
 }
 
@@ -61,6 +63,7 @@ type controller struct {
 	id                 component.ID
 	logger             *zap.Logger
 	collectionInterval time.Duration
+	initialDelay       time.Duration
 	nextConsumer       consumer.Metrics
 
 	scrapers    []Scraper
@@ -104,6 +107,7 @@ func NewScraperControllerReceiver(
 		id:                 set.ID,
 		logger:             set.Logger,
 		collectionInterval: cfg.CollectionInterval,
+		initialDelay:       cfg.InitialDelay,
 		nextConsumer:       nextConsumer,
 		done:               make(chan struct{}),
 		terminated:         make(chan struct{}),
@@ -167,6 +171,10 @@ func (sc *controller) Shutdown(ctx context.Context) error {
 // collection interval.
 func (sc *controller) startScraping() {
 	go func() {
+		if sc.initialDelay > 0 {
+			<-time.After(sc.initialDelay)
+		}
+
 		if sc.tickerCh == nil {
 			ticker := time.NewTicker(sc.collectionInterval)
 			defer ticker.Stop()
@@ -174,6 +182,10 @@ func (sc *controller) startScraping() {
 			sc.tickerCh = ticker.C
 		}
 
+		// Call scrape method on initialision to ensure
+		// that scrapers start from when the component starts
+		// instead of waiting for the full duration to start.
+		sc.scrapeMetricsAndReport(context.Background())
 		for {
 			select {
 			case <-sc.tickerCh:
