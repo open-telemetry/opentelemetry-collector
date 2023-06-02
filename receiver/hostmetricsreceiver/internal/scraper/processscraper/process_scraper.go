@@ -109,7 +109,6 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 
 		errs.AddPartial(partialErr.Failed, partialErr)
 	}
-	cpuTimeTopK := NewTopK(s.config.Top)
 	rms.Resize(len(metadata))
 	for i, md := range metadata {
 		rm := rms.At(i)
@@ -121,7 +120,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 
 		now := pdata.TimestampFromTime(time.Now())
 
-		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle, cpuTimeTopK); err != nil {
+		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle); err != nil {
 			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
@@ -149,6 +148,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 	var errs scrapererror.ScrapeErrors
 
+	cpuTimeTopK := NewTopK(s.config.Top)
 	metadata := make([]*processMetadata, 0, handles.Len())
 	for i := 0; i < handles.Len(); i++ {
 		pid := handles.Pid(i)
@@ -169,6 +169,13 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		if (s.includeFS != nil && !s.includeFS.Matches(executable.name)) ||
 			(s.excludeFS != nil && s.excludeFS.Matches(executable.name)) {
 			continue
+		}
+
+		// 过滤topK值
+		if percent, err := handle.Percent(0); err == nil {
+			if !cpuTimeTopK.Append(NewProcessInfo(executable.name, percent)) {
+				continue
+			}
 		}
 
 		command, err := getProcessCommand(handle)
@@ -192,10 +199,18 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		metadata = append(metadata, md)
 	}
 
-	return metadata, errs.Combine()
+	// 保证只有topK的值返回
+	topKMetadata := make([]*processMetadata, 0, len(metadata))
+	for _, meta := range metadata {
+		if i := cpuTimeTopK.GetIndex(meta.executable.name); i != -1 {
+			topKMetadata = append(topKMetadata, meta)
+		}
+	}
+
+	return topKMetadata, errs.Combine()
 }
 
-func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, handle processHandle, topKByCPUTime TopKInterface) error {
+func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, handle processHandle) error {
 	times, err := handle.Times()
 	if err != nil {
 		return err
@@ -211,11 +226,9 @@ func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdat
 			processName = fmt.Sprintf("%d/%s", pid, processName)
 		}
 	}
-	if topKByCPUTime.Append(NewProcessInfo(processName, times.Total())) {
-		startIdx := metrics.Len()
-		metrics.Resize(startIdx + cpuMetricsLen)
-		initializeCPUTimeMetric(metrics.At(startIdx), startTime, now, times, processName)
-	}
+	startIdx := metrics.Len()
+	metrics.Resize(startIdx + cpuMetricsLen)
+	initializeCPUTimeMetric(metrics.At(startIdx), startTime, now, times, processName)
 	return nil
 }
 

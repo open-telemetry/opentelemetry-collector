@@ -16,6 +16,7 @@ package processscraper
 
 import (
 	"strings"
+	"time"
 
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/process"
@@ -106,6 +107,7 @@ type processHandle interface {
 	Cmdline() (string, error)
 	CmdlineSlice() ([]string, error)
 	Times() (*cpu.TimesStat, error)
+	Percent(interval time.Duration) (float64, error)
 	MemoryInfo() (*process.MemoryInfoStat, error)
 	IOCounters() (*process.IOCountersStat, error)
 }

@@ -93,7 +93,7 @@ func Test_topK_Append(t *testing.T) {
 						Value: 1.0,
 					},
 				},
-				K: 4,
+				K: 5,
 			},
 			args: args{
 				&processInfo{

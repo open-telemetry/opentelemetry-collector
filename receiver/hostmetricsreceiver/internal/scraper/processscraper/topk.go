@@ -42,6 +42,7 @@ type processInfo struct {
 
 type TopKInterface interface {
 	Append(p *processInfo) bool
+	GetIndex(name string) int
 }
 
 // 基于排序实现计算TopK值
@@ -52,23 +53,22 @@ type topK struct {
 }
 
 func (t *topK) Append(p *processInfo) bool {
-	if exists, i := t.in(p); exists {
+	if i := t.GetIndex(p.Name); i != -1 {
 		t.processes[i] = p
 	} else {
 		t.processes = append(t.processes, p)
 	}
 	t.calculate()
-	exists, _ := t.in(p)
-	return exists
+	return t.GetIndex(p.Name) != -1
 }
 
-func (t *topK) in(p *processInfo) (bool, int) {
+func (t *topK) GetIndex(name string) int {
 	for i, process := range t.processes {
-		if process.Name == p.Name {
-			return true, i
+		if process.Name == name {
+			return i
 		}
 	}
-	return false, -1
+	return -1
 }
 
 func (t *topK) calculate() {
