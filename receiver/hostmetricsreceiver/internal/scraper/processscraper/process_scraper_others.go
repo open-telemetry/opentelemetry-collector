@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !linux && !windows
 // +build !linux,!windows
 
 package processscraper
@@ -21,23 +20,11 @@ import (
 	"github.com/shirou/gopsutil/cpu"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 const cpuStatesLen = 0
 
 func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.Timestamp, cpuTime *cpu.TimesStat, processName string) {
-}
-
-func appendCPUPercentDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.Timestamp, value float64, processName string) {
-	dataPoint := ddps.At(0)
-	labelsMap := dataPoint.LabelsMap()
-	if len(processName) > 0 {
-		labelsMap.Insert(metadata.Labels.ProcessName, processName)
-	}
-	dataPoint.SetStartTime(startTime)
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetValue(value)
 }
 
 func getProcessExecutable(processHandle) (*executableMetadata, error) {
