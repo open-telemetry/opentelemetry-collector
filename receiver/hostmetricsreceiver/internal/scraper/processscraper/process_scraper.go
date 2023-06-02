@@ -95,10 +95,6 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func GetPidProcessName(pid int32, processName string) string {
-	return fmt.Sprintf("%d/%s", pid, processName)
-}
-
 func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
 	rms := pdata.NewResourceMetricsSlice()
 
