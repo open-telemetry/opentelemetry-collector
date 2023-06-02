@@ -44,7 +44,7 @@ func TestNewTopK(t *testing.T) {
 			args: args{k: 0},
 			want: &topK{
 				processes: make([]*processInfo, 0),
-				K:         10,
+				k:         10,
 			},
 		},
 		{
@@ -52,7 +52,7 @@ func TestNewTopK(t *testing.T) {
 			args: args{k: 123},
 			want: &topK{
 				processes: make([]*processInfo, 0),
-				K:         123,
+				k:         123,
 			},
 		},
 	}
@@ -93,7 +93,7 @@ func Test_topK_Append(t *testing.T) {
 						Value: 1.0,
 					},
 				},
-				K: 5,
+				k: 5,
 			},
 			args: args{
 				&processInfo{
@@ -101,134 +101,6 @@ func Test_topK_Append(t *testing.T) {
 					Value: 4.0,
 				},
 			},
-			want: true,
-			wantData: processInfoList{
-				{
-					Name:  "foo4",
-					Value: 4.0,
-				},
-				{
-					Name:  "foo3",
-					Value: 3.0,
-				},
-				{
-					Name:  "foo2",
-					Value: 2.0,
-				},
-				{
-					Name:  "foo1",
-					Value: 1.0,
-				},
-			},
-		},
-		{
-			name: "success, replace",
-			tr: &topK{
-				processes: processInfoList{
-					{
-						Name:  "foo3",
-						Value: 3.0,
-					},
-					{
-						Name:  "foo2",
-						Value: 2.0,
-					},
-					{
-						Name:  "foo1",
-						Value: 1.0,
-					},
-				},
-				K: 3,
-			},
-			args: args{
-				&processInfo{
-					Name:  "foo4",
-					Value: 4.0,
-				},
-			},
-			want: true,
-			wantData: processInfoList{
-				{
-					Name:  "foo4",
-					Value: 4.0,
-				},
-				{
-					Name:  "foo3",
-					Value: 3.0,
-				},
-				{
-					Name:  "foo2",
-					Value: 2.0,
-				},
-			},
-		},
-		{
-			name: "success, resort",
-			tr: &topK{
-				processes: processInfoList{
-					{
-						Name:  "foo3",
-						Value: 3.0,
-					},
-					{
-						Name:  "foo2",
-						Value: 2.0,
-					},
-					{
-						Name:  "foo1",
-						Value: 1.0,
-					},
-				},
-				K: 3,
-			},
-			args: args{
-				&processInfo{
-					Name:  "foo3",
-					Value: 1.5,
-				},
-			},
-			want: true,
-			wantData: processInfoList{
-				{
-					Name:  "foo2",
-					Value: 2.0,
-				},
-				{
-					Name:  "foo3",
-					Value: 1.5,
-				},
-				{
-					Name:  "foo1",
-					Value: 1.0,
-				},
-			},
-		},
-		{
-			name: "success, no effect",
-			tr: &topK{
-				processes: processInfoList{
-					{
-						Name:  "foo3",
-						Value: 3.0,
-					},
-					{
-						Name:  "foo2",
-						Value: 2.0,
-					},
-					{
-						Name:  "foo1",
-						Value: 1.0,
-					},
-				},
-				K: 3,
-			},
-			args: args{
-				&processInfo{
-					Name:  "foo4",
-					Value: 0.01,
-				},
-			},
-			want: false,
 			wantData: processInfoList{
 				{
 					Name:  "foo3",
@@ -241,17 +113,97 @@ func Test_topK_Append(t *testing.T) {
 				{
 					Name:  "foo1",
 					Value: 1.0,
+				},
+				{
+					Name:  "foo4",
+					Value: 4.0,
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got1 := tt.tr.Append(tt.args.p); got1 != tt.want {
-				t.Errorf("topK.Append() = %v, want %v", got1, tt.want)
-			}
+			tt.tr.Append(tt.args.p)
 			if got2 := tt.tr.processes; !reflect.DeepEqual(got2, tt.wantData) {
 				t.Errorf("topK.processes = %v, want %v", got2, tt.wantData)
+			}
+		})
+	}
+}
+
+func Test_topK_GetTop(t *testing.T) {
+	type fields struct {
+		processes processInfoList
+		k         int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   map[string]struct{}
+	}{
+		{
+			name: "ok",
+			fields: fields{
+				processes: processInfoList{
+					{
+						Name:  "foo1",
+						Value: 1.0,
+					},
+					{
+						Name:  "foo2",
+						Value: 2.0,
+					},
+					{
+						Name:  "foo3",
+						Value: 3.0,
+					},
+					{
+						Name:  "foo3",
+						Value: 4.0,
+					},
+				},
+				k: 2,
+			},
+			want: map[string]struct{}{"foo3": {}},
+		},
+		{
+			name: "ok 2",
+			fields: fields{
+				processes: processInfoList{
+					{
+						Name:  "foo1",
+						Value: 1.0,
+					},
+					{
+						Name:  "foo2",
+						Value: 2.0,
+					},
+					{
+						Name:  "foo3",
+						Value: 3.0,
+					},
+					{
+						Name:  "foo3",
+						Value: 0.1,
+					},
+					{
+						Name:  "foo4",
+						Value: 5.0,
+					},
+				},
+				k: 3,
+			},
+			want: map[string]struct{}{"foo3": {}, "foo4": {}, "foo2": {}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tr := &topK{
+				processes: tt.fields.processes,
+				k:         tt.fields.k,
+			}
+			if got := tr.GetTop(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("topK.GetTop() = %v, want %v", got, tt.want)
 			}
 		})
 	}

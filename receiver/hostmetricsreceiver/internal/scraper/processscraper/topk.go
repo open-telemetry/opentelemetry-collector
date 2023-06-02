@@ -31,7 +31,7 @@ func NewTopK(k uint) TopKInterface {
 	}
 	return &topK{
 		processes: make(processInfoList, 0),
-		K:         int(k),
+		k:         int(k),
 	}
 }
 
@@ -41,44 +41,32 @@ type processInfo struct {
 }
 
 type TopKInterface interface {
-	Append(p *processInfo) bool
-	GetIndex(name string) int
+	Append(p *processInfo)
+	GetTop() map[string]struct{}
 }
 
 // 基于排序实现计算TopK值
 type topK struct {
 	// 永远有序，而且长度为K
 	processes processInfoList
-	K         int
+	k         int
 }
 
-func (t *topK) Append(p *processInfo) bool {
-	if i := t.GetIndex(p.Name); i != -1 {
-		t.processes[i] = p
-	} else {
-		t.processes = append(t.processes, p)
-	}
-	t.calculate()
-	return t.GetIndex(p.Name) != -1
+func (t *topK) Append(p *processInfo) {
+	t.processes = append(t.processes, p)
 }
 
-func (t *topK) GetIndex(name string) int {
-	for i, process := range t.processes {
-		if process.Name == name {
-			return i
-		}
-	}
-	return -1
-}
-
-func (t *topK) calculate() {
-	// 先排序
+/// 返回值数量小于等于k，因为会有相同进程名的进程
+func (t *topK) GetTop() map[string]struct{} {
 	sort.Sort(t.processes)
-	// 数组长度小于k,直接返回
-	if len(t.processes) < t.K {
-		return
+	result := make(map[string]struct{})
+	for i, process := range t.processes {
+		if i == t.k {
+			break
+		}
+		result[process.Name] = struct{}{}
 	}
-	t.processes = t.processes[0:t.K]
+	return result
 }
 
 var _ TopKInterface = (*topK)(nil)

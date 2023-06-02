@@ -171,11 +171,8 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			continue
 		}
 
-		// 过滤topK值
 		if percent, err := handle.Percent(0); err == nil {
-			if !cpuTimeTopK.Append(NewProcessInfo(executable.name, percent)) {
-				continue
-			}
+			cpuTimeTopK.Append(NewProcessInfo(executable.name, percent))
 		}
 
 		command, err := getProcessCommand(handle)
@@ -200,9 +197,10 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	}
 
 	// 保证只有topK的值返回
+	topData := cpuTimeTopK.GetTop()
 	topKMetadata := make([]*processMetadata, 0, len(metadata))
 	for _, meta := range metadata {
-		if i := cpuTimeTopK.GetIndex(meta.executable.name); i != -1 {
+		if _, ok := topData[meta.executable.name]; ok {
 			topKMetadata = append(topKMetadata, meta)
 		}
 	}
