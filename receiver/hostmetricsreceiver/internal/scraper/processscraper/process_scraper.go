@@ -95,12 +95,33 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
+func GetPidProcessName(pid int32, processName string) string {
+	return fmt.Sprintf("%d/%s", pid, processName)
+}
+
 func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
 	rms := pdata.NewResourceMetricsSlice()
 
 	var errs scrapererror.ScrapeErrors
 
+	cpuTimeTopK := NewTopK(s.config.Top)
+	memoryTopK := NewTopK(s.config.Top)
 	metadata, err := s.getProcessMetadata()
+
+	for _, md := range metadata {
+		handle := md.handle
+		mem, err := handle.MemoryInfo()
+		if err != nil {
+			continue
+		}
+		percent, err := handle.Percent(0)
+		if err != nil {
+			continue
+		}
+		name := GetPidProcessName(md.pid, md.executable.name)
+		memoryTopK.Append(NewProcessInfo(name, float64(mem.RSS)))
+		cpuTimeTopK.Append(NewProcessInfo(name, percent))
+	}
 	if err != nil {
 		partialErr, isPartial := err.(scrapererror.PartialScrapeError)
 		if !isPartial {
@@ -110,6 +131,9 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 		errs.AddPartial(partialErr.Failed, partialErr)
 	}
 	rms.Resize(len(metadata))
+
+	memoryTopKMap := memoryTopK.GetTop()
+	cpuTimeTopKMap := cpuTimeTopK.GetTop()
 	for i, md := range metadata {
 		rm := rms.At(i)
 		md.initializeResource(rm.Resource())
@@ -120,12 +144,17 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 
 		now := pdata.TimestampFromTime(time.Now())
 
-		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle); err != nil {
-			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		name := GetPidProcessName(md.pid, md.executable.name)
+		if _, ok := cpuTimeTopKMap[name]; ok {
+			if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle); err != nil {
+				errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
+			}
 		}
 
-		if err = scrapeAndAppendMemoryUsageMetrics(metrics, now, md.handle); err != nil {
-			errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		if _, ok := memoryTopKMap[name]; ok {
+			if err = scrapeAndAppendMemoryUsageMetrics(metrics, now, md.handle); err != nil {
+				errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err))
+			}
 		}
 
 		if err = scrapeAndAppendDiskIOMetric(metrics, s.startTime, now, md.handle); err != nil {
@@ -148,7 +177,6 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 	var errs scrapererror.ScrapeErrors
 
-	cpuTimeTopK := NewTopK(s.config.Top)
 	metadata := make([]*processMetadata, 0, handles.Len())
 	for i := 0; i < handles.Len(); i++ {
 		pid := handles.Pid(i)
@@ -169,10 +197,6 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		if (s.includeFS != nil && !s.includeFS.Matches(executable.name)) ||
 			(s.excludeFS != nil && s.excludeFS.Matches(executable.name)) {
 			continue
-		}
-
-		if percent, err := handle.Percent(0); err == nil {
-			cpuTimeTopK.Append(NewProcessInfo(executable.name, percent))
 		}
 
 		command, err := getProcessCommand(handle)
@@ -196,16 +220,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		metadata = append(metadata, md)
 	}
 
-	// 保证只有topK的值返回
-	topData := cpuTimeTopK.GetTop()
-	topKMetadata := make([]*processMetadata, 0, len(metadata))
-	for _, meta := range metadata {
-		if _, ok := topData[meta.executable.name]; ok {
-			topKMetadata = append(topKMetadata, meta)
-		}
-	}
-
-	return topKMetadata, errs.Combine()
+	return metadata, errs.Combine()
 }
 
 func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, handle processHandle) error {
