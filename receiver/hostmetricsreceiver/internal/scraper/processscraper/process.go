@@ -108,6 +108,7 @@ type processHandle interface {
 	CmdlineSlice() ([]string, error)
 	Times() (*cpu.TimesStat, error)
 	Percent(interval time.Duration) (float64, error)
+	CPUPercent() (float64, error)
 	MemoryInfo() (*process.MemoryInfoStat, error)
 	IOCounters() (*process.IOCountersStat, error)
 }

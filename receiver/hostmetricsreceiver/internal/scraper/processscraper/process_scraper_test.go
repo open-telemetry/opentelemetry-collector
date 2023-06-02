@@ -200,6 +200,12 @@ type processHandleMock struct {
 	mock.Mock
 }
 
+// CPUPercent implements processHandle.
+func (p *processHandleMock) CPUPercent() (float64, error) {
+	args := p.MethodCalled("CPUPercent")
+	return args.Get(0).(float64), args.Error(1)
+}
+
 // Percent implements processHandle.
 func (p *processHandleMock) Percent(interval time.Duration) (float64, error) {
 	args := p.MethodCalled("Percent")

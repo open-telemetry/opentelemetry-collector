@@ -114,7 +114,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 		if err != nil {
 			continue
 		}
-		percent, err := handle.Percent(0)
+		percent, err := handle.CPUPercent()
 		if err != nil {
 			continue
 		}
@@ -263,6 +263,10 @@ func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.Time
 		processName, err = handle.Name()
 		if err != nil {
 			return err
+		}
+		if processHandle, ok := handle.(*process.Process); ok {
+			pid := processHandle.Pid
+			processName = fmt.Sprintf("%d/%s", pid, processName)
 		}
 	}
 
