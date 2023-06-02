@@ -104,24 +104,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 
 	var errs scrapererror.ScrapeErrors
 
-	cpuTimeTopK := NewTopK(s.config.Top)
-	memoryTopK := NewTopK(s.config.Top)
 	metadata, err := s.getProcessMetadata()
-
-	for _, md := range metadata {
-		handle := md.handle
-		mem, err := handle.MemoryInfo()
-		if err != nil {
-			continue
-		}
-		percent, err := handle.CPUPercent()
-		if err != nil {
-			continue
-		}
-		name := GetPidProcessName(md.pid, md.executable.name)
-		memoryTopK.Append(NewProcessInfo(name, float64(mem.RSS)))
-		cpuTimeTopK.Append(NewProcessInfo(name, percent))
-	}
 	if err != nil {
 		partialErr, isPartial := err.(scrapererror.PartialScrapeError)
 		if !isPartial {
@@ -131,9 +114,6 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 		errs.AddPartial(partialErr.Failed, partialErr)
 	}
 	rms.Resize(len(metadata))
-
-	memoryTopKMap := memoryTopK.GetTop()
-	cpuTimeTopKMap := cpuTimeTopK.GetTop()
 	for i, md := range metadata {
 		rm := rms.At(i)
 		md.initializeResource(rm.Resource())
@@ -144,17 +124,12 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 
 		now := pdata.TimestampFromTime(time.Now())
 
-		name := GetPidProcessName(md.pid, md.executable.name)
-		if _, ok := cpuTimeTopKMap[name]; ok {
-			if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle); err != nil {
-				errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
-			}
+		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle); err != nil {
+			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		if _, ok := memoryTopKMap[name]; ok {
-			if err = scrapeAndAppendMemoryUsageMetrics(metrics, now, md.handle); err != nil {
-				errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err))
-			}
+		if err = scrapeAndAppendMemoryUsageMetrics(metrics, now, md.handle); err != nil {
+			errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		if err = scrapeAndAppendDiskIOMetric(metrics, s.startTime, now, md.handle); err != nil {
