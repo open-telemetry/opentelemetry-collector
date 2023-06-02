@@ -209,7 +209,7 @@ var Metrics = &metricStruct{
 		"process.cpu.time",
 		func(metric pdata.Metric) {
 			metric.SetName("process.cpu.time")
-			metric.SetDescription("Total CPU seconds broken down by different states.")
+			metric.SetDescription("Total CPU seconds of per process.")
 			metric.SetUnit("s")
 			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
 			metric.DoubleSum().SetIsMonotonic(true)

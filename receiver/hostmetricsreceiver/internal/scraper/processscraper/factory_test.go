@@ -16,10 +16,13 @@ package processscraper
 
 import (
 	"context"
+	"reflect"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 )
 
@@ -41,5 +44,51 @@ func TestCreateResourceMetricsScraper(t *testing.T) {
 	} else {
 		assert.Error(t, err)
 		assert.Nil(t, scraper)
+	}
+}
+
+func TestFactory_CreateDefaultConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		f    *Factory
+		want internal.Config
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.f.CreateDefaultConfig(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Factory.CreateDefaultConfig() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFactory_CreateResourceMetricsScraper(t *testing.T) {
+	type args struct {
+		in0    context.Context
+		in1    *zap.Logger
+		config internal.Config
+	}
+	tests := []struct {
+		name    string
+		f       *Factory
+		args    args
+		want    scraperhelper.ResourceMetricsScraper
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.f.CreateResourceMetricsScraper(tt.args.in0, tt.args.in1, tt.args.config)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Factory.CreateResourceMetricsScraper() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Factory.CreateResourceMetricsScraper() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

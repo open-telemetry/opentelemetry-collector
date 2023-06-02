@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/process"
@@ -197,6 +198,18 @@ func (p *processHandlesMock) Len() int {
 
 type processHandleMock struct {
 	mock.Mock
+}
+
+// CPUPercent implements processHandle.
+func (p *processHandleMock) CPUPercent() (float64, error) {
+	args := p.MethodCalled("CPUPercent")
+	return args.Get(0).(float64), args.Error(1)
+}
+
+// Percent implements processHandle.
+func (p *processHandleMock) Percent(interval time.Duration) (float64, error) {
+	args := p.MethodCalled("Percent")
+	return args.Get(0).(float64), args.Error(1)
 }
 
 func (p *processHandleMock) Cwd() (string, error) {
