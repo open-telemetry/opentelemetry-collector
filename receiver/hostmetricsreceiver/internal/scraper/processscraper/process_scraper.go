@@ -109,7 +109,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 
 		errs.AddPartial(partialErr.Failed, partialErr)
 	}
-
+	CPUTimeTopK := NewTopK(s.config.Top)
 	rms.Resize(len(metadata))
 	for i, md := range metadata {
 		rm := rms.At(i)
@@ -121,7 +121,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 
 		now := pdata.TimestampFromTime(time.Now())
 
-		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle); err != nil {
+		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle, CPUTimeTopK); err != nil {
 			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
@@ -195,7 +195,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	return metadata, errs.Combine()
 }
 
-func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, handle processHandle) error {
+func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, handle processHandle, topKByCPUTime TopKInterface) error {
 	times, err := handle.Times()
 	if err != nil {
 		return err
@@ -211,10 +211,11 @@ func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdat
 			processName = fmt.Sprintf("%d/%s", pid, processName)
 		}
 	}
-
-	startIdx := metrics.Len()
-	metrics.Resize(startIdx + cpuMetricsLen)
-	initializeCPUTimeMetric(metrics.At(startIdx), startTime, now, times, processName)
+	if topKByCPUTime.Append(NewProcessInfo(processName, times.Total())) {
+		startIdx := metrics.Len()
+		metrics.Resize(startIdx + cpuMetricsLen)
+		initializeCPUTimeMetric(metrics.At(startIdx), startTime, now, times, processName)
+	}
 	return nil
 }
 

@@ -28,6 +28,7 @@ type Config struct {
 	// If neither `include` or `exclude` are set, process metrics will be generated for all processes.
 	Include MatchConfig `mapstructure:"include"`
 	Exclude MatchConfig `mapstructure:"exclude"`
+	Top     uint        `mapstructure:"top"`
 }
 
 type MatchConfig struct {
