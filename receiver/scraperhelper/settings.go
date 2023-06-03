@@ -26,7 +26,9 @@ type ScraperControllerSettings struct {
 	// should be called and used as the context timeout
 	// to ensure that scrapers don't exceed the interval.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
-	InitialDelay       time.Duration `mapstructure:"intial_delay"`
+	// InitialDelay sets the initial start delay for the scraper,
+	// any non positive value is assumed to be immediately.
+	InitialDelay time.Duration `mapstructure:"intial_delay"`
 	// Timeout is used to set scraper's context deadline, it must be within
 	// the range of (0, CollectionInterval]
 	Timeout time.Duration `mapstructure:"timeout"`
@@ -37,6 +39,7 @@ type ScraperControllerSettings struct {
 func NewDefaultScraperControllerSettings(component.Type) ScraperControllerSettings {
 	return ScraperControllerSettings{
 		CollectionInterval: time.Minute,
+		InitialDelay:       time.Second,
 		Timeout:            time.Minute,
 	}
 }
