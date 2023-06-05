@@ -28,7 +28,7 @@ type ScraperControllerSettings struct {
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// InitialDelay sets the initial start delay for the scraper,
 	// any non positive value is assumed to be immediately.
-	InitialDelay time.Duration `mapstructure:"intial_delay"`
+	InitialDelay time.Duration `mapstructure:"initial_delay"`
 	// Timeout is used to set scraper's context deadline, it must be within
 	// the range of (0, CollectionInterval]
 	Timeout time.Duration `mapstructure:"timeout"`
