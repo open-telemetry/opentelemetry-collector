@@ -5,7 +5,7 @@ change_type: 'enhancement'
 component: otlpreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Propagate errors from the exporter back to the caller
+note: Propagate HTTP errors from the exporter back to the caller
 
 # One or more tracking issues or pull requests related to the change
 issues: [7486]
@@ -13,4 +13,4 @@ issues: [7486]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: The Collector can now propagate errors from backends to the client when used as a simple gateway.
+subtext: The Collector can now propagate errors from backends to the client when used as a proxy.
