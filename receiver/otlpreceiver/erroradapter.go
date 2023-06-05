@@ -16,7 +16,9 @@ func gRPCToHTTP(s *status.Status) int {
 		return http.StatusInternalServerError
 	case codes.AlreadyExists:
 		return http.StatusConflict
-	case codes.Canceled, codes.DataLoss:
+	case codes.Canceled:
+		return http.StatusInternalServerError
+	case codes.DataLoss:
 		return http.StatusInternalServerError
 	case codes.DeadlineExceeded:
 		return http.StatusRequestTimeout
