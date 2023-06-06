@@ -9,7 +9,7 @@
 | Distributions            | [core], [contrib]     |
 
 Export data via gRPC using [OTLP](
-https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
+https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md)
 format. By default, this exporter requires TLS and offers queued retry capabilities.
 
 ## Getting Started
