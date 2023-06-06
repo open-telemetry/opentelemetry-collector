@@ -148,5 +148,5 @@ extensions:
 ## How to validate configuration file and return all errors without running collector
 
 ```bash
-   ./otelcorecol --config=file:examples/local/otel-config.yaml  --dry-run
+   ./otelcorecol validate --config=file:examples/local/otel-config.yaml
 ```
