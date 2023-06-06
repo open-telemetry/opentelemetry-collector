@@ -9,7 +9,7 @@
 | Distributions            | [core], [contrib]     |
 
 Export traces and/or metrics via HTTP using [OTLP](
-https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
+https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md)
 format.
 
 The following settings are required:
