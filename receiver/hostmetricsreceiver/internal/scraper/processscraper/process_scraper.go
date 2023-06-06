@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/shirou/gopsutil/cpu"
@@ -37,9 +38,6 @@ const (
 	diskMetricsLen   = 1
 
 	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen
-
-	// 如果要关闭进程名tag，设为false
-	supportName = true
 )
 
 // scraper for Process Metrics
@@ -121,11 +119,11 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 
 		now := pdata.TimestampFromTime(time.Now())
 
-		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle); err != nil {
+		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md); err != nil {
 			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		if err = scrapeAndAppendMemoryUsageMetrics(metrics, now, md.handle); err != nil {
+		if err = scrapeAndAppendMemoryUsageMetrics(metrics, now, md); err != nil {
 			errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
@@ -195,67 +193,57 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	return metadata, errs.Combine()
 }
 
-func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, handle processHandle) error {
-	times, err := handle.Times()
+func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, pmeta *processMetadata) error {
+	times, err := pmeta.handle.Times()
 	if err != nil {
 		return err
 	}
-	name := ""
-	if supportName {
-		name, err = handle.Cwd()
-		if err != nil {
-			return err
-		}
-		name = filepath.Base(name)
-	}
+	labels := pdata.NewStringMap()
+	labels.Insert(metadata.Labels.ProcessPid, strconv.Itoa(int(pmeta.pid)))
+	labels.Insert(metadata.Labels.ProcessBCwd, filepath.Base(pmeta.executable.cwd))
+	labels.Insert(metadata.Labels.ProcessName, pmeta.executable.name)
+
 	startIdx := metrics.Len()
 	metrics.Resize(startIdx + cpuMetricsLen)
-	initializeCPUTimeMetric(metrics.At(startIdx), startTime, now, times, name)
+	initializeCPUTimeMetric(metrics.At(startIdx), startTime, now, times, labels)
 	return nil
 }
 
-func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, times *cpu.TimesStat, processName string) {
+func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, times *cpu.TimesStat, labels pdata.StringMap) {
 	metadata.Metrics.ProcessCPUTime.Init(metric)
 
 	ddps := metric.DoubleSum().DataPoints()
 	ddps.Resize(cpuStatesLen)
-	appendCPUTimeStateDataPoints(ddps, startTime, now, times, processName)
+	appendCPUTimeStateDataPoints(ddps, startTime, now, times, labels)
 }
 
-func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.Timestamp, handle processHandle) error {
-	mem, err := handle.MemoryInfo()
+func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.Timestamp, pmeta *processMetadata) error {
+	mem, err := pmeta.handle.MemoryInfo()
 	if err != nil {
 		return err
 	}
-	name := ""
-	if supportName {
-		name, err = handle.Cwd()
-		if err != nil {
-			return err
-		}
-		name = filepath.Base(name)
-	}
+	labels := pdata.NewStringMap()
+	labels.Insert(metadata.Labels.ProcessPid, strconv.Itoa(int(pmeta.pid)))
+	labels.Insert(metadata.Labels.ProcessBCwd, filepath.Base(pmeta.executable.cwd))
+	labels.Insert(metadata.Labels.ProcessName, pmeta.executable.name)
 
 	startIdx := metrics.Len()
 	metrics.Resize(startIdx + memoryMetricsLen)
-	initializeMemoryUsageMetric(metrics.At(startIdx+0), metadata.Metrics.ProcessMemoryPhysicalUsage, now, int64(mem.RSS), name)
+	initializeMemoryUsageMetric(metrics.At(startIdx+0), metadata.Metrics.ProcessMemoryPhysicalUsage, now, int64(mem.RSS), labels)
 	// initializeMemoryUsageMetric(metrics.At(startIdx+1), metadata.Metrics.ProcessMemoryVirtualUsage, now, int64(mem.VMS), name)
 	return nil
 }
 
-func initializeMemoryUsageMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, now pdata.Timestamp, usage int64, processName string) {
+func initializeMemoryUsageMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, now pdata.Timestamp, usage int64, labels pdata.StringMap) {
 	metricIntf.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(1)
-	initializeMemoryUsageDataPoint(idps.At(0), now, usage, processName)
+	initializeMemoryUsageDataPoint(idps.At(0), now, usage, labels)
 }
 
-func initializeMemoryUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, usage int64, processName string) {
-	if len(processName) > 0 {
-		labelsMap := dataPoint.LabelsMap()
-		labelsMap.Insert(metadata.Labels.ProcessName, processName)
-	}
+func initializeMemoryUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, usage int64, labels pdata.StringMap) {
+	labels.CopyTo(dataPoint.LabelsMap())
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(usage)
 }
