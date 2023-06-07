@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -124,7 +125,7 @@ func generateConfig() *Config {
 				Address: ":8080",
 			},
 		},
-		Extensions: []component.ID{component.NewID("nop")},
+		Extensions: extensions.Config{component.NewID("nop")},
 		Pipelines: map[component.ID]*PipelineConfig{
 			component.NewID("traces"): {
 				Receivers:  []component.ID{component.NewID("nop")},

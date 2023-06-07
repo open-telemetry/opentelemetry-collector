@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -468,7 +469,7 @@ func newNopConfig() Config {
 
 func newNopConfigPipelineConfigs(pipelineCfgs map[component.ID]*PipelineConfig) Config {
 	return Config{
-		Extensions: []component.ID{component.NewID("nop")},
+		Extensions: extensions.Config{component.NewID("nop")},
 		Pipelines:  pipelineCfgs,
 		Telemetry: telemetry.Config{
 			Logs: telemetry.LogsConfig{

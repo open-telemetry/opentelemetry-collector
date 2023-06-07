@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -23,7 +24,7 @@ type Config struct {
 	Telemetry telemetry.Config `mapstructure:"telemetry"`
 
 	// Extensions are the ordered list of extensions configured for the service.
-	Extensions []component.ID `mapstructure:"extensions"`
+	Extensions extensions.Config `mapstructure:"extensions"`
 
 	// Pipelines are the set of data pipelines configured for the service.
 	Pipelines map[component.ID]*PipelineConfig `mapstructure:"pipelines"`

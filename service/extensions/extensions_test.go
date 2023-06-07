@@ -29,12 +29,12 @@ func TestBuildExtensions(t *testing.T) {
 		name              string
 		factories         map[component.Type]extension.Factory
 		extensionsConfigs map[component.ID]component.Config
-		serviceExtensions []component.ID
+		config            Config
 		wantErrMsg        string
 	}{
 		{
 			name: "extension_not_configured",
-			serviceExtensions: []component.ID{
+			config: Config{
 				component.NewID("myextension"),
 			},
 			wantErrMsg: "failed to create extension \"myextension\": extension \"myextension\" is not configured",
@@ -44,7 +44,7 @@ func TestBuildExtensions(t *testing.T) {
 			extensionsConfigs: map[component.ID]component.Config{
 				component.NewID("unknown"): nopExtensionConfig,
 			},
-			serviceExtensions: []component.ID{
+			config: Config{
 				component.NewID("unknown"),
 			},
 			wantErrMsg: "failed to create extension \"unknown\": extension factory not available for: \"unknown\"",
@@ -57,7 +57,7 @@ func TestBuildExtensions(t *testing.T) {
 			extensionsConfigs: map[component.ID]component.Config{
 				component.NewID(errExtensionFactory.Type()): errExtensionConfig,
 			},
-			serviceExtensions: []component.ID{
+			config: Config{
 				component.NewID(errExtensionFactory.Type()),
 			},
 			wantErrMsg: "failed to create extension \"err\": cannot create \"err\" extension type",
@@ -70,7 +70,7 @@ func TestBuildExtensions(t *testing.T) {
 			extensionsConfigs: map[component.ID]component.Config{
 				component.NewID(badExtensionFactory.Type()): badExtensionCfg,
 			},
-			serviceExtensions: []component.ID{
+			config: Config{
 				component.NewID(badExtensionFactory.Type()),
 			},
 			wantErrMsg: "factory for \"bf\" produced a nil extension",
@@ -84,7 +84,7 @@ func TestBuildExtensions(t *testing.T) {
 				BuildInfo: component.NewDefaultBuildInfo(),
 				Configs:   tt.extensionsConfigs,
 				Factories: tt.factories,
-			}, tt.serviceExtensions)
+			}, tt.config)
 			require.Error(t, err)
 			assert.EqualError(t, err, tt.wantErrMsg)
 		})
