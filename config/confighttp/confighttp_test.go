@@ -826,8 +826,8 @@ func TestHttpServerHeaders(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hss := &HTTPServerSettings{
-				Endpoint: "localhost:0",
-				Headers:  tt.headers,
+				Endpoint:        "localhost:0",
+				ResponseHeaders: tt.headers,
 			}
 
 			ln, err := hss.ToListener()

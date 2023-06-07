@@ -219,7 +219,7 @@ type HTTPServerSettings struct {
 
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
-	Headers map[string]configopaque.String `mapstructure:"headers"`
+	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
 }
 
 // ToListener creates a net.Listener.
@@ -297,8 +297,8 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		handler = cors.New(co).Handler(handler)
 	}
 
-	if hss.Headers != nil {
-		handler = headerHandler(handler, hss.Headers)
+	if hss.ResponseHeaders != nil {
+		handler = responseHeadersHandler(handler, hss.ResponseHeaders)
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -325,7 +325,7 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 	}, nil
 }
 
-func headerHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {
+func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
 

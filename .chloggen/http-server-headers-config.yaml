@@ -5,7 +5,7 @@ change_type: enhancement
 component: confighttp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `headers` configuration option on HTTPServerSettings. It allows for additional headers to be attached to each HTTP response sent to the client
+note: Add `response_headers` configuration option on HTTPServerSettings. It allows for additional headers to be attached to each HTTP response sent to the client
 
 # One or more tracking issues or pull requests related to the change
 issues: [7328]
