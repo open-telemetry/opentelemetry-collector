@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -131,8 +131,8 @@ func TestPipelineConfigUnmarshalError(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			pipelines := make(map[component.ID]service.PipelineConfig)
-			err := tt.conf.Unmarshal(&pipelines, confmap.WithErrorUnused())
+			pips := new(pipelines.Config)
+			err := tt.conf.Unmarshal(&pips, confmap.WithErrorUnused())
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectError)
 		})

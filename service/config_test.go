@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -45,47 +46,20 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
-			expected: fmt.Errorf(`service::pipeline::traces: %w`, errors.New(`references processor "nop" multiple times`)),
-		},
-		{
-			name: "missing-pipeline-receivers",
-			cfgFn: func() *Config {
-				cfg := generateConfig()
-				cfg.Pipelines[component.NewID("traces")].Receivers = nil
-				return cfg
-			},
-			expected: fmt.Errorf(`service::pipeline::traces: %w`, errMissingServicePipelineReceivers),
-		},
-		{
-			name: "missing-pipeline-exporters",
-			cfgFn: func() *Config {
-				cfg := generateConfig()
-				cfg.Pipelines[component.NewID("traces")].Exporters = nil
-				return cfg
-			},
-			expected: fmt.Errorf(`service::pipeline::traces: %w`, errMissingServicePipelineExporters),
-		},
-		{
-			name: "missing-pipelines",
-			cfgFn: func() *Config {
-				cfg := generateConfig()
-				cfg.Pipelines = nil
-				return cfg
-			},
-			expected: errMissingServicePipelines,
+			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, fmt.Errorf(`pipeline "traces": %w`, errors.New(`references processor "nop" multiple times`))),
 		},
 		{
 			name: "invalid-service-pipeline-type",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Pipelines[component.NewID("wrongtype")] = &PipelineConfig{
+				cfg.Pipelines[component.NewID("wrongtype")] = &pipelines.PipelineConfig{
 					Receivers:  []component.ID{component.NewID("nop")},
 					Processors: []component.ID{component.NewID("nop")},
 					Exporters:  []component.ID{component.NewID("nop")},
 				}
 				return cfg
 			},
-			expected: errors.New(`service::pipeline::wrongtype: unknown datatype "wrongtype"`),
+			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, errors.New(`pipeline "wrongtype": unknown datatype "wrongtype"`)),
 		},
 		{
 			name: "invalid-telemetry-metric-config",
@@ -126,7 +100,7 @@ func generateConfig() *Config {
 			},
 		},
 		Extensions: extensions.Config{component.NewID("nop")},
-		Pipelines: map[component.ID]*PipelineConfig{
+		Pipelines: pipelines.Config{
 			component.NewID("traces"): {
 				Receivers:  []component.ID{component.NewID("nop")},
 				Processors: []component.ID{component.NewID("nop")},

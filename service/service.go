@@ -191,15 +191,6 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 		return fmt.Errorf("failed to build extensions: %w", err)
 	}
 
-	graphPipelinesConfigs := make(map[component.ID]*graph.PipelineConfig, len(cfg.Pipelines))
-	for id, cfg := range cfg.Pipelines {
-		graphPipelinesConfigs[id] = &graph.PipelineConfig{
-			Receivers:  cfg.Receivers,
-			Processors: cfg.Processors,
-			Exporters:  cfg.Exporters,
-		}
-	}
-
 	pSet := graph.Settings{
 		Telemetry:        srv.telemetrySettings,
 		BuildInfo:        srv.buildInfo,
@@ -207,7 +198,7 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 		ProcessorBuilder: set.Processors,
 		ExporterBuilder:  set.Exporters,
 		ConnectorBuilder: set.Connectors,
-		PipelineConfigs:  graphPipelinesConfigs,
+		PipelineConfigs:  cfg.Pipelines,
 	}
 
 	if srv.host.pipelines, err = graph.Build(ctx, pSet); err != nil {
