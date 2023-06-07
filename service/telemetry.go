@@ -18,15 +18,12 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/bridge/opencensus"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -34,8 +31,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
-	"go.opentelemetry.io/collector/obsreport"
-	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
+	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -46,29 +42,10 @@ const (
 	// supported trace propagators
 	traceContextPropagator = "tracecontext"
 	b3Propagator           = "b3"
-
-	// gRPC Instrumentation Name
-	grpcInstrumentation = "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-
-	// http Instrumentation Name
-	httpInstrumentation = "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 var (
 	errUnsupportedPropagator = errors.New("unsupported trace propagator")
-
-	// grpcUnacceptableKeyValues is a list of high cardinality grpc attributes that should be filtered out.
-	grpcUnacceptableKeyValues = []attribute.KeyValue{
-		attribute.String(semconv.AttributeNetSockPeerAddr, ""),
-		attribute.String(semconv.AttributeNetSockPeerPort, ""),
-		attribute.String(semconv.AttributeNetSockPeerName, ""),
-	}
-
-	// httpUnacceptableKeyValues is a list of high cardinality http attributes that should be filtered out.
-	httpUnacceptableKeyValues = []attribute.KeyValue{
-		attribute.String(semconv.AttributeNetHostName, ""),
-		attribute.String(semconv.AttributeNetHostPort, ""),
-	}
 )
 
 type telemetryInitializer struct {
@@ -193,29 +170,11 @@ func (tel *telemetryInitializer) initOpenTelemetry(res *resource.Resource, promR
 	}
 
 	exporter.RegisterProducer(opencensus.NewMetricProducer())
-	views := batchViews()
-	if tel.disableHighCardinality {
-		views = append(views, sdkmetric.NewView(sdkmetric.Instrument{
-			Scope: instrumentation.Scope{
-				Name: grpcInstrumentation,
-			},
-		}, sdkmetric.Stream{
-			AttributeFilter: cardinalityFilter(grpcUnacceptableKeyValues...),
-		}))
-		views = append(views, sdkmetric.NewView(sdkmetric.Instrument{
-			Scope: instrumentation.Scope{
-				Name: httpInstrumentation,
-			},
-		}, sdkmetric.Stream{
-			AttributeFilter: cardinalityFilter(httpUnacceptableKeyValues...),
-		}))
+	mp, err := proctelemetry.InitOpenTelemetry(res, []sdkmetric.Option{sdkmetric.WithReader(exporter)}, tel.disableHighCardinality)
+	if err != nil {
+		return err
 	}
-	tel.mp = sdkmetric.NewMeterProvider(
-		sdkmetric.WithResource(res),
-		sdkmetric.WithReader(exporter),
-		sdkmetric.WithView(views...),
-	)
-
+	tel.mp = mp
 	return nil
 }
 
@@ -230,13 +189,6 @@ func (tel *telemetryInitializer) shutdown() error {
 		}
 	}
 	return errs
-}
-
-func cardinalityFilter(kvs ...attribute.KeyValue) attribute.Filter {
-	filter := attribute.NewSet(kvs...)
-	return func(kv attribute.KeyValue) bool {
-		return !filter.HasValue(kv.Key)
-	}
 }
 
 func sanitizePrometheusKey(str string) string {
@@ -262,23 +214,4 @@ func textMapPropagatorFromConfig(props []string) (propagation.TextMapPropagator,
 		}
 	}
 	return propagation.NewCompositeTextMapPropagator(textMapPropagators...), nil
-}
-
-func batchViews() []sdkmetric.View {
-	return []sdkmetric.View{
-		sdkmetric.NewView(
-			sdkmetric.Instrument{Name: obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size")},
-			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
-				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
-			}},
-		),
-		sdkmetric.NewView(
-			sdkmetric.Instrument{Name: obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size_bytes")},
-			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
-				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
-					100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
-					1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
-			}},
-		),
-	}
 }

@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
+	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -243,13 +244,13 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 	require.NoError(t, err)
 	counter.Add(context.Background(), 13)
 
-	grpcExampleCounter, err := mp.Meter(grpcInstrumentation).Int64Counter(grpcPrefix + counterName)
+	grpcExampleCounter, err := mp.Meter(proctelemetry.GRPCInstrumentation).Int64Counter(grpcPrefix + counterName)
 	require.NoError(t, err)
-	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributes(grpcUnacceptableKeyValues...))
+	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributes(proctelemetry.GRPCUnacceptableKeyValues...))
 
-	httpExampleCounter, err := mp.Meter(httpInstrumentation).Int64Counter(httpPrefix + counterName)
+	httpExampleCounter, err := mp.Meter(proctelemetry.HTTPInstrumentation).Int64Counter(httpPrefix + counterName)
 	require.NoError(t, err)
-	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributes(httpUnacceptableKeyValues...))
+	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributes(proctelemetry.HTTPUnacceptableKeyValues...))
 
 	// Creates a OpenCensus measure
 	ocCounter := stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless)
