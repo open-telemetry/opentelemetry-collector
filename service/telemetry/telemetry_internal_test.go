@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package service
+package telemetry
 
 import (
 	"context"
@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
-	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 const (
@@ -35,11 +34,13 @@ const (
 	counterName  = "test_counter"
 )
 
+var testInstanceID = "test_instance_id"
+
 func TestBuildResource(t *testing.T) {
 	buildInfo := component.NewDefaultBuildInfo()
 
 	// Check default config
-	cfg := telemetry.Config{}
+	cfg := Config{}
 	otelRes := buildResource(buildInfo, cfg)
 	res := pdataFromSdk(otelRes)
 
@@ -55,7 +56,7 @@ func TestBuildResource(t *testing.T) {
 	assert.True(t, ok)
 
 	// Check override by nil
-	cfg = telemetry.Config{
+	cfg = Config{
 		Resource: map[string]*string{
 			semconv.AttributeServiceName:       nil,
 			semconv.AttributeServiceVersion:    nil,
@@ -70,7 +71,7 @@ func TestBuildResource(t *testing.T) {
 
 	// Check override values
 	strPtr := func(v string) *string { return &v }
-	cfg = telemetry.Config{
+	cfg = Config{
 		Resource: map[string]*string{
 			semconv.AttributeServiceName:       strPtr("a"),
 			semconv.AttributeServiceVersion:    strPtr("b"),
@@ -191,22 +192,17 @@ func TestTelemetryInit(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			tel := newColTelemetry(tc.useOtel, tc.disableHighCard, tc.extendedConfig)
 			buildInfo := component.NewDefaultBuildInfo()
-			cfg := telemetry.Config{
+			cfg := Config{
 				Resource: map[string]*string{
 					semconv.AttributeServiceInstanceID: &testInstanceID,
 				},
-				Metrics: telemetry.MetricsConfig{
+				Metrics: MetricsConfig{
 					Level:   configtelemetry.LevelDetailed,
 					Address: testutil.GetAvailableLocalAddress(t),
 				},
 			}
 			otelRes := buildResource(buildInfo, cfg)
-			res := pdataFromSdk(otelRes)
-			settings := component.TelemetrySettings{
-				Logger:   zap.NewNop(),
-				Resource: res,
-			}
-			err := tel.init(otelRes, settings, cfg, make(chan error))
+			err := tel.init(otelRes, zap.NewNop(), cfg, make(chan error))
 			require.NoError(t, err)
 			defer func() {
 				require.NoError(t, tel.shutdown())

@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -243,6 +245,11 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 }
 
 func TestServiceTelemetryWithOpenCensusMetrics(t *testing.T) {
+	prev := obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled()
+	assert.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelForInternalMetricsfeatureGate.ID(), false))
+	defer func() {
+		assert.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelForInternalMetricsfeatureGate.ID(), prev))
+	}()
 	for _, tc := range ownMetricsTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
 			testCollectorStartHelper(t, false, tc)
@@ -251,6 +258,11 @@ func TestServiceTelemetryWithOpenCensusMetrics(t *testing.T) {
 }
 
 func TestServiceTelemetryWithOpenTelemetryMetrics(t *testing.T) {
+	prev := obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled()
+	assert.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelForInternalMetricsfeatureGate.ID(), true))
+	defer func() {
+		assert.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelForInternalMetricsfeatureGate.ID(), prev))
+	}()
 	for _, tc := range ownMetricsTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
 			testCollectorStartHelper(t, true, tc)
@@ -277,7 +289,6 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, tc ownMetricsTestCase)
 		map[component.ID]component.Config{component.NewID("zpages"): &zpagesextension.Config{TCPAddr: confignet.TCPAddr{Endpoint: zpagesAddr}}},
 		map[component.Type]extension.Factory{"zpages": zpagesextension.NewFactory()})
 	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
-	set.useOtel = &useOtel
 
 	cfg := newNopConfig()
 	cfg.Extensions = []component.ID{component.NewID("zpages")}

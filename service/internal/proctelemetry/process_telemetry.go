@@ -18,8 +18,7 @@ import (
 )
 
 const (
-	scopeName      = "go.opentelemetry.io/collector/service/process_telemetry"
-	processNameKey = "process_name"
+	scopeName = "go.opentelemetry.io/collector/service/process_telemetry"
 )
 
 // processMetrics is a struct that contains views related to process metrics (cpu, mem, etc)

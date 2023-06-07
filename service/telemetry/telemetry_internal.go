@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package service // import "go.opentelemetry.io/collector/service"
+package telemetry // import "go.opentelemetry.io/collector/service"
 
 import (
 	"errors"
@@ -28,11 +28,9 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
-	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 const (
@@ -48,7 +46,7 @@ var (
 	errUnsupportedPropagator = errors.New("unsupported trace propagator")
 )
 
-type telemetryInitializer struct {
+type telemetryInternal struct {
 	views      []*view.View
 	ocRegistry *ocmetric.Registry
 	mp         metric.MeterProvider
@@ -59,8 +57,8 @@ type telemetryInitializer struct {
 	extendedConfig         bool
 }
 
-func newColTelemetry(useOtel bool, disableHighCardinality bool, extendedConfig bool) *telemetryInitializer {
-	return &telemetryInitializer{
+func newColTelemetry(useOtel bool, disableHighCardinality bool, extendedConfig bool) *telemetryInternal {
+	return &telemetryInternal{
 		mp:                     noop.NewMeterProvider(),
 		useOtel:                useOtel,
 		disableHighCardinality: disableHighCardinality,
@@ -68,9 +66,9 @@ func newColTelemetry(useOtel bool, disableHighCardinality bool, extendedConfig b
 	}
 }
 
-func (tel *telemetryInitializer) init(res *resource.Resource, settings component.TelemetrySettings, cfg telemetry.Config, asyncErrorChannel chan error) error {
+func (tel *telemetryInternal) init(res *resource.Resource, logger *zap.Logger, cfg Config, asyncErrorChannel chan error) error {
 	if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
-		settings.Logger.Info(
+		logger.Info(
 			"Skipping telemetry setup.",
 			zap.String(zapKeyTelemetryAddress, cfg.Metrics.Address),
 			zap.String(zapKeyTelemetryLevel, cfg.Metrics.Level.String()),
@@ -78,7 +76,7 @@ func (tel *telemetryInitializer) init(res *resource.Resource, settings component
 		return nil
 	}
 
-	settings.Logger.Info("Setting up own telemetry...")
+	logger.Info("Setting up own telemetry...")
 
 	if tp, err := textMapPropagatorFromConfig(cfg.Traces.Propagators); err == nil {
 		otel.SetTextMapPropagator(tp)
@@ -86,10 +84,10 @@ func (tel *telemetryInitializer) init(res *resource.Resource, settings component
 		return err
 	}
 
-	return tel.initPrometheus(res, settings.Logger, cfg.Metrics.Address, cfg.Metrics.Level, asyncErrorChannel)
+	return tel.initPrometheus(res, logger, cfg.Metrics.Address, cfg.Metrics.Level, asyncErrorChannel)
 }
 
-func (tel *telemetryInitializer) initPrometheus(res *resource.Resource, logger *zap.Logger, address string, level configtelemetry.Level, asyncErrorChannel chan error) error {
+func (tel *telemetryInternal) initPrometheus(res *resource.Resource, logger *zap.Logger, address string, level configtelemetry.Level, asyncErrorChannel chan error) error {
 	promRegistry := prometheus.NewRegistry()
 	if tel.useOtel {
 		if err := tel.initOpenTelemetry(res, promRegistry); err != nil {
@@ -122,7 +120,7 @@ func (tel *telemetryInitializer) initPrometheus(res *resource.Resource, logger *
 	return nil
 }
 
-func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, res *resource.Resource, promRegistry *prometheus.Registry) error {
+func (tel *telemetryInternal) initOpenCensus(level configtelemetry.Level, res *resource.Resource, promRegistry *prometheus.Registry) error {
 	tel.ocRegistry = ocmetric.NewRegistry()
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 
@@ -151,7 +149,7 @@ func (tel *telemetryInitializer) initOpenCensus(level configtelemetry.Level, res
 	return nil
 }
 
-func (tel *telemetryInitializer) initOpenTelemetry(res *resource.Resource, promRegistry *prometheus.Registry) error {
+func (tel *telemetryInternal) initOpenTelemetry(res *resource.Resource, promRegistry *prometheus.Registry) error {
 	// Initialize the ocRegistry, still used by the process metrics.
 	tel.ocRegistry = ocmetric.NewRegistry()
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
@@ -178,7 +176,7 @@ func (tel *telemetryInitializer) initOpenTelemetry(res *resource.Resource, promR
 	return nil
 }
 
-func (tel *telemetryInitializer) shutdown() error {
+func (tel *telemetryInternal) shutdown() error {
 	metricproducer.GlobalManager().DeleteProducer(tel.ocRegistry)
 	view.Unregister(tel.views...)
 
