@@ -198,9 +198,7 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	cfg.Validate()
-
-	return nil
+	return cfg.Validate()
 }
 
 // Run starts the collector according to the given configuration, and waits for it to complete.
