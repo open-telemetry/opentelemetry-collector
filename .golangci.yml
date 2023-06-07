@@ -100,20 +100,23 @@ linters-settings:
       - kilometres
 
   depguard:
-    list-type: denylist
-    include-go-root: true
-    packages-with-error-message:
-      - github.com/pkg/errors: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
-      - go.uber.org/atomic: "Use 'sync/atomic' instead of go.uber.org/atomic"
-    # Add a different guard rule so that we can ignore tests.
-    additional-guards:
-      - list-type: denylist
-        include-go-root: true
-        packages-with-error-message:
-          - go.opentelemetry.io/proto: "Use go.opentelemetry.io/collector/pdata instead"
-        # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
-        ignore-file-rules:
-          - "**/*_test.go"
+    rules:
+      denied-deps:
+        deny:
+          - pkg: go.uber.org/atomic
+            desc: "Use 'sync/atomic' instead of go.uber.org/atomic"
+          - pkg: github.com/pkg/errors
+            desc: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
+          - pkg: github.com/hashicorp/go-multierror
+            desc: "Use go.uber.org/multierr instead of github.com/hashicorp/go-multierror"
+        # Add a different guard rule so that we can ignore tests.
+      ignore-in-test:
+          deny:
+          - pkg: go.opentelemetry.io/proto
+            desc: "Use go.opentelemetry.io/collector/pdata instead"
+            # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
+          files:
+            - "!**/*_test.go"
 
 linters:
   enable:
