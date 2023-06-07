@@ -350,6 +350,25 @@ func TestCollectorClosedStateOnStartUpError(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
+func TestCollectorDryRun(t *testing.T) {
+	factories, err := nopFactories()
+	require.NoError(t, err)
+
+	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}))
+	require.NoError(t, err)
+
+	// Load a bad config causing startup to fail
+	set := CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: cfgProvider,
+	}
+	col, err := NewCollector(set)
+	require.NoError(t, err)
+
+	require.Error(t, col.DryRun(context.Background()))
+}
+
 func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.WaitGroup {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)

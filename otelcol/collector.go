@@ -192,6 +192,15 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	return nil
 }
 
+func (col *Collector) DryRun(ctx context.Context) error {
+	cfg, err := col.set.ConfigProvider.Get(ctx, col.set.Factories)
+	if err != nil {
+		return fmt.Errorf("failed to get config: %w", err)
+	}
+
+	return cfg.Validate()
+}
+
 // Run starts the collector according to the given configuration, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 func (col *Collector) Run(ctx context.Context) error {
