@@ -19,9 +19,8 @@ dist/
 *.DS_Store
 
 # Coverage
-coverage.out
+coverage/*
 coverage.txt
-coverage.html
 
 # Wix
 *.wixobj
