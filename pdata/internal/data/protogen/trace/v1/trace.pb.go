@@ -89,8 +89,8 @@ type Status_StatusCode int32
 const (
 	// The default status.
 	Status_STATUS_CODE_UNSET Status_StatusCode = 0
-	// The Span has been validated by an Application developers or Operator to have
-	// completed successfully.
+	// The Span has been validated by an Application developer or Operator to
+	// have completed successfully.
 	Status_STATUS_CODE_OK Status_StatusCode = 1
 	// The Span contains an error.
 	Status_STATUS_CODE_ERROR Status_StatusCode = 2
@@ -320,20 +320,16 @@ func (m *ScopeSpans) GetSchemaUrl() string {
 // The next available field id is 17.
 type Span struct {
 	// A unique identifier for a trace. All spans from the same trace share
-	// the same `trace_id`. The ID is a 16-byte array. An ID with all zeroes
-	// is considered invalid.
-	//
-	// This field is semantically required. Receiver should generate new
-	// random trace_id if empty or invalid trace_id was received.
+	// the same `trace_id`. The ID is a 16-byte array. An ID with all zeroes OR
+	// of length other than 16 bytes is considered invalid (empty string in OTLP/JSON
+	// is zero-length and thus is also invalid).
 	//
 	// This field is required.
 	TraceId go_opentelemetry_io_collector_pdata_internal_data.TraceID `protobuf:"bytes,1,opt,name=trace_id,json=traceId,proto3,customtype=go.opentelemetry.io/collector/pdata/internal/data.TraceID" json:"trace_id"`
 	// A unique identifier for a span within a trace, assigned when the span
-	// is created. The ID is an 8-byte array. An ID with all zeroes is considered
-	// invalid.
-	//
-	// This field is semantically required. Receiver should generate new
-	// random span_id if empty or invalid span_id was received.
+	// is created. The ID is an 8-byte array. An ID with all zeroes OR of length
+	// other than 8 bytes is considered invalid (empty string in OTLP/JSON
+	// is zero-length and thus is also invalid).
 	//
 	// This field is required.
 	SpanId go_opentelemetry_io_collector_pdata_internal_data.SpanID `protobuf:"bytes,2,opt,name=span_id,json=spanId,proto3,customtype=go.opentelemetry.io/collector/pdata/internal/data.SpanID" json:"span_id"`
@@ -379,8 +375,8 @@ type Span struct {
 	//
 	//     "/http/user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
 	//     "/http/server_latency": 300
-	//     "abc.com/myattribute": true
-	//     "abc.com/score": 10.239
+	//     "example.com/myattribute": true
+	//     "example.com/score": 10.239
 	//
 	// The OpenTelemetry API specification further restricts the allowed value types:
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/README.md#attribute

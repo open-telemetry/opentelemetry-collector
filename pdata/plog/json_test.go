@@ -32,7 +32,7 @@ var logsOTLP = func() Logs {
 	lg.SetSeverityNumber(SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_ERROR))
 	lg.SetSeverityText("Error")
 	lg.SetDroppedAttributesCount(1)
-	lg.SetFlags(LogRecordFlags(otlplogs.LogRecordFlags_LOG_RECORD_FLAG_UNSPECIFIED))
+	lg.SetFlags(LogRecordFlags(otlplogs.LogRecordFlags_LOG_RECORD_FLAGS_DO_NOT_USE))
 	traceID := pcommon.TraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
 	spanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	lg.SetTraceID(traceID)
