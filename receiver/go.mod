@@ -70,6 +70,8 @@ replace go.opentelemetry.io/collector/consumer => ../consumer
 
 replace go.opentelemetry.io/collector/exporter => ../exporter
 
+replace go.opentelemetry.io/collector/extension => ../extension
+
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
 
 replace go.opentelemetry.io/collector/featuregate => ../featuregate

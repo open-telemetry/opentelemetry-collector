@@ -40,6 +40,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
+	go.opentelemetry.io/collector/extension v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
 	go.opentelemetry.io/collector/processor v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.0 // indirect
@@ -62,6 +63,8 @@ replace go.opentelemetry.io/collector/component => ../../component
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/exporter => ../
+
+replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 

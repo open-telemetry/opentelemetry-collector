@@ -29,7 +29,17 @@ require (
 
 replace go.opentelemetry.io/collector => ../
 
+replace go.opentelemetry.io/collector/component => ../component
+
+replace go.opentelemetry.io/collector/confmap => ../confmap
+
 replace go.opentelemetry.io/collector/exporter => ../exporter
+
+replace go.opentelemetry.io/collector/extension => ../extension
+
+replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
+
+replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
@@ -38,14 +48,6 @@ replace go.opentelemetry.io/collector/processor => ../processor
 replace go.opentelemetry.io/collector/receiver => ../receiver
 
 replace go.opentelemetry.io/collector/semconv => ../semconv
-
-replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
-
-replace go.opentelemetry.io/collector/component => ../component
-
-replace go.opentelemetry.io/collector/featuregate => ../featuregate
-
-replace go.opentelemetry.io/collector/confmap => ../confmap
 
 retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
