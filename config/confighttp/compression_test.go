@@ -9,29 +9,26 @@ import (
 	"compress/zlib"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
-	"time"
 
 	"github.com/golang/snappy"
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
-	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestHTTPClientCompression(t *testing.T) {
 	testBody := []byte("uncompressed_text")
-	compressedGzipBody, _ := compressGzip(testBody)
-	compressedZlibBody, _ := compressZlib(testBody)
-	compressedDeflateBody, _ := compressZlib(testBody)
-	compressedSnappyBody, _ := compressSnappy(testBody)
-	compressedZstdBody, _ := compressZstd(testBody)
+	compressedGzipBody := compressGzip(t, testBody)
+	compressedZlibBody := compressZlib(t, testBody)
+	compressedDeflateBody := compressZlib(t, testBody)
+	compressedSnappyBody := compressSnappy(t, testBody)
+	compressedZstdBody := compressZstd(t, testBody)
 
 	tests := []struct {
 		name        string
@@ -53,66 +50,56 @@ func TestHTTPClientCompression(t *testing.T) {
 		},
 		{
 			name:        "ValidGzip",
-			encoding:    "gzip",
+			encoding:    configcompression.Gzip,
 			reqBody:     compressedGzipBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidZlib",
-			encoding:    "zlib",
+			encoding:    configcompression.Zlib,
 			reqBody:     compressedZlibBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidDeflate",
-			encoding:    "deflate",
+			encoding:    configcompression.Deflate,
 			reqBody:     compressedDeflateBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidSnappy",
-			encoding:    "snappy",
+			encoding:    configcompression.Snappy,
 			reqBody:     compressedSnappyBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidZstd",
-			encoding:    "zstd",
+			encoding:    configcompression.Zstd,
 			reqBody:     compressedZstdBody.Bytes(),
 			shouldError: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
 				require.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, tt.reqBody, body)
 				w.WriteHeader(200)
-			})
+			}))
+			t.Cleanup(srv.Close)
 
-			addr := testutil.GetAvailableLocalAddress(t)
-			ln, err := net.Listen("tcp", addr)
-			require.NoError(t, err, "failed to create listener: %v", err)
-			srv := &http.Server{
-				Handler: handler,
-			}
-			go func() {
-				_ = srv.Serve(ln)
-			}()
-			// Wait for the servers to start
-			<-time.After(10 * time.Millisecond)
-
-			serverURL := fmt.Sprintf("http://%s", ln.Addr().String())
 			reqBody := bytes.NewBuffer(testBody)
 
-			req, err := http.NewRequest(http.MethodGet, serverURL, reqBody)
+			req, err := http.NewRequest(http.MethodGet, srv.URL, reqBody)
 			require.NoError(t, err, "failed to create request to test handler")
 
-			client := http.Client{}
-			if configcompression.IsCompressed(tt.encoding) {
-				client.Transport = newCompressRoundTripper(http.DefaultTransport, tt.encoding)
+			clientSettings := HTTPClientSettings{
+				Endpoint:    srv.URL,
+				Compression: tt.encoding,
 			}
+			client, err := clientSettings.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
 			res, err := client.Do(req)
 			if tt.shouldError {
 				assert.Error(t, err)
@@ -123,7 +110,6 @@ func TestHTTPClientCompression(t *testing.T) {
 			_, err = io.ReadAll(res.Body)
 			require.NoError(t, err)
 			require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
-			require.NoError(t, srv.Close())
 		})
 	}
 }
@@ -131,81 +117,56 @@ func TestHTTPClientCompression(t *testing.T) {
 func TestHTTPContentDecompressionHandler(t *testing.T) {
 	testBody := []byte("uncompressed_text")
 	tests := []struct {
-		name        string
-		encoding    string
-		reqBodyFunc func() (*bytes.Buffer, error)
-		respCode    int
-		respBody    string
+		name     string
+		encoding string
+		reqBody  *bytes.Buffer
+		respCode int
+		respBody string
 	}{
 		{
 			name:     "NoCompression",
 			encoding: "",
-			reqBodyFunc: func() (*bytes.Buffer, error) {
-				return bytes.NewBuffer(testBody), nil
-			},
+			reqBody:  bytes.NewBuffer(testBody),
 			respCode: 200,
 		},
 		{
 			name:     "ValidGzip",
 			encoding: "gzip",
-			reqBodyFunc: func() (*bytes.Buffer, error) {
-				return compressGzip(testBody)
-			},
+			reqBody:  compressGzip(t, testBody),
 			respCode: 200,
 		},
 		{
 			name:     "ValidZlib",
 			encoding: "zlib",
-			reqBodyFunc: func() (*bytes.Buffer, error) {
-				return compressZlib(testBody)
-			},
+			reqBody:  compressZlib(t, testBody),
 			respCode: 200,
 		},
 		{
 			name:     "InvalidGzip",
 			encoding: "gzip",
-			reqBodyFunc: func() (*bytes.Buffer, error) {
-				return bytes.NewBuffer(testBody), nil
-			},
+			reqBody:  bytes.NewBuffer(testBody),
 			respCode: 400,
 			respBody: "gzip: invalid header\n",
 		},
 		{
 			name:     "InvalidZlib",
 			encoding: "zlib",
-			reqBodyFunc: func() (*bytes.Buffer, error) {
-				return bytes.NewBuffer(testBody), nil
-			},
+			reqBody:  bytes.NewBuffer(testBody),
 			respCode: 400,
 			respBody: "zlib: invalid header\n",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			srv := httptest.NewServer(httpContentDecompressor(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
 				require.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, testBody, string(body))
 				w.WriteHeader(200)
-			})
+			})))
+			t.Cleanup(srv.Close)
 
-			addr := testutil.GetAvailableLocalAddress(t)
-			ln, err := net.Listen("tcp", addr)
-			require.NoError(t, err, "failed to create listener: %v", err)
-			srv := &http.Server{
-				Handler: httpContentDecompressor(handler),
-			}
-			go func() {
-				_ = srv.Serve(ln)
-			}()
-			// Wait for the servers to start
-			<-time.After(10 * time.Millisecond)
-
-			serverURL := fmt.Sprintf("http://%s", ln.Addr().String())
-			reqBody, err := tt.reqBodyFunc()
-			require.NoError(t, err, "failed to generate request body: %v", err)
-
-			req, err := http.NewRequest(http.MethodGet, serverURL, reqBody)
+			req, err := http.NewRequest(http.MethodGet, srv.URL, tt.reqBody)
 			require.NoError(t, err, "failed to create request to test handler")
 			req.Header.Set("Content-Encoding", tt.encoding)
 
@@ -219,13 +180,12 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 				require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
 				assert.Equal(t, tt.respBody, string(body))
 			}
-			require.NoError(t, srv.Close())
 		})
 	}
 }
 
 func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
-	compressedGzipBody, _ := compressGzip([]byte{})
+	compressedGzipBody := compressGzip(t, []byte{})
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		body, err := io.ReadAll(r.Body)
@@ -238,7 +198,8 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	require.NoError(t, err, "failed to create request to test handler")
 
 	client := http.Client{}
-	client.Transport = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+	require.NoError(t, err)
 	res, err := client.Do(req)
 	require.NoError(t, err)
 
@@ -259,22 +220,18 @@ func (*copyFailBody) Close() error {
 }
 
 func TestHTTPContentCompressionCopyError(t *testing.T) {
-	body := &copyFailBody{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 	}))
-	defer server.Close()
+	t.Cleanup(server.Close)
 
-	url, _ := url.Parse(server.URL)
-	req := &http.Request{
-		Method: "GET",
-		URL:    url,
-		Body:   body,
-	}
+	req, err := http.NewRequest(http.MethodGet, server.URL, &copyFailBody{})
+	require.NoError(t, err)
 
 	client := http.Client{}
-	client.Transport = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
-	_, err := client.Do(req)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+	require.NoError(t, err)
+	_, err = client.Do(req)
 	require.Error(t, err)
 }
 
@@ -287,81 +244,53 @@ func (*closeFailBody) Close() error {
 }
 
 func TestHTTPContentCompressionRequestBodyCloseError(t *testing.T) {
-	testBody := []byte("blank")
-	body := &closeFailBody{
-		Buffer: bytes.NewBuffer(testBody),
-	}
-
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 	}))
-	defer server.Close()
+	t.Cleanup(server.Close)
 
-	url, _ := url.Parse(server.URL)
-	req := &http.Request{
-		Method: "GET",
-		URL:    url,
-		Body:   body,
-	}
+	req, err := http.NewRequest(http.MethodGet, server.URL, &closeFailBody{Buffer: bytes.NewBuffer([]byte("blank"))})
+	require.NoError(t, err)
 
 	client := http.Client{}
-	client.Transport = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
-	_, err := client.Do(req)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+	require.NoError(t, err)
+	_, err = client.Do(req)
 	require.Error(t, err)
 }
 
-func compressGzip(body []byte) (*bytes.Buffer, error) {
+func compressGzip(t testing.TB, body []byte) *bytes.Buffer {
 	var buf bytes.Buffer
-
 	gw := gzip.NewWriter(&buf)
-	defer gw.Close()
-
 	_, err := gw.Write(body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &buf, nil
+	require.NoError(t, err)
+	require.NoError(t, gw.Close())
+	return &buf
 }
 
-func compressZlib(body []byte) (*bytes.Buffer, error) {
+func compressZlib(t testing.TB, body []byte) *bytes.Buffer {
 	var buf bytes.Buffer
-
 	zw := zlib.NewWriter(&buf)
-	defer zw.Close()
-
 	_, err := zw.Write(body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &buf, nil
+	require.NoError(t, err)
+	require.NoError(t, zw.Close())
+	return &buf
 }
 
-func compressSnappy(body []byte) (*bytes.Buffer, error) {
+func compressSnappy(t testing.TB, body []byte) *bytes.Buffer {
 	var buf bytes.Buffer
-
 	sw := snappy.NewBufferedWriter(&buf)
-	defer sw.Close()
-
 	_, err := sw.Write(body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &buf, nil
+	require.NoError(t, err)
+	require.NoError(t, sw.Close())
+	return &buf
 }
 
-func compressZstd(body []byte) (*bytes.Buffer, error) {
+func compressZstd(t testing.TB, body []byte) *bytes.Buffer {
 	var buf bytes.Buffer
-
 	zw, _ := zstd.NewWriter(&buf)
-	defer zw.Close()
-
 	_, err := zw.Write(body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &buf, nil
+	require.NoError(t, err)
+	require.NoError(t, zw.Close())
+	return &buf
 }
