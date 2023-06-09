@@ -32,7 +32,7 @@ test_build_config() {
     echo "Starting test '${test}' at $(date)" >> "${out}/test.log"
 
     final_build_config=$(basename "${build_config}")
-    envsubst < "$build_config" > "${out}/${final_build_config}"
+    "${WORKSPACE_DIR}/.tools/envsubst" < "$build_config" > "${out}/${final_build_config}"
     if ! go run . --go "${GOBIN}" --config "${out}/${final_build_config}" --output-path "${out}" --name otelcol-built-test > "${out}/builder.log" 2>&1; then
         echo "❌ FAIL ${test}. Failed to compile the test ${test}. Build logs:"
         cat "${out}/builder.log"

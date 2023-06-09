@@ -496,3 +496,7 @@ chlog-preview: $(CHLOG)
 .PHONY: chlog-update
 chlog-update: $(CHLOG)
 	$(CHLOG) update --version $(VERSION)
+
+.PHONY: builder-integration-test
+builder-integration-test: $(ENVSUBST)
+	cd ./cmd/builder && ./test/test.sh

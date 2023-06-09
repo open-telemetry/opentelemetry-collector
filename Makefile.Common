@@ -18,6 +18,7 @@ APIDIFF     := $(TOOLS_BIN_DIR)/apidiff
 CHECKDOC    := $(TOOLS_BIN_DIR)/checkdoc
 CHLOG       := $(TOOLS_BIN_DIR)/chloggen
 CROSSLINK   := $(TOOLS_BIN_DIR)/crosslink
+ENVSUBST    := $(TOOLS_BIN_DIR)/envsubst
 GO_ACC      := $(TOOLS_BIN_DIR)/go-acc
 GOCOVMERGE  := $(TOOLS_BIN_DIR)/gocovmerge
 GOIMPORTS   := $(TOOLS_BIN_DIR)/goimports

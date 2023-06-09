@@ -3,6 +3,7 @@ module go.opentelemetry.io/collector/internal/tools
 go 1.19
 
 require (
+	github.com/a8m/envsubst v1.4.2
 	github.com/client9/misspell v0.3.4
 	github.com/golangci/golangci-lint v1.53.2
 	github.com/google/addlicense v1.1.1
@@ -35,7 +36,6 @@ require (
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/OpenPeeDeeP/depguard/v2 v2.1.0 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230518184743-7afd39499903 // indirect
-	github.com/a8m/envsubst v1.4.2 // indirect
 	github.com/acomagu/bufpipe v1.0.4 // indirect
 	github.com/alecthomas/participle/v2 v2.0.0 // indirect
 	github.com/alexkohler/nakedret/v2 v2.0.1 // indirect
