@@ -31,7 +31,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.9
+          go-version: ~1.19.10
       
       # Generate apidiff states of Main
       - name: Generate-States
