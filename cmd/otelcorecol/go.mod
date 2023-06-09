@@ -13,10 +13,10 @@ require (
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.79.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.79.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.79.0
-	go.opentelemetry.io/collector/extension v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/extension v0.0.0-20230609200026-525adf4a682a
 	go.opentelemetry.io/collector/extension/ballastextension v0.79.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.79.0
-	go.opentelemetry.io/collector/processor v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/processor v0.0.0-20230609193203-89d1060c7606
 	go.opentelemetry.io/collector/processor/batchprocessor v0.79.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.79.0
 	go.opentelemetry.io/collector/receiver v0.79.0
