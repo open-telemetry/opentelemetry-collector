@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -35,7 +36,7 @@ var configNop = &Config{
 	Extensions: map[component.ID]component.Config{component.NewID("nop"): extensiontest.NewNopFactory().CreateDefaultConfig()},
 	Service: service.Config{
 		Extensions: []component.ID{component.NewID("nop")},
-		Pipelines: map[component.ID]*service.PipelineConfig{
+		Pipelines: pipelines.Config{
 			component.NewID("traces"): {
 				Receivers:  []component.ID{component.NewID("nop")},
 				Processors: []component.ID{component.NewID("nop")},

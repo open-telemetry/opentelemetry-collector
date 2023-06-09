@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -88,7 +89,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "2"))
 				return cfg
 			},
-			expected: errors.New(`service::pipeline::traces: references receiver "nop/2" which is not configured`),
+			expected: errors.New(`service::pipelines::traces: references receiver "nop/2" which is not configured`),
 		},
 		{
 			name: "invalid-processor-reference",
@@ -98,7 +99,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Processors = append(pipe.Processors, component.NewIDWithName("nop", "2"))
 				return cfg
 			},
-			expected: errors.New(`service::pipeline::traces: references processor "nop/2" which is not configured`),
+			expected: errors.New(`service::pipelines::traces: references processor "nop/2" which is not configured`),
 		},
 		{
 			name: "invalid-exporter-reference",
@@ -108,7 +109,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
 				return cfg
 			},
-			expected: errors.New(`service::pipeline::traces: references exporter "nop/2" which is not configured`),
+			expected: errors.New(`service::pipelines::traces: references exporter "nop/2" which is not configured`),
 		},
 		{
 			name: "invalid-receiver-config",
@@ -199,7 +200,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "conn2"))
 				return cfg
 			},
-			expected: errors.New(`service::pipeline::traces: references receiver "nop/conn2" which is not configured`),
+			expected: errors.New(`service::pipelines::traces: references receiver "nop/conn2" which is not configured`),
 		},
 		{
 			name: "invalid-connector-reference-as-receiver",
@@ -209,7 +210,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "conn2"))
 				return cfg
 			},
-			expected: errors.New(`service::pipeline::traces: references exporter "nop/conn2" which is not configured`),
+			expected: errors.New(`service::pipelines::traces: references exporter "nop/conn2" which is not configured`),
 		},
 		{
 			name: "missing-connector-as-receiver",
@@ -238,7 +239,7 @@ func TestConfigValidate(t *testing.T) {
 				cfg.Service.Pipelines = nil
 				return cfg
 			},
-			expected: errors.New(`service must have at least one pipeline`),
+			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, errors.New(`service must have at least one pipeline`)),
 		},
 	}
 
@@ -285,7 +286,7 @@ func generateConfig() *Config {
 				},
 			},
 			Extensions: []component.ID{component.NewID("nop")},
-			Pipelines: map[component.ID]*service.PipelineConfig{
+			Pipelines: pipelines.Config{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("nop")},
 					Processors: []component.ID{component.NewID("nop")},

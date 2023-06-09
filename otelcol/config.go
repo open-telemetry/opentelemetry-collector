@@ -130,14 +130,14 @@ func (cfg *Config) Validate() error {
 				connectorsAsReceivers[ref] = struct{}{}
 				continue
 			}
-			return fmt.Errorf("service::pipeline::%s: references receiver %q which is not configured", pipelineID, ref)
+			return fmt.Errorf("service::pipelines::%s: references receiver %q which is not configured", pipelineID, ref)
 		}
 
 		// Validate pipeline processor name references.
 		for _, ref := range pipeline.Processors {
 			// Check that the name referenced in the pipeline's processors exists in the top-level processors.
 			if cfg.Processors[ref] == nil {
-				return fmt.Errorf("service::pipeline::%s: references processor %q which is not configured", pipelineID, ref)
+				return fmt.Errorf("service::pipelines::%s: references processor %q which is not configured", pipelineID, ref)
 			}
 		}
 
@@ -151,7 +151,7 @@ func (cfg *Config) Validate() error {
 				connectorsAsExporters[ref] = struct{}{}
 				continue
 			}
-			return fmt.Errorf("service::pipeline::%s: references exporter %q which is not configured", pipelineID, ref)
+			return fmt.Errorf("service::pipelines::%s: references exporter %q which is not configured", pipelineID, ref)
 		}
 	}
 

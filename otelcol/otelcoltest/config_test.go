@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Contains(t, cfg.Service.Extensions, component.NewID("nop"))
 	require.Len(t, cfg.Service.Pipelines, 1)
 	assert.Equal(t,
-		&service.PipelineConfig{
+		&pipelines.PipelineConfig{
 			Receivers:  []component.ID{component.NewID("nop")},
 			Processors: []component.ID{component.NewID("nop")},
 			Exporters:  []component.ID{component.NewID("nop")},
