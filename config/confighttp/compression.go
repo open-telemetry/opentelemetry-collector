@@ -65,66 +65,55 @@ func (r *compressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	return r.rt.RoundTrip(cReq)
 }
 
-type errorHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
-
 type decompressor struct {
-	errorHandler
-}
-
-type decompressorOption func(d *decompressor)
-
-func withErrorHandlerForDecompressor(e errorHandler) decompressorOption {
-	return func(d *decompressor) {
-		d.errorHandler = e
-	}
+	errHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
+	base       http.Handler
 }
 
 // httpContentDecompressor offloads the task of handling compressed HTTP requests
 // by identifying the compression format in the "Content-Encoding" header and re-writing
 // request body so that the handlers further in the chain can work on decompressed data.
 // It supports gzip and deflate/zlib compression.
-func httpContentDecompressor(h http.Handler, opts ...decompressorOption) http.Handler {
-	d := &decompressor{}
-	for _, o := range opts {
-		o(d)
+func httpContentDecompressor(h http.Handler, eh func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)) http.Handler {
+	errHandler := defaultErrorHandler
+	if eh != nil {
+		errHandler = eh
 	}
-	if d.errorHandler == nil {
-		d.errorHandler = defaultErrorHandler
+	return &decompressor{
+		errHandler: errHandler,
+		base:       h,
 	}
-	return d.wrap(h)
 }
 
-func (d *decompressor) wrap(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		newBody, err := newBodyReader(r)
-		if err != nil {
-			d.errorHandler(w, r, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if newBody != nil {
-			defer newBody.Close()
-			// "Content-Encoding" header is removed to avoid decompressing twice
-			// in case the next handler(s) have implemented a similar mechanism.
-			r.Header.Del(headerContentEncoding)
-			// "Content-Length" is set to -1 as the size of the decompressed body is unknown.
-			r.Header.Del("Content-Length")
-			r.ContentLength = -1
-			r.Body = newBody
-		}
-		h.ServeHTTP(w, r)
-	})
+func (d *decompressor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	newBody, err := newBodyReader(r)
+	if err != nil {
+		d.errHandler(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if newBody != nil {
+		defer newBody.Close()
+		// "Content-Encoding" header is removed to avoid decompressing twice
+		// in case the next handler(s) have implemented a similar mechanism.
+		r.Header.Del("Content-Encoding")
+		// "Content-Length" is set to -1 as the size of the decompressed body is unknown.
+		r.Header.Del("Content-Length")
+		r.ContentLength = -1
+		r.Body = newBody
+	}
+	d.base.ServeHTTP(w, r)
 }
 
 func newBodyReader(r *http.Request) (io.ReadCloser, error) {
 	encoding := r.Header.Get(headerContentEncoding)
 	switch encoding {
-	case "gzip":
+	case string(configcompression.Gzip):
 		gr, err := gzip.NewReader(r.Body)
 		if err != nil {
 			return nil, err
 		}
 		return gr, nil
-	case "deflate", "zlib":
+	case string(configcompression.Deflate), string(configcompression.Zlib):
 		zr, err := zlib.NewReader(r.Body)
 		if err != nil {
 			return nil, err

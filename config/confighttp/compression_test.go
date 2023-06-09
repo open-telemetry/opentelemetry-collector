@@ -85,7 +85,7 @@ func TestHTTPClientCompression(t *testing.T) {
 				body, err := io.ReadAll(r.Body)
 				require.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, tt.reqBody, body)
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 			}))
 			t.Cleanup(srv.Close)
 
@@ -127,52 +127,52 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			name:     "NoCompression",
 			encoding: "",
 			reqBody:  bytes.NewBuffer(testBody),
-			respCode: 200,
+			respCode: http.StatusOK,
 		},
 		{
 			name:     "ValidGzip",
 			encoding: "gzip",
 			reqBody:  compressGzip(t, testBody),
-			respCode: 200,
+			respCode: http.StatusOK,
 		},
 		{
 			name:     "ValidZlib",
 			encoding: "zlib",
 			reqBody:  compressZlib(t, testBody),
-			respCode: 200,
+			respCode: http.StatusOK,
 		},
 		{
 			name:     "ValidZstd",
 			encoding: "zstd",
 			reqBody:  compressZstd(t, testBody),
-			respCode: 200,
+			respCode: http.StatusOK,
 		},
 		{
 			name:     "InvalidGzip",
 			encoding: "gzip",
 			reqBody:  bytes.NewBuffer(testBody),
-			respCode: 400,
+			respCode: http.StatusBadRequest,
 			respBody: "gzip: invalid header\n",
 		},
 		{
 			name:     "InvalidZlib",
 			encoding: "zlib",
 			reqBody:  bytes.NewBuffer(testBody),
-			respCode: 400,
+			respCode: http.StatusBadRequest,
 			respBody: "zlib: invalid header\n",
 		},
 		{
 			name:     "InvalidZstd",
 			encoding: "zstd",
 			reqBody:  bytes.NewBuffer(testBody),
-			respCode: 400,
+			respCode: http.StatusBadRequest,
 			respBody: "invalid input: magic number mismatch",
 		},
 		{
 			name:     "UnsupportedCompression",
 			encoding: "nosuchcompression",
 			reqBody:  bytes.NewBuffer(testBody),
-			respCode: 400,
+			respCode: http.StatusBadRequest,
 			respBody: "unsupported Content-Encoding: nosuchcompression\n",
 		},
 	}
@@ -189,7 +189,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 				require.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, testBody, string(body))
 				w.WriteHeader(http.StatusOK)
-			})))
+			}), defaultErrorHandler))
 			t.Cleanup(srv.Close)
 
 			req, err := http.NewRequest(http.MethodGet, srv.URL, tt.reqBody)
@@ -213,7 +213,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	compressedGzipBody := compressGzip(t, []byte{})
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err, "failed to read request body: %v", err)
 		assert.EqualValues(t, compressedGzipBody.Bytes(), body)
@@ -247,7 +247,7 @@ func (*copyFailBody) Close() error {
 
 func TestHTTPContentCompressionCopyError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	}))
 	t.Cleanup(server.Close)
 
@@ -271,7 +271,7 @@ func (*closeFailBody) Close() error {
 
 func TestHTTPContentCompressionRequestBodyCloseError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	}))
 	t.Cleanup(server.Close)
 
