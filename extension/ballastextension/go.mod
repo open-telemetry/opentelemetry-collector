@@ -7,6 +7,7 @@ require (
 	go.opentelemetry.io/collector v0.79.0
 	go.opentelemetry.io/collector/component v0.79.0
 	go.opentelemetry.io/collector/confmap v0.79.0
+	go.opentelemetry.io/collector/extension v0.0.0-00010101000000-000000000000
 	go.uber.org/zap v1.24.0
 )
 
@@ -50,11 +51,11 @@ replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/exporter => ../../exporter
 
+replace go.opentelemetry.io/collector/extension => ../
+
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
-
-replace go.opentelemetry.io/collector/processor => ../../processor
 
 replace go.opentelemetry.io/collector/receiver => ../../receiver
 
@@ -68,3 +69,5 @@ retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 )
+
+replace go.opentelemetry.io/collector/processor => ../../processor

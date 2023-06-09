@@ -24,6 +24,7 @@ replaces:
   - go.opentelemetry.io/collector/consumer => ${WORKSPACE_DIR}/consumer
   - go.opentelemetry.io/collector/exporter => ${WORKSPACE_DIR}/exporter
   - go.opentelemetry.io/collector/exporter/loggingexporter => ${WORKSPACE_DIR}/exporter/loggingexporter
+  - go.opentelemetry.io/collector/extension => ${WORKSPACE_DIR}/extension
   - go.opentelemetry.io/collector/extension/zpagesextension => ${WORKSPACE_DIR}/extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ${WORKSPACE_DIR}/featuregate
   - go.opentelemetry.io/collector/receiver => ${WORKSPACE_DIR}/receiver

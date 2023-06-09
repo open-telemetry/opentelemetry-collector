@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.79.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.79.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.79.0
+	go.opentelemetry.io/collector/extension v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/extension/ballastextension v0.79.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.79.0
 	go.opentelemetry.io/collector/processor v0.0.0-00010101000000-000000000000
@@ -115,6 +116,8 @@ replace go.opentelemetry.io/collector/exporter/loggingexporter => ../../exporter
 replace go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/otlpexporter
 
 replace go.opentelemetry.io/collector/exporter/otlphttpexporter => ../../exporter/otlphttpexporter
+
+replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/extension/ballastextension => ../../extension/ballastextension
 

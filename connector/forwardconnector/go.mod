@@ -45,6 +45,8 @@ replace go.opentelemetry.io/collector/component => ../../component
 
 replace go.opentelemetry.io/collector/exporter => ../../exporter
 
+replace go.opentelemetry.io/collector/extension => ../../extension
+
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/processor => ../../processor

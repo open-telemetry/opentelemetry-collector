@@ -35,6 +35,7 @@ require (
 	github.com/mostynb/go-grpc-compression v1.1.18 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
+	go.opentelemetry.io/collector/extension v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
 	go.opentelemetry.io/collector/processor v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/receiver v0.79.0 // indirect
@@ -58,6 +59,8 @@ replace go.opentelemetry.io/collector/component => ../../component
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/exporter => ../
+
+replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
