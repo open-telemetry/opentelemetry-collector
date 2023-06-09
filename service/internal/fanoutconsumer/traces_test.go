@@ -11,10 +11,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -163,21 +165,48 @@ func TestTracesMultiplexingMixLastNonMutating(t *testing.T) {
 }
 
 func TestTracesWhenErrors(t *testing.T) {
-	p1 := mutatingErr{Consumer: consumertest.NewErr(errors.New("my error"))}
-	p2 := consumertest.NewErr(errors.New("my error"))
+	myErr := errors.New("my error")
+	require.False(t, consumererror.IsPermanent(myErr)) // sanity check
+
+	p1 := mutatingErr{Consumer: consumertest.NewErr(myErr)}
+	p2 := consumertest.NewErr(myErr)
 	p3 := new(consumertest.TracesSink)
 
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
 	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
-		assert.Error(t, tfc.ConsumeTraces(context.Background(), td))
+		err := tfc.ConsumeTraces(context.Background(), td)
+		assert.ErrorIs(t, err, myErr)
+		assert.True(t,
+			consumererror.IsPermanent(err),
+			"When at least one consumer succeeded and one failed, the error is permanent",
+		)
 	}
 
+	assert.Len(t, p3.AllTraces(), 2)
 	assert.True(t, td == p3.AllTraces()[0])
 	assert.True(t, td == p3.AllTraces()[1])
 	assert.EqualValues(t, td, p3.AllTraces()[0])
 	assert.EqualValues(t, td, p3.AllTraces()[1])
+}
+
+func TestTracesAllConsumersFailNoPermanentErrors(t *testing.T) {
+	myErr := errors.New("my error")
+	require.False(t, consumererror.IsPermanent(myErr)) // sanity check
+
+	p1 := mutatingErr{Consumer: consumertest.NewErr(myErr)}
+	p2 := consumertest.NewErr(myErr)
+
+	tfc := NewTraces([]consumer.Traces{p1, p2})
+	td := testdata.GenerateTraces(1)
+
+	err := tfc.ConsumeTraces(context.Background(), td)
+	assert.ErrorIs(t, err, myErr, "The same error should be propagated to the caller")
+	assert.False(t,
+		consumererror.IsPermanent(err),
+		"When no errors are permanent, and nothing succeeded, the error should not be permanent",
+	)
 }
 
 type mutatingTracesSink struct {

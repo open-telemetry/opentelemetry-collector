@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -56,18 +57,35 @@ func (tsc *tracesConsumer) Capabilities() consumer.Capabilities {
 
 // ConsumeTraces exports the ptrace.Traces to all consumers wrapped by the current one.
 func (tsc *tracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	// if we have at least one successful consumer and one failed, we wrap the
+	// resulting error in a permanent error, so that no retries are attempted
+	var oneSucceeded bool
 	var errs error
+
 	// Initially pass to clone exporter to avoid the case where the optimization of sending
 	// the incoming data to a mutating consumer is used that may change the incoming data before
 	// cloning.
 	for _, tc := range tsc.clone {
 		clonedTraces := ptrace.NewTraces()
 		td.CopyTo(clonedTraces)
-		errs = multierr.Append(errs, tc.ConsumeTraces(ctx, clonedTraces))
+		err := tc.ConsumeTraces(ctx, clonedTraces)
+		if err == nil {
+			oneSucceeded = true
+		}
+		errs = multierr.Append(errs, err)
 	}
 	for _, tc := range tsc.pass {
-		errs = multierr.Append(errs, tc.ConsumeTraces(ctx, td))
+		err := tc.ConsumeTraces(ctx, td)
+		if err == nil {
+			oneSucceeded = true
+		}
+		errs = multierr.Append(errs, err)
 	}
+
+	if errs != nil && oneSucceeded {
+		return consumererror.NewPermanent(errs)
+	}
+
 	return errs
 }
 
