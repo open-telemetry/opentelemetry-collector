@@ -174,10 +174,12 @@ func TestJsonHttp(t *testing.T) {
 	}
 	addr := testutil.GetAvailableLocalAddress(t)
 	tracesURLPath := "/v1/traceingest"
+	metricsURLPath := "/v1/metricingest"
+	logsURLPath := "/v1/logingest"
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
-	ocr := newHTTPReceiver(t, addr, tracesURLPath, defaultMetricsURLPath, defaultLogsURLPath, sink, nil)
+	ocr := newHTTPReceiver(t, addr, tracesURLPath, metricsURLPath, logsURLPath, sink, nil)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
