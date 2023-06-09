@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/colerrs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
@@ -38,20 +39,7 @@ func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *t
 
 	otlpResp, err := tracesReceiver.Export(req.Context(), otlpReq)
 	if err != nil {
-		httpStatus := http.StatusInternalServerError // the default status on errors
-
-		// perhaps we had a gRPC exporter for this data returning an error?
-		if s, ok := status.FromError(err); ok {
-			httpStatus = gRPCToHTTP(s)
-		}
-
-		// perhaps it was an HTTP exporter that failed?
-		reqErr := &colerrs.RequestError{}
-		if errors.As(err, reqErr) {
-			httpStatus = reqErr.StatusCode()
-		}
-
-		writeError(resp, encoder, err, httpStatus)
+		writeError(resp, encoder, err, determineHTTPStatus(err))
 		return
 	}
 
@@ -61,6 +49,28 @@ func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *t
 		return
 	}
 	writeResponse(resp, encoder.contentType(), http.StatusOK, msg)
+}
+
+func determineHTTPStatus(err error) int {
+	// short-circuit: we don't want permanent errors to be retried, perhaps
+	// one consumer succeeded and one failed?
+	if consumererror.IsPermanent(err) {
+		return http.StatusInternalServerError
+	}
+
+	// perhaps we had a gRPC exporter for this data returning an error?
+	if s, ok := status.FromError(err); ok {
+		return gRPCToHTTP(s)
+	}
+
+	// perhaps it was an HTTP exporter that failed?
+	reqErr := &colerrs.RequestError{}
+	if errors.As(err, reqErr) {
+		return reqErr.StatusCode()
+	}
+
+	return http.StatusInternalServerError
+
 }
 
 func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver *metrics.Receiver, encoder encoder) {

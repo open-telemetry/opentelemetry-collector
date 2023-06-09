@@ -34,7 +34,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/internal/colerrs"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -932,6 +934,36 @@ func TestHTTPMaxRequestBodySize_OK(t *testing.T) {
 
 func TestHTTPMaxRequestBodySize_TooLarge(t *testing.T) {
 	testHTTPMaxRequestBodySizeJSON(t, traceJSON, len(traceJSON)-1, 400)
+}
+
+func TestDetermineHTTPStatusOnError(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		err      error
+		expected int
+	}{
+		{
+			desc:     "permanent error yields 500",
+			err:      consumererror.NewPermanent(errors.New("boo")),
+			expected: http.StatusInternalServerError,
+		},
+		{
+			desc:     "same as gRPC",
+			err:      status.Error(codes.AlreadyExists, "boo"),
+			expected: http.StatusConflict,
+		},
+		{
+			desc:     "same as HTTP",
+			err:      colerrs.NewRequestError(http.StatusTeapot, errors.New("not coffee")),
+			expected: http.StatusTeapot,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			st := determineHTTPStatus(tC.err)
+			assert.Equal(t, tC.expected, st)
+		})
+	}
 }
 
 func newGRPCReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consumer.Metrics) component.Component {

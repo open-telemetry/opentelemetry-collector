@@ -12,8 +12,8 @@ type RequestError struct {
 }
 
 // NewRequestError creates a new HTTP Client Request error with the given parameters
-func NewRequestError(statusCode int, wrapped error) *RequestError {
-	return &RequestError{
+func NewRequestError(statusCode int, wrapped error) RequestError {
+	return RequestError{
 		wrapped:    wrapped,
 		statusCode: statusCode,
 	}
