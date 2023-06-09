@@ -370,7 +370,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				ct, ok := transport.(*compressRoundTripper)
 				assert.True(t, ok)
 				assert.Equal(t, test.settings.Compression, ct.compressionType)
-				transport = ct.RoundTripper
+				transport = ct.rt
 			}
 
 			// Headers should wrap Auth, unwrap it
