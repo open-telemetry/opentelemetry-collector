@@ -217,6 +217,7 @@ jobs:
             goarch: ppc64le
           - goos: linux
             goarch: arm
+            goarm: 7
           - goos: windows
             goarch: 386
           - goos: windows
@@ -241,5 +242,6 @@ jobs:
         env:
           GOOS: ${{matrix.goos}}
           GOARCH: ${{matrix.goarch}}
+          GOARM: ${{matrix.goarm}}
         run: |
           make otelcorecol
