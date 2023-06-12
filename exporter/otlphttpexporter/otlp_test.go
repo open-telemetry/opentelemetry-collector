@@ -543,8 +543,9 @@ func TestErrorResponses(t *testing.T) {
 
 func TestErrorResponseInvalidResponseBody(t *testing.T) {
 	resp := &http.Response{
-		StatusCode: 400,
-		Body:       io.NopCloser(badReader{}),
+		StatusCode:    400,
+		Body:          io.NopCloser(badReader{}),
+		ContentLength: 100,
 	}
 	status := readResponseStatus(resp)
 	assert.Nil(t, status)
@@ -777,9 +778,76 @@ func TestPartialSuccess_logs(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestPartialResponse_missingHeaderButHasBody(t *testing.T) {
+	response := ptraceotlp.NewExportResponse()
+	partial := response.PartialSuccess()
+	partial.SetErrorMessage("hello")
+	partial.SetRejectedSpans(1)
+	data, err := response.MarshalProto()
+	require.NoError(t, err)
+	resp := &http.Response{
+		// `-1` indicates a missing Content-Length header in the Go http standard library
+		ContentLength: -1,
+		Body:          io.NopCloser(bytes.NewReader(data)),
+	}
+	err = handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
+	assert.True(t, consumererror.IsPermanent(err))
+}
+
+func TestPartialResponse_missingHeaderAndBody(t *testing.T) {
+	resp := &http.Response{
+		// `-1` indicates a missing Content-Length header in the Go http standard library
+		ContentLength: -1,
+		Body:          io.NopCloser(bytes.NewReader([]byte{})),
+	}
+	err := handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
+	assert.Nil(t, err)
+}
+
+func TestPartialResponse_nonErrUnexpectedEOFError(t *testing.T) {
+	resp := &http.Response{
+		// `-1` indicates a missing Content-Length header in the Go http standard library
+		ContentLength: -1,
+		Body:          io.NopCloser(badReader{}),
+	}
+	err := handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
+	assert.Error(t, err)
+}
+
+func TestPartialSuccess_shortContentLengthHeader(t *testing.T) {
+	response := ptraceotlp.NewExportResponse()
+	partial := response.PartialSuccess()
+	partial.SetErrorMessage("hello")
+	partial.SetRejectedSpans(1)
+	data, err := response.MarshalProto()
+	require.NoError(t, err)
+	resp := &http.Response{
+		ContentLength: 3,
+		Body:          io.NopCloser(bytes.NewReader(data)),
+	}
+	err = handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
+	assert.Error(t, err)
+}
+
+func TestPartialSuccess_longContentLengthHeader(t *testing.T) {
+	response := ptraceotlp.NewExportResponse()
+	partial := response.PartialSuccess()
+	partial.SetErrorMessage("hello")
+	partial.SetRejectedSpans(1)
+	data, err := response.MarshalProto()
+	require.NoError(t, err)
+	resp := &http.Response{
+		ContentLength: 4096,
+		Body:          io.NopCloser(bytes.NewReader(data)),
+	}
+	err = handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
+	assert.Error(t, err)
+}
+
 func TestPartialSuccessInvalidResponseBody(t *testing.T) {
 	resp := &http.Response{
-		Body: io.NopCloser(badReader{}),
+		Body:          io.NopCloser(badReader{}),
+		ContentLength: 100,
 	}
 	err := handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
 	assert.Error(t, err)

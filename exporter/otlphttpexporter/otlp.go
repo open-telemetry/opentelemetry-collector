@@ -192,27 +192,36 @@ func isRetryableStatusCode(code int) bool {
 	}
 }
 
-func readResponseBody(body io.ReadCloser) ([]byte, error) {
-	// Read the maximum number of bytes allowed in a request. This avoids
-	// issues with missing or invalid Content-Length headers.
-	protoBytes := make([]byte, maxHTTPResponseReadBytes)
-	n, err := io.ReadFull(body, protoBytes)
+func readResponseBody(resp *http.Response) ([]byte, error) {
+	if resp.ContentLength == 0 {
+		return nil, nil
+	}
+
+	maxRead := resp.ContentLength
+
+	// if maxRead == -1, the ContentLength header has not been sent, so read up to
+	// the maximum permitted body size. If it is larger than the permitted body
+	// size, still try to read from the body in case the value is an error. If the
+	// body is larger than the maximum size, proto unmarshaling will likely fail.
+	if maxRead == -1 || maxRead > maxHTTPResponseReadBytes {
+		maxRead = maxHTTPResponseReadBytes
+	}
+	protoBytes := make([]byte, maxRead)
+	n, err := io.ReadFull(resp.Body, protoBytes)
 
 	// No bytes read and an EOF error indicates there is no body to read.
 	if n == 0 && (err == nil || errors.Is(err, io.EOF)) {
 		return nil, nil
 	}
 
-	// io.ReadFull will return io.ErrorUnexpectedEOF in most cases since there
-	// will usually be a mismatch between the length of the byte slice and the
-	// size of the body, so we ignore that error.
+	// io.ReadFull will return io.ErrorUnexpectedEOF if the Content-Length header
+	// wasn't set, since we will try to read past the length of the body. If this
+	// is the case, the body will still have the full message in it, so we want to
+	// ignore the error and parse the message.
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
 		return nil, err
 	}
 
-	// The pdata unmarshaling methods check for the length of the slice
-	// when unmarshaling it, so we have to trim down the length to the
-	// actual size of the data.
 	return protoBytes[:n], nil
 }
 
@@ -224,7 +233,7 @@ func readResponseStatus(resp *http.Response) *status.Status {
 		// Request failed. Read the body. OTLP spec says:
 		// "Response body for all HTTP 4xx and HTTP 5xx responses MUST be a
 		// Protobuf-encoded Status message that describes the problem."
-		respBytes, err := readResponseBody(resp.Body)
+		respBytes, err := readResponseBody(resp)
 
 		if err != nil {
 			return nil
@@ -242,7 +251,7 @@ func readResponseStatus(resp *http.Response) *status.Status {
 }
 
 func handlePartialSuccessResponse(resp *http.Response, partialSuccessHandler partialSuccessHandler) error {
-	bodyBytes, err := readResponseBody(resp.Body)
+	bodyBytes, err := readResponseBody(resp)
 
 	if err != nil {
 		return err
