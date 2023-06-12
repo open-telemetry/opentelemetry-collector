@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -42,6 +44,10 @@ func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) internal.Req
 	}
 }
 
+func logsRequestMarshaler(req internal.Request) ([]byte, error) {
+	return logsMarshaler.MarshalLogs(req.(*logsRequest).ld)
+}
+
 func (req *logsRequest) OnError(err error) internal.Request {
 	var logError consumererror.Logs
 	if errors.As(err, &logError) {
@@ -58,7 +64,7 @@ func (req *logsRequest) Marshal() ([]byte, error) {
 	return logsMarshaler.MarshalLogs(req.ld)
 }
 
-func (req *logsRequest) Count() int {
+func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
 }
 
@@ -88,7 +94,9 @@ func NewLogsExporter(
 	}
 
 	bs := fromOptions(options...)
-	be, err := newBaseExporter(set, bs, component.DataTypeLogs, newLogsRequestUnmarshalerFunc(pusher))
+	bs.marshaler = logsRequestMarshaler
+	bs.unmarshaler = newLogsRequestUnmarshalerFunc(pusher)
+	be, err := newBaseExporter(set, bs, component.DataTypeLogs)
 	if err != nil {
 		return nil, err
 	}
@@ -103,9 +111,73 @@ func NewLogsExporter(
 		req := newLogsRequest(ctx, ld, pusher)
 		serr := be.sender.send(req)
 		if errors.Is(serr, errSendingQueueIsFull) {
-			be.obsrep.recordLogsEnqueueFailure(req.Context(), int64(req.Count()))
+			be.obsrep.recordLogsEnqueueFailure(req.Context(), int64(req.ItemsCount()))
 		}
 		return serr
+	}, bs.consumerOptions...)
+
+	return &logsExporter{
+		baseExporter: be,
+		Logs:         lc,
+	}, err
+}
+
+type LogsConverter interface {
+	// RequestFromLogs converts plog.Logs data into a request.
+	RequestFromLogs(context.Context, plog.Logs) (Request, error)
+}
+
+// NewLogsExporterV2 creates new logs exporter based on custom LogsConverter and RequestSender.
+func NewLogsExporterV2(
+	_ context.Context,
+	set exporter.CreateSettings,
+	converter LogsConverter,
+	sender RequestSender,
+	options ...Option,
+) (exporter.Logs, error) {
+	if set.Logger == nil {
+		return nil, errNilLogger
+	}
+
+	if converter == nil {
+		return nil, errNilLogsConverter
+	}
+
+	if sender == nil {
+		return nil, errNilRequestSender
+	}
+
+	bs := fromOptions(options...)
+	bs.RequestSender = sender
+
+	be, err := newBaseExporter(set, bs, component.DataTypeLogs)
+	if err != nil {
+		return nil, err
+	}
+	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
+		return &logsExporterWithObservability{
+			obsrep:     be.obsrep,
+			nextSender: nextSender,
+		}
+	})
+
+	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
+		req, cErr := converter.RequestFromLogs(ctx, ld)
+		if cErr != nil {
+			set.Logger.Error("Failed to convert logs. Dropping data.",
+				zap.Int("dropped_log_records", ld.LogRecordCount()),
+				zap.Error(err))
+			return consumererror.NewPermanent(cErr)
+		}
+		sErr := be.sender.send(&request{
+			baseRequest: baseRequest{ctx: ctx},
+			Request:     req,
+			sender:      sender,
+		})
+		if errors.Is(sErr, errSendingQueueIsFull) {
+			be.obsrep.recordLogsEnqueueFailure(ctx, int64(req.ItemsCount()))
+		}
+		return sErr
 	}, bs.consumerOptions...)
 
 	return &logsExporter{
@@ -122,6 +194,6 @@ type logsExporterWithObservability struct {
 func (lewo *logsExporterWithObservability) send(req internal.Request) error {
 	req.SetContext(lewo.obsrep.StartLogsOp(req.Context()))
 	err := lewo.nextSender.send(req)
-	lewo.obsrep.EndLogsOp(req.Context(), req.Count(), err)
+	lewo.obsrep.EndLogsOp(req.Context(), req.ItemsCount(), err)
 	return err
 }

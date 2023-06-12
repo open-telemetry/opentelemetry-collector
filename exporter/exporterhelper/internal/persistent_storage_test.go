@@ -36,7 +36,13 @@ func createTestClient(extension storage.Extension) storage.Client {
 }
 
 func createTestPersistentStorageWithLoggingAndCapacity(client storage.Client, logger *zap.Logger, capacity uint64) *persistentContiguousStorage {
-	return newPersistentContiguousStorage(context.Background(), "foo", capacity, logger, client, newFakeTracesRequestUnmarshalerFunc())
+	return newPersistentContiguousStorage(context.Background(), "foo", PersistentQueueSettings{
+		Capacity:    capacity,
+		Logger:      logger,
+		Client:      client,
+		Unmarshaler: newFakeTracesRequestUnmarshalerFunc(),
+		Marshaler:   newFakeTracesRequestMarshalerFunc(),
+	})
 }
 
 func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage {
@@ -79,6 +85,13 @@ func newFakeTracesRequestUnmarshalerFunc() RequestUnmarshaler {
 			return nil, err
 		}
 		return newFakeTracesRequest(traces), nil
+	}
+}
+
+func newFakeTracesRequestMarshalerFunc() RequestMarshaler {
+	return func(req Request) ([]byte, error) {
+		marshaler := ptrace.ProtoMarshaler{}
+		return marshaler.MarshalTraces(req.(*fakeTracesRequest).td)
 	}
 }
 

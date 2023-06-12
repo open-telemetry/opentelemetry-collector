@@ -18,4 +18,12 @@ var (
 	errNilPushMetricsData = errors.New("nil PushMetrics")
 	// errNilPushLogsData is returned when a nil PushLogs is given.
 	errNilPushLogsData = errors.New("nil PushLogs")
+	// errNilTracesConverter is returned when a nil TracesConverter is given.
+	errNilTracesConverter = errors.New("nil TracesConverter")
+	// errNilMetricsConverter is returned when a nil MetricsConverter is given.
+	errNilMetricsConverter = errors.New("nil MetricsConverter")
+	// errNilLogsConverter is returned when a nil LogsConverter is given.
+	errNilLogsConverter = errors.New("nil LogsConverter")
+	// errNilRequestSender is returned when a nil RequestSender is given.
+	errNilRequestSender = errors.New("nil RequestSender")
 )

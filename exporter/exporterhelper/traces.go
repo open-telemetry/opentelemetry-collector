@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -42,6 +44,10 @@ func newTraceRequestUnmarshalerFunc(pusher consumer.ConsumeTracesFunc) internal.
 	}
 }
 
+func tracesRequestMarshaler(req internal.Request) ([]byte, error) {
+	return tracesMarshaler.MarshalTraces(req.(*tracesRequest).td)
+}
+
 // Marshal provides serialization capabilities required by persistent queue
 func (req *tracesRequest) Marshal() ([]byte, error) {
 	return tracesMarshaler.MarshalTraces(req.td)
@@ -59,7 +65,7 @@ func (req *tracesRequest) Export(ctx context.Context) error {
 	return req.pusher(ctx, req.td)
 }
 
-func (req *tracesRequest) Count() int {
+func (req *tracesRequest) ItemsCount() int {
 	return req.td.SpanCount()
 }
 
@@ -89,7 +95,9 @@ func NewTracesExporter(
 	}
 
 	bs := fromOptions(options...)
-	be, err := newBaseExporter(set, bs, component.DataTypeTraces, newTraceRequestUnmarshalerFunc(pusher))
+	bs.marshaler = tracesRequestMarshaler
+	bs.unmarshaler = newTraceRequestUnmarshalerFunc(pusher)
+	be, err := newBaseExporter(set, bs, component.DataTypeTraces)
 	if err != nil {
 		return nil, err
 	}
@@ -104,9 +112,73 @@ func NewTracesExporter(
 		req := newTracesRequest(ctx, td, pusher)
 		serr := be.sender.send(req)
 		if errors.Is(serr, errSendingQueueIsFull) {
-			be.obsrep.recordTracesEnqueueFailure(req.Context(), int64(req.Count()))
+			be.obsrep.recordTracesEnqueueFailure(req.Context(), int64(req.ItemsCount()))
 		}
 		return serr
+	}, bs.consumerOptions...)
+
+	return &traceExporter{
+		baseExporter: be,
+		Traces:       tc,
+	}, err
+}
+
+type TracesConverter interface {
+	// RequestFromTraces converts ptrace.Traces into a Request.
+	RequestFromTraces(context.Context, ptrace.Traces) (Request, error)
+}
+
+// NewTracesExporterV2 creates a new traces exporter based on a custom TracesConverter and RequestSender.
+func NewTracesExporterV2(
+	_ context.Context,
+	set exporter.CreateSettings,
+	converter TracesConverter,
+	sender RequestSender,
+	options ...Option,
+) (exporter.Traces, error) {
+	if set.Logger == nil {
+		return nil, errNilLogger
+	}
+
+	if converter == nil {
+		return nil, errNilTracesConverter
+	}
+
+	if sender == nil {
+		return nil, errNilRequestSender
+	}
+
+	bs := fromOptions(options...)
+	bs.RequestSender = sender
+
+	be, err := newBaseExporter(set, bs, component.DataTypeTraces)
+	if err != nil {
+		return nil, err
+	}
+	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
+		return &tracesExporterWithObservability{
+			obsrep:     be.obsrep,
+			nextSender: nextSender,
+		}
+	})
+
+	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
+		req, cErr := converter.RequestFromTraces(ctx, td)
+		if cErr != nil {
+			set.Logger.Error("Failed to convert traces. Dropping data.",
+				zap.Int("dropped_spans", td.SpanCount()),
+				zap.Error(err))
+			return consumererror.NewPermanent(cErr)
+		}
+		sErr := be.sender.send(&request{
+			baseRequest: baseRequest{ctx: ctx},
+			Request:     req,
+			sender:      sender,
+		})
+		if errors.Is(sErr, errSendingQueueIsFull) {
+			be.obsrep.recordTracesEnqueueFailure(ctx, int64(req.ItemsCount()))
+		}
+		return sErr
 	}, bs.consumerOptions...)
 
 	return &traceExporter{
@@ -124,6 +196,6 @@ func (tewo *tracesExporterWithObservability) send(req internal.Request) error {
 	req.SetContext(tewo.obsrep.StartTracesOp(req.Context()))
 	// Forward the data to the next consumer (this pusher is the next).
 	err := tewo.nextSender.send(req)
-	tewo.obsrep.EndTracesOp(req.Context(), req.Count(), err)
+	tewo.obsrep.EndTracesOp(req.Context(), req.ItemsCount(), err)
 	return err
 }
