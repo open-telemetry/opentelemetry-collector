@@ -46,7 +46,7 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 * Implement the `component.Component` interface
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation which performs the component operation
-* Have a `metadata.yaml` file and it's generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md)).
+* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md)).
 
 For more details on components, see the [Adding New Components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-new-components) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) which provides a detailed example of building a component.
 
