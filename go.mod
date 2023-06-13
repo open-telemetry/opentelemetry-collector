@@ -28,7 +28,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.0.0-20230609193203-89d1060c7606
 	go.opentelemetry.io/collector/receiver v0.79.0
 	go.opentelemetry.io/collector/semconv v0.79.0
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.1-0.20230612162650-64be7e574a17
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.1-0.20230613175305-e94326455e25
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.17.0
 	go.opentelemetry.io/otel v1.16.0
