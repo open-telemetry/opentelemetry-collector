@@ -238,7 +238,7 @@ func (n *connectorNode) buildComponent(
 
 	switch n.rcvrPipelineType {
 	case component.DataTypeTraces:
-		capability := nexts[0].Capabilities()
+		capability := consumer.Capabilities{MutatesData: false}
 		consumers := make(map[component.ID]consumer.Traces, len(nexts))
 		for _, next := range nexts {
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Traces)
@@ -271,7 +271,7 @@ func (n *connectorNode) buildComponent(
 		}
 
 	case component.DataTypeMetrics:
-		capability := nexts[0].Capabilities()
+		capability := consumer.Capabilities{MutatesData: false}
 		consumers := make(map[component.ID]consumer.Metrics, len(nexts))
 		for _, next := range nexts {
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Metrics)
@@ -303,7 +303,7 @@ func (n *connectorNode) buildComponent(
 			n.Component, n.baseConsumer = conn, conn
 		}
 	case component.DataTypeLogs:
-		capability := nexts[0].Capabilities()
+		capability := consumer.Capabilities{MutatesData: false}
 		consumers := make(map[component.ID]consumer.Logs, len(nexts))
 		for _, next := range nexts {
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Logs)
