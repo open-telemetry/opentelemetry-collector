@@ -21,7 +21,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.79.0
 	go.opentelemetry.io/collector/consumer v0.79.0
 	go.opentelemetry.io/collector/exporter v0.79.0
-	go.opentelemetry.io/collector/extension v0.0.0-20230609200026-525adf4a682a
+	go.opentelemetry.io/collector/extension v0.79.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.79.0
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
