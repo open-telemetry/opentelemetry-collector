@@ -26,6 +26,7 @@ type Config struct {
 	SkipGenerate    bool   `mapstructure:"-"`
 	SkipCompilation bool   `mapstructure:"-"`
 	SkipGetModules  bool   `mapstructure:"-"`
+	SkipNewGoMod    bool   `mapstructure:"-"`
 	LDFlags         string `mapstructure:"-"`
 
 	Distribution Distribution `mapstructure:"dist"`
@@ -84,11 +85,12 @@ func NewDefaultConfig() Config {
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
 	return multierr.Combine(
-		validateModules(c.Extensions),
-		validateModules(c.Receivers),
-		validateModules(c.Exporters),
-		validateModules(c.Processors),
-		validateModules(c.Connectors),
+		c.validateSkips(),
+		c.validateModules(c.Extensions),
+		c.validateModules(c.Receivers),
+		c.validateModules(c.Exporters),
+		c.validateModules(c.Processors),
+		c.validateModules(c.Connectors),
 	)
 }
 
@@ -140,10 +142,24 @@ func (c *Config) ParseModules() error {
 	return nil
 }
 
-func validateModules(mods []Module) error {
+func (c *Config) validateSkips() error {
+	if c.SkipNewGoMod && len(c.Replaces) != 0 || len(c.Excludes) != 0 {
+		return fmt.Errorf("replaces and excludes incompatible with skip-new-go-mod")
+	}
+	return nil
+}
+
+func (c *Config) validateModules(mods []Module) error {
 	for _, mod := range mods {
 		if mod.GoMod == "" {
 			return fmt.Errorf("module %q: %w", mod.GoMod, ErrInvalidGoMod)
+		}
+		if strings.Count(mod.GoMod, " ") != 1 {
+			return fmt.Errorf("module should be \"name version\" with one space: %q: %w", mod.GoMod, ErrInvalidGoMod)
+		}
+
+		if mod.Path != "" && c.SkipNewGoMod {
+			return fmt.Errorf("module %q path replacement incompatible with skip-new-go-mod: %w", mod.Name, ErrInvalidGoMod)
 		}
 	}
 	return nil

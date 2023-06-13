@@ -17,20 +17,20 @@ import (
 )
 
 func TestGenerateDefault(t *testing.T) {
-	require.NoError(t, Generate(NewDefaultConfig()))
+	require.NoError(t, Generate(NewDefaultConfig(), allTemplates))
 }
 
 func TestGenerateInvalidCollectorVersion(t *testing.T) {
 	cfg := NewDefaultConfig()
 	cfg.Distribution.OtelColVersion = "invalid"
-	err := Generate(cfg)
+	err := Generate(cfg, allTemplates)
 	require.NoError(t, err)
 }
 
 func TestGenerateInvalidOutputPath(t *testing.T) {
 	cfg := NewDefaultConfig()
 	cfg.Distribution.OutputPath = "/:invalid"
-	err := Generate(cfg)
+	err := Generate(cfg, allTemplates)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to create output path")
 }
@@ -39,7 +39,7 @@ func TestSkipGenerate(t *testing.T) {
 	cfg := NewDefaultConfig()
 	cfg.Distribution.OutputPath = t.TempDir()
 	cfg.SkipGenerate = true
-	err := Generate(cfg)
+	err := Generate(cfg, allTemplates)
 	require.NoError(t, err)
 	outputFile, err := os.Open(cfg.Distribution.OutputPath)
 	require.NoError(t, err)

@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
@@ -18,11 +19,28 @@ import (
 var (
 	// ErrGoNotFound is returned when a Go binary hasn't been found
 	ErrGoNotFound = errors.New("go binary not found")
+
+	sourceTemplates = []*template.Template{
+		mainTemplate,
+		mainOthersTemplate,
+		mainWindowsTemplate,
+		componentsTemplate,
+		componentsTestTemplate,
+	}
+
+	allTemplates = append(sourceTemplates, goModTemplate)
 )
 
 // GenerateAndCompile will generate the source files based on the given configuration, update go mod, and will compile into a binary
 func GenerateAndCompile(cfg Config) error {
-	if err := Generate(cfg); err != nil {
+	var tmpls []*template.Template
+	if cfg.SkipNewGoMod {
+		tmpls = sourceTemplates
+	} else {
+		tmpls = allTemplates
+	}
+
+	if err := Generate(cfg, tmpls); err != nil {
 		return err
 	}
 
@@ -35,7 +53,7 @@ func GenerateAndCompile(cfg Config) error {
 }
 
 // Generate assembles a new distribution based on the given configuration
-func Generate(cfg Config) error {
+func Generate(cfg Config, generate []*template.Template) error {
 	if cfg.SkipGenerate {
 		cfg.Logger.Info("Skipping generating source codes.")
 		return nil
@@ -53,14 +71,7 @@ func Generate(cfg Config) error {
 		return fmt.Errorf("failed to create output path: %w", err)
 	}
 
-	for _, tmpl := range []*template.Template{
-		mainTemplate,
-		mainOthersTemplate,
-		mainWindowsTemplate,
-		componentsTemplate,
-		componentsTestTemplate,
-		goModTemplate,
-	} {
+	for _, tmpl := range generate {
 		if err := processAndWrite(cfg, tmpl, tmpl.Name(), cfg); err != nil {
 			return fmt.Errorf("failed to generate source file %q: %w", tmpl.Name(), err)
 		}
@@ -110,12 +121,40 @@ func GetModules(cfg Config) error {
 		cfg.Logger.Info("Generating source codes only, will not update go.mod and retrieve Go modules.")
 		return nil
 	}
-
-	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path
-	cmd := exec.Command(cfg.Distribution.Go, "mod", "tidy", "-compat=1.19")
-	cmd.Dir = cfg.Distribution.OutputPath
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to update go.mod: %w. Output:\n%s", err, out)
+	if !cfg.SkipNewGoMod {
+		// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path
+		cmd := exec.Command(cfg.Distribution.Go, "mod", "tidy", "-compat=1.19")
+		cmd.Dir = cfg.Distribution.OutputPath
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("failed to update go.mod: %w. Output:\n%s", err, out)
+		}
+	} else {
+		// If a new go.mod file was not generated, we have here an
+		// additional step here to "go get" each selected version.
+		allModules :=
+			append(cfg.Exporters,
+				append(cfg.Extensions,
+					append(cfg.Receivers,
+						append(cfg.Processors,
+							cfg.Connectors...,
+						)...,
+					)...,
+				)...,
+			)
+		for _, mod := range allModules {
+			name, ver, _ := strings.Cut(mod.GoMod, " ")
+			if ver == "v0.0.0" {
+				continue
+			}
+			mod := name + "@" + ver
+			cfg.Logger.Info("go get", zap.String("gomod", mod))
+			// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path
+			cmd := exec.Command(cfg.Distribution.Go, "get", mod)
+			cmd.Dir = cfg.Distribution.OutputPath
+			if out, err := cmd.CombinedOutput(); err != nil {
+				return fmt.Errorf("failed to get %s: %w. Output:\n%s", mod, err, out)
+			}
+		}
 	}
 
 	cfg.Logger.Info("Getting go modules")
