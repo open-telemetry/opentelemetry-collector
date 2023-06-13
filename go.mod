@@ -25,7 +25,7 @@ require (
 	go.opentelemetry.io/collector/extension/zpagesextension v0.79.0
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
-	go.opentelemetry.io/collector/processor v0.0.0-20230609193203-89d1060c7606
+	go.opentelemetry.io/collector/processor v0.79.0
 	go.opentelemetry.io/collector/receiver v0.79.0
 	go.opentelemetry.io/collector/semconv v0.79.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.1-0.20230612162650-64be7e574a17
