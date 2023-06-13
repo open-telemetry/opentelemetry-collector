@@ -53,6 +53,8 @@ replace go.opentelemetry.io/collector/exporter => ../../exporter
 
 replace go.opentelemetry.io/collector/extension => ../
 
+replace go.opentelemetry.io/collector/extension/auth => ../auth
+
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
