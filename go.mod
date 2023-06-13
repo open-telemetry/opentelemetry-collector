@@ -8,7 +8,7 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/google/uuid v1.3.0
 	github.com/klauspost/compress v1.16.5
-	github.com/mostynb/go-grpc-compression v1.1.18
+	github.com/mostynb/go-grpc-compression v1.1.19
 	github.com/prometheus/client_golang v1.15.1
 	github.com/prometheus/client_model v0.4.0
 	github.com/prometheus/common v0.44.0
@@ -28,7 +28,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.0.0-20230609193203-89d1060c7606
 	go.opentelemetry.io/collector/receiver v0.79.0
 	go.opentelemetry.io/collector/semconv v0.79.0
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.1-0.20230612162650-64be7e574a17
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.17.0
 	go.opentelemetry.io/otel v1.16.0
@@ -48,6 +48,7 @@ require (
 )
 
 require (
+	cloud.google.com/go/compute/metadata v0.2.4-0.20230602132616-4d8f0906c19e // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -83,7 +84,7 @@ require (
 	go.opentelemetry.io/contrib/zpages v0.42.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
-	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
