@@ -37,7 +37,8 @@ func NewFactory() processor.Factory {
 		createDefaultConfig,
 		processor.WithTraces(f.createTracesProcessor, component.StabilityLevelBeta),
 		processor.WithMetrics(f.createMetricsProcessor, component.StabilityLevelBeta),
-		processor.WithLogs(f.createLogsProcessor, component.StabilityLevelBeta))
+		processor.WithLogs(f.createLogsProcessor, component.StabilityLevelBeta),
+		processor.WithProfiles(f.createProfilesProcessor, component.StabilityLevelBeta))
 }
 
 // CreateDefaultConfig creates the default configuration for processor. Notice
@@ -92,6 +93,23 @@ func (f *factory) createLogsProcessor(
 	}
 	return processorhelper.NewLogsProcessor(ctx, set, cfg, nextConsumer,
 		memLimiter.processLogs,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithStart(memLimiter.start),
+		processorhelper.WithShutdown(memLimiter.shutdown))
+}
+
+func (f *factory) createProfilesProcessor(
+	ctx context.Context,
+	set processor.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Profiles,
+) (processor.Profiles, error) {
+	memLimiter, err := f.getMemoryLimiter(set, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewProfilesProcessor(ctx, set, cfg, nextConsumer,
+		memLimiter.processProfiles,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
 		processorhelper.WithShutdown(memLimiter.shutdown))

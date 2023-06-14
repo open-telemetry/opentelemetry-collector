@@ -50,15 +50,18 @@ type Processor struct {
 	useOtelForMetrics bool
 	otelAttrs         []attribute.KeyValue
 
-	acceptedSpansCounter        metric.Int64Counter
-	refusedSpansCounter         metric.Int64Counter
-	droppedSpansCounter         metric.Int64Counter
-	acceptedMetricPointsCounter metric.Int64Counter
-	refusedMetricPointsCounter  metric.Int64Counter
-	droppedMetricPointsCounter  metric.Int64Counter
-	acceptedLogRecordsCounter   metric.Int64Counter
-	refusedLogRecordsCounter    metric.Int64Counter
-	droppedLogRecordsCounter    metric.Int64Counter
+	acceptedSpansCounter          metric.Int64Counter
+	refusedSpansCounter           metric.Int64Counter
+	droppedSpansCounter           metric.Int64Counter
+	acceptedMetricPointsCounter   metric.Int64Counter
+	refusedMetricPointsCounter    metric.Int64Counter
+	droppedMetricPointsCounter    metric.Int64Counter
+	acceptedLogRecordsCounter     metric.Int64Counter
+	refusedLogRecordsCounter      metric.Int64Counter
+	droppedLogRecordsCounter      metric.Int64Counter
+	acceptedProfileRecordsCounter metric.Int64Counter
+	refusedProfileRecordsCounter  metric.Int64Counter
+	droppedProfileRecordsCounter  metric.Int64Counter
 }
 
 // ProcessorSettings are settings for creating a Processor.
@@ -160,6 +163,27 @@ func (por *Processor) createOtelMetrics(cfg ProcessorSettings) error {
 	)
 	errors = multierr.Append(errors, err)
 
+	por.acceptedProfileRecordsCounter, err = meter.Int64Counter(
+		obsmetrics.ProcessorPrefix+obsmetrics.AcceptedProfileRecordsKey,
+		metric.WithDescription("Number of profile records successfully pushed into the next component in the pipeline."),
+		metric.WithUnit("1"),
+	)
+	errors = multierr.Append(errors, err)
+
+	por.refusedProfileRecordsCounter, err = meter.Int64Counter(
+		obsmetrics.ProcessorPrefix+obsmetrics.RefusedProfileRecordsKey,
+		metric.WithDescription("Number of profile records that were rejected by the next component in the pipeline."),
+		metric.WithUnit("1"),
+	)
+	errors = multierr.Append(errors, err)
+
+	por.droppedProfileRecordsCounter, err = meter.Int64Counter(
+		obsmetrics.ProcessorPrefix+obsmetrics.DroppedProfileRecordsKey,
+		metric.WithDescription("Number of profile records that were dropped."),
+		metric.WithUnit("1"),
+	)
+	errors = multierr.Append(errors, err)
+
 	return errors
 }
 
@@ -201,6 +225,10 @@ func (por *Processor) recordWithOC(ctx context.Context, dataType component.DataT
 		acceptedMeasure = obsmetrics.ProcessorAcceptedLogRecords
 		refusedMeasure = obsmetrics.ProcessorRefusedLogRecords
 		droppedMeasure = obsmetrics.ProcessorDroppedLogRecords
+	case component.DataTypeProfiles:
+		acceptedMeasure = obsmetrics.ProcessorAcceptedProfileRecords
+		refusedMeasure = obsmetrics.ProcessorRefusedProfileRecords
+		droppedMeasure = obsmetrics.ProcessorDroppedProfileRecords
 	}
 
 	// ignore the error for now; should not happen
@@ -281,5 +309,26 @@ func (por *Processor) LogsRefused(ctx context.Context, numRecords int) {
 func (por *Processor) LogsDropped(ctx context.Context, numRecords int) {
 	if por.level != configtelemetry.LevelNone {
 		por.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(numRecords))
+	}
+}
+
+// ProfilesAccepted reports that the logs were accepted.
+func (por *Processor) ProfilesAccepted(ctx context.Context, numRecords int) {
+	if por.level != configtelemetry.LevelNone {
+		por.recordData(ctx, component.DataTypeProfiles, int64(numRecords), int64(0), int64(0))
+	}
+}
+
+// ProfilesRefused reports that the logs were refused.
+func (por *Processor) ProfilesRefused(ctx context.Context, numRecords int) {
+	if por.level != configtelemetry.LevelNone {
+		por.recordData(ctx, component.DataTypeProfiles, int64(0), int64(numRecords), int64(0))
+	}
+}
+
+// ProfilesDropped reports that the logs were dropped.
+func (por *Processor) ProfilesDropped(ctx context.Context, numRecords int) {
+	if por.level != configtelemetry.LevelNone {
+		por.recordData(ctx, component.DataTypeProfiles, int64(0), int64(0), int64(numRecords))
 	}
 }

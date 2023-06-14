@@ -27,19 +27,22 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
 type baseExporter struct {
 	// Input configuration.
-	config     *Config
-	client     *http.Client
-	tracesURL  string
-	metricsURL string
-	logsURL    string
-	logger     *zap.Logger
-	settings   component.TelemetrySettings
+	config      *Config
+	client      *http.Client
+	tracesURL   string
+	metricsURL  string
+	logsURL     string
+	profilesURL string
+	logger      *zap.Logger
+	settings    component.TelemetrySettings
 	// Default user-agent header.
 	userAgent string
 }
@@ -110,6 +113,16 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	}
 
 	return e.export(ctx, e.logsURL, request)
+}
+
+func (e *baseExporter) pushProfiles(ctx context.Context, ld pprofile.Profiles) error {
+	tr := pprofileotlp.NewExportRequestFromProfiles(ld)
+	request, err := tr.MarshalProto()
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+
+	return e.export(ctx, e.profilesURL, request)
 }
 
 func (e *baseExporter) export(ctx context.Context, url string, request []byte) error {

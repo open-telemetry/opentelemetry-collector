@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -220,6 +221,25 @@ func (ml *memoryLimiter) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
 	ml.obsrep.LogsAccepted(ctx, numRecords)
+	return ld, nil
+}
+
+func (ml *memoryLimiter) processProfiles(ctx context.Context, ld pprofile.Profiles) (pprofile.Profiles, error) {
+	numRecords := ld.ProfileRecordCount()
+	if ml.mustRefuse.Load() {
+		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
+		// 	it is necessary to check the pipeline to see if this is directly connected
+		// 	to a receiver (ie.: a receiver is on the call stack). For now it
+		// 	assumes that the pipeline is properly configured and a receiver is on the
+		// 	callstack.
+		ml.obsrep.ProfilesRefused(ctx, numRecords)
+
+		return ld, errDataRefused
+	}
+
+	// Even if the next consumer returns error record the data as accepted by
+	// this processor.
+	ml.obsrep.ProfilesAccepted(ctx, numRecords)
 	return ld, nil
 }
 

@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -349,6 +350,11 @@ func (bp *batchProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return bp.batcher.consume(ctx, ld)
 }
 
+// ConsumeProfiles implements ProfilesProcessor
+func (bp *batchProcessor) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error {
+	return bp.batcher.consume(ctx, ld)
+}
+
 // newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
 func newBatchTracesProcessor(set processor.CreateSettings, next consumer.Traces, cfg *Config, useOtel bool) (*batchProcessor, error) {
 	return newBatchProcessor(set, cfg, func() batch { return newBatchTraces(next) }, useOtel)
@@ -362,6 +368,11 @@ func newBatchMetricsProcessor(set processor.CreateSettings, next consumer.Metric
 // newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
 func newBatchLogsProcessor(set processor.CreateSettings, next consumer.Logs, cfg *Config, useOtel bool) (*batchProcessor, error) {
 	return newBatchProcessor(set, cfg, func() batch { return newBatchLogs(next) }, useOtel)
+}
+
+// newBatchProfilesProcessor creates a new batch processor that batches logs by size or with timeout
+func newBatchProfilesProcessor(set processor.CreateSettings, next consumer.Profiles, cfg *Config, useOtel bool) (*batchProcessor, error) {
+	return newBatchProcessor(set, cfg, func() batch { return newBatchProfiles(next) }, useOtel)
 }
 
 type batchTraces struct {
@@ -502,4 +513,51 @@ func (bl *batchLogs) add(item any) {
 	}
 	bl.logCount += newLogsCount
 	ld.ResourceLogs().MoveAndAppendTo(bl.logData.ResourceLogs())
+}
+
+type batchProfiles struct {
+	nextConsumer consumer.Profiles
+	profileData  pprofile.Profiles
+	profileCount int
+	sizer        pprofile.Sizer
+}
+
+func newBatchProfiles(nextConsumer consumer.Profiles) *batchProfiles {
+	return &batchProfiles{nextConsumer: nextConsumer, profileData: pprofile.NewProfiles(), sizer: &pprofile.ProtoMarshaler{}}
+}
+
+func (bl *batchProfiles) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
+	var req pprofile.Profiles
+	var sent int
+	var bytes int
+
+	if sendBatchMaxSize > 0 && bl.profileCount > sendBatchMaxSize {
+		req = splitProfiles(sendBatchMaxSize, bl.profileData)
+		bl.profileCount -= sendBatchMaxSize
+		sent = sendBatchMaxSize
+	} else {
+		req = bl.profileData
+		sent = bl.profileCount
+		bl.profileData = pprofile.NewProfiles()
+		bl.profileCount = 0
+	}
+	if returnBytes {
+		bytes = bl.sizer.ProfilesSize(req)
+	}
+	return sent, bytes, bl.nextConsumer.ConsumeProfiles(ctx, req)
+}
+
+func (bl *batchProfiles) itemCount() int {
+	return bl.profileCount
+}
+
+func (bl *batchProfiles) add(item any) {
+	ld := item.(pprofile.Profiles)
+
+	newProfilesCount := ld.ProfileRecordCount()
+	if newProfilesCount == 0 {
+		return
+	}
+	bl.profileCount += newProfilesCount
+	ld.ResourceProfiles().MoveAndAppendTo(bl.profileData.ResourceProfiles())
 }

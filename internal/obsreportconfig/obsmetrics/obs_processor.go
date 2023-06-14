@@ -20,6 +20,9 @@ const (
 
 	// DroppedLogRecordsKey is the key used to identify log records dropped by the Collector.
 	DroppedLogRecordsKey = "dropped_log_records"
+
+	// DroppedLogRecordsKey is the key used to identify log records dropped by the Collector.
+	DroppedProfileRecordsKey = "dropped_profile_records"
 )
 
 var (
@@ -64,5 +67,17 @@ var (
 	ProcessorDroppedLogRecords = stats.Int64(
 		ProcessorPrefix+DroppedLogRecordsKey,
 		"Number of log records that were dropped.",
+		stats.UnitDimensionless)
+	ProcessorAcceptedProfileRecords = stats.Int64(
+		ProcessorPrefix+AcceptedProfileRecordsKey,
+		"Number of profile records successfully pushed into the next component in the pipeline.",
+		stats.UnitDimensionless)
+	ProcessorRefusedProfileRecords = stats.Int64(
+		ProcessorPrefix+RefusedProfileRecordsKey,
+		"Number of profile records that were rejected by the next component in the pipeline.",
+		stats.UnitDimensionless)
+	ProcessorDroppedProfileRecords = stats.Int64(
+		ProcessorPrefix+DroppedProfileRecordsKey,
+		"Number of profile records that were dropped.",
 		stats.UnitDimensionless)
 )
