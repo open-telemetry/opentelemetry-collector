@@ -18,4 +18,6 @@ var (
 	errNilPushMetricsData = errors.New("nil PushMetrics")
 	// errNilPushLogsData is returned when a nil PushLogs is given.
 	errNilPushLogsData = errors.New("nil PushLogs")
+	// errNilPushProfilesData is returned when a nil PushProfiles is given.
+	errNilPushProfilesData = errors.New("nil PushProfiles")
 )

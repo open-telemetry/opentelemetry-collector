@@ -32,6 +32,12 @@ const (
 	// RefusedLogRecordsKey used to identify log records refused (ie.: not ingested) by the
 	// Collector.
 	RefusedLogRecordsKey = "refused_log_records"
+
+	// AcceptedProfileRecordsKey used to identify profile records accepted by the Collector.
+	AcceptedProfileRecordsKey = "accepted_profile_records"
+	// RefusedProfileRecordsKey used to identify profile records refused (ie.: not ingested) by the
+	// Collector.
+	RefusedProfileRecordsKey = "refused_profile_records"
 )
 
 var (
@@ -42,6 +48,7 @@ var (
 	ReceiveTraceDataOperationSuffix = NameSep + "TraceDataReceived"
 	ReceiverMetricsOperationSuffix  = NameSep + "MetricsReceived"
 	ReceiverLogsOperationSuffix     = NameSep + "LogsReceived"
+	ReceiverProfilesOperationSuffix = NameSep + "ProfilesReceived"
 
 	// Receiver metrics. Any count of data items below is in the original format
 	// that they were received, reasoning: reconciliation is easier if measurement

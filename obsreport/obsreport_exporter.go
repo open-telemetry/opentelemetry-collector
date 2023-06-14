@@ -167,6 +167,20 @@ func (exp *Exporter) EndLogsOp(ctx context.Context, numLogRecords int, err error
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
 }
 
+// StartProfilesOp is called at the start of an Export operation.
+// The returned context should be used in other calls to the Exporter functions
+// dealing with the same export operation.
+func (exp *Exporter) StartProfilesOp(ctx context.Context) context.Context {
+	return exp.startOp(ctx, obsmetrics.ExportProfilesOperationSuffix)
+}
+
+// EndProfilesOp completes the export operation that was started with StartProfilesOp.
+func (exp *Exporter) EndProfilesOp(ctx context.Context, numProfileRecords int, err error) {
+	numSent, numFailedToSend := toNumItems(numProfileRecords, err)
+	exp.recordMetrics(ctx, component.DataTypeProfiles, numSent, numFailedToSend)
+	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentProfileRecordsKey, obsmetrics.FailedToSendProfileRecordsKey)
+}
+
 // startOp creates the span used to trace the operation. Returning
 // the updated context and the created span.
 func (exp *Exporter) startOp(ctx context.Context, operationSuffix string) context.Context {

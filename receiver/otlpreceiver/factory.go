@@ -29,7 +29,8 @@ func NewFactory() receiver.Factory {
 		createDefaultConfig,
 		receiver.WithTraces(createTraces, component.StabilityLevelStable),
 		receiver.WithMetrics(createMetrics, component.StabilityLevelStable),
-		receiver.WithLogs(createLog, component.StabilityLevelBeta))
+		receiver.WithLogs(createLog, component.StabilityLevelBeta),
+		receiver.WithProfiles(createProfile, component.StabilityLevelBeta))
 }
 
 // createDefaultConfig creates the default configuration for receiver.
@@ -109,6 +110,27 @@ func createLog(
 	}
 
 	if err = r.Unwrap().registerLogsConsumer(consumer); err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+// createProfile creates a log receiver based on provided config.
+func createProfile(
+	_ context.Context,
+	set receiver.CreateSettings,
+	cfg component.Config,
+	consumer consumer.Profiles,
+) (receiver.Profiles, error) {
+	oCfg := cfg.(*Config)
+	r, err := receivers.GetOrAdd(oCfg, func() (*otlpReceiver, error) {
+		return newOtlpReceiver(oCfg, set)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err = r.Unwrap().registerProfilesConsumer(consumer); err != nil {
 		return nil, err
 	}
 	return r, nil

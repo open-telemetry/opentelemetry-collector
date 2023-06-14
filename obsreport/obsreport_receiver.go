@@ -41,12 +41,14 @@ type Receiver struct {
 	useOtelForMetrics bool
 	otelAttrs         []attribute.KeyValue
 
-	acceptedSpansCounter        metric.Int64Counter
-	refusedSpansCounter         metric.Int64Counter
-	acceptedMetricPointsCounter metric.Int64Counter
-	refusedMetricPointsCounter  metric.Int64Counter
-	acceptedLogRecordsCounter   metric.Int64Counter
-	refusedLogRecordsCounter    metric.Int64Counter
+	acceptedSpansCounter          metric.Int64Counter
+	refusedSpansCounter           metric.Int64Counter
+	acceptedMetricPointsCounter   metric.Int64Counter
+	refusedMetricPointsCounter    metric.Int64Counter
+	acceptedLogRecordsCounter     metric.Int64Counter
+	refusedLogRecordsCounter      metric.Int64Counter
+	acceptedProfileRecordsCounter metric.Int64Counter
+	refusedProfileRecordsCounter  metric.Int64Counter
 }
 
 // ReceiverSettings are settings for creating an Receiver.
@@ -144,6 +146,20 @@ func (rec *Receiver) createOtelMetrics() error {
 	)
 	errors = multierr.Append(errors, err)
 
+	rec.acceptedProfileRecordsCounter, err = rec.meter.Int64Counter(
+		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedProfileRecordsKey,
+		metric.WithDescription("Number of profile records successfully pushed into the pipeline."),
+		metric.WithUnit("1"),
+	)
+	errors = multierr.Append(errors, err)
+
+	rec.refusedProfileRecordsCounter, err = rec.meter.Int64Counter(
+		obsmetrics.ReceiverPrefix+obsmetrics.RefusedProfileRecordsKey,
+		metric.WithDescription("Number of profile records that could not be pushed into the pipeline."),
+		metric.WithUnit("1"),
+	)
+	errors = multierr.Append(errors, err)
+
 	return errors
 }
 
@@ -181,6 +197,24 @@ func (rec *Receiver) EndLogsOp(
 	err error,
 ) {
 	rec.endOp(receiverCtx, format, numReceivedLogRecords, err, component.DataTypeLogs)
+}
+
+// StartProfilesOp is called when a request is received from a client.
+// The returned context should be used in other calls to the obsreport functions
+// dealing with the same receive operation.
+func (rec *Receiver) StartProfilesOp(operationCtx context.Context) context.Context {
+	return rec.startOp(operationCtx, obsmetrics.ReceiverProfilesOperationSuffix)
+}
+
+// EndProfilesOp completes the receive operation that was started with
+// StartProfilesOp.
+func (rec *Receiver) EndProfilesOp(
+	receiverCtx context.Context,
+	format string,
+	numReceivedProfileRecords int,
+	err error,
+) {
+	rec.endOp(receiverCtx, format, numReceivedProfileRecords, err, component.DataTypeProfiles)
 }
 
 // StartMetricsOp is called when a request is received from a client.

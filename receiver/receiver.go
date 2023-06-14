@@ -40,6 +40,15 @@ type Logs interface {
 	component.Component
 }
 
+// Profiles receiver receives logs.
+// Its purpose is to translate data from any format to the collector's internal logs data format.
+// ProfilesReceiver feeds a consumer.Profiles with data.
+//
+// For example, it could be a receiver that reads syslogs and convert them into plog.Profiles.
+type Profiles interface {
+	component.Component
+}
+
 // CreateSettings configures Receiver creators.
 type CreateSettings struct {
 	// ID returns the ID of the component that will be created.
@@ -145,6 +154,22 @@ func (f CreateLogsFunc) CreateLogsReceiver(
 	return f(ctx, set, cfg, nextConsumer)
 }
 
+// CreateProfilesFunc is the equivalent of ReceiverFactory.CreateProfilesReceiver().
+type CreateProfilesFunc func(context.Context, CreateSettings, component.Config, consumer.Profiles) (Profiles, error)
+
+// CreateProfilesReceiver implements Factory.CreateProfilesReceiver().
+func (f CreateProfilesFunc) CreateProfilesReceiver(
+	ctx context.Context,
+	set CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Profiles,
+) (Profiles, error) {
+	if f == nil {
+		return nil, component.ErrDataTypeIsNotSupported
+	}
+	return f(ctx, set, cfg, nextConsumer)
+}
+
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
@@ -154,6 +179,8 @@ type factory struct {
 	metricsStabilityLevel component.StabilityLevel
 	CreateLogsFunc
 	logsStabilityLevel component.StabilityLevel
+	CreateProfilesFunc
+	profilesStabilityLevel component.StabilityLevel
 }
 
 func (f *factory) Type() component.Type {
@@ -195,6 +222,14 @@ func WithLogs(createLogsReceiver CreateLogsFunc, sl component.StabilityLevel) Fa
 	return factoryOptionFunc(func(o *factory) {
 		o.logsStabilityLevel = sl
 		o.CreateLogsFunc = createLogsReceiver
+	})
+}
+
+// WithProfiles overrides the default "error not supported" implementation for CreateProfilesReceiver and the default "undefined" stability level.
+func WithProfiles(createProfilesReceiver CreateProfilesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.profilesStabilityLevel = sl
+		o.CreateProfilesFunc = createProfilesReceiver
 	})
 }
 
