@@ -150,6 +150,14 @@ func TestUnmarshalMetricReader(t *testing.T) {
 			}}),
 			err: "invalid exporter configuration",
 		},
+		{
+			name: "valid periodic reader type, valid otlp exporter",
+			cfg: confmap.NewFromStringMap(map[string]any{"periodic": PeriodicMetricReader{
+				Exporter: MetricExporter{
+					Otlp: &OtlpMetric{},
+				},
+			}}),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

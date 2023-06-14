@@ -123,6 +123,55 @@ func TestMetricReader(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "periodic/otlp-exporter-invalid-protocol",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol: *strPtr("http/invalid"),
+						},
+					},
+				},
+			},
+			err: errors.New("unsupported protocol http/invalid"),
+		},
+		{
+			name: "periodic/otlp-grpc-exporter",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    "localhost:4317",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]interface{}{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "periodic/otlp-http-exporter",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol:    "http/protobuf",
+							Endpoint:    "localhost:4318",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]interface{}{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {

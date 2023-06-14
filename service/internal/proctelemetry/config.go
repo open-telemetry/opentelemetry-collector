@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
@@ -16,6 +17,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/bridge/opencensus"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
@@ -35,6 +38,10 @@ const (
 
 	// http Instrumentation Name
 	HTTPInstrumentation = "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
+	// supported protocols
+	protocolProtobufHTTP = "http/protobuf"
+	protocolProtobufGRPC = "grpc/protobuf"
 )
 
 var (
@@ -169,7 +176,8 @@ func initPullExporter(exporter telemetry.MetricExporter, asyncErrorChannel chan 
 	}
 	return nil, nil, fmt.Errorf("no valid exporter")
 }
-func initPeriodicExporter(_ context.Context, exporter telemetry.MetricExporter, opts ...sdkmetric.PeriodicReaderOption) (sdkmetric.Reader, *http.Server, error) {
+
+func initPeriodicExporter(ctx context.Context, exporter telemetry.MetricExporter, opts ...sdkmetric.PeriodicReaderOption) (sdkmetric.Reader, *http.Server, error) {
 	if exporter.Console != nil {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
@@ -182,5 +190,88 @@ func initPeriodicExporter(_ context.Context, exporter telemetry.MetricExporter, 
 		}
 		return sdkmetric.NewPeriodicReader(exp, opts...), nil, nil
 	}
+	if exporter.Otlp != nil {
+		var err error
+		var exp sdkmetric.Exporter
+		switch exporter.Otlp.Protocol {
+		case protocolProtobufHTTP:
+			exp, err = initOTLPHTTPExporter(ctx, exporter.Otlp)
+		case protocolProtobufGRPC:
+			exp, err = initOTLPgRPCExporter(ctx, exporter.Otlp)
+		default:
+			return nil, nil, fmt.Errorf("unsupported protocol %s", exporter.Otlp.Protocol)
+		}
+		if err != nil {
+			return nil, nil, err
+		}
+		return sdkmetric.NewPeriodicReader(exp, opts...), nil, nil
+	}
 	return nil, nil, fmt.Errorf("no valid exporter")
+}
+
+func initOTLPgRPCExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric) (sdkmetric.Exporter, error) {
+	opts := []otlpmetricgrpc.Option{}
+
+	if len(otlpConfig.Endpoint) > 0 {
+		endpoint, err := url.Parse(otlpConfig.Endpoint)
+
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, otlpmetricgrpc.WithEndpoint(endpoint.Host))
+
+		if endpoint.Scheme == "http" {
+			opts = append(opts, otlpmetricgrpc.WithInsecure())
+		}
+	}
+
+	if otlpConfig.Compression != nil {
+		opts = append(opts, otlpmetricgrpc.WithCompressor(*otlpConfig.Compression))
+	}
+	if otlpConfig.Timeout != nil {
+		opts = append(opts, otlpmetricgrpc.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
+	}
+	if len(otlpConfig.Headers) > 0 {
+		opts = append(opts, otlpmetricgrpc.WithHeaders(toStringMap(otlpConfig.Headers)))
+	}
+
+	return otlpmetricgrpc.New(ctx, opts...)
+}
+
+func initOTLPHTTPExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric) (sdkmetric.Exporter, error) {
+	opts := []otlpmetrichttp.Option{}
+
+	if len(otlpConfig.Endpoint) > 0 {
+		endpoint, err := url.Parse(otlpConfig.Endpoint)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, otlpmetrichttp.WithEndpoint(endpoint.Host))
+
+		if endpoint.Scheme == "http" {
+			opts = append(opts, otlpmetrichttp.WithInsecure())
+		}
+		if len(endpoint.Path) > 0 {
+			opts = append(opts, otlpmetrichttp.WithURLPath(endpoint.Path))
+		}
+	}
+	// if otlpConfig.Compression != nil {
+	// 	opts = append(opts, otlpmetrichttp.WithCompression(*otlpConfig.Compression)) // TODO: convert this to compression type
+	// }
+	if otlpConfig.Timeout != nil {
+		opts = append(opts, otlpmetrichttp.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
+	}
+	if len(otlpConfig.Headers) > 0 {
+		opts = append(opts, otlpmetrichttp.WithHeaders(toStringMap(otlpConfig.Headers)))
+	}
+
+	return otlpmetrichttp.New(ctx, opts...)
+}
+
+func toStringMap(in map[string]interface{}) map[string]string {
+	out := map[string]string{}
+	for k, v := range in {
+		out[k] = fmt.Sprint(v)
+	}
+	return out
 }
