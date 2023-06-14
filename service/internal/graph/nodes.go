@@ -369,6 +369,7 @@ type capabilitiesNode struct {
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
+	consumer.ConsumeProfilesFunc
 }
 
 func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {
