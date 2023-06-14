@@ -340,13 +340,20 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	require.NoError(t, srvTwo.Start(context.Background()))
 
 	// check telemetry server to ensure we get a response
-	// #nosec G107
-	resp, err = http.Get(telemetryURL)
-	assert.NoError(t, err)
+	require.Eventually(t,
+		func() bool {
+			// #nosec G107
+			resp, err = http.Get(telemetryURL)
+			return err == nil
+		},
+		500*time.Millisecond,
+		100*time.Millisecond,
+		"Must get a valid response from the service",
+	)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Shutdown the new service
-	require.NoError(t, srvTwo.Shutdown(context.Background()))
+	assert.NoError(t, srvTwo.Shutdown(context.Background()))
 }
 
 func assertResourceLabels(t *testing.T, res pcommon.Resource, expectedLabels map[string]labelValue) {
