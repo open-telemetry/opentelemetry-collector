@@ -4,16 +4,12 @@
 package connectortest // import "go.opentelemetry.io/collector/connector/connectortest"
 
 import (
-	"errors"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 )
-
-var errTooFewConsumers = errors.New("router requires a minimum of 2 consumers")
 
 type TracesRouterOption struct {
 	id   component.ID
@@ -31,15 +27,12 @@ func WithTracesSink(id component.ID, sink *consumertest.TracesSink) TracesRouter
 }
 
 // NewTracesRouter returns a connector.TracesRouter with sinks based on the options provided
-func NewTracesRouter(opts ...TracesRouterOption) (connector.TracesRouter, error) {
+func NewTracesRouter(opts ...TracesRouterOption) connector.TracesRouter {
 	consumers := make(map[component.ID]consumer.Traces)
 	for _, opt := range opts {
 		consumers[opt.id] = opt.cons
 	}
-	if len(consumers) < 2 {
-		return nil, errTooFewConsumers
-	}
-	return fanoutconsumer.NewTracesRouter(consumers).(connector.TracesRouter), nil
+	return fanoutconsumer.NewTracesRouter(consumers).(connector.TracesRouter)
 }
 
 type MetricsRouterOption struct {
@@ -58,15 +51,12 @@ func WithMetricsSink(id component.ID, sink *consumertest.MetricsSink) MetricsRou
 }
 
 // NewMetricsRouter returns a connector.MetricsRouter with sinks based on the options provided
-func NewMetricsRouter(opts ...MetricsRouterOption) (connector.MetricsRouter, error) {
+func NewMetricsRouter(opts ...MetricsRouterOption) connector.MetricsRouter {
 	consumers := make(map[component.ID]consumer.Metrics)
 	for _, opt := range opts {
 		consumers[opt.id] = opt.cons
 	}
-	if len(consumers) < 2 {
-		return nil, errTooFewConsumers
-	}
-	return fanoutconsumer.NewMetricsRouter(consumers).(connector.MetricsRouter), nil
+	return fanoutconsumer.NewMetricsRouter(consumers).(connector.MetricsRouter)
 }
 
 type LogsRouterOption struct {
@@ -85,13 +75,10 @@ func WithLogsSink(id component.ID, sink *consumertest.LogsSink) LogsRouterOption
 }
 
 // NewLogsRouter returns a connector.LogsRouter with sinks based on the options provided
-func NewLogsRouter(opts ...LogsRouterOption) (connector.LogsRouter, error) {
+func NewLogsRouter(opts ...LogsRouterOption) connector.LogsRouter {
 	consumers := make(map[component.ID]consumer.Logs)
 	for _, opt := range opts {
 		consumers[opt.id] = opt.cons
 	}
-	if len(consumers) < 2 {
-		return nil, errTooFewConsumers
-	}
-	return fanoutconsumer.NewLogsRouter(consumers).(connector.LogsRouter), nil
+	return fanoutconsumer.NewLogsRouter(consumers).(connector.LogsRouter)
 }
