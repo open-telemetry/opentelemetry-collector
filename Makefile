@@ -235,6 +235,8 @@ genproto_sub:
 	# HACK: Workaround for istio 1.15 / envoy 1.23.1 mistakenly emitting deprecated field.
 	# reserved 1000 -> repeated ScopeLogs deprecated_scope_logs = 1000;
 	sed 's/reserved 1000;/repeated ScopeLogs deprecated_scope_logs = 1000;/g' $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/logs/v1/logs.proto 1<> $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/logs/v1/logs.proto
+	# reserved 1000 -> repeated ScopeProfiles deprecated_scope_profiles = 1000;
+	sed 's/reserved 1000;/repeated ScopeProfiles deprecated_scope_profiles = 1000;/g' $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/profiles/v1/profiles.proto 1<> $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/profiles/v1/profiles.proto
 	# reserved 1000 -> repeated ScopeMetrics deprecated_scope_metrics = 1000;
 	sed 's/reserved 1000;/repeated ScopeMetrics deprecated_scope_metrics = 1000;/g' $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/metrics/v1/metrics.proto 1<> $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/metrics/v1/metrics.proto
 	# reserved 1000 -> repeated ScopeSpans deprecated_scope_spans = 1000;

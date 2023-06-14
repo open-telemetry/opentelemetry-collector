@@ -25,13 +25,13 @@ func TestProfileRecordCount(t *testing.T) {
 	ill := rl.ScopeProfiles().AppendEmpty()
 	assert.EqualValues(t, 0, profiles.ProfileRecordCount())
 
-	ill.ProfileRecords().AppendEmpty()
+	ill.Profiles().AppendEmpty()
 	assert.EqualValues(t, 1, profiles.ProfileRecordCount())
 
 	rms := profiles.ResourceProfiles()
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeProfiles().AppendEmpty()
-	illl := rms.AppendEmpty().ScopeProfiles().AppendEmpty().ProfileRecords()
+	illl := rms.AppendEmpty().ScopeProfiles().AppendEmpty().Profiles()
 	for i := 0; i < 5; i++ {
 		illl.AppendEmpty()
 	}
@@ -56,7 +56,7 @@ func TestProfileRecordCountWithEmpty(t *testing.T) {
 			{
 				ScopeProfiles: []*otlpprofiles.ScopeProfiles{
 					{
-						ProfileRecords: []*otlpprofiles.ProfileRecord{{}},
+						Profiles: []*otlpprofiles.Profile{{}},
 					},
 				},
 			},

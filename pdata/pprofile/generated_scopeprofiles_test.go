@@ -46,11 +46,11 @@ func TestScopeProfiles_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
 }
 
-func TestScopeProfiles_ProfileRecords(t *testing.T) {
+func TestScopeProfiles_Profiles(t *testing.T) {
 	ms := NewScopeProfiles()
-	assert.Equal(t, NewProfileRecordSlice(), ms.ProfileRecords())
-	fillTestProfileRecordSlice(ms.ProfileRecords())
-	assert.Equal(t, generateTestProfileRecordSlice(), ms.ProfileRecords())
+	assert.Equal(t, NewProfileSlice(), ms.Profiles())
+	fillTestProfileSlice(ms.Profiles())
+	assert.Equal(t, generateTestProfileSlice(), ms.Profiles())
 }
 
 func generateTestScopeProfiles() ScopeProfiles {
@@ -62,5 +62,5 @@ func generateTestScopeProfiles() ScopeProfiles {
 func fillTestScopeProfiles(tv ScopeProfiles) {
 	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestProfileRecordSlice(newProfileRecordSlice(&tv.orig.ProfileRecords))
+	fillTestProfileSlice(newProfileSlice(&tv.orig.Profiles))
 }

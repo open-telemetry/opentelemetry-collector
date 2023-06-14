@@ -57,14 +57,14 @@ func (ms ScopeProfiles) SetSchemaUrl(v string) {
 	ms.orig.SchemaUrl = v
 }
 
-// ProfileRecords returns the ProfileRecords associated with this ScopeProfiles.
-func (ms ScopeProfiles) ProfileRecords() ProfileRecordSlice {
-	return newProfileRecordSlice(&ms.orig.ProfileRecords)
+// Profiles returns the Profiles associated with this ScopeProfiles.
+func (ms ScopeProfiles) Profiles() ProfileSlice {
+	return newProfileSlice(&ms.orig.Profiles)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeProfiles) CopyTo(dest ScopeProfiles) {
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
-	ms.ProfileRecords().CopyTo(dest.ProfileRecords())
+	ms.Profiles().CopyTo(dest.Profiles())
 }

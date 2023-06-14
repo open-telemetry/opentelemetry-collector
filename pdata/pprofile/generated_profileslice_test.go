@@ -15,74 +15,74 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1"
 )
 
-func TestProfileRecordSlice(t *testing.T) {
-	es := NewProfileRecordSlice()
+func TestProfileSlice(t *testing.T) {
+	es := NewProfileSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newProfileRecordSlice(&[]*otlpprofiles.ProfileRecord{})
+	es = newProfileSlice(&[]*otlpprofiles.Profile{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewProfileRecord()
-	testVal := generateTestProfileRecord()
+	emptyVal := NewProfile()
+	testVal := generateTestProfile()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestProfileRecord(el)
+		fillTestProfile(el)
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
 }
 
-func TestProfileRecordSlice_CopyTo(t *testing.T) {
-	dest := NewProfileRecordSlice()
+func TestProfileSlice_CopyTo(t *testing.T) {
+	dest := NewProfileSlice()
 	// Test CopyTo to empty
-	NewProfileRecordSlice().CopyTo(dest)
-	assert.Equal(t, NewProfileRecordSlice(), dest)
+	NewProfileSlice().CopyTo(dest)
+	assert.Equal(t, NewProfileSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestProfileRecordSlice().CopyTo(dest)
-	assert.Equal(t, generateTestProfileRecordSlice(), dest)
+	generateTestProfileSlice().CopyTo(dest)
+	assert.Equal(t, generateTestProfileSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestProfileRecordSlice().CopyTo(dest)
-	assert.Equal(t, generateTestProfileRecordSlice(), dest)
+	generateTestProfileSlice().CopyTo(dest)
+	assert.Equal(t, generateTestProfileSlice(), dest)
 }
 
-func TestProfileRecordSlice_EnsureCapacity(t *testing.T) {
-	es := generateTestProfileRecordSlice()
+func TestProfileSlice_EnsureCapacity(t *testing.T) {
+	es := generateTestProfileSlice()
 
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
 	assert.Equal(t, es.Len(), cap(*es.orig))
-	assert.Equal(t, generateTestProfileRecordSlice(), es)
+	assert.Equal(t, generateTestProfileSlice(), es)
 
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	es.EnsureCapacity(ensureLargeLen)
-	assert.Less(t, generateTestProfileRecordSlice().Len(), ensureLargeLen)
+	assert.Less(t, generateTestProfileSlice().Len(), ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	assert.Equal(t, generateTestProfileRecordSlice(), es)
+	assert.Equal(t, generateTestProfileSlice(), es)
 }
 
-func TestProfileRecordSlice_MoveAndAppendTo(t *testing.T) {
+func TestProfileSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestProfileRecordSlice()
-	dest := NewProfileRecordSlice()
-	src := generateTestProfileRecordSlice()
+	expectedSlice := generateTestProfileSlice()
+	dest := NewProfileSlice()
+	src := generateTestProfileSlice()
 	src.MoveAndAppendTo(dest)
-	assert.Equal(t, generateTestProfileRecordSlice(), dest)
+	assert.Equal(t, generateTestProfileSlice(), dest)
 	assert.Equal(t, 0, src.Len())
 	assert.Equal(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo empty slice
 	src.MoveAndAppendTo(dest)
-	assert.Equal(t, generateTestProfileRecordSlice(), dest)
+	assert.Equal(t, generateTestProfileSlice(), dest)
 	assert.Equal(t, 0, src.Len())
 	assert.Equal(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo not empty slice
-	generateTestProfileRecordSlice().MoveAndAppendTo(dest)
+	generateTestProfileSlice().MoveAndAppendTo(dest)
 	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.Equal(t, expectedSlice.At(i), dest.At(i))
@@ -90,33 +90,33 @@ func TestProfileRecordSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestProfileRecordSlice_RemoveIf(t *testing.T) {
+func TestProfileSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewProfileRecordSlice()
-	emptySlice.RemoveIf(func(el ProfileRecord) bool {
+	emptySlice := NewProfileSlice()
+	emptySlice.RemoveIf(func(el Profile) bool {
 		t.Fail()
 		return false
 	})
 
 	// Test RemoveIf
-	filtered := generateTestProfileRecordSlice()
+	filtered := generateTestProfileSlice()
 	pos := 0
-	filtered.RemoveIf(func(el ProfileRecord) bool {
+	filtered.RemoveIf(func(el Profile) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
 
-func TestProfileRecordSlice_Sort(t *testing.T) {
-	es := generateTestProfileRecordSlice()
-	es.Sort(func(a, b ProfileRecord) bool {
+func TestProfileSlice_Sort(t *testing.T) {
+	es := generateTestProfileSlice()
+	es.Sort(func(a, b Profile) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b ProfileRecord) bool {
+	es.Sort(func(a, b Profile) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
@@ -124,16 +124,16 @@ func TestProfileRecordSlice_Sort(t *testing.T) {
 	}
 }
 
-func generateTestProfileRecordSlice() ProfileRecordSlice {
-	es := NewProfileRecordSlice()
-	fillTestProfileRecordSlice(es)
+func generateTestProfileSlice() ProfileSlice {
+	es := NewProfileSlice()
+	fillTestProfileSlice(es)
 	return es
 }
 
-func fillTestProfileRecordSlice(es ProfileRecordSlice) {
-	*es.orig = make([]*otlpprofiles.ProfileRecord, 7)
+func fillTestProfileSlice(es ProfileSlice) {
+	*es.orig = make([]*otlpprofiles.Profile, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpprofiles.ProfileRecord{}
-		fillTestProfileRecord(newProfileRecord((*es.orig)[i]))
+		(*es.orig)[i] = &otlpprofiles.Profile{}
+		fillTestProfile(newProfile((*es.orig)[i]))
 	}
 }

@@ -31,7 +31,7 @@ var pprofile = &Package{
 		scopeProfilesSlice,
 		scopeProfiles,
 		profileSlice,
-		profileRecord,
+		profile,
 	},
 }
 
@@ -67,59 +67,37 @@ var scopeProfiles = &messageValueStruct{
 		scopeField,
 		schemaURLField,
 		&sliceField{
-			fieldName:   "ProfileRecords",
+			fieldName:   "Profiles",
 			returnSlice: profileSlice,
 		},
 	},
 }
 
 var profileSlice = &sliceOfPtrs{
-	structName: "ProfileRecordSlice",
-	element:    profileRecord,
+	structName: "ProfileSlice",
+	element:    profile,
 }
 
-var profileRecord = &messageValueStruct{
-	structName:     "ProfileRecord",
-	description:    "// ProfileRecord are experimental implementation of OpenTelemetry Profile Data Model.\n",
-	originFullName: "otlpprofiles.ProfileRecord",
+var profile = &messageValueStruct{
+	structName:     "Profile",
+	description:    "// Profile are experimental implementation of OpenTelemetry Profile Data Model.\n",
+	originFullName: "otlpprofiles.Profile",
 	fields: []baseField{
 		&primitiveTypedField{
-			fieldName:       "ObservedTimestamp",
-			originFieldName: "ObservedTimeUnixNano",
+			fieldName:       "ProfileID",
+			originFieldName: "ProfileId",
+			returnType:      profileIDType,
+		},
+		&primitiveTypedField{
+			fieldName:       "StartTime",
+			originFieldName: "StartTimeUnixNano",
 			returnType:      timestampType,
 		},
 		&primitiveTypedField{
-			fieldName:       "Timestamp",
-			originFieldName: "TimeUnixNano",
+			fieldName:       "EndTime",
+			originFieldName: "EndTimeUnixNano",
 			returnType:      timestampType,
 		},
-		traceIDField,
-		spanIDField,
-		&primitiveTypedField{
-			fieldName: "Flags",
-			returnType: &primitiveType{
-				structName: "ProfileRecordFlags",
-				rawType:    "uint32",
-				defaultVal: "0",
-				testVal:    "1",
-			},
-		},
-		&primitiveField{
-			fieldName:  "SeverityText",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"INFO"`,
-		},
-		&primitiveTypedField{
-			fieldName: "SeverityNumber",
-			returnType: &primitiveType{
-				structName: "SeverityNumber",
-				rawType:    "otlpprofiles.SeverityNumber",
-				defaultVal: `otlpprofiles.SeverityNumber(0)`,
-				testVal:    `otlpprofiles.SeverityNumber(5)`,
-			},
-		},
-		bodyField,
 		attributes,
 		droppedAttributesCount,
 	},

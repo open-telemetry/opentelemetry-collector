@@ -29,135 +29,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// Possible values for ProfileRecord.SeverityNumber.
-type SeverityNumber int32
-
-const (
-	// UNSPECIFIED is the default SeverityNumber, it MUST NOT be used.
-	SeverityNumber_SEVERITY_NUMBER_UNSPECIFIED SeverityNumber = 0
-	SeverityNumber_SEVERITY_NUMBER_TRACE       SeverityNumber = 1
-	SeverityNumber_SEVERITY_NUMBER_TRACE2      SeverityNumber = 2
-	SeverityNumber_SEVERITY_NUMBER_TRACE3      SeverityNumber = 3
-	SeverityNumber_SEVERITY_NUMBER_TRACE4      SeverityNumber = 4
-	SeverityNumber_SEVERITY_NUMBER_DEBUG       SeverityNumber = 5
-	SeverityNumber_SEVERITY_NUMBER_DEBUG2      SeverityNumber = 6
-	SeverityNumber_SEVERITY_NUMBER_DEBUG3      SeverityNumber = 7
-	SeverityNumber_SEVERITY_NUMBER_DEBUG4      SeverityNumber = 8
-	SeverityNumber_SEVERITY_NUMBER_INFO        SeverityNumber = 9
-	SeverityNumber_SEVERITY_NUMBER_INFO2       SeverityNumber = 10
-	SeverityNumber_SEVERITY_NUMBER_INFO3       SeverityNumber = 11
-	SeverityNumber_SEVERITY_NUMBER_INFO4       SeverityNumber = 12
-	SeverityNumber_SEVERITY_NUMBER_WARN        SeverityNumber = 13
-	SeverityNumber_SEVERITY_NUMBER_WARN2       SeverityNumber = 14
-	SeverityNumber_SEVERITY_NUMBER_WARN3       SeverityNumber = 15
-	SeverityNumber_SEVERITY_NUMBER_WARN4       SeverityNumber = 16
-	SeverityNumber_SEVERITY_NUMBER_ERROR       SeverityNumber = 17
-	SeverityNumber_SEVERITY_NUMBER_ERROR2      SeverityNumber = 18
-	SeverityNumber_SEVERITY_NUMBER_ERROR3      SeverityNumber = 19
-	SeverityNumber_SEVERITY_NUMBER_ERROR4      SeverityNumber = 20
-	SeverityNumber_SEVERITY_NUMBER_FATAL       SeverityNumber = 21
-	SeverityNumber_SEVERITY_NUMBER_FATAL2      SeverityNumber = 22
-	SeverityNumber_SEVERITY_NUMBER_FATAL3      SeverityNumber = 23
-	SeverityNumber_SEVERITY_NUMBER_FATAL4      SeverityNumber = 24
-)
-
-var SeverityNumber_name = map[int32]string{
-	0:  "SEVERITY_NUMBER_UNSPECIFIED",
-	1:  "SEVERITY_NUMBER_TRACE",
-	2:  "SEVERITY_NUMBER_TRACE2",
-	3:  "SEVERITY_NUMBER_TRACE3",
-	4:  "SEVERITY_NUMBER_TRACE4",
-	5:  "SEVERITY_NUMBER_DEBUG",
-	6:  "SEVERITY_NUMBER_DEBUG2",
-	7:  "SEVERITY_NUMBER_DEBUG3",
-	8:  "SEVERITY_NUMBER_DEBUG4",
-	9:  "SEVERITY_NUMBER_INFO",
-	10: "SEVERITY_NUMBER_INFO2",
-	11: "SEVERITY_NUMBER_INFO3",
-	12: "SEVERITY_NUMBER_INFO4",
-	13: "SEVERITY_NUMBER_WARN",
-	14: "SEVERITY_NUMBER_WARN2",
-	15: "SEVERITY_NUMBER_WARN3",
-	16: "SEVERITY_NUMBER_WARN4",
-	17: "SEVERITY_NUMBER_ERROR",
-	18: "SEVERITY_NUMBER_ERROR2",
-	19: "SEVERITY_NUMBER_ERROR3",
-	20: "SEVERITY_NUMBER_ERROR4",
-	21: "SEVERITY_NUMBER_FATAL",
-	22: "SEVERITY_NUMBER_FATAL2",
-	23: "SEVERITY_NUMBER_FATAL3",
-	24: "SEVERITY_NUMBER_FATAL4",
-}
-
-var SeverityNumber_value = map[string]int32{
-	"SEVERITY_NUMBER_UNSPECIFIED": 0,
-	"SEVERITY_NUMBER_TRACE":       1,
-	"SEVERITY_NUMBER_TRACE2":      2,
-	"SEVERITY_NUMBER_TRACE3":      3,
-	"SEVERITY_NUMBER_TRACE4":      4,
-	"SEVERITY_NUMBER_DEBUG":       5,
-	"SEVERITY_NUMBER_DEBUG2":      6,
-	"SEVERITY_NUMBER_DEBUG3":      7,
-	"SEVERITY_NUMBER_DEBUG4":      8,
-	"SEVERITY_NUMBER_INFO":        9,
-	"SEVERITY_NUMBER_INFO2":       10,
-	"SEVERITY_NUMBER_INFO3":       11,
-	"SEVERITY_NUMBER_INFO4":       12,
-	"SEVERITY_NUMBER_WARN":        13,
-	"SEVERITY_NUMBER_WARN2":       14,
-	"SEVERITY_NUMBER_WARN3":       15,
-	"SEVERITY_NUMBER_WARN4":       16,
-	"SEVERITY_NUMBER_ERROR":       17,
-	"SEVERITY_NUMBER_ERROR2":      18,
-	"SEVERITY_NUMBER_ERROR3":      19,
-	"SEVERITY_NUMBER_ERROR4":      20,
-	"SEVERITY_NUMBER_FATAL":       21,
-	"SEVERITY_NUMBER_FATAL2":      22,
-	"SEVERITY_NUMBER_FATAL3":      23,
-	"SEVERITY_NUMBER_FATAL4":      24,
-}
-
-func (x SeverityNumber) String() string {
-	return proto.EnumName(SeverityNumber_name, int32(x))
-}
-
-func (SeverityNumber) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_d1c030a3ec7e961e, []int{0}
-}
-
-// ProfileRecordFlags is defined as a protobuf 'uint32' type and is to be used as
-// bit-fields. Each non-zero value defined in this enum is a bit-mask.
-// To extract the bit-field, for example, use an expression like:
-//
-//	(profileRecord.flags & PROFILE_RECORD_FLAGS_TRACE_FLAGS_MASK)
-type ProfileRecordFlags int32
-
-const (
-	// The zero value for the enum. Should not be used for comparisons.
-	// Instead use bitwise "and" with the appropriate mask as shown above.
-	ProfileRecordFlags_PROFILE_RECORD_FLAGS_DO_NOT_USE ProfileRecordFlags = 0
-	// Bits 0-7 are used for trace flags.
-	ProfileRecordFlags_PROFILE_RECORD_FLAGS_TRACE_FLAGS_MASK ProfileRecordFlags = 255
-)
-
-var ProfileRecordFlags_name = map[int32]string{
-	0:   "PROFILE_RECORD_FLAGS_DO_NOT_USE",
-	255: "PROFILE_RECORD_FLAGS_TRACE_FLAGS_MASK",
-}
-
-var ProfileRecordFlags_value = map[string]int32{
-	"PROFILE_RECORD_FLAGS_DO_NOT_USE":       0,
-	"PROFILE_RECORD_FLAGS_TRACE_FLAGS_MASK": 255,
-}
-
-func (x ProfileRecordFlags) String() string {
-	return proto.EnumName(ProfileRecordFlags_name, int32(x))
-}
-
-func (ProfileRecordFlags) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_d1c030a3ec7e961e, []int{1}
-}
-
 // ProfilesData represents the profiles data that can be stored in a persistent storage,
 // OR can be embedded by other protocols that transfer OTLP profiles data but do not
 // implement the OTLP protocol.
@@ -181,7 +52,7 @@ func (m *ProfilesData) Reset()         { *m = ProfilesData{} }
 func (m *ProfilesData) String() string { return proto.CompactTextString(m) }
 func (*ProfilesData) ProtoMessage()    {}
 func (*ProfilesData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d1c030a3ec7e961e, []int{0}
+	return fileDescriptor_57ba5958fad9a734, []int{0}
 }
 func (m *ProfilesData) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -221,7 +92,7 @@ func (m *ProfilesData) GetResourceProfiles() []*ResourceProfiles {
 type ResourceProfiles struct {
 	DeprecatedScopeProfiles []*ScopeProfiles `protobuf:"bytes,1000,rep,name=deprecated_scope_profiles,json=deprecatedScopeProfiles,proto3" json:"deprecated_scope_profiles,omitempty"`
 	// The resource for the profiles in this message.
-	// If this field is not set then resource info is unknown.
+	// If this field is not set then no resource info is known.
 	Resource v1.Resource `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource"`
 	// A list of ScopeProfiles that originate from a resource.
 	ScopeProfiles []*ScopeProfiles `protobuf:"bytes,2,rep,name=scope_profiles,json=scopeProfiles,proto3" json:"scope_profiles,omitempty"`
@@ -234,7 +105,7 @@ func (m *ResourceProfiles) Reset()         { *m = ResourceProfiles{} }
 func (m *ResourceProfiles) String() string { return proto.CompactTextString(m) }
 func (*ResourceProfiles) ProtoMessage()    {}
 func (*ResourceProfiles) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d1c030a3ec7e961e, []int{1}
+	return fileDescriptor_57ba5958fad9a734, []int{1}
 }
 func (m *ResourceProfiles) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -291,15 +162,15 @@ func (m *ResourceProfiles) GetSchemaUrl() string {
 	return ""
 }
 
-// A collection of Profiles produced by a Scope.
+// A collection of Profiles produced by an InstrumentationScope.
 type ScopeProfiles struct {
 	// The instrumentation scope information for the profiles in this message.
 	// Semantically when InstrumentationScope isn't set, it is equivalent with
 	// an empty instrumentation scope name (unknown).
 	Scope v11.InstrumentationScope `protobuf:"bytes,1,opt,name=scope,proto3" json:"scope"`
-	// A list of profile records.
-	ProfileRecords []*ProfileRecord `protobuf:"bytes,2,rep,name=profile_records,json=profileRecords,proto3" json:"profile_records,omitempty"`
-	// This schema_url applies to all profiles in the "profiles" field.
+	// A list of Profiles that originate from an instrumentation scope.
+	Profiles []*Profile `protobuf:"bytes,2,rep,name=profiles,proto3" json:"profiles,omitempty"`
+	// This schema_url applies to all profiles and profile events in the "profiles" field.
 	SchemaUrl string `protobuf:"bytes,3,opt,name=schema_url,json=schemaUrl,proto3" json:"schema_url,omitempty"`
 }
 
@@ -307,7 +178,7 @@ func (m *ScopeProfiles) Reset()         { *m = ScopeProfiles{} }
 func (m *ScopeProfiles) String() string { return proto.CompactTextString(m) }
 func (*ScopeProfiles) ProtoMessage()    {}
 func (*ScopeProfiles) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d1c030a3ec7e961e, []int{2}
+	return fileDescriptor_57ba5958fad9a734, []int{2}
 }
 func (m *ScopeProfiles) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -343,9 +214,9 @@ func (m *ScopeProfiles) GetScope() v11.InstrumentationScope {
 	return v11.InstrumentationScope{}
 }
 
-func (m *ScopeProfiles) GetProfileRecords() []*ProfileRecord {
+func (m *ScopeProfiles) GetProfiles() []*Profile {
 	if m != nil {
-		return m.ProfileRecords
+		return m.Profiles
 	}
 	return nil
 }
@@ -357,89 +228,54 @@ func (m *ScopeProfiles) GetSchemaUrl() string {
 	return ""
 }
 
-// A profile record according to OpenTelemetry Profile Data Model:
-// https://github.com/open-telemetry/oteps/blob/main/text/profiles/0097-profile-data-model.md
-type ProfileRecord struct {
-	// time_unix_nano is the time when the event occurred.
-	// Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January 1970.
-	// Value of 0 indicates unknown or missing timestamp.
-	TimeUnixNano uint64 `protobuf:"fixed64,1,opt,name=time_unix_nano,json=timeUnixNano,proto3" json:"time_unix_nano,omitempty"`
-	// Time when the event was observed by the collection system.
-	// For events that originate in OpenTelemetry (e.g. using OpenTelemetry Profileging SDK)
-	// this timestamp is typically set at the generation time and is equal to Timestamp.
-	// For events originating externally and collected by OpenTelemetry (e.g. using
-	// Collector) this is the time when OpenTelemetry's code observed the event measured
-	// by the clock of the OpenTelemetry code. This field MUST be set once the event is
-	// observed by OpenTelemetry.
+// A Profile represents a single profile.
+type Profile struct {
+	// A unique identifier for a profile. The ID is a 16-byte array. An ID with
+	// all zeroes is considered invalid.
 	//
-	// For converting OpenTelemetry profile data to formats that support only one timestamp or
-	// when receiving OpenTelemetry profile data by recipients that support only one timestamp
-	// internally the following profileic is recommended:
-	//   - Use time_unix_nano if it is present, otherwise use observed_time_unix_nano.
-	//
+	// This field is required.
+	ProfileId go_opentelemetry_io_collector_pdata_internal_data.ProfileID `protobuf:"bytes,1,opt,name=profile_id,json=profileId,proto3,customtype=go.opentelemetry.io/collector/pdata/internal/data.ProfileID" json:"profile_id"`
+	// start_time_unix_nano is the start time of the profile.
 	// Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January 1970.
-	// Value of 0 indicates unknown or missing timestamp.
-	ObservedTimeUnixNano uint64 `protobuf:"fixed64,11,opt,name=observed_time_unix_nano,json=observedTimeUnixNano,proto3" json:"observed_time_unix_nano,omitempty"`
-	// Numerical value of the severity, normalized to values described in Profile Data Model.
-	// [Optional].
-	SeverityNumber SeverityNumber `protobuf:"varint,2,opt,name=severity_number,json=severityNumber,proto3,enum=opentelemetry.proto.profiles.v1.SeverityNumber" json:"severity_number,omitempty"`
-	// The severity text (also known as profile level). The original string representation as
-	// it is known at the source. [Optional].
-	SeverityText string `protobuf:"bytes,3,opt,name=severity_text,json=severityText,proto3" json:"severity_text,omitempty"`
-	// A value containing the body of the profile record. Can be for example a human-readable
-	// string message (including multi-line) describing the event in a free form or it can
-	// be a structured data composed of arrays and maps of other values. [Optional].
-	Body v11.AnyValue `protobuf:"bytes,5,opt,name=body,proto3" json:"body"`
-	// Additional attributes that describe the specific event occurrence. [Optional].
+	//
+	// This field is semantically required and it is expected that end_time >= start_time.
+	StartTimeUnixNano uint64 `protobuf:"fixed64,2,opt,name=start_time_unix_nano,json=startTimeUnixNano,proto3" json:"start_time_unix_nano,omitempty"`
+	// end_time_unix_nano is the end time of the span.
+	// Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January 1970.
+	//
+	// This field is semantically required and it is expected that end_time >= start_time.
+	EndTimeUnixNano uint64 `protobuf:"fixed64,3,opt,name=end_time_unix_nano,json=endTimeUnixNano,proto3" json:"end_time_unix_nano,omitempty"`
+	// attributes is a collection of key/value pairs. Note, global attributes
+	// like server name can be set using the resource API. Examples of attributes:
+	//
+	//     "/http/user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
+	//     "/http/server_latency": 300
+	//     "abc.com/myattribute": true
+	//     "abc.com/score": 10.239
+	//
+	// The OpenTelemetry API specification further restricts the allowed value types:
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/README.md#attribute
 	// Attribute keys MUST be unique (it is not allowed to have more than one
 	// attribute with the same key).
-	Attributes             []v11.KeyValue `protobuf:"bytes,6,rep,name=attributes,proto3" json:"attributes"`
-	DroppedAttributesCount uint32         `protobuf:"varint,7,opt,name=dropped_attributes_count,json=droppedAttributesCount,proto3" json:"dropped_attributes_count,omitempty"`
-	// Flags, a bit field. 8 least significant bits are the trace flags as
-	// defined in W3C Trace Context specification. 24 most significant bits are reserved
-	// and must be set to 0. Readers must not assume that 24 most significant bits
-	// will be zero and must correctly mask the bits when reading 8-bit trace flag (use
-	// flags & PROFILE_RECORD_FLAGS_TRACE_FLAGS_MASK). [Optional].
-	Flags uint32 `protobuf:"fixed32,8,opt,name=flags,proto3" json:"flags,omitempty"`
-	// A unique identifier for a trace. All profiles from the same trace share
-	// the same `trace_id`. The ID is a 16-byte array. An ID with all zeroes OR
-	// of length other than 16 bytes is considered invalid (empty string in OTLP/JSON
-	// is zero-length and thus is also invalid).
-	//
-	// This field is optional.
-	//
-	// The receivers SHOULD assume that the profile record is not associated with a
-	// trace if any of the following is true:
-	//   - the field is not present,
-	//   - the field contains an invalid value.
-	TraceId go_opentelemetry_io_collector_pdata_internal_data.TraceID `protobuf:"bytes,9,opt,name=trace_id,json=traceId,proto3,customtype=go.opentelemetry.io/collector/pdata/internal/data.TraceID" json:"trace_id"`
-	// A unique identifier for a span within a trace, assigned when the span
-	// is created. The ID is an 8-byte array. An ID with all zeroes OR of length
-	// other than 8 bytes is considered invalid (empty string in OTLP/JSON
-	// is zero-length and thus is also invalid).
-	//
-	// This field is optional. If the sender specifies a valid span_id then it SHOULD also
-	// specify a valid trace_id.
-	//
-	// The receivers SHOULD assume that the profile record is not associated with a
-	// span if any of the following is true:
-	//   - the field is not present,
-	//   - the field contains an invalid value.
-	SpanId go_opentelemetry_io_collector_pdata_internal_data.SpanID `protobuf:"bytes,10,opt,name=span_id,json=spanId,proto3,customtype=go.opentelemetry.io/collector/pdata/internal/data.SpanID" json:"span_id"`
+	Attributes []v11.KeyValue `protobuf:"bytes,4,rep,name=attributes,proto3" json:"attributes"`
+	// dropped_attributes_count is the number of attributes that were discarded. Attributes
+	// can be discarded because their keys are too long or because there are too many
+	// attributes. If this value is 0, then no attributes were dropped.
+	DroppedAttributesCount uint32 `protobuf:"varint,5,opt,name=dropped_attributes_count,json=droppedAttributesCount,proto3" json:"dropped_attributes_count,omitempty"`
 }
 
-func (m *ProfileRecord) Reset()         { *m = ProfileRecord{} }
-func (m *ProfileRecord) String() string { return proto.CompactTextString(m) }
-func (*ProfileRecord) ProtoMessage()    {}
-func (*ProfileRecord) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d1c030a3ec7e961e, []int{3}
+func (m *Profile) Reset()         { *m = Profile{} }
+func (m *Profile) String() string { return proto.CompactTextString(m) }
+func (*Profile) ProtoMessage()    {}
+func (*Profile) Descriptor() ([]byte, []int) {
+	return fileDescriptor_57ba5958fad9a734, []int{3}
 }
-func (m *ProfileRecord) XXX_Unmarshal(b []byte) error {
+func (m *Profile) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ProfileRecord) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *Profile) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ProfileRecord.Marshal(b, m, deterministic)
+		return xxx_messageInfo_Profile.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -449,149 +285,96 @@ func (m *ProfileRecord) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return b[:n], nil
 	}
 }
-func (m *ProfileRecord) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ProfileRecord.Merge(m, src)
+func (m *Profile) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Profile.Merge(m, src)
 }
-func (m *ProfileRecord) XXX_Size() int {
+func (m *Profile) XXX_Size() int {
 	return m.Size()
 }
-func (m *ProfileRecord) XXX_DiscardUnknown() {
-	xxx_messageInfo_ProfileRecord.DiscardUnknown(m)
+func (m *Profile) XXX_DiscardUnknown() {
+	xxx_messageInfo_Profile.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ProfileRecord proto.InternalMessageInfo
+var xxx_messageInfo_Profile proto.InternalMessageInfo
 
-func (m *ProfileRecord) GetTimeUnixNano() uint64 {
+func (m *Profile) GetStartTimeUnixNano() uint64 {
 	if m != nil {
-		return m.TimeUnixNano
+		return m.StartTimeUnixNano
 	}
 	return 0
 }
 
-func (m *ProfileRecord) GetObservedTimeUnixNano() uint64 {
+func (m *Profile) GetEndTimeUnixNano() uint64 {
 	if m != nil {
-		return m.ObservedTimeUnixNano
+		return m.EndTimeUnixNano
 	}
 	return 0
 }
 
-func (m *ProfileRecord) GetSeverityNumber() SeverityNumber {
-	if m != nil {
-		return m.SeverityNumber
-	}
-	return SeverityNumber_SEVERITY_NUMBER_UNSPECIFIED
-}
-
-func (m *ProfileRecord) GetSeverityText() string {
-	if m != nil {
-		return m.SeverityText
-	}
-	return ""
-}
-
-func (m *ProfileRecord) GetBody() v11.AnyValue {
-	if m != nil {
-		return m.Body
-	}
-	return v11.AnyValue{}
-}
-
-func (m *ProfileRecord) GetAttributes() []v11.KeyValue {
+func (m *Profile) GetAttributes() []v11.KeyValue {
 	if m != nil {
 		return m.Attributes
 	}
 	return nil
 }
 
-func (m *ProfileRecord) GetDroppedAttributesCount() uint32 {
+func (m *Profile) GetDroppedAttributesCount() uint32 {
 	if m != nil {
 		return m.DroppedAttributesCount
 	}
 	return 0
 }
 
-func (m *ProfileRecord) GetFlags() uint32 {
-	if m != nil {
-		return m.Flags
-	}
-	return 0
-}
-
 func init() {
-	proto.RegisterEnum("opentelemetry.proto.profiles.v1.SeverityNumber", SeverityNumber_name, SeverityNumber_value)
-	proto.RegisterEnum("opentelemetry.proto.profiles.v1.ProfileRecordFlags", ProfileRecordFlags_name, ProfileRecordFlags_value)
 	proto.RegisterType((*ProfilesData)(nil), "opentelemetry.proto.profiles.v1.ProfilesData")
 	proto.RegisterType((*ResourceProfiles)(nil), "opentelemetry.proto.profiles.v1.ResourceProfiles")
 	proto.RegisterType((*ScopeProfiles)(nil), "opentelemetry.proto.profiles.v1.ScopeProfiles")
-	proto.RegisterType((*ProfileRecord)(nil), "opentelemetry.proto.profiles.v1.ProfileRecord")
+	proto.RegisterType((*Profile)(nil), "opentelemetry.proto.profiles.v1.Profile")
 }
 
 func init() {
-	proto.RegisterFile("opentelemetry/proto/profiles/v1/profiles.proto", fileDescriptor_d1c030a3ec7e961e)
+	proto.RegisterFile("opentelemetry/proto/profiles/v1/profiles.proto", fileDescriptor_57ba5958fad9a734)
 }
 
-var fileDescriptor_d1c030a3ec7e961e = []byte{
-	// 951 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x96, 0xcf, 0x6e, 0xea, 0x46,
-	0x14, 0xc6, 0x31, 0xe1, 0xef, 0x84, 0x70, 0xa7, 0x73, 0x49, 0xae, 0x9b, 0xa8, 0x84, 0xa6, 0x55,
-	0x4a, 0x53, 0x09, 0x14, 0xa0, 0xd2, 0xed, 0xae, 0x26, 0x98, 0x88, 0x86, 0x40, 0x34, 0x40, 0xaa,
-	0xdc, 0x56, 0xb2, 0x0c, 0x9e, 0x52, 0x4b, 0xc6, 0x63, 0xd9, 0x03, 0x4a, 0xf6, 0x7d, 0x80, 0x3e,
-	0x41, 0xb7, 0x95, 0xfa, 0x1a, 0xed, 0xe2, 0x2e, 0xef, 0xb2, 0xea, 0x22, 0xaa, 0x92, 0x4d, 0xdf,
-	0xa2, 0xd5, 0x0c, 0x86, 0x90, 0xd4, 0x4e, 0x6e, 0x56, 0x99, 0x39, 0xbf, 0xef, 0x7c, 0xe7, 0x8c,
-	0x4f, 0x3c, 0x18, 0xec, 0x53, 0x87, 0xd8, 0x8c, 0x58, 0x64, 0x42, 0x98, 0x7b, 0x55, 0x76, 0x5c,
-	0xca, 0x68, 0xd9, 0xa2, 0x63, 0xaf, 0x3c, 0x3b, 0x14, 0x7f, 0x4b, 0x22, 0x84, 0x76, 0xee, 0xe9,
-	0xe6, 0xc1, 0x92, 0xe0, 0xb3, 0xc3, 0xed, 0xdc, 0x98, 0x8e, 0xe9, 0x3c, 0x95, 0xaf, 0xe6, 0x74,
-	0xfb, 0x20, 0xc8, 0x7a, 0x44, 0x27, 0x13, 0x6a, 0x73, 0xf3, 0xf9, 0xca, 0xd7, 0x96, 0x82, 0xb4,
-	0x2e, 0xf1, 0xe8, 0xd4, 0x1d, 0x11, 0xae, 0x5e, 0xac, 0xe7, 0xfa, 0xbd, 0x37, 0x20, 0xd5, 0xa6,
-	0x63, 0xaf, 0xa1, 0x33, 0x1d, 0x75, 0xc0, 0xc6, 0x82, 0x6a, 0xbc, 0x23, 0x59, 0x2a, 0xac, 0x15,
-	0xd7, 0x2b, 0x9f, 0x97, 0x1e, 0x69, 0xb9, 0x84, 0xfd, 0x0c, 0xee, 0x82, 0x33, 0xee, 0xca, 0x6e,
-	0xef, 0x97, 0x28, 0xc8, 0xac, 0x62, 0xf4, 0x1d, 0xd8, 0x34, 0x88, 0xe3, 0x92, 0x91, 0xce, 0x88,
-	0xa1, 0x79, 0x23, 0xea, 0xf8, 0x85, 0xfe, 0x49, 0x8a, 0x4a, 0xfb, 0x8f, 0x56, 0xea, 0x71, 0xbd,
-	0x28, 0xf3, 0xf2, 0xce, 0x65, 0x19, 0x44, 0x27, 0x20, 0xb5, 0xa8, 0x2e, 0x4b, 0x05, 0x29, 0xb4,
-	0xf1, 0xe5, 0x03, 0x58, 0x69, 0xbe, 0x1e, 0x7b, 0x7b, 0xbd, 0x1b, 0xc1, 0x4b, 0x03, 0xa4, 0x02,
-	0xb0, 0xd2, 0x5e, 0xf4, 0x59, 0xdd, 0xa5, 0xbd, 0x65, 0x4f, 0x1f, 0x71, 0x9b, 0x1f, 0xc9, 0x44,
-	0xd7, 0xa6, 0xae, 0x25, 0xaf, 0x15, 0xa4, 0x62, 0x9a, 0x63, 0x1e, 0x19, 0xb8, 0xd6, 0xde, 0x1f,
-	0x12, 0x48, 0xdf, 0x1d, 0xa0, 0x0b, 0xe2, 0x22, 0xd3, 0xef, 0xbe, 0x1a, 0x58, 0xce, 0x1f, 0xf6,
-	0xec, 0xb0, 0xd4, 0xb2, 0x3d, 0xe6, 0x4e, 0x27, 0xc4, 0x66, 0x3a, 0x33, 0xa9, 0x2d, 0x7c, 0xfc,
-	0x73, 0xcc, 0x7d, 0xd0, 0x31, 0x58, 0xb7, 0xe8, 0x58, 0x73, 0xc9, 0x88, 0xba, 0xc6, 0xfb, 0x9d,
-	0xa2, 0x4d, 0xc7, 0x58, 0xc8, 0x31, 0xb0, 0x16, 0xcb, 0x27, 0x8f, 0xf1, 0x53, 0x1c, 0xa4, 0x97,
-	0x89, 0xe8, 0x53, 0x90, 0x65, 0xe6, 0x84, 0x68, 0x53, 0xdb, 0xbc, 0xd4, 0x6c, 0xdd, 0xa6, 0xe2,
-	0x3c, 0x09, 0x9c, 0xe1, 0xd1, 0x81, 0x6d, 0x5e, 0x76, 0x74, 0x9b, 0xa2, 0x2f, 0xc1, 0x2b, 0x3a,
-	0xf4, 0x88, 0x3b, 0x23, 0x86, 0xf6, 0x40, 0xbe, 0x2e, 0xe4, 0xb9, 0x05, 0xee, 0xaf, 0xa6, 0xf5,
-	0xc1, 0x0b, 0x8f, 0xcc, 0x88, 0x6b, 0xb2, 0x2b, 0xcd, 0x9e, 0x4e, 0x86, 0xc4, 0x95, 0xa3, 0x05,
-	0xa9, 0x98, 0xad, 0x7c, 0xf1, 0xf8, 0x70, 0xfc, 0x9c, 0x8e, 0x48, 0xc1, 0x59, 0xef, 0xde, 0x1e,
-	0x7d, 0x02, 0x36, 0x96, 0xae, 0x8c, 0x5c, 0x32, 0xff, 0x88, 0x99, 0x45, 0xb0, 0x4f, 0x2e, 0x19,
-	0x52, 0x40, 0x6c, 0x48, 0x8d, 0x2b, 0x39, 0x2e, 0xa6, 0xf3, 0xd9, 0x13, 0xd3, 0x51, 0xec, 0xab,
-	0x73, 0xdd, 0x9a, 0x2e, 0x26, 0x22, 0x52, 0xd1, 0x29, 0x00, 0x3a, 0x63, 0xae, 0x39, 0x9c, 0x32,
-	0xe2, 0xc9, 0x09, 0x31, 0x8f, 0xa7, 0x8c, 0x4e, 0xc8, 0x3d, 0xa3, 0x15, 0x03, 0xf4, 0x1a, 0xc8,
-	0x86, 0x4b, 0x1d, 0x87, 0x18, 0xda, 0x5d, 0x54, 0x1b, 0xd1, 0xa9, 0xcd, 0xe4, 0x64, 0x41, 0x2a,
-	0x6e, 0xe0, 0x2d, 0x9f, 0x2b, 0x4b, 0x7c, 0xc4, 0x29, 0xca, 0x81, 0xf8, 0x0f, 0x96, 0x3e, 0xf6,
-	0xe4, 0x54, 0x41, 0x2a, 0x26, 0xf1, 0x7c, 0x83, 0xbe, 0x07, 0x29, 0xe6, 0xea, 0x23, 0xa2, 0x99,
-	0x86, 0x9c, 0x2e, 0x48, 0xc5, 0x4c, 0x5d, 0xe1, 0x35, 0xff, 0xba, 0xde, 0xfd, 0x6a, 0x4c, 0x1f,
-	0xb4, 0x69, 0xf2, 0x1b, 0xc8, 0xb2, 0xc8, 0x88, 0x51, 0xb7, 0xec, 0x18, 0x3a, 0xd3, 0xcb, 0xa6,
-	0xcd, 0x88, 0x6b, 0xeb, 0x56, 0x99, 0xef, 0x4a, 0x7d, 0xee, 0xd4, 0x6a, 0xe0, 0xa4, 0xb0, 0x6c,
-	0x19, 0xe8, 0x02, 0x24, 0x3d, 0x47, 0xb7, 0xb9, 0x39, 0x10, 0xe6, 0x5f, 0xfb, 0xe6, 0xaf, 0x9f,
-	0x6f, 0xde, 0x73, 0x74, 0xbb, 0xd5, 0xc0, 0x09, 0x6e, 0xd8, 0x32, 0xbe, 0x89, 0xa5, 0x62, 0x30,
-	0x7e, 0xf0, 0x7b, 0x1c, 0x64, 0xef, 0x0f, 0x1a, 0xed, 0x82, 0x9d, 0x9e, 0x7a, 0xae, 0xe2, 0x56,
-	0xff, 0x42, 0xeb, 0x0c, 0x4e, 0xeb, 0x2a, 0xd6, 0x06, 0x9d, 0xde, 0x99, 0x7a, 0xd4, 0x6a, 0xb6,
-	0xd4, 0x06, 0x8c, 0xa0, 0x0f, 0xc1, 0xe6, 0x43, 0x41, 0x1f, 0x2b, 0x47, 0x2a, 0x94, 0xd0, 0x36,
-	0xd8, 0x0a, 0x44, 0x15, 0x18, 0x0d, 0x65, 0x55, 0xb8, 0x16, 0xca, 0x6a, 0x30, 0x16, 0x54, 0xae,
-	0xa1, 0xd6, 0x07, 0xc7, 0x30, 0x1e, 0x94, 0x26, 0x50, 0x05, 0x26, 0x42, 0x59, 0x15, 0x26, 0x43,
-	0x59, 0x0d, 0xa6, 0x90, 0x0c, 0x72, 0x0f, 0x59, 0xab, 0xd3, 0xec, 0xc2, 0x74, 0x50, 0x23, 0x9c,
-	0x54, 0x20, 0x08, 0x43, 0x55, 0xb8, 0x1e, 0x86, 0x6a, 0x30, 0x13, 0x54, 0xea, 0x5b, 0x05, 0x77,
-	0xe0, 0x46, 0x50, 0x12, 0x27, 0x15, 0x98, 0x0d, 0x43, 0x55, 0xf8, 0x22, 0x0c, 0xd5, 0x20, 0x0c,
-	0x42, 0x2a, 0xc6, 0x5d, 0x0c, 0x3f, 0x08, 0x7a, 0x18, 0x02, 0x55, 0x20, 0x0a, 0x65, 0x55, 0xf8,
-	0x32, 0x94, 0xd5, 0x60, 0x2e, 0xa8, 0x5c, 0x53, 0xe9, 0x2b, 0x6d, 0xb8, 0x19, 0x94, 0x26, 0x50,
-	0x05, 0x6e, 0x85, 0xb2, 0x2a, 0x7c, 0x15, 0xca, 0x6a, 0x50, 0x3e, 0xb8, 0x00, 0xd9, 0xe5, 0x5d,
-	0xda, 0x14, 0xaf, 0xe5, 0x2e, 0xd8, 0x69, 0x77, 0x8f, 0x35, 0xac, 0x1e, 0x75, 0x71, 0x43, 0x6b,
-	0xb6, 0x95, 0xe3, 0x9e, 0xd6, 0xe8, 0x6a, 0x9d, 0x6e, 0x5f, 0x1b, 0xf4, 0x54, 0x18, 0x41, 0xfb,
-	0xe0, 0xe3, 0xff, 0x09, 0xc4, 0xbf, 0x9c, 0xbf, 0x3e, 0x55, 0x7a, 0x27, 0xf0, 0x5f, 0xa9, 0xfe,
-	0xab, 0xf4, 0xf6, 0x26, 0x2f, 0xbd, 0xbb, 0xc9, 0x4b, 0x7f, 0xdf, 0xe4, 0xa5, 0x9f, 0x6f, 0xf3,
-	0x91, 0x77, 0xb7, 0xf9, 0xc8, 0x9f, 0xb7, 0xf9, 0x08, 0xc8, 0x9b, 0xf4, 0xb1, 0x0b, 0xb4, 0xce,
-	0xef, 0x77, 0xef, 0x8c, 0x87, 0xce, 0xa4, 0x37, 0xf5, 0x67, 0xbf, 0xb0, 0xf3, 0xef, 0x90, 0x31,
-	0xb1, 0x17, 0x5f, 0x44, 0xbf, 0x45, 0x77, 0xba, 0x0e, 0xb1, 0xfb, 0x4b, 0x07, 0xe1, 0xcd, 0x7f,
-	0x7e, 0xbc, 0xd2, 0xf9, 0xe1, 0x30, 0x21, 0xf4, 0xd5, 0xff, 0x02, 0x00, 0x00, 0xff, 0xff, 0x48,
-	0x86, 0x67, 0x14, 0x55, 0x09, 0x00, 0x00,
+var fileDescriptor_57ba5958fad9a734 = []byte{
+	// 589 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x54, 0xcb, 0x6e, 0xd3, 0x4c,
+	0x14, 0xce, 0xa4, 0xd7, 0x4c, 0x9b, 0xff, 0x6f, 0xad, 0x0a, 0x4c, 0x25, 0x9c, 0x28, 0x1b, 0x0c,
+	0x48, 0xb6, 0xd2, 0x6e, 0x90, 0x58, 0x91, 0x46, 0x48, 0x51, 0x05, 0x8d, 0x4c, 0xd3, 0x05, 0x0b,
+	0xac, 0x89, 0x7d, 0x08, 0x16, 0xf6, 0x8c, 0x35, 0x1e, 0x47, 0xed, 0x5b, 0xf0, 0x1c, 0xbc, 0x00,
+	0x7b, 0x24, 0xa4, 0x2e, 0xbb, 0x60, 0x81, 0x58, 0x54, 0x28, 0xd9, 0xf0, 0x18, 0xc8, 0xf6, 0xd8,
+	0x4d, 0xac, 0x48, 0x16, 0x6c, 0xa2, 0xc9, 0x39, 0xdf, 0xf9, 0x2e, 0x67, 0x6c, 0x63, 0x83, 0x85,
+	0x40, 0x05, 0xf8, 0x10, 0x80, 0xe0, 0x57, 0x66, 0xc8, 0x99, 0x60, 0xc9, 0xef, 0x7b, 0xcf, 0x87,
+	0xc8, 0x9c, 0x76, 0x8b, 0xb3, 0x91, 0xb6, 0x94, 0xd6, 0x12, 0x3e, 0x2b, 0x1a, 0x05, 0x66, 0xda,
+	0x3d, 0x3c, 0x98, 0xb0, 0x09, 0xcb, 0x68, 0x92, 0x53, 0x86, 0x38, 0x7c, 0xb2, 0x4a, 0xc6, 0x61,
+	0x41, 0xc0, 0x68, 0x22, 0x92, 0x9d, 0x24, 0x76, 0xa5, 0x25, 0x0e, 0x11, 0x8b, 0xb9, 0x03, 0x09,
+	0x3a, 0x3f, 0x67, 0xf8, 0x0e, 0xc5, 0xbb, 0x43, 0x69, 0xa0, 0x4f, 0x04, 0x51, 0xde, 0xe1, 0xfd,
+	0x1c, 0x61, 0xe7, 0xce, 0x54, 0xd4, 0x5e, 0xd3, 0x77, 0x8e, 0xba, 0x46, 0x85, 0x7d, 0xc3, 0x92,
+	0x93, 0x39, 0xa3, 0xb5, 0xc7, 0x4b, 0x95, 0xce, 0xd7, 0x3a, 0xde, 0x2b, 0xc3, 0x94, 0x8f, 0xf8,
+	0x81, 0x0b, 0x21, 0x07, 0x87, 0x08, 0x70, 0xed, 0xc8, 0x61, 0xe1, 0x82, 0xf8, 0xef, 0xad, 0x54,
+	0xdd, 0xa8, 0x54, 0x7f, 0x93, 0xcc, 0x15, 0xd2, 0xf7, 0xef, 0x18, 0x97, 0x1a, 0xca, 0x29, 0xde,
+	0xce, 0x5d, 0xa9, 0xa8, 0x8d, 0xf4, 0x9d, 0xa3, 0xc7, 0x2b, 0xa9, 0x8b, 0x45, 0x2d, 0x04, 0xeb,
+	0xad, 0x5f, 0xdf, 0xb6, 0x6a, 0x56, 0x41, 0xa0, 0x8c, 0xf0, 0x7f, 0x25, 0xbb, 0xf5, 0x7f, 0x72,
+	0xdb, 0x8c, 0x96, 0x3c, 0x3e, 0xc4, 0x38, 0x72, 0x3e, 0x40, 0x40, 0xec, 0x98, 0xfb, 0xea, 0x5a,
+	0x1b, 0xe9, 0x0d, 0xab, 0x91, 0x55, 0x46, 0xdc, 0xef, 0x7c, 0x43, 0xb8, 0xb9, 0x1c, 0xea, 0x0c,
+	0x6f, 0xa4, 0x0c, 0x32, 0xd1, 0xf1, 0x4a, 0x79, 0xf9, 0xa0, 0x4c, 0xbb, 0xc6, 0x80, 0x46, 0x82,
+	0xc7, 0x01, 0x50, 0x41, 0x84, 0xc7, 0x68, 0xca, 0x25, 0xb3, 0x65, 0x3c, 0x4a, 0x1f, 0x6f, 0x97,
+	0x22, 0xe9, 0x95, 0x91, 0xa4, 0x1b, 0xab, 0x98, 0xac, 0xca, 0xf1, 0xbd, 0x8e, 0xb7, 0xe4, 0x90,
+	0x32, 0xc6, 0x58, 0x8e, 0xd9, 0x9e, 0x9b, 0xc6, 0xd8, 0xed, 0x9d, 0x24, 0x8e, 0x7e, 0xde, 0xb6,
+	0x9e, 0x4f, 0x58, 0x49, 0xdc, 0x4b, 0x5e, 0x00, 0xdf, 0x07, 0x47, 0x30, 0x6e, 0x86, 0x2e, 0x11,
+	0xc4, 0xf4, 0xa8, 0x00, 0x4e, 0x89, 0x6f, 0x26, 0xff, 0x72, 0x2f, 0x83, 0xbe, 0xd5, 0x90, 0xb4,
+	0x03, 0x57, 0x31, 0xf1, 0x41, 0x24, 0x08, 0x17, 0xb6, 0xf0, 0x02, 0xb0, 0x63, 0xea, 0x5d, 0xda,
+	0x94, 0x50, 0xa6, 0xd6, 0xdb, 0x48, 0xdf, 0xb4, 0xf6, 0xd3, 0xde, 0xb9, 0x17, 0xc0, 0x88, 0x7a,
+	0x97, 0xaf, 0x09, 0x65, 0xca, 0x53, 0xac, 0x00, 0x75, 0xcb, 0xf0, 0xb5, 0x14, 0xfe, 0x3f, 0x50,
+	0x77, 0x09, 0xfc, 0x0a, 0x63, 0x22, 0x04, 0xf7, 0xc6, 0xb1, 0x80, 0x48, 0x5d, 0x4f, 0x97, 0xf6,
+	0xa8, 0xe2, 0x22, 0x4e, 0xe1, 0xea, 0x82, 0xf8, 0x71, 0xbe, 0xfc, 0x05, 0x02, 0xe5, 0x19, 0x56,
+	0x5d, 0xce, 0xc2, 0x10, 0x5c, 0xfb, 0xae, 0x6a, 0x3b, 0x2c, 0xa6, 0x42, 0xdd, 0x68, 0x23, 0xbd,
+	0x69, 0xdd, 0x93, 0xfd, 0x17, 0x45, 0xfb, 0x24, 0xe9, 0xf6, 0xbe, 0xa0, 0xeb, 0x99, 0x86, 0x6e,
+	0x66, 0x1a, 0xfa, 0x35, 0xd3, 0xd0, 0xa7, 0xb9, 0x56, 0xbb, 0x99, 0x6b, 0xb5, 0x1f, 0x73, 0xad,
+	0x86, 0x3b, 0x1e, 0xab, 0xba, 0xc6, 0x5e, 0x33, 0x7f, 0xaa, 0x86, 0x49, 0x6b, 0x88, 0xde, 0xbe,
+	0xfc, 0xeb, 0xf5, 0x67, 0xdf, 0x9d, 0x09, 0xd0, 0xc5, 0xaf, 0xe1, 0xe7, 0x7a, 0xeb, 0x2c, 0x04,
+	0x7a, 0x5e, 0xb0, 0xa4, 0xfc, 0xf9, 0x4d, 0x45, 0xc6, 0x45, 0x77, 0xbc, 0x99, 0xce, 0x1d, 0xff,
+	0x09, 0x00, 0x00, 0xff, 0xff, 0xe0, 0x81, 0x88, 0x24, 0x59, 0x05, 0x00, 0x00,
 }
 
 func (m *ProfilesData) Marshal() (dAtA []byte, err error) {
@@ -728,10 +511,10 @@ func (m *ScopeProfiles) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x1a
 	}
-	if len(m.ProfileRecords) > 0 {
-		for iNdEx := len(m.ProfileRecords) - 1; iNdEx >= 0; iNdEx-- {
+	if len(m.Profiles) > 0 {
+		for iNdEx := len(m.Profiles) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.ProfileRecords[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.Profiles[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -755,7 +538,7 @@ func (m *ScopeProfiles) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ProfileRecord) Marshal() (dAtA []byte, err error) {
+func (m *Profile) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -765,52 +548,20 @@ func (m *ProfileRecord) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ProfileRecord) MarshalTo(dAtA []byte) (int, error) {
+func (m *Profile) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ProfileRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *Profile) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.ObservedTimeUnixNano != 0 {
-		i -= 8
-		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(m.ObservedTimeUnixNano))
-		i--
-		dAtA[i] = 0x59
-	}
-	{
-		size := m.SpanId.Size()
-		i -= size
-		if _, err := m.SpanId.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintProfiles(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x52
-	{
-		size := m.TraceId.Size()
-		i -= size
-		if _, err := m.TraceId.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintProfiles(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x4a
-	if m.Flags != 0 {
-		i -= 4
-		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(m.Flags))
-		i--
-		dAtA[i] = 0x45
-	}
 	if m.DroppedAttributesCount != 0 {
 		i = encodeVarintProfiles(dAtA, i, uint64(m.DroppedAttributesCount))
 		i--
-		dAtA[i] = 0x38
+		dAtA[i] = 0x28
 	}
 	if len(m.Attributes) > 0 {
 		for iNdEx := len(m.Attributes) - 1; iNdEx >= 0; iNdEx-- {
@@ -823,37 +574,31 @@ func (m *ProfileRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintProfiles(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x32
+			dAtA[i] = 0x22
 		}
 	}
+	if m.EndTimeUnixNano != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(m.EndTimeUnixNano))
+		i--
+		dAtA[i] = 0x19
+	}
+	if m.StartTimeUnixNano != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(m.StartTimeUnixNano))
+		i--
+		dAtA[i] = 0x11
+	}
 	{
-		size, err := m.Body.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
+		size := m.ProfileId.Size()
+		i -= size
+		if _, err := m.ProfileId.MarshalTo(dAtA[i:]); err != nil {
 			return 0, err
 		}
-		i -= size
 		i = encodeVarintProfiles(dAtA, i, uint64(size))
 	}
 	i--
-	dAtA[i] = 0x2a
-	if len(m.SeverityText) > 0 {
-		i -= len(m.SeverityText)
-		copy(dAtA[i:], m.SeverityText)
-		i = encodeVarintProfiles(dAtA, i, uint64(len(m.SeverityText)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.SeverityNumber != 0 {
-		i = encodeVarintProfiles(dAtA, i, uint64(m.SeverityNumber))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.TimeUnixNano != 0 {
-		i -= 8
-		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(m.TimeUnixNano))
-		i--
-		dAtA[i] = 0x9
-	}
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -918,8 +663,8 @@ func (m *ScopeProfiles) Size() (n int) {
 	_ = l
 	l = m.Scope.Size()
 	n += 1 + l + sovProfiles(uint64(l))
-	if len(m.ProfileRecords) > 0 {
-		for _, e := range m.ProfileRecords {
+	if len(m.Profiles) > 0 {
+		for _, e := range m.Profiles {
 			l = e.Size()
 			n += 1 + l + sovProfiles(uint64(l))
 		}
@@ -931,24 +676,20 @@ func (m *ScopeProfiles) Size() (n int) {
 	return n
 }
 
-func (m *ProfileRecord) Size() (n int) {
+func (m *Profile) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.TimeUnixNano != 0 {
+	l = m.ProfileId.Size()
+	n += 1 + l + sovProfiles(uint64(l))
+	if m.StartTimeUnixNano != 0 {
 		n += 9
 	}
-	if m.SeverityNumber != 0 {
-		n += 1 + sovProfiles(uint64(m.SeverityNumber))
+	if m.EndTimeUnixNano != 0 {
+		n += 9
 	}
-	l = len(m.SeverityText)
-	if l > 0 {
-		n += 1 + l + sovProfiles(uint64(l))
-	}
-	l = m.Body.Size()
-	n += 1 + l + sovProfiles(uint64(l))
 	if len(m.Attributes) > 0 {
 		for _, e := range m.Attributes {
 			l = e.Size()
@@ -957,16 +698,6 @@ func (m *ProfileRecord) Size() (n int) {
 	}
 	if m.DroppedAttributesCount != 0 {
 		n += 1 + sovProfiles(uint64(m.DroppedAttributesCount))
-	}
-	if m.Flags != 0 {
-		n += 5
-	}
-	l = m.TraceId.Size()
-	n += 1 + l + sovProfiles(uint64(l))
-	l = m.SpanId.Size()
-	n += 1 + l + sovProfiles(uint64(l))
-	if m.ObservedTimeUnixNano != 0 {
-		n += 9
 	}
 	return n
 }
@@ -1308,7 +1039,7 @@ func (m *ScopeProfiles) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProfileRecords", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Profiles", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1335,8 +1066,8 @@ func (m *ScopeProfiles) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ProfileRecords = append(m.ProfileRecords, &ProfileRecord{})
-			if err := m.ProfileRecords[len(m.ProfileRecords)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.Profiles = append(m.Profiles, &Profile{})
+			if err := m.Profiles[len(m.Profiles)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1393,7 +1124,7 @@ func (m *ScopeProfiles) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ProfileRecord) Unmarshal(dAtA []byte) error {
+func (m *Profile) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1416,46 +1147,17 @@ func (m *ProfileRecord) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ProfileRecord: wiretype end group for non-group")
+			return fmt.Errorf("proto: Profile: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ProfileRecord: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: Profile: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 1 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TimeUnixNano", wireType)
-			}
-			m.TimeUnixNano = 0
-			if (iNdEx + 8) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.TimeUnixNano = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
-			iNdEx += 8
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SeverityNumber", wireType)
-			}
-			m.SeverityNumber = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowProfiles
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.SeverityNumber |= SeverityNumber(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SeverityText", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProfileId", wireType)
 			}
-			var stringLen uint64
+			var byteLen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowProfiles
@@ -1465,58 +1167,46 @@ func (m *ProfileRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				byteLen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
+			if byteLen < 0 {
 				return ErrInvalidLengthProfiles
 			}
-			postIndex := iNdEx + intStringLen
+			postIndex := iNdEx + byteLen
 			if postIndex < 0 {
 				return ErrInvalidLengthProfiles
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SeverityText = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Body", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowProfiles
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthProfiles
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthProfiles
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Body.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ProfileId.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
-		case 6:
+		case 2:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartTimeUnixNano", wireType)
+			}
+			m.StartTimeUnixNano = 0
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StartTimeUnixNano = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
+			iNdEx += 8
+		case 3:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EndTimeUnixNano", wireType)
+			}
+			m.EndTimeUnixNano = 0
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EndTimeUnixNano = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
+			iNdEx += 8
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
 			}
@@ -1550,7 +1240,7 @@ func (m *ProfileRecord) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 7:
+		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field DroppedAttributesCount", wireType)
 			}
@@ -1569,92 +1259,6 @@ func (m *ProfileRecord) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 8:
-			if wireType != 5 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Flags", wireType)
-			}
-			m.Flags = 0
-			if (iNdEx + 4) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Flags = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
-			iNdEx += 4
-		case 9:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TraceId", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowProfiles
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthProfiles
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthProfiles
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.TraceId.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 10:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SpanId", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowProfiles
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthProfiles
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthProfiles
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.SpanId.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 11:
-			if wireType != 1 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ObservedTimeUnixNano", wireType)
-			}
-			m.ObservedTimeUnixNano = 0
-			if (iNdEx + 8) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ObservedTimeUnixNano = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
-			iNdEx += 8
 		default:
 			iNdEx = preIndex
 			skippy, err := skipProfiles(dAtA[iNdEx:])

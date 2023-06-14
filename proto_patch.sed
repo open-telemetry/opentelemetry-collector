@@ -18,6 +18,13 @@ s+bytes \(.*span_id\) = \(.*\);+bytes \1 = \2\
   (gogoproto.customtype) = "go.opentelemetry.io/collector/pdata/internal/data.SpanID"\
   ];+g
 
+s+bytes \(.*profile_id\) = \(.*\);+bytes \1 = \2\
+  [\
+  // Use custom ProfileId data type for this field.\
+  (gogoproto.nullable) = false,\
+  (gogoproto.customtype) = "go.opentelemetry.io/collector/pdata/internal/data.ProfileID"\
+  ];+g
+
 s+repeated opentelemetry.proto.common.v1.KeyValue \(.*\);+repeated opentelemetry.proto.common.v1.KeyValue \1\
   [ (gogoproto.nullable) = false ];+g
 

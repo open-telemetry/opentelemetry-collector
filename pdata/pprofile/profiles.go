@@ -39,7 +39,7 @@ func (ms Profiles) ProfileRecordCount() int {
 		ill := rs.ScopeProfiles()
 		for i := 0; i < ill.Len(); i++ {
 			profiles := ill.At(i)
-			profileCount += profiles.ProfileRecords().Len()
+			profileCount += profiles.Profiles().Len()
 		}
 	}
 	return profileCount
