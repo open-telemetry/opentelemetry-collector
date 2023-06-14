@@ -11,11 +11,12 @@ module-sets:
     version: v0.79.0
     modules:
       - go.opentelemetry.io/collector
+      - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/component
       - go.opentelemetry.io/collector/confmap
-      - go.opentelemetry.io/collector/consumer
-      - go.opentelemetry.io/collector/cmd/builder
+      - go.opentelemetry.io/collector/connector
       - go.opentelemetry.io/collector/connector/forwardconnector
+      - go.opentelemetry.io/collector/consumer
       - go.opentelemetry.io/collector/exporter
       - go.opentelemetry.io/collector/exporter/loggingexporter
       - go.opentelemetry.io/collector/exporter/otlpexporter

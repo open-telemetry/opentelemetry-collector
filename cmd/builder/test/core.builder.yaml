@@ -22,6 +22,7 @@ replaces:
   - go.opentelemetry.io/collector/component => ${WORKSPACE_DIR}/component
   - go.opentelemetry.io/collector/confmap => ${WORKSPACE_DIR}/confmap
   - go.opentelemetry.io/collector/consumer => ${WORKSPACE_DIR}/consumer
+  - go.opentelemetry.io/collector/connector => ${WORKSPACE_DIR}/connector
   - go.opentelemetry.io/collector/exporter => ${WORKSPACE_DIR}/exporter
   - go.opentelemetry.io/collector/exporter/loggingexporter => ${WORKSPACE_DIR}/exporter/loggingexporter
   - go.opentelemetry.io/collector/extension => ${WORKSPACE_DIR}/extension

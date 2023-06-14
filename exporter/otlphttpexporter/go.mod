@@ -92,3 +92,5 @@ retract (
 )
 
 replace cloud.google.com/go => cloud.google.com/go v0.110.2
+
+replace go.opentelemetry.io/collector/connector => ../../connector
