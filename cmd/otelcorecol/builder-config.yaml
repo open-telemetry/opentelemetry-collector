@@ -31,6 +31,7 @@ replaces:
   - go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/otlpexporter
   - go.opentelemetry.io/collector/exporter/otlphttpexporter => ../../exporter/otlphttpexporter
   - go.opentelemetry.io/collector/extension => ../../extension
+  - go.opentelemetry.io/collector/extension/auth => ../../extension/auth
   - go.opentelemetry.io/collector/extension/ballastextension => ../../extension/ballastextension
   - go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ../../featuregate
