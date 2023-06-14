@@ -28,7 +28,7 @@ func (cfg Config) Validate() error {
 	// Check that all pipelines have at least one receiver and one exporter, and they reference
 	// only configured components.
 	for pipelineID, pipeline := range cfg {
-		if pipelineID.Type() != component.DataTypeTraces && pipelineID.Type() != component.DataTypeMetrics && pipelineID.Type() != component.DataTypeLogs {
+		if pipelineID.Type() != component.DataTypeTraces && pipelineID.Type() != component.DataTypeMetrics && pipelineID.Type() != component.DataTypeLogs && pipelineID.Type() != component.DataTypeProfiles {
 			return fmt.Errorf("pipeline %q: unknown datatype %q", pipelineID, pipelineID.Type())
 		}
 

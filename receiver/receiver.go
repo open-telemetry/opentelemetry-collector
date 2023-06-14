@@ -91,6 +91,14 @@ type Factory interface {
 	// LogsReceiverStability gets the stability level of the LogsReceiver.
 	LogsReceiverStability() component.StabilityLevel
 
+	// CreateProfilesReceiver creates a ProfilesReceiver based on this config.
+	// If the receiver type does not support the data type or if the config is not valid
+	// an error will be returned instead.
+	CreateProfilesReceiver(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Profiles) (Profiles, error)
+
+	// ProfilesReceiverStability gets the stability level of the ProfilesReceiver.
+	ProfilesReceiverStability() component.StabilityLevel
+
 	unexportedFactoryFunc()
 }
 
@@ -199,6 +207,10 @@ func (f *factory) MetricsReceiverStability() component.StabilityLevel {
 
 func (f *factory) LogsReceiverStability() component.StabilityLevel {
 	return f.logsStabilityLevel
+}
+
+func (f *factory) ProfilesReceiverStability() component.StabilityLevel {
+	return f.profilesStabilityLevel
 }
 
 // WithTraces overrides the default "error not supported" implementation for CreateTracesReceiver and the default "undefined" stability level.
@@ -315,6 +327,22 @@ func (b *Builder) CreateLogs(ctx context.Context, set CreateSettings, next consu
 
 	logStabilityLevel(set.Logger, f.LogsReceiverStability())
 	return f.CreateLogsReceiver(ctx, set, cfg, next)
+}
+
+// CreateProfiles creates a Profiles receiver based on the settings and config.
+func (b *Builder) CreateProfiles(ctx context.Context, set CreateSettings, next consumer.Profiles) (Logs, error) {
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("receiver %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.LogsReceiverStability())
+	return f.CreateProfilesReceiver(ctx, set, cfg, next)
 }
 
 func (b *Builder) Factory(componentType component.Type) component.Factory {

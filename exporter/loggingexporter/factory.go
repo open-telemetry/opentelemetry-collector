@@ -35,6 +35,7 @@ func NewFactory() exporter.Factory {
 		exporter.WithTraces(createTracesExporter, component.StabilityLevelDevelopment),
 		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDevelopment),
 		exporter.WithLogs(createLogsExporter, component.StabilityLevelDevelopment),
+		exporter.WithProfiles(createProfilesExporter, component.StabilityLevelDevelopment),
 	)
 }
 
@@ -83,6 +84,21 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewLogsExporter(ctx, set, cfg,
 		s.pushLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		// Disable Timeout/RetryOnFailure and SendingQueue
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
+		exporterhelper.WithShutdown(loggerSync(exporterLogger)),
+	)
+}
+
+func createProfilesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Profiles, error) {
+	cfg := config.(*Config)
+	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
+	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
+	return exporterhelper.NewProfilesExporter(ctx, set, cfg,
+		s.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

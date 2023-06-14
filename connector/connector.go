@@ -80,6 +80,27 @@ type LogsRouter interface {
 	PipelineIDs() []component.ID
 }
 
+// A Profiles connector acts as an exporter from a logs pipeline and a receiver
+// to one or more traces, metrics, or logs pipelines.
+// Profiles feeds a consumer.Profiles, consumer.Metrics, or consumer.Profiles with data.
+//
+// Examples:
+//   - Structured logs containing span information could be consumed and emitted as traces.
+//   - Metrics could be extracted from structured logs that contain numeric data.
+//   - Profiles could be collected in one pipeline and routed to another logs pipeline
+//     based on criteria such as attributes or other content of the log. The second
+//     pipeline can then process and export the log to the appropriate backend.
+type Profiles interface {
+	component.Component
+	consumer.Profiles
+}
+
+// ProfilesRouter feeds the first consumer.Profiles in each of the specified pipelines.
+type ProfilesRouter interface {
+	Consumer(...component.ID) (consumer.Profiles, error)
+	PipelineIDs() []component.ID
+}
+
 // CreateSettings configures Connector creators.
 type CreateSettings struct {
 	// ID returns the ID of the component that will be created.
@@ -292,6 +313,22 @@ func (f CreateLogsToLogsFunc) CreateLogsToLogs(
 	return f(ctx, set, cfg, nextConsumer)
 }
 
+// CreateProfilesToProfilesFunc is the equivalent of Factory.CreateProfilesToProfiles().
+type CreateProfilesToProfilesFunc func(context.Context, CreateSettings, component.Config, consumer.Profiles) (Profiles, error)
+
+// CreateProfilesToProfiles implements Factory.CreateProfilesToProfiles().
+func (f CreateProfilesToProfilesFunc) CreateProfilesToProfiles(
+	ctx context.Context,
+	set CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Profiles,
+) (Profiles, error) {
+	if f == nil {
+		return nil, errDataTypes(set.ID, component.DataTypeProfiles, component.DataTypeProfiles)
+	}
+	return f(ctx, set, cfg, nextConsumer)
+}
+
 // factory implements Factory.
 type factory struct {
 	cfgType component.Type
@@ -309,6 +346,8 @@ type factory struct {
 	CreateLogsToMetricsFunc
 	CreateLogsToLogsFunc
 
+	CreateProfilesToProfilesFunc
+
 	tracesToTracesStabilityLevel  component.StabilityLevel
 	tracesToMetricsStabilityLevel component.StabilityLevel
 	tracesToLogsStabilityLevel    component.StabilityLevel
@@ -320,6 +359,8 @@ type factory struct {
 	logsToTracesStabilityLevel  component.StabilityLevel
 	logsToMetricsStabilityLevel component.StabilityLevel
 	logsToLogsStabilityLevel    component.StabilityLevel
+
+	profilesToProfilesStabilityLevel component.StabilityLevel
 }
 
 // Type returns the type of component.
@@ -398,6 +439,14 @@ func WithLogsToLogs(createLogsToLogs CreateLogsToLogsFunc, sl component.Stabilit
 	return factoryOptionFunc(func(o *factory) {
 		o.logsToLogsStabilityLevel = sl
 		o.CreateLogsToLogsFunc = createLogsToLogs
+	})
+}
+
+// WithProfilesToProfiles overrides the default "error not supported" implementation for WithProfilesToProfiles and the default "undefined" stability level.
+func WithProfilesToProfiles(createProfilesToProfiles CreateProfilesToProfilesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.profilesToProfilesStabilityLevel = sl
+		o.CreateProfilesToProfilesFunc = createProfilesToProfiles
 	})
 }
 

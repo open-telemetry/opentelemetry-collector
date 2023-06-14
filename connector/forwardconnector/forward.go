@@ -23,6 +23,7 @@ func NewFactory() connector.Factory {
 		connector.WithTracesToTraces(createTracesToTraces, component.StabilityLevelBeta),
 		connector.WithMetricsToMetrics(createMetricsToMetrics, component.StabilityLevelBeta),
 		connector.WithLogsToLogs(createLogsToLogs, component.StabilityLevelBeta),
+		connector.WithProfilesToProfiles(createProfilesToProfiles, component.StabilityLevelBeta),
 	)
 }
 
@@ -61,6 +62,16 @@ func createLogsToLogs(
 	return &forward{Logs: nextConsumer}, nil
 }
 
+// createProfilesToProfiles creates a log receiver based on provided config.
+func createProfilesToProfiles(
+	_ context.Context,
+	_ connector.CreateSettings,
+	_ component.Config,
+	nextConsumer consumer.Profiles,
+) (connector.Profiles, error) {
+	return &forward{Profiles: nextConsumer}, nil
+}
+
 // forward is used to pass signals directly from one pipeline to another.
 // This is useful when there is a need to replicate data and process it in more
 // than one way. It can also be used to join pipelines together.
@@ -68,6 +79,7 @@ type forward struct {
 	consumer.Traces
 	consumer.Metrics
 	consumer.Logs
+	consumer.Profiles
 	component.StartFunc
 	component.ShutdownFunc
 }

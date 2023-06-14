@@ -14,15 +14,17 @@ import (
 	"go.opentelemetry.io/collector/exporter/loggingexporter/internal/otlptext"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type loggingExporter struct {
-	verbosity        configtelemetry.Level
-	logger           *zap.Logger
-	logsMarshaler    plog.Marshaler
-	metricsMarshaler pmetric.Marshaler
-	tracesMarshaler  ptrace.Marshaler
+	verbosity         configtelemetry.Level
+	logger            *zap.Logger
+	logsMarshaler     plog.Marshaler
+	metricsMarshaler  pmetric.Marshaler
+	tracesMarshaler   ptrace.Marshaler
+	profilesMarshaler pprofile.Marshaler
 }
 
 func (s *loggingExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
@@ -74,13 +76,30 @@ func (s *loggingExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	return nil
 }
 
+func (s *loggingExporter) pushProfiles(_ context.Context, ld pprofile.Profiles) error {
+	s.logger.Info("LogsExporter",
+		zap.Int("resource profiles", ld.ResourceProfiles().Len()),
+		zap.Int("profile records", ld.ProfileRecordCount()))
+	if s.verbosity != configtelemetry.LevelDetailed {
+		return nil
+	}
+
+	buf, err := s.profilesMarshaler.MarshalProfiles(ld)
+	if err != nil {
+		return err
+	}
+	s.logger.Info(string(buf))
+	return nil
+}
+
 func newLoggingExporter(logger *zap.Logger, verbosity configtelemetry.Level) *loggingExporter {
 	return &loggingExporter{
-		verbosity:        verbosity,
-		logger:           logger,
-		logsMarshaler:    otlptext.NewTextLogsMarshaler(),
-		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
-		tracesMarshaler:  otlptext.NewTextTracesMarshaler(),
+		verbosity:         verbosity,
+		logger:            logger,
+		logsMarshaler:     otlptext.NewTextLogsMarshaler(),
+		metricsMarshaler:  otlptext.NewTextMetricsMarshaler(),
+		tracesMarshaler:   otlptext.NewTextTracesMarshaler(),
+		profilesMarshaler: otlptext.NewTextProfilesMarshaler(),
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -28,6 +29,9 @@ type Consumer interface {
 
 	// ConsumeLogs to implement the consumer.Logs.
 	ConsumeLogs(context.Context, plog.Logs) error
+
+	// ConsumeLogs to implement the consumer.Profiles.
+	ConsumeProfiles(context.Context, pprofile.Profiles) error
 
 	unexported()
 }

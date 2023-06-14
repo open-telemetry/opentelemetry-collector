@@ -95,6 +95,12 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 			consumers = append(consumers, next.(consumer.Logs))
 		}
 		n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
+	case component.DataTypeProfiles:
+		var consumers []consumer.Profiles
+		for _, next := range nexts {
+			consumers = append(consumers, next.(consumer.Profiles))
+		}
+		n.Component, err = builder.CreateProfiles(ctx, set, fanoutconsumer.NewProfiles(consumers))
 	default:
 		return fmt.Errorf("error creating receiver %q for data type %q is not supported", set.ID, n.pipelineType)
 	}
@@ -143,6 +149,8 @@ func (n *processorNode) buildComponent(ctx context.Context,
 		n.Component, err = builder.CreateMetrics(ctx, set, next.(consumer.Metrics))
 	case component.DataTypeLogs:
 		n.Component, err = builder.CreateLogs(ctx, set, next.(consumer.Logs))
+	case component.DataTypeProfiles:
+		n.Component, err = builder.CreateProfiles(ctx, set, next.(consumer.Profiles))
 	default:
 		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID, n.pipelineID.Type())
 	}
@@ -191,6 +199,8 @@ func (n *exporterNode) buildComponent(
 		n.Component, err = builder.CreateMetrics(ctx, set)
 	case component.DataTypeLogs:
 		n.Component, err = builder.CreateLogs(ctx, set)
+	case component.DataTypeProfiles:
+		n.Component, err = builder.CreateProfiles(ctx, set)
 	default:
 		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
 	}
