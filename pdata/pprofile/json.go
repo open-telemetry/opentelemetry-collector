@@ -5,6 +5,7 @@ package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 import (
 	"bytes"
+	"fmt"
 
 	jsoniter "github.com/json-iterator/go"
 
@@ -94,31 +95,21 @@ func (ms ScopeProfiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
 func (ms Profile) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
-		// case "timeUnixNano", "time_unix_nano":
-		// 	ms.orig.TimeUnixNano = json.ReadUint64(iter)
-		// case "observed_time_unix_nano", "observedTimeUnixNano":
-		// 	ms.orig.ObservedTimeUnixNano = json.ReadUint64(iter)
-		// case "severity_text", "severityText":
-		// 	ms.orig.SeverityText = iter.ReadString()
-		// case "body":
-		// 	json.ReadValue(iter, &ms.orig.Body)
-		// case "attributes":
-		// 	iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-		// 		ms.orig.Attributes = append(ms.orig.Attributes, json.ReadAttribute(iter))
-		// 		return true
-		// 	})
-		// case "droppedAttributesCount", "dropped_attributes_count":
-		// 	ms.orig.DroppedAttributesCount = json.ReadUint32(iter)
-		// case "flags":
-		// 	ms.orig.Flags = json.ReadUint32(iter)
-		// case "traceId", "trace_id":
-		// 	if err := ms.orig.TraceId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-		// 		iter.ReportError("readProfile.traceId", fmt.Sprintf("parse trace_id:%v", err))
-		// 	}
-		// case "spanId", "span_id":
-		// 	if err := ms.orig.SpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-		// 		iter.ReportError("readProfile.spanId", fmt.Sprintf("parse span_id:%v", err))
-		// 	}
+		case "startTimeUnixNano", "start_time_unix_nano":
+			ms.orig.StartTimeUnixNano = json.ReadUint64(iter)
+		case "endTimeUnixNano", "end_time_unix_nano":
+			ms.orig.EndTimeUnixNano = json.ReadUint64(iter)
+		case "attributes":
+			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+				ms.orig.Attributes = append(ms.orig.Attributes, json.ReadAttribute(iter))
+				return true
+			})
+		case "droppedAttributesCount", "dropped_attributes_count":
+			ms.orig.DroppedAttributesCount = json.ReadUint32(iter)
+		case "profileId", "profile_id":
+			if err := ms.orig.ProfileId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
+				iter.ReportError("readProfile.profileId", fmt.Sprintf("parse profile_id:%v", err))
+			}
 		default:
 			iter.Skip()
 		}

@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -28,20 +27,13 @@ var profilesOTLP = func() Profiles {
 	il.Scope().SetVersion("version")
 	il.Scope().SetDroppedAttributesCount(1)
 	il.SetSchemaUrl("scope_schema")
-	lg := il.ProfileRecords().AppendEmpty()
-	lg.SetSeverityNumber(SeverityNumber(otlpprofiles.SeverityNumber_SEVERITY_NUMBER_ERROR))
-	lg.SetSeverityText("Error")
+	lg := il.Profiles().AppendEmpty()
 	lg.SetDroppedAttributesCount(1)
-	lg.SetFlags(ProfileRecordFlags(otlpprofiles.ProfileRecordFlags_LOG_RECORD_FLAGS_DO_NOT_USE))
-	traceID := pcommon.TraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-	spanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
-	lg.SetTraceID(traceID)
-	lg.SetSpanID(spanID)
-	lg.Body().SetStr("hello world")
-	lg.SetTimestamp(pcommon.Timestamp(1684617382541971000))
-	lg.SetObservedTimestamp(pcommon.Timestamp(1684623646539558000))
+	profileID := pcommon.ProfileID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	lg.SetProfileID(profileID)
+	lg.SetStartTime(pcommon.Timestamp(1684617382541971000))
+	lg.SetEndTime(pcommon.Timestamp(1684623646539558000))
 	lg.Attributes().PutStr("sdkVersion", "1.0.1")
-	lg.SetFlags(DefaultProfileRecordFlags.WithIsSampled(true))
 	return ld
 }()
 
@@ -112,17 +104,17 @@ func TestUnmarshalJsoniterProfileRecord(t *testing.T) {
 	jsonStr := `{"extra":"", "body":{}}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := NewProfileRecord()
+	val := NewProfile()
 	val.unmarshalJsoniter(iter)
 	assert.NoError(t, iter.Error)
-	assert.Equal(t, NewProfileRecord(), val)
+	assert.Equal(t, NewProfile(), val)
 }
 
 func TestUnmarshalJsoniterProfileWrongTraceID(t *testing.T) {
 	jsonStr := `{"body":{}, "traceId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewProfileRecord().unmarshalJsoniter(iter)
+	NewProfile().unmarshalJsoniter(iter)
 	require.Error(t, iter.Error)
 	assert.Contains(t, iter.Error.Error(), "parse trace_id")
 }
@@ -131,7 +123,7 @@ func TestUnmarshalJsoniterProfileWrongSpanID(t *testing.T) {
 	jsonStr := `{"body":{}, "spanId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewProfileRecord().unmarshalJsoniter(iter)
+	NewProfile().unmarshalJsoniter(iter)
 	require.Error(t, iter.Error)
 	assert.Contains(t, iter.Error.Error(), "parse span_id")
 }

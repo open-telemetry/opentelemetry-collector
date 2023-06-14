@@ -22,7 +22,7 @@ func TestProtoProfilesUnmarshalerError(t *testing.T) {
 func TestProtoSizer(t *testing.T) {
 	marshaler := &ProtoMarshaler{}
 	ld := NewProfiles()
-	ld.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().SetSeverityText("error")
+	ld.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().SetStartTime(pcommon.NewTimestampFromTime(time.Now()))
 
 	size := marshaler.ProfilesSize(ld)
 
@@ -72,7 +72,7 @@ func generateBenchmarkProfiles(profilesCount int) Profiles {
 	ilm.Profiles().EnsureCapacity(profilesCount)
 	for i := 0; i < profilesCount; i++ {
 		im := ilm.Profiles().AppendEmpty()
-		im.SetTimestamp(endTime)
+		im.SetEndTime(endTime)
 	}
 	return md
 }
