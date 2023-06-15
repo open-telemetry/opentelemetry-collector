@@ -131,26 +131,42 @@ type Factory interface {
 	CreateTracesToTraces(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (Traces, error)
 	CreateTracesToMetrics(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (Traces, error)
 	CreateTracesToLogs(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (Traces, error)
+	CreateTracesToProfiles(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Profiles) (Traces, error)
 
 	CreateMetricsToTraces(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (Metrics, error)
 	CreateMetricsToMetrics(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (Metrics, error)
 	CreateMetricsToLogs(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (Metrics, error)
+	CreateMetricsToProfiles(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Profiles) (Metrics, error)
 
 	CreateLogsToTraces(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (Logs, error)
 	CreateLogsToMetrics(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (Logs, error)
 	CreateLogsToLogs(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (Logs, error)
+	CreateLogsToProfiles(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Profiles) (Logs, error)
+
+	CreateProfilesToTraces(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (Profiles, error)
+	CreateProfilesToMetrics(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (Profiles, error)
+	CreateProfilesToLogs(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (Profiles, error)
+	CreateProfilesToProfiles(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Profiles) (Profiles, error)
 
 	TracesToTracesStability() component.StabilityLevel
 	TracesToMetricsStability() component.StabilityLevel
 	TracesToLogsStability() component.StabilityLevel
+	TracesToProfilesStability() component.StabilityLevel
 
 	MetricsToTracesStability() component.StabilityLevel
 	MetricsToMetricsStability() component.StabilityLevel
 	MetricsToLogsStability() component.StabilityLevel
+	MetricsToProfilesStability() component.StabilityLevel
 
 	LogsToTracesStability() component.StabilityLevel
 	LogsToMetricsStability() component.StabilityLevel
 	LogsToLogsStability() component.StabilityLevel
+	LogsToProfilesStability() component.StabilityLevel
+
+	ProfilesToTracesStability() component.StabilityLevel
+	ProfilesToMetricsStability() component.StabilityLevel
+	ProfilesToLogsStability() component.StabilityLevel
+	ProfilesToProfilesStability() component.StabilityLevel
 
 	unexportedFactoryFunc()
 }
@@ -217,6 +233,22 @@ func (f CreateTracesToLogsFunc) CreateTracesToLogs(
 	return f(ctx, set, cfg, nextConsumer)
 }
 
+// CreateTracesToProfilesFunc is the equivalent of Factory.CreateTracesToProfiles().
+type CreateTracesToProfilesFunc func(context.Context, CreateSettings, component.Config, consumer.Profiles) (Traces, error)
+
+// CreateTracesToProfiles implements Factory.CreateTracesToProfiles().
+func (f CreateTracesToProfilesFunc) CreateTracesToProfiles(
+	ctx context.Context,
+	set CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Profiles,
+) (Traces, error) {
+	if f == nil {
+		return nil, errDataTypes(set.ID, component.DataTypeTraces, component.DataTypeProfiles)
+	}
+	return f(ctx, set, cfg, nextConsumer)
+}
+
 // CreateMetricsToTracesFunc is the equivalent of Factory.CreateMetricsToTraces().
 type CreateMetricsToTracesFunc func(context.Context, CreateSettings, component.Config, consumer.Traces) (Metrics, error)
 
@@ -261,6 +293,22 @@ func (f CreateMetricsToLogsFunc) CreateMetricsToLogs(
 ) (Metrics, error) {
 	if f == nil {
 		return nil, errDataTypes(set.ID, component.DataTypeMetrics, component.DataTypeLogs)
+	}
+	return f(ctx, set, cfg, nextConsumer)
+}
+
+// CreateMetricsToProfilesFunc is the equivalent of Factory.CreateMetricsToProfiles().
+type CreateMetricsToProfilesFunc func(context.Context, CreateSettings, component.Config, consumer.Profiles) (Metrics, error)
+
+// CreateMetricsToProfiles implements Factory.CreateMetricsToProfiles().
+func (f CreateMetricsToProfilesFunc) CreateMetricsToProfiles(
+	ctx context.Context,
+	set CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Profiles,
+) (Metrics, error) {
+	if f == nil {
+		return nil, errDataTypes(set.ID, component.DataTypeMetrics, component.DataTypeProfiles)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -313,6 +361,70 @@ func (f CreateLogsToLogsFunc) CreateLogsToLogs(
 	return f(ctx, set, cfg, nextConsumer)
 }
 
+// CreateLogsToProfilesFunc is the equivalent of Factory.CreateLogsToProfiles().
+type CreateLogsToProfilesFunc func(context.Context, CreateSettings, component.Config, consumer.Profiles) (Logs, error)
+
+// CreateLogsToProfiles implements Factory.CreateLogsToProfiles().
+func (f CreateLogsToProfilesFunc) CreateLogsToProfiles(
+	ctx context.Context,
+	set CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Profiles,
+) (Logs, error) {
+	if f == nil {
+		return nil, errDataTypes(set.ID, component.DataTypeLogs, component.DataTypeProfiles)
+	}
+	return f(ctx, set, cfg, nextConsumer)
+}
+
+// CreateProfilesToTracesFunc is the equivalent of Factory.CreateProfilesToTraces().
+type CreateProfilesToTracesFunc func(context.Context, CreateSettings, component.Config, consumer.Traces) (Profiles, error)
+
+// CreateProfilesToTraces implements Factory.CreateProfilesToTraces().
+func (f CreateProfilesToTracesFunc) CreateProfilesToTraces(
+	ctx context.Context,
+	set CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Traces,
+) (Profiles, error) {
+	if f == nil {
+		return nil, errDataTypes(set.ID, component.DataTypeLogs, component.DataTypeTraces)
+	}
+	return f(ctx, set, cfg, nextConsumer)
+}
+
+// CreateProfilesToMetricsFunc is the equivalent of Factory.CreateProfilesToMetrics().
+type CreateProfilesToMetricsFunc func(context.Context, CreateSettings, component.Config, consumer.Metrics) (Profiles, error)
+
+// CreateProfilesToMetrics implements Factory.CreateProfilesToMetrics().
+func (f CreateProfilesToMetricsFunc) CreateProfilesToMetrics(
+	ctx context.Context,
+	set CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics,
+) (Profiles, error) {
+	if f == nil {
+		return nil, errDataTypes(set.ID, component.DataTypeLogs, component.DataTypeMetrics)
+	}
+	return f(ctx, set, cfg, nextConsumer)
+}
+
+// CreateProfilesToLogsFunc is the equivalent of Factory.CreateProfilesToLogs().
+type CreateProfilesToLogsFunc func(context.Context, CreateSettings, component.Config, consumer.Logs) (Profiles, error)
+
+// CreateProfilesToLogs implements Factory.CreateProfilesToLogs().
+func (f CreateProfilesToLogsFunc) CreateProfilesToLogs(
+	ctx context.Context,
+	set CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (Profiles, error) {
+	if f == nil {
+		return nil, errDataTypes(set.ID, component.DataTypeLogs, component.DataTypeLogs)
+	}
+	return f(ctx, set, cfg, nextConsumer)
+}
+
 // CreateProfilesToProfilesFunc is the equivalent of Factory.CreateProfilesToProfiles().
 type CreateProfilesToProfilesFunc func(context.Context, CreateSettings, component.Config, consumer.Profiles) (Profiles, error)
 
@@ -337,29 +449,41 @@ type factory struct {
 	CreateTracesToTracesFunc
 	CreateTracesToMetricsFunc
 	CreateTracesToLogsFunc
+	CreateTracesToProfilesFunc
 
 	CreateMetricsToTracesFunc
 	CreateMetricsToMetricsFunc
 	CreateMetricsToLogsFunc
+	CreateMetricsToProfilesFunc
 
 	CreateLogsToTracesFunc
 	CreateLogsToMetricsFunc
 	CreateLogsToLogsFunc
+	CreateLogsToProfilesFunc
 
+	CreateProfilesToTracesFunc
+	CreateProfilesToMetricsFunc
+	CreateProfilesToLogsFunc
 	CreateProfilesToProfilesFunc
 
-	tracesToTracesStabilityLevel  component.StabilityLevel
-	tracesToMetricsStabilityLevel component.StabilityLevel
-	tracesToLogsStabilityLevel    component.StabilityLevel
+	tracesToTracesStabilityLevel   component.StabilityLevel
+	tracesToMetricsStabilityLevel  component.StabilityLevel
+	tracesToLogsStabilityLevel     component.StabilityLevel
+	tracesToProfilesStabilityLevel component.StabilityLevel
 
-	metricsToTracesStabilityLevel  component.StabilityLevel
-	metricsToMetricsStabilityLevel component.StabilityLevel
-	metricsToLogsStabilityLevel    component.StabilityLevel
+	metricsToTracesStabilityLevel   component.StabilityLevel
+	metricsToMetricsStabilityLevel  component.StabilityLevel
+	metricsToLogsStabilityLevel     component.StabilityLevel
+	metricsToProfilesStabilityLevel component.StabilityLevel
 
-	logsToTracesStabilityLevel  component.StabilityLevel
-	logsToMetricsStabilityLevel component.StabilityLevel
-	logsToLogsStabilityLevel    component.StabilityLevel
+	logsToTracesStabilityLevel   component.StabilityLevel
+	logsToMetricsStabilityLevel  component.StabilityLevel
+	logsToLogsStabilityLevel     component.StabilityLevel
+	logsToProfilesStabilityLevel component.StabilityLevel
 
+	profilesToTracesStabilityLevel   component.StabilityLevel
+	profilesToMetricsStabilityLevel  component.StabilityLevel
+	profilesToLogsStabilityLevel     component.StabilityLevel
 	profilesToProfilesStabilityLevel component.StabilityLevel
 }
 
@@ -462,6 +586,10 @@ func (f factory) TracesToLogsStability() component.StabilityLevel {
 	return f.tracesToLogsStabilityLevel
 }
 
+func (f factory) TracesToProfilesStability() component.StabilityLevel {
+	return f.tracesToProfilesStabilityLevel
+}
+
 func (f factory) MetricsToTracesStability() component.StabilityLevel {
 	return f.metricsToTracesStabilityLevel
 }
@@ -474,6 +602,10 @@ func (f factory) MetricsToLogsStability() component.StabilityLevel {
 	return f.metricsToLogsStabilityLevel
 }
 
+func (f factory) MetricsToProfilesStability() component.StabilityLevel {
+	return f.metricsToProfilesStabilityLevel
+}
+
 func (f factory) LogsToTracesStability() component.StabilityLevel {
 	return f.logsToTracesStabilityLevel
 }
@@ -484,6 +616,26 @@ func (f factory) LogsToMetricsStability() component.StabilityLevel {
 
 func (f factory) LogsToLogsStability() component.StabilityLevel {
 	return f.logsToLogsStabilityLevel
+}
+
+func (f factory) LogsToProfilesStability() component.StabilityLevel {
+	return f.logsToProfilesStabilityLevel
+}
+
+func (f factory) ProfilesToTracesStability() component.StabilityLevel {
+	return f.profilesToTracesStabilityLevel
+}
+
+func (f factory) ProfilesToMetricsStability() component.StabilityLevel {
+	return f.profilesToMetricsStabilityLevel
+}
+
+func (f factory) ProfilesToLogsStability() component.StabilityLevel {
+	return f.profilesToLogsStabilityLevel
+}
+
+func (f factory) ProfilesToProfilesStability() component.StabilityLevel {
+	return f.profilesToProfilesStabilityLevel
 }
 
 // NewFactory returns a Factory.
@@ -570,6 +722,22 @@ func (b *Builder) CreateTracesToLogs(ctx context.Context, set CreateSettings, ne
 	return f.CreateTracesToLogs(ctx, set, cfg, next)
 }
 
+// CreateTracesToProfiles creates a Traces connector based on the settings and config.
+func (b *Builder) CreateTracesToProfiles(ctx context.Context, set CreateSettings, next consumer.Profiles) (Traces, error) {
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("connector %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.TracesToProfilesStability())
+	return f.CreateTracesToProfiles(ctx, set, cfg, next)
+}
+
 // CreateMetricsToTraces creates a Metrics connector based on the settings and config.
 func (b *Builder) CreateMetricsToTraces(ctx context.Context, set CreateSettings, next consumer.Traces) (Metrics, error) {
 	cfg, existsCfg := b.cfgs[set.ID]
@@ -618,6 +786,22 @@ func (b *Builder) CreateMetricsToLogs(ctx context.Context, set CreateSettings, n
 	return f.CreateMetricsToLogs(ctx, set, cfg, next)
 }
 
+// CreateMetricsToProfiles creates a Metrics connector based on the settings and config.
+func (b *Builder) CreateMetricsToProfiles(ctx context.Context, set CreateSettings, next consumer.Profiles) (Metrics, error) {
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("connector %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.MetricsToProfilesStability())
+	return f.CreateMetricsToProfiles(ctx, set, cfg, next)
+}
+
 // CreateLogsToTraces creates a Logs connector based on the settings and config.
 func (b *Builder) CreateLogsToTraces(ctx context.Context, set CreateSettings, next consumer.Traces) (Logs, error) {
 	cfg, existsCfg := b.cfgs[set.ID]
@@ -664,6 +848,86 @@ func (b *Builder) CreateLogsToLogs(ctx context.Context, set CreateSettings, next
 
 	logStabilityLevel(set.Logger, f.LogsToLogsStability())
 	return f.CreateLogsToLogs(ctx, set, cfg, next)
+}
+
+// CreateLogsToProfiles creates a Logs connector based on the settings and config.
+func (b *Builder) CreateLogsToProfiles(ctx context.Context, set CreateSettings, next consumer.Profiles) (Logs, error) {
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("connector %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.LogsToProfilesStability())
+	return f.CreateLogsToProfiles(ctx, set, cfg, next)
+}
+
+// CreateProfilesToTraces creates a Profiles connector based on the settings and config.
+func (b *Builder) CreateProfilesToTraces(ctx context.Context, set CreateSettings, next consumer.Traces) (Profiles, error) {
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("connector %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.ProfilesToTracesStability())
+	return f.CreateProfilesToTraces(ctx, set, cfg, next)
+}
+
+// CreateProfilesToMetrics creates a Profiles connector based on the settings and config.
+func (b *Builder) CreateProfilesToMetrics(ctx context.Context, set CreateSettings, next consumer.Metrics) (Profiles, error) {
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("connector %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.ProfilesToMetricsStability())
+	return f.CreateProfilesToMetrics(ctx, set, cfg, next)
+}
+
+// CreateProfilesToLogs creates a Profiles connector based on the settings and config.
+func (b *Builder) CreateProfilesToLogs(ctx context.Context, set CreateSettings, next consumer.Logs) (Profiles, error) {
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("connector %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.ProfilesToLogsStability())
+	return f.CreateProfilesToLogs(ctx, set, cfg, next)
+}
+
+// CreateProfilesToProfiles creates a Profiles connector based on the settings and config.
+func (b *Builder) CreateProfilesToProfiles(ctx context.Context, set CreateSettings, next consumer.Profiles) (Profiles, error) {
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("connector %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.ProfilesToProfilesStability())
+	return f.CreateProfilesToProfiles(ctx, set, cfg, next)
 }
 
 func (b *Builder) IsConfigured(componentID component.ID) bool {

@@ -35,14 +35,16 @@ type Exporter struct {
 	tracer         trace.Tracer
 	logger         *zap.Logger
 
-	useOtelForMetrics        bool
-	otelAttrs                []attribute.KeyValue
-	sentSpans                metric.Int64Counter
-	failedToSendSpans        metric.Int64Counter
-	sentMetricPoints         metric.Int64Counter
-	failedToSendMetricPoints metric.Int64Counter
-	sentLogRecords           metric.Int64Counter
-	failedToSendLogRecords   metric.Int64Counter
+	useOtelForMetrics          bool
+	otelAttrs                  []attribute.KeyValue
+	sentSpans                  metric.Int64Counter
+	failedToSendSpans          metric.Int64Counter
+	sentMetricPoints           metric.Int64Counter
+	failedToSendMetricPoints   metric.Int64Counter
+	sentLogRecords             metric.Int64Counter
+	failedToSendLogRecords     metric.Int64Counter
+	sentProfileRecords         metric.Int64Counter
+	failedToSendProfileRecords metric.Int64Counter
 }
 
 // ExporterSettings are settings for creating an Exporter.
@@ -118,6 +120,18 @@ func (exp *Exporter) createOtelMetrics(cfg ExporterSettings) error {
 	exp.failedToSendLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendLogRecordsKey,
 		metric.WithDescription("Number of log records in failed attempts to send to destination."),
+		metric.WithUnit("1"))
+	errors = multierr.Append(errors, err)
+
+	exp.sentProfileRecords, err = meter.Int64Counter(
+		obsmetrics.ExporterPrefix+obsmetrics.SentProfileRecordsKey,
+		metric.WithDescription("Number of profile record successfully sent to destination."),
+		metric.WithUnit("1"))
+	errors = multierr.Append(errors, err)
+
+	exp.failedToSendProfileRecords, err = meter.Int64Counter(
+		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendProfileRecordsKey,
+		metric.WithDescription("Number of profile records in failed attempts to send to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
@@ -212,6 +226,9 @@ func (exp *Exporter) recordWithOtel(ctx context.Context, dataType component.Data
 	case component.DataTypeLogs:
 		sentMeasure = exp.sentLogRecords
 		failedMeasure = exp.failedToSendLogRecords
+	case component.DataTypeProfiles:
+		sentMeasure = exp.sentProfileRecords
+		failedMeasure = exp.failedToSendProfileRecords
 	}
 
 	sentMeasure.Add(ctx, sent, metric.WithAttributes(exp.otelAttrs...))
@@ -230,6 +247,9 @@ func (exp *Exporter) recordWithOC(ctx context.Context, dataType component.DataTy
 	case component.DataTypeLogs:
 		sentMeasure = obsmetrics.ExporterSentLogRecords
 		failedMeasure = obsmetrics.ExporterFailedToSendLogRecords
+	case component.DataTypeProfiles:
+		sentMeasure = obsmetrics.ExporterSentProfileRecords
+		failedMeasure = obsmetrics.ExporterFailedToSendProfileRecords
 	}
 
 	if failed > 0 {
