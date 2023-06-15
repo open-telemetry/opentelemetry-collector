@@ -45,6 +45,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		fmt.Sprintf("go.opentelemetry.io/collector/component => %s/component", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/confmap => %s/confmap", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/consumer => %s/consumer", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/connector => %s/connector", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/exporter => %s/exporter", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/exporter/loggingexporter => %s/exporter/loggingexporter", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/exporter/otlpexporter => %s/exporter/otlpexporter", workspaceDir),

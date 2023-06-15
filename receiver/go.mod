@@ -85,3 +85,5 @@ replace go.opentelemetry.io/collector/processor => ../processor
 replace go.opentelemetry.io/collector/semconv => ../semconv
 
 retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
+
+replace go.opentelemetry.io/collector/connector => ../connector
