@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2
-	github.com/fsnotify/fsnotify v1.6.0
 	github.com/golang/snappy v0.0.4
 	github.com/google/uuid v1.3.0
 	github.com/klauspost/compress v1.16.6
@@ -21,6 +20,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/config/confignet v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/config/configopaque v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/config/configtls v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/confmap v0.79.0
 	go.opentelemetry.io/collector/connector v0.0.0-20230615165320-df20186ee21c
 	go.opentelemetry.io/collector/consumer v0.79.0
@@ -59,6 +59,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
@@ -103,6 +104,8 @@ replace go.opentelemetry.io/collector/config/configcompression => ./config/confi
 replace go.opentelemetry.io/collector/config/confignet => ./config/confignet
 
 replace go.opentelemetry.io/collector/config/configopaque => ./config/configopaque
+
+replace go.opentelemetry.io/collector/config/configtls => ./config/configtls
 
 replace go.opentelemetry.io/collector/connector => ./connector
 
