@@ -78,7 +78,7 @@ func (ms ScopeProfiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
 		switch f {
 		case "scope":
 			json.ReadScope(iter, &ms.orig.Scope)
-		case "profile_records", "profileRecords":
+		case "profiles":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				ms.Profiles().AppendEmpty().unmarshalJsoniter(iter)
 				return true
