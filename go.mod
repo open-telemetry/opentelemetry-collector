@@ -19,11 +19,11 @@ require (
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.79.0
 	go.opentelemetry.io/collector/confmap v0.79.0
-	go.opentelemetry.io/collector/connector v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/connector v0.0.0-20230615165320-df20186ee21c
 	go.opentelemetry.io/collector/consumer v0.79.0
 	go.opentelemetry.io/collector/exporter v0.79.0
 	go.opentelemetry.io/collector/extension v0.0.0-20230609200026-525adf4a682a
-	go.opentelemetry.io/collector/extension/auth v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/extension/auth v0.0.0-20230615165320-df20186ee21c
 	go.opentelemetry.io/collector/extension/zpagesextension v0.79.0
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
