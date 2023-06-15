@@ -64,3 +64,5 @@ replace go.opentelemetry.io/collector/receiver => ../receiver
 replace go.opentelemetry.io/collector/semconv => ../semconv
 
 replace go.opentelemetry.io/collector/exporter => ../exporter
+
+replace go.opentelemetry.io/collector/config/configcompression => ../config/configcompression

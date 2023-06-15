@@ -72,3 +72,5 @@ retract (
 )
 
 replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
+
+replace go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
