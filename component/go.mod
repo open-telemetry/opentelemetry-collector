@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.79.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/confmap v0.79.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
 	go.opentelemetry.io/otel/metric v1.16.0
@@ -14,6 +14,7 @@ require (
 )
 
 require (
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -34,41 +35,15 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector => ../
+replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
 
 replace go.opentelemetry.io/collector/confmap => ../confmap
-
-replace go.opentelemetry.io/collector/consumer => ../consumer
-
-replace go.opentelemetry.io/collector/exporter => ../exporter
-
-replace go.opentelemetry.io/collector/extension => ../extension
-
-replace go.opentelemetry.io/collector/extension/auth => ../extension/auth
 
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
-replace go.opentelemetry.io/collector/processor => ../processor
-
-replace go.opentelemetry.io/collector/receiver => ../receiver
-
-replace go.opentelemetry.io/collector/semconv => ../semconv
-
-replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
-
 retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 )
-
-replace go.opentelemetry.io/collector/connector => ../connector
-
-replace go.opentelemetry.io/collector/config/configcompression => ../config/configcompression
-
-replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
-
-replace go.opentelemetry.io/collector/config/configopaque => ../config/configopaque
-
-replace go.opentelemetry.io/collector/config/configtls => ../config/configtls

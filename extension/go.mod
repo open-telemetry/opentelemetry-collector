@@ -16,7 +16,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector v0.79.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/confmap v0.79.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012 // indirect
@@ -35,36 +35,12 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector => ../
-
 replace go.opentelemetry.io/collector/component => ../component
 
 replace go.opentelemetry.io/collector/confmap => ../confmap
-
-replace go.opentelemetry.io/collector/consumer => ../consumer
-
-replace go.opentelemetry.io/collector/extension/auth => ../extension/auth
-
-replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
 
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
-replace go.opentelemetry.io/collector/processor => ../processor
-
-replace go.opentelemetry.io/collector/receiver => ../receiver
-
-replace go.opentelemetry.io/collector/semconv => ../semconv
-
-replace go.opentelemetry.io/collector/exporter => ../exporter
-
-replace go.opentelemetry.io/collector/connector => ../connector
-
-replace go.opentelemetry.io/collector/config/configcompression => ../config/configcompression
-
-replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
-
-replace go.opentelemetry.io/collector/config/configopaque => ../config/configopaque
-
-replace go.opentelemetry.io/collector/config/configtls => ../config/configtls
+replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry

@@ -20,6 +20,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/config/confignet v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/config/configopaque v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/config/configtelemetry v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/config/configtls v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/confmap v0.79.0
 	go.opentelemetry.io/collector/connector v0.0.0-20230615165320-df20186ee21c
@@ -54,7 +55,6 @@ require (
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.4-0.20230602132616-4d8f0906c19e // indirect
-	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -104,6 +104,8 @@ replace go.opentelemetry.io/collector/config/configcompression => ./config/confi
 replace go.opentelemetry.io/collector/config/confignet => ./config/confignet
 
 replace go.opentelemetry.io/collector/config/configopaque => ./config/configopaque
+
+replace go.opentelemetry.io/collector/config/configtelemetry => ./config/configtelemetry
 
 replace go.opentelemetry.io/collector/config/configtls => ./config/configtls
 
