@@ -23,7 +23,7 @@ connectors:
 replaces:
   - go.opentelemetry.io/collector => ../../
   - go.opentelemetry.io/collector/component => ../../component
-  # - go.opentelemetry.io/collector/config/configauth => ../../config/configauth
+  - go.opentelemetry.io/collector/config/configauth => ../../config/configauth
   - go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
   # - go.opentelemetry.io/collector/config/configgrpc => ../../config/configgrpc
   # - go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp

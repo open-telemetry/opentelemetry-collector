@@ -43,6 +43,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/extension v0.0.0-20230609200026-525adf4a682a // indirect
@@ -66,6 +67,8 @@ require (
 replace go.opentelemetry.io/collector => ../../
 
 replace go.opentelemetry.io/collector/component => ../../component
+
+replace go.opentelemetry.io/collector/config/configauth => ../../config/configauth
 
 replace go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
 
