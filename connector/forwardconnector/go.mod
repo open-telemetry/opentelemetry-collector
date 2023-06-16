@@ -71,16 +71,6 @@ retract (
 	v0.69.0 // Release failed, use v0.69.1
 )
 
-replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
-
-replace go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
-
 replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 
-replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
-
-replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
-
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
-
-replace go.opentelemetry.io/collector/config/configauth => ../../config/configauth
