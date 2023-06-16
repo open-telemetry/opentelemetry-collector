@@ -30,7 +30,7 @@ replaces:
   - go.opentelemetry.io/collector/config/confignet => ../../config/confignet
   - go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
   # - go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
-  # - go.opentelemetry.io/collector/config/configtls => ../../config/configtls
+  - go.opentelemetry.io/collector/config/configtls => ../../config/configtls
   - go.opentelemetry.io/collector/confmap => ../../confmap
   - go.opentelemetry.io/collector/consumer => ../../consumer
   - go.opentelemetry.io/collector/connector => ../../connector

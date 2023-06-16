@@ -8,6 +8,7 @@ require (
 	go.opentelemetry.io/collector v0.79.0
 	go.opentelemetry.io/collector/component v0.79.0
 	go.opentelemetry.io/collector/config/confignet v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/config/configtls v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/confmap v0.79.0
 	go.opentelemetry.io/collector/consumer v0.79.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
@@ -86,7 +87,11 @@ replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 
 replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
 
+replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
+
 replace go.opentelemetry.io/collector/confmap => ../../confmap
+
+replace go.opentelemetry.io/collector/connector => ../../connector
 
 replace go.opentelemetry.io/collector/exporter => ../../exporter
 
@@ -112,5 +117,3 @@ retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 )
-
-replace go.opentelemetry.io/collector/connector => ../../connector
