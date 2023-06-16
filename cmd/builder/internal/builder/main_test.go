@@ -43,6 +43,7 @@ func TestGenerateAndCompile(t *testing.T) {
 	workspaceDir := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile)))))
 	replaces := []string{fmt.Sprintf("go.opentelemetry.io/collector => %s", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/component => %s/component", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/config/confignet => %s/config/confignet", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/confmap => %s/confmap", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/consumer => %s/consumer", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/connector => %s/connector", workspaceDir),
