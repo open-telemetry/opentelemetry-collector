@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.79.0
 	go.uber.org/zap v1.24.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc
-	google.golang.org/grpc v1.55.0
+	google.golang.org/grpc v1.56.0
 	google.golang.org/protobuf v1.30.0
 )
 
@@ -47,10 +47,10 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.1.19 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.15.1 // indirect
+	github.com/prometheus/client_golang v1.16.0 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
-	github.com/prometheus/procfs v0.9.0 // indirect
+	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	go.opencensus.io v0.24.0 // indirect

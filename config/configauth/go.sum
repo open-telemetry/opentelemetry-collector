@@ -246,12 +246,6 @@ github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1
 go.etcd.io/etcd/api/v3 v3.5.4/go.mod h1:5GB2vv4A4AOn3yk7MftYGHkUfGtDHnEraIjym4dYz5A=
 go.etcd.io/etcd/client/pkg/v3 v3.5.4/go.mod h1:IJHfcCEKxYu1Os13ZdwCwIUTUVGYTSAM3YSwc9/Ac1g=
 go.etcd.io/etcd/client/v3 v3.5.4/go.mod h1:ZaRkVgBZC+L+dLCjTcF1hRXpgZXQPOvnA/Ak/gq3kiY=
-go.opentelemetry.io/collector/confmap v0.79.0 h1:a4XVde3lLP81BiSbt8AzVD6pvQBX8YkrB9ZtMSHKv1A=
-go.opentelemetry.io/collector/confmap v0.79.0/go.mod h1:cKr2c7lVtEJCuMOncUPlcROJBbTFaHiPjYp1Y8RbL+Q=
-go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 h1:pSO81lfikGEgRXHepmOGy2o6WWCly427UJCgMJC5c8g=
-go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012/go.mod h1:/kVAsGUCyJXIDSgHftCN63QiwAEVHRLX2Kh/S+dqgHY=
-go.opentelemetry.io/collector/pdata v1.0.0-rcv0012 h1:R+cfEUMyLn9Q1QknyQ4QU77pbfc1aJKYEXFHtnwSbCg=
-go.opentelemetry.io/collector/pdata v1.0.0-rcv0012/go.mod h1:rEAKFqc1L03lidKtra/2/dJtI0Hp+JsQxuPEIkj/2Vg=
 go.opentelemetry.io/otel v1.16.0 h1:Z7GVAX/UkAXPKsy94IU+i6thsQS4nb7LviLpnaNeW8s=
 go.opentelemetry.io/otel v1.16.0/go.mod h1:vl0h9NUa1D5s1nv3A5vZOYWn8av4K8Ml6JDeHrT/bx4=
 go.opentelemetry.io/otel/metric v1.16.0 h1:RbrpwVG1Hfv85LgnZ7+txXioPDoh6EdbZHo26Q3hqOo=
@@ -388,8 +382,8 @@ google.golang.org/grpc v1.25.1/go.mod h1:c3i+UQWmh7LiEpx4sFZnkU36qjEYZ0imhYfXVyQ
 google.golang.org/grpc v1.27.0/go.mod h1:qbnxyOmOxrQa7FizSgH+ReBfzJrCY1pSN7KXBS8abTk=
 google.golang.org/grpc v1.33.1/go.mod h1:fr5YgcSWrqhRRxogOsw7RzIpsmvOZ6IcH4kBYTpR3n0=
 google.golang.org/grpc v1.38.0/go.mod h1:NREThFqKR1f3iQ6oBuvc5LadQuXVGo9rkm5ZGrQdJfM=
-google.golang.org/grpc v1.55.0 h1:3Oj82/tFSCeUrRTg/5E/7d/W5A1tj6Ky1ABAuZuv5ag=
-google.golang.org/grpc v1.55.0/go.mod h1:iYEXKGkEBhg1PjZQvoYEVPTDkHo1/bjTnfwTeGONTY8=
+google.golang.org/grpc v1.56.0 h1:+y7Bs8rtMd07LeXmL3NxcTLn7mUkbKZqEpPhMNkwJEE=
+google.golang.org/grpc v1.56.0/go.mod h1:I9bI3vqKfayGqPUAwGdOSu7kt6oIJLixfffKrpXqQ9s=
 google.golang.org/protobuf v0.0.0-20200109180630-ec00e32a8dfd/go.mod h1:DFci5gLYBciE7Vtevhsrf46CRTquxDuWsQurQQe4oz8=
 google.golang.org/protobuf v0.0.0-20200221191635-4d8936d0db64/go.mod h1:kwYJMbMJ01Woi6D6+Kah6886xMZcty6N08ah7+eCXa0=
 google.golang.org/protobuf v0.0.0-20200228230310-ab0ca4ff8a60/go.mod h1:cfTl7dwQJ+fmap5saPgwCLgHXTUD7jkjRqWcaiX5VyM=
