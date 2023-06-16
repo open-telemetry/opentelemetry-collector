@@ -23,6 +23,7 @@ connectors:
 replaces:
   - go.opentelemetry.io/collector => ../../
   - go.opentelemetry.io/collector/component => ../../component
+  - go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
   - go.opentelemetry.io/collector/confmap => ../../confmap
   - go.opentelemetry.io/collector/consumer => ../../consumer
   - go.opentelemetry.io/collector/connector => ../../connector
