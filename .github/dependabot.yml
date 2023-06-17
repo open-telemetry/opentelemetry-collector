@@ -38,6 +38,16 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/config/configgrpc"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/config/confighttp"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/config/confignet"
     schedule:
       interval: "weekly"
@@ -54,6 +64,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/config/configtls"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/config/internal"
     schedule:
       interval: "weekly"
       day: "wednesday"
