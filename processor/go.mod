@@ -26,7 +26,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.0.0-20230616224627-4b30d7ffa7b7 // indirect
 	go.opentelemetry.io/collector/confmap v0.79.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
