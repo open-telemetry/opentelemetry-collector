@@ -7,14 +7,14 @@ require (
 	github.com/klauspost/compress v1.16.6
 	github.com/rs/cors v1.9.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector v0.79.0
 	go.opentelemetry.io/collector/component v0.79.0
-	go.opentelemetry.io/collector/config/configauth v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector/config/configcompression v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector/config/configopaque v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector/config/configtelemetry v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector/config/configtls v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector/config/internal v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/config/configauth v0.0.0-20230616224627-4b30d7ffa7b7
+	go.opentelemetry.io/collector/config/configcompression v0.0.0-20230616224627-4b30d7ffa7b7
+	go.opentelemetry.io/collector/config/configopaque v0.0.0-20230616224627-4b30d7ffa7b7
+	go.opentelemetry.io/collector/config/configtelemetry v0.0.0-20230616224627-4b30d7ffa7b7
+	go.opentelemetry.io/collector/config/configtls v0.0.0-20230616224627-4b30d7ffa7b7
+	go.opentelemetry.io/collector/config/internal v0.0.0-20230616224627-4b30d7ffa7b7
 	go.opentelemetry.io/collector/extension/auth v0.0.0-20230615165320-df20186ee21c
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0
 	go.opentelemetry.io/otel v1.16.0
