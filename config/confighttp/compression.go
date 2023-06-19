@@ -9,8 +9,11 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/klauspost/compress/zstd"
 
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -102,7 +105,7 @@ func (d *decompressor) wrap(h http.Handler) http.Handler {
 			defer newBody.Close()
 			// "Content-Encoding" header is removed to avoid decompressing twice
 			// in case the next handler(s) have implemented a similar mechanism.
-			r.Header.Del("Content-Encoding")
+			r.Header.Del(headerContentEncoding)
 			// "Content-Length" is set to -1 as the size of the decompressed body is unknown.
 			r.Header.Del("Content-Length")
 			r.ContentLength = -1
@@ -113,7 +116,8 @@ func (d *decompressor) wrap(h http.Handler) http.Handler {
 }
 
 func newBodyReader(r *http.Request) (io.ReadCloser, error) {
-	switch r.Header.Get("Content-Encoding") {
+	encoding := r.Header.Get(headerContentEncoding)
+	switch encoding {
 	case "gzip":
 		gr, err := gzip.NewReader(r.Body)
 		if err != nil {
@@ -126,8 +130,24 @@ func newBodyReader(r *http.Request) (io.ReadCloser, error) {
 			return nil, err
 		}
 		return zr, nil
+	case "zstd":
+		zr, err := zstd.NewReader(
+			r.Body,
+			// Concurrency 1 disables async decoding. We don't need async decoding, it is pointless
+			// for our use-case (a server accepting decoding http requests).
+			// Disabling async improves performance (I benchmarked it previously when working
+			// on https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/23257).
+			zstd.WithDecoderConcurrency(1),
+		)
+		if err != nil {
+			return nil, err
+		}
+		return io.NopCloser(zr), nil
+	case "":
+		// Not a compressed payload. Nothing to do.
+		return nil, nil
 	}
-	return nil, nil
+	return nil, fmt.Errorf("unsupported %s: %s", headerContentEncoding, encoding)
 }
 
 // defaultErrorHandler writes the error message in plain text.
