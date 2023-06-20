@@ -4,6 +4,33 @@
 
 <!-- next version -->
 
+## v1.0.0-rcv0013/v0.80.0
+
+### 🚩 Deprecations 🚩
+
+- `service`: Deprecate service.PipelineConfig in favor of pipelines.Config. (#7854)
+
+### 💡 Enhancements 💡
+
+- `service`: Added dry run flag to validate config file without running collector. (#4671)
+- `configtls`: Allow TLS Settings to be provided in memory in addition to filepath. (#7313)
+- `connector`: Updates the way connector nodes are built to always pass a fanoutconsumer to their factory functions. (#7672, #7673)
+- `otlp`: update otlp protos to v0.20.0 (#7839)
+- `configauth`: Split config/configauth into its own module (#7895)
+- `configgrpc, confighttp, config/internal`: Split confighttp, configgrpc, and config/internal into separate modules (#7895)
+- `confignet`: Split config/confignet into its own module (#7895)
+- `configopaque`: Split config/configopaque into its own module (#7895)
+- `configtelemetry`: Split config/configtelemetry into its own module (#7895)
+- `configtls`: Split config/configtls into its own module (#7895)
+- `configcompression`: Split config/configcompression into its own module (#7895)
+- `extension`: Splitting `extension/auth` into separate module (#7054)
+- `connector`: Split connector into its own module (#7895)
+- `extension`: split extension module into its own module (#7306)
+- `processor`: Split the processor into its own go module (#7307)
+- `confighttp`: Avoid re-creating the compressors for every request. (#7859)
+- `otlpexporter`: Treat partial success responses as errors (#6686)
+- `service/pipelines`: Add pipelines.Config to remove duplicate of the pipelines configuration (#7854)
+
 ## v0.79.0
 
 ### 🚩 Deprecations 🚩
