@@ -101,6 +101,9 @@ func (g *Graph) createNodes(set Settings) {
 	for connID, exprPipelineIDs := range connectorsAsExporter {
 		for _, eID := range exprPipelineIDs {
 			for _, rID := range connectorsAsReceiver[connID] {
+				if !set.ConnectorBuilder.SupportsConnection(connID.Type(), eID.Type(), rID.Type()) {
+					continue
+				}
 				connNode := g.createConnector(eID, rID, connID)
 				g.pipelines[eID].exporters[connNode.ID()] = connNode
 				g.pipelines[rID].receivers[connNode.ID()] = connNode

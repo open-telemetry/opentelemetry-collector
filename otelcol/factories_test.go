@@ -4,6 +4,7 @@
 package otelcol
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter"
@@ -20,7 +21,15 @@ func nopFactories() (Factories, error) {
 	var factories Factories
 	var err error
 
-	if factories.Connectors, err = connector.MakeFactoryMap(connectortest.NewNopFactory()); err != nil {
+	if factories.Connectors, err = connector.MakeFactoryMap(connectortest.NewNopFactory(
+		// Used in TestValidateConfig
+		connector.WithTracesToTraces(connectortest.CreateTracesToTracesConnector, component.StabilityLevelDevelopment),
+		connector.WithMetricsToMetrics(connectortest.CreateMetricsToMetricsConnector, component.StabilityLevelDevelopment),
+		// connector.WithLogsToLogs(connectortest.CreateLogsToLogsConnector, component.StabilityLevelDevelopment),
+
+		// Used in testdata/otelcol-nop.yaml
+		connector.WithTracesToLogs(connectortest.CreateTracesToLogsConnector, component.StabilityLevelDevelopment),
+	)); err != nil {
 		return Factories{}, err
 	}
 
