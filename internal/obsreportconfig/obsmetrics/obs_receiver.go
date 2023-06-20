@@ -79,4 +79,12 @@ var (
 		ReceiverPrefix+RefusedLogRecordsKey,
 		"Number of log records that could not be pushed into the pipeline.",
 		stats.UnitDimensionless)
+	ReceiverAcceptedProfilesRecords = stats.Int64(
+		ReceiverPrefix+AcceptedLogRecordsKey,
+		"Number of profile records successfully pushed into the pipeline.",
+		stats.UnitDimensionless)
+	ReceiverRefusedProfilesRecords = stats.Int64(
+		ReceiverPrefix+RefusedLogRecordsKey,
+		"Number of profile records that could not be pushed into the pipeline.",
+		stats.UnitDimensionless)
 )

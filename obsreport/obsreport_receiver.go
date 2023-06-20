@@ -344,6 +344,9 @@ func (rec *Receiver) recordWithOC(receiverCtx context.Context, dataType componen
 	case component.DataTypeLogs:
 		acceptedMeasure = obsmetrics.ReceiverAcceptedLogRecords
 		refusedMeasure = obsmetrics.ReceiverRefusedLogRecords
+	case component.DataTypeProfiles:
+		acceptedMeasure = obsmetrics.ReceiverAcceptedProfilesRecords
+		refusedMeasure = obsmetrics.ReceiverRefusedProfilesRecords
 	}
 
 	stats.Record(
