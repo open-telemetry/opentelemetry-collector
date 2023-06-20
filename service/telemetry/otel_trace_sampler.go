@@ -10,7 +10,7 @@ import (
 type recordSampler struct{}
 
 func (r recordSampler) ShouldSample(_ sdktrace.SamplingParameters) sdktrace.SamplingResult {
-	return sdktrace.SamplingResult{Decision: sdktrace.RecordOnly}
+	return sdktrace.SamplingResult{Decision: sdktrace.RecordAndSample}
 }
 
 func (r recordSampler) Description() string {
