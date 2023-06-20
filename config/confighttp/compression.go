@@ -142,7 +142,7 @@ func newBodyReader(r *http.Request) (io.ReadCloser, error) {
 		if err != nil {
 			return nil, err
 		}
-		return io.NopCloser(zr), nil
+		return zr.IOReadCloser(), nil
 	case "":
 		// Not a compressed payload. Nothing to do.
 		return nil, nil
