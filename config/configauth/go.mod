@@ -6,7 +6,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.79.0
 	go.opentelemetry.io/collector/extension v0.0.0-20230609200026-525adf4a682a
-	go.opentelemetry.io/collector/extension/auth v0.0.0-20230615165320-df20186ee21c
+	go.opentelemetry.io/collector/extension/auth v0.0.0-20230619144035-25129b794d48
 )
 
 require (
