@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.0.0-20230619134516-d8100bb80fe1
 	go.opentelemetry.io/collector/extension/auth v0.0.0-20230615165320-df20186ee21c
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.1-0.20230612162650-64be7e574a17
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.1-0.20230620132329-7abf94b714d4
 	go.opentelemetry.io/otel v1.16.0
 	go.uber.org/zap v1.24.0
 	google.golang.org/grpc v1.56.0
