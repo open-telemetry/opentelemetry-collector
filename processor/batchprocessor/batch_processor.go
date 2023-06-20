@@ -554,7 +554,7 @@ func (bl *batchProfiles) itemCount() int {
 func (bl *batchProfiles) add(item any) {
 	ld := item.(pprofile.Profiles)
 
-	newProfilesCount := ld.ProfileRecordCount()
+	newProfilesCount := ld.ProfileCount()
 	if newProfilesCount == 0 {
 		return
 	}

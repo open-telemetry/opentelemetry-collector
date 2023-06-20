@@ -39,9 +39,9 @@ var profilesRequestJSON = []byte(`
 
 func TestRequestToPData(t *testing.T) {
 	tr := NewExportRequest()
-	assert.Equal(t, tr.Profiles().ProfileRecordCount(), 0)
+	assert.Equal(t, tr.Profiles().ProfileCount(), 0)
 	tr.Profiles().ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
-	assert.Equal(t, tr.Profiles().ProfileRecordCount(), 1)
+	assert.Equal(t, tr.Profiles().ProfileCount(), 1)
 }
 
 func TestRequestJSON(t *testing.T) {

@@ -31,7 +31,7 @@ func New(nextConsumer consumer.Profiles, obsrecv *obsreport.Receiver) *Receiver 
 // Export implements the service Export profiles func.
 func (r *Receiver) Export(ctx context.Context, req pprofileotlp.ExportRequest) (pprofileotlp.ExportResponse, error) {
 	ld := req.Profiles()
-	numProfiles := ld.ProfileRecordCount()
+	numProfiles := ld.ProfileCount()
 	if numProfiles == 0 {
 		return pprofileotlp.NewExportResponse(), nil
 	}

@@ -79,7 +79,7 @@ func (s *loggingExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 func (s *loggingExporter) pushProfiles(_ context.Context, ld pprofile.Profiles) error {
 	s.logger.Info("ProfilesExporter",
 		zap.Int("resource profiles", ld.ResourceProfiles().Len()),
-		zap.Int("profile records", ld.ProfileRecordCount()))
+		zap.Int("profile records", ld.ProfileCount()))
 	if s.verbosity != configtelemetry.LevelDetailed {
 		return nil
 	}

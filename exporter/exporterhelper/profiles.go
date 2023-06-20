@@ -59,7 +59,7 @@ func (req *profilesRequest) Marshal() ([]byte, error) {
 }
 
 func (req *profilesRequest) Count() int {
-	return req.ld.ProfileRecordCount()
+	return req.ld.ProfileCount()
 }
 
 type profilesExporter struct {

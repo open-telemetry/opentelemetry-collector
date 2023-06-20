@@ -30,8 +30,8 @@ func (ms Profiles) CopyTo(dest Profiles) {
 	ms.ResourceProfiles().CopyTo(dest.ResourceProfiles())
 }
 
-// ProfileRecordCount calculates the total number of profile records.
-func (ms Profiles) ProfileRecordCount() int {
+// ProfileCount calculates the total number of profile records.
+func (ms Profiles) ProfileCount() int {
 	profileCount := 0
 	rss := ms.ResourceProfiles()
 	for i := 0; i < rss.Len(); i++ {

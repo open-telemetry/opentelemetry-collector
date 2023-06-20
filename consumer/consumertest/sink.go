@@ -162,9 +162,9 @@ func (sle *LogsSink) Reset() {
 // stores all logs and allows querying them for testing.
 type ProfilesSink struct {
 	nonMutatingConsumer
-	mu                 sync.Mutex
-	profiles           []pprofile.Profiles
-	profileRecordCount int
+	mu           sync.Mutex
+	profiles     []pprofile.Profiles
+	profileCount int
 }
 
 var _ consumer.Profiles = (*ProfilesSink)(nil)
@@ -175,7 +175,7 @@ func (sle *ProfilesSink) ConsumeProfiles(_ context.Context, ld pprofile.Profiles
 	defer sle.mu.Unlock()
 
 	sle.profiles = append(sle.profiles, ld)
-	sle.profileRecordCount += ld.ProfileRecordCount()
+	sle.profileCount += ld.ProfileCount()
 
 	return nil
 }
@@ -190,11 +190,11 @@ func (sle *ProfilesSink) AllProfiles() []pprofile.Profiles {
 	return copyProfiles
 }
 
-// ProfileRecordCount returns the number of profile records stored by this sink since last Reset.
-func (sle *ProfilesSink) ProfileRecordCount() int {
+// ProfileCount returns the number of profile records stored by this sink since last Reset.
+func (sle *ProfilesSink) ProfileCount() int {
 	sle.mu.Lock()
 	defer sle.mu.Unlock()
-	return sle.profileRecordCount
+	return sle.profileCount
 }
 
 // Reset deletes any stored data.
@@ -203,5 +203,5 @@ func (sle *ProfilesSink) Reset() {
 	defer sle.mu.Unlock()
 
 	sle.profiles = nil
-	sle.profileRecordCount = 0
+	sle.profileCount = 0
 }

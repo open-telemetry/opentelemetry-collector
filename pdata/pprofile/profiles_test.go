@@ -15,18 +15,18 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1"
 )
 
-func TestProfileRecordCount(t *testing.T) {
+func TestProfileCount(t *testing.T) {
 	profiles := NewProfiles()
-	assert.EqualValues(t, 0, profiles.ProfileRecordCount())
+	assert.EqualValues(t, 0, profiles.ProfileCount())
 
 	rl := profiles.ResourceProfiles().AppendEmpty()
-	assert.EqualValues(t, 0, profiles.ProfileRecordCount())
+	assert.EqualValues(t, 0, profiles.ProfileCount())
 
 	ill := rl.ScopeProfiles().AppendEmpty()
-	assert.EqualValues(t, 0, profiles.ProfileRecordCount())
+	assert.EqualValues(t, 0, profiles.ProfileCount())
 
 	ill.Profiles().AppendEmpty()
-	assert.EqualValues(t, 1, profiles.ProfileRecordCount())
+	assert.EqualValues(t, 1, profiles.ProfileCount())
 
 	rms := profiles.ResourceProfiles()
 	rms.EnsureCapacity(3)
@@ -36,21 +36,21 @@ func TestProfileRecordCount(t *testing.T) {
 		illl.AppendEmpty()
 	}
 	// 5 + 1 (from rms.At(0) initialized first)
-	assert.EqualValues(t, 6, profiles.ProfileRecordCount())
+	assert.EqualValues(t, 6, profiles.ProfileCount())
 }
 
-func TestProfileRecordCountWithEmpty(t *testing.T) {
-	assert.Zero(t, NewProfiles().ProfileRecordCount())
+func TestProfileCountWithEmpty(t *testing.T) {
+	assert.Zero(t, NewProfiles().ProfileCount())
 	assert.Zero(t, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
 		ResourceProfiles: []*otlpprofiles.ResourceProfiles{{}},
-	}).ProfileRecordCount())
+	}).ProfileCount())
 	assert.Zero(t, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
 		ResourceProfiles: []*otlpprofiles.ResourceProfiles{
 			{
 				ScopeProfiles: []*otlpprofiles.ScopeProfiles{{}},
 			},
 		},
-	}).ProfileRecordCount())
+	}).ProfileCount())
 	assert.Equal(t, 1, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
 		ResourceProfiles: []*otlpprofiles.ResourceProfiles{
 			{
@@ -61,7 +61,7 @@ func TestProfileRecordCountWithEmpty(t *testing.T) {
 				},
 			},
 		},
-	}).ProfileRecordCount())
+	}).ProfileCount())
 }
 
 func TestToFromProfileOtlp(t *testing.T) {

@@ -225,7 +225,7 @@ func (ml *memoryLimiter) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 }
 
 func (ml *memoryLimiter) processProfiles(ctx context.Context, ld pprofile.Profiles) (pprofile.Profiles, error) {
-	numRecords := ld.ProfileRecordCount()
+	numRecords := ld.ProfileCount()
 	if ml.mustRefuse.Load() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected

@@ -47,24 +47,24 @@ func TestSplitProfiles(t *testing.T) {
 
 	splitSize := 5
 	split := splitProfiles(splitSize, ld)
-	assert.Equal(t, splitSize, split.ProfileRecordCount())
+	assert.Equal(t, splitSize, split.ProfileCount())
 	assert.Equal(t, cp, split)
-	assert.Equal(t, 15, ld.ProfileRecordCount())
+	assert.Equal(t, 15, ld.ProfileCount())
 	assert.Equal(t, "test-profile-int-0-0", split.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SeverityText())
 	assert.Equal(t, "test-profile-int-0-4", split.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(4).SeverityText())
 
 	split = splitProfiles(splitSize, ld)
-	assert.Equal(t, 10, ld.ProfileRecordCount())
+	assert.Equal(t, 10, ld.ProfileCount())
 	assert.Equal(t, "test-profile-int-0-5", split.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SeverityText())
 	assert.Equal(t, "test-profile-int-0-9", split.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(4).SeverityText())
 
 	split = splitProfiles(splitSize, ld)
-	assert.Equal(t, 5, ld.ProfileRecordCount())
+	assert.Equal(t, 5, ld.ProfileCount())
 	assert.Equal(t, "test-profile-int-0-10", split.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SeverityText())
 	assert.Equal(t, "test-profile-int-0-14", split.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(4).SeverityText())
 
 	split = splitProfiles(splitSize, ld)
-	assert.Equal(t, 5, ld.ProfileRecordCount())
+	assert.Equal(t, 5, ld.ProfileCount())
 	assert.Equal(t, "test-profile-int-0-15", split.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SeverityText())
 	assert.Equal(t, "test-profile-int-0-19", split.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(4).SeverityText())
 }
@@ -85,8 +85,8 @@ func TestSplitProfilesMultipleResourceProfiles(t *testing.T) {
 
 	splitSize := 5
 	split := splitProfiles(splitSize, td)
-	assert.Equal(t, splitSize, split.ProfileRecordCount())
-	assert.Equal(t, 35, td.ProfileRecordCount())
+	assert.Equal(t, splitSize, split.ProfileCount())
+	assert.Equal(t, 35, td.ProfileCount())
 	assert.Equal(t, "test-profile-int-0-0", split.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SeverityText())
 	assert.Equal(t, "test-profile-int-0-4", split.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(4).SeverityText())
 }
@@ -107,8 +107,8 @@ func TestSplitProfilesMultipleResourceProfiles_split_size_greater_than_profile_s
 
 	splitSize := 25
 	split := splitProfiles(splitSize, td)
-	assert.Equal(t, splitSize, split.ProfileRecordCount())
-	assert.Equal(t, 40-splitSize, td.ProfileRecordCount())
+	assert.Equal(t, splitSize, split.ProfileCount())
+	assert.Equal(t, 40-splitSize, td.ProfileCount())
 	assert.Equal(t, 1, td.ResourceProfiles().Len())
 	assert.Equal(t, "test-profile-int-0-0", split.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SeverityText())
 	assert.Equal(t, "test-profile-int-0-19", split.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(19).SeverityText())
@@ -140,8 +140,8 @@ func TestSplitProfilesMultipleILL(t *testing.T) {
 
 	splitSize := 40
 	split := splitProfiles(splitSize, td)
-	assert.Equal(t, splitSize, split.ProfileRecordCount())
-	assert.Equal(t, 20, td.ProfileRecordCount())
+	assert.Equal(t, splitSize, split.ProfileCount())
+	assert.Equal(t, 20, td.ProfileCount())
 	assert.Equal(t, "test-profile-int-0-0", split.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SeverityText())
 	assert.Equal(t, "test-profile-int-0-4", split.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(4).SeverityText())
 }

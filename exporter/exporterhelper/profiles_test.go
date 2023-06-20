@@ -210,11 +210,11 @@ func checkRecordedMetricsForProfilesExporter(t *testing.T, tt obsreporttest.Test
 
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	if wantError != nil {
-		// TODO: @petethepig fix this
-		// require.NoError(t, tt.CheckExporterProfiles(0, int64(numBatches*ld.ProfileRecordCount())))
+		// TODO(@petethepig): fix this
+		// require.NoError(t, tt.CheckExporterProfiles(0, int64(numBatches*ld.ProfileCount())))
 	} else {
-		// TODO: @petethepig fix this
-		// require.NoError(t, tt.CheckExporterProfiles(int64(numBatches*ld.ProfileRecordCount()), 0))
+		// TODO(@petethepig): fix this
+		// require.NoError(t, tt.CheckExporterProfiles(int64(numBatches*ld.ProfileCount()), 0))
 	}
 }
 

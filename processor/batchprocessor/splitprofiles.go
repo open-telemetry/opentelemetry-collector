@@ -9,7 +9,7 @@ import (
 
 // splitProfiles removes profilerecords from the input data and returns a new data of the specified size.
 func splitProfiles(size int, src pprofile.Profiles) pprofile.Profiles {
-	if src.ProfileRecordCount() <= size {
+	if src.ProfileCount() <= size {
 		return src
 	}
 	totalCopiedProfiles := 0
