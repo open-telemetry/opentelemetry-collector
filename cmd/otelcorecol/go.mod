@@ -83,8 +83,8 @@ require (
 	go.opentelemetry.io/collector/confmap v0.79.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.79.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.0.0-20230615165320-df20186ee21c // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013 // indirect
 	go.opentelemetry.io/collector/semconv v0.79.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.1-0.20230612162650-64be7e574a17 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0 // indirect
