@@ -3,7 +3,7 @@
 
 module-sets:
   stable:
-    version: v1.0.0-rcv0012
+    version: v1.0.0-rcv0013
     modules:
       - go.opentelemetry.io/collector/featuregate
       - go.opentelemetry.io/collector/pdata
