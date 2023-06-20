@@ -15,11 +15,11 @@ var _ json.Unmarshaler = ExportResponse{}
 var _ json.Marshaler = ExportResponse{}
 
 func TestExportResponseJSON(t *testing.T) {
-	jsonStr := `{"partialSuccess": {"rejectedProfileRecords":1, "errorMessage":"nothing"}}`
+	jsonStr := `{"partialSuccess": {"rejectedProfiles":1, "errorMessage":"nothing"}}`
 	val := NewExportResponse()
 	assert.NoError(t, val.UnmarshalJSON([]byte(jsonStr)))
 	expected := NewExportResponse()
-	expected.PartialSuccess().SetRejectedProfileRecords(1)
+	expected.PartialSuccess().SetRejectedProfiles(1)
 	expected.PartialSuccess().SetErrorMessage("nothing")
 	assert.Equal(t, expected, val)
 }

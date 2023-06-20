@@ -40,14 +40,14 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	*ms.orig = otlpcollectorprofile.ExportProfilesPartialSuccess{}
 }
 
-// RejectedProfileRecords returns the rejectedprofilerecords associated with this ExportPartialSuccess.
-func (ms ExportPartialSuccess) RejectedProfileRecords() int64 {
-	return ms.orig.RejectedProfileRecords
+// RejectedProfiles returns the rejectedprofiles associated with this ExportPartialSuccess.
+func (ms ExportPartialSuccess) RejectedProfiles() int64 {
+	return ms.orig.RejectedProfiles
 }
 
-// SetRejectedProfileRecords replaces the rejectedprofilerecords associated with this ExportPartialSuccess.
-func (ms ExportPartialSuccess) SetRejectedProfileRecords(v int64) {
-	ms.orig.RejectedProfileRecords = v
+// SetRejectedProfiles replaces the rejectedprofiles associated with this ExportPartialSuccess.
+func (ms ExportPartialSuccess) SetRejectedProfiles(v int64) {
+	ms.orig.RejectedProfiles = v
 }
 
 // ErrorMessage returns the errormessage associated with this ExportPartialSuccess.
@@ -62,6 +62,6 @@ func (ms ExportPartialSuccess) SetErrorMessage(v string) {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
-	dest.SetRejectedProfileRecords(ms.RejectedProfileRecords())
+	dest.SetRejectedProfiles(ms.RejectedProfiles())
 	dest.SetErrorMessage(ms.ErrorMessage())
 }

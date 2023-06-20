@@ -60,6 +60,12 @@ func checkExporterEnqueueFailedLogsStats(t *testing.T, insts *instruments, expor
 	checkValueForProducer(t, insts.registry, tagsForExporterView(exporter), logRecords, "exporter/enqueue_failed_log_records")
 }
 
+// checkExporterEnqueueFailedLogsStats checks that reported number of log records failed to enqueue match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func checkExporterEnqueueFailedProfilesStats(t *testing.T, insts *instruments, exporter component.ID, profiles int64) {
+	checkValueForProducer(t, insts.registry, tagsForExporterView(exporter), profiles, "exporter/enqueue_failed_profiles")
+}
+
 // tagsForExporterView returns the tags that are needed for the exporter views.
 func tagsForExporterView(exporter component.ID) []tag.Tag {
 	return []tag.Tag{

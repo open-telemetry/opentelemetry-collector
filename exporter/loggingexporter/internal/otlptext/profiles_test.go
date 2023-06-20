@@ -15,37 +15,37 @@ import (
 
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
 func TestProfilesText(t *testing.T) {
 	tests := []struct {
 		name string
-		in   plog.Profiles
+		in   pprofile.Profiles
 		out  string
 	}{
 		{
-			name: "empty_logs",
-			in:   plog.NewProfiles(),
+			name: "empty_profiles",
+			in:   pprofile.NewProfiles(),
 			out:  "empty.out",
 		},
 		{
-			name: "logs_with_one_record",
+			name: "profiles_with_one_record",
 			in:   testdata.GenerateProfiles(1),
 			out:  "one_record.out",
 		},
 		{
-			name: "logs_with_two_records",
+			name: "profiles_with_two_records",
 			in:   testdata.GenerateProfiles(2),
 			out:  "two_records.out",
 		},
 		{
-			name: "logs_with_embedded_maps",
-			in: func() plog.Profiles {
-				ls := plog.NewProfiles()
-				l := ls.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().ProfileRecords().AppendEmpty()
-				l.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)))
-				l.SetSeverityNumber(plog.SeverityNumberInfo)
+			name: "profiles_with_embedded_maps",
+			in: func() pprofile.Profiles {
+				ls := pprofile.NewProfiles()
+				l := ls.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				l.SetStartTime(pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)))
+				l.SetSeverityNumber(pprofile.SeverityNumberInfo)
 				l.SetSeverityText("INFO")
 				bm := l.Body().SetEmptyMap()
 				bm.PutStr("key1", "val1")
@@ -66,7 +66,7 @@ func TestProfilesText(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewTextProfilesMarshaler().MarshalProfiles(tt.in)
 			assert.NoError(t, err)
-			out, err := os.ReadFile(filepath.Join("testdata", "logs", tt.out))
+			out, err := os.ReadFile(filepath.Join("testdata", "profiles", tt.out))
 			require.NoError(t, err)
 			expected := strings.ReplaceAll(string(out), "\r", "")
 			assert.Equal(t, expected, string(got))

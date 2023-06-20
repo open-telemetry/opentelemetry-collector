@@ -69,8 +69,8 @@ func (ms ExportResponse) unmarshalJsoniter(iter *jsoniter.Iterator) {
 func (ms ExportPartialSuccess) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iterator *jsoniter.Iterator, f string) bool {
 		switch f {
-		case "rejected_profile_records", "rejectedProfileRecords":
-			ms.orig.RejectedProfileRecords = json.ReadInt64(iter)
+		case "rejected_profiles", "rejectedProfiles":
+			ms.orig.RejectedProfiles = json.ReadInt64(iter)
 		case "error_message", "errorMessage":
 			ms.orig.ErrorMessage = iter.ReadString()
 		default:

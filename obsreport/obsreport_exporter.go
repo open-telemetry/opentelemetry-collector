@@ -35,16 +35,16 @@ type Exporter struct {
 	tracer         trace.Tracer
 	logger         *zap.Logger
 
-	useOtelForMetrics          bool
-	otelAttrs                  []attribute.KeyValue
-	sentSpans                  metric.Int64Counter
-	failedToSendSpans          metric.Int64Counter
-	sentMetricPoints           metric.Int64Counter
-	failedToSendMetricPoints   metric.Int64Counter
-	sentLogRecords             metric.Int64Counter
-	failedToSendLogRecords     metric.Int64Counter
-	sentProfileRecords         metric.Int64Counter
-	failedToSendProfileRecords metric.Int64Counter
+	useOtelForMetrics        bool
+	otelAttrs                []attribute.KeyValue
+	sentSpans                metric.Int64Counter
+	failedToSendSpans        metric.Int64Counter
+	sentMetricPoints         metric.Int64Counter
+	failedToSendMetricPoints metric.Int64Counter
+	sentLogRecords           metric.Int64Counter
+	failedToSendLogRecords   metric.Int64Counter
+	sentProfiles             metric.Int64Counter
+	failedToSendProfiles     metric.Int64Counter
 }
 
 // ExporterSettings are settings for creating an Exporter.
@@ -123,14 +123,14 @@ func (exp *Exporter) createOtelMetrics(cfg ExporterSettings) error {
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
-	exp.sentProfileRecords, err = meter.Int64Counter(
-		obsmetrics.ExporterPrefix+obsmetrics.SentProfileRecordsKey,
+	exp.sentProfiles, err = meter.Int64Counter(
+		obsmetrics.ExporterPrefix+obsmetrics.SentProfilesKey,
 		metric.WithDescription("Number of profile record successfully sent to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
-	exp.failedToSendProfileRecords, err = meter.Int64Counter(
-		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendProfileRecordsKey,
+	exp.failedToSendProfiles, err = meter.Int64Counter(
+		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendProfilesKey,
 		metric.WithDescription("Number of profile records in failed attempts to send to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
@@ -189,10 +189,10 @@ func (exp *Exporter) StartProfilesOp(ctx context.Context) context.Context {
 }
 
 // EndProfilesOp completes the export operation that was started with StartProfilesOp.
-func (exp *Exporter) EndProfilesOp(ctx context.Context, numProfileRecords int, err error) {
-	numSent, numFailedToSend := toNumItems(numProfileRecords, err)
+func (exp *Exporter) EndProfilesOp(ctx context.Context, numProfiles int, err error) {
+	numSent, numFailedToSend := toNumItems(numProfiles, err)
 	exp.recordMetrics(ctx, component.DataTypeProfiles, numSent, numFailedToSend)
-	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentProfileRecordsKey, obsmetrics.FailedToSendProfileRecordsKey)
+	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentProfilesKey, obsmetrics.FailedToSendProfilesKey)
 }
 
 // startOp creates the span used to trace the operation. Returning
@@ -227,8 +227,8 @@ func (exp *Exporter) recordWithOtel(ctx context.Context, dataType component.Data
 		sentMeasure = exp.sentLogRecords
 		failedMeasure = exp.failedToSendLogRecords
 	case component.DataTypeProfiles:
-		sentMeasure = exp.sentProfileRecords
-		failedMeasure = exp.failedToSendProfileRecords
+		sentMeasure = exp.sentProfiles
+		failedMeasure = exp.failedToSendProfiles
 	}
 
 	sentMeasure.Add(ctx, sent, metric.WithAttributes(exp.otelAttrs...))
@@ -248,8 +248,8 @@ func (exp *Exporter) recordWithOC(ctx context.Context, dataType component.DataTy
 		sentMeasure = obsmetrics.ExporterSentLogRecords
 		failedMeasure = obsmetrics.ExporterFailedToSendLogRecords
 	case component.DataTypeProfiles:
-		sentMeasure = obsmetrics.ExporterSentProfileRecords
-		failedMeasure = obsmetrics.ExporterFailedToSendProfileRecords
+		sentMeasure = obsmetrics.ExporterSentProfiles
+		failedMeasure = obsmetrics.ExporterFailedToSendProfiles
 	}
 
 	if failed > 0 {

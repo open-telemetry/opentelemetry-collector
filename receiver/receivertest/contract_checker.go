@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 )
@@ -113,6 +114,8 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	switch params.DataType {
 	case component.DataTypeLogs:
 		receiver, err = params.Factory.CreateLogsReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
+	case component.DataTypeProfiles:
+		receiver, err = params.Factory.CreateProfilesReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
 	case component.DataTypeTraces:
 		receiver, err = params.Factory.CreateTracesReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
 	case component.DataTypeMetrics:
@@ -374,6 +377,36 @@ func idSetFromLogs(data plog.Logs) (idSet, error) {
 		ils := rss.At(i).ScopeLogs()
 		for j := 0; j < ils.Len(); j++ {
 			ss := ils.At(j).LogRecords()
+			for k := 0; k < ss.Len(); k++ {
+				elem := ss.At(k)
+				key, exists := elem.Attributes().Get(UniqueIDAttrName)
+				if !exists {
+					return ds, fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
+				}
+				if key.Type() != pcommon.ValueTypeStr {
+					return ds, fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
+				}
+				ds[UniqueIDAttrVal(key.Str())] = true
+			}
+		}
+	}
+	return ds, nil
+}
+
+func (m *mockConsumer) ConsumeProfiles(_ context.Context, data pprofile.Profiles) error {
+	ids, err := idSetFromProfiles(data)
+	require.NoError(m.t, err)
+	return m.consume(ids)
+}
+
+// idSetFromProfiles computes an idSet from given plog.Profiles. The idSet will contain ids of all log records.
+func idSetFromProfiles(data pprofile.Profiles) (idSet, error) {
+	ds := map[UniqueIDAttrVal]bool{}
+	rss := data.ResourceProfiles()
+	for i := 0; i < rss.Len(); i++ {
+		ils := rss.At(i).ScopeProfiles()
+		for j := 0; j < ils.Len(); j++ {
+			ss := ils.At(j).Profiles()
 			for k := 0; k < ss.Len(); k++ {
 				elem := ss.At(k)
 				key, exists := elem.Attributes().Get(UniqueIDAttrName)

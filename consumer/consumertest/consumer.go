@@ -52,6 +52,7 @@ type baseConsumer struct {
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
+	consumer.ConsumeProfilesFunc
 }
 
 func (bc baseConsumer) unexported() {}

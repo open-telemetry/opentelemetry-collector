@@ -103,6 +103,6 @@ func (f fakeProfilesServer) Export(_ context.Context, request ExportRequest) (Ex
 
 func generateProfilesRequest() ExportRequest {
 	ld := pprofile.NewProfiles()
-	ld.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().ProfileRecords().AppendEmpty().Body().SetStr("test_profile_record")
+	ld.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 	return NewExportRequestFromProfiles(ld)
 }

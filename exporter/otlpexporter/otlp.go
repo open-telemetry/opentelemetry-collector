@@ -138,8 +138,8 @@ func (e *baseExporter) pushProfiles(ctx context.Context, ld pprofile.Profiles) e
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedProfileRecords() == 0) {
-		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedProfileRecords()))
+	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedProfiles() == 0) {
+		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedProfiles()))
 	}
 	return nil
 }

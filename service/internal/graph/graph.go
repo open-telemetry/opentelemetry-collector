@@ -326,6 +326,7 @@ func (g *Graph) GetExporters() map[component.DataType]map[component.ID]component
 	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Component)
 	exportersMap[component.DataTypeMetrics] = make(map[component.ID]component.Component)
 	exportersMap[component.DataTypeLogs] = make(map[component.ID]component.Component)
+	exportersMap[component.DataTypeProfiles] = make(map[component.ID]component.Component)
 
 	for _, pg := range g.pipelines {
 		for _, expNode := range pg.exporters {

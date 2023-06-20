@@ -30,11 +30,11 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 }
 
-func TestExportPartialSuccess_RejectedProfileRecords(t *testing.T) {
+func TestExportPartialSuccess_RejectedProfiles(t *testing.T) {
 	ms := NewExportPartialSuccess()
-	assert.Equal(t, int64(0), ms.RejectedProfileRecords())
-	ms.SetRejectedProfileRecords(int64(13))
-	assert.Equal(t, int64(13), ms.RejectedProfileRecords())
+	assert.Equal(t, int64(0), ms.RejectedProfiles())
+	ms.SetRejectedProfiles(int64(13))
+	assert.Equal(t, int64(13), ms.RejectedProfiles())
 }
 
 func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
@@ -51,6 +51,6 @@ func generateTestExportPartialSuccess() ExportPartialSuccess {
 }
 
 func fillTestExportPartialSuccess(tv ExportPartialSuccess) {
-	tv.orig.RejectedProfileRecords = int64(13)
+	tv.orig.RejectedProfiles = int64(13)
 	tv.orig.ErrorMessage = "error message"
 }

@@ -33,11 +33,11 @@ const (
 	// Collector.
 	RefusedLogRecordsKey = "refused_log_records"
 
-	// AcceptedProfileRecordsKey used to identify profile records accepted by the Collector.
-	AcceptedProfileRecordsKey = "accepted_profile_records"
-	// RefusedProfileRecordsKey used to identify profile records refused (ie.: not ingested) by the
+	// AcceptedProfilesKey used to identify profile records accepted by the Collector.
+	AcceptedProfilesKey = "accepted_profiles"
+	// RefusedProfilesKey used to identify profile records refused (ie.: not ingested) by the
 	// Collector.
-	RefusedProfileRecordsKey = "refused_profile_records"
+	RefusedProfilesKey = "refused_profiles"
 )
 
 var (
@@ -79,11 +79,11 @@ var (
 		ReceiverPrefix+RefusedLogRecordsKey,
 		"Number of log records that could not be pushed into the pipeline.",
 		stats.UnitDimensionless)
-	ReceiverAcceptedProfilesRecords = stats.Int64(
+	ReceiverAcceptedProfiles = stats.Int64(
 		ReceiverPrefix+AcceptedLogRecordsKey,
 		"Number of profile records successfully pushed into the pipeline.",
 		stats.UnitDimensionless)
-	ReceiverRefusedProfilesRecords = stats.Int64(
+	ReceiverRefusedProfiles = stats.Int64(
 		ReceiverPrefix+RefusedLogRecordsKey,
 		"Number of profile records that could not be pushed into the pipeline.",
 		stats.UnitDimensionless)

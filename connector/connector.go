@@ -388,7 +388,7 @@ func (f CreateProfilesToTracesFunc) CreateProfilesToTraces(
 	nextConsumer consumer.Traces,
 ) (Profiles, error) {
 	if f == nil {
-		return nil, errDataTypes(set.ID, component.DataTypeLogs, component.DataTypeTraces)
+		return nil, errDataTypes(set.ID, component.DataTypeProfiles, component.DataTypeTraces)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -404,7 +404,7 @@ func (f CreateProfilesToMetricsFunc) CreateProfilesToMetrics(
 	nextConsumer consumer.Metrics,
 ) (Profiles, error) {
 	if f == nil {
-		return nil, errDataTypes(set.ID, component.DataTypeLogs, component.DataTypeMetrics)
+		return nil, errDataTypes(set.ID, component.DataTypeProfiles, component.DataTypeMetrics)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -420,7 +420,7 @@ func (f CreateProfilesToLogsFunc) CreateProfilesToLogs(
 	nextConsumer consumer.Logs,
 ) (Profiles, error) {
 	if f == nil {
-		return nil, errDataTypes(set.ID, component.DataTypeLogs, component.DataTypeLogs)
+		return nil, errDataTypes(set.ID, component.DataTypeProfiles, component.DataTypeLogs)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }

@@ -47,7 +47,7 @@ func createLogsProcessor(context.Context, processor.CreateSettings, component.Co
 	return nopInstance, nil
 }
 
-func createProfilesProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Profiles) (processor.Logs, error) {
+func createProfilesProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Profiles) (processor.Profiles, error) {
 	return nopInstance, nil
 }
 

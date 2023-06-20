@@ -281,6 +281,12 @@ func (n *connectorNode) buildComponent(
 				return err
 			}
 			n.Component, n.baseConsumer = conn, conn
+		case component.DataTypeProfiles:
+			conn, err := builder.CreateProfilesToTraces(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
 		}
 
 	case component.DataTypeMetrics:
@@ -312,6 +318,12 @@ func (n *connectorNode) buildComponent(
 			n.baseConsumer = capabilityconsumer.NewMetrics(conn, capability)
 		case component.DataTypeLogs:
 			conn, err := builder.CreateLogsToMetrics(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
+		case component.DataTypeProfiles:
+			conn, err := builder.CreateProfilesToMetrics(ctx, set, next)
 			if err != nil {
 				return err
 			}
@@ -350,6 +362,52 @@ func (n *connectorNode) buildComponent(
 			// When connecting pipelines of the same data type, the connector must
 			// inherit the capabilities of pipelines in which it is acting as a receiver.
 			n.baseConsumer = capabilityconsumer.NewLogs(conn, capability)
+		case component.DataTypeProfiles:
+			conn, err := builder.CreateProfilesToLogs(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
+		}
+	case component.DataTypeProfiles:
+		next := nexts[0].(consumer.Profiles)
+		capability := nexts[0].Capabilities()
+		if len(nexts) > 1 {
+			consumers := make(map[component.ID]consumer.Profiles, len(nexts))
+			for _, next := range nexts {
+				consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Profiles)
+				capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
+			}
+			next = fanoutconsumer.NewProfilesRouter(consumers)
+		}
+		switch n.exprPipelineType {
+		case component.DataTypeTraces:
+			conn, err := builder.CreateTracesToProfiles(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
+		case component.DataTypeMetrics:
+			conn, err := builder.CreateMetricsToProfiles(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
+		case component.DataTypeLogs:
+			conn, err := builder.CreateLogsToProfiles(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component, n.baseConsumer = conn, conn
+		case component.DataTypeProfiles:
+			conn, err := builder.CreateProfilesToProfiles(ctx, set, next)
+			if err != nil {
+				return err
+			}
+			n.Component = conn
+			// When connecting pipelines of the same data type, the connector must
+			// inherit the capabilities of pipelines in which it is acting as a receiver.
+			n.baseConsumer = capabilityconsumer.NewProfiles(conn, capability)
 		}
 	}
 	return nil

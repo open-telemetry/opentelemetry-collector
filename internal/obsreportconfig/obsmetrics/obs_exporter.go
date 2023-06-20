@@ -27,10 +27,10 @@ const (
 	// FailedToSendLogRecordsKey used to track logs that failed to be sent by exporters.
 	FailedToSendLogRecordsKey = "send_failed_log_records"
 
-	// SentProfileRecordsKey used to track profiles sent by exporters.
-	SentProfileRecordsKey = "sent_profile_records"
-	// FailedToSendProfileRecordsKey used to track profiles that failed to be sent by exporters.
-	FailedToSendProfileRecordsKey = "send_failed_profile_records"
+	// SentProfilesKey used to track profiles sent by exporters.
+	SentProfilesKey = "sent_profiles"
+	// FailedToSendProfilesKey used to track profiles that failed to be sent by exporters.
+	FailedToSendProfilesKey = "send_failed_profiles"
 )
 
 var (
@@ -71,12 +71,12 @@ var (
 		ExporterPrefix+FailedToSendLogRecordsKey,
 		"Number of log records in failed attempts to send to destination.",
 		stats.UnitDimensionless)
-	ExporterSentProfileRecords = stats.Int64(
-		ExporterPrefix+SentProfileRecordsKey,
+	ExporterSentProfiles = stats.Int64(
+		ExporterPrefix+SentProfilesKey,
 		"Number of profile record successfully sent to destination.",
 		stats.UnitDimensionless)
-	ExporterFailedToSendProfileRecords = stats.Int64(
-		ExporterPrefix+FailedToSendProfileRecordsKey,
+	ExporterFailedToSendProfiles = stats.Int64(
+		ExporterPrefix+FailedToSendProfilesKey,
 		"Number of profile records in failed attempts to send to destination.",
 		stats.UnitDimensionless)
 )

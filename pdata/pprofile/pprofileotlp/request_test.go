@@ -40,14 +40,14 @@ var profilesRequestJSON = []byte(`
 func TestRequestToPData(t *testing.T) {
 	tr := NewExportRequest()
 	assert.Equal(t, tr.Profiles().ProfileRecordCount(), 0)
-	tr.Profiles().ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().ProfileRecords().AppendEmpty()
+	tr.Profiles().ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 	assert.Equal(t, tr.Profiles().ProfileRecordCount(), 1)
 }
 
 func TestRequestJSON(t *testing.T) {
 	lr := NewExportRequest()
 	assert.NoError(t, lr.UnmarshalJSON(profilesRequestJSON))
-	assert.Equal(t, "test_profile_record", lr.Profiles().ResourceProfiles().At(0).ScopeProfiles().At(0).ProfileRecords().At(0).Body().AsString())
+	assert.Equal(t, "test_profile_record", lr.Profiles().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0))
 
 	got, err := lr.MarshalJSON()
 	assert.NoError(t, err)
