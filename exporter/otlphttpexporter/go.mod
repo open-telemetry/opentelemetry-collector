@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v0.0.0-20230619134516-d8100bb80fe1
 	go.opentelemetry.io/collector/config/confighttp v0.0.0-20230619134516-d8100bb80fe1
 	go.opentelemetry.io/collector/config/configopaque v0.0.0-20230619134516-d8100bb80fe1
-	go.opentelemetry.io/collector/config/configtls v0.0.0-20230619134516-d8100bb80fe1
+	go.opentelemetry.io/collector/config/configtls v0.0.0-20230619144035-25129b794d48
 	go.opentelemetry.io/collector/confmap v0.79.0
 	go.opentelemetry.io/collector/consumer v0.79.0
 	go.opentelemetry.io/collector/exporter v0.79.0
