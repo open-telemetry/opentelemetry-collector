@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/otelcol/internal/sharedgate"
 	"go.opentelemetry.io/collector/service"
 )
 
@@ -95,10 +94,6 @@ func (cfg *Config) Validate() error {
 		if err := component.ValidateConfig(extCfg); err != nil {
 			return fmt.Errorf("extensions::%s: %w", extID, err)
 		}
-	}
-
-	if len(cfg.Connectors) != 0 && !sharedgate.ConnectorsFeatureGate.IsEnabled() {
-		return fmt.Errorf("connectors require feature gate: %s", sharedgate.ConnectorsFeatureGate.ID())
 	}
 
 	if err := cfg.Service.Validate(); err != nil {
