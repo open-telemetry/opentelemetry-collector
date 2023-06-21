@@ -275,6 +275,7 @@ genjsonschema: genjsonschema-cleanup $(GOJSONSCHEMA)
 	curl -sSL https://api.github.com/repos/open-telemetry/opentelemetry-configuration/tarball/${OPENTELEMETRY_JSONSCHEMA_VERSION} | tar xz --strip 1 -C ${OPENTELEMETRY_JSONSCHEMA_SRC_DIR}
 	$(GOJSONSCHEMA) \
 		--package telemetry \
+		--tags mapstructure \
 		--output ./service/telemetry/generated_config.go \
 		--schema-package=https://opentelemetry.io/otelconfig/opentelemetry_configuration.json=github.com/open-telemetry/opentelemetry-collector/schema \
     	${OPENTELEMETRY_JSONSCHEMA_SRC_DIR}/schema/opentelemetry_configuration.json

@@ -232,3 +232,6 @@ retract (
 	v0.57.1 // Release failed, use v0.57.2
 	v0.57.0 // Release failed, use v0.57.2
 )
+
+// work around until https://github.com/omissis/go-jsonschema/pull/80 is merged
+replace github.com/atombender/go-jsonschema v0.11.0 => github.com/codeboten/go-jsonschema v0.0.0-20230525211506-d0b3c13fa8d4
