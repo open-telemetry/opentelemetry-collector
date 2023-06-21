@@ -32,9 +32,9 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, component.StabilityLevelDevelopment),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDevelopment),
-		exporter.WithLogs(createLogsExporter, component.StabilityLevelDevelopment),
+		exporter.WithTraces(createTracesExporter, component.StabilityLevelDeprecated),
+		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDeprecated),
+		exporter.WithLogs(createLogsExporter, component.StabilityLevelDeprecated),
 	)
 }
 

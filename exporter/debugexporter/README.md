@@ -1,4 +1,4 @@
-# Logging Exporter
+# Debug Exporter
 
 | Status                   |                       |
 | ------------------------ |-----------------------|
@@ -14,10 +14,6 @@ Supported pipeline types: traces, metrics, logs
 
 The following settings are optional:
 
-- `loglevel` (default = `info`): the log level of the logging export
-  (debug|info|warn|error). When set to `debug`, pipeline data is verbosely 
-      - **Note**: This option has been deprecated in favor of `verbosity`
-  logged.
 - `verbosity` (default = `normal`): the verbosity of the logging export
   (detailed|normal|basic). When set to `detailed`, pipeline data is verbosely
   logged.
@@ -28,14 +24,11 @@ The following settings are optional:
   docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details.
   on how sampling parameters impact number of messages.
 
-### Note
-`loglevel` is deprecated, use `verbosity` instead.
-
 Example:
 
 ```yaml
 exporters:
-  logging:
+  debug:
     verbosity: detailed
     sampling_initial: 5
     sampling_thereafter: 200

@@ -20,7 +20,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr                   = "logging"
+	typeStr                   = "debug"
 	defaultSamplingInitial    = 2
 	defaultSamplingThereafter = 500
 )
@@ -50,7 +50,7 @@ func createDefaultConfig() component.Config {
 func createTracesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	s := newdebugexporter(exporterLogger, cfg.Verbosity)
+	s := newDebugExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewTracesExporter(ctx, set, cfg,
 		s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -65,7 +65,7 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	s := newdebugexporter(exporterLogger, cfg.Verbosity)
+	s := newDebugExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
 		s.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -80,7 +80,7 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, con
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	s := newdebugexporter(exporterLogger, cfg.Verbosity)
+	s := newDebugExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewLogsExporter(ctx, set, cfg,
 		s.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),

@@ -58,8 +58,8 @@ func TestLoggingLogsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lle.Shutdown(context.Background()))
 }
 
-func TestdebugexporterErrors(t *testing.T) {
-	le := newdebugexporter(zaptest.NewLogger(t), configtelemetry.LevelDetailed)
+func TestDebugExporterErrors(t *testing.T) {
+	le := newDebugExporter(zaptest.NewLogger(t), configtelemetry.LevelDetailed)
 	require.NotNil(t, le)
 
 	errWant := errors.New("my error")

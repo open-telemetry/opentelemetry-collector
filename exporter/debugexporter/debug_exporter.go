@@ -74,7 +74,7 @@ func (s *debugexporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func newdebugexporter(logger *zap.Logger, verbosity configtelemetry.Level) *debugexporter {
+func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debugexporter {
 	return &debugexporter{
 		verbosity:        verbosity,
 		logger:           logger,
