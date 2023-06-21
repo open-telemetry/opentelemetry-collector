@@ -10,7 +10,7 @@ import (
 type recordSampler struct{}
 
 func (r recordSampler) ShouldSample(_ sdktrace.SamplingParameters) sdktrace.SamplingResult {
-	return sdktrace.SamplingResult{Decision: sdktrace.RecordAndSample}
+	return sdktrace.SamplingResult{Decision: sdktrace.RecordOnly}
 }
 
 func (r recordSampler) Description() string {
@@ -24,5 +24,6 @@ func alwaysRecord() sdktrace.Sampler {
 		sdktrace.WithRemoteParentSampled(sdktrace.AlwaysSample()),
 		sdktrace.WithRemoteParentNotSampled(rs),
 		sdktrace.WithLocalParentSampled(sdktrace.AlwaysSample()),
+		sdktrace.WithLocalParentNotSampled(sdktrace.AlwaysSample()),
 		sdktrace.WithRemoteParentSampled(rs))
 }
