@@ -1,3 +1,4 @@
+// Deprecated: loggingexporter is deprecated in favour of the debugexporter. It will be removed in July 2024.
 module go.opentelemetry.io/collector/exporter/loggingexporter
 
 go 1.19
