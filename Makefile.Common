@@ -55,7 +55,7 @@ test-with-cover: $(GO_ACC)
 
 .PHONY: benchmark
 benchmark:
-	$(GOTEST) -bench=. -run=notests ./... | tee benchmarks.txt
+	$(GOTEST) -bench=. -run=notests ./... | tee benchmark.txt
 
 .PHONY: fmt
 fmt: $(GOIMPORTS)
