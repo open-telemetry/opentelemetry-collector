@@ -1,0 +1,13 @@
+ResourceMetrics #0
+Resource SchemaURL: 
+Resource attributes:
+     -> resource-attr: Str(resource-attr-val-1)
+ScopeMetrics #0
+ScopeMetrics SchemaURL: 
+InstrumentationScope  
+Metric #0
+Descriptor:
+     -> Name: sum-int
+     -> Description: 
+     -> Unit: 1
+     -> DataType: Empty
