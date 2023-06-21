@@ -34,7 +34,7 @@ processors:
   batch:
 
 exporters:
-  logging:
+  debug:
 
 service:
   pipelines:
@@ -44,7 +44,7 @@ service:
       processors:
       - batch
       exporters:
-      - logging
+      - debug
 EOF
 $ /tmp/dist/otelcol-custom --config=/tmp/otelcol.yaml
 ```

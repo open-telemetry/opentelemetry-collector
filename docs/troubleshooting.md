@@ -76,13 +76,13 @@ receivers:
             regex: '.*grpc_io.*'
             action: drop
 exporters:
-  logging:
+  debug:
 service:
   pipelines:
     metrics:
       receivers: [prometheus]
       processors: []
-      exporters: [logging]
+      exporters: [debug]
 ```
 
 ### zPages
@@ -109,7 +109,7 @@ extensions:
 exporters](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#general-information)
 can be configured to inspect the data being processed by the Collector.
 
-For live troubleshooting purposes consider leveraging the `logging` exporter,
+For live troubleshooting purposes consider leveraging the `debug` exporter,
 which can be used to confirm that data is being received, processed and
 exported by the Collector.
 
@@ -117,13 +117,13 @@ exported by the Collector.
 receivers:
   zipkin:
 exporters:
-  logging:
+  debug:
 service:
   pipelines:
     traces:
       receivers: [zipkin]
       processors: []
-      exporters: [logging]
+      exporters: [debug]
 ```
 
 Get a Zipkin payload to test. For example create a file called `trace.json`
@@ -161,21 +161,21 @@ $ curl -X POST localhost:9411/api/v2/spans -H'Content-Type: application/json' -d
 You should see a log entry like the following from the Collector:
 
 ```
-2020-11-11T04:12:33.089Z	INFO	loggingexporter/logging_exporter.go:296	TraceExporter	{"#spans": 1}
+2020-11-11T04:12:33.089Z	INFO	debugexporter/debug_exporter.go:296	TraceExporter	{"#spans": 1}
 ```
 
-You can also configure the `logging` exporter so the entire payload is printed:
+You can also configure the `debug` exporter so the entire payload is printed:
 
 ```yaml
 exporters:
-  logging:
+  debug:
     verbosity: detailed
 ```
 
 With the modified configuration if you re-run the test above the log output should look like:
 
 ```
-2020-11-11T04:08:17.344Z	DEBUG	loggingexporter/logging_exporter.go:353	ResourceSpans #0
+2020-11-11T04:08:17.344Z	DEBUG	debugexporter/debug_exporter.go:353	ResourceSpans #0
 Resource labels:
      -> service.name: Str(api)
 ScopeSpans #0
