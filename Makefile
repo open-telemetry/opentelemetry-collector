@@ -57,7 +57,7 @@ gotest:
 .PHONY: gobenchmark
 gobenchmark:
 	@$(MAKE) for-all-target TARGET="benchmark"
-	cat `find . -name benchmarks.txt` > benchmarks.txt
+	cat `find . -name benchmark.txt` > benchmarks.txt
 
 .PHONY: gotest-with-cover
 gotest-with-cover:
