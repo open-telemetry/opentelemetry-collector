@@ -1,5 +1,7 @@
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
 ALL_PKGS := $(sort $(shell go list ./...))
+# COVER_PKGS is the list of packages to include in the coverage
+COVER_PKGS := $(shell go list ./... | tr "\n" ",")
 
 GOTEST_OPT?= -race -timeout 120s
 GOCMD?= go
@@ -49,7 +51,7 @@ test:
 .PHONY: test-with-cover
 test-with-cover: $(GO_ACC)
 	mkdir -p $(PWD)/coverage/unit
-	$(GOTEST) $(GOTEST_OPT) -cover ./... -covermode=atomic -args -test.gocoverdir="$(PWD)/coverage/unit"
+	$(GOTEST) $(GOTEST_OPT) -cover ./... -covermode=atomic -coverpkg $(COVER_PKGS) -args -test.gocoverdir="$(PWD)/coverage/unit"
 
 .PHONY: benchmark
 benchmark:
