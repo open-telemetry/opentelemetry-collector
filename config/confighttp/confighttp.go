@@ -219,6 +219,10 @@ type HTTPServerSettings struct {
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
 	// Experimental: *NOTE* this option is subject to change or removal in the future.
 	IncludeMetadata bool `mapstructure:"include_metadata"`
+
+	// Additional headers attached to each HTTP response sent to the client.
+	// Header values are opaque since they may be sensitive.
+	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
 }
 
 // ToListener creates a net.Listener.
@@ -285,6 +289,7 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		handler = authInterceptor(handler, server)
 	}
 
+	// TODO: emit a warning when non-empty CorsHeaders and empty CorsOrigins.
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
 		co := cors.Options{
 			AllowedOrigins:   hss.CORS.AllowedOrigins,
@@ -294,7 +299,10 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		}
 		handler = cors.New(co).Handler(handler)
 	}
-	// TODO: emit a warning when non-empty CorsHeaders and empty CorsOrigins.
+
+	if hss.ResponseHeaders != nil {
+		handler = responseHeadersHandler(handler, hss.ResponseHeaders)
+	}
 
 	// Enable OpenTelemetry observability plugin.
 	// TODO: Consider to use component ID string as prefix for all the operations.
@@ -318,6 +326,18 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 	return &http.Server{
 		Handler: handler,
 	}, nil
+}
+
+func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+
+		for k, v := range headers {
+			h.Set(k, string(v))
+		}
+
+		handler.ServeHTTP(w, r)
+	})
 }
 
 // CORSSettings configures a receiver for HTTP cross-origin resource sharing (CORS).
