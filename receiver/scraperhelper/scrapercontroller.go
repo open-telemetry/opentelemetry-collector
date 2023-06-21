@@ -19,6 +19,23 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
+// ScraperControllerSettings defines common settings for a scraper controller
+// configuration. Scraper controller receivers can embed this struct, instead
+// of receiver.Settings, and extend it with more fields if needed.
+type ScraperControllerSettings struct {
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	InitialDelay       time.Duration `mapstructure:"initial_delay"`
+}
+
+// NewDefaultScraperControllerSettings returns default scraper controller
+// settings with a collection interval of one minute.
+func NewDefaultScraperControllerSettings(component.Type) ScraperControllerSettings {
+	return ScraperControllerSettings{
+		CollectionInterval: time.Minute,
+		InitialDelay:       time.Second,
+	}
+}
+
 // ScraperControllerOption apply changes to internal options.
 type ScraperControllerOption func(*controller)
 
@@ -47,7 +64,6 @@ type controller struct {
 	logger             *zap.Logger
 	collectionInterval time.Duration
 	initialDelay       time.Duration
-	timeout            time.Duration
 	nextConsumer       consumer.Metrics
 
 	scrapers    []Scraper
@@ -92,7 +108,6 @@ func NewScraperControllerReceiver(
 		logger:             set.Logger,
 		collectionInterval: cfg.CollectionInterval,
 		initialDelay:       cfg.InitialDelay,
-		timeout:            cfg.Timeout,
 		nextConsumer:       nextConsumer,
 		done:               make(chan struct{}),
 		terminated:         make(chan struct{}),
@@ -174,9 +189,7 @@ func (sc *controller) startScraping() {
 		for {
 			select {
 			case <-sc.tickerCh:
-				ctx, done := context.WithTimeout(context.Background(), sc.timeout)
-				sc.scrapeMetricsAndReport(ctx)
-				done()
+				sc.scrapeMetricsAndReport(context.Background())
 			case <-sc.done:
 				sc.terminated <- struct{}{}
 				return
