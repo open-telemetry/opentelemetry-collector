@@ -5,6 +5,7 @@ module-sets:
   stable:
     version: v1.0.0-rcv0013
     modules:
+      - go.opentelemetry.io/collector/config/confignet
       - go.opentelemetry.io/collector/featuregate
       - go.opentelemetry.io/collector/pdata
   beta:
@@ -18,7 +19,6 @@ module-sets:
       - go.opentelemetry.io/collector/config/configcompression
       - go.opentelemetry.io/collector/config/configgrpc
       - go.opentelemetry.io/collector/config/confighttp
-      - go.opentelemetry.io/collector/config/confignet
       - go.opentelemetry.io/collector/config/configopaque
       - go.opentelemetry.io/collector/config/configtelemetry
       - go.opentelemetry.io/collector/config/configtls
