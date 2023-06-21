@@ -22,6 +22,9 @@ dist/
 coverage/*
 coverage.txt
 
+# Benchmarks
+benchmarks.txt
+
 # Wix
 *.wixobj
 *.wixpdb
