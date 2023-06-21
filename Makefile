@@ -59,9 +59,9 @@ gobenchmark:
 	@$(MAKE) for-all-target TARGET="benchmark"
 
 .PHONY: gotest-with-cover
-gotest-with-cover: $(GOCOVMERGE)
+gotest-with-cover:
 	@$(MAKE) for-all-target TARGET="test-with-cover"
-	$(GOCOVMERGE) $$(find . -name coverage.out) > coverage.txt
+	$(GOCMD) tool covdata textfmt -i=./coverage/unit -o ./coverage.txt
 
 .PHONY: goporto
 goporto: $(PORTO)
