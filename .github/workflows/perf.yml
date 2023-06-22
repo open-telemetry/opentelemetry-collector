@@ -1,8 +1,8 @@
 name: Automation - Performance
 
 on:
-  workflow_dispatch:
-
+  push:
+    branches: [main]
 
 jobs:
   runperf:
