@@ -1,0 +1,29 @@
+name: Automation - Performance
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  runperf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ~1.19.10
+
+      - name: Run benchmark
+        run: make gobenchmark
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'go'
+          output-file-path: benchmarks.txt
+          gh-pages-branch: gh-pages
+          auto-push: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          benchmark-data-dir-path: "docs/dev/bench"
