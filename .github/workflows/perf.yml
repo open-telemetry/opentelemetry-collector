@@ -26,3 +26,4 @@ jobs:
           gh-pages-branch: gh-pages
           auto-push: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          benchmark-data-dir-path: "docs/dev/bench"
