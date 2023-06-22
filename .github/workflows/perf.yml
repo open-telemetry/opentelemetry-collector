@@ -23,3 +23,5 @@ jobs:
         with:
           tool: 'go'
           output-file-path: benchmarks.txt
+          gh-pages-branch: gh-pages
+          auto-push: true
