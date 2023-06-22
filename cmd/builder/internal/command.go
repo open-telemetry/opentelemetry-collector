@@ -20,6 +20,7 @@ import (
 )
 
 const (
+	skipGenerateFlag               = "skip-generate"
 	skipCompilationFlag            = "skip-compilation"
 	skipGetModulesFlag             = "skip-get-modules"
 	ldflagsFlag                    = "ldflags"
@@ -74,6 +75,7 @@ configuration is provided, ocb will generate a default Collector.
 	cmd.Flags().StringVar(&cfgFile, "config", "", "build configuration file")
 
 	// the distribution parameters, which we accept as CLI flags as well
+	cmd.Flags().BoolVar(&cfg.SkipGenerate, skipGenerateFlag, false, "Whether builder should skip generating go code (default false)")
 	cmd.Flags().BoolVar(&cfg.SkipCompilation, skipCompilationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
 	cmd.Flags().BoolVar(&cfg.SkipGetModules, skipGetModulesFlag, false, "Whether builder should skip updating go.mod and retrieve Go module list (default false)")
 	cmd.Flags().StringVar(&cfg.LDFlags, ldflagsFlag, "", `ldflags to include in the "go build" command`)
@@ -160,6 +162,9 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 	cfg.Replaces = cfgFromFile.Replaces
 	cfg.Excludes = cfgFromFile.Excludes
 
+	if !flags.Changed(skipGenerateFlag) && cfgFromFile.SkipGenerate {
+		cfg.SkipGenerate = cfgFromFile.SkipGenerate
+	}
 	if !flags.Changed(skipCompilationFlag) && cfgFromFile.SkipCompilation {
 		cfg.SkipCompilation = cfgFromFile.SkipCompilation
 	}

@@ -112,3 +112,24 @@ replaces:
   # a list of "replaces" directives that will be part of the resulting go.mod
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.40.0
 ```
+
+## Steps
+
+The builder has 3 steps:
+
+* Generate: generates the golang source code
+* Get modules: generates the go.mod file based on the imported modules in the generated golang source code
+* Compilation: builds the OpenTelemetry Collector executable
+
+Each step can be skipped independently: `--skip-generate`, `--skip-get-modules` and `--skip-compilation`.
+
+For instance, a code generation step could execute
+
+```console
+ocb --skip-compilation --config=config.yaml
+```
+then commit the code in a git repo. A CI can sync the code and execute
+```console
+ocb --skip-generate --skip-get-modules --config=config.yaml
+```
+to only execute the compilation step.

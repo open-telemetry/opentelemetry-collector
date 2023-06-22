@@ -5,6 +5,8 @@ package builder
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -31,6 +33,18 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	err := Generate(cfg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to create output path")
+}
+
+func TestSkipGenerate(t *testing.T) {
+	cfg := NewDefaultConfig()
+	cfg.Distribution.OutputPath = t.TempDir()
+	cfg.SkipGenerate = true
+	err := Generate(cfg)
+	require.NoError(t, err)
+	outputFile, err := os.Open(cfg.Distribution.OutputPath)
+	require.NoError(t, err)
+	_, err = outputFile.Readdirnames(1)
+	require.ErrorIs(t, err, io.EOF, "skip generate should leave output directory empty")
 }
 
 func TestGenerateAndCompile(t *testing.T) {
