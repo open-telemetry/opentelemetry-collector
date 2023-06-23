@@ -24,20 +24,6 @@ As a result, the following parameters are also required:
   only be used if `insecure` is set to false.
   - `key_pem`: Alternative to `key_file`. Provide the key contents as a string instead of a filepath.
 
-A certificate authority may also need to be defined:
-
-- `ca_file`: Path to the CA cert. For a client this verifies the server
-  certificate. For a server this verifies client certificates. If empty uses
-  system root CA. Should only be used if `insecure` is set to false.
-  - `ca_pem`: Alternative to `ca_file`. Provide the CA cert contents as a string instead of a filepath.
-
-Additionally you can configure TLS to be enabled but skip verifying the server's
-certificate chain. This cannot be combined with `insecure` since `insecure`
-won't use TLS at all.
-
-- `insecure_skip_verify` (default = false): whether to skip verifying the
-  certificate or not.
-
 Minimum and maximum TLS version can be set:
 
 __IMPORTANT__: TLS 1.0 and 1.1 are deprecated due to known vulnerabilities and should be avoided.
@@ -66,9 +52,21 @@ under `tls`, like server configuration.
 
 Beyond TLS configuration, the following setting can optionally be configured:
 
+A certificate authority may also need to be defined:
+
+- `ca_file`: Path to the CA cert. This is the CA that is used to verify certificates supplied by the server.
+  If empty uses system root CA. Should only be used if `insecure` is set to false.
+  - `ca_pem`: Alternative to `ca_file`. Provide the CA cert contents as a string instead of a filepath.
 - `server_name_override`: If set to a non-empty string, it will override the
   virtual host name of authority (e.g. :authority header field) in requests
   (typically used for testing).
+
+Additionally you can configure TLS to be enabled but skip verifying the server's
+certificate chain. This cannot be combined with `insecure` since `insecure`
+won't use TLS at all.
+
+- `insecure_skip_verify` (default = false): whether to skip verifying the
+  certificate or not.
 
 Example:
 
