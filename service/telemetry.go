@@ -97,7 +97,7 @@ func (tel *telemetryInitializer) initMetrics(res *resource.Resource, logger *zap
 
 	if len(cfg.Metrics.Address) != 0 {
 		if tel.extendedConfig {
-			logger.Warn("service.telemetry.metrics.address is being deprecated in favor of service.telemetry.metrics.metric_readers")
+			logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::metric_readers")
 		}
 		host, port, err := net.SplitHostPort(cfg.Metrics.Address)
 		if err != nil {

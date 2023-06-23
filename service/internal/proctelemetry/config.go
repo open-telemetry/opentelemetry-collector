@@ -65,7 +65,7 @@ func InitMetricReader(ctx context.Context, name string, reader any, asyncErrorCh
 		}
 		return initExporter(ctx, r.Exporter, asyncErrorChannel)
 	default:
-		return nil, nil, fmt.Errorf("unsupported metric reader type: %s", readerType)
+		return nil, nil, fmt.Errorf("unsupported metric reader type %q", readerType)
 	}
 }
 
@@ -174,7 +174,7 @@ func initExporter(_ context.Context, exporters telemetry.MetricExporter, asyncEr
 			}
 			return initPrometheusExporter(e, asyncErrorChannel)
 		default:
-			return nil, nil, fmt.Errorf("unsupported metric exporter type: %s", exporterType)
+			return nil, nil, fmt.Errorf("unsupported metric exporter type %q", exporterType)
 		}
 	}
 	return nil, nil, fmt.Errorf("no valid exporter: %v", exporters)

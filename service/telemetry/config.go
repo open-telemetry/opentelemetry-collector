@@ -160,11 +160,11 @@ func (mrs *MeterProviderJsonMetricReaders) Unmarshal(conf *confmap.Conf) error {
 					}
 					r.Exporter[key] = promExporter
 				default:
-					return fmt.Errorf("unsupported metric exporter type: %s", key)
+					return fmt.Errorf("unsupported metric exporter type %q", key)
 				}
 			}
 		default:
-			return fmt.Errorf("unsupported metric reader type: %s", readerType)
+			return fmt.Errorf("unsupported metric reader type %q", readerType)
 		}
 	}
 	return nil
