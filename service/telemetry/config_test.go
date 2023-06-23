@@ -73,7 +73,7 @@ func TestUnmarshalMetricReaders(t *testing.T) {
 		{
 			name: "invalid config",
 			cfg:  confmap.NewFromStringMap(map[string]any{"invalid": "invalid"}),
-			err:  "unsupported metric reader type: invalid",
+			err:  "unsupported metric reader type \"invalid\"",
 		},
 		{
 			name: "valid reader type, invalid config",
@@ -91,7 +91,7 @@ func TestUnmarshalMetricReaders(t *testing.T) {
 					"invalid": "invalid",
 				},
 			}}),
-			err: "unsupported metric exporter type: invalid",
+			err: "unsupported metric exporter type \"invalid\"",
 		},
 		{
 			name: "valid pull reader type, invalid prometheus exporter",

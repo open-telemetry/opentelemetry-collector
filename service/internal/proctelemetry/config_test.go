@@ -30,7 +30,7 @@ func TestMetricReader(t *testing.T) {
 	}{
 		{
 			name: "noreader",
-			err:  errors.New("unsupported metric reader type: noreader"),
+			err:  errors.New("unsupported metric reader type \"noreader\""),
 		},
 		{
 			name: "pull/prometheus-invalid-config-no-host",

@@ -37,7 +37,7 @@ const (
 	pullMetricReader = "pull"
 
 	// supported exporters
-	prometheueExporter = "prometheus"
+	prometheusExporter = "prometheus"
 )
 
 var (
@@ -167,7 +167,7 @@ func initPrometheusExporter(prometheusConfig telemetry.Prometheus, asyncErrorCha
 func initExporter(_ context.Context, exporters telemetry.MetricExporter, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
 	for exporterType, exporter := range exporters {
 		switch exporterType {
-		case prometheueExporter:
+		case prometheusExporter:
 			e, ok := exporter.(telemetry.Prometheus)
 			if !ok {
 				return nil, nil, fmt.Errorf("prometheus exporter invalid: %v", exporter)
