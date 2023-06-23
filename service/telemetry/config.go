@@ -125,7 +125,6 @@ type TracesConfig struct {
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
-
 	// Check when service telemetry metric level is not none, the metrics address should not be empty
 	if c.Metrics.Level != configtelemetry.LevelNone && c.Metrics.Address == "" && len(c.Metrics.Readers) == 0 {
 		return fmt.Errorf("collector telemetry metric address should exist when metric level is not none")
@@ -135,12 +134,14 @@ func (c *Config) Validate() error {
 }
 
 func (mrs *MeterProviderJsonMetricReaders) Unmarshal(conf *confmap.Conf) error {
+	if conf == nil {
+		return nil
+	}
+
 	if err := conf.Unmarshal(mrs); err != nil {
 		return err
 	}
-	if *mrs == nil {
-		*mrs = make(MeterProviderJsonMetricReaders)
-	}
+
 	for key, reader := range *mrs {
 		readerType := strings.Split(key, "/")[0]
 		switch readerType {
