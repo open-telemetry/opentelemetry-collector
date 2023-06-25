@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/Shopify/sarama"
+	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -91,6 +92,7 @@ type kafkaLogsProducer struct {
 	topic      string
 	marshaller LogsMarshaller
 	logger     *zap.Logger
+	messageKey string
 }
 
 func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) (int, error) {
@@ -101,7 +103,7 @@ func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) (in
 			messages[i].Value = []byte(value.ArrayVal().At(i).StringVal())
 		}
 
-		err := e.producer.SendMessages(producerMessages(messages, e.topic))
+		err := e.producer.SendMessages(producerLogMessages(messages, e.topic, e.messageKey))
 		if err != nil {
 			return ld.LogRecordCount(), err
 		}
@@ -195,6 +197,7 @@ func newLogsExporter(config Config, params component.ExporterCreateParams, marsh
 		topic:      config.Topic,
 		marshaller: marshaller,
 		logger:     params.Logger,
+		messageKey: config.MessageKey,
 	}, nil
 
 }
@@ -204,6 +207,19 @@ func producerMessages(messages []Message, topic string) []*sarama.ProducerMessag
 	for i := range messages {
 		producerMessages[i] = &sarama.ProducerMessage{
 			Topic: topic,
+			Value: sarama.ByteEncoder(messages[i].Value),
+		}
+	}
+	return producerMessages
+}
+
+func producerLogMessages(messages []Message, topic string, key string) []*sarama.ProducerMessage {
+	producerMessages := make([]*sarama.ProducerMessage, len(messages))
+	for i := range messages {
+		res := gjson.GetBytes(messages[i].Value, key)
+		producerMessages[i] = &sarama.ProducerMessage{
+			Topic: topic,
+			Key:   sarama.StringEncoder(res.String()),
 			Value: sarama.ByteEncoder(messages[i].Value),
 		}
 	}

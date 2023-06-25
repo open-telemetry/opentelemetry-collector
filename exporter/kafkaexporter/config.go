@@ -35,6 +35,9 @@ type Config struct {
 	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
 
+	// message key in order to partition
+	MessageKey string `mapstructure:"message_key"`
+
 	// Encoding of messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
 
