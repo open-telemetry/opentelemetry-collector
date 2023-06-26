@@ -209,7 +209,7 @@ func (e metricsErrorMarshaller) Encoding() string {
 
 var _ TracesMarshaller = (*tracesErrorMarshaller)(nil)
 
-func (e tracesErrorMarshaller) Marshal(_ pdata.Traces) ([]Message, error) {
+func (e tracesErrorMarshaller) Marshal(_ pdata.Traces, topic string) ([]*sarama.ProducerMessage, error) {
 	return nil, e.err
 }
 

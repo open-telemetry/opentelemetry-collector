@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/Shopify/sarama"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -51,14 +52,14 @@ func TestJaegerMarshaller(t *testing.T) {
 	tests := []struct {
 		unmarshaller TracesMarshaller
 		encoding     string
-		messages     []Message
+		messages     []*sarama.ProducerMessage
 	}{
 		{
 			unmarshaller: jaegerMarshaller{
 				marshaller: jaegerProtoSpanMarshaller{},
 			},
 			encoding: "jaeger_proto",
-			messages: []Message{{Value: jaegerProtoBytes}},
+			messages: []*sarama.ProducerMessage{{Value: sarama.ByteEncoder(jaegerProtoBytes)}},
 		},
 		{
 			unmarshaller: jaegerMarshaller{
@@ -67,12 +68,12 @@ func TestJaegerMarshaller(t *testing.T) {
 				},
 			},
 			encoding: "jaeger_json",
-			messages: []Message{{Value: jsonByteBuffer.Bytes()}},
+			messages: []*sarama.ProducerMessage{{Value: sarama.ByteEncoder(jsonByteBuffer.Bytes())}},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.encoding, func(t *testing.T) {
-			messages, err := test.unmarshaller.Marshal(td)
+			messages, err := test.unmarshaller.Marshal(td, "")
 			require.NoError(t, err)
 			assert.Equal(t, test.messages, messages)
 			assert.Equal(t, test.encoding, test.unmarshaller.Encoding())
@@ -89,7 +90,7 @@ func TestJaegerMarshaller_error_covert_traceID(t *testing.T) {
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 	// fails in zero traceID
-	messages, err := marshaller.Marshal(td)
+	messages, err := marshaller.Marshal(td, "")
 	require.Error(t, err)
 	assert.Nil(t, messages)
 }

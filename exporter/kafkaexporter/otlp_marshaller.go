@@ -15,6 +15,7 @@
 package kafkaexporter
 
 import (
+	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpmetric "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
@@ -30,7 +31,7 @@ func (m *otlpTracesPbMarshaller) Encoding() string {
 	return defaultEncoding
 }
 
-func (m *otlpTracesPbMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
+func (m *otlpTracesPbMarshaller) Marshal(traces pdata.Traces, topic string) ([]*sarama.ProducerMessage, error) {
 	request := otlptrace.ExportTraceServiceRequest{
 		ResourceSpans: pdata.TracesToOtlp(traces),
 	}
@@ -38,7 +39,12 @@ func (m *otlpTracesPbMarshaller) Marshal(traces pdata.Traces) ([]Message, error)
 	if err != nil {
 		return nil, err
 	}
-	return []Message{{Value: bts}}, nil
+	return []*sarama.ProducerMessage{
+		{
+			Value: sarama.ByteEncoder(bts),
+			Topic: topic,
+		},
+	}, nil
 }
 
 type otlpMetricsPbMarshaller struct {
