@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
@@ -151,6 +152,11 @@ func TestJsonHttp(t *testing.T) {
 		{
 			name:        "JSONGzipCompressed",
 			encoding:    "gzip",
+			contentType: "application/json",
+		},
+		{
+			name:        "JSONZstdCompressed",
+			encoding:    "zstd",
 			contentType: "application/json",
 		},
 		{
@@ -374,8 +380,13 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *errOrSinkConsumer, enco
 	case "gzip":
 		buf, err = compressGzip(traceJSON)
 		require.NoError(t, err, "Error while gzip compressing trace: %v", err)
-	default:
+	case "zstd":
+		buf, err = compressZstd(traceJSON)
+		require.NoError(t, err, "Error while zstd compressing trace: %v", err)
+	case "":
 		buf = bytes.NewBuffer(traceJSON)
+	default:
+		t.Fatalf("Unsupported compression type %v", encoding)
 	}
 	sink.SetConsumeError(expectedErr)
 	req, err := http.NewRequest(http.MethodPost, url, buf)
@@ -428,6 +439,10 @@ func TestProtoHttp(t *testing.T) {
 			encoding: "gzip",
 		},
 		{
+			name:     "ProtoZstdCompressed",
+			encoding: "zstd",
+		},
+		{
 			name:     "NotGRPCError",
 			encoding: "",
 			err:      errors.New("my error"),
@@ -477,8 +492,13 @@ func createHTTPProtobufRequest(
 	case "gzip":
 		buf, err = compressGzip(traceBytes)
 		require.NoError(t, err, "Error while gzip compressing trace: %v", err)
-	default:
+	case "zstd":
+		buf, err = compressZstd(traceBytes)
+		require.NoError(t, err, "Error while zstd compressing trace: %v", err)
+	case "":
 		buf = bytes.NewBuffer(traceBytes)
+	default:
+		t.Fatalf("Unsupported compression type %v", encoding)
 	}
 	req, err := http.NewRequest(http.MethodPost, url, buf)
 	require.NoError(t, err, "Error creating trace POST request: %v", err)
@@ -564,6 +584,18 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			},
 			resBodyFunc: func() ([]byte, error) {
 				return proto.Marshal(status.New(codes.InvalidArgument, "gzip: invalid header").Proto())
+			},
+			status: 400,
+		},
+		{
+			name:     "ProtoZstdUncompressed",
+			content:  "application/x-protobuf",
+			encoding: "zstd",
+			reqBodyFunc: func() (*bytes.Buffer, error) {
+				return bytes.NewBuffer([]byte(`{"key": "value"}`)), nil
+			},
+			resBodyFunc: func() ([]byte, error) {
+				return proto.Marshal(status.New(codes.InvalidArgument, "invalid input: magic number mismatch").Proto())
 			},
 			status: 400,
 		},
@@ -962,6 +994,24 @@ func compressGzip(body []byte) (*bytes.Buffer, error) {
 	defer gw.Close()
 
 	_, err := gw.Write(body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &buf, nil
+}
+
+func compressZstd(body []byte) (*bytes.Buffer, error) {
+	var buf bytes.Buffer
+
+	zw, err := zstd.NewWriter(&buf)
+	if err != nil {
+		return nil, err
+	}
+
+	defer zw.Close()
+
+	_, err = zw.Write(body)
 	if err != nil {
 		return nil, err
 	}

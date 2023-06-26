@@ -142,6 +142,12 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: 200,
 		},
 		{
+			name:     "ValidZstd",
+			encoding: "zstd",
+			reqBody:  compressZstd(t, testBody),
+			respCode: 200,
+		},
+		{
 			name:     "InvalidGzip",
 			encoding: "gzip",
 			reqBody:  bytes.NewBuffer(testBody),
@@ -155,14 +161,34 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: 400,
 			respBody: "zlib: invalid header\n",
 		},
+		{
+			name:     "InvalidZstd",
+			encoding: "zstd",
+			reqBody:  bytes.NewBuffer(testBody),
+			respCode: 400,
+			respBody: "invalid input: magic number mismatch",
+		},
+		{
+			name:     "UnsupportedCompression",
+			encoding: "nosuchcompression",
+			reqBody:  bytes.NewBuffer(testBody),
+			respCode: 400,
+			respBody: "unsupported Content-Encoding: nosuchcompression\n",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := httptest.NewServer(httpContentDecompressor(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					w.WriteHeader(http.StatusBadRequest)
+					_, _ = w.Write([]byte(err.Error()))
+					return
+				}
+
 				require.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, testBody, string(body))
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 			})))
 			t.Cleanup(srv.Close)
 
