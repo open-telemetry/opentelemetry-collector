@@ -42,6 +42,11 @@ func TracesToOtlp(td Traces) []*otlptrace.ResourceSpans {
 	return *td.orig
 }
 
+// TraceToOtlp converts the internal Trace to the OTLP.
+func TraceToOtlp(td ResourceSpansSlice, index int) *otlptrace.ResourceSpans {
+	return (*td.orig)[index]
+}
+
 // ToOtlpProtoBytes converts the internal Traces to OTLP Collector
 // ExportTraceServiceRequest ProtoBuf bytes.
 func (td Traces) ToOtlpProtoBytes() ([]byte, error) {

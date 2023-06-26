@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpmetric "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
+	v1 "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
 var _ TracesMarshaller = (*otlpTracesPbMarshaller)(nil)
@@ -32,24 +33,26 @@ func (m *otlpTracesPbMarshaller) Encoding() string {
 }
 
 func (m *otlpTracesPbMarshaller) Marshal(traces pdata.Traces, topic string) ([]*sarama.ProducerMessage, error) {
-	request := otlptrace.ExportTraceServiceRequest{
-		ResourceSpans: pdata.TracesToOtlp(traces),
-	}
-	bts, err := request.Marshal()
-	if err != nil {
-		return nil, err
-	}
-	var key []byte
-	if span := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0); !span.TraceID().IsEmpty() {
-		key = []byte(span.TraceID().HexString())
-	}
-	return []*sarama.ProducerMessage{
-		{
+	messages := make([]*sarama.ProducerMessage, traces.ResourceSpans().Len())
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		var key []byte
+		if span := traces.ResourceSpans().At(i).InstrumentationLibrarySpans().At(0).Spans().At(0); !span.TraceID().IsEmpty() {
+			key = []byte(span.TraceID().HexString())
+		}
+		resourceSpans := traces.ResourceSpans()
+		request := otlptrace.ExportTraceServiceRequest{ResourceSpans: []*v1.ResourceSpans{pdata.TraceToOtlp(resourceSpans, i)}}
+		bts, err := request.Marshal()
+		if err != nil {
+			return nil, err
+		}
+		messages[i] = &sarama.ProducerMessage{
 			Value: sarama.ByteEncoder(bts),
 			Topic: topic,
 			Key:   sarama.ByteEncoder(key),
-		},
-	}, nil
+		}
+	}
+
+	return messages, nil
 }
 
 type otlpMetricsPbMarshaller struct {
