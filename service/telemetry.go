@@ -68,7 +68,7 @@ func newColTelemetry(useOtel bool, disableHighCardinality bool, extendedConfig b
 	}
 }
 
-func (tel *telemetryInitializer) init(res *resource.Resource, settings component.TelemetrySettings, cfg telemetry.Config, asyncErrorChannel chan error) error {
+func (tel *telemetryInitializer) init(res *resource.Resource, promRegistry *prometheus.Registry, settings component.TelemetrySettings, cfg telemetry.Config, asyncErrorChannel chan error) error {
 	if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
 		settings.Logger.Info(
 			"Skipping telemetry setup.",
@@ -86,11 +86,10 @@ func (tel *telemetryInitializer) init(res *resource.Resource, settings component
 		return err
 	}
 
-	return tel.initPrometheus(res, settings.Logger, cfg.Metrics.Address, cfg.Metrics.Level, asyncErrorChannel)
+	return tel.initPrometheus(res, promRegistry, settings.Logger, cfg.Metrics.Address, cfg.Metrics.Level, asyncErrorChannel)
 }
 
-func (tel *telemetryInitializer) initPrometheus(res *resource.Resource, logger *zap.Logger, address string, level configtelemetry.Level, asyncErrorChannel chan error) error {
-	promRegistry := prometheus.NewRegistry()
+func (tel *telemetryInitializer) initPrometheus(res *resource.Resource, promRegistry *prometheus.Registry, logger *zap.Logger, address string, level configtelemetry.Level, asyncErrorChannel chan error) error {
 	if tel.useOtel {
 		if err := tel.initOpenTelemetry(res, promRegistry); err != nil {
 			return err

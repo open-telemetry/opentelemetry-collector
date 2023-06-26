@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
@@ -206,7 +207,7 @@ func TestTelemetryInit(t *testing.T) {
 				Logger:   zap.NewNop(),
 				Resource: res,
 			}
-			err := tel.init(otelRes, settings, cfg, make(chan error))
+			err := tel.init(otelRes, prometheus.NewRegistry(), settings, cfg, make(chan error))
 			require.NoError(t, err)
 			defer func() {
 				require.NoError(t, tel.shutdown())
