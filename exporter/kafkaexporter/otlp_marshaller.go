@@ -39,10 +39,15 @@ func (m *otlpTracesPbMarshaller) Marshal(traces pdata.Traces, topic string) ([]*
 	if err != nil {
 		return nil, err
 	}
+	var key []byte
+	if span := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0); !span.TraceID().IsEmpty() {
+		key = []byte(span.TraceID().HexString())
+	}
 	return []*sarama.ProducerMessage{
 		{
 			Value: sarama.ByteEncoder(bts),
 			Topic: topic,
+			Key:   sarama.ByteEncoder(key),
 		},
 	}, nil
 }

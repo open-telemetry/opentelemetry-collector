@@ -40,7 +40,7 @@ func TestOTLPTracesPbMarshaller(t *testing.T) {
 	assert.Equal(t, "otlp_proto", m.Encoding())
 	messages, err := m.Marshal(td, "")
 	require.NoError(t, err)
-	assert.Equal(t, []*sarama.ProducerMessage{{Value: sarama.ByteEncoder(expected)}}, messages)
+	assert.Equal(t, []*sarama.ProducerMessage{{Value: sarama.ByteEncoder(expected), Key: sarama.ByteEncoder(nil)}}, messages)
 }
 
 func TestOTLPMetricsPbMarshaller(t *testing.T) {
