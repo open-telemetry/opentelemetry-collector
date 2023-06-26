@@ -9,6 +9,7 @@ import (
 	"runtime"
 
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -71,6 +72,10 @@ type Service struct {
 }
 
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
+	return NewWithRegistry(ctx, set, cfg, prometheus.NewRegistry())
+}
+
+func NewWithRegistry(ctx context.Context, set Settings, cfg Config, registry *prometheus.Registry) (*Service, error) {
 	useOtel := obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled()
 	if set.useOtel != nil {
 		useOtel = *set.useOtel
@@ -108,7 +113,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		Resource: pcommonRes,
 	}
 
-	if err = srv.telemetryInitializer.init(res, srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
+	if err = srv.telemetryInitializer.init(res, registry, srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
 		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
