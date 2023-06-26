@@ -18,6 +18,8 @@ jobs:
       - name: Run benchmark
         run: make gobenchmark
 
+      # Disabling until fine-grained permissions token enabled for the
+      # repository
       #- name: Store benchmark result
       #  uses: benchmark-action/github-action-benchmark@v1
       #  with:
