@@ -15,13 +15,14 @@
 package kafkaexporter
 
 import (
+	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // TracesMarshaller marshals traces into Message array.
 type TracesMarshaller interface {
 	// Marshal serializes spans into Messages
-	Marshal(traces pdata.Traces) ([]Message, error)
+	Marshal(traces pdata.Traces, topic string) ([]*sarama.ProducerMessage, error)
 
 	// Encoding returns encoding name
 	Encoding() string

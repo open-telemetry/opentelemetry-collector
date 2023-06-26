@@ -47,11 +47,12 @@ type kafkaTracesProducer struct {
 }
 
 func (e *kafkaTracesProducer) traceDataPusher(_ context.Context, td pdata.Traces) (int, error) {
-	messages, err := e.marshaller.Marshal(td)
+	messages, err := e.marshaller.Marshal(td, e.topic)
 	if err != nil {
 		return td.SpanCount(), consumererror.Permanent(err)
 	}
-	err = e.producer.SendMessages(producerMessages(messages, e.topic))
+	//producerMessages(messages, e.topic)
+	err = e.producer.SendMessages(messages)
 	if err != nil {
 		return td.SpanCount(), err
 	}

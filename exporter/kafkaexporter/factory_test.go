@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -106,7 +107,7 @@ type customMarshaller struct {
 
 var _ TracesMarshaller = (*customMarshaller)(nil)
 
-func (c customMarshaller) Marshal(_ pdata.Traces) ([]Message, error) {
+func (c customMarshaller) Marshal(_ pdata.Traces, _ string) ([]*sarama.ProducerMessage, error) {
 	panic("implement me")
 }
 

@@ -17,6 +17,7 @@ package kafkaexporter
 import (
 	"testing"
 
+	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -37,9 +38,9 @@ func TestOTLPTracesPbMarshaller(t *testing.T) {
 
 	m := otlpTracesPbMarshaller{}
 	assert.Equal(t, "otlp_proto", m.Encoding())
-	messages, err := m.Marshal(td)
+	messages, err := m.Marshal(td, "")
 	require.NoError(t, err)
-	assert.Equal(t, []Message{{Value: expected}}, messages)
+	assert.Equal(t, []*sarama.ProducerMessage{{Value: sarama.ByteEncoder(expected)}}, messages)
 }
 
 func TestOTLPMetricsPbMarshaller(t *testing.T) {
