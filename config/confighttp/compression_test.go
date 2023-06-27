@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/golang/snappy"
@@ -114,8 +115,44 @@ func TestHTTPClientCompression(t *testing.T) {
 	}
 }
 
+func TestHTTPCustomDecompression(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(err.Error()))
+			return
+		}
+
+		require.NoError(t, err, "failed to read request body: %v", err)
+		assert.EqualValues(t, "decompressed body", string(body))
+		w.WriteHeader(http.StatusOK)
+	})
+	decoders := map[string]func(io.ReadCloser) (io.ReadCloser, error){
+		"custom-encoding": func(io.ReadCloser) (io.ReadCloser, error) { // nolint: unparam
+			return io.NopCloser(strings.NewReader("decompressed body")), nil
+		},
+	}
+	srv := httptest.NewServer(httpContentDecompressor(handler, defaultErrorHandler, decoders))
+
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequest(http.MethodGet, srv.URL, bytes.NewBuffer([]byte("123decompressed body")))
+	require.NoError(t, err, "failed to create request to test handler")
+	req.Header.Set("Content-Encoding", "custom-encoding")
+
+	client := http.Client{}
+	res, err := client.Do(req)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, res.StatusCode, "test handler returned unexpected status code ")
+	_, err = io.ReadAll(res.Body)
+	require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
+}
+
 func TestHTTPContentDecompressionHandler(t *testing.T) {
 	testBody := []byte("uncompressed_text")
+	noDecoders := map[string]func(io.ReadCloser) (io.ReadCloser, error){}
 	tests := []struct {
 		name     string
 		encoding string
@@ -202,7 +239,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 				require.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, testBody, string(body))
 				w.WriteHeader(http.StatusOK)
-			}), defaultErrorHandler))
+			}), defaultErrorHandler, noDecoders))
 			t.Cleanup(srv.Close)
 
 			req, err := http.NewRequest(http.MethodGet, srv.URL, tt.reqBody)

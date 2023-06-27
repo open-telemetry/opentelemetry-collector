@@ -1116,6 +1116,66 @@ func TestFailedServerAuth(t *testing.T) {
 	assert.Equal(t, response.Result().Status, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)))
 }
 
+func TestServerWithErrorHandler(t *testing.T) {
+	// prepare
+	hss := HTTPServerSettings{
+		Endpoint: "localhost:0",
+	}
+	eh := func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int) {
+		assert.Equal(t, statusCode, http.StatusBadRequest)
+		// custom error handler changes returned status code
+		http.Error(w, "invalid request", http.StatusInternalServerError)
+
+	}
+
+	srv, err := hss.ToServer(
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+		WithErrorHandler(eh),
+	)
+	require.NoError(t, err)
+	// test
+	response := &httptest.ResponseRecorder{}
+
+	req, err := http.NewRequest(http.MethodGet, srv.Addr, nil)
+	require.NoError(t, err, "Error creating request: %v", err)
+	req.Header.Set("Content-Encoding", "something-invalid")
+
+	srv.Handler.ServeHTTP(response, req)
+	// verify
+	assert.Equal(t, response.Result().StatusCode, http.StatusInternalServerError)
+}
+
+func TestServerWithDecoder(t *testing.T) {
+	// prepare
+	hss := HTTPServerSettings{
+		Endpoint: "localhost:0",
+	}
+	decoder := func(body io.ReadCloser) (io.ReadCloser, error) {
+		return body, nil
+	}
+
+	srv, err := hss.ToServer(
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+		WithDecoder("something-else", decoder),
+	)
+	require.NoError(t, err)
+	// test
+	response := &httptest.ResponseRecorder{}
+
+	req, err := http.NewRequest(http.MethodGet, srv.Addr, nil)
+	require.NoError(t, err, "Error creating request: %v", err)
+	req.Header.Set("Content-Encoding", "something-else")
+
+	srv.Handler.ServeHTTP(response, req)
+	// verify
+	assert.Equal(t, response.Result().StatusCode, http.StatusOK)
+
+}
+
 type mockHost struct {
 	component.Host
 	ext map[component.ID]component.Component

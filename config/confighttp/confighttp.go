@@ -6,6 +6,7 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"crypto/tls"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"time"
@@ -248,6 +249,7 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 // returned by HTTPServerSettings.ToServer().
 type toServerOptions struct {
 	errHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
+	decoders   map[string]func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // ToServerOption is an option to change the behavior of the HTTP server
@@ -262,6 +264,17 @@ func WithErrorHandler(e func(w http.ResponseWriter, r *http.Request, errorMsg st
 	}
 }
 
+// WithDecoder provides support for additional decoders to be configured
+// by the caller.
+func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)) ToServerOption {
+	return func(opts *toServerOptions) {
+		if opts.decoders == nil {
+			opts.decoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
+		}
+		opts.decoders[key] = dec
+	}
+}
+
 // ToServer creates an http.Server from settings object.
 func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
@@ -271,7 +284,7 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		o(serverOpts)
 	}
 
-	handler = httpContentDecompressor(handler, serverOpts.errHandler)
+	handler = httpContentDecompressor(handler, serverOpts.errHandler, serverOpts.decoders)
 
 	if hss.MaxRequestBodySize > 0 {
 		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
