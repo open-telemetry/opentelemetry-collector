@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/a8m/envsubst v1.4.2
-	github.com/atombender/go-jsonschema v0.11.0
+	github.com/atombender/go-jsonschema v0.12.0
 	github.com/client9/misspell v0.3.4
 	github.com/golangci/golangci-lint v1.53.3
 	github.com/google/addlicense v1.1.1
@@ -232,6 +232,3 @@ retract (
 	v0.57.1 // Release failed, use v0.57.2
 	v0.57.0 // Release failed, use v0.57.2
 )
-
-// work around until https://github.com/omissis/go-jsonschema/pull/80 is merged
-replace github.com/atombender/go-jsonschema v0.11.0 => github.com/codeboten/go-jsonschema v0.0.0-20230622190031-76e0cafc4ced
