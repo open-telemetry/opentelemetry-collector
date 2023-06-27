@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mostynb/go-grpc-compression/snappy"
-	"github.com/mostynb/go-grpc-compression/zstd"
+	"github.com/mostynb/go-grpc-compression/nonclobbering/snappy"
+	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
