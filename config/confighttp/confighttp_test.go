@@ -955,7 +955,7 @@ func TestHttpClientHeaders(t *testing.T) {
 				for k, v := range tt.headers {
 					assert.Equal(t, r.Header.Get(k), string(v))
 				}
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 			}))
 			defer server.Close()
 			serverURL, _ := url.Parse(server.URL)

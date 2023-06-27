@@ -247,7 +247,7 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 // toServerOptions has options that change the behavior of the HTTP server
 // returned by HTTPServerSettings.ToServer().
 type toServerOptions struct {
-	errorHandler
+	errHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
 }
 
 // ToServerOption is an option to change the behavior of the HTTP server
@@ -256,9 +256,9 @@ type ToServerOption func(opts *toServerOptions)
 
 // WithErrorHandler overrides the HTTP error handler that gets invoked
 // when there is a failure inside httpContentDecompressor.
-func WithErrorHandler(e errorHandler) ToServerOption {
+func WithErrorHandler(e func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)) ToServerOption {
 	return func(opts *toServerOptions) {
-		opts.errorHandler = e
+		opts.errHandler = e
 	}
 }
 
@@ -271,10 +271,7 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		o(serverOpts)
 	}
 
-	handler = httpContentDecompressor(
-		handler,
-		withErrorHandlerForDecompressor(serverOpts.errorHandler),
-	)
+	handler = httpContentDecompressor(handler, serverOpts.errHandler)
 
 	if hss.MaxRequestBodySize > 0 {
 		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
