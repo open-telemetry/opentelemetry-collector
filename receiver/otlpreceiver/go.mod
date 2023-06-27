@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.80.0
 	go.opentelemetry.io/collector/semconv v0.80.0
 	go.uber.org/zap v1.24.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230626202813-9b080da550b3
 	google.golang.org/grpc v1.56.0
 	google.golang.org/protobuf v1.30.0
 )
