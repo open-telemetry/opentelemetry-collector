@@ -133,12 +133,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	}()
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
-		if err := handlePartialSuccessResponse(resp, partialSuccessHandler); err != nil {
-			return err
-		}
-
-		// Request is successful.
-		return nil
+		return handlePartialSuccessResponse(resp, partialSuccessHandler)
 	}
 
 	respStatus := readResponseStatus(resp)
