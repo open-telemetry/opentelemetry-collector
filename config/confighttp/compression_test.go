@@ -130,6 +130,12 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: http.StatusOK,
 		},
 		{
+			name:     "ValidDeflate",
+			encoding: "deflate",
+			reqBody:  compressZlib(t, testBody),
+			respCode: http.StatusOK,
+		},
+		{
 			name:     "ValidGzip",
 			encoding: "gzip",
 			reqBody:  compressGzip(t, testBody),
@@ -146,6 +152,13 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			encoding: "zstd",
 			reqBody:  compressZstd(t, testBody),
 			respCode: http.StatusOK,
+		},
+		{
+			name:     "InvalidDeflate",
+			encoding: "deflate",
+			reqBody:  bytes.NewBuffer(testBody),
+			respCode: http.StatusBadRequest,
+			respBody: "zlib: invalid header\n",
 		},
 		{
 			name:     "InvalidGzip",
