@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/config/configgrpc
 go 1.19
 
 require (
-	github.com/mostynb/go-grpc-compression v1.1.19
+	github.com/mostynb/go-grpc-compression v1.2.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.80.0
 	go.opentelemetry.io/collector/component v0.80.0
