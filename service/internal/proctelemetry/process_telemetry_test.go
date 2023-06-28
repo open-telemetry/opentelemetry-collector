@@ -173,16 +173,13 @@ func TestOCProcessTelemetry(t *testing.T) {
 func TestOCProcessTelemetryWithHostProc(t *testing.T) {
 	ocRegistry := metric.NewRegistry()
 	hostProc := "/host/proc"
-	os.Setenv("HOST_PROC", hostProc)
+	t.Setenv("HOST_PROC", hostProc)
 
 	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0, false))
 
-	// make sure HOST_PROC is restored
+	// make sure HOST_PROC is untouched
 	envValue, _ := os.LookupEnv("HOST_PROC")
 	require.Equal(t, envValue, hostProc)
-
-	// unset HOST_PROC so other tests are not impacted
-	defer os.Unsetenv("HOST_PROC")
 
 	// Check that the metrics are actually filled.
 	<-time.After(200 * time.Millisecond)

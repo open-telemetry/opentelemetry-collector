@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opencensus.io/metric"
 	"go.opencensus.io/stats"
@@ -59,18 +60,13 @@ func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProv
 		ms:                &runtime.MemStats{},
 	}
 
-	hostproc, exists := os.LookupEnv("HOST_PROC")
-	// unset HOST_PROC env variable so the process search occurs locally
-	if !useHostProcEnvVar && exists {
-		os.Unsetenv("HOST_PROC")
+	ctx := context.Background()
+	if !useHostProcEnvVar {
+		ctx = context.WithValue(ctx, common.EnvKey, common.EnvMap{common.HostProcEnvKey: "/proc"})
 	}
-	pm.proc, err = process.NewProcess(int32(os.Getpid()))
+	pm.proc, err = process.NewProcessWithContext(ctx, int32(os.Getpid()))
 	if err != nil {
 		return err
-	}
-	// restore immediately if it was previously set, don't use defer
-	if !useHostProcEnvVar && exists {
-		os.Setenv("HOST_PROC", hostproc)
 	}
 
 	if useOtel {
