@@ -69,7 +69,7 @@ func (f *flagValue) Set(s string) error {
 		enabled, ok := gatesEnabled[gate.id]
 		if !ok {
 			if f.reg.strict && (gate.stage == StageAlpha || gate.stage == StageBeta) {
-				errs = multierr.Append(errs, fmt.Errorf("gate %s is not explicitly set", gate.id))
+				errs = multierr.Append(errs, fmt.Errorf("gate %q is not explicitly set", gate.id))
 			}
 			return
 		}
