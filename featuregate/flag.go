@@ -77,7 +77,7 @@ func (f *flagValue) Set(s string) error {
 			errs = multierr.Append(errs, fmt.Errorf("gate %s must be explicitly enabled, remove strict mode to override", gate.id))
 		}
 		if f.reg.strict && gate.stage == StageStable {
-			errs = multierr.Append(errs, fmt.Errorf("gate %s must not be set", gate.id))
+			errs = multierr.Append(errs, fmt.Errorf("gate %q must not be set", gate.id))
 		}
 
 		errs = multierr.Append(errs, f.reg.Set(gate.id, enabled))
