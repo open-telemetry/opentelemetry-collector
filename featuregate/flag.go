@@ -5,6 +5,7 @@ package featuregate // import "go.opentelemetry.io/collector/featuregate"
 
 import (
 	"flag"
+	"fmt"
 	"strings"
 
 	"go.uber.org/multierr"
@@ -22,6 +23,9 @@ type flagValue struct {
 
 func (f *flagValue) String() string {
 	var ids []string
+	if f.reg.strict {
+		ids = []string{"strict"}
+	}
 	f.reg.VisitAll(func(g *Gate) {
 		id := g.ID()
 		if !g.IsEnabled() {
@@ -39,6 +43,13 @@ func (f *flagValue) Set(s string) error {
 
 	var errs error
 	ids := strings.Split(s, ",")
+	if len(ids) > 0 && ids[0] == "strict" {
+		f.reg.strict = true
+		ids = ids[1:]
+	}
+
+	gatesEnabled := map[string]bool{}
+
 	for i := range ids {
 		id := ids[i]
 		val := true
@@ -49,7 +60,28 @@ func (f *flagValue) Set(s string) error {
 		case '+':
 			id = id[1:]
 		}
-		errs = multierr.Append(errs, f.reg.Set(id, val))
+		gatesEnabled[id] = val
+		if _, ok := f.reg.gates.Load(id); !ok {
+			errs = multierr.Append(errs, fmt.Errorf("no such feature gate %q", id))
+		}
 	}
+	f.reg.VisitAll(func(gate *Gate) {
+		enabled, ok := gatesEnabled[gate.id]
+		if !ok {
+			if f.reg.strict && (gate.stage == StageAlpha || gate.stage == StageBeta) {
+				errs = multierr.Append(errs, fmt.Errorf("gate %s is not explicitly set", gate.id))
+			}
+			return
+		}
+		if f.reg.strict && !enabled && gate.stage == StageBeta {
+			errs = multierr.Append(errs, fmt.Errorf("gate %s must be explicitly enabled, remove strict mode to override", gate.id))
+		}
+		if f.reg.strict && gate.stage == StageStable {
+			errs = multierr.Append(errs, fmt.Errorf("gate %s must not be set", gate.id))
+		}
+
+		errs = multierr.Append(errs, f.reg.Set(gate.id, enabled))
+	})
+
 	return errs
 }

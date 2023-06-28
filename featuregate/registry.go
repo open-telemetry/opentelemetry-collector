@@ -18,7 +18,8 @@ func GlobalRegistry() *Registry {
 }
 
 type Registry struct {
-	gates sync.Map
+	gates  sync.Map
+	strict bool
 }
 
 // NewRegistry returns a new empty Registry.

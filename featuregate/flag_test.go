@@ -106,6 +106,40 @@ func TestNewFlag(t *testing.T) {
 			expected:       map[string]bool{"alpha": false, "beta": true, "deprecated": false, "stable": true},
 			expectedStr:    "-alpha,beta,-deprecated,stable",
 		},
+		{
+			name:        "strict mode",
+			input:       "strict,alpha,beta,-alpha",
+			expected:    map[string]bool{"alpha": false, "beta": true, "deprecated": false, "stable": true},
+			expectedStr: "strict,-alpha,beta,-deprecated,stable",
+		},
+		{
+			name:           "strict mode but no alpha gate set",
+			input:          "strict,beta",
+			expectedSetErr: true,
+			expected:       map[string]bool{"alpha": false, "beta": true, "deprecated": false, "stable": true},
+			expectedStr:    "strict,-alpha,beta,-deprecated,stable",
+		},
+		{
+			name:           "strict mode but no beta gate set",
+			input:          "strict,alpha",
+			expectedSetErr: true,
+			expected:       map[string]bool{"alpha": true, "beta": true, "deprecated": false, "stable": true},
+			expectedStr:    "strict,alpha,beta,-deprecated,stable",
+		},
+		{
+			name:           "strict mode but beta gate disabled",
+			input:          "strict,alpha,-beta",
+			expectedSetErr: true,
+			expected:       map[string]bool{"alpha": true, "beta": false, "deprecated": false, "stable": true},
+			expectedStr:    "strict,alpha,-beta,-deprecated,stable",
+		},
+		{
+			name:           "strict mode but stable gate set",
+			input:          "strict,alpha,beta,stable",
+			expectedSetErr: true,
+			expected:       map[string]bool{"alpha": true, "beta": true, "deprecated": false, "stable": true},
+			expectedStr:    "strict,alpha,beta,-deprecated,stable",
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			reg := NewRegistry()
