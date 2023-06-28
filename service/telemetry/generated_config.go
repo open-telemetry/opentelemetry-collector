@@ -7,23 +7,51 @@ import (
 	"fmt"
 )
 
-type Attributes struct {
-	// ServiceName corresponds to the JSON schema field "service.name".
-	ServiceName *string `mapstructure:"service.name,omitempty"`
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *PeriodicMetricReader) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["exporter"]; !ok || v == nil {
+		return fmt.Errorf("field exporter in PeriodicMetricReader: required")
+	}
+	type Plain PeriodicMetricReader
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = PeriodicMetricReader(plain)
+	return nil
 }
 
-type CommonJson map[string]interface{}
+type Otlp struct {
+	// Certificate corresponds to the JSON schema field "certificate".
+	Certificate *string `mapstructure:"certificate,omitempty"`
 
-type Console map[string]interface{}
+	// ClientCertificate corresponds to the JSON schema field "client_certificate".
+	ClientCertificate *string `mapstructure:"client_certificate,omitempty"`
 
-type Headers map[string]interface{}
+	// ClientKey corresponds to the JSON schema field "client_key".
+	ClientKey *string `mapstructure:"client_key,omitempty"`
 
-type LoggerProviderJson struct {
-	// LogrecordLimits corresponds to the JSON schema field "logrecord_limits".
-	LogrecordLimits *LoggerProviderJsonLogrecordLimits `mapstructure:"logrecord_limits,omitempty"`
+	// Compression corresponds to the JSON schema field "compression".
+	Compression *string `mapstructure:"compression,omitempty"`
+
+	// Endpoint corresponds to the JSON schema field "endpoint".
+	Endpoint string `mapstructure:"endpoint"`
+
+	// Headers corresponds to the JSON schema field "headers".
+	Headers Headers `mapstructure:"headers,omitempty"`
+
+	// Protocol corresponds to the JSON schema field "protocol".
+	Protocol string `mapstructure:"protocol"`
+
+	// Timeout corresponds to the JSON schema field "timeout".
+	Timeout *int `mapstructure:"timeout,omitempty"`
 }
 
-type LoggerProviderJsonLogrecordLimits struct {
+type LoggerProviderJsonLimits struct {
 	// AttributeCountLimit corresponds to the JSON schema field
 	// "attribute_count_limit".
 	AttributeCountLimit *int `mapstructure:"attribute_count_limit,omitempty"`
@@ -33,16 +61,119 @@ type LoggerProviderJsonLogrecordLimits struct {
 	AttributeValueLengthLimit *int `mapstructure:"attribute_value_length_limit,omitempty"`
 }
 
-type MeterProviderJson struct {
-	// MetricReaders corresponds to the JSON schema field "metric_readers".
-	MetricReaders MeterProviderJsonMetricReaders `mapstructure:"metric_readers,omitempty"`
+type Headers map[string]interface{}
+
+type BatchSpanProcessor struct {
+	// ExportTimeout corresponds to the JSON schema field "export_timeout".
+	ExportTimeout *int `mapstructure:"export_timeout,omitempty"`
+
+	// Exporter corresponds to the JSON schema field "exporter".
+	Exporter *SpanExporter `mapstructure:"exporter,omitempty"`
+
+	// MaxExportBatchSize corresponds to the JSON schema field
+	// "max_export_batch_size".
+	MaxExportBatchSize *int `mapstructure:"max_export_batch_size,omitempty"`
+
+	// MaxQueueSize corresponds to the JSON schema field "max_queue_size".
+	MaxQueueSize *int `mapstructure:"max_queue_size,omitempty"`
+
+	// ScheduleDelay corresponds to the JSON schema field "schedule_delay".
+	ScheduleDelay *int `mapstructure:"schedule_delay,omitempty"`
 }
 
-type MeterProviderJsonMetricReaders map[string]interface{}
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *Otlp) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["endpoint"]; !ok || v == nil {
+		return fmt.Errorf("field endpoint in Otlp: required")
+	}
+	if v, ok := raw["protocol"]; !ok || v == nil {
+		return fmt.Errorf("field protocol in Otlp: required")
+	}
+	type Plain Otlp
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = Otlp(plain)
+	return nil
+}
 
-type MetricExporter map[string]interface{}
+type CommonJson map[string]interface{}
 
-type Otlp struct {
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *PullMetricReader) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["exporter"]; !ok || v == nil {
+		return fmt.Errorf("field exporter in PullMetricReader: required")
+	}
+	type Plain PullMetricReader
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = PullMetricReader(plain)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *OtlpMetric) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["endpoint"]; !ok || v == nil {
+		return fmt.Errorf("field endpoint in OtlpMetric: required")
+	}
+	if v, ok := raw["protocol"]; !ok || v == nil {
+		return fmt.Errorf("field protocol in OtlpMetric: required")
+	}
+	type Plain OtlpMetric
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = OtlpMetric(plain)
+	return nil
+}
+
+type Attributes struct {
+	// ServiceName corresponds to the JSON schema field "service.name".
+	ServiceName *string `mapstructure:"service.name,omitempty"`
+}
+
+type MetricExporter struct {
+	// Console corresponds to the JSON schema field "console".
+	Console Console `mapstructure:"console,omitempty"`
+
+	// Otlp corresponds to the JSON schema field "otlp".
+	Otlp *OtlpMetric `mapstructure:"otlp,omitempty"`
+
+	// Prometheus corresponds to the JSON schema field "prometheus".
+	Prometheus *Prometheus `mapstructure:"prometheus,omitempty"`
+}
+
+type MeterProviderJson struct {
+	// Readers corresponds to the JSON schema field "readers".
+	Readers MeterProviderJsonReaders `mapstructure:"readers,omitempty"`
+}
+
+type Console map[string]interface{}
+
+type LoggerProviderJson struct {
+	// Limits corresponds to the JSON schema field "limits".
+	Limits *LoggerProviderJsonLimits `mapstructure:"limits,omitempty"`
+}
+
+type MeterProviderJsonReaders map[string]interface{}
+
+type OtlpMetric struct {
 	// Certificate corresponds to the JSON schema field "certificate".
 	Certificate *string `mapstructure:"certificate,omitempty"`
 
@@ -87,29 +218,6 @@ type PeriodicMetricReader struct {
 	Timeout *int `mapstructure:"timeout,omitempty"`
 }
 
-type PullMetricReader struct {
-	// Exporter corresponds to the JSON schema field "exporter".
-	Exporter MetricExporter `mapstructure:"exporter"`
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *PullMetricReader) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["exporter"]; !ok || v == nil {
-		return fmt.Errorf("field exporter in PullMetricReader: required")
-	}
-	type Plain PullMetricReader
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = PullMetricReader(plain)
-	return nil
-}
-
 type Prometheus struct {
 	// Host corresponds to the JSON schema field "host".
 	Host *string `mapstructure:"host,omitempty"`
@@ -118,43 +226,9 @@ type Prometheus struct {
 	Port *int `mapstructure:"port,omitempty"`
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *PeriodicMetricReader) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["exporter"]; !ok || v == nil {
-		return fmt.Errorf("field exporter in PeriodicMetricReader: required")
-	}
-	type Plain PeriodicMetricReader
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = PeriodicMetricReader(plain)
-	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *Otlp) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["endpoint"]; !ok || v == nil {
-		return fmt.Errorf("field endpoint in Otlp: required")
-	}
-	if v, ok := raw["protocol"]; !ok || v == nil {
-		return fmt.Errorf("field protocol in Otlp: required")
-	}
-	type Plain Otlp
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = Otlp(plain)
-	return nil
+type PullMetricReader struct {
+	// Exporter corresponds to the JSON schema field "exporter".
+	Exporter MetricExporter `mapstructure:"exporter"`
 }
 
 type ResourceJson struct {
@@ -162,12 +236,28 @@ type ResourceJson struct {
 	Attributes *Attributes `mapstructure:"attributes,omitempty"`
 }
 
-type TracerProviderJson struct {
-	// SpanLimits corresponds to the JSON schema field "span_limits".
-	SpanLimits *TracerProviderJsonSpanLimits `mapstructure:"span_limits,omitempty"`
+type SimpleSpanProcessor struct {
+	// Exporter corresponds to the JSON schema field "exporter".
+	Exporter *SpanExporter `mapstructure:"exporter,omitempty"`
 }
 
-type TracerProviderJsonSpanLimits struct {
+type SpanExporter struct {
+	// Console corresponds to the JSON schema field "console".
+	Console Console `mapstructure:"console,omitempty"`
+
+	// Otlp corresponds to the JSON schema field "otlp".
+	Otlp *Otlp `mapstructure:"otlp,omitempty"`
+}
+
+type TracerProviderJson struct {
+	// Limits corresponds to the JSON schema field "limits".
+	Limits *TracerProviderJsonLimits `mapstructure:"limits,omitempty"`
+
+	// Processors corresponds to the JSON schema field "processors".
+	Processors TracerProviderJsonProcessors `mapstructure:"processors,omitempty"`
+}
+
+type TracerProviderJsonLimits struct {
 	// AttributeCountLimit corresponds to the JSON schema field
 	// "attribute_count_limit".
 	AttributeCountLimit *int `mapstructure:"attribute_count_limit,omitempty"`
@@ -190,3 +280,5 @@ type TracerProviderJsonSpanLimits struct {
 	// LinkCountLimit corresponds to the JSON schema field "link_count_limit".
 	LinkCountLimit *int `mapstructure:"link_count_limit,omitempty"`
 }
+
+type TracerProviderJsonProcessors map[string]interface{}
