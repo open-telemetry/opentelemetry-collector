@@ -37,7 +37,7 @@ func LoadConfigAndValidate(fileName string, factories otelcol.Factories) (*otelc
 	if err != nil {
 		return nil, err
 	}
-	return cfg, cfg.Validate(factories)
+	return cfg, cfg.Validate()
 }
 
 func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {

@@ -148,7 +148,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	if err = cfg.Validate(col.set.Factories); err != nil {
+	if err = cfg.Validate(); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
@@ -198,7 +198,7 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	return cfg.Validate(col.set.Factories)
+	return cfg.Validate()
 }
 
 // Run starts the collector according to the given configuration, and waits for it to complete.

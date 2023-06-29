@@ -582,6 +582,36 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			},
 			expectedPerExporter: 3,
 		},
+		{
+			name: "pipelines_conn_lanes.yaml",
+			pipelineConfigs: pipelines.Config{
+				component.NewIDWithName("traces", "in"): {
+					Receivers: []component.ID{component.NewID("examplereceiver")},
+					Exporters: []component.ID{component.NewID("mockforward")},
+				},
+				component.NewIDWithName("traces", "out"): {
+					Receivers: []component.ID{component.NewID("mockforward")},
+					Exporters: []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewIDWithName("metrics", "in"): {
+					Receivers: []component.ID{component.NewID("examplereceiver")},
+					Exporters: []component.ID{component.NewID("mockforward")},
+				},
+				component.NewIDWithName("metrics", "out"): {
+					Receivers: []component.ID{component.NewID("mockforward")},
+					Exporters: []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewIDWithName("logs", "in"): {
+					Receivers: []component.ID{component.NewID("examplereceiver")},
+					Exporters: []component.ID{component.NewID("mockforward")},
+				},
+				component.NewIDWithName("logs", "out"): {
+					Receivers: []component.ID{component.NewID("mockforward")},
+					Exporters: []component.ID{component.NewID("exampleexporter")},
+				},
+			},
+			expectedPerExporter: 1,
+		},
 	}
 
 	for _, test := range tests {
@@ -622,9 +652,11 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 						component.NewID("exampleconnector"):                  testcomponents.ExampleConnectorFactory.CreateDefaultConfig(),
 						component.NewIDWithName("exampleconnector", "fork"):  testcomponents.ExampleConnectorFactory.CreateDefaultConfig(),
 						component.NewIDWithName("exampleconnector", "merge"): testcomponents.ExampleConnectorFactory.CreateDefaultConfig(),
+						component.NewID("mockforward"):                       testcomponents.MockForwardConnectorFactory.CreateDefaultConfig(),
 					},
 					map[component.Type]connector.Factory{
-						testcomponents.ExampleConnectorFactory.Type(): testcomponents.ExampleConnectorFactory,
+						testcomponents.ExampleConnectorFactory.Type():     testcomponents.ExampleConnectorFactory,
+						testcomponents.MockForwardConnectorFactory.Type(): testcomponents.MockForwardConnectorFactory,
 					},
 				),
 				PipelineConfigs: test.pipelineConfigs,
@@ -1017,6 +1049,7 @@ func TestGraphBuildErrors(t *testing.T) {
 	nopProcessorFactory := processortest.NewNopFactory()
 	nopExporterFactory := exportertest.NewNopFactory()
 	nopConnectorFactory := connectortest.NewNopFactory()
+	mfConnectorFactory := testcomponents.MockForwardConnectorFactory
 	badReceiverFactory := newBadReceiverFactory()
 	badProcessorFactory := newBadProcessorFactory()
 	badExporterFactory := newBadExporterFactory()
@@ -1186,6 +1219,305 @@ func TestGraphBuildErrors(t *testing.T) {
 				},
 			},
 			expected: "failed to create \"bf\" receiver for data type \"traces\": telemetry type is not supported",
+		},
+		{
+			name: "not_supported_connector_traces_traces.yaml",
+			receiverCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			exporterCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			connectorCfgs: map[component.ID]component.Config{
+				component.NewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
+			},
+			pipelineCfgs: pipelines.Config{
+				component.NewIDWithName("traces", "in"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("bf")},
+				},
+				component.NewIDWithName("traces", "out"): {
+					Receivers: []component.ID{component.NewID("bf")},
+					Exporters: []component.ID{component.NewID("nop")},
+				},
+			},
+			expected: "connector \"bf\" cannot connect from traces to traces: telemetry type is not supported",
+		},
+		{
+			name: "not_supported_connector_traces_metrics.yaml",
+			receiverCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			exporterCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			connectorCfgs: map[component.ID]component.Config{
+				component.NewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
+			},
+			pipelineCfgs: pipelines.Config{
+				component.NewIDWithName("traces", "in"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("bf")},
+				},
+				component.NewIDWithName("metrics", "out"): {
+					Receivers: []component.ID{component.NewID("bf")},
+					Exporters: []component.ID{component.NewID("nop")},
+				},
+			},
+			expected: "connector \"bf\" cannot connect from traces to metrics: telemetry type is not supported",
+		},
+		{
+			name: "not_supported_connector_traces_logs.yaml",
+			receiverCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			exporterCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			connectorCfgs: map[component.ID]component.Config{
+				component.NewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
+			},
+			pipelineCfgs: pipelines.Config{
+				component.NewIDWithName("traces", "in"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("bf")},
+				},
+				component.NewIDWithName("logs", "out"): {
+					Receivers: []component.ID{component.NewID("bf")},
+					Exporters: []component.ID{component.NewID("nop")},
+				},
+			},
+			expected: "connector \"bf\" cannot connect from traces to logs: telemetry type is not supported",
+		},
+		{
+			name: "not_supported_connector_metrics_traces.yaml",
+			receiverCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			exporterCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			connectorCfgs: map[component.ID]component.Config{
+				component.NewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
+			},
+			pipelineCfgs: pipelines.Config{
+				component.NewIDWithName("metrics", "in"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("bf")},
+				},
+				component.NewIDWithName("traces", "out"): {
+					Receivers: []component.ID{component.NewID("bf")},
+					Exporters: []component.ID{component.NewID("nop")},
+				},
+			},
+			expected: "connector \"bf\" cannot connect from metrics to traces: telemetry type is not supported",
+		},
+		{
+			name: "not_supported_connector_metrics_metrics.yaml",
+			receiverCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			exporterCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			connectorCfgs: map[component.ID]component.Config{
+				component.NewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
+			},
+			pipelineCfgs: pipelines.Config{
+				component.NewIDWithName("metrics", "in"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("bf")},
+				},
+				component.NewIDWithName("metrics", "out"): {
+					Receivers: []component.ID{component.NewID("bf")},
+					Exporters: []component.ID{component.NewID("nop")},
+				},
+			},
+			expected: "connector \"bf\" cannot connect from metrics to metrics: telemetry type is not supported",
+		},
+		{
+			name: "not_supported_connector_metrics_logs.yaml",
+			receiverCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			exporterCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			connectorCfgs: map[component.ID]component.Config{
+				component.NewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
+			},
+			pipelineCfgs: pipelines.Config{
+				component.NewIDWithName("metrics", "in"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("bf")},
+				},
+				component.NewIDWithName("logs", "out"): {
+					Receivers: []component.ID{component.NewID("bf")},
+					Exporters: []component.ID{component.NewID("nop")},
+				},
+			},
+			expected: "connector \"bf\" cannot connect from metrics to logs: telemetry type is not supported",
+		},
+		{
+			name: "not_supported_connector_logs_traces.yaml",
+			receiverCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			exporterCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			connectorCfgs: map[component.ID]component.Config{
+				component.NewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
+			},
+			pipelineCfgs: pipelines.Config{
+				component.NewIDWithName("logs", "in"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("bf")},
+				},
+				component.NewIDWithName("traces", "out"): {
+					Receivers: []component.ID{component.NewID("bf")},
+					Exporters: []component.ID{component.NewID("nop")},
+				},
+			},
+			expected: "connector \"bf\" cannot connect from logs to traces: telemetry type is not supported",
+		},
+		{
+			name: "not_supported_connector_logs_metrics.yaml",
+			receiverCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			exporterCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			connectorCfgs: map[component.ID]component.Config{
+				component.NewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
+			},
+			pipelineCfgs: pipelines.Config{
+				component.NewIDWithName("logs", "in"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("bf")},
+				},
+				component.NewIDWithName("metrics", "out"): {
+					Receivers: []component.ID{component.NewID("bf")},
+					Exporters: []component.ID{component.NewID("nop")},
+				},
+			},
+			expected: "connector \"bf\" cannot connect from logs to metrics: telemetry type is not supported",
+		},
+		{
+			name: "not_supported_connector_logs_logs.yaml",
+			receiverCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			exporterCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			connectorCfgs: map[component.ID]component.Config{
+				component.NewID("bf"): nopConnectorFactory.CreateDefaultConfig(),
+			},
+			pipelineCfgs: pipelines.Config{
+				component.NewIDWithName("logs", "in"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("bf")},
+				},
+				component.NewIDWithName("logs", "out"): {
+					Receivers: []component.ID{component.NewID("bf")},
+					Exporters: []component.ID{component.NewID("nop")},
+				},
+			},
+			expected: "connector \"bf\" cannot connect from logs to logs: telemetry type is not supported",
+		},
+		{
+			name: "orphaned-connector-use-as-exporter",
+			receiverCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			exporterCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			connectorCfgs: map[component.ID]component.Config{
+				component.NewIDWithName("nop", "conn"): nopConnectorFactory.CreateDefaultConfig(),
+			},
+			pipelineCfgs: pipelines.Config{
+				component.NewIDWithName("metrics", "in"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewIDWithName("nop", "conn")},
+				},
+			},
+			expected: `connector "nop/conn" used as exporter in metrics pipeline but not used in any supported receiver pipeline`,
+		},
+		{
+			name: "orphaned-connector-use-as-receiver",
+			receiverCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			exporterCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			connectorCfgs: map[component.ID]component.Config{
+				component.NewIDWithName("nop", "conn"): nopConnectorFactory.CreateDefaultConfig(),
+			},
+			pipelineCfgs: pipelines.Config{
+				component.NewIDWithName("traces", "out"): {
+					Receivers: []component.ID{component.NewIDWithName("nop", "conn")},
+					Exporters: []component.ID{component.NewID("nop")},
+				},
+			},
+			expected: `connector "nop/conn" used as receiver in traces pipeline but not used in any supported exporter pipeline`,
+		},
+		{
+			name: "partially-orphaned-connector-use-as-exporter",
+			receiverCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			exporterCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			connectorCfgs: map[component.ID]component.Config{
+				component.NewID("mockforward"): mfConnectorFactory.CreateDefaultConfig(),
+			},
+			pipelineCfgs: pipelines.Config{
+				component.NewIDWithName("traces", "in"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("mockforward")},
+				},
+				component.NewIDWithName("traces", "out"): {
+					Receivers: []component.ID{component.NewID("mockforward")},
+					Exporters: []component.ID{component.NewID("nop")},
+				},
+				component.NewIDWithName("metrics", "in"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("mockforward")},
+				},
+			},
+			expected: `connector "mockforward" used as exporter in metrics pipeline but not used in any supported receiver pipeline`,
+		},
+		{
+			name: "partially-orphaned-connector-use-as-receiver",
+			receiverCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			exporterCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
+			},
+			connectorCfgs: map[component.ID]component.Config{
+				component.NewID("mockforward"): mfConnectorFactory.CreateDefaultConfig(),
+			},
+			pipelineCfgs: pipelines.Config{
+				component.NewIDWithName("metrics", "in"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("mockforward")},
+				},
+				component.NewIDWithName("metrics", "out"): {
+					Receivers: []component.ID{component.NewID("mockforward")},
+					Exporters: []component.ID{component.NewID("nop")},
+				},
+				component.NewIDWithName("traces", "out"): {
+					Receivers: []component.ID{component.NewID("mockforward")},
+					Exporters: []component.ID{component.NewID("nop")},
+				},
+			},
+			expected: `connector "mockforward" used as receiver in traces pipeline but not used in any supported exporter pipeline`,
 		},
 		{
 			name: "not_allowed_simple_cycle_traces.yaml",
@@ -1567,6 +1899,29 @@ func TestGraphBuildErrors(t *testing.T) {
 			},
 			expected: "failed to create \"unknown\" receiver for data type \"logs\": receiver factory not available for: \"unknown\"",
 		},
+		{
+			name: "unknown_connector_factory",
+			receiverCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			exporterCfgs: map[component.ID]component.Config{
+				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+			},
+			connectorCfgs: map[component.ID]component.Config{
+				component.NewID("unknown"): nopConnectorFactory.CreateDefaultConfig(),
+			},
+			pipelineCfgs: pipelines.Config{
+				component.NewIDWithName("traces", "in"): {
+					Receivers: []component.ID{component.NewID("nop")},
+					Exporters: []component.ID{component.NewID("unknown")},
+				},
+				component.NewIDWithName("traces", "out"): {
+					Receivers: []component.ID{component.NewID("unknown")},
+					Exporters: []component.ID{component.NewID("nop")},
+				},
+			},
+			expected: "connector factory not available for: \"unknown\"",
+		},
 	}
 
 	for _, test := range tests {
@@ -1597,6 +1952,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					map[component.Type]connector.Factory{
 						nopConnectorFactory.Type(): nopConnectorFactory,
 						badConnectorFactory.Type(): badConnectorFactory,
+						mfConnectorFactory.Type():  mfConnectorFactory,
 					}),
 				PipelineConfigs: test.pipelineCfgs,
 			}

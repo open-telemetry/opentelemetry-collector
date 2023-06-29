@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
@@ -214,103 +213,6 @@ func TestConfigValidate(t *testing.T) {
 			expected: errors.New(`service::pipelines::traces: references exporter "nop/conn2" which is not configured`),
 		},
 		{
-			name: "missing-connector-as-receiver",
-			cfgFn: func() *Config {
-				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines[component.NewID("traces")]
-				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "conn"))
-				return cfg
-			},
-			expected: errors.New(`connectors::nop/conn: must be used as both receiver and exporter but is not used as receiver`),
-		},
-		{
-			name: "missing-connector-as-exporter",
-			cfgFn: func() *Config {
-				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines[component.NewID("traces")]
-				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "conn"))
-				return cfg
-			},
-			expected: errors.New(`connectors::nop/conn: must be used as both receiver and exporter but is not used as exporter`),
-		},
-		{
-			name: "orphaned-connector-use-as-exporter",
-			cfgFn: func() *Config {
-				cfg := generateConfigWithPipelines(pipelines.Config{
-					component.NewIDWithName("traces", "in"): {
-						Receivers:  []component.ID{component.NewID("nop")},
-						Processors: []component.ID{component.NewID("nop")},
-						Exporters:  []component.ID{component.NewIDWithName("nop", "conn")},
-					},
-					component.NewIDWithName("traces", "out"): {
-						Receivers:  []component.ID{component.NewIDWithName("nop", "conn")},
-						Processors: []component.ID{component.NewID("nop")},
-						Exporters:  []component.ID{component.NewID("nop")},
-					},
-					component.NewIDWithName("metrics", "in"): {
-						Receivers:  []component.ID{component.NewID("nop")},
-						Processors: []component.ID{component.NewID("nop")},
-						Exporters:  []component.ID{component.NewIDWithName("nop", "conn")},
-					},
-				})
-				return cfg
-			},
-			expected: errors.New(`connectors::nop/conn: is used as exporter in "metrics" pipeline but is not used in supported receiver pipeline`),
-		},
-		{
-			name: "orphaned-connector-use-as-receiver",
-			cfgFn: func() *Config {
-				cfg := generateConfigWithPipelines(pipelines.Config{
-					component.NewIDWithName("metrics", "in"): {
-						Receivers:  []component.ID{component.NewID("nop")},
-						Processors: []component.ID{component.NewID("nop")},
-						Exporters:  []component.ID{component.NewIDWithName("nop", "conn")},
-					},
-					component.NewIDWithName("metrics", "out"): {
-						Receivers:  []component.ID{component.NewIDWithName("nop", "conn")},
-						Processors: []component.ID{component.NewID("nop")},
-						Exporters:  []component.ID{component.NewID("nop")},
-					},
-					component.NewIDWithName("traces", "out"): {
-						Receivers:  []component.ID{component.NewIDWithName("nop", "conn")},
-						Processors: []component.ID{component.NewID("nop")},
-						Exporters:  []component.ID{component.NewID("nop")},
-					},
-				})
-				return cfg
-			},
-			expected: errors.New(`connectors::nop/conn: is used as receiver in "traces" pipeline but is not used in supported exporter pipeline`),
-		},
-		{
-			name: "connector-forward",
-			cfgFn: func() *Config {
-				cfg := generateConfigWithPipelines(pipelines.Config{
-					component.NewIDWithName("metrics", "in"): {
-						Receivers:  []component.ID{component.NewID("nop")},
-						Processors: []component.ID{component.NewID("nop")},
-						Exporters:  []component.ID{component.NewIDWithName("nop", "conn")},
-					},
-					component.NewIDWithName("metrics", "out"): {
-						Receivers:  []component.ID{component.NewIDWithName("nop", "conn")},
-						Processors: []component.ID{component.NewID("nop")},
-						Exporters:  []component.ID{component.NewID("nop")},
-					},
-					component.NewIDWithName("traces", "in"): {
-						Receivers:  []component.ID{component.NewID("nop")},
-						Processors: []component.ID{component.NewID("nop")},
-						Exporters:  []component.ID{component.NewIDWithName("nop", "conn")},
-					},
-					component.NewIDWithName("traces", "out"): {
-						Receivers:  []component.ID{component.NewIDWithName("nop", "conn")},
-						Processors: []component.ID{component.NewID("nop")},
-						Exporters:  []component.ID{component.NewID("nop")},
-					},
-				})
-				return cfg
-			},
-			expected: nil,
-		},
-		{
 			name: "invalid-service-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
@@ -324,24 +226,12 @@ func TestConfigValidate(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := test.cfgFn()
-			factories, err := nopFactories()
-			require.NoError(t, err)
-			assert.Equal(t, test.expected, cfg.Validate(factories))
+			assert.Equal(t, test.expected, cfg.Validate())
 		})
 	}
 }
 
 func generateConfig() *Config {
-	return generateConfigWithPipelines(pipelines.Config{
-		component.NewID("traces"): {
-			Receivers:  []component.ID{component.NewID("nop")},
-			Processors: []component.ID{component.NewID("nop")},
-			Exporters:  []component.ID{component.NewID("nop")},
-		},
-	})
-}
-
-func generateConfigWithPipelines(pipes pipelines.Config) *Config {
 	return &Config{
 		Receivers: map[component.ID]component.Config{
 			component.NewID("nop"): &errConfig{},
@@ -376,7 +266,13 @@ func generateConfigWithPipelines(pipes pipelines.Config) *Config {
 				},
 			},
 			Extensions: []component.ID{component.NewID("nop")},
-			Pipelines:  pipes,
+			Pipelines: pipelines.Config{
+				component.NewID("traces"): {
+					Receivers:  []component.ID{component.NewID("nop")},
+					Processors: []component.ID{component.NewID("nop")},
+					Exporters:  []component.ID{component.NewID("nop")},
+				},
+			},
 		},
 	}
 }

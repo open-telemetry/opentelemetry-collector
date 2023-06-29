@@ -131,8 +131,6 @@ type Factory interface {
 	LogsToMetricsStability() component.StabilityLevel
 	LogsToLogsStability() component.StabilityLevel
 
-	Stability(exporterType, receiverType component.Type) component.StabilityLevel
-
 	unexportedFactoryFunc()
 }
 
@@ -439,39 +437,6 @@ func (f factory) LogsToLogsStability() component.StabilityLevel {
 	return f.logsToLogsStabilityLevel
 }
 
-func (f factory) Stability(expType, recType component.Type) component.StabilityLevel {
-	switch expType {
-	case component.DataTypeTraces:
-		switch recType {
-		case component.DataTypeTraces:
-			return f.tracesToTracesStabilityLevel
-		case component.DataTypeMetrics:
-			return f.tracesToMetricsStabilityLevel
-		case component.DataTypeLogs:
-			return f.tracesToLogsStabilityLevel
-		}
-	case component.DataTypeMetrics:
-		switch recType {
-		case component.DataTypeTraces:
-			return f.metricsToTracesStabilityLevel
-		case component.DataTypeMetrics:
-			return f.metricsToMetricsStabilityLevel
-		case component.DataTypeLogs:
-			return f.metricsToLogsStabilityLevel
-		}
-	case component.DataTypeLogs:
-		switch recType {
-		case component.DataTypeTraces:
-			return f.logsToTracesStabilityLevel
-		case component.DataTypeMetrics:
-			return f.logsToMetricsStabilityLevel
-		case component.DataTypeLogs:
-			return f.logsToLogsStabilityLevel
-		}
-	}
-	return component.StabilityLevelUndefined
-}
-
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
 	f := &factory{
@@ -506,14 +471,6 @@ type Builder struct {
 // NewBuilder creates a new connector.Builder to help with creating components form a set of configs and factories.
 func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]Factory) *Builder {
 	return &Builder{cfgs: cfgs, factories: factories}
-}
-
-func (b *Builder) SupportsConnection(connType, expType, recType component.Type) bool {
-	f, exists := b.factories[connType]
-	if !exists {
-		return false
-	}
-	return f.Stability(expType, recType) != component.StabilityLevelUndefined
 }
 
 // CreateTracesToTraces creates a Traces connector based on the settings and config.
