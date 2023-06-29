@@ -28,6 +28,7 @@ type processMetrics struct {
 	startTimeUnixNano int64
 	ballastSizeBytes  uint64
 	proc              *process.Process
+	context           context.Context
 
 	processUptime *metric.Float64DerivedCumulative
 	allocMem      *metric.Int64DerivedGauge
@@ -64,7 +65,8 @@ func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProv
 	if hostProc != "" {
 		ctx = context.WithValue(ctx, common.EnvKey, common.EnvMap{common.HostProcEnvKey: hostProc})
 	}
-	pm.proc, err = process.NewProcessWithContext(ctx, int32(os.Getpid()))
+	pm.context = ctx
+	pm.proc, err = process.NewProcessWithContext(pm.context, int32(os.Getpid()))
 	if err != nil {
 		return err
 	}
@@ -236,7 +238,7 @@ func (pm *processMetrics) updateSysMem() int64 {
 }
 
 func (pm *processMetrics) updateCPUSeconds() float64 {
-	times, err := pm.proc.Times()
+	times, err := pm.proc.TimesWithContext(pm.context)
 	if err != nil {
 		return 0
 	}
@@ -246,7 +248,7 @@ func (pm *processMetrics) updateCPUSeconds() float64 {
 }
 
 func (pm *processMetrics) updateRSSMemory() int64 {
-	mem, err := pm.proc.MemoryInfo()
+	mem, err := pm.proc.MemoryInfoWithContext(pm.context)
 	if err != nil {
 		return 0
 	}

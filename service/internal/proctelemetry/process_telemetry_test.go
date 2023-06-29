@@ -5,10 +5,8 @@ package proctelemetry
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -166,22 +164,16 @@ func TestOCProcessTelemetry(t *testing.T) {
 			assert.GreaterOrEqual(t, value, float64(0), metricName)
 			continue
 		}
-		fmt.Println(fmt.Sprintf("%s %d", metricName, ts.Points[0].Value))
-
 		assert.Greater(t, value, float64(0), metricName)
 	}
 }
 
 func TestOCProcessTelemetryWithHostProc(t *testing.T) {
 	ocRegistry := metric.NewRegistry()
-	hostProc := "/host/proc"
-	t.Setenv("HOST_PROC", hostProc)
+	// Make the sure the environment variable value is not used.
+	t.Setenv("HOST_PROC", "foo/bar")
 
 	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0, "/host/proc"))
-
-	// make sure HOST_PROC is untouched
-	envValue, _ := os.LookupEnv("HOST_PROC")
-	require.Equal(t, envValue, hostProc)
 
 	// Check that the metrics are actually filled.
 	<-time.After(200 * time.Millisecond)
@@ -208,8 +200,6 @@ func TestOCProcessTelemetryWithHostProc(t *testing.T) {
 			assert.GreaterOrEqual(t, value, float64(0), metricName)
 			continue
 		}
-		fmt.Println(fmt.Sprintf("%s %d", metricName, ts.Points[0].Value))
-
 		assert.Greater(t, value, float64(0), metricName)
 	}
 }
