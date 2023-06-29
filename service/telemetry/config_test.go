@@ -40,27 +40,16 @@ func TestLoadConfig(t *testing.T) {
 			success: false,
 		},
 		{
-			name: "metric telemetry with valid useHostProcEnvVar",
+			name: "metric telemetry with valid host proc",
 			cfg: &Config{
 				Metrics: MetricsConfig{
-					Level:             configtelemetry.LevelBasic,
-					Address:           "127.0.0.1:3333",
-					UseHostProcEnvVar: true,
+					Level:    configtelemetry.LevelBasic,
+					Address:  "127.0.0.1:3333",
+					HostProc: "/host/proc",
 				},
 			},
 			success:  true,
 			hostproc: "/host/proc",
-		},
-		{
-			name: "metric telemetry with useHostProcEnvVar but actual env variable not set",
-			cfg: &Config{
-				Metrics: MetricsConfig{
-					Level:             configtelemetry.LevelBasic,
-					Address:           "127.0.0.1:3333",
-					UseHostProcEnvVar: true,
-				},
-			},
-			success: false,
 		},
 	}
 

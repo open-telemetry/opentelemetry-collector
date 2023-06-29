@@ -107,7 +107,7 @@ func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_cli
 func TestOtelProcessTelemetry(t *testing.T) {
 	tel := setupTelemetry(t)
 
-	require.NoError(t, RegisterProcessMetrics(nil, tel.MeterProvider, true, 0, false))
+	require.NoError(t, RegisterProcessMetrics(nil, tel.MeterProvider, true, 0, ""))
 
 	mp, err := fetchPrometheusMetrics(tel.promHandler)
 	require.NoError(t, err)
@@ -139,7 +139,7 @@ func TestOtelProcessTelemetry(t *testing.T) {
 func TestOCProcessTelemetry(t *testing.T) {
 	ocRegistry := metric.NewRegistry()
 
-	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0, false))
+	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0, ""))
 
 	// Check that the metrics are actually filled.
 	<-time.After(200 * time.Millisecond)
@@ -177,7 +177,7 @@ func TestOCProcessTelemetryWithHostProc(t *testing.T) {
 	hostProc := "/host/proc"
 	t.Setenv("HOST_PROC", hostProc)
 
-	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0, false))
+	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0, "/host/proc"))
 
 	// make sure HOST_PROC is untouched
 	envValue, _ := os.LookupEnv("HOST_PROC")
@@ -220,7 +220,7 @@ func TestProcessTelemetryFailToRegister(t *testing.T) {
 			ocRegistry := metric.NewRegistry()
 			_, err := ocRegistry.AddFloat64Gauge(metricName)
 			require.NoError(t, err)
-			assert.Error(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0, false))
+			assert.Error(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0, ""))
 		})
 	}
 }
