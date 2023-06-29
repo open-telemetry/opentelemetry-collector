@@ -22,6 +22,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
+	github.com/knadh/koanf/v2 v2.0.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -74,23 +75,3 @@ retract (
 replace go.opentelemetry.io/collector/connector => ../../connector
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
-
-replace go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
-
-replace go.opentelemetry.io/collector/config/internal => ../../config/internal
-
-replace go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
-
-replace go.opentelemetry.io/collector/config/configauth => ../../config/configauth
-
-replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
-
-replace go.opentelemetry.io/collector/config/configgrpc => ../../config/configgrpc
-
-replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
-
-replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
-
-replace go.opentelemetry.io/collector/extension/auth => ../auth
-
-replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
