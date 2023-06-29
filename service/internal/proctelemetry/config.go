@@ -139,7 +139,7 @@ func cardinalityFilter(kvs ...attribute.KeyValue) attribute.Filter {
 	}
 }
 
-func initPrometheusExporter(prometheusConfig telemetry.Prometheus, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+func initPrometheusExporter(prometheusConfig *telemetry.Prometheus, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
 	promRegistry := prometheus.NewRegistry()
 	if prometheusConfig.Host == nil {
 		return nil, nil, fmt.Errorf("host must be specified")
@@ -164,18 +164,9 @@ func initPrometheusExporter(prometheusConfig telemetry.Prometheus, asyncErrorCha
 	return exporter, InitPrometheusServer(promRegistry, fmt.Sprintf("%s:%d", *prometheusConfig.Host, *prometheusConfig.Port), asyncErrorChannel), nil
 }
 
-func initExporter(_ context.Context, exporters telemetry.MetricExporter, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
-	for exporterType, exporter := range exporters {
-		switch exporterType {
-		case prometheusExporter:
-			e, ok := exporter.(telemetry.Prometheus)
-			if !ok {
-				return nil, nil, fmt.Errorf("prometheus exporter invalid: %v", exporter)
-			}
-			return initPrometheusExporter(e, asyncErrorChannel)
-		default:
-			return nil, nil, fmt.Errorf("unsupported metric exporter type %q", exporterType)
-		}
+func initExporter(_ context.Context, exporter telemetry.MetricExporter, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+	if exporter.Prometheus != nil {
+		return initPrometheusExporter(exporter.Prometheus, asyncErrorChannel)
 	}
-	return nil, nil, fmt.Errorf("no valid exporter: %v", exporters)
+	return nil, nil, fmt.Errorf("no valid exporter: %v", exporter)
 }

@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg: &Config{
 				Metrics: MetricsConfig{
 					Level: configtelemetry.LevelBasic,
-					Readers: MeterProviderJsonMetricReaders{
+					Readers: MeterProviderJsonReaders{
 						"pull/prometheus": PullMetricReader{},
 					},
 				},
@@ -83,41 +83,35 @@ func TestUnmarshalMetricReaders(t *testing.T) {
 		{
 			name: "valid pull reader type, no exporter",
 			cfg:  confmap.NewFromStringMap(map[string]any{"pull": PullMetricReader{}}),
+			err:  "invalid exporter configuration",
 		},
 		{
 			name: "valid pull reader type, invalid exporter",
 			cfg: confmap.NewFromStringMap(map[string]any{"pull": PullMetricReader{
 				Exporter: MetricExporter{
-					"invalid": "invalid",
+					Prometheus: nil,
 				},
 			}}),
-			err: "unsupported metric exporter type \"invalid\"",
-		},
-		{
-			name: "valid pull reader type, invalid prometheus exporter",
-			cfg: confmap.NewFromStringMap(map[string]any{"pull": PullMetricReader{
-				Exporter: MetricExporter{
-					"prometheus": "invalid",
-				},
-			}}),
-			err: "invalid exporter configuration: '' expected a map, got 'string'",
+			err: "invalid exporter configuration",
 		},
 		{
 			name: "valid pull reader type, valid prometheus exporter",
 			cfg: confmap.NewFromStringMap(map[string]any{"pull": PullMetricReader{
 				Exporter: MetricExporter{
-					"prometheus": Prometheus{},
+					Prometheus: &Prometheus{},
 				},
 			}}),
 		},
 	}
 	for _, tt := range tests {
-		reader := make(MeterProviderJsonMetricReaders)
-		err := reader.Unmarshal(tt.cfg)
-		if len(tt.err) > 0 {
-			assert.ErrorContains(t, err, tt.err)
-		} else {
-			assert.NoError(t, err)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			reader := make(MeterProviderJsonReaders)
+			err := reader.Unmarshal(tt.cfg)
+			if len(tt.err) > 0 {
+				assert.ErrorContains(t, err, tt.err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
 	}
 }

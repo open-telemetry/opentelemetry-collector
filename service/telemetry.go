@@ -97,7 +97,7 @@ func (tel *telemetryInitializer) initMetrics(res *resource.Resource, logger *zap
 
 	if len(cfg.Metrics.Address) != 0 {
 		if tel.extendedConfig {
-			logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::metric_readers")
+			logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 		}
 		host, port, err := net.SplitHostPort(cfg.Metrics.Address)
 		if err != nil {
@@ -108,11 +108,11 @@ func (tel *telemetryInitializer) initMetrics(res *resource.Resource, logger *zap
 			return err
 		}
 		if cfg.Metrics.Readers == nil {
-			cfg.Metrics.Readers = telemetry.MeterProviderJsonMetricReaders{}
+			cfg.Metrics.Readers = telemetry.MeterProviderJsonReaders{}
 		}
 		cfg.Metrics.Readers["pull/serviceaddress"] = telemetry.PullMetricReader{
 			Exporter: telemetry.MetricExporter{
-				"prometheus": telemetry.Prometheus{
+				Prometheus: &telemetry.Prometheus{
 					Host: &host,
 					Port: &portInt,
 				},

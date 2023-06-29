@@ -36,7 +36,7 @@ func TestMetricReader(t *testing.T) {
 			name: "pull/prometheus-invalid-config-no-host",
 			reader: telemetry.PullMetricReader{
 				Exporter: telemetry.MetricExporter{
-					"prometheus": telemetry.Prometheus{},
+					Prometheus: &telemetry.Prometheus{},
 				},
 			},
 			err: errors.New("host must be specified"),
@@ -45,7 +45,7 @@ func TestMetricReader(t *testing.T) {
 			name: "pull/prometheus-invalid-config-no-port",
 			reader: telemetry.PullMetricReader{
 				Exporter: telemetry.MetricExporter{
-					"prometheus": telemetry.Prometheus{
+					Prometheus: &telemetry.Prometheus{
 						Host: strPtr("locahost"),
 					},
 				},
@@ -56,7 +56,7 @@ func TestMetricReader(t *testing.T) {
 			name: "pull/prometheus-invalid-config-no-port",
 			reader: telemetry.PullMetricReader{
 				Exporter: telemetry.MetricExporter{
-					"prometheus": telemetry.Prometheus{
+					Prometheus: &telemetry.Prometheus{
 						Host: strPtr("locahost"),
 						Port: intPtr(8080),
 					},

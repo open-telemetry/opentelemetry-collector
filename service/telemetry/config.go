@@ -111,7 +111,7 @@ type MetricsConfig struct {
 
 	// Readers allow configuration of metric readers to emit metrics to
 	// any number of supported backends.
-	Readers MeterProviderJsonMetricReaders `mapstructure:"metric_readers"`
+	Readers MeterProviderJsonReaders `mapstructure:"readers"`
 }
 
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
@@ -133,7 +133,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (mrs *MeterProviderJsonMetricReaders) Unmarshal(conf *confmap.Conf) error {
+func (mrs *MeterProviderJsonReaders) Unmarshal(conf *confmap.Conf) error {
 	if conf == nil {
 		return nil
 	}
@@ -151,19 +151,10 @@ func (mrs *MeterProviderJsonMetricReaders) Unmarshal(conf *confmap.Conf) error {
 				return fmt.Errorf("invalid pull metric reader configuration: %w", err)
 			}
 			(*mrs)[key] = r
-
-			for key, exporter := range r.Exporter {
-				switch key {
-				case "prometheus":
-					var promExporter Prometheus
-					if err := mapstructure.Decode(exporter, &promExporter); err != nil {
-						return fmt.Errorf("invalid exporter configuration: %w", err)
-					}
-					r.Exporter[key] = promExporter
-				default:
-					return fmt.Errorf("unsupported metric exporter type %q", key)
-				}
+			if r.Exporter.Prometheus == nil {
+				return fmt.Errorf("invalid exporter configuration")
 			}
+
 		default:
 			return fmt.Errorf("unsupported metric reader type %q", readerType)
 		}

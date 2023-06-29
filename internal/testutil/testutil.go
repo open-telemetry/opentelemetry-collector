@@ -57,17 +57,17 @@ func GetAvailableLocalAddress(t testing.TB) string {
 	return endpoint
 }
 
-func GetAvailableLocalAddressPrometheus(t testing.TB) telemetry.Prometheus {
+func GetAvailableLocalAddressPrometheus(t testing.TB) *telemetry.Prometheus {
 	address := GetAvailableLocalAddress(t)
 	host, port, err := net.SplitHostPort(address)
 	if err != nil {
-		return telemetry.Prometheus{}
+		return nil
 	}
 	portInt, err := strconv.Atoi(port)
 	if err != nil {
-		return telemetry.Prometheus{}
+		return nil
 	}
-	return telemetry.Prometheus{
+	return &telemetry.Prometheus{
 		Host: &host,
 		Port: &portInt,
 	}

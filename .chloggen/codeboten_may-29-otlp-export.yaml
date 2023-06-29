@@ -5,7 +5,7 @@ change_type: enhancement
 component: service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "add ability to configure prometheus export via `metric_readers`"
+note: "add ability to configure prometheus export via `readers`"
 
 # One or more tracking issues or pull requests related to the change
 issues: [7641]
@@ -15,7 +15,7 @@ issues: [7641]
 # Use pipe (|) for multiline entries.
 subtext: |
   This enables end users to configure additional prometheus exporters for the collector's telemetry
-  via the `metric_readers` configuration option. Configuring prometheus through the existing method
+  via the `readers` configuration option. Configuring prometheus through the existing method
   of setting the service::metrics::address will continue to work, and only log a warning for users
   who have enabled the `telemetry.useOtelWithSDKConfigurationForInternalTelemetry` feature gate.
 
