@@ -67,3 +67,23 @@ replace go.opentelemetry.io/collector/semconv => ../semconv
 replace go.opentelemetry.io/collector/exporter => ../exporter
 
 replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
+
+replace go.opentelemetry.io/collector/config/confighttp => ../config/confighttp
+
+replace go.opentelemetry.io/collector/extension/auth => ../extension/auth
+
+replace go.opentelemetry.io/collector/config/configopaque => ../config/configopaque
+
+replace go.opentelemetry.io/collector/config/configcompression => ../config/configcompression
+
+replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../receiver/otlpreceiver
+
+replace go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../processor/memorylimiterprocessor
+
+replace go.opentelemetry.io/collector/config/configgrpc => ../config/configgrpc
+
+replace go.opentelemetry.io/collector/config/configauth => ../config/configauth
+
+replace go.opentelemetry.io/collector/config/internal => ../config/internal
+
+replace go.opentelemetry.io/collector/config/configtls => ../config/configtls

@@ -92,3 +92,9 @@ replace go.opentelemetry.io/collector/component => ../../component
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
+
+replace go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
+
+replace go.opentelemetry.io/collector/config/configgrpc => ../configgrpc
+
+replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
