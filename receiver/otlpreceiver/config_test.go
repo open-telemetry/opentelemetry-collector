@@ -192,11 +192,33 @@ func TestUnmarshalConfigEmptyProtocols(t *testing.T) {
 }
 
 func TestUnmarshalConfigInvalidSignalPath(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid_signal_path.yaml"))
-	require.NoError(t, err)
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	assert.EqualError(t, component.UnmarshalConfig(cm, cfg), "invalid HTTP URL path set for signal: parse \":invalid\": missing protocol scheme")
+	tests := []struct {
+		name       string
+		testDataFn string
+	}{
+		{
+			name:       "Invalid traces URL path",
+			testDataFn: "invalid_traces_path.yaml",
+		},
+		{
+			name:       "Invalid metrics URL path",
+			testDataFn: "invalid_metrics_path.yaml",
+		},
+		{
+			name:       "Invalid logs URL path",
+			testDataFn: "invalid_logs_path.yaml",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", test.testDataFn))
+			require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			assert.EqualError(t, component.UnmarshalConfig(cm, cfg), "invalid HTTP URL path set for signal: parse \":invalid\": missing protocol scheme")
+		})
+	}
 }
 
 func TestUnmarshalConfigEmpty(t *testing.T) {

@@ -622,7 +622,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
-	url := fmt.Sprintf("http://%s/%s", addr, defaultTracesURLPath)
+	url := fmt.Sprintf("http://%s%s", addr, defaultTracesURLPath)
 
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
