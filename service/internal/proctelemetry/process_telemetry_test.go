@@ -5,6 +5,7 @@ package proctelemetry
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -165,6 +166,7 @@ func TestOCProcessTelemetry(t *testing.T) {
 			assert.GreaterOrEqual(t, value, float64(0), metricName)
 			continue
 		}
+		fmt.Println(fmt.Sprintf("%s %d", metricName, ts.Points[0].Value))
 
 		assert.Greater(t, value, float64(0), metricName)
 	}
@@ -206,6 +208,7 @@ func TestOCProcessTelemetryWithHostProc(t *testing.T) {
 			assert.GreaterOrEqual(t, value, float64(0), metricName)
 			continue
 		}
+		fmt.Println(fmt.Sprintf("%s %d", metricName, ts.Points[0].Value))
 
 		assert.Greater(t, value, float64(0), metricName)
 	}
