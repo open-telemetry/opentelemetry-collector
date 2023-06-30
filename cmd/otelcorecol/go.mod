@@ -9,17 +9,17 @@ require (
 	go.opentelemetry.io/collector v0.81.0
 	go.opentelemetry.io/collector/component v0.81.0
 	go.opentelemetry.io/collector/connector v0.81.0
-	go.opentelemetry.io/collector/connector/forwardconnector v0.78.1
+	go.opentelemetry.io/collector/connector/forwardconnector v0.81.0
 	go.opentelemetry.io/collector/exporter v0.81.0
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.78.1
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.78.1
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.78.1
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.81.0
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.81.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.81.0
 	go.opentelemetry.io/collector/extension v0.81.0
-	go.opentelemetry.io/collector/extension/ballastextension v0.78.1
+	go.opentelemetry.io/collector/extension/ballastextension v0.81.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.81.0
 	go.opentelemetry.io/collector/processor v0.81.0
-	go.opentelemetry.io/collector/processor/batchprocessor v0.78.1
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.78.1
+	go.opentelemetry.io/collector/processor/batchprocessor v0.81.0
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.81.0
 	go.opentelemetry.io/collector/receiver v0.81.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.81.0
 	golang.org/x/sys v0.10.0
@@ -115,9 +115,29 @@ replace go.opentelemetry.io/collector => ../../
 
 replace go.opentelemetry.io/collector/component => ../../component
 
+replace go.opentelemetry.io/collector/config/configauth => ../../config/configauth
+
+replace go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
+
+replace go.opentelemetry.io/collector/config/configgrpc => ../../config/configgrpc
+
+replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
+
+replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
+
+replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
+
+replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
+
+replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
+
+replace go.opentelemetry.io/collector/config/internal => ../../config/internal
+
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
+
+replace go.opentelemetry.io/collector/connector => ../../connector
 
 replace go.opentelemetry.io/collector/connector/forwardconnector => ../../connector/forwardconnector
 
@@ -129,6 +149,10 @@ replace go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/ot
 
 replace go.opentelemetry.io/collector/exporter/otlphttpexporter => ../../exporter/otlphttpexporter
 
+replace go.opentelemetry.io/collector/extension => ../../extension
+
+replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
+
 replace go.opentelemetry.io/collector/extension/ballastextension => ../../extension/ballastextension
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
@@ -136,6 +160,8 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extensi
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
+
+replace go.opentelemetry.io/collector/processor => ../../processor
 
 replace go.opentelemetry.io/collector/receiver => ../../receiver
 
@@ -146,3 +172,6 @@ replace go.opentelemetry.io/collector/processor/batchprocessor => ../../processo
 replace go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
+
+// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
+replace cloud.google.com/go => cloud.google.com/go v0.110.2
