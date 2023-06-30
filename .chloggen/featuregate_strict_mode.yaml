@@ -5,7 +5,7 @@ change_type: enhancement
 component: featuregate
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Use strict mode to drive explicit behaviors when setting feature gates
+note: Add a new flag to set feature gates with additional validation
 
 # One or more tracking issues or pull requests related to the change
 issues: [7804]
@@ -13,4 +13,8 @@ issues: [7804]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  In strict mode, the collector will perform additional checks on startup to validate the feature gates set:
+  * All alpha and beta feature gates must be set explicitly.
+  * All beta feature gates must be explicitly enabled.
+  * All stable feature gates must be left unset.
