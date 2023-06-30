@@ -63,15 +63,15 @@ func (f *flagValue) Set(s string) error {
 		enabled, ok := gatesEnabled[gate.id]
 		if !ok {
 			if f.strict && (gate.stage == StageAlpha || gate.stage == StageBeta) {
-				errs = multierr.Append(errs, fmt.Errorf("gate %q is not explicitly set", gate.id))
+				errs = multierr.Append(errs, fmt.Errorf("gate %q is not explicitly configured", gate.id))
 			}
 			return
 		}
 		if f.strict && !enabled && gate.stage == StageBeta {
-			errs = multierr.Append(errs, fmt.Errorf("gate %q must be explicitly enabled, remove strict mode to override", gate.id))
+			errs = multierr.Append(errs, fmt.Errorf("gate %q is in beta and must be explicitly enabled", gate.id))
 		}
 		if f.strict && gate.stage == StageStable {
-			errs = multierr.Append(errs, fmt.Errorf("gate %q must not be set", gate.id))
+			errs = multierr.Append(errs, fmt.Errorf("gate %q is stable and must not be configured", gate.id))
 		}
 
 		errs = multierr.Append(errs, f.reg.Set(gate.id, enabled))

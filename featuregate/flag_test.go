@@ -131,7 +131,7 @@ func TestNewFlag(t *testing.T) {
 		{
 			name:           "strict mode but no alpha gate set",
 			input:          "beta",
-			expectedSetErr: "gate \"alpha\" is not explicitly set",
+			expectedSetErr: "gate \"alpha\" is not explicitly configured",
 			expected:       map[string]bool{"alpha": false, "beta": true, "deprecated": false, "stable": true},
 			expectedStr:    "-alpha,beta,-deprecated,stable",
 			strict:         true,
@@ -139,7 +139,7 @@ func TestNewFlag(t *testing.T) {
 		{
 			name:           "strict mode but no beta gate set",
 			input:          "alpha",
-			expectedSetErr: "gate \"beta\" is not explicitly set",
+			expectedSetErr: "gate \"beta\" is not explicitly configured",
 			expected:       map[string]bool{"alpha": true, "beta": true, "deprecated": false, "stable": true},
 			expectedStr:    "alpha,beta,-deprecated,stable",
 			strict:         true,
@@ -147,7 +147,7 @@ func TestNewFlag(t *testing.T) {
 		{
 			name:           "strict mode but beta gate disabled",
 			input:          "alpha,-beta",
-			expectedSetErr: "gate \"beta\" must be explicitly enabled, remove strict mode to override",
+			expectedSetErr: "gate \"beta\" is in beta and must be explicitly enabled",
 			expected:       map[string]bool{"alpha": true, "beta": false, "deprecated": false, "stable": true},
 			expectedStr:    "alpha,-beta,-deprecated,stable",
 			strict:         true,
@@ -155,7 +155,7 @@ func TestNewFlag(t *testing.T) {
 		{
 			name:           "strict mode but stable gate set",
 			input:          "alpha,beta,stable",
-			expectedSetErr: "gate \"stable\" must not be set",
+			expectedSetErr: "gate \"stable\" is stable and must not be configured",
 			expected:       map[string]bool{"alpha": true, "beta": true, "deprecated": false, "stable": true},
 			expectedStr:    "alpha,beta,-deprecated,stable",
 			strict:         true,
