@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	configFlag       = "config"
-	featureGatesFlag = "feature-gates"
+	configFlag             = "config"
+	featureGatesFlag       = "feature-gates"
+	featureGatesStrictFlag = "feature-gates-strict"
 )
 
 type configFlagValue struct {
@@ -50,8 +51,10 @@ func flags(reg *featuregate.Registry) *flag.FlagSet {
 			return nil
 		})
 
-	flagSet.Var(featuregate.NewFlag(reg), featureGatesFlag,
-		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature. Start with strict to enable strict mode.")
+	flagSet.Var(featuregate.NewFlag(reg, false), featureGatesFlag,
+		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
+	flagSet.Var(featuregate.NewFlag(reg, true), featureGatesStrictFlag,
+		"Comma-delimited list of feature gate identifiers validated with strict mode. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
 
 	return flagSet
 }

@@ -12,20 +12,18 @@ import (
 )
 
 // NewFlag returns a flag.Value that directly applies feature gate statuses to a Registry.
-func NewFlag(reg *Registry) flag.Value {
-	return &flagValue{reg: reg}
+func NewFlag(reg *Registry, strict bool) flag.Value {
+	return &flagValue{reg: reg, strict: strict}
 }
 
 // flagValue implements the flag.Value interface and directly applies feature gate statuses to a Registry.
 type flagValue struct {
-	reg *Registry
+	reg    *Registry
+	strict bool
 }
 
 func (f *flagValue) String() string {
 	var ids []string
-	if f.reg.strict {
-		ids = []string{"strict"}
-	}
 	f.reg.VisitAll(func(g *Gate) {
 		id := g.ID()
 		if !g.IsEnabled() {
@@ -43,10 +41,6 @@ func (f *flagValue) Set(s string) error {
 
 	var errs error
 	ids := strings.Split(s, ",")
-	if len(ids) > 0 && ids[0] == "strict" {
-		f.reg.strict = true
-		ids = ids[1:]
-	}
 
 	gatesEnabled := map[string]bool{}
 
@@ -68,15 +62,15 @@ func (f *flagValue) Set(s string) error {
 	f.reg.VisitAll(func(gate *Gate) {
 		enabled, ok := gatesEnabled[gate.id]
 		if !ok {
-			if f.reg.strict && (gate.stage == StageAlpha || gate.stage == StageBeta) {
+			if f.strict && (gate.stage == StageAlpha || gate.stage == StageBeta) {
 				errs = multierr.Append(errs, fmt.Errorf("gate %q is not explicitly set", gate.id))
 			}
 			return
 		}
-		if f.reg.strict && !enabled && gate.stage == StageBeta {
+		if f.strict && !enabled && gate.stage == StageBeta {
 			errs = multierr.Append(errs, fmt.Errorf("gate %q must be explicitly enabled, remove strict mode to override", gate.id))
 		}
-		if f.reg.strict && gate.stage == StageStable {
+		if f.strict && gate.stage == StageStable {
 			errs = multierr.Append(errs, fmt.Errorf("gate %q must not be set", gate.id))
 		}
 

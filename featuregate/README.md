@@ -52,6 +52,21 @@ otelcol --config=config.yaml --feature-gates=gate1,-gate2,+gate3
 
 This will enable `gate1` and `gate3` and disable `gate2`.
 
+### Strict mode
+
+Features gate can be executed in strict mode as well. This mode uses the flag `--feature-gates-strict`.
+This flag is mutually exclusive flag with `--feature-gates`.
+
+The flag follows the same notation as the `--feature-gates` flag and is interpreted with additional rules by the collector:
+
+* If the feature gate is alpha, the collector will fail to start if the feature gate is not explicitly set, 
+whether it is enabled or disabled.
+* If the feature gate is considered beta and therefore enabled by default, the collector will fail if the gate is not enabled.
+* If the feature gate is stable, the strict mode fails if the feature gate flag is used.
+
+The strict mode is typically used when testing collector upgrades to ensure that changes to feature gates stability levels
+are tracked and explicitly managed as part of the upgrade.
+
 ## Feature Lifecycle
 
 Features controlled by a `Gate` should follow a three-stage lifecycle, 
