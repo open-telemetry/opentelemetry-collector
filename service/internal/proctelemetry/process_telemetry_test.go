@@ -173,7 +173,7 @@ func TestOCProcessTelemetryWithHostProc(t *testing.T) {
 	// Make the sure the environment variable value is not used.
 	t.Setenv("HOST_PROC", "foo/bar")
 
-	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0, "/host/proc"))
+	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0, "/proc"))
 
 	// Check that the metrics are actually filled.
 	<-time.After(200 * time.Millisecond)
