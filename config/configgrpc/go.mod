@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.80.0
 	go.opentelemetry.io/collector/config/internal v0.80.0
 	go.opentelemetry.io/collector/extension/auth v0.80.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.1-0.20230612162650-64be7e574a17
 	go.opentelemetry.io/otel v1.16.0
 	go.uber.org/zap v1.24.0
@@ -58,7 +58,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.80.0 // indirect
 	go.opentelemetry.io/collector/exporter v0.80.0 // indirect
 	go.opentelemetry.io/collector/extension v0.80.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/collector/processor v0.80.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.80.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.39.0 // indirect
