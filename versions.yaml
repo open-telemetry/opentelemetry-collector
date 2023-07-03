@@ -8,7 +8,7 @@ module-sets:
       - go.opentelemetry.io/collector/featuregate
       - go.opentelemetry.io/collector/pdata
   beta:
-    version: v0.80.0
+    version: v0.81.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/cmd/builder
