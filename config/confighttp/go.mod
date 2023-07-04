@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/golang/snappy v0.0.4
-	github.com/klauspost/compress v1.16.6
+	github.com/klauspost/compress v1.16.7
 	github.com/rs/cors v1.9.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.80.0

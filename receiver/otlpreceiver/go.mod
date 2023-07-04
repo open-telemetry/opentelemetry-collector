@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/gogo/protobuf v1.3.2
-	github.com/klauspost/compress v1.16.6
+	github.com/klauspost/compress v1.16.7
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.80.0
 	go.opentelemetry.io/collector/component v0.80.0
