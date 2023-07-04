@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
@@ -36,7 +37,11 @@ func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *t
 
 	otlpResp, err := tracesReceiver.Export(req.Context(), otlpReq)
 	if err != nil {
-		writeError(resp, encoder, err, http.StatusInternalServerError)
+		if consumererror.IsPermanent(err) {
+			writeError(resp, encoder, err, http.StatusBadRequest)
+		} else {
+			writeError(resp, encoder, err, http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -62,7 +67,11 @@ func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver 
 
 	otlpResp, err := metricsReceiver.Export(req.Context(), otlpReq)
 	if err != nil {
-		writeError(resp, encoder, err, http.StatusInternalServerError)
+		if consumererror.IsPermanent(err) {
+			writeError(resp, encoder, err, http.StatusBadRequest)
+		} else {
+			writeError(resp, encoder, err, http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -88,7 +97,11 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.
 
 	otlpResp, err := logsReceiver.Export(req.Context(), otlpReq)
 	if err != nil {
-		writeError(resp, encoder, err, http.StatusInternalServerError)
+		if consumererror.IsPermanent(err) {
+			writeError(resp, encoder, err, http.StatusBadRequest)
+		} else {
+			writeError(resp, encoder, err, http.StatusInternalServerError)
+		}
 		return
 	}
 
