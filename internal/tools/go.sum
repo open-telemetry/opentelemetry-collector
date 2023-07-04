@@ -464,7 +464,7 @@ github.com/olekukonko/tablewriter v0.0.5/go.mod h1:hPp6KlRPjbx+hW8ykQs1w3UBbZlj6
 github.com/onsi/ginkgo/v2 v2.9.4 h1:xR7vG4IXt5RWx6FfIjyAtsoMAtnc3C/rFXBBd2AjZwE=
 github.com/onsi/gomega v1.27.6 h1:ENqfyGeS5AX/rlXDd/ETokDz93u0YufY1Pgxuy/PvWE=
 github.com/otiai10/copy v1.2.0/go.mod h1:rrF5dJ5F0t/EWSYODDu4j9/vEeYHMkc8jt0zJChqQWw=
-github.com/otiai10/copy v1.11.0 h1:OKBD80J/mLBrwnzXqGtFCzprFSGioo30JcmR4APsNwc=
+github.com/otiai10/copy v1.12.0 h1:cLMgSQnXBs1eehF0Wy/FAGsgDTDmAqFR7rQylBb1nDY=
 github.com/otiai10/curr v0.0.0-20150429015615-9b4961190c95/go.mod h1:9qAhocn7zKJG+0mI8eUu6xqkFDYS2kb2saOteoSB3cE=
 github.com/otiai10/curr v1.0.0/go.mod h1:LskTG5wDwr8Rs+nNQ+1LlxRjAtTZZjtJW4rMXl6j4vs=
 github.com/otiai10/mint v1.3.0/go.mod h1:F5AjcsTsWUqX+Na9fpHb52P8pcRX2CI6A3ctIT91xUo=
@@ -654,8 +654,8 @@ go.opentelemetry.io/build-tools/checkdoc v0.9.0 h1:Jk0MggS4gUJrRlq4XKSV4hmIyDU/T
 go.opentelemetry.io/build-tools/checkdoc v0.9.0/go.mod h1:3dQZFtq1x9RrKDM3RWGo1BQjZxH67zUrKmsjLegWttc=
 go.opentelemetry.io/build-tools/chloggen v0.9.0 h1:sHdl6T5NTlGhRwy7du4APkd2GZEamI4DfBitdKlzxGU=
 go.opentelemetry.io/build-tools/chloggen v0.9.0/go.mod h1:zuYbAo3TkrHo3C7lCrM5dHWSS50BDr0UfRYtyBFv2dQ=
-go.opentelemetry.io/build-tools/crosslink v0.8.0 h1:rYpcYwNX4//WbSvwHCiCPCczh9u+lYHLezrl9865nFA=
-go.opentelemetry.io/build-tools/crosslink v0.8.0/go.mod h1:rWAN3EQ4rJn5ewknqw/0CkfkU4t7toCAtkl5q7VZP/M=
+go.opentelemetry.io/build-tools/crosslink v0.9.0 h1:LOeJzMxsxBG2qMKeO22fRs91QvDfY+BA5pF1skTjbx0=
+go.opentelemetry.io/build-tools/crosslink v0.9.0/go.mod h1:VaSi2ahs+r+v//m6OpqTkD5siSFVta9eTHhKqPsfH/Q=
 go.opentelemetry.io/build-tools/multimod v0.9.0 h1:Im9PCGhfmKQC2XR0aTYzADNiOZLk9QEQgibDhadH+i0=
 go.opentelemetry.io/build-tools/multimod v0.9.0/go.mod h1:9KdBtlVebuj00X4bIt6DX1zagilSzIQmkJo8XzQ9OTQ=
 go.opentelemetry.io/build-tools/semconvgen v0.9.0 h1:Tsqd5KAVI2onoX+3Bjg7rD4kA8JdBxmxTUHcAZddYKw=
