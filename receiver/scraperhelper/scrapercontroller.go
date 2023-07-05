@@ -166,20 +166,14 @@ func (sc *controller) startScraping() {
 
 			sc.tickerCh = ticker.C
 		}
-
-		ctx, done := withScrapeContext(sc.timeout)
-
 		// Call scrape method on initialision to ensure
 		// that scrapers start from when the component starts
 		// instead of waiting for the full duration to start.
-		sc.scrapeMetricsAndReport(ctx)
-		done()
+		sc.scrapeMetricsAndReport()
 		for {
 			select {
 			case <-sc.tickerCh:
-				ctx, done = withScrapeContext(sc.timeout)
-				sc.scrapeMetricsAndReport(ctx)
-				done()
+				sc.scrapeMetricsAndReport()
 			case <-sc.done:
 				sc.terminated <- struct{}{}
 				return
@@ -191,7 +185,10 @@ func (sc *controller) startScraping() {
 // scrapeMetricsAndReport calls the Scrape function for each of the configured
 // Scrapers, records observability information, and passes the scraped metrics
 // to the next component.
-func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
+func (sc *controller) scrapeMetricsAndReport() {
+	ctx, done := withScrapeContext(sc.timeout)
+	defer done()
+
 	metrics := pmetric.NewMetrics()
 
 	for i, scraper := range sc.scrapers {
