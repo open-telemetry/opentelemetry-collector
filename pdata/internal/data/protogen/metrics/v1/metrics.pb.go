@@ -901,7 +901,6 @@ type NumberDataPoint struct {
 	// value fields is not present inside this oneof.
 	//
 	// Types that are valid to be assigned to Value:
-	//
 	//	*NumberDataPoint_AsDouble
 	//	*NumberDataPoint_AsInt
 	Value isNumberDataPoint_Value `protobuf_oneof:"value"`
@@ -1067,7 +1066,6 @@ type HistogramDataPoint struct {
 	// see: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#histogram
 	//
 	// Types that are valid to be assigned to Sum_:
-	//
 	//	*HistogramDataPoint_Sum
 	Sum_ isHistogramDataPoint_Sum_ `protobuf_oneof:"sum_"`
 	// bucket_counts is an optional field contains the count values of histogram
@@ -1101,13 +1099,11 @@ type HistogramDataPoint struct {
 	// min is the minimum value over (start_time, end_time].
 	//
 	// Types that are valid to be assigned to Min_:
-	//
 	//	*HistogramDataPoint_Min
 	Min_ isHistogramDataPoint_Min_ `protobuf_oneof:"min_"`
 	// max is the maximum value over (start_time, end_time].
 	//
 	// Types that are valid to be assigned to Max_:
-	//
 	//	*HistogramDataPoint_Max
 	Max_ isHistogramDataPoint_Max_ `protobuf_oneof:"max_"`
 }
@@ -1315,13 +1311,12 @@ type ExponentialHistogramDataPoint struct {
 	// see: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#histogram
 	//
 	// Types that are valid to be assigned to Sum_:
-	//
 	//	*ExponentialHistogramDataPoint_Sum
 	Sum_ isExponentialHistogramDataPoint_Sum_ `protobuf_oneof:"sum_"`
 	// scale describes the resolution of the histogram.  Boundaries are
 	// located at powers of the base, where:
 	//
-	//	base = (2^(2^-scale))
+	//   base = (2^(2^-scale))
 	//
 	// The histogram bucket identified by `index`, a signed integer,
 	// contains values that are greater than (base^index) and
@@ -1356,13 +1351,11 @@ type ExponentialHistogramDataPoint struct {
 	// min is the minimum value over (start_time, end_time].
 	//
 	// Types that are valid to be assigned to Min_:
-	//
 	//	*ExponentialHistogramDataPoint_Min
 	Min_ isExponentialHistogramDataPoint_Min_ `protobuf_oneof:"min_"`
 	// max is the maximum value over (start_time, end_time].
 	//
 	// Types that are valid to be assigned to Max_:
-	//
 	//	*ExponentialHistogramDataPoint_Max
 	Max_ isExponentialHistogramDataPoint_Max_ `protobuf_oneof:"max_"`
 	// ZeroThreshold may be optionally set to convey the width of the zero
@@ -1833,7 +1826,6 @@ type Exemplar struct {
 	// inside this oneof.
 	//
 	// Types that are valid to be assigned to Value:
-	//
 	//	*Exemplar_AsDouble
 	//	*Exemplar_AsInt
 	Value isExemplar_Value `protobuf_oneof:"value"`
