@@ -140,13 +140,6 @@ func (g *Graph) createNodes(set Settings) error {
 			if supportedUse {
 				continue
 			}
-			// Retain previous error message for special case where connector is used once, but incorrectly.
-			// TODO remove this case if we agree the slightly more generic error message is acceptable.
-			if len(expTypes) == 1 && len(recTypes) == 1 {
-				for recType := range recTypes {
-					return fmt.Errorf("connector %q cannot connect from %s to %s: telemetry type is not supported", connID, expType, recType)
-				}
-			}
 			return fmt.Errorf("connector %q used as exporter in %s pipeline but not used in any supported receiver pipeline", connID, expType)
 		}
 		for recType, supportedUse := range recTypes {

@@ -1241,7 +1241,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" cannot connect from traces to traces: telemetry type is not supported",
+			expected: "connector \"bf\" used as exporter in traces pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_traces_metrics.yaml",
@@ -1264,7 +1264,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" cannot connect from traces to metrics: telemetry type is not supported",
+			expected: "connector \"bf\" used as exporter in traces pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_traces_logs.yaml",
@@ -1287,7 +1287,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" cannot connect from traces to logs: telemetry type is not supported",
+			expected: "connector \"bf\" used as exporter in traces pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_metrics_traces.yaml",
@@ -1310,7 +1310,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" cannot connect from metrics to traces: telemetry type is not supported",
+			expected: "connector \"bf\" used as exporter in metrics pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_metrics_metrics.yaml",
@@ -1333,7 +1333,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" cannot connect from metrics to metrics: telemetry type is not supported",
+			expected: "connector \"bf\" used as exporter in metrics pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_metrics_logs.yaml",
@@ -1356,7 +1356,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" cannot connect from metrics to logs: telemetry type is not supported",
+			expected: "connector \"bf\" used as exporter in metrics pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_logs_traces.yaml",
@@ -1379,7 +1379,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" cannot connect from logs to traces: telemetry type is not supported",
+			expected: "connector \"bf\" used as exporter in logs pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_logs_metrics.yaml",
@@ -1402,7 +1402,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" cannot connect from logs to metrics: telemetry type is not supported",
+			expected: "connector \"bf\" used as exporter in logs pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_logs_logs.yaml",
@@ -1425,7 +1425,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" cannot connect from logs to logs: telemetry type is not supported",
+			expected: "connector \"bf\" used as exporter in logs pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "orphaned-connector-use-as-exporter",
