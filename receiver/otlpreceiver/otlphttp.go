@@ -40,7 +40,7 @@ func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *t
 		if consumererror.IsPermanent(err) {
 			writeError(resp, encoder, err, http.StatusBadRequest)
 		} else {
-			writeError(resp, encoder, err, http.StatusInternalServerError)
+			writeError(resp, encoder, err, http.StatusServiceUnavailable)
 		}
 		return
 	}
@@ -70,7 +70,7 @@ func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver 
 		if consumererror.IsPermanent(err) {
 			writeError(resp, encoder, err, http.StatusBadRequest)
 		} else {
-			writeError(resp, encoder, err, http.StatusInternalServerError)
+			writeError(resp, encoder, err, http.StatusServiceUnavailable)
 		}
 		return
 	}
@@ -100,7 +100,7 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.
 		if consumererror.IsPermanent(err) {
 			writeError(resp, encoder, err, http.StatusBadRequest)
 		} else {
-			writeError(resp, encoder, err, http.StatusInternalServerError)
+			writeError(resp, encoder, err, http.StatusServiceUnavailable)
 		}
 		return
 	}
