@@ -409,7 +409,7 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 		elapsed = make(chan time.Time, 1)
 		cfg     = ScraperControllerSettings{
 			CollectionInterval: time.Second,
-			Timeout:            300 * time.Millisecond,
+			InitialDelay:       300 * time.Millisecond,
 		}
 	)
 
