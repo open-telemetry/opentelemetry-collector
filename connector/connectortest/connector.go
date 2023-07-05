@@ -26,62 +26,57 @@ func NewNopCreateSettings() connector.CreateSettings {
 type nopConfig struct{}
 
 // NewNopFactory returns a connector.Factory that constructs nop processors.
-func NewNopFactory(opts ...connector.FactoryOption) connector.Factory {
-	if len(opts) == 0 {
-		opts = []connector.FactoryOption{
-			connector.WithTracesToTraces(CreateTracesToTracesConnector, component.StabilityLevelDevelopment),
-			connector.WithTracesToMetrics(CreateTracesToMetricsConnector, component.StabilityLevelDevelopment),
-			connector.WithTracesToLogs(CreateTracesToLogsConnector, component.StabilityLevelDevelopment),
-			connector.WithMetricsToTraces(CreateMetricsToTracesConnector, component.StabilityLevelDevelopment),
-			connector.WithMetricsToMetrics(CreateMetricsToMetricsConnector, component.StabilityLevelDevelopment),
-			connector.WithMetricsToLogs(CreateMetricsToLogsConnector, component.StabilityLevelDevelopment),
-			connector.WithLogsToTraces(CreateLogsToTracesConnector, component.StabilityLevelDevelopment),
-			connector.WithLogsToMetrics(CreateLogsToMetricsConnector, component.StabilityLevelDevelopment),
-			connector.WithLogsToLogs(CreateLogsToLogsConnector, component.StabilityLevelDevelopment),
-		}
-	}
+func NewNopFactory() connector.Factory {
 	return connector.NewFactory(
 		"nop",
 		func() component.Config {
 			return &nopConfig{}
 		},
-		opts...,
+		connector.WithTracesToTraces(createTracesToTracesConnector, component.StabilityLevelDevelopment),
+		connector.WithTracesToMetrics(createTracesToMetricsConnector, component.StabilityLevelDevelopment),
+		connector.WithTracesToLogs(createTracesToLogsConnector, component.StabilityLevelDevelopment),
+		connector.WithMetricsToTraces(createMetricsToTracesConnector, component.StabilityLevelDevelopment),
+		connector.WithMetricsToMetrics(createMetricsToMetricsConnector, component.StabilityLevelDevelopment),
+		connector.WithMetricsToLogs(createMetricsToLogsConnector, component.StabilityLevelDevelopment),
+		connector.WithLogsToTraces(createLogsToTracesConnector, component.StabilityLevelDevelopment),
+		connector.WithLogsToMetrics(createLogsToMetricsConnector, component.StabilityLevelDevelopment),
+		connector.WithLogsToLogs(createLogsToLogsConnector, component.StabilityLevelDevelopment),
 	)
 }
 
-func CreateTracesToTracesConnector(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Traces, error) {
+func createTracesToTracesConnector(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Traces, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func CreateTracesToMetricsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Traces, error) {
+func createTracesToMetricsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Traces, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func CreateTracesToLogsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Traces, error) {
+func createTracesToLogsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Traces, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func CreateMetricsToTracesConnector(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Metrics, error) {
+func createMetricsToTracesConnector(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Metrics, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func CreateMetricsToMetricsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Metrics, error) {
+func createMetricsToMetricsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Metrics, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func CreateMetricsToLogsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Metrics, error) {
+func createMetricsToLogsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Metrics, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func CreateLogsToTracesConnector(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Logs, error) {
+func createLogsToTracesConnector(context.Context, connector.CreateSettings, component.Config, consumer.Traces) (connector.Logs, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func CreateLogsToMetricsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Logs, error) {
+func createLogsToMetricsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Metrics) (connector.Logs, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
-func CreateLogsToLogsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Logs, error) {
+func createLogsToLogsConnector(context.Context, connector.CreateSettings, component.Config, consumer.Logs) (connector.Logs, error) {
 	return &nopConnector{Consumer: consumertest.NewNop()}, nil
 }
 
