@@ -102,6 +102,14 @@ func TestUnmarshalMetricReaders(t *testing.T) {
 				},
 			}}),
 		},
+		{
+			name: "valid pull reader type with name, valid prometheus exporter",
+			cfg: confmap.NewFromStringMap(map[string]any{"pull/prometheus1": PullMetricReader{
+				Exporter: MetricExporter{
+					Prometheus: &Prometheus{},
+				},
+			}}),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
