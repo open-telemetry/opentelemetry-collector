@@ -238,10 +238,12 @@ func TestTelemetryInit(t *testing.T) {
 			tel := newColTelemetry(tc.useOtel, tc.disableHighCard, tc.extendedConfig)
 			buildInfo := component.NewDefaultBuildInfo()
 			if tc.extendedConfig {
-				tc.cfg.Metrics.Readers = telemetry.MeterProviderJsonReaders{
-					"pull/prometheus": telemetry.PullMetricReader{
-						Exporter: telemetry.MetricExporter{
-							Prometheus: testutil.GetAvailableLocalAddressPrometheus(t),
+				tc.cfg.Metrics.Readers = []telemetry.MetricReader{
+					{
+						Pull: &telemetry.PullMetricReader{
+							Exporter: telemetry.MetricExporter{
+								Prometheus: testutil.GetAvailableLocalAddressPrometheus(t),
+							},
 						},
 					},
 				}

@@ -1,21 +1,20 @@
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
 component: service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "add ability to configure prometheus export via `readers`"
+note: Enable configuration of collector telemetry through prometheus reader
 
 # One or more tracking issues or pull requests related to the change
-issues: [7641]
+issues: []
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This enables end users to configure additional prometheus exporters for the collector's telemetry
-  via the `readers` configuration option. Configuring prometheus through the existing method
-  of setting the service::metrics::address will continue to work, and only log a warning for users
-  who have enabled the `telemetry.useOtelWithSDKConfigurationForInternalTelemetry` feature gate.
-
+  These options are still experimental. To enable them, users must enable both
+  `telemetry.useOtelForInternalMetrics` and `telemetry.useOtelWithSDKConfigurationForInternalTelemetry`
+  feature gates. This change updates `metric_readers` to `readers` to align with the configuration
+  working group.

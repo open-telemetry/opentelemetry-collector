@@ -108,26 +108,25 @@ func (tel *telemetryInitializer) initMetrics(res *resource.Resource, logger *zap
 			return err
 		}
 		if cfg.Metrics.Readers == nil {
-			cfg.Metrics.Readers = telemetry.MeterProviderJsonReaders{}
+			cfg.Metrics.Readers = []telemetry.MetricReader{}
 		}
-		cfg.Metrics.Readers["pull/serviceaddress"] = telemetry.PullMetricReader{
-			Exporter: telemetry.MetricExporter{
-				Prometheus: &telemetry.Prometheus{
-					Host: &host,
-					Port: &portInt,
+		cfg.Metrics.Readers = append(cfg.Metrics.Readers, telemetry.MetricReader{
+			Pull: &telemetry.PullMetricReader{
+				Exporter: telemetry.MetricExporter{
+					Prometheus: &telemetry.Prometheus{
+						Host: &host,
+						Port: &portInt,
+					},
 				},
 			},
-		}
+		})
 	}
 
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 	opts := []sdkmetric.Option{}
-	for name, reader := range cfg.Metrics.Readers {
-		// @codeboten: server returned here only happens when a pull based metric
-		// reader is configured, this could be refactored to pass in a
-		// func to add the server to the list of servers. another thing that would
-		// be nice is not to have to pass down the asyncErrorChannel
-		r, server, err := proctelemetry.InitMetricReader(context.Background(), name, reader, asyncErrorChannel)
+	for _, reader := range cfg.Metrics.Readers {
+		// https://github.com/open-telemetry/opentelemetry-collector/issues/8045
+		r, server, err := proctelemetry.InitMetricReader(context.Background(), reader, asyncErrorChannel)
 		if err != nil {
 			return err
 		}

@@ -24,29 +24,33 @@ func intPtr(i int) *int {
 func TestMetricReader(t *testing.T) {
 	testCases := []struct {
 		name   string
-		reader any
+		reader telemetry.MetricReader
 		args   any
 		err    error
 	}{
 		{
 			name: "noreader",
-			err:  errors.New("unsupported metric reader type \"noreader\""),
+			err:  errors.New("unsupported metric reader type {<nil> <nil>}"),
 		},
 		{
 			name: "pull/prometheus-invalid-config-no-host",
-			reader: telemetry.PullMetricReader{
-				Exporter: telemetry.MetricExporter{
-					Prometheus: &telemetry.Prometheus{},
+			reader: telemetry.MetricReader{
+				Pull: &telemetry.PullMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Prometheus: &telemetry.Prometheus{},
+					},
 				},
 			},
 			err: errors.New("host must be specified"),
 		},
 		{
 			name: "pull/prometheus-invalid-config-no-port",
-			reader: telemetry.PullMetricReader{
-				Exporter: telemetry.MetricExporter{
-					Prometheus: &telemetry.Prometheus{
-						Host: strPtr("locahost"),
+			reader: telemetry.MetricReader{
+				Pull: &telemetry.PullMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Prometheus: &telemetry.Prometheus{
+							Host: strPtr("locahost"),
+						},
 					},
 				},
 			},
@@ -54,20 +58,22 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "pull/prometheus-invalid-config-no-port",
-			reader: telemetry.PullMetricReader{
-				Exporter: telemetry.MetricExporter{
-					Prometheus: &telemetry.Prometheus{
-						Host: strPtr("locahost"),
-						Port: intPtr(8080),
+			reader: telemetry.MetricReader{
+				Pull: &telemetry.PullMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Prometheus: &telemetry.Prometheus{
+							Host: strPtr("locahost"),
+							Port: intPtr(8080),
+						},
 					},
 				},
 			},
 		},
 	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, _, err := InitMetricReader(context.Background(), tc.name, tc.reader, make(chan error))
-			assert.Equal(t, tc.err, err)
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := InitMetricReader(context.Background(), tt.reader, make(chan error))
+			assert.Equal(t, tt.err, err)
 		})
 	}
 }

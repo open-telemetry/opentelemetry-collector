@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -32,12 +31,6 @@ const (
 
 	// http Instrumentation Name
 	HTTPInstrumentation = "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-
-	// supported metric readers
-	pullMetricReader = "pull"
-
-	// supported exporters
-	prometheusExporter = "prometheus"
 )
 
 var (
@@ -55,18 +48,11 @@ var (
 	}
 )
 
-func InitMetricReader(ctx context.Context, name string, reader any, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
-	readerType := strings.Split(name, "/")[0]
-	switch readerType {
-	case pullMetricReader:
-		r, ok := reader.(telemetry.PullMetricReader)
-		if !ok {
-			return nil, nil, fmt.Errorf("invalid metric reader configuration: %v", reader)
-		}
-		return initExporter(ctx, r.Exporter, asyncErrorChannel)
-	default:
-		return nil, nil, fmt.Errorf("unsupported metric reader type %q", readerType)
+func InitMetricReader(ctx context.Context, reader telemetry.MetricReader, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+	if reader.Pull != nil {
+		return initExporter(ctx, reader.Pull.Exporter, asyncErrorChannel)
 	}
+	return nil, nil, fmt.Errorf("unsupported metric reader type %v", reader)
 }
 
 func InitOpenTelemetry(res *resource.Resource, options []sdkmetric.Option, disableHighCardinality bool) (*sdkmetric.MeterProvider, error) {
@@ -148,11 +134,9 @@ func initPrometheusExporter(prometheusConfig *telemetry.Prometheus, asyncErrorCh
 		return nil, nil, fmt.Errorf("port must be specified")
 	}
 	wrappedRegisterer := prometheus.WrapRegistererWithPrefix("otelcol_", promRegistry)
-	// We can remove `otelprom.WithoutUnits()` when the otel-go start exposing prometheus metrics using the OpenMetrics format
-	// which includes metric units that prometheusreceiver uses to trim unit's suffixes from metric names.
-	// https://github.com/open-telemetry/opentelemetry-go/issues/3468
 	exporter, err := otelprom.New(
 		otelprom.WithRegisterer(wrappedRegisterer),
+		// https://github.com/open-telemetry/opentelemetry-collector/issues/8043
 		otelprom.WithoutUnits(),
 		// Disabled for the moment until this becomes stable, and we are ready to break backwards compatibility.
 		otelprom.WithoutScopeInfo())

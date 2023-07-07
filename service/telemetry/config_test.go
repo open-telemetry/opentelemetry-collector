@@ -7,9 +7,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -43,8 +46,8 @@ func TestLoadConfig(t *testing.T) {
 			cfg: &Config{
 				Metrics: MetricsConfig{
 					Level: configtelemetry.LevelBasic,
-					Readers: MeterProviderJsonReaders{
-						"pull/prometheus": PullMetricReader{},
+					Readers: []MetricReader{
+						{Pull: &PullMetricReader{}},
 					},
 				},
 			},
@@ -64,7 +67,23 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
-func TestUnmarshalMetricReaders(t *testing.T) {
+// Force the state of feature gate for a test
+func setFeatureGateForTest(t testing.TB, gate *featuregate.Gate, enabled bool) func() {
+	originalValue := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	return func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), originalValue))
+	}
+}
+
+func TestUnmarshalMetricReaderWithGateOff(t *testing.T) {
+	defer setFeatureGateForTest(t, obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate, false)()
+	reader := MetricReader{}
+	assert.NoError(t, reader.Unmarshal(confmap.NewFromStringMap(map[string]any{"invalid": "invalid"})))
+}
+
+func TestUnmarshalMetricReader(t *testing.T) {
+	defer setFeatureGateForTest(t, obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate, true)()
 	tests := []struct {
 		name string
 		cfg  *confmap.Conf
@@ -73,12 +92,21 @@ func TestUnmarshalMetricReaders(t *testing.T) {
 		{
 			name: "invalid config",
 			cfg:  confmap.NewFromStringMap(map[string]any{"invalid": "invalid"}),
-			err:  "unsupported metric reader type \"invalid\"",
+			err:  "unsupported metric reader type [invalid]",
+		},
+		{
+			name: "invalid pull reader type with valid prometheus exporter",
+			cfg: confmap.NewFromStringMap(map[string]any{"pull/prometheus1": PullMetricReader{
+				Exporter: MetricExporter{
+					Prometheus: &Prometheus{},
+				},
+			}}),
+			err: "unsupported metric reader type [pull/prometheus1]",
 		},
 		{
 			name: "valid reader type, invalid config",
 			cfg:  confmap.NewFromStringMap(map[string]any{"pull": "garbage"}),
-			err:  "invalid pull metric reader configuration: '' expected a map, got 'string'",
+			err:  "invalid metric reader configuration",
 		},
 		{
 			name: "valid pull reader type, no exporter",
@@ -102,18 +130,10 @@ func TestUnmarshalMetricReaders(t *testing.T) {
 				},
 			}}),
 		},
-		{
-			name: "valid pull reader type with name, valid prometheus exporter",
-			cfg: confmap.NewFromStringMap(map[string]any{"pull/prometheus1": PullMetricReader{
-				Exporter: MetricExporter{
-					Prometheus: &Prometheus{},
-				},
-			}}),
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader := make(MeterProviderJsonReaders)
+			reader := MetricReader{}
 			err := reader.Unmarshal(tt.cfg)
 			if len(tt.err) > 0 {
 				assert.ErrorContains(t, err, tt.err)

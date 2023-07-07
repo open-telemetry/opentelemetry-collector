@@ -5,13 +5,12 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
 // Config defines the configurable settings for service telemetry.
@@ -111,7 +110,7 @@ type MetricsConfig struct {
 
 	// Readers allow configuration of metric readers to emit metrics to
 	// any number of supported backends.
-	Readers MeterProviderJsonReaders `mapstructure:"readers"`
+	Readers []MetricReader `mapstructure:"readers"`
 }
 
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
@@ -127,37 +126,33 @@ type TracesConfig struct {
 func (c *Config) Validate() error {
 	// Check when service telemetry metric level is not none, the metrics address should not be empty
 	if c.Metrics.Level != configtelemetry.LevelNone && c.Metrics.Address == "" && len(c.Metrics.Readers) == 0 {
-		return fmt.Errorf("collector telemetry metric address should exist when metric level is not none")
+		return fmt.Errorf("collector telemetry metric address or reader should exist when metric level is not none")
 	}
 
 	return nil
 }
 
-func (mrs *MeterProviderJsonReaders) Unmarshal(conf *confmap.Conf) error {
+func (mr *MetricReader) Unmarshal(conf *confmap.Conf) error {
+	if !obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled() {
+		fmt.Println(obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled())
+		// only unmarshal if feature gate is enabled
+		return nil
+	}
+
 	if conf == nil {
 		return nil
 	}
 
-	if err := conf.Unmarshal(mrs); err != nil {
-		return err
+	if err := conf.Unmarshal(mr); err != nil {
+		return fmt.Errorf("invalid metric reader configuration: %w", err)
 	}
 
-	for key, reader := range *mrs {
-		readerType := strings.Split(key, "/")[0]
-		switch readerType {
-		case "pull":
-			var r PullMetricReader
-			if err := mapstructure.Decode(reader, &r); err != nil {
-				return fmt.Errorf("invalid pull metric reader configuration: %w", err)
-			}
-			(*mrs)[key] = r
-			if r.Exporter.Prometheus == nil {
-				return fmt.Errorf("invalid exporter configuration")
-			}
-
-		default:
-			return fmt.Errorf("unsupported metric reader type %q", readerType)
+	if mr.Pull != nil {
+		if mr.Pull.Exporter.Prometheus == nil {
+			return fmt.Errorf("invalid exporter configuration")
 		}
+		return nil
 	}
-	return nil
+
+	return fmt.Errorf("unsupported metric reader type %s", conf.AllKeys())
 }
