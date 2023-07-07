@@ -375,6 +375,38 @@ func TestMap_EnsureCapacity(t *testing.T) {
 	assert.Equal(t, 8, cap(*am.getOrig()))
 }
 
+func TestMap_EnsureCapacity_Existing(t *testing.T) {
+	am := NewMap()
+	am.PutStr("foo", "bar")
+
+	assert.Equal(t, 1, am.Len())
+
+	// Add more capacity.
+	am.EnsureCapacity(5)
+
+	// Ensure previously existing element is still there.
+	assert.Equal(t, 1, am.Len())
+	v, ok := am.Get("foo")
+	assert.Equal(t, v.Str(), "bar")
+	assert.True(t, ok)
+
+	assert.Equal(t, 5, cap(*am.getOrig()))
+
+	// Add one more element.
+	am.PutStr("abc", "xyz")
+
+	// Verify that both elements are there.
+	assert.Equal(t, 2, am.Len())
+
+	v, ok = am.Get("foo")
+	assert.Equal(t, v.Str(), "bar")
+	assert.True(t, ok)
+
+	v, ok = am.Get("abc")
+	assert.Equal(t, v.Str(), "xyz")
+	assert.True(t, ok)
+}
+
 func TestMap_Clear(t *testing.T) {
 	am := NewMap()
 	assert.Nil(t, *am.getOrig())
