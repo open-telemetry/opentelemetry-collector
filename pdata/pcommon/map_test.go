@@ -375,7 +375,7 @@ func TestMap_EnsureCapacity(t *testing.T) {
 	assert.Equal(t, 8, cap(*am.getOrig()))
 }
 
-func TestMap_EnsureCapacity_Exiting(t *testing.T) {
+func TestMap_EnsureCapacity_Existing(t *testing.T) {
 	am := NewMap()
 	am.PutStr("foo", "bar")
 
