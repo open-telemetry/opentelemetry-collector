@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -414,10 +415,10 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *errOrSinkConsumer, enco
 		errStatus := &spb.Status{}
 		assert.NoError(t, json.Unmarshal(respBytes, errStatus))
 		if s, ok := status.FromError(expectedErr); ok {
-			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 			assert.True(t, proto.Equal(errStatus, s.Proto()))
 		} else {
-			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
 		}
 		require.Len(t, allTraces, 0)
@@ -544,10 +545,10 @@ func testHTTPProtobufRequest(
 		errStatus := &spb.Status{}
 		assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
 		if s, ok := status.FromError(expectedErr); ok {
-			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 			assert.True(t, proto.Equal(errStatus, s.Proto()))
 		} else {
-			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
 		}
 		require.Len(t, allTraces, 0)
@@ -805,7 +806,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 		} else {
 			errStatus := &spb.Status{}
 			assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
-			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 			assert.Equal(t, ingestionState.expectedCode, codes.Code(errStatus.Code))
 		}
 	}
@@ -952,6 +953,65 @@ func TestHTTPMaxRequestBodySize_OK(t *testing.T) {
 
 func TestHTTPMaxRequestBodySize_TooLarge(t *testing.T) {
 	testHTTPMaxRequestBodySizeJSON(t, traceJSON, len(traceJSON)-1, 400)
+}
+
+func TestHTTPErrors_PermanentAndNonPermanent(t *testing.T) {
+	errorTypes := []struct {
+		permanent          bool
+		nonPermanent       bool
+		expectedCode       codes.Code
+		expectedStatusCode int
+	}{
+		{
+			expectedCode:       codes.InvalidArgument,
+			expectedStatusCode: http.StatusBadRequest,
+			permanent:          true,
+			nonPermanent:       false,
+		},
+		{
+			expectedCode:       codes.Unknown,
+			expectedStatusCode: http.StatusServiceUnavailable,
+			permanent:          false,
+			nonPermanent:       true,
+		},
+		{
+			expectedCode:       codes.OK,
+			expectedStatusCode: http.StatusOK,
+			permanent:          false,
+			nonPermanent:       false,
+		},
+	}
+	addr := testutil.GetAvailableLocalAddress(t)
+
+	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
+
+	ocr := newHTTPReceiver(t, addr, sink, nil)
+	require.NotNil(t, ocr)
+	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
+
+	for _, errorType := range errorTypes {
+		if errorType.permanent {
+			sink.SetConsumeError(consumererror.NewPermanent(errors.New("permanent error")))
+		} else if errorType.nonPermanent {
+			sink.SetConsumeError(errors.New("non-permanent error"))
+		} else {
+			sink.SetConsumeError(nil)
+		}
+		req, err := http.NewRequest(http.MethodPost, "http://"+addr+"/v1/traces", bytes.NewReader(traceJSON))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		respBytes, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.Equal(t, errorType.expectedStatusCode, resp.StatusCode)
+		if errorType.expectedCode != codes.OK {
+			errStatus := &spb.Status{}
+			assert.NoError(t, json.Unmarshal(respBytes, errStatus))
+			assert.Equal(t, errorType.expectedCode, codes.Code(errStatus.Code))
+		}
+	}
 }
 
 func newGRPCReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consumer.Metrics) component.Component {
