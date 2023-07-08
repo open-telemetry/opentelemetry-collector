@@ -961,18 +961,21 @@ func TestHTTPErrors_PermanentAndNonPermanent(t *testing.T) {
 		nonPermanent       bool
 		expectedCode       codes.Code
 		expectedStatusCode int
+		err                error
 	}{
 		{
 			expectedCode:       codes.InvalidArgument,
 			expectedStatusCode: http.StatusBadRequest,
 			permanent:          true,
 			nonPermanent:       false,
+			err:                consumererror.NewPermanent(errors.New("permanent error")),
 		},
 		{
 			expectedCode:       codes.Unknown,
 			expectedStatusCode: http.StatusServiceUnavailable,
 			permanent:          false,
 			nonPermanent:       true,
+			err:                errors.New("non-permanent error"),
 		},
 		{
 			expectedCode:       codes.OK,
@@ -991,13 +994,7 @@ func TestHTTPErrors_PermanentAndNonPermanent(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 	for _, errorType := range errorTypes {
-		if errorType.permanent {
-			sink.SetConsumeError(consumererror.NewPermanent(errors.New("permanent error")))
-		} else if errorType.nonPermanent {
-			sink.SetConsumeError(errors.New("non-permanent error"))
-		} else {
-			sink.SetConsumeError(nil)
-		}
+		sink.SetConsumeError(errorType.err)
 		req, err := http.NewRequest(http.MethodPost, "http://"+addr+"/v1/traces", bytes.NewReader(traceJSON))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
