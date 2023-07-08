@@ -12,14 +12,14 @@ import (
 )
 
 // NewFlag returns a flag.Value that directly applies feature gate statuses to a Registry.
-func NewFlag(reg *Registry, strict bool) flag.Value {
+func NewFlag(reg *Registry, strict *bool) flag.Value {
 	return &flagValue{reg: reg, strict: strict}
 }
 
 // flagValue implements the flag.Value interface and directly applies feature gate statuses to a Registry.
 type flagValue struct {
 	reg    *Registry
-	strict bool
+	strict *bool
 }
 
 func (f *flagValue) String() string {
@@ -62,15 +62,15 @@ func (f *flagValue) Set(s string) error {
 	f.reg.VisitAll(func(gate *Gate) {
 		enabled, ok := gatesEnabled[gate.id]
 		if !ok {
-			if f.strict && (gate.stage == StageAlpha || gate.stage == StageBeta) {
+			if *f.strict && (gate.stage == StageAlpha || gate.stage == StageBeta) {
 				errs = multierr.Append(errs, fmt.Errorf("gate %q is in %s and is not explicitly configured", gate.id, gate.stage))
 			}
 			return
 		}
-		if f.strict && !enabled && gate.stage == StageBeta {
+		if *f.strict && !enabled && gate.stage == StageBeta {
 			errs = multierr.Append(errs, fmt.Errorf("gate %q is in beta and must be explicitly enabled", gate.id))
 		}
-		if f.strict && gate.stage == StageStable {
+		if *f.strict && gate.stage == StageStable {
 			errs = multierr.Append(errs, fmt.Errorf("gate %q is stable and must not be configured", gate.id))
 		}
 

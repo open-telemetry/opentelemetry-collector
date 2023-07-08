@@ -51,11 +51,12 @@ func flags(reg *featuregate.Registry) *flag.FlagSet {
 			return nil
 		})
 
-	flagSet.Var(featuregate.NewFlag(reg, false), featureGatesFlag,
-		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
-	flagSet.Var(featuregate.NewFlag(reg, true), featureGatesStrictFlag,
-		"Comma-delimited list of feature gate identifiers validated with strict mode. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
+	strict := flagSet.Bool(featureGatesStrictFlag, false,
+		"Apply strict validation of feature gates.")
+	flag := featuregate.NewFlag(reg, strict)
 
+	flagSet.Var(flag, featureGatesFlag,
+		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
 	return flagSet
 }
 

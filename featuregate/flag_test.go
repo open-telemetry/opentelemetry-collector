@@ -167,7 +167,7 @@ func TestNewFlag(t *testing.T) {
 			reg.MustRegister("beta", StageBeta)
 			reg.MustRegister("deprecated", StageDeprecated, WithRegisterToVersion("1.0.0"))
 			reg.MustRegister("stable", StageStable, WithRegisterToVersion("1.0.0"))
-			v := NewFlag(reg, tt.strict)
+			v := NewFlag(reg, &tt.strict)
 			if tt.expectedSetErr != "" {
 				require.ErrorContains(t, v.Set(tt.input), tt.expectedSetErr)
 			} else {
