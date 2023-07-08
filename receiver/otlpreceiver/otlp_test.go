@@ -169,7 +169,7 @@ func TestJsonHttp(t *testing.T) {
 			name:        "GRPCError",
 			encoding:    "",
 			contentType: "application/json",
-			err:         status.New(codes.Internal, "").Err(),
+			err:         status.New(codes.Unavailable, "").Err(),
 		},
 	}
 	addr := testutil.GetAvailableLocalAddress(t)
@@ -418,7 +418,7 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *errOrSinkConsumer, enco
 			assert.True(t, proto.Equal(errStatus, s.Proto()))
 		} else {
 			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
+			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unavailable), Message: "my error"}))
 		}
 		require.Len(t, allTraces, 0)
 	}
@@ -450,7 +450,7 @@ func TestProtoHttp(t *testing.T) {
 		{
 			name:     "GRPCError",
 			encoding: "",
-			err:      status.New(codes.Internal, "").Err(),
+			err:      status.New(codes.Unavailable, "").Err(),
 		},
 	}
 	addr := testutil.GetAvailableLocalAddress(t)
@@ -543,12 +543,12 @@ func testHTTPProtobufRequest(
 	} else {
 		errStatus := &spb.Status{}
 		assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
-		if s, ok := status.FromError(expectedErr); ok {
+		if _, ok := status.FromError(expectedErr); ok {
 			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-			assert.True(t, proto.Equal(errStatus, s.Proto()))
+			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unavailable), Message: ""}))
 		} else {
 			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
+			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unavailable), Message: "my error"}))
 		}
 		require.Len(t, allTraces, 0)
 	}
@@ -691,7 +691,7 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 		},
 		{
 			okToIngest:   false,
-			expectedCode: codes.Unknown,
+			expectedCode: codes.Unavailable,
 		},
 		{
 			okToIngest:   true,
@@ -758,7 +758,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 		},
 		{
 			okToIngest:   false,
-			expectedCode: codes.Unknown,
+			expectedCode: codes.Unavailable,
 		},
 		{
 			okToIngest:   true,

@@ -7,8 +7,11 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const dataFormatProtobuf = "protobuf"
@@ -31,6 +34,12 @@ func New(nextConsumer consumer.Metrics, obsrecv *obsreport.Receiver) *Receiver {
 // Export implements the service Export metrics func.
 func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
 	md := req.Metrics()
+	getCode := func(isPermanent bool) codes.Code {
+		if isPermanent {
+			return codes.InvalidArgument
+		}
+		return codes.Unavailable
+	}
 	dataPointCount := md.DataPointCount()
 	if dataPointCount == 0 {
 		return pmetricotlp.NewExportResponse(), nil
@@ -39,6 +48,16 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	ctx = r.obsrecv.StartMetricsOp(ctx)
 	err := r.nextConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, dataFormatProtobuf, dataPointCount, err)
+	// Use appropiate status codes for permanent/non-permanent errors
+	if err != nil {
+		s, ok := status.FromError(err)
+		if !ok {
+			s = status.New(getCode(consumererror.IsPermanent(err)), err.Error())
+		} else {
+			s = status.New(getCode(consumererror.IsPermanent(err)), s.Message())
+		}
+		return pmetricotlp.NewExportResponse(), s.Err()
+	}
 
 	return pmetricotlp.NewExportResponse(), err
 }

@@ -7,8 +7,11 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const dataFormatProtobuf = "protobuf"
@@ -31,6 +34,12 @@ func New(nextConsumer consumer.Traces, obsrecv *obsreport.Receiver) *Receiver {
 // Export implements the service Export traces func.
 func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	td := req.Traces()
+	getCode := func(isPermanent bool) codes.Code {
+		if isPermanent {
+			return codes.InvalidArgument
+		}
+		return codes.Unavailable
+	}
 	// We need to ensure that it propagates the receiver name as a tag
 	numSpans := td.SpanCount()
 	if numSpans == 0 {
@@ -41,5 +50,15 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	err := r.nextConsumer.ConsumeTraces(ctx, td)
 	r.obsrecv.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
 
-	return ptraceotlp.NewExportResponse(), err
+	// Use appropiate status codes for permanent/non-permanent errors
+	if err != nil {
+		s, ok := status.FromError(err)
+		if !ok {
+			s = status.New(getCode(consumererror.IsPermanent(err)), err.Error())
+		} else {
+			s = status.New(getCode(consumererror.IsPermanent(err)), s.Message())
+		}
+		return ptraceotlp.NewExportResponse(), s.Err()
+	}
+	return ptraceotlp.NewExportResponse(), nil
 }
