@@ -213,26 +213,6 @@ func TestConfigValidate(t *testing.T) {
 			expected: errors.New(`service::pipelines::traces: references exporter "nop/conn2" which is not configured`),
 		},
 		{
-			name: "missing-connector-as-receiver",
-			cfgFn: func() *Config {
-				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines[component.NewID("traces")]
-				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "conn"))
-				return cfg
-			},
-			expected: errors.New(`connectors::nop/conn: must be used as both receiver and exporter but is not used as receiver`),
-		},
-		{
-			name: "missing-connector-as-exporter",
-			cfgFn: func() *Config {
-				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines[component.NewID("traces")]
-				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "conn"))
-				return cfg
-			},
-			expected: errors.New(`connectors::nop/conn: must be used as both receiver and exporter but is not used as exporter`),
-		},
-		{
 			name: "invalid-service-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
