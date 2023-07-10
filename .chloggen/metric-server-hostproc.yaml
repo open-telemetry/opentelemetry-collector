@@ -5,7 +5,7 @@ change_type: bug_fix
 component: service/proctelemetry
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Make sure OTEL internal metrics is reading and reporting its own process data when HOST_PROC is set set
+note: Make sure OTEL internal metrics is reading and reporting its own process data when HOST_PROC is set
 
 # One or more tracking issues or pull requests related to the change
 issues: [7434]
