@@ -16,6 +16,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -51,7 +52,16 @@ func TestExport_ErrorConsumer(t *testing.T) {
 
 	traceClient := makeTraceServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := traceClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
+	assert.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
+	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
+}
+func TestExport_PermanentErrorConsumer(t *testing.T) {
+	ld := testdata.GenerateTraces(1)
+	req := ptraceotlp.NewExportRequestFromTraces(ld)
+
+	traceClient := makeTraceServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("my error"))))
+	resp, err := traceClient.Export(context.Background(), req)
+	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = Permanent error: my error")
 	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
 }
 

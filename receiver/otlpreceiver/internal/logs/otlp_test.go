@@ -16,6 +16,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -47,13 +48,23 @@ func TestExport_EmptyRequest(t *testing.T) {
 	assert.NotNil(t, resp, "The response is missing")
 }
 
-func TestExport_ErrorConsumer(t *testing.T) {
+func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 	ld := testdata.GenerateLogs(1)
 	req := plogotlp.NewExportRequestFromLogs(ld)
 
 	logClient := makeLogsServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := logClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
+	assert.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
+	assert.Equal(t, plogotlp.ExportResponse{}, resp)
+}
+
+func TestExport_PermanentErrorConsumer(t *testing.T) {
+	ld := testdata.GenerateLogs(1)
+	req := plogotlp.NewExportRequestFromLogs(ld)
+
+	logClient := makeLogsServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("my error"))))
+	resp, err := logClient.Export(context.Background(), req)
+	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = Permanent error: my error")
 	assert.Equal(t, plogotlp.ExportResponse{}, resp)
 }
 

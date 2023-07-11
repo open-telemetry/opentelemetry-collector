@@ -543,9 +543,9 @@ func testHTTPProtobufRequest(
 	} else {
 		errStatus := &spb.Status{}
 		assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
-		if _, ok := status.FromError(expectedErr); ok {
+		if s, ok := status.FromError(expectedErr); ok {
 			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unavailable), Message: ""}))
+			assert.True(t, proto.Equal(errStatus, s.Proto()))
 		} else {
 			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unavailable), Message: "my error"}))
