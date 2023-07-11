@@ -33,8 +33,11 @@ type PipelineWatcher interface {
 	NotReady() error
 }
 
+// ConfigWatcher is an interface that should be implemented by an extension that
+// wishes to be notified of the Collector's effective configuration.
 type ConfigWatcher interface {
-	ConfigResolved(ctx context.Context, conf *confmap.Conf) error
+	// NotifyConfig notifies the extension of the Collector's current effective configuration.
+	NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 }
 
 // CreateSettings is passed to Factory.Create(...) function.

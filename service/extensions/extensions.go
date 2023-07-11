@@ -73,12 +73,12 @@ func (bes *Extensions) NotifyPipelineNotReady() error {
 	return errs
 }
 
-func (bes *Extensions) NotifyConfigResolved(ctx context.Context, conf *confmap.Conf) error {
+func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
 	var errs error
 	for _, ext := range bes.extMap {
 		if cw, ok := ext.(extension.ConfigWatcher); ok {
 			clonedConf := confmap.NewFromStringMap(conf.ToStringMap())
-			errs = multierr.Append(errs, cw.ConfigResolved(ctx, clonedConf))
+			errs = multierr.Append(errs, cw.NotifyConfig(ctx, clonedConf))
 		}
 	}
 	return errs

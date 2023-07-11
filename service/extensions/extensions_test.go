@@ -174,7 +174,7 @@ func TestNotifyConfigResolved(t *testing.T) {
 				Factories: tt.factories,
 			}, tt.serviceExtensions)
 			assert.NoError(t, err)
-			errs := extensions.NotifyConfigResolved(context.Background(), confmap.NewFromStringMap(map[string]interface{}{}))
+			errs := extensions.NotifyConfig(context.Background(), confmap.NewFromStringMap(map[string]interface{}{}))
 			assert.Equal(t, tt.want, errs)
 		})
 	}
