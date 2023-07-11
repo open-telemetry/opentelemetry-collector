@@ -455,6 +455,8 @@ package test
 func DoFoo() {}
 ```
 
+#### End-user impacting changes
+
 When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it
 behind a [feature
 gate](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/)
