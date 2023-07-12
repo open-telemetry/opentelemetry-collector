@@ -34,12 +34,6 @@ func New(nextConsumer consumer.Traces, obsrecv *obsreport.Receiver) *Receiver {
 // Export implements the service Export traces func.
 func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	td := req.Traces()
-	getCode := func(isPermanent bool) codes.Code {
-		if isPermanent {
-			return codes.InvalidArgument
-		}
-		return codes.Unavailable
-	}
 	// We need to ensure that it propagates the receiver name as a tag
 	numSpans := td.SpanCount()
 	if numSpans == 0 {
@@ -54,9 +48,11 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	if err != nil {
 		s, ok := status.FromError(err)
 		if !ok {
-			s = status.New(getCode(consumererror.IsPermanent(err)), err.Error())
-		} else {
-			s = status.New(getCode(consumererror.IsPermanent(err)), s.Message())
+			code := codes.Unavailable
+			if consumererror.IsPermanent(err) {
+				code = codes.InvalidArgument
+			}
+			s = status.New(code, err.Error())
 		}
 		return ptraceotlp.NewExportResponse(), s.Err()
 	}

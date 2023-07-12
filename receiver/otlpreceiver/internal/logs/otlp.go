@@ -38,12 +38,6 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 	if numSpans == 0 {
 		return plogotlp.NewExportResponse(), nil
 	}
-	getCode := func(isPermanent bool) codes.Code {
-		if isPermanent {
-			return codes.InvalidArgument
-		}
-		return codes.Unavailable
-	}
 
 	ctx = r.obsrecv.StartLogsOp(ctx)
 	err := r.nextConsumer.ConsumeLogs(ctx, ld)
@@ -52,9 +46,11 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 	if err != nil {
 		s, ok := status.FromError(err)
 		if !ok {
-			s = status.New(getCode(consumererror.IsPermanent(err)), err.Error())
-		} else {
-			s = status.New(getCode(consumererror.IsPermanent(err)), s.Message())
+			code := codes.Unavailable
+			if consumererror.IsPermanent(err) {
+				code = codes.InvalidArgument
+			}
+			s = status.New(code, err.Error())
 		}
 		return plogotlp.NewExportResponse(), s.Err()
 	}

@@ -46,7 +46,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 	assert.NotNil(t, resp, "The response is missing")
 }
 
-func TestExport_ErrorConsumer(t *testing.T) {
+func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 	td := testdata.GenerateTraces(1)
 	req := ptraceotlp.NewExportRequestFromTraces(td)
 

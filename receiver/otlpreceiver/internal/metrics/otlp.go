@@ -34,12 +34,6 @@ func New(nextConsumer consumer.Metrics, obsrecv *obsreport.Receiver) *Receiver {
 // Export implements the service Export metrics func.
 func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
 	md := req.Metrics()
-	getCode := func(isPermanent bool) codes.Code {
-		if isPermanent {
-			return codes.InvalidArgument
-		}
-		return codes.Unavailable
-	}
 	dataPointCount := md.DataPointCount()
 	if dataPointCount == 0 {
 		return pmetricotlp.NewExportResponse(), nil
@@ -52,9 +46,11 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	if err != nil {
 		s, ok := status.FromError(err)
 		if !ok {
-			s = status.New(getCode(consumererror.IsPermanent(err)), err.Error())
-		} else {
-			s = status.New(getCode(consumererror.IsPermanent(err)), s.Message())
+			code := codes.Unavailable
+			if consumererror.IsPermanent(err) {
+				code = codes.InvalidArgument
+			}
+			s = status.New(code, err.Error())
 		}
 		return pmetricotlp.NewExportResponse(), s.Err()
 	}

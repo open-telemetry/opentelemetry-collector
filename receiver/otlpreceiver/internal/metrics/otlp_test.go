@@ -48,7 +48,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 	require.NotNil(t, resp)
 }
 
-func TestExport_ErrorConsumer(t *testing.T) {
+func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 
@@ -57,6 +57,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	assert.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
 	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
 }
+
 func TestExport_PermanentErrorConsumer(t *testing.T) {
 	ld := testdata.GenerateMetrics(1)
 	req := pmetricotlp.NewExportRequestFromMetrics(ld)
