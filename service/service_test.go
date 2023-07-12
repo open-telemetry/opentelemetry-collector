@@ -537,7 +537,7 @@ func (comp *configWatcherExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (comp *configWatcherExtension) ConfigResolved(_ context.Context, _ *confmap.Conf) error {
+func (comp *configWatcherExtension) NotifyConfig(_ context.Context, _ *confmap.Conf) error {
 	return errors.New("Failed to resolve config")
 }
 

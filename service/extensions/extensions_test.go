@@ -92,7 +92,7 @@ func TestBuildExtensions(t *testing.T) {
 	}
 }
 
-func TestNotifyConfigResolved(t *testing.T) {
+func TestNotifyConfig(t *testing.T) {
 	notificationError := errors.New("Error processing config")
 	nopExtensionFactory := extensiontest.NewNopFactory()
 	nopExtensionConfig := nopExtensionFactory.CreateDefaultConfig()
@@ -192,7 +192,7 @@ func (comp *configWatcherExtension) Shutdown(_ context.Context) error {
 	return comp.fn()
 }
 
-func (comp *configWatcherExtension) ConfigResolved(_ context.Context, _ *confmap.Conf) error {
+func (comp *configWatcherExtension) NotifyConfig(_ context.Context, _ *confmap.Conf) error {
 	return comp.fn()
 }
 

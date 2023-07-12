@@ -98,3 +98,33 @@ func TestConfigProviderFile(t *testing.T) {
 
 	assert.EqualValues(t, configNop, cfg)
 }
+
+func TestGetConfmap(t *testing.T) {
+	configPath := filepath.Join("testdata", "otelcol-nop.yaml")
+	uriLocation := "file:" + configPath
+	provider := fileprovider.New()
+	set := ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs:      []string{uriLocation},
+			Providers: map[string]confmap.Provider{provider.Scheme(): provider},
+		},
+	}
+
+	configBytes, err := os.ReadFile(configPath)
+	require.NoError(t, err)
+
+	yamlMap := map[string]any{}
+	err = yaml.Unmarshal(configBytes, yamlMap)
+	require.NoError(t, err)
+
+	cp, err := NewConfigProvider(set)
+	require.NoError(t, err)
+
+	cmp, ok := cp.(ConfmapProvider)
+	require.True(t, ok)
+
+	cmap, err := cmp.GetConfmap(context.Background())
+	require.NoError(t, err)
+
+	assert.EqualValues(t, cmap.ToStringMap(), yamlMap)
+}
