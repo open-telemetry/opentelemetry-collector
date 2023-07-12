@@ -100,8 +100,7 @@ func TestConfigProviderFile(t *testing.T) {
 }
 
 func TestGetConfmap(t *testing.T) {
-	configPath := filepath.Join("testdata", "otelcol-nop.yaml")
-	uriLocation := "file:" + configPath
+	uriLocation := "file:" + filepath.Join("testdata", "otelcol-nop.yaml")
 	provider := fileprovider.New()
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
@@ -110,7 +109,7 @@ func TestGetConfmap(t *testing.T) {
 		},
 	}
 
-	configBytes, err := os.ReadFile(configPath)
+	configBytes, err := os.ReadFile(filepath.Join("testdata", "otelcol-nop.yaml"))
 	require.NoError(t, err)
 
 	yamlMap := map[string]any{}
