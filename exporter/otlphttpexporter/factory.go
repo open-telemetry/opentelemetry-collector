@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/url"
 	"time"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -61,7 +62,7 @@ func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string)
 	case oCfg.Endpoint == "":
 		return "", fmt.Errorf("either endpoint or %s_endpoint must be specified", signalName)
 	default:
-		if oCfg.Endpoint[len(oCfg.Endpoint)-1] == '/' {
+		if strings.HasSuffix(oCfg.Endpoint, "/") {
 			return oCfg.Endpoint + "v1/" + signalName, nil
 		}
 		return oCfg.Endpoint + "/v1/" + signalName, nil
