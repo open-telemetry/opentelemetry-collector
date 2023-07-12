@@ -61,6 +61,9 @@ func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string)
 	case oCfg.Endpoint == "":
 		return "", fmt.Errorf("either endpoint or %s_endpoint must be specified", signalName)
 	default:
+		if oCfg.Endpoint[len(oCfg.Endpoint)-1] == '/' {
+			return oCfg.Endpoint + "v1/" + signalName, nil
+		}
 		return oCfg.Endpoint + "/v1/" + signalName, nil
 	}
 }
