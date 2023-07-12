@@ -199,14 +199,14 @@ func TestComposeSignalURL(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	// Has slash at end
-	cfg.HTTPClientSettings.Endpoint = "http://www.gooddeals.com/"
+	cfg.HTTPClientSettings.Endpoint = "http://localhost:4318/"
 	url, err := composeSignalURL(cfg, "", "traces")
 	require.NoError(t, err)
-	assert.Equal(t, "http://www.gooddeals.com/v1/traces", url)
+	assert.Equal(t, "http://localhost:4318/v1/traces", url)
 
 	// No slash at end
-	cfg.HTTPClientSettings.Endpoint = "http://www.gooddeals.com"
+	cfg.HTTPClientSettings.Endpoint = "http://localhost:4318"
 	url, err = composeSignalURL(cfg, "", "traces")
 	require.NoError(t, err)
-	assert.Equal(t, "http://www.gooddeals.com/v1/traces", url)
+	assert.Equal(t, "http://localhost:4318/v1/traces", url)
 }
