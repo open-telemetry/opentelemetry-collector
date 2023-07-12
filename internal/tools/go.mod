@@ -13,7 +13,7 @@ require (
 	github.com/pavius/impi v0.0.3
 	go.opentelemetry.io/build-tools/checkdoc v0.9.0
 	go.opentelemetry.io/build-tools/chloggen v0.9.0
-	go.opentelemetry.io/build-tools/crosslink v0.8.0
+	go.opentelemetry.io/build-tools/crosslink v0.9.0
 	go.opentelemetry.io/build-tools/multimod v0.9.0
 	go.opentelemetry.io/build-tools/semconvgen v0.9.0
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
