@@ -22,7 +22,7 @@ The [contrib repository](https://github.com/open-telemetry/opentelemetry-collect
 ## Recommended Processors
 
 By default, no processors are enabled. Depending on the data source, it may be recommended that multiple processors be enabled. Processors must be
-enabled for every data source: Not all processors support all data sources.
+enabled for every data source: not all processors support all data sources.
 In addition, it is important to note that the order of processors matters. The
 order in each section below is the best practice. Refer to the individual
 processor documentation for more information.
@@ -30,17 +30,20 @@ processor documentation for more information.
 ### Traces
 
 1. [memory_limiter](memorylimiterprocessor/README.md)
-2. *any sampling processors*
+2. *Sampling processors, excluding `tail_sampling`*
 3. Any processor relying on sending source from `Context` (e.g. `k8sattributes`)
-3. [batch](batchprocessor/README.md)
-4. *any other processors*
+4. [batch](batchprocessor/README.md)
+5. *Any other processors*
+
+Note `tail_sampling` functions like a batch processor, so it must be added
+after processors that rely on the original context.
 
 ### Metrics
 
 1. [memory_limiter](memorylimiterprocessor/README.md)
 2. Any processor relying on sending source from `Context` (e.g. `k8sattributes`)
 3. [batch](batchprocessor/README.md)
-4. *any other processors*
+4. *Any other processors*
 
 ## Data Ownership
 
