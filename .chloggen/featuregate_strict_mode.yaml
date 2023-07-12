@@ -5,7 +5,7 @@ change_type: enhancement
 component: featuregate
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add a new flag to set feature gates with additional validation
+note: "Add new flag `--feature-gates-strict` to set feature gates with additional validation"
 
 # One or more tracking issues or pull requests related to the change
 issues: [7804]
