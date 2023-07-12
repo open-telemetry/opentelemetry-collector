@@ -35,11 +35,11 @@ func (m Map) Clear() {
 // EnsureCapacity increases the capacity of this Map instance, if necessary,
 // to ensure that it can hold at least the number of elements specified by the capacity argument.
 func (m Map) EnsureCapacity(capacity int) {
-	if capacity <= cap(*m.getOrig()) {
+	oldOrig := *m.getOrig()
+	if capacity <= cap(oldOrig) {
 		return
 	}
-	oldOrig := *m.getOrig()
-	*m.getOrig() = make([]otlpcommon.KeyValue, 0, capacity)
+	*m.getOrig() = make([]otlpcommon.KeyValue, len(oldOrig), capacity)
 	copy(*m.getOrig(), oldOrig)
 }
 

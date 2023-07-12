@@ -35,6 +35,14 @@ var ExampleConnectorFactory = connector.NewFactory(
 	connector.WithLogsToLogs(createExampleLogsToLogs, component.StabilityLevelDevelopment),
 )
 
+var MockForwardConnectorFactory = connector.NewFactory(
+	"mockforward",
+	createExampleConnectorDefaultConfig,
+	connector.WithTracesToTraces(createExampleTracesToTraces, component.StabilityLevelDevelopment),
+	connector.WithMetricsToMetrics(createExampleMetricsToMetrics, component.StabilityLevelDevelopment),
+	connector.WithLogsToLogs(createExampleLogsToLogs, component.StabilityLevelDevelopment),
+)
+
 func createExampleConnectorDefaultConfig() component.Config {
 	return &struct{}{}
 }

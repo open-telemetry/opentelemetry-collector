@@ -108,10 +108,6 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	// Keep track of whether connectors are used as receivers and exporters
-	connectorsAsReceivers := make(map[component.ID]struct{}, len(cfg.Connectors))
-	connectorsAsExporters := make(map[component.ID]struct{}, len(cfg.Connectors))
-
 	// Check that all pipelines reference only configured components.
 	for pipelineID, pipeline := range cfg.Service.Pipelines {
 		// Validate pipeline receiver name references.
@@ -122,7 +118,6 @@ func (cfg *Config) Validate() error {
 			}
 
 			if _, ok := cfg.Connectors[ref]; ok {
-				connectorsAsReceivers[ref] = struct{}{}
 				continue
 			}
 			return fmt.Errorf("service::pipelines::%s: references receiver %q which is not configured", pipelineID, ref)
@@ -143,24 +138,10 @@ func (cfg *Config) Validate() error {
 				continue
 			}
 			if _, ok := cfg.Connectors[ref]; ok {
-				connectorsAsExporters[ref] = struct{}{}
 				continue
 			}
 			return fmt.Errorf("service::pipelines::%s: references exporter %q which is not configured", pipelineID, ref)
 		}
 	}
-
-	// Validate that connectors are used as both receiver and exporter
-	for connID := range cfg.Connectors {
-		_, recOK := connectorsAsReceivers[connID]
-		_, expOK := connectorsAsExporters[connID]
-		if recOK && !expOK {
-			return fmt.Errorf("connectors::%s: must be used as both receiver and exporter but is not used as exporter", connID)
-		}
-		if !recOK && expOK {
-			return fmt.Errorf("connectors::%s: must be used as both receiver and exporter but is not used as receiver", connID)
-		}
-	}
-
 	return nil
 }

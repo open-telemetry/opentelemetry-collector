@@ -58,13 +58,18 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 			exporters: make(map[int64]graph.Node),
 		}
 	}
-	pipelines.createNodes(set)
+	if err := pipelines.createNodes(set); err != nil {
+		return nil, err
+	}
 	pipelines.createEdges()
 	return pipelines, pipelines.buildComponents(ctx, set)
 }
 
 // Creates a node for each instance of a component and adds it to the graph
-func (g *Graph) createNodes(set Settings) {
+func (g *Graph) createNodes(set Settings) error {
+	// Build a list of all connectors for easy reference
+	connectors := make(map[component.ID]struct{})
+
 	// Keep track of connectors and where they are used. (map[connectorID][]pipelineID)
 	connectorsAsExporter := make(map[component.ID][]component.ID)
 	connectorsAsReceiver := make(map[component.ID][]component.ID)
@@ -73,6 +78,7 @@ func (g *Graph) createNodes(set Settings) {
 		pipe := g.pipelines[pipelineID]
 		for _, recvID := range pipelineCfg.Receivers {
 			if set.ConnectorBuilder.IsConfigured(recvID) {
+				connectors[recvID] = struct{}{}
 				connectorsAsReceiver[recvID] = append(connectorsAsReceiver[recvID], pipelineID)
 				continue
 			}
@@ -90,6 +96,7 @@ func (g *Graph) createNodes(set Settings) {
 
 		for _, exprID := range pipelineCfg.Exporters {
 			if set.ConnectorBuilder.IsConfigured(exprID) {
+				connectors[exprID] = struct{}{}
 				connectorsAsExporter[exprID] = append(connectorsAsExporter[exprID], pipelineID)
 				continue
 			}
@@ -98,15 +105,63 @@ func (g *Graph) createNodes(set Settings) {
 		}
 	}
 
-	for connID, exprPipelineIDs := range connectorsAsExporter {
-		for _, eID := range exprPipelineIDs {
+	for connID := range connectors {
+		factory := set.ConnectorBuilder.Factory(connID.Type())
+		if factory == nil {
+			return fmt.Errorf("connector factory not available for: %q", connID.Type())
+		}
+		connFactory := factory.(connector.Factory)
+
+		expTypes := make(map[component.DataType]bool)
+		for _, pipelineID := range connectorsAsExporter[connID] {
+			// The presence of each key indicates how the connector is used as an exporter.
+			// The value is initially set to false. Later we will set the value to true *if* we
+			// confirm that there is a supported corresponding use as a receiver.
+			expTypes[pipelineID.Type()] = false
+		}
+		recTypes := make(map[component.DataType]bool)
+		for _, pipelineID := range connectorsAsReceiver[connID] {
+			// The presence of each key indicates how the connector is used as a receiver.
+			// The value is initially set to false. Later we will set the value to true *if* we
+			// confirm that there is a supported corresponding use as an exporter.
+			recTypes[pipelineID.Type()] = false
+		}
+
+		for expType := range expTypes {
+			for recType := range recTypes {
+				if connectorStability(connFactory, expType, recType) != component.StabilityLevelUndefined {
+					expTypes[expType] = true
+					recTypes[recType] = true
+				}
+			}
+		}
+
+		for expType, supportedUse := range expTypes {
+			if supportedUse {
+				continue
+			}
+			return fmt.Errorf("connector %q used as exporter in %s pipeline but not used in any supported receiver pipeline", connID, expType)
+		}
+		for recType, supportedUse := range recTypes {
+			if supportedUse {
+				continue
+			}
+			return fmt.Errorf("connector %q used as receiver in %s pipeline but not used in any supported exporter pipeline", connID, recType)
+		}
+
+		for _, eID := range connectorsAsExporter[connID] {
 			for _, rID := range connectorsAsReceiver[connID] {
+				if connectorStability(connFactory, eID.Type(), rID.Type()) == component.StabilityLevelUndefined {
+					// Connector is not supported for this combination, but we know it is used correctly elsewhere
+					continue
+				}
 				connNode := g.createConnector(eID, rID, connID)
 				g.pipelines[eID].exporters[connNode.ID()] = connNode
 				g.pipelines[rID].receivers[connNode.ID()] = connNode
 			}
 		}
 	}
+	return nil
 }
 
 func (g *Graph) createReceiver(pipelineType component.DataType, recvID component.ID) *receiverNode {
@@ -366,4 +421,37 @@ func cycleErr(err error, cycles [][]graph.Node) error {
 		}
 	}
 	return fmt.Errorf("cycle detected: %s", strings.Join(componentDetails, " -> "))
+}
+
+func connectorStability(f connector.Factory, expType, recType component.Type) component.StabilityLevel {
+	switch expType {
+	case component.DataTypeTraces:
+		switch recType {
+		case component.DataTypeTraces:
+			return f.TracesToTracesStability()
+		case component.DataTypeMetrics:
+			return f.TracesToMetricsStability()
+		case component.DataTypeLogs:
+			return f.TracesToLogsStability()
+		}
+	case component.DataTypeMetrics:
+		switch recType {
+		case component.DataTypeTraces:
+			return f.MetricsToTracesStability()
+		case component.DataTypeMetrics:
+			return f.MetricsToMetricsStability()
+		case component.DataTypeLogs:
+			return f.MetricsToLogsStability()
+		}
+	case component.DataTypeLogs:
+		switch recType {
+		case component.DataTypeTraces:
+			return f.LogsToTracesStability()
+		case component.DataTypeMetrics:
+			return f.LogsToMetricsStability()
+		case component.DataTypeLogs:
+			return f.LogsToLogsStability()
+		}
+	}
+	return component.StabilityLevelUndefined
 }
