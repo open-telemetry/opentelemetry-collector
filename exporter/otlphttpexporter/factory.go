@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"time"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
