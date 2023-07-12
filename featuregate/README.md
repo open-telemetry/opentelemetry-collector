@@ -55,7 +55,6 @@ This will enable `gate1` and `gate3` and disable `gate2`.
 ### Strict mode
 
 Features gate can be executed in strict mode as well. This mode uses the flag `--feature-gates-strict`.
-This flag is mutually exclusive flag with `--feature-gates`.
 
 The flag follows the same notation as the `--feature-gates` flag and is interpreted with additional rules by the collector:
 
