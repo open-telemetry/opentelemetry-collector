@@ -407,7 +407,10 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 
 	var (
 		elapsed = make(chan time.Time, 1)
-		cfg     = NewDefaultScraperControllerSettings("my-delayed-scraper")
+		cfg     = ScraperControllerSettings{
+			CollectionInterval: time.Second,
+			InitialDelay:       300 * time.Millisecond,
+		}
 	)
 
 	scp, err := NewScraper("timed", func(ctx context.Context) (pmetric.Metrics, error) {
