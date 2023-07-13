@@ -193,3 +193,20 @@ func TestCreateLogsExporter(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 }
+
+func TestComposeSignalURL(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	// Has slash at end
+	cfg.HTTPClientSettings.Endpoint = "http://localhost:4318/"
+	url, err := composeSignalURL(cfg, "", "traces")
+	require.NoError(t, err)
+	assert.Equal(t, "http://localhost:4318/v1/traces", url)
+
+	// No slash at end
+	cfg.HTTPClientSettings.Endpoint = "http://localhost:4318"
+	url, err = composeSignalURL(cfg, "", "traces")
+	require.NoError(t, err)
+	assert.Equal(t, "http://localhost:4318/v1/traces", url)
+}
