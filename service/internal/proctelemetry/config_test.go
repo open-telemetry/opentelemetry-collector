@@ -33,6 +33,17 @@ func TestMetricReader(t *testing.T) {
 			err:  errors.New("unsupported metric reader type {<nil> <nil>}"),
 		},
 		{
+			name: "pull prometheus invalid exporter",
+			reader: telemetry.MetricReader{
+				Pull: &telemetry.PullMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{},
+					},
+				},
+			},
+			err: errors.New("no valid exporter"),
+		},
+		{
 			name: "pull/prometheus-invalid-config-no-host",
 			reader: telemetry.MetricReader{
 				Pull: &telemetry.PullMetricReader{

@@ -152,5 +152,5 @@ func initExporter(_ context.Context, exporter telemetry.MetricExporter, asyncErr
 	if exporter.Prometheus != nil {
 		return initPrometheusExporter(exporter.Prometheus, asyncErrorChannel)
 	}
-	return nil, nil, fmt.Errorf("no valid exporter: %v", exporter)
+	return nil, nil, fmt.Errorf("no valid exporter")
 }
