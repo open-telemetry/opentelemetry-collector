@@ -134,7 +134,6 @@ func (c *Config) Validate() error {
 
 func (mr *MetricReader) Unmarshal(conf *confmap.Conf) error {
 	if !obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled() {
-		fmt.Println(obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled())
 		// only unmarshal if feature gate is enabled
 		return nil
 	}
