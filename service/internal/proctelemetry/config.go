@@ -4,7 +4,16 @@
 package proctelemetry // import "go.opentelemetry.io/collector/service/internal/proctelemetry"
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/bridge/opencensus"
+	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
@@ -12,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/obsreport"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 const (
@@ -38,6 +48,13 @@ var (
 	}
 )
 
+func InitMetricReader(ctx context.Context, reader telemetry.MetricReader, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+	if reader.Pull != nil {
+		return initExporter(ctx, reader.Pull.Exporter, asyncErrorChannel)
+	}
+	return nil, nil, fmt.Errorf("unsupported metric reader type %v", reader)
+}
+
 func InitOpenTelemetry(res *resource.Resource, options []sdkmetric.Option, disableHighCardinality bool) (*sdkmetric.MeterProvider, error) {
 	opts := []sdkmetric.Option{
 		sdkmetric.WithResource(res),
@@ -48,6 +65,21 @@ func InitOpenTelemetry(res *resource.Resource, options []sdkmetric.Option, disab
 	return sdkmetric.NewMeterProvider(
 		opts...,
 	), nil
+}
+
+func InitPrometheusServer(registry *prometheus.Registry, address string, asyncErrorChannel chan error) *http.Server {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	server := &http.Server{
+		Addr:    address,
+		Handler: mux,
+	}
+	go func() {
+		if serveErr := server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+			asyncErrorChannel <- serveErr
+		}
+	}()
+	return server
 }
 
 func batchViews(disableHighCardinality bool) []sdkmetric.View {
@@ -91,4 +123,34 @@ func cardinalityFilter(kvs ...attribute.KeyValue) attribute.Filter {
 	return func(kv attribute.KeyValue) bool {
 		return !filter.HasValue(kv.Key)
 	}
+}
+
+func initPrometheusExporter(prometheusConfig *telemetry.Prometheus, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+	promRegistry := prometheus.NewRegistry()
+	if prometheusConfig.Host == nil {
+		return nil, nil, fmt.Errorf("host must be specified")
+	}
+	if prometheusConfig.Port == nil {
+		return nil, nil, fmt.Errorf("port must be specified")
+	}
+	wrappedRegisterer := prometheus.WrapRegistererWithPrefix("otelcol_", promRegistry)
+	exporter, err := otelprom.New(
+		otelprom.WithRegisterer(wrappedRegisterer),
+		// https://github.com/open-telemetry/opentelemetry-collector/issues/8043
+		otelprom.WithoutUnits(),
+		// Disabled for the moment until this becomes stable, and we are ready to break backwards compatibility.
+		otelprom.WithoutScopeInfo())
+	if err != nil {
+		return nil, nil, fmt.Errorf("error creating otel prometheus exporter: %w", err)
+	}
+
+	exporter.RegisterProducer(opencensus.NewMetricProducer())
+	return exporter, InitPrometheusServer(promRegistry, fmt.Sprintf("%s:%d", *prometheusConfig.Host, *prometheusConfig.Port), asyncErrorChannel), nil
+}
+
+func initExporter(_ context.Context, exporter telemetry.MetricExporter, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+	if exporter.Prometheus != nil {
+		return initPrometheusExporter(exporter.Prometheus, asyncErrorChannel)
+	}
+	return nil, nil, fmt.Errorf("no valid exporter")
 }

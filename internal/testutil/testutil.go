@@ -7,11 +7,14 @@ import (
 	"net"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 type portpair struct {
@@ -52,6 +55,22 @@ func GetAvailableLocalAddress(t testing.TB) string {
 	}
 
 	return endpoint
+}
+
+func GetAvailableLocalAddressPrometheus(t testing.TB) *telemetry.Prometheus {
+	address := GetAvailableLocalAddress(t)
+	host, port, err := net.SplitHostPort(address)
+	if err != nil {
+		return nil
+	}
+	portInt, err := strconv.Atoi(port)
+	if err != nil {
+		return nil
+	}
+	return &telemetry.Prometheus{
+		Host: &host,
+		Port: &portInt,
+	}
 }
 
 func findAvailableAddress(t testing.TB) string {
