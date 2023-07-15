@@ -56,7 +56,7 @@ This will enable `gate1` and `gate3` and disable `gate2`.
 
 Features gate can be executed in strict mode as well. This mode uses the flag `--feature-gates-strict`.
 
-The flag follows the same notation as the `--feature-gates` flag and is interpreted with additional rules by the collector:
+When set, the flag adds validation rules:
 
 * If the feature gate is alpha, the collector will fail to start if the feature gate is not explicitly set, 
 whether it is enabled or disabled.
