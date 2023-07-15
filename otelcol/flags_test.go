@@ -54,11 +54,28 @@ func TestSetFlag(t *testing.T) {
 			args:        []string{"--set=key:name"},
 			expectedErr: `invalid value "key:name" for flag -set: missing equal sign`,
 		},
+		{
+			name: "feature gates",
+			args: []string{"--feature-gates=alpha,-beta"},
+		},
+		{
+			name:        "feature gates and strict",
+			args:        []string{"--feature-gates=alpha,-beta", "--feature-gates-strict=true"},
+			expectedErr: `invalid value "true" for flag -feature-gates-strict: gate "beta" is in beta and must be explicitly enabled`,
+		},
+		{
+			name:        "strict flag first and feature gates",
+			args:        []string{"--feature-gates-strict=true", "--feature-gates=alpha,-beta"},
+			expectedErr: `invalid value "alpha,-beta" for flag -feature-gates: gate "beta" is in beta and must be explicitly enabled`,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flgs := flags(featuregate.NewRegistry())
+			reg := featuregate.NewRegistry()
+			reg.MustRegister("alpha", featuregate.StageAlpha)
+			reg.MustRegister("beta", featuregate.StageBeta)
+			flgs := flags(reg)
 			err := flgs.Parse(tt.args)
 			if tt.expectedErr != "" {
 				assert.EqualError(t, err, tt.expectedErr)

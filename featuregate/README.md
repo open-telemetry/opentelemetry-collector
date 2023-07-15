@@ -54,7 +54,9 @@ This will enable `gate1` and `gate3` and disable `gate2`.
 
 ### Strict mode
 
-Features gate can be executed in strict mode as well. This mode uses the flag `--feature-gates-strict`.
+Features gate can be executed in strict mode as well.
+
+To activate, use the flag `--feature-gates-strict=true`.
 
 When set, the flag adds validation rules:
 

@@ -167,18 +167,24 @@ func TestNewFlag(t *testing.T) {
 			reg.MustRegister("beta", StageBeta)
 			reg.MustRegister("deprecated", StageDeprecated, WithRegisterToVersion("1.0.0"))
 			reg.MustRegister("stable", StageStable, WithRegisterToVersion("1.0.0"))
-			v := NewFlag(reg, &tt.strict)
-			if tt.expectedSetErr != "" {
-				require.ErrorContains(t, v.Set(tt.input), tt.expectedSetErr)
+			gates, strict := NewFlags(reg)
+			if tt.strict {
+				require.NoError(t, strict.Set("true"))
 			} else {
-				require.NoError(t, v.Set(tt.input))
+				require.NoError(t, strict.Set(""))
+			}
+
+			if tt.expectedSetErr != "" {
+				require.ErrorContains(t, gates.Set(tt.input), tt.expectedSetErr)
+			} else {
+				require.NoError(t, gates.Set(tt.input))
 			}
 			got := map[string]bool{}
 			reg.VisitAll(func(g *Gate) {
 				got[g.ID()] = g.IsEnabled()
 			})
 			assert.Equal(t, tt.expected, got)
-			assert.Equal(t, tt.expectedStr, v.String())
+			assert.Equal(t, tt.expectedStr, gates.String())
 		})
 	}
 }
