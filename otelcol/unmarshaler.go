@@ -6,6 +6,7 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 import (
 	"go.uber.org/zap/zapcore"
 
+	"go.opentelemetry.io/collector/config/configrotate"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
@@ -48,6 +49,7 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 						Initial:    100,
 						Thereafter: 100,
 					},
+					Rotation:          configrotate.NewDefaultRotateConfig(),
 					OutputPaths:       []string{"stderr"},
 					ErrorOutputPaths:  []string{"stderr"},
 					DisableCaller:     false,
