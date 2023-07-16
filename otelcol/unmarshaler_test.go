@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config/configrotate"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
@@ -50,6 +51,13 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 			Tick:       10 * time.Second,
 			Initial:    10,
 			Thereafter: 100,
+		},
+		Rotation: &configrotate.Config{
+			Enabled:      true,
+			MaxMegabytes: 100,
+			MaxDays:      0,
+			MaxBackups:   100,
+			LocalTime:    false,
 		},
 		DisableCaller:     zapProdCfg.DisableCaller,
 		DisableStacktrace: zapProdCfg.DisableStacktrace,

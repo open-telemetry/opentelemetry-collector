@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configrotate"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/telemetry/internal"
 )
@@ -28,6 +29,7 @@ func createDefaultConfig() component.Config {
 				Initial:    10,
 				Thereafter: 100,
 			},
+			Rotation:          configrotate.NewDefaultRotateConfig(),
 			OutputPaths:       []string{"stderr"},
 			ErrorOutputPaths:  []string{"stderr"},
 			DisableCaller:     false,
