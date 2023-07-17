@@ -5,15 +5,18 @@ package proctelemetry // import "go.opentelemetry.io/collector/service/internal/
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/bridge/opencensus"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
@@ -50,7 +53,10 @@ var (
 
 func InitMetricReader(ctx context.Context, reader telemetry.MetricReader, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
 	if reader.Pull != nil {
-		return initExporter(ctx, reader.Pull.Exporter, asyncErrorChannel)
+		return initPullExporter(reader.Pull.Exporter, asyncErrorChannel)
+	}
+	if reader.Periodic != nil {
+		return initPeriodicExporter(ctx, reader.Periodic.Exporter)
 	}
 	return nil, nil, fmt.Errorf("unsupported metric reader type %v", reader)
 }
@@ -148,9 +154,24 @@ func initPrometheusExporter(prometheusConfig *telemetry.Prometheus, asyncErrorCh
 	return exporter, InitPrometheusServer(promRegistry, fmt.Sprintf("%s:%d", *prometheusConfig.Host, *prometheusConfig.Port), asyncErrorChannel), nil
 }
 
-func initExporter(_ context.Context, exporter telemetry.MetricExporter, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+func initPullExporter(exporter telemetry.MetricExporter, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
 	if exporter.Prometheus != nil {
 		return initPrometheusExporter(exporter.Prometheus, asyncErrorChannel)
+	}
+	return nil, nil, fmt.Errorf("no valid exporter")
+}
+func initPeriodicExporter(_ context.Context, exporter telemetry.MetricExporter) (sdkmetric.Reader, *http.Server, error) {
+	if exporter.Console != nil {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+
+		exp, err := stdoutmetric.New(
+			stdoutmetric.WithEncoder(enc),
+		)
+		if err != nil {
+			return nil, nil, err
+		}
+		return sdkmetric.NewPeriodicReader(exp), nil, nil
 	}
 	return nil, nil, fmt.Errorf("no valid exporter")
 }

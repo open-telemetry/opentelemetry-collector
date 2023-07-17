@@ -133,6 +133,23 @@ func TestUnmarshalMetricReader(t *testing.T) {
 				},
 			}}),
 		},
+		{
+			name: "valid periodic reader type, valid console exporter",
+			cfg: confmap.NewFromStringMap(map[string]any{"periodic": PeriodicMetricReader{
+				Exporter: MetricExporter{
+					Console: Console{},
+				},
+			}}),
+		},
+		{
+			name: "valid periodic reader type, invalid console exporter",
+			cfg: confmap.NewFromStringMap(map[string]any{"periodic": PeriodicMetricReader{
+				Exporter: MetricExporter{
+					Prometheus: &Prometheus{},
+				},
+			}}),
+			err: "invalid exporter configuration",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

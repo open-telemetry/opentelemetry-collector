@@ -152,6 +152,12 @@ func (mr *MetricReader) Unmarshal(conf *confmap.Conf) error {
 		}
 		return nil
 	}
+	if mr.Periodic != nil {
+		if mr.Periodic.Exporter.Console == nil {
+			return fmt.Errorf("invalid exporter configuration")
+		}
+		return nil
+	}
 
 	return fmt.Errorf("unsupported metric reader type %s", conf.AllKeys())
 }
