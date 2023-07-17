@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -56,7 +57,15 @@ func InitMetricReader(ctx context.Context, reader telemetry.MetricReader, asyncE
 		return initPullExporter(reader.Pull.Exporter, asyncErrorChannel)
 	}
 	if reader.Periodic != nil {
-		return initPeriodicExporter(ctx, reader.Periodic.Exporter)
+		opts := []sdkmetric.PeriodicReaderOption{}
+		if reader.Periodic.Interval != nil {
+			opts = append(opts, sdkmetric.WithInterval(time.Duration(*reader.Periodic.Interval)*time.Millisecond))
+		}
+
+		if reader.Periodic.Timeout != nil {
+			opts = append(opts, sdkmetric.WithTimeout(time.Duration(*reader.Periodic.Timeout)*time.Millisecond))
+		}
+		return initPeriodicExporter(ctx, reader.Periodic.Exporter, opts...)
 	}
 	return nil, nil, fmt.Errorf("unsupported metric reader type %v", reader)
 }
@@ -160,7 +169,7 @@ func initPullExporter(exporter telemetry.MetricExporter, asyncErrorChannel chan 
 	}
 	return nil, nil, fmt.Errorf("no valid exporter")
 }
-func initPeriodicExporter(_ context.Context, exporter telemetry.MetricExporter) (sdkmetric.Reader, *http.Server, error) {
+func initPeriodicExporter(_ context.Context, exporter telemetry.MetricExporter, opts ...sdkmetric.PeriodicReaderOption) (sdkmetric.Reader, *http.Server, error) {
 	if exporter.Console != nil {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
@@ -171,7 +180,7 @@ func initPeriodicExporter(_ context.Context, exporter telemetry.MetricExporter) 
 		if err != nil {
 			return nil, nil, err
 		}
-		return sdkmetric.NewPeriodicReader(exp), nil, nil
+		return sdkmetric.NewPeriodicReader(exp, opts...), nil, nil
 	}
 	return nil, nil, fmt.Errorf("no valid exporter")
 }

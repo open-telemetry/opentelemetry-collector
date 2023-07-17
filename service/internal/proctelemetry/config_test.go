@@ -111,6 +111,18 @@ func TestMetricReader(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "periodic/console-exporter-with-timeout-interval",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Interval: intPtr(10),
+					Timeout:  intPtr(5),
+					Exporter: telemetry.MetricExporter{
+						Console: telemetry.Console{},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
