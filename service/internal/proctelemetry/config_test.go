@@ -80,6 +80,27 @@ func TestMetricReader(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "periodic/invalid-exporter",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Prometheus: &telemetry.Prometheus{
+							Host: strPtr("locahost"),
+							Port: intPtr(8080),
+						},
+					},
+				},
+			},
+			err: errors.New("no valid exporter"),
+		},
+		{
+			name: "periodic/no-exporter",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{},
+			},
+			err: errors.New("no valid exporter"),
+		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
