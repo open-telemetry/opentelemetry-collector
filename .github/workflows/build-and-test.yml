@@ -185,11 +185,15 @@ jobs:
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: Wandalen/wretry.action@v1.3.0
         with:
-          file: ./coverage.txt
-          fail_ci_if_error: true
-          verbose: true
+          action: codecov/codecov-action@v3
+          with: |
+            file: ./coverage.txt
+            fail_ci_if_error: true
+            verbose: true
+          attempt_limit: 10
+          attempt_delay: 15000
 
   cross-build-collector:
     needs: [setup-environment]
