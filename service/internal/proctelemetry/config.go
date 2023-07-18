@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -209,18 +210,23 @@ func initPeriodicExporter(ctx context.Context, exporter telemetry.MetricExporter
 	return nil, nil, fmt.Errorf("no valid exporter")
 }
 
+func normalizeEndpoint(endpoint string) string {
+	if !strings.HasPrefix(endpoint, "https://") && !strings.HasPrefix(endpoint, "http://") {
+		return fmt.Sprintf("http://%s", endpoint)
+	}
+	return endpoint
+}
+
 func initOTLPgRPCExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric) (sdkmetric.Exporter, error) {
 	opts := []otlpmetricgrpc.Option{}
 
 	if len(otlpConfig.Endpoint) > 0 {
-		endpoint, err := url.Parse(otlpConfig.Endpoint)
-
+		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
 		if err != nil {
 			return nil, err
 		}
-		opts = append(opts, otlpmetricgrpc.WithEndpoint(endpoint.Host))
-
-		if endpoint.Scheme == "http" {
+		opts = append(opts, otlpmetricgrpc.WithEndpoint(u.Host))
+		if u.Scheme == "http" {
 			opts = append(opts, otlpmetricgrpc.WithInsecure())
 		}
 	}
@@ -242,22 +248,29 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric)
 	opts := []otlpmetrichttp.Option{}
 
 	if len(otlpConfig.Endpoint) > 0 {
-		endpoint, err := url.Parse(otlpConfig.Endpoint)
+		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
 		if err != nil {
 			return nil, err
 		}
-		opts = append(opts, otlpmetrichttp.WithEndpoint(endpoint.Host))
+		opts = append(opts, otlpmetrichttp.WithEndpoint(u.Host))
 
-		if endpoint.Scheme == "http" {
+		if u.Scheme == "http" {
 			opts = append(opts, otlpmetrichttp.WithInsecure())
 		}
-		if len(endpoint.Path) > 0 {
-			opts = append(opts, otlpmetrichttp.WithURLPath(endpoint.Path))
+		if len(u.Path) > 0 {
+			opts = append(opts, otlpmetrichttp.WithURLPath(u.Path))
 		}
 	}
-	// if otlpConfig.Compression != nil {
-	// 	opts = append(opts, otlpmetrichttp.WithCompression(*otlpConfig.Compression)) // TODO: convert this to compression type
-	// }
+	if otlpConfig.Compression != nil {
+		switch *otlpConfig.Compression {
+		case "gzip":
+			opts = append(opts, otlpmetrichttp.WithCompression(otlpmetrichttp.GzipCompression))
+		case "none":
+			opts = append(opts, otlpmetrichttp.WithCompression(otlpmetrichttp.NoCompression))
+		default:
+			return nil, fmt.Errorf("unsupported compression %s", *otlpConfig.Compression)
+		}
+	}
 	if otlpConfig.Timeout != nil {
 		opts = append(opts, otlpmetrichttp.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
 	}
