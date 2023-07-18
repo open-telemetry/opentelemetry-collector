@@ -171,3 +171,65 @@ func TestUnmarshalMetricReader(t *testing.T) {
 		})
 	}
 }
+
+func TestUnmarshalSpanProcessorWithGateOff(t *testing.T) {
+	defer setFeatureGateForTest(t, obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate, false)()
+	sp := SpanProcessor{}
+	assert.NoError(t, sp.Unmarshal(confmap.NewFromStringMap(map[string]any{"invalid": "invalid"})))
+}
+
+func TestUnmarshalSpanProcessor(t *testing.T) {
+	defer setFeatureGateForTest(t, obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate, true)()
+	tests := []struct {
+		name string
+		cfg  *confmap.Conf
+		err  string
+	}{
+		{
+			name: "invalid config",
+			cfg:  confmap.NewFromStringMap(map[string]any{"invalid": "invalid"}),
+			err:  "unsupported span processor type [invalid]",
+		},
+		{
+			name: "nil config, nothing to do",
+		},
+		{
+			name: "invalid batch processor type with valid console exporter",
+			cfg: confmap.NewFromStringMap(map[string]any{"thing": BatchSpanProcessor{
+				Exporter: SpanExporter{
+					Console: Console{},
+				},
+			}}),
+			err: "unsupported span processor type [thing]",
+		},
+		{
+			name: "valid batch processor, invalid config",
+			cfg:  confmap.NewFromStringMap(map[string]any{"batch": "garbage"}),
+			err:  "invalid span processor configuration",
+		},
+		{
+			name: "valid batch processor, no exporter",
+			cfg:  confmap.NewFromStringMap(map[string]any{"batch": BatchSpanProcessor{}}),
+			err:  "invalid exporter configuration",
+		},
+		{
+			name: "valid batch processor, valid console exporter",
+			cfg: confmap.NewFromStringMap(map[string]any{"batch": BatchSpanProcessor{
+				Exporter: SpanExporter{
+					Console: Console{},
+				},
+			}}),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			processor := SpanProcessor{}
+			err := processor.Unmarshal(tt.cfg)
+			if len(tt.err) > 0 {
+				assert.ErrorContains(t, err, tt.err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

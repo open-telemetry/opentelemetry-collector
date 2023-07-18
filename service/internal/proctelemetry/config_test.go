@@ -42,7 +42,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
-			err: errors.New("no valid exporter"),
+			err: errNoValidMetricExporter,
 		},
 		{
 			name: "pull/prometheus-invalid-config-no-host",
@@ -93,14 +93,14 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
-			err: errors.New("no valid exporter"),
+			err: errNoValidMetricExporter,
 		},
 		{
 			name: "periodic/no-exporter",
 			reader: telemetry.MetricReader{
 				Periodic: &telemetry.PeriodicMetricReader{},
 			},
-			err: errors.New("no valid exporter"),
+			err: errNoValidMetricExporter,
 		},
 		{
 			name: "periodic/console-exporter",
@@ -340,6 +340,97 @@ func TestMetricReader(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			_, _, err := InitMetricReader(context.Background(), tt.reader, make(chan error))
+			assert.Equal(t, tt.err, err)
+		})
+	}
+}
+
+func TestSpanProcessor(t *testing.T) {
+	testCases := []struct {
+		name      string
+		processor telemetry.SpanProcessor
+		args      any
+		err       error
+	}{
+		{
+			name: "no processor",
+			err:  errors.New("unsupported span processor type {<nil> <nil>}"),
+		},
+		{
+			name: "batch processor invalid exporter",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					Exporter: telemetry.SpanExporter{},
+				},
+			},
+			err: errNoValidSpanExporter,
+		},
+		{
+			name: "batch processor invalid batch size console exporter",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxExportBatchSize: intPtr(-1),
+					Exporter: telemetry.SpanExporter{
+						Console: telemetry.Console{},
+					},
+				},
+			},
+			err: errors.New("invalid batch size -1"),
+		},
+		{
+			name: "batch processor invalid export timeout console exporter",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					ExportTimeout: intPtr(-2),
+					Exporter: telemetry.SpanExporter{
+						Console: telemetry.Console{},
+					},
+				},
+			},
+			err: errors.New("invalid export timeout -2"),
+		},
+		{
+			name: "batch processor invalid queue size console exporter",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxQueueSize: intPtr(-3),
+					Exporter: telemetry.SpanExporter{
+						Console: telemetry.Console{},
+					},
+				},
+			},
+			err: errors.New("invalid queue size -3"),
+		},
+		{
+			name: "batch processor invalid schedule delay console exporter",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					ScheduleDelay: intPtr(-4),
+					Exporter: telemetry.SpanExporter{
+						Console: telemetry.Console{},
+					},
+				},
+			},
+			err: errors.New("invalid schedule delay -4"),
+		},
+		{
+			name: "batch processor console exporter",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxExportBatchSize: intPtr(0),
+					ExportTimeout:      intPtr(0),
+					MaxQueueSize:       intPtr(0),
+					ScheduleDelay:      intPtr(0),
+					Exporter: telemetry.SpanExporter{
+						Console: telemetry.Console{},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := InitSpanProcessor(context.Background(), tt.processor)
 			assert.Equal(t, tt.err, err)
 		})
 	}

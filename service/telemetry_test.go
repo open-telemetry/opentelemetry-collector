@@ -195,6 +195,17 @@ func TestTelemetryInit(t *testing.T) {
 				Metrics: telemetry.MetricsConfig{
 					Level: configtelemetry.LevelDetailed,
 				},
+				Traces: telemetry.TracesConfig{
+					Processors: []telemetry.SpanProcessor{
+						{
+							Batch: &telemetry.BatchSpanProcessor{
+								Exporter: telemetry.SpanExporter{
+									Console: telemetry.Console{},
+								},
+							},
+						},
+					},
+				},
 				Resource: map[string]*string{
 					semconv.AttributeServiceInstanceID: &testInstanceID,
 				},

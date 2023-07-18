@@ -22,10 +22,12 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"go.opentelemetry.io/collector/obsreport"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
@@ -58,6 +60,9 @@ var (
 		attribute.String(semconv.AttributeNetHostName, ""),
 		attribute.String(semconv.AttributeNetHostPort, ""),
 	}
+
+	errNoValidMetricExporter = errors.New("no valid metric exporter")
+	errNoValidSpanExporter   = errors.New("no valid span exporter")
 )
 
 func InitMetricReader(ctx context.Context, reader telemetry.MetricReader, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
@@ -76,6 +81,56 @@ func InitMetricReader(ctx context.Context, reader telemetry.MetricReader, asyncE
 		return initPeriodicExporter(ctx, reader.Periodic.Exporter, opts...)
 	}
 	return nil, nil, fmt.Errorf("unsupported metric reader type %v", reader)
+}
+
+func InitSpanProcessor(_ context.Context, processor telemetry.SpanProcessor) (sdktrace.SpanProcessor, error) {
+	if processor.Batch != nil {
+		if processor.Batch.Exporter.Console != nil {
+			exp, err := stdouttrace.New(
+				stdouttrace.WithPrettyPrint(),
+			)
+			if err != nil {
+				return nil, err
+			}
+			opts := []sdktrace.BatchSpanProcessorOption{}
+			if processor.Batch.ExportTimeout != nil {
+				if *processor.Batch.ExportTimeout < 0 {
+					return nil, fmt.Errorf("invalid export timeout %d", *processor.Batch.ExportTimeout)
+				}
+				opts = append(opts, sdktrace.WithExportTimeout(time.Millisecond*time.Duration(*processor.Batch.ExportTimeout)))
+			}
+			if processor.Batch.MaxExportBatchSize != nil {
+				if *processor.Batch.MaxExportBatchSize < 0 {
+					return nil, fmt.Errorf("invalid batch size %d", *processor.Batch.MaxExportBatchSize)
+				}
+				opts = append(opts, sdktrace.WithMaxExportBatchSize(*processor.Batch.MaxExportBatchSize))
+			}
+			if processor.Batch.MaxQueueSize != nil {
+				if *processor.Batch.MaxQueueSize < 0 {
+					return nil, fmt.Errorf("invalid queue size %d", *processor.Batch.MaxQueueSize)
+				}
+				opts = append(opts, sdktrace.WithMaxQueueSize(*processor.Batch.MaxQueueSize))
+			}
+			if processor.Batch.ScheduleDelay != nil {
+				if *processor.Batch.ScheduleDelay < 0 {
+					return nil, fmt.Errorf("invalid schedule delay %d", *processor.Batch.ScheduleDelay)
+				}
+				opts = append(opts, sdktrace.WithBatchTimeout(time.Millisecond*time.Duration(*processor.Batch.ScheduleDelay)))
+			}
+			return sdktrace.NewBatchSpanProcessor(exp, opts...), nil
+		}
+		return nil, errNoValidSpanExporter
+	}
+	return nil, fmt.Errorf("unsupported span processor type %v", processor)
+}
+
+func InitTracerProvider(res *resource.Resource, options []sdktrace.TracerProviderOption) (*sdktrace.TracerProvider, error) {
+	opts := []sdktrace.TracerProviderOption{
+		sdktrace.WithResource(res),
+	}
+
+	opts = append(opts, options...)
+	return sdktrace.NewTracerProvider(opts...), nil
 }
 
 func InitOpenTelemetry(res *resource.Resource, options []sdkmetric.Option, disableHighCardinality bool) (*sdkmetric.MeterProvider, error) {
@@ -175,7 +230,7 @@ func initPullExporter(exporter telemetry.MetricExporter, asyncErrorChannel chan 
 	if exporter.Prometheus != nil {
 		return initPrometheusExporter(exporter.Prometheus, asyncErrorChannel)
 	}
-	return nil, nil, fmt.Errorf("no valid exporter")
+	return nil, nil, errNoValidMetricExporter
 }
 
 func initPeriodicExporter(ctx context.Context, exporter telemetry.MetricExporter, opts ...sdkmetric.PeriodicReaderOption) (sdkmetric.Reader, *http.Server, error) {
@@ -207,7 +262,7 @@ func initPeriodicExporter(ctx context.Context, exporter telemetry.MetricExporter
 		}
 		return sdkmetric.NewPeriodicReader(exp, opts...), nil, nil
 	}
-	return nil, nil, fmt.Errorf("no valid exporter")
+	return nil, nil, errNoValidMetricExporter
 }
 
 func normalizeEndpoint(endpoint string) string {
