@@ -18,6 +18,7 @@ const (
 	zComponentKind = "componentkindz"
 )
 
+// HandleZPages handles ZPages requests for the zpages extension.
 func (g *Graph) HandleZPages(w http.ResponseWriter, r *http.Request) {
 	qValues := r.URL.Query()
 	pipelineName := qValues.Get(zPipelineName)

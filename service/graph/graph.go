@@ -25,20 +25,27 @@ import (
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
-// Settings holds configuration for building builtPipelines.
+// Settings holds configuration for building a Graph.
 type Settings struct {
+	// Telemetry specifies the telemetry settings.
 	Telemetry component.TelemetrySettings
+	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
 
-	ReceiverBuilder  *receiver.Builder
+	// ReceiverBuilder is a helper struct that given a set of Configs and Factories helps with creating receivers.
+	ReceiverBuilder *receiver.Builder
+	// ProcessorBuilder is a helper struct that given a set of Configs and Factories helps with creating processors.
 	ProcessorBuilder *processor.Builder
-	ExporterBuilder  *exporter.Builder
+	// ExporterBuilder is a helper struct that given a set of Configs and Factories helps with creating exporters.
+	ExporterBuilder *exporter.Builder
+	// ConnectorBuilder is a helper struct that given a set of Configs and Factories helps with creating connectors.
 	ConnectorBuilder *connector.Builder
 
 	// PipelineConfigs is a map of component.ID to PipelineConfig.
 	PipelineConfigs pipelines.Config
 }
 
+// Graph of collector components.
 type Graph struct {
 	// All component instances represented as nodes, with directed edges indicating data flow.
 	componentGraph *simple.DirectedGraph
@@ -47,6 +54,7 @@ type Graph struct {
 	pipelines map[component.ID]*pipelineNodes
 }
 
+// Build a collector graph.
 func Build(ctx context.Context, set Settings) (*Graph, error) {
 	pipelines := &Graph{
 		componentGraph: simple.NewDirectedGraph(),
@@ -316,6 +324,7 @@ type pipelineNodes struct {
 	exporters map[int64]graph.Node
 }
 
+// StartAll components in the graph in topological order.
 func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
@@ -338,6 +347,7 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
 	return nil
 }
 
+// ShutdownAll components in the graph in topological order.
 func (g *Graph) ShutdownAll(ctx context.Context) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
