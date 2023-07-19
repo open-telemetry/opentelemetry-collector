@@ -4,21 +4,21 @@ go 1.19
 
 require (
 	github.com/a8m/envsubst v1.4.2
-	github.com/atombender/go-jsonschema v0.12.0
+	github.com/atombender/go-jsonschema v0.12.1
 	github.com/client9/misspell v0.3.4
 	github.com/golangci/golangci-lint v1.53.3
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.4.0
-	github.com/mikefarah/yq/v4 v4.34.1
+	github.com/mikefarah/yq/v4 v4.34.2
 	github.com/pavius/impi v0.0.3
 	go.opentelemetry.io/build-tools/checkdoc v0.9.0
 	go.opentelemetry.io/build-tools/chloggen v0.9.0
 	go.opentelemetry.io/build-tools/crosslink v0.9.0
 	go.opentelemetry.io/build-tools/multimod v0.9.0
 	go.opentelemetry.io/build-tools/semconvgen v0.9.0
-	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
+	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22
 	golang.org/x/tools v0.11.0
-	golang.org/x/vuln v0.2.0
+	golang.org/x/vuln v1.0.0
 )
 
 require (
