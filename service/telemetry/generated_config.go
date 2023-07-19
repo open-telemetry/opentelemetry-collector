@@ -17,7 +17,7 @@ type BatchLogRecordProcessor struct {
 	ExportTimeout *int `mapstructure:"export_timeout,omitempty"`
 
 	// Exporter corresponds to the JSON schema field "exporter".
-	Exporter *LogRecordExporter `mapstructure:"exporter,omitempty"`
+	Exporter LogRecordExporter `mapstructure:"exporter"`
 
 	// MaxExportBatchSize corresponds to the JSON schema field
 	// "max_export_batch_size".
@@ -35,7 +35,7 @@ type BatchSpanProcessor struct {
 	ExportTimeout *int `mapstructure:"export_timeout,omitempty"`
 
 	// Exporter corresponds to the JSON schema field "exporter".
-	Exporter *SpanExporter `mapstructure:"exporter,omitempty"`
+	Exporter SpanExporter `mapstructure:"exporter"`
 
 	// MaxExportBatchSize corresponds to the JSON schema field
 	// "max_export_batch_size".
@@ -52,7 +52,7 @@ type CommonJson map[string]interface{}
 
 type Console map[string]interface{}
 
-type Headers map[string]interface{}
+type Headers map[string]string
 
 type LogRecordExporter struct {
 	// Otlp corresponds to the JSON schema field "otlp".
@@ -222,6 +222,240 @@ type SamplerAlwaysOff map[string]interface{}
 
 type SamplerAlwaysOn map[string]interface{}
 
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *BatchSpanProcessor) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["exporter"]; !ok || v == nil {
+		return fmt.Errorf("field exporter in BatchSpanProcessor: required")
+	}
+	type Plain BatchSpanProcessor
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = BatchSpanProcessor(plain)
+	return nil
+}
+
+type ViewStreamAggregationExplicitBucketHistogram struct {
+	// Boundaries corresponds to the JSON schema field "boundaries".
+	Boundaries []float64 `mapstructure:"boundaries,omitempty"`
+
+	// RecordMinMax corresponds to the JSON schema field "record_min_max".
+	RecordMinMax *bool `mapstructure:"record_min_max,omitempty"`
+}
+
+type ViewStreamAggregationExponentialBucketHistogram struct {
+	// MaxScale corresponds to the JSON schema field "max_scale".
+	MaxScale *int `mapstructure:"max_scale,omitempty"`
+
+	// MaxSize corresponds to the JSON schema field "max_size".
+	MaxSize *int `mapstructure:"max_size,omitempty"`
+
+	// RecordMinMax corresponds to the JSON schema field "record_min_max".
+	RecordMinMax *bool `mapstructure:"record_min_max,omitempty"`
+}
+
+type ViewStreamAggregation struct {
+	// Default corresponds to the JSON schema field "default".
+	Default interface{} `mapstructure:"default,omitempty"`
+
+	// Drop corresponds to the JSON schema field "drop".
+	Drop interface{} `mapstructure:"drop,omitempty"`
+
+	// ExplicitBucketHistogram corresponds to the JSON schema field
+	// "explicit_bucket_histogram".
+	ExplicitBucketHistogram *ViewStreamAggregationExplicitBucketHistogram `mapstructure:"explicit_bucket_histogram,omitempty"`
+
+	// ExponentialBucketHistogram corresponds to the JSON schema field
+	// "exponential_bucket_histogram".
+	ExponentialBucketHistogram *ViewStreamAggregationExponentialBucketHistogram `mapstructure:"exponential_bucket_histogram,omitempty"`
+
+	// LastValue corresponds to the JSON schema field "last_value".
+	LastValue interface{} `mapstructure:"last_value,omitempty"`
+
+	// Sum corresponds to the JSON schema field "sum".
+	Sum interface{} `mapstructure:"sum,omitempty"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *ViewStreamAggregation) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	type Plain ViewStreamAggregation
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	if plain.Default != nil {
+		return fmt.Errorf("field %s: must be null", "default")
+	}
+	if plain.Drop != nil {
+		return fmt.Errorf("field %s: must be null", "drop")
+	}
+	if plain.LastValue != nil {
+		return fmt.Errorf("field %s: must be null", "last_value")
+	}
+	if plain.Sum != nil {
+		return fmt.Errorf("field %s: must be null", "sum")
+	}
+	*j = ViewStreamAggregation(plain)
+	return nil
+}
+
+type ViewStream struct {
+	// Aggregation corresponds to the JSON schema field "aggregation".
+	Aggregation *ViewStreamAggregation `mapstructure:"aggregation,omitempty"`
+
+	// AttributeKeys corresponds to the JSON schema field "attribute_keys".
+	AttributeKeys []string `mapstructure:"attribute_keys,omitempty"`
+
+	// Description corresponds to the JSON schema field "description".
+	Description *string `mapstructure:"description,omitempty"`
+
+	// Name corresponds to the JSON schema field "name".
+	Name *string `mapstructure:"name,omitempty"`
+}
+
+type View struct {
+	// Selector corresponds to the JSON schema field "selector".
+	Selector *ViewSelector `mapstructure:"selector,omitempty"`
+
+	// Stream corresponds to the JSON schema field "stream".
+	Stream *ViewStream `mapstructure:"stream,omitempty"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *PullMetricReader) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["exporter"]; !ok || v == nil {
+		return fmt.Errorf("field exporter in PullMetricReader: required")
+	}
+	type Plain PullMetricReader
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = PullMetricReader(plain)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *Otlp) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["endpoint"]; !ok || v == nil {
+		return fmt.Errorf("field endpoint in Otlp: required")
+	}
+	if v, ok := raw["protocol"]; !ok || v == nil {
+		return fmt.Errorf("field protocol in Otlp: required")
+	}
+	type Plain Otlp
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = Otlp(plain)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *PeriodicMetricReader) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["exporter"]; !ok || v == nil {
+		return fmt.Errorf("field exporter in PeriodicMetricReader: required")
+	}
+	type Plain PeriodicMetricReader
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = PeriodicMetricReader(plain)
+	return nil
+}
+
+type SpanExporter struct {
+	// Console corresponds to the JSON schema field "console".
+	Console Console `mapstructure:"console,omitempty"`
+
+	// Otlp corresponds to the JSON schema field "otlp".
+	Otlp *Otlp `mapstructure:"otlp,omitempty"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *OtlpMetric) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["endpoint"]; !ok || v == nil {
+		return fmt.Errorf("field endpoint in OtlpMetric: required")
+	}
+	if v, ok := raw["protocol"]; !ok || v == nil {
+		return fmt.Errorf("field protocol in OtlpMetric: required")
+	}
+	type Plain OtlpMetric
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = OtlpMetric(plain)
+	return nil
+}
+
+type ViewSelector struct {
+	// InstrumentName corresponds to the JSON schema field "instrument_name".
+	InstrumentName *string `mapstructure:"instrument_name,omitempty"`
+
+	// InstrumentType corresponds to the JSON schema field "instrument_type".
+	InstrumentType *string `mapstructure:"instrument_type,omitempty"`
+
+	// MeterName corresponds to the JSON schema field "meter_name".
+	MeterName *string `mapstructure:"meter_name,omitempty"`
+
+	// MeterSchemaUrl corresponds to the JSON schema field "meter_schema_url".
+	MeterSchemaUrl *string `mapstructure:"meter_schema_url,omitempty"`
+
+	// MeterVersion corresponds to the JSON schema field "meter_version".
+	MeterVersion *string `mapstructure:"meter_version,omitempty"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *BatchLogRecordProcessor) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["exporter"]; !ok || v == nil {
+		return fmt.Errorf("field exporter in BatchLogRecordProcessor: required")
+	}
+	type Plain BatchLogRecordProcessor
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = BatchLogRecordProcessor(plain)
+	return nil
+}
+
+type SimpleLogRecordProcessor struct {
+	// Exporter corresponds to the JSON schema field "exporter".
+	Exporter LogRecordExporter `mapstructure:"exporter"`
+}
+
 type SamplerJaegerRemote struct {
 	// Endpoint corresponds to the JSON schema field "endpoint".
 	Endpoint *string `mapstructure:"endpoint,omitempty"`
@@ -258,22 +492,45 @@ type SamplerTraceIdRatioBased struct {
 	Ratio *float64 `mapstructure:"ratio,omitempty"`
 }
 
-type SimpleLogRecordProcessor struct {
-	// Exporter corresponds to the JSON schema field "exporter".
-	Exporter *LogRecordExporter `mapstructure:"exporter,omitempty"`
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *SimpleLogRecordProcessor) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["exporter"]; !ok || v == nil {
+		return fmt.Errorf("field exporter in SimpleLogRecordProcessor: required")
+	}
+	type Plain SimpleLogRecordProcessor
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = SimpleLogRecordProcessor(plain)
+	return nil
 }
 
 type SimpleSpanProcessor struct {
 	// Exporter corresponds to the JSON schema field "exporter".
-	Exporter *SpanExporter `mapstructure:"exporter,omitempty"`
+	Exporter SpanExporter `mapstructure:"exporter"`
 }
 
-type SpanExporter struct {
-	// Console corresponds to the JSON schema field "console".
-	Console Console `mapstructure:"console,omitempty"`
-
-	// Otlp corresponds to the JSON schema field "otlp".
-	Otlp *Otlp `mapstructure:"otlp,omitempty"`
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *SimpleSpanProcessor) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["exporter"]; !ok || v == nil {
+		return fmt.Errorf("field exporter in SimpleSpanProcessor: required")
+	}
+	type Plain SimpleSpanProcessor
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = SimpleSpanProcessor(plain)
+	return nil
 }
 
 type SpanLimits struct {
@@ -317,189 +574,4 @@ type TracerProviderJson struct {
 
 	// Sampler corresponds to the JSON schema field "sampler".
 	Sampler *Sampler `mapstructure:"sampler,omitempty"`
-}
-
-type View struct {
-	// Selector corresponds to the JSON schema field "selector".
-	Selector *ViewSelector `mapstructure:"selector,omitempty"`
-
-	// Stream corresponds to the JSON schema field "stream".
-	Stream *ViewStream `mapstructure:"stream,omitempty"`
-}
-
-type ViewSelector struct {
-	// InstrumentName corresponds to the JSON schema field "instrument_name".
-	InstrumentName *string `mapstructure:"instrument_name,omitempty"`
-
-	// InstrumentType corresponds to the JSON schema field "instrument_type".
-	InstrumentType *string `mapstructure:"instrument_type,omitempty"`
-
-	// MeterName corresponds to the JSON schema field "meter_name".
-	MeterName *string `mapstructure:"meter_name,omitempty"`
-
-	// MeterSchemaUrl corresponds to the JSON schema field "meter_schema_url".
-	MeterSchemaUrl *string `mapstructure:"meter_schema_url,omitempty"`
-
-	// MeterVersion corresponds to the JSON schema field "meter_version".
-	MeterVersion *string `mapstructure:"meter_version,omitempty"`
-}
-
-type ViewStream struct {
-	// Aggregation corresponds to the JSON schema field "aggregation".
-	Aggregation *ViewStreamAggregation `mapstructure:"aggregation,omitempty"`
-
-	// AttributeKeys corresponds to the JSON schema field "attribute_keys".
-	AttributeKeys []string `mapstructure:"attribute_keys,omitempty"`
-
-	// Description corresponds to the JSON schema field "description".
-	Description *string `mapstructure:"description,omitempty"`
-
-	// Name corresponds to the JSON schema field "name".
-	Name *string `mapstructure:"name,omitempty"`
-}
-
-type ViewStreamAggregation struct {
-	// Default corresponds to the JSON schema field "default".
-	Default interface{} `mapstructure:"default,omitempty"`
-
-	// Drop corresponds to the JSON schema field "drop".
-	Drop interface{} `mapstructure:"drop,omitempty"`
-
-	// ExplicitBucketHistogram corresponds to the JSON schema field
-	// "explicit_bucket_histogram".
-	ExplicitBucketHistogram *ViewStreamAggregationExplicitBucketHistogram `mapstructure:"explicit_bucket_histogram,omitempty"`
-
-	// ExponentialBucketHistogram corresponds to the JSON schema field
-	// "exponential_bucket_histogram".
-	ExponentialBucketHistogram *ViewStreamAggregationExponentialBucketHistogram `mapstructure:"exponential_bucket_histogram,omitempty"`
-
-	// LastValue corresponds to the JSON schema field "last_value".
-	LastValue interface{} `mapstructure:"last_value,omitempty"`
-
-	// Sum corresponds to the JSON schema field "sum".
-	Sum interface{} `mapstructure:"sum,omitempty"`
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *PullMetricReader) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["exporter"]; !ok || v == nil {
-		return fmt.Errorf("field exporter in PullMetricReader: required")
-	}
-	type Plain PullMetricReader
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = PullMetricReader(plain)
-	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *PeriodicMetricReader) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["exporter"]; !ok || v == nil {
-		return fmt.Errorf("field exporter in PeriodicMetricReader: required")
-	}
-	type Plain PeriodicMetricReader
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = PeriodicMetricReader(plain)
-	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *OtlpMetric) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["endpoint"]; !ok || v == nil {
-		return fmt.Errorf("field endpoint in OtlpMetric: required")
-	}
-	if v, ok := raw["protocol"]; !ok || v == nil {
-		return fmt.Errorf("field protocol in OtlpMetric: required")
-	}
-	type Plain OtlpMetric
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = OtlpMetric(plain)
-	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *Otlp) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["endpoint"]; !ok || v == nil {
-		return fmt.Errorf("field endpoint in Otlp: required")
-	}
-	if v, ok := raw["protocol"]; !ok || v == nil {
-		return fmt.Errorf("field protocol in Otlp: required")
-	}
-	type Plain Otlp
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = Otlp(plain)
-	return nil
-}
-
-type ViewStreamAggregationExplicitBucketHistogram struct {
-	// Boundaries corresponds to the JSON schema field "boundaries".
-	Boundaries []float64 `mapstructure:"boundaries,omitempty"`
-
-	// RecordMinMax corresponds to the JSON schema field "record_min_max".
-	RecordMinMax *bool `mapstructure:"record_min_max,omitempty"`
-}
-
-type ViewStreamAggregationExponentialBucketHistogram struct {
-	// MaxScale corresponds to the JSON schema field "max_scale".
-	MaxScale *int `mapstructure:"max_scale,omitempty"`
-
-	// MaxSize corresponds to the JSON schema field "max_size".
-	MaxSize *int `mapstructure:"max_size,omitempty"`
-
-	// RecordMinMax corresponds to the JSON schema field "record_min_max".
-	RecordMinMax *bool `mapstructure:"record_min_max,omitempty"`
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *ViewStreamAggregation) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	type Plain ViewStreamAggregation
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	if plain.Default != nil {
-		return fmt.Errorf("field %s: must be null", "default")
-	}
-	if plain.Drop != nil {
-		return fmt.Errorf("field %s: must be null", "drop")
-	}
-	if plain.LastValue != nil {
-		return fmt.Errorf("field %s: must be null", "last_value")
-	}
-	if plain.Sum != nil {
-		return fmt.Errorf("field %s: must be null", "sum")
-	}
-	*j = ViewStreamAggregation(plain)
-	return nil
 }

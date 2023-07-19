@@ -279,6 +279,9 @@ genjsonschema: genjsonschema-cleanup $(GOJSONSCHEMA)
 		--output ./service/telemetry/generated_config.go \
 		--schema-package=https://opentelemetry.io/otelconfig/opentelemetry_configuration.json=github.com/open-telemetry/opentelemetry-collector/schema \
     	${OPENTELEMETRY_JSONSCHEMA_SRC_DIR}/schema/opentelemetry_configuration.json
+	@echo Modify jsonschema generated files.
+	sed -f $(TOOLS_MOD_DIR)/jsonschema_patch.sed service/telemetry/generated_config.go > service/telemetry/generated_config_tmp.go
+	mv service/telemetry/generated_config_tmp.go service/telemetry/generated_config.go
 	$(MAKE) fmt
 	$(MAKE) genjsonschema-cleanup
 
