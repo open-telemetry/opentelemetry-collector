@@ -146,7 +146,7 @@ func TestMetricReader(t *testing.T) {
 							Protocol:    "grpc/protobuf",
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]interface{}{
+							Headers: map[string]string{
 								"test": "test1",
 							},
 						},
@@ -164,7 +164,7 @@ func TestMetricReader(t *testing.T) {
 							Endpoint:    "http://localhost:4317",
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]interface{}{
+							Headers: map[string]string{
 								"test": "test1",
 							},
 						},
@@ -182,7 +182,7 @@ func TestMetricReader(t *testing.T) {
 							Endpoint:    "localhost:4317",
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]interface{}{
+							Headers: map[string]string{
 								"test": "test1",
 							},
 						},
@@ -200,7 +200,7 @@ func TestMetricReader(t *testing.T) {
 							Endpoint:    " ",
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]interface{}{
+							Headers: map[string]string{
 								"test": "test1",
 							},
 						},
@@ -219,7 +219,7 @@ func TestMetricReader(t *testing.T) {
 							Endpoint:    "localhost:4317",
 							Compression: strPtr("invalid"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]interface{}{
+							Headers: map[string]string{
 								"test": "test1",
 							},
 						},
@@ -237,7 +237,7 @@ func TestMetricReader(t *testing.T) {
 							Endpoint:    "http://localhost:4318",
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]interface{}{
+							Headers: map[string]string{
 								"test": "test1",
 							},
 						},
@@ -255,7 +255,7 @@ func TestMetricReader(t *testing.T) {
 							Endpoint:    "http://localhost:4318/path/123",
 							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]interface{}{
+							Headers: map[string]string{
 								"test": "test1",
 							},
 						},
@@ -272,7 +272,7 @@ func TestMetricReader(t *testing.T) {
 							Protocol:    "http/protobuf",
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]interface{}{
+							Headers: map[string]string{
 								"test": "test1",
 							},
 						},
@@ -290,7 +290,7 @@ func TestMetricReader(t *testing.T) {
 							Endpoint:    "localhost:4318",
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]interface{}{
+							Headers: map[string]string{
 								"test": "test1",
 							},
 						},
@@ -308,7 +308,7 @@ func TestMetricReader(t *testing.T) {
 							Endpoint:    " ",
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]interface{}{
+							Headers: map[string]string{
 								"test": "test1",
 							},
 						},
@@ -327,14 +327,14 @@ func TestMetricReader(t *testing.T) {
 							Endpoint:    "localhost:4318",
 							Compression: strPtr("invalid"),
 							Timeout:     intPtr(1000),
-							Headers: map[string]interface{}{
+							Headers: map[string]string{
 								"test": "test1",
 							},
 						},
 					},
 				},
 			},
-			err: errors.New("unsupported compression invalid"),
+			err: errors.New("unsupported compression \"invalid\""),
 		},
 	}
 	for _, tt := range testCases {

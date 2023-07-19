@@ -238,7 +238,7 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric)
 		opts = append(opts, otlpmetricgrpc.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
 	}
 	if len(otlpConfig.Headers) > 0 {
-		opts = append(opts, otlpmetricgrpc.WithHeaders(toStringMap(otlpConfig.Headers)))
+		opts = append(opts, otlpmetricgrpc.WithHeaders(otlpConfig.Headers))
 	}
 
 	return otlpmetricgrpc.New(ctx, opts...)
@@ -268,23 +268,15 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric)
 		case "none":
 			opts = append(opts, otlpmetrichttp.WithCompression(otlpmetrichttp.NoCompression))
 		default:
-			return nil, fmt.Errorf("unsupported compression %s", *otlpConfig.Compression)
+			return nil, fmt.Errorf("unsupported compression %q", *otlpConfig.Compression)
 		}
 	}
 	if otlpConfig.Timeout != nil {
 		opts = append(opts, otlpmetrichttp.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
 	}
 	if len(otlpConfig.Headers) > 0 {
-		opts = append(opts, otlpmetrichttp.WithHeaders(toStringMap(otlpConfig.Headers)))
+		opts = append(opts, otlpmetrichttp.WithHeaders(otlpConfig.Headers))
 	}
 
 	return otlpmetrichttp.New(ctx, opts...)
-}
-
-func toStringMap(in map[string]interface{}) map[string]string {
-	out := map[string]string{}
-	for k, v := range in {
-		out[k] = fmt.Sprint(v)
-	}
-	return out
 }
