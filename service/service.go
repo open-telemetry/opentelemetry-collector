@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/extensions"
-	"go.opentelemetry.io/collector/service/internal/graph"
+	"go.opentelemetry.io/collector/service/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
