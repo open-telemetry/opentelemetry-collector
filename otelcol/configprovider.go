@@ -53,6 +53,9 @@ type ConfigProvider interface {
 // ConfmapProvider is an optional interface to be implemented by ConfigProviders
 // to provide confmap.Conf objects representing a marshaled version of the
 // Collector's configuration.
+//
+// The purpose of this interface is that otelcol.ConfigProvider structs do not
+// necessarily need to use confmap.Conf as their underlying config structure.
 type ConfmapProvider interface {
 	// GetConfmap resolves the Collector's configuration and provides it as a confmap.Conf object.
 	//
