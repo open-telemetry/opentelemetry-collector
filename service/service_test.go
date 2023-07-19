@@ -380,6 +380,29 @@ func TestExtensionNotificationFailure(t *testing.T) {
 	require.NoError(t, srv.Shutdown(context.Background()))
 }
 
+func TestNilCollectorEffectiveConfig(t *testing.T) {
+	set := newNopSettings()
+	set.CollectorConf = nil
+	cfg := newNopConfig()
+
+	var extName component.Type = "configWatcher"
+	configWatcherExtensionFactory := newConfigWatcherExtensionFactory(extName)
+	set.Extensions = extension.NewBuilder(
+		map[component.ID]component.Config{component.NewID(extName): configWatcherExtensionFactory.CreateDefaultConfig()},
+		map[component.Type]extension.Factory{extName: configWatcherExtensionFactory})
+	cfg.Extensions = []component.ID{component.NewID(extName)}
+
+	// Create a service
+	srv, err := New(context.Background(), set, cfg)
+	require.NoError(t, err)
+
+	// Start the service
+	require.NoError(t, srv.Start(context.Background()))
+
+	// Shut down the service
+	require.NoError(t, srv.Shutdown(context.Background()))
+}
+
 func assertResourceLabels(t *testing.T, res pcommon.Resource, expectedLabels map[string]labelValue) {
 	for key, labelValue := range expectedLabels {
 		lookupKey, ok := prometheusToOtelConv[key]

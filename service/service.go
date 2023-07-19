@@ -143,8 +143,10 @@ func (srv *Service) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
 
-	if err := srv.host.serviceExtensions.NotifyConfig(ctx, srv.collectorConf); err != nil {
-		return err
+	if srv.collectorConf != nil {
+		if err := srv.host.serviceExtensions.NotifyConfig(ctx, srv.collectorConf); err != nil {
+			return err
+		}
 	}
 
 	if err := srv.host.pipelines.StartAll(ctx, srv.host); err != nil {

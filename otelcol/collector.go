@@ -144,7 +144,7 @@ func (col *Collector) Shutdown() {
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(StateStarting)
 
-	conf := confmap.New()
+	var conf *confmap.Conf
 
 	if cp, ok := col.set.ConfigProvider.(ConfmapProvider); ok {
 		var err error
