@@ -9,7 +9,7 @@ require (
 	github.com/golangci/golangci-lint v1.53.3
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.4.0
-	github.com/mikefarah/yq/v4 v4.34.1
+	github.com/mikefarah/yq/v4 v4.34.2
 	github.com/pavius/impi v0.0.3
 	go.opentelemetry.io/build-tools/checkdoc v0.9.0
 	go.opentelemetry.io/build-tools/chloggen v0.9.0
