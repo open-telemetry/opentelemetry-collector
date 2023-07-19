@@ -125,5 +125,5 @@ func TestGetConfmap(t *testing.T) {
 	cmap, err := cmp.GetConfmap(context.Background())
 	require.NoError(t, err)
 
-	assert.EqualValues(t, cmap.ToStringMap(), yamlMap)
+	assert.EqualValues(t, yamlMap, cmap.ToStringMap())
 }
