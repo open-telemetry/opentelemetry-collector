@@ -5,7 +5,7 @@ change_type: bug_fix
 component: service/proctelemetry
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Make sure OTEL internal metrics is reading and reporting its own process data when HOST_PROC is set
+note: Allow to override the /proc folder on Linux used by process telemetry.
 
 # One or more tracking issues or pull requests related to the change
 issues: [7434]
@@ -13,4 +13,4 @@ issues: [7434]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: If user wants to use the path defined in the environment variable HOST_PROC, then they can set `useHostProcEnvVar` to true
+subtext: This is an API change only, allowing users to set a value to override the environment variable HOST_PROC.
