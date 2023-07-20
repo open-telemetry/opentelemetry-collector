@@ -220,6 +220,14 @@ func TestUnmarshalSpanProcessor(t *testing.T) {
 				},
 			}}),
 		},
+		{
+			name: "valid batch processor type, valid otlp exporter",
+			cfg: confmap.NewFromStringMap(map[string]any{"batch": BatchSpanProcessor{
+				Exporter: SpanExporter{
+					Otlp: &Otlp{},
+				},
+			}}),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

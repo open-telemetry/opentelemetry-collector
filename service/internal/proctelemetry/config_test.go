@@ -427,6 +427,266 @@ func TestSpanProcessor(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "batch/otlp-exporter-invalid-protocol",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxExportBatchSize: intPtr(0),
+					ExportTimeout:      intPtr(0),
+					MaxQueueSize:       intPtr(0),
+					ScheduleDelay:      intPtr(0),
+					Exporter: telemetry.SpanExporter{
+						Otlp: &telemetry.Otlp{
+							Protocol: *strPtr("http/invalid"),
+						},
+					},
+				},
+			},
+			err: errors.New("unsupported protocol http/invalid"),
+		},
+		{
+			name: "batch/otlp-grpc-exporter-no-endpoint",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxExportBatchSize: intPtr(0),
+					ExportTimeout:      intPtr(0),
+					MaxQueueSize:       intPtr(0),
+					ScheduleDelay:      intPtr(0),
+					Exporter: telemetry.SpanExporter{
+						Otlp: &telemetry.Otlp{
+							Protocol:    "grpc/protobuf",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "batch/otlp-grpc-exporter",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxExportBatchSize: intPtr(0),
+					ExportTimeout:      intPtr(0),
+					MaxQueueSize:       intPtr(0),
+					ScheduleDelay:      intPtr(0),
+					Exporter: telemetry.SpanExporter{
+						Otlp: &telemetry.Otlp{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    "http://localhost:4317",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "batch/otlp-grpc-exporter-no-scheme",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxExportBatchSize: intPtr(0),
+					ExportTimeout:      intPtr(0),
+					MaxQueueSize:       intPtr(0),
+					ScheduleDelay:      intPtr(0),
+					Exporter: telemetry.SpanExporter{
+						Otlp: &telemetry.Otlp{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    "localhost:4317",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "batch/otlp-grpc-invalid-endpoint",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxExportBatchSize: intPtr(0),
+					ExportTimeout:      intPtr(0),
+					MaxQueueSize:       intPtr(0),
+					ScheduleDelay:      intPtr(0),
+					Exporter: telemetry.SpanExporter{
+						Otlp: &telemetry.Otlp{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    " ",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+			err: &url.Error{Op: "parse", URL: "http:// ", Err: url.InvalidHostError(" ")},
+		},
+		{
+			name: "batch/otlp-grpc-invalid-compression",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxExportBatchSize: intPtr(0),
+					ExportTimeout:      intPtr(0),
+					MaxQueueSize:       intPtr(0),
+					ScheduleDelay:      intPtr(0),
+					Exporter: telemetry.SpanExporter{
+						Otlp: &telemetry.Otlp{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    "localhost:4317",
+							Compression: strPtr("invalid"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "batch/otlp-http-exporter",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxExportBatchSize: intPtr(0),
+					ExportTimeout:      intPtr(0),
+					MaxQueueSize:       intPtr(0),
+					ScheduleDelay:      intPtr(0),
+					Exporter: telemetry.SpanExporter{
+						Otlp: &telemetry.Otlp{
+							Protocol:    "http/protobuf",
+							Endpoint:    "http://localhost:4318",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "batch/otlp-http-exporter-with-path",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxExportBatchSize: intPtr(0),
+					ExportTimeout:      intPtr(0),
+					MaxQueueSize:       intPtr(0),
+					ScheduleDelay:      intPtr(0),
+					Exporter: telemetry.SpanExporter{
+						Otlp: &telemetry.Otlp{
+							Protocol:    "http/protobuf",
+							Endpoint:    "http://localhost:4318/path/123",
+							Compression: strPtr("none"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "batch/otlp-http-exporter-no-endpoint",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxExportBatchSize: intPtr(0),
+					ExportTimeout:      intPtr(0),
+					MaxQueueSize:       intPtr(0),
+					ScheduleDelay:      intPtr(0),
+					Exporter: telemetry.SpanExporter{
+						Otlp: &telemetry.Otlp{
+							Protocol:    "http/protobuf",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "batch/otlp-http-exporter-no-scheme",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxExportBatchSize: intPtr(0),
+					ExportTimeout:      intPtr(0),
+					MaxQueueSize:       intPtr(0),
+					ScheduleDelay:      intPtr(0),
+					Exporter: telemetry.SpanExporter{
+						Otlp: &telemetry.Otlp{
+							Protocol:    "http/protobuf",
+							Endpoint:    "localhost:4318",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "batch/otlp-http-invalid-endpoint",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxExportBatchSize: intPtr(0),
+					ExportTimeout:      intPtr(0),
+					MaxQueueSize:       intPtr(0),
+					ScheduleDelay:      intPtr(0),
+					Exporter: telemetry.SpanExporter{
+						Otlp: &telemetry.Otlp{
+							Protocol:    "http/protobuf",
+							Endpoint:    " ",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+			err: &url.Error{Op: "parse", URL: "http:// ", Err: url.InvalidHostError(" ")},
+		},
+		{
+			name: "batch/otlp-http-invalid-compression",
+			processor: telemetry.SpanProcessor{
+				Batch: &telemetry.BatchSpanProcessor{
+					MaxExportBatchSize: intPtr(0),
+					ExportTimeout:      intPtr(0),
+					MaxQueueSize:       intPtr(0),
+					ScheduleDelay:      intPtr(0),
+					Exporter: telemetry.SpanExporter{
+						Otlp: &telemetry.Otlp{
+							Protocol:    "http/protobuf",
+							Endpoint:    "localhost:4318",
+							Compression: strPtr("invalid"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+			err: errors.New("unsupported compression \"invalid\""),
+		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
