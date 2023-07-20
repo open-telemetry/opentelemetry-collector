@@ -4,7 +4,6 @@
 package telemetry
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,10 +13,9 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	tests := []struct {
-		name     string
-		cfg      *Config
-		success  bool
-		hostproc string
+		name    string
+		cfg     *Config
+		success bool
 	}{
 		{
 			name: "basic metric telemetry",
@@ -43,11 +41,6 @@ func TestLoadConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.hostproc != "" {
-				os.Setenv("HOST_PROC", tt.hostproc)
-			} else {
-				os.Unsetenv("HOST_PROC")
-			}
 			err := tt.cfg.Validate()
 			if tt.success {
 				assert.NoError(t, err)
