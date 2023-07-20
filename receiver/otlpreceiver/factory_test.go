@@ -277,7 +277,7 @@ func TestCreateLogReceiver(t *testing.T) {
 					GRPC: defaultGRPCSettings,
 					HTTP: &httpServerSettings{
 						HTTPServerSettings: &confighttp.HTTPServerSettings{
-							Endpoint: "327.0.0.1:1122",
+							Endpoint: "127.0.0.1:1122",
 						},
 					},
 				},
