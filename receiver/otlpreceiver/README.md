@@ -47,7 +47,7 @@ and processed accordingly. Note the serialization format needs to be [protobuf J
 
 The HTTP/JSON configuration also provides `traces_url_path`, `metrics_url_path`, and `logs_url_path`
 configuration to allow the URL paths that signal data needs to be sent to be modified per signal type.  These default to
-`v1/traces`, `v1/metrics`, and `v1/logs` respectively.
+`/v1/traces`, `/v1/metrics`, and `/v1/logs` respectively.
 
 To write traces with HTTP/JSON, `POST` to `[address]/[traces_url_path]` for traces,
 to `[address]/[metrics_url_path]` for metrics, to `[address]/[logs_url_path]` for logs.
