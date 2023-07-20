@@ -122,11 +122,6 @@ type MetricsConfig struct {
 	// Readers allow configuration of metric readers to emit metrics to
 	// any number of supported backends.
 	Readers []MetricReader `mapstructure:"metric_readers"`
-
-	// HostProc is the path to the proc folder used to look up for the collector process.
-	// When unset, the collector will use the environment variable HOST_PROC if set, and
-	// default to `/proc` if no value is set.
-	HostProc string `mapstructure:"host_proc"`
 }
 
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.

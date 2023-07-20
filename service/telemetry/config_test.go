@@ -39,18 +39,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 			success: false,
 		},
-		{
-			name: "metric telemetry with valid host proc",
-			cfg: &Config{
-				Metrics: MetricsConfig{
-					Level:    configtelemetry.LevelBasic,
-					Address:  "127.0.0.1:3333",
-					HostProc: "/host/proc",
-				},
-			},
-			success:  true,
-			hostproc: "/host/proc",
-		},
 	}
 
 	for _, tt := range tests {
