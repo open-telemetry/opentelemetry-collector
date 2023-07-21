@@ -45,6 +45,10 @@ type strictFlagValue struct {
 	args *gateRegistrationArgs
 }
 
+func (f *strictFlagValue) IsBoolFlag() bool {
+	return true
+}
+
 func (f *strictFlagValue) String() string {
 	return fmt.Sprintf("%t", f.args.strict)
 }
