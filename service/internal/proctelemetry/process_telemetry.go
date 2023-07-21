@@ -51,9 +51,34 @@ type processMetrics struct {
 	ms         *runtime.MemStats
 }
 
+type RegisterOption interface {
+	apply(*registerOption)
+}
+
+type registerOption struct {
+	hostProc string
+}
+
+type registerOptionFunc func(*registerOption)
+
+func (fn registerOptionFunc) apply(set *registerOption) {
+	fn(set)
+}
+
+// WithHostProc overrides the /proc folder on Linux used by process telemetry.
+func WithHostProc(hostProc string) RegisterOption {
+	return registerOptionFunc(func(uo *registerOption) {
+		uo.hostProc = hostProc
+	})
+}
+
 // RegisterProcessMetrics creates a new set of processMetrics (mem, cpu) that can be used to measure
 // basic information about this process.
-func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProvider, useOtel bool, ballastSizeBytes uint64, hostProc string) error {
+func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProvider, useOtel bool, ballastSizeBytes uint64, opts ...RegisterOption) error {
+	set := registerOption{}
+	for _, opt := range opts {
+		opt.apply(&set)
+	}
 	var err error
 	pm := &processMetrics{
 		startTimeUnixNano: time.Now().UnixNano(),
@@ -62,8 +87,8 @@ func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProv
 	}
 
 	ctx := context.Background()
-	if hostProc != "" {
-		ctx = context.WithValue(ctx, common.EnvKey, common.EnvMap{common.HostProcEnvKey: hostProc})
+	if set.hostProc != "" {
+		ctx = context.WithValue(ctx, common.EnvKey, common.EnvMap{common.HostProcEnvKey: set.hostProc})
 	}
 	pm.context = ctx
 	pm.proc, err = process.NewProcessWithContext(pm.context, int32(os.Getpid()))

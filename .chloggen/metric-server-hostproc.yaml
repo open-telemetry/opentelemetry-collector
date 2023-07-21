@@ -1,5 +1,5 @@
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: bug_fix
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
 component: service/proctelemetry
@@ -13,4 +13,6 @@ issues: [7434]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: This is an API change only, allowing users to set a value to override the environment variable HOST_PROC.
+subtext: |
+  This is an API change only, allowing users to set a value to override the environment variable HOST_PROC.
+  This change affects the proctelemetry.RegisterProcessMetrics function, adding a vararg argument to pass options.
