@@ -82,10 +82,14 @@ func (cfg *Config) Validate() error {
 		}
 
 		if _, ok := cfg.Exporters[connID]; ok {
-			return fmt.Errorf("connectors::%s: there's already an exporter named %q", connID, connID)
+			return fmt.Errorf("connectors::%s: ambiguous ID: Found both %q exporter and %q connector. "+
+				"Change one of the components' IDs to eliminate ambiguity (e.g. rename %q connector to %q)",
+				connID, connID, connID, connID, connID.String()+"/connector")
 		}
 		if _, ok := cfg.Receivers[connID]; ok {
-			return fmt.Errorf("connectors::%s: there's already a receiver named %q", connID, connID)
+			return fmt.Errorf("connectors::%s: ambiguous ID: Found both %q receiver and %q connector. "+
+				"Change one of the components' IDs to eliminate ambiguity (e.g. rename %q connector to %q)",
+				connID, connID, connID, connID, connID.String()+"/connector")
 		}
 	}
 
