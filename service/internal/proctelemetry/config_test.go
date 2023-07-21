@@ -6,6 +6,7 @@ package proctelemetry
 import (
 	"context"
 	"errors"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -122,6 +123,218 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			name: "periodic/otlp-exporter-invalid-protocol",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol: *strPtr("http/invalid"),
+						},
+					},
+				},
+			},
+			err: errors.New("unsupported protocol http/invalid"),
+		},
+		{
+			name: "periodic/otlp-grpc-exporter-no-endpoint",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol:    "grpc/protobuf",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "periodic/otlp-grpc-exporter",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    "http://localhost:4317",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "periodic/otlp-grpc-exporter-no-scheme",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    "localhost:4317",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "periodic/otlp-grpc-invalid-endpoint",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    " ",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+			err: &url.Error{Op: "parse", URL: "http:// ", Err: url.InvalidHostError(" ")},
+		},
+		{
+			name: "periodic/otlp-grpc-invalid-compression",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol:    "grpc/protobuf",
+							Endpoint:    "localhost:4317",
+							Compression: strPtr("invalid"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "periodic/otlp-http-exporter",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol:    "http/protobuf",
+							Endpoint:    "http://localhost:4318",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "periodic/otlp-http-exporter-with-path",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol:    "http/protobuf",
+							Endpoint:    "http://localhost:4318/path/123",
+							Compression: strPtr("none"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "periodic/otlp-http-exporter-no-endpoint",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol:    "http/protobuf",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "periodic/otlp-http-exporter-no-scheme",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol:    "http/protobuf",
+							Endpoint:    "localhost:4318",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "periodic/otlp-http-invalid-endpoint",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol:    "http/protobuf",
+							Endpoint:    " ",
+							Compression: strPtr("gzip"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+			err: &url.Error{Op: "parse", URL: "http:// ", Err: url.InvalidHostError(" ")},
+		},
+		{
+			name: "periodic/otlp-http-invalid-compression",
+			reader: telemetry.MetricReader{
+				Periodic: &telemetry.PeriodicMetricReader{
+					Exporter: telemetry.MetricExporter{
+						Otlp: &telemetry.OtlpMetric{
+							Protocol:    "http/protobuf",
+							Endpoint:    "localhost:4318",
+							Compression: strPtr("invalid"),
+							Timeout:     intPtr(1000),
+							Headers: map[string]string{
+								"test": "test1",
+							},
+						},
+					},
+				},
+			},
+			err: errors.New("unsupported compression \"invalid\""),
 		},
 	}
 	for _, tt := range testCases {

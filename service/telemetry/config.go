@@ -153,7 +153,7 @@ func (mr *MetricReader) Unmarshal(conf *confmap.Conf) error {
 		return nil
 	}
 	if mr.Periodic != nil {
-		if mr.Periodic.Exporter.Console == nil {
+		if mr.Periodic.Exporter.Otlp == nil && mr.Periodic.Exporter.Console == nil {
 			return fmt.Errorf("invalid exporter configuration")
 		}
 		return nil
