@@ -151,7 +151,7 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 			return err
 		}
 
-		err = r.startHTTPServer(r.cfg.HTTP, host)
+		err = r.startHTTPServer(r.cfg.HTTP.HTTPServerSettings, host)
 		if err != nil {
 			return err
 		}
@@ -189,7 +189,7 @@ func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 	r.tracesReceiver = trace.New(tc, r.obsrepGRPC)
 	httpTracesReceiver := trace.New(tc, r.obsrepHTTP)
 	if r.httpMux != nil {
-		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
+		r.httpMux.HandleFunc(r.cfg.HTTP.TracesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			if req.Method != http.MethodPost {
 				handleUnmatchedMethod(resp)
 				return
@@ -214,7 +214,7 @@ func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 	r.metricsReceiver = metrics.New(mc, r.obsrepGRPC)
 	httpMetricsReceiver := metrics.New(mc, r.obsrepHTTP)
 	if r.httpMux != nil {
-		r.httpMux.HandleFunc("/v1/metrics", func(resp http.ResponseWriter, req *http.Request) {
+		r.httpMux.HandleFunc(r.cfg.HTTP.MetricsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			if req.Method != http.MethodPost {
 				handleUnmatchedMethod(resp)
 				return
@@ -239,7 +239,7 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 	r.logsReceiver = logs.New(lc, r.obsrepGRPC)
 	httpLogsReceiver := logs.New(lc, r.obsrepHTTP)
 	if r.httpMux != nil {
-		r.httpMux.HandleFunc("/v1/logs", func(resp http.ResponseWriter, req *http.Request) {
+		r.httpMux.HandleFunc(r.cfg.HTTP.LogsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			if req.Method != http.MethodPost {
 				handleUnmatchedMethod(resp)
 				return
