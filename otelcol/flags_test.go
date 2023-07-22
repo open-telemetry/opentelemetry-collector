@@ -61,7 +61,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			name:        "feature gates and strict",
 			args:        []string{"--feature-gates=alpha,-beta", "--feature-gates-strict=true"},
-			expectedErr: `invalid value "true" for flag -feature-gates-strict: gate "beta" is in beta and must be explicitly enabled`,
+			expectedErr: `invalid boolean value "true" for -feature-gates-strict: gate "beta" is in beta and must be explicitly enabled`,
 		},
 		{
 			name:        "strict flag first and feature gates",
