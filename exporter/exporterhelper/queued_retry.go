@@ -83,10 +83,10 @@ type queuedRetrySender struct {
 	requestUnmarshaler internal.RequestUnmarshaler
 }
 
-func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg QueueSettings, rCfg RetrySettings, enableLoggerSampler bool, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg QueueSettings, rCfg RetrySettings, enableSampledLogger bool, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	newLogger := logger
-	if !enableLoggerSampler {
+	if !enableSampledLogger {
 		newLogger = createSampledLogger(logger)
 	}
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())

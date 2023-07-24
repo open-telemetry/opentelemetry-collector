@@ -75,6 +75,8 @@ func TestUnmarshalConfig(t *testing.T) {
 				BalancerName:    "round_robin",
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("nop")},
 			},
-			EnableLoggerSampler: true,
+			SampledLoggerSettings: exporterhelper.SampledLoggerSettings{
+				Enabled: true,
+			},
 		}, cfg)
 }
