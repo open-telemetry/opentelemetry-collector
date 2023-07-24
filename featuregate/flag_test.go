@@ -188,3 +188,15 @@ func TestNewFlag(t *testing.T) {
 		})
 	}
 }
+
+func TestStrictFlagValue_String(t *testing.T) {
+	s := strictFlagValue{args: &gateRegistrationArgs{strict: true}}
+	require.Equal(t, "true", s.String())
+	s.args.strict = false
+	require.Equal(t, "false", s.String())
+}
+
+func TestStrictFlagValue_IsBoolFlag(t *testing.T) {
+	s := strictFlagValue{args: &gateRegistrationArgs{strict: true}}
+	require.Equal(t, true, s.IsBoolFlag())
+}
