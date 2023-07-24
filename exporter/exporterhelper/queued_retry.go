@@ -83,9 +83,12 @@ type queuedRetrySender struct {
 	requestUnmarshaler internal.RequestUnmarshaler
 }
 
-func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg QueueSettings, rCfg RetrySettings, enableLoggerSampler bool, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
-	sampledLogger := createSampledLogger(logger)
+	newLogger := logger
+	if !enableLoggerSampler {
+		newLogger = createSampledLogger(logger)
+	}
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
 
 	qrs := &queuedRetrySender{
@@ -95,7 +98,7 @@ func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg Queue
 		cfg:                qCfg,
 		retryStopCh:        retryStopCh,
 		traceAttribute:     traceAttr,
-		logger:             sampledLogger,
+		logger:             newLogger,
 		requestUnmarshaler: reqUnmarshaler,
 	}
 
@@ -104,7 +107,7 @@ func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg Queue
 		cfg:            rCfg,
 		nextSender:     nextSender,
 		stopCh:         retryStopCh,
-		logger:         sampledLogger,
+		logger:         newLogger,
 		// Following three functions actually depend on queuedRetrySender
 		onTemporaryFailure: qrs.onTemporaryFailure,
 	}

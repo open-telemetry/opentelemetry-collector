@@ -64,6 +64,7 @@ type baseSettings struct {
 	TimeoutSettings
 	QueueSettings
 	RetrySettings
+	EnableLoggerSampler bool
 }
 
 // fromOptions returns the internal options starting from the default and applying all configured options.
@@ -74,7 +75,8 @@ func fromOptions(options ...Option) *baseSettings {
 		// TODO: Enable queuing by default (call DefaultQueueSettings)
 		QueueSettings: QueueSettings{Enabled: false},
 		// TODO: Enable retry by default (call DefaultRetrySettings)
-		RetrySettings: RetrySettings{Enabled: false},
+		RetrySettings:       RetrySettings{Enabled: false},
+		EnableLoggerSampler: true,
 	}
 
 	for _, op := range options {
@@ -154,7 +156,7 @@ func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal compo
 		return nil, err
 	}
 
-	be.qrSender = newQueuedRetrySender(set.ID, signal, bs.QueueSettings, bs.RetrySettings, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
+	be.qrSender = newQueuedRetrySender(set.ID, signal, bs.QueueSettings, bs.RetrySettings, bs.EnableLoggerSampler, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
 	be.sender = be.qrSender
 	be.StartFunc = func(ctx context.Context, host component.Host) error {
 		// First start the wrapped exporter.

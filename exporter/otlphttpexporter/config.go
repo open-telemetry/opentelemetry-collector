@@ -25,6 +25,8 @@ type Config struct {
 
 	// The URL to send logs to. If omitted the Endpoint + "/v1/logs" will be used.
 	LogsEndpoint string `mapstructure:"logs_endpoint"`
+
+	EnableLoggerSampler bool `mapstructure:"enable_logger_sampler"`
 }
 
 var _ component.Config = (*Config)(nil)
