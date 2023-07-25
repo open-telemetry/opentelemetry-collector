@@ -86,7 +86,6 @@ type queuedRetrySender struct {
 func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg QueueSettings, rCfg RetrySettings, lCfg SampledLoggerSettings, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	newLogger := createSampledLogger(logger, lCfg)
-
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
 
 	qrs := &queuedRetrySender{

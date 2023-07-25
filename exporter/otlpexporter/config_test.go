@@ -76,7 +76,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("nop")},
 			},
 			SampledLoggerSettings: exporterhelper.SampledLoggerSettings{
-				Enabled: true,
+				Enabled: false,
 			},
 		}, cfg)
 }

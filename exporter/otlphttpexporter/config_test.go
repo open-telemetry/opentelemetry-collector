@@ -71,7 +71,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Compression:     "gzip",
 			},
 			SampledLoggerSettings: exporterhelper.SampledLoggerSettings{
-				Enabled: true,
+				Enabled: false,
 			},
 		}, cfg)
 }
