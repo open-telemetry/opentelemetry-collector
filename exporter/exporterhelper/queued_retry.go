@@ -85,10 +85,8 @@ type queuedRetrySender struct {
 
 func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg QueueSettings, rCfg RetrySettings, lCfg SampledLoggerSettings, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
-	newLogger := logger
-	if !lCfg.Enabled {
-		newLogger = createSampledLogger(logger)
-	}
+	newLogger := createSampledLogger(logger, lCfg)
+
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
 
 	qrs := &queuedRetrySender{
@@ -269,9 +267,13 @@ func NewDefaultRetrySettings() RetrySettings {
 	}
 }
 
-func createSampledLogger(logger *zap.Logger) *zap.Logger {
+func createSampledLogger(logger *zap.Logger, lCfg SampledLoggerSettings) *zap.Logger {
 	if logger.Core().Enabled(zapcore.DebugLevel) {
 		// Debugging is enabled. Don't do any sampling.
+		return logger
+	}
+
+	if !lCfg.Enabled {
 		return logger
 	}
 

@@ -24,6 +24,8 @@ The following configuration options can be modified:
       [the batch processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor)
       is used, the metric `batch_send_size` can be used for estimation)
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
+- `sampled_logger`: Samples logging messages, which caps the CPU and I/O load of logging while keeping a representative subset of your logs.
+  - `enabled` (default = true)
 
 The `initial_interval`, `max_interval`, `max_elapsed_time`, and `timeout` options accept 
 [duration strings](https://pkg.go.dev/time#ParseDuration),

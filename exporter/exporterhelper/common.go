@@ -27,9 +27,9 @@ func NewDefaultTimeoutSettings() TimeoutSettings {
 	}
 }
 
-// SampledLoggerSettings. The SampledLogger samples logging messages, which
-// caps the CPU and I/O load of logging while attempting to preserve a
+// SampledLoggerSettings samples logging messages, which caps the CPU and I/O load of logging while keeping a
 // representative subset of your logs.
+// Its purpose is to balance between the need for comprehensive logging and the potential performance impact of logging too much data.
 type SampledLoggerSettings struct {
 	// Enable the sampledLogger
 	Enabled bool `mapstructure:"enabled"`
