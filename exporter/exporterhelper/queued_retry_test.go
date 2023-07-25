@@ -619,7 +619,7 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	}, time.Second, 1*time.Millisecond)
 }
 
-func TestSampledLogger(t *testing.T) {
+func TestCreateSampledLogger(t *testing.T) {
 	testCases := []struct {
 		desc                 string
 		logger               *zap.Logger
@@ -633,7 +633,7 @@ func TestSampledLogger(t *testing.T) {
 			sampledLoggedCreated: true,
 		},
 		{
-			desc:   "disable logger sampler",
+			desc:   "sampledLogger disable",
 			logger: zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel)),
 			lCfg: SampledLoggerSettings{
 				Enabled: false,
@@ -641,13 +641,13 @@ func TestSampledLogger(t *testing.T) {
 			sampledLoggedCreated: false,
 		},
 		{
-			desc:                 "debug logger and sampledLogged enabled - sampledLogger not created",
+			desc:                 "debug logger level and sampledLogged enabled - sampledLogger not created",
 			logger:               zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel)),
 			lCfg:                 NewDefaultSampledLoggerSettings(),
 			sampledLoggedCreated: false,
 		},
 		{
-			desc:   "debug logger and sampledLogged disabled - sampledLogger not created",
+			desc:   "debug logger level and sampledLogged disabled - sampledLogger not created",
 			logger: zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel)),
 			lCfg: SampledLoggerSettings{
 				Enabled: false,

@@ -91,7 +91,7 @@ func fromOptions(options ...Option) *baseSettings {
 		QueueSettings: QueueSettings{Enabled: false},
 		// TODO: Enable retry by default (call DefaultRetrySettings)
 		RetrySettings:         RetrySettings{Enabled: false},
-		SampledLoggerSettings: SampledLoggerSettings{Enabled: true},
+		SampledLoggerSettings: NewDefaultSampledLoggerSettings(),
 	}
 
 	for _, op := range options {
