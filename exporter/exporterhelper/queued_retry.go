@@ -267,12 +267,8 @@ func NewDefaultRetrySettings() RetrySettings {
 }
 
 func createSampledLogger(logger *zap.Logger, lCfg SampledLoggerSettings) *zap.Logger {
-	if logger.Core().Enabled(zapcore.DebugLevel) {
+	if !lCfg.Enabled || logger.Core().Enabled(zapcore.DebugLevel) {
 		// Debugging is enabled. Don't do any sampling.
-		return logger
-	}
-
-	if !lCfg.Enabled {
 		return logger
 	}
 
