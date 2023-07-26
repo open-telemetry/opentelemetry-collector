@@ -73,6 +73,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
+	e.profileExporter = pprofileotlp.NewGRPCClient(e.clientConn)
 	headers := map[string]string{}
 	for k, v := range e.config.GRPCClientSettings.Headers {
 		headers[k] = string(v)
@@ -131,8 +132,8 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func (e *baseExporter) pushProfiles(ctx context.Context, ld pprofile.Profiles) error {
-	req := pprofileotlp.NewExportRequestFromProfiles(ld)
+func (e *baseExporter) pushProfiles(ctx context.Context, pd pprofile.Profiles) error {
+	req := pprofileotlp.NewExportRequestFromProfiles(pd)
 	resp, respErr := e.profileExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	if err := processError(respErr); err != nil {
 		return err

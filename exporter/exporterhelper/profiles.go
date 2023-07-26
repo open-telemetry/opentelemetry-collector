@@ -20,14 +20,14 @@ var profilesUnmarshaler = &pprofile.ProtoUnmarshaler{}
 
 type profilesRequest struct {
 	baseRequest
-	ld     pprofile.Profiles
+	pd     pprofile.Profiles
 	pusher consumer.ConsumeProfilesFunc
 }
 
-func newProfilesRequest(ctx context.Context, ld pprofile.Profiles, pusher consumer.ConsumeProfilesFunc) internal.Request {
+func newProfilesRequest(ctx context.Context, pd pprofile.Profiles, pusher consumer.ConsumeProfilesFunc) internal.Request {
 	return &profilesRequest{
 		baseRequest: baseRequest{ctx: ctx},
-		ld:          ld,
+		pd:          pd,
 		pusher:      pusher,
 	}
 }
@@ -51,15 +51,15 @@ func (req *profilesRequest) OnError(err error) internal.Request {
 }
 
 func (req *profilesRequest) Export(ctx context.Context) error {
-	return req.pusher(ctx, req.ld)
+	return req.pusher(ctx, req.pd)
 }
 
 func (req *profilesRequest) Marshal() ([]byte, error) {
-	return profilesMarshaler.MarshalProfiles(req.ld)
+	return profilesMarshaler.MarshalProfiles(req.pd)
 }
 
 func (req *profilesRequest) Count() int {
-	return req.ld.ProfileCount()
+	return req.pd.ProfileCount()
 }
 
 type profilesExporter struct {
@@ -99,8 +99,8 @@ func NewProfilesExporter(
 		}
 	})
 
-	lc, err := consumer.NewProfiles(func(ctx context.Context, ld pprofile.Profiles) error {
-		req := newProfilesRequest(ctx, ld, pusher)
+	lc, err := consumer.NewProfiles(func(ctx context.Context, pd pprofile.Profiles) error {
+		req := newProfilesRequest(ctx, pd, pusher)
 		serr := be.sender.send(req)
 		if errors.Is(serr, errSendingQueueIsFull) {
 			be.obsrep.recordProfilesEnqueueFailure(req.Context(), int64(req.Count()))
