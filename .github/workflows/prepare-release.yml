@@ -29,7 +29,7 @@ jobs:
       - name: Validate version format
         run: |
           # Define the regular expression pattern for the version format.
-          version_pattern='^[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)?$'
+          version_pattern='^[0-9]+\.[0-9]+\.[0-9]+(-rcv?[0-9\.]+)?$'
           
           # Check if candidate-stable matches the version pattern.
           if ! [[ "${{ inputs.candidate-stable }}" =~ $version_pattern ]]; then
