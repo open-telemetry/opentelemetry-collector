@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -615,6 +617,56 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return produceCounter.Load() == uint32(2)
 	}, time.Second, 1*time.Millisecond)
+}
+
+func TestCreateSampledLogger(t *testing.T) {
+	testCases := []struct {
+		desc                 string
+		logger               *zap.Logger
+		lCfg                 SampledLoggerSettings
+		sampledLoggedCreated bool
+	}{
+		{
+			desc:                 "default configuration - sampledLogger enabled",
+			logger:               zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel)),
+			lCfg:                 NewDefaultSampledLoggerSettings(),
+			sampledLoggedCreated: true,
+		},
+		{
+			desc:   "sampledLogger disable",
+			logger: zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel)),
+			lCfg: SampledLoggerSettings{
+				Enabled: false,
+			},
+			sampledLoggedCreated: false,
+		},
+		{
+			desc:                 "debug logger level and sampledLogged enabled - sampledLogger not created",
+			logger:               zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel)),
+			lCfg:                 NewDefaultSampledLoggerSettings(),
+			sampledLoggedCreated: false,
+		},
+		{
+			desc:   "debug logger level and sampledLogged disabled - sampledLogger not created",
+			logger: zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel)),
+			lCfg: SampledLoggerSettings{
+				Enabled: false,
+			},
+			sampledLoggedCreated: false,
+		},
+	}
+
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			newLogger := createSampledLogger(tC.logger, tC.lCfg)
+			require.NotNil(t, newLogger)
+			if tC.sampledLoggedCreated {
+				require.NotEqual(t, tC.logger, newLogger)
+			} else {
+				require.Equal(t, tC.logger, newLogger)
+			}
+		})
+	}
 }
 
 type mockErrorRequest struct {

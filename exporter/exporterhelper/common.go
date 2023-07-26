@@ -27,6 +27,21 @@ func NewDefaultTimeoutSettings() TimeoutSettings {
 	}
 }
 
+// SampledLoggerSettings samples logging messages, which caps the CPU and I/O load of logging while keeping a
+// representative subset of your logs.
+// Its purpose is to balance between the need for comprehensive logging and the potential performance impact of logging too much data.
+type SampledLoggerSettings struct {
+	// Enable the sampledLogger
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// NewDefaultSampledLoggerSettings returns the default settings for SampledLoggerSettings.
+func NewDefaultSampledLoggerSettings() SampledLoggerSettings {
+	return SampledLoggerSettings{
+		Enabled: true,
+	}
+}
+
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 type requestSender interface {
 	send(req internal.Request) error
@@ -64,6 +79,7 @@ type baseSettings struct {
 	TimeoutSettings
 	QueueSettings
 	RetrySettings
+	SampledLoggerSettings
 }
 
 // fromOptions returns the internal options starting from the default and applying all configured options.
@@ -74,7 +90,8 @@ func fromOptions(options ...Option) *baseSettings {
 		// TODO: Enable queuing by default (call DefaultQueueSettings)
 		QueueSettings: QueueSettings{Enabled: false},
 		// TODO: Enable retry by default (call DefaultRetrySettings)
-		RetrySettings: RetrySettings{Enabled: false},
+		RetrySettings:         RetrySettings{Enabled: false},
+		SampledLoggerSettings: NewDefaultSampledLoggerSettings(),
 	}
 
 	for _, op := range options {
@@ -154,7 +171,7 @@ func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal compo
 		return nil, err
 	}
 
-	be.qrSender = newQueuedRetrySender(set.ID, signal, bs.QueueSettings, bs.RetrySettings, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
+	be.qrSender = newQueuedRetrySender(set.ID, signal, bs.QueueSettings, bs.RetrySettings, bs.SampledLoggerSettings, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
 	be.sender = be.qrSender
 	be.StartFunc = func(ctx context.Context, host component.Host) error {
 		// First start the wrapped exporter.
