@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package graph // import "go.opentelemetry.io/collector/service/graph"
+package pipelines // import "go.opentelemetry.io/collector/service/pipelines"
 
 import (
 	"net/http"

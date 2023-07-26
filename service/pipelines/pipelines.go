@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package graph // import "go.opentelemetry.io/collector/service/graph"
+package pipelines // import "go.opentelemetry.io/collector/service/pipelines"
 
 import (
 	"context"
@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
-	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 // Settings holds configuration for building a Graph.
@@ -52,7 +51,7 @@ type Pipelines struct {
 }
 
 // New builds a collector pipeline set.
-func New(ctx context.Context, set Settings, cfg pipelines.Config) (*Pipelines, error) {
+func New(ctx context.Context, set Settings, cfg Config) (*Pipelines, error) {
 	pipelines := &Pipelines{
 		componentGraph: simple.NewDirectedGraph(),
 		pipelines:      make(map[component.ID]*pipelineNodes, len(cfg)),
@@ -71,7 +70,7 @@ func New(ctx context.Context, set Settings, cfg pipelines.Config) (*Pipelines, e
 }
 
 // Creates a node for each instance of a component and adds it to the graph
-func (p *Pipelines) createNodes(set Settings, cfg pipelines.Config) error {
+func (p *Pipelines) createNodes(set Settings, cfg Config) error {
 	// Build a list of all connectors for easy reference
 	connectors := make(map[component.ID]struct{})
 

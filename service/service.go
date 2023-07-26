@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/extensions"
-	"go.opentelemetry.io/collector/service/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
+	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -191,7 +191,7 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 		return fmt.Errorf("failed to build extensions: %w", err)
 	}
 
-	pSet := graph.Settings{
+	pSet := pipelines.Settings{
 		Telemetry:        srv.telemetrySettings,
 		BuildInfo:        srv.buildInfo,
 		ReceiverBuilder:  set.Receivers,
@@ -200,7 +200,7 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 		ConnectorBuilder: set.Connectors,
 	}
 
-	if srv.host.pipelines, err = graph.New(ctx, pSet, cfg.Pipelines); err != nil {
+	if srv.host.pipelines, err = pipelines.New(ctx, pSet, cfg.Pipelines); err != nil {
 		return fmt.Errorf("failed to build pipelines: %w", err)
 	}
 
