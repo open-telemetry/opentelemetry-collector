@@ -19,7 +19,7 @@ const (
 )
 
 // HandleZPages handles ZPages requests for the zpages extension.
-func (g *Graph) HandleZPages(w http.ResponseWriter, r *http.Request) {
+func (g *Pipelines) HandleZPages(w http.ResponseWriter, r *http.Request) {
 	qValues := r.URL.Query()
 	pipelineName := qValues.Get(zPipelineName)
 	componentName := qValues.Get(zComponentName)

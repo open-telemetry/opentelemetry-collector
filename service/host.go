@@ -26,7 +26,7 @@ type serviceHost struct {
 
 	buildInfo component.BuildInfo
 
-	pipelines         *graph.Graph
+	pipelines         *graph.Pipelines
 	serviceExtensions *extensions.Extensions
 }
 

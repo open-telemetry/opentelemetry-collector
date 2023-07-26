@@ -140,7 +140,7 @@ func TestGraphStartStop(t *testing.T) {
 				order:   map[component.ID]int{},
 			}
 
-			pg := &Graph{componentGraph: simple.NewDirectedGraph()}
+			pg := &Pipelines{componentGraph: simple.NewDirectedGraph()}
 			for _, edge := range tt.edges {
 				f, t := &testNode{id: edge[0]}, &testNode{id: edge[1]}
 				pg.componentGraph.SetEdge(simple.Edge{F: f, T: t})
@@ -161,7 +161,7 @@ func TestGraphStartStop(t *testing.T) {
 }
 
 func TestGraphStartStopCycle(t *testing.T) {
-	pg := &Graph{componentGraph: simple.NewDirectedGraph()}
+	pg := &Pipelines{componentGraph: simple.NewDirectedGraph()}
 
 	r1 := &testNode{id: component.NewIDWithName("r", "1")}
 	p1 := &testNode{id: component.NewIDWithName("p", "1")}
@@ -183,7 +183,7 @@ func TestGraphStartStopCycle(t *testing.T) {
 }
 
 func TestGraphStartStopComponentError(t *testing.T) {
-	pg := &Graph{componentGraph: simple.NewDirectedGraph()}
+	pg := &Pipelines{componentGraph: simple.NewDirectedGraph()}
 	pg.componentGraph.SetEdge(simple.Edge{
 		F: &testNode{
 			id:       component.NewIDWithName("r", "1"),
@@ -659,10 +659,9 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 						testcomponents.MockForwardConnectorFactory.Type(): testcomponents.MockForwardConnectorFactory,
 					},
 				),
-				PipelineConfigs: test.pipelineConfigs,
 			}
 
-			pg, err := Build(context.Background(), set)
+			pg, err := New(context.Background(), set, test.pipelineConfigs)
 			require.NoError(t, err)
 
 			assert.Equal(t, len(test.pipelineConfigs), len(pg.pipelines))
@@ -928,53 +927,54 @@ func TestConnectorRouter(t *testing.T) {
 				testcomponents.ExampleRouterFactory.Type(): testcomponents.ExampleRouterFactory,
 			},
 		),
-		PipelineConfigs: pipelines.Config{
-			tracesInID: {
-				Receivers: []component.ID{rcvrID},
-				Exporters: []component.ID{routeTracesID},
-			},
-			tracesRightID: {
-				Receivers: []component.ID{routeTracesID},
-				Exporters: []component.ID{expRightID},
-			},
-			tracesLeftID: {
-				Receivers: []component.ID{routeTracesID},
-				Exporters: []component.ID{expLeftID},
-			},
-			metricsInID: {
-				Receivers: []component.ID{rcvrID},
-				Exporters: []component.ID{routeMetricsID},
-			},
-			metricsRightID: {
-				Receivers: []component.ID{routeMetricsID},
-				Exporters: []component.ID{expRightID},
-			},
-			metricsLeftID: {
-				Receivers: []component.ID{routeMetricsID},
-				Exporters: []component.ID{expLeftID},
-			},
-			logsInID: {
-				Receivers: []component.ID{rcvrID},
-				Exporters: []component.ID{routeLogsID},
-			},
-			logsRightID: {
-				Receivers: []component.ID{routeLogsID},
-				Exporters: []component.ID{expRightID},
-			},
-			logsLeftID: {
-				Receivers: []component.ID{routeLogsID},
-				Exporters: []component.ID{expLeftID},
-			},
+	}
+
+	pcfg := pipelines.Config{
+		tracesInID: {
+			Receivers: []component.ID{rcvrID},
+			Exporters: []component.ID{routeTracesID},
+		},
+		tracesRightID: {
+			Receivers: []component.ID{routeTracesID},
+			Exporters: []component.ID{expRightID},
+		},
+		tracesLeftID: {
+			Receivers: []component.ID{routeTracesID},
+			Exporters: []component.ID{expLeftID},
+		},
+		metricsInID: {
+			Receivers: []component.ID{rcvrID},
+			Exporters: []component.ID{routeMetricsID},
+		},
+		metricsRightID: {
+			Receivers: []component.ID{routeMetricsID},
+			Exporters: []component.ID{expRightID},
+		},
+		metricsLeftID: {
+			Receivers: []component.ID{routeMetricsID},
+			Exporters: []component.ID{expLeftID},
+		},
+		logsInID: {
+			Receivers: []component.ID{rcvrID},
+			Exporters: []component.ID{routeLogsID},
+		},
+		logsRightID: {
+			Receivers: []component.ID{routeLogsID},
+			Exporters: []component.ID{expRightID},
+		},
+		logsLeftID: {
+			Receivers: []component.ID{routeLogsID},
+			Exporters: []component.ID{expLeftID},
 		},
 	}
 
-	pg, err := Build(ctx, set)
+	pg, err := New(ctx, set, pcfg)
 	require.NoError(t, err)
 
 	allReceivers := pg.getReceivers()
 	allExporters := pg.GetExporters()
 
-	assert.Equal(t, len(set.PipelineConfigs), len(pg.pipelines))
+	assert.Equal(t, len(pcfg), len(pg.pipelines))
 
 	// Get a handle for the traces receiver and both exporters
 	tracesReceiver := allReceivers[component.DataTypeTraces][rcvrID].(*testcomponents.ExampleReceiver)
@@ -1954,9 +1954,8 @@ func TestGraphBuildErrors(t *testing.T) {
 						badConnectorFactory.Type(): badConnectorFactory,
 						mfConnectorFactory.Type():  mfConnectorFactory,
 					}),
-				PipelineConfigs: test.pipelineCfgs,
 			}
-			_, err := Build(context.Background(), set)
+			_, err := New(context.Background(), set, test.pipelineCfgs)
 			assert.EqualError(t, err, test.expected)
 		})
 	}
@@ -2018,42 +2017,42 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 	dataTypes := []component.DataType{component.DataTypeTraces, component.DataTypeMetrics, component.DataTypeLogs}
 	for _, dt := range dataTypes {
 		t.Run(string(dt)+"/receiver", func(t *testing.T) {
-			set.PipelineConfigs = pipelines.Config{
+			pcfg := pipelines.Config{
 				component.NewID(dt): {
 					Receivers:  []component.ID{component.NewID("nop"), component.NewID("err")},
 					Processors: []component.ID{component.NewID("nop")},
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			}
-			pipelines, err := Build(context.Background(), set)
+			pipelines, err := New(context.Background(), set, pcfg)
 			assert.NoError(t, err)
 			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
 		})
 
 		t.Run(string(dt)+"/processor", func(t *testing.T) {
-			set.PipelineConfigs = pipelines.Config{
+			pcfg := pipelines.Config{
 				component.NewID(dt): {
 					Receivers:  []component.ID{component.NewID("nop")},
 					Processors: []component.ID{component.NewID("nop"), component.NewID("err")},
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			}
-			pipelines, err := Build(context.Background(), set)
+			pipelines, err := New(context.Background(), set, pcfg)
 			assert.NoError(t, err)
 			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
 		})
 
 		t.Run(string(dt)+"/exporter", func(t *testing.T) {
-			set.PipelineConfigs = pipelines.Config{
+			pcfg := pipelines.Config{
 				component.NewID(dt): {
 					Receivers:  []component.ID{component.NewID("nop")},
 					Processors: []component.ID{component.NewID("nop")},
 					Exporters:  []component.ID{component.NewID("nop"), component.NewID("err")},
 				},
 			}
-			pipelines, err := Build(context.Background(), set)
+			pipelines, err := New(context.Background(), set, pcfg)
 			assert.NoError(t, err)
 			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
@@ -2061,7 +2060,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 
 		for _, dt2 := range dataTypes {
 			t.Run(string(dt)+"/"+string(dt2)+"/connector", func(t *testing.T) {
-				set.PipelineConfigs = pipelines.Config{
+				pcfg := pipelines.Config{
 					component.NewIDWithName(dt, "in"): {
 						Receivers:  []component.ID{component.NewID("nop")},
 						Processors: []component.ID{component.NewID("nop")},
@@ -2073,7 +2072,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 						Exporters:  []component.ID{component.NewID("nop")},
 					},
 				}
-				pipelines, err := Build(context.Background(), set)
+				pipelines, err := New(context.Background(), set, pcfg)
 				assert.NoError(t, err)
 				assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 				assert.Error(t, pipelines.ShutdownAll(context.Background()))
@@ -2082,7 +2081,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 	}
 }
 
-func (g *Graph) getReceivers() map[component.DataType]map[component.ID]component.Component {
+func (g *Pipelines) getReceivers() map[component.DataType]map[component.ID]component.Component {
 	receiversMap := make(map[component.DataType]map[component.ID]component.Component)
 	receiversMap[component.DataTypeTraces] = make(map[component.ID]component.Component)
 	receiversMap[component.DataTypeMetrics] = make(map[component.ID]component.Component)

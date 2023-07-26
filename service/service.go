@@ -198,10 +198,9 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 		ProcessorBuilder: set.Processors,
 		ExporterBuilder:  set.Exporters,
 		ConnectorBuilder: set.Connectors,
-		PipelineConfigs:  cfg.Pipelines,
 	}
 
-	if srv.host.pipelines, err = graph.Build(ctx, pSet); err != nil {
+	if srv.host.pipelines, err = graph.New(ctx, pSet, cfg.Pipelines); err != nil {
 		return fmt.Errorf("failed to build pipelines: %w", err)
 	}
 
