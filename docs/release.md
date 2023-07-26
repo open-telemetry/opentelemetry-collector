@@ -134,11 +134,10 @@ The following documents the procedure to release a bugfix
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2023-07-17 | v0.82.0 | @jpkrohling     |
-| 2023-07-31 | v0.83.0 | @djaglowski     |
-| 2023-08-14 | v0.84.0 | @dmitryax       |
-| 2023-08-28 | v0.85.0 | @codeboten      |
-| 2023-09-11 | v0.86.0 | @codeboten      |
-| 2023-09-25 | v0.87.0 | @bogdandrutu    |
-| 2023-10-09 | v0.88.0 | @Aneurysm9      |
-| 2023-10-23 | v0.89.0 | @mx-psi         |
+| 2023-08-14 | v0.83.0 | @djaglowski     |
+| 2023-08-28 | v0.84.0 | @dmitryax       |
+| 2023-09-11 | v0.85.0 | @codeboten      |
+| 2023-09-25 | v0.86.0 | @bogdandrutu    |
+| 2023-10-09 | v0.87.0 | @Aneurysm9      |
+| 2023-10-23 | v0.88.0 | @mx-psi         |
+| 2023-11-06 | v0.89.0 | @jpkrohling     |
