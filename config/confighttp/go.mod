@@ -7,15 +7,15 @@ require (
 	github.com/klauspost/compress v1.16.7
 	github.com/rs/cors v1.9.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.81.0
-	go.opentelemetry.io/collector/component v0.81.0
-	go.opentelemetry.io/collector/config/configauth v0.81.0
-	go.opentelemetry.io/collector/config/configcompression v0.81.0
-	go.opentelemetry.io/collector/config/configopaque v0.81.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.81.0
-	go.opentelemetry.io/collector/config/configtls v0.81.0
-	go.opentelemetry.io/collector/config/internal v0.81.0
-	go.opentelemetry.io/collector/extension/auth v0.81.0
+	go.opentelemetry.io/collector v0.82.0
+	go.opentelemetry.io/collector/component v0.82.0
+	go.opentelemetry.io/collector/config/configauth v0.82.0
+	go.opentelemetry.io/collector/config/configcompression v0.82.0
+	go.opentelemetry.io/collector/config/configopaque v0.82.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.82.0
+	go.opentelemetry.io/collector/config/configtls v0.82.0
+	go.opentelemetry.io/collector/config/internal v0.82.0
+	go.opentelemetry.io/collector/extension/auth v0.82.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0
 	go.opentelemetry.io/otel v1.16.0
 	go.uber.org/zap v1.24.0
@@ -36,10 +36,10 @@ require (
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.81.0 // indirect
-	go.opentelemetry.io/collector/extension v0.81.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013 // indirect
+	go.opentelemetry.io/collector/confmap v0.82.0 // indirect
+	go.opentelemetry.io/collector/extension v0.82.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
