@@ -29,7 +29,7 @@ func NewDefaultTimeoutSettings() TimeoutSettings {
 
 // SampledLoggerSettings configures the logger sampler.
 type SampledLoggerSettings struct {
-	// Enable/disable the sampledLogger. When setting `debug` log level the sampling will be disabled regardless of the value of this property.
+	// Enabled enables/disables the sampledLogger. When setting `debug` log level the sampling will be disabled regardless of the value of this property.
 	Enabled bool `mapstructure:"enabled"`
 }
 
