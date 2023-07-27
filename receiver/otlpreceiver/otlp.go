@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
@@ -135,6 +136,10 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 
 		if r.logsReceiver != nil {
 			plogotlp.RegisterGRPCServer(r.serverGRPC, r.logsReceiver)
+		}
+
+		if r.profilesReceiver != nil {
+			pprofileotlp.RegisterGRPCServer(r.serverGRPC, r.profilesReceiver)
 		}
 
 		err = r.startGRPCServer(r.cfg.GRPC, host)
