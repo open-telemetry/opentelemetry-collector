@@ -6,10 +6,12 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/jzelinskie/must"
@@ -30,9 +32,20 @@ func collapsedToOprof(profile string, flavor string) Profiles {
 	return pprofStructToOprof(pprof, []byte(profile), flavor)
 }
 
+func prettyPrint(v any) {
+	str := string(must.NotError(json.MarshalIndent(v, "", "  ")))
+	// if len(str) > 5000 {
+	// 	str = str[:5000]
+	// }
+	fmt.Println(str)
+}
+
 func PprofToOprof(profile []byte, flavor string) Profiles {
 	var pprof pprof.Profile
-	proto.Unmarshal(profile, &pprof)
+	err := proto.Unmarshal(ungzipIfNeeded(profile), &pprof)
+	if err != nil {
+		panic(err)
+	}
 	return pprofStructToOprof(&pprof, profile, flavor)
 	// for _, rps := range oprof.ResourceProfiles {
 
@@ -95,15 +108,21 @@ func pprofStructToOprof(pprof *pprof.Profile, op []byte, flavor string) Profiles
 
 func readPprof(filename string) *pprof.Profile {
 	b := must.NotError(ioutil.ReadFile(filename))
-	if bytes.HasPrefix(b, []byte{0x1f, 0x8b}) {
-		b = must.NotError(ioutil.ReadAll(must.NotError(gzip.NewReader(bytes.NewReader(b)))))
-	}
+	b = ungzipIfNeeded(b)
+
 	var p pprof.Profile
 	err := proto.Unmarshal(b, &p)
 	if err != nil {
 		panic(err)
 	}
 	return &p
+}
+
+func ungzipIfNeeded(b []byte) []byte {
+	if bytes.HasPrefix(b, []byte{0x1f, 0x8b}) {
+		b = must.NotError(ioutil.ReadAll(must.NotError(gzip.NewReader(bytes.NewReader(b)))))
+	}
+	return b
 }
 
 func collapsedToPprof(collapsed string) *pprof.Profile {
@@ -329,6 +348,7 @@ func pprofToNormalizedProfile(pprofProfile *pprof.Profile) *normalized.Profile {
 }
 
 func pprofToArraysProfile(pprofProfile *pprof.Profile) *arrays.Profile {
+
 	p := &arrays.Profile{
 		StringTable: pprofProfile.StringTable,
 	}
@@ -342,6 +362,19 @@ func pprofToArraysProfile(pprofProfile *pprof.Profile) *arrays.Profile {
 			SystemNameIndex: uint32(f.SystemName),
 			FilenameIndex:   uint32(f.Filename),
 			StartLine:       uint32(f.StartLine),
+		}
+	}
+
+	p.Mappings = make([]*arrays.Mapping, len(pprofProfile.Mapping))
+	for i, m := range pprofProfile.Mapping {
+		p.Mappings[i] = &arrays.Mapping{
+			MemoryStart:   m.MemoryStart,
+			MemoryLimit:   m.MemoryLimit,
+			FileOffset:    m.FileOffset,
+			FilenameIndex: uint32(m.Filename),
+			BuildIdIndex:  uint32(m.BuildId),
+			// SymbolicInfo:        m.SymbolicInfo,
+			// AttributeSetIndices: m.AttributeSetIndices,
 		}
 	}
 	p.Locations = make([]*arrays.Location, len(pprofProfile.Location))
@@ -366,7 +399,7 @@ func pprofToArraysProfile(pprofProfile *pprof.Profile) *arrays.Profile {
 		p.ProfileTypes[k] = &arrays.ProfileType{}
 
 		p.ProfileTypes[k].Values = make([]int64, len(pprofProfile.Sample))
-		p.ProfileTypes[k].StacktraceIndices = make([]uint32, len(pprofProfile.Sample))
+		p.ProfileTypes[k].StacktraceIndices = make([]uint32, len(pprofProfile.Sample)) // TODO: drop zeros?
 		p.ProfileTypes[k].LinkIndices = make([]uint32, len(pprofProfile.Sample))
 		p.ProfileTypes[k].AttributeSetIndices = make([]uint32, len(pprofProfile.Sample))
 		p.ProfileTypes[k].Timestamps = make([]uint64, len(pprofProfile.Sample))
@@ -506,4 +539,124 @@ func gzipBuffer(p []byte) []byte {
 		panic(err)
 	}
 	return b.Bytes()
+}
+
+func ungzipBuffer(p []byte) []byte {
+	var b bytes.Buffer
+	gz := gzip.NewWriter(&b)
+	if _, err := gz.Write(p); err != nil {
+		panic(err)
+	}
+	if err := gz.Close(); err != nil {
+		panic(err)
+	}
+	return b.Bytes()
+}
+
+func GetLabels(r ResourceProfiles) []common.KeyValue {
+	return r.orig.Resource.Attributes
+}
+
+func OprofToPprof(pWrapper Profile) []byte {
+	p := pWrapper.orig
+
+	dst := pprof.Profile{}
+	// orig := p.getOrig()
+	// for _, rp := range orig.GetResourceProfiles() {
+	// 	for _, sp := range rp.ScopeProfiles {
+	// 		for _, p := range sp.Profiles {
+	switch p.AlternativeProfile.(type) {
+	case *otlpprofile.Profile_Arrays:
+		arrays := p.AlternativeProfile.(*otlpprofile.Profile_Arrays)
+		src := arrays.Arrays
+		dst.StringTable = src.StringTable
+		dst.Function = make([]*pprof.Function, len(src.Functions))
+		for i, f := range src.Functions {
+			dst.Function[i] = &pprof.Function{
+				Id:         uint64(i + 1),
+				Name:       int64(f.NameIndex),
+				SystemName: int64(f.SystemNameIndex),
+				Filename:   int64(f.FilenameIndex),
+				StartLine:  int64(f.StartLine),
+			}
+		}
+		dst.Location = make([]*pprof.Location, len(src.Locations))
+		for i, l := range src.Locations {
+			lines := make([]*pprof.Line, len(l.Line))
+			for j, line := range l.Line {
+				lines[j] = &pprof.Line{
+					FunctionId: uint64(line.FunctionIndex),
+					Line:       int64(line.Line),
+				}
+			}
+			dst.Location[i] = &pprof.Location{
+				Id:        uint64(i + 1),
+				MappingId: uint64(l.MappingIndex),
+				Address:   uint64(l.Address),
+				Line:      lines,
+			}
+		}
+		dst.Mapping = make([]*pprof.Mapping, len(src.Mappings))
+		for i, m := range src.Mappings {
+			dst.Mapping[i] = &pprof.Mapping{
+				Id:          uint64(i + 1),
+				MemoryStart: m.MemoryStart,
+				MemoryLimit: m.MemoryLimit,
+				FileOffset:  m.FileOffset,
+				Filename:    int64(m.FilenameIndex),
+				BuildId:     int64(m.BuildIdIndex),
+			}
+		}
+
+		// TODO: implement these
+		dst.TimeNanos = int64(time.Now().UnixNano())
+		dst.DurationNanos = 201278458
+		dst.Period = 10000000
+
+		// TODO: implement this, dedup with SampleType
+		dst.PeriodType = &pprof.ValueType{
+			Type: 3,
+			Unit: 4,
+		}
+		dst.SampleType = make([]*pprof.ValueType, len(src.ProfileTypes))
+		for i, _ := range src.ProfileTypes {
+			// TODO: implement this, dedup with PeriodType
+			dst.SampleType[i] = &pprof.ValueType{
+				Type: int64(i*2 + 1),
+				Unit: int64(i*2 + 2),
+			}
+		}
+
+		sampleLookup := make(map[uint32]*pprof.Sample)
+
+		for i, pt := range src.ProfileTypes {
+			for j, sti := range pt.StacktraceIndices {
+				value := pt.Values[j]
+				stacktrace := src.Stacktraces[sti]
+				var sample *pprof.Sample
+				if s, ok := sampleLookup[sti]; ok {
+					sample = s
+				} else {
+					sample = &pprof.Sample{
+						Value: make([]int64, len(src.ProfileTypes)),
+					}
+					dst.Sample = append(dst.Sample, sample)
+					sampleLookup[sti] = sample
+				}
+				sample.Value[i] = value
+				sample.LocationId = make([]uint64, len(stacktrace.LocationIndices))
+				for k, li := range stacktrace.LocationIndices {
+					sample.LocationId[k] = uint64(li)
+				}
+				// TODO: labels
+			}
+		}
+		// TODO: implement support for Links
+		// TODO: implement support for SampleTypes
+		// TODO: implement support for Stacktraces
+		// TODO: implement support for AttributeSets
+	default:
+		panic("unsupported profile type")
+	}
+	return must.NotError(dst.Marshal())
 }
