@@ -112,6 +112,14 @@ Max: 15.000000
 ExplicitBounds #0: 1.000000
 Buckets #0, Count: 0
 Buckets #1, Count: 1
+Exemplars:
+Exemplar #0
+     -> Trace ID: 0102030405060708090a0b0c0d0e0f10
+     -> Span ID: 1112131415161718
+     -> Timestamp: 2020-02-11 20:26:13.000000123 +0000 UTC
+     -> Value: 15.000000
+     -> FilteredAttributes:
+          -> exemplar-attachment: Str(exemplar-attachment-value)
 Metric #5
 Descriptor:
      -> Name: exponential-histogram
@@ -144,6 +152,14 @@ Max: 1.000000
 Bucket [0, 0], Count: 1
 Bucket (0.250000, 1.000000], Count: 1
 Bucket (1.000000, 4.000000], Count: 1
+Exemplars:
+Exemplar #0
+     -> Trace ID: 0102030405060708090a0b0c0d0e0f10
+     -> Span ID: 1112131415161718
+     -> Timestamp: 2020-02-11 20:26:13.000000123 +0000 UTC
+     -> Value: 15.000000
+     -> FilteredAttributes:
+          -> exemplar-attachment: Str(exemplar-attachment-value)
 Metric #6
 Descriptor:
      -> Name: summary

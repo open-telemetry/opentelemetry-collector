@@ -188,6 +188,8 @@ func initHistogramMetric(hm pmetric.Metric) {
 	hdp1.SetMax(15)
 	hdp1.BucketCounts().FromRaw([]uint64{0, 1})
 	exemplar := hdp1.Exemplars().AppendEmpty()
+	exemplar.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	exemplar.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	exemplar.SetTimestamp(metricExemplarTimestamp)
 	exemplar.SetDoubleValue(15)
 	initMetricExemplarAttributes(exemplar.FilteredAttributes())
@@ -242,6 +244,8 @@ func initExponentialHistogramMetric(hm pmetric.Metric) {
 	// Bucket [1.000000, 4.000000), Count: 1
 
 	exemplar := hdp1.Exemplars().AppendEmpty()
+	exemplar.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	exemplar.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	exemplar.SetTimestamp(metricExemplarTimestamp)
 	exemplar.SetDoubleValue(15)
 	initMetricExemplarAttributes(exemplar.FilteredAttributes())
