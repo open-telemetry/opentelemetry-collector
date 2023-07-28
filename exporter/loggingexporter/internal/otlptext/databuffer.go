@@ -102,6 +102,8 @@ func (b *dataBuffer) logNumberDataPoints(ps pmetric.NumberDataPointSlice) {
 		case pmetric.NumberDataPointValueTypeDouble:
 			b.logEntry("Value: %f", p.DoubleValue())
 		}
+
+		b.logExemplars("Exemplars", p.Exemplars())
 	}
 }
 
@@ -134,6 +136,8 @@ func (b *dataBuffer) logHistogramDataPoints(ps pmetric.HistogramDataPointSlice) 
 		for j := 0; j < p.BucketCounts().Len(); j++ {
 			b.logEntry("Buckets #%d, Count: %d", j, p.BucketCounts().At(j))
 		}
+
+		b.logExemplars("Exemplars", p.Exemplars())
 	}
 }
 
@@ -191,6 +195,8 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 			upper := math.Exp(float64(index+1) * factor)
 			b.logEntry("Bucket (%f, %f], Count: %d", lower, upper, posB.At(pos))
 		}
+
+		b.logExemplars("Exemplars", p.Exemplars())
 	}
 }
 
@@ -255,6 +261,32 @@ func (b *dataBuffer) logLinks(description string, sl ptrace.SpanLinkSlice) {
 			continue
 		}
 		b.logAttributes("     -> Attributes:", l.Attributes())
+	}
+}
+
+func (b *dataBuffer) logExemplars(description string, se pmetric.ExemplarSlice) {
+	if se.Len() == 0 {
+		return
+	}
+
+	b.logEntry("%s:", description)
+
+	for i := 0; i < se.Len(); i++ {
+		e := se.At(i)
+		b.logEntry("Exemplar #%d", i)
+		b.logEntry("     -> Trace ID: %s", e.TraceID())
+		b.logEntry("     -> Span ID: %s", e.SpanID())
+		b.logEntry("     -> Timestamp: %s", e.Timestamp())
+		switch e.ValueType() {
+		case pmetric.ExemplarValueTypeInt:
+			b.logEntry("     -> Value: %d", e.IntValue())
+		case pmetric.ExemplarValueTypeDouble:
+			b.logEntry("     -> Value: %f", e.DoubleValue())
+		}
+		if e.FilteredAttributes().Len() == 0 {
+			continue
+		}
+		b.logAttributes("     -> FilteredAttributes", e.FilteredAttributes())
 	}
 }
 
