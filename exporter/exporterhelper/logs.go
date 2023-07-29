@@ -93,7 +93,7 @@ func NewLogsExporter(
 		return nil, errNilPushLogsData
 	}
 
-	bs := fromOptions(options...)
+	bs := newBaseSettings(false, options...)
 	bs.marshaler = logsRequestMarshaler
 	bs.unmarshaler = newLogsRequestUnmarshalerFunc(pusher)
 	be, err := newBaseExporter(set, bs, component.DataTypeLogs)
@@ -127,8 +127,8 @@ type LogsConverter interface {
 	RequestFromLogs(context.Context, plog.Logs) (Request, error)
 }
 
-// NewLogsExporterV2 creates new logs exporter based on custom LogsConverter and RequestSender.
-func NewLogsExporterV2(
+// NewLogsRequestExporter creates new logs exporter based on custom LogsConverter and RequestSender.
+func NewLogsRequestExporter(
 	_ context.Context,
 	set exporter.CreateSettings,
 	converter LogsConverter,
@@ -147,7 +147,7 @@ func NewLogsExporterV2(
 		return nil, errNilRequestSender
 	}
 
-	bs := fromOptions(options...)
+	bs := newBaseSettings(true, options...)
 	bs.RequestSender = sender
 
 	be, err := newBaseExporter(set, bs, component.DataTypeLogs)

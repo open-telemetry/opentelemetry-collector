@@ -94,7 +94,7 @@ func NewTracesExporter(
 		return nil, errNilPushTraceData
 	}
 
-	bs := fromOptions(options...)
+	bs := newBaseSettings(false, options...)
 	bs.marshaler = tracesRequestMarshaler
 	bs.unmarshaler = newTraceRequestUnmarshalerFunc(pusher)
 	be, err := newBaseExporter(set, bs, component.DataTypeTraces)
@@ -128,8 +128,8 @@ type TracesConverter interface {
 	RequestFromTraces(context.Context, ptrace.Traces) (Request, error)
 }
 
-// NewTracesExporterV2 creates a new traces exporter based on a custom TracesConverter and RequestSender.
-func NewTracesExporterV2(
+// NewTracesRequestExporter creates a new traces exporter based on a custom TracesConverter and RequestSender.
+func NewTracesRequestExporter(
 	_ context.Context,
 	set exporter.CreateSettings,
 	converter TracesConverter,
@@ -148,7 +148,7 @@ func NewTracesExporterV2(
 		return nil, errNilRequestSender
 	}
 
-	bs := fromOptions(options...)
+	bs := newBaseSettings(true, options...)
 	bs.RequestSender = sender
 
 	be, err := newBaseExporter(set, bs, component.DataTypeTraces)

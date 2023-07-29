@@ -11,7 +11,7 @@ import (
 
 // Request represents a single request that can be sent to the endpoint.
 type Request interface {
-	// ItemsCount returns the count basic item in the request, the smallest peaces of data that can be sent to the endpoint.
+	// ItemsCount returns the count basic item in the request, the smallest pieces of data that can be sent to the endpoint.
 	// For example, for OTLP exporter, this value represents the number of spans, metric data points or log records.
 	ItemsCount() int
 }

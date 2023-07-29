@@ -44,7 +44,7 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	rCfg := NewDefaultRetrySettings()
 	mockR := newMockRequest(context.Background(), 2, consumererror.NewPermanent(errors.New("bad data")))
-	bs := fromOptions(WithRetry(rCfg), WithQueue(qCfg))
+	bs := newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg))
 	bs.marshaler = mockRequestMarshaler
 	bs.unmarshaler = mockRequestUnmarshaler(mockR)
 	be, err := newBaseExporter(defaultSettings, bs, "")
@@ -71,7 +71,7 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	rCfg := NewDefaultRetrySettings()
 	rCfg.Enabled = false
-	bs := fromOptions(WithRetry(rCfg), WithQueue(qCfg))
+	bs := newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg))
 	bs.marshaler = mockRequestMarshaler
 	bs.unmarshaler = mockRequestUnmarshaler(newMockRequest(context.Background(), 2, errors.New("transient error")))
 	be, err := newBaseExporter(defaultSettings, bs, "")
@@ -100,7 +100,7 @@ func TestQueuedRetry_OnError(t *testing.T) {
 	qCfg.NumConsumers = 1
 	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = 0
-	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -127,7 +127,7 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := NewDefaultRetrySettings()
-	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -161,7 +161,7 @@ func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := NewDefaultRetrySettings()
-	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -191,7 +191,7 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 100 * time.Millisecond
-	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -238,7 +238,7 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 	qCfg.NumConsumers = 1
 	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = 10 * time.Millisecond
-	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -271,7 +271,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 	qCfg.QueueSize = 1
 	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = 0
-	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -298,7 +298,7 @@ func TestQueuedRetry_DropOnFull(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.QueueSize = 0
 	rCfg := NewDefaultRetrySettings()
-	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -319,7 +319,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	rCfg := NewDefaultRetrySettings()
 	set := tt.ToExporterCreateSettings()
-	be, err := newBaseExporter(set, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(set, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -354,7 +354,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 0 // to make every request go straight to the queue
 	rCfg := NewDefaultRetrySettings()
-	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -488,7 +488,7 @@ func TestQueuedRetry_RequeuingEnabled(t *testing.T) {
 	qCfg.NumConsumers = 1
 	rCfg := NewDefaultRetrySettings()
 	rCfg.MaxElapsedTime = time.Nanosecond // we don't want to retry at all, but requeue instead
-	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -520,7 +520,7 @@ func TestQueuedRetry_RequeuingEnabledQueueFull(t *testing.T) {
 	qCfg.QueueSize = 0
 	rCfg := NewDefaultRetrySettings()
 	rCfg.MaxElapsedTime = time.Nanosecond // we don't want to retry at all, but requeue instead
-	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	be.qrSender.requeuingEnabled = true
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -545,7 +545,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := NewDefaultRetrySettings()
 	set := tt.ToExporterCreateSettings()
-	be, err := newBaseExporter(set, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(set, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 
 	var extensions = map[component.ID]component.Component{
@@ -569,7 +569,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := NewDefaultRetrySettings()
 	set := tt.ToExporterCreateSettings()
-	bs := fromOptions(WithRetry(rCfg), WithQueue(qCfg))
+	bs := newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg))
 	bs.marshaler = mockRequestMarshaler
 	bs.unmarshaler = mockRequestUnmarshaler(&mockRequest{})
 	be, err := newBaseExporter(set, bs, "")
@@ -596,7 +596,7 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 
 	req := newMockRequest(context.Background(), 3, errors.New("some error"))
 
-	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 
 	require.NoError(t, be.Start(context.Background(), &mockHost{}))
@@ -628,6 +628,14 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return produceCounter.Load() == uint32(2)
 	}, time.Second, 1*time.Millisecond)
+}
+
+func TestQueueRetryOptionsWithRequestExporter(t *testing.T) {
+	bs := newBaseSettings(true, WithRetry(NewDefaultRetrySettings()))
+	assert.True(t, bs.requestExporter)
+	assert.Panics(t, func() {
+		_ = newBaseSettings(true, WithRetry(NewDefaultRetrySettings()), WithQueue(NewDefaultQueueSettings()))
+	})
 }
 
 type mockErrorRequest struct {

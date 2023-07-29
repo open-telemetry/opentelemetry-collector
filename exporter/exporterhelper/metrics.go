@@ -94,7 +94,7 @@ func NewMetricsExporter(
 		return nil, errNilPushMetricsData
 	}
 
-	bs := fromOptions(options...)
+	bs := newBaseSettings(false, options...)
 	bs.marshaler = metricsRequestMarshaler
 	bs.unmarshaler = newMetricsRequestUnmarshalerFunc(pusher)
 	be, err := newBaseExporter(set, bs, component.DataTypeMetrics)
@@ -128,8 +128,8 @@ type MetricsConverter interface {
 	RequestFromMetrics(context.Context, pmetric.Metrics) (Request, error)
 }
 
-// NewMetricsExporterV2 creates a new metrics exporter based on a custom TracesConverter and RequestSender.
-func NewMetricsExporterV2(
+// NewMetricsRequestExporter creates a new metrics exporter based on a custom TracesConverter and RequestSender.
+func NewMetricsRequestExporter(
 	_ context.Context,
 	set exporter.CreateSettings,
 	converter MetricsConverter,
@@ -148,7 +148,7 @@ func NewMetricsExporterV2(
 		return nil, errNilRequestSender
 	}
 
-	bs := fromOptions(options...)
+	bs := newBaseSettings(true, options...)
 	bs.RequestSender = sender
 
 	be, err := newBaseExporter(set, bs, component.DataTypeMetrics)

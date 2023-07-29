@@ -75,12 +75,14 @@ type baseSettings struct {
 	queueSettings
 	RetrySettings
 	RequestSender
+	requestExporter bool
 }
 
-// fromOptions returns the internal options starting from the default and applying all configured options.
-func fromOptions(options ...Option) *baseSettings {
-	// Start from the default options:
-	opts := &baseSettings{
+// fromOptions returns the baseSettings starting from the default and applying all configured options.
+// requestExporter indicates whether the base settings are for a new request exporter or not.
+func newBaseSettings(requestExporter bool, options ...Option) *baseSettings {
+	bs := &baseSettings{
+		requestExporter: requestExporter,
 		TimeoutSettings: NewDefaultTimeoutSettings(),
 		// TODO: Enable queuing by default (call DefaultQueueSettings)
 		queueSettings: queueSettings{
@@ -91,10 +93,10 @@ func fromOptions(options ...Option) *baseSettings {
 	}
 
 	for _, op := range options {
-		op(opts)
+		op(bs)
 	}
 
-	return opts
+	return bs
 }
 
 // Option apply changes to baseSettings.
@@ -137,6 +139,9 @@ func WithRetry(retrySettings RetrySettings) Option {
 // Permanent queue is not yet available for exporter helpers V2, they ignore StorageID field.
 func WithQueue(config QueueSettings) Option {
 	return func(o *baseSettings) {
+		if o.requestExporter {
+			panic("queueing is not supported for request exporters yet")
+		}
 		o.queueSettings.config = config
 	}
 }

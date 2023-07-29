@@ -32,7 +32,11 @@ var (
 )
 
 func TestBaseExporter(t *testing.T) {
-	be, err := newBaseExporter(defaultSettings, fromOptions(), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false), "")
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, be.Shutdown(context.Background()))
+	be, err = newBaseExporter(defaultSettings, newBaseSettings(true), "")
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, be.Shutdown(context.Background()))
@@ -42,7 +46,8 @@ func TestBaseExporterWithOptions(t *testing.T) {
 	want := errors.New("my error")
 	be, err := newBaseExporter(
 		defaultSettings,
-		fromOptions(
+		newBaseSettings(
+			false,
 			WithStart(func(ctx context.Context, host component.Host) error { return want }),
 			WithShutdown(func(ctx context.Context) error { return want }),
 			WithTimeout(NewDefaultTimeoutSettings())),

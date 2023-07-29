@@ -57,7 +57,7 @@ func TestTracesExporter_NilLogger(t *testing.T) {
 }
 
 func TestTracesExporterV2_NilLogger(t *testing.T) {
-	te, err := NewTracesExporterV2(context.Background(), exporter.CreateSettings{}, &fakeRequestConverter{},
+	te, err := NewTracesRequestExporter(context.Background(), exporter.CreateSettings{}, &fakeRequestConverter{},
 		newFakeRequestSender(nil))
 	require.Nil(t, te)
 	require.Equal(t, errNilLogger, err)
@@ -70,13 +70,13 @@ func TestTracesExporter_NilPushTraceData(t *testing.T) {
 }
 
 func TestTracesExporterV2_NilTracesConverter(t *testing.T) {
-	te, err := NewTracesExporterV2(context.Background(), exportertest.NewNopCreateSettings(), nil, newFakeRequestSender(nil))
+	te, err := NewTracesRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), nil, newFakeRequestSender(nil))
 	require.Nil(t, te)
 	require.Equal(t, errNilTracesConverter, err)
 }
 
 func TestTracesExporterV2_NilRequestSender(t *testing.T) {
-	te, err := NewTracesExporterV2(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, nil)
+	te, err := NewTracesRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, nil)
 	require.Nil(t, te)
 	require.Equal(t, errNilRequestSender, err)
 }
@@ -95,7 +95,7 @@ func TestTracesExporter_Default(t *testing.T) {
 
 func TestTracesExporterV2_Default(t *testing.T) {
 	td := ptrace.NewTraces()
-	te, err := NewTracesExporterV2(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(nil))
+	te, err := NewTracesRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(nil))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
@@ -116,7 +116,7 @@ func TestTracesExporter_WithCapabilities(t *testing.T) {
 
 func TestTracesExporterV2_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
-	te, err := NewTracesExporterV2(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(nil), WithCapabilities(capabilities))
+	te, err := NewTracesRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(nil), WithCapabilities(capabilities))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
@@ -137,7 +137,7 @@ func TestTracesExporter_Default_ReturnError(t *testing.T) {
 func TestTracesExporterV2_Default_ConverterError(t *testing.T) {
 	td := ptrace.NewTraces()
 	want := errors.New("convert_error")
-	te, err := NewTracesExporterV2(context.Background(), exportertest.NewNopCreateSettings(),
+	te, err := NewTracesRequestExporter(context.Background(), exportertest.NewNopCreateSettings(),
 		&fakeRequestConverter{tracesError: want}, newFakeRequestSender(nil))
 	require.NoError(t, err)
 	require.NotNil(t, te)
@@ -147,7 +147,7 @@ func TestTracesExporterV2_Default_ConverterError(t *testing.T) {
 func TestTracesExporterV2_Default_RequestSenderError(t *testing.T) {
 	td := ptrace.NewTraces()
 	want := errors.New("send_error")
-	te, err := NewTracesExporterV2(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(want))
+	te, err := NewTracesRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(want))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 	require.Equal(t, want, te.ConsumeTraces(context.Background(), td))
@@ -170,7 +170,7 @@ func TestTracesExporterV2_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := NewTracesExporterV2(context.Background(), tt.ToExporterCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(nil))
+	te, err := NewTracesRequestExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(nil))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -196,7 +196,7 @@ func TestTracesExporterV2_WithRecordMetrics_ReturnError(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := NewTracesExporterV2(context.Background(), tt.ToExporterCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(want))
+	te, err := NewTracesRequestExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(want))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -228,31 +228,6 @@ func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	checkExporterEnqueueFailedTracesStats(t, globalInstruments, fakeTracesExporterName, int64(10))
 }
 
-func TestTracesExporterV2_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(fakeTracesExporterV2Name)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	rCfg := NewDefaultRetrySettings()
-	qCfg := NewDefaultQueueSettings()
-	qCfg.NumConsumers = 1
-	qCfg.QueueSize = 2
-	wantErr := errors.New("some-error")
-	te, err := NewTracesExporterV2(context.Background(), tt.ToExporterCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(wantErr), WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	td := testdata.GenerateTraces(2)
-	const numBatches = 7
-	for i := 0; i < numBatches; i++ {
-		// errors are checked in the checkExporterEnqueueFailedTracesStats function below.
-		_ = te.ConsumeTraces(context.Background(), td)
-	}
-
-	// 2 batched must be in queue, and 5 batches (10 spans) rejected due to queue overflow
-	checkExporterEnqueueFailedTracesStats(t, globalInstruments, fakeTracesExporterV2Name, int64(10))
-}
-
 func TestTracesExporter_WithSpan(t *testing.T) {
 	set := exportertest.NewNopCreateSettings()
 	sr := new(tracetest.SpanRecorder)
@@ -274,7 +249,7 @@ func TestTracesExporterV2_WithSpan(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	te, err := NewTracesExporterV2(context.Background(), set, &fakeRequestConverter{}, newFakeRequestSender(nil))
+	te, err := NewTracesRequestExporter(context.Background(), set, &fakeRequestConverter{}, newFakeRequestSender(nil))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -304,7 +279,7 @@ func TestTracesExporterV2_WithSpan_ReturnError(t *testing.T) {
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
 	want := errors.New("my_error")
-	te, err := NewTracesExporterV2(context.Background(), set, &fakeRequestConverter{}, newFakeRequestSender(want))
+	te, err := NewTracesRequestExporter(context.Background(), set, &fakeRequestConverter{}, newFakeRequestSender(want))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -328,7 +303,7 @@ func TestTracesExporterV2_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	te, err := NewTracesExporterV2(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(nil), WithShutdown(shutdown))
+	te, err := NewTracesRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(nil), WithShutdown(shutdown))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
@@ -353,7 +328,7 @@ func TestTracesExporterV2_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	te, err := NewTracesExporterV2(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(nil), WithShutdown(shutdownErr))
+	te, err := NewTracesRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, newFakeRequestSender(nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
