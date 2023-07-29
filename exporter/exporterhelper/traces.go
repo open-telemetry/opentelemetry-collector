@@ -48,11 +48,6 @@ func tracesRequestMarshaler(req internal.Request) ([]byte, error) {
 	return tracesMarshaler.MarshalTraces(req.(*tracesRequest).td)
 }
 
-// Marshal provides serialization capabilities required by persistent queue
-func (req *tracesRequest) Marshal() ([]byte, error) {
-	return tracesMarshaler.MarshalTraces(req.td)
-}
-
 func (req *tracesRequest) OnError(err error) internal.Request {
 	var traceError consumererror.Traces
 	if errors.As(err, &traceError) {

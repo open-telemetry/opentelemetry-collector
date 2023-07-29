@@ -60,11 +60,6 @@ func (req *metricsRequest) Export(ctx context.Context) error {
 	return req.pusher(ctx, req.md)
 }
 
-// Marshal provides serialization capabilities required by persistent queue
-func (req *metricsRequest) Marshal() ([]byte, error) {
-	return metricsMarshaler.MarshalMetrics(req.md)
-}
-
 func (req *metricsRequest) ItemsCount() int {
 	return req.md.DataPointCount()
 }

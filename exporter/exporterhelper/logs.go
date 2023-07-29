@@ -60,10 +60,6 @@ func (req *logsRequest) Export(ctx context.Context) error {
 	return req.pusher(ctx, req.ld)
 }
 
-func (req *logsRequest) Marshal() ([]byte, error) {
-	return logsMarshaler.MarshalLogs(req.ld)
-}
-
 func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
 }
