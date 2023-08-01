@@ -361,8 +361,8 @@ type Marshaler interface {
 //   - for example, input is {}, then output is Config{ Keys: ["a", "b"]}
 func zeroSliceHookFunc() mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
-		if to.CanSet() && to.Kind() == reflect.Slice {
-			to.Set(reflect.MakeSlice(reflect.SliceOf(to.Type().Elem()), 0, 0))
+		if to.CanSet() && to.Kind() == reflect.Slice && from.Kind() == reflect.Slice {
+			to.Set(reflect.MakeSlice(to.Type(), from.Len(), from.Cap()))
 		}
 
 		return from.Interface(), nil
