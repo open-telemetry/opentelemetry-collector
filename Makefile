@@ -534,22 +534,23 @@ crosslink: $(CROSSLINK)
 	$(CROSSLINK) --root=$(shell pwd) --prune
 
 
-FILENAME?=$(shell git branch --show-current).yaml
+FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
-chlog-new: $(CHLOG)
-	$(CHLOG) new --filename $(FILENAME)
+chlog-new: $(CHLOGGEN)
+	$(CHLOGGEN) new --config $(CHLOGGEN_CONFIG) --filename $(FILENAME)
 
 .PHONY: chlog-validate
-chlog-validate: $(CHLOG)
-	$(CHLOG) validate
+chlog-validate: $(CHLOGGEN)
+	$(CHLOGGEN) validate --config $(CHLOGGEN_CONFIG)
 
 .PHONY: chlog-preview
-chlog-preview: $(CHLOG)
-	$(CHLOG) update --dry
+chlog-preview: $(CHLOGGEN)
+	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --dry
 
 .PHONY: chlog-update
-chlog-update: $(CHLOG)
-	$(CHLOG) update --version $(VERSION)
+chlog-update: $(CHLOGGEN)
+	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
+
 
 .PHONY: builder-integration-test
 builder-integration-test: $(ENVSUBST)

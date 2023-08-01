@@ -12,7 +12,7 @@ require (
 	github.com/mikefarah/yq/v4 v4.34.2
 	github.com/pavius/impi v0.0.3
 	go.opentelemetry.io/build-tools/checkfile v0.10.0
-	go.opentelemetry.io/build-tools/chloggen v0.9.0
+	go.opentelemetry.io/build-tools/chloggen v0.11.0
 	go.opentelemetry.io/build-tools/crosslink v0.9.0
 	go.opentelemetry.io/build-tools/multimod v0.9.0
 	go.opentelemetry.io/build-tools/semconvgen v0.9.0

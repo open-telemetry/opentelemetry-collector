@@ -652,8 +652,8 @@ go.opentelemetry.io/build-tools v0.10.0 h1:5asgwud1lI/pMYQM9P/vwEgOjyv6G3nhYnwo0
 go.opentelemetry.io/build-tools v0.10.0/go.mod h1:GFpz8YD/DG5shfY1J2f3uuK88zr61U5rVRGOhKMDE9M=
 go.opentelemetry.io/build-tools/checkfile v0.10.0 h1:RjwCDirwXHFTGA3Nh6nL6P2x43abZFGiMEyk7GCQee4=
 go.opentelemetry.io/build-tools/checkfile v0.10.0/go.mod h1:hmR/xk4LQkhQx2hsIELlowjoc+zB/4dGUEcDnCyvKdo=
-go.opentelemetry.io/build-tools/chloggen v0.9.0 h1:sHdl6T5NTlGhRwy7du4APkd2GZEamI4DfBitdKlzxGU=
-go.opentelemetry.io/build-tools/chloggen v0.9.0/go.mod h1:zuYbAo3TkrHo3C7lCrM5dHWSS50BDr0UfRYtyBFv2dQ=
+go.opentelemetry.io/build-tools/chloggen v0.11.0 h1:PYbfjzw/4pHNfwH0kCAMolvmdorMVGxSSFY8A9097fw=
+go.opentelemetry.io/build-tools/chloggen v0.11.0/go.mod h1:zuYbAo3TkrHo3C7lCrM5dHWSS50BDr0UfRYtyBFv2dQ=
 go.opentelemetry.io/build-tools/crosslink v0.9.0 h1:LOeJzMxsxBG2qMKeO22fRs91QvDfY+BA5pF1skTjbx0=
 go.opentelemetry.io/build-tools/crosslink v0.9.0/go.mod h1:VaSi2ahs+r+v//m6OpqTkD5siSFVta9eTHhKqPsfH/Q=
 go.opentelemetry.io/build-tools/multimod v0.9.0 h1:Im9PCGhfmKQC2XR0aTYzADNiOZLk9QEQgibDhadH+i0=
