@@ -12,53 +12,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
+package processortest // import "go.opentelemetry.io/collector/component/componenttest"
 
 import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor"
 )
 
 // NewUnhealthyProcessorCreateSettings returns a new nop settings for Create*Processor functions.
-func NewUnhealthyProcessorCreateSettings() component.ProcessorCreateSettings {
-	return component.ProcessorCreateSettings{
-		TelemetrySettings: NewNopTelemetrySettings(),
+func NewUnhealthyProcessorCreateSettings() processor.CreateSettings {
+	return processor.CreateSettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
 }
 
-type unhealthyProcessorConfig struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-}
-
 // NewUnhealthyProcessorFactory returns a component.ProcessorFactory that constructs nop processors.
-func NewUnhealthyProcessorFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+func NewUnhealthyProcessorFactory() processor.Factory {
+	return processor.NewFactory(
 		"unhealthy",
-		func() component.ProcessorConfig {
-			return &unhealthyProcessorConfig{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID("nop")),
-			}
+		func() component.Config {
+			return &struct{}{}
 		},
-		component.WithTracesProcessor(createUnhealthyTracesProcessor, component.StabilityLevelStable),
-		component.WithMetricsProcessor(createUnhealthyMetricsProcessor, component.StabilityLevelStable),
-		component.WithLogsProcessor(createUnhealthyLogsProcessor, component.StabilityLevelStable),
+		processor.WithTraces(createUnhealthyTracesProcessor, component.StabilityLevelStable),
+		processor.WithMetrics(createUnhealthyMetricsProcessor, component.StabilityLevelStable),
+		processor.WithLogs(createUnhealthyLogsProcessor, component.StabilityLevelStable),
 	)
 }
 
-func createUnhealthyTracesProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Traces) (component.TracesProcessor, error) {
+func createUnhealthyTracesProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Traces) (processor.Traces, error) {
 	return unhealthyProcessorInstance, nil
 }
 
-func createUnhealthyMetricsProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Metrics) (component.MetricsProcessor, error) {
+func createUnhealthyMetricsProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Metrics) (processor.Metrics, error) {
 	return unhealthyProcessorInstance, nil
 }
 
-func createUnhealthyLogsProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Logs) (component.LogsProcessor, error) {
+func createUnhealthyLogsProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Logs) (processor.Logs, error) {
 	return unhealthyProcessorInstance, nil
 }
 
@@ -68,7 +63,8 @@ var unhealthyProcessorInstance = &unhealthyProcessor{
 
 // unhealthyProcessor stores consumed traces and metrics for testing purposes.
 type unhealthyProcessor struct {
-	nopComponent
+	component.StartFunc
+	component.ShutdownFunc
 	consumertest.Consumer
 }
 

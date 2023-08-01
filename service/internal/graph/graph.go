@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
@@ -22,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
+	"go.opentelemetry.io/collector/service/internal/components"
+	"go.opentelemetry.io/collector/service/internal/servicehost"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
@@ -45,12 +48,16 @@ type Graph struct {
 
 	// Keep track of how nodes relate to pipelines, so we can declare edges in the graph.
 	pipelines map[component.ID]*pipelineNodes
+
+	// Keep track of status source per node
+	statusSources map[int64]*statusReportingComponent
 }
 
 func Build(ctx context.Context, set Settings) (*Graph, error) {
 	pipelines := &Graph{
 		componentGraph: simple.NewDirectedGraph(),
 		pipelines:      make(map[component.ID]*pipelineNodes, len(set.PipelineConfigs)),
+		statusSources:  make(map[int64]*statusReportingComponent),
 	}
 	for pipelineID := range set.PipelineConfigs {
 		pipelines.pipelines[pipelineID] = &pipelineNodes{
@@ -84,12 +91,21 @@ func (g *Graph) createNodes(set Settings) error {
 			}
 			rcvrNode := g.createReceiver(pipelineID.Type(), recvID)
 			pipe.receivers[rcvrNode.ID()] = rcvrNode
+			g.statusSources[rcvrNode.ID()] = &statusReportingComponent{
+				id:   recvID,
+				kind: component.KindReceiver,
+			}
 		}
 
 		pipe.capabilitiesNode = newCapabilitiesNode(pipelineID)
 
 		for _, procID := range pipelineCfg.Processors {
-			pipe.processors = append(pipe.processors, g.createProcessor(pipelineID, procID))
+			procNode := g.createProcessor(pipelineID, procID)
+			pipe.processors = append(pipe.processors, procNode)
+			g.statusSources[procNode.ID()] = &statusReportingComponent{
+				id:   procID,
+				kind: component.KindProcessor,
+			}
 		}
 
 		pipe.fanOutNode = newFanOutNode(pipelineID)
@@ -102,6 +118,10 @@ func (g *Graph) createNodes(set Settings) error {
 			}
 			expNode := g.createExporter(pipelineID.Type(), exprID)
 			pipe.exporters[expNode.ID()] = expNode
+			g.statusSources[expNode.ID()] = &statusReportingComponent{
+				id:   expNode.componentID,
+				kind: component.KindExporter,
+			}
 		}
 	}
 
@@ -158,6 +178,10 @@ func (g *Graph) createNodes(set Settings) error {
 				connNode := g.createConnector(eID, rID, connID)
 				g.pipelines[eID].exporters[connNode.ID()] = connNode
 				g.pipelines[rID].receivers[connNode.ID()] = connNode
+				g.statusSources[connNode.ID()] = &statusReportingComponent{
+					id:   connNode.componentID,
+					kind: component.KindConnector,
+				}
 			}
 		}
 	}
@@ -316,7 +340,20 @@ type pipelineNodes struct {
 	exporters map[int64]graph.Node
 }
 
-func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
+type statusReportingComponent struct {
+	kind component.Kind
+	id   component.ID
+}
+
+func (s *statusReportingComponent) GetKind() component.Kind {
+	return s.kind
+}
+
+func (s *statusReportingComponent) ID() component.ID {
+	return s.id
+}
+
+func (g *Graph) StartAll(ctx context.Context, host servicehost.Host) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
 		return err
@@ -326,12 +363,27 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
 	// are started before upstream components. This ensures that each
 	// component's consumer is ready to consume.
 	for i := len(nodes) - 1; i >= 0; i-- {
-		comp, ok := nodes[i].(component.Component)
+		node := nodes[i]
+		comp, ok := node.(component.Component)
+
 		if !ok {
 			// Skip capabilities/fanout nodes
 			continue
 		}
-		if compErr := comp.Start(ctx, host); compErr != nil {
+
+		statusSource, ok := g.statusSources[node.ID()]
+
+		if !ok {
+			// TODO: this should not happen. I'm not sure this code path will remain, but if it does
+			// we should ensure that we have a valid nop value for statusSource.
+		}
+
+		// note: there is no longer a per-component logger, hence the zap.NewNop()
+		// we should be able to remove the logger from components.NewHostWrapper as we deprecate
+		// and remove host.ReportFatalError
+		hostWrapper := components.NewHostWrapper(host, statusSource, zap.NewNop())
+
+		if compErr := comp.Start(ctx, hostWrapper); compErr != nil {
 			return compErr
 		}
 	}

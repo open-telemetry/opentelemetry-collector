@@ -31,11 +31,11 @@ func (n nopHost) GetFactory(kind component.Kind, componentType component.Type) c
 	return nil
 }
 
-func (n nopHost) GetExtensions() map[component.ID]component.Extension {
+func (n nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (n nopHost) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
+func (n nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return nil
 }
 

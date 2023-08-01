@@ -40,7 +40,7 @@ func (host *serviceHost) ReportFatalError(err error) {
 }
 
 func (host *serviceHost) ReportComponentStatus(source component.StatusSource, event *component.StatusEvent) {
-	host.extensions.NotifyComponentStatusChange(source, event)
+	host.serviceExtensions.NotifyComponentStatusChange(source, event)
 }
 
 func (host *serviceHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {

@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
+	"go.opentelemetry.io/collector/service/internal/servicehost"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -234,7 +235,7 @@ func (srv *Service) Logger() *zap.Logger {
 	return srv.telemetrySettings.Logger
 }
 
-func getBallastSize(host component.Host) uint64 {
+func getBallastSize(host servicehost.Host) uint64 {
 	for _, ext := range host.GetExtensions() {
 		if bExt, ok := ext.(interface{ GetBallastSize() uint64 }); ok {
 			return bExt.GetBallastSize()

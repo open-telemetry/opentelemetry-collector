@@ -19,7 +19,7 @@ service:
   pipelines:
     traces:
       receivers: [nop]
-      processors: [nop,unhealthy,unhealthy]
+      processors: [nop,unhealthy]
       exporters: [nop]
     metrics:
       receivers: [nop]

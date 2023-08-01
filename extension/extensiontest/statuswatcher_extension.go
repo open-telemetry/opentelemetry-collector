@@ -12,39 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
+package extensiontest // import "go.opentelemetry.io/collector/extension/extensiontest"
 
 import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension"
 )
 
 // NewStatusWatcherExtensionCreateSettings returns a new nop settings for Create*Extension functions.
-func NewStatusWatcherExtensionCreateSettings() component.ExtensionCreateSettings {
-	return component.ExtensionCreateSettings{
-		TelemetrySettings: NewNopTelemetrySettings(),
+func NewStatusWatcherExtensionCreateSettings() extension.CreateSettings {
+	return extension.CreateSettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
-}
-
-type statusWatcherExtensionConfig struct {
-	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
 // NewStatusWatcherExtensionFactory returns a component.ExtensionFactory that constructs nop extensions.
 func NewStatusWatcherExtensionFactory(
 	onStatusChanged func(source component.StatusSource, event *component.StatusEvent),
-) component.ExtensionFactory {
-	return component.NewExtensionFactory(
+) extension.Factory {
+	return extension.NewFactory(
 		"statuswatcher",
-		func() component.ExtensionConfig {
-			return &statusWatcherExtensionConfig{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID("statuswatcher")),
-			}
+		func() component.Config {
+			return &struct{}{}
 		},
-		func(context.Context, component.ExtensionCreateSettings, component.ExtensionConfig) (component.Extension, error) {
+		func(context.Context, extension.CreateSettings, component.Config) (component.Component, error) {
 			return &statusWatcherExtension{onStatusChanged: onStatusChanged}, nil
 		},
 		component.StabilityLevelStable)
@@ -52,7 +47,8 @@ func NewStatusWatcherExtensionFactory(
 
 // statusWatcherExtension stores consumed traces and metrics for testing purposes.
 type statusWatcherExtension struct {
-	nopComponent
+	component.StartFunc
+	component.ShutdownFunc
 	onStatusChanged func(source component.StatusSource, event *component.StatusEvent)
 }
 

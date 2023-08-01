@@ -33,6 +33,6 @@ type Host interface {
 	ReportFatalError(err error)
 
 	GetFactory(kind component.Kind, componentType component.Type) component.Factory
-	GetExtensions() map[component.ID]component.Extension
-	GetExporters() map[component.DataType]map[component.ID]component.Exporter
+	GetExtensions() map[component.ID]component.Component
+	GetExporters() map[component.DataType]map[component.ID]component.Component
 }

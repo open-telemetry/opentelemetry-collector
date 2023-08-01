@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/service/internal/servicehost"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
@@ -146,7 +147,7 @@ func TestGraphStartStop(t *testing.T) {
 				pg.componentGraph.SetEdge(simple.Edge{F: f, T: t})
 			}
 
-			require.NoError(t, pg.StartAll(ctx, componenttest.NewNopHost()))
+			require.NoError(t, pg.StartAll(ctx, servicehost.NewNopHost()))
 			for _, edge := range tt.edges {
 				assert.Greater(t, ctx.order[edge[0]], ctx.order[edge[1]])
 			}
@@ -173,7 +174,7 @@ func TestGraphStartStopCycle(t *testing.T) {
 	pg.componentGraph.SetEdge(simple.Edge{F: c1, T: e1})
 	pg.componentGraph.SetEdge(simple.Edge{F: c1, T: p1}) // loop back
 
-	err := pg.StartAll(context.Background(), componenttest.NewNopHost())
+	err := pg.StartAll(context.Background(), servicehost.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `topo: no topological ordering: cyclic components`)
 
@@ -194,7 +195,7 @@ func TestGraphStartStopComponentError(t *testing.T) {
 			shutdownErr: errors.New("bar"),
 		},
 	})
-	assert.EqualError(t, pg.StartAll(context.Background(), componenttest.NewNopHost()), "foo")
+	assert.EqualError(t, pg.StartAll(context.Background(), servicehost.NewNopHost()), "foo")
 	assert.EqualError(t, pg.ShutdownAll(context.Background()), "bar")
 }
 
@@ -667,7 +668,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 
 			assert.Equal(t, len(test.pipelineConfigs), len(pg.pipelines))
 
-			assert.NoError(t, pg.StartAll(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, pg.StartAll(context.Background(), servicehost.NewNopHost()))
 
 			mutatingPipelines := make(map[component.ID]bool, len(test.pipelineConfigs))
 
@@ -2027,7 +2028,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
+			assert.Error(t, pipelines.StartAll(context.Background(), servicehost.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
 		})
 
@@ -2041,7 +2042,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
+			assert.Error(t, pipelines.StartAll(context.Background(), servicehost.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
 		})
 
@@ -2055,7 +2056,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
+			assert.Error(t, pipelines.StartAll(context.Background(), servicehost.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
 		})
 
@@ -2075,7 +2076,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 				}
 				pipelines, err := Build(context.Background(), set)
 				assert.NoError(t, err)
-				assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
+				assert.Error(t, pipelines.StartAll(context.Background(), servicehost.NewNopHost()))
 				assert.Error(t, pipelines.ShutdownAll(context.Background()))
 			})
 		}
