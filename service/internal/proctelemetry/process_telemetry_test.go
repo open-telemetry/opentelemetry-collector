@@ -140,7 +140,7 @@ func TestOCProcessTelemetry(t *testing.T) {
 	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0))
 
 	// Check that the metrics are actually filled.
-	time.Sleep(200 * time.Millisecond)
+	<-time.After(200 * time.Millisecond)
 
 	metrics := ocRegistry.Read()
 
@@ -164,6 +164,7 @@ func TestOCProcessTelemetry(t *testing.T) {
 			assert.GreaterOrEqual(t, value, float64(0), metricName)
 			continue
 		}
+
 		assert.Greater(t, value, float64(0), metricName)
 	}
 }
