@@ -31,10 +31,8 @@ func NewHostWrapper(host servicehost.Host, component component.StatusSource, log
 func (hw *hostWrapper) ReportFatalError(err error) {
 	// The logger from the built component already identifies the component.
 	hw.Logger.Error("Component fatal error", zap.Error(err))
-	hw.Host.ReportFatalError(err)
+	hw.Host.ReportFatalError(err) // nolint:staticcheck
 }
-
-var emptyComponentID = component.ID{}
 
 func (hw *hostWrapper) ReportComponentStatus(event *component.StatusEvent) {
 	hw.Host.ReportComponentStatus(hw.component, event)

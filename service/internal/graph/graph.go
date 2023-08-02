@@ -371,16 +371,7 @@ func (g *Graph) StartAll(ctx context.Context, host servicehost.Host) error {
 			continue
 		}
 
-		statusSource, ok := g.statusSources[node.ID()]
-
-		if !ok {
-			// TODO: this should not happen. I'm not sure this code path will remain, but if it does
-			// we should ensure that we have a valid nop value for statusSource.
-		}
-
-		// note: there is no longer a per-component logger, hence the zap.NewNop()
-		// we should be able to remove the logger from components.NewHostWrapper as we deprecate
-		// and remove host.ReportFatalError
+		statusSource := g.statusSources[node.ID()]
 		hostWrapper := components.NewHostWrapper(host, statusSource, zap.NewNop())
 
 		if compErr := comp.Start(ctx, hostWrapper); compErr != nil {

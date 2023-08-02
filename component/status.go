@@ -1,18 +1,7 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package component
+package component // import "go.opentelemetry.io/collector/component"
 
 import (
 	"errors"
@@ -45,12 +34,12 @@ func (ev *StatusEvent) Err() error {
 	return ev.err
 }
 
-// statusEventOption applies options to a StatusEvent.
-type statusEventOption func(*StatusEvent) error
+// StatusEventOption applies options to a StatusEvent.
+type StatusEventOption func(*StatusEvent) error
 
 // WithError sets the error object of the Event. It is optional
 // and should only be applied to an Event of type ComponentError.
-func WithError(err error) statusEventOption {
+func WithError(err error) StatusEventOption {
 	return func(o *StatusEvent) error {
 		if o.status == StatusOK {
 			return errors.New("event with ComponentOK cannot have an error")
@@ -64,7 +53,7 @@ func WithError(err error) statusEventOption {
 // options. Will return an error if an error is provided for a non-error event
 // type (status.ComponentOK).
 // If the timestamp is not provided will set it to time.Now().
-func NewStatusEvent(status Status, options ...statusEventOption) (*StatusEvent, error) {
+func NewStatusEvent(status Status, options ...StatusEventOption) (*StatusEvent, error) {
 	ev := StatusEvent{
 		status: status,
 	}
