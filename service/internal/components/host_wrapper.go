@@ -16,11 +16,11 @@ import (
 // TODO: rename this to componentHost or hostComponentConnector to better reflect the purpose.
 type hostWrapper struct {
 	servicehost.Host
-	component component.StatusSource
+	component *component.GlobalID
 	*zap.Logger
 }
 
-func NewHostWrapper(host servicehost.Host, component component.StatusSource, logger *zap.Logger) component.Host {
+func NewHostWrapper(host servicehost.Host, component *component.GlobalID, logger *zap.Logger) component.Host {
 	return &hostWrapper{
 		host,
 		component,

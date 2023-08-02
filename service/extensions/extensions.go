@@ -27,26 +27,17 @@ type Extensions struct {
 	extMap    map[component.ID]extension.Extension
 }
 
-type statusReportingExtension struct {
-	id component.ID
-}
-
-func (s *statusReportingExtension) GetKind() component.Kind {
-	return component.KindExtension
-}
-
-func (s *statusReportingExtension) ID() component.ID {
-	return s.id
-}
-
 // Start starts all extensions.
 func (bes *Extensions) Start(ctx context.Context, host servicehost.Host) error {
 	bes.telemetry.Logger.Info("Starting extensions...")
 	for extID, ext := range bes.extMap {
 		extLogger := components.ExtensionLogger(bes.telemetry.Logger, extID)
 		extLogger.Info("Extension is starting...")
-		statusSource := &statusReportingExtension{extID}
-		if err := ext.Start(ctx, components.NewHostWrapper(host, statusSource, extLogger)); err != nil {
+		globalID := &component.GlobalID{
+			ID:   extID,
+			Kind: component.KindExtension,
+		}
+		if err := ext.Start(ctx, components.NewHostWrapper(host, globalID, extLogger)); err != nil {
 			return err
 		}
 		extLogger.Info("Extension started.")
@@ -98,7 +89,7 @@ func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) err
 	return errs
 }
 
-func (bes *Extensions) NotifyComponentStatusChange(source component.StatusSource, event *component.StatusEvent) error {
+func (bes *Extensions) NotifyComponentStatusChange(source *component.GlobalID, event *component.StatusEvent) error {
 	var errs error
 	for _, ext := range bes.extMap {
 		if pw, ok := ext.(component.StatusWatcher); ok {

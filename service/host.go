@@ -39,7 +39,7 @@ func (host *serviceHost) ReportFatalError(err error) {
 	host.asyncErrorChannel <- err
 }
 
-func (host *serviceHost) ReportComponentStatus(source component.StatusSource, event *component.StatusEvent) {
+func (host *serviceHost) ReportComponentStatus(source *component.GlobalID, event *component.StatusEvent) {
 	// TODO: What should we do if there is an error notifying here?
 	host.serviceExtensions.NotifyComponentStatusChange(source, event) //nolint:errcheck
 }

@@ -50,14 +50,14 @@ type Graph struct {
 	pipelines map[component.ID]*pipelineNodes
 
 	// Keep track of status source per node
-	statusSources map[int64]*statusReportingComponent
+	globalIDs map[int64]*component.GlobalID
 }
 
 func Build(ctx context.Context, set Settings) (*Graph, error) {
 	pipelines := &Graph{
 		componentGraph: simple.NewDirectedGraph(),
 		pipelines:      make(map[component.ID]*pipelineNodes, len(set.PipelineConfigs)),
-		statusSources:  make(map[int64]*statusReportingComponent),
+		globalIDs:      make(map[int64]*component.GlobalID),
 	}
 	for pipelineID := range set.PipelineConfigs {
 		pipelines.pipelines[pipelineID] = &pipelineNodes{
@@ -91,9 +91,9 @@ func (g *Graph) createNodes(set Settings) error {
 			}
 			rcvrNode := g.createReceiver(pipelineID.Type(), recvID)
 			pipe.receivers[rcvrNode.ID()] = rcvrNode
-			g.statusSources[rcvrNode.ID()] = &statusReportingComponent{
-				id:   recvID,
-				kind: component.KindReceiver,
+			g.globalIDs[rcvrNode.ID()] = &component.GlobalID{
+				ID:   recvID,
+				Kind: component.KindReceiver,
 			}
 		}
 
@@ -102,9 +102,10 @@ func (g *Graph) createNodes(set Settings) error {
 		for _, procID := range pipelineCfg.Processors {
 			procNode := g.createProcessor(pipelineID, procID)
 			pipe.processors = append(pipe.processors, procNode)
-			g.statusSources[procNode.ID()] = &statusReportingComponent{
-				id:   procID,
-				kind: component.KindProcessor,
+			g.globalIDs[procNode.ID()] = &component.GlobalID{
+				ID:         procID,
+				Kind:       component.KindProcessor,
+				PipelineID: pipelineID,
 			}
 		}
 
@@ -118,9 +119,9 @@ func (g *Graph) createNodes(set Settings) error {
 			}
 			expNode := g.createExporter(pipelineID.Type(), exprID)
 			pipe.exporters[expNode.ID()] = expNode
-			g.statusSources[expNode.ID()] = &statusReportingComponent{
-				id:   expNode.componentID,
-				kind: component.KindExporter,
+			g.globalIDs[expNode.ID()] = &component.GlobalID{
+				ID:   expNode.componentID,
+				Kind: component.KindExporter,
 			}
 		}
 	}
@@ -178,9 +179,9 @@ func (g *Graph) createNodes(set Settings) error {
 				connNode := g.createConnector(eID, rID, connID)
 				g.pipelines[eID].exporters[connNode.ID()] = connNode
 				g.pipelines[rID].receivers[connNode.ID()] = connNode
-				g.statusSources[connNode.ID()] = &statusReportingComponent{
-					id:   connNode.componentID,
-					kind: component.KindConnector,
+				g.globalIDs[connNode.ID()] = &component.GlobalID{
+					ID:   connNode.componentID,
+					Kind: component.KindConnector,
 				}
 			}
 		}
@@ -340,19 +341,6 @@ type pipelineNodes struct {
 	exporters map[int64]graph.Node
 }
 
-type statusReportingComponent struct {
-	kind component.Kind
-	id   component.ID
-}
-
-func (s *statusReportingComponent) GetKind() component.Kind {
-	return s.kind
-}
-
-func (s *statusReportingComponent) ID() component.ID {
-	return s.id
-}
-
 func (g *Graph) StartAll(ctx context.Context, host servicehost.Host) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
@@ -371,8 +359,8 @@ func (g *Graph) StartAll(ctx context.Context, host servicehost.Host) error {
 			continue
 		}
 
-		statusSource := g.statusSources[node.ID()]
-		hostWrapper := components.NewHostWrapper(host, statusSource, zap.NewNop())
+		globalID := g.globalIDs[node.ID()]
+		hostWrapper := components.NewHostWrapper(host, globalID, zap.NewNop())
 
 		if compErr := comp.Start(ctx, hostWrapper); compErr != nil {
 			return compErr

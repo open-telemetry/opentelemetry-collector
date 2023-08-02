@@ -16,7 +16,7 @@ type Host interface {
 	// ReportComponentStatus is used to communicate the status of a source component to the Host.
 	// The Host implementations will broadcast this information to interested parties via
 	// StatusWatcher interface.
-	ReportComponentStatus(source component.StatusSource, event *component.StatusEvent)
+	ReportComponentStatus(source *component.GlobalID, event *component.StatusEvent)
 
 	// See component.Host for the documentation of the rest of the functions.
 

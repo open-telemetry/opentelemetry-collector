@@ -175,3 +175,10 @@ type CreateDefaultConfigFunc func() Config
 func (f CreateDefaultConfigFunc) CreateDefaultConfig() Config {
 	return f()
 }
+
+// GlobalID uniquely identifies a component
+type GlobalID struct {
+	ID         ID
+	Kind       Kind
+	PipelineID ID // Not empty only if the Kind is Processor
+}

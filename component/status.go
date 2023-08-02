@@ -14,12 +14,6 @@ const (
 	StatusError
 )
 
-// StatusSource component that reports a status about itself.
-// The implementation of this interface must be comparable to be useful as a map key.
-type StatusSource interface {
-	ID() ID
-}
-
 type StatusEvent struct {
 	status Status
 	err    error
@@ -75,5 +69,5 @@ type StatusWatcher interface {
 	// Extensions that implement this interface must be ready that the ComponentStatusChanged
 	// may be called  before, after or concurrently with Component.Shutdown() call.
 	// The function may be called concurrently with itself.
-	ComponentStatusChanged(source StatusSource, event *StatusEvent)
+	ComponentStatusChanged(source *GlobalID, event *StatusEvent)
 }
