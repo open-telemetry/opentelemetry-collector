@@ -66,6 +66,7 @@ func init() {
 		"jfr_6":      readJfr("profiles/jfr_1.jfr")[5],
 		"jfr_7":      readJfr("profiles/jfr_1.jfr")[6],
 		"ruby_1":     readPprof("profiles/ruby_1.pprof"),
+		"java_1":     readPprof("profiles/java.pprof"),
 	}
 }
 
@@ -401,4 +402,17 @@ func BenchmarkRuby1Normalized(b *testing.B) {
 }
 func BenchmarkRuby1Arrays(b *testing.B) {
 	benchmark(b, "ruby_1", "arrays", false)
+}
+
+func BenchmarkJava1Pprof(b *testing.B) {
+	benchmark(b, "java_1", "pprof", false)
+}
+func BenchmarkJava1Denormalized(b *testing.B) {
+	benchmark(b, "java_1", "denormalized", false)
+}
+func BenchmarkJava1Normalized(b *testing.B) {
+	benchmark(b, "java_1", "normalized", false)
+}
+func BenchmarkJava1Arrays(b *testing.B) {
+	benchmark(b, "java_1", "arrays", false)
 }
