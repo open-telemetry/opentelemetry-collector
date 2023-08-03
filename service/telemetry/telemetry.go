@@ -6,6 +6,7 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
@@ -35,19 +36,21 @@ func (t *Telemetry) Shutdown(ctx context.Context) error {
 
 // Settings holds configuration for building Telemetry.
 type Settings struct {
+	BuildInfo  component.BuildInfo
 	ZapOptions []zap.Option
 }
 
 // New creates a new Telemetry from Config.
-func New(_ context.Context, set Settings, cfg Config) (*Telemetry, error) {
+func New(ctx context.Context, set Settings, cfg Config) (*Telemetry, error) {
 	logger, err := newLogger(cfg.Logs, set.ZapOptions)
 	if err != nil {
 		return nil, err
 	}
-	tp := sdktrace.NewTracerProvider(
-		// needed for supporting the zpages extension
-		sdktrace.WithSampler(alwaysRecord()),
-	)
+	tp, err := newTracerProvider(ctx, set, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Telemetry{
 		logger:         logger,
 		tracerProvider: tp,

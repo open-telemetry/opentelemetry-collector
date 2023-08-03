@@ -5,7 +5,6 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
-	"errors"
 	"net"
 	"net/http"
 	"strconv"
@@ -17,19 +16,13 @@ import (
 	ocmetric "go.opencensus.io/metric"
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/stats/view"
-	"go.opentelemetry.io/contrib/propagators/b3"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
-	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
@@ -39,21 +32,12 @@ import (
 const (
 	zapKeyTelemetryAddress = "address"
 	zapKeyTelemetryLevel   = "level"
-
-	// supported trace propagators
-	traceContextPropagator = "tracecontext"
-	b3Propagator           = "b3"
-)
-
-var (
-	errUnsupportedPropagator = errors.New("unsupported trace propagator")
 )
 
 type telemetryInitializer struct {
 	views      []*view.View
 	ocRegistry *ocmetric.Registry
 	mp         metric.MeterProvider
-	tp         trace.TracerProvider
 	servers    []*http.Server
 
 	useOtel                bool
@@ -64,53 +48,24 @@ type telemetryInitializer struct {
 func newColTelemetry(useOtel bool, disableHighCardinality bool, extendedConfig bool) *telemetryInitializer {
 	return &telemetryInitializer{
 		mp:                     noopmetric.NewMeterProvider(),
-		tp:                     trace.NewNoopTracerProvider(),
 		useOtel:                useOtel,
 		disableHighCardinality: disableHighCardinality,
 		extendedConfig:         extendedConfig,
 	}
 }
 
-func (tel *telemetryInitializer) init(res *resource.Resource, settings component.TelemetrySettings, cfg telemetry.Config, asyncErrorChannel chan error) error {
+func (tel *telemetryInitializer) initMetrics(res *resource.Resource, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
 	if cfg.Metrics.Level == configtelemetry.LevelNone || (cfg.Metrics.Address == "" && len(cfg.Metrics.Readers) == 0) {
-		settings.Logger.Info(
-			"Skipping telemetry setup.",
+		logger.Info(
+			"Skipping telemetry metrics setup.",
 			zap.String(zapKeyTelemetryAddress, cfg.Metrics.Address),
 			zap.String(zapKeyTelemetryLevel, cfg.Metrics.Level.String()),
 		)
 		return nil
 	}
 
-	settings.Logger.Info("Setting up own telemetry...")
+	logger.Info("Setting up metrics telemetry...")
 
-	if tp, err := tel.initTraces(res, cfg); err == nil {
-		tel.tp = tp
-	} else {
-		return err
-	}
-
-	if tp, err := textMapPropagatorFromConfig(cfg.Traces.Propagators); err == nil {
-		otel.SetTextMapPropagator(tp)
-	} else {
-		return err
-	}
-
-	return tel.initMetrics(res, settings.Logger, cfg, asyncErrorChannel)
-}
-
-func (tel *telemetryInitializer) initTraces(res *resource.Resource, cfg telemetry.Config) (trace.TracerProvider, error) {
-	opts := []sdktrace.TracerProviderOption{}
-	for _, processor := range cfg.Traces.Processors {
-		sp, err := proctelemetry.InitSpanProcessor(context.Background(), processor)
-		if err != nil {
-			return nil, err
-		}
-		opts = append(opts, sdktrace.WithSpanProcessor(sp))
-	}
-	return proctelemetry.InitTracerProvider(res, opts)
-}
-
-func (tel *telemetryInitializer) initMetrics(res *resource.Resource, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
 	// Initialize the ocRegistry, still used by the process metrics.
 	tel.ocRegistry = ocmetric.NewRegistry()
 	if !tel.useOtel && !tel.extendedConfig {
@@ -228,19 +183,4 @@ func sanitizePrometheusKey(str string) string {
 		return '_'
 	}
 	return strings.Map(runeFilterMap, str)
-}
-
-func textMapPropagatorFromConfig(props []string) (propagation.TextMapPropagator, error) {
-	var textMapPropagators []propagation.TextMapPropagator
-	for _, prop := range props {
-		switch prop {
-		case traceContextPropagator:
-			textMapPropagators = append(textMapPropagators, propagation.TraceContext{})
-		case b3Propagator:
-			textMapPropagators = append(textMapPropagators, b3.New())
-		default:
-			return nil, errUnsupportedPropagator
-		}
-	}
-	return propagation.NewCompositeTextMapPropagator(textMapPropagators...), nil
 }
