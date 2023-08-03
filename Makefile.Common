@@ -17,7 +17,7 @@ TOOLS_BIN_NAMES := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(shell echo $(TOOLS_
 
 ADDLICENSE   := $(TOOLS_BIN_DIR)/addlicense
 APIDIFF      := $(TOOLS_BIN_DIR)/apidiff
-CHECKDOC     := $(TOOLS_BIN_DIR)/checkdoc
+CHECKFILE    := $(TOOLS_BIN_DIR)/checkfile
 CHLOG        := $(TOOLS_BIN_DIR)/chloggen
 CROSSLINK    := $(TOOLS_BIN_DIR)/crosslink
 ENVSUBST     := $(TOOLS_BIN_DIR)/envsubst
