@@ -201,7 +201,7 @@ func TestHandleInvalidRequests(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	cfg := &Config{
 		Protocols: Protocols{
-			HTTP: &httpServerSettings{
+			HTTP: &HttpServerSettings{
 				HTTPServerSettings: &confighttp.HTTPServerSettings{
 					Endpoint: endpoint,
 				},
@@ -900,7 +900,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
-			HTTP: &httpServerSettings{
+			HTTP: &HttpServerSettings{
 				HTTPServerSettings: &confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 					TLSSetting: &configtls.TLSServerSetting{
@@ -933,7 +933,7 @@ func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expe
 	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
 	cfg := &Config{
 		Protocols: Protocols{
-			HTTP: &httpServerSettings{
+			HTTP: &HttpServerSettings{
 				HTTPServerSettings: &confighttp.HTTPServerSettings{
 					Endpoint:           endpoint,
 					MaxRequestBodySize: int64(size),

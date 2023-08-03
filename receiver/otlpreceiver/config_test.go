@@ -115,7 +115,7 @@ func TestUnmarshalConfig(t *testing.T) {
 						},
 					},
 				},
-				HTTP: &httpServerSettings{
+				HTTP: &HttpServerSettings{
 					HTTPServerSettings: &confighttp.HTTPServerSettings{
 						Endpoint: "0.0.0.0:4318",
 						TLSSetting: &configtls.TLSServerSetting{
@@ -154,7 +154,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 					},
 					ReadBufferSize: 512 * 1024,
 				},
-				HTTP: &httpServerSettings{
+				HTTP: &HttpServerSettings{
 					HTTPServerSettings: &confighttp.HTTPServerSettings{
 						Endpoint: "/tmp/http_otlp.sock",
 					},
