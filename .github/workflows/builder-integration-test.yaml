@@ -30,6 +30,6 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.11
+          go-version: ~1.19.12
       - name: Test
         run: make builder-integration-test
