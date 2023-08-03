@@ -48,7 +48,7 @@ func createDefaultConfig() component.Config {
 				// We almost write 0 bytes, so no need to tune WriteBufferSize.
 				ReadBufferSize: 512 * 1024,
 			},
-			HTTP: &HttpServerSettings{
+			HTTP: &HTTPServerSettings{
 				HTTPServerSettings: &confighttp.HTTPServerSettings{
 					Endpoint: defaultHTTPEndpoint,
 				},

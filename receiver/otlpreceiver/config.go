@@ -21,7 +21,7 @@ const (
 	protoHTTP = "protocols::http"
 )
 
-type HttpServerSettings struct {
+type HTTPServerSettings struct {
 	*confighttp.HTTPServerSettings `mapstructure:",squash"`
 
 	// The URL path to receive traces on. If omitted "/v1/traces" will be used.
@@ -37,7 +37,7 @@ type HttpServerSettings struct {
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
 	GRPC *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
-	HTTP *HttpServerSettings            `mapstructure:"http"`
+	HTTP *HTTPServerSettings            `mapstructure:"http"`
 }
 
 // Config defines configuration for OTLP receiver.
