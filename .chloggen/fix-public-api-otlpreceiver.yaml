@@ -10,7 +10,7 @@ component: otlpreceiver
 note: the public API for creating the otlpreceiver configuration for HTTPServerSettings was private. This change makes it public.
 
 # One or more tracking issues or pull requests related to the change
-issues: [#8176, #8175]
+issues: [8175]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
