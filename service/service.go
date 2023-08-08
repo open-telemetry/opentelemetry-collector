@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
@@ -35,6 +36,9 @@ import (
 type Settings struct {
 	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
+
+	// CollectorConf contains the Collector's current configuration
+	CollectorConf *confmap.Conf
 
 	// Receivers builder for receivers.
 	Receivers *receiver.Builder
@@ -68,6 +72,7 @@ type Service struct {
 	telemetrySettings    component.TelemetrySettings
 	host                 *serviceHost
 	telemetryInitializer *telemetryInitializer
+	collectorConf        *confmap.Conf
 }
 
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
@@ -89,6 +94,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
 		telemetryInitializer: newColTelemetry(useOtel, disableHighCard, extendedConfig),
+		collectorConf:        set.CollectorConf,
 	}
 	var err error
 	srv.telemetry, err = telemetry.New(ctx, telemetry.Settings{ZapOptions: set.LoggingOptions}, cfg.Telemetry)
@@ -136,6 +142,12 @@ func (srv *Service) Start(ctx context.Context) error {
 
 	if err := srv.host.serviceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
+	}
+
+	if srv.collectorConf != nil {
+		if err := srv.host.serviceExtensions.NotifyConfig(ctx, srv.collectorConf); err != nil {
+			return err
+		}
 	}
 
 	if err := srv.host.pipelines.StartAll(ctx, srv.host); err != nil {
