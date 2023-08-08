@@ -112,15 +112,9 @@ retract (
 	v0.32.0 // Contains incomplete metrics transition to proto 0.9.0, random components are not working.
 )
 
-replace go.opentelemetry.io/collector/exporter/otlphttpexporter => ./exporter/otlphttpexporter
-
-replace go.opentelemetry.io/collector/receiver/otlpreceiver => ./receiver/otlpreceiver
-
 replace go.opentelemetry.io/collector/exporter/otlpexporter => ./exporter/otlpexporter
 
 replace go.opentelemetry.io/collector/config/internal => ./config/internal
-
-replace go.opentelemetry.io/collector/config/confighttp => ./config/confighttp
 
 replace go.opentelemetry.io/collector/config/configtls => ./config/configtls
 
