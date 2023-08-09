@@ -45,10 +45,6 @@ func TestSkipGenerate(t *testing.T) {
 	require.NoError(t, err)
 	_, err = outputFile.Readdirnames(1)
 	require.ErrorIs(t, err, io.EOF, "skip generate should leave output directory empty")
-
-	// Sleep for 1 second to make sure all processes using the files are completed
-	// (on Windows fail to delete temp dir otherwise).
-	time.Sleep(1 * time.Second)
 }
 
 func TestGenerateAndCompile(t *testing.T) {
