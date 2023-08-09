@@ -33,7 +33,7 @@ type HTTPClientSettings struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
+	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
