@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/exporter
 
-go 1.19
+go 1.20
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
