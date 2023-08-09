@@ -48,6 +48,10 @@ $(YQ): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
 
 .PHONY: test
 test:
+ifeq ($(OS),Windows_NT)
+	# Work around https://github.com/actions/runner-images/issues/712
+	set TEMP="$USERPROFILE\AppData\Local\Temp"
+endif
 	$(GOTEST) $(GOTEST_OPT) ./...
 
 .PHONY: test-with-cover
