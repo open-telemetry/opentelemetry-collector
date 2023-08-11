@@ -130,7 +130,7 @@ jobs:
           make crosslink
           git diff -s --exit-code || (echo 'Replace statements are out of date, please run "make crosslink" and commit the changes in this PR.' && exit 1)
 
-  unittest:
+  unittest-matrix:
     strategy:
       matrix:
         go-version: ["1.21", "1.20"] # 1.20 needs quotes otherwise it's interpreted as 1.2
@@ -158,6 +158,22 @@ jobs:
           key: unittest-${{ runner.os }}-go-build-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
         run: make gotest
+  unittest:
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [setup-environment, unittest-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.unittest-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.unittest-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi
 
   test-coverage:
     runs-on: ubuntu-latest
