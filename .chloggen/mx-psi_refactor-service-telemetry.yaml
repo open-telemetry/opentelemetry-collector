@@ -14,3 +14,5 @@ issues: [8207]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext:
+
+change_logs: [api]
