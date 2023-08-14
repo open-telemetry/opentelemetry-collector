@@ -8,7 +8,6 @@ import (
 	"errors"
 	"time"
 
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -146,7 +145,7 @@ func (sc *controller) Shutdown(ctx context.Context) error {
 
 	var errs error
 	for _, scraper := range sc.scrapers {
-		errs = multierr.Append(errs, scraper.Shutdown(ctx))
+		errs = errors.Join(errs, scraper.Shutdown(ctx))
 	}
 
 	return errs
