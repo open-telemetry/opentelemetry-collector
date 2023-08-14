@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -107,42 +106,42 @@ func (rec *Receiver) createOtelMetrics() error {
 		metric.WithDescription("Number of spans successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	rec.refusedSpansCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedSpansKey,
 		metric.WithDescription("Number of spans that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	rec.acceptedMetricPointsCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedMetricPointsKey,
 		metric.WithDescription("Number of metric points successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	rec.refusedMetricPointsCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedMetricPointsKey,
 		metric.WithDescription("Number of metric points that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	rec.acceptedLogRecordsCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedLogRecordsKey,
 		metric.WithDescription("Number of log records successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	rec.refusedLogRecordsCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedLogRecordsKey,
 		metric.WithDescription("Number of log records that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	return errors
 }

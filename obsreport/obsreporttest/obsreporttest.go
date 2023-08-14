@@ -5,6 +5,7 @@ package obsreporttest // import "go.opentelemetry.io/collector/obsreport/obsrepo
 
 import (
 	"context"
+	"errors"
 
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/prometheus/client_golang/prometheus"
@@ -14,7 +15,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -136,9 +136,9 @@ func (tts *TestTelemetry) Shutdown(ctx context.Context) error {
 	view.Unregister(tts.views...)
 	view.UnregisterExporter(tts.ocExporter)
 	var errs error
-	errs = multierr.Append(errs, tts.SpanRecorder.Shutdown(ctx))
+	errs = errors.Join(errs, tts.SpanRecorder.Shutdown(ctx))
 	if tts.meterProvider != nil {
-		errs = multierr.Append(errs, tts.meterProvider.Shutdown(ctx))
+		errs = errors.Join(errs, tts.meterProvider.Shutdown(ctx))
 	}
 	return errs
 }

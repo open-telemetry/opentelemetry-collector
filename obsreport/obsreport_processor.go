@@ -11,7 +11,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -102,63 +101,63 @@ func (por *Processor) createOtelMetrics(cfg ProcessorSettings) error {
 		metric.WithDescription("Number of spans successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	por.refusedSpansCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.RefusedSpansKey,
 		metric.WithDescription("Number of spans that were rejected by the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	por.droppedSpansCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.DroppedSpansKey,
 		metric.WithDescription("Number of spans that were dropped."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	por.acceptedMetricPointsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.AcceptedMetricPointsKey,
 		metric.WithDescription("Number of metric points successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	por.refusedMetricPointsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.RefusedMetricPointsKey,
 		metric.WithDescription("Number of metric points that were rejected by the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	por.droppedMetricPointsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.DroppedMetricPointsKey,
 		metric.WithDescription("Number of metric points that were dropped."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	por.acceptedLogRecordsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.AcceptedLogRecordsKey,
 		metric.WithDescription("Number of log records successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	por.refusedLogRecordsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.RefusedLogRecordsKey,
 		metric.WithDescription("Number of log records that were rejected by the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	por.droppedLogRecordsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.DroppedLogRecordsKey,
 		metric.WithDescription("Number of log records that were dropped."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	return errors
 }

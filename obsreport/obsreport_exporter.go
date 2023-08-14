@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -89,37 +88,37 @@ func (exp *Exporter) createOtelMetrics(cfg ExporterSettings) error {
 		obsmetrics.ExporterPrefix+obsmetrics.SentSpansKey,
 		metric.WithDescription("Number of spans successfully sent to destination."),
 		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	exp.failedToSendSpans, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendSpansKey,
 		metric.WithDescription("Number of spans in failed attempts to send to destination."),
 		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	exp.sentMetricPoints, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentMetricPointsKey,
 		metric.WithDescription("Number of metric points successfully sent to destination."),
 		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	exp.failedToSendMetricPoints, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendMetricPointsKey,
 		metric.WithDescription("Number of metric points in failed attempts to send to destination."),
 		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	exp.sentLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentLogRecordsKey,
 		metric.WithDescription("Number of log record successfully sent to destination."),
 		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	exp.failedToSendLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendLogRecordsKey,
 		metric.WithDescription("Number of log records in failed attempts to send to destination."),
 		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
+	errors = errors.Join(errors, err)
 
 	return errors
 }
