@@ -12,20 +12,20 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector/component v0.82.0
-	go.opentelemetry.io/collector/config/confignet v0.82.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.82.0
-	go.opentelemetry.io/collector/confmap v0.82.0
-	go.opentelemetry.io/collector/connector v0.82.0
-	go.opentelemetry.io/collector/consumer v0.82.0
-	go.opentelemetry.io/collector/exporter v0.82.0
-	go.opentelemetry.io/collector/extension v0.82.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.82.0
+	go.opentelemetry.io/collector/component v0.83.0
+	go.opentelemetry.io/collector/config/confignet v0.83.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.83.0
+	go.opentelemetry.io/collector/confmap v0.83.0
+	go.opentelemetry.io/collector/connector v0.83.0
+	go.opentelemetry.io/collector/consumer v0.83.0
+	go.opentelemetry.io/collector/exporter v0.83.0
+	go.opentelemetry.io/collector/extension v0.83.0
+	go.opentelemetry.io/collector/extension/zpagesextension v0.83.0
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
-	go.opentelemetry.io/collector/processor v0.82.0
-	go.opentelemetry.io/collector/receiver v0.82.0
-	go.opentelemetry.io/collector/semconv v0.82.0
+	go.opentelemetry.io/collector/processor v0.83.0
+	go.opentelemetry.io/collector/receiver v0.83.0
+	go.opentelemetry.io/collector/semconv v0.83.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.17.0
 	go.opentelemetry.io/otel v1.16.0
 	go.opentelemetry.io/otel/bridge/opencensus v0.39.0
