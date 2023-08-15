@@ -83,9 +83,9 @@ The last step of the release process creates artifacts for the new version of th
 
 5. Ensure the "Release" action passes, this will
  
-    1. push new container images to https://hub.docker.com/repository/docker/otel/opentelemetry-collector and https://hub.docker.com/repository/docker/otel/opentelemetry-collector-contrib
+    1. push new container images to `https://hub.docker.com/repository/docker/otel/opentelemetry-collector` and `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-contrib`
 
-    2. create a Github release for the tag and push all the build artifacts to the Github release. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/runs/1346637081).
+    2. create a Github release for the tag and push all the build artifacts to the Github release. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/runs/5869052077).
 
 ## Troubleshooting
 
