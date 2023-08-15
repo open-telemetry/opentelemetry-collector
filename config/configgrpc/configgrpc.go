@@ -86,6 +86,10 @@ type GRPCClientSettings struct {
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
 
+	// WithAuthority parameter configures client to rewrite ":authority" header
+	// (godoc.org/google.golang.org/grpc#WithAuthority)
+	Authority string `mapstructure:"authority"`
+
 	// Auth configuration for outgoing RPCs.
 	Auth *configauth.Authentication `mapstructure:"auth"`
 }
@@ -245,6 +249,10 @@ func (gcs *GRPCClientSettings) toDialOptions(host component.Host, settings compo
 			return nil, fmt.Errorf("invalid balancer_name: %s", gcs.BalancerName)
 		}
 		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":"%s"}`, gcs.BalancerName)))
+	}
+
+	if gcs.Authority != "" {
+		opts = append(opts, grpc.WithAuthority(gcs.Authority))
 	}
 
 	otelOpts := []otelgrpc.Option{
