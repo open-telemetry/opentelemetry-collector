@@ -9,7 +9,7 @@ require (
 	github.com/golangci/golangci-lint v1.53.3
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.4.0
-	github.com/mikefarah/yq/v4 v4.34.2
+	github.com/mikefarah/yq/v4 v4.35.1
 	github.com/pavius/impi v0.0.3
 	go.opentelemetry.io/build-tools/checkfile v0.11.0
 	go.opentelemetry.io/build-tools/chloggen v0.11.0
@@ -146,7 +146,7 @@ require (
 	github.com/nishanths/predeclared v0.2.2 // indirect
 	github.com/nunnatsa/ginkgolinter v0.12.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
+	github.com/pelletier/go-toml/v2 v2.0.9 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
