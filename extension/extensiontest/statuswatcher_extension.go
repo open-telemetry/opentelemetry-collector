@@ -21,7 +21,7 @@ func NewStatusWatcherExtensionCreateSettings() extension.CreateSettings {
 
 // NewStatusWatcherExtensionFactory returns a component.ExtensionFactory that constructs nop extensions.
 func NewStatusWatcherExtensionFactory(
-	onStatusChanged func(source *component.GlobalID, event *component.StatusEvent),
+	onStatusChanged func(source *component.InstanceID, event *component.StatusEvent),
 ) extension.Factory {
 	return extension.NewFactory(
 		"statuswatcher",
@@ -38,9 +38,9 @@ func NewStatusWatcherExtensionFactory(
 type statusWatcherExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
-	onStatusChanged func(source *component.GlobalID, event *component.StatusEvent)
+	onStatusChanged func(source *component.InstanceID, event *component.StatusEvent)
 }
 
-func (e statusWatcherExtension) ComponentStatusChanged(source *component.GlobalID, event *component.StatusEvent) {
+func (e statusWatcherExtension) ComponentStatusChanged(source *component.InstanceID, event *component.StatusEvent) {
 	e.onStatusChanged(source, event)
 }

@@ -33,11 +33,11 @@ func (bes *Extensions) Start(ctx context.Context, host servicehost.Host) error {
 	for extID, ext := range bes.extMap {
 		extLogger := components.ExtensionLogger(bes.telemetry.Logger, extID)
 		extLogger.Info("Extension is starting...")
-		globalID := &component.GlobalID{
+		instanceID := &component.InstanceID{
 			ID:   extID,
 			Kind: component.KindExtension,
 		}
-		if err := ext.Start(ctx, components.NewHostWrapper(host, globalID, extLogger)); err != nil {
+		if err := ext.Start(ctx, components.NewHostWrapper(host, instanceID, extLogger)); err != nil {
 			return err
 		}
 		extLogger.Info("Extension started.")
@@ -89,11 +89,11 @@ func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) err
 	return errs
 }
 
-func (bes *Extensions) NotifyComponentStatusChange(source *component.GlobalID, event *component.StatusEvent) error {
+func (bes *Extensions) NotifyComponentStatusChange(source *component.InstanceID, event *component.StatusEvent) error {
 	var errs error
 	for _, ext := range bes.extMap {
-		if pw, ok := ext.(component.StatusWatcher); ok {
-			pw.ComponentStatusChanged(source, event)
+		if sw, ok := ext.(component.StatusWatcher); ok {
+			sw.ComponentStatusChanged(source, event)
 		}
 	}
 	return errs

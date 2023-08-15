@@ -69,5 +69,5 @@ type StatusWatcher interface {
 	// Extensions that implement this interface must be ready that the ComponentStatusChanged
 	// may be called  before, after or concurrently with Component.Shutdown() call.
 	// The function may be called concurrently with itself.
-	ComponentStatusChanged(source *GlobalID, event *StatusEvent)
+	ComponentStatusChanged(source *InstanceID, event *StatusEvent)
 }

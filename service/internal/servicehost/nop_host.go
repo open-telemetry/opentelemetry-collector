@@ -13,7 +13,7 @@ type nopHost struct{}
 func (n nopHost) ReportFatalError(_ error) {
 }
 
-func (n nopHost) ReportComponentStatus(_ *component.GlobalID, _ *component.StatusEvent) {
+func (n nopHost) ReportComponentStatus(_ *component.InstanceID, _ *component.StatusEvent) {
 }
 
 func (n nopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {

@@ -163,9 +163,9 @@ func TestComponentStatusWatcher(t *testing.T) {
 	factories.Processors[unhealthyProcessorFactory.Type()] = unhealthyProcessorFactory
 
 	// Keep track of all status changes in a map.
-	changedComponents := map[*component.GlobalID]component.Status{}
+	changedComponents := map[*component.InstanceID]component.Status{}
 	var mux sync.Mutex
-	onStatusChanged := func(source *component.GlobalID, event *component.StatusEvent) {
+	onStatusChanged := func(source *component.InstanceID, event *component.StatusEvent) {
 		mux.Lock()
 		defer mux.Unlock()
 		changedComponents[source] = event.Status()
