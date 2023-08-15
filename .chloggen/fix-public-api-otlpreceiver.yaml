@@ -15,7 +15,7 @@ issues: [8175]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Changes signature of receiver/otlpreceiver/config.go type httpServerSettings to HTTPServerSettings, and all places that uses it.
+subtext: Changes signature of receiver/otlpreceiver/config.go type httpServerSettings to HTTPConfig.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
