@@ -7,7 +7,7 @@ change_type: enhancement
 component: otlpreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: the public API for creating the otlpreceiver configuration for HTTPServerSettings was private. This change makes it public.
+note: Export HTTPConfig as part of the API for creating the otlpreceiver configuration.
 
 # One or more tracking issues or pull requests related to the change
 issues: [8175]
