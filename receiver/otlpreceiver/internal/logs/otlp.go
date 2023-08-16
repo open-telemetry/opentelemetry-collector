@@ -55,5 +55,5 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 		return plogotlp.NewExportResponse(), s.Err()
 	}
 
-	return plogotlp.NewExportResponse(), err
+	return plogotlp.NewExportResponse(), nil
 }
