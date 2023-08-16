@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -42,9 +44,8 @@ func newTraceRequestUnmarshalerFunc(pusher consumer.ConsumeTracesFunc) internal.
 	}
 }
 
-// Marshal provides serialization capabilities required by persistent queue
-func (req *tracesRequest) Marshal() ([]byte, error) {
-	return tracesMarshaler.MarshalTraces(req.td)
+func tracesRequestMarshaler(req internal.Request) ([]byte, error) {
+	return tracesMarshaler.MarshalTraces(req.(*tracesRequest).td)
 }
 
 func (req *tracesRequest) OnError(err error) internal.Request {
@@ -88,8 +89,10 @@ func NewTracesExporter(
 		return nil, errNilPushTraceData
 	}
 
-	bs := fromOptions(options...)
-	be, err := newBaseExporter(set, bs, component.DataTypeTraces, newTraceRequestUnmarshalerFunc(pusher))
+	bs := newBaseSettings(false, options...)
+	bs.marshaler = tracesRequestMarshaler
+	bs.unmarshaler = newTraceRequestUnmarshalerFunc(pusher)
+	be, err := newBaseExporter(set, bs, component.DataTypeTraces)
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +110,55 @@ func NewTracesExporter(
 			be.obsrep.recordTracesEnqueueFailure(req.Context(), int64(req.Count()))
 		}
 		return serr
+	}, bs.consumerOptions...)
+
+	return &traceExporter{
+		baseExporter: be,
+		Traces:       tc,
+	}, err
+}
+
+type TracesConverter interface {
+	// RequestFromTraces converts ptrace.Traces into a Request.
+	RequestFromTraces(context.Context, ptrace.Traces) (Request, error)
+}
+
+// NewTracesRequestExporter creates a new traces exporter based on a custom TracesConverter and RequestSender.
+func NewTracesRequestExporter(
+	_ context.Context,
+	set exporter.CreateSettings,
+	converter TracesConverter,
+	options ...Option,
+) (exporter.Traces, error) {
+	if set.Logger == nil {
+		return nil, errNilLogger
+	}
+
+	if converter == nil {
+		return nil, errNilTracesConverter
+	}
+
+	bs := newBaseSettings(true, options...)
+
+	be, err := newBaseExporter(set, bs, component.DataTypeTraces)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Add new observability tracing/metrics to the new exporterhelper.
+
+	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
+		req, cErr := converter.RequestFromTraces(ctx, td)
+		if cErr != nil {
+			set.Logger.Error("Failed to convert traces. Dropping data.",
+				zap.Int("dropped_spans", td.SpanCount()),
+				zap.Error(err))
+			return consumererror.NewPermanent(cErr)
+		}
+		return be.sender.send(&request{
+			baseRequest: baseRequest{ctx: ctx},
+			Request:     req,
+		})
 	}, bs.consumerOptions...)
 
 	return &traceExporter{

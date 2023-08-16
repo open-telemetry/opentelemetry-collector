@@ -70,33 +70,32 @@ func (qCfg *QueueSettings) Validate() error {
 }
 
 type queuedRetrySender struct {
-	fullName           string
-	id                 component.ID
-	signal             component.DataType
-	cfg                QueueSettings
-	consumerSender     requestSender
-	queue              internal.ProducerConsumerQueue
-	retryStopCh        chan struct{}
-	traceAttribute     attribute.KeyValue
-	logger             *zap.Logger
-	requeuingEnabled   bool
-	requestUnmarshaler internal.RequestUnmarshaler
+	fullName         string
+	id               component.ID
+	signal           component.DataType
+	queueSettings    queueSettings
+	consumerSender   requestSender
+	queue            internal.ProducerConsumerQueue
+	retryStopCh      chan struct{}
+	traceAttribute   attribute.KeyValue
+	logger           *zap.Logger
+	requeuingEnabled bool
 }
 
-func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(id component.ID, signal component.DataType, qs queueSettings, rCfg RetrySettings,
+	nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
 
 	qrs := &queuedRetrySender{
-		fullName:           id.String(),
-		id:                 id,
-		signal:             signal,
-		cfg:                qCfg,
-		retryStopCh:        retryStopCh,
-		traceAttribute:     traceAttr,
-		logger:             sampledLogger,
-		requestUnmarshaler: reqUnmarshaler,
+		fullName:       id.String(),
+		id:             id,
+		signal:         signal,
+		queueSettings:  qs,
+		retryStopCh:    retryStopCh,
+		traceAttribute: traceAttr,
+		logger:         sampledLogger,
 	}
 
 	qrs.consumerSender = &retrySender{
@@ -109,8 +108,8 @@ func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg Queue
 		onTemporaryFailure: qrs.onTemporaryFailure,
 	}
 
-	if qCfg.StorageID == nil {
-		qrs.queue = internal.NewBoundedMemoryQueue(qrs.cfg.QueueSize)
+	if !qs.persistenceEnabled() {
+		qrs.queue = internal.NewBoundedMemoryQueue(qs.config.QueueSize)
 	}
 	// The Persistent Queue is initialized separately as it needs extra information about the component
 
@@ -143,16 +142,24 @@ func toStorageClient(ctx context.Context, storageID component.ID, host component
 
 // initializePersistentQueue uses extra information for initialization available from component.Host
 func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, host component.Host) error {
-	if qrs.cfg.StorageID == nil {
+	if !qrs.queueSettings.persistenceEnabled() {
 		return nil
 	}
 
-	storageClient, err := toStorageClient(ctx, *qrs.cfg.StorageID, host, qrs.id, qrs.signal)
+	storageClient, err := toStorageClient(ctx, *qrs.queueSettings.config.StorageID, host, qrs.id, qrs.signal)
 	if err != nil {
 		return err
 	}
 
-	qrs.queue = internal.NewPersistentQueue(ctx, qrs.fullName, qrs.signal, qrs.cfg.QueueSize, qrs.logger, storageClient, qrs.requestUnmarshaler)
+	qrs.queue = internal.NewPersistentQueue(ctx, internal.PersistentQueueSettings{
+		Name:        qrs.fullName,
+		Signal:      qrs.signal,
+		Capacity:    uint64(qrs.queueSettings.config.QueueSize),
+		Logger:      qrs.logger,
+		Client:      storageClient,
+		Marshaler:   qrs.queueSettings.marshaler,
+		Unmarshaler: qrs.queueSettings.unmarshaler,
+	})
 
 	// TODO: this can be further exposed as a config param rather than relying on a type of queue
 	qrs.requeuingEnabled = true
@@ -191,13 +198,13 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item internal.Request) {
+	qrs.queue.StartConsumers(qrs.queueSettings.config.NumConsumers, func(item internal.Request) {
 		_ = qrs.consumerSender.send(item)
 		item.OnProcessingFinished()
 	})
 
 	// Start reporting queue length metric
-	if qrs.cfg.Enabled {
+	if qrs.queueSettings.config.Enabled {
 		err := globalInstruments.queueSize.UpsertEntry(func() int64 {
 			return int64(qrs.queue.Size())
 		}, metricdata.NewLabelValue(qrs.fullName))
@@ -205,7 +212,7 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 			return fmt.Errorf("failed to create retry queue size metric: %w", err)
 		}
 		err = globalInstruments.queueCapacity.UpsertEntry(func() int64 {
-			return int64(qrs.cfg.QueueSize)
+			return int64(qrs.queueSettings.config.QueueSize)
 		}, metricdata.NewLabelValue(qrs.fullName))
 		if err != nil {
 			return fmt.Errorf("failed to create retry queue capacity metric: %w", err)
@@ -218,7 +225,7 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 // shutdown is invoked during service shutdown.
 func (qrs *queuedRetrySender) shutdown() {
 	// Cleanup queue metrics reporting
-	if qrs.cfg.Enabled {
+	if qrs.queueSettings.config.Enabled {
 		_ = globalInstruments.queueSize.UpsertEntry(func() int64 {
 			return int64(0)
 		}, metricdata.NewLabelValue(qrs.fullName))
@@ -287,7 +294,7 @@ func createSampledLogger(logger *zap.Logger) *zap.Logger {
 
 // send implements the requestSender interface
 func (qrs *queuedRetrySender) send(req internal.Request) error {
-	if !qrs.cfg.Enabled {
+	if !qrs.queueSettings.config.Enabled {
 		err := qrs.consumerSender.send(req)
 		if err != nil {
 			qrs.logger.Error(
