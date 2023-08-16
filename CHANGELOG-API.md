@@ -6,3 +6,13 @@ This changelog includes only developer-facing changes.
 If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG.md).
 
 <!-- next version -->
+
+## v0.83.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Remove go 1.19 support, bump minimum to go 1.20 and add testing for 1.21 (#8207)
+
+### 💡 Enhancements 💡
+
+- `changelog`: Generate separate changelogs for end users and package consumers (#8153)
