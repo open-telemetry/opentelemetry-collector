@@ -9,9 +9,11 @@ import (
 	"net"
 	"testing"
 
+	"github.com/gogo/status"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 
 	"go.opentelemetry.io/collector/component"
@@ -55,6 +57,7 @@ func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 	metricsClient := makeMetricsServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := metricsClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
+	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
 }
 
@@ -65,6 +68,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 	metricsClient := makeMetricsServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("my error"))))
 	resp, err := metricsClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = Permanent error: my error")
+	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
 }
 

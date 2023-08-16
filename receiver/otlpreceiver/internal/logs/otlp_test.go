@@ -12,7 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -55,6 +57,7 @@ func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 	logClient := makeLogsServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := logClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
+	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, plogotlp.ExportResponse{}, resp)
 }
 
@@ -65,6 +68,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 	logClient := makeLogsServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("my error"))))
 	resp, err := logClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = Permanent error: my error")
+	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, plogotlp.ExportResponse{}, resp)
 }
 
