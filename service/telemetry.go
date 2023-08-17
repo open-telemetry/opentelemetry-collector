@@ -163,6 +163,8 @@ func (tel *telemetryInitializer) initMetrics(res *resource.Resource, logger *zap
 		opts = append(opts, sdkmetric.WithReader(r))
 	}
 
+	opts = append(opts, telemetry.ViewOptionsFromConfig(cfg.Metrics.Views)...)
+
 	mp, err := proctelemetry.InitOpenTelemetry(res, opts, tel.disableHighCardinality)
 	if err != nil {
 		return err

@@ -308,6 +308,171 @@ func TestTelemetryInit(t *testing.T) {
 	}
 }
 
+func strToPtr(in string) *string {
+	return &in
+}
+
+func TestTelemetryMetricsViews(t *testing.T) {
+	type metricValue struct {
+		value  float64
+		labels map[string]string
+	}
+
+	for _, tc := range []struct {
+		name            string
+		disableHighCard bool
+		expectedMetrics map[string]metricValue
+		cfg             *telemetry.Config
+	}{
+		{
+			name: "NoViews",
+			cfg: &telemetry.Config{
+				Metrics: telemetry.MetricsConfig{
+					Level: configtelemetry.LevelDetailed,
+				},
+				Resource: map[string]*string{
+					semconv.AttributeServiceInstanceID: &testInstanceID,
+				},
+			},
+			expectedMetrics: map[string]metricValue{
+				metricPrefix + ocPrefix + counterName + "_total": {
+					value:  13,
+					labels: map[string]string{},
+				},
+				metricPrefix + otelPrefix + counterName + "_total": {
+					value:  13,
+					labels: map[string]string{},
+				},
+				metricPrefix + grpcPrefix + counterName + "_total": {
+					value: 11,
+					labels: map[string]string{
+						"net_sock_peer_addr": "",
+						"net_sock_peer_name": "",
+						"net_sock_peer_port": "",
+					},
+				},
+				metricPrefix + httpPrefix + counterName + "_total": {
+					value: 10,
+					labels: map[string]string{
+						"net_host_name": "",
+						"net_host_port": "",
+					},
+				},
+				metricPrefix + "target_info": {
+					value: 0,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+			},
+		},
+		{
+			name: "MultipleViews",
+			cfg: &telemetry.Config{
+				Metrics: telemetry.MetricsConfig{
+					Level: configtelemetry.LevelDetailed,
+					Views: []telemetry.View{
+						{
+							Selector: &telemetry.ViewSelector{
+								InstrumentName: strToPtr(grpcPrefix + counterName),
+								InstrumentType: strToPtr("counter"),
+							},
+							Stream: &telemetry.ViewStream{
+								Name: strToPtr("stream_name_1"),
+							},
+						},
+						{
+							Selector: &telemetry.ViewSelector{
+								InstrumentName: strToPtr("*"),
+							},
+							Stream: &telemetry.ViewStream{
+								Aggregation: &telemetry.ViewStreamAggregation{
+									Drop: "",
+								},
+							},
+						},
+					},
+				},
+				Resource: map[string]*string{
+					semconv.AttributeServiceInstanceID: &testInstanceID,
+				},
+			},
+			expectedMetrics: map[string]metricValue{
+				metricPrefix + "stream_name_1_total": {
+					value: 11,
+					labels: map[string]string{
+						"net_sock_peer_addr": "",
+						"net_sock_peer_name": "",
+						"net_sock_peer_port": "",
+					},
+				},
+				metricPrefix + ocPrefix + counterName + "_total": {
+					value:  13,
+					labels: map[string]string{},
+				},
+				metricPrefix + "target_info": {
+					value: 0,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tel := newColTelemetry(true, tc.disableHighCard, true)
+			buildInfo := component.NewDefaultBuildInfo()
+			tc.cfg.Metrics.Readers = []telemetry.MetricReader{
+				{
+					Pull: &telemetry.PullMetricReader{
+						Exporter: telemetry.MetricExporter{
+							Prometheus: testutil.GetAvailableLocalAddressPrometheus(t),
+						},
+					},
+				},
+			}
+			otelRes := buildResource(buildInfo, *tc.cfg)
+			res := pdataFromSdk(otelRes)
+			settings := component.TelemetrySettings{
+				Logger:   zap.NewNop(),
+				Resource: res,
+			}
+			err := tel.init(otelRes, settings, *tc.cfg, make(chan error))
+			require.NoError(t, err)
+			defer func() {
+				require.NoError(t, tel.shutdown())
+			}()
+
+			v := createTestMetrics(t, tel.mp)
+			defer func() {
+				view.Unregister(v)
+			}()
+
+			metrics := getMetricsFromPrometheus(t, tel.servers[0].Handler)
+			require.Equal(t, len(tc.expectedMetrics), len(metrics))
+
+			for metricName, metricValue := range tc.expectedMetrics {
+				mf, present := metrics[metricName]
+				require.True(t, present, "expected metric %q was not present", metricName)
+				require.Len(t, mf.Metric, 1, "only one measure should exist for metric %q", metricName)
+
+				labels := make(map[string]string)
+				for _, pair := range mf.Metric[0].Label {
+					labels[pair.GetName()] = pair.GetValue()
+				}
+
+				require.Equal(t, metricValue.labels, labels, "labels for metric %q was different than expected", metricName)
+				require.Equal(t, metricValue.value, mf.Metric[0].Counter.GetValue(), "value for metric %q was different than expected", metricName)
+			}
+		})
+
+	}
+}
+
 func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 	// Creates a OTel Go counter
 	counter, err := mp.Meter("collector_test").Int64Counter(otelPrefix+counterName, metric.WithUnit("ms"))

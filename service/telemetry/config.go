@@ -111,6 +111,9 @@ type MetricsConfig struct {
 	// Readers allow configuration of metric readers to emit metrics to
 	// any number of supported backends.
 	Readers []MetricReader `mapstructure:"readers"`
+
+	// Views allow configuration of metric views.
+	Views []View `mapstructure:"views"`
 }
 
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
@@ -201,4 +204,84 @@ func (pmr *PeriodicMetricReader) Validate() error {
 		return fmt.Errorf("invalid exporter configuration")
 	}
 	return nil
+}
+
+func (v *View) Unmarshal(conf *confmap.Conf) error {
+	if !obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled() {
+		// only unmarshal if feature gate is enabled
+		return nil
+	}
+
+	if conf == nil {
+		return nil
+	}
+
+	if err := conf.Unmarshal(v); err != nil {
+		return fmt.Errorf("invalid view configuration: %w", err)
+	}
+
+	return v.Validate()
+}
+
+func (v *View) Validate() error {
+	if v.Selector == nil || v.Stream == nil {
+		return fmt.Errorf("invalid view configuration")
+	}
+	return nil
+}
+
+func (s *ViewSelector) InstrumentNameStr() string {
+	if s.InstrumentName == nil {
+		return ""
+	}
+	return *s.InstrumentName
+}
+
+func (s *ViewSelector) InstrumentTypeStr() string {
+	if s.InstrumentType == nil {
+		return ""
+	}
+	return *s.InstrumentType
+}
+
+func (s *ViewSelector) MeterNameStr() string {
+	if s.MeterName == nil {
+		return ""
+	}
+	return *s.MeterName
+}
+
+func (s *ViewSelector) MeterVersionStr() string {
+	if s.MeterVersion == nil {
+		return ""
+	}
+	return *s.MeterVersion
+}
+
+func (s *ViewSelector) MeterSchemaURLStr() string {
+	if s.MeterSchemaUrl == nil {
+		return ""
+	}
+	return *s.MeterSchemaUrl
+}
+
+func (s *ViewStream) NameStr() string {
+	if s.Name == nil {
+		return ""
+	}
+	return *s.Name
+}
+
+func (s *ViewStream) DescriptionStr() string {
+	if s.Description == nil {
+		return ""
+	}
+	return *s.Description
+}
+
+func (e *ViewStreamAggregationExplicitBucketHistogram) RecordMinMaxBool() bool {
+	if e.RecordMinMax == nil {
+		return false
+	}
+	return *e.RecordMinMax
 }
