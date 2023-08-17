@@ -80,6 +80,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
+				Authority:       "pseudo-authority",
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
@@ -108,6 +109,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
+				Authority:       "pseudo-authority",
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
@@ -136,6 +138,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
+				Authority:       "pseudo-authority",
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
@@ -149,7 +152,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			opts, err := test.settings.toDialOptions(test.host, tt.TelemetrySettings)
 			assert.NoError(t, err)
-			assert.Len(t, opts, 9)
+			assert.Len(t, opts, 10)
 		})
 	}
 }
