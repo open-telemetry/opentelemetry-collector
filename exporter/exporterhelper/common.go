@@ -77,7 +77,7 @@ type baseSettings struct {
 	requestExporter bool
 }
 
-// fromOptions returns the baseSettings starting from the default and applying all configured options.
+// newBaseSettings returns the baseSettings starting from the default and applying all configured options.
 // requestExporter indicates whether the base settings are for a new request exporter or not.
 func newBaseSettings(requestExporter bool, options ...Option) *baseSettings {
 	bs := &baseSettings{
