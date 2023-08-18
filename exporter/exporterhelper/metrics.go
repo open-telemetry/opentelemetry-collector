@@ -123,7 +123,7 @@ type MetricsConverter interface {
 	RequestFromMetrics(context.Context, pmetric.Metrics) (Request, error)
 }
 
-// NewMetricsRequestExporter creates a new metrics exporter based on a custom TracesConverter and RequestSender.
+// NewMetricsRequestExporter creates a new metrics exporter based on a custom MetricsConverter and RequestSender.
 func NewMetricsRequestExporter(
 	_ context.Context,
 	set exporter.CreateSettings,
