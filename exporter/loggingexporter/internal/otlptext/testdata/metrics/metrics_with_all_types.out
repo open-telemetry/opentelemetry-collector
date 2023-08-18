@@ -157,7 +157,7 @@ Exemplar #0
      -> Trace ID: 0102030405060708090a0b0c0d0e0f10
      -> Span ID: 1112131415161718
      -> Timestamp: 2020-02-11 20:26:13.000000123 +0000 UTC
-     -> Value: 15.000000
+     -> Value: 15
      -> FilteredAttributes:
           -> exemplar-attachment: Str(exemplar-attachment-value)
 Metric #6
