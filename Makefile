@@ -16,11 +16,6 @@ ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort 
 
 CMD?=
 
-# TODO: Find a way to configure this in the generated code, currently no effect.
-BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
-VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
-BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
-
 RUN_CONFIG?=examples/local/otel-config.yaml
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
 COMP_REL_PATH=cmd/otelcorecol/components.go
@@ -35,10 +30,6 @@ $(1)
 endef
 
 .DEFAULT_GOAL := all
-
-.PHONY: version
-version:
-	@echo ${VERSION}
 
 .PHONY: all
 all: checklicense checkdoc misspell goimpi goporto multimod-verify golint gotest
@@ -145,7 +136,7 @@ endif
 .PHONY: otelcorecol
 otelcorecol:
 	pushd cmd/otelcorecol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcorecol_$(GOOS)_$(GOARCH) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) ./cmd/otelcorecol && popd
+		-tags $(GO_BUILD_TAGS) ./cmd/otelcorecol && popd
 
 .PHONY: genotelcorecol
 genotelcorecol: install-tools
@@ -533,7 +524,6 @@ crosslink: $(CROSSLINK)
 	@echo "Executing crosslink"
 	$(CROSSLINK) --root=$(shell pwd) --prune
 
-
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
 chlog-new: $(CHLOGGEN)
@@ -550,7 +540,6 @@ chlog-preview: $(CHLOGGEN)
 .PHONY: chlog-update
 chlog-update: $(CHLOGGEN)
 	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
-
 
 .PHONY: builder-integration-test
 builder-integration-test: $(ENVSUBST)
