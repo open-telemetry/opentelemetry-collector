@@ -17,6 +17,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 )
 
 func TestStateString(t *testing.T) {
@@ -369,6 +371,31 @@ func TestCollectorDryRun(t *testing.T) {
 	require.Error(t, col.DryRun(context.Background()))
 }
 
+func TestPassConfmapToServiceFailure(t *testing.T) {
+	factories, err := nopFactories()
+	require.NoError(t, err)
+
+	cfgProvider, err := NewConfigProvider(ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs:       []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
+			Providers:  makeMapProvidersMap(newFailureProvider()),
+			Converters: []confmap.Converter{expandconverter.New()},
+		},
+	})
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: cfgProvider,
+	}
+	col, err := NewCollector(set)
+	require.NoError(t, err)
+
+	err = col.Run(context.Background())
+	require.Error(t, err)
+}
+
 func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.WaitGroup {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -377,4 +404,22 @@ func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.Wai
 		require.NoError(t, col.Run(ctx))
 	}()
 	return wg
+}
+
+type failureProvider struct{}
+
+func newFailureProvider() confmap.Provider {
+	return &failureProvider{}
+}
+
+func (fmp *failureProvider) Retrieve(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	return nil, errors.New("a failure occurred during configuration retrieval")
+}
+
+func (*failureProvider) Scheme() string {
+	return "file"
+}
+
+func (*failureProvider) Shutdown(context.Context) error {
+	return nil
 }
