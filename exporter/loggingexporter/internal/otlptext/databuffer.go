@@ -235,10 +235,6 @@ func (b *dataBuffer) logEvents(description string, se ptrace.SpanEventSlice) {
 		b.logEntry("     -> Name: %s", e.Name())
 		b.logEntry("     -> Timestamp: %s", e.Timestamp())
 		b.logEntry("     -> DroppedAttributesCount: %d", e.DroppedAttributesCount())
-
-		if e.Attributes().Len() == 0 {
-			continue
-		}
 		b.logAttributes("     -> Attributes:", e.Attributes())
 	}
 }
@@ -257,9 +253,6 @@ func (b *dataBuffer) logLinks(description string, sl ptrace.SpanLinkSlice) {
 		b.logEntry("     -> ID: %s", l.SpanID())
 		b.logEntry("     -> TraceState: %s", l.TraceState().AsRaw())
 		b.logEntry("     -> DroppedAttributesCount: %d", l.DroppedAttributesCount())
-		if l.Attributes().Len() == 0 {
-			continue
-		}
 		b.logAttributes("     -> Attributes:", l.Attributes())
 	}
 }
@@ -282,9 +275,6 @@ func (b *dataBuffer) logExemplars(description string, se pmetric.ExemplarSlice) 
 			b.logEntry("     -> Value: %d", e.IntValue())
 		case pmetric.ExemplarValueTypeDouble:
 			b.logEntry("     -> Value: %f", e.DoubleValue())
-		}
-		if e.FilteredAttributes().Len() == 0 {
-			continue
 		}
 		b.logAttributes("     -> FilteredAttributes", e.FilteredAttributes())
 	}
