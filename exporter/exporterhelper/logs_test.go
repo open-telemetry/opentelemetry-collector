@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,7 +21,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -146,6 +149,30 @@ func TestLogsRequestExporter_Default_ExportError(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	require.Equal(t, want, le.ConsumeLogs(context.Background(), ld))
+}
+
+func TestLogsExporter_WithPersistentQueue(t *testing.T) {
+	qCfg := NewDefaultQueueSettings()
+	storageID := component.NewIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID
+	rCfg := NewDefaultRetrySettings()
+	ts := consumertest.LogsSink{}
+	set := exportertest.NewNopCreateSettings()
+	set.ID = component.NewIDWithName("test_logs", "with_persistent_queue")
+	te, err := NewLogsExporter(context.Background(), set, &fakeLogsExporterConfig, ts.ConsumeLogs, WithRetry(rCfg), WithQueue(qCfg))
+	require.NoError(t, err)
+
+	host := &mockHost{ext: map[component.ID]component.Component{
+		storageID: internal.NewMockStorageExtension(),
+	}}
+	require.NoError(t, te.Start(context.Background(), host))
+	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
+
+	traces := testdata.GenerateLogs(2)
+	require.NoError(t, te.ConsumeLogs(context.Background(), traces))
+	require.Eventually(t, func() bool {
+		return len(ts.AllLogs()) == 1 && ts.LogRecordCount() == 2
+	}, 500*time.Millisecond, 10*time.Millisecond)
 }
 
 func TestLogsExporter_WithRecordMetrics(t *testing.T) {
