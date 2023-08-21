@@ -105,7 +105,7 @@ func InitSpanProcessor(ctx context.Context, processor telemetry.SpanProcessor) (
 			case protocolProtobufGRPC:
 				exp, err = initOTLPgRPCSpanExporter(ctx, processor.Batch.Exporter.Otlp)
 			default:
-				return nil, fmt.Errorf("unsupported protocol %s", processor.Batch.Exporter.Otlp.Protocol)
+				return nil, fmt.Errorf("unsupported protocol %q", processor.Batch.Exporter.Otlp.Protocol)
 			}
 			if err != nil {
 				return nil, err
