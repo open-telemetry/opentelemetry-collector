@@ -1,5 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
+
 package exporterhelper
 
 import (
@@ -59,15 +60,39 @@ func TestLogsExporter_NilLogger(t *testing.T) {
 	require.Equal(t, errNilLogger, err)
 }
 
+func TestLogsRequestExporter_NilLogger(t *testing.T) {
+	le, err := NewLogsRequestExporter(context.Background(), exporter.CreateSettings{}, &fakeRequestConverter{})
+	require.Nil(t, le)
+	require.Equal(t, errNilLogger, err)
+}
+
 func TestLogsExporter_NilPushLogsData(t *testing.T) {
 	le, err := NewLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeLogsExporterConfig, nil)
 	require.Nil(t, le)
 	require.Equal(t, errNilPushLogsData, err)
 }
 
+func TestLogsRequestExporter_NilLogsConverter(t *testing.T) {
+	le, err := NewLogsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), nil)
+	require.Nil(t, le)
+	require.Equal(t, errNilLogsConverter, err)
+}
+
 func TestLogsExporter_Default(t *testing.T) {
 	ld := plog.NewLogs()
 	le, err := NewLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeLogsExporterConfig, newPushLogsData(nil))
+	assert.NotNil(t, le)
+	assert.NoError(t, err)
+
+	assert.Equal(t, consumer.Capabilities{MutatesData: false}, le.Capabilities())
+	assert.NoError(t, le.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, le.ConsumeLogs(context.Background(), ld))
+	assert.NoError(t, le.Shutdown(context.Background()))
+}
+
+func TestLogsRequestExporter_Default(t *testing.T) {
+	ld := plog.NewLogs()
+	le, err := NewLogsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{})
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -86,6 +111,15 @@ func TestLogsExporter_WithCapabilities(t *testing.T) {
 	assert.Equal(t, capabilities, le.Capabilities())
 }
 
+func TestLogsRequestExporter_WithCapabilities(t *testing.T) {
+	capabilities := consumer.Capabilities{MutatesData: true}
+	le, err := NewLogsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, WithCapabilities(capabilities))
+	require.NoError(t, err)
+	require.NotNil(t, le)
+
+	assert.Equal(t, capabilities, le.Capabilities())
+}
+
 func TestLogsExporter_Default_ReturnError(t *testing.T) {
 	ld := plog.NewLogs()
 	want := errors.New("my_error")
@@ -95,7 +129,26 @@ func TestLogsExporter_Default_ReturnError(t *testing.T) {
 	require.Equal(t, want, le.ConsumeLogs(context.Background(), ld))
 }
 
-func TestLogsExporter_WithRecordLogs(t *testing.T) {
+func TestLogsRequestExporter_Default_ConvertError(t *testing.T) {
+	ld := plog.NewLogs()
+	want := errors.New("convert_error")
+	le, err := NewLogsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{logsError: want})
+	require.NoError(t, err)
+	require.NotNil(t, le)
+	require.Equal(t, consumererror.NewPermanent(want), le.ConsumeLogs(context.Background(), ld))
+}
+
+func TestLogsRequestExporter_Default_ExportError(t *testing.T) {
+	ld := plog.NewLogs()
+	want := errors.New("export_error")
+	le, err := NewLogsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(),
+		&fakeRequestConverter{requestError: want})
+	require.NoError(t, err)
+	require.NotNil(t, le)
+	require.Equal(t, want, le.ConsumeLogs(context.Background(), ld))
+}
+
+func TestLogsExporter_WithRecordMetrics(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry(fakeLogsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -107,7 +160,7 @@ func TestLogsExporter_WithRecordLogs(t *testing.T) {
 	checkRecordedMetricsForLogsExporter(t, tt, le, nil)
 }
 
-func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
+func TestLogsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	tt, err := obsreporttest.SetupTelemetry(fakeLogsExporterName)
 	require.NoError(t, err)
@@ -184,11 +237,34 @@ func TestLogsExporter_WithShutdown(t *testing.T) {
 	assert.True(t, shutdownCalled)
 }
 
+func TestLogsRequestExporter_WithShutdown(t *testing.T) {
+	shutdownCalled := false
+	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
+
+	le, err := NewLogsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, WithShutdown(shutdown))
+	assert.NotNil(t, le)
+	assert.NoError(t, err)
+
+	assert.Nil(t, le.Shutdown(context.Background()))
+	assert.True(t, shutdownCalled)
+}
+
 func TestLogsExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
 	le, err := NewLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeLogsExporterConfig, newPushLogsData(nil), WithShutdown(shutdownErr))
+	assert.NotNil(t, le)
+	assert.NoError(t, err)
+
+	assert.Equal(t, le.Shutdown(context.Background()), want)
+}
+
+func TestLogsRequestExporter_WithShutdown_ReturnError(t *testing.T) {
+	want := errors.New("my_error")
+	shutdownErr := func(context.Context) error { return want }
+
+	le, err := NewLogsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{}, WithShutdown(shutdownErr))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -225,7 +301,8 @@ func generateLogsTraffic(t *testing.T, tracer trace.Tracer, le exporter.Logs, nu
 	}
 }
 
-func checkWrapSpanForLogsExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le exporter.Logs, wantError error, numLogRecords int64) {
+func checkWrapSpanForLogsExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le exporter.Logs,
+	wantError error, numLogRecords int64) { // nolint: unparam
 	const numRequests = 5
 	generateLogsTraffic(t, tracer, le, numRequests, wantError)
 
