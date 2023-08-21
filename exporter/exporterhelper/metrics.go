@@ -149,8 +149,12 @@ func NewMetricsRequestExporter(
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO: Add new observability tracing/metrics to the new exporterhelper.
+	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
+		return &metricsSenderWithObservability{
+			obsrep:     be.obsrep,
+			nextSender: nextSender,
+		}
+	})
 
 	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		req, cErr := converter.RequestFromMetrics(ctx, md)
@@ -160,10 +164,15 @@ func NewMetricsRequestExporter(
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}
-		return be.sender.send(&request{
+		r := &request{
 			Request:     req,
 			baseRequest: baseRequest{ctx: ctx},
-		})
+		}
+		sErr := be.sender.send(r)
+		if errors.Is(sErr, errSendingQueueIsFull) {
+			be.obsrep.recordMetricsEnqueueFailure(r.Context(), int64(r.Count()))
+		}
+		return sErr
 	}, bs.consumerOptions...)
 
 	return &metricsExporter{

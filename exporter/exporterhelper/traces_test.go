@@ -158,6 +158,18 @@ func TestTracesExporter_WithRecordMetrics(t *testing.T) {
 	checkRecordedMetricsForTracesExporter(t, tt, te, nil)
 }
 
+func TestTracesRequestExporter_WithRecordMetrics(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry(fakeTracesExporterName)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	te, err := NewTracesRequestExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeRequestConverter{})
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	checkRecordedMetricsForTracesExporter(t, tt, te, nil)
+}
+
 func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	tt, err := obsreporttest.SetupTelemetry(fakeTracesExporterName)
@@ -165,6 +177,19 @@ func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	te, err := NewTracesExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeTracesExporterConfig, newTraceDataPusher(want))
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	checkRecordedMetricsForTracesExporter(t, tt, te, want)
+}
+
+func TestTracesRequestExporter_WithRecordMetrics_RequestSenderError(t *testing.T) {
+	want := errors.New("export_error")
+	tt, err := obsreporttest.SetupTelemetry(fakeTracesExporterName)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	te, err := NewTracesRequestExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeRequestConverter{requestError: want})
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -210,6 +235,20 @@ func TestTracesExporter_WithSpan(t *testing.T) {
 	checkWrapSpanForTracesExporter(t, sr, set.TracerProvider.Tracer("test"), te, nil, 1)
 }
 
+func TestTracesRequestExporter_WithSpan(t *testing.T) {
+	set := exportertest.NewNopCreateSettings()
+	sr := new(tracetest.SpanRecorder)
+	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(set.TracerProvider)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+
+	te, err := NewTracesRequestExporter(context.Background(), set, &fakeRequestConverter{})
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	checkWrapSpanForTracesExporter(t, sr, set.TracerProvider.Tracer("test"), te, nil, 1)
+}
+
 func TestTracesExporter_WithSpan_ReturnError(t *testing.T) {
 	set := exportertest.NewNopCreateSettings()
 	sr := new(tracetest.SpanRecorder)
@@ -219,6 +258,21 @@ func TestTracesExporter_WithSpan_ReturnError(t *testing.T) {
 
 	want := errors.New("my_error")
 	te, err := NewTracesExporter(context.Background(), set, &fakeTracesExporterConfig, newTraceDataPusher(want))
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	checkWrapSpanForTracesExporter(t, sr, set.TracerProvider.Tracer("test"), te, want, 1)
+}
+
+func TestTracesRequestExporter_WithSpan_ExportError(t *testing.T) {
+	set := exportertest.NewNopCreateSettings()
+	sr := new(tracetest.SpanRecorder)
+	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(set.TracerProvider)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+
+	want := errors.New("export_error")
+	te, err := NewTracesRequestExporter(context.Background(), set, &fakeRequestConverter{requestError: want})
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
