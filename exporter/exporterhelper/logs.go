@@ -118,12 +118,17 @@ func NewLogsExporter(
 	}, err
 }
 
+// LogsConverter provides an interface for converting plog.Logs into a request.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type LogsConverter interface {
 	// RequestFromLogs converts plog.Logs data into a request.
 	RequestFromLogs(context.Context, plog.Logs) (Request, error)
 }
 
 // NewLogsRequestExporter creates new logs exporter based on custom LogsConverter and RequestSender.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewLogsRequestExporter(
 	_ context.Context,
 	set exporter.CreateSettings,
