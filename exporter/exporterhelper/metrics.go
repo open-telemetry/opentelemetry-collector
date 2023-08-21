@@ -118,12 +118,17 @@ func NewMetricsExporter(
 	}, err
 }
 
+// MetricsConverter provides an interface for converting pmetric.Metrics into a request.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type MetricsConverter interface {
 	// RequestFromMetrics converts pdata.Metrics into a request.
 	RequestFromMetrics(context.Context, pmetric.Metrics) (Request, error)
 }
 
 // NewMetricsRequestExporter creates a new metrics exporter based on a custom MetricsConverter and RequestSender.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewMetricsRequestExporter(
 	_ context.Context,
 	set exporter.CreateSettings,

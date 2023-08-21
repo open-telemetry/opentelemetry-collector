@@ -118,12 +118,17 @@ func NewTracesExporter(
 	}, err
 }
 
+// TracesConverter provides an interface for converting ptrace.Traces into a request.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type TracesConverter interface {
 	// RequestFromTraces converts ptrace.Traces into a Request.
 	RequestFromTraces(context.Context, ptrace.Traces) (Request, error)
 }
 
 // NewTracesRequestExporter creates a new traces exporter based on a custom TracesConverter and RequestSender.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewTracesRequestExporter(
 	_ context.Context,
 	set exporter.CreateSettings,
