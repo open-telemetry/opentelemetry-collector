@@ -2,7 +2,67 @@
 
 # Changelog
 
+Starting with version v0.83.0, this changelog includes only user-facing changes.
+If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./CHANGELOG-API.md).
+
 <!-- next version -->
+
+## v0.83.0
+
+### 💡 Enhancements 💡
+
+- `extension`: Add optional `ConfigWatcher` interface (#6596)
+  Extensions implementing this interface will be notified of the Collector's effective config.
+- `otelcol`: Add optional `ConfmapProvider` interface for Config Providers (#6596)
+  This allows providing the Collector's configuration as a marshaled confmap.Conf object
+  from a ConfigProvider
+  
+- `service`: Add `CollectorConf` field to `service.Settings` (#6596)
+  This field is intended to be used by the Collector to pass its effective configuration to the service.
+  
+
+## v1.0.0-rcv0014/v0.82.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: Enable configuration of collector telemetry through prometheus reader (#7641)
+  These options are still experimental. To enable them, users must enable both
+  `telemetry.useOtelForInternalMetrics` and `telemetry.useOtelWithSDKConfigurationForInternalTelemetry`
+  feature gates. This change updates `metric_readers` to `readers` to align with the configuration
+  working group.
+  
+- `service`: Remove experimental `metric_readers.args` and `metric_reader.type` config options. (#7641)
+  These options were experimental and did not have any effect on the configuration of
+  the collector's telemetry. The change aligns the configuration with the latest iteration
+  of the configuration json schema, which may still change in the future.
+
+### 💡 Enhancements 💡
+
+- `service`: Add support for exporting internal metrics to the console (#7641)
+  Internal collector metrics can now be exported to the console
+  using the otel-go stdout exporter.
+  
+- `service`: Add support for `interval` and `timeout` configuration in periodic reader (#7641)
+- `service`: Add support for span processor configuration for internal traces (#8106)
+  These options are still experimental. To enable them, users must enable both
+  `telemetry.useOtelForInternalMetrics` and `telemetry.useOtelWithSDKConfigurationForInternalTelemetry`
+  feature gates.
+  
+- `service`: Add support for OTLP export for internal metrics (#7641)
+  Internal collector metrics can now be exported via OTLP
+  using the otel-go otlpgrpc and otlphttp exporters.
+  
+- `scraperhelper`: Adding optional timeout field to scrapers (#7951)
+- `otlpreceiver`: Add http url paths per signal config options to otlpreceiver (#7511)
+- `otlphttpexporter`: Add support for trailing slash in endpoint URL (#8084)
+  URLs like `http://localhost:4318/` will now be treated as if they were `http://localhost:4318`
+
+### 🧰 Bug fixes 🧰
+
+- `connector`: Fix connector validation (#7892)
+  Validation of connectors was too aggressive such that a connector that was used in any combination of unsupported roles would fail.
+  Instead, validation should pass as long as each use of the connector has a supported corresponding use.
+  
 
 ## v0.81.0
 

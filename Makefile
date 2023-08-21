@@ -16,11 +16,6 @@ ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort 
 
 CMD?=
 
-# TODO: Find a way to configure this in the generated code, currently no effect.
-BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
-VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
-BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
-
 RUN_CONFIG?=examples/local/otel-config.yaml
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
 COMP_REL_PATH=cmd/otelcorecol/components.go
@@ -35,10 +30,6 @@ $(1)
 endef
 
 .DEFAULT_GOAL := all
-
-.PHONY: version
-version:
-	@echo ${VERSION}
 
 .PHONY: all
 all: checklicense checkdoc misspell goimpi goporto multimod-verify golint gotest
@@ -145,7 +136,7 @@ endif
 .PHONY: otelcorecol
 otelcorecol:
 	pushd cmd/otelcorecol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcorecol_$(GOOS)_$(GOARCH) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) ./cmd/otelcorecol && popd
+		-tags $(GO_BUILD_TAGS) ./cmd/otelcorecol && popd
 
 .PHONY: genotelcorecol
 genotelcorecol: install-tools
@@ -393,8 +384,8 @@ certs-dryrun:
 
 # Verify existence of READMEs for components specified as default components in the collector.
 .PHONY: checkdoc
-checkdoc: $(CHECKDOC)
-	$(CHECKDOC) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
+checkdoc: $(CHECKFILE)
+	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
 
 # Construct new API state snapshots
 .PHONY: apidiff-build
@@ -435,8 +426,44 @@ push-tags: $(MULTIMOD)
 	done;
 
 .PHONY: check-changes
-check-changes: $(MULTIMOD)
-	$(MULTIMOD) diff -p $(PREVIOUS_VERSION) -m $(MODSET)
+check-changes: $(YQ)
+ifndef MODSET
+	@echo "MODSET not defined"
+	@echo "usage: make check-changes PREVIOUS_VERSION=<version eg 0.52.0> MODSET=beta"
+	exit 1
+endif
+ifndef PREVIOUS_VERSION
+	@echo "PREVIOUS_VERSION not defined"
+	@echo "usage: make check-changes PREVIOUS_VERSION=<version eg 0.52.0> MODSET=beta"
+	exit 1
+else
+ifeq (, $(findstring v,$(PREVIOUS_VERSION)))
+NORMALIZED_PREVIOUS_VERSION="v$(PREVIOUS_VERSION)"
+else
+NORMALIZED_PREVIOUS_VERSION="$(PREVIOUS_VERSION)"
+endif
+endif
+	@all_submods=$$($(YQ) e '.module-sets.*.modules[] | select(. != "go.opentelemetry.io/collector")' versions.yaml | sed 's/^go\.opentelemetry\.io\/collector\///'); \
+	mods=$$($(YQ) e '.module-sets.$(MODSET).modules[]' versions.yaml | sed 's/^go\.opentelemetry\.io\/collector\///'); \
+	changed_files=""; \
+	for mod in $${mods}; do \
+		if [ "$${mod}" == "go.opentelemetry.io/collector" ]; then \
+			changed_files+=$$(git diff --name-only $(NORMALIZED_PREVIOUS_VERSION) -- $$(printf '%s\n' $${all_submods[@]} | sed 's/^/:!/' | paste -sd' ' -) | grep -E '.+\.go$$'); \
+		elif ! git rev-parse --quiet --verify $${mod}/$(NORMALIZED_PREVIOUS_VERSION) >/dev/null; then \
+			echo "Module $${mod} does not have a $(NORMALIZED_PREVIOUS_VERSION) tag"; \
+			echo "$(MODSET) release is required."; \
+			exit 0; \
+		else \
+			changed_files+=$$(git diff --name-only $${mod}/$(NORMALIZED_PREVIOUS_VERSION) -- $${mod} | grep -E '.+\.go$$'); \
+		fi; \
+	done; \
+	if [ -n "$${changed_files}" ]; then \
+		echo "The following files changed in $(MODSET) modules since $(NORMALIZED_PREVIOUS_VERSION): $${changed_files}"; \
+	else \
+		echo "No $(MODSET) modules have changed since $(NORMALIZED_PREVIOUS_VERSION)"; \
+		echo "No need to release $(MODSET)."; \
+		exit 1; \
+	fi
 
 .PHONY: prepare-release
 prepare-release:
@@ -497,23 +524,22 @@ crosslink: $(CROSSLINK)
 	@echo "Executing crosslink"
 	$(CROSSLINK) --root=$(shell pwd) --prune
 
-
-FILENAME?=$(shell git branch --show-current).yaml
+FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
-chlog-new: $(CHLOG)
-	$(CHLOG) new --filename $(FILENAME)
+chlog-new: $(CHLOGGEN)
+	$(CHLOGGEN) new --config $(CHLOGGEN_CONFIG) --filename $(FILENAME)
 
 .PHONY: chlog-validate
-chlog-validate: $(CHLOG)
-	$(CHLOG) validate
+chlog-validate: $(CHLOGGEN)
+	$(CHLOGGEN) validate --config $(CHLOGGEN_CONFIG)
 
 .PHONY: chlog-preview
-chlog-preview: $(CHLOG)
-	$(CHLOG) update --dry
+chlog-preview: $(CHLOGGEN)
+	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --dry
 
 .PHONY: chlog-update
-chlog-update: $(CHLOG)
-	$(CHLOG) update --version $(VERSION)
+chlog-update: $(CHLOGGEN)
+	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
 
 .PHONY: builder-integration-test
 builder-integration-test: $(ENVSUBST)

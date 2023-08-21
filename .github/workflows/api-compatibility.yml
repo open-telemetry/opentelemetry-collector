@@ -1,6 +1,6 @@
 # This GitHub action is used to compare API state snapshots of Main
-# to Head of the PR in order to validate releases are not breaking 
-# backwards compatibility. 
+# to Head of the PR in order to validate releases are not breaking
+# backwards compatibility.
 #
 # This GitHub action will fail if there are incompatible changes.
 #
@@ -15,44 +15,47 @@ on:
 jobs:
   Check-Compatibility:
     runs-on: macos-latest
+    env:
+      BASE_REF: ${{ github.base_ref }}
+      HEAD_REF: ${{ github.head_ref }}
     steps:
 
       - name: Checkout-Main
         uses: actions/checkout@v3
-        with: 
+        with:
           ref: ${{ github.base_ref }}
           path: ${{ github.base_ref }}
 
       - name: Checkout-HEAD
-        uses: actions/checkout@v3 
-        with: 
+        uses: actions/checkout@v3
+        with:
           path: ${{ github.head_ref }}
 
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.11
-      
+          go-version: ~1.20.7
+
       # Generate apidiff states of Main
       - name: Generate-States
         run: |
-          cd ${{ github.base_ref }}
+          cd $BASE_REF
           make apidiff-build
-          
+
       # Compare apidiff states of Main with PR
       - name: Compare-States
-        env: 
+        env:
           CI: true
           COMPARE_OPTS: -d "../${{ github.base_ref }}/internal/data/apidiff"
         run: |
-          cd ${{ github.head_ref }}
+          cd $HEAD_REF
           make apidiff-compare
-      
+
       # Fail GitHub Action if there are incompatible changes
       - name: Check-States
-        env: 
+        env:
           CI: true
           COMPARE_OPTS: -d "../${{ github.base_ref }}/internal/data/apidiff" -c
         run: |
-          cd ${{ github.head_ref }}
+          cd $HEAD_REF
           make apidiff-compare

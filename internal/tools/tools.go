@@ -20,7 +20,7 @@ import (
 	_ "github.com/jcchavezs/porto/cmd/porto"
 	_ "github.com/mikefarah/yq/v4"
 	_ "github.com/pavius/impi/cmd/impi"
-	_ "go.opentelemetry.io/build-tools/checkdoc"
+	_ "go.opentelemetry.io/build-tools/checkfile"
 	_ "go.opentelemetry.io/build-tools/chloggen"
 	_ "go.opentelemetry.io/build-tools/crosslink"
 	_ "go.opentelemetry.io/build-tools/multimod"
