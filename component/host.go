@@ -21,7 +21,7 @@ type Host interface {
 	// May be called by the component any time after Component.Start is called or while
 	// Component.Start call is executing.
 	// May be called concurrently with itself.
-	ReportComponentStatus(event *StatusEvent)
+	ReportComponentStatus(status Status, options ...StatusEventOption)
 
 	// GetFactory of the specified kind. Returns the factory for a component type.
 	// This allows components to create other components. For example:

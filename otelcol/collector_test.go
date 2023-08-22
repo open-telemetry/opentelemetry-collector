@@ -166,6 +166,10 @@ func TestComponentStatusWatcher(t *testing.T) {
 	changedComponents := map[*component.InstanceID]component.Status{}
 	var mux sync.Mutex
 	onStatusChanged := func(source *component.InstanceID, event *component.StatusEvent) {
+		// skip the startup notifications
+		if event.Status() == component.StatusStarting {
+			return
+		}
 		mux.Lock()
 		defer mux.Unlock()
 		changedComponents[source] = event.Status()
@@ -201,7 +205,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 			// All processors must report a status change with the same ID
 			assert.EqualValues(t, component.NewID(unhealthyProcessorFactory.Type()), k.ID)
 			// And all must be in StatusError
-			assert.EqualValues(t, component.StatusError, v)
+			assert.EqualValues(t, component.StatusRecoverableError, v)
 		}
 		// We have 3 processors with exactly the same ID in otelcol-statuswatcher.yaml
 		// We must have exactly 3 items in our map. This ensures that the "source" argument

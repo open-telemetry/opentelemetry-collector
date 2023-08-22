@@ -3,29 +3,77 @@
 package component
 
 import (
-	"errors"
+	"fmt"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestStatusEventOK(t *testing.T) {
-	event, err := NewStatusEvent(StatusOK)
-	require.NoError(t, err)
-	require.Equal(t, StatusOK, event.Status())
-	require.Nil(t, event.Err())
+func TestStatusEventWithoutError(t *testing.T) {
+	statuses := []Status{
+		StatusStarting,
+		StatusOK,
+		StatusRecoverableError,
+		StatusPermanentError,
+		StatusFatalError,
+		StatusStopping,
+		StatusStopped,
+	}
+
+	for _, status := range statuses {
+		t.Run(fmt.Sprintf("%s without error", status), func(t *testing.T) {
+			ev, err := NewStatusEvent(status)
+			require.NoError(t, err)
+			require.Equal(t, status, ev.Status())
+			require.Nil(t, ev.Err())
+			require.False(t, ev.Timestamp().IsZero())
+		})
+	}
 }
 
-func TestStatusEventOKWithError(t *testing.T) {
-	event, err := NewStatusEvent(StatusOK, WithError(errors.New("an error")))
-	require.Error(t, err)
-	require.Nil(t, event)
+func TestStatusEventWithError(t *testing.T) {
+	statuses := []Status{
+		StatusRecoverableError,
+		StatusRecoverableError,
+		StatusFatalError,
+	}
+
+	for _, status := range statuses {
+		t.Run(fmt.Sprintf("error status: %s with error", status), func(t *testing.T) {
+			ev, err := NewStatusEvent(status, WithError(assert.AnError))
+			require.NoError(t, err)
+			require.Equal(t, status, ev.Status())
+			require.Equal(t, assert.AnError, ev.Err())
+			require.False(t, ev.Timestamp().IsZero())
+		})
+	}
 }
 
-func TestStatusEventError(t *testing.T) {
-	eventErr := errors.New("an error")
-	event, err := NewStatusEvent(StatusError, WithError(eventErr))
+func TestNonErrorStatusWithError(t *testing.T) {
+	statuses := []Status{
+		StatusStarting,
+		StatusOK,
+		StatusStopping,
+		StatusStopped,
+	}
+
+	for _, status := range statuses {
+		t.Run(fmt.Sprintf("non error status: %s with error", status), func(t *testing.T) {
+			ev, err := NewStatusEvent(status, WithError(assert.AnError))
+			require.Error(t, err)
+			require.ErrorIs(t, err, errStatusEventInvalidArgument)
+			require.Nil(t, ev)
+		})
+	}
+}
+
+func TestStatusEventWithTimestamp(t *testing.T) {
+	ts := time.Now()
+	ev, err := NewStatusEvent(StatusOK, WithTimestamp(ts))
 	require.NoError(t, err)
-	require.Equal(t, StatusError, event.Status())
-	require.Equal(t, eventErr, event.Err())
+	require.Equal(t, StatusOK, ev.Status())
+	require.Nil(t, ev.Err())
+	require.Equal(t, ts, ev.Timestamp())
 }

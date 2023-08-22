@@ -59,8 +59,7 @@ type unhealthyProcessor struct {
 
 func (unhealthyProcessor) Start(_ context.Context, host component.Host) error {
 	go func() {
-		evt, _ := component.NewStatusEvent(component.StatusError)
-		host.ReportComponentStatus(evt)
+		host.ReportComponentStatus(component.StatusRecoverableError)
 	}()
 	return nil
 }
