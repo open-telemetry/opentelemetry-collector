@@ -1,5 +1,5 @@
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
 component: featuregate
@@ -18,3 +18,4 @@ subtext: |
   * All alpha and beta feature gates must be set explicitly.
   * All beta feature gates must be explicitly enabled.
   * All stable feature gates must be left unset.
+change_logs: [api, user]

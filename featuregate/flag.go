@@ -11,6 +11,13 @@ import (
 	"go.uber.org/multierr"
 )
 
+// NewFlag returns a flag.Value that directly applies feature gate statuses to a Registry.
+//
+// Deprecated: use NewFlags instead to get both gates and strict flags.
+func NewFlag(reg *Registry) flag.Value {
+	return &gatesFlagValue{args: &gateRegistrationArgs{reg: reg}}
+}
+
 // NewFlags returns two flag.Values: one that registers gates, and one that sets strict mode.
 func NewFlags(reg *Registry) (flag.Value, flag.Value) {
 	g := &gateRegistrationArgs{reg: reg}
