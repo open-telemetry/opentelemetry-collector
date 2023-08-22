@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/balancer/roundrobin"
+	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/encoding/gzip"
@@ -37,9 +37,6 @@ import (
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")
-
-// Allowed balancer names to be set in grpclb_policy to discover the servers.
-var allowedBalancerNames = []string{roundrobin.Name, grpc.PickFirstBalancerName}
 
 // KeepaliveClientConfig exposes the keepalive.ClientParameters to be used by the exporter.
 // Refer to the original data-structure for the meaning of each parameter:
@@ -269,12 +266,7 @@ func (gcs *GRPCClientSettings) toDialOptions(host component.Host, settings compo
 }
 
 func validateBalancerName(balancerName string) bool {
-	for _, item := range allowedBalancerNames {
-		if item == balancerName {
-			return true
-		}
-	}
-	return false
+	return balancer.Get(balancerName) != nil
 }
 
 // ToListener returns the net.Listener constructed from the settings.
