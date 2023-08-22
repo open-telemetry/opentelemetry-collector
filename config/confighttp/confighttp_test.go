@@ -73,6 +73,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:     &idleConnTimeout,
 				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:         "",
+				DisableKeepAlives:   true,
 			},
 			shouldError: false,
 		},
@@ -91,6 +92,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:     &idleConnTimeout,
 				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:         "none",
+				DisableKeepAlives:   true,
 			},
 			shouldError: false,
 		},
@@ -109,6 +111,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:     &idleConnTimeout,
 				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:         "gzip",
+				DisableKeepAlives:   true,
 			},
 			shouldError: false,
 		},
@@ -145,6 +148,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
 				assert.EqualValues(t, 45, transport.MaxConnsPerHost)
 				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
+				assert.EqualValues(t, true, transport.DisableKeepAlives)
 			case *compressRoundTripper:
 				assert.EqualValues(t, "gzip", transport.compressionType)
 			}
@@ -192,6 +196,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			assert.EqualValues(t, 0, transport.MaxIdleConnsPerHost)
 			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
 			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
+			assert.EqualValues(t, false, transport.DisableKeepAlives)
 
 		})
 	}
