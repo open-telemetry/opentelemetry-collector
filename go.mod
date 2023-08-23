@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/prometheus/client_golang v1.16.0
 	github.com/prometheus/client_model v0.4.0
 	github.com/prometheus/common v0.44.0
