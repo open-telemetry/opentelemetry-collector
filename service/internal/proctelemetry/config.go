@@ -346,7 +346,7 @@ func initOTLPgRPCSpanExporter(ctx context.Context, otlpConfig *telemetry.Otlp) (
 	if otlpConfig.Compression != nil {
 		opts = append(opts, otlptracegrpc.WithCompressor(*otlpConfig.Compression))
 	}
-	if otlpConfig.Timeout != nil {
+	if otlpConfig.Timeout != nil && *otlpConfig.Timeout > 0 {
 		opts = append(opts, otlptracegrpc.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
 	}
 	if len(otlpConfig.Headers) > 0 {
@@ -383,7 +383,7 @@ func initOTLPHTTPSpanExporter(ctx context.Context, otlpConfig *telemetry.Otlp) (
 			return nil, fmt.Errorf("unsupported compression %q", *otlpConfig.Compression)
 		}
 	}
-	if otlpConfig.Timeout != nil {
+	if otlpConfig.Timeout != nil && *otlpConfig.Timeout > 0 {
 		opts = append(opts, otlptracehttp.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
 	}
 	if len(otlpConfig.Headers) > 0 {
