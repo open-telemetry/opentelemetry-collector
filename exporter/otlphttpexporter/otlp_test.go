@@ -687,6 +687,7 @@ func TestPartialSuccess_traces(t *testing.T) {
 		partial.SetRejectedSpans(1)
 		bytes, err := response.MarshalProto()
 		require.NoError(t, err)
+		writer.Header().Set("Content-Type", "application/x-protobuf")
 		_, err = writer.Write(bytes)
 		require.NoError(t, err)
 	})
@@ -720,6 +721,7 @@ func TestPartialSuccess_metrics(t *testing.T) {
 		partial.SetRejectedDataPoints(1)
 		bytes, err := response.MarshalProto()
 		require.NoError(t, err)
+		writer.Header().Set("Content-Type", "application/x-protobuf")
 		_, err = writer.Write(bytes)
 		require.NoError(t, err)
 	})
@@ -751,9 +753,10 @@ func TestPartialSuccess_logs(t *testing.T) {
 		partial := response.PartialSuccess()
 		partial.SetErrorMessage("hello")
 		partial.SetRejectedLogRecords(1)
-		bytes, err := response.MarshalProto()
+		b, err := response.MarshalProto()
 		require.NoError(t, err)
-		_, err = writer.Write(bytes)
+		writer.Header().Set("Content-Type", "application/x-protobuf")
+		_, err = writer.Write(b)
 		require.NoError(t, err)
 	})
 	defer srv.Close()
@@ -789,6 +792,9 @@ func TestPartialResponse_missingHeaderButHasBody(t *testing.T) {
 		// `-1` indicates a missing Content-Length header in the Go http standard library
 		ContentLength: -1,
 		Body:          io.NopCloser(bytes.NewReader(data)),
+		Header: map[string][]string{
+			"Content-Type": {"application/x-protobuf"},
+		},
 	}
 	err = handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
 	assert.True(t, consumererror.IsPermanent(err))
@@ -799,6 +805,9 @@ func TestPartialResponse_missingHeaderAndBody(t *testing.T) {
 		// `-1` indicates a missing Content-Length header in the Go http standard library
 		ContentLength: -1,
 		Body:          io.NopCloser(bytes.NewReader([]byte{})),
+		Header: map[string][]string{
+			"Content-Type": {"application/x-protobuf"},
+		},
 	}
 	err := handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
 	assert.Nil(t, err)
@@ -824,6 +833,9 @@ func TestPartialSuccess_shortContentLengthHeader(t *testing.T) {
 	resp := &http.Response{
 		ContentLength: 3,
 		Body:          io.NopCloser(bytes.NewReader(data)),
+		Header: map[string][]string{
+			"Content-Type": {"application/x-protobuf"},
+		},
 	}
 	err = handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
 	assert.Error(t, err)
@@ -839,6 +851,9 @@ func TestPartialSuccess_longContentLengthHeader(t *testing.T) {
 	resp := &http.Response{
 		ContentLength: 4096,
 		Body:          io.NopCloser(bytes.NewReader(data)),
+		Header: map[string][]string{
+			"Content-Type": {"application/x-protobuf"},
+		},
 	}
 	err = handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
 	assert.Error(t, err)
@@ -848,6 +863,9 @@ func TestPartialSuccessInvalidResponseBody(t *testing.T) {
 	resp := &http.Response{
 		Body:          io.NopCloser(badReader{}),
 		ContentLength: 100,
+		Header: map[string][]string{
+			"Content-Type": {protobufContentType},
+		},
 	}
 	err := handlePartialSuccessResponse(resp, tracesPartialSuccessHandler)
 	assert.Error(t, err)
@@ -873,9 +891,49 @@ func TestPartialSuccessInvalidBody(t *testing.T) {
 	}
 	for _, tt := range invalidBodyCases {
 		t.Run("Invalid response body_"+tt.telemetryType, func(t *testing.T) {
-			err := tt.handler([]byte{1})
+			err := tt.handler([]byte{1}, "application/x-protobuf")
 			assert.Error(t, err)
 		})
+	}
+}
+
+func TestPartialSuccessUnsupportedContentType(t *testing.T) {
+	unsupportedContentTypeCases := []struct {
+		contentType string
+	}{
+		{
+			contentType: "application/json",
+		},
+		{
+			contentType: "text/plain",
+		},
+		{
+			contentType: "application/octet-stream",
+		},
+	}
+	for _, telemetryType := range []string{"logs", "metrics", "traces"} {
+		for _, tt := range unsupportedContentTypeCases {
+			t.Run("Unsupported content type "+tt.contentType+" "+telemetryType, func(t *testing.T) {
+				var handler func(b []byte, contentType string) error
+				switch telemetryType {
+				case "logs":
+					handler = logsPartialSuccessHandler
+				case "metrics":
+					handler = metricsPartialSuccessHandler
+				case "traces":
+					handler = tracesPartialSuccessHandler
+				default:
+					panic(telemetryType)
+				}
+				exportResponse := ptraceotlp.NewExportResponse()
+				exportResponse.PartialSuccess().SetErrorMessage("foo")
+				exportResponse.PartialSuccess().SetRejectedSpans(42)
+				b, err := exportResponse.MarshalProto()
+				require.NoError(t, err)
+				err = handler(b, tt.contentType)
+				assert.NoError(t, err)
+			})
+		}
 	}
 }
 
