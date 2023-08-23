@@ -10,6 +10,22 @@ note: Introduce a new exporter helper that operates over client-provided request
 # One or more tracking issues or pull requests related to the change
 issues: [7874]
 
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  The following experimental API is introduced in exporter/exporterhelper package:
+    - `NewLogsRequestExporter`: a new exporter helper for logs.
+    - `NewMetricsRequestExporter`: a new exporter helper for metrics.
+    - `NewTracesRequestExporter`: a new exporter helper for traces.
+    - `Request`: an interface for client-defined requests.
+    - `RequestItemsCounter`: an optional interface for counting the number of items in a Request.
+    - `LogsConverter`: an interface for converting plog.Logs to Request.
+    - `MetricsConverter`: an interface for converting pmetric.Metrics to Request.
+    - `TracesConverter`: an interface for converting ptrace.Traces to Request.
+    All the new APIs are intended to be used by exporters that need to operate over client-provided requests instead of pdata.
+
+
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
 # Include 'user' if the change is relevant to end users.
