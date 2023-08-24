@@ -39,7 +39,7 @@ import (
 // testBalancerBuilder facilitates testing validateBalancerName().
 type testBalancerBuilder struct{}
 
-func (testBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Balancer {
+func (testBalancerBuilder) Build(_ balancer.ClientConn, _ balancer.BuildOptions) balancer.Balancer {
 	return nil
 }
 
