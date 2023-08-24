@@ -266,7 +266,7 @@ func tracesPartialSuccessHandler(protoBytes []byte, contentType string) error {
 	exportResponse := ptraceotlp.NewExportResponse()
 	err := exportResponse.UnmarshalProto(protoBytes)
 	if err != nil {
-		return err
+		return fmt.Errorf("error parsing protobuf response: %w", err)
 	}
 	partialSuccess := exportResponse.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
@@ -282,7 +282,7 @@ func metricsPartialSuccessHandler(protoBytes []byte, contentType string) error {
 	exportResponse := pmetricotlp.NewExportResponse()
 	err := exportResponse.UnmarshalProto(protoBytes)
 	if err != nil {
-		return err
+		return fmt.Errorf("error parsing protobuf response: %w", err)
 	}
 	partialSuccess := exportResponse.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
@@ -298,7 +298,7 @@ func logsPartialSuccessHandler(protoBytes []byte, contentType string) error {
 	exportResponse := plogotlp.NewExportResponse()
 	err := exportResponse.UnmarshalProto(protoBytes)
 	if err != nil {
-		return err
+		return fmt.Errorf("error parsing protobuf response: %w", err)
 	}
 	partialSuccess := exportResponse.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {

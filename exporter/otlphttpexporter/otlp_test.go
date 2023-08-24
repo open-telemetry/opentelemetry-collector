@@ -892,7 +892,7 @@ func TestPartialSuccessInvalidBody(t *testing.T) {
 	for _, tt := range invalidBodyCases {
 		t.Run("Invalid response body_"+tt.telemetryType, func(t *testing.T) {
 			err := tt.handler([]byte{1}, "application/x-protobuf")
-			assert.Error(t, err)
+			assert.ErrorContains(t, err, "error parsing protobuf response:")
 		})
 	}
 }
