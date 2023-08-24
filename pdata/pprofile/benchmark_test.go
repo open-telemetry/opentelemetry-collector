@@ -40,18 +40,15 @@ func measureMemoryImpact(cb func() any) (uint64, any) {
 
 var profiles map[string]*pprof.Profile
 
-// TODO
-/*
-
-* go traces
-* benchmark for a lot of timestamps
-* benchmark for a lot of links, attributes, etc
-
- */
+func selectProfile(arr []*pprof.Profile, i int) *pprof.Profile {
+	if arr == nil {
+		return nil
+	}
+	return arr[i]
+}
 
 func init() {
 	runtime.MemProfileRate = 1
-
 	jfr1 := readJfr("profiles/jfr_1.jfr")
 	jfr2 := readJfr("profiles/jfr_2.jfr")
 	jfr3 := readJfr("profiles/jfr_3.jfr")
@@ -76,16 +73,16 @@ func init() {
 		"profile_11":                    readPprof("profiles/profile_11.pprof"),
 		"profile_12":                    readPprof("profiles/profile_12.pprof"),
 		"profile_13":                    readPprof("profiles/profile_13.pprof"),
-		"jfr_1_1":                       jfr1[0],
-		"jfr_1_2":                       jfr1[1],
-		"jfr_1_3":                       jfr1[2],
-		"jfr_1_4":                       jfr1[3],
-		"jfr_1_5":                       jfr1[4],
-		"jfr_1_6":                       jfr1[5],
-		"jfr_1_7":                       jfr1[6],
-		"jfr_2_1":                       jfr2[0],
-		"jfr_3_1":                       jfr3[0],
-		"jfr_4_1":                       jfr4[0],
+		"jfr_1_1":                       selectProfile(jfr1, 0),
+		"jfr_1_2":                       selectProfile(jfr1, 1),
+		"jfr_1_3":                       selectProfile(jfr1, 2),
+		"jfr_1_4":                       selectProfile(jfr1, 3),
+		"jfr_1_5":                       selectProfile(jfr1, 4),
+		"jfr_1_6":                       selectProfile(jfr1, 5),
+		"jfr_1_7":                       selectProfile(jfr1, 6),
+		"jfr_2_1":                       selectProfile(jfr2, 0),
+		"jfr_3_1":                       selectProfile(jfr3, 0),
+		"jfr_4_1":                       selectProfile(jfr4, 0),
 		"java_1":                        readPprof("profiles/java.pprof"),
 	}
 }

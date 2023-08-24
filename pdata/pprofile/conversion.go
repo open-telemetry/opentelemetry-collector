@@ -682,7 +682,6 @@ func parserCollapsed(profile string, cb func(name []byte, val, timestamp int, la
 }
 
 func calculateLabelsCount(p *pprof.Profile) (r uint64) {
-	return 0
 	labelSets := make(map[string]bool)
 	for i := 0; i < len(p.Sample); i++ {
 		key := ""

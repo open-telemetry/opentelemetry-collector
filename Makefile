@@ -508,3 +508,9 @@ chlog-update: $(CHLOG)
 .PHONY: builder-integration-test
 builder-integration-test: $(ENVSUBST)
 	cd ./cmd/builder && ./test/test.sh
+
+.PHONY: profile-benchmark
+profile-benchmark: $(ENVSUBST)
+	cd ./pdata/pprofile && go test -bench . -run=^$$ | tee /tmp/benchmarks.txt
+	@echo "Benchmark results for posting to Google Sheets:"
+	cat /tmp/benchmarks.txt | grep 'Benchmark' | sed -E "s/[[:space:]]+/ /g"
