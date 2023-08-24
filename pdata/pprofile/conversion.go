@@ -6,9 +6,12 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +19,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/jzelinskie/must"
 	"golang.org/x/exp/slices"
+	"gopkg.in/yaml.v3"
+
+	go_opentelemetry_io_collector_pdata_internal_data "go.opentelemetry.io/collector/pdata/internal/data"
 
 	common "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 
@@ -27,17 +33,48 @@ import (
 	resource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 )
 
-func collapsedToOprof(profile string, flavor string) Profiles {
-	pprof := collapsedToPprof(profile)
-	return pprofStructToOprof(pprof, []byte(profile), flavor)
+func prettyPrint(v any) {
+	// have to convert it to json first, otherwise it's too verbose and names are wrong
+	str := string(must.NotError(json.MarshalIndent(v, "", "  ")))
+	var v2 map[string]any
+	json.Unmarshal([]byte(str), &v2)
+
+	yamlEncoder := yaml.NewEncoder(os.Stdout)
+	yamlEncoder.SetIndent(2)
+	yamlEncoder.Encode(v2)
 }
 
-func prettyPrint(v any) {
-	str := string(must.NotError(json.MarshalIndent(v, "", "  ")))
-	// if len(str) > 5000 {
-	// 	str = str[:5000]
-	// }
-	fmt.Println(str)
+type stringTableBuilder struct {
+	originalStringTable []string
+	newStringTable      []string
+	conversionTable     map[int64]uint32
+}
+
+func newStringTableBuilder(originalStringTable []string) *stringTableBuilder {
+	return &stringTableBuilder{
+		originalStringTable: originalStringTable,
+		newStringTable:      []string{""},
+		conversionTable:     make(map[int64]uint32),
+	}
+}
+
+// resolves a string but does not add it to the string table
+func (stb *stringTableBuilder) resolveString(n int64) string {
+	return stb.originalStringTable[n]
+}
+
+func (stb *stringTableBuilder) convertStringIndex(n int64) uint32 {
+	if n == 0 {
+		return 0
+	}
+	if ret, ok := stb.conversionTable[n]; ok {
+		return ret
+	}
+	str := stb.originalStringTable[n]
+	stb.newStringTable = append(stb.newStringTable, str)
+	stringTableID := uint32(len(stb.newStringTable) - 1)
+	stb.conversionTable[n] = stringTableID
+	return stringTableID
 }
 
 func PprofToOprof(profile []byte, flavor string) Profiles {
@@ -61,26 +98,32 @@ func PprofToOprof(profile []byte, flavor string) Profiles {
 // 	return pprofStructToOprof(&pprof, profile, flavor)
 // }
 
+var profileId = go_opentelemetry_io_collector_pdata_internal_data.ProfileID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+
 func pprofStructToOprof(pprof *pprof.Profile, op []byte, flavor string) Profiles {
 	var otlpProfile *otlpprofile.Profile
 	switch flavor {
 	case "pprof":
 		otlpProfile = &otlpprofile.Profile{
+			ProfileId:          profileId,
 			OriginalPayload:    op,
 			AlternativeProfile: &otlpprofile.Profile_Pprof{Pprof: pprof},
 		}
 	case "normalized":
 		otlpProfile = &otlpprofile.Profile{
+			ProfileId:          profileId,
 			OriginalPayload:    op,
 			AlternativeProfile: &otlpprofile.Profile_Normalized{Normalized: pprofToNormalizedProfile(pprof)},
 		}
 	case "arrays":
 		otlpProfile = &otlpprofile.Profile{
+			ProfileId:          profileId,
 			OriginalPayload:    op,
 			AlternativeProfile: &otlpprofile.Profile_Arrays{Arrays: pprofToArraysProfile(pprof)},
 		}
 	case "denormalized":
 		otlpProfile = &otlpprofile.Profile{
+			ProfileId:          profileId,
 			OriginalPayload:    op,
 			AlternativeProfile: &otlpprofile.Profile_Denormalized{Denormalized: pprofToDenormalizedProfile(pprof)},
 		}
@@ -107,11 +150,15 @@ func pprofStructToOprof(pprof *pprof.Profile, op []byte, flavor string) Profiles
 }
 
 func readPprof(filename string) *pprof.Profile {
-	b := must.NotError(ioutil.ReadFile(filename))
+	b, err := os.ReadFile(filename)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+
 	b = ungzipIfNeeded(b)
 
 	var p pprof.Profile
-	err := proto.Unmarshal(b, &p)
+	err = proto.Unmarshal(b, &p)
 	if err != nil {
 		panic(err)
 	}
@@ -201,15 +248,31 @@ func collapsedToPprof(collapsed string) *pprof.Profile {
 	return p
 }
 
+func stringToSpanId(s string) go_opentelemetry_io_collector_pdata_internal_data.SpanID {
+	var spanId go_opentelemetry_io_collector_pdata_internal_data.SpanID
+	b := must.NotError(hex.DecodeString(s[2:]))
+	copy(spanId[:], b)
+	return spanId
+}
+
+func stringToTraceId(s string) go_opentelemetry_io_collector_pdata_internal_data.TraceID {
+	var traceId go_opentelemetry_io_collector_pdata_internal_data.TraceID
+	b := must.NotError(hex.DecodeString(s[2:]))
+	copy(traceId[:], b)
+	return traceId
+}
+
 func pprofToDenormalizedProfile(pprofProfile *pprof.Profile) *denormalized.Profile {
 	p := &denormalized.Profile{
 		Samples: make([]*denormalized.Sample, len(pprofProfile.Sample)),
 	}
+
 	for i, s := range pprofProfile.Sample {
 		values := make([]uint64, len(s.Value))
 		for j, v := range s.Value {
 			values[j] = uint64(v)
 		}
+
 		p.Samples[i] = &denormalized.Sample{
 			Stacktrace: &denormalized.Stacktrace{
 				Locations: make([]*denormalized.Location, len(s.LocationId)),
@@ -219,6 +282,34 @@ func pprofToDenormalizedProfile(pprofProfile *pprof.Profile) *denormalized.Profi
 			Values: values,
 			// TimestampUnixNano
 		}
+
+		span_id := ""
+		trace_id := ""
+		for _, l := range s.Label {
+			if pprofProfile.StringTable[l.Key] == "__timestamp__" {
+				p.Samples[i].TimestampUnixNano = uint64(l.Num)
+				continue
+			}
+			if pprofProfile.StringTable[l.Key] == "span_id" {
+				span_id = pprofProfile.StringTable[l.Str]
+				continue
+			}
+			if pprofProfile.StringTable[l.Key] == "trace_id" {
+				trace_id = pprofProfile.StringTable[l.Str]
+				continue
+			}
+			p.Samples[i].Attributes = append(p.Samples[i].Attributes, common.KeyValue{
+				Key:   pprofProfile.StringTable[l.Key],
+				Value: common.AnyValue{Value: &common.AnyValue_StringValue{StringValue: pprofProfile.StringTable[l.Str]}},
+			})
+		}
+		if span_id != "" && trace_id != "" {
+			p.Samples[i].Links = append(p.Samples[i].Links, &denormalized.Link{
+				SpanId:  stringToSpanId(span_id),
+				TraceId: stringToTraceId(trace_id),
+			})
+		}
+
 		for j, lid := range s.LocationId {
 			if int(lid) >= len(pprofProfile.Location) {
 				p.Samples[i].Stacktrace.Locations[j] = &denormalized.Location{}
@@ -260,18 +351,29 @@ func pprofToDenormalizedProfile(pprofProfile *pprof.Profile) *denormalized.Profi
 }
 
 func pprofToNormalizedProfile(pprofProfile *pprof.Profile) *normalized.Profile {
-	p := &normalized.Profile{
-		StringTable: pprofProfile.StringTable,
-	}
+	p := &normalized.Profile{}
+
+	stb := newStringTableBuilder(pprofProfile.StringTable)
 
 	labelsMap := make(map[string]uint32)
+
+	p.Mappings = make([]*normalized.Mapping, len(pprofProfile.Mapping))
+	for i, m := range pprofProfile.Mapping {
+		p.Mappings[i] = &normalized.Mapping{
+			MemoryStart:   m.MemoryStart,
+			MemoryLimit:   m.MemoryLimit,
+			FileOffset:    m.FileOffset,
+			FilenameIndex: stb.convertStringIndex(m.Filename),
+			BuildIdIndex:  stb.convertStringIndex(m.BuildId),
+		}
+	}
 
 	p.Functions = make([]*normalized.Function, len(pprofProfile.Function))
 	for i, f := range pprofProfile.Function {
 		p.Functions[i] = &normalized.Function{
-			NameIndex:       uint32(f.Name),
-			SystemNameIndex: uint32(f.SystemName),
-			FilenameIndex:   uint32(f.Filename),
+			NameIndex:       stb.convertStringIndex(f.Name),
+			SystemNameIndex: stb.convertStringIndex(f.SystemName),
+			FilenameIndex:   stb.convertStringIndex(f.Filename),
 			StartLine:       uint32(f.StartLine),
 		}
 	}
@@ -299,12 +401,31 @@ func pprofToNormalizedProfile(pprofProfile *pprof.Profile) *normalized.Profile {
 		}
 
 		labelsKey := ""
+		var links []*normalized.Link
 		var timestamp uint64
+
+		var span_id string
+		var trace_id string
 		for _, l := range s.Label {
-			if p.StringTable[l.Key] == "__timestamp__" {
+			keyStr := stb.resolveString(l.Key)
+			if keyStr == "__timestamp__" {
 				timestamp = uint64(l.Num)
+				continue
+			} else if keyStr == "span_id" {
+				span_id = stb.resolveString(l.Str)
+				continue
+			} else if keyStr == "trace_id" {
+				trace_id = stb.resolveString(l.Str)
+				continue
 			}
 			labelsKey += fmt.Sprintf("%d=%d,", l.Key, l.Str)
+		}
+
+		if span_id != "" && trace_id != "" {
+			links = append(links, &normalized.Link{
+				SpanId:  stringToSpanId(span_id),
+				TraceId: stringToTraceId(trace_id),
+			})
 		}
 
 		var attributeSetId uint32
@@ -313,13 +434,18 @@ func pprofToNormalizedProfile(pprofProfile *pprof.Profile) *normalized.Profile {
 		} else {
 			as := &normalized.AttributeSet{}
 			for _, l := range s.Label {
-				if p.StringTable[l.Key] == "__timestamp__" {
+				keyStr := stb.resolveString(l.Key)
+				if keyStr == "__timestamp__" {
+					continue
+				} else if keyStr == "span_id" {
+					continue
+				} else if keyStr == "trace_id" {
 					continue
 				}
-				// l.Key = uint64(len(p.StringTable))
+				valStr := stb.resolveString(l.Str)
 				as.Attributes = append(as.Attributes, common.KeyValue{
-					Key:   p.StringTable[l.Key],
-					Value: common.AnyValue{Value: &common.AnyValue_StringValue{StringValue: p.StringTable[l.Str]}},
+					Key:   keyStr,
+					Value: common.AnyValue{Value: &common.AnyValue_StringValue{StringValue: valStr}},
 				})
 			}
 			attributeSetId = uint32(len(p.AttributeSets))
@@ -344,23 +470,22 @@ func pprofToNormalizedProfile(pprofProfile *pprof.Profile) *normalized.Profile {
 			TimestampUnixNano:   timestamp,
 		}
 	}
+	p.StringTable = stb.newStringTable
 	return p
 }
 
 func pprofToArraysProfile(pprofProfile *pprof.Profile) *arrays.Profile {
-
-	p := &arrays.Profile{
-		StringTable: pprofProfile.StringTable,
-	}
+	p := &arrays.Profile{}
+	stb := newStringTableBuilder(pprofProfile.StringTable)
 
 	labelsMap := make(map[string]uint32)
 
 	p.Functions = make([]*arrays.Function, len(pprofProfile.Function))
 	for i, f := range pprofProfile.Function {
 		p.Functions[i] = &arrays.Function{
-			NameIndex:       uint32(f.Name),
-			SystemNameIndex: uint32(f.SystemName),
-			FilenameIndex:   uint32(f.Filename),
+			NameIndex:       stb.convertStringIndex(f.Name),
+			SystemNameIndex: stb.convertStringIndex(f.SystemName),
+			FilenameIndex:   stb.convertStringIndex(f.Filename),
 			StartLine:       uint32(f.StartLine),
 		}
 	}
@@ -371,8 +496,8 @@ func pprofToArraysProfile(pprofProfile *pprof.Profile) *arrays.Profile {
 			MemoryStart:   m.MemoryStart,
 			MemoryLimit:   m.MemoryLimit,
 			FileOffset:    m.FileOffset,
-			FilenameIndex: uint32(m.Filename),
-			BuildIdIndex:  uint32(m.BuildId),
+			FilenameIndex: stb.convertStringIndex(m.Filename),
+			BuildIdIndex:  stb.convertStringIndex(m.BuildId),
 			// SymbolicInfo:        m.SymbolicInfo,
 			// AttributeSetIndices: m.AttributeSetIndices,
 		}
@@ -395,14 +520,14 @@ func pprofToArraysProfile(pprofProfile *pprof.Profile) *arrays.Profile {
 	p.Stacktraces = make([]*arrays.Stacktrace, len(pprofProfile.Sample))
 	p.ProfileTypes = make([]*arrays.ProfileType, len(pprofProfile.SampleType))
 
+	p.AttributeSets = append(p.AttributeSets, &arrays.AttributeSet{})
+	p.Links = append(p.Links, &arrays.Link{})
+
 	for k := 0; k < len(pprofProfile.SampleType); k++ {
 		p.ProfileTypes[k] = &arrays.ProfileType{}
 
 		p.ProfileTypes[k].Values = make([]int64, len(pprofProfile.Sample))
-		p.ProfileTypes[k].StacktraceIndices = make([]uint32, len(pprofProfile.Sample)) // TODO: drop zeros?
-		p.ProfileTypes[k].LinkIndices = make([]uint32, len(pprofProfile.Sample))
-		p.ProfileTypes[k].AttributeSetIndices = make([]uint32, len(pprofProfile.Sample))
-		p.ProfileTypes[k].Timestamps = make([]uint64, len(pprofProfile.Sample))
+		p.ProfileTypes[k].StacktraceIndices = make([]uint32, len(pprofProfile.Sample))
 
 		for i, s := range pprofProfile.Sample {
 			values := make([]int64, len(s.Value))
@@ -412,11 +537,31 @@ func pprofToArraysProfile(pprofProfile *pprof.Profile) *arrays.Profile {
 
 			labelsKey := ""
 			var timestamp uint64
+			var linkIndex uint32
+			var span_id string
+			var trace_id string
 			for _, l := range s.Label {
-				if p.StringTable[l.Key] == "__timestamp__" {
+				keyStr := stb.resolveString(l.Key)
+				if keyStr == "__timestamp__" {
 					timestamp = uint64(l.Num)
+					continue
+				} else if keyStr == "span_id" {
+					span_id = stb.resolveString(l.Str)
+					continue
+				} else if keyStr == "trace_id" {
+					trace_id = stb.resolveString(l.Str)
+					continue
 				}
 				labelsKey += fmt.Sprintf("%d=%d,", l.Key, l.Str)
+			}
+
+			// TODO: dedup links
+			if span_id != "" && trace_id != "" {
+				linkIndex = uint32(len(p.Links))
+				p.Links = append(p.Links, &arrays.Link{
+					TraceId: stringToTraceId(trace_id),
+					SpanId:  stringToSpanId(span_id),
+				})
 			}
 
 			var attributeSetId uint32
@@ -425,13 +570,17 @@ func pprofToArraysProfile(pprofProfile *pprof.Profile) *arrays.Profile {
 			} else {
 				as := &arrays.AttributeSet{}
 				for _, l := range s.Label {
-					if p.StringTable[l.Key] == "__timestamp__" {
+					keyStr := stb.resolveString(l.Key)
+					if keyStr == "__timestamp__" {
+						continue
+					} else if keyStr == "span_id" {
+						continue
+					} else if keyStr == "trace_id" {
 						continue
 					}
-					// l.Key = uint64(len(p.StringTable))
 					as.Attributes = append(as.Attributes, common.KeyValue{
-						Key:   p.StringTable[l.Key],
-						Value: common.AnyValue{Value: &common.AnyValue_StringValue{StringValue: p.StringTable[l.Str]}},
+						Key:   stb.resolveString(l.Key),
+						Value: common.AnyValue{Value: &common.AnyValue_StringValue{StringValue: stb.resolveString(l.Str)}},
 					})
 				}
 				attributeSetId = uint32(len(p.AttributeSets))
@@ -458,11 +607,30 @@ func pprofToArraysProfile(pprofProfile *pprof.Profile) *arrays.Profile {
 			// }
 			p.ProfileTypes[k].Values[i] = values[0]
 			p.ProfileTypes[k].StacktraceIndices[i] = uint32(i)
-			p.ProfileTypes[k].LinkIndices[i] = 0 // TODO
-			p.ProfileTypes[k].AttributeSetIndices[i] = attributeSetId
-			p.ProfileTypes[k].Timestamps[i] = timestamp
+
+			if linkIndex > 0 {
+				if p.ProfileTypes[k].LinkIndices == nil {
+					p.ProfileTypes[k].LinkIndices = make([]uint32, len(pprofProfile.Sample))
+				}
+				p.ProfileTypes[k].LinkIndices[i] = linkIndex
+			}
+
+			if attributeSetId > 0 {
+				if p.ProfileTypes[k].AttributeSetIndices == nil {
+					p.ProfileTypes[k].AttributeSetIndices = make([]uint32, len(pprofProfile.Sample))
+				}
+				p.ProfileTypes[k].AttributeSetIndices[i] = attributeSetId
+			}
+
+			if timestamp > 0 {
+				if p.ProfileTypes[k].Timestamps == nil {
+					p.ProfileTypes[k].Timestamps = make([]uint64, len(pprofProfile.Sample))
+				}
+				p.ProfileTypes[k].Timestamps[i] = timestamp
+			}
 		}
 	}
+	p.StringTable = stb.newStringTable
 	return p
 }
 
@@ -486,7 +654,7 @@ func parserCollapsed(profile string, cb func(name []byte, val, timestamp int, la
 		labels := make(map[string]string)
 		var timestamp int
 		if len(arr) > 2 {
-			for _, x := range arr {
+			for _, x := range arr[2:] {
 				if bytes.Contains(x, []byte("=")) {
 					labelsArr := bytes.Split(x, []byte(","))
 					for _, label := range labelsArr {
@@ -494,8 +662,9 @@ func parserCollapsed(profile string, cb func(name []byte, val, timestamp int, la
 						labels[string(kv[0])] = string(kv[1])
 					}
 				} else {
-					timestampInt, err := strconv.Atoi(string(count))
+					timestampInt, err := strconv.Atoi(string(x))
 					if err != nil {
+						continue
 						return err
 					}
 					timestamp = int(timestampInt)
@@ -513,13 +682,19 @@ func parserCollapsed(profile string, cb func(name []byte, val, timestamp int, la
 }
 
 func calculateLabelsCount(p *pprof.Profile) (r uint64) {
+	return 0
 	labelSets := make(map[string]bool)
 	for i := 0; i < len(p.Sample); i++ {
 		key := ""
 		// TODO: sort?
 		for j := 0; j < len(p.Sample[i].Label); j++ {
 			key += p.StringTable[p.Sample[i].Label[j].Key]
-			key += p.StringTable[p.Sample[i].Label[j].Str]
+			str := p.Sample[i].Label[j].Str
+			if str == 0 {
+				key += fmt.Sprintf("%d", p.Sample[i].Label[j].Num)
+			} else {
+				key += p.StringTable[str]
+			}
 		}
 		if _, ok := labelSets[key]; !ok {
 			r++
@@ -619,7 +794,7 @@ func OprofToPprof(pWrapper Profile) []byte {
 			Unit: 4,
 		}
 		dst.SampleType = make([]*pprof.ValueType, len(src.ProfileTypes))
-		for i, _ := range src.ProfileTypes {
+		for i := range src.ProfileTypes {
 			// TODO: implement this, dedup with PeriodType
 			dst.SampleType[i] = &pprof.ValueType{
 				Type: int64(i*2 + 1),
@@ -659,4 +834,32 @@ func OprofToPprof(pWrapper Profile) []byte {
 		panic("unsupported profile type")
 	}
 	return must.NotError(dst.Marshal())
+}
+
+func splitIntoManyEventsWithTimestamps(p *pprof.Profile) *pprof.Profile {
+	newSamples := []*pprof.Sample{}
+	p.StringTable = append(p.StringTable, "__timestamp__")
+	for _, s := range p.Sample {
+		// only supported for cpu profiles
+		for i := 0; i < int(s.Value[0]); i++ {
+			newLabels := []*pprof.Label{}
+			for _, l := range s.Label {
+				newLabels = append(newLabels, l)
+			}
+			// adds timestamps
+			newLabels = append(newLabels, &pprof.Label{
+				Key: int64(len(p.StringTable) - 1),
+				Num: int64(time.Now().Add(time.Duration(i) * time.Millisecond).Unix()),
+			})
+			newSamples = append(newSamples, &pprof.Sample{
+				Value:      []int64{1, 1},
+				LocationId: s.LocationId,
+				Label:      newLabels,
+			})
+		}
+	}
+	fmt.Println("before:", len(p.Sample))
+	p.Sample = newSamples
+	fmt.Println("after:", len(p.Sample))
+	return p
 }

@@ -3,8 +3,9 @@ package pprofile
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -13,6 +14,7 @@ import (
 	"github.com/pyroscope-io/pyroscope/pkg/storage"
 	"github.com/pyroscope-io/pyroscope/pkg/storage/segment"
 	"github.com/pyroscope-io/pyroscope/pkg/storage/tree"
+
 	"go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1/alternatives/pprof"
 )
 
@@ -42,7 +44,10 @@ func (p *putter) Put(_ context.Context, pi *storage.PutInput) error {
 }
 
 func readJfr(filename string) []*pprof.Profile {
-	b := must.NotError(ioutil.ReadFile(filename))
+	b, err := os.ReadFile(filename)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
 	b = ungzipIfNeeded(b)
 
 	putter := putter{}
@@ -50,7 +55,7 @@ func readJfr(filename string) []*pprof.Profile {
 	pi := &storage.PutInput{
 		Key: must.NotError(segment.ParseKey("test{foo=\"bar\"}")),
 	}
-	err := jfr.ParseJFR(context.TODO(), &putter, bytes.NewReader(b), pi, &jfr.LabelsSnapshot{})
+	err = jfr.ParseJFR(context.TODO(), &putter, bytes.NewReader(b), pi, &jfr.LabelsSnapshot{})
 	if err != nil {
 		return nil
 	}
