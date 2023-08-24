@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 
@@ -34,6 +35,21 @@ import (
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
+
+// testBalancerBuilder facilitates testing validateBalancerName().
+type testBalancerBuilder struct{}
+
+func (testBalancerBuilder) Build(_ balancer.ClientConn, _ balancer.BuildOptions) balancer.Balancer {
+	return nil
+}
+
+func (testBalancerBuilder) Name() string {
+	return "configgrpc_balancer_test"
+}
+
+func init() {
+	balancer.Register(testBalancerBuilder{})
+}
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
@@ -137,7 +153,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				ReadBufferSize:  1024,
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
-				BalancerName:    "round_robin",
+				BalancerName:    "configgrpc_balancer_test",
 				Authority:       "pseudo-authority",
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
