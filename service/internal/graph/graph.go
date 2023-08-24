@@ -51,6 +51,8 @@ type Graph struct {
 
 	// Keep track of status source per node
 	instanceIDs map[int64]*component.InstanceID
+
+	logger *zap.Logger
 }
 
 func Build(ctx context.Context, set Settings) (*Graph, error) {
@@ -58,6 +60,7 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 		componentGraph: simple.NewDirectedGraph(),
 		pipelines:      make(map[component.ID]*pipelineNodes, len(set.PipelineConfigs)),
 		instanceIDs:    make(map[int64]*component.InstanceID),
+		logger:         set.Telemetry.Logger,
 	}
 	for pipelineID := range set.PipelineConfigs {
 		pipelines.pipelines[pipelineID] = &pipelineNodes{
@@ -370,7 +373,7 @@ func (g *Graph) StartAll(ctx context.Context, host servicehost.Host) error {
 		}
 
 		instanceID := g.instanceIDs[node.ID()]
-		hostWrapper := components.NewHostWrapper(host, instanceID, zap.NewNop())
+		hostWrapper := components.NewHostWrapper(host, instanceID, g.logger)
 
 		if compErr := comp.Start(ctx, hostWrapper); compErr != nil {
 			return compErr

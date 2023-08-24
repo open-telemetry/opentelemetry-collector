@@ -63,7 +63,7 @@ func TestNonErrorStatusWithError(t *testing.T) {
 		t.Run(fmt.Sprintf("non error status: %s with error", status), func(t *testing.T) {
 			ev, err := NewStatusEvent(status, WithError(assert.AnError))
 			require.Error(t, err)
-			require.ErrorIs(t, err, errStatusEventInvalidArgument)
+			require.ErrorIs(t, err, ErrStatusEventInvalidArgument)
 			require.Nil(t, ev)
 		})
 	}

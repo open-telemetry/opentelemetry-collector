@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package componenttest
+package servicehost
 
 import (
 	"errors"
@@ -18,7 +18,7 @@ func TestNewNopHost(t *testing.T) {
 	require.NotNil(t, nh)
 	require.IsType(t, &nopHost{}, nh)
 
-	nh.ReportComponentStatus(component.StatusOK)
+	nh.ReportComponentStatus(&component.InstanceID{}, &component.StatusEvent{})
 	nh.ReportFatalError(errors.New("TestError"))
 
 	assert.Nil(t, nh.GetExporters()) // nolint: staticcheck

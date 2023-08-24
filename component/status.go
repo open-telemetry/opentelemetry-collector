@@ -75,9 +75,9 @@ func (ev *StatusEvent) Timestamp() time.Time {
 // StatusEventOption applies options to a StatusEvent.
 type StatusEventOption func(*StatusEvent) error
 
-// errStatusEventInvalidArgument indicates an invalid option was specified when creating a status
+// ErrStatusEventInvalidArgument indicates an invalid option was specified when creating a status
 // event. This will happen when using WithError for a non-error status.
-var errStatusEventInvalidArgument = errors.New("status event argument error")
+var ErrStatusEventInvalidArgument = errors.New("status event argument error")
 
 // WithError sets the error object of the StatusEvent. It is optional
 // and should only be applied to an Event of type ComponentError.
@@ -87,7 +87,7 @@ func WithError(err error) StatusEventOption {
 			return fmt.Errorf(
 				"event with %s cannot have an error: %w",
 				o.status,
-				errStatusEventInvalidArgument,
+				ErrStatusEventInvalidArgument,
 			)
 		}
 		o.err = err

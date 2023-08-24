@@ -6,6 +6,7 @@ package status
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
@@ -135,6 +136,16 @@ func TestStatusFSM(t *testing.T) {
 			require.Equal(t, tc.expectedStatuses, receivedStatuses)
 		})
 	}
+}
+
+func TestStatusEventError(t *testing.T) {
+	fsm := newStatusFSM(func(*component.StatusEvent) {})
+
+	// the combination of StatusOK with an error is invalid
+	err := fsm.Event(component.StatusOK, component.WithError(assert.AnError))
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, component.ErrStatusEventInvalidArgument)
 }
 
 func TestNewNotifier(t *testing.T) {

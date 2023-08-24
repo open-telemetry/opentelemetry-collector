@@ -4,6 +4,7 @@
 package components // import "go.opentelemetry.io/collector/service/internal/components"
 
 import (
+	"errors"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -37,14 +38,18 @@ func (hw *hostWrapper) ReportFatalError(err error) {
 }
 
 func (hw *hostWrapper) ReportComponentStatus(status component.Status, options ...component.StatusEventOption) {
-	// The following can return an error. The two cases that would result in an error would be:
+	// The following can return an error for one of two reasons:
 	//   - An invalid state transition
 	//   - Invalid arguments (basically providing a component.WithError option to a non-error status)
 	// The latter is a programming error and should be corrected. The former, is something that is
 	// likely to happen, but not something the programmer should be concerned about. An example would be
 	// reporting StatusRecoverableError multiple times, which, could happen while recovering, however,
 	// only the first invocation would result in a successful status transition.
-	_ = hw.statusNotifier.Event(status, options...)
+	err := hw.statusNotifier.Event(status, options...)
+
+	if err != nil && errors.Is(err, component.ErrStatusEventInvalidArgument) {
+		hw.Logger.Error("Component status error", zap.Error(err))
+	}
 }
 
 // RegisterZPages is used by zpages extension to register handles from service.
