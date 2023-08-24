@@ -414,6 +414,29 @@ func TestServiceTelemetryLogger(t *testing.T) {
 	assert.NotNil(t, srv.telemetrySettings.Logger)
 }
 
+func TestServiceFatalError(t *testing.T) {
+	set := newNopSettings()
+	set.AsyncErrorChannel = make(chan error)
+
+	srv, err := New(context.Background(), set, newNopConfig())
+	require.NoError(t, err)
+
+	assert.NoError(t, srv.Start(context.Background()))
+	t.Cleanup(func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
+
+	go func() {
+		ev, _ := component.NewStatusEvent(component.StatusFatalError, component.WithError(assert.AnError))
+		srv.host.ReportComponentStatus(&component.InstanceID{}, ev)
+	}()
+
+	err = <-srv.host.asyncErrorChannel
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, assert.AnError)
+}
+
 func assertResourceLabels(t *testing.T, res pcommon.Resource, expectedLabels map[string]labelValue) {
 	for key, labelValue := range expectedLabels {
 		lookupKey, ok := prometheusToOtelConv[key]

@@ -42,6 +42,9 @@ func (host *serviceHost) ReportFatalError(err error) {
 func (host *serviceHost) ReportComponentStatus(source *component.InstanceID, event *component.StatusEvent) {
 	// TODO: What should we do if there is an error notifying here?
 	host.serviceExtensions.NotifyComponentStatusChange(source, event) //nolint:errcheck
+	if event.Status() == component.StatusFatalError {
+		host.asyncErrorChannel <- event.Err()
+	}
 }
 
 func (host *serviceHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
