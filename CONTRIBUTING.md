@@ -494,6 +494,51 @@ that each of the following steps is done in a separate version:
 1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo(context.Context) Foo` if desired or remove it entirely if
    needed.
 
+#### Configuration changes
+
+##### Alpha components
+
+Configuration for alpha components can be changed with minimal notice. Documenting them as part of the changelog is
+sufficient. We still recommend giving users one or two minor version's notice before breaking the configuration, such as
+when removing or renaming a configuration option. Providing a migration path in the component's repository is NOT
+required for alpha components, altough still recommended.
+
+- when adding a new configuration option, components MAY mark the new option as required and are not required to provide
+  a reasonable default.
+- when renaming a configuration option, components MAY treat the old name as an alias to the new one and log a WARN
+  level message in case the old option is being used.
+- when removing a configuration option, components MAY keep the old option for a few minor releases and log a WARN level
+  message instructing users to remove the option.
+
+##### Beta components
+
+One of the requirements for a component to be marked as beta is to have its configuration options stabilized. Therefore,
+backward incompatible changes should be rare events for beta components. Users of those components are not expecting to
+have their Collector instances failing at startup because of a configuration change. When doing backward incompatible
+changes, component owners should add the migration path to a place within the component's repository, linked from the
+component's main README. This is to ensure that people using older instructions can understand how to migrate to the
+latest version of the component.
+
+When adding a new required option:
+- the option MUST come with a sensible default value
+
+When renaming or removing a configuration option:
+- the option MUST be deprecated in one version
+- a WARN level message should be logged, with a link to a place within the component's repository where the change is
+  documented and a migration path is provided
+- the option MUST be kept for at least N+1 version, and MAY be hidden behind a feature flag in N+2
+- the option and the WARN level message MAY be removed after N+2 or 6 months, whichever comes later
+
+Additionally, when removing an option:
+- the option MAY be made non operational already by the same version where it is deprecated
+
+##### Stable components
+
+Stable component MUST be compatible between minor versions, unless critical security issues are found. In that case, the
+component owner MUST provide a migration path and a reasonable time frame for users to upgrade. The same rules from beta
+components apply to stable when it comes to configuration changes.
+
+
 ### Specification Tracking
 
 The [OpenTelemetry Specification](https://github.com/open-telemetry/opentelemetry-specification) can be a rapidly
