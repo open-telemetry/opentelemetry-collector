@@ -62,11 +62,6 @@ func newFakeTracesRequest(td ptrace.Traces) *fakeTracesRequest {
 	}
 }
 
-func (fd *fakeTracesRequest) Marshal() ([]byte, error) {
-	marshaler := &ptrace.ProtoMarshaler{}
-	return marshaler.MarshalTraces(fd.td)
-}
-
 func (fd *fakeTracesRequest) OnProcessingFinished() {
 	if fd.processingFinishedCallback != nil {
 		fd.processingFinishedCallback()
@@ -480,7 +475,7 @@ func TestPersistentStorage_StorageFull(t *testing.T) {
 	var err error
 	traces := newTraces(5, 10)
 	req := newFakeTracesRequest(traces)
-	marshaled, err := req.Marshal()
+	marshaled, err := newFakeTracesRequestMarshalerFunc()(req)
 	require.NoError(t, err)
 	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
 	freeSpaceInBytes := 1
