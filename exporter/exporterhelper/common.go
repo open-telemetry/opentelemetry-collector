@@ -56,39 +56,31 @@ func (req *baseRequest) OnProcessingFinished() {
 	}
 }
 
-type queueSettings struct {
-	config      QueueSettings
-	marshaler   internal.RequestMarshaler
-	unmarshaler internal.RequestUnmarshaler
-}
-
-func (qs *queueSettings) persistenceEnabled() bool {
-	return qs.config.StorageID != nil && qs.marshaler != nil && qs.unmarshaler != nil
-}
-
 // baseSettings represents all the options that users can configure.
 type baseSettings struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumerOptions []consumer.Option
 	TimeoutSettings
-	queueSettings
+	queue internal.ProducerConsumerQueue
 	RetrySettings
 	requestExporter bool
+	marshaler       internal.RequestMarshaler
+	unmarshaler     internal.RequestUnmarshaler
 }
 
 // newBaseSettings returns the baseSettings starting from the default and applying all configured options.
 // requestExporter indicates whether the base settings are for a new request exporter or not.
-func newBaseSettings(requestExporter bool, options ...Option) *baseSettings {
+// TODO: The first three arguments will be removed when the old exporter helpers will be updated to call the new ones.
+func newBaseSettings(requestExporter bool, marshaler internal.RequestMarshaler,
+	unmarshaler internal.RequestUnmarshaler, options ...Option) *baseSettings {
 	bs := &baseSettings{
 		requestExporter: requestExporter,
 		TimeoutSettings: NewDefaultTimeoutSettings(),
-		// TODO: Enable queuing by default (call DefaultQueueSettings)
-		queueSettings: queueSettings{
-			config: QueueSettings{Enabled: false},
-		},
 		// TODO: Enable retry by default (call DefaultRetrySettings)
 		RetrySettings: RetrySettings{Enabled: false},
+		marshaler:     marshaler,
+		unmarshaler:   unmarshaler,
 	}
 
 	for _, op := range options {
@@ -141,7 +133,14 @@ func WithQueue(config QueueSettings) Option {
 		if o.requestExporter {
 			panic("queueing is not available for the new request exporters yet")
 		}
-		o.queueSettings.config = config
+		if !config.Enabled {
+			return
+		}
+		if config.StorageID == nil {
+			o.queue = internal.NewBoundedMemoryQueue(config.QueueSize, config.NumConsumers)
+			return
+		}
+		o.queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID, o.marshaler, o.unmarshaler)
 	}
 }
 
@@ -172,7 +171,7 @@ func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal compo
 		return nil, err
 	}
 
-	be.qrSender = newQueuedRetrySender(set.ID, signal, bs.queueSettings, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
+	be.qrSender = newQueuedRetrySender(set.ID, signal, bs.queue, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
 	be.sender = be.qrSender
 	be.StartFunc = func(ctx context.Context, host component.Host) error {
 		// First start the wrapped exporter.
@@ -181,7 +180,7 @@ func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal compo
 		}
 
 		// If no error then start the queuedRetrySender.
-		return be.qrSender.start(ctx, host)
+		return be.qrSender.start(ctx, host, set)
 	}
 	be.ShutdownFunc = func(ctx context.Context) error {
 		// First shutdown the queued retry sender

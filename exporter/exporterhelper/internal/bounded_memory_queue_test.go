@@ -6,6 +6,7 @@
 package internal
 
 import (
+	"context"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -14,7 +15,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
+
+func newNopQueueSettings(callback func(item Request)) QueueSettings {
+	return QueueSettings{
+		CreateSettings: exportertest.NewNopCreateSettings(),
+		DataType:       component.DataTypeMetrics,
+		Callback:       callback,
+	}
+}
 
 type stringRequest struct {
 	Request
@@ -29,7 +42,7 @@ func newStringRequest(str string) Request {
 // We want to test the overflow behavior, so we block the consumer
 // by holding a startLock before submitting items to the queue.
 func helper(t *testing.T, startConsumers func(q ProducerConsumerQueue, consumerFn func(item Request))) {
-	q := NewBoundedMemoryQueue(1)
+	q := NewBoundedMemoryQueue(1, 1)
 
 	var startLock sync.Mutex
 
@@ -88,7 +101,7 @@ func helper(t *testing.T, startConsumers func(q ProducerConsumerQueue, consumerF
 
 func TestBoundedQueue(t *testing.T) {
 	helper(t, func(q ProducerConsumerQueue, consumerFn func(item Request)) {
-		q.StartConsumers(1, consumerFn)
+		assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(consumerFn)))
 	})
 }
 
@@ -99,14 +112,14 @@ func TestBoundedQueue(t *testing.T) {
 // only after Stop will mean the consumers are still locked while
 // trying to perform the final consumptions.
 func TestShutdownWhileNotEmpty(t *testing.T) {
-	q := NewBoundedMemoryQueue(10)
+	q := NewBoundedMemoryQueue(10, 1)
 
 	consumerState := newConsumerState(t)
 
-	q.StartConsumers(1, func(item Request) {
+	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {
 		consumerState.record(item.(stringRequest).str)
 		time.Sleep(1 * time.Second)
-	})
+	})))
 
 	q.Produce(newStringRequest("a"))
 	q.Produce(newStringRequest("b"))
@@ -183,30 +196,10 @@ func (s *consumerState) assertConsumed(expected map[string]bool) {
 }
 
 func TestZeroSize(t *testing.T) {
-	q := NewBoundedMemoryQueue(0)
+	q := NewBoundedMemoryQueue(0, 1)
 
-	q.StartConsumers(1, func(item Request) {
-	})
+	err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {}))
+	assert.NoError(t, err)
 
 	assert.False(t, q.Produce(newStringRequest("a"))) // in process
-}
-
-func BenchmarkBoundedQueue(b *testing.B) {
-	q := NewBoundedMemoryQueue(1000)
-
-	q.StartConsumers(10, func(item Request) {})
-
-	for n := 0; n < b.N; n++ {
-		q.Produce(newStringRequest("a"))
-	}
-}
-
-func BenchmarkBoundedQueueWithFactory(b *testing.B) {
-	q := NewBoundedMemoryQueue(1000)
-
-	q.StartConsumers(10, func(item Request) {})
-
-	for n := 0; n < b.N; n++ {
-		q.Produce(newStringRequest("a"))
-	}
 }
