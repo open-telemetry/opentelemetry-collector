@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func mockRequestUnmarshaler(mr *mockRequest) internal.RequestUnmarshaler {
@@ -650,10 +649,6 @@ func (mer *mockErrorRequest) OnError(error) internal.Request {
 	return mer
 }
 
-func (mer *mockErrorRequest) Marshal() ([]byte, error) {
-	return nil, nil
-}
-
 func (mer *mockErrorRequest) Count() int {
 	return 7
 }
@@ -683,11 +678,6 @@ func (m *mockRequest) Export(ctx context.Context) error {
 	}
 	// Respond like gRPC/HTTP, if context is cancelled, return error
 	return ctx.Err()
-}
-
-func (m *mockRequest) Marshal() ([]byte, error) {
-	marshaler := &ptrace.ProtoMarshaler{}
-	return marshaler.MarshalTraces(ptrace.NewTraces())
 }
 
 func (m *mockRequest) OnError(error) internal.Request {
