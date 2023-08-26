@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/rs/cors"
@@ -31,6 +32,9 @@ const headerContentEncoding = "Content-Encoding"
 type HTTPClientSettings struct {
 	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
 	Endpoint string `mapstructure:"endpoint"`
+
+	// Proxy setting for the collector
+	Proxy string `mapstructure:"proxy"`
 
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
@@ -122,6 +126,16 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 
 	if hcs.IdleConnTimeout != nil {
 		transport.IdleConnTimeout = *hcs.IdleConnTimeout
+	}
+
+	// Setting the Proxy URL
+	if hcs.Proxy != "" {
+		proxyURL, err := url.Parse(hcs.Proxy)
+		if err != nil {
+			return nil, err
+		} else {
+			transport.Proxy = http.ProxyURL(proxyURL)
+		}
 	}
 
 	clientTransport := (http.RoundTripper)(transport)
