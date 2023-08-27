@@ -41,4 +41,4 @@ Tier 3 platforms are currently:
 - Kubernetes arm64, i386, arm/v7 and ppc64le
 - Docker amd64, arm64, i386, arm/v7 and ppc64le
 
-The proposed additional platforms Linux on s390x (#378) and AIX on ppc64 ([#19195](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19195#issuecomment-1458560971)) will be included into Tier 3 once they're added to the OpenTelemetry Collector as platforms. 
+The proposed additional platforms Linux on s390x (#378) and AIX on ppc64 ([#19195](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19195)) will be included into Tier 3 once they're added to the OpenTelemetry Collector as platforms. 
