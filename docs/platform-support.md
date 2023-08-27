@@ -20,7 +20,7 @@ Tier 1 platforms are currently:
 
 ### Tier 2 – Secondary Support
 
-Tier 2 platforms are _guaranteed to work with specified limitations_. Precompiled binaries are built and tested on the platform as part of the biweekly release cycle. Build and test infrastructure is provided by the platform maintainers. All tests are executed on the platform as far as they are applicable, and all prerequisites are fulfilled. Not executed tests and not tested collector add-ons (received, processors, exporters, etc.) are published on release of the collector distribution. Any build or test failure delays the release of the binaries for the respective platform but not the collector distribution for all other platforms. Defects are addressed but not with the priority as for Tier 1 and, if specific to the platform, require the support of the platform maintainers.
+Tier 2 platforms are _guaranteed to work with specified limitations_. Precompiled binaries are built and tested on the platform as part of the biweekly release cycle. Build and test infrastructure is provided by the platform maintainers. All tests are executed on the platform as far as they are applicable, and all prerequisites are fulfilled. Not executed tests and not tested collector add-ons (receivers, processors, exporters, etc.) are published on release of the collector distribution. Any build or test failure delays the release of the binaries for the respective platform but not the collector distribution for all other platforms. Defects are addressed but not with the priority as for Tier 1 and, if specific to the platform, require the support of the platform maintainers.
 
 Tier 2 platforms are currently:
 - None
