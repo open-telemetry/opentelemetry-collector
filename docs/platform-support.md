@@ -1,6 +1,6 @@
 # Platform Support
 
-The OpenTelemetry Collector will be supported following a tiered platform support model to balance between the aim to support as many platforms as possible and to guarantee stability for the most important platforms. The platform support for the OpenTelemetry Collector is broken into three tiers with different levels of support for each tier  and aligns with the current test strategy.
+The OpenTelemetry Collector will be supported following a tiered platform support model to balance between the aim to support as many platforms as possible and to guarantee stability for the most important platforms. A platforms is described by the pair of operating system and processor architecture family as they are defined by the Go programming language as [known operating systems and architectures for use with the GOOS and GOARCH values](https://go.dev/src/go/build/syslist.go). With the support of the Go language to cross-compile, the OpenTelemetry Collector can generally be built for all operating systems and architectures [supported the Go compilers](https://go.dev/doc/install/source#introduction). The platform support for the OpenTelemetry Collector is broken into three tiers with different levels of support for each tier  and aligns with the current test strategy.
 
 ## Current Test Strategy
 
