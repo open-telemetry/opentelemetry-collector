@@ -768,10 +768,11 @@ func checkValueForGlobalManager(t *testing.T, wantTags []tag.Tag, value int64, v
 func checkValueForProducer(t *testing.T, producer metricproducer.Producer, wantTags []tag.Tag, value int64, vName string) bool {
 	for _, metric := range producer.Read() {
 		if metric.Descriptor.Name == vName && len(metric.TimeSeries) > 0 {
-			lastValue := metric.TimeSeries[len(metric.TimeSeries)-1]
-			if tagsMatchLabelKeys(wantTags, metric.Descriptor.LabelKeys, lastValue.LabelValues) {
-				require.Equal(t, value, lastValue.Points[len(lastValue.Points)-1].Value.(int64))
-				return true
+			for _, ts := range metric.TimeSeries {
+				if tagsMatchLabelKeys(wantTags, metric.Descriptor.LabelKeys, ts.LabelValues) {
+					require.Equal(t, value, ts.Points[len(ts.Points)-1].Value.(int64))
+					return true
+				}
 			}
 		}
 	}
