@@ -32,12 +32,53 @@ func TestNewBuildSubCommand(t *testing.T) {
 	cmd.SetArgs([]string{"components"})
 
 	ExpectedYamlStruct := componentsOutput{
-		BuildInfo:  component.NewDefaultBuildInfo(),
-		Receivers:  []component.Type{"nop"},
-		Processors: []component.Type{"nop"},
-		Exporters:  []component.Type{"nop"},
-		Connectors: []component.Type{"nop"},
-		Extensions: []component.Type{"nop"},
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Receivers: []componentWithStability{{
+			Name: component.Type("nop"),
+			StabilityLevels: map[string]string{
+				"logs":    "Stable",
+				"metrics": "Stable",
+				"traces":  "Stable",
+			},
+		}},
+		Processors: []componentWithStability{{
+			Name: component.Type("nop"),
+			StabilityLevels: map[string]string{
+				"logs":    "Stable",
+				"metrics": "Stable",
+				"traces":  "Stable",
+			},
+		}},
+		Exporters: []componentWithStability{{
+			Name: component.Type("nop"),
+			StabilityLevels: map[string]string{
+				"logs":    "Stable",
+				"metrics": "Stable",
+				"traces":  "Stable",
+			},
+		}},
+		Connectors: []componentWithStability{{
+			Name: component.Type("nop"),
+			StabilityLevels: map[string]string{
+				"logstologs":    "Development",
+				"logstometrics": "Development",
+				"logstotraces":  "Development",
+
+				"metricstologs":    "Development",
+				"metricstometrics": "Development",
+				"metricstotraces":  "Development",
+
+				"tracestologs":    "Development",
+				"tracestometrics": "Development",
+				"tracestotraces":  "Development",
+			},
+		}},
+		Extensions: []componentWithStability{{
+			Name: component.Type("nop"),
+			StabilityLevels: map[string]string{
+				"extension": "Stable",
+			},
+		}},
 	}
 	ExpectedOutput, err := yaml.Marshal(ExpectedYamlStruct)
 	require.NoError(t, err)
