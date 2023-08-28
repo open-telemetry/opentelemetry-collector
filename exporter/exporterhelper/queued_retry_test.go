@@ -7,8 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -20,6 +18,8 @@ import (
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/tag"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
