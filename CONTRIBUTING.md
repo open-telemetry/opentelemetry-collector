@@ -501,7 +501,7 @@ that each of the following steps is done in a separate version:
 Configuration for alpha components can be changed with minimal notice. Documenting them as part of the changelog is
 sufficient. We still recommend giving users one or two minor version's notice before breaking the configuration, such as
 when removing or renaming a configuration option. Providing a migration path in the component's repository is NOT
-required for alpha components, altough still recommended.
+required for alpha components, although still recommended.
 
 - when adding a new configuration option, components MAY mark the new option as required and are not required to provide
   a reasonable default.
