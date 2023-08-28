@@ -31,8 +31,9 @@ The following settings can be optionally configured:
 - `timeout` (default = 30s): HTTP request time limit. For details see https://golang.org/pkg/net/http/#Client
 - `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
-- `sampled_logger`: Enables/disables sampling of logging messages.
-    - `enabled` (default = true). When setting `debug` log level the sampling will be disabled regardless of the value of this property.
+- `sampled_logger`: The logger sampler configuration. It caps the CPU and I/O load of logging while keeping a representative subset of your logs.
+    - `enabled` (default = true). Enables/disables sampling of logging messages. 
+        When setting `debug` log level the sampling will be disabled regardless of the value of this property.
 
 Example:
 
