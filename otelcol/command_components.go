@@ -13,8 +13,8 @@ import (
 )
 
 type componentWithStability struct {
-	Name            component.Type
-	StabilityLevels map[string]string
+	Name      component.Type
+	Stability map[string]string
 }
 
 type componentsOutput struct {
@@ -31,6 +31,7 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 	return &cobra.Command{
 		Use:   "components",
 		Short: "Outputs available components in this collector distribution",
+		Long:  "Outputs available components in this collector distribution including their stability levels. The output format is not stable and can change between releases.",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -38,25 +39,25 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 			for con := range set.Factories.Connectors {
 				components.Connectors = append(components.Connectors, componentWithStability{
 					Name: con,
-					StabilityLevels: map[string]string{
-						"logstologs":    set.Factories.Connectors[con].LogsToLogsStability().String(),
-						"logstometrics": set.Factories.Connectors[con].LogsToMetricsStability().String(),
-						"logstotraces":  set.Factories.Connectors[con].LogsToTracesStability().String(),
+					Stability: map[string]string{
+						"logs-to-logs":    set.Factories.Connectors[con].LogsToLogsStability().String(),
+						"logs-to-metrics": set.Factories.Connectors[con].LogsToMetricsStability().String(),
+						"logs-to-traces":  set.Factories.Connectors[con].LogsToTracesStability().String(),
 
-						"metricstologs":    set.Factories.Connectors[con].MetricsToLogsStability().String(),
-						"metricstometrics": set.Factories.Connectors[con].MetricsToMetricsStability().String(),
-						"metricstotraces":  set.Factories.Connectors[con].MetricsToTracesStability().String(),
+						"metrics-to-logs":    set.Factories.Connectors[con].MetricsToLogsStability().String(),
+						"metrics-to-metrics": set.Factories.Connectors[con].MetricsToMetricsStability().String(),
+						"metrics-to-traces":  set.Factories.Connectors[con].MetricsToTracesStability().String(),
 
-						"tracestologs":    set.Factories.Connectors[con].TracesToLogsStability().String(),
-						"tracestometrics": set.Factories.Connectors[con].TracesToMetricsStability().String(),
-						"tracestotraces":  set.Factories.Connectors[con].TracesToTracesStability().String(),
+						"traces-to-logs":    set.Factories.Connectors[con].TracesToLogsStability().String(),
+						"traces-to-metrics": set.Factories.Connectors[con].TracesToMetricsStability().String(),
+						"traces-to-traces":  set.Factories.Connectors[con].TracesToTracesStability().String(),
 					},
 				})
 			}
 			for ext := range set.Factories.Extensions {
 				components.Extensions = append(components.Extensions, componentWithStability{
 					Name: ext,
-					StabilityLevels: map[string]string{
+					Stability: map[string]string{
 						"extension": set.Factories.Extensions[ext].ExtensionStability().String(),
 					},
 				})
@@ -64,7 +65,7 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 			for prs := range set.Factories.Processors {
 				components.Processors = append(components.Processors, componentWithStability{
 					Name: prs,
-					StabilityLevels: map[string]string{
+					Stability: map[string]string{
 						"logs":    set.Factories.Processors[prs].LogsProcessorStability().String(),
 						"metrics": set.Factories.Processors[prs].MetricsProcessorStability().String(),
 						"traces":  set.Factories.Processors[prs].TracesProcessorStability().String(),
@@ -74,7 +75,7 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 			for rcv := range set.Factories.Receivers {
 				components.Receivers = append(components.Receivers, componentWithStability{
 					Name: rcv,
-					StabilityLevels: map[string]string{
+					Stability: map[string]string{
 						"logs":    set.Factories.Receivers[rcv].LogsReceiverStability().String(),
 						"metrics": set.Factories.Receivers[rcv].MetricsReceiverStability().String(),
 						"traces":  set.Factories.Receivers[rcv].TracesReceiverStability().String(),
@@ -84,7 +85,7 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 			for exp := range set.Factories.Exporters {
 				components.Exporters = append(components.Exporters, componentWithStability{
 					Name: exp,
-					StabilityLevels: map[string]string{
+					Stability: map[string]string{
 						"logs":    set.Factories.Exporters[exp].LogsExporterStability().String(),
 						"metrics": set.Factories.Exporters[exp].MetricsExporterStability().String(),
 						"traces":  set.Factories.Exporters[exp].TracesExporterStability().String(),

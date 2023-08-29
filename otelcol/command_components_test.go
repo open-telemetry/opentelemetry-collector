@@ -35,7 +35,7 @@ func TestNewBuildSubCommand(t *testing.T) {
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Receivers: []componentWithStability{{
 			Name: component.Type("nop"),
-			StabilityLevels: map[string]string{
+			Stability: map[string]string{
 				"logs":    "Stable",
 				"metrics": "Stable",
 				"traces":  "Stable",
@@ -43,7 +43,7 @@ func TestNewBuildSubCommand(t *testing.T) {
 		}},
 		Processors: []componentWithStability{{
 			Name: component.Type("nop"),
-			StabilityLevels: map[string]string{
+			Stability: map[string]string{
 				"logs":    "Stable",
 				"metrics": "Stable",
 				"traces":  "Stable",
@@ -51,7 +51,7 @@ func TestNewBuildSubCommand(t *testing.T) {
 		}},
 		Exporters: []componentWithStability{{
 			Name: component.Type("nop"),
-			StabilityLevels: map[string]string{
+			Stability: map[string]string{
 				"logs":    "Stable",
 				"metrics": "Stable",
 				"traces":  "Stable",
@@ -59,23 +59,23 @@ func TestNewBuildSubCommand(t *testing.T) {
 		}},
 		Connectors: []componentWithStability{{
 			Name: component.Type("nop"),
-			StabilityLevels: map[string]string{
-				"logstologs":    "Development",
-				"logstometrics": "Development",
-				"logstotraces":  "Development",
+			Stability: map[string]string{
+				"logs-to-logs":    "Development",
+				"logs-to-metrics": "Development",
+				"logs-to-traces":  "Development",
 
-				"metricstologs":    "Development",
-				"metricstometrics": "Development",
-				"metricstotraces":  "Development",
+				"metrics-to-logs":    "Development",
+				"metrics-to-metrics": "Development",
+				"metrics-to-traces":  "Development",
 
-				"tracestologs":    "Development",
-				"tracestometrics": "Development",
-				"tracestotraces":  "Development",
+				"traces-to-logs":    "Development",
+				"traces-to-metrics": "Development",
+				"traces-to-traces":  "Development",
 			},
 		}},
 		Extensions: []componentWithStability{{
 			Name: component.Type("nop"),
-			StabilityLevels: map[string]string{
+			Stability: map[string]string{
 				"extension": "Stable",
 			},
 		}},
