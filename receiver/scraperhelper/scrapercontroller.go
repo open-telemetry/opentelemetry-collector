@@ -194,13 +194,20 @@ func (sc *controller) scrapeMetricsAndReport() {
 	for i, scraper := range sc.scrapers {
 		scrp := sc.obsScrapers[i]
 		ctx = scrp.StartMetricsOp(ctx)
+		var err error
 		md, err := scraper.Scrape(ctx)
 
 		if err != nil {
-			sc.logger.Error("Error scraping metrics", zap.Error(err), zap.Stringer("scraper", scraper.ID()))
-			if !scrapererror.IsPartialScrapeError(err) {
-				scrp.EndMetricsOp(ctx, 0, err)
-				continue
+			var levelErrors *scrapererror.ScrapeLevelErrors
+			if errors.As(err, &levelErrors) {
+				levelErrors.ZapLogAll(sc.logger, scraper.ID().String())
+				err = levelErrors.CombineErrors()
+			} else {
+				sc.logger.Error("Error scraping metrics", zap.Error(err), zap.Stringer("scraper", scraper.ID()))
+				if !scrapererror.IsPartialScrapeError(err) {
+					scrp.EndMetricsOp(ctx, 0, err)
+					continue
+				}
 			}
 		}
 		scrp.EndMetricsOp(ctx, md.MetricCount(), err)

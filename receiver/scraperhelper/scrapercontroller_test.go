@@ -14,6 +14,9 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -56,7 +59,7 @@ func (ts *testScrapeMetrics) scrape(_ context.Context) (pmetric.Metrics, error) 
 	ts.ch <- ts.timesScrapeCalled
 
 	if ts.err != nil {
-		return pmetric.Metrics{}, ts.err
+		return pmetric.NewMetrics(), ts.err
 	}
 
 	md := pmetric.NewMetrics()
@@ -113,6 +116,15 @@ func TestScrapeController(t *testing.T) {
 			name:      "AddMetricsScrapers_ScrapeError",
 			scrapers:  2,
 			scrapeErr: errors.New("err1"),
+		},
+		{
+			name:     "AddMetricsScrapers_ScrapeLevelsError",
+			scrapers: 2,
+			scrapeErr: &scrapererror.ScrapeLevelErrors{
+				Errors:        []error{errors.New("err1")},
+				WarningErrors: []error{errors.New("err2")},
+				DebugErrors:   []error{errors.New("err3")},
+			},
 		},
 		{
 			name:          "AddMetricsScrapersWithInitializeAndClose",
@@ -434,4 +446,78 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 	assert.GreaterOrEqual(t, t1.Sub(t0), 300*time.Millisecond, "Must have had 300ms pass as defined by initial delay")
 
 	assert.NoError(t, r.Shutdown(context.Background()), "Must not error closing down")
+}
+
+func TestScrapeErrorExpectedLogs(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name         string
+		err          error
+		expectedLogs int
+	}{
+		{
+			name:         "plain error",
+			err:          errors.New("err1"),
+			expectedLogs: 1,
+		},
+		{
+			name:         "partial error",
+			err:          scrapererror.NewPartialScrapeError(errors.New("err1"), 1),
+			expectedLogs: 1,
+		},
+		{
+			name: "level error",
+			err: &scrapererror.ScrapeLevelErrors{
+				Errors:        []error{errors.New("err1")},
+				WarningErrors: []error{errors.New("err2")},
+				DebugErrors:   []error{errors.New("err3")},
+			},
+			expectedLogs: 3,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			scrapeMetricsCh := make(chan int, 10)
+			tsm := &testScrapeMetrics{
+				ch:  scrapeMetricsCh,
+				err: test.err,
+			}
+
+			cfg := newTestNoDelaySettings()
+
+			tickerCh := make(chan time.Time)
+
+			scp, err := NewScraper("", tsm.scrape)
+			assert.NoError(t, err)
+
+			settings := receivertest.NewNopCreateSettings()
+			observedCore, observedLogs := observer.New(zapcore.DebugLevel)
+			settings.Logger = zap.New(observedCore)
+
+			receiver, err := NewScraperControllerReceiver(
+				cfg,
+				settings,
+				new(consumertest.MetricsSink),
+				AddScraper(scp),
+				WithTickerChannel(tickerCh),
+			)
+			require.NoError(t, err)
+
+			require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
+
+			assert.Eventually(
+				t,
+				func() bool {
+					return <-scrapeMetricsCh == 1
+				},
+				300*time.Millisecond,
+				100*time.Millisecond,
+				"Make sure the scraper channel is called",
+			)
+
+			assert.Len(t, observedLogs.All(), test.expectedLogs)
+		})
+	}
 }
