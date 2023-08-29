@@ -51,7 +51,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 			Transport: "tcp",
 		},
 	}
-	defaultHTTPSettings := &httpServerSettings{
+	defaultHTTPSettings := &HTTPConfig{
 		HTTPServerSettings: &confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
@@ -94,7 +94,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
-					HTTP: &httpServerSettings{
+					HTTP: &HTTPConfig{
 						HTTPServerSettings: &confighttp.HTTPServerSettings{
 							Endpoint: "localhost:112233",
 						},
@@ -132,7 +132,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 			Transport: "tcp",
 		},
 	}
-	defaultHTTPSettings := &httpServerSettings{
+	defaultHTTPSettings := &HTTPConfig{
 		HTTPServerSettings: &confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
@@ -175,7 +175,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
-					HTTP: &httpServerSettings{
+					HTTP: &HTTPConfig{
 						HTTPServerSettings: &confighttp.HTTPServerSettings{
 							Endpoint: "327.0.0.1:1122",
 						},
@@ -212,7 +212,7 @@ func TestCreateLogReceiver(t *testing.T) {
 			Transport: "tcp",
 		},
 	}
-	defaultHTTPSettings := &httpServerSettings{
+	defaultHTTPSettings := &HTTPConfig{
 		HTTPServerSettings: &confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
@@ -259,7 +259,7 @@ func TestCreateLogReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
-					HTTP: &httpServerSettings{
+					HTTP: &HTTPConfig{
 						HTTPServerSettings: &confighttp.HTTPServerSettings{
 							Endpoint: "327.0.0.1:1122",
 						},
@@ -275,7 +275,7 @@ func TestCreateLogReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
-					HTTP: &httpServerSettings{
+					HTTP: &HTTPConfig{
 						HTTPServerSettings: &confighttp.HTTPServerSettings{
 							Endpoint: "127.0.0.1:1122",
 						},

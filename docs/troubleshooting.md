@@ -56,8 +56,8 @@ more details.
 $ otelcol --metrics-addr 0.0.0.0:8888
 ```
 
-A grafana dashboard for these metrics can be found
-[here](https://grafana.com/grafana/dashboards/11575).
+A Grafana dashboard for these metrics can be found
+[here](https://grafana.com/grafana/dashboards/15983-opentelemetry-collector/).
 
 Also note that a Collector can be configured to scrape its own metrics and send
 it through configured pipelines. For example:

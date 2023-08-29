@@ -35,11 +35,21 @@ func buildPersistentStorageName(name string, signal component.DataType) string {
 	return fmt.Sprintf("%s-%s", name, signal)
 }
 
+type PersistentQueueSettings struct {
+	Name        string
+	Signal      component.DataType
+	Capacity    uint64
+	Logger      *zap.Logger
+	Client      storage.Client
+	Unmarshaler RequestUnmarshaler
+	Marshaler   RequestMarshaler
+}
+
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func NewPersistentQueue(ctx context.Context, name string, signal component.DataType, capacity int, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
+func NewPersistentQueue(ctx context.Context, params PersistentQueueSettings) ProducerConsumerQueue {
 	return &persistentQueue{
 		stopChan: make(chan struct{}),
-		storage:  newPersistentContiguousStorage(ctx, buildPersistentStorageName(name, signal), uint64(capacity), logger, client, unmarshaler),
+		storage:  newPersistentContiguousStorage(ctx, buildPersistentStorageName(params.Name, params.Signal), params),
 	}
 }
 

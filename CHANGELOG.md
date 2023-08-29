@@ -7,6 +7,20 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.83.0
+
+### 💡 Enhancements 💡
+
+- `extension`: Add optional `ConfigWatcher` interface (#6596)
+  Extensions implementing this interface will be notified of the Collector's effective config.
+- `otelcol`: Add optional `ConfmapProvider` interface for Config Providers (#6596)
+  This allows providing the Collector's configuration as a marshaled confmap.Conf object
+  from a ConfigProvider
+  
+- `service`: Add `CollectorConf` field to `service.Settings` (#6596)
+  This field is intended to be used by the Collector to pass its effective configuration to the service.
+  
+
 ## v1.0.0-rcv0014/v0.82.0
 
 ### 🛑 Breaking changes 🛑

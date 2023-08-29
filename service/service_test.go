@@ -56,7 +56,7 @@ type ownMetricsTestCase struct {
 	expectedLabels      map[string]labelValue
 }
 
-var testResourceAttrValue = "resource_attr_test_value"
+var testResourceAttrValue = "resource_attr_test_value" // #nosec G101: Potential hardcoded credentials
 var testInstanceID = "test_instance_id"
 var testServiceVersion = "2022-05-20"
 var testServiceName = "test name"

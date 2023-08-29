@@ -150,12 +150,17 @@ func (sp *SpanProcessor) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if sp.Batch != nil {
-		if sp.Batch.Exporter.Console == nil {
-			return fmt.Errorf("invalid exporter configuration")
-		}
-		return nil
+		return sp.Batch.Exporter.Validate()
 	}
 	return fmt.Errorf("unsupported span processor type %s", conf.AllKeys())
+}
+
+// Validate checks for valid exporters to be configured for the SpanExporter
+func (se *SpanExporter) Validate() error {
+	if se.Console == nil && se.Otlp == nil {
+		return fmt.Errorf("invalid exporter configuration")
+	}
+	return nil
 }
 
 func (mr *MetricReader) Unmarshal(conf *confmap.Conf) error {
@@ -173,17 +178,27 @@ func (mr *MetricReader) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if mr.Pull != nil {
-		if mr.Pull.Exporter.Prometheus == nil {
-			return fmt.Errorf("invalid exporter configuration")
-		}
-		return nil
+		return mr.Pull.Validate()
 	}
 	if mr.Periodic != nil {
-		if mr.Periodic.Exporter.Otlp == nil && mr.Periodic.Exporter.Console == nil {
-			return fmt.Errorf("invalid exporter configuration")
-		}
-		return nil
+		return mr.Periodic.Validate()
 	}
 
 	return fmt.Errorf("unsupported metric reader type %s", conf.AllKeys())
+}
+
+// Validate checks for valid exporters to be configured for the PullMetricReader
+func (pmr *PullMetricReader) Validate() error {
+	if pmr.Exporter.Prometheus == nil {
+		return fmt.Errorf("invalid exporter configuration")
+	}
+	return nil
+}
+
+// Validate checks for valid exporters to be configured for the PeriodicMetricReader
+func (pmr *PeriodicMetricReader) Validate() error {
+	if pmr.Exporter.Otlp == nil && pmr.Exporter.Console == nil {
+		return fmt.Errorf("invalid exporter configuration")
+	}
+	return nil
 }

@@ -162,7 +162,7 @@ func TestMetricReader(t *testing.T) {
 						Otlp: &telemetry.OtlpMetric{
 							Protocol:    "grpc/protobuf",
 							Endpoint:    "http://localhost:4317",
-							Compression: strPtr("gzip"),
+							Compression: strPtr("none"),
 							Timeout:     intPtr(1000),
 							Headers: map[string]string{
 								"test": "test1",
@@ -226,6 +226,7 @@ func TestMetricReader(t *testing.T) {
 					},
 				},
 			},
+			err: errors.New("unsupported compression \"invalid\""),
 		},
 		{
 			name: "periodic/otlp-http-exporter",

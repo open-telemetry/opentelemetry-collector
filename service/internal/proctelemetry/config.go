@@ -234,7 +234,14 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric)
 	}
 
 	if otlpConfig.Compression != nil {
-		opts = append(opts, otlpmetricgrpc.WithCompressor(*otlpConfig.Compression))
+		switch *otlpConfig.Compression {
+		case "gzip":
+			opts = append(opts, otlpmetricgrpc.WithCompressor(*otlpConfig.Compression))
+		case "none":
+			break
+		default:
+			return nil, fmt.Errorf("unsupported compression %q", *otlpConfig.Compression)
+		}
 	}
 	if otlpConfig.Timeout != nil {
 		opts = append(opts, otlpmetricgrpc.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
