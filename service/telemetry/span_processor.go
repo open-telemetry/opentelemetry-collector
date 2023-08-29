@@ -19,13 +19,8 @@ import (
 
 var errNoValidSpanExporter = errors.New("no valid span exporter")
 
-const (
-	// supported protocols
-	protocolProtobufHTTP = "http/protobuf"
-	protocolProtobufGRPC = "grpc/protobuf"
-)
-
-func normalizeEndpoint(endpoint string) string {
+// NormalizeEndpoint takes an HTTP(s) endpoint and adds the protocol prefix if missing.
+func NormalizeEndpoint(endpoint string) string {
 	if !strings.HasPrefix(endpoint, "https://") && !strings.HasPrefix(endpoint, "http://") {
 		return fmt.Sprintf("http://%s", endpoint)
 	}
@@ -36,7 +31,7 @@ func initOTLPgRPCSpanExporter(ctx context.Context, otlpConfig *Otlp) (sdktrace.S
 	opts := []otlptracegrpc.Option{}
 
 	if len(otlpConfig.Endpoint) > 0 {
-		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
+		u, err := url.ParseRequestURI(NormalizeEndpoint(otlpConfig.Endpoint))
 		if err != nil {
 			return nil, err
 		}
@@ -70,7 +65,7 @@ func initOTLPHTTPSpanExporter(ctx context.Context, otlpConfig *Otlp) (sdktrace.S
 	opts := []otlptracehttp.Option{}
 
 	if len(otlpConfig.Endpoint) > 0 {
-		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
+		u, err := url.ParseRequestURI(NormalizeEndpoint(otlpConfig.Endpoint))
 		if err != nil {
 			return nil, err
 		}
@@ -148,9 +143,9 @@ func newSpanProcessor(ctx context.Context, processor SpanProcessor) (sdktrace.Sp
 			var err error
 			var exp sdktrace.SpanExporter
 			switch processor.Batch.Exporter.Otlp.Protocol {
-			case protocolProtobufHTTP:
+			case ProtocolProtobufHTTP:
 				exp, err = initOTLPHTTPSpanExporter(ctx, processor.Batch.Exporter.Otlp)
-			case protocolProtobufGRPC:
+			case ProtocolProtobufGRPC:
 				exp, err = initOTLPgRPCSpanExporter(ctx, processor.Batch.Exporter.Otlp)
 			default:
 				return nil, fmt.Errorf("unsupported protocol %q", processor.Batch.Exporter.Otlp.Protocol)

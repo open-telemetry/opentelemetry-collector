@@ -13,6 +13,14 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
+// supported protocols for exporters
+const (
+	// ProtocolProtobufHTTP is the OTLP/HTTP with Protobuf encoding protocol
+	ProtocolProtobufHTTP = "http/protobuf"
+	// ProtocolProtobufGRPC is the OTLP/gRPC protocol
+	ProtocolProtobufGRPC = "grpc/protobuf"
+)
+
 // Config defines the configurable settings for service telemetry.
 type Config struct {
 	Logs    LogsConfig    `mapstructure:"logs"`

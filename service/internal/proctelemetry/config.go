@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -39,10 +38,6 @@ const (
 
 	// http Instrumentation Name
 	HTTPInstrumentation = "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-
-	// supported protocols
-	protocolProtobufHTTP = "http/protobuf"
-	protocolProtobufGRPC = "grpc/protobuf"
 )
 
 var (
@@ -197,9 +192,9 @@ func initPeriodicExporter(ctx context.Context, exporter telemetry.MetricExporter
 		var err error
 		var exp sdkmetric.Exporter
 		switch exporter.Otlp.Protocol {
-		case protocolProtobufHTTP:
+		case telemetry.ProtocolProtobufHTTP:
 			exp, err = initOTLPHTTPExporter(ctx, exporter.Otlp)
-		case protocolProtobufGRPC:
+		case telemetry.ProtocolProtobufGRPC:
 			exp, err = initOTLPgRPCExporter(ctx, exporter.Otlp)
 		default:
 			return nil, nil, fmt.Errorf("unsupported protocol %s", exporter.Otlp.Protocol)
@@ -212,18 +207,11 @@ func initPeriodicExporter(ctx context.Context, exporter telemetry.MetricExporter
 	return nil, nil, errNoValidMetricExporter
 }
 
-func normalizeEndpoint(endpoint string) string {
-	if !strings.HasPrefix(endpoint, "https://") && !strings.HasPrefix(endpoint, "http://") {
-		return fmt.Sprintf("http://%s", endpoint)
-	}
-	return endpoint
-}
-
 func initOTLPgRPCExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric) (sdkmetric.Exporter, error) {
 	opts := []otlpmetricgrpc.Option{}
 
 	if len(otlpConfig.Endpoint) > 0 {
-		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
+		u, err := url.ParseRequestURI(telemetry.NormalizeEndpoint(otlpConfig.Endpoint))
 		if err != nil {
 			return nil, err
 		}
@@ -257,7 +245,7 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric)
 	opts := []otlpmetrichttp.Option{}
 
 	if len(otlpConfig.Endpoint) > 0 {
-		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
+		u, err := url.ParseRequestURI(telemetry.NormalizeEndpoint(otlpConfig.Endpoint))
 		if err != nil {
 			return nil, err
 		}
