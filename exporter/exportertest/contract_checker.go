@@ -6,7 +6,6 @@ package exportertest // import "go.opentelemetry.io/collector/exporter/exportert
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"testing"
 
@@ -14,7 +13,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -36,7 +34,7 @@ type CheckConsumeContractParams struct {
 	// Config of the exporter to use.
 	Config               component.Config
 	NumberOfTestElements int
-	MockReceiver         interface{}
+	MockReceiver         MockReceiver
 }
 
 func CheckConsumeContract(params CheckConsumeContractParams) {
@@ -95,7 +93,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 }
 
 func checkMetrics(params CheckConsumeContractParams, decisionFunc func() error, checkIfTestPassed func(*testing.T, int, requestCounter)) {
-	receiver := params.MockReceiver.(*mockMetricsReceiver)
+	receiver := params.MockReceiver
 	ctx := context.Background()
 
 	var exp exporter.Metrics
@@ -123,18 +121,19 @@ func checkMetrics(params CheckConsumeContractParams, decisionFunc func() error, 
 		err = exp.ConsumeMetrics(ctx, data)
 	}
 
+	reqCounter := receiver.getReqCounter()
 	// The overall number of requests sent by exporter
-	fmt.Printf("Number of export tries: %d\n", receiver.reqCounter.total)
+	fmt.Printf("Number of export tries: %d\n", reqCounter.total)
 	// Successfully delivered items
-	fmt.Printf("Total items received successfully: %d\n", receiver.reqCounter.success)
+	fmt.Printf("Total items received successfully: %d\n", reqCounter.success)
 	// Number of errors that happened
-	fmt.Printf("Number of permanent errors: %d\n", receiver.reqCounter.error.permanent)
-	fmt.Printf("Number of non-permanent errors: %d\n", receiver.reqCounter.error.nonpermanent)
-	checkIfTestPassed(params.T, params.NumberOfTestElements, receiver.reqCounter)
+	fmt.Printf("Number of permanent errors: %d\n", reqCounter.error.permanent)
+	fmt.Printf("Number of non-permanent errors: %d\n", reqCounter.error.nonpermanent)
+	checkIfTestPassed(params.T, params.NumberOfTestElements, reqCounter)
 }
 
 func checkTraces(params CheckConsumeContractParams, decisionFunc func() error, checkIfTestPassed func(*testing.T, int, requestCounter)) {
-	receiver := params.MockReceiver.(*mockTracesReceiver)
+	receiver := params.MockReceiver
 	ctx := context.Background()
 
 	var exp exporter.Traces
@@ -162,18 +161,19 @@ func checkTraces(params CheckConsumeContractParams, decisionFunc func() error, c
 		err = exp.ConsumeTraces(ctx, data)
 	}
 
+	reqCounter := receiver.getReqCounter()
 	// The overall number of requests sent by exporter
-	fmt.Printf("Number of export tries: %d\n", receiver.reqCounter.total)
+	fmt.Printf("Number of export tries: %d\n", reqCounter.total)
 	// Successfully delivered items
-	fmt.Printf("Total items received successfully: %d\n", receiver.reqCounter.success)
+	fmt.Printf("Total items received successfully: %d\n", reqCounter.success)
 	// Number of errors that happened
-	fmt.Printf("Number of permanent errors: %d\n", receiver.reqCounter.error.permanent)
-	fmt.Printf("Number of non-permanent errors: %d\n", receiver.reqCounter.error.nonpermanent)
-	checkIfTestPassed(params.T, params.NumberOfTestElements, receiver.reqCounter)
+	fmt.Printf("Number of permanent errors: %d\n", reqCounter.error.permanent)
+	fmt.Printf("Number of non-permanent errors: %d\n", reqCounter.error.nonpermanent)
+	checkIfTestPassed(params.T, params.NumberOfTestElements, reqCounter)
 }
 
 func checkLogs(params CheckConsumeContractParams, decisionFunc func() error, checkIfTestPassed func(*testing.T, int, requestCounter)) {
-	receiver := params.MockReceiver.(*mockLogsReceiver)
+	receiver := params.MockReceiver
 	ctx := context.Background()
 
 	var exp exporter.Logs
@@ -201,47 +201,15 @@ func checkLogs(params CheckConsumeContractParams, decisionFunc func() error, che
 		err = exp.ConsumeLogs(ctx, data)
 	}
 
+	reqCounter := receiver.getReqCounter()
 	// The overall number of requests sent by exporter
-	fmt.Printf("Number of export tries: %d\n", receiver.reqCounter.total)
+	fmt.Printf("Number of export tries: %d\n", reqCounter.total)
 	// Successfully delivered items
-	fmt.Printf("Total items received successfully: %d\n", receiver.reqCounter.success)
+	fmt.Printf("Total items received successfully: %d\n", reqCounter.success)
 	// Number of errors that happened
-	fmt.Printf("Number of permanent errors: %d\n", receiver.reqCounter.error.permanent)
-	fmt.Printf("Number of non-permanent errors: %d\n", receiver.reqCounter.error.nonpermanent)
-	checkIfTestPassed(params.T, params.NumberOfTestElements, receiver.reqCounter)
-}
-
-// // randomNonPermanentErrorConsumeDecision is a decision function that succeeds approximately
-// // half of the time and fails with a non-permanent error the rest of the time.
-func randomNonPermanentErrorConsumeDecision() error {
-	if rand.Float32() < 0.5 {
-		return errNonPermanent
-	}
-	return nil
-}
-
-// randomPermanentErrorConsumeDecision is a decision function that succeeds approximately
-// half of the time and fails with a permanent error the rest of the time.
-func randomPermanentErrorConsumeDecision() error {
-	if rand.Float32() < 0.5 {
-		return consumererror.NewPermanent(errPermanent)
-	}
-	return nil
-}
-
-// randomErrorsConsumeDecision is a decision function that succeeds approximately
-// a third of the time, fails with a permanent error the third of the time and fails with
-// a non-permanent error the rest of the time.
-func randomErrorsConsumeDecision() error {
-	r := rand.Float64()
-	third := 1.0 / 3.0
-	if r < third {
-		return consumererror.NewPermanent(errPermanent)
-	}
-	if r < 2*third {
-		return errNonPermanent
-	}
-	return nil
+	fmt.Printf("Number of permanent errors: %d\n", reqCounter.error.permanent)
+	fmt.Printf("Number of non-permanent errors: %d\n", reqCounter.error.nonpermanent)
+	checkIfTestPassed(params.T, params.NumberOfTestElements, reqCounter)
 }
 
 // Test is successful if all the elements were received successfully and no error was returned

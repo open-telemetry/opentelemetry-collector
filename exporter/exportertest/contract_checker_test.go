@@ -36,9 +36,9 @@ func NewTestRetrySettings() exporterhelper.RetrySettings {
 func TestConsumeContractOtlpLogs(t *testing.T) {
 
 	ln, err := net.Listen("tcp", "localhost:0")
-	mockReceiver := otlpLogsReceiverOnGRPCServer(ln)
+	mockReceiver := CreateMockReceiver(component.DataTypeLogs, ln)
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
-	t.Cleanup(func() { mockReceiver.srv.GracefulStop() })
+	t.Cleanup(func() { mockReceiver.srvStop() })
 
 	cfg := &otlpexporter.Config{
 		TimeoutSettings: exporterhelper.TimeoutSettings{},
@@ -63,11 +63,10 @@ func TestConsumeContractOtlpLogs(t *testing.T) {
 }
 
 func TestConsumeContractOtlpTraces(t *testing.T) {
-
 	ln, err := net.Listen("tcp", "localhost:0")
-	mockReceiver := otlpTracesReceiverOnGRPCServer(ln)
+	mockReceiver := CreateMockReceiver(component.DataTypeTraces, ln)
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
-	t.Cleanup(func() { mockReceiver.srv.GracefulStop() })
+	t.Cleanup(func() { mockReceiver.srvStop() })
 
 	cfg := &otlpexporter.Config{
 		TimeoutSettings: exporterhelper.TimeoutSettings{},
@@ -94,9 +93,9 @@ func TestConsumeContractOtlpTraces(t *testing.T) {
 func TestConsumeContractOtlpMetrics(t *testing.T) {
 
 	ln, err := net.Listen("tcp", "localhost:0")
-	mockReceiver := otlpMetricsReceiverOnGRPCServer(ln)
+	mockReceiver := CreateMockReceiver(component.DataTypeMetrics, ln)
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
-	t.Cleanup(func() { mockReceiver.srv.GracefulStop() })
+	t.Cleanup(func() { mockReceiver.srvStop() })
 
 	cfg := &otlpexporter.Config{
 		TimeoutSettings: exporterhelper.TimeoutSettings{},

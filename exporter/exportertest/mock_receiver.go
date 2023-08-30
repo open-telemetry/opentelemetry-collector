@@ -5,6 +5,9 @@ package exportertest // import "go.opentelemetry.io/collector/exporter/exportert
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
+	"math/rand"
 	"net"
 	"sync"
 
@@ -24,6 +27,60 @@ import (
 
 var errNonPermanent = status.Error(codes.DeadlineExceeded, "non Permanent error")
 var errPermanent = status.Error(codes.Internal, "Permanent error")
+
+type DecisionFunc func() error
+
+type MockReceiver interface {
+	clearCounters()
+	setExportErrorFunction(decisionFunction func() error)
+	srvStop()
+	getReqCounter() requestCounter
+}
+
+// // randomNonPermanentErrorConsumeDecision is a decision function that succeeds approximately
+// // half of the time and fails with a non-permanent error the rest of the time.
+func randomNonPermanentErrorConsumeDecision() error {
+	if rand.Float32() < 0.5 {
+		return errNonPermanent
+	}
+	return nil
+}
+
+func CreateMockReceiver(dataType component.DataType, ln net.Listener) MockReceiver {
+	switch dataType {
+	case component.DataTypeLogs:
+		return otlpLogsReceiverOnGRPCServer(ln)
+	case component.DataTypeTraces:
+		return otlpTracesReceiverOnGRPCServer(ln)
+	case component.DataTypeMetrics:
+		return otlpMetricsReceiverOnGRPCServer(ln)
+	}
+	return nil
+}
+
+// randomPermanentErrorConsumeDecision is a decision function that succeeds approximately
+// half of the time and fails with a permanent error the rest of the time.
+func randomPermanentErrorConsumeDecision() error {
+	if rand.Float32() < 0.5 {
+		return consumererror.NewPermanent(errPermanent)
+	}
+	return nil
+}
+
+// randomErrorsConsumeDecision is a decision function that succeeds approximately
+// a third of the time, fails with a permanent error the third of the time and fails with
+// a non-permanent error the rest of the time.
+func randomErrorsConsumeDecision() error {
+	r := rand.Float64()
+	third := 1.0 / 3.0
+	if r < third {
+		return consumererror.NewPermanent(errPermanent)
+	}
+	if r < 2*third {
+		return errNonPermanent
+	}
+	return nil
+}
 
 type mockReceiver struct {
 	srv                 *grpc.Server
@@ -70,6 +127,10 @@ type mockLogsReceiver struct {
 	mockReceiver
 	exportResponse func() plogotlp.ExportResponse
 	lastRequest    plog.Logs
+}
+
+func (r *mockReceiver) srvStop() {
+	r.srv.GracefulStop()
 }
 
 type mockTracesReceiver struct {
@@ -136,6 +197,21 @@ func (r *mockMetricsReceiver) Export(_ context.Context, req pmetricotlp.ExportRe
 	return r.exportResponse(), nil
 }
 
+func (r *mockMetricsReceiver) createExporter(ctx context.Context, factory exporter.Factory, cfg component.Config) (exporter.Metrics, error) {
+	exp, err := factory.CreateMetricsExporter(ctx, NewNopCreateSettings(), cfg)
+	return exp, err
+}
+
+func (r *mockTracesReceiver) createExporter(ctx context.Context, factory exporter.Factory, cfg component.Config) (exporter.Traces, error) {
+	exp, err := factory.CreateTracesExporter(ctx, NewNopCreateSettings(), cfg)
+	return exp, err
+}
+
+func (r *mockLogsReceiver) createExporter(ctx context.Context, factory exporter.Factory, cfg component.Config) (exporter.Logs, error) {
+	exp, err := factory.CreateLogsExporter(ctx, NewNopCreateSettings(), cfg)
+	return exp, err
+}
+
 func (r *mockReceiver) processError(err error, dataType string, idOfElement string) {
 	if consumererror.IsPermanent(err) {
 		fmt.Println("permanent error happened")
@@ -152,6 +228,10 @@ func (r *mockReceiver) clearCounters() {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.reqCounter = newRequestCounter()
+}
+
+func (r *mockReceiver) getReqCounter() requestCounter {
+	return r.reqCounter
 }
 
 func otlpMetricsReceiverOnGRPCServer(ln net.Listener) *mockMetricsReceiver {
