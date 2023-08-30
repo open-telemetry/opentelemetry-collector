@@ -15,9 +15,13 @@ import (
 type mockStorageExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
+	getClientError error
 }
 
 func (m mockStorageExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, _ string) (storage.Client, error) {
+	if m.getClientError != nil {
+		return nil, m.getClientError
+	}
 	return &mockStorageClient{st: map[string][]byte{}}, nil
 }
 

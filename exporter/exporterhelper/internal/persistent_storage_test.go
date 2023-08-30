@@ -36,13 +36,8 @@ func createTestClient(extension storage.Extension) storage.Client {
 }
 
 func createTestPersistentStorageWithLoggingAndCapacity(client storage.Client, logger *zap.Logger, capacity uint64) *persistentContiguousStorage {
-	return newPersistentContiguousStorage(context.Background(), "foo", PersistentQueueSettings{
-		Capacity:    capacity,
-		Logger:      logger,
-		Client:      client,
-		Unmarshaler: newFakeTracesRequestUnmarshalerFunc(),
-		Marshaler:   newFakeTracesRequestMarshalerFunc(),
-	})
+	return newPersistentContiguousStorage(context.Background(), "foo", client, logger, capacity,
+		newFakeTracesRequestMarshalerFunc(), newFakeTracesRequestUnmarshalerFunc())
 }
 
 func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage {
@@ -355,7 +350,7 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 
 	// No more items
 	ext := createStorageExtension(path)
-	wq := createTestQueue(ext, 1000)
+	wq := createTestQueue(t, 1000, 1, func(Request) {})
 	require.Equal(t, 0, wq.Size())
 	require.NoError(t, ext.Shutdown(context.Background()))
 }

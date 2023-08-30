@@ -89,9 +89,7 @@ func NewMetricsExporter(
 		return nil, errNilPushMetricsData
 	}
 
-	bs := newBaseSettings(false, options...)
-	bs.marshaler = metricsRequestMarshaler
-	bs.unmarshaler = newMetricsRequestUnmarshalerFunc(pusher)
+	bs := newBaseSettings(false, metricsRequestMarshaler, newMetricsRequestUnmarshalerFunc(pusher), options...)
 	be, err := newBaseExporter(set, bs, component.DataTypeMetrics)
 	if err != nil {
 		return nil, err
@@ -143,7 +141,7 @@ func NewMetricsRequestExporter(
 		return nil, errNilMetricsConverter
 	}
 
-	bs := newBaseSettings(true, options...)
+	bs := newBaseSettings(true, nil, nil, options...)
 
 	be, err := newBaseExporter(set, bs, component.DataTypeMetrics)
 	if err != nil {

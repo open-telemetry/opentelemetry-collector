@@ -89,9 +89,7 @@ func NewLogsExporter(
 		return nil, errNilPushLogsData
 	}
 
-	bs := newBaseSettings(false, options...)
-	bs.marshaler = logsRequestMarshaler
-	bs.unmarshaler = newLogsRequestUnmarshalerFunc(pusher)
+	bs := newBaseSettings(false, logsRequestMarshaler, newLogsRequestUnmarshalerFunc(pusher), options...)
 	be, err := newBaseExporter(set, bs, component.DataTypeLogs)
 	if err != nil {
 		return nil, err
@@ -143,7 +141,7 @@ func NewLogsRequestExporter(
 		return nil, errNilLogsConverter
 	}
 
-	bs := newBaseSettings(true, options...)
+	bs := newBaseSettings(true, nil, nil, options...)
 
 	be, err := newBaseExporter(set, bs, component.DataTypeLogs)
 	if err != nil {

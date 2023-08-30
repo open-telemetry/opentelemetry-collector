@@ -89,9 +89,7 @@ func NewTracesExporter(
 		return nil, errNilPushTraceData
 	}
 
-	bs := newBaseSettings(false, options...)
-	bs.marshaler = tracesRequestMarshaler
-	bs.unmarshaler = newTraceRequestUnmarshalerFunc(pusher)
+	bs := newBaseSettings(false, tracesRequestMarshaler, newTraceRequestUnmarshalerFunc(pusher), options...)
 	be, err := newBaseExporter(set, bs, component.DataTypeTraces)
 	if err != nil {
 		return nil, err
@@ -143,7 +141,7 @@ func NewTracesRequestExporter(
 		return nil, errNilTracesConverter
 	}
 
-	bs := newBaseSettings(true, options...)
+	bs := newBaseSettings(true, nil, nil, options...)
 
 	be, err := newBaseExporter(set, bs, component.DataTypeTraces)
 	if err != nil {
