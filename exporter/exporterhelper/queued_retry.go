@@ -170,19 +170,17 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host, se
 
 // shutdown is invoked during service shutdown.
 func (qrs *queuedRetrySender) shutdown() {
-	// Cleanup queue metrics reporting
-	if qrs.queue != nil {
-		_ = globalInstruments.queueSize.UpsertEntry(func() int64 {
-			return int64(0)
-		}, metricdata.NewLabelValue(qrs.fullName))
-	}
-
 	// First Stop the retry goroutines, so that unblocks the queue numWorkers.
 	close(qrs.retryStopCh)
 
-	// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
-	// try once every request.
 	if qrs.queue != nil {
+		// Cleanup queue metrics reporting
+		_ = globalInstruments.queueSize.UpsertEntry(func() int64 {
+			return int64(0)
+		}, metricdata.NewLabelValue(qrs.fullName))
+
+		// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
+		// try once every request.
 		qrs.queue.Stop()
 	}
 }
