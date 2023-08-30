@@ -4,29 +4,22 @@
 package components // import "go.opentelemetry.io/collector/service/internal/components"
 
 import (
-	"errors"
 	"net/http"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service/internal/servicehost"
-	"go.opentelemetry.io/collector/service/internal/status"
 )
 
 // hostWrapper adds behavior on top of the component.Host being passed when starting the built components.
 type hostWrapper struct {
-	servicehost.Host
-	component      *component.InstanceID
-	statusNotifier status.Notifier
+	component.Host
 	*zap.Logger
 }
 
-func NewHostWrapper(host servicehost.Host, instanceID *component.InstanceID, logger *zap.Logger) component.Host {
+func NewHostWrapper(host component.Host, logger *zap.Logger) component.Host {
 	return &hostWrapper{
 		host,
-		instanceID,
-		status.NewNotifier(host, instanceID),
 		logger,
 	}
 }
@@ -35,21 +28,6 @@ func (hw *hostWrapper) ReportFatalError(err error) {
 	// The logger from the built component already identifies the component.
 	hw.Logger.Error("Component fatal error", zap.Error(err))
 	hw.Host.ReportFatalError(err) // nolint:staticcheck
-}
-
-func (hw *hostWrapper) ReportComponentStatus(status component.Status, options ...component.StatusEventOption) {
-	// The following can return an error for one of two reasons:
-	//   - An invalid state transition
-	//   - Invalid arguments (basically providing a component.WithError option to a non-error status)
-	// The latter is a programming error and should be corrected. The former, is something that is
-	// likely to happen, but not something the programmer should be concerned about. An example would be
-	// reporting StatusRecoverableError multiple times, which, could happen while recovering, however,
-	// only the first invocation would result in a successful status transition.
-	err := hw.statusNotifier.Event(status, options...)
-
-	if err != nil && errors.Is(err, component.ErrStatusEventInvalidArgument) {
-		hw.Logger.Error("Component status error", zap.Error(err))
-	}
 }
 
 // RegisterZPages is used by zpages extension to register handles from service.

@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service/internal/servicehost"
 )
 
 func TestStatusFSM(t *testing.T) {
@@ -149,6 +148,13 @@ func TestStatusEventError(t *testing.T) {
 }
 
 func TestNewNotifier(t *testing.T) {
-	notifier := NewNotifier(servicehost.NewNopHost(), &component.InstanceID{})
+	fnCalled := false
+
+	statusFunc := func(*component.InstanceID, *component.StatusEvent) {
+		fnCalled = true
+	}
+
+	notifier := NewNotifier(&component.InstanceID{}, statusFunc)
 	require.NoError(t, notifier.Event(component.StatusOK))
+	require.True(t, fnCalled)
 }

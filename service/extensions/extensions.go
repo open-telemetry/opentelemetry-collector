@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/service/internal/components"
-	"go.opentelemetry.io/collector/service/internal/servicehost"
+	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
@@ -23,21 +23,17 @@ const zExtensionName = "zextensionname"
 
 // Extensions is a map of extensions created from extension configs.
 type Extensions struct {
-	telemetry component.TelemetrySettings
+	telemetry servicetelemetry.Settings
 	extMap    map[component.ID]extension.Extension
 }
 
 // Start starts all extensions.
-func (bes *Extensions) Start(ctx context.Context, host servicehost.Host) error {
+func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 	bes.telemetry.Logger.Info("Starting extensions...")
 	for extID, ext := range bes.extMap {
 		extLogger := components.ExtensionLogger(bes.telemetry.Logger, extID)
 		extLogger.Info("Extension is starting...")
-		instanceID := &component.InstanceID{
-			ID:   extID,
-			Kind: component.KindExtension,
-		}
-		if err := ext.Start(ctx, components.NewHostWrapper(host, instanceID, extLogger)); err != nil {
+		if err := ext.Start(ctx, components.NewHostWrapper(host, extLogger)); err != nil {
 			return err
 		}
 		extLogger.Info("Extension started.")
@@ -135,7 +131,7 @@ func (bes *Extensions) HandleZPages(w http.ResponseWriter, r *http.Request) {
 
 // Settings holds configuration for building Extensions.
 type Settings struct {
-	Telemetry component.TelemetrySettings
+	Telemetry servicetelemetry.Settings
 	BuildInfo component.BuildInfo
 
 	// Extensions builder for extensions.
@@ -149,9 +145,17 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 		extMap:    make(map[component.ID]extension.Extension),
 	}
 	for _, extID := range cfg {
+
+		instanceID := &component.InstanceID{
+			ID:   extID,
+			Kind: component.KindExtension,
+		}
+
+		telSet := set.Telemetry.ToComponentTelemetrySettings(instanceID)
+
 		extSet := extension.CreateSettings{
 			ID:                extID,
-			TelemetrySettings: set.Telemetry,
+			TelemetrySettings: telSet,
 			BuildInfo:         set.BuildInfo,
 		}
 		extSet.TelemetrySettings.Logger = components.ExtensionLogger(set.Telemetry.Logger, extID)

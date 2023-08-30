@@ -18,7 +18,6 @@ func TestNewNopHost(t *testing.T) {
 	require.NotNil(t, nh)
 	require.IsType(t, &nopHost{}, nh)
 
-	nh.ReportComponentStatus(component.StatusOK)
 	nh.ReportFatalError(errors.New("TestError"))
 
 	assert.Nil(t, nh.GetExporters()) // nolint: staticcheck

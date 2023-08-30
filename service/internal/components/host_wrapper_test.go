@@ -7,14 +7,11 @@ import (
 	"errors"
 	"testing"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service/internal/servicehost"
 )
 
 func Test_newHostWrapper(_ *testing.T) {
-	hw := NewHostWrapper(servicehost.NewNopHost(), nil, zap.NewNop())
+	hw := NewHostWrapper(componenttest.NewNopHost(), zap.NewNop())
 	hw.ReportFatalError(errors.New("test error"))
-	hw.ReportComponentStatus(component.StatusOK)
 }

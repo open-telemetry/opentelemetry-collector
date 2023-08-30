@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service/internal/servicehost"
 )
 
 // onTransitionFunc receives a component.StatusEvent on a successful state transition
@@ -100,12 +99,14 @@ type Notifier interface {
 	Event(status component.Status, options ...component.StatusEventOption) error
 }
 
-// NewNotifier returns a status.Notifier that reports component status through the given
-// servicehost. The underlying implementation is a finite state machine.
-func NewNotifier(host servicehost.Host, instanceID *component.InstanceID) Notifier {
+// NewNotifier returns a status.Notifier that reports component status for the given
+// component instance via an underlying finite state machine
+func NewNotifier(instanceID *component.InstanceID, fn func(*component.InstanceID, *component.StatusEvent)) Notifier {
 	return newStatusFSM(
 		func(ev *component.StatusEvent) {
-			host.ReportComponentStatus(instanceID, ev)
+			fn(instanceID, ev)
 		},
 	)
 }
+
+type ReportStatusFunc func(*component.InstanceID, *component.StatusEvent)

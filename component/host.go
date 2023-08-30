@@ -15,14 +15,6 @@ type Host interface {
 	// Deprecated: [0.65.0] Use ReportComponentStatus instead (with an event component.StatusFatalError)
 	ReportFatalError(err error)
 
-	// ReportComponentStatus can be used by a component to communicate its status to the Host.
-	// The Host implementations may broadcast this information to interested parties via
-	// StatusWatcher interface.
-	// May be called by the component any time after Component.Start is called or while
-	// Component.Start call is executing.
-	// May be called concurrently with itself.
-	ReportComponentStatus(status Status, options ...StatusEventOption)
-
 	// GetFactory of the specified kind. Returns the factory for a component type.
 	// This allows components to create other components. For example:
 	//   func (r MyReceiver) Start(host component.Host) error {

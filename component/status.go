@@ -135,3 +135,5 @@ type StatusWatcher interface {
 	// The function may be called concurrently with itself.
 	ComponentStatusChanged(source *InstanceID, event *StatusEvent)
 }
+
+type ReportStatusFunc func(Status, ...StatusEventOption)

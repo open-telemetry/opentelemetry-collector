@@ -23,14 +23,13 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
-	"go.opentelemetry.io/collector/service/internal/components"
-	"go.opentelemetry.io/collector/service/internal/servicehost"
+	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 // Settings holds configuration for building builtPipelines.
 type Settings struct {
-	Telemetry component.TelemetrySettings
+	Telemetry servicetelemetry.Settings
 	BuildInfo component.BuildInfo
 
 	ReceiverBuilder  *receiver.Builder
@@ -265,15 +264,22 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 
 	for i := len(nodes) - 1; i >= 0; i-- {
 		node := nodes[i]
+
+		// skipped for capabilitiesNodes and fanoutNodes as they are not assigned componentIDs.
+		var telemetrySettings component.TelemetrySettings
+		if instanceID, ok := g.instanceIDs[node.ID()]; ok {
+			telemetrySettings = set.Telemetry.ToComponentTelemetrySettings(instanceID)
+		}
+
 		switch n := node.(type) {
 		case *receiverNode:
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
+			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
 		case *processorNode:
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
+			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
 		case *exporterNode:
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder)
+			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ExporterBuilder)
 		case *connectorNode:
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
+			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
 		case *capabilitiesNode:
 			capability := consumer.Capabilities{MutatesData: false}
 			for _, proc := range g.pipelines[n.pipelineID].processors {
@@ -354,7 +360,7 @@ type pipelineNodes struct {
 	exporters map[int64]graph.Node
 }
 
-func (g *Graph) StartAll(ctx context.Context, host servicehost.Host) error {
+func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
 		return err
@@ -372,10 +378,8 @@ func (g *Graph) StartAll(ctx context.Context, host servicehost.Host) error {
 			continue
 		}
 
-		instanceID := g.instanceIDs[node.ID()]
-		hostWrapper := components.NewHostWrapper(host, instanceID, g.logger)
-
-		if compErr := comp.Start(ctx, hostWrapper); compErr != nil {
+		// TODO: automatically handle status here
+		if compErr := comp.Start(ctx, host); compErr != nil {
 			return compErr
 		}
 	}
@@ -399,6 +403,7 @@ func (g *Graph) ShutdownAll(ctx context.Context) error {
 			// Skip capabilities/fanout nodes
 			continue
 		}
+		// TODO: automatically handle status here
 		errs = multierr.Append(errs, comp.Shutdown(ctx))
 	}
 	return errs

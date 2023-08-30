@@ -34,32 +34,37 @@ func NewUnhealthyProcessorFactory() processor.Factory {
 	)
 }
 
-func createUnhealthyTracesProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Traces) (processor.Traces, error) {
-	return unhealthyProcessorInstance, nil
+func createUnhealthyTracesProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, _ consumer.Traces) (processor.Traces, error) {
+	return &unhealthyProcessor{
+		Consumer:  consumertest.NewNop(),
+		telemetry: set.TelemetrySettings,
+	}, nil
 }
 
-func createUnhealthyMetricsProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Metrics) (processor.Metrics, error) {
-	return unhealthyProcessorInstance, nil
+func createUnhealthyMetricsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, _ consumer.Metrics) (processor.Metrics, error) {
+	return &unhealthyProcessor{
+		Consumer:  consumertest.NewNop(),
+		telemetry: set.TelemetrySettings,
+	}, nil
 }
 
-func createUnhealthyLogsProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Logs) (processor.Logs, error) {
-	return unhealthyProcessorInstance, nil
+func createUnhealthyLogsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, _ consumer.Logs) (processor.Logs, error) {
+	return &unhealthyProcessor{
+		Consumer:  consumertest.NewNop(),
+		telemetry: set.TelemetrySettings,
+	}, nil
 }
 
-var unhealthyProcessorInstance = &unhealthyProcessor{
-	Consumer: consumertest.NewNop(),
-}
-
-// unhealthyProcessor stores consumed traces and metrics for testing purposes.
 type unhealthyProcessor struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumertest.Consumer
+	telemetry component.TelemetrySettings
 }
 
-func (unhealthyProcessor) Start(_ context.Context, host component.Host) error {
+func (p unhealthyProcessor) Start(_ context.Context, host component.Host) error {
 	go func() {
-		host.ReportComponentStatus(component.StatusRecoverableError)
+		p.telemetry.ReportComponentStatus(component.StatusRecoverableError)
 	}()
 	return nil
 }

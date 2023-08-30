@@ -12,10 +12,9 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/graph"
-	"go.opentelemetry.io/collector/service/internal/servicehost"
 )
 
-var _ servicehost.Host = (*serviceHost)(nil)
+var _ component.Host = (*serviceHost)(nil)
 
 type serviceHost struct {
 	asyncErrorChannel chan error
@@ -38,15 +37,6 @@ type serviceHost struct {
 func (host *serviceHost) ReportFatalError(err error) {
 	host.asyncErrorChannel <- err
 }
-
-func (host *serviceHost) ReportComponentStatus(source *component.InstanceID, event *component.StatusEvent) {
-	// TODO: What should we do if there is an error returned by a StatusWatcher?
-	host.serviceExtensions.NotifyComponentStatusChange(source, event) //nolint:errcheck
-	if event.Status() == component.StatusFatalError {
-		host.asyncErrorChannel <- event.Err()
-	}
-}
-
 func (host *serviceHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
 	switch kind {
 	case component.KindReceiver:
@@ -75,4 +65,16 @@ func (host *serviceHost) GetExtensions() map[component.ID]component.Component {
 // for additional information.
 func (host *serviceHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return host.pipelines.GetExporters()
+}
+
+func (host *serviceHost) reportComponentStatus(source *component.InstanceID, event *component.StatusEvent) {
+	// TODO: What should we do if there is an error returned by a StatusWatcher?
+	if host.serviceExtensions == nil {
+		// TODO: remove this temporary workaround
+		return
+	}
+	host.serviceExtensions.NotifyComponentStatusChange(source, event) //nolint:errcheck
+	if event.Status() == component.StatusFatalError {
+		host.asyncErrorChannel <- event.Err()
+	}
 }

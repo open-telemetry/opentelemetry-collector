@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-type TelemetrySettings struct {
+type TelemetrySettingsBase[T any] struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
 	Logger *zap.Logger
@@ -29,4 +29,8 @@ type TelemetrySettings struct {
 
 	// Resource contains the resource attributes for the collector's telemetry.
 	Resource pcommon.Resource
+
+	ReportComponentStatus T
 }
+
+type TelemetrySettings TelemetrySettingsBase[ReportStatusFunc]

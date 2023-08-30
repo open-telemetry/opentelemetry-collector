@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
-	"go.opentelemetry.io/collector/service/internal/servicehost"
+	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -70,7 +70,7 @@ type Settings struct {
 type Service struct {
 	buildInfo            component.BuildInfo
 	telemetry            *telemetry.Telemetry
-	telemetrySettings    component.TelemetrySettings
+	telemetrySettings    servicetelemetry.Settings
 	host                 *serviceHost
 	telemetryInitializer *telemetryInitializer
 	collectorConf        *confmap.Conf
@@ -105,14 +105,15 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	res := buildResource(set.BuildInfo, cfg.Telemetry)
 	pcommonRes := pdataFromSdk(res)
 
-	srv.telemetrySettings = component.TelemetrySettings{
+	srv.telemetrySettings = servicetelemetry.Settings{
 		Logger:         srv.telemetry.Logger(),
 		TracerProvider: srv.telemetry.TracerProvider(),
 		MeterProvider:  noop.NewMeterProvider(),
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 
 		// Construct telemetry attributes from build info and config's resource attributes.
-		Resource: pcommonRes,
+		Resource:              pcommonRes,
+		ReportComponentStatus: srv.host.reportComponentStatus,
 	}
 
 	if err = srv.telemetryInitializer.init(res, srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
@@ -235,7 +236,7 @@ func (srv *Service) Logger() *zap.Logger {
 	return srv.telemetrySettings.Logger
 }
 
-func getBallastSize(host servicehost.Host) uint64 {
+func getBallastSize(host component.Host) uint64 {
 	for _, ext := range host.GetExtensions() {
 		if bExt, ok := ext.(interface{ GetBallastSize() uint64 }); ok {
 			return bExt.GetBallastSize()

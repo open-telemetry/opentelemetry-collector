@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
+	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -272,7 +273,7 @@ func TestTelemetryInit(t *testing.T) {
 			}
 			otelRes := buildResource(buildInfo, *tc.cfg)
 			res := pdataFromSdk(otelRes)
-			settings := component.TelemetrySettings{
+			settings := servicetelemetry.Settings{
 				Logger:   zap.NewNop(),
 				Resource: res,
 			}
