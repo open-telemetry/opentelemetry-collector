@@ -34,7 +34,7 @@ type HTTPClientSettings struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// Proxy setting for the collector
-	Proxy string `mapstructure:"proxy"`
+	ProxyURL string `mapstructure:"proxy_url"`
 
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
