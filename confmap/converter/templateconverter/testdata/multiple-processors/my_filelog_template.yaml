@@ -1,0 +1,12 @@
+receivers:
+  filelog:
+    include: {{ .my_file }}
+
+processors:
+  batch/1:
+  batch/2:
+
+pipelines:
+  logs:
+    receivers: [filelog]
+    processors: [batch/1, batch/2]

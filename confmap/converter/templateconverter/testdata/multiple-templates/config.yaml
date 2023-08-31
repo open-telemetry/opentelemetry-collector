@@ -1,0 +1,19 @@
+receivers:
+  template/my_filelog_template:
+    my_foo_file: foo.log
+    my_bar_file: bar.log
+  template/my_otlp_template:
+    http_port: 4318
+    grpc_port: 4317
+processors:
+  batch:
+exporters:
+  otlp:
+    endpoint: localhost:4319
+
+service:
+  pipelines:
+    logs:
+      receivers: [template/my_filelog_template]
+      processors: [batch]
+      exporters: [otlp]

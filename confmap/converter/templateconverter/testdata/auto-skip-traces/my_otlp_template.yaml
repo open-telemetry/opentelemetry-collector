@@ -1,0 +1,11 @@
+receivers:
+  otlp:
+    endpoint: localhost:{{ .port }}
+
+pipelines:
+  logs:
+    receivers: [otlp]
+  metrics:
+    receivers: [otlp]
+  traces:
+    receivers: [otlp]

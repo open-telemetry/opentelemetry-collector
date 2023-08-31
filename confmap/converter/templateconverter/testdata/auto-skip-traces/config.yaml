@@ -1,0 +1,15 @@
+receivers:
+  template/my_otlp_template:
+    port: 4317
+exporters:
+  otlp:
+    endpoint: localhost:4319
+
+service:
+  pipelines:
+    metrics:
+      receivers: [template/my_otlp_template]
+      exporters: [otlp]
+    logs:
+      receivers: [template/my_otlp_template]
+      exporters: [otlp]

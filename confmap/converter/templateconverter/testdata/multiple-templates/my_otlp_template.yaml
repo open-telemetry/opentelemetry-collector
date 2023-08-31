@@ -1,0 +1,15 @@
+receivers:
+  otlp/http:
+    protocols:
+      http:
+        endpoint: localhost:{{ .http_port }}
+  otlp/grpc:
+    protocols:
+      grpc:
+        endpoint: localhost:{{ .grpc_port }}
+
+pipelines:
+  logs/http:
+    receivers: [otlp/http]
+  logs/grpc:
+    receivers: [otlp/grpc]

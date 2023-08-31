@@ -1,0 +1,145 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package templateprovider
+
+import (
+	"context"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+)
+
+const templateSchemePrefix = schemeName + ":"
+
+func TestValidateProviderScheme(t *testing.T) {
+	assert.NoError(t, confmaptest.ValidateProviderScheme(New()))
+}
+
+func TestEmptyName(t *testing.T) {
+	fp := New()
+	_, err := fp.Retrieve(context.Background(), "", nil)
+	require.Error(t, err)
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestUnsupportedScheme(t *testing.T) {
+	fp := New()
+	_, err := fp.Retrieve(context.Background(), "https://", nil)
+	assert.Error(t, err)
+	assert.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestNonExistent(t *testing.T) {
+	fp := New()
+	_, err := fp.Retrieve(context.Background(), templateSchemePrefix+filepath.Join("testdata", "non-existent.yaml"), nil)
+	assert.Error(t, err)
+	_, err = fp.Retrieve(context.Background(), templateSchemePrefix+absolutePath(t, filepath.Join("testdata", "non-existent.yaml")), nil)
+	assert.Error(t, err)
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestInvalidYAML(t *testing.T) {
+	fp := New()
+	_, err := fp.Retrieve(context.Background(), templateSchemePrefix+filepath.Join("testdata", "invalid-yaml.yaml"), nil)
+	assert.Error(t, err)
+	_, err = fp.Retrieve(context.Background(), templateSchemePrefix+absolutePath(t, filepath.Join("testdata", "invalid-yaml.yaml")), nil)
+	assert.Error(t, err)
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestNonMapContent(t *testing.T) {
+	fp := New()
+	_, err := fp.Retrieve(context.Background(), templateSchemePrefix+filepath.Join("testdata", "nonmap.yaml"), nil)
+	assert.ErrorContains(t, err, "cannot be used as a Conf")
+	_, err = fp.Retrieve(context.Background(), templateSchemePrefix+absolutePath(t, filepath.Join("testdata", "nonmap.yaml")), nil)
+	assert.ErrorContains(t, err, "cannot be used as a Conf")
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestMissingType(t *testing.T) {
+	fp := New()
+	_, err := fp.Retrieve(context.Background(), templateSchemePrefix+filepath.Join("testdata", "missing-type.yaml"), nil)
+	assert.ErrorContains(t, err, "must have a 'type'")
+	_, err = fp.Retrieve(context.Background(), templateSchemePrefix+absolutePath(t, filepath.Join("testdata", "missing-type.yaml")), nil)
+	assert.ErrorContains(t, err, "must have a 'type'")
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestNonStringType(t *testing.T) {
+	fp := New()
+	_, err := fp.Retrieve(context.Background(), templateSchemePrefix+filepath.Join("testdata", "nonstring-type.yaml"), nil)
+	assert.ErrorContains(t, err, "type' must be a string")
+	_, err = fp.Retrieve(context.Background(), templateSchemePrefix+absolutePath(t, filepath.Join("testdata", "nonstring-type.yaml")), nil)
+	assert.ErrorContains(t, err, "type' must be a string")
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestMissingTemplate(t *testing.T) {
+	fp := New()
+	_, err := fp.Retrieve(context.Background(), templateSchemePrefix+filepath.Join("testdata", "missing-template.yaml"), nil)
+	assert.ErrorContains(t, err, "must have a 'template'")
+	_, err = fp.Retrieve(context.Background(), templateSchemePrefix+absolutePath(t, filepath.Join("testdata", "missing-template.yaml")), nil)
+	assert.ErrorContains(t, err, "must have a 'template'")
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestNonStringTemplate(t *testing.T) {
+	fp := New()
+	_, err := fp.Retrieve(context.Background(), templateSchemePrefix+filepath.Join("testdata", "nonstring-template.yaml"), nil)
+	assert.ErrorContains(t, err, "template' must be a string")
+	_, err = fp.Retrieve(context.Background(), templateSchemePrefix+absolutePath(t, filepath.Join("testdata", "nonstring-template.yaml")), nil)
+	assert.ErrorContains(t, err, "template' must be a string")
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestInvalidTemplate(t *testing.T) {
+	fp := New()
+	_, err := fp.Retrieve(context.Background(), templateSchemePrefix+filepath.Join("testdata", "invalid-template.yaml"), nil)
+	assert.ErrorContains(t, err, "parse as text/template")
+	_, err = fp.Retrieve(context.Background(), templateSchemePrefix+absolutePath(t, filepath.Join("testdata", "invalid-template.yaml")), nil)
+	assert.ErrorContains(t, err, "parse as text/template")
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestRelativePath(t *testing.T) {
+	fp := New()
+	ret, err := fp.Retrieve(context.Background(), templateSchemePrefix+filepath.Join("testdata", "default-config.yaml"), nil)
+	require.NoError(t, err)
+	retMap, err := ret.AsConf()
+	assert.NoError(t, err)
+	expectedMap := confmap.NewFromStringMap(map[string]any{
+		allTemplatesKey: map[string]any{
+			"my_filelog_template": "filelog:\n  include: {{ .my_file }}\n",
+		},
+	})
+	assert.Equal(t, expectedMap, retMap)
+	assert.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestAbsolutePath(t *testing.T) {
+	fp := New()
+	ret, err := fp.Retrieve(context.Background(), templateSchemePrefix+absolutePath(t, filepath.Join("testdata", "default-config.yaml")), nil)
+	require.NoError(t, err)
+	retMap, err := ret.AsConf()
+	assert.NoError(t, err)
+	expectedMap := confmap.NewFromStringMap(map[string]any{
+		allTemplatesKey: map[string]any{
+			"my_filelog_template": "filelog:\n  include: {{ .my_file }}\n",
+		},
+	})
+	assert.Equal(t, expectedMap, retMap)
+	assert.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func absolutePath(t *testing.T, relativePath string) string {
+	dir, err := os.Getwd()
+	require.NoError(t, err)
+	return filepath.Join(dir, relativePath)
+}
