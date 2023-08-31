@@ -1,0 +1,29 @@
+receivers:
+  template/my_filelog_template:
+    my_file: foo.log
+processors:
+  batch:
+exporters:
+  otlp:
+    endpoint: localhost:4317
+
+service:
+  pipelines:
+    logs:
+      receivers: [template/my_filelog_template]
+      processors: [batch]
+      exporters: [otlp]
+
+templates:
+  receivers:
+    my_filelog_template: |
+      receivers:
+        filelog:
+          include: {{ .my_file }}
+      processors:
+        batch/1:
+        batch/2:
+      pipelines:
+        logs:
+          receivers: [filelog]
+          processors: [batch/1, batch/2]

@@ -1,0 +1,29 @@
+receivers:
+  filelog/foo/my_filelog_template:
+    include: foo.log
+  filelog/bar/my_filelog_template:
+    include: bar.log
+processors:
+  batch:
+  batch/1/my_filelog_template:
+  batch/2/my_filelog_template:
+exporters:
+  otlp:
+    endpoint: localhost:4319
+connectors:
+  forward/my_filelog_template:
+
+service:
+  pipelines:
+    logs/a/my_filelog_template:
+      receivers: [filelog/foo/my_filelog_template]
+      processors: [batch/1/my_filelog_template]
+      exporters: [forward/my_filelog_template]
+    logs/b/my_filelog_template:
+      receivers: [filelog/bar/my_filelog_template]
+      processors: [batch/2/my_filelog_template]
+      exporters: [forward/my_filelog_template]
+    logs:
+      receivers: [forward/my_filelog_template]
+      processors: [batch]
+      exporters: [otlp]

@@ -9,12 +9,20 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
+	"go.opentelemetry.io/collector/confmap/converter/templateconverter"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
 	"go.opentelemetry.io/collector/confmap/provider/httpsprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
+	"go.opentelemetry.io/collector/featuregate"
 )
+
+var templateFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"confmap.templates",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.85.0"),
+	featuregate.WithRegisterDescription("controls whether templates may be used in configuration"))
 
 // ConfigProvider provides the service configuration.
 //
@@ -132,11 +140,18 @@ func (cm *configProvider) GetConfmap(ctx context.Context) (*confmap.Conf, error)
 }
 
 func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
+	providers := makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New(), httpprovider.New(), httpsprovider.New())
+	converters := []confmap.Converter{expandconverter.New()}
+	if templateFeatureGate.IsEnabled() {
+		// Template converter should be applied before env vars are expanded so that templates may contain env vars.
+		converters = append([]confmap.Converter{templateconverter.New()}, converters...)
+	}
+
 	return ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:       uris,
-			Providers:  makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New(), httpprovider.New(), httpsprovider.New()),
-			Converters: []confmap.Converter{expandconverter.New()},
+			Providers:  providers,
+			Converters: converters,
 		},
 	}
 }

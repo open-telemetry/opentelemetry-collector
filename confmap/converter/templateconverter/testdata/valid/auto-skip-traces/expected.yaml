@@ -1,0 +1,23 @@
+receivers:
+  otlp/my_otlp_template:
+    endpoint: localhost:4317
+exporters:
+  otlp:
+    endpoint: localhost:4319
+connectors:
+  forward/my_otlp_template:
+
+service:
+  pipelines:
+    metrics/my_otlp_template:
+      receivers: [otlp/my_otlp_template]
+      exporters: [forward/my_otlp_template]
+    logs/my_otlp_template:
+      receivers: [otlp/my_otlp_template]
+      exporters: [forward/my_otlp_template]
+    metrics:
+      receivers: [forward/my_otlp_template]
+      exporters: [otlp]
+    logs:
+      receivers: [forward/my_otlp_template]
+      exporters: [otlp]

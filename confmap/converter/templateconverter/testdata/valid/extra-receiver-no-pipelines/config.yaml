@@ -1,0 +1,26 @@
+# Test that template expansion doesn't touch non-templated receivers
+# used in the same pipeline.
+receivers:
+  template/my_filelog_template:
+    my_file: foo.log
+  extra:
+    foo: bar
+processors:
+  batch:
+exporters:
+  otlp:
+    endpoint: localhost:4317
+
+service:
+  pipelines:
+    logs:
+      receivers: [extra, template/my_filelog_template]
+      processors: [batch]
+      exporters: [otlp]
+
+templates:
+  receivers:
+    my_filelog_template: |
+      receivers:
+        filelog:
+          include: {{ .my_file }}

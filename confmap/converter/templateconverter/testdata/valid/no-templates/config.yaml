@@ -1,0 +1,15 @@
+receivers:
+  filelog:
+    include: foo.log
+exporters:
+  otlp:
+    endpoint: localhost:4319
+
+service:
+  pipelines:
+    metrics:
+      receivers: [template/my_otlp_template]
+      exporters: [otlp]
+    traces:
+      receivers: [template/my_otlp_template]
+      exporters: [otlp]

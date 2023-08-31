@@ -1,0 +1,53 @@
+receivers:
+  template/my_filelog_template:
+    my_foo_file: foo.log
+    my_bar_file: bar.log
+  template/my_otlp_template:
+    http_port: 4318
+    grpc_port: 4317
+processors:
+  batch:
+exporters:
+  otlp:
+    endpoint: localhost:4319
+
+service:
+  pipelines:
+    logs:
+      receivers: [template/my_filelog_template]
+      processors: [batch]
+      exporters: [otlp]
+
+templates:
+  receivers:
+    my_filelog_template: |
+      receivers:
+        filelog/foo:
+          include: {{ .my_foo_file }}
+        filelog/bar:
+          include: {{ .my_bar_file }}
+      processors:
+        batch/1:
+        batch/2:
+      pipelines:
+        logs/a:
+          receivers: [filelog/foo]
+          processors: [batch/1]
+        logs/b:
+          receivers: [filelog/bar]
+          processors: [batch/2]
+    my_otlp_template: |
+      receivers:
+        otlp/http:
+          protocols:
+            http:
+              endpoint: localhost:{{ .http_port }}
+        otlp/grpc:
+          protocols:
+            grpc:
+              endpoint: localhost:{{ .grpc_port }}
+      pipelines:
+        logs/http:
+          receivers: [otlp/http]
+        logs/grpc:
+          receivers: [otlp/grpc]

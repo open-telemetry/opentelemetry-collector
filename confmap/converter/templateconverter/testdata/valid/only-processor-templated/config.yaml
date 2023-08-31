@@ -1,0 +1,27 @@
+# No processors defined in top level section.
+# Test that we create the processors section when expanding the template.
+receivers:
+  template/my_filelog_template:
+    my_file: foo.log
+exporters:
+  otlp:
+    endpoint: localhost:4317
+
+service:
+  pipelines:
+    logs:
+      receivers: [template/my_filelog_template]
+      exporters: [otlp]
+
+templates:
+  receivers:
+    my_filelog_template: |
+      receivers:
+        filelog:
+          include: {{ .my_file }}
+      processors:
+        batch:
+      pipelines:
+        logs:
+          receivers: [filelog]
+          processors: [batch]
