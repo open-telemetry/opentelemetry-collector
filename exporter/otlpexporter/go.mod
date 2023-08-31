@@ -51,6 +51,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/collector/processor v0.85.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.85.0 // indirect
+	go.opentelemetry.io/collector/service v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.44.0 // indirect
 	go.opentelemetry.io/otel v1.18.0 // indirect
 	go.opentelemetry.io/otel/metric v1.18.0 // indirect
@@ -100,6 +101,8 @@ replace go.opentelemetry.io/collector/processor => ../../processor
 replace go.opentelemetry.io/collector/receiver => ../../receiver
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
+
+replace go.opentelemetry.io/collector/service => ../../service
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
 

@@ -41,5 +41,6 @@ replaces:
   - go.opentelemetry.io/collector/receiver => ${WORKSPACE_DIR}/receiver
   - go.opentelemetry.io/collector/receiver/otlpreceiver => ${WORKSPACE_DIR}/receiver/otlpreceiver
   - go.opentelemetry.io/collector/semconv => ${WORKSPACE_DIR}/semconv
+  - go.opentelemetry.io/collector/service => ${WORKSPACE_DIR}/service
   - go.opentelemetry.io/collector/pdata => ${WORKSPACE_DIR}/pdata
   - go.opentelemetry.io/collector/processor => ${WORKSPACE_DIR}/processor
