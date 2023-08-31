@@ -50,7 +50,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/collector/processor v0.84.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.84.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.40.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.40.1-0.20230831181707-02616a25c68e // indirect
 	go.opentelemetry.io/otel/metric v1.17.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.40.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
