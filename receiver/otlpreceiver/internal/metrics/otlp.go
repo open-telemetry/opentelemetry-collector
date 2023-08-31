@@ -55,5 +55,5 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 		return pmetricotlp.NewExportResponse(), s.Err()
 	}
 
-	return pmetricotlp.NewExportResponse(), err
+	return pmetricotlp.NewExportResponse(), nil
 }
