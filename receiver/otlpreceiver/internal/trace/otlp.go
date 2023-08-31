@@ -56,5 +56,6 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 		}
 		return ptraceotlp.NewExportResponse(), s.Err()
 	}
-	return ptraceotlp.NewExportResponse(), err
+
+	return ptraceotlp.NewExportResponse(), nil
 }
