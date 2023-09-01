@@ -25,8 +25,8 @@ func (m mockStorageExtension) GetClient(_ context.Context, _ component.Kind, _ c
 	return &mockStorageClient{st: map[string][]byte{}}, nil
 }
 
-func NewMockStorageExtension() storage.Extension {
-	return &mockStorageExtension{}
+func NewMockStorageExtension(getClientError error) storage.Extension {
+	return &mockStorageExtension{getClientError: getClientError}
 }
 
 type mockStorageClient struct {

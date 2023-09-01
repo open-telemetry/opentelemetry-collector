@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -470,7 +469,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	require.NoError(t, err)
 
 	var extensions = map[component.ID]component.Component{
-		storageID: &mockStorageExtension{},
+		storageID: internal.NewMockStorageExtension(nil),
 	}
 	host := &mockHost{ext: extensions}
 
@@ -497,7 +496,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	require.NoError(t, err)
 
 	var extensions = map[component.ID]component.Component{
-		storageID: &mockStorageExtension{GetClientError: storageError},
+		storageID: internal.NewMockStorageExtension(storageError),
 	}
 	host := &mockHost{ext: extensions}
 
@@ -725,25 +724,6 @@ type mockHost struct {
 
 func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nh.ext
-}
-
-type mockStorageExtension struct {
-	GetClientError error
-}
-
-func (mse *mockStorageExtension) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (mse *mockStorageExtension) Shutdown(_ context.Context) error {
-	return nil
-}
-
-func (mse *mockStorageExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, _ string) (storage.Client, error) {
-	if mse.GetClientError != nil {
-		return nil, mse.GetClientError
-	}
-	return storage.NewNopClient(), nil
 }
 
 type producerConsumerQueueWithCounter struct {

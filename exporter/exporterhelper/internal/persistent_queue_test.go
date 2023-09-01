@@ -36,7 +36,7 @@ func createTestQueue(t *testing.T, capacity, numConsumers int, callback func(ite
 	pq := NewPersistentQueue(capacity, numConsumers, component.ID{}, newFakeTracesRequestMarshalerFunc(),
 		newFakeTracesRequestUnmarshalerFunc())
 	host := &mockHost{ext: map[component.ID]component.Component{
-		{}: createStorageExtension(t.TempDir()),
+		{}: NewMockStorageExtension(nil),
 	}}
 	err := pq.Start(context.Background(), host, newNopQueueSettings(callback))
 	require.NoError(t, err)
@@ -45,13 +45,11 @@ func createTestQueue(t *testing.T, capacity, numConsumers int, callback func(ite
 }
 
 func TestPersistentQueue_Capacity(t *testing.T) {
-	path := t.TempDir()
-
 	for i := 0; i < 100; i++ {
 		pq := NewPersistentQueue(5, 1, component.ID{}, newFakeTracesRequestMarshalerFunc(),
 			newFakeTracesRequestUnmarshalerFunc())
 		host := &mockHost{ext: map[component.ID]component.Component{
-			{}: createStorageExtension(path),
+			{}: NewMockStorageExtension(nil),
 		}}
 		err := pq.Start(context.Background(), host, newNopQueueSettings(func(req Request) {}))
 		require.NoError(t, err)
@@ -252,8 +250,7 @@ func TestToStorageClient(t *testing.T) {
 
 			var extensions = map[component.ID]component.Component{}
 			for i := 0; i < tC.numStorages; i++ {
-				extensions[component.NewIDWithName("file_storage",
-					strconv.Itoa(i))] = &mockStorageExtension{getClientError: tC.getClientError}
+				extensions[component.NewIDWithName("file_storage", strconv.Itoa(i))] = NewMockStorageExtension(tC.getClientError)
 			}
 			host := &mockHost{ext: extensions}
 			ownerID := component.NewID("foo_exporter")
