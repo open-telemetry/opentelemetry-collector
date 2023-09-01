@@ -40,12 +40,13 @@ func NewDefaultScraperControllerSettings(component.Type) ScraperControllerSettin
 	}
 }
 
-func (set *ScraperControllerSettings) Validate() (errs error) {
+func (set *ScraperControllerSettings) Validate() error {
+	var errs []error
 	if set.CollectionInterval <= 0 {
-		errs = errors.Join(errs, fmt.Errorf(`"collection_interval": %w`, errNonPositiveInterval))
+		errs = append(errs, fmt.Errorf(`"collection_interval": %w`, errNonPositiveInterval))
 	}
 	if set.Timeout < 0 {
-		errs = errors.Join(errs, fmt.Errorf(`"timeout": %w`, errNonPositiveInterval))
+		errs = append(errs, fmt.Errorf(`"timeout": %w`, errNonPositiveInterval))
 	}
-	return errs
+	return errors.Join(errs...)
 }

@@ -247,15 +247,15 @@ func getExpectedStartErr(test metricsTestCase) error {
 }
 
 func getExpectedShutdownErr(test metricsTestCase) error {
-	var errs error
+	var errs []error
 
 	if test.closeErr != nil {
 		for i := 0; i < test.scrapers; i++ {
-			errs = errors.Join(errs, test.closeErr)
+			errs = append(errs, test.closeErr)
 		}
 	}
 
-	return errs
+	return errors.Join(errs...)
 }
 
 func assertChannelsCalled(t *testing.T, chs []chan bool, message string) {

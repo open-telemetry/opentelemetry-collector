@@ -143,12 +143,12 @@ func (sc *controller) Shutdown(ctx context.Context) error {
 		<-sc.terminated
 	}
 
-	var errs error
+	var errs []error
 	for _, scraper := range sc.scrapers {
-		errs = errors.Join(errs, scraper.Shutdown(ctx))
+		errs = append(errs, scraper.Shutdown(ctx))
 	}
 
-	return errs
+	return errors.Join(errs...)
 }
 
 // startScraping initiates a ticker that calls Scrape based on the configured
