@@ -8,11 +8,16 @@ This module defines necessary interfaces to implement server and client type aut
 The currently known authenticators are:
 
 - Server Authenticators
-  - [oidc](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/oidcauthextension)
+  - [Basic Auth Extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/basicauthextension)
+  - [Bearer Token Extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/bearertokenauthextension)
+  - [OIDC Extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/oidcauthextension)
 
 - Client Authenticators
-  - [oauth2](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/oauth2clientauthextension)
-  - [BearerToken](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/bearertokenauthextension)
+  - [ASAP Client Authentication Extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/asapauthextension)
+  - [Basic Auth Extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/basicauthextension)
+  - [Bearer Token Extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/bearertokenauthextension)
+  - [OAuth2 Client Extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/oauth2clientauthextension)
+  - [Sigv4 Extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/sigv4authextension)
 
 Examples:
 ```yaml
