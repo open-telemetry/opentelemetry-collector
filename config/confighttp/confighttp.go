@@ -133,9 +133,8 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 		proxyURL, err := url.Parse(hcs.Proxy)
 		if err != nil {
 			return nil, err
-		} else {
-			transport.Proxy = http.ProxyURL(proxyURL)
 		}
+			transport.Proxy = http.ProxyURL(proxyURL)
 	}
 
 	clientTransport := (http.RoundTripper)(transport)
