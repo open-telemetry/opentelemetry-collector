@@ -21,13 +21,13 @@ jobs:
     steps:
 
       - name: Checkout-Main
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.base_ref }}
           path: ${{ github.base_ref }}
 
       - name: Checkout-HEAD
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: ${{ github.head_ref }}
 

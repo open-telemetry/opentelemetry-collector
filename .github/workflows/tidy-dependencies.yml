@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ contains(github.event.pull_request.labels.*.name, 'dependencies') }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: "renovate-bot/open-telemetry-_-opentelemetry-collector"
           ref: ${{ github.head_ref }}
