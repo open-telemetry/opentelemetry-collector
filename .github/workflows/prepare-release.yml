@@ -23,7 +23,7 @@ jobs:
   prepare-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       # Make sure that there are no open issues with release:blocker label in Core. The release has to be delayed until they are resolved.
