@@ -79,19 +79,3 @@ retract (
 replace go.opentelemetry.io/collector/connector => ../../connector
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
-
-replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
-
-replace go.opentelemetry.io/collector/config/configgrpc => ../../config/configgrpc
-
-replace go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
-
-replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
-
-replace go.opentelemetry.io/collector/config/configauth => ../../config/configauth
-
-replace go.opentelemetry.io/collector/extension/auth => ../auth
-
-replace go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/otlpexporter
-
-replace go.opentelemetry.io/collector/config/internal => ../../config/internal

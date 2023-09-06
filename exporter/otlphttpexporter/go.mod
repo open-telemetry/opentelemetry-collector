@@ -125,5 +125,3 @@ retract (
 
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
 replace cloud.google.com/go => cloud.google.com/go v0.110.9
-
-replace go.opentelemetry.io/collector/exporter/otlpexporter => ../otlpexporter
