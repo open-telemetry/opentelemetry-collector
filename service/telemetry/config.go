@@ -55,7 +55,7 @@ type LogsConfig struct {
 	// (default = false)
 	DisableStacktrace bool `mapstructure:"disable_stacktrace"`
 
-	// Sampling sets a sampling policy for the extra sampled logger.
+	// Sampling sets a sampling policy for the more efficient sampled logger.
 	// Default:
 	//     initial: 1
 	//     thereafter: 100
@@ -92,7 +92,7 @@ type LogsConfig struct {
 	InitialFields map[string]any `mapstructure:"initial_fields"`
 }
 
-// LogsSamplingConfig sets a sampling strategy for the extra sampled logger. Sampling caps the
+// LogsSamplingConfig sets a sampling strategy for the more efficient sampled logger. Sampling caps the
 // global CPU and I/O load that logging puts on your process while attempting
 // to preserve a representative subset of your logs.
 type LogsSamplingConfig struct {

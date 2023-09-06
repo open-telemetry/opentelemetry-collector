@@ -77,7 +77,7 @@ type queuedRetrySender struct {
 }
 
 func newQueuedRetrySender(id component.ID, signal component.DataType, queue internal.ProducerConsumerQueue,
-	rCfg RetrySettings, nextSender requestSender, sampledLogger *zap.Logger) *queuedRetrySender {
+	rCfg RetrySettings, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
 
@@ -88,7 +88,7 @@ func newQueuedRetrySender(id component.ID, signal component.DataType, queue inte
 		queue:          queue,
 		retryStopCh:    retryStopCh,
 		traceAttribute: traceAttr,
-		logger:         sampledLogger,
+		logger:         logger,
 		// TODO: this can be further exposed as a config param rather than relying on a type of queue
 		requeuingEnabled: queue != nil && queue.IsPersistent(),
 	}
@@ -98,7 +98,7 @@ func newQueuedRetrySender(id component.ID, signal component.DataType, queue inte
 		cfg:            rCfg,
 		nextSender:     nextSender,
 		stopCh:         retryStopCh,
-		logger:         sampledLogger,
+		logger:         logger,
 		// Following three functions actually depend on queuedRetrySender
 		onTemporaryFailure: qrs.onTemporaryFailure,
 	}
