@@ -89,9 +89,7 @@ func NewTracesExporter(
 		return nil, errNilPushTraceData
 	}
 
-	bs := newBaseSettings(false, options...)
-	bs.marshaler = tracesRequestMarshaler
-	bs.unmarshaler = newTraceRequestUnmarshalerFunc(pusher)
+	bs := newBaseSettings(false, tracesRequestMarshaler, newTraceRequestUnmarshalerFunc(pusher), options...)
 	be, err := newBaseExporter(set, bs, component.DataTypeTraces)
 	if err != nil {
 		return nil, err
@@ -118,12 +116,17 @@ func NewTracesExporter(
 	}, err
 }
 
+// TracesConverter provides an interface for converting ptrace.Traces into a request.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type TracesConverter interface {
 	// RequestFromTraces converts ptrace.Traces into a Request.
 	RequestFromTraces(context.Context, ptrace.Traces) (Request, error)
 }
 
 // NewTracesRequestExporter creates a new traces exporter based on a custom TracesConverter and RequestSender.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewTracesRequestExporter(
 	_ context.Context,
 	set exporter.CreateSettings,
@@ -138,14 +141,18 @@ func NewTracesRequestExporter(
 		return nil, errNilTracesConverter
 	}
 
-	bs := newBaseSettings(true, options...)
+	bs := newBaseSettings(true, nil, nil, options...)
 
 	be, err := newBaseExporter(set, bs, component.DataTypeTraces)
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO: Add new observability tracing/metrics to the new exporterhelper.
+	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
+		return &tracesExporterWithObservability{
+			obsrep:     be.obsrep,
+			nextSender: nextSender,
+		}
+	})
 
 	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		req, cErr := converter.RequestFromTraces(ctx, td)
@@ -155,10 +162,15 @@ func NewTracesRequestExporter(
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}
-		return be.sender.send(&request{
+		r := &request{
 			baseRequest: baseRequest{ctx: ctx},
 			Request:     req,
-		})
+		}
+		sErr := be.sender.send(r)
+		if errors.Is(sErr, errSendingQueueIsFull) {
+			be.obsrep.recordTracesEnqueueFailure(r.Context(), int64(r.Count()))
+		}
+		return sErr
 	}, bs.consumerOptions...)
 
 	return &traceExporter{

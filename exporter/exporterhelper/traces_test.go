@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,7 +21,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -146,12 +149,48 @@ func TestTracesRequestExporter_Default_ExportError(t *testing.T) {
 	require.Equal(t, want, te.ConsumeTraces(context.Background(), td))
 }
 
+func TestTracesExporter_WithPersistentQueue(t *testing.T) {
+	qCfg := NewDefaultQueueSettings()
+	storageID := component.NewIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID
+	rCfg := NewDefaultRetrySettings()
+	ts := consumertest.TracesSink{}
+	set := exportertest.NewNopCreateSettings()
+	set.ID = component.NewIDWithName("test_traces", "with_persistent_queue")
+	te, err := NewTracesExporter(context.Background(), set, &fakeTracesExporterConfig, ts.ConsumeTraces, WithRetry(rCfg), WithQueue(qCfg))
+	require.NoError(t, err)
+
+	host := &mockHost{ext: map[component.ID]component.Component{
+		storageID: internal.NewMockStorageExtension(),
+	}}
+	require.NoError(t, te.Start(context.Background(), host))
+	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
+
+	traces := testdata.GenerateTraces(2)
+	require.NoError(t, te.ConsumeTraces(context.Background(), traces))
+	require.Eventually(t, func() bool {
+		return len(ts.AllTraces()) == 1 && ts.SpanCount() == 2
+	}, 500*time.Millisecond, 10*time.Millisecond)
+}
+
 func TestTracesExporter_WithRecordMetrics(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry(fakeTracesExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	te, err := NewTracesExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeTracesExporterConfig, newTraceDataPusher(nil))
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	checkRecordedMetricsForTracesExporter(t, tt, te, nil)
+}
+
+func TestTracesRequestExporter_WithRecordMetrics(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry(fakeTracesExporterName)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	te, err := NewTracesRequestExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeRequestConverter{})
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -165,6 +204,19 @@ func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	te, err := NewTracesExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeTracesExporterConfig, newTraceDataPusher(want))
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	checkRecordedMetricsForTracesExporter(t, tt, te, want)
+}
+
+func TestTracesRequestExporter_WithRecordMetrics_RequestSenderError(t *testing.T) {
+	want := errors.New("export_error")
+	tt, err := obsreporttest.SetupTelemetry(fakeTracesExporterName)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	te, err := NewTracesRequestExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeRequestConverter{requestError: want})
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -210,6 +262,20 @@ func TestTracesExporter_WithSpan(t *testing.T) {
 	checkWrapSpanForTracesExporter(t, sr, set.TracerProvider.Tracer("test"), te, nil, 1)
 }
 
+func TestTracesRequestExporter_WithSpan(t *testing.T) {
+	set := exportertest.NewNopCreateSettings()
+	sr := new(tracetest.SpanRecorder)
+	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(set.TracerProvider)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+
+	te, err := NewTracesRequestExporter(context.Background(), set, &fakeRequestConverter{})
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	checkWrapSpanForTracesExporter(t, sr, set.TracerProvider.Tracer("test"), te, nil, 1)
+}
+
 func TestTracesExporter_WithSpan_ReturnError(t *testing.T) {
 	set := exportertest.NewNopCreateSettings()
 	sr := new(tracetest.SpanRecorder)
@@ -219,6 +285,21 @@ func TestTracesExporter_WithSpan_ReturnError(t *testing.T) {
 
 	want := errors.New("my_error")
 	te, err := NewTracesExporter(context.Background(), set, &fakeTracesExporterConfig, newTraceDataPusher(want))
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	checkWrapSpanForTracesExporter(t, sr, set.TracerProvider.Tracer("test"), te, want, 1)
+}
+
+func TestTracesRequestExporter_WithSpan_ExportError(t *testing.T) {
+	set := exportertest.NewNopCreateSettings()
+	sr := new(tracetest.SpanRecorder)
+	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(set.TracerProvider)
+	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+
+	want := errors.New("export_error")
+	te, err := NewTracesRequestExporter(context.Background(), set, &fakeRequestConverter{requestError: want})
 	require.NoError(t, err)
 	require.NotNil(t, te)
 

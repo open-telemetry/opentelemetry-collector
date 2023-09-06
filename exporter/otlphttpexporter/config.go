@@ -13,10 +13,9 @@ import (
 
 // Config defines configuration for OTLP/HTTP exporter.
 type Config struct {
-	confighttp.HTTPClientSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings         `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings         `mapstructure:"retry_on_failure"`
-	exporterhelper.SampledLoggerSettings `mapstructure:"sampled_logger"`
+	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
 
 	// The URL to send traces to. If omitted the Endpoint + "/v1/traces" will be used.
 	TracesEndpoint string `mapstructure:"traces_endpoint"`

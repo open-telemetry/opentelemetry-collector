@@ -70,8 +70,5 @@ func TestUnmarshalConfig(t *testing.T) {
 				Timeout:         time.Second * 10,
 				Compression:     "gzip",
 			},
-			SampledLoggerSettings: exporterhelper.SampledLoggerSettings{
-				Enabled: false,
-			},
 		}, cfg)
 }

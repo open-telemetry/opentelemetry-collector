@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -18,18 +17,15 @@ import (
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/tag"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func mockRequestUnmarshaler(mr *mockRequest) internal.RequestUnmarshaler {
@@ -46,9 +42,7 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	rCfg := NewDefaultRetrySettings()
 	mockR := newMockRequest(context.Background(), 2, consumererror.NewPermanent(errors.New("bad data")))
-	bs := newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg))
-	bs.marshaler = mockRequestMarshaler
-	bs.unmarshaler = mockRequestUnmarshaler(mockR)
+	bs := newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg))
 	be, err := newBaseExporter(defaultSettings, bs, "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
@@ -73,9 +67,9 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	rCfg := NewDefaultRetrySettings()
 	rCfg.Enabled = false
-	bs := newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg))
-	bs.marshaler = mockRequestMarshaler
-	bs.unmarshaler = mockRequestUnmarshaler(newMockRequest(context.Background(), 2, errors.New("transient error")))
+	bs := newBaseSettings(false, mockRequestMarshaler,
+		mockRequestUnmarshaler(newMockRequest(context.Background(), 2, errors.New("transient error"))),
+		WithRetry(rCfg), WithQueue(qCfg))
 	be, err := newBaseExporter(defaultSettings, bs, "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
@@ -102,7 +96,7 @@ func TestQueuedRetry_OnError(t *testing.T) {
 	qCfg.NumConsumers = 1
 	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = 0
-	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -129,7 +123,7 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := NewDefaultRetrySettings()
-	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -163,7 +157,7 @@ func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := NewDefaultRetrySettings()
-	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -193,7 +187,7 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 100 * time.Millisecond
-	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -240,7 +234,7 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 	qCfg.NumConsumers = 1
 	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = 10 * time.Millisecond
-	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -273,7 +267,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 	qCfg.QueueSize = 1
 	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = 0
-	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -300,7 +294,7 @@ func TestQueuedRetry_DropOnFull(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.QueueSize = 0
 	rCfg := NewDefaultRetrySettings()
-	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -321,7 +315,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	rCfg := NewDefaultRetrySettings()
 	set := tt.ToExporterCreateSettings()
-	be, err := newBaseExporter(set, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(set, newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -356,7 +350,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 0 // to make every request go straight to the queue
 	rCfg := NewDefaultRetrySettings()
-	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -398,99 +392,13 @@ func TestQueueSettings_Validate(t *testing.T) {
 	assert.NoError(t, qCfg.Validate())
 }
 
-func TestGetRetrySettings(t *testing.T) {
-	getStorageClientError := errors.New("unable to create storage client")
-	testCases := []struct {
-		desc           string
-		storage        storage.Extension
-		numStorages    int
-		storageIndex   int
-		expectedError  error
-		getClientError error
-	}{
-		{
-			desc:          "obtain storage extension by name",
-			numStorages:   2,
-			storageIndex:  0,
-			expectedError: nil,
-		},
-		{
-			desc:          "fail on not existing storage extension",
-			numStorages:   2,
-			storageIndex:  100,
-			expectedError: errNoStorageClient,
-		},
-		{
-			desc:          "invalid extension type",
-			numStorages:   2,
-			storageIndex:  100,
-			expectedError: errNoStorageClient,
-		},
-		{
-			desc:           "fail on error getting storage client from extension",
-			numStorages:    1,
-			storageIndex:   0,
-			expectedError:  getStorageClientError,
-			getClientError: getStorageClientError,
-		},
-	}
-
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			storageID := component.NewIDWithName("file_storage", strconv.Itoa(tC.storageIndex))
-
-			var extensions = map[component.ID]component.Component{}
-			for i := 0; i < tC.numStorages; i++ {
-				extensions[component.NewIDWithName("file_storage", strconv.Itoa(i))] = &mockStorageExtension{GetClientError: tC.getClientError}
-			}
-			host := &mockHost{ext: extensions}
-			ownerID := component.NewID("foo_exporter")
-
-			// execute
-			client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.DataTypeTraces)
-
-			// verify
-			if tC.expectedError != nil {
-				assert.ErrorIs(t, err, tC.expectedError)
-				assert.Nil(t, client)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, client)
-			}
-		})
-	}
-}
-
-func TestInvalidStorageExtensionType(t *testing.T) {
-	storageID := component.NewIDWithName("extension", "extension")
-
-	// make a test extension
-	factory := extensiontest.NewNopFactory()
-	extConfig := factory.CreateDefaultConfig()
-	settings := extensiontest.NewNopCreateSettings()
-	extension, err := factory.CreateExtension(context.Background(), settings, extConfig)
-	assert.NoError(t, err)
-	var extensions = map[component.ID]component.Component{
-		storageID: extension,
-	}
-	host := &mockHost{ext: extensions}
-	ownerID := component.NewID("foo_exporter")
-
-	// execute
-	client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.DataTypeTraces)
-
-	// we should get an error about the extension type
-	assert.ErrorIs(t, err, errWrongExtensionType)
-	assert.Nil(t, client)
-}
-
 // if requeueing is enabled, we eventually retry even if we failed at first
 func TestQueuedRetry_RequeuingEnabled(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := NewDefaultRetrySettings()
 	rCfg.MaxElapsedTime = time.Nanosecond // we don't want to retry at all, but requeue instead
-	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -522,7 +430,7 @@ func TestQueuedRetry_RequeuingEnabledQueueFull(t *testing.T) {
 	qCfg.QueueSize = 0
 	rCfg := NewDefaultRetrySettings()
 	rCfg.MaxElapsedTime = time.Nanosecond // we don't want to retry at all, but requeue instead
-	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 	be.qrSender.requeuingEnabled = true
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -537,6 +445,17 @@ func TestQueuedRetry_RequeuingEnabledQueueFull(t *testing.T) {
 	mockR.checkNumRequests(t, 1)
 }
 
+func TestQueueRetryWithDisabledQueue(t *testing.T) {
+	qs := NewDefaultQueueSettings()
+	qs.Enabled = false
+	bs := newBaseSettings(false, nil, nil, WithQueue(qs))
+	require.Nil(t, bs.queue)
+	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), bs, component.DataTypeLogs)
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, be.Shutdown(context.Background()))
+}
+
 func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry(defaultID)
 	require.NoError(t, err)
@@ -547,7 +466,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := NewDefaultRetrySettings()
 	set := tt.ToExporterCreateSettings()
-	be, err := newBaseExporter(set, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(set, newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 
 	var extensions = map[component.ID]component.Component{
@@ -571,7 +490,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := NewDefaultRetrySettings()
 	set := tt.ToExporterCreateSettings()
-	bs := newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg))
+	bs := newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg))
 	bs.marshaler = mockRequestMarshaler
 	bs.unmarshaler = mockRequestUnmarshaler(&mockRequest{})
 	be, err := newBaseExporter(set, bs, "")
@@ -598,7 +517,7 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 
 	req := newMockRequest(context.Background(), 3, errors.New("some error"))
 
-	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, WithRetry(rCfg), WithQueue(qCfg)), "")
+	be, err := newBaseExporter(defaultSettings, newBaseSettings(false, nil, nil, WithRetry(rCfg), WithQueue(qCfg)), "")
 	require.NoError(t, err)
 
 	require.NoError(t, be.Start(context.Background(), &mockHost{}))
@@ -632,61 +551,11 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	}, time.Second, 1*time.Millisecond)
 }
 
-func TestCreateSampledLogger(t *testing.T) {
-	testCases := []struct {
-		desc                 string
-		logger               *zap.Logger
-		lCfg                 SampledLoggerSettings
-		sampledLoggedCreated bool
-	}{
-		{
-			desc:                 "default configuration - sampledLogger enabled",
-			logger:               zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel)),
-			lCfg:                 NewDefaultSampledLoggerSettings(),
-			sampledLoggedCreated: true,
-		},
-		{
-			desc:   "sampledLogger disable",
-			logger: zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel)),
-			lCfg: SampledLoggerSettings{
-				Enabled: false,
-			},
-			sampledLoggedCreated: false,
-		},
-		{
-			desc:                 "debug logger level and sampledLogged enabled - sampledLogger not created",
-			logger:               zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel)),
-			lCfg:                 NewDefaultSampledLoggerSettings(),
-			sampledLoggedCreated: false,
-		},
-		{
-			desc:   "debug logger level and sampledLogged disabled - sampledLogger not created",
-			logger: zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel)),
-			lCfg: SampledLoggerSettings{
-				Enabled: false,
-			},
-			sampledLoggedCreated: false,
-		},
-	}
-
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			newLogger := createSampledLogger(tC.logger, tC.lCfg)
-			require.NotNil(t, newLogger)
-			if tC.sampledLoggedCreated {
-				require.NotEqual(t, tC.logger, newLogger)
-			} else {
-				require.Equal(t, tC.logger, newLogger)
-			}
-		})
-	}
-}
-
 func TestQueueRetryOptionsWithRequestExporter(t *testing.T) {
-	bs := newBaseSettings(true, WithRetry(NewDefaultRetrySettings()))
+	bs := newBaseSettings(true, nil, nil, WithRetry(NewDefaultRetrySettings()))
 	assert.True(t, bs.requestExporter)
 	assert.Panics(t, func() {
-		_ = newBaseSettings(true, WithRetry(NewDefaultRetrySettings()), WithQueue(NewDefaultQueueSettings()))
+		_ = newBaseSettings(true, nil, nil, WithRetry(NewDefaultRetrySettings()), WithQueue(NewDefaultQueueSettings()))
 	})
 }
 
@@ -700,10 +569,6 @@ func (mer *mockErrorRequest) Export(_ context.Context) error {
 
 func (mer *mockErrorRequest) OnError(error) internal.Request {
 	return mer
-}
-
-func (mer *mockErrorRequest) Marshal() ([]byte, error) {
-	return nil, nil
 }
 
 func (mer *mockErrorRequest) Count() int {
@@ -735,11 +600,6 @@ func (m *mockRequest) Export(ctx context.Context) error {
 	}
 	// Respond like gRPC/HTTP, if context is cancelled, return error
 	return ctx.Err()
-}
-
-func (m *mockRequest) Marshal() ([]byte, error) {
-	marshaler := &ptrace.ProtoMarshaler{}
-	return marshaler.MarshalTraces(ptrace.NewTraces())
 }
 
 func (m *mockRequest) OnError(error) internal.Request {
@@ -830,10 +690,11 @@ func checkValueForGlobalManager(t *testing.T, wantTags []tag.Tag, value int64, v
 func checkValueForProducer(t *testing.T, producer metricproducer.Producer, wantTags []tag.Tag, value int64, vName string) bool {
 	for _, metric := range producer.Read() {
 		if metric.Descriptor.Name == vName && len(metric.TimeSeries) > 0 {
-			lastValue := metric.TimeSeries[len(metric.TimeSeries)-1]
-			if tagsMatchLabelKeys(wantTags, metric.Descriptor.LabelKeys, lastValue.LabelValues) {
-				require.Equal(t, value, lastValue.Points[len(lastValue.Points)-1].Value.(int64))
-				return true
+			for _, ts := range metric.TimeSeries {
+				if tagsMatchLabelKeys(wantTags, metric.Descriptor.LabelKeys, ts.LabelValues) {
+					require.Equal(t, value, ts.Points[len(ts.Points)-1].Value.(int64))
+					return true
+				}
 			}
 		}
 	}

@@ -89,9 +89,7 @@ func NewMetricsExporter(
 		return nil, errNilPushMetricsData
 	}
 
-	bs := newBaseSettings(false, options...)
-	bs.marshaler = metricsRequestMarshaler
-	bs.unmarshaler = newMetricsRequestUnmarshalerFunc(pusher)
+	bs := newBaseSettings(false, metricsRequestMarshaler, newMetricsRequestUnmarshalerFunc(pusher), options...)
 	be, err := newBaseExporter(set, bs, component.DataTypeMetrics)
 	if err != nil {
 		return nil, err
@@ -118,12 +116,17 @@ func NewMetricsExporter(
 	}, err
 }
 
+// MetricsConverter provides an interface for converting pmetric.Metrics into a request.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type MetricsConverter interface {
 	// RequestFromMetrics converts pdata.Metrics into a request.
 	RequestFromMetrics(context.Context, pmetric.Metrics) (Request, error)
 }
 
 // NewMetricsRequestExporter creates a new metrics exporter based on a custom MetricsConverter and RequestSender.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewMetricsRequestExporter(
 	_ context.Context,
 	set exporter.CreateSettings,
@@ -138,14 +141,18 @@ func NewMetricsRequestExporter(
 		return nil, errNilMetricsConverter
 	}
 
-	bs := newBaseSettings(true, options...)
+	bs := newBaseSettings(true, nil, nil, options...)
 
 	be, err := newBaseExporter(set, bs, component.DataTypeMetrics)
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO: Add new observability tracing/metrics to the new exporterhelper.
+	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
+		return &metricsSenderWithObservability{
+			obsrep:     be.obsrep,
+			nextSender: nextSender,
+		}
+	})
 
 	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		req, cErr := converter.RequestFromMetrics(ctx, md)
@@ -155,10 +162,15 @@ func NewMetricsRequestExporter(
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}
-		return be.sender.send(&request{
+		r := &request{
 			Request:     req,
 			baseRequest: baseRequest{ctx: ctx},
-		})
+		}
+		sErr := be.sender.send(r)
+		if errors.Is(sErr, errSendingQueueIsFull) {
+			be.obsrep.recordMetricsEnqueueFailure(r.Context(), int64(r.Count()))
+		}
+		return sErr
 	}, bs.consumerOptions...)
 
 	return &metricsExporter{

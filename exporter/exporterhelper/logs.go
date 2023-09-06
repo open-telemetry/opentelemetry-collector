@@ -89,9 +89,7 @@ func NewLogsExporter(
 		return nil, errNilPushLogsData
 	}
 
-	bs := newBaseSettings(false, options...)
-	bs.marshaler = logsRequestMarshaler
-	bs.unmarshaler = newLogsRequestUnmarshalerFunc(pusher)
+	bs := newBaseSettings(false, logsRequestMarshaler, newLogsRequestUnmarshalerFunc(pusher), options...)
 	be, err := newBaseExporter(set, bs, component.DataTypeLogs)
 	if err != nil {
 		return nil, err
@@ -118,12 +116,17 @@ func NewLogsExporter(
 	}, err
 }
 
+// LogsConverter provides an interface for converting plog.Logs into a request.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type LogsConverter interface {
 	// RequestFromLogs converts plog.Logs data into a request.
 	RequestFromLogs(context.Context, plog.Logs) (Request, error)
 }
 
 // NewLogsRequestExporter creates new logs exporter based on custom LogsConverter and RequestSender.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewLogsRequestExporter(
 	_ context.Context,
 	set exporter.CreateSettings,
@@ -138,14 +141,18 @@ func NewLogsRequestExporter(
 		return nil, errNilLogsConverter
 	}
 
-	bs := newBaseSettings(true, options...)
+	bs := newBaseSettings(true, nil, nil, options...)
 
 	be, err := newBaseExporter(set, bs, component.DataTypeLogs)
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO: Add new observability tracing/metrics to the new exporterhelper.
+	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
+		return &logsExporterWithObservability{
+			obsrep:     be.obsrep,
+			nextSender: nextSender,
+		}
+	})
 
 	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		req, cErr := converter.RequestFromLogs(ctx, ld)
@@ -155,10 +162,15 @@ func NewLogsRequestExporter(
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}
-		return be.sender.send(&request{
+		r := &request{
 			baseRequest: baseRequest{ctx: ctx},
 			Request:     req,
-		})
+		}
+		sErr := be.sender.send(r)
+		if errors.Is(sErr, errSendingQueueIsFull) {
+			be.obsrep.recordLogsEnqueueFailure(r.Context(), int64(r.Count()))
+		}
+		return sErr
 	}, bs.consumerOptions...)
 
 	return &logsExporter{

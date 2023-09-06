@@ -23,5 +23,3 @@ headers:
   header1: 234
   another: "somevalue"
 compression: gzip
-sampled_logger:
-  enabled: false
