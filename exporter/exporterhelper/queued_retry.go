@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -78,9 +77,8 @@ type queuedRetrySender struct {
 }
 
 func newQueuedRetrySender(id component.ID, signal component.DataType, queue internal.ProducerConsumerQueue,
-	rCfg RetrySettings, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+	rCfg RetrySettings, nextSender requestSender, sampledLogger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
-	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
 
 	qrs := &queuedRetrySender{
@@ -215,25 +213,6 @@ func NewDefaultRetrySettings() RetrySettings {
 		MaxInterval:         30 * time.Second,
 		MaxElapsedTime:      5 * time.Minute,
 	}
-}
-
-func createSampledLogger(logger *zap.Logger) *zap.Logger {
-	if logger.Core().Enabled(zapcore.DebugLevel) {
-		// Debugging is enabled. Don't do any sampling.
-		return logger
-	}
-
-	// Create a logger that samples all messages to 1 per 10 seconds initially,
-	// and 1/100 of messages after that.
-	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		return zapcore.NewSamplerWithOptions(
-			core,
-			10*time.Second,
-			1,
-			100,
-		)
-	})
-	return logger.WithOptions(opts)
 }
 
 // send implements the requestSender interface

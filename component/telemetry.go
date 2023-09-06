@@ -17,6 +17,10 @@ type TelemetrySettings struct {
 	// component to be used later as well.
 	Logger *zap.Logger
 
+	// SampledLogger passed to the created component.
+	// It will be used to avoid flooding the logs with messages that are repeated frequently.
+	SampledLogger *zap.Logger
+
 	// TracerProvider that the factory can pass to other instrumented third-party libraries.
 	TracerProvider trace.TracerProvider
 

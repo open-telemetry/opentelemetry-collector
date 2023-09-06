@@ -171,7 +171,7 @@ func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal compo
 		return nil, err
 	}
 
-	be.qrSender = newQueuedRetrySender(set.ID, signal, bs.queue, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
+	be.qrSender = newQueuedRetrySender(set.ID, signal, bs.queue, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, set.SampledLogger)
 	be.sender = be.qrSender
 	be.StartFunc = func(ctx context.Context, host component.Host) error {
 		// First start the wrapped exporter.

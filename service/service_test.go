@@ -403,6 +403,19 @@ func TestNilCollectorEffectiveConfig(t *testing.T) {
 	require.NoError(t, srv.Shutdown(context.Background()))
 }
 
+func TestServiceTelemetryLoggers(t *testing.T) {
+	srv, err := New(context.Background(), newNopSettings(), newNopConfig())
+	require.NoError(t, err)
+
+	assert.NoError(t, srv.Start(context.Background()))
+	t.Cleanup(func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
+	assert.NotNil(t, srv.telemetrySettings.Logger)
+	assert.NotNil(t, srv.telemetrySettings.SampledLogger)
+	assert.NotEqual(t, srv.telemetrySettings.Logger, srv.telemetrySettings.SampledLogger)
+}
+
 func assertResourceLabels(t *testing.T, res pcommon.Resource, expectedLabels map[string]labelValue) {
 	for key, labelValue := range expectedLabels {
 		lookupKey, ok := prometheusToOtelConv[key]
