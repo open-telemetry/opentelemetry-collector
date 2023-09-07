@@ -5,6 +5,7 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -16,8 +17,11 @@ import (
 
 type Telemetry struct {
 	logger         *zap.Logger
-	sampledLogger  *zap.Logger
 	tracerProvider *sdktrace.TracerProvider
+
+	createSampledLogger sync.Once
+	sampledLogger       *zap.Logger
+	samplingCfg         *LogsSamplingConfig
 }
 
 func (t *Telemetry) TracerProvider() trace.TracerProvider {
@@ -28,8 +32,13 @@ func (t *Telemetry) Logger() *zap.Logger {
 	return t.logger
 }
 
-func (t *Telemetry) SampledLogger() *zap.Logger {
-	return t.sampledLogger
+func (t *Telemetry) SampledLogger() func() *zap.Logger {
+	return func() *zap.Logger {
+		t.createSampledLogger.Do(func() {
+			t.sampledLogger = newSampledLogger(t.samplingCfg, t.logger)
+		})
+		return t.sampledLogger
+	}
 }
 
 func (t *Telemetry) Shutdown(ctx context.Context) error {
@@ -50,7 +59,6 @@ func New(_ context.Context, set Settings, cfg Config) (*Telemetry, error) {
 	if err != nil {
 		return nil, err
 	}
-	sampledLogger := newSampledLogger(cfg.Logs.Sampling, logger)
 
 	tp := sdktrace.NewTracerProvider(
 		// needed for supporting the zpages extension
@@ -58,8 +66,8 @@ func New(_ context.Context, set Settings, cfg Config) (*Telemetry, error) {
 	)
 	return &Telemetry{
 		logger:         logger,
-		sampledLogger:  sampledLogger,
 		tracerProvider: tp,
+		samplingCfg:    cfg.Logs.Sampling,
 	}, nil
 }
 

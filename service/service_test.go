@@ -412,8 +412,8 @@ func TestServiceTelemetryLoggers(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 	assert.NotNil(t, srv.telemetrySettings.Logger)
-	assert.NotNil(t, srv.telemetrySettings.SampledLogger)
-	assert.NotEqual(t, srv.telemetrySettings.Logger, srv.telemetrySettings.SampledLogger)
+	assert.NotNil(t, srv.telemetrySettings.SampledLogger())
+	assert.NotEqual(t, srv.telemetrySettings.Logger, srv.telemetrySettings.SampledLogger())
 }
 
 func assertResourceLabels(t *testing.T, res pcommon.Resource, expectedLabels map[string]labelValue) {
