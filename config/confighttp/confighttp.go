@@ -74,6 +74,14 @@ type HTTPClientSettings struct {
 	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
 	// There's an already set value, and we want to override it only if an explicit value provided
 	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
+
+	// DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server
+	// for a single HTTP request.
+	//
+	// WARNING: enabling this option can result in significant overhead establishing a new HTTP(S)
+	// connection for every request. Before enabling this option please consider whether changes
+	// to idle connection settings can achieve your goal.
+	DisableKeepAlives bool `mapstructure:"disable_keep_alives"`
 }
 
 // NewDefaultHTTPClientSettings returns HTTPClientSettings type object with
@@ -123,6 +131,8 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 	if hcs.IdleConnTimeout != nil {
 		transport.IdleConnTimeout = *hcs.IdleConnTimeout
 	}
+
+	transport.DisableKeepAlives = hcs.DisableKeepAlives
 
 	clientTransport := (http.RoundTripper)(transport)
 
