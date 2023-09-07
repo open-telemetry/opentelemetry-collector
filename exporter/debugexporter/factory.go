@@ -10,9 +10,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr                   = "debug"
-	defaultSamplingInitial    = 2
-	defaultSamplingThereafter = 500
+	typeStr = "debug"
 )
 
 // NewFactory creates a factory for Logging exporter
