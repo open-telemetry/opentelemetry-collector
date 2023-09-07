@@ -17,10 +17,8 @@ type TelemetrySettings struct {
 	// component to be used later as well.
 	Logger *zap.Logger
 
-	// SampledLogger is built from the logger. It is passed to the created component.
-	// It will be used to avoid flooding the logs with messages that are repeated frequently.
-	// It will be built the first time used.
-	SampledLogger func() *zap.Logger
+	// GetSampledLoggerFunction is a function to get the sampled Logger
+	GetSampledLoggerFunction func() *zap.Logger
 
 	// TracerProvider that the factory can pass to other instrumented third-party libraries.
 	TracerProvider trace.TracerProvider
@@ -34,4 +32,11 @@ type TelemetrySettings struct {
 
 	// Resource contains the resource attributes for the collector's telemetry.
 	Resource pcommon.Resource
+}
+
+// SampledLogger is built from the logger. It is passed to the created component.
+// It will be used to avoid flooding the logs with messages that are repeated frequently.
+// It will be built the first time used.
+func (t *TelemetrySettings) SampledLogger() *zap.Logger {
+	return t.GetSampledLoggerFunction()
 }
