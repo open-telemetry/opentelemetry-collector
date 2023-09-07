@@ -105,11 +105,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	pcommonRes := pdataFromSdk(res)
 
 	srv.telemetrySettings = component.TelemetrySettings{
-		Logger:                   srv.telemetry.Logger(),
-		GetSampledLoggerFunction: srv.telemetry.SampledLogger(),
-		TracerProvider:           srv.telemetry.TracerProvider(),
-		MeterProvider:            noop.NewMeterProvider(),
-		MetricsLevel:             cfg.Telemetry.Metrics.Level,
+		Logger:         srv.telemetry.Logger(),
+		SampledLogger:  srv.telemetry.SampledLogger(),
+		TracerProvider: srv.telemetry.TracerProvider(),
+		MeterProvider:  noop.NewMeterProvider(),
+		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 
 		// Construct telemetry attributes from build info and config's resource attributes.
 		Resource: pcommonRes,
