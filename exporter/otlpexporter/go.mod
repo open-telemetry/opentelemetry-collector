@@ -55,6 +55,7 @@ require (
 	go.opentelemetry.io/otel v1.17.0 // indirect
 	go.opentelemetry.io/otel/metric v1.17.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.17.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v0.40.0 // indirect
 	go.opentelemetry.io/otel/trace v1.17.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.25.0 // indirect
