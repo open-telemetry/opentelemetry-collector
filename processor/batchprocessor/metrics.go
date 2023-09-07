@@ -118,10 +118,11 @@ func newBatchProcessorTelemetry(set processor.CreateSettings, currentMetadataCar
 		detailed:      set.MetricsLevel == configtelemetry.LevelDetailed,
 	}
 
-	err = bpt.createOtelMetrics(set.MeterProvider, currentMetadataCardinality)
-	if err != nil {
-		return nil, err
-	}
+	// ignore returned error as per workaround in https://github.com/open-telemetry/opentelemetry-collector/issues/8346
+	// if err != nil {
+	// 	return nil, err
+	// }
+	_ = bpt.createOtelMetrics(set.MeterProvider, currentMetadataCardinality)
 
 	return bpt, nil
 }

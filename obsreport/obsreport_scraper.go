@@ -74,9 +74,11 @@ func newScraper(cfg ScraperSettings, useOtel bool) (*Scraper, error) {
 		},
 	}
 
-	if err := scraper.createOtelMetrics(cfg); err != nil {
-		return nil, err
-	}
+	// ignore returned error as per workaround in https://github.com/open-telemetry/opentelemetry-collector/issues/8346
+	// if err := scraper.createOtelMetrics(cfg); err != nil {
+	// 	return nil, err
+	// }
+	_ = scraper.createOtelMetrics(cfg)
 
 	return scraper, nil
 }

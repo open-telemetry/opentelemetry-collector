@@ -83,9 +83,11 @@ func newProcessor(cfg ProcessorSettings, useOtel bool) (*Processor, error) {
 		},
 	}
 
-	if err := proc.createOtelMetrics(cfg); err != nil {
-		return nil, err
-	}
+	// ignore returned error as per workaround in https://github.com/open-telemetry/opentelemetry-collector/issues/8346
+	// if err := proc.createOtelMetrics(cfg); err != nil {
+	// 	return nil, err
+	// }
+	_ = proc.createOtelMetrics(cfg)
 
 	return proc, nil
 }

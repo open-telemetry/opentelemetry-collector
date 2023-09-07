@@ -88,9 +88,11 @@ func newReceiver(cfg ReceiverSettings, useOtel bool) (*Receiver, error) {
 		},
 	}
 
-	if err := rec.createOtelMetrics(); err != nil {
-		return nil, err
-	}
+	// ignore returned error as per workaround in https://github.com/open-telemetry/opentelemetry-collector/issues/8346
+	// if err := rec.createOtelMetrics(); err != nil {
+	// 	return nil, err
+	// }
+	_ = rec.createOtelMetrics()
 
 	return rec, nil
 }

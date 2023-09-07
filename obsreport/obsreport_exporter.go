@@ -70,9 +70,11 @@ func newExporter(cfg ExporterSettings, useOtel bool) (*Exporter, error) {
 		},
 	}
 
-	if err := exp.createOtelMetrics(cfg); err != nil {
-		return nil, err
-	}
+	// ignore returned error as per workaround in https://github.com/open-telemetry/opentelemetry-collector/issues/8346
+	// if err := exp.createOtelMetrics(cfg); err != nil {
+	// 	return nil, err
+	// }
+	_ = exp.createOtelMetrics(cfg)
 
 	return exp, nil
 }

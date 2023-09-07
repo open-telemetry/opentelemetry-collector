@@ -97,7 +97,9 @@ func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProv
 	}
 
 	if useOtel {
-		return pm.recordWithOtel(mp.Meter(scopeName))
+		// ignore returned error as per workaround in https://github.com/open-telemetry/opentelemetry-collector/issues/8346
+		_ = pm.recordWithOtel(mp.Meter(scopeName))
+		return nil
 	}
 	return pm.recordWithOC(ocRegistry)
 }
