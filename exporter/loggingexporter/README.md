@@ -6,7 +6,7 @@
 | Supported pipeline types | traces, metrics, logs |
 | Distributions            | [core], [contrib]     |
 
-This exporter is being deprecated in favour of the [debug exporter]. It will be removed in September 2024.
+This exporter is being deprecated in favour of the [debug exporter]. The debug exporter has backward compatibility with the logging exporter. To migrate, replace `logging` in the `exporters` section of your Collector's config with `debug`. The logging exporter will be removed in September 2024.
 
 Exports data to the console via zap.Logger.
 
