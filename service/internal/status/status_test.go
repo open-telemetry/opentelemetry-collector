@@ -22,6 +22,7 @@ func TestStatusFSM(t *testing.T) {
 		{
 			name: "successful startup and shutdown",
 			reportedStatuses: []component.Status{
+				component.StatusStarting,
 				component.StatusOK,
 				component.StatusStopping,
 				component.StatusStopped,
@@ -36,6 +37,7 @@ func TestStatusFSM(t *testing.T) {
 		{
 			name: "component recovered",
 			reportedStatuses: []component.Status{
+				component.StatusStarting,
 				component.StatusRecoverableError,
 				component.StatusOK,
 				component.StatusStopping,
@@ -52,6 +54,7 @@ func TestStatusFSM(t *testing.T) {
 		{
 			name: "repeated events are errors",
 			reportedStatuses: []component.Status{
+				component.StatusStarting,
 				component.StatusOK,
 				component.StatusRecoverableError,
 				component.StatusRecoverableError,
@@ -73,6 +76,7 @@ func TestStatusFSM(t *testing.T) {
 		{
 			name: "PermanentError is terminal",
 			reportedStatuses: []component.Status{
+				component.StatusStarting,
 				component.StatusOK,
 				component.StatusPermanentError,
 				component.StatusOK,
@@ -87,6 +91,7 @@ func TestStatusFSM(t *testing.T) {
 		{
 			name: "FatalError is terminal",
 			reportedStatuses: []component.Status{
+				component.StatusStarting,
 				component.StatusOK,
 				component.StatusFatalError,
 				component.StatusOK,
@@ -101,6 +106,7 @@ func TestStatusFSM(t *testing.T) {
 		{
 			name: "Stopped is terminal",
 			reportedStatuses: []component.Status{
+				component.StatusStarting,
 				component.StatusOK,
 				component.StatusStopping,
 				component.StatusStopped,
@@ -117,7 +123,7 @@ func TestStatusFSM(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var receivedStatuses []component.Status
-			fsm := newStatusFSM(
+			fsm := newFSM(
 				func(ev *component.StatusEvent) {
 					receivedStatuses = append(receivedStatuses, ev.Status())
 				},
@@ -138,8 +144,8 @@ func TestStatusFSM(t *testing.T) {
 }
 
 func TestStatusEventError(t *testing.T) {
-	fsm := newStatusFSM(func(*component.StatusEvent) {})
-
+	fsm := newFSM(func(*component.StatusEvent) {})
+	fsm.Event(component.StatusStarting)
 	// the combination of StatusOK with an error is invalid
 	err := fsm.Event(component.StatusOK, component.WithError(assert.AnError))
 
@@ -147,14 +153,48 @@ func TestStatusEventError(t *testing.T) {
 	require.ErrorIs(t, err, component.ErrStatusEventInvalidArgument)
 }
 
-func TestNewNotifier(t *testing.T) {
-	fnCalled := false
+func TestStatusFuncs(t *testing.T) {
+	id1 := &component.InstanceID{}
+	id2 := &component.InstanceID{}
 
-	statusFunc := func(*component.InstanceID, *component.StatusEvent) {
-		fnCalled = true
+	actualStatuses := make(map[*component.InstanceID][]component.Status)
+	statusFunc := func(id *component.InstanceID, ev *component.StatusEvent) {
+		actualStatuses[id] = append(actualStatuses[id], ev.Status())
 	}
 
-	notifier := NewNotifier(&component.InstanceID{}, statusFunc)
-	require.NoError(t, notifier.Event(component.StatusOK))
-	require.True(t, fnCalled)
+	statuses1 := []component.Status{
+		component.StatusStarting,
+		component.StatusOK,
+		component.StatusStopping,
+		component.StatusStopped,
+	}
+
+	statuses2 := []component.Status{
+		component.StatusStarting,
+		component.StatusOK,
+		component.StatusRecoverableError,
+		component.StatusOK,
+		component.StatusStopping,
+		component.StatusStopped,
+	}
+
+	expectedStatuses := map[*component.InstanceID][]component.Status{
+		id1: statuses1,
+		id2: statuses2,
+	}
+
+	serviceStatusFn := NewServiceStatusFunc(statusFunc)
+
+	comp1Func := NewComponentStatusFunc(id1, serviceStatusFn)
+	comp2Func := NewComponentStatusFunc(id2, serviceStatusFn)
+
+	for _, st := range statuses1 {
+		comp1Func(st)
+	}
+
+	for _, st := range statuses2 {
+		comp2Func(st)
+	}
+
+	require.Equal(t, expectedStatuses, actualStatuses)
 }

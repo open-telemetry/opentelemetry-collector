@@ -8,18 +8,15 @@ import (
 	"go.opentelemetry.io/collector/service/internal/status"
 )
 
-type Settings component.TelemetrySettingsBase[status.ReportStatusFunc]
+type Settings component.TelemetrySettingsBase[status.ServiceStatusFunc]
 
-func (s Settings) ToComponentTelemetrySettings(instanceID *component.InstanceID) component.TelemetrySettings {
-	notifier := status.NewNotifier(instanceID, s.ReportComponentStatus)
+func (s Settings) ToComponentTelemetrySettings(id *component.InstanceID) component.TelemetrySettings {
 	return component.TelemetrySettings{
-		Logger:         s.Logger,
-		TracerProvider: s.TracerProvider,
-		MeterProvider:  s.MeterProvider,
-		MetricsLevel:   s.MetricsLevel,
-		Resource:       s.Resource,
-		ReportComponentStatus: func(status component.Status, options ...component.StatusEventOption) {
-			notifier.Event(status, options...)
-		},
+		Logger:                s.Logger,
+		TracerProvider:        s.TracerProvider,
+		MeterProvider:         s.MeterProvider,
+		MetricsLevel:          s.MetricsLevel,
+		Resource:              s.Resource,
+		ReportComponentStatus: status.NewComponentStatusFunc(id, s.ReportComponentStatus),
 	}
 }

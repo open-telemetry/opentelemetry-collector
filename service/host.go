@@ -67,12 +67,8 @@ func (host *serviceHost) GetExporters() map[component.DataType]map[component.ID]
 	return host.pipelines.GetExporters()
 }
 
-func (host *serviceHost) reportComponentStatus(source *component.InstanceID, event *component.StatusEvent) {
+func (host *serviceHost) notifyComponentStatusChange(source *component.InstanceID, event *component.StatusEvent) {
 	// TODO: What should we do if there is an error returned by a StatusWatcher?
-	if host.serviceExtensions == nil {
-		// TODO: remove this temporary workaround
-		return
-	}
 	host.serviceExtensions.NotifyComponentStatusChange(source, event) //nolint:errcheck
 	if event.Status() == component.StatusFatalError {
 		host.asyncErrorChannel <- event.Err()

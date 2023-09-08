@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
+	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -113,7 +114,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 		// Construct telemetry attributes from build info and config's resource attributes.
 		Resource:              pcommonRes,
-		ReportComponentStatus: srv.host.reportComponentStatus,
+		ReportComponentStatus: status.NewServiceStatusFunc(srv.host.notifyComponentStatusChange),
 	}
 
 	if err = srv.telemetryInitializer.init(res, srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {

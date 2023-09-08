@@ -33,4 +33,4 @@ type TelemetrySettingsBase[T any] struct {
 	ReportComponentStatus T
 }
 
-type TelemetrySettings TelemetrySettingsBase[ReportStatusFunc]
+type TelemetrySettings TelemetrySettingsBase[StatusFunc]

@@ -13,7 +13,8 @@ type Status int32
 
 // Enumeration of possible component statuses
 const (
-	StatusStarting Status = iota
+	StatusNone Status = iota
+	StatusStarting
 	StatusOK
 	StatusRecoverableError
 	StatusPermanentError
@@ -40,7 +41,7 @@ func (s Status) String() string {
 	case StatusStopped:
 		return "StatusStopped"
 	}
-	return "StatusUnknown"
+	return "StatusNone"
 }
 
 // errorStatuses is a set of statuses that can have associated errors
@@ -136,4 +137,4 @@ type StatusWatcher interface {
 	ComponentStatusChanged(source *InstanceID, event *StatusEvent)
 }
 
-type ReportStatusFunc func(Status, ...StatusEventOption)
+type StatusFunc func(Status, ...StatusEventOption)

@@ -6,6 +6,7 @@ package status // import "go.opentelemetry.io/collector/service/internal/status"
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -46,15 +47,17 @@ func (m *fsm) Event(status component.Status, options ...component.StatusEventOpt
 	return nil
 }
 
-// newStatusFSM creates a state machine with all valid transitions for component.Status.
-// It sets the initial state to component.StatusStarting and triggers the onTransitionFunc
-// for the initial state.
-func newStatusFSM(onTransition onTransitionFunc) *fsm {
-	starting, _ := component.NewStatusEvent(component.StatusStarting)
-	m := &fsm{
-		current:      starting,
+// newFSM creates a state machine with all valid transitions for component.Status.
+// The initial state is set to component.StatusNone.
+func newFSM(onTransition onTransitionFunc) *fsm {
+	initial, _ := component.NewStatusEvent(component.StatusNone)
+	return &fsm{
+		current:      initial,
 		onTransition: onTransition,
 		transitions: map[component.Status]map[component.Status]struct{}{
+			component.StatusNone: {
+				component.StatusStarting: {},
+			},
 			component.StatusStarting: {
 				component.StatusOK:               {},
 				component.StatusRecoverableError: {},
@@ -88,25 +91,36 @@ func newStatusFSM(onTransition onTransitionFunc) *fsm {
 			component.StatusStopped: {},
 		},
 	}
-
-	// fire initial starting event
-	m.onTransition(starting)
-	return m
 }
 
-// A Notifier emits status events
-type Notifier interface {
-	Event(status component.Status, options ...component.StatusEventOption) error
+type NotifyStatusFunc func(*component.InstanceID, *component.StatusEvent)
+type ServiceStatusFunc func(id *component.InstanceID, status component.Status, opts ...component.StatusEventOption)
+
+// NewServiceStatusFunc returns a function to be used as ReportComponentStatus for
+// servicetelemetry.Settings, which differs from component.TelemetrySettings in that
+// the service version does not correspond to a specific component, and thus needs
+// the a component.InstanceID as a parameter.
+func NewServiceStatusFunc(notifyStatusChange NotifyStatusFunc) ServiceStatusFunc {
+	var fsmMap sync.Map
+	return func(id *component.InstanceID, status component.Status, opts ...component.StatusEventOption) {
+		f, ok := fsmMap.Load(id)
+		if !ok {
+			f = newFSM(func(ev *component.StatusEvent) {
+				notifyStatusChange(id, ev)
+			})
+			if val, loaded := fsmMap.LoadOrStore(id, f); loaded {
+				f = val
+			}
+		}
+		_ = f.(*fsm).Event(status, opts...)
+	}
 }
 
-// NewNotifier returns a status.Notifier that reports component status for the given
-// component instance via an underlying finite state machine
-func NewNotifier(instanceID *component.InstanceID, fn func(*component.InstanceID, *component.StatusEvent)) Notifier {
-	return newStatusFSM(
-		func(ev *component.StatusEvent) {
-			fn(instanceID, ev)
-		},
-	)
+// NewComponentStatusFunc returns a function to be used as ReportComponentStatus for
+// component.TelemetrySettings, which differs from servicetelemetry.Settings in that
+// the component version is tied to specific component instance.
+func NewComponentStatusFunc(id *component.InstanceID, srvStatus ServiceStatusFunc) component.StatusFunc {
+	return func(status component.Status, opts ...component.StatusEventOption) {
+		srvStatus(id, status, opts...)
+	}
 }
-
-type ReportStatusFunc func(*component.InstanceID, *component.StatusEvent)

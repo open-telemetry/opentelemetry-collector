@@ -21,6 +21,6 @@ func NewNopSettings() Settings {
 		MeterProvider:         noop.NewMeterProvider(),
 		MetricsLevel:          configtelemetry.LevelNone,
 		Resource:              pcommon.NewResource(),
-		ReportComponentStatus: func(*component.InstanceID, *component.StatusEvent) {},
+		ReportComponentStatus: func(*component.InstanceID, component.Status, ...component.StatusEventOption) {},
 	}
 }
