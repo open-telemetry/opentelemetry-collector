@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.84.0
 	go.opentelemetry.io/collector/config/internal v0.84.0
 	go.opentelemetry.io/collector/extension/auth v0.84.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.43.0
 	go.opentelemetry.io/otel v1.17.0
 	go.uber.org/zap v1.25.0
 	golang.org/x/net v0.15.0
