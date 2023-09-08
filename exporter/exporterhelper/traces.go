@@ -89,26 +89,20 @@ func NewTracesExporter(
 		return nil, errNilPushTraceData
 	}
 
-	bs := newBaseSettings(false, tracesRequestMarshaler, newTraceRequestUnmarshalerFunc(pusher), options...)
-	be, err := newBaseExporter(set, bs, component.DataTypeTraces)
+	be, err := newBaseExporter(set, component.DataTypeTraces, false, tracesRequestMarshaler,
+		newTraceRequestUnmarshalerFunc(pusher), newTracesExporterWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
-	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
-		return &tracesExporterWithObservability{
-			obsrep:     be.obsrep,
-			nextSender: nextSender,
-		}
-	})
 
 	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		req := newTracesRequest(ctx, td, pusher)
-		serr := be.sender.send(req)
+		serr := be.send(req)
 		if errors.Is(serr, errSendingQueueIsFull) {
 			be.obsrep.recordTracesEnqueueFailure(req.Context(), int64(req.Count()))
 		}
 		return serr
-	}, bs.consumerOptions...)
+	}, be.consumerOptions...)
 
 	return &traceExporter{
 		baseExporter: be,
@@ -141,18 +135,10 @@ func NewTracesRequestExporter(
 		return nil, errNilTracesConverter
 	}
 
-	bs := newBaseSettings(true, nil, nil, options...)
-
-	be, err := newBaseExporter(set, bs, component.DataTypeTraces)
+	be, err := newBaseExporter(set, component.DataTypeTraces, true, nil, nil, newTracesExporterWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
-	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
-		return &tracesExporterWithObservability{
-			obsrep:     be.obsrep,
-			nextSender: nextSender,
-		}
-	})
 
 	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		req, cErr := converter.RequestFromTraces(ctx, td)
@@ -166,12 +152,12 @@ func NewTracesRequestExporter(
 			baseRequest: baseRequest{ctx: ctx},
 			Request:     req,
 		}
-		sErr := be.sender.send(r)
+		sErr := be.send(r)
 		if errors.Is(sErr, errSendingQueueIsFull) {
 			be.obsrep.recordTracesEnqueueFailure(r.Context(), int64(r.Count()))
 		}
 		return sErr
-	}, bs.consumerOptions...)
+	}, be.consumerOptions...)
 
 	return &traceExporter{
 		baseExporter: be,
@@ -180,8 +166,12 @@ func NewTracesRequestExporter(
 }
 
 type tracesExporterWithObservability struct {
-	obsrep     *obsExporter
-	nextSender requestSender
+	baseRequestSender
+	obsrep *obsExporter
+}
+
+func newTracesExporterWithObservability(obsrep *obsExporter) requestSender {
+	return &tracesExporterWithObservability{obsrep: obsrep}
 }
 
 func (tewo *tracesExporterWithObservability) send(req internal.Request) error {
