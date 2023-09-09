@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
@@ -51,7 +50,7 @@ type Graph struct {
 	// Keep track of status source per node
 	instanceIDs map[int64]*component.InstanceID
 
-	logger *zap.Logger
+	telemetry servicetelemetry.Settings
 }
 
 func Build(ctx context.Context, set Settings) (*Graph, error) {
@@ -59,7 +58,7 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 		componentGraph: simple.NewDirectedGraph(),
 		pipelines:      make(map[component.ID]*pipelineNodes, len(set.PipelineConfigs)),
 		instanceIDs:    make(map[int64]*component.InstanceID),
-		logger:         set.Telemetry.Logger,
+		telemetry:      set.Telemetry,
 	}
 	for pipelineID := range set.PipelineConfigs {
 		pipelines.pipelines[pipelineID] = &pipelineNodes{
@@ -378,10 +377,15 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
 			continue
 		}
 
-		// TODO: automatically handle status here
+		instanceID := g.instanceIDs[node.ID()]
+		g.telemetry.ReportComponentStatus(instanceID, component.StatusStarting)
+
 		if compErr := comp.Start(ctx, host); compErr != nil {
+			g.telemetry.ReportComponentStatus(instanceID, component.StatusPermanentError, component.WithError(compErr))
 			return compErr
 		}
+
+		g.telemetry.ReportComponentStatus(instanceID, component.StatusOK)
 	}
 	return nil
 }
@@ -398,13 +402,24 @@ func (g *Graph) ShutdownAll(ctx context.Context) error {
 	// before the consumer is stopped.
 	var errs error
 	for i := 0; i < len(nodes); i++ {
-		comp, ok := nodes[i].(component.Component)
+		node := nodes[i]
+		comp, ok := node.(component.Component)
+
 		if !ok {
 			// Skip capabilities/fanout nodes
 			continue
 		}
-		// TODO: automatically handle status here
-		errs = multierr.Append(errs, comp.Shutdown(ctx))
+
+		instanceID := g.instanceIDs[node.ID()]
+		g.telemetry.ReportComponentStatus(instanceID, component.StatusStopping)
+
+		if compErr := comp.Shutdown(ctx); compErr != nil {
+			errs = multierr.Append(errs, compErr)
+			g.telemetry.ReportComponentStatus(instanceID, component.StatusPermanentError, component.WithError(compErr))
+			continue
+		}
+
+		g.telemetry.ReportComponentStatus(instanceID, component.StatusStopped)
 	}
 	return errs
 }
