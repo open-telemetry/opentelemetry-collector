@@ -10,6 +10,7 @@ type nopClient struct{}
 var nopClientInstance Client = &nopClient{}
 
 // NewNopClient returns a nop client
+// Deprecated: [0.85.0] Use helpers from github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest instead.
 func NewNopClient() Client {
 	return nopClientInstance
 }
