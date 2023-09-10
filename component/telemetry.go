@@ -44,4 +44,6 @@ type TelemetrySettingsBase[T any] struct {
 	ReportComponentStatus T
 }
 
+// TelemetrySettings and servicetelemetry.Settings differ in the method signature for
+// ReportComponentStatus
 type TelemetrySettings TelemetrySettingsBase[StatusFunc]

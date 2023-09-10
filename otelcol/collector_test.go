@@ -158,7 +158,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Use a processor factory that creates "unhealthy" processor: one that
-	// always reports StatusError after successful Start.
+	// always reports StatusRecoverableError after successful Start.
 	unhealthyProcessorFactory := processortest.NewUnhealthyProcessorFactory()
 	factories.Processors[unhealthyProcessorFactory.Type()] = unhealthyProcessorFactory
 
@@ -194,7 +194,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 	// Start the newly created collector.
 	wg := startCollector(context.Background(), t, col)
 
-	// The "unhealthy" processors will now begin to asynchronously report StatusError.
+	// The "unhealthy" processors will now begin to asynchronously report StatusRecoverableError.
 	// We expect to see these reports.
 	assert.Eventually(t, func() bool {
 		mux.Lock()
@@ -203,7 +203,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 		for k, v := range changedComponents {
 			// All processors must report a status change with the same ID
 			assert.EqualValues(t, component.NewID(unhealthyProcessorFactory.Type()), k.ID)
-			// And all must be in StatusError
+			// And all must be in StatusRecoverableError
 			assert.EqualValues(t, component.StatusRecoverableError, v)
 		}
 		// We have 3 processors with exactly the same ID in otelcol-statuswatcher.yaml

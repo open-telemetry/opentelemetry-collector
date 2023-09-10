@@ -137,4 +137,5 @@ type StatusWatcher interface {
 	ComponentStatusChanged(source *InstanceID, event *StatusEvent)
 }
 
+// StatusFunc is the expected type of ReportComponentStatus for compoment.TelemetrySettings
 type StatusFunc func(Status, ...StatusEventOption) error

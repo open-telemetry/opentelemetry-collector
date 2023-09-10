@@ -145,17 +145,13 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 		extMap:    make(map[component.ID]extension.Extension),
 	}
 	for _, extID := range cfg {
-
 		instanceID := &component.InstanceID{
 			ID:   extID,
 			Kind: component.KindExtension,
 		}
-
-		telSet := set.Telemetry.ToComponentTelemetrySettings(instanceID)
-
 		extSet := extension.CreateSettings{
 			ID:                extID,
-			TelemetrySettings: telSet,
+			TelemetrySettings: set.Telemetry.ToComponentTelemetrySettings(instanceID),
 			BuildInfo:         set.BuildInfo,
 		}
 		extSet.TelemetrySettings.Logger = components.ExtensionLogger(set.Telemetry.Logger, extID)

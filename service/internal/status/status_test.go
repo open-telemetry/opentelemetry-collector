@@ -132,7 +132,7 @@ func TestStatusFSM(t *testing.T) {
 
 			errorCount := 0
 			for _, status := range tc.reportedStatuses {
-				if err := fsm.Transition(status); err != nil {
+				if err := fsm.transition(status); err != nil {
 					errorCount++
 					require.ErrorIs(t, err, errInvalidStateTransition)
 				}
@@ -146,11 +146,11 @@ func TestStatusFSM(t *testing.T) {
 
 func TestStatusEventError(t *testing.T) {
 	fsm := newFSM(func(*component.StatusEvent) {})
-	err := fsm.Transition(component.StatusStarting)
+	err := fsm.transition(component.StatusStarting)
 	require.NoError(t, err)
 
 	// the combination of StatusOK with an error is invalid
-	err = fsm.Transition(component.StatusOK, component.WithError(assert.AnError))
+	err = fsm.transition(component.StatusOK, component.WithError(assert.AnError))
 
 	require.Error(t, err)
 	require.ErrorIs(t, err, component.ErrStatusEventInvalidArgument)

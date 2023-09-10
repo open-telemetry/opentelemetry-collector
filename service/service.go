@@ -145,6 +145,7 @@ func (srv *Service) Start(ctx context.Context) error {
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
 
+	// enable status reporting
 	srv.statusInit()
 
 	if err := srv.host.serviceExtensions.Start(ctx, srv.host); err != nil {

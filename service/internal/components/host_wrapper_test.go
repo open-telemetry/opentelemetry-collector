@@ -7,8 +7,9 @@ import (
 	"errors"
 	"testing"
 
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func Test_newHostWrapper(_ *testing.T) {

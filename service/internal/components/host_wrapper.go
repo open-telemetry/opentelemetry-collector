@@ -27,7 +27,7 @@ func NewHostWrapper(host component.Host, logger *zap.Logger) component.Host {
 func (hw *hostWrapper) ReportFatalError(err error) {
 	// The logger from the built component already identifies the component.
 	hw.Logger.Error("Component fatal error", zap.Error(err))
-	hw.Host.ReportFatalError(err) // nolint:staticcheck
+	hw.Host.ReportFatalError(err)
 }
 
 // RegisterZPages is used by zpages extension to register handles from service.
