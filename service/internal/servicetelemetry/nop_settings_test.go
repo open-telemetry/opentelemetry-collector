@@ -26,6 +26,5 @@ func TestNewNopSettings(t *testing.T) {
 	require.Equal(t, noop.NewMeterProvider(), set.MeterProvider)
 	require.Equal(t, configtelemetry.LevelNone, set.MetricsLevel)
 	require.Equal(t, pcommon.NewResource(), set.Resource)
-
-	set.ReportComponentStatus(&component.InstanceID{}, component.StatusStarting)
+	require.NoError(t, set.ReportComponentStatus(&component.InstanceID{}, component.StatusStarting))
 }

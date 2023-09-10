@@ -137,4 +137,4 @@ type StatusWatcher interface {
 	ComponentStatusChanged(source *InstanceID, event *StatusEvent)
 }
 
-type StatusFunc func(Status, ...StatusEventOption)
+type StatusFunc func(Status, ...StatusEventOption) error

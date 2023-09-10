@@ -166,8 +166,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 	changedComponents := map[*component.InstanceID]component.Status{}
 	var mux sync.Mutex
 	onStatusChanged := func(source *component.InstanceID, event *component.StatusEvent) {
-		// skip the startup notifications
-		if event.Status() == component.StatusStarting {
+		if event.Status() != component.StatusRecoverableError {
 			return
 		}
 		mux.Lock()

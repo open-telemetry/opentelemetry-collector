@@ -4,6 +4,7 @@
 package status
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -131,7 +132,7 @@ func TestStatusFSM(t *testing.T) {
 
 			errorCount := 0
 			for _, status := range tc.reportedStatuses {
-				if err := fsm.Event(status); err != nil {
+				if err := fsm.Transition(status); err != nil {
 					errorCount++
 					require.ErrorIs(t, err, errInvalidStateTransition)
 				}
@@ -145,9 +146,11 @@ func TestStatusFSM(t *testing.T) {
 
 func TestStatusEventError(t *testing.T) {
 	fsm := newFSM(func(*component.StatusEvent) {})
-	fsm.Event(component.StatusStarting)
+	err := fsm.Transition(component.StatusStarting)
+	require.NoError(t, err)
+
 	// the combination of StatusOK with an error is invalid
-	err := fsm.Event(component.StatusOK, component.WithError(assert.AnError))
+	err = fsm.Transition(component.StatusOK, component.WithError(assert.AnError))
 
 	require.Error(t, err)
 	require.ErrorIs(t, err, component.ErrStatusEventInvalidArgument)
@@ -183,18 +186,62 @@ func TestStatusFuncs(t *testing.T) {
 		id2: statuses2,
 	}
 
-	serviceStatusFn := NewServiceStatusFunc(statusFunc)
-
+	init, serviceStatusFn := NewServiceStatusFunc(statusFunc)
 	comp1Func := NewComponentStatusFunc(id1, serviceStatusFn)
 	comp2Func := NewComponentStatusFunc(id2, serviceStatusFn)
+	init()
 
 	for _, st := range statuses1 {
-		comp1Func(st)
+		require.NoError(t, comp1Func(st))
 	}
 
 	for _, st := range statuses2 {
-		comp2Func(st)
+		require.NoError(t, comp2Func(st))
 	}
 
 	require.Equal(t, expectedStatuses, actualStatuses)
+}
+
+func TestStatusFuncsConcurrent(t *testing.T) {
+	ids := []*component.InstanceID{{}, {}, {}, {}}
+	count := 0
+	statusFunc := func(id *component.InstanceID, ev *component.StatusEvent) {
+		count++
+	}
+	init, serviceStatusFn := NewServiceStatusFunc(statusFunc)
+	init()
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(ids))
+
+	for _, id := range ids {
+		id := id
+		go func() {
+			compFn := NewComponentStatusFunc(id, serviceStatusFn)
+			_ = compFn(component.StatusStarting)
+			for i := 0; i < 1000; i++ {
+				_ = compFn(component.StatusRecoverableError)
+				_ = compFn(component.StatusOK)
+			}
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+	require.Equal(t, 8004, count)
+}
+
+func TestStatusFuncReady(t *testing.T) {
+	statusFunc := func(*component.InstanceID, *component.StatusEvent) {}
+	init, serviceStatusFn := NewServiceStatusFunc(statusFunc)
+	id := &component.InstanceID{}
+
+	err := serviceStatusFn(id, component.StatusStarting)
+	require.Error(t, err)
+	require.ErrorIs(t, err, errStatusNotReady)
+
+	init()
+
+	err = serviceStatusFn(id, component.StatusStarting)
+	require.NoError(t, err)
 }

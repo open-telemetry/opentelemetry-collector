@@ -378,14 +378,14 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
 		}
 
 		instanceID := g.instanceIDs[node.ID()]
-		g.telemetry.ReportComponentStatus(instanceID, component.StatusStarting)
+		_ = g.telemetry.ReportComponentStatus(instanceID, component.StatusStarting)
 
 		if compErr := comp.Start(ctx, host); compErr != nil {
-			g.telemetry.ReportComponentStatus(instanceID, component.StatusPermanentError, component.WithError(compErr))
+			_ = g.telemetry.ReportComponentStatus(instanceID, component.StatusPermanentError, component.WithError(compErr))
 			return compErr
 		}
 
-		g.telemetry.ReportComponentStatus(instanceID, component.StatusOK)
+		_ = g.telemetry.ReportComponentStatus(instanceID, component.StatusOK)
 	}
 	return nil
 }
@@ -411,15 +411,15 @@ func (g *Graph) ShutdownAll(ctx context.Context) error {
 		}
 
 		instanceID := g.instanceIDs[node.ID()]
-		g.telemetry.ReportComponentStatus(instanceID, component.StatusStopping)
+		_ = g.telemetry.ReportComponentStatus(instanceID, component.StatusStopping)
 
 		if compErr := comp.Shutdown(ctx); compErr != nil {
 			errs = multierr.Append(errs, compErr)
-			g.telemetry.ReportComponentStatus(instanceID, component.StatusPermanentError, component.WithError(compErr))
+			_ = g.telemetry.ReportComponentStatus(instanceID, component.StatusPermanentError, component.WithError(compErr))
 			continue
 		}
 
-		g.telemetry.ReportComponentStatus(instanceID, component.StatusStopped)
+		_ = g.telemetry.ReportComponentStatus(instanceID, component.StatusStopped)
 	}
 	return errs
 }

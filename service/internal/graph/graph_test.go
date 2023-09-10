@@ -177,10 +177,10 @@ func TestGraphStartStopCycle(t *testing.T) {
 	e1 := &testNode{id: component.NewIDWithName("e", "1")}
 
 	pg.instanceIDs = map[int64]*component.InstanceID{
-		r1.ID(): &component.InstanceID{},
-		p1.ID(): &component.InstanceID{},
-		c1.ID(): &component.InstanceID{},
-		e1.ID(): &component.InstanceID{},
+		r1.ID(): {},
+		p1.ID(): {},
+		c1.ID(): {},
+		e1.ID(): {},
 	}
 
 	pg.componentGraph.SetEdge(simple.Edge{F: r1, T: p1})
@@ -209,8 +209,8 @@ func TestGraphStartStopComponentError(t *testing.T) {
 		shutdownErr: errors.New("bar"),
 	}
 	pg.instanceIDs = map[int64]*component.InstanceID{
-		r1.ID(): &component.InstanceID{},
-		e1.ID(): &component.InstanceID{},
+		r1.ID(): {},
+		e1.ID(): {},
 	}
 	pg.componentGraph.SetEdge(simple.Edge{
 		F: r1,
@@ -2138,7 +2138,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 		shutdownErr      error
 	}{
 		{
-			name: "succesful startup/shutdown",
+			name: "successful startup/shutdown",
 			edge: [2]*testNode{rNoErr, eNoErr},
 			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
 				instanceIDs[rNoErr]: {
@@ -2227,8 +2227,8 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			pg.telemetry = servicetelemetry.NewNopSettings()
 
 			actualStatuses := make(map[*component.InstanceID][]*component.StatusEvent)
-			pg.telemetry.ReportComponentStatus = status.NewServiceStatusFunc(func(id *component.InstanceID, ev *component.StatusEvent) {
-				//copy event to normalize timestamp
+			init, statusFunc := status.NewServiceStatusFunc(func(id *component.InstanceID, ev *component.StatusEvent) {
+				// copy event to normalize timestamp
 				opts := []component.StatusEventOption{component.WithTimestamp(now)}
 				if ev.Err() != nil {
 					opts = append(opts, component.WithError(ev.Err()))
@@ -2236,6 +2236,9 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 				evCopy, _ := component.NewStatusEvent(ev.Status(), opts...)
 				actualStatuses[id] = append(actualStatuses[id], evCopy)
 			})
+
+			pg.telemetry.ReportComponentStatus = statusFunc
+			init()
 
 			e0, e1 := tc.edge[0], tc.edge[1]
 			pg.instanceIDs = map[int64]*component.InstanceID{

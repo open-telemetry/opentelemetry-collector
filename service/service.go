@@ -75,6 +75,7 @@ type Service struct {
 	host                 *serviceHost
 	telemetryInitializer *telemetryInitializer
 	collectorConf        *confmap.Conf
+	statusInit           status.InitFunc
 }
 
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
@@ -113,8 +114,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 
 		// Construct telemetry attributes from build info and config's resource attributes.
-		Resource:              pcommonRes,
-		ReportComponentStatus: status.NewServiceStatusFunc(srv.host.notifyComponentStatusChange),
+		Resource: pcommonRes,
 	}
 
 	if err = srv.telemetryInitializer.init(res, srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
@@ -122,6 +122,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	}
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
 	srv.telemetrySettings.TracerProvider = srv.telemetryInitializer.tp
+	srv.statusInit, srv.telemetrySettings.ReportComponentStatus =
+		status.NewServiceStatusFunc(srv.host.notifyComponentStatusChange)
 
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensionsAndPipeline(ctx, set, cfg); err != nil {
@@ -142,6 +144,8 @@ func (srv *Service) Start(ctx context.Context) error {
 		zap.String("Version", srv.buildInfo.Version),
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
+
+	srv.statusInit()
 
 	if err := srv.host.serviceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
