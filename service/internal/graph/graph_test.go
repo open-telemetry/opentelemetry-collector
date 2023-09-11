@@ -2143,13 +2143,11 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
 				instanceIDs[rNoErr]: {
 					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusOK, component.WithTimestamp(now)),
 					newStatusEvent(component.StatusStopping, component.WithTimestamp(now)),
 					newStatusEvent(component.StatusStopped, component.WithTimestamp(now)),
 				},
 				instanceIDs[eNoErr]: {
 					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusOK, component.WithTimestamp(now)),
 					newStatusEvent(component.StatusStopping, component.WithTimestamp(now)),
 					newStatusEvent(component.StatusStopped, component.WithTimestamp(now)),
 				},
@@ -2176,7 +2174,6 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 				},
 				instanceIDs[eNoErr]: {
 					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusOK, component.WithTimestamp(now)),
 					newStatusEvent(component.StatusStopping, component.WithTimestamp(now)),
 					newStatusEvent(component.StatusStopped, component.WithTimestamp(now)),
 				},
@@ -2189,13 +2186,11 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
 				instanceIDs[rSdErr]: {
 					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusOK, component.WithTimestamp(now)),
 					newStatusEvent(component.StatusStopping, component.WithTimestamp(now)),
 					newStatusEvent(component.StatusPermanentError, component.WithTimestamp(now), component.WithError(assert.AnError)),
 				},
 				instanceIDs[eNoErr]: {
 					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusOK, component.WithTimestamp(now)),
 					newStatusEvent(component.StatusStopping, component.WithTimestamp(now)),
 					newStatusEvent(component.StatusStopped, component.WithTimestamp(now)),
 				},
@@ -2208,13 +2203,11 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
 				instanceIDs[rNoErr]: {
 					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusOK, component.WithTimestamp(now)),
 					newStatusEvent(component.StatusStopping, component.WithTimestamp(now)),
 					newStatusEvent(component.StatusStopped, component.WithTimestamp(now)),
 				},
 				instanceIDs[eSdErr]: {
 					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusOK, component.WithTimestamp(now)),
 					newStatusEvent(component.StatusStopping, component.WithTimestamp(now)),
 					newStatusEvent(component.StatusPermanentError, component.WithTimestamp(now), component.WithError(assert.AnError)),
 				},

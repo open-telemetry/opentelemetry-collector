@@ -384,8 +384,6 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
 			_ = g.telemetry.ReportComponentStatus(instanceID, component.StatusPermanentError, component.WithError(compErr))
 			return compErr
 		}
-
-		_ = g.telemetry.ReportComponentStatus(instanceID, component.StatusOK)
 	}
 	return nil
 }

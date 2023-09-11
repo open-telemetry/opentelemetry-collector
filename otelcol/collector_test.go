@@ -163,15 +163,15 @@ func TestComponentStatusWatcher(t *testing.T) {
 	factories.Processors[unhealthyProcessorFactory.Type()] = unhealthyProcessorFactory
 
 	// Keep track of all status changes in a map.
-	changedComponents := map[*component.InstanceID]component.Status{}
+	changedComponents := map[*component.InstanceID][]component.Status{}
 	var mux sync.Mutex
 	onStatusChanged := func(source *component.InstanceID, event *component.StatusEvent) {
-		if event.Status() != component.StatusRecoverableError {
+		if source.ID.Type() != unhealthyProcessorFactory.Type() {
 			return
 		}
 		mux.Lock()
 		defer mux.Unlock()
-		changedComponents[source] = event.Status()
+		changedComponents[source] = append(changedComponents[source], event.Status())
 	}
 
 	// Add a "statuswatcher" extension that will receive notifications when processor
@@ -194,6 +194,12 @@ func TestComponentStatusWatcher(t *testing.T) {
 	// Start the newly created collector.
 	wg := startCollector(context.Background(), t, col)
 
+	// An unhealthy processor asynchronously reports a recoverable error.
+	expectedStatuses := []component.Status{
+		component.StatusStarting,
+		component.StatusRecoverableError,
+	}
+
 	// The "unhealthy" processors will now begin to asynchronously report StatusRecoverableError.
 	// We expect to see these reports.
 	assert.Eventually(t, func() bool {
@@ -203,8 +209,8 @@ func TestComponentStatusWatcher(t *testing.T) {
 		for k, v := range changedComponents {
 			// All processors must report a status change with the same ID
 			assert.EqualValues(t, component.NewID(unhealthyProcessorFactory.Type()), k.ID)
-			// And all must be in StatusRecoverableError
-			assert.EqualValues(t, component.StatusRecoverableError, v)
+			// And all must have the expected statuses
+			assert.Equal(t, expectedStatuses, v)
 		}
 		// We have 3 processors with exactly the same ID in otelcol-statuswatcher.yaml
 		// We must have exactly 3 items in our map. This ensures that the "source" argument
@@ -216,6 +222,13 @@ func TestComponentStatusWatcher(t *testing.T) {
 
 	col.Shutdown()
 	wg.Wait()
+
+	// Check for additional statuses after Shutdown.
+	expectedStatuses = append(expectedStatuses, component.StatusStopping, component.StatusStopped)
+	for _, v := range changedComponents {
+		assert.Equal(t, expectedStatuses, v)
+	}
+
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
