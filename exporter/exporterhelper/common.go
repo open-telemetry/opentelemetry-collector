@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -267,23 +266,4 @@ func (ts *timeoutSender) send(req internal.Request) error {
 		defer cancelFunc()
 	}
 	return req.Export(ctx)
-}
-
-func createSampledLogger(logger *zap.Logger) *zap.Logger {
-	if logger.Core().Enabled(zapcore.DebugLevel) {
-		// Debugging is enabled. Don't do any sampling.
-		return logger
-	}
-
-	// Create a logger that samples all messages to 1 per 10 seconds initially,
-	// and 1/100 of messages after that.
-	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		return zapcore.NewSamplerWithOptions(
-			core,
-			10*time.Second,
-			1,
-			100,
-		)
-	})
-	return logger.WithOptions(opts)
 }
