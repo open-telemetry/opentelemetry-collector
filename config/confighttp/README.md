@@ -28,6 +28,7 @@ README](../configtls/README.md).
 - [`max_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
 - [`idle_conn_timeout`](https://golang.org/pkg/net/http/#Transport)
 - [`auth`](../configauth/README.md)
+- [`disable_keep_alives`](https://golang.org/pkg/net/http/#Transport)
 
 Example:
 

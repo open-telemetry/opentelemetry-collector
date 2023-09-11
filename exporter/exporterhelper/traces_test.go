@@ -161,7 +161,7 @@ func TestTracesExporter_WithPersistentQueue(t *testing.T) {
 	require.NoError(t, err)
 
 	host := &mockHost{ext: map[component.ID]component.Component{
-		storageID: internal.NewMockStorageExtension(),
+		storageID: internal.NewMockStorageExtension(nil),
 	}}
 	require.NoError(t, te.Start(context.Background(), host))
 	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })

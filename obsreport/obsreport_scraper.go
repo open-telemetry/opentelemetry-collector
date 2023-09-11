@@ -11,6 +11,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -74,7 +75,11 @@ func newScraper(cfg ScraperSettings, useOtel bool) (*Scraper, error) {
 		},
 	}
 
-	if err := scraper.createOtelMetrics(cfg); err != nil {
+	// ignore instrument name error as per workaround in https://github.com/open-telemetry/opentelemetry-collector/issues/8346
+	// if err := scraper.createOtelMetrics(cfg); err != nil {
+	// 	return nil, err
+	// }
+	if err := scraper.createOtelMetrics(cfg); err != nil && !errors.Is(err, sdkmetric.ErrInstrumentName) {
 		return nil, err
 	}
 
