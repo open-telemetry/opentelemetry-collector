@@ -21,7 +21,6 @@ type Telemetry struct {
 
 	createSampledLogger sync.Once
 	sampledLogger       *zap.Logger
-	samplingCfg         *LogsSamplingConfig
 }
 
 func (t *Telemetry) TracerProvider() trace.TracerProvider {
@@ -35,7 +34,7 @@ func (t *Telemetry) Logger() *zap.Logger {
 func (t *Telemetry) SampledLogger() func() *zap.Logger {
 	return func() *zap.Logger {
 		t.createSampledLogger.Do(func() {
-			t.sampledLogger = newSampledLogger(t.samplingCfg, t.logger)
+			t.sampledLogger = newSampledLogger(t.logger)
 		})
 		return t.sampledLogger
 	}
@@ -67,7 +66,6 @@ func New(_ context.Context, set Settings, cfg Config) (*Telemetry, error) {
 	return &Telemetry{
 		logger:         logger,
 		tracerProvider: tp,
-		samplingCfg:    cfg.Logs.Sampling,
 	}, nil
 }
 
@@ -76,6 +74,7 @@ func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	zapCfg := &zap.Config{
 		Level:             zap.NewAtomicLevelAt(cfg.Level),
 		Development:       cfg.Development,
+		Sampling:          toSamplingConfig(cfg.Sampling),
 		Encoding:          cfg.Encoding,
 		EncoderConfig:     zap.NewProductionEncoderConfig(),
 		OutputPaths:       cfg.OutputPaths,
@@ -98,29 +97,26 @@ func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	return logger, nil
 }
 
-func newSampledLogger(cfg *LogsSamplingConfig, logger *zap.Logger) *zap.Logger {
-	if cfg == nil {
-		cfg = newDefaultLogsSamplingConfig()
+func toSamplingConfig(sc *LogsSamplingConfig) *zap.SamplingConfig {
+	if sc == nil {
+		return nil
 	}
+	return &zap.SamplingConfig{
+		Initial:    sc.Initial,
+		Thereafter: sc.Thereafter,
+	}
+}
 
-	// Create a logger that samples all messages to "initial" per "tick" initially,
-	// and cfg.Initial/cfg.Thereafter of messages after that.
+func newSampledLogger(logger *zap.Logger) *zap.Logger {
+	// Create a logger that samples all messages to 10 per second initially,
+	// and 10/100 of messages after that.
 	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		return zapcore.NewSamplerWithOptions(
 			core,
-			cfg.Tick,
-			cfg.Initial,
-			cfg.Thereafter,
+			1*time.Second,
+			10,
+			100,
 		)
 	})
 	return logger.WithOptions(opts)
-}
-
-// newDefaultLogsSamplingConfig returns a default LogsSamplingConfig.
-func newDefaultLogsSamplingConfig() *LogsSamplingConfig {
-	return &LogsSamplingConfig{
-		Initial:    1,
-		Thereafter: 100,
-		Tick:       10 * time.Second,
-	}
 }

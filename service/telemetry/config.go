@@ -5,7 +5,6 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"fmt"
-	"time"
 
 	"go.uber.org/zap/zapcore"
 
@@ -55,11 +54,7 @@ type LogsConfig struct {
 	// (default = false)
 	DisableStacktrace bool `mapstructure:"disable_stacktrace"`
 
-	// Sampling sets a sampling policy for the more efficient sampled logger.
-	// Default:
-	//     initial: 1
-	//     thereafter: 100
-	//     tick: 10s
+	// Sampling sets a sampling policy. A nil SamplingConfig disables sampling.
 	Sampling *LogsSamplingConfig `mapstructure:"sampling"`
 
 	// OutputPaths is a list of URLs or file paths to write logging output to.
@@ -92,13 +87,12 @@ type LogsConfig struct {
 	InitialFields map[string]any `mapstructure:"initial_fields"`
 }
 
-// LogsSamplingConfig sets a sampling strategy for the more efficient sampled logger. Sampling caps the
+// LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
 // global CPU and I/O load that logging puts on your process while attempting
 // to preserve a representative subset of your logs.
 type LogsSamplingConfig struct {
-	Initial    int           `mapstructure:"initial"`
-	Thereafter int           `mapstructure:"thereafter"`
-	Tick       time.Duration `mapstructure:"tick"`
+	Initial    int `mapstructure:"initial"`
+	Thereafter int `mapstructure:"thereafter"`
 }
 
 // MetricsConfig exposes the common Telemetry configuration for one component.

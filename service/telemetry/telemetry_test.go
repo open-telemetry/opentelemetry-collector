@@ -6,7 +6,6 @@ package telemetry
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -83,14 +82,13 @@ func TestSampledLoggerCreateFirstTime(t *testing.T) {
 			},
 		},
 		{
-			name: "Custom sampling",
+			name: "Already using sampling",
 			cfg: &Config{
 				Logs: LogsConfig{
 					Level:    zapcore.DebugLevel,
 					Encoding: "console",
 					Sampling: &LogsSamplingConfig{
 						Initial:    50,
-						Tick:       2 * time.Second,
 						Thereafter: 40,
 					},
 				},
