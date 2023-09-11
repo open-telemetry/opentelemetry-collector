@@ -58,7 +58,6 @@ func New(_ context.Context, set Settings, cfg Config) (*Telemetry, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	tp := sdktrace.NewTracerProvider(
 		// needed for supporting the zpages extension
 		sdktrace.WithSampler(alwaysRecord()),
