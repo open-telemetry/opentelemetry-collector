@@ -286,10 +286,7 @@ func (gss *GRPCServerSettings) ToServer(host component.Host, settings component.
 		return nil, err
 	}
 	opts = append(opts, extraOpts...)
-	grpcServer, err := grpc.NewServer(opts...), nil
-	if err != nil {
-		return nil, err
-	}
+	grpcServer := grpc.NewServer(opts...)
 	if gss.HealthCheck {
 		healthServer := health.NewServer()
 		grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
