@@ -110,4 +110,5 @@ see [confignet README](../confignet/README.md).
 - [`read_buffer_size`](https://godoc.org/google.golang.org/grpc#ReadBufferSize)
 - [`tls`](../configtls/README.md)
 - [`write_buffer_size`](https://godoc.org/google.golang.org/grpc#WriteBufferSize)
+- [`healthcheck`](https://github.com/grpc/grpc/blob/master/doc/health-checking.md): registers the health check service
 - [`auth`](../configauth/README.md)
