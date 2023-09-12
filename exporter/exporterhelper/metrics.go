@@ -148,10 +148,7 @@ func NewMetricsRequestExporter(
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}
-		r := &request{
-			Request:     req,
-			baseRequest: baseRequest{ctx: ctx},
-		}
+		r := newRequest(ctx, req)
 		sErr := be.send(r)
 		if errors.Is(sErr, errSendingQueueIsFull) {
 			be.obsrep.recordMetricsEnqueueFailure(r.Context(), int64(r.Count()))
