@@ -19,6 +19,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 
@@ -236,6 +237,20 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 	assert.NotNil(t, srv)
 }
 
+func TestGrpcHealthCheck(t *testing.T) {
+	gss := &GRPCServerSettings{
+		NetAddr: confignet.NetAddr{
+			Endpoint:  "localhost:1234",
+			Transport: "tcp",
+		},
+		HealthCheck: true,
+	}
+	gsvr, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	assert.NoError(t, err)
+	info := gsvr.GetServiceInfo()[grpc_health_v1.Health_ServiceDesc.ServiceName]
+	assert.Len(t, info.Methods, 2) // assert the 2 grpc health check endpoints were registered
+}
+
 func TestGRPCClientSettingsError(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
@@ -424,7 +439,6 @@ func TestGRPCServerWarning(t *testing.T) {
 			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), test.len)
 		})
 	}
-
 }
 
 func TestGRPCServerSettingsError(t *testing.T) {

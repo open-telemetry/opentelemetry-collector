@@ -21,6 +21,8 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/encoding/gzip"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
@@ -142,6 +144,10 @@ type GRPCServerSettings struct {
 
 	// Keepalive anchor for all the settings related to keepalive.
 	Keepalive *KeepaliveServerConfig `mapstructure:"keepalive"`
+
+	// HealthCheck service for the gRPC server. See gRPC health checking.
+	// (https://github.com/grpc/grpc/blob/master/doc/health-checking.md)
+	HealthCheck bool `mapstructure:"healthcheck"`
 
 	// Auth for this receiver
 	Auth *configauth.Authentication `mapstructure:"auth"`
@@ -280,7 +286,15 @@ func (gss *GRPCServerSettings) ToServer(host component.Host, settings component.
 		return nil, err
 	}
 	opts = append(opts, extraOpts...)
-	return grpc.NewServer(opts...), nil
+	grpcServer, err := grpc.NewServer(opts...), nil
+	if err != nil {
+		return nil, err
+	}
+	if gss.HealthCheck {
+		healthServer := health.NewServer()
+		grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
+	}
+	return grpcServer, nil
 }
 
 func (gss *GRPCServerSettings) toServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
