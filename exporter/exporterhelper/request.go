@@ -59,3 +59,13 @@ func (req *request) Count() int {
 	}
 	return 0
 }
+
+// RequestMarshaler is a function that can marshal a Request into bytes.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+type RequestMarshaler func(req Request) ([]byte, error)
+
+// RequestUnmarshaler is a function that can unmarshal bytes into a Request.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+type RequestUnmarshaler func(data []byte) (Request, error)

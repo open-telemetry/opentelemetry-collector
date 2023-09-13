@@ -112,7 +112,8 @@ func WithRetry(retrySettings RetrySettings) Option {
 func WithQueue(config QueueSettings) Option {
 	return func(o *baseExporter) {
 		if o.requestExporter {
-			panic("queueing is not available for the new request exporters yet")
+			panic("this option is not available for the new request exporters, " +
+				"use WithMemoryQueue or WithPersistentQueue instead")
 		}
 		var queue internal.ProducerConsumerQueue
 		if config.Enabled {
@@ -121,6 +122,52 @@ func WithQueue(config QueueSettings) Option {
 			} else {
 				queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID, o.marshaler, o.unmarshaler)
 			}
+		}
+		qs := newQueueSender(o.set.ID, o.signal, queue, o.sampledLogger)
+		o.queueSender = qs
+		o.setOnTemporaryFailure(qs.onTemporaryFailure)
+	}
+}
+
+// WithMemoryQueue overrides the default QueueConfig for an exporter to use an in-memory queue.
+// This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func WithMemoryQueue(config QueueConfig) Option {
+	return func(o *baseExporter) {
+		var queue internal.ProducerConsumerQueue
+		if config.Enabled {
+			queue = internal.NewBoundedMemoryQueue(config.QueueSize, config.NumConsumers)
+		}
+		qs := newQueueSender(o.set.ID, o.signal, queue, o.sampledLogger)
+		o.queueSender = qs
+		o.setOnTemporaryFailure(qs.onTemporaryFailure)
+	}
+}
+
+// WithPersistentQueue overrides the default QueueConfig for an exporter to use a persistent queue.
+// This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func WithPersistentQueue(config PersistentQueueConfig, marshaler RequestMarshaler, unmarshaler RequestUnmarshaler) Option {
+	return func(o *baseExporter) {
+		var queue internal.ProducerConsumerQueue
+		if config.Enabled {
+			queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID,
+				func(req internal.Request) ([]byte, error) {
+					return marshaler(req.(*request).Request)
+				},
+				func(data []byte) (internal.Request, error) {
+					req, err := unmarshaler(data)
+					if err != nil {
+						return nil, err
+					}
+					return &request{
+						Request:     req,
+						baseRequest: baseRequest{ctx: context.Background()},
+					}, nil
+				},
+			)
 		}
 		qs := newQueueSender(o.set.ID, o.signal, queue, o.sampledLogger)
 		o.queueSender = qs

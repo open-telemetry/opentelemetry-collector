@@ -6,6 +6,7 @@ package exporterhelper
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -142,11 +143,12 @@ func TestTracesRequestExporter_Default_ConvertError(t *testing.T) {
 
 func TestTracesRequestExporter_Default_ExportError(t *testing.T) {
 	td := ptrace.NewTraces()
-	want := errors.New("export_error")
-	te, err := NewTracesRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeRequestConverter{requestError: want})
+	wantErr := errors.New("export_error")
+	te, err := NewTracesRequestExporter(context.Background(), exportertest.NewNopCreateSettings(),
+		&fakeRequestConverter{exportCallback: func(req Request) error { return wantErr }})
 	require.NoError(t, err)
 	require.NotNil(t, te)
-	require.Equal(t, want, te.ConsumeTraces(context.Background(), td))
+	require.Equal(t, wantErr, te.ConsumeTraces(context.Background(), td))
 }
 
 func TestTracesExporter_WithPersistentQueue(t *testing.T) {
@@ -170,6 +172,34 @@ func TestTracesExporter_WithPersistentQueue(t *testing.T) {
 	require.NoError(t, te.ConsumeTraces(context.Background(), traces))
 	require.Eventually(t, func() bool {
 		return len(ts.AllTraces()) == 1 && ts.SpanCount() == 2
+	}, 500*time.Millisecond, 10*time.Millisecond)
+}
+
+func TestTracesRequestExporter_WithPersistentQueue(t *testing.T) {
+	qCfg := NewDefaultPersistentQueueConfig()
+	storageID := component.NewIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID
+	acc := &atomic.Uint32{}
+	set := exportertest.NewNopCreateSettings()
+	set.ID = component.NewIDWithName("test_traces_request", "with_persistent_queue")
+	rc := &fakeRequestConverter{exportCallback: func(req Request) error {
+		acc.Add(uint32(req.(RequestItemsCounter).ItemsCount()))
+		return nil
+	}}
+	te, err := NewTracesRequestExporter(context.Background(), set, rc,
+		WithPersistentQueue(qCfg, rc.requestMarshalerFunc(), rc.requestUnmarshalerFunc()))
+	require.NoError(t, err)
+
+	host := &mockHost{ext: map[component.ID]component.Component{
+		storageID: internal.NewMockStorageExtension(nil),
+	}}
+	require.NoError(t, te.Start(context.Background(), host))
+	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
+
+	require.NoError(t, te.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+	require.NoError(t, te.ConsumeTraces(context.Background(), testdata.GenerateTraces(2)))
+	require.Eventually(t, func() bool {
+		return acc.Load() == 3
 	}, 500*time.Millisecond, 10*time.Millisecond)
 }
 
@@ -211,16 +241,17 @@ func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestTracesRequestExporter_WithRecordMetrics_RequestSenderError(t *testing.T) {
-	want := errors.New("export_error")
+	wantErr := errors.New("export_error")
 	tt, err := obsreporttest.SetupTelemetry(fakeTracesExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := NewTracesRequestExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeRequestConverter{requestError: want})
+	te, err := NewTracesRequestExporter(context.Background(), tt.ToExporterCreateSettings(),
+		&fakeRequestConverter{exportCallback: func(req Request) error { return wantErr }})
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	checkRecordedMetricsForTracesExporter(t, tt, te, want)
+	checkRecordedMetricsForTracesExporter(t, tt, te, wantErr)
 }
 
 func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
@@ -298,12 +329,13 @@ func TestTracesRequestExporter_WithSpan_ExportError(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	want := errors.New("export_error")
-	te, err := NewTracesRequestExporter(context.Background(), set, &fakeRequestConverter{requestError: want})
+	wantErr := errors.New("export_error")
+	te, err := NewTracesRequestExporter(context.Background(), set,
+		&fakeRequestConverter{exportCallback: func(req Request) error { return wantErr }})
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForTracesExporter(t, sr, set.TracerProvider.Tracer("test"), te, want, 1)
+	checkWrapSpanForTracesExporter(t, sr, set.TracerProvider.Tracer("test"), te, wantErr, 1)
 }
 
 func TestTracesExporter_WithShutdown(t *testing.T) {

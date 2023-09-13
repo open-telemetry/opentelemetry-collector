@@ -62,6 +62,64 @@ func (qCfg *QueueSettings) Validate() error {
 	return nil
 }
 
+// QueueConfig defines configuration for queueing requests before exporting.
+// It's supposed to be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+type QueueConfig struct {
+	// Enabled indicates whether to not enqueue batches before exporting.
+	Enabled bool `mapstructure:"enabled"`
+	// NumConsumers is the number of consumers from the queue.
+	NumConsumers int `mapstructure:"num_consumers"`
+	// QueueSize is the maximum number of batches allowed in queue at a given time.
+	// This field is left for backward compatibility with QueueSettings.
+	// Later, it will be replaced with size fields specified explicitly in terms of items or batches.
+	QueueSize int `mapstructure:"queue_size"`
+}
+
+// NewDefaultQueueConfig returns the default QueueConfig.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewDefaultQueueConfig() QueueConfig {
+	return QueueConfig{
+		Enabled:      true,
+		NumConsumers: 10,
+		QueueSize:    defaultQueueSize,
+	}
+}
+
+// PersistentQueueConfig defines configuration for queueing requests before exporting using a persistent storage.
+// It's supposed to be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter and will replace
+// QueueSettings in the future.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+type PersistentQueueConfig struct {
+	QueueConfig `mapstructure:",squash"`
+	// StorageID if not empty, enables the persistent storage and uses the component specified
+	// as a storage extension for the persistent queue
+	StorageID *component.ID `mapstructure:"storage"`
+}
+
+// NewDefaultPersistentQueueConfig returns the default PersistentQueueConfig.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewDefaultPersistentQueueConfig() PersistentQueueConfig {
+	return PersistentQueueConfig{
+		QueueConfig: NewDefaultQueueConfig(),
+	}
+}
+
+// Validate checks if the QueueSettings configuration is valid
+func (qCfg *QueueConfig) Validate() error {
+	if !qCfg.Enabled {
+		return nil
+	}
+	if qCfg.QueueSize <= 0 {
+		return errors.New("queue size must be positive")
+	}
+	return nil
+}
+
 type queueSender struct {
 	baseRequestSender
 	fullName         string

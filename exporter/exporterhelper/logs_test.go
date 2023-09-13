@@ -6,6 +6,7 @@ package exporterhelper
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -143,12 +144,12 @@ func TestLogsRequestExporter_Default_ConvertError(t *testing.T) {
 
 func TestLogsRequestExporter_Default_ExportError(t *testing.T) {
 	ld := plog.NewLogs()
-	want := errors.New("export_error")
+	wantErr := errors.New("export_error")
 	le, err := NewLogsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(),
-		&fakeRequestConverter{requestError: want})
+		&fakeRequestConverter{exportCallback: func(Request) error { return wantErr }})
 	require.NoError(t, err)
 	require.NotNil(t, le)
-	require.Equal(t, want, le.ConsumeLogs(context.Background(), ld))
+	require.Equal(t, wantErr, le.ConsumeLogs(context.Background(), ld))
 }
 
 func TestLogsExporter_WithPersistentQueue(t *testing.T) {
@@ -172,6 +173,34 @@ func TestLogsExporter_WithPersistentQueue(t *testing.T) {
 	require.NoError(t, te.ConsumeLogs(context.Background(), traces))
 	require.Eventually(t, func() bool {
 		return len(ts.AllLogs()) == 1 && ts.LogRecordCount() == 2
+	}, 500*time.Millisecond, 10*time.Millisecond)
+}
+
+func TestLogsRequestExporter_WithPersistentQueue(t *testing.T) {
+	qCfg := NewDefaultPersistentQueueConfig()
+	storageID := component.NewIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID
+	acc := &atomic.Uint32{}
+	set := exportertest.NewNopCreateSettings()
+	set.ID = component.NewIDWithName("test_logs_request", "with_persistent_queue")
+	rc := &fakeRequestConverter{exportCallback: func(req Request) error {
+		acc.Add(uint32(req.(RequestItemsCounter).ItemsCount()))
+		return nil
+	}}
+	te, err := NewLogsRequestExporter(context.Background(), set, rc,
+		WithPersistentQueue(qCfg, rc.requestMarshalerFunc(), rc.requestUnmarshalerFunc()))
+	require.NoError(t, err)
+
+	host := &mockHost{ext: map[component.ID]component.Component{
+		storageID: internal.NewMockStorageExtension(nil),
+	}}
+	require.NoError(t, te.Start(context.Background(), host))
+	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
+
+	require.NoError(t, te.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
+	require.NoError(t, te.ConsumeLogs(context.Background(), testdata.GenerateLogs(2)))
+	require.Eventually(t, func() bool {
+		return acc.Load() == 3
 	}, 500*time.Millisecond, 10*time.Millisecond)
 }
 
@@ -213,17 +242,17 @@ func TestLogsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestLogsRequestExporter_WithRecordMetrics_ExportError(t *testing.T) {
-	want := errors.New("export_error")
+	wantErr := errors.New("export_error")
 	tt, err := obsreporttest.SetupTelemetry(fakeLogsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	le, err := NewLogsRequestExporter(context.Background(), tt.ToExporterCreateSettings(),
-		&fakeRequestConverter{requestError: want})
+		&fakeRequestConverter{exportCallback: func(Request) error { return wantErr }})
 	require.Nil(t, err)
 	require.NotNil(t, le)
 
-	checkRecordedMetricsForLogsExporter(t, tt, le, want)
+	checkRecordedMetricsForLogsExporter(t, tt, le, wantErr)
 }
 
 func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
@@ -298,11 +327,12 @@ func TestLogsRequestExporter_WithSpan_ReturnError(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	want := errors.New("my_error")
-	le, err := NewLogsRequestExporter(context.Background(), set, &fakeRequestConverter{requestError: want})
+	wantErr := errors.New("my_error")
+	le, err := NewLogsRequestExporter(context.Background(), set,
+		&fakeRequestConverter{exportCallback: func(Request) error { return wantErr }})
 	require.Nil(t, err)
 	require.NotNil(t, le)
-	checkWrapSpanForLogsExporter(t, sr, set.TracerProvider.Tracer("test"), le, want, 1)
+	checkWrapSpanForLogsExporter(t, sr, set.TracerProvider.Tracer("test"), le, wantErr, 1)
 }
 
 func TestLogsExporter_WithShutdown(t *testing.T) {

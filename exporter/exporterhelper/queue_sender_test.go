@@ -177,6 +177,18 @@ func TestQueueSettings_Validate(t *testing.T) {
 	assert.NoError(t, qCfg.Validate())
 }
 
+func TestQueueConfig_Validate(t *testing.T) {
+	qCfg := NewDefaultQueueConfig()
+	assert.NoError(t, qCfg.Validate())
+
+	qCfg.QueueSize = 0
+	assert.EqualError(t, qCfg.Validate(), "queue size must be positive")
+
+	// Confirm Validate doesn't return error with invalid config when feature is disabled
+	qCfg.Enabled = false
+	assert.NoError(t, qCfg.Validate())
+}
+
 // if requeueing is enabled, we eventually retry even if we failed at first
 func TestQueuedRetry_RequeuingEnabled(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
@@ -249,6 +261,34 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 }
 
+func TestMemoryQueue(t *testing.T) {
+	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, true, nil, nil, newNoopObsrepSender, WithMemoryQueue(NewDefaultQueueConfig()))
+	require.NotNil(t, be.queueSender.(*queueSender).queue)
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, be.Shutdown(context.Background()))
+}
+
+func TestMemoryQueueDisabled(t *testing.T) {
+	qs := NewDefaultQueueConfig()
+	qs.Enabled = false
+	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, true, nil, nil, newNoopObsrepSender, WithMemoryQueue(qs))
+	require.Nil(t, be.queueSender.(*queueSender).queue)
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, be.Shutdown(context.Background()))
+}
+
+func TestPersistentQueueDisabled(t *testing.T) {
+	qs := NewDefaultPersistentQueueConfig()
+	qs.Enabled = false
+	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, true, nil, nil, newNoopObsrepSender, WithPersistentQueue(qs, nil, nil))
+	require.Nil(t, be.queueSender.(*queueSender).queue)
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, be.Shutdown(context.Background()))
+}
+
 func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry(defaultID)
 	require.NoError(t, err)
@@ -293,6 +333,59 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 
 	// we fail to start if we get an error creating the storage client
 	require.Error(t, be.Start(context.Background(), host), "could not get storage client")
+}
+
+func TestPersistentQueueRetryStorageError(t *testing.T) {
+	storageError := errors.New("could not get storage client")
+	tt, err := obsreporttest.SetupTelemetry(defaultID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	qCfg := NewDefaultPersistentQueueConfig()
+	storageID := component.NewIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID // enable persistence
+	rCfg := NewDefaultRetrySettings()
+	set := tt.ToExporterCreateSettings()
+	rc := fakeRequestConverter{}
+	be, err := newBaseExporter(set, "", true, nil, nil, newNoopObsrepSender, WithRetry(rCfg),
+		WithPersistentQueue(qCfg, rc.requestMarshalerFunc(), rc.requestUnmarshalerFunc()))
+	require.NoError(t, err)
+
+	var extensions = map[component.ID]component.Component{
+		storageID: internal.NewMockStorageExtension(storageError),
+	}
+	host := &mockHost{ext: extensions}
+
+	// we fail to start if we get an error creating the storage client
+	require.Error(t, be.Start(context.Background(), host), "could not get storage client")
+}
+
+func TestPersistentQueueRetryUnmarshalError(t *testing.T) {
+	cfg := NewDefaultPersistentQueueConfig()
+	storageID := component.NewIDWithName("file_storage", "storage")
+	cfg.StorageID = &storageID // enable persistence
+	set := exportertest.NewNopCreateSettings()
+	set.ID = component.NewIDWithName("test_request", "with_persistent_queue")
+	unmarshalCalled := &atomic.Bool{}
+	rc := fakeRequestConverter{}
+	unmarshaler := func(bytes []byte) (Request, error) {
+		unmarshalCalled.Store(true)
+		return nil, errors.New("unmarshal error")
+	}
+	be, err := newBaseExporter(set, "", true, nil, nil, newNoopObsrepSender, WithPersistentQueue(cfg, rc.requestMarshalerFunc(), unmarshaler))
+	require.NoError(t, err)
+
+	require.Nil(t, be.Start(context.Background(), &mockHost{ext: map[component.ID]component.Component{
+		storageID: internal.NewMockStorageExtension(nil),
+	}}))
+
+	require.NoError(t, be.send(&request{
+		baseRequest: baseRequest{ctx: context.Background()},
+		Request:     rc.fakeRequest(1),
+	}))
+	require.Eventually(t, func() bool { return unmarshalCalled.Load() }, 100*time.Millisecond, 10*time.Millisecond)
+
+	require.NoError(t, be.Shutdown(context.Background()))
 }
 
 func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
