@@ -4,6 +4,7 @@
 package json
 
 import (
+	"fmt"
 	"testing"
 
 	jsoniter "github.com/json-iterator/go"
@@ -176,7 +177,7 @@ func TestReadValueUnknownField(t *testing.T) {
 	assert.EqualValues(t, &otlpcommon.AnyValue{}, value)
 }
 
-func TestReadValueInvliadBytesValue(t *testing.T) {
+func TestReadValueInvalidBytesValue(t *testing.T) {
 	jsonStr := `{"bytesValue": "--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
@@ -185,6 +186,17 @@ func TestReadValueInvliadBytesValue(t *testing.T) {
 	if assert.Error(t, iter.Error) {
 		assert.Contains(t, iter.Error.Error(), "base64")
 	}
+}
+
+func TestReadValueBytesValue(t *testing.T) {
+	jsonStr := `{"bytesValue": "IkFRSUQi"}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+
+	val := otlpcommon.AnyValue{}
+	ReadValue(iter, &val)
+	b := val.GetBytesValue()
+	fmt.Println(b)
 }
 
 func TestReadArrayUnknownField(t *testing.T) {

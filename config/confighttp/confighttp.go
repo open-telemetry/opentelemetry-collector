@@ -33,7 +33,7 @@ type HTTPClientSettings struct {
 	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
 	Endpoint string `mapstructure:"endpoint"`
 
-	// Proxy setting for the collector
+	// ProxyURL setting for the collector
 	ProxyURL string `mapstructure:"proxy_url"`
 
 	// TLSSetting struct exposes TLS client configuration.
@@ -129,12 +129,12 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 	}
 
 	// Setting the Proxy URL
-	if hcs.Proxy != "" {
-		proxyURL, err := url.Parse(hcs.Proxy)
+	if hcs.ProxyURL != "" {
+		proxyURL, err := url.Parse(hcs.ProxyURL)
 		if err != nil {
 			return nil, err
 		}
-			transport.Proxy = http.ProxyURL(proxyURL)
+		transport.Proxy = http.ProxyURL(proxyURL)
 	}
 
 	clientTransport := (http.RoundTripper)(transport)
