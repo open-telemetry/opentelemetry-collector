@@ -122,7 +122,7 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
-	firstMockR := newMockRequest(context.Background(), 2, errors.New("transient error"))
+	firstMockR := newErrorRequest(context.Background())
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
 		require.NoError(t, be.send(firstMockR))
@@ -135,15 +135,14 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 		require.NoError(t, be.send(secondMockR))
 	})
 
+	require.LessOrEqual(t, 1, be.queueSender.(*queueSender).queue.Size())
+
 	assert.NoError(t, be.Shutdown(context.Background()))
 
-	// TODO: Ensure that queue is drained, and uncomment the next 3 lines.
-	//  https://github.com/jaegertracing/jaeger/pull/2349
-	firstMockR.checkNumRequests(t, 1)
-	// secondMockR.checkNumRequests(t, 1)
-	// ocs.checkSendItemsCount(t, 3)
-	ocs.checkDroppedItemsCount(t, 2)
-	// require.Zero(t, be.qrSender.queue.OtlpProtoSize())
+	secondMockR.checkNumRequests(t, 1)
+	ocs.checkSendItemsCount(t, 3)
+	ocs.checkDroppedItemsCount(t, 7)
+	require.Zero(t, be.queueSender.(*queueSender).queue.Size())
 }
 
 func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
