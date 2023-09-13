@@ -20,7 +20,7 @@ type boundedMemoryQueue struct {
 	stopWG       sync.WaitGroup
 	size         *atomic.Uint32
 	stopped      *atomic.Bool
-	items        chan Request
+	items        chan *Request
 	capacity     uint32
 	numConsumers int
 }
@@ -29,7 +29,7 @@ type boundedMemoryQueue struct {
 // callback for dropped items (e.g. useful to emit metrics).
 func NewBoundedMemoryQueue(capacity int, numConsumers int) ProducerConsumerQueue {
 	return &boundedMemoryQueue{
-		items:        make(chan Request, capacity),
+		items:        make(chan *Request, capacity),
 		stopped:      &atomic.Bool{},
 		size:         &atomic.Uint32{},
 		capacity:     uint32(capacity),
@@ -58,7 +58,7 @@ func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set Queu
 }
 
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
-func (q *boundedMemoryQueue) Produce(item Request) bool {
+func (q *boundedMemoryQueue) Produce(item *Request) bool {
 	if q.stopped.Load() {
 		return false
 	}

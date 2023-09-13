@@ -48,7 +48,7 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 
 	assert.NoError(t, be.Shutdown(context.Background()))
 
-	secondMockR.checkNumRequests(t, 1)
+	secondMockR.Request.(*mockRequest).checkNumRequests(t, 1)
 	ocs.checkSendItemsCount(t, 3)
 	ocs.checkDroppedItemsCount(t, 7)
 	require.Zero(t, be.queueSender.(*queueSender).queue.Size())
@@ -75,7 +75,7 @@ func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 	})
 	ocs.awaitAsyncProcessing()
 
-	mockR.checkNumRequests(t, 1)
+	mockR.Request.(*mockRequest).checkNumRequests(t, 1)
 	ocs.checkSendItemsCount(t, 2)
 	ocs.checkDroppedItemsCount(t, 0)
 	require.Zero(t, be.queueSender.(*queueSender).queue.Size())
@@ -110,7 +110,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 	})
 
 	wantRequests := 10
-	reqs := make([]*mockRequest, 0, 10)
+	reqs := make([]*internal.Request, 0, 10)
 	for i := 0; i < wantRequests; i++ {
 		ocs.run(func() {
 			req := newMockRequest(context.Background(), 2, nil)
@@ -124,7 +124,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 
 	require.Len(t, reqs, wantRequests)
 	for _, req := range reqs {
-		req.checkNumRequests(t, 1)
+		req.Request.(*mockRequest).checkNumRequests(t, 1)
 	}
 
 	ocs.checkSendItemsCount(t, 2*wantRequests)
@@ -202,7 +202,7 @@ func TestQueuedRetry_RequeuingEnabled(t *testing.T) {
 	ocs.awaitAsyncProcessing()
 
 	// In the newMockConcurrentExporter we count requests and items even for failed requests
-	mockR.checkNumRequests(t, 2)
+	mockR.Request.(*mockRequest).checkNumRequests(t, 2)
 	ocs.checkSendItemsCount(t, 1)
 	ocs.checkDroppedItemsCount(t, 1) // not actually dropped, but ocs counts each failed send here
 }
@@ -226,7 +226,7 @@ func TestQueuedRetry_RequeuingEnabledQueueFull(t *testing.T) {
 	mockR := newMockRequest(context.Background(), 1, traceErr)
 
 	require.Error(t, be.retrySender.send(mockR), "sending_queue is full")
-	mockR.checkNumRequests(t, 1)
+	mockR.Request.(*mockRequest).checkNumRequests(t, 1)
 }
 
 func TestQueueRetryWithDisabledQueue(t *testing.T) {
@@ -243,7 +243,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 		require.Error(t, be.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
-	mockR.checkNumRequests(t, 1)
+	mockR.Request.(*mockRequest).checkNumRequests(t, 1)
 	ocs.checkSendItemsCount(t, 0)
 	ocs.checkDroppedItemsCount(t, 2)
 	require.NoError(t, be.Shutdown(context.Background()))
@@ -283,7 +283,8 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := NewDefaultRetrySettings()
 	set := tt.ToExporterCreateSettings()
-	be, err := newBaseExporter(set, "", false, mockRequestMarshaler, mockRequestUnmarshaler(&mockRequest{}), newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
+	unmarshaler := mockRequestUnmarshaler(newMockRequest(context.Background(), 1, nil))
+	be, err := newBaseExporter(set, "", false, mockRequestMarshaler, unmarshaler, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
 	var extensions = map[component.ID]component.Component{

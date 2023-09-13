@@ -32,7 +32,7 @@ func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 // createTestQueue creates and starts a fake queue with the given capacity and number of consumers.
-func createTestQueue(t *testing.T, capacity, numConsumers int, callback func(item Request)) ProducerConsumerQueue {
+func createTestQueue(t *testing.T, capacity, numConsumers int, callback func(item *Request)) ProducerConsumerQueue {
 	pq := NewPersistentQueue(capacity, numConsumers, component.ID{}, newFakeTracesRequestMarshalerFunc(),
 		newFakeTracesRequestUnmarshalerFunc())
 	host := &mockHost{ext: map[component.ID]component.Component{
@@ -51,7 +51,7 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 		host := &mockHost{ext: map[component.ID]component.Component{
 			{}: NewMockStorageExtension(nil),
 		}}
-		err := pq.Start(context.Background(), host, newNopQueueSettings(func(req Request) {}))
+		err := pq.Start(context.Background(), host, newNopQueueSettings(func(req *Request) {}))
 		require.NoError(t, err)
 
 		// Stop consumer to imitate queue overflow
@@ -85,7 +85,7 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 }
 
 func TestPersistentQueue_Close(t *testing.T) {
-	wq := createTestQueue(t, 1001, 100, func(item Request) {})
+	wq := createTestQueue(t, 1001, 100, func(item *Request) {})
 	traces := newTraces(1, 10)
 	req := newFakeTracesRequest(traces)
 
@@ -104,7 +104,7 @@ func TestPersistentQueue_Close(t *testing.T) {
 
 // Verify storage closes after queue consumers. If not in this order, successfully consumed items won't be updated in storage
 func TestPersistentQueue_Close_StorageCloseAfterConsumers(t *testing.T) {
-	wq := createTestQueue(t, 1001, 1, func(item Request) {})
+	wq := createTestQueue(t, 1001, 1, func(item *Request) {})
 	traces := newTraces(1, 10)
 
 	lastRequestProcessedTime := time.Now()
@@ -163,7 +163,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			req := newFakeTracesRequest(traces)
 
 			numMessagesConsumed := &atomic.Int32{}
-			tq := createTestQueue(t, 1000, c.numConsumers, func(item Request) {
+			tq := createTestQueue(t, 1000, c.numConsumers, func(item *Request) {
 				if item != nil {
 					numMessagesConsumed.Add(int32(1))
 				}

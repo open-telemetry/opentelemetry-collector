@@ -80,7 +80,7 @@ func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set Q
 }
 
 // Produce adds an item to the queue and returns true if it was accepted
-func (pq *persistentQueue) Produce(item Request) bool {
+func (pq *persistentQueue) Produce(item *Request) bool {
 	err := pq.storage.put(item)
 	return err == nil
 }

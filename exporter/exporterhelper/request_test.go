@@ -6,6 +6,7 @@ package exporterhelper
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper/request"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -31,14 +32,14 @@ type fakeRequestConverter struct {
 	requestError error
 }
 
-func (c fakeRequestConverter) RequestFromMetrics(_ context.Context, md pmetric.Metrics) (Request, error) {
+func (c fakeRequestConverter) RequestFromMetrics(_ context.Context, md pmetric.Metrics) (request.Request, error) {
 	return fakeRequest{items: md.DataPointCount(), err: c.requestError}, c.metricsError
 }
 
-func (c fakeRequestConverter) RequestFromTraces(_ context.Context, td ptrace.Traces) (Request, error) {
+func (c fakeRequestConverter) RequestFromTraces(_ context.Context, td ptrace.Traces) (request.Request, error) {
 	return fakeRequest{items: td.SpanCount(), err: c.requestError}, c.tracesError
 }
 
-func (c fakeRequestConverter) RequestFromLogs(_ context.Context, ld plog.Logs) (Request, error) {
+func (c fakeRequestConverter) RequestFromLogs(_ context.Context, ld plog.Logs) (request.Request, error) {
 	return fakeRequest{items: ld.LogRecordCount(), err: c.requestError}, c.logsError
 }

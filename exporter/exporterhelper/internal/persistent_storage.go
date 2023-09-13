@@ -50,7 +50,7 @@ type persistentContiguousStorage struct {
 	stopOnce sync.Once
 	capacity uint64
 
-	reqChan chan Request
+	reqChan chan *Request
 
 	mu                       sync.Mutex
 	readIndex                itemIndex
@@ -91,7 +91,7 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, clien
 		marshaler:   marshaler,
 		capacity:    capacity,
 		putChan:     make(chan struct{}, capacity),
-		reqChan:     make(chan Request),
+		reqChan:     make(chan *Request),
 		stopChan:    make(chan struct{}),
 		itemsCount:  &atomic.Uint64{},
 	}
@@ -145,7 +145,7 @@ func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContigu
 	pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
 }
 
-func (pcs *persistentContiguousStorage) enqueueNotDispatchedReqs(reqs []Request) {
+func (pcs *persistentContiguousStorage) enqueueNotDispatchedReqs(reqs []*Request) {
 	if len(reqs) > 0 {
 		errCount := 0
 		for _, req := range reqs {
@@ -183,7 +183,7 @@ func (pcs *persistentContiguousStorage) loop() {
 }
 
 // get returns the request channel that all the requests will be send on
-func (pcs *persistentContiguousStorage) get() <-chan Request {
+func (pcs *persistentContiguousStorage) get() <-chan *Request {
 	return pcs.reqChan
 }
 
@@ -203,7 +203,7 @@ func (pcs *persistentContiguousStorage) stop() {
 }
 
 // put marshals the request and puts it into the persistent queue
-func (pcs *persistentContiguousStorage) put(req Request) error {
+func (pcs *persistentContiguousStorage) put(req *Request) error {
 	// Nil requests are ignored
 	if req == nil {
 		return nil
@@ -231,7 +231,7 @@ func (pcs *persistentContiguousStorage) put(req Request) error {
 }
 
 // getNextItem pulls the next available item from the persistent storage; if none is found, returns (nil, false)
-func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (Request, bool) {
+func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (*Request, bool) {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 
@@ -244,7 +244,7 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (Reques
 		pcs.updateReadIndex(ctx)
 		pcs.itemDispatchingStart(ctx, index)
 
-		var req Request
+		var req *Request
 		batch, err := newBatch(pcs).get(pcs.itemKey(index)).execute(ctx)
 		if err == nil {
 			req, err = batch.getRequestResult(pcs.itemKey(index))
@@ -261,14 +261,14 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (Reques
 		}
 
 		// If all went well so far, cleanup will be handled by callback
-		req.SetOnProcessingFinished(func() {
+		req.processingFinishedCallback = func() {
 			pcs.mu.Lock()
 			defer pcs.mu.Unlock()
 			if err := pcs.itemDispatchingFinish(ctx, index); err != nil {
 				pcs.logger.Error("Error deleting item from queue",
 					zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 			}
-		})
+		}
 		return req, true
 	}
 
@@ -278,8 +278,8 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (Reques
 // retrieveNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
 // and moves the items back to the queue. The function returns an array which might contain nils
 // if unmarshalling of the value at a given index was not possible.
-func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Context) []Request {
-	var reqs []Request
+func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Context) []*Request {
+	var reqs []*Request
 	var dispatchedItems []itemIndex
 
 	pcs.mu.Lock()
@@ -302,7 +302,7 @@ func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Co
 		pcs.logger.Debug("No items left for dispatch by consumers")
 	}
 
-	reqs = make([]Request, len(dispatchedItems))
+	reqs = make([]*Request, len(dispatchedItems))
 	keys := make([]string, len(dispatchedItems))
 	retrieveBatch := newBatch(pcs)
 	cleanupBatch := newBatch(pcs)

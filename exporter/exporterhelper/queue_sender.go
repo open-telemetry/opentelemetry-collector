@@ -86,7 +86,7 @@ func newQueueSender(id component.ID, signal component.DataType, queue internal.P
 	}
 }
 
-func (qs *queueSender) onTemporaryFailure(logger *zap.Logger, req internal.Request, err error) error {
+func (qs *queueSender) onTemporaryFailure(logger *zap.Logger, req *internal.Request, err error) error {
 	if !qs.requeuingEnabled || qs.queue == nil {
 		logger.Error(
 			"Exporting failed. No more retries left. Dropping data.",
@@ -120,7 +120,7 @@ func (qs *queueSender) start(ctx context.Context, host component.Host, set expor
 	err := qs.queue.Start(ctx, host, internal.QueueSettings{
 		CreateSettings: set,
 		DataType:       qs.signal,
-		Callback: func(item internal.Request) {
+		Callback: func(item *internal.Request) {
 			_ = qs.nextSender.send(item)
 			item.OnProcessingFinished()
 		},
@@ -161,7 +161,7 @@ func (qs *queueSender) shutdown() {
 }
 
 // send implements the requestSender interface
-func (qs *queueSender) send(req internal.Request) error {
+func (qs *queueSender) send(req *internal.Request) error {
 	if qs.queue == nil {
 		err := qs.nextSender.send(req)
 		if err != nil {

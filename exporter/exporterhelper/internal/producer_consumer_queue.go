@@ -15,7 +15,7 @@ import (
 type QueueSettings struct {
 	exporter.CreateSettings
 	DataType component.DataType
-	Callback func(item Request)
+	Callback func(item *Request)
 }
 
 // ProducerConsumerQueue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
@@ -26,7 +26,7 @@ type ProducerConsumerQueue interface {
 	Start(ctx context.Context, host component.Host, set QueueSettings) error
 	// Produce is used by the producer to submit new item to the queue. Returns false if the item wasn't added
 	// to the queue due to queue overflow.
-	Produce(item Request) bool
+	Produce(item *Request) bool
 	// Size returns the current Size of the queue
 	Size() int
 	// Stop stops all consumers, as well as the length reporter if started,

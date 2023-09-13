@@ -73,7 +73,7 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 	}
 }
 
-type onRequestHandlingFinishedFunc func(*zap.Logger, internal.Request, error) error
+type onRequestHandlingFinishedFunc func(*zap.Logger, *internal.Request, error) error
 
 type retrySender struct {
 	baseRequestSender
@@ -86,7 +86,7 @@ type retrySender struct {
 
 func newRetrySender(id component.ID, rCfg RetrySettings, logger *zap.Logger, onTemporaryFailure onRequestHandlingFinishedFunc) *retrySender {
 	if onTemporaryFailure == nil {
-		onTemporaryFailure = func(logger *zap.Logger, req internal.Request, err error) error {
+		onTemporaryFailure = func(logger *zap.Logger, req *internal.Request, err error) error {
 			return err
 		}
 	}
@@ -104,7 +104,7 @@ func (rs *retrySender) shutdown() {
 }
 
 // send implements the requestSender interface
-func (rs *retrySender) send(req internal.Request) error {
+func (rs *retrySender) send(req *internal.Request) error {
 	if !rs.cfg.Enabled {
 		err := rs.nextSender.send(req)
 		if err != nil {

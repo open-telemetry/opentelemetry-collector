@@ -3,34 +3,58 @@
 
 package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 
-import "context"
+import (
+	"context"
+
+	"go.opentelemetry.io/collector/exporter/exporterhelper/request"
+)
 
 // Request defines capabilities required for persistent storage of a request
-type Request interface {
-	// Context returns the context.Context of the requests.
-	Context() context.Context
+type Request struct {
+	request.Request
+	ctx                        context.Context
+	processingFinishedCallback func()
+}
 
-	// SetContext updates the context.Context of the requests.
-	SetContext(context.Context)
+func NewRequest(ctx context.Context, req request.Request) *Request {
+	return &Request{Request: req, ctx: ctx}
+}
 
-	Export(ctx context.Context) error
+func (req *Request) OnError(err error) *Request {
+	if r, ok := req.Request.(request.ErrorHandler); ok {
+		return &Request{
+			Request: r.OnError(err),
+			ctx:     req.ctx,
+		}
+	}
+	return req
+}
 
-	// OnError returns a new Request may contain the items left to be sent if some items failed to process and can be retried.
-	// Otherwise, it should return the original Request.
-	OnError(error) Request
+// Count returns a number of items in the request. If the request does not implement RequestItemsCounter
+// then 0 is returned.
+func (req *Request) Count() int {
+	if counter, ok := req.Request.(request.ItemsCounter); ok {
+		return counter.ItemsCount()
+	}
+	return 0
+}
 
-	// Count returns the count of spans/metric points or log records.
-	Count() int
+func (req *Request) Context() context.Context {
+	return req.ctx
+}
 
-	// OnProcessingFinished calls the optional callback function to handle cleanup after all processing is finished
-	OnProcessingFinished()
+func (req *Request) SetContext(ctx context.Context) {
+	req.ctx = ctx
+}
 
-	// SetOnProcessingFinished allows to set an optional callback function to do the cleanup (e.g. remove the item from persistent queue)
-	SetOnProcessingFinished(callback func())
+func (req *Request) OnProcessingFinished() {
+	if req.processingFinishedCallback != nil {
+		req.processingFinishedCallback()
+	}
 }
 
 // RequestUnmarshaler defines a function which takes a byte slice and unmarshals it into a relevant request
-type RequestUnmarshaler func([]byte) (Request, error)
+type RequestUnmarshaler func([]byte) (*Request, error)
 
 // RequestMarshaler defines a function which takes a request and marshals it into a byte slice
-type RequestMarshaler func(Request) ([]byte, error)
+type RequestMarshaler func(*Request) ([]byte, error)
