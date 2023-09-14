@@ -19,7 +19,7 @@ func NewStatusWatcherExtensionCreateSettings() extension.CreateSettings {
 	}
 }
 
-// NewStatusWatcherExtensionFactory returns a component.ExtensionFactory that constructs nop extensions.
+// NewStatusWatcherExtensionFactory returns a component.ExtensionFactory to construct a status watcher extension.
 func NewStatusWatcherExtensionFactory(
 	onStatusChanged func(source *component.InstanceID, event *component.StatusEvent),
 ) extension.Factory {
@@ -34,7 +34,8 @@ func NewStatusWatcherExtensionFactory(
 		component.StabilityLevelStable)
 }
 
-// statusWatcherExtension stores consumed traces and metrics for testing purposes.
+// statusWatcherExtension receives status events reported via component status reporting for testing
+// purposes.
 type statusWatcherExtension struct {
 	component.StartFunc
 	component.ShutdownFunc

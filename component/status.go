@@ -81,7 +81,8 @@ type StatusEventOption func(*StatusEvent) error
 var ErrStatusEventInvalidArgument = errors.New("status event argument error")
 
 // WithError sets the error object of the StatusEvent. It is optional
-// and should only be applied to an Event of type ComponentError.
+// and should only be applied to an event with an error status (e.g. StatusRecoverableError,
+// StatusPermanentError, or StatusFatalError).
 func WithError(err error) StatusEventOption {
 	return func(o *StatusEvent) error {
 		if _, ok := errorStatuses[o.status]; !ok {
