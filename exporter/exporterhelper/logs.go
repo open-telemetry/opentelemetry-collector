@@ -98,6 +98,7 @@ func NewLogsExporter(
 	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		req := newLogsRequest(ctx, ld, pusher)
 		serr := be.send(req)
+		// TODO: Check for the queue overflow before converting the data.
 		if errors.Is(serr, errSendingQueueIsFull) {
 			be.obsrep.recordLogsEnqueueFailure(req.Context(), int64(req.Count()))
 		}

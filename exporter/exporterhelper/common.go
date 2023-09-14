@@ -132,6 +132,15 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 	}
 }
 
+func WithBatcher(batcher *Batcher) Option {
+	return func(o *baseExporter) {
+		if !o.requestExporter {
+			panic("batching is only available for the new request exporters")
+		}
+		o.batchSender = newBatchSender(o.set, batcher)
+	}
+}
+
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
 	component.StartFunc
@@ -148,6 +157,7 @@ type baseExporter struct {
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
 	// Most of the senders are optional, and initialized with a no-op path-through sender.
+	batchSender   requestSender
 	queueSender   requestSender
 	obsrepSender  requestSender
 	retrySender   requestSender
@@ -174,6 +184,7 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 		unmarshaler:     unmarshaler,
 		signal:          signal,
 
+		batchSender:   &baseRequestSender{},
 		queueSender:   &baseRequestSender{},
 		obsrepSender:  osf(obsrep),
 		retrySender:   &baseRequestSender{},
@@ -193,11 +204,12 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 
 // send sends the request using the first sender in the chain.
 func (be *baseExporter) send(req internal.Request) error {
-	return be.queueSender.send(req)
+	return be.batchSender.send(req)
 }
 
 // connectSenders connects the senders in the predefined order.
 func (be *baseExporter) connectSenders() {
+	be.batchSender.setNextSender(be.queueSender)
 	be.queueSender.setNextSender(be.obsrepSender)
 	be.obsrepSender.setNextSender(be.retrySender)
 	be.retrySender.setNextSender(be.timeoutSender)
@@ -214,7 +226,10 @@ func (be *baseExporter) Start(ctx context.Context, host component.Host) error {
 }
 
 func (be *baseExporter) Shutdown(ctx context.Context) error {
-	// First shutdown the retry sender, so it can push any pending requests to back the queue.
+	// First shutdown the batch sender
+	be.batchSender.shutdown()
+
+	// Then shutdown the retry sender, so it can push any pending requests to back the queue.
 	be.retrySender.shutdown()
 
 	// Then shutdown the queue sender.

@@ -150,6 +150,7 @@ func NewMetricsRequestExporter(
 		}
 		r := newRequest(ctx, req)
 		sErr := be.send(r)
+		// TODO: Check for the queue overflow before converting the data.
 		if errors.Is(sErr, errSendingQueueIsFull) {
 			be.obsrep.recordMetricsEnqueueFailure(r.Context(), int64(r.Count()))
 		}
