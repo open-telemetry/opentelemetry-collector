@@ -4,6 +4,7 @@
 package status
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 
@@ -142,6 +143,42 @@ func TestStatusFSM(t *testing.T) {
 			require.Equal(t, tc.expectedStatuses, receivedStatuses)
 		})
 	}
+}
+
+func TestValidSeqsToStopped(t *testing.T) {
+	statuses := []component.Status{
+		component.StatusStarting,
+		component.StatusOK,
+		component.StatusRecoverableError,
+		component.StatusPermanentError,
+		component.StatusFatalError,
+	}
+
+	for _, status := range statuses {
+		name := fmt.Sprintf("transition from: %s to: %s invalid", status, component.StatusStopped)
+		t.Run(name, func(t *testing.T) {
+			fsm := newFSM(func(*component.StatusEvent) {})
+			if status != component.StatusStarting {
+				require.NoError(t, fsm.transition(component.StatusStarting))
+			}
+			require.NoError(t, fsm.transition(status))
+			// skipping to stopped is not allowed
+			err := fsm.transition(component.StatusStopped)
+			require.Error(t, err)
+			require.ErrorIs(t, err, errInvalidStateTransition)
+
+			// stopping -> stopped is allowed for non-fatal, non-permanent errors
+			err = fsm.transition(component.StatusStopping)
+			if status == component.StatusPermanentError || status == component.StatusFatalError {
+				require.Error(t, err)
+				require.ErrorIs(t, err, errInvalidStateTransition)
+			} else {
+				require.NoError(t, err)
+				require.NoError(t, fsm.transition(component.StatusStopped))
+			}
+		})
+	}
+
 }
 
 func TestStatusEventError(t *testing.T) {
