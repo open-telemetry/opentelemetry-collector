@@ -90,12 +90,8 @@ func (g *Graph) createNodes(set Settings) error {
 				connectorsAsReceiver[recvID] = append(connectorsAsReceiver[recvID], pipelineID)
 				continue
 			}
-			rcvrNode := g.createReceiver(pipelineID.Type(), recvID)
+			rcvrNode := g.createReceiver(pipelineID, recvID)
 			pipe.receivers[rcvrNode.ID()] = rcvrNode
-			g.instanceIDs[rcvrNode.ID()] = &component.InstanceID{
-				ID:   recvID,
-				Kind: component.KindReceiver,
-			}
 		}
 
 		pipe.capabilitiesNode = newCapabilitiesNode(pipelineID)
@@ -103,13 +99,6 @@ func (g *Graph) createNodes(set Settings) error {
 		for _, procID := range pipelineCfg.Processors {
 			procNode := g.createProcessor(pipelineID, procID)
 			pipe.processors = append(pipe.processors, procNode)
-			g.instanceIDs[procNode.ID()] = &component.InstanceID{
-				ID:   procID,
-				Kind: component.KindProcessor,
-				PipelineIDs: map[component.ID]struct{}{
-					pipelineID: {},
-				},
-			}
 		}
 
 		pipe.fanOutNode = newFanOutNode(pipelineID)
@@ -120,15 +109,8 @@ func (g *Graph) createNodes(set Settings) error {
 				connectorsAsExporter[exprID] = append(connectorsAsExporter[exprID], pipelineID)
 				continue
 			}
-			expNode := g.createExporter(pipelineID.Type(), exprID)
+			expNode := g.createExporter(pipelineID, exprID)
 			pipe.exporters[expNode.ID()] = expNode
-			g.instanceIDs[expNode.ID()] = &component.InstanceID{
-				ID:   expNode.componentID,
-				Kind: component.KindExporter,
-				PipelineIDs: map[component.ID]struct{}{
-					pipelineID: {},
-				},
-			}
 		}
 	}
 
@@ -186,50 +168,76 @@ func (g *Graph) createNodes(set Settings) error {
 
 				g.pipelines[eID].exporters[connNode.ID()] = connNode
 				g.pipelines[rID].receivers[connNode.ID()] = connNode
-				g.instanceIDs[connNode.ID()] = &component.InstanceID{
-					ID:   connNode.componentID,
-					Kind: component.KindConnector,
-					PipelineIDs: map[component.ID]struct{}{
-						eID: {},
-						rID: {},
-					},
-				}
 			}
 		}
 	}
 	return nil
 }
 
-func (g *Graph) createReceiver(pipelineType component.DataType, recvID component.ID) *receiverNode {
-	rcvrNode := newReceiverNode(pipelineType, recvID)
+func (g *Graph) createReceiver(pipelineID, recvID component.ID) *receiverNode {
+	rcvrNode := newReceiverNode(pipelineID.Type(), recvID)
 	if node := g.componentGraph.Node(rcvrNode.ID()); node != nil {
+		g.instanceIDs[node.ID()].PipelineIDs[pipelineID] = struct{}{}
 		return node.(*receiverNode)
 	}
 	g.componentGraph.AddNode(rcvrNode)
+	g.instanceIDs[rcvrNode.ID()] = &component.InstanceID{
+		ID:   recvID,
+		Kind: component.KindReceiver,
+		PipelineIDs: map[component.ID]struct{}{
+			pipelineID: {},
+		},
+	}
 	return rcvrNode
 }
 
 func (g *Graph) createProcessor(pipelineID, procID component.ID) *processorNode {
 	procNode := newProcessorNode(pipelineID, procID)
 	g.componentGraph.AddNode(procNode)
+	g.instanceIDs[procNode.ID()] = &component.InstanceID{
+		ID:   procID,
+		Kind: component.KindProcessor,
+		PipelineIDs: map[component.ID]struct{}{
+			pipelineID: {},
+		},
+	}
 	return procNode
 }
 
-func (g *Graph) createExporter(pipelineType component.DataType, exprID component.ID) *exporterNode {
-	expNode := newExporterNode(pipelineType, exprID)
+func (g *Graph) createExporter(pipelineID, exprID component.ID) *exporterNode {
+	expNode := newExporterNode(pipelineID.Type(), exprID)
 	if node := g.componentGraph.Node(expNode.ID()); node != nil {
+		g.instanceIDs[expNode.ID()].PipelineIDs[pipelineID] = struct{}{}
 		return node.(*exporterNode)
 	}
 	g.componentGraph.AddNode(expNode)
+	g.instanceIDs[expNode.ID()] = &component.InstanceID{
+		ID:   expNode.componentID,
+		Kind: component.KindExporter,
+		PipelineIDs: map[component.ID]struct{}{
+			pipelineID: {},
+		},
+	}
 	return expNode
 }
 
 func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID, connID component.ID) *connectorNode {
 	connNode := newConnectorNode(exprPipelineID.Type(), rcvrPipelineID.Type(), connID)
 	if node := g.componentGraph.Node(connNode.ID()); node != nil {
+		instanceID := g.instanceIDs[connNode.ID()]
+		instanceID.PipelineIDs[exprPipelineID] = struct{}{}
+		instanceID.PipelineIDs[rcvrPipelineID] = struct{}{}
 		return node.(*connectorNode)
 	}
 	g.componentGraph.AddNode(connNode)
+	g.instanceIDs[connNode.ID()] = &component.InstanceID{
+		ID:   connNode.componentID,
+		Kind: component.KindConnector,
+		PipelineIDs: map[component.ID]struct{}{
+			exprPipelineID: {},
+			rcvrPipelineID: {},
+		},
+	}
 	return connNode
 }
 
