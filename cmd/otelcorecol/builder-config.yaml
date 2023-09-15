@@ -52,3 +52,4 @@ replaces:
   - go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
   - go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
   - go.opentelemetry.io/collector/semconv => ../../semconv
+  - go.opentelemetry.io/collector/service => ../../service

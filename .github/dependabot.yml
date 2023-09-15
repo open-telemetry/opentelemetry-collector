@@ -177,3 +177,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/service"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
