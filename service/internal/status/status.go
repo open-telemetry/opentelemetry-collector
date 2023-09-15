@@ -27,33 +27,25 @@ type fsm struct {
 // transition will attempt to execute a state transition. If it's successful, it calls the
 // onTransitionFunc with a StatusEvent representing the new state. Returns an error if the arguments
 // result in an invalid status, or if the state transition is not valid.
-func (m *fsm) transition(status component.Status, options ...component.StatusEventOption) error {
-	if _, ok := m.transitions[m.current.Status()][status]; !ok {
+func (m *fsm) transition(ev *component.StatusEvent) error {
+	if _, ok := m.transitions[m.current.Status()][ev.Status()]; !ok {
 		return fmt.Errorf(
 			"cannot transition from %s to %s: %w",
 			m.current.Status(),
-			status,
+			ev.Status(),
 			errInvalidStateTransition,
 		)
 	}
-
-	ev, err := component.NewStatusEvent(status, options...)
-	if err != nil {
-		return err
-	}
-
 	m.current = ev
 	m.onTransition(ev)
-
 	return nil
 }
 
 // newFSM creates a state machine with all valid transitions for component.Status.
 // The initial state is set to component.StatusNone.
 func newFSM(onTransition onTransitionFunc) *fsm {
-	initial, _ := component.NewStatusEvent(component.StatusNone)
 	return &fsm{
-		current:      initial,
+		current:      component.NewStatusEvent(component.StatusNone),
 		onTransition: onTransition,
 		transitions: map[component.Status]map[component.Status]struct{}{
 			component.StatusNone: {
@@ -121,7 +113,7 @@ func initAndReadyFuncs() (InitFunc, readyFunc) {
 type NotifyStatusFunc func(*component.InstanceID, *component.StatusEvent)
 
 // ServiceStatusFunc is the expected type of ReportComponentStatus for servicetelemetry.Settings
-type ServiceStatusFunc func(id *component.InstanceID, status component.Status, opts ...component.StatusEventOption) error
+type ServiceStatusFunc func(*component.InstanceID, *component.StatusEvent) error
 
 // errStatusNotReady is returned when trying to report status before service start
 var errStatusNotReady = errors.New("report component status is not ready until service start")
@@ -136,7 +128,7 @@ func NewServiceStatusFunc(notifyStatusChange NotifyStatusFunc) (InitFunc, Servic
 	mu := sync.Mutex{}
 	fsmMap := make(map[*component.InstanceID]*fsm)
 	return init,
-		func(id *component.InstanceID, status component.Status, opts ...component.StatusEventOption) error {
+		func(id *component.InstanceID, ev *component.StatusEvent) error {
 			if !isReady() {
 				return errStatusNotReady
 			}
@@ -149,7 +141,7 @@ func NewServiceStatusFunc(notifyStatusChange NotifyStatusFunc) (InitFunc, Servic
 				})
 				fsmMap[id] = fsm
 			}
-			return fsm.transition(status, opts...)
+			return fsm.transition(ev)
 		}
 
 }
@@ -158,7 +150,7 @@ func NewServiceStatusFunc(notifyStatusChange NotifyStatusFunc) (InitFunc, Servic
 // component.TelemetrySettings, which differs from servicetelemetry.Settings in that
 // the component version is tied to specific component instance.
 func NewComponentStatusFunc(id *component.InstanceID, srvStatus ServiceStatusFunc) component.StatusFunc {
-	return func(status component.Status, opts ...component.StatusEventOption) error {
-		return srvStatus(id, status, opts...)
+	return func(ev *component.StatusEvent) error {
+		return srvStatus(id, ev)
 	}
 }

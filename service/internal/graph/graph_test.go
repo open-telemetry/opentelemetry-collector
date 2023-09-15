@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -2123,12 +2122,21 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 		eSdErr: {ID: eSdErr.id},
 	}
 
-	newStatusEvent := func(status component.Status, opts ...component.StatusEventOption) *component.StatusEvent {
-		ev, _ := component.NewStatusEvent(status, opts...)
-		return ev
-	}
+	// compare two maps of status events ignoring timestamp
+	assertEqualStatuses := func(t *testing.T, evMap1, evMap2 map[*component.InstanceID][]*component.StatusEvent) {
+		assert.Equal(t, len(evMap1), len(evMap2))
+		for id, evts1 := range evMap1 {
+			evts2 := evMap2[id]
+			assert.Equal(t, len(evts1), len(evts2))
+			for i := 0; i < len(evts1); i++ {
+				ev1 := evts1[i]
+				ev2 := evts2[i]
+				assert.Equal(t, ev1.Status(), ev2.Status())
+				assert.Equal(t, ev1.Err(), ev2.Err())
+			}
+		}
 
-	now := time.Now()
+	}
 
 	for _, tc := range []struct {
 		name             string
@@ -2142,14 +2150,14 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			edge: [2]*testNode{rNoErr, eNoErr},
 			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
 				instanceIDs[rNoErr]: {
-					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusStopping, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusStopped, component.WithTimestamp(now)),
+					component.NewStatusEvent(component.StatusStarting),
+					component.NewStatusEvent(component.StatusStopping),
+					component.NewStatusEvent(component.StatusStopped),
 				},
 				instanceIDs[eNoErr]: {
-					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusStopping, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusStopped, component.WithTimestamp(now)),
+					component.NewStatusEvent(component.StatusStarting),
+					component.NewStatusEvent(component.StatusStopping),
+					component.NewStatusEvent(component.StatusStopped),
 				},
 			},
 		},
@@ -2158,8 +2166,8 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			edge: [2]*testNode{rNoErr, eStErr},
 			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
 				instanceIDs[eStErr]: {
-					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusPermanentError, component.WithTimestamp(now), component.WithError(assert.AnError)),
+					component.NewStatusEvent(component.StatusStarting),
+					component.NewPermanentErrorEvent(assert.AnError),
 				},
 			},
 			startupErr: assert.AnError,
@@ -2169,13 +2177,13 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			edge: [2]*testNode{rStErr, eNoErr},
 			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
 				instanceIDs[rStErr]: {
-					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusPermanentError, component.WithTimestamp(now), component.WithError(assert.AnError)),
+					component.NewStatusEvent(component.StatusStarting),
+					component.NewPermanentErrorEvent(assert.AnError),
 				},
 				instanceIDs[eNoErr]: {
-					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusStopping, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusStopped, component.WithTimestamp(now)),
+					component.NewStatusEvent(component.StatusStarting),
+					component.NewStatusEvent(component.StatusStopping),
+					component.NewStatusEvent(component.StatusStopped),
 				},
 			},
 			startupErr: assert.AnError,
@@ -2185,14 +2193,14 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			edge: [2]*testNode{rSdErr, eNoErr},
 			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
 				instanceIDs[rSdErr]: {
-					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusStopping, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusPermanentError, component.WithTimestamp(now), component.WithError(assert.AnError)),
+					component.NewStatusEvent(component.StatusStarting),
+					component.NewStatusEvent(component.StatusStopping),
+					component.NewPermanentErrorEvent(assert.AnError),
 				},
 				instanceIDs[eNoErr]: {
-					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusStopping, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusStopped, component.WithTimestamp(now)),
+					component.NewStatusEvent(component.StatusStarting),
+					component.NewStatusEvent(component.StatusStopping),
+					component.NewStatusEvent(component.StatusStopped),
 				},
 			},
 			shutdownErr: assert.AnError,
@@ -2202,14 +2210,14 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			edge: [2]*testNode{rNoErr, eSdErr},
 			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
 				instanceIDs[rNoErr]: {
-					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusStopping, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusStopped, component.WithTimestamp(now)),
+					component.NewStatusEvent(component.StatusStarting),
+					component.NewStatusEvent(component.StatusStopping),
+					component.NewStatusEvent(component.StatusStopped),
 				},
 				instanceIDs[eSdErr]: {
-					newStatusEvent(component.StatusStarting, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusStopping, component.WithTimestamp(now)),
-					newStatusEvent(component.StatusPermanentError, component.WithTimestamp(now), component.WithError(assert.AnError)),
+					component.NewStatusEvent(component.StatusStarting),
+					component.NewStatusEvent(component.StatusStopping),
+					component.NewPermanentErrorEvent(assert.AnError),
 				},
 			},
 			shutdownErr: assert.AnError,
@@ -2221,13 +2229,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 
 			actualStatuses := make(map[*component.InstanceID][]*component.StatusEvent)
 			init, statusFunc := status.NewServiceStatusFunc(func(id *component.InstanceID, ev *component.StatusEvent) {
-				// copy event to normalize timestamp
-				opts := []component.StatusEventOption{component.WithTimestamp(now)}
-				if ev.Err() != nil {
-					opts = append(opts, component.WithError(ev.Err()))
-				}
-				evCopy, _ := component.NewStatusEvent(ev.Status(), opts...)
-				actualStatuses[id] = append(actualStatuses[id], evCopy)
+				actualStatuses[id] = append(actualStatuses[id], ev)
 			})
 
 			pg.telemetry.ReportComponentStatus = statusFunc
@@ -2242,7 +2244,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 
 			assert.Equal(t, tc.startupErr, pg.StartAll(context.Background(), componenttest.NewNopHost()))
 			assert.Equal(t, tc.shutdownErr, pg.ShutdownAll(context.Background()))
-			assert.Equal(t, tc.expectedStatuses, actualStatuses)
+			assertEqualStatuses(t, tc.expectedStatuses, actualStatuses)
 		})
 	}
 }

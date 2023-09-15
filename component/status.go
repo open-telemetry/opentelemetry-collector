@@ -4,8 +4,6 @@
 package component // import "go.opentelemetry.io/collector/component"
 
 import (
-	"errors"
-	"fmt"
 	"time"
 )
 
@@ -44,13 +42,6 @@ func (s Status) String() string {
 	return "StatusNone"
 }
 
-// errorStatuses is a set of statuses that can have associated errors
-var errorStatuses = map[Status]struct{}{
-	StatusRecoverableError: {},
-	StatusPermanentError:   {},
-	StatusFatalError:       {},
-}
-
 // StatusEvent contains a status and timestamp, and can contain an error
 type StatusEvent struct {
 	status    Status
@@ -73,58 +64,38 @@ func (ev *StatusEvent) Timestamp() time.Time {
 	return ev.timestamp
 }
 
-// StatusEventOption applies options to a StatusEvent.
-type StatusEventOption func(*StatusEvent) error
-
-// ErrStatusEventInvalidArgument indicates an invalid option was specified when creating a status
-// event. This will happen when using WithError for a non-error status.
-var ErrStatusEventInvalidArgument = errors.New("status event argument error")
-
-// WithError sets the error object of the StatusEvent. It is optional
-// and should only be applied to an event with an error status (e.g. StatusRecoverableError,
-// StatusPermanentError, or StatusFatalError).
-func WithError(err error) StatusEventOption {
-	return func(o *StatusEvent) error {
-		if _, ok := errorStatuses[o.status]; !ok {
-			return fmt.Errorf(
-				"event with %s cannot have an error: %w",
-				o.status,
-				ErrStatusEventInvalidArgument,
-			)
-		}
-		o.err = err
-		return nil
+// NewStatusEvent creates and returns a StatusEvent with the specified status and sets the timestamp
+// time.Now(). To provide set an error on the event for an error status use one of the dedicated
+// constructors (e.g. NewRecoverableErrorEvent, NewPermanentErrorEvent, NewFatalErrorEvent)
+func NewStatusEvent(status Status) *StatusEvent {
+	return &StatusEvent{
+		status:    status,
+		timestamp: time.Now(),
 	}
 }
 
-// WithTimestamp is optional, when used it sets the timestamp of the StatusEvent.
-func WithTimestamp(t time.Time) StatusEventOption {
-	return func(o *StatusEvent) error {
-		o.timestamp = t
-		return nil
-	}
+// NewRecoverableErrorEvent creates and returns a StatusEvent with StatusRecoverableError, the
+// specified error, and a timestamp set to time.Now().
+func NewRecoverableErrorEvent(err error) *StatusEvent {
+	ev := NewStatusEvent(StatusRecoverableError)
+	ev.err = err
+	return ev
 }
 
-// NewStatusEvent creates and returns a StatusEvent with default and provided
-// options. Will return an error if an error is provided for a non-error event
-// type (status.ComponentOK).
-// If the timestamp is not provided will set it to time.Now().
-func NewStatusEvent(status Status, options ...StatusEventOption) (*StatusEvent, error) {
-	ev := StatusEvent{
-		status: status,
-	}
+// NewPermanentErrorEvent creates and returns a StatusEvent with StatusPermanentError, the
+// specified error, and a timestamp set to time.Now().
+func NewPermanentErrorEvent(err error) *StatusEvent {
+	ev := NewStatusEvent(StatusPermanentError)
+	ev.err = err
+	return ev
+}
 
-	for _, opt := range options {
-		if err := opt(&ev); err != nil {
-			return nil, err
-		}
-	}
-
-	if ev.timestamp.IsZero() {
-		ev.timestamp = time.Now()
-	}
-
-	return &ev, nil
+// NewFatalErrorEvent creates and returns a StatusEvent with StatusFatalError, the
+// specified error, and a timestamp set to time.Now().
+func NewFatalErrorEvent(err error) *StatusEvent {
+	ev := NewStatusEvent(StatusFatalError)
+	ev.err = err
+	return ev
 }
 
 // StatusWatcher is an extra interface for Extension hosted by the OpenTelemetry
@@ -139,4 +110,4 @@ type StatusWatcher interface {
 }
 
 // StatusFunc is the expected type of ReportComponentStatus for compoment.TelemetrySettings
-type StatusFunc func(Status, ...StatusEventOption) error
+type StatusFunc func(*StatusEvent) error

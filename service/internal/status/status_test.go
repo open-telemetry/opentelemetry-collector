@@ -8,7 +8,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
@@ -133,7 +132,7 @@ func TestStatusFSM(t *testing.T) {
 
 			errorCount := 0
 			for _, status := range tc.reportedStatuses {
-				if err := fsm.transition(status); err != nil {
+				if err := fsm.transition(component.NewStatusEvent(status)); err != nil {
 					errorCount++
 					require.ErrorIs(t, err, errInvalidStateTransition)
 				}
@@ -146,51 +145,39 @@ func TestStatusFSM(t *testing.T) {
 }
 
 func TestValidSeqsToStopped(t *testing.T) {
-	statuses := []component.Status{
-		component.StatusStarting,
-		component.StatusOK,
-		component.StatusRecoverableError,
-		component.StatusPermanentError,
-		component.StatusFatalError,
+	events := []*component.StatusEvent{
+		component.NewStatusEvent(component.StatusStarting),
+		component.NewStatusEvent(component.StatusOK),
+		component.NewStatusEvent(component.StatusRecoverableError),
+		component.NewStatusEvent(component.StatusPermanentError),
+		component.NewStatusEvent(component.StatusFatalError),
 	}
 
-	for _, status := range statuses {
-		name := fmt.Sprintf("transition from: %s to: %s invalid", status, component.StatusStopped)
+	for _, ev := range events {
+		name := fmt.Sprintf("transition from: %s to: %s invalid", ev.Status(), component.StatusStopped)
 		t.Run(name, func(t *testing.T) {
 			fsm := newFSM(func(*component.StatusEvent) {})
-			if status != component.StatusStarting {
-				require.NoError(t, fsm.transition(component.StatusStarting))
+			if ev.Status() != component.StatusStarting {
+				require.NoError(t, fsm.transition(component.NewStatusEvent(component.StatusStarting)))
 			}
-			require.NoError(t, fsm.transition(status))
+			require.NoError(t, fsm.transition(ev))
 			// skipping to stopped is not allowed
-			err := fsm.transition(component.StatusStopped)
+			err := fsm.transition(component.NewStatusEvent(component.StatusStopped))
 			require.Error(t, err)
 			require.ErrorIs(t, err, errInvalidStateTransition)
 
 			// stopping -> stopped is allowed for non-fatal, non-permanent errors
-			err = fsm.transition(component.StatusStopping)
-			if status == component.StatusPermanentError || status == component.StatusFatalError {
+			err = fsm.transition(component.NewStatusEvent(component.StatusStopping))
+			if ev.Status() == component.StatusPermanentError || ev.Status() == component.StatusFatalError {
 				require.Error(t, err)
 				require.ErrorIs(t, err, errInvalidStateTransition)
 			} else {
 				require.NoError(t, err)
-				require.NoError(t, fsm.transition(component.StatusStopped))
+				require.NoError(t, fsm.transition(component.NewStatusEvent(component.StatusStopped)))
 			}
 		})
 	}
 
-}
-
-func TestStatusEventError(t *testing.T) {
-	fsm := newFSM(func(*component.StatusEvent) {})
-	err := fsm.transition(component.StatusStarting)
-	require.NoError(t, err)
-
-	// the combination of StatusOK with an error is invalid
-	err = fsm.transition(component.StatusOK, component.WithError(assert.AnError))
-
-	require.Error(t, err)
-	require.ErrorIs(t, err, component.ErrStatusEventInvalidArgument)
 }
 
 func TestStatusFuncs(t *testing.T) {
@@ -229,11 +216,11 @@ func TestStatusFuncs(t *testing.T) {
 	init()
 
 	for _, st := range statuses1 {
-		require.NoError(t, comp1Func(st))
+		require.NoError(t, comp1Func(component.NewStatusEvent(st)))
 	}
 
 	for _, st := range statuses2 {
-		require.NoError(t, comp2Func(st))
+		require.NoError(t, comp2Func(component.NewStatusEvent(st)))
 	}
 
 	require.Equal(t, expectedStatuses, actualStatuses)
@@ -255,10 +242,10 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 		id := id
 		go func() {
 			compFn := NewComponentStatusFunc(id, serviceStatusFn)
-			_ = compFn(component.StatusStarting)
+			_ = compFn(component.NewStatusEvent(component.StatusStarting))
 			for i := 0; i < 1000; i++ {
-				_ = compFn(component.StatusRecoverableError)
-				_ = compFn(component.StatusOK)
+				_ = compFn(component.NewStatusEvent(component.StatusRecoverableError))
+				_ = compFn(component.NewStatusEvent(component.StatusOK))
 			}
 			wg.Done()
 		}()
@@ -273,12 +260,12 @@ func TestStatusFuncReady(t *testing.T) {
 	init, serviceStatusFn := NewServiceStatusFunc(statusFunc)
 	id := &component.InstanceID{}
 
-	err := serviceStatusFn(id, component.StatusStarting)
+	err := serviceStatusFn(id, component.NewStatusEvent(component.StatusStarting))
 	require.Error(t, err)
 	require.ErrorIs(t, err, errStatusNotReady)
 
 	init()
 
-	err = serviceStatusFn(id, component.StatusStarting)
+	err = serviceStatusFn(id, component.NewStatusEvent(component.StatusStarting))
 	require.NoError(t, err)
 }

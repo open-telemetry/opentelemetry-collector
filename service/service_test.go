@@ -427,7 +427,7 @@ func TestServiceFatalError(t *testing.T) {
 	})
 
 	go func() {
-		ev, _ := component.NewStatusEvent(component.StatusFatalError, component.WithError(assert.AnError))
+		ev := component.NewFatalErrorEvent(assert.AnError)
 		srv.host.notifyComponentStatusChange(&component.InstanceID{}, ev)
 	}()
 
