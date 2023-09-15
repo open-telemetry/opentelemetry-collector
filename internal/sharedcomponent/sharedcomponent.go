@@ -27,18 +27,36 @@ func NewSharedComponents[K comparable, V component.Component]() *SharedComponent
 
 // GetOrAdd returns the already created instance if exists, otherwise creates a new instance
 // and adds it to the map of references.
-func (scs *SharedComponents[K, V]) GetOrAdd(key K, create func() (V, error)) (*SharedComponent[V], error) {
+func (scs *SharedComponents[K, V]) GetOrAdd(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*SharedComponent[V], error) {
 	if c, ok := scs.comps[key]; ok {
+		// If we haven't already seen this telemetry settings, this shared component represents
+		// another instance. Wrap ReportComponentStatus to report for all instances this shared
+		// component represents.
+		if _, ok := c.seenSettings[telemetrySettings]; !ok {
+			c.seenSettings[telemetrySettings] = struct{}{}
+			prev := c.telemetry.ReportComponentStatus
+			c.telemetry.ReportComponentStatus = func(ev *component.StatusEvent) error {
+				if err := telemetrySettings.ReportComponentStatus(ev); err != nil {
+					return err
+				}
+				return prev(ev)
+			}
+		}
 		return c, nil
 	}
 	comp, err := create()
 	if err != nil {
 		return nil, err
 	}
+
 	newComp := &SharedComponent[V]{
 		component: comp,
 		removeFunc: func() {
 			delete(scs.comps, key)
+		},
+		telemetry: telemetrySettings,
+		seenSettings: map[*component.TelemetrySettings]struct{}{
+			telemetrySettings: {},
 		},
 	}
 	scs.comps[key] = newComp
@@ -53,6 +71,9 @@ type SharedComponent[V component.Component] struct {
 	startOnce  sync.Once
 	stopOnce   sync.Once
 	removeFunc func()
+
+	telemetry    *component.TelemetrySettings
+	seenSettings map[*component.TelemetrySettings]struct{}
 }
 
 // Unwrap returns the original component.
