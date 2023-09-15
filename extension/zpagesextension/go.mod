@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/contrib/zpages v0.44.0
 	go.opentelemetry.io/otel/sdk v1.18.0
 	go.opentelemetry.io/otel/trace v1.18.0
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.26.0
 )
 
 require (
