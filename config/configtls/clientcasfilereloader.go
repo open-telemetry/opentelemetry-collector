@@ -112,7 +112,7 @@ func (r *clientCAsFileReloader) handleWatcherEvents() {
 			// NOTE: k8s configmaps uses symlinks, we need this workaround.
 			// original configmap file is removed.
 			// SEE: https://martensson.io/go-fsnotify-and-kubernetes-configmaps/
-			if event.Op == fsnotify.Remove || event.Op == fsnotify.Chmod {
+			if event.Has(fsnotify.Remove) || event.Has(fsnotify.Chmod) {
 				// remove the watcher since the file is removed
 				if err := r.watcher.Remove(event.Name); err != nil {
 					r.lastReloadError = err
@@ -123,7 +123,7 @@ func (r *clientCAsFileReloader) handleWatcherEvents() {
 				}
 				r.reload()
 			}
-			if event.Op == fsnotify.Write {
+			if event.Has(fsnotify.Write) {
 				r.reload()
 			}
 		}
