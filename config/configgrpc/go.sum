@@ -202,8 +202,8 @@ github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lN
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
-github.com/mostynb/go-grpc-compression v1.2.0 h1:KJzRFSYPXlcoYjG5/xLZB8tpuOyWF2UnlW4tAuaWnfI=
-github.com/mostynb/go-grpc-compression v1.2.0/go.mod h1:oidYvYyefMmhcuvU8fLJ8FfZyTyVzJ6SkmD5fIKgRe8=
+github.com/mostynb/go-grpc-compression v1.2.1 h1:16tdYxBZSD8p9AUmvw4F7Nyc2T4/eE7XsIXrgxSEcJI=
+github.com/mostynb/go-grpc-compression v1.2.1/go.mod h1:oidYvYyefMmhcuvU8fLJ8FfZyTyVzJ6SkmD5fIKgRe8=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
