@@ -68,8 +68,7 @@ func (host *serviceHost) GetExporters() map[component.DataType]map[component.ID]
 }
 
 func (host *serviceHost) notifyComponentStatusChange(source *component.InstanceID, event *component.StatusEvent) {
-	// TODO: What should we do if there is an error returned by a StatusWatcher?
-	host.serviceExtensions.NotifyComponentStatusChange(source, event) //nolint:errcheck
+	host.serviceExtensions.NotifyComponentStatusChange(source, event)
 	if event.Status() == component.StatusFatalError {
 		host.asyncErrorChannel <- event.Err()
 	}
