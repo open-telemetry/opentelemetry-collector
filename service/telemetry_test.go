@@ -273,7 +273,7 @@ func TestTelemetryInit(t *testing.T) {
 			}
 			otelRes := buildResource(buildInfo, *tc.cfg)
 			res := pdataFromSdk(otelRes)
-			settings := servicetelemetry.Settings{
+			settings := servicetelemetry.TelemetrySettings{
 				Logger:   zap.NewNop(),
 				Resource: res,
 			}

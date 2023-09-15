@@ -71,7 +71,7 @@ func newColTelemetry(useOtel bool, disableHighCardinality bool, extendedConfig b
 	}
 }
 
-func (tel *telemetryInitializer) init(res *resource.Resource, settings servicetelemetry.Settings, cfg telemetry.Config, asyncErrorChannel chan error) error {
+func (tel *telemetryInitializer) init(res *resource.Resource, settings servicetelemetry.TelemetrySettings, cfg telemetry.Config, asyncErrorChannel chan error) error {
 	if cfg.Metrics.Level == configtelemetry.LevelNone || (cfg.Metrics.Address == "" && len(cfg.Metrics.Readers) == 0) {
 		settings.Logger.Info(
 			"Skipping telemetry setup.",

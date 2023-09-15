@@ -28,7 +28,7 @@ import (
 
 // Settings holds configuration for building builtPipelines.
 type Settings struct {
-	Telemetry servicetelemetry.Settings
+	Telemetry servicetelemetry.TelemetrySettings
 	BuildInfo component.BuildInfo
 
 	ReceiverBuilder  *receiver.Builder
@@ -50,7 +50,7 @@ type Graph struct {
 	// Keep track of status source per node
 	instanceIDs map[int64]*component.InstanceID
 
-	telemetry servicetelemetry.Settings
+	telemetry servicetelemetry.TelemetrySettings
 }
 
 func Build(ctx context.Context, set Settings) (*Graph, error) {

@@ -71,7 +71,7 @@ type Settings struct {
 type Service struct {
 	buildInfo            component.BuildInfo
 	telemetry            *telemetry.Telemetry
-	telemetrySettings    servicetelemetry.Settings
+	telemetrySettings    servicetelemetry.TelemetrySettings
 	host                 *serviceHost
 	telemetryInitializer *telemetryInitializer
 	collectorConf        *confmap.Conf
@@ -107,7 +107,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	res := buildResource(set.BuildInfo, cfg.Telemetry)
 	pcommonRes := pdataFromSdk(res)
 
-	srv.telemetrySettings = servicetelemetry.Settings{
+	srv.telemetrySettings = servicetelemetry.TelemetrySettings{
 		Logger:         srv.telemetry.Logger(),
 		TracerProvider: srv.telemetry.TracerProvider(),
 		MeterProvider:  noop.NewMeterProvider(),

@@ -13,9 +13,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// NewNopSettings returns a new nop settings for Create* functions.
-func NewNopSettings() Settings {
-	return Settings{
+// NewNopTelemetrySettings returns a new nop settings for Create* functions.
+func NewNopTelemetrySettings() TelemetrySettings {
+	return TelemetrySettings{
 		Logger:         zap.NewNop(),
 		TracerProvider: trace.NewNoopTracerProvider(),
 		MeterProvider:  noop.NewMeterProvider(),

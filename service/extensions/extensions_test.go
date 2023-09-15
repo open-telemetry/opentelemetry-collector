@@ -81,7 +81,7 @@ func TestBuildExtensions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := New(context.Background(), Settings{
-				Telemetry:  servicetelemetry.NewNopSettings(),
+				Telemetry:  servicetelemetry.NewNopTelemetrySettings(),
 				BuildInfo:  component.NewDefaultBuildInfo(),
 				Extensions: extension.NewBuilder(tt.extensionsConfigs, tt.factories),
 			}, tt.config)
@@ -167,7 +167,7 @@ func TestNotifyConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			extensions, err := New(context.Background(), Settings{
-				Telemetry:  servicetelemetry.NewNopSettings(),
+				Telemetry:  servicetelemetry.NewNopTelemetrySettings(),
 				BuildInfo:  component.NewDefaultBuildInfo(),
 				Extensions: extension.NewBuilder(tt.extensionsConfigs, tt.factories),
 			}, tt.serviceExtensions)

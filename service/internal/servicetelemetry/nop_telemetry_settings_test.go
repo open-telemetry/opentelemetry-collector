@@ -17,10 +17,10 @@ import (
 )
 
 func TestNewNopSettings(t *testing.T) {
-	set := NewNopSettings()
+	set := NewNopTelemetrySettings()
 
 	require.NotNil(t, set)
-	require.IsType(t, Settings{}, set)
+	require.IsType(t, TelemetrySettings{}, set)
 	require.Equal(t, zap.NewNop(), set.Logger)
 	require.Equal(t, trace.NewNoopTracerProvider(), set.TracerProvider)
 	require.Equal(t, noop.NewMeterProvider(), set.MeterProvider)

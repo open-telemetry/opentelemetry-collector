@@ -23,7 +23,7 @@ const zExtensionName = "zextensionname"
 
 // Extensions is a map of extensions created from extension configs.
 type Extensions struct {
-	telemetry servicetelemetry.Settings
+	telemetry servicetelemetry.TelemetrySettings
 	extMap    map[component.ID]extension.Extension
 }
 
@@ -129,7 +129,7 @@ func (bes *Extensions) HandleZPages(w http.ResponseWriter, r *http.Request) {
 
 // Settings holds configuration for building Extensions.
 type Settings struct {
-	Telemetry servicetelemetry.Settings
+	Telemetry servicetelemetry.TelemetrySettings
 	BuildInfo component.BuildInfo
 
 	// Extensions builder for extensions.
