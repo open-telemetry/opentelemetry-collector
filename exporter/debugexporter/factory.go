@@ -1,12 +1,10 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggingexporter"
+package debugexporter // import "go.opentelemetry.io/collector/exporter/debugexporter"
 
 import (
 	"context"
-
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -16,25 +14,24 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr                   = "logging"
+	typeStr                   = "debug"
 	defaultSamplingInitial    = 2
 	defaultSamplingThereafter = 500
 )
 
-// NewFactory creates a factory for Logging exporter
+// NewFactory creates a factory for Debug exporter
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, component.StabilityLevelDeprecated),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDeprecated),
-		exporter.WithLogs(createLogsExporter, component.StabilityLevelDeprecated),
+		exporter.WithTraces(createTracesExporter, component.StabilityLevelDevelopment),
+		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDevelopment),
+		exporter.WithLogs(createLogsExporter, component.StabilityLevelDevelopment),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		LogLevel:           zapcore.InfoLevel,
 		Verbosity:          configtelemetry.LevelNormal,
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
@@ -45,8 +42,6 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 	cfg := config.(*Config)
 	return common.CreateTracesExporter(ctx, set, config, &common.Common{
 		Verbosity:          cfg.Verbosity,
-		WarnLogLevel:       cfg.warnLogLevel,
-		LogLevel:           cfg.LogLevel,
 		SamplingInitial:    cfg.SamplingInitial,
 		SamplingThereafter: cfg.SamplingThereafter,
 	})
@@ -56,8 +51,6 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, con
 	cfg := config.(*Config)
 	return common.CreateMetricsExporter(ctx, set, config, &common.Common{
 		Verbosity:          cfg.Verbosity,
-		WarnLogLevel:       cfg.warnLogLevel,
-		LogLevel:           cfg.LogLevel,
 		SamplingInitial:    cfg.SamplingInitial,
 		SamplingThereafter: cfg.SamplingThereafter,
 	})
@@ -67,8 +60,6 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 	cfg := config.(*Config)
 	return common.CreateLogsExporter(ctx, set, config, &common.Common{
 		Verbosity:          cfg.Verbosity,
-		WarnLogLevel:       cfg.warnLogLevel,
-		LogLevel:           cfg.LogLevel,
 		SamplingInitial:    cfg.SamplingInitial,
 		SamplingThereafter: cfg.SamplingThereafter,
 	})

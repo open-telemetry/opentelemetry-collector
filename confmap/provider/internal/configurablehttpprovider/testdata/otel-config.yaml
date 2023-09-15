@@ -20,7 +20,7 @@ processors:
     check_interval: 5s
 
 exporters:
-  logging:
+  debug:
     verbosity: detailed
 
 service:
@@ -28,10 +28,10 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [logging]
+      exporters: [debug]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [logging]
+      exporters: [debug]
 
   extensions: [memory_ballast, zpages]
