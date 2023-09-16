@@ -111,3 +111,49 @@ type StatusWatcher interface {
 
 // StatusFunc is the expected type of ReportComponentStatus for component.TelemetrySettings
 type StatusFunc func(*StatusEvent) error
+
+// AggregateStatus will derive a status for the given input using the following rules in order:
+//   1. If any instance encounters a fatal error, the component is in a Fatal Error state.
+//   2. If any instance is in a Permanent Error state, the component status is Permanent Error.
+//   3. If any instance is Stopping, the component is in a Stopping state.
+//   4. If any instance is Stopped, but no instances are Stopping, we must be in the process of Stopping the component.
+//   5. If all instances are Stopped, the component is Stopped.
+//   6. If any instance is in a Recoverable Error state, the component status is Recoverable Error.
+//   7. If any instance is Starting, the component status is Starting.
+//   8. None of the above were true, so the component is OK. (In other words, all instances are OK.)
+
+func AggregateStatus(eventMap map[*InstanceID]*StatusEvent) Status {
+	seen := make(map[Status]struct{})
+	for _, ev := range eventMap {
+		seen[ev.Status()] = struct{}{}
+	}
+
+	if _, isFatal := seen[StatusFatalError]; isFatal {
+		return StatusFatalError
+	}
+
+	if _, isPermanent := seen[StatusPermanentError]; isPermanent {
+		return StatusPermanentError
+	}
+
+	if _, isStopping := seen[StatusStopping]; isStopping {
+		return StatusStopping
+	}
+
+	if _, isStopped := seen[StatusStopped]; isStopped {
+		if len(seen) == 1 {
+			return StatusStopped
+		}
+		return StatusStopping
+	}
+
+	if _, isRecoverable := seen[StatusRecoverableError]; isRecoverable {
+		return StatusRecoverableError
+	}
+
+	if _, isStarting := seen[StatusStarting]; isStarting {
+		return StatusStarting
+	}
+
+	return StatusOK
+}
