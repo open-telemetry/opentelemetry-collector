@@ -175,11 +175,11 @@ func LastStatusEvent[K comparable](eventMap map[K]*StatusEvent) (lastKey K, last
 	return
 }
 
-// LastErrorEvent returns the key and last StatusEvent with an Error status from the provided
-// map. Results will be nil if there is not an error event in the map.
-func LastErrorEvent[K comparable](eventMap map[K]*StatusEvent) (lastKey K, lastEvent *StatusEvent) {
+// LastEventByStatus returns the key and last StatusEvent of the given status from the provided map.
+// Results will be nil if there is not an event with the given status in the map.
+func LastEventByStatus[K comparable](eventMap map[K]*StatusEvent, status Status) (lastKey K, lastEvent *StatusEvent) {
 	for key, event := range eventMap {
-		if StatusIsError(event.Status()) &&
+		if status == event.Status() &&
 			(lastEvent == nil || lastEvent.timestamp.Before(event.timestamp)) {
 			lastKey = key
 			lastEvent = event

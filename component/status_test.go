@@ -5,6 +5,7 @@ package component
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -189,6 +190,10 @@ func TestLastEvent(t *testing.T) {
 		expectedID: NewStatusEvent(StatusStopping),
 	}
 
+	// ensure expected event is sufficiently more recent
+	ev := eventMap[expectedID]
+	ev.timestamp = ev.timestamp.Add(time.Duration(2) * time.Second)
+
 	lastID, lastEvent := LastStatusEvent(eventMap)
 
 	assert.Equal(t, expectedID, lastID)
@@ -196,20 +201,46 @@ func TestLastEvent(t *testing.T) {
 }
 
 func TestLastErrorEvent(t *testing.T) {
-	expectedID := &InstanceID{
-		ID:   NewIDWithName(DataTypeTraces, "0"),
-		Kind: KindReceiver,
+	statuses := []Status{
+		StatusStarting,
+		StatusOK,
+		StatusRecoverableError,
+		StatusPermanentError,
+		StatusFatalError,
+		StatusStopping,
+		StatusStopped,
 	}
 
-	eventMap := map[*InstanceID]*StatusEvent{
-		{}:         NewStatusEvent(StatusRecoverableError),
-		{}:         NewStatusEvent(StatusPermanentError),
-		expectedID: NewStatusEvent(StatusFatalError),
-		{}:         NewStatusEvent(StatusStopping),
+	// populate an eventMap and reverse lookup (expectedIDs) for later assertions
+	expectedIDs := make(map[Status]*InstanceID)
+	eventMap := make(map[*InstanceID]*StatusEvent)
+	// append duplicate statuses to ensure the latest is returned
+	statusesWithDups := statuses
+	statusesWithDups = append(statusesWithDups, StatusOK, StatusPermanentError, StatusStopped)
+	for i, st := range statusesWithDups {
+		id := &InstanceID{
+			ID: NewIDWithName(DataTypeTraces, fmt.Sprint(i)),
+		}
+		// expectedID will be overwritten for dups
+		expectedIDs[st] = id
+		ev := NewStatusEvent(st)
+		// pad the time between events
+		ev.timestamp = ev.timestamp.Add(time.Duration(i) * time.Second)
+		// events with duplicate statuses will exist in the eventMap
+		eventMap[id] = ev
 	}
 
-	lastID, lastEvent := LastErrorEvent(eventMap)
+	// multiple for events for some statuses
+	assert.Greater(t, len(eventMap), len(statuses))
+	// one id per status
+	assert.Equal(t, len(statuses), len(expectedIDs))
 
-	assert.Equal(t, expectedID, lastID)
-	assert.Equal(t, StatusFatalError, lastEvent.Status())
+	for _, st := range statuses {
+		t.Run(fmt.Sprintf("with %s", st), func(t *testing.T) {
+			lastID, lastEvent := LastEventByStatus(eventMap, st)
+			assert.Equal(t, expectedIDs[st], lastID)
+			assert.Equal(t, st, lastEvent.Status())
+		})
+	}
+
 }
