@@ -113,19 +113,23 @@ type StatusWatcher interface {
 type StatusFunc func(*StatusEvent) error
 
 // AggregateStatus will derive a status for the given input using the following rules in order:
-//   1. If any instance encounters a fatal error, the component is in a Fatal Error state.
-//   2. If any instance is in a Permanent Error state, the component status is Permanent Error.
-//   3. If any instance is Stopping, the component is in a Stopping state.
-//   4. If any instance is Stopped, but no instances are Stopping, we must be in the process of Stopping the component.
-//   5. If all instances are Stopped, the component is Stopped.
-//   6. If any instance is in a Recoverable Error state, the component status is Recoverable Error.
-//   7. If any instance is Starting, the component status is Starting.
-//   8. None of the above were true, so the component is OK. (In other words, all instances are OK.)
-
-func AggregateStatus(eventMap map[*InstanceID]*StatusEvent) Status {
+//  1. If all instances have the same status, there is nothing to aggregate, return it.
+//  2. If any instance encounters a fatal error, the component is in a Fatal Error state.
+//  3. If any instance is in a Permanent Error state, the component status is Permanent Error.
+//  4. If any instance is Stopping, the component is in a Stopping state.
+//  5. An instance is Stopped, but not all instances are Stopping, we must be in the process of Stopping the component.
+//  6. If any instance is in a Recoverable Error state, the component status is Recoverable Error.
+//  7. By process of elimination, the only remaining state is starting.
+func AggregateStatus[K comparable](eventMap map[K]*StatusEvent) Status {
 	seen := make(map[Status]struct{})
 	for _, ev := range eventMap {
 		seen[ev.Status()] = struct{}{}
+	}
+
+	if len(seen) == 1 {
+		for st := range seen {
+			return st
+		}
 	}
 
 	if _, isFatal := seen[StatusFatalError]; isFatal {
@@ -141,9 +145,6 @@ func AggregateStatus(eventMap map[*InstanceID]*StatusEvent) Status {
 	}
 
 	if _, isStopped := seen[StatusStopped]; isStopped {
-		if len(seen) == 1 {
-			return StatusStopped
-		}
 		return StatusStopping
 	}
 
@@ -151,9 +152,38 @@ func AggregateStatus(eventMap map[*InstanceID]*StatusEvent) Status {
 		return StatusRecoverableError
 	}
 
-	if _, isStarting := seen[StatusStarting]; isStarting {
-		return StatusStarting
-	}
+	return StatusStarting
+}
 
-	return StatusOK
+// StatusIsError returns true for error statuses (e.g. StatusRecoverableError,
+// StatusPermanentError, or StatusFatalError)
+func StatusIsError(status Status) bool {
+	return status == StatusRecoverableError ||
+		status == StatusPermanentError ||
+		status == StatusFatalError
+}
+
+// LastStatusEvent returns the key and last StatusEvent by timestamp from the map provided.
+// Results will be nil for an empty map.
+func LastStatusEvent[K comparable](eventMap map[K]*StatusEvent) (lastKey K, lastEvent *StatusEvent) {
+	for key, event := range eventMap {
+		if lastEvent == nil || lastEvent.timestamp.Before(event.timestamp) {
+			lastKey = key
+			lastEvent = event
+		}
+	}
+	return
+}
+
+// LastErrorEvent returns the key and last StatusEvent with an Error status from the provided
+// map. Results will be nil if there is not an error event in the map.
+func LastErrorEvent[K comparable](eventMap map[K]*StatusEvent) (lastKey K, lastEvent *StatusEvent) {
+	for key, event := range eventMap {
+		if StatusIsError(event.Status()) &&
+			(lastEvent == nil || lastEvent.timestamp.Before(event.timestamp)) {
+			lastKey = key
+			lastEvent = event
+		}
+	}
+	return
 }

@@ -135,3 +135,81 @@ func TestAggregateStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestStatusIsError(t *testing.T) {
+	for _, tc := range []struct {
+		status  Status
+		isError bool
+	}{
+		{
+			status:  StatusStarting,
+			isError: false,
+		},
+		{
+			status:  StatusOK,
+			isError: false,
+		},
+		{
+			status:  StatusRecoverableError,
+			isError: true,
+		},
+		{
+			status:  StatusPermanentError,
+			isError: true,
+		},
+		{
+			status:  StatusFatalError,
+			isError: true,
+		},
+		{
+			status:  StatusStopping,
+			isError: false,
+		},
+		{
+			status:  StatusStopped,
+			isError: false,
+		},
+	} {
+		name := fmt.Sprintf("StatusIsError(%s) is %t", tc.status, tc.isError)
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tc.isError, StatusIsError(tc.status))
+		})
+	}
+}
+
+func TestLastEvent(t *testing.T) {
+	expectedID := &InstanceID{
+		ID:   NewIDWithName(DataTypeTraces, "0"),
+		Kind: KindReceiver,
+	}
+
+	eventMap := map[*InstanceID]*StatusEvent{
+		{}:         NewStatusEvent(StatusOK),
+		{}:         NewStatusEvent(StatusOK),
+		expectedID: NewStatusEvent(StatusStopping),
+	}
+
+	lastID, lastEvent := LastStatusEvent(eventMap)
+
+	assert.Equal(t, expectedID, lastID)
+	assert.Equal(t, StatusStopping, lastEvent.Status())
+}
+
+func TestLastErrorEvent(t *testing.T) {
+	expectedID := &InstanceID{
+		ID:   NewIDWithName(DataTypeTraces, "0"),
+		Kind: KindReceiver,
+	}
+
+	eventMap := map[*InstanceID]*StatusEvent{
+		{}:         NewStatusEvent(StatusRecoverableError),
+		{}:         NewStatusEvent(StatusPermanentError),
+		expectedID: NewStatusEvent(StatusFatalError),
+		{}:         NewStatusEvent(StatusStopping),
+	}
+
+	lastID, lastEvent := LastErrorEvent(eventMap)
+
+	assert.Equal(t, expectedID, lastID)
+	assert.Equal(t, StatusFatalError, lastEvent.Status())
+}
