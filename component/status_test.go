@@ -244,3 +244,154 @@ func TestLastErrorEvent(t *testing.T) {
 	}
 
 }
+
+func TestEffectiveStatus(t *testing.T) {
+	// maxTime is used to make sure we select the event with the latest timestamp
+	maxTime := time.Unix(1<<63-62135596801, 999999999)
+	// latest sets the timestamp for an event to maxTime
+	latest := func(ev *StatusEvent) *StatusEvent {
+		ev.timestamp = maxTime
+		return ev
+	}
+
+	for _, tc := range []struct {
+		name           string
+		statusMap      map[*InstanceID]*StatusEvent
+		expectedStatus *StatusEvent
+	}{
+		{
+			name: "FatalError - existing event",
+			statusMap: map[*InstanceID]*StatusEvent{
+				{}: NewStatusEvent(StatusStarting),
+				{}: NewStatusEvent(StatusOK),
+				{}: latest(NewFatalErrorEvent(assert.AnError)),
+				{}: NewStatusEvent(StatusRecoverableError),
+			},
+			expectedStatus: &StatusEvent{
+				status:    StatusFatalError,
+				timestamp: maxTime,
+				err:       assert.AnError,
+			},
+		},
+		{
+			name: "FatalError - synthetic event",
+			statusMap: map[*InstanceID]*StatusEvent{
+				{}: NewStatusEvent(StatusStarting),
+				{}: NewStatusEvent(StatusOK),
+				{}: NewFatalErrorEvent(assert.AnError),
+				{}: latest(NewStatusEvent(StatusRecoverableError)),
+			},
+			expectedStatus: &StatusEvent{
+				status:    StatusFatalError,
+				timestamp: maxTime,
+				err:       assert.AnError,
+			},
+		},
+		{
+			name: "PermanentError - existing event",
+			statusMap: map[*InstanceID]*StatusEvent{
+				{}: NewStatusEvent(StatusStarting),
+				{}: NewStatusEvent(StatusOK),
+				{}: latest(NewPermanentErrorEvent(assert.AnError)),
+				{}: NewStatusEvent(StatusRecoverableError),
+			},
+			expectedStatus: &StatusEvent{
+				status:    StatusPermanentError,
+				timestamp: maxTime,
+				err:       assert.AnError,
+			},
+		},
+		{
+			name: "PermanentError - synthetic event",
+			statusMap: map[*InstanceID]*StatusEvent{
+				{}: NewStatusEvent(StatusStarting),
+				{}: NewStatusEvent(StatusOK),
+				{}: NewPermanentErrorEvent(assert.AnError),
+				{}: latest(NewStatusEvent(StatusRecoverableError)),
+			},
+			expectedStatus: &StatusEvent{
+				status:    StatusPermanentError,
+				timestamp: maxTime,
+				err:       assert.AnError,
+			},
+		},
+		{
+			name: "Stopping - existing event",
+			statusMap: map[*InstanceID]*StatusEvent{
+				{}: NewStatusEvent(StatusStarting),
+				{}: NewStatusEvent(StatusOK),
+				{}: NewStatusEvent(StatusRecoverableError),
+				{}: latest(NewStatusEvent(StatusStopping)),
+			},
+			expectedStatus: &StatusEvent{
+				status:    StatusStopping,
+				timestamp: maxTime,
+			},
+		},
+		{
+			name: "Stopping - synthetic event",
+			statusMap: map[*InstanceID]*StatusEvent{
+				{}: NewStatusEvent(StatusStarting),
+				{}: NewStatusEvent(StatusOK),
+				{}: NewStatusEvent(StatusRecoverableError),
+				{}: latest(NewStatusEvent(StatusStopped)),
+			},
+			expectedStatus: &StatusEvent{
+				status:    StatusStopping,
+				timestamp: maxTime,
+			},
+		},
+		{
+			name: "Stopped - existing event",
+			statusMap: map[*InstanceID]*StatusEvent{
+				{}: NewStatusEvent(StatusStopped),
+				{}: latest(NewStatusEvent(StatusStopped)),
+				{}: NewStatusEvent(StatusStopped),
+			},
+			expectedStatus: &StatusEvent{
+				status:    StatusStopped,
+				timestamp: maxTime,
+			},
+		},
+		{
+			name: "RecoverableError - existing event",
+			statusMap: map[*InstanceID]*StatusEvent{
+				{}: NewStatusEvent(StatusStarting),
+				{}: NewStatusEvent(StatusOK),
+				{}: latest(NewRecoverableErrorEvent(assert.AnError)),
+			},
+			expectedStatus: &StatusEvent{
+				status:    StatusRecoverableError,
+				timestamp: maxTime,
+				err:       assert.AnError,
+			},
+		},
+		{
+			name: "Starting - synthetic event",
+			statusMap: map[*InstanceID]*StatusEvent{
+				{}: NewStatusEvent(StatusStarting),
+				{}: latest(NewStatusEvent(StatusOK)),
+			},
+			expectedStatus: &StatusEvent{
+				status:    StatusStarting,
+				timestamp: maxTime,
+			},
+		},
+		{
+			name: "OK - existing event",
+			statusMap: map[*InstanceID]*StatusEvent{
+				{}: NewStatusEvent(StatusOK),
+				{}: latest(NewStatusEvent(StatusOK)),
+				{}: NewStatusEvent(StatusOK),
+			},
+			expectedStatus: &StatusEvent{
+				status:    StatusOK,
+				timestamp: maxTime,
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expectedStatus, EffectiveStatus(tc.statusMap))
+		})
+	}
+}

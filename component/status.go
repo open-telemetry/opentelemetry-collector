@@ -187,3 +187,29 @@ func LastEventByStatus[K comparable](eventMap map[K]*StatusEvent, status Status)
 	}
 	return
 }
+
+// EffectiveStatus returns a status event where:
+//   - The status is set to the aggregate status of the events in the eventMap
+//   - The timestamp is set to the latest timestamp of the events in the eventMap
+//   - For an error status, the event will have same error as the most current event of the same
+//     error type from the eventMap
+func EffectiveStatus[K comparable](eventMap map[K]*StatusEvent) *StatusEvent {
+	aggregateStatus := AggregateStatus[K](eventMap)
+	_, lastEvent := LastStatusEvent[K](eventMap)
+	// the effective status matches an existing event
+	if lastEvent.Status() == aggregateStatus {
+		return lastEvent
+	}
+
+	// the effective status requires a synthetic event
+	effectiveStatus := &StatusEvent{
+		status:    aggregateStatus,
+		timestamp: lastEvent.timestamp,
+	}
+	if StatusIsError(aggregateStatus) {
+		_, errorEvent := LastEventByStatus[K](eventMap, aggregateStatus)
+		effectiveStatus.err = errorEvent.err
+	}
+
+	return effectiveStatus
+}
