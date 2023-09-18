@@ -4,7 +4,16 @@ The OpenTelemetry Collector will be supported following a tiered platform suppor
 
 ## Current Test Strategy
 
-The current verification process of the OpenTelemetry Collector includes unit and performance tests for core and additional end-to-end and integration tests for contrib. In the end-to-end tests, receivers, processors, and exporters etc. are tested in a testbed, while the integration tests rely on actual instances and available container images. Additional stability tests are in preparation for the future as well. All verification tests are run on Ubuntu 22.04 Linux on amd64 as the primary platform today. In addition, unit tests are run for the _contrib_ collector on Microsoft Windows Server 2022 (amd64). The cross compile supports two MacOS/Darwin targets (amd64 and arm64), five Linux platforms (amd64, arm64, i386, arm and ppc64le) and two Windows binaries (amd64, i386) today. None of those platforms is tested today, except of Linux on amd64 as the primary platform. The OpenTelemetry Collector can be installed using apk, deb or rpm files and is available as container images (core, contrib) for deployment on Kubernetes and Docker. The container images are built using qemu and published to Docker Hub and ghcr.io for Linux on amd64, arm64, i386, arm/v7 and ppc64le. The end-to-end test for the _contrib_ container images is run on Ubuntu 22.04 Linux for the Kubernetes versions v1.23 to v1.26.
+The current verification process of the OpenTelemetry Collector includes unit and performance tests for core and additional end-to-end and integration tests for contrib. In the end-to-end tests, receivers, processors, and exporters etc. are tested in a testbed, while the integration tests rely on actual instances and available container images. Additional stability tests are in preparation for the future as well. All verification tests are run on the linux/amd64 as the primary platform today. In addition, unit tests are run for the _contrib_ collector on windows/amd64. The tests use as execution environments the latest Ubuntu and Windows Server versions [supported as Github runners](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources). 
+
+The cross compile supports the following targets:
+- darwin/amd64 and darwin/arm64
+- linux/amd64, linux/arm64, linux/386, linux/arm and linux/ppc64le
+- windows/amd64, windows/386. 
+
+Except of the mentioned tests for linux/amd64 and windows/amd64, none of the other platforms are tested today. 
+
+Container images of the _core_ and _contrib_ collector are built and published to Docker Hub and ghcr.io for linux/amd64, linux/arm64, linux/i386, linux/arm and linux/ppc64le. End-to-end tests of the _contrib_ container images are run on the latest Ubuntu Linux supported by GitHub runners and for the four most recent Kubernetes versions.
 
 ## Tiered platform support model
 
