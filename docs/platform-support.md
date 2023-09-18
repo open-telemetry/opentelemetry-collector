@@ -19,35 +19,49 @@ Container images of the _core_ and _contrib_ collector are built and published t
 
 The OpenTelemetry Collector will be supported following a tiered platform support model to balance between the aim to support as many platforms as possible and to guarantee stability for the most important platforms. The platform support for the OpenTelemetry Collector is broken into three tiers with different levels of support for each tier. 
 
+### Platform Support - Summary
+
+The following tables summarized the platform tiers of support by the verification tests performed for them and by the specification if dummy implementations are allowed for selected features, the availability of precompiled binaries incl. container images and if bugfix releases are provided for previous releases in case of critical defects. 
+
+| Tier | Unit tests | Performance tests | End-to-end tests | Integrations tests | Dummy implementations | Precompiled binaries | Bugfix releases |
+|------|------------|-------------------|------------------|--------------------|-----------------------|----------------------|-----------------|
+| 1    | yes        | yes               | yes              | yes                | no                    | yes                  | yes             |
+| 2    | yes        | optional          | optional         | optional           | yes                   | yes                  | no              |
+| 3    | no         | no                | no               | no                 | yes                   | yes                  | no              |
+
 ### Tier 1 – Primary Support
 
-The Tier 1 supported platforms are _guaranteed to work_. Precompiled binaries are built on the platform, fully supported for all collector add-ons (receivers, processor, exporters etc.), and continuously tested as part of the development processes to ensure any proposed change will function correctly. Build and test infrastructure is provided by the project. All tests are executed on the platform as part of automated continuous integration (CI) for each pull request and the biweekly release cycle. Any build or test failure block the release of the collector distribution for all platforms. Defects are addressed with priority and depending on severity fixed for the previous release in a bug fix release.
+The Tier 1 supported platforms are _guaranteed to work_. Precompiled binaries are built on the platform, fully supported for all collector add-ons (receivers, processor, exporters etc.), and continuously tested as part of the development processes to ensure any proposed change will function correctly. Build and test infrastructure is provided by the project. All tests are executed on the platform as part of automated continuous integration (CI) for each pull request and the biweekly release cycle. Any build or test failure block the release of the collector distribution for all platforms. Defects are addressed with priority and depending on severity fixed for previous release(s) in a bug fix release.
 
 Tier 1 platforms are currently:
-- Linux amd64
-- Kubernetes amd64
+| Platform    | Owner(s)                                                                                                    |
+|-------------|-------------------------------------------------------------------------------------------------------------|
+| linux/amd64 | [OpenTelemetry Collector approvers](https://github.com/open-telemetry/opentelemetry-collector#contributing) |
 
 ### Tier 2 – Secondary Support
 
 Tier 2 platforms are _guaranteed to work with specified limitations_. Precompiled binaries are built and tested on the platform as part of the biweekly release cycle. Build and test infrastructure is provided by the platform maintainers. All tests are executed on the platform as far as they are applicable, and all prerequisites are fulfilled. Not executed tests and not tested collector add-ons (receivers, processors, exporters, etc.) are published on release of the collector distribution. Any build or test failure delays the release of the binaries for the respective platform but not the collector distribution for all other platforms. Defects are addressed but not with the priority as for Tier 1 and, if specific to the platform, require the support of the platform maintainers.
 
 Tier 2 platforms are currently:
-- None
+| Platform      | Owner(s)                                                                                                    |
+|---------------|-------------------------------------------------------------------------------------------------------------|
+| windows/amd64 | [OpenTelemetry Collector approvers](https://github.com/open-telemetry/opentelemetry-collector#contributing) |
 
 ### Tier 3 - Community Support
 
 Tier 3 platforms are _guaranteed to build_. Precompiled binaries are made available as part of the release process and as result of a cross compile build on Linux amd64 but the binaries are not tested at all. Any build failure delays the release of the binaries for the respective platform but not the collector distribution for all other platforms. Defects are addressed based on community contributions. Core developers might provide guidance or code reviews, but direct fixes may be limited.
 
 Tier 3 platforms are currently:
-- MacOS/Darwin amd64 
-- MacOS/Darwin arm64
-- Linux arm64 
-- Linux i386
-- Linux arm/7 
-- Linux ppc64le 
-- Windows amd64
-- Windows i386
-- Kubernetes arm64, i386, arm/v7 and ppc64le
-- Docker amd64, arm64, i386, arm/v7 and ppc64le
+| Platform      | Owner(s)                                                                                                    |
+|---------------|-------------------------------------------------------------------------------------------------------------|
+| darwin/amd64  |                                                                                                             |
+| darwin/arm64  |                                                                                                             |
+| linux/arm64   |                                                                                                             |
+| linux/386     |                                                                                                             |
+| linux/arm     |                                                                                                             |
+| linux/ppc64le |                                                                                                             |
+| windows/386   |                                                                                                             |
 
-The proposed additional platforms Linux on s390x (#378) and AIX on ppc64 ([#19195](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19195)) will be included into Tier 3 once they're added to the OpenTelemetry Collector as platforms. 
+The proposed additional platforms linux/s390x (#378) and aix/ppc64 ([#19195](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19195)) will be included into Tier 3 once they're added to the OpenTelemetry Collector as platforms. 
+
+
