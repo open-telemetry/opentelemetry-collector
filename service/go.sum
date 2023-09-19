@@ -293,8 +293,8 @@ go.opentelemetry.io/contrib/zpages v0.44.0 h1:9J/cxTTWhM6kzgdaBt6NiXS2HUreXn/eW2
 go.opentelemetry.io/contrib/zpages v0.44.0/go.mod h1:G3eNCGhodjn2wIdM+i6GneZb1Cqg6dNRBlm1cpNEElg=
 go.opentelemetry.io/otel v1.18.0 h1:TgVozPGZ01nHyDZxK5WGPFB9QexeTMXEH7+tIClWfzs=
 go.opentelemetry.io/otel v1.18.0/go.mod h1:9lWqYO0Db579XzVuCKFNPDl4s73Voa+zEck3wHaAYQI=
-go.opentelemetry.io/otel/bridge/opencensus v0.40.0 h1:pqDiayRhBgoqy1vwnscik+TizcImJ58l053NScJyZso=
-go.opentelemetry.io/otel/bridge/opencensus v0.40.0/go.mod h1:1NvVHb6tLTe5A9qCYz+eErW0t8iPn4ZfR6tDKcqlGTM=
+go.opentelemetry.io/otel/bridge/opencensus v0.41.0 h1:VBpeaTbrvLFHvRtsyCJXjsTaicBNrAFdmctiN1k6WNI=
+go.opentelemetry.io/otel/bridge/opencensus v0.41.0/go.mod h1:yCQB5IKRhgjlbTLc91+ixcZc2/8BncGGJ+CS3dZJwtY=
 go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.41.0 h1:k0k7hFNDd8K4iOMJXj7s8sHaC4mhTlAeppRmZXLgZ6k=
 go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.41.0/go.mod h1:hG4Fj/y8TR/tlEDREo8tWstl9fO9gcFkn4xrx0Io8xU=
 go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.41.0 h1:HgbDTD8pioFdY3NRc/YCvsWjqQPtweGyXxa32LgnTOw=
