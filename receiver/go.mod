@@ -17,6 +17,7 @@ require (
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
@@ -46,6 +47,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.85.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.85.0 // indirect
 	go.opentelemetry.io/collector/exporter v0.85.0 // indirect
+	go.opentelemetry.io/collector/extension v0.85.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/collector/processor v0.85.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.41.0 // indirect
