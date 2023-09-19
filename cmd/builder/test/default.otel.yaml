@@ -9,7 +9,7 @@ receivers:
 processors:
 
 exporters:
-  logging:
+  debug:
 
 service:
   extensions: [zpages]
@@ -19,4 +19,4 @@ service:
         - otlp
       processors: []
       exporters:
-        - logging
+        - debug

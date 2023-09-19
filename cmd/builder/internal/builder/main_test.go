@@ -67,6 +67,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		fmt.Sprintf("go.opentelemetry.io/collector/consumer => %s/consumer", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/connector => %s/connector", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/exporter => %s/exporter", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/exporter/debugexporter => %s/exporter/debugexporter", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/exporter/loggingexporter => %s/exporter/loggingexporter", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/exporter/otlpexporter => %s/exporter/otlpexporter", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/exporter/otlphttpexporter => %s/exporter/otlphttpexporter", workspaceDir),
@@ -79,8 +80,10 @@ func TestGenerateAndCompile(t *testing.T) {
 		fmt.Sprintf("go.opentelemetry.io/collector/processor/memorylimiterprocessor => %s/processor/memorylimiterprocessor", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/receiver => %s/receiver", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/receiver/otlpreceiver => %s/receiver/otlpreceiver", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/otelcol => %s/otelcol", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/pdata => %s/pdata", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/semconv => %s/semconv", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/service => %s/service", workspaceDir),
 	}
 
 	testCases := []struct {

@@ -27,18 +27,18 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 1. Update Contrib to use the latest in development version of Core. Run `make update-otel` in Contrib root directory and if it results in any changes submit a draft PR to Contrib. Ensure the CI passes before proceeding. This is to ensure that the latest core does not break contrib in any way. We’ll update it once more to the final release number later.
 
-2. Determine the version number that will be assigned to the release. During the beta phase, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.85.0` as the version to be released, following `v0.54.0`. 
-   Check if stable modules have any changes since the last release by running `make check-changes PREVIOUS_VERSION=v1.0.0-rcv0014 MODSET=stable`. If there are no changes, there is no need to release new version for stable modules. 
+2. Determine the version number that will be assigned to the release. During the beta phase, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.85.0` as the version to be released, following `v0.84.0`.
+   Check if stable modules have any changes since the last release by running `make check-changes PREVIOUS_VERSION=v1.0.0-rcv0014 MODSET=stable`. If there are no changes, there is no need to release new version for stable modules.
 
 3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Core should be haulted**.
-   - When prompted, enter the version numbers determined in Step 1, but do not include a leading `v`.
+   - When prompted, enter the version numbers determined in Step 2, but do not include a leading `v`.
    - If not intending to release stable modeles, do not specify a version for `Release candidate version stable`.
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
 4. Check out the commit created by merging the PR created by `Automation - Prepare Release` (e.g. `prepare-release-prs/0.85.0`) and create a branch named `release/<release-series>` (e.g. `release/v0.85.x`). Push the new branch to `open-telemetry/opentelemetry-collector`.
 
-5. Make sure you are on `release/<release-series>`. Tag the module groups with the new release version by running: 
+5. Make sure you are on `release/<release-series>`. Tag the module groups with the new release version by running:
    - `make push-tags MODSET=beta` for beta modules group,
    - `make push-tags MODSET=stable` beta stable modules group, only if there were changes since the last release.
    
@@ -82,7 +82,7 @@ The last step of the release process creates artifacts for the new version of th
 4. Check out the commit created by merging the PR and tag with the new release version by running the `make push-tags TAG=v0.85.0` command. If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-releases.git` in each command. Wait for the new tag build to pass successfully.
 
 5. Ensure the "Release" action passes, this will
- 
+
     1. push new container images to `https://hub.docker.com/repository/docker/otel/opentelemetry-collector` and `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-contrib`
 
     2. create a Github release for the tag and push all the build artifacts to the Github release. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/runs/5869052077).
@@ -145,10 +145,10 @@ The following documents the procedure to release a bugfix
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2023-09-11 | v0.85.0 | @codeboten      |
 | 2023-09-25 | v0.86.0 | @bogdandrutu    |
 | 2023-10-09 | v0.87.0 | @Aneurysm9      |
 | 2023-10-23 | v0.88.0 | @mx-psi         |
 | 2023-11-06 | v0.89.0 | @jpkrohling     |
 | 2023-11-20 | v0.90.0 | @djaglowski     |
-| 2023-12-04 | v0.84.0 | @dmitryax       |
+| 2023-12-04 | v0.91.0 | @dmitryax       |
+| 2023-12-18 | v0.92.0 | @codeboten      |

@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.84.0
+	go.opentelemetry.io/collector v0.85.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
 )
 
@@ -21,8 +21,8 @@ require (
 	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
-	google.golang.org/grpc v1.57.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
+	google.golang.org/grpc v1.58.1 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
@@ -59,3 +59,5 @@ replace go.opentelemetry.io/collector/connector => ../connector
 replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
+
+replace go.opentelemetry.io/collector/service => ../service

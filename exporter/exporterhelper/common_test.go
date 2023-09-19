@@ -68,3 +68,14 @@ func checkStatus(t *testing.T, sd sdktrace.ReadOnlySpan, err error) {
 		require.Equal(t, codes.Unset, sd.Status().Code, "SpanData %v", sd)
 	}
 }
+
+func TestQueueRetryOptionsWithRequestExporter(t *testing.T) {
+	bs, err := newBaseExporter(exportertest.NewNopCreateSettings(), "", true, nil, nil, newNoopObsrepSender,
+		WithRetry(NewDefaultRetrySettings()))
+	require.Nil(t, err)
+	require.True(t, bs.requestExporter)
+	require.Panics(t, func() {
+		_, _ = newBaseExporter(exportertest.NewNopCreateSettings(), "", true, nil, nil, newNoopObsrepSender,
+			WithRetry(NewDefaultRetrySettings()), WithQueue(NewDefaultQueueSettings()))
+	})
+}

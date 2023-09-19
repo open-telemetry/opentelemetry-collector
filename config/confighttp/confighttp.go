@@ -172,7 +172,7 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 		}
 	}
 
-	// wrapping http transport with otelhttp transport to enable otel instrumenetation
+	// wrapping http transport with otelhttp transport to enable otel instrumentation
 	if settings.TracerProvider != nil && settings.MeterProvider != nil {
 		clientTransport = otelhttp.NewTransport(
 			clientTransport,

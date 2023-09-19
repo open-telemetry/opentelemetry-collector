@@ -1,17 +1,15 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggingexporter"
+package common // import "go.opentelemetry.io/collector/exporter/internal/common"
 
 import (
 	"context"
-	"errors"
-	"os"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/exporter/loggingexporter/internal/otlptext"
+	"go.opentelemetry.io/collector/exporter/internal/otlptext"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -81,21 +79,5 @@ func newLoggingExporter(logger *zap.Logger, verbosity configtelemetry.Level) *lo
 		logsMarshaler:    otlptext.NewTextLogsMarshaler(),
 		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
 		tracesMarshaler:  otlptext.NewTextTracesMarshaler(),
-	}
-}
-
-func loggerSync(logger *zap.Logger) func(context.Context) error {
-	return func(context.Context) error {
-		// Currently Sync() return a different error depending on the OS.
-		// Since these are not actionable ignore them.
-		err := logger.Sync()
-		osErr := &os.PathError{}
-		if errors.As(err, &osErr) {
-			wrappedErr := osErr.Unwrap()
-			if knownSyncError(wrappedErr) {
-				err = nil
-			}
-		}
-		return err
 	}
 }

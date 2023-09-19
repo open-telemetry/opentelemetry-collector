@@ -14,19 +14,6 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 )
 
-// TimeoutSettings for timeout. The timeout applies to individual attempts to send data to the backend.
-type TimeoutSettings struct {
-	// Timeout is the timeout for every attempt to send data to the backend.
-	Timeout time.Duration `mapstructure:"timeout"`
-}
-
-// NewDefaultTimeoutSettings returns the default settings for TimeoutSettings.
-func NewDefaultTimeoutSettings() TimeoutSettings {
-	return TimeoutSettings{
-		Timeout: 5 * time.Second,
-	}
-}
-
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 type requestSender interface {
 	start(ctx context.Context, host component.Host, set exporter.CreateSettings) error
