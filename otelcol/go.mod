@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014
 	go.opentelemetry.io/collector/processor v0.85.0
 	go.opentelemetry.io/collector/receiver v0.85.0
-	go.opentelemetry.io/collector/service v0.0.0-20230915215502-07938f20fcc7
+	go.opentelemetry.io/collector/service v0.85.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/sys v0.12.0

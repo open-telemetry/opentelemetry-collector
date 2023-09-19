@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
 	go.opentelemetry.io/collector/processor v0.85.0
 	go.opentelemetry.io/collector/receiver v0.85.0
-	go.opentelemetry.io/collector/service v0.0.0-20230915215502-07938f20fcc7
+	go.opentelemetry.io/collector/service v0.85.0
 	go.opentelemetry.io/otel v1.18.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.41.0
 	go.opentelemetry.io/otel/metric v1.18.0
