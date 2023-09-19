@@ -96,6 +96,48 @@ func TestToStringMap(t *testing.T) {
 	}
 }
 
+func TestBasicOperations(t *testing.T) {
+	stringMap := map[string]any{
+		"receivers": map[string]any{
+			"nop":            nil,
+			"nop/myreceiver": nil,
+		},
+		"processors": map[string]any{
+			"nop":             nil,
+			"nop/myprocessor": nil,
+		},
+		"exporters": map[string]any{
+			"nop":            nil,
+			"nop/myexporter": nil,
+		},
+		"extensions": map[string]any{
+			"nop":             nil,
+			"nop/myextension": nil,
+		},
+	}
+
+	conf := NewFromStringMap(stringMap)
+	assert.Equal(t, stringMap, conf.ToStringMap())
+
+	assert.True(t, conf.IsSet("receivers"))
+	receivers, err := conf.Sub("receivers")
+	assert.NoError(t, err)
+	assert.True(t, receivers.IsSet("nop"))
+
+	receivers.Delete("nop")
+	assert.False(t, receivers.IsSet("nop"))
+
+	conf.Delete("processors")
+	assert.False(t, conf.IsSet("processors"))
+
+	// restore by merging original over top of modified
+	conf2 := NewFromStringMap(stringMap)
+	assert.NoError(t, conf.Merge(conf2))
+
+	assert.Equal(t, stringMap, conf.ToStringMap())
+	assert.Equal(t, conf.ToStringMap(), conf2.ToStringMap())
+}
+
 func TestExpandNilStructPointersHookFunc(t *testing.T) {
 	stringMap := map[string]any{
 		"boolean": nil,
