@@ -28,7 +28,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.85.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.19.0
 	go.opentelemetry.io/otel v1.18.0
-	go.opentelemetry.io/otel/bridge/opencensus v0.40.0
+	go.opentelemetry.io/otel/bridge/opencensus v0.41.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.41.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.41.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.18.0
