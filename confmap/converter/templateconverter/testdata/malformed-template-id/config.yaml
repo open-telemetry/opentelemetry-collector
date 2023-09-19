@@ -1,0 +1,15 @@
+receivers:
+  template: # missing "/<template_type>[/<template_name>]"
+    my_file: foo.log
+processors:
+  batch:
+exporters:
+  otlp:
+    endpoint: localhost:4317
+
+service:
+  pipelines:
+    logs:
+      receivers: [template/my_filelog_template]
+      processors: [batch]
+      exporters: [otlp]

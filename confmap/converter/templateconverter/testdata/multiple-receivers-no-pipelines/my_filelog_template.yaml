@@ -1,0 +1,5 @@
+receivers:
+  filelog/foo:
+    include: {{ .my_foo_file }}
+  filelog/bar:
+    include: {{ .my_bar_file }}

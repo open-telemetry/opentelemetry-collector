@@ -1,0 +1,6 @@
+receivers:
+  filelog:
+    include: {{ .my_file }}
+
+processors:
+  batch:

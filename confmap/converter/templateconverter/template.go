@@ -41,13 +41,13 @@ func (c *converter) Convert(_ context.Context, conf *confmap.Conf) error {
 	c.cfg = conf.ToStringMap()
 
 	for templateID := range c.cfg["receivers"].(map[string]any) {
-		if !strings.HasPrefix(templateID, "template/") {
+		if !strings.HasPrefix(templateID, "template") {
 			continue
 		}
 		var cfg *TemplateConfig
 		cfg, err := c.renderTemplate(templateID)
 		if err != nil {
-			return fmt.Errorf("template %q: %w", templateID, err)
+			return err
 		}
 		err = c.expandTemplate(cfg, templateID)
 		if err != nil {
@@ -93,8 +93,8 @@ func render(templateType, instanceName, rawTemplate string, parameters any) (*Te
 		return nil, errors.New("must have at least one receiver")
 	}
 
-	if len(cfg.Pipelines) == 0 {
-		return nil, errors.New("must have at least one pipeline")
+	if len(cfg.Processors) > 0 && len(cfg.Pipelines) == 0 {
+		return nil, errors.New("template containing processors must have at least one pipeline")
 	}
 
 	// Apply a scope to all component IDs in the template.
@@ -111,6 +111,8 @@ func render(templateType, instanceName, rawTemplate string, parameters any) (*Te
 }
 
 func (c *converter) expandTemplate(cfg *TemplateConfig, templateID string) error {
+	pipelinesMap := c.cfg["service"].(map[string]any)["pipelines"].(map[string]any)
+
 	templateType, instanceName, err := parseTemplateID(templateID)
 	if err != nil {
 		return err
@@ -121,6 +123,35 @@ func (c *converter) expandTemplate(cfg *TemplateConfig, templateID string) error
 	delete(c.cfg["receivers"].(map[string]any), templateID)
 	for receiverID, receiverCfg := range cfg.Receivers {
 		c.cfg["receivers"].(map[string]any)[receiverID] = receiverCfg
+	}
+
+	// Special case where the template only contains receivers. In this case,
+	// we can just substitute the rendered receivers in place of the template ID.
+	if len(cfg.Processors) == 0 && len(cfg.Pipelines) == 0 {
+		for _, pipelineMap := range pipelinesMap {
+			receiverIDs := pipelineMap.(map[string]any)["receivers"].([]any)
+			newReceiverIDs := make([]any, 0, len(receiverIDs))
+			for _, receiverID := range receiverIDs {
+				if receiverID != templateID {
+					newReceiverIDs = append(newReceiverIDs, receiverID)
+				}
+			}
+
+			if len(newReceiverIDs) == len(receiverIDs) {
+				// This pipeline did not use the template
+				continue
+			}
+
+			for receiverID := range cfg.Receivers {
+				newReceiverIDs = append(newReceiverIDs, receiverID)
+			}
+			// This makes tests deterministic
+			sort.Slice(newReceiverIDs, func(i, j int) bool {
+				return newReceiverIDs[i].(string) < newReceiverIDs[j].(string)
+			})
+			pipelineMap.(map[string]any)["receivers"] = newReceiverIDs
+		}
+		return nil
 	}
 
 	// Update the processors section by adding any rendered processors.
@@ -145,12 +176,10 @@ func (c *converter) expandTemplate(cfg *TemplateConfig, templateID string) error
 
 	// Crawl through existing "pipelines" and replace all references
 	// to this instance of the template with the forward connector.
-	// Since these are a 1:1 changes, we are updating the original Conf.
 	//
 	// Also take note of the pipeline data types in which the template is used.
 	// We'll use these later to include only relevant partial pipelines.
 	var usedTraces, usedMetrics, usedLogs bool
-	pipelinesMap := c.cfg["service"].(map[string]any)["pipelines"].(map[string]any)
 	for pipelineID := range pipelinesMap {
 		switch {
 		case isTraces(pipelineID):
@@ -160,8 +189,6 @@ func (c *converter) expandTemplate(cfg *TemplateConfig, templateID string) error
 		case isLogs(pipelineID):
 			usedLogs = true
 		default:
-			// For now, just let it be. It'll blow up later in config
-			// validation but that's not the converter's problem to flag.
 			continue
 		}
 
@@ -195,7 +222,7 @@ func (c *converter) expandTemplate(cfg *TemplateConfig, templateID string) error
 				continue
 			}
 		default:
-			return fmt.Errorf("pipeline id must start with data type: %q", partialName)
+			continue
 		}
 
 		scopedPipelineName := partialName + "/" + templateType
@@ -236,15 +263,12 @@ type PartialPipeline struct {
 func parseTemplateID(templateID string) (templateType, instanceName string, err error) {
 	templateIDParts := strings.SplitN(templateID, "/", 3)
 	switch len(templateIDParts) {
-	case 1: // just "template"
-		return "", "", fmt.Errorf("'template' must be followed by type")
 	case 2: // template/type
 		return templateIDParts[1], "", nil
 	case 3: // template/type/name
 		return templateIDParts[1], templateIDParts[2], nil
-	default:
-		return "", "", fmt.Errorf("invalid template ID: %q", templateID)
 	}
+	return "", "", fmt.Errorf("'template' must be followed by type")
 }
 
 // In order to ensure the component IDs in this template are globally unique,

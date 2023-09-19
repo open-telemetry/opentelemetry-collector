@@ -1,0 +1,7 @@
+receivers:
+  filelog:
+    include: {{ .my_file }}
+
+pipelines:
+  logs:
+    receivers: [filelog]

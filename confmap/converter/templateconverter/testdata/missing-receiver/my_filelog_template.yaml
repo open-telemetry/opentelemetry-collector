@@ -1,0 +1,3 @@
+pipelines:
+  logs:
+    receivers: [filelog]

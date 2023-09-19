@@ -1,0 +1,11 @@
+receivers:
+  filelog/foo:
+    include: {{ .my_foo_file }}
+  filelog/bar:
+    include: {{ .my_bar_file }}
+
+pipelines:
+  logs/foo:
+    receivers: [filelog/foo]
+  logs/bar:
+    receivers: [filelog/bar]
