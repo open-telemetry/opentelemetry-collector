@@ -7,8 +7,6 @@ import (
 	"context"
 	"time"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -114,7 +112,7 @@ func WithTimeout(timeoutSettings TimeoutSettings) Option {
 // The default RetrySettings is to disable retries.
 func WithRetry(retrySettings RetrySettings) Option {
 	return func(o *baseExporter) {
-		o.retrySender = newRetrySender(o.set.ID, retrySettings, o.sampledLogger, o.onTemporaryFailure)
+		o.retrySender = newRetrySender(o.set.ID, retrySettings, o.set.Logger, o.onTemporaryFailure)
 	}
 }
 
@@ -134,7 +132,7 @@ func WithQueue(config QueueSettings) Option {
 				queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID, o.marshaler, o.unmarshaler)
 			}
 		}
-		qs := newQueueSender(o.set.ID, o.signal, queue, o.sampledLogger)
+		qs := newQueueSender(o.set.ID, o.signal, queue, o.set.Logger)
 		o.queueSender = qs
 		o.setOnTemporaryFailure(qs.onTemporaryFailure)
 	}
@@ -159,9 +157,8 @@ type baseExporter struct {
 	unmarshaler     internal.RequestUnmarshaler
 	signal          component.DataType
 
-	set           exporter.CreateSettings
-	obsrep        *obsExporter
-	sampledLogger *zap.Logger
+	set    exporter.CreateSettings
+	obsrep *obsExporter
 
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
@@ -197,9 +194,8 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 		retrySender:   &baseRequestSender{},
 		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutSettings()},
 
-		set:           set,
-		obsrep:        obsrep,
-		sampledLogger: set.SampledLogger(),
+		set:    set,
+		obsrep: obsrep,
 	}
 
 	for _, op := range options {

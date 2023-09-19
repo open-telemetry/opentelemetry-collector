@@ -6,6 +6,7 @@ package telemetry
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -63,7 +64,7 @@ func TestTelemetryConfiguration(t *testing.T) {
 	}
 }
 
-func TestSampledLoggerCreateFirstTime(t *testing.T) {
+func TestSampledLogger(t *testing.T) {
 	tests := []struct {
 		name string
 		cfg  *Config
@@ -72,29 +73,34 @@ func TestSampledLoggerCreateFirstTime(t *testing.T) {
 			name: "Default sampling",
 			cfg: &Config{
 				Logs: LogsConfig{
-					Level:    zapcore.DebugLevel,
 					Encoding: "console",
-				},
-				Metrics: MetricsConfig{
-					Level:   configtelemetry.LevelBasic,
-					Address: "127.0.0.1:3333",
 				},
 			},
 		},
 		{
-			name: "Already using sampling",
+			name: "Custom sampling",
 			cfg: &Config{
 				Logs: LogsConfig{
 					Level:    zapcore.DebugLevel,
 					Encoding: "console",
 					Sampling: &LogsSamplingConfig{
-						Initial:    50,
-						Thereafter: 40,
+						Enabled:    true,
+						Tick:       1 * time.Second,
+						Initial:    100,
+						Thereafter: 100,
 					},
 				},
-				Metrics: MetricsConfig{
-					Level:   configtelemetry.LevelBasic,
-					Address: "127.0.0.1:3333",
+			},
+		},
+		{
+			name: "Disable sampling",
+			cfg: &Config{
+				Logs: LogsConfig{
+					Level:    zapcore.DebugLevel,
+					Encoding: "console",
+					Sampling: &LogsSamplingConfig{
+						Enabled: false,
+					},
 				},
 			},
 		},
@@ -105,10 +111,7 @@ func TestSampledLoggerCreateFirstTime(t *testing.T) {
 			telemetry, err := New(context.Background(), Settings{ZapOptions: []zap.Option{}}, *tt.cfg)
 			assert.NoError(t, err)
 			assert.NotNil(t, telemetry)
-			assert.Nil(t, telemetry.sampledLogger)
-			getSampledLogger := telemetry.SampledLogger()
-			assert.NotNil(t, getSampledLogger())
-			assert.Equal(t, getSampledLogger(), telemetry.sampledLogger)
+			assert.NotNil(t, telemetry.Logger())
 		})
 	}
 }

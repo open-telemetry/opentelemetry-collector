@@ -5,6 +5,7 @@ package otelcol
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,7 +46,9 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 		Development: zapProdCfg.Development,
 		Encoding:    "console",
 		Sampling: &telemetry.LogsSamplingConfig{
-			Initial:    100,
+			Enabled:    true,
+			Tick:       1 * time.Second,
+			Initial:    10,
 			Thereafter: 100,
 		},
 		DisableCaller:     zapProdCfg.DisableCaller,

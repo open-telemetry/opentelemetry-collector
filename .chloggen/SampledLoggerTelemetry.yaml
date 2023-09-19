@@ -7,7 +7,7 @@ change_type: enhancement
 component: service/telemetry exporter/exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "New sampled logger in the telemetry configuration used to avoid flooding the logs with messages that are repeated frequently."
+note: "Update default sampling logger configuration in the telemetry configuration."
 
 # One or more tracking issues or pull requests related to the change
 issues: [8134]
@@ -15,7 +15,7 @@ issues: [8134]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: The sampled logger is built from the logger. It is configured to sample 100 logs in a second after 10 initial logs.
+subtext: The sampled configuration can be disabled easily by setting the 'enabled' field to 'false'
 
 
 # Optional: The change log or logs in which this entry should be included.

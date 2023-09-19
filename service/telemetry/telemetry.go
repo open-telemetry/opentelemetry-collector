@@ -5,8 +5,6 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"context"
-	"sync"
-	"time"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
@@ -18,9 +16,6 @@ import (
 type Telemetry struct {
 	logger         *zap.Logger
 	tracerProvider *sdktrace.TracerProvider
-
-	createSampledLogger sync.Once
-	sampledLogger       *zap.Logger
 }
 
 func (t *Telemetry) TracerProvider() trace.TracerProvider {
@@ -29,15 +24,6 @@ func (t *Telemetry) TracerProvider() trace.TracerProvider {
 
 func (t *Telemetry) Logger() *zap.Logger {
 	return t.logger
-}
-
-func (t *Telemetry) SampledLogger() func() *zap.Logger {
-	return func() *zap.Logger {
-		t.createSampledLogger.Do(func() {
-			t.sampledLogger = newSampledLogger(t.logger)
-		})
-		return t.sampledLogger
-	}
 }
 
 func (t *Telemetry) Shutdown(ctx context.Context) error {
@@ -73,7 +59,6 @@ func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	zapCfg := &zap.Config{
 		Level:             zap.NewAtomicLevelAt(cfg.Level),
 		Development:       cfg.Development,
-		Sampling:          toSamplingConfig(cfg.Sampling),
 		Encoding:          cfg.Encoding,
 		EncoderConfig:     zap.NewProductionEncoderConfig(),
 		OutputPaths:       cfg.OutputPaths,
@@ -92,29 +77,22 @@ func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	if err != nil {
 		return nil, err
 	}
+	if cfg.Sampling != nil && cfg.Sampling.Enabled {
+		logger = newSampledLogger(logger, cfg.Sampling)
+	}
 
 	return logger, nil
 }
 
-func toSamplingConfig(sc *LogsSamplingConfig) *zap.SamplingConfig {
-	if sc == nil {
-		return nil
-	}
-	return &zap.SamplingConfig{
-		Initial:    sc.Initial,
-		Thereafter: sc.Thereafter,
-	}
-}
-
-func newSampledLogger(logger *zap.Logger) *zap.Logger {
-	// Create a logger that samples all messages to 10 per second initially,
-	// and 10/100 of messages after that.
+func newSampledLogger(logger *zap.Logger, sc *LogsSamplingConfig) *zap.Logger {
+	// Create a logger that samples all messages to sc.Tick per second initially,
+	// and sc.Initial/sc.Thereafter of messages after that.
 	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		return zapcore.NewSamplerWithOptions(
 			core,
-			1*time.Second,
-			10,
-			100,
+			sc.Tick,
+			sc.Initial,
+			sc.Thereafter,
 		)
 	})
 	return logger.WithOptions(opts)

@@ -106,7 +106,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	srv.telemetrySettings = component.TelemetrySettings{
 		Logger:         srv.telemetry.Logger(),
-		SampledLogger:  srv.telemetry.SampledLogger(),
 		TracerProvider: srv.telemetry.TracerProvider(),
 		MeterProvider:  noop.NewMeterProvider(),
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
