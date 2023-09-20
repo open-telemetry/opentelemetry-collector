@@ -192,7 +192,7 @@ func TestCheckExporterTracesViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep, err := exporterhelper.New(exporterhelper.Settings{
+	obsrep, err := exporterhelper.NewObsReport(exporterhelper.ObsReportSettings{
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})
@@ -212,7 +212,7 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep, err := exporterhelper.New(exporterhelper.Settings{
+	obsrep, err := exporterhelper.NewObsReport(exporterhelper.ObsReportSettings{
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})
@@ -232,7 +232,7 @@ func TestCheckExporterLogsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep, err := exporterhelper.New(exporterhelper.Settings{
+	obsrep, err := exporterhelper.NewObsReport(exporterhelper.ObsReportSettings{
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})

@@ -34,8 +34,8 @@ const (
 	nameSep = "/"
 )
 
-// Exporter is a helper to add observability to an exporter.
-type Exporter struct {
+// ObsReport is a helper to add observability to an exporter.
+type ObsReport struct {
 	level          configtelemetry.Level
 	spanNamePrefix string
 	mutators       []tag.Mutator
@@ -52,19 +52,19 @@ type Exporter struct {
 	failedToSendLogRecords   metric.Int64Counter
 }
 
-// Settings are settings for creating an Exporter.
-type Settings struct {
+// ObsReportSettings are settings for creating an ObsReport.
+type ObsReportSettings struct {
 	ExporterID             component.ID
 	ExporterCreateSettings exporter.CreateSettings
 }
 
-// New creates a new Exporter.
-func New(cfg Settings) (*Exporter, error) {
+// NewObsReport creates a new Exporter.
+func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 	return newExporter(cfg, obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
 }
 
-func newExporter(cfg Settings, useOtel bool) (*Exporter, error) {
-	exp := &Exporter{
+func newExporter(cfg ObsReportSettings, useOtel bool) (*ObsReport, error) {
+	exp := &ObsReport{
 		level:          cfg.ExporterCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
 		mutators:       []tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation))},
@@ -88,45 +88,45 @@ func newExporter(cfg Settings, useOtel bool) (*Exporter, error) {
 	return exp, nil
 }
 
-func (exp *Exporter) createOtelMetrics(cfg Settings) error {
-	if !exp.useOtelForMetrics {
+func (or *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
+	if !or.useOtelForMetrics {
 		return nil
 	}
 	meter := cfg.ExporterCreateSettings.MeterProvider.Meter(exporterScope)
 
 	var errors, err error
 
-	exp.sentSpans, err = meter.Int64Counter(
+	or.sentSpans, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentSpansKey,
 		metric.WithDescription("Number of spans successfully sent to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
-	exp.failedToSendSpans, err = meter.Int64Counter(
+	or.failedToSendSpans, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendSpansKey,
 		metric.WithDescription("Number of spans in failed attempts to send to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
-	exp.sentMetricPoints, err = meter.Int64Counter(
+	or.sentMetricPoints, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentMetricPointsKey,
 		metric.WithDescription("Number of metric points successfully sent to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
-	exp.failedToSendMetricPoints, err = meter.Int64Counter(
+	or.failedToSendMetricPoints, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendMetricPointsKey,
 		metric.WithDescription("Number of metric points in failed attempts to send to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
-	exp.sentLogRecords, err = meter.Int64Counter(
+	or.sentLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentLogRecordsKey,
 		metric.WithDescription("Number of log record successfully sent to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
-	exp.failedToSendLogRecords, err = meter.Int64Counter(
+	or.failedToSendLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendLogRecordsKey,
 		metric.WithDescription("Number of log records in failed attempts to send to destination."),
 		metric.WithUnit("1"))
@@ -138,84 +138,84 @@ func (exp *Exporter) createOtelMetrics(cfg Settings) error {
 // StartTracesOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
-func (exp *Exporter) StartTracesOp(ctx context.Context) context.Context {
-	return exp.startOp(ctx, obsmetrics.ExportTraceDataOperationSuffix)
+func (or *ObsReport) StartTracesOp(ctx context.Context) context.Context {
+	return or.startOp(ctx, obsmetrics.ExportTraceDataOperationSuffix)
 }
 
 // EndTracesOp completes the export operation that was started with StartTracesOp.
-func (exp *Exporter) EndTracesOp(ctx context.Context, numSpans int, err error) {
+func (or *ObsReport) EndTracesOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	exp.recordMetrics(ctx, component.DataTypeTraces, numSent, numFailedToSend)
+	or.recordMetrics(ctx, component.DataTypeTraces, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSpansKey, obsmetrics.FailedToSendSpansKey)
 }
 
 // StartMetricsOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
-func (exp *Exporter) StartMetricsOp(ctx context.Context) context.Context {
-	return exp.startOp(ctx, obsmetrics.ExportMetricsOperationSuffix)
+func (or *ObsReport) StartMetricsOp(ctx context.Context) context.Context {
+	return or.startOp(ctx, obsmetrics.ExportMetricsOperationSuffix)
 }
 
 // EndMetricsOp completes the export operation that was started with
 // StartMetricsOp.
-func (exp *Exporter) EndMetricsOp(ctx context.Context, numMetricPoints int, err error) {
+func (or *ObsReport) EndMetricsOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	exp.recordMetrics(ctx, component.DataTypeMetrics, numSent, numFailedToSend)
+	or.recordMetrics(ctx, component.DataTypeMetrics, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentMetricPointsKey, obsmetrics.FailedToSendMetricPointsKey)
 }
 
 // StartLogsOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the Exporter functions
 // dealing with the same export operation.
-func (exp *Exporter) StartLogsOp(ctx context.Context) context.Context {
-	return exp.startOp(ctx, obsmetrics.ExportLogsOperationSuffix)
+func (or *ObsReport) StartLogsOp(ctx context.Context) context.Context {
+	return or.startOp(ctx, obsmetrics.ExportLogsOperationSuffix)
 }
 
 // EndLogsOp completes the export operation that was started with StartLogsOp.
-func (exp *Exporter) EndLogsOp(ctx context.Context, numLogRecords int, err error) {
+func (or *ObsReport) EndLogsOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
-	exp.recordMetrics(ctx, component.DataTypeLogs, numSent, numFailedToSend)
+	or.recordMetrics(ctx, component.DataTypeLogs, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
 }
 
 // startOp creates the span used to trace the operation. Returning
 // the updated context and the created span.
-func (exp *Exporter) startOp(ctx context.Context, operationSuffix string) context.Context {
-	spanName := exp.spanNamePrefix + operationSuffix
-	ctx, _ = exp.tracer.Start(ctx, spanName)
+func (or *ObsReport) startOp(ctx context.Context, operationSuffix string) context.Context {
+	spanName := or.spanNamePrefix + operationSuffix
+	ctx, _ = or.tracer.Start(ctx, spanName)
 	return ctx
 }
 
-func (exp *Exporter) recordMetrics(ctx context.Context, dataType component.DataType, numSent, numFailed int64) {
-	if exp.level == configtelemetry.LevelNone {
+func (or *ObsReport) recordMetrics(ctx context.Context, dataType component.DataType, numSent, numFailed int64) {
+	if or.level == configtelemetry.LevelNone {
 		return
 	}
-	if exp.useOtelForMetrics {
-		exp.recordWithOtel(ctx, dataType, numSent, numFailed)
+	if or.useOtelForMetrics {
+		or.recordWithOtel(ctx, dataType, numSent, numFailed)
 	} else {
-		exp.recordWithOC(ctx, dataType, numSent, numFailed)
+		or.recordWithOC(ctx, dataType, numSent, numFailed)
 	}
 }
 
-func (exp *Exporter) recordWithOtel(ctx context.Context, dataType component.DataType, sent int64, failed int64) {
+func (or *ObsReport) recordWithOtel(ctx context.Context, dataType component.DataType, sent int64, failed int64) {
 	var sentMeasure, failedMeasure metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
-		sentMeasure = exp.sentSpans
-		failedMeasure = exp.failedToSendSpans
+		sentMeasure = or.sentSpans
+		failedMeasure = or.failedToSendSpans
 	case component.DataTypeMetrics:
-		sentMeasure = exp.sentMetricPoints
-		failedMeasure = exp.failedToSendMetricPoints
+		sentMeasure = or.sentMetricPoints
+		failedMeasure = or.failedToSendMetricPoints
 	case component.DataTypeLogs:
-		sentMeasure = exp.sentLogRecords
-		failedMeasure = exp.failedToSendLogRecords
+		sentMeasure = or.sentLogRecords
+		failedMeasure = or.failedToSendLogRecords
 	}
 
-	sentMeasure.Add(ctx, sent, metric.WithAttributes(exp.otelAttrs...))
-	failedMeasure.Add(ctx, failed, metric.WithAttributes(exp.otelAttrs...))
+	sentMeasure.Add(ctx, sent, metric.WithAttributes(or.otelAttrs...))
+	failedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))
 }
 
-func (exp *Exporter) recordWithOC(ctx context.Context, dataType component.DataType, sent int64, failed int64) {
+func (or *ObsReport) recordWithOC(ctx context.Context, dataType component.DataType, sent int64, failed int64) {
 	var sentMeasure, failedMeasure *stats.Int64Measure
 	switch dataType {
 	case component.DataTypeTraces:
@@ -232,13 +232,13 @@ func (exp *Exporter) recordWithOC(ctx context.Context, dataType component.DataTy
 	if failed > 0 {
 		_ = stats.RecordWithTags(
 			ctx,
-			exp.mutators,
+			or.mutators,
 			sentMeasure.M(sent),
 			failedMeasure.M(failed))
 	} else {
 		_ = stats.RecordWithTags(
 			ctx,
-			exp.mutators,
+			or.mutators,
 			sentMeasure.M(sent))
 	}
 }

@@ -29,7 +29,7 @@ func TestExportTraceDataOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep, err := newExporter(Settings{
+		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
 			ExporterCreateSettings: tt.ToExporterCreateSettings(),
 		}, useOtel)
@@ -77,7 +77,7 @@ func TestExportMetricsOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep, err := newExporter(Settings{
+		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
 			ExporterCreateSettings: tt.ToExporterCreateSettings(),
 		}, useOtel)
@@ -126,7 +126,7 @@ func TestExportLogsOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep, err := newExporter(Settings{
+		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
 			ExporterCreateSettings: tt.ToExporterCreateSettings(),
 		}, useOtel)

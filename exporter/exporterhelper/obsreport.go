@@ -73,26 +73,26 @@ func newInstruments(registry *metric.Registry) *instruments {
 
 // obsExporter is a helper to add observability to an exporter.
 type obsExporter struct {
-	*Exporter
+	*ObsReport
 	failedToEnqueueTraceSpansEntry   *metric.Int64CumulativeEntry
 	failedToEnqueueMetricPointsEntry *metric.Int64CumulativeEntry
 	failedToEnqueueLogRecordsEntry   *metric.Int64CumulativeEntry
 }
 
 // newObsExporter creates a new observability exporter.
-func newObsExporter(cfg Settings, insts *instruments) (*obsExporter, error) {
+func newObsExporter(cfg ObsReportSettings, insts *instruments) (*obsExporter, error) {
 	labelValue := metricdata.NewLabelValue(cfg.ExporterID.String())
 	failedToEnqueueTraceSpansEntry, _ := insts.failedToEnqueueTraceSpans.GetEntry(labelValue)
 	failedToEnqueueMetricPointsEntry, _ := insts.failedToEnqueueMetricPoints.GetEntry(labelValue)
 	failedToEnqueueLogRecordsEntry, _ := insts.failedToEnqueueLogRecords.GetEntry(labelValue)
 
-	exp, err := New(cfg)
+	exp, err := NewObsReport(cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return &obsExporter{
-		Exporter:                         exp,
+		ObsReport:                        exp,
 		failedToEnqueueTraceSpansEntry:   failedToEnqueueTraceSpansEntry,
 		failedToEnqueueMetricPointsEntry: failedToEnqueueMetricPointsEntry,
 		failedToEnqueueLogRecordsEntry:   failedToEnqueueLogRecordsEntry,
