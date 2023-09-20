@@ -16,11 +16,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/iruntime"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
@@ -74,7 +74,7 @@ type memoryLimiter struct {
 	logger                 *zap.Logger
 	configMismatchedLogged bool
 
-	obsrep *obsreport.Processor
+	obsrep *processorhelper.ObsReport
 
 	refCounterLock sync.Mutex
 	refCounter     int
@@ -104,7 +104,7 @@ func newMemoryLimiter(set processor.CreateSettings, cfg *Config) (*memoryLimiter
 		zap.Uint64("spike_limit_mib", usageChecker.memSpikeLimit/mibBytes),
 		zap.Duration("check_interval", cfg.CheckInterval))
 
-	obsrep, err := obsreport.NewProcessor(obsreport.ProcessorSettings{
+	obsrep, err := processorhelper.NewObsReport(processorhelper.ObsReportSettings{
 		ProcessorID:             set.ID,
 		ProcessorCreateSettings: set,
 	})
