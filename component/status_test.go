@@ -245,7 +245,7 @@ func TestLastErrorEvent(t *testing.T) {
 
 }
 
-func TestEffectiveStatus(t *testing.T) {
+func TestAggregateStatusEvent(t *testing.T) {
 	// maxTime is used to make sure we select the event with the latest timestamp
 	maxTime := time.Unix(1<<63-62135596801, 999999999)
 	// latest sets the timestamp for an event to maxTime
@@ -391,7 +391,7 @@ func TestEffectiveStatus(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expectedStatus, EffectiveStatus(tc.statusMap))
+			assert.Equal(t, tc.expectedStatus, AggregateStatusEvent(tc.statusMap))
 		})
 	}
 }

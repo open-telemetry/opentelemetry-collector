@@ -126,12 +126,15 @@ func AggregateStatus[K comparable](eventMap map[K]*StatusEvent) Status {
 		seen[ev.Status()] = struct{}{}
 	}
 
+	// All statuses are the same. Note, this will handle StatusOK and StatusStopped as these two
+	// cases require all components be in the same state.
 	if len(seen) == 1 {
 		for st := range seen {
 			return st
 		}
 	}
 
+	// Handle mixed status cases
 	if _, isFatal := seen[StatusFatalError]; isFatal {
 		return StatusFatalError
 	}
@@ -152,6 +155,7 @@ func AggregateStatus[K comparable](eventMap map[K]*StatusEvent) Status {
 		return StatusRecoverableError
 	}
 
+	// By process of elimination, this is the last possible status; no check necessary.
 	return StatusStarting
 }
 
@@ -188,12 +192,12 @@ func LastEventByStatus[K comparable](eventMap map[K]*StatusEvent, status Status)
 	return
 }
 
-// EffectiveStatus returns a status event where:
+// AggregateStatusEvent returns a status event where:
 //   - The status is set to the aggregate status of the events in the eventMap
 //   - The timestamp is set to the latest timestamp of the events in the eventMap
 //   - For an error status, the event will have same error as the most current event of the same
 //     error type from the eventMap
-func EffectiveStatus[K comparable](eventMap map[K]*StatusEvent) *StatusEvent {
+func AggregateStatusEvent[K comparable](eventMap map[K]*StatusEvent) *StatusEvent {
 	aggregateStatus := AggregateStatus[K](eventMap)
 	_, lastEvent := LastStatusEvent[K](eventMap)
 	// the effective status matches an existing event
@@ -202,14 +206,14 @@ func EffectiveStatus[K comparable](eventMap map[K]*StatusEvent) *StatusEvent {
 	}
 
 	// the effective status requires a synthetic event
-	effectiveStatus := &StatusEvent{
+	aggregateEvent := &StatusEvent{
 		status:    aggregateStatus,
 		timestamp: lastEvent.timestamp,
 	}
 	if StatusIsError(aggregateStatus) {
 		_, errorEvent := LastEventByStatus[K](eventMap, aggregateStatus)
-		effectiveStatus.err = errorEvent.err
+		aggregateEvent.err = errorEvent.err
 	}
 
-	return effectiveStatus
+	return aggregateEvent
 }
