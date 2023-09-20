@@ -12,13 +12,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestSummaryDataPointSlice(t *testing.T) {
 	es := NewSummaryDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{})
+	state := internal.StateMutable
+	es = newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSummaryDataPoint()
@@ -30,6 +32,19 @@ func TestSummaryDataPointSlice(t *testing.T) {
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
+}
+
+func TestSummaryDataPointSliceReadOnly(t *testing.T) {
+	sharedState := internal.StateReadOnly
+	es := newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{}, &sharedState)
+	assert.Equal(t, 0, es.Len())
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.EnsureCapacity(2) })
+	es2 := NewSummaryDataPointSlice()
+	es.CopyTo(es2)
+	assert.Panics(t, func() { es2.CopyTo(es) })
+	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
+	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
 }
 
 func TestSummaryDataPointSlice_CopyTo(t *testing.T) {
@@ -134,6 +149,6 @@ func fillTestSummaryDataPointSlice(es SummaryDataPointSlice) {
 	*es.orig = make([]*otlpmetrics.SummaryDataPoint, 7)
 	for i := 0; i < 7; i++ {
 		(*es.orig)[i] = &otlpmetrics.SummaryDataPoint{}
-		fillTestSummaryDataPoint(newSummaryDataPoint((*es.orig)[i]))
+		fillTestSummaryDataPoint(newSummaryDataPoint((*es.orig)[i], es.state))
 	}
 }

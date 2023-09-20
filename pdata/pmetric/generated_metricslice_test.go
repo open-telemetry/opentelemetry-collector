@@ -12,13 +12,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestMetricSlice(t *testing.T) {
 	es := NewMetricSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newMetricSlice(&[]*otlpmetrics.Metric{})
+	state := internal.StateMutable
+	es = newMetricSlice(&[]*otlpmetrics.Metric{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewMetric()
@@ -30,6 +32,19 @@ func TestMetricSlice(t *testing.T) {
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
+}
+
+func TestMetricSliceReadOnly(t *testing.T) {
+	sharedState := internal.StateReadOnly
+	es := newMetricSlice(&[]*otlpmetrics.Metric{}, &sharedState)
+	assert.Equal(t, 0, es.Len())
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.EnsureCapacity(2) })
+	es2 := NewMetricSlice()
+	es.CopyTo(es2)
+	assert.Panics(t, func() { es2.CopyTo(es) })
+	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
+	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
 }
 
 func TestMetricSlice_CopyTo(t *testing.T) {
@@ -134,6 +149,6 @@ func fillTestMetricSlice(es MetricSlice) {
 	*es.orig = make([]*otlpmetrics.Metric, 7)
 	for i := 0; i < 7; i++ {
 		(*es.orig)[i] = &otlpmetrics.Metric{}
-		fillTestMetric(newMetric((*es.orig)[i]))
+		fillTestMetric(newMetric((*es.orig)[i], es.state))
 	}
 }

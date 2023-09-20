@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/pdata/internal"
 )
 
 func TestNewUInt64Slice(t *testing.T) {
@@ -41,6 +43,27 @@ func TestNewUInt64Slice(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, uint64(1), mv.At(0))
+}
+
+func TestUInt64SliceReadOnly(t *testing.T) {
+	raw := []uint64{1, 2, 3}
+	state := internal.StateReadOnly
+	ms := UInt64Slice(internal.NewUInt64Slice(&raw, &state))
+
+	assert.Equal(t, 3, ms.Len())
+	assert.Equal(t, uint64(1), ms.At(0))
+	assert.Panics(t, func() { ms.Append(1) })
+	assert.Panics(t, func() { ms.EnsureCapacity(2) })
+	assert.Equal(t, raw, ms.AsRaw())
+	assert.Panics(t, func() { ms.FromRaw(raw) })
+
+	ms2 := NewUInt64Slice()
+	ms.CopyTo(ms2)
+	assert.Equal(t, ms.AsRaw(), ms2.AsRaw())
+	assert.Panics(t, func() { ms2.CopyTo(ms) })
+
+	assert.Panics(t, func() { ms.MoveTo(ms2) })
+	assert.Panics(t, func() { ms2.MoveTo(ms) })
 }
 
 func TestUInt64SliceAppend(t *testing.T) {

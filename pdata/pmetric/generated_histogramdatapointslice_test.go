@@ -12,13 +12,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestHistogramDataPointSlice(t *testing.T) {
 	es := NewHistogramDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newHistogramDataPointSlice(&[]*otlpmetrics.HistogramDataPoint{})
+	state := internal.StateMutable
+	es = newHistogramDataPointSlice(&[]*otlpmetrics.HistogramDataPoint{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewHistogramDataPoint()
@@ -30,6 +32,19 @@ func TestHistogramDataPointSlice(t *testing.T) {
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
+}
+
+func TestHistogramDataPointSliceReadOnly(t *testing.T) {
+	sharedState := internal.StateReadOnly
+	es := newHistogramDataPointSlice(&[]*otlpmetrics.HistogramDataPoint{}, &sharedState)
+	assert.Equal(t, 0, es.Len())
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.EnsureCapacity(2) })
+	es2 := NewHistogramDataPointSlice()
+	es.CopyTo(es2)
+	assert.Panics(t, func() { es2.CopyTo(es) })
+	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
+	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
 }
 
 func TestHistogramDataPointSlice_CopyTo(t *testing.T) {
@@ -134,6 +149,6 @@ func fillTestHistogramDataPointSlice(es HistogramDataPointSlice) {
 	*es.orig = make([]*otlpmetrics.HistogramDataPoint, 7)
 	for i := 0; i < 7; i++ {
 		(*es.orig)[i] = &otlpmetrics.HistogramDataPoint{}
-		fillTestHistogramDataPoint(newHistogramDataPoint((*es.orig)[i]))
+		fillTestHistogramDataPoint(newHistogramDataPoint((*es.orig)[i], es.state))
 	}
 }

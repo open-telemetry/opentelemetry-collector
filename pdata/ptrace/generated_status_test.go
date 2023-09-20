@@ -10,6 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/pdata/internal"
+	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
 func TestStatus_MoveTo(t *testing.T) {
@@ -18,6 +21,9 @@ func TestStatus_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewStatus(), ms)
 	assert.Equal(t, generateTestStatus(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newStatus(&otlptrace.Status{}, &sharedState)) })
+	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).MoveTo(dest) })
 }
 
 func TestStatus_CopyTo(t *testing.T) {
@@ -28,6 +34,8 @@ func TestStatus_CopyTo(t *testing.T) {
 	orig = generateTestStatus()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newStatus(&otlptrace.Status{}, &sharedState)) })
 }
 
 func TestStatus_Code(t *testing.T) {
@@ -43,6 +51,8 @@ func TestStatus_Message(t *testing.T) {
 	assert.Equal(t, "", ms.Message())
 	ms.SetMessage("cancelled")
 	assert.Equal(t, "cancelled", ms.Message())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).SetMessage("cancelled") })
 }
 
 func generateTestStatus() Status {
