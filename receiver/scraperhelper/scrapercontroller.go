@@ -13,9 +13,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -51,7 +51,7 @@ type controller struct {
 	nextConsumer       consumer.Metrics
 
 	scrapers    []Scraper
-	obsScrapers []*obsreport.Scraper
+	obsScrapers []*ObsReport
 
 	tickerCh <-chan time.Time
 
@@ -59,7 +59,7 @@ type controller struct {
 	done        chan struct{}
 	terminated  chan struct{}
 
-	obsrecv      *obsreport.Receiver
+	obsrecv      *receiverhelper.ObsReport
 	recvSettings receiver.CreateSettings
 }
 
@@ -78,7 +78,7 @@ func NewScraperControllerReceiver(
 		return nil, errors.New("collection_interval must be a positive duration")
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "",
 		ReceiverCreateSettings: set,
@@ -104,9 +104,9 @@ func NewScraperControllerReceiver(
 		op(sc)
 	}
 
-	sc.obsScrapers = make([]*obsreport.Scraper, len(sc.scrapers))
+	sc.obsScrapers = make([]*ObsReport, len(sc.scrapers))
 	for i, scraper := range sc.scrapers {
-		scrp, err := obsreport.NewScraper(obsreport.ScraperSettings{
+		scrp, err := NewObsReport(ObsReportSettings{
 			ReceiverID:             sc.id,
 			Scraper:                scraper.ID(),
 			ReceiverCreateSettings: sc.recvSettings,

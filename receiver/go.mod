@@ -4,12 +4,17 @@ go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.4
+	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.85.0
 	go.opentelemetry.io/collector/component v0.85.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.85.0
 	go.opentelemetry.io/collector/consumer v0.85.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
 	go.opentelemetry.io/otel v1.18.0
+	go.opentelemetry.io/otel/metric v1.18.0
 	go.opentelemetry.io/otel/sdk v1.18.0
+	go.opentelemetry.io/otel/sdk/metric v0.41.0
+	go.opentelemetry.io/otel/trace v1.18.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
 )
@@ -17,7 +22,6 @@ require (
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
@@ -43,17 +47,11 @@ require (
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
-	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.85.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.85.0 // indirect
 	go.opentelemetry.io/collector/exporter v0.85.0 // indirect
-	go.opentelemetry.io/collector/extension v0.85.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/collector/processor v0.85.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.41.0 // indirect
-	go.opentelemetry.io/otel/metric v1.18.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v0.41.0 // indirect
-	go.opentelemetry.io/otel/trace v1.18.0 // indirect
 	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/text v0.13.0 // indirect

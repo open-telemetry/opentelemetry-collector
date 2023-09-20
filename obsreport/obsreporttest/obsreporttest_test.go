@@ -12,9 +12,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -34,7 +35,7 @@ func TestCheckScraperMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	s, err := obsreport.NewScraper(obsreport.ScraperSettings{
+	s, err := scraperhelper.NewObsReport(scraperhelper.ObsReportSettings{
 		ReceiverID:             receiver,
 		Scraper:                scraper,
 		ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
@@ -55,7 +56,7 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	rec, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	rec, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             receiver,
 		Transport:              transport,
 		ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
@@ -76,7 +77,7 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	rec, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	rec, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             receiver,
 		Transport:              transport,
 		ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
@@ -97,7 +98,7 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	rec, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	rec, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             receiver,
 		Transport:              transport,
 		ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
