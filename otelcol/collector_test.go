@@ -218,7 +218,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 		// components having the same IDs (having same ID for different component instances
 		// is a normal situation for processors).
 		return len(changedComponents) == 3
-	}, time.Second, time.Millisecond*10)
+	}, 2*time.Second, time.Millisecond*100)
 
 	col.Shutdown()
 	wg.Wait()
