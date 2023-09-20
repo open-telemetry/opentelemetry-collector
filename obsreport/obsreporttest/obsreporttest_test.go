@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
@@ -117,7 +118,7 @@ func TestCheckProcessorTracesViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	por, err := obsreport.NewProcessor(obsreport.ProcessorSettings{
+	por, err := processorhelper.NewObsReport(processorhelper.ObsReportSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
@@ -142,7 +143,7 @@ func TestCheckProcessorMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	por, err := obsreport.NewProcessor(obsreport.ProcessorSettings{
+	por, err := processorhelper.NewObsReport(processorhelper.ObsReportSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
@@ -167,7 +168,7 @@ func TestCheckProcessorLogViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	por, err := obsreport.NewProcessor(obsreport.ProcessorSettings{
+	por, err := processorhelper.NewObsReport(processorhelper.ObsReportSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
