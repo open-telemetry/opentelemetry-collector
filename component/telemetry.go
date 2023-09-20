@@ -37,7 +37,6 @@ type TelemetrySettingsBase[T any] struct {
 	// be returned are:
 	//
 	//   - An illegal state transition
-	//   - Using the WithError() option with a non-error status
 	//   - Calling this method before component startup
 	//
 	// If the API is being used properly, these errors are safe to ignore.
