@@ -265,9 +265,9 @@ func (or *ObsReport) MetricsRefused(ctx context.Context, numPoints int) {
 }
 
 // MetricsDropped reports that the metrics were dropped.
-func (por *ObsReport) MetricsDropped(ctx context.Context, numPoints int) {
-	if por.level != configtelemetry.LevelNone {
-		por.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(numPoints))
+func (or *ObsReport) MetricsDropped(ctx context.Context, numPoints int) {
+	if or.level != configtelemetry.LevelNone {
+		or.recordData(ctx, component.DataTypeMetrics, int64(0), int64(0), int64(numPoints))
 	}
 }
 
