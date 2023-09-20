@@ -12,14 +12,14 @@ type Exporter = exporterhelper.Exporter
 
 // ExporterSettings are settings for creating an Exporter.
 //
-// Deprecated: [0.85.0] Use exporterhelper.ExporterSettings instead.
-type ExporterSettings = exporterhelper.ExporterSettings
+// Deprecated: [0.85.0] Use exporterhelper.Settings instead.
+type ExporterSettings = exporterhelper.Settings
 
 // NewExporter creates a new Exporter.
 //
-// Deprecated: [0.85.0] Use exporterhelper.NewExporter instead.
+// Deprecated: [0.85.0] Use exporterhelper.New instead.
 func NewExporter(cfg ExporterSettings) (*exporterhelper.Exporter, error) {
-	return exporterhelper.NewExporter(exporterhelper.ExporterSettings{
+	return exporterhelper.New(exporterhelper.Settings{
 		ExporterID:             cfg.ExporterID,
 		ExporterCreateSettings: cfg.ExporterCreateSettings,
 	})

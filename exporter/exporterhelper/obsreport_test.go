@@ -22,7 +22,7 @@ func TestExportEnqueueFailure(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	insts := newInstruments(metric.NewRegistry())
-	obsrep, err := newObsExporter(ExporterSettings{
+	obsrep, err := newObsExporter(Settings{
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	}, insts)

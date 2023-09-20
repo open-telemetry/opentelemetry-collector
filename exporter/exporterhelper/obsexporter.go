@@ -52,18 +52,18 @@ type Exporter struct {
 	failedToSendLogRecords   metric.Int64Counter
 }
 
-// ExporterSettings are settings for creating an Exporter.
-type ExporterSettings struct {
+// Settings are settings for creating an Exporter.
+type Settings struct {
 	ExporterID             component.ID
 	ExporterCreateSettings exporter.CreateSettings
 }
 
-// NewExporter creates a new Exporter.
-func NewExporter(cfg ExporterSettings) (*Exporter, error) {
+// New creates a new Exporter.
+func New(cfg Settings) (*Exporter, error) {
 	return newExporter(cfg, obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
 }
 
-func newExporter(cfg ExporterSettings, useOtel bool) (*Exporter, error) {
+func newExporter(cfg Settings, useOtel bool) (*Exporter, error) {
 	exp := &Exporter{
 		level:          cfg.ExporterCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
@@ -88,7 +88,7 @@ func newExporter(cfg ExporterSettings, useOtel bool) (*Exporter, error) {
 	return exp, nil
 }
 
-func (exp *Exporter) createOtelMetrics(cfg ExporterSettings) error {
+func (exp *Exporter) createOtelMetrics(cfg Settings) error {
 	if !exp.useOtelForMetrics {
 		return nil
 	}

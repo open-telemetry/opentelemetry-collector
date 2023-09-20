@@ -80,13 +80,13 @@ type obsExporter struct {
 }
 
 // newObsExporter creates a new observability exporter.
-func newObsExporter(cfg ExporterSettings, insts *instruments) (*obsExporter, error) {
+func newObsExporter(cfg Settings, insts *instruments) (*obsExporter, error) {
 	labelValue := metricdata.NewLabelValue(cfg.ExporterID.String())
 	failedToEnqueueTraceSpansEntry, _ := insts.failedToEnqueueTraceSpans.GetEntry(labelValue)
 	failedToEnqueueMetricPointsEntry, _ := insts.failedToEnqueueMetricPoints.GetEntry(labelValue)
 	failedToEnqueueLogRecordsEntry, _ := insts.failedToEnqueueLogRecords.GetEntry(labelValue)
 
-	exp, err := NewExporter(cfg)
+	exp, err := New(cfg)
 	if err != nil {
 		return nil, err
 	}
