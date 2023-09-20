@@ -17,9 +17,9 @@ issues: [8492]
 # Use pipe (|) for multiline entries.
 subtext: |
   These deprecated methods/structs have been moved to exporterhelper:
-  - `obsreport.Exporter` -> `exporterhelper.Exporter`
-  - `obsreport.ExporterSettings` -> `exporterhelper.Settings`
-  - `obsreport.NewExporter` -> `exporterhelper.New`
+  - `obsreport.Exporter` -> `exporterhelper.ObsReport`
+  - `obsreport.ExporterSettings` -> `exporterhelper.ObsReportSettings`
+  - `obsreport.NewExporter` -> `exporterhelper.NewObsReport`
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
