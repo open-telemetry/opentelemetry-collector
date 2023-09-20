@@ -11,6 +11,10 @@ import (
 )
 
 func main() {
+	if err := otelcol.NewCommandFeatureGate().Execute(); err != nil {
+		log.Fatalf("failed to validate featuregates: %v", err)
+	}
+
 	factories, err := components()
 	if err != nil {
 		log.Fatalf("failed to build components: %v", err)
