@@ -5,11 +5,16 @@ package main
 
 import (
 	"log"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/otelcol"
 )
 
 func main() {
+	if err := otelcol.NewCommandFeatureGate().Execute(); err != nil {
+		log.Fatalf("failed to validate featuregates: %v", err)
+	}
+
 	factories, err := components()
 	if err != nil {
 		log.Fatalf("failed to build components: %v", err)
