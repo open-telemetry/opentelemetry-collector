@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/obsreport"
 )
 
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
@@ -169,7 +168,7 @@ type baseExporter struct {
 func newBaseExporter(set exporter.CreateSettings, signal component.DataType, requestExporter bool, marshaler internal.RequestMarshaler,
 	unmarshaler internal.RequestUnmarshaler, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
 
-	obsrep, err := newObsExporter(obsreport.ExporterSettings{ExporterID: set.ID, ExporterCreateSettings: set}, globalInstruments)
+	obsrep, err := newObsExporter(Settings{ExporterID: set.ID, ExporterCreateSettings: set}, globalInstruments)
 	if err != nil {
 		return nil, err
 	}
