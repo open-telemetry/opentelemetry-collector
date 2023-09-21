@@ -25,13 +25,7 @@ import (
 )
 
 const (
-	exporterName = "exporter"
-
-	exporterScope = scopeName + nameSep + exporterName
-
-	scopeName = "go.opentelemetry.io/collector/obsreport"
-
-	nameSep = "/"
+	exporterScope = obsmetrics.Scope + obsmetrics.NameSep + obsmetrics.ExporterKey
 )
 
 // ObsReport is a helper to add observability to an exporter.
