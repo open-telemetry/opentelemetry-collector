@@ -14,8 +14,14 @@ import (
 
 // NewCommandFeatureGate constructs a new cobra.Command used to parse given FeatureGates.
 func NewCommandFeatureGate() *cobra.Command {
-	flagSet := flags(featuregate.GlobalRegistry())
-	rootCmd := &cobra.Command{SilenceUsage: true}
+	flagSet := new(flag.FlagSet)
+	flagFeatureGate(flagSet, featuregate.GlobalRegistry())
+	rootCmd := &cobra.Command{
+		SilenceUsage: true,
+		FParseErrWhitelist: cobra.FParseErrWhitelist{
+			UnknownFlags: true,
+		},
+	}
 	rootCmd.Flags().AddGoFlagSet(flagSet)
 	return rootCmd
 }
