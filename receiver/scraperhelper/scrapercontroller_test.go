@@ -134,7 +134,8 @@ func TestScrapeController(t *testing.T) {
 	for _, test := range testCases {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			tt, err := obsreporttest.SetupTelemetry(component.NewID("receiver"))
+			receiverID := component.NewID("receiver")
+			tt, err := obsreporttest.SetupTelemetry(receiverID)
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -156,7 +157,7 @@ func TestScrapeController(t *testing.T) {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, tt.ToReceiverCreateSettings(), nextConsumer, options...)
+			mr, err := NewScraperControllerReceiver(cfg, receivertest.NewCreateSettings(receiverID, tt.TelemetrySettings), nextConsumer, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return

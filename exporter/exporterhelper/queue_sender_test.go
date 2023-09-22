@@ -100,7 +100,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 
 	qCfg := NewDefaultQueueSettings()
 	rCfg := NewDefaultRetrySettings()
-	set := tt.ToExporterCreateSettings()
+	set := exportertest.NewCreateSettings(defaultID, tt.TelemetrySettings)
 	be, err := newBaseExporter(set, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
@@ -258,7 +258,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	storageID := component.NewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := NewDefaultRetrySettings()
-	set := tt.ToExporterCreateSettings()
+	set := exportertest.NewCreateSettings(defaultID, tt.TelemetrySettings)
 	be, err := newBaseExporter(set, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
@@ -282,7 +282,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	storageID := component.NewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := NewDefaultRetrySettings()
-	set := tt.ToExporterCreateSettings()
+	set := exportertest.NewCreateSettings(defaultID, tt.TelemetrySettings)
 	be, err := newBaseExporter(set, "", false, mockRequestMarshaler, mockRequestUnmarshaler(&mockRequest{}), newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
