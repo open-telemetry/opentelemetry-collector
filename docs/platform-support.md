@@ -64,7 +64,7 @@ Tier 3 platforms are currently:
 | linux/386     |                                                                                                             |
 | linux/arm     |                                                                                                             |
 | linux/ppc64le |                                                                                                             |
-| linux/s390x   |                                                                                                             |
+| linux/s390x   | [@bwalk-at-ibm](https://github.com/bwalk-at-ibm), [@rrschulze](https://github.com/rrschulze)                |
 | windows/386   |                                                                                                             |
 
 The proposed additional platform aix/ppc64 ([#19195](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19195)) will be included into Tier 3 once it's added to the OpenTelemetry Collector as platform. 
