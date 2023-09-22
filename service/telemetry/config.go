@@ -99,10 +99,15 @@ type LogsConfig struct {
 // global CPU and I/O load that logging puts on your process while attempting
 // to preserve a representative subset of your logs.
 type LogsSamplingConfig struct {
-	Enabled    bool          `mapstructure:"enabled"`
-	Tick       time.Duration `mapstructure:"tick"`
-	Initial    int           `mapstructure:"initial"`
-	Thereafter int           `mapstructure:"thereafter"`
+	// Enabled enable sampling logging
+	Enabled bool `mapstructure:"enabled"`
+	// Tick represents the interval in seconds that the logger apply each sampling.
+	Tick time.Duration `mapstructure:"tick"`
+	// Initial represents the first M messages logged each Tick.
+	Initial int `mapstructure:"initial"`
+	// Thereafter represents the N messages logged after Initial and the rest are dropped, during each Tick.
+	// If Thereafter is zero, the Core will drop all log entries after the first M messages each Tick.
+	Thereafter int `mapstructure:"thereafter"`
 }
 
 // MetricsConfig exposes the common Telemetry configuration for one component.

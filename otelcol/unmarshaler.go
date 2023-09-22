@@ -48,7 +48,7 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 					Encoding:    "console",
 					Sampling: &telemetry.LogsSamplingConfig{
 						Enabled:    true,
-						Tick:       1 * time.Second,
+						Tick:       10 * time.Second,
 						Initial:    10,
 						Thereafter: 100,
 					},

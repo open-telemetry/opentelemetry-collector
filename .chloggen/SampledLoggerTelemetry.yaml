@@ -7,7 +7,7 @@ change_type: enhancement
 component: service/telemetry exporter/exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Update default sampling logger configuration in the telemetry configuration."
+note: "Enable sampling logging by default and apply it to all components."
 
 # One or more tracking issues or pull requests related to the change
 issues: [8134]

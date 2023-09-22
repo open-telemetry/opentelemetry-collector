@@ -85,8 +85,8 @@ func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 }
 
 func newSampledLogger(logger *zap.Logger, sc *LogsSamplingConfig) *zap.Logger {
-	// Create a logger that samples all messages to sc.Tick per second initially,
-	// and sc.Initial/sc.Thereafter of messages after that.
+	// Create a logger that samples every Nth message after the first M messages every S seconds
+	// where N = sc.Thereafter, M = sc.Initial, S = sc.Tick.
 	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		return zapcore.NewSamplerWithOptions(
 			core,
