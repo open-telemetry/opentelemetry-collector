@@ -25,10 +25,7 @@ import (
 )
 
 const (
-	receiverName  = "receiver"
-	scopeName     = "go.opentelemetry.io/collector/obsreport"
-	nameSep       = "/"
-	receiverScope = scopeName + nameSep + receiverName
+	receiverScope = obsmetrics.Scope + obsmetrics.NameSep + obsmetrics.ReceiverKey
 )
 
 // ObsReport is a helper to add observability to a receiver.

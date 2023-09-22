@@ -24,10 +24,7 @@ import (
 )
 
 var (
-	processorName  = "processor"
-	scopeName      = "go.opentelemetry.io/collector/obsreport"
-	nameSep        = "/"
-	processorScope = scopeName + nameSep + processorName
+	processorScope = obsmetrics.Scope + obsmetrics.NameSep + obsmetrics.ProcessorKey
 )
 
 // BuildCustomMetricName is used to be build a metric name following

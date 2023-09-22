@@ -26,10 +26,7 @@ import (
 )
 
 var (
-	scraperName  = "scraper"
-	scraperScope = scopeName + nameSep + scraperName
-	scopeName    = "go.opentelemetry.io/collector/obsreport"
-	nameSep      = "/"
+	scraperScope = obsmetrics.Scope + obsmetrics.NameSep + obsmetrics.ScraperKey
 )
 
 // ObsReport is a helper to add observability to a scraper.
