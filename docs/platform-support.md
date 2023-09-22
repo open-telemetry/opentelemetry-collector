@@ -17,7 +17,7 @@ The cross compile supports the following targets:
 
 Except of the mentioned tests for linux/amd64 and windows/amd64, no other platforms are tested by the CI/CD tooling. 
 
-Container images of the _core_ and _contrib_ collector are built and published to Docker Hub and ghcr.io for linux/amd64, linux/arm64, linux/i386, linux/arm and linux/ppc64le. End-to-end tests of the _contrib_ container images are run on the latest Ubuntu Linux supported by GitHub runners and for the four most recent Kubernetes versions.
+Container images of the _core_ and _contrib_ collector are built and published to Docker Hub and ghcr.io for the platforms specified in the [goreleaser configuration](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/bf8002ec6d2109cdb4184fc6eb6f8bda59ea96a2/.goreleaser.yaml#L137). End-to-end tests of the _contrib_ container images are run on the latest Ubuntu Linux supported by GitHub runners and for the four most recent Kubernetes versions.
 
 ## Tiered platform support model
 
