@@ -15,7 +15,7 @@ The cross compile supports the following targets:
 - linux/amd64, linux/arm64, linux/386, linux/arm and linux/ppc64le
 - windows/amd64, windows/386. 
 
-Except of the mentioned tests for linux/amd64 and windows/amd64, none of the other platforms are tested today. 
+Except of the mentioned tests for linux/amd64 and windows/amd64, no other platforms are tested by the CI/CD tooling. 
 
 Container images of the _core_ and _contrib_ collector are built and published to Docker Hub and ghcr.io for linux/amd64, linux/arm64, linux/i386, linux/arm and linux/ppc64le. End-to-end tests of the _contrib_ container images are run on the latest Ubuntu Linux supported by GitHub runners and for the four most recent Kubernetes versions.
 
