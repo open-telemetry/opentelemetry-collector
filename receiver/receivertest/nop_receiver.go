@@ -61,3 +61,11 @@ func NewNopBuilder() *receiver.Builder {
 		map[component.ID]component.Config{component.NewID(typeStr): nopFactory.CreateDefaultConfig()},
 		map[component.Type]receiver.Factory{typeStr: nopFactory})
 }
+
+func NewCreateSettings(id component.ID, set component.TelemetrySettings) receiver.CreateSettings {
+	return receiver.CreateSettings{
+		ID:                id,
+		TelemetrySettings: set,
+		BuildInfo:         component.NewDefaultBuildInfo(),
+	}
+}

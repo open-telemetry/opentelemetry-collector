@@ -54,27 +54,24 @@ type TestTelemetry struct {
 }
 
 // ToExporterCreateSettings returns an exporter.CreateSettings with configured TelemetrySettings.
+//
+// Deprecated: [0.85.0] Use exportertest.NewCreateSettings instead
 func (tts *TestTelemetry) ToExporterCreateSettings() exporter.CreateSettings {
-	set := exportertest.NewNopCreateSettings()
-	set.TelemetrySettings = tts.TelemetrySettings
-	set.ID = tts.id
-	return set
+	return exportertest.NewCreateSettings(tts.id, tts.TelemetrySettings)
 }
 
 // ToProcessorCreateSettings returns a processor.CreateSettings with configured TelemetrySettings.
+//
+// Deprecated: [0.85.0] Use processortest.NewCreateSettings instead
 func (tts *TestTelemetry) ToProcessorCreateSettings() processor.CreateSettings {
-	set := processortest.NewNopCreateSettings()
-	set.TelemetrySettings = tts.TelemetrySettings
-	set.ID = tts.id
-	return set
+	return processortest.NewCreateSettings(tts.id, tts.TelemetrySettings)
 }
 
 // ToReceiverCreateSettings returns a receiver.CreateSettings with configured TelemetrySettings.
+//
+// Deprecated: [0.85.0] Use receivertest.NewCreateSettings instead
 func (tts *TestTelemetry) ToReceiverCreateSettings() receiver.CreateSettings {
-	set := receivertest.NewNopCreateSettings()
-	set.TelemetrySettings = tts.TelemetrySettings
-	set.ID = tts.id
-	return set
+	return receivertest.NewCreateSettings(tts.id, tts.TelemetrySettings)
 }
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.

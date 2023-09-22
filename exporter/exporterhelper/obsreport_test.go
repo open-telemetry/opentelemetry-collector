@@ -12,6 +12,7 @@ import (
 	"go.opencensus.io/tag"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -24,7 +25,7 @@ func TestExportEnqueueFailure(t *testing.T) {
 	insts := newInstruments(metric.NewRegistry())
 	obsrep, err := newObsExporter(ObsReportSettings{
 		ExporterID:             exporter,
-		ExporterCreateSettings: tt.ToExporterCreateSettings(),
+		ExporterCreateSettings: exportertest.NewCreateSettings(exporter, tt.TelemetrySettings),
 	}, insts)
 	require.NoError(t, err)
 

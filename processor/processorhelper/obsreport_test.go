@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 var (
@@ -25,7 +26,7 @@ func TestProcessorTraceData(t *testing.T) {
 		const droppedSpans = 13
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
-			ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
+			ProcessorCreateSettings: processortest.NewCreateSettings(processorID, tt.TelemetrySettings),
 		}, useOtel)
 		require.NoError(t, err)
 		obsrep.TracesAccepted(context.Background(), acceptedSpans)
@@ -44,7 +45,7 @@ func TestProcessorMetricsData(t *testing.T) {
 
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
-			ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
+			ProcessorCreateSettings: processortest.NewCreateSettings(processorID, tt.TelemetrySettings),
 		}, useOtel)
 		require.NoError(t, err)
 		obsrep.MetricsAccepted(context.Background(), acceptedPoints)
@@ -85,7 +86,7 @@ func TestProcessorLogRecords(t *testing.T) {
 
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
-			ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
+			ProcessorCreateSettings: processortest.NewCreateSettings(processorID, tt.TelemetrySettings),
 		}, useOtel)
 		require.NoError(t, err)
 		obsrep.LogsAccepted(context.Background(), acceptedRecords)

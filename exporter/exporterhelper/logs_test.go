@@ -180,7 +180,7 @@ func TestLogsExporter_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	le, err := NewLogsExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeLogsExporterConfig, newPushLogsData(nil))
+	le, err := NewLogsExporter(context.Background(), exportertest.NewCreateSettings(fakeLogsExporterName, tt.TelemetrySettings), &fakeLogsExporterConfig, newPushLogsData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -192,7 +192,7 @@ func TestLogsRequestExporter_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	le, err := NewLogsRequestExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeRequestConverter{})
+	le, err := NewLogsRequestExporter(context.Background(), exportertest.NewCreateSettings(fakeLogsExporterName, tt.TelemetrySettings), &fakeRequestConverter{})
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -205,7 +205,7 @@ func TestLogsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	le, err := NewLogsExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeLogsExporterConfig, newPushLogsData(want))
+	le, err := NewLogsExporter(context.Background(), exportertest.NewCreateSettings(fakeLogsExporterName, tt.TelemetrySettings), &fakeLogsExporterConfig, newPushLogsData(want))
 	require.Nil(t, err)
 	require.NotNil(t, le)
 
@@ -218,7 +218,7 @@ func TestLogsRequestExporter_WithRecordMetrics_ExportError(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	le, err := NewLogsRequestExporter(context.Background(), tt.ToExporterCreateSettings(),
+	le, err := NewLogsRequestExporter(context.Background(), exportertest.NewCreateSettings(fakeLogsExporterName, tt.TelemetrySettings),
 		&fakeRequestConverter{requestError: want})
 	require.Nil(t, err)
 	require.NotNil(t, le)
@@ -236,7 +236,7 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
-	te, err := NewLogsExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeLogsExporterConfig, newPushLogsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	te, err := NewLogsExporter(context.Background(), exportertest.NewCreateSettings(fakeLogsExporterName, tt.TelemetrySettings), &fakeLogsExporterConfig, newPushLogsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 

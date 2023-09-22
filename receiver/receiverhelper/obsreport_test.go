@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 const (
@@ -47,7 +48,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 			rec, err := newReceiver(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Transport:              transport,
-				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
+				ReceiverCreateSettings: receivertest.NewCreateSettings(receiverID, tt.TelemetrySettings),
 			}, useOtel)
 			require.NoError(t, err)
 			ctx := rec.StartTracesOp(parentCtx)
@@ -94,7 +95,7 @@ func TestReceiveLogsOp(t *testing.T) {
 			rec, err := newReceiver(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Transport:              transport,
-				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
+				ReceiverCreateSettings: receivertest.NewCreateSettings(receiverID, tt.TelemetrySettings),
 			}, useOtel)
 			require.NoError(t, err)
 
@@ -142,7 +143,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 			rec, err := newReceiver(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Transport:              transport,
-				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
+				ReceiverCreateSettings: receivertest.NewCreateSettings(receiverID, tt.TelemetrySettings),
 			}, useOtel)
 			require.NoError(t, err)
 
@@ -197,7 +198,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 			ReceiverID:             receiverID,
 			Transport:              transport,
 			LongLivedCtx:           true,
-			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
+			ReceiverCreateSettings: receivertest.NewCreateSettings(receiverID, tt.TelemetrySettings),
 		})
 		require.NoError(t, rerr)
 		ctx := rec.StartTracesOp(longLivedCtx)
