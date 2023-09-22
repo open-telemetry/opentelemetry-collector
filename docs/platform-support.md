@@ -66,6 +66,6 @@ Tier 3 platforms are currently:
 | linux/ppc64le |                                                                                                             |
 | windows/386   |                                                                                                             |
 
-The proposed additional platforms linux/s390x (#378) and aix/ppc64 ([#19195](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19195)) will be included into Tier 3 once they're added to the OpenTelemetry Collector as platforms. 
+The proposed additional platform aix/ppc64 ([#19195](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19195)) will be included into Tier 3 once it's added to the OpenTelemetry Collector as platform. 
 
 
