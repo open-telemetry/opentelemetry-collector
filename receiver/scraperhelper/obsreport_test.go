@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -47,7 +47,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 			scrp, err := newScraper(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Scraper:                scraperID,
-				ReceiverCreateSettings: receivertest.NewCreateSettings(receiverID, tt.TelemetrySettings),
+				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
 			}, useOtel)
 			require.NoError(t, err)
 			ctx := scrp.StartMetricsOp(parentCtx)

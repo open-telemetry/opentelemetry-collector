@@ -178,7 +178,7 @@ func TestTracesExporter_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := NewTracesExporter(context.Background(), exportertest.NewCreateSettings(fakeTracesExporterName, tt.TelemetrySettings), &fakeTracesExporterConfig, newTraceDataPusher(nil))
+	te, err := NewTracesExporter(context.Background(), exporter.CreateSettings{ID: fakeTracesExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, &fakeTracesExporterConfig, newTraceDataPusher(nil))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -190,7 +190,7 @@ func TestTracesRequestExporter_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := NewTracesRequestExporter(context.Background(), exportertest.NewCreateSettings(fakeTracesExporterName, tt.TelemetrySettings), &fakeRequestConverter{})
+	te, err := NewTracesRequestExporter(context.Background(), exporter.CreateSettings{ID: fakeTracesExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, &fakeRequestConverter{})
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -203,7 +203,7 @@ func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := NewTracesExporter(context.Background(), exportertest.NewCreateSettings(fakeTracesExporterName, tt.TelemetrySettings), &fakeTracesExporterConfig, newTraceDataPusher(want))
+	te, err := NewTracesExporter(context.Background(), exporter.CreateSettings{ID: fakeTracesExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, &fakeTracesExporterConfig, newTraceDataPusher(want))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -216,7 +216,7 @@ func TestTracesRequestExporter_WithRecordMetrics_RequestSenderError(t *testing.T
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := NewTracesRequestExporter(context.Background(), exportertest.NewCreateSettings(fakeTracesExporterName, tt.TelemetrySettings), &fakeRequestConverter{requestError: want})
+	te, err := NewTracesRequestExporter(context.Background(), exporter.CreateSettings{ID: fakeTracesExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, &fakeRequestConverter{requestError: want})
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -233,7 +233,7 @@ func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
-	te, err := NewTracesExporter(context.Background(), exportertest.NewCreateSettings(fakeTracesExporterName, tt.TelemetrySettings), &fakeTracesExporterConfig, newTraceDataPusher(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	te, err := NewTracesExporter(context.Background(), exporter.CreateSettings{ID: fakeTracesExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, &fakeTracesExporterConfig, newTraceDataPusher(wantErr), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 

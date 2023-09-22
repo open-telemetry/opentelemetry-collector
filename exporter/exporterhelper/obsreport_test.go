@@ -12,34 +12,34 @@ import (
 	"go.opencensus.io/tag"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 func TestExportEnqueueFailure(t *testing.T) {
-	exporter := component.NewID("fakeExporter")
-	tt, err := obsreporttest.SetupTelemetry(exporter)
+	exporterID := component.NewID("fakeExporter")
+	tt, err := obsreporttest.SetupTelemetry(exporterID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	insts := newInstruments(metric.NewRegistry())
 	obsrep, err := newObsExporter(ObsReportSettings{
-		ExporterID:             exporter,
-		ExporterCreateSettings: exportertest.NewCreateSettings(exporter, tt.TelemetrySettings),
+		ExporterID:             exporterID,
+		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
 	}, insts)
 	require.NoError(t, err)
 
 	logRecords := int64(7)
 	obsrep.recordLogsEnqueueFailure(context.Background(), logRecords)
-	checkExporterEnqueueFailedLogsStats(t, insts, exporter, logRecords)
+	checkExporterEnqueueFailedLogsStats(t, insts, exporterID, logRecords)
 
 	spans := int64(12)
 	obsrep.recordTracesEnqueueFailure(context.Background(), spans)
-	checkExporterEnqueueFailedTracesStats(t, insts, exporter, spans)
+	checkExporterEnqueueFailedTracesStats(t, insts, exporterID, spans)
 
 	metricPoints := int64(21)
 	obsrep.recordMetricsEnqueueFailure(context.Background(), metricPoints)
-	checkExporterEnqueueFailedMetricsStats(t, insts, exporter, metricPoints)
+	checkExporterEnqueueFailedMetricsStats(t, insts, exporterID, metricPoints)
 }
 
 // checkExporterEnqueueFailedTracesStats checks that reported number of spans failed to enqueue match given values.

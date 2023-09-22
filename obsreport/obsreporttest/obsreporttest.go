@@ -20,12 +20,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 const (
@@ -55,23 +52,35 @@ type TestTelemetry struct {
 
 // ToExporterCreateSettings returns an exporter.CreateSettings with configured TelemetrySettings.
 //
-// Deprecated: [0.85.0] Use exportertest.NewCreateSettings instead
+// Deprecated: [0.85.0] Use exporter.CreateSettings struct instead.
 func (tts *TestTelemetry) ToExporterCreateSettings() exporter.CreateSettings {
-	return exportertest.NewCreateSettings(tts.id, tts.TelemetrySettings)
+	return exporter.CreateSettings{
+		ID:                tts.id,
+		TelemetrySettings: tts.TelemetrySettings,
+		BuildInfo:         component.NewDefaultBuildInfo(),
+	}
 }
 
 // ToProcessorCreateSettings returns a processor.CreateSettings with configured TelemetrySettings.
 //
-// Deprecated: [0.85.0] Use processortest.NewCreateSettings instead
+// Deprecated: [0.85.0] Use processor.CreateSettings struct instead.
 func (tts *TestTelemetry) ToProcessorCreateSettings() processor.CreateSettings {
-	return processortest.NewCreateSettings(tts.id, tts.TelemetrySettings)
+	return processor.CreateSettings{
+		ID:                tts.id,
+		TelemetrySettings: tts.TelemetrySettings,
+		BuildInfo:         component.NewDefaultBuildInfo(),
+	}
 }
 
 // ToReceiverCreateSettings returns a receiver.CreateSettings with configured TelemetrySettings.
 //
-// Deprecated: [0.85.0] Use receivertest.NewCreateSettings instead
+// Deprecated: [0.85.0] Use receiver.CreateSettings struct instead.
 func (tts *TestTelemetry) ToReceiverCreateSettings() receiver.CreateSettings {
-	return receivertest.NewCreateSettings(tts.id, tts.TelemetrySettings)
+	return receiver.CreateSettings{
+		ID:                tts.id,
+		TelemetrySettings: tts.TelemetrySettings,
+		BuildInfo:         component.NewDefaultBuildInfo(),
+	}
 }
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
