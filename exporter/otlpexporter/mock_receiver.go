@@ -5,6 +5,7 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 
 import (
 	"context"
+	"errors"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver"
@@ -13,13 +14,13 @@ import (
 )
 
 type mockOtlpReceiver struct {
-	mockConsumer    *exportertest.MockConsumer
+	mockConsumer    exportertest.MockConsumer
 	traceReceiver   receiver.Traces
 	metricsReceiver receiver.Metrics
 	logReceiver     receiver.Logs
 }
 
-func newOTLPDataReceiver(mockConsumer *exportertest.MockConsumer) *mockOtlpReceiver {
+func newOTLPDataReceiver(mockConsumer exportertest.MockConsumer) *mockOtlpReceiver {
 	return &mockOtlpReceiver{
 		mockConsumer: mockConsumer,
 	}
@@ -28,7 +29,6 @@ func newOTLPDataReceiver(mockConsumer *exportertest.MockConsumer) *mockOtlpRecei
 func (bor *mockOtlpReceiver) Start() error {
 	factory := otlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
-	//cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("127.0.0.1:%d", bor.port), Transport: "tcp"}
 	cfg.HTTP = nil
 	var err error
 	set := receivertest.NewNopCreateSettings()
@@ -53,13 +53,9 @@ func (bor *mockOtlpReceiver) Start() error {
 
 func (bor *mockOtlpReceiver) Stop() error {
 	bor.mockConsumer.Clear()
-	if err := bor.traceReceiver.Shutdown(context.Background()); err != nil {
-		return err
-	}
-	if err := bor.metricsReceiver.Shutdown(context.Background()); err != nil {
-		return err
-	}
-	return bor.logReceiver.Shutdown(context.Background())
+	err := bor.traceReceiver.Shutdown(context.Background())
+	err = errors.Join(err, bor.metricsReceiver.Shutdown(context.Background()))
+	return errors.Join(err, bor.logReceiver.Shutdown(context.Background()))
 }
 
 func (bor *mockOtlpReceiver) RequestCounter() exportertest.RequestCounter {

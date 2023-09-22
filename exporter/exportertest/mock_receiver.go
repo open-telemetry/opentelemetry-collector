@@ -8,11 +8,10 @@ import (
 	"math/rand"
 	"sync"
 
-	"go.opentelemetry.io/collector/consumer"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -23,15 +22,13 @@ import (
 var errNonPermanent = status.Error(codes.DeadlineExceeded, "non Permanent error")
 var errPermanent = status.Error(codes.Internal, "Permanent error")
 
-type DecisionFunc func() error
-
 type MockReceiver interface {
 	Start() error
 	Stop() error
 	RequestCounter() RequestCounter
 }
 
-type MockReceiverFactory func(DecisionFunc) MockReceiver
+type MockReceiverFactory func(consumer MockConsumer) MockReceiver
 
 // // randomNonPermanentErrorConsumeDecision is a decision function that succeeds approximately
 // // half of the time and fails with a non-permanent error the rest of the time.
@@ -66,14 +63,16 @@ func randomErrorsConsumeDecision() error {
 	return nil
 }
 
-type BaseMockConsumer interface {
-	ConsumeLogs(_ context.Context, ld plog.Logs)
-	ConsumeMetrics(_ context.Context, md pmetric.Metrics)
-	ConsumeTraces(_ context.Context, td ptrace.Traces)
+type MockConsumer interface {
+	ConsumeLogs(_ context.Context, ld plog.Logs) error
+	ConsumeMetrics(_ context.Context, md pmetric.Metrics) error
+	ConsumeTraces(_ context.Context, td ptrace.Traces) error
+	Capabilities() consumer.Capabilities
 	Clear()
+	RequestCounter() RequestCounter
 }
 
-type MockConsumer struct {
+type mockConsumer struct {
 	reqCounter          RequestCounter
 	mux                 sync.Mutex
 	exportErrorFunction func() error
@@ -82,10 +81,8 @@ type MockConsumer struct {
 	ReceivedLogs        []plog.Logs
 }
 
-type MockConsumerFactory func() MockConsumer
-
-func CreateDefaultConsumer(decisionFunc DecisionFunc) MockConsumer {
-	return MockConsumer{
+func NewMockConsumer(decisionFunc func() error) MockConsumer {
+	return &mockConsumer{
 		reqCounter:          newRequestCounter(),
 		mux:                 sync.Mutex{},
 		exportErrorFunction: decisionFunc,
@@ -121,7 +118,7 @@ func newRequestCounter() RequestCounter {
 	}
 }
 
-func (r *MockConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+func (r *mockConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.reqCounter.total++
@@ -137,7 +134,7 @@ func (r *MockConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func (r *MockConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+func (r *mockConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.reqCounter.total++
@@ -153,7 +150,7 @@ func (r *MockConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 	return nil
 }
 
-func (r *MockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+func (r *mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.reqCounter.total++
@@ -169,11 +166,11 @@ func (r *MockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 	return nil
 }
 
-func (r *MockConsumer) Capabilities() consumer.Capabilities {
+func (r *mockConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
-func (r *MockConsumer) processError(err error, dataType string, idOfElement string) {
+func (r *mockConsumer) processError(err error, dataType string, idOfElement string) {
 	if consumererror.IsPermanent(err) {
 		fmt.Println("permanent error happened")
 		fmt.Printf("Dropping %s number: %s\n", dataType, idOfElement)
@@ -185,13 +182,13 @@ func (r *MockConsumer) processError(err error, dataType string, idOfElement stri
 	}
 }
 
-func (r *MockConsumer) Clear() {
+func (r *mockConsumer) Clear() {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.reqCounter = newRequestCounter()
 }
 
-func (r *MockConsumer) RequestCounter() RequestCounter {
+func (r *mockConsumer) RequestCounter() RequestCounter {
 	return r.reqCounter
 }
 

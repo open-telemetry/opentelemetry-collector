@@ -4,11 +4,8 @@
 package otlpexporter
 
 import (
-	"fmt"
 	"testing"
 	"time"
-
-	"go.opentelemetry.io/collector/config/confignet"
 
 	"github.com/cenkalti/backoff/v4"
 
@@ -38,7 +35,7 @@ func testConfig() component.Config {
 		QueueSettings:   exporterhelper.QueueSettings{Enabled: false},
 		RetrySettings:   newTestRetrySettings(),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			Endpoint: confignet.NetAddr{Endpoint: fmt.Sprintf("0.0.0.0:4317"), Transport: "tcp"}.Endpoint,
+			Endpoint: "0.0.0.0:4317",
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure: true,
 			}},
@@ -46,9 +43,8 @@ func testConfig() component.Config {
 }
 
 // Define a function that matches the MockReceiverFactory signature
-func createMockOtlpReceiver(decisionFunc exportertest.DecisionFunc) exportertest.MockReceiver {
-	mockConsumer := exportertest.CreateDefaultConsumer(decisionFunc)
-	rcv := newOTLPDataReceiver(&mockConsumer)
+func createMockOtlpReceiver(mockConsumer exportertest.MockConsumer) exportertest.MockReceiver {
+	rcv := newOTLPDataReceiver(mockConsumer)
 	err := rcv.Start()
 	if err != nil {
 		return nil

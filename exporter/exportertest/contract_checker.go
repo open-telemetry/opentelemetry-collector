@@ -6,11 +6,11 @@ package exportertest // import "go.opentelemetry.io/collector/exporter/exportert
 import (
 	"context"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
@@ -80,7 +80,8 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 }
 
 func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFunc func() error, checkIfTestPassed func(*testing.T, int, RequestCounter)) {
-	rcv := params.MockReceiverFactory(decisionFunc)
+	mockConsumerInstance := NewMockConsumer(decisionFunc)
+	rcv := params.MockReceiverFactory(mockConsumerInstance)
 	switch params.DataType {
 	case component.DataTypeLogs:
 		checkLogs(params, rcv, checkIfTestPassed)
@@ -116,7 +117,7 @@ func checkMetrics(params CheckConsumeContractParams, mockReceiver MockReceiver, 
 	for i := 0; i < params.NumberOfTestElements; i++ {
 		id := UniqueIDAttrVal(strconv.Itoa(i))
 		fmt.Println("Preparing metric number: ", id)
-		data := CreateOneMetricWithID(id)
+		data := createOneMetricWithID(id)
 
 		err = exp.ConsumeMetrics(ctx, data)
 	}
@@ -157,12 +158,11 @@ func checkTraces(params CheckConsumeContractParams, mockReceiver MockReceiver, c
 	for i := 0; i < params.NumberOfTestElements; i++ {
 		id := UniqueIDAttrVal(strconv.Itoa(i))
 		fmt.Println("Preparing trace number: ", id)
-		data := CreateOneTraceWithID(id)
+		data := createOneTraceWithID(id)
 
 		err = exp.ConsumeTraces(ctx, data)
 	}
 
-	fmt.Println("Before request Counter")
 	reqCounter := mockReceiver.RequestCounter()
 	// The overall number of requests sent by exporter
 	fmt.Printf("Number of export tries: %d\n", reqCounter.total)
@@ -171,7 +171,6 @@ func checkTraces(params CheckConsumeContractParams, mockReceiver MockReceiver, c
 	// Number of errors that happened
 	fmt.Printf("Number of permanent errors: %d\n", reqCounter.error.permanent)
 	fmt.Printf("Number of non-permanent errors: %d\n", reqCounter.error.nonpermanent)
-	//checkIfTestPassed(params.T, params.NumberOfTestElements, reqCounter)
 
 	assert.EventuallyWithT(params.T, func(c *assert.CollectT) {
 		checkIfTestPassed(params.T, params.NumberOfTestElements, reqCounter)
@@ -200,7 +199,7 @@ func checkLogs(params CheckConsumeContractParams, mockReceiver MockReceiver, che
 	for i := 0; i < params.NumberOfTestElements; i++ {
 		id := UniqueIDAttrVal(strconv.Itoa(i))
 		fmt.Println("Preparing log number: ", id)
-		data := CreateOneLogWithID(id)
+		data := createOneLogWithID(id)
 
 		err = exp.ConsumeLogs(ctx, data)
 	}
@@ -248,7 +247,7 @@ func randomErrorConsumeDecisionPassed(t *testing.T, allRecordsNumber int, reqCou
 	require.Equal(t, reqCounter.total, allRecordsNumber+reqCounter.error.nonpermanent)
 }
 
-func CreateOneLogWithID(id UniqueIDAttrVal) plog.Logs {
+func createOneLogWithID(id UniqueIDAttrVal) plog.Logs {
 	data := plog.NewLogs()
 	data.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr(
 		UniqueIDAttrName,
@@ -257,7 +256,7 @@ func CreateOneLogWithID(id UniqueIDAttrVal) plog.Logs {
 	return data
 }
 
-func CreateOneTraceWithID(id UniqueIDAttrVal) ptrace.Traces {
+func createOneTraceWithID(id UniqueIDAttrVal) ptrace.Traces {
 	data := ptrace.NewTraces()
 	data.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().PutStr(
 		UniqueIDAttrName,
@@ -266,7 +265,7 @@ func CreateOneTraceWithID(id UniqueIDAttrVal) ptrace.Traces {
 	return data
 }
 
-func CreateOneMetricWithID(id UniqueIDAttrVal) pmetric.Metrics {
+func createOneMetricWithID(id UniqueIDAttrVal) pmetric.Metrics {
 	data := pmetric.NewMetrics()
 	data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyHistogram().DataPoints().AppendEmpty().Attributes().PutStr(UniqueIDAttrName, string(id))
 	return data
