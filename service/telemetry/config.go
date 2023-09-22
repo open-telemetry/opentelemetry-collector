@@ -59,7 +59,7 @@ type LogsConfig struct {
 	// Default:
 	// 		sampling:
 	//	   		enabled: true
-	//	   		tick: 1s
+	//	   		tick: 10s
 	//	   		initial: 10
 	//	   		thereafter: 100
 	// Sampling can be disabled by setting 'enabled' to false
@@ -106,7 +106,7 @@ type LogsSamplingConfig struct {
 	// Initial represents the first M messages logged each Tick.
 	Initial int `mapstructure:"initial"`
 	// Thereafter represents the N messages logged after Initial and the rest are dropped, during each Tick.
-	// If Thereafter is zero, the Core will drop all log entries after the first M messages each Tick.
+	// If Thereafter is zero, the logger will drop all the messages after the Initial each Tick.
 	Thereafter int `mapstructure:"thereafter"`
 }
 
