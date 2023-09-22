@@ -1,0 +1,3 @@
+template: |
+  filelog:
+    include: {{ .my_file }}

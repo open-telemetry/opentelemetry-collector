@@ -1,0 +1,4 @@
+type: [123,456]
+template: |
+  filelog:
+    include: {{ .my_file }}
