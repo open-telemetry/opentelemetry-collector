@@ -21,7 +21,7 @@ Container images of the _core_ and _contrib_ collector are built and published t
 
 ## Tiered platform support model
 
-The OpenTelemetry Collector will be supported following a tiered platform support model to balance between the aim to support as many platforms as possible and to guarantee stability for the most important platforms. The platform support for the OpenTelemetry Collector is broken into three tiers with different levels of support for each tier. 
+The platform support for the OpenTelemetry Collector is broken into three tiers with different levels of support for each tier. 
 
 ### Platform Support - Summary
 
