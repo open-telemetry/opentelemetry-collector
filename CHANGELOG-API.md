@@ -7,6 +7,48 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.0.0-rcv0015/v0.86.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: remove deprecated service.PipelineConfig (#8485)
+
+### 🚩 Deprecations 🚩
+
+- `obsreporttest`: deprecate To*CreateSettings funcs in obsreporttest (#8492)
+  The following TestTelemetry methods have been deprecated. Use structs instead:
+  -  ToExporterCreateSettings -> exporter.CreateSettings
+  -  ToProcessorCreateSettings -> processor.CreateSettings
+  -  ToReceiverCreateSettings -> receiver.CreateSettings
+  
+- `obsreport`: Deprecating `obsreport.Exporter`, `obsreport.ExporterSettings`, `obsreport.NewExporter` (#8492)
+  These deprecated methods/structs have been moved to exporterhelper:
+  - `obsreport.Exporter` -> `exporterhelper.ObsReport`
+  - `obsreport.ExporterSettings` -> `exporterhelper.ObsReportSettings`
+  - `obsreport.NewExporter` -> `exporterhelper.NewObsReport`
+  
+- `obsreport`: Deprecating `obsreport.BuildProcessorCustomMetricName`, `obsreport.Processor`, `obsreport.ProcessorSettings`, `obsreport.NewProcessor` (#8492)
+  These deprecated methods/structs have been moved to processorhelper:
+  - `obsreport.BuildProcessorCustomMetricName` -> `processorhelper.BuildCustomMetricName`
+  - `obsreport.Processor` -> `processorhelper.ObsReport`
+  - `obsreport.ProcessorSettings` -> `processorhelper.ObsReportSettings`
+  - `obsreport.NewProcessor` -> `processorhelper.NewObsReport`
+  
+- `obsreport`: Deprecating obsreport scraper and receiver API (#8492)
+  These deprecated methods/structs have been moved to receiverhelper and scraperhelper:
+  - `obsreport.Receiver` -> `receiverhelper.ObsReport`
+  - `obsreport.ReceiverSettings` -> `receiverhelper.ObsReportSettings`
+  - `obsreport.NewReceiver` -> `receiverhelper.NewObsReport`
+  - `obsreport.Scraper` -> `scraperhelper.ObsReport`
+  - `obsreport.ScraperSettings` -> `scraperhelper.ObsReportSettings`
+  - `obsreport.NewScraper` -> `scraperhelper.NewObsReport`
+  
+
+### 💡 Enhancements 💡
+
+- `otelcol`: Splitting otelcol into its own module. (#7924)
+- `service`: Split service into its own module (#7923)
+
 ## v0.85.0
 
 ## v0.84.0

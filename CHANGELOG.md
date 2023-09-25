@@ -7,6 +7,26 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.0.0-rcv0015/v0.86.0
+
+### 🚩 Deprecations 🚩
+
+- `loggingexporter`: Mark the logging exporter as deprecated, in favour of debug exporter (#7769)
+
+### 🚀 New components 🚀
+
+- `debugexporter`: Add debug exporter, which replaces the logging exporter (#7769)
+
+### 💡 Enhancements 💡
+
+- `featuregate`: List valid feature gates when failing to load invalid gate (#8505)
+- `supported platforms`: Add `linux/s390x` architecture to cross build tests in CI (#8213)
+
+### 🧰 Bug fixes 🧰
+
+- `builder`: fix setting `dist.*` keys from env (#8239)
+- `configtls`: fix incorrect use of fsnotify (#8438)
+
 ## v0.85.0
 
 ### 💡 Enhancements 💡
