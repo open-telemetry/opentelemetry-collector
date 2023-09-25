@@ -4,11 +4,11 @@ go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.85.0
-	go.opentelemetry.io/collector/component v0.85.0
-	go.opentelemetry.io/collector/config/confignet v0.85.0
-	go.opentelemetry.io/collector/confmap v0.85.0
-	go.opentelemetry.io/collector/extension v0.85.0
+	go.opentelemetry.io/collector v0.86.0
+	go.opentelemetry.io/collector/component v0.86.0
+	go.opentelemetry.io/collector/config/confignet v0.86.0
+	go.opentelemetry.io/collector/confmap v0.86.0
+	go.opentelemetry.io/collector/extension v0.86.0
 	go.opentelemetry.io/contrib/zpages v0.44.0
 	go.opentelemetry.io/otel/sdk v1.18.0
 	go.opentelemetry.io/otel/trace v1.18.0
@@ -29,10 +29,10 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.85.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.86.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015 // indirect
-	go.opentelemetry.io/collector/service v0.0.0-20230915215502-07938f20fcc7 // indirect
+	go.opentelemetry.io/collector/service v0.86.0 // indirect
 	go.opentelemetry.io/otel v1.18.0 // indirect
 	go.opentelemetry.io/otel/metric v1.18.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

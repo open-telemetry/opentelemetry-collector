@@ -11,21 +11,21 @@ require (
 	github.com/shirou/gopsutil/v3 v3.23.8
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.85.0
-	go.opentelemetry.io/collector/component v0.85.0
-	go.opentelemetry.io/collector/config/confignet v0.85.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.85.0
-	go.opentelemetry.io/collector/confmap v0.85.0
-	go.opentelemetry.io/collector/connector v0.85.0
-	go.opentelemetry.io/collector/consumer v0.85.0
-	go.opentelemetry.io/collector/exporter v0.85.0
-	go.opentelemetry.io/collector/extension v0.85.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.85.0
+	go.opentelemetry.io/collector v0.86.0
+	go.opentelemetry.io/collector/component v0.86.0
+	go.opentelemetry.io/collector/config/confignet v0.86.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.86.0
+	go.opentelemetry.io/collector/confmap v0.86.0
+	go.opentelemetry.io/collector/connector v0.86.0
+	go.opentelemetry.io/collector/consumer v0.86.0
+	go.opentelemetry.io/collector/exporter v0.86.0
+	go.opentelemetry.io/collector/extension v0.86.0
+	go.opentelemetry.io/collector/extension/zpagesextension v0.86.0
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015
-	go.opentelemetry.io/collector/processor v0.85.0
-	go.opentelemetry.io/collector/receiver v0.85.0
-	go.opentelemetry.io/collector/semconv v0.85.0
+	go.opentelemetry.io/collector/processor v0.86.0
+	go.opentelemetry.io/collector/receiver v0.86.0
+	go.opentelemetry.io/collector/semconv v0.86.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.19.0
 	go.opentelemetry.io/otel v1.18.0
 	go.opentelemetry.io/otel/bridge/opencensus v0.41.0
