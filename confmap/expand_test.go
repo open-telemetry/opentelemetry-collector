@@ -459,3 +459,35 @@ func TestResolverExpandStringValueInvalidReturnValue(t *testing.T) {
 	_, err = resolver.Resolve(context.Background())
 	assert.EqualError(t, err, `expanding ${test:PORT}, expected convertable to string value type, got ['ӛ']([]interface {})`)
 }
+
+func TestResolverExpandInTemplateError(t *testing.T) {
+	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
+		return NewRetrieved(map[string]any{
+			"templates": map[string]any{
+				"receivers": map[string]any{
+					"my_template": map[string]any{
+						"receivers": map[string]any{
+							"my_receiver": map[string]any{
+								"endpoint": "${input:{{ .my_env_var_name }}}",
+							},
+						},
+					},
+				},
+			},
+		})
+	})
+
+	templateErr := "expanding ${input:{{ .my_env_var_name }"
+	converter := &mockConverter{err: errors.New(templateErr)}
+
+	resolver, err := NewResolver(ResolverSettings{
+		URIs:       []string{"input:"},
+		Providers:  makeMapProvidersMap(provider),
+		Converters: []Converter{converter},
+	})
+	require.NoError(t, err)
+
+	_, err = resolver.Resolve(context.Background())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `cannot expand value in template "templates::receivers::my_template::receivers::my_receiver::endpoint": `+templateErr)
+}

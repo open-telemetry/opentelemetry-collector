@@ -141,6 +141,9 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 	for _, k := range retMap.AllKeys() {
 		val, err := mr.expandValueRecursively(ctx, retMap.Get(k))
 		if err != nil {
+			if strings.HasPrefix(k, "templates::") {
+				return nil, fmt.Errorf("cannot expand value in template %q: %w", k, err)
+			}
 			return nil, err
 		}
 		cfgMap[k] = val
