@@ -55,21 +55,21 @@ type TestTelemetry struct {
 
 // ToExporterCreateSettings returns an exporter.CreateSettings with configured TelemetrySettings.
 //
-// Deprecated: [0.85.0] Use exportertest.NewCreateSettings instead
+// Deprecated: [0.86.0] Use exportertest.NewCreateSettings instead
 func (tts *TestTelemetry) ToExporterCreateSettings() exporter.CreateSettings {
 	return exportertest.NewCreateSettings(tts.id, tts.TelemetrySettings)
 }
 
 // ToProcessorCreateSettings returns a processor.CreateSettings with configured TelemetrySettings.
 //
-// Deprecated: [0.85.0] Use processortest.NewCreateSettings instead
+// Deprecated: [0.86.0] Use processortest.NewCreateSettings instead
 func (tts *TestTelemetry) ToProcessorCreateSettings() processor.CreateSettings {
 	return processortest.NewCreateSettings(tts.id, tts.TelemetrySettings)
 }
 
 // ToReceiverCreateSettings returns a receiver.CreateSettings with configured TelemetrySettings.
 //
-// Deprecated: [0.85.0] Use receivertest.NewCreateSettings instead
+// Deprecated: [0.86.0] Use receivertest.NewCreateSettings instead
 func (tts *TestTelemetry) ToReceiverCreateSettings() receiver.CreateSettings {
 	return receivertest.NewCreateSettings(tts.id, tts.TelemetrySettings)
 }
