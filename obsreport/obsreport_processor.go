@@ -11,24 +11,24 @@ import (
 // the standards used in the Collector. The configType should be the same
 // value used to identify the type on the config.
 //
-// Deprecated: [0.85.0] Use processorhelper.BuildCustomMetricName instead.
+// Deprecated: [0.86.0] Use processorhelper.BuildCustomMetricName instead.
 func BuildProcessorCustomMetricName(configType, metric string) string {
 	return processorhelper.BuildCustomMetricName(configType, metric)
 }
 
 // Processor is a helper to add observability to a processor.
 //
-// Deprecated: [0.85.0] Use processorhelper.ObsReport instead.
+// Deprecated: [0.86.0] Use processorhelper.ObsReport instead.
 type Processor = processorhelper.ObsReport
 
 // ProcessorSettings is a helper to add observability to a processor.
 //
-// Deprecated: [0.85.0] Use processorhelper.ObsReportSettings instead.
+// Deprecated: [0.86.0] Use processorhelper.ObsReportSettings instead.
 type ProcessorSettings = processorhelper.ObsReportSettings
 
 // NewProcessor creates a new Processor.
 //
-// Deprecated: [0.85.0] Use processorhelper.NewObsReport instead.
+// Deprecated: [0.86.0] Use processorhelper.NewObsReport instead.
 func NewProcessor(cfg ProcessorSettings) (*Processor, error) {
 	return processorhelper.NewObsReport(cfg)
 }

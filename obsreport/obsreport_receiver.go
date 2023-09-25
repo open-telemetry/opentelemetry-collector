@@ -7,17 +7,17 @@ import "go.opentelemetry.io/collector/receiver/receiverhelper"
 
 // Receiver is a helper to add observability to a receiver.
 //
-// Deprecated: [0.85.0] Use receiverhelper.ObsReport instead.
+// Deprecated: [0.86.0] Use receiverhelper.ObsReport instead.
 type Receiver = receiverhelper.ObsReport
 
 // ReceiverSettings are settings for creating an Receiver.
 //
-// Deprecated: [0.85.0] Use receiverhelper.ObsReportSettings instead.
+// Deprecated: [0.86.0] Use receiverhelper.ObsReportSettings instead.
 type ReceiverSettings = receiverhelper.ObsReportSettings
 
 // NewReceiver creates a new Receiver.
 //
-// Deprecated: [0.85.0] Use receiverhelper.NewObsReport instead.
+// Deprecated: [0.86.0] Use receiverhelper.NewObsReport instead.
 func NewReceiver(cfg ReceiverSettings) (*Receiver, error) {
 	return receiverhelper.NewObsReport(cfg)
 }
