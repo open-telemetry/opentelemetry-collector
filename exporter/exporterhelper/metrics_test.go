@@ -181,7 +181,7 @@ func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	me, err := NewMetricsExporter(context.Background(), exportertest.NewCreateSettings(fakeMetricsExporterName, tt.TelemetrySettings), &fakeMetricsExporterConfig, newPushMetricsData(nil))
+	me, err := NewMetricsExporter(context.Background(), exporter.CreateSettings{ID: fakeMetricsExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsExporterConfig, newPushMetricsData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -193,7 +193,7 @@ func TestMetricsRequestExporter_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewCreateSettings(fakeMetricsExporterName, tt.TelemetrySettings), fakeRequestConverter{})
+	me, err := NewMetricsRequestExporter(context.Background(), exporter.CreateSettings{ID: fakeMetricsExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, fakeRequestConverter{})
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -206,7 +206,7 @@ func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	me, err := NewMetricsExporter(context.Background(), exportertest.NewCreateSettings(fakeMetricsExporterName, tt.TelemetrySettings), &fakeMetricsExporterConfig, newPushMetricsData(want))
+	me, err := NewMetricsExporter(context.Background(), exporter.CreateSettings{ID: fakeMetricsExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsExporterConfig, newPushMetricsData(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -219,7 +219,7 @@ func TestMetricsRequestExporter_WithRecordMetrics_ExportError(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewCreateSettings(fakeMetricsExporterName, tt.TelemetrySettings), fakeRequestConverter{requestError: want})
+	me, err := NewMetricsRequestExporter(context.Background(), exporter.CreateSettings{ID: fakeMetricsExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, fakeRequestConverter{requestError: want})
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -236,7 +236,7 @@ func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
-	te, err := NewMetricsExporter(context.Background(), exportertest.NewCreateSettings(fakeMetricsExporterName, tt.TelemetrySettings), &fakeMetricsExporterConfig, newPushMetricsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	te, err := NewMetricsExporter(context.Background(), exporter.CreateSettings{ID: fakeMetricsExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsExporterConfig, newPushMetricsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 

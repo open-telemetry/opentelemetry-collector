@@ -65,11 +65,3 @@ func NewNopBuilder() *exporter.Builder {
 		map[component.ID]component.Config{component.NewID(typeStr): nopFactory.CreateDefaultConfig()},
 		map[component.Type]exporter.Factory{typeStr: nopFactory})
 }
-
-func NewCreateSettings(id component.ID, set component.TelemetrySettings) exporter.CreateSettings {
-	return exporter.CreateSettings{
-		ID:                id,
-		TelemetrySettings: set,
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}

@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -32,7 +32,7 @@ func TestExportTraceDataOp(t *testing.T) {
 
 		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
-			ExporterCreateSettings: exportertest.NewCreateSettings(exporterID, tt.TelemetrySettings),
+			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
 		}, useOtel)
 		require.NoError(t, err)
 
@@ -80,7 +80,7 @@ func TestExportMetricsOp(t *testing.T) {
 
 		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
-			ExporterCreateSettings: exportertest.NewCreateSettings(exporterID, tt.TelemetrySettings),
+			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
 		}, useOtel)
 		require.NoError(t, err)
 
@@ -129,7 +129,7 @@ func TestExportLogsOp(t *testing.T) {
 
 		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
-			ExporterCreateSettings: exportertest.NewCreateSettings(exporterID, tt.TelemetrySettings),
+			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
 		}, useOtel)
 		require.NoError(t, err)
 

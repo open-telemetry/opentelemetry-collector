@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -48,7 +48,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 			rec, err := newReceiver(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Transport:              transport,
-				ReceiverCreateSettings: receivertest.NewCreateSettings(receiverID, tt.TelemetrySettings),
+				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
 			}, useOtel)
 			require.NoError(t, err)
 			ctx := rec.StartTracesOp(parentCtx)
@@ -95,7 +95,7 @@ func TestReceiveLogsOp(t *testing.T) {
 			rec, err := newReceiver(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Transport:              transport,
-				ReceiverCreateSettings: receivertest.NewCreateSettings(receiverID, tt.TelemetrySettings),
+				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
 			}, useOtel)
 			require.NoError(t, err)
 
@@ -143,7 +143,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 			rec, err := newReceiver(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Transport:              transport,
-				ReceiverCreateSettings: receivertest.NewCreateSettings(receiverID, tt.TelemetrySettings),
+				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
 			}, useOtel)
 			require.NoError(t, err)
 
@@ -198,7 +198,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 			ReceiverID:             receiverID,
 			Transport:              transport,
 			LongLivedCtx:           true,
-			ReceiverCreateSettings: receivertest.NewCreateSettings(receiverID, tt.TelemetrySettings),
+			ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, rerr)
 		ctx := rec.StartTracesOp(longLivedCtx)
