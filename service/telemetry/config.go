@@ -105,7 +105,7 @@ type LogsSamplingConfig struct {
 	Tick time.Duration `mapstructure:"tick"`
 	// Initial represents the first M messages logged each Tick.
 	Initial int `mapstructure:"initial"`
-	// Thereafter represents the N messages logged after Initial and the rest are dropped, during each Tick.
+	// Thereafter represents the sampling rate, every Nth message will be sampled after Initial messages are logged during each Tick.
 	// If Thereafter is zero, the logger will drop all the messages after the Initial each Tick.
 	Thereafter int `mapstructure:"thereafter"`
 }
