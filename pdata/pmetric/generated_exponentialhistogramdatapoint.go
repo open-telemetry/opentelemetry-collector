@@ -80,27 +80,6 @@ func (ms ExponentialHistogramDataPoint) SetCount(v uint64) {
 	ms.orig.Count = v
 }
 
-// Sum returns the sum associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Sum() float64 {
-	return ms.orig.GetSum()
-}
-
-// HasSum returns true if the ExponentialHistogramDataPoint contains a
-// Sum value, false otherwise.
-func (ms ExponentialHistogramDataPoint) HasSum() bool {
-	return ms.orig.Sum_ != nil
-}
-
-// SetSum replaces the sum associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetSum(v float64) {
-	ms.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: v}
-}
-
-// RemoveSum removes the sum associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) RemoveSum() {
-	ms.orig.Sum_ = nil
-}
-
 // Scale returns the scale associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Scale() int32 {
 	return ms.orig.Scale
@@ -144,6 +123,27 @@ func (ms ExponentialHistogramDataPoint) Flags() DataPointFlags {
 // SetFlags replaces the flags associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetFlags(v DataPointFlags) {
 	ms.orig.Flags = uint32(v)
+}
+
+// Sum returns the sum associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) Sum() float64 {
+	return ms.orig.GetSum()
+}
+
+// HasSum returns true if the ExponentialHistogramDataPoint contains a
+// Sum value, false otherwise.
+func (ms ExponentialHistogramDataPoint) HasSum() bool {
+	return ms.orig.Sum_ != nil
+}
+
+// SetSum replaces the sum associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) SetSum(v float64) {
+	ms.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: v}
+}
+
+// RemoveSum removes the sum associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) RemoveSum() {
+	ms.orig.Sum_ = nil
 }
 
 // Min returns the min associated with this ExponentialHistogramDataPoint.
@@ -194,16 +194,16 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
-	if ms.HasSum() {
-		dest.SetSum(ms.Sum())
-	}
-
 	dest.SetScale(ms.Scale())
 	dest.SetZeroCount(ms.ZeroCount())
 	ms.Positive().CopyTo(dest.Positive())
 	ms.Negative().CopyTo(dest.Negative())
 	ms.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
+	if ms.HasSum() {
+		dest.SetSum(ms.Sum())
+	}
+
 	if ms.HasMin() {
 		dest.SetMin(ms.Min())
 	}

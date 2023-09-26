@@ -64,16 +64,6 @@ func TestHistogramDataPoint_Count(t *testing.T) {
 	assert.Equal(t, uint64(17), ms.Count())
 }
 
-func TestHistogramDataPoint_Sum(t *testing.T) {
-	ms := NewHistogramDataPoint()
-	assert.Equal(t, float64(0.0), ms.Sum())
-	ms.SetSum(float64(17.13))
-	assert.True(t, ms.HasSum())
-	assert.Equal(t, float64(17.13), ms.Sum())
-	ms.RemoveSum()
-	assert.False(t, ms.HasSum())
-}
-
 func TestHistogramDataPoint_BucketCounts(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, []uint64(nil), ms.BucketCounts().AsRaw())
@@ -101,6 +91,16 @@ func TestHistogramDataPoint_Flags(t *testing.T) {
 	testValFlags := DataPointFlags(1)
 	ms.SetFlags(testValFlags)
 	assert.Equal(t, testValFlags, ms.Flags())
+}
+
+func TestHistogramDataPoint_Sum(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.Equal(t, float64(0.0), ms.Sum())
+	ms.SetSum(float64(17.13))
+	assert.True(t, ms.HasSum())
+	assert.Equal(t, float64(17.13), ms.Sum())
+	ms.RemoveSum()
+	assert.False(t, ms.HasSum())
 }
 
 func TestHistogramDataPoint_Min(t *testing.T) {
@@ -134,11 +134,11 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Count = uint64(17)
-	tv.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(17.13)}
 	tv.orig.BucketCounts = []uint64{1, 2, 3}
 	tv.orig.ExplicitBounds = []float64{1, 2, 3}
 	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars))
 	tv.orig.Flags = 1
+	tv.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(17.13)}
 	tv.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(9.23)}
 	tv.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(182.55)}
 }
