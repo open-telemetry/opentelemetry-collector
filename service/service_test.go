@@ -544,6 +544,8 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 				Development: false,
 				Encoding:    "console",
 				Sampling: &telemetry.LogsSamplingConfig{
+					Enabled:    true,
+					Tick:       10 * time.Second,
 					Initial:    100,
 					Thereafter: 100,
 				},
