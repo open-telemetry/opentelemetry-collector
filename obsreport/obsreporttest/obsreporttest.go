@@ -19,10 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
-	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -48,39 +45,6 @@ type TestTelemetry struct {
 	otelPrometheusChecker *prometheusChecker
 	meterProvider         *sdkmetric.MeterProvider
 	ocExporter            *ocprom.Exporter
-}
-
-// ToExporterCreateSettings returns an exporter.CreateSettings with configured TelemetrySettings.
-//
-// Deprecated: [0.86.0] Use exporter.CreateSettings struct instead.
-func (tts *TestTelemetry) ToExporterCreateSettings() exporter.CreateSettings {
-	return exporter.CreateSettings{
-		ID:                tts.id,
-		TelemetrySettings: tts.TelemetrySettings,
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}
-
-// ToProcessorCreateSettings returns a processor.CreateSettings with configured TelemetrySettings.
-//
-// Deprecated: [0.86.0] Use processor.CreateSettings struct instead.
-func (tts *TestTelemetry) ToProcessorCreateSettings() processor.CreateSettings {
-	return processor.CreateSettings{
-		ID:                tts.id,
-		TelemetrySettings: tts.TelemetrySettings,
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}
-
-// ToReceiverCreateSettings returns a receiver.CreateSettings with configured TelemetrySettings.
-//
-// Deprecated: [0.86.0] Use receiver.CreateSettings struct instead.
-func (tts *TestTelemetry) ToReceiverCreateSettings() receiver.CreateSettings {
-	return receiver.CreateSettings{
-		ID:                tts.id,
-		TelemetrySettings: tts.TelemetrySettings,
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
 }
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
