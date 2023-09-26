@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
@@ -96,7 +95,7 @@ func TestQueuedRetry_DropOnFull(t *testing.T) {
 }
 
 func TestQueuedRetryHappyPath(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(defaultID)
+	tt, err := componenttest.SetupTelemetry(defaultID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -145,7 +144,7 @@ func setFeatureGateForTest(t testing.TB, gate *featuregate.Gate, enabled bool) f
 func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 	resetFlag := setFeatureGateForTest(t, obsreportconfig.UseOtelForInternalMetricsfeatureGate, false)
 	defer resetFlag()
-	tt, err := obsreporttest.SetupTelemetry(defaultID)
+	tt, err := componenttest.SetupTelemetry(defaultID)
 	require.NoError(t, err)
 
 	qCfg := NewDefaultQueueSettings()
@@ -167,7 +166,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 }
 
 func TestQueuedRetry_QueueMetricsReportedUsingOTel(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(defaultID)
+	tt, err := componenttest.SetupTelemetry(defaultID)
 	require.NoError(t, err)
 
 	qCfg := NewDefaultQueueSettings()
@@ -241,7 +240,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 }
 
 func TestQueuedRetryPersistenceEnabled(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(defaultID)
+	tt, err := componenttest.SetupTelemetry(defaultID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -265,7 +264,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 
 func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	storageError := errors.New("could not get storage client")
-	tt, err := obsreporttest.SetupTelemetry(defaultID)
+	tt, err := componenttest.SetupTelemetry(defaultID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 

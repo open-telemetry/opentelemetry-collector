@@ -32,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
@@ -52,7 +51,7 @@ func init() {
 }
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -67,7 +66,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 }
 
 func TestAllGrpcClientSettings(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -237,7 +236,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -360,7 +359,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 }
 
 func TestUseSecure(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -499,7 +498,7 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 }
 
 func TestHttpReception(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -651,7 +650,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on windows")
 	}
-	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -880,7 +879,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 					},
 				}
 
-				tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
+				tt, err := componenttest.SetupTelemetry(component.NewID("component"))
 				require.NoError(t, err)
 				defer func() {
 					require.NoError(t, tt.Shutdown(context.Background()))

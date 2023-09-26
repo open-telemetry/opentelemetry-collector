@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package obsreporttest // import "go.opentelemetry.io/collector/obsreport/obsreporttest"
+package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
 
 import (
 	"context"
@@ -18,7 +18,6 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
@@ -138,7 +137,7 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 
 	settings := TestTelemetry{
-		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		TelemetrySettings: NewNopTelemetrySettings(),
 		id:                id,
 		SpanRecorder:      sr,
 	}

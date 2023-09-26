@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package obsreporttest_test
+package componenttest_test
 
 import (
 	"context"
@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/receiver"
@@ -34,7 +34,7 @@ var (
 )
 
 func TestCheckScraperMetricsViews(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(receiverID)
+	tt, err := componenttest.SetupTelemetry(receiverID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -48,14 +48,14 @@ func TestCheckScraperMetricsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	s.EndMetricsOp(ctx, 7, nil)
 
-	assert.NoError(t, obsreporttest.CheckScraperMetrics(tt, receiverID, scraperID, 7, 0))
-	assert.Error(t, obsreporttest.CheckScraperMetrics(tt, receiverID, scraperID, 7, 7))
-	assert.Error(t, obsreporttest.CheckScraperMetrics(tt, receiverID, scraperID, 0, 0))
-	assert.Error(t, obsreporttest.CheckScraperMetrics(tt, receiverID, scraperID, 0, 7))
+	assert.NoError(t, componenttest.CheckScraperMetrics(tt, receiverID, scraperID, 7, 0))
+	assert.Error(t, componenttest.CheckScraperMetrics(tt, receiverID, scraperID, 7, 7))
+	assert.Error(t, componenttest.CheckScraperMetrics(tt, receiverID, scraperID, 0, 0))
+	assert.Error(t, componenttest.CheckScraperMetrics(tt, receiverID, scraperID, 0, 7))
 }
 
 func TestCheckReceiverTracesViews(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(receiverID)
+	tt, err := componenttest.SetupTelemetry(receiverID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -76,7 +76,7 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 }
 
 func TestCheckReceiverMetricsViews(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(receiverID)
+	tt, err := componenttest.SetupTelemetry(receiverID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -97,7 +97,7 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 }
 
 func TestCheckReceiverLogsViews(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(receiverID)
+	tt, err := componenttest.SetupTelemetry(receiverID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -118,7 +118,7 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 }
 
 func TestCheckProcessorTracesViews(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(processorID)
+	tt, err := componenttest.SetupTelemetry(processorID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -143,7 +143,7 @@ func TestCheckProcessorTracesViews(t *testing.T) {
 }
 
 func TestCheckProcessorMetricsViews(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(processorID)
+	tt, err := componenttest.SetupTelemetry(processorID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -168,7 +168,7 @@ func TestCheckProcessorMetricsViews(t *testing.T) {
 }
 
 func TestCheckProcessorLogViews(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(processorID)
+	tt, err := componenttest.SetupTelemetry(processorID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -193,7 +193,7 @@ func TestCheckProcessorLogViews(t *testing.T) {
 }
 
 func TestCheckExporterTracesViews(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(exporterID)
+	tt, err := componenttest.SetupTelemetry(exporterID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -213,7 +213,7 @@ func TestCheckExporterTracesViews(t *testing.T) {
 }
 
 func TestCheckExporterMetricsViews(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(exporterID)
+	tt, err := componenttest.SetupTelemetry(exporterID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -233,7 +233,7 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 }
 
 func TestCheckExporterLogsViews(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(exporterID)
+	tt, err := componenttest.SetupTelemetry(exporterID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 

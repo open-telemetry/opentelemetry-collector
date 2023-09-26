@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package obsreporttest // import "go.opentelemetry.io/collector/obsreport/obsreporttest"
+package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
 
 import (
 	"net/http"

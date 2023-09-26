@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -22,7 +22,7 @@ var (
 )
 
 func TestProcessorTraceData(t *testing.T) {
-	testTelemetry(t, processorID, func(t *testing.T, tt obsreporttest.TestTelemetry, useOtel bool) {
+	testTelemetry(t, processorID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
 		const acceptedSpans = 27
 		const refusedSpans = 19
 		const droppedSpans = 13
@@ -40,7 +40,7 @@ func TestProcessorTraceData(t *testing.T) {
 }
 
 func TestProcessorMetricsData(t *testing.T) {
-	testTelemetry(t, processorID, func(t *testing.T, tt obsreporttest.TestTelemetry, useOtel bool) {
+	testTelemetry(t, processorID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
 		const acceptedPoints = 29
 		const refusedPoints = 11
 		const droppedPoints = 17
@@ -81,7 +81,7 @@ func TestBuildProcessorCustomMetricName(t *testing.T) {
 }
 
 func TestProcessorLogRecords(t *testing.T) {
-	testTelemetry(t, processorID, func(t *testing.T, tt obsreporttest.TestTelemetry, useOtel bool) {
+	testTelemetry(t, processorID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
 		const acceptedRecords = 29
 		const refusedRecords = 11
 		const droppedRecords = 17
@@ -99,14 +99,14 @@ func TestProcessorLogRecords(t *testing.T) {
 	})
 }
 
-func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt obsreporttest.TestTelemetry, useOtel bool)) {
+func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool)) {
 	t.Run("WithOC", func(t *testing.T) {
 		originalValue := obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled()
 		require.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelForInternalMetricsfeatureGate.ID(), false))
 		defer func() {
 			require.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelForInternalMetricsfeatureGate.ID(), originalValue))
 		}()
-		tt, err := obsreporttest.SetupTelemetry(id)
+		tt, err := componenttest.SetupTelemetry(id)
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -114,7 +114,7 @@ func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt
 	})
 
 	t.Run("WithOTel", func(t *testing.T) {
-		tt, err := obsreporttest.SetupTelemetry(id)
+		tt, err := componenttest.SetupTelemetry(id)
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 

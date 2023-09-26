@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -181,7 +180,7 @@ func TestLogsExporter_WithPersistentQueue(t *testing.T) {
 }
 
 func TestLogsExporter_WithRecordMetrics(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(fakeLogsExporterName)
+	tt, err := componenttest.SetupTelemetry(fakeLogsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -193,7 +192,7 @@ func TestLogsExporter_WithRecordMetrics(t *testing.T) {
 }
 
 func TestLogsRequestExporter_WithRecordMetrics(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(fakeLogsExporterName)
+	tt, err := componenttest.SetupTelemetry(fakeLogsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -208,7 +207,7 @@ func TestLogsRequestExporter_WithRecordMetrics(t *testing.T) {
 
 func TestLogsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	tt, err := obsreporttest.SetupTelemetry(fakeLogsExporterName)
+	tt, err := componenttest.SetupTelemetry(fakeLogsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -221,7 +220,7 @@ func TestLogsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 
 func TestLogsRequestExporter_WithRecordMetrics_ExportError(t *testing.T) {
 	want := errors.New("export_error")
-	tt, err := obsreporttest.SetupTelemetry(fakeLogsExporterName)
+	tt, err := componenttest.SetupTelemetry(fakeLogsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -234,7 +233,7 @@ func TestLogsRequestExporter_WithRecordMetrics_ExportError(t *testing.T) {
 }
 
 func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(fakeLogsExporterName)
+	tt, err := componenttest.SetupTelemetry(fakeLogsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -366,7 +365,7 @@ func newPushLogsData(retError error) consumer.ConsumeLogsFunc {
 	}
 }
 
-func checkRecordedMetricsForLogsExporter(t *testing.T, tt obsreporttest.TestTelemetry, le exporter.Logs, wantError error) {
+func checkRecordedMetricsForLogsExporter(t *testing.T, tt componenttest.TestTelemetry, le exporter.Logs, wantError error) {
 	ld := testdata.GenerateLogs(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
