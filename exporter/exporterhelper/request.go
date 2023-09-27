@@ -37,6 +37,13 @@ type request struct {
 
 var _ internal.Request = (*request)(nil)
 
+func newRequest(ctx context.Context, req Request) *request {
+	return &request{
+		Request:     req,
+		baseRequest: baseRequest{ctx: ctx},
+	}
+}
+
 func (req *request) OnError(_ error) internal.Request {
 	// Potentially we could introduce a new RequestError type that would represent partially succeeded request.
 	// In that case we should consider returning them back to the pipeline converted back to pdata in case if

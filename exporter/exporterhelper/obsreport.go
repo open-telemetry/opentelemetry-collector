@@ -11,7 +11,6 @@ import (
 	"go.opencensus.io/metric/metricproducer"
 
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
-	"go.opentelemetry.io/collector/obsreport"
 )
 
 // TODO: Incorporate this functionality along with tests from obsreport_test.go
@@ -74,26 +73,26 @@ func newInstruments(registry *metric.Registry) *instruments {
 
 // obsExporter is a helper to add observability to an exporter.
 type obsExporter struct {
-	*obsreport.Exporter
+	*ObsReport
 	failedToEnqueueTraceSpansEntry   *metric.Int64CumulativeEntry
 	failedToEnqueueMetricPointsEntry *metric.Int64CumulativeEntry
 	failedToEnqueueLogRecordsEntry   *metric.Int64CumulativeEntry
 }
 
 // newObsExporter creates a new observability exporter.
-func newObsExporter(cfg obsreport.ExporterSettings, insts *instruments) (*obsExporter, error) {
+func newObsExporter(cfg ObsReportSettings, insts *instruments) (*obsExporter, error) {
 	labelValue := metricdata.NewLabelValue(cfg.ExporterID.String())
 	failedToEnqueueTraceSpansEntry, _ := insts.failedToEnqueueTraceSpans.GetEntry(labelValue)
 	failedToEnqueueMetricPointsEntry, _ := insts.failedToEnqueueMetricPoints.GetEntry(labelValue)
 	failedToEnqueueLogRecordsEntry, _ := insts.failedToEnqueueLogRecords.GetEntry(labelValue)
 
-	exp, err := obsreport.NewExporter(cfg)
+	exp, err := NewObsReport(cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return &obsExporter{
-		Exporter:                         exp,
+		ObsReport:                        exp,
 		failedToEnqueueTraceSpansEntry:   failedToEnqueueTraceSpansEntry,
 		failedToEnqueueMetricPointsEntry: failedToEnqueueMetricPointsEntry,
 		failedToEnqueueLogRecordsEntry:   failedToEnqueueLogRecordsEntry,

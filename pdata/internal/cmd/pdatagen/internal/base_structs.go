@@ -117,7 +117,6 @@ func New{{ .structName }}(orig *{{ .originName }}) {{ .structName }} {
 
 type baseStruct interface {
 	getName() string
-	getPackageName() string
 	generateStruct(sb *bytes.Buffer)
 	generateTests(sb *bytes.Buffer)
 	generateTestValueHelpers(sb *bytes.Buffer)
@@ -136,10 +135,6 @@ type messageValueStruct struct {
 
 func (ms *messageValueStruct) getName() string {
 	return ms.structName
-}
-
-func (ms *messageValueStruct) getPackageName() string {
-	return ms.packageName
 }
 
 func (ms *messageValueStruct) generateStruct(sb *bytes.Buffer) {

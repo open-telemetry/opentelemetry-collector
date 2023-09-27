@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
@@ -134,7 +135,8 @@ func TestScrapeController(t *testing.T) {
 	for _, test := range testCases {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			tt, err := obsreporttest.SetupTelemetry(component.NewID("receiver"))
+			receiverID := component.NewID("receiver")
+			tt, err := obsreporttest.SetupTelemetry(receiverID)
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -156,7 +158,7 @@ func TestScrapeController(t *testing.T) {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, tt.ToReceiverCreateSettings(), nextConsumer, options...)
+			mr, err := NewScraperControllerReceiver(cfg, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, nextConsumer, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return

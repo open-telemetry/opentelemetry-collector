@@ -89,28 +89,20 @@ func NewMetricsExporter(
 		return nil, errNilPushMetricsData
 	}
 
-	bs := newBaseSettings(false, options...)
-	bs.marshaler = metricsRequestMarshaler
-	bs.unmarshaler = newMetricsRequestUnmarshalerFunc(pusher)
-	be, err := newBaseExporter(set, bs, component.DataTypeMetrics)
+	be, err := newBaseExporter(set, component.DataTypeMetrics, false, metricsRequestMarshaler,
+		newMetricsRequestUnmarshalerFunc(pusher), newMetricsSenderWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
-	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
-		return &metricsSenderWithObservability{
-			obsrep:     be.obsrep,
-			nextSender: nextSender,
-		}
-	})
 
 	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		req := newMetricsRequest(ctx, md, pusher)
-		serr := be.sender.send(req)
+		serr := be.send(req)
 		if errors.Is(serr, errSendingQueueIsFull) {
 			be.obsrep.recordMetricsEnqueueFailure(req.Context(), int64(req.Count()))
 		}
 		return serr
-	}, bs.consumerOptions...)
+	}, be.consumerOptions...)
 
 	return &metricsExporter{
 		baseExporter: be,
@@ -143,18 +135,10 @@ func NewMetricsRequestExporter(
 		return nil, errNilMetricsConverter
 	}
 
-	bs := newBaseSettings(true, options...)
-
-	be, err := newBaseExporter(set, bs, component.DataTypeMetrics)
+	be, err := newBaseExporter(set, component.DataTypeMetrics, true, nil, nil, newMetricsSenderWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
-	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
-		return &metricsSenderWithObservability{
-			obsrep:     be.obsrep,
-			nextSender: nextSender,
-		}
-	})
 
 	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		req, cErr := converter.RequestFromMetrics(ctx, md)
@@ -164,16 +148,13 @@ func NewMetricsRequestExporter(
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}
-		r := &request{
-			Request:     req,
-			baseRequest: baseRequest{ctx: ctx},
-		}
-		sErr := be.sender.send(r)
+		r := newRequest(ctx, req)
+		sErr := be.send(r)
 		if errors.Is(sErr, errSendingQueueIsFull) {
 			be.obsrep.recordMetricsEnqueueFailure(r.Context(), int64(r.Count()))
 		}
 		return sErr
-	}, bs.consumerOptions...)
+	}, be.consumerOptions...)
 
 	return &metricsExporter{
 		baseExporter: be,
@@ -182,8 +163,12 @@ func NewMetricsRequestExporter(
 }
 
 type metricsSenderWithObservability struct {
-	obsrep     *obsExporter
-	nextSender requestSender
+	baseRequestSender
+	obsrep *obsExporter
+}
+
+func newMetricsSenderWithObservability(obsrep *obsExporter) requestSender {
+	return &metricsSenderWithObservability{obsrep: obsrep}
 }
 
 func (mewo *metricsSenderWithObservability) send(req internal.Request) error {
