@@ -48,7 +48,7 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 		Sampling: &telemetry.LogsSamplingConfig{
 			Enabled:    true,
 			Tick:       10 * time.Second,
-			Initial:    100,
+			Initial:    10,
 			Thereafter: 100,
 		},
 		DisableCaller:     zapProdCfg.DisableCaller,

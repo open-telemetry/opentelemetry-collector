@@ -60,7 +60,7 @@ type LogsConfig struct {
 	// 		sampling:
 	//	   		enabled: true
 	//	   		tick: 10s
-	//	   		initial: 100
+	//	   		initial: 10
 	//	   		thereafter: 100
 	// Sampling can be disabled by setting 'enabled' to false
 	Sampling *LogsSamplingConfig `mapstructure:"sampling"`

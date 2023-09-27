@@ -49,7 +49,7 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 					Sampling: &telemetry.LogsSamplingConfig{
 						Enabled:    true,
 						Tick:       10 * time.Second,
-						Initial:    100,
+						Initial:    10,
 						Thereafter: 100,
 					},
 					OutputPaths:       []string{"stderr"},
