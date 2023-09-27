@@ -11,8 +11,6 @@ Logs can be helpful in identifying issues. Always start by checking the log
 output and looking for potential issues.
 The verbosity level defaults to `INFO` and can be adjusted.
 
-#### Version 0.36 and above:
-
 Set the log level in the config `service::telemetry::logs`
 
 ```yaml
@@ -22,21 +20,11 @@ service:
       level: "debug"
 ```
 
-#### Version 0.35 and below:
-
-Pass `--log-level` flag to the `otelcol` process. See `--help` for more details.
-
-```console
-$ otelcol --log-level DEBUG
-```
-
 ### Metrics
 
 Prometheus metrics are exposed locally on port `8888` and path `/metrics`. For
 containerized environments it may be desirable to expose this port on a
 public interface instead of just locally.
-
-#### Version 0.43.0 and above:
 
 Set the address in the config `service::telemetry::metrics`
 
@@ -45,15 +33,6 @@ service:
   telemetry:
     metrics:
       address: ":8888"
-```
-
-#### Version 0.42.0 and below:
-
-Pass `--metrics-addr <ADDR>` flag to the `otelcol` process. See `--help` for
-more details.
-
-```console
-$ otelcol --metrics-addr 0.0.0.0:8888
 ```
 
 A Grafana dashboard for these metrics can be found
