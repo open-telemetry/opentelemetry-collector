@@ -64,16 +64,6 @@ func TestExponentialHistogramDataPoint_Count(t *testing.T) {
 	assert.Equal(t, uint64(17), ms.Count())
 }
 
-func TestExponentialHistogramDataPoint_Sum(t *testing.T) {
-	ms := NewExponentialHistogramDataPoint()
-	assert.Equal(t, float64(0.0), ms.Sum())
-	ms.SetSum(float64(17.13))
-	assert.True(t, ms.HasSum())
-	assert.Equal(t, float64(17.13), ms.Sum())
-	ms.RemoveSum()
-	assert.False(t, ms.HasSum())
-}
-
 func TestExponentialHistogramDataPoint_Scale(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
 	assert.Equal(t, int32(0), ms.Scale())
@@ -115,6 +105,16 @@ func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
 	assert.Equal(t, testValFlags, ms.Flags())
 }
 
+func TestExponentialHistogramDataPoint_Sum(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.Equal(t, float64(0.0), ms.Sum())
+	ms.SetSum(float64(17.13))
+	assert.True(t, ms.HasSum())
+	assert.Equal(t, float64(17.13), ms.Sum())
+	ms.RemoveSum()
+	assert.False(t, ms.HasSum())
+}
+
 func TestExponentialHistogramDataPoint_Min(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
 	assert.Equal(t, float64(0.0), ms.Min())
@@ -146,13 +146,13 @@ func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Count = uint64(17)
-	tv.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(17.13)}
 	tv.orig.Scale = int32(4)
 	tv.orig.ZeroCount = uint64(201)
 	fillTestExponentialHistogramDataPointBuckets(newExponentialHistogramDataPointBuckets(&tv.orig.Positive))
 	fillTestExponentialHistogramDataPointBuckets(newExponentialHistogramDataPointBuckets(&tv.orig.Negative))
 	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars))
 	tv.orig.Flags = 1
+	tv.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(17.13)}
 	tv.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(9.23)}
 	tv.orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(182.55)}
 }
