@@ -33,7 +33,7 @@ type TelemetrySettingsBase[T any] struct {
 	// ReportComponentStatus allows a component to report runtime changes in status. The service
 	// will automatically report status for a component during startup and shutdown. Components can
 	// use this method to report status after start and before shutdown. ReportComponentStatus
-	// will only return errors if the API used incorrectly. The three scenarios where an error will
+	// will only return errors if the API used incorrectly. The two scenarios where an error will
 	// be returned are:
 	//
 	//   - An illegal state transition
