@@ -150,6 +150,41 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	assert.Equal(t, 0, q.Size())
 }
 
+func TestShutdownWhileInFlight(t *testing.T) {
+	q := NewBoundedMemoryQueue(10000000, 10)
+
+	consumerState := newConsumerState(t)
+
+	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {
+		consumerState.record(item.(stringRequest).str)
+	})))
+
+	waitDone := sync.WaitGroup{}
+	done := &atomic.Bool{}
+
+	for i := 0; i < 10; i++ {
+		go func() {
+			for {
+				waitDone.Add(1)
+				q.Produce(newStringRequest("a"))
+				waitDone.Done()
+				if done.Load() {
+					break
+				}
+			}
+		}()
+	}
+
+	time.Sleep(100 * time.Millisecond)
+
+	q.Stop()
+	done.Store(true)
+	waitDone.Wait()
+
+	assert.False(t, q.Produce(newStringRequest("x")), "cannot push to closed queue")
+	assert.Equal(t, 0, q.Size())
+}
+
 type consumerState struct {
 	sync.Mutex
 	t            *testing.T

@@ -19,6 +19,7 @@ import (
 type boundedMemoryQueue struct {
 	stopWG       sync.WaitGroup
 	size         *atomic.Uint32
+	queueWG      sync.WaitGroup
 	stopped      *atomic.Bool
 	items        chan Request
 	capacity     uint32
@@ -50,6 +51,7 @@ func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set Queu
 			for item := range q.items {
 				q.size.Add(^uint32(0))
 				set.Callback(item)
+				q.queueWG.Done()
 			}
 		}()
 	}
@@ -71,12 +73,14 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 	}
 
 	q.size.Add(1)
+	q.queueWG.Add(1)
 	select {
 	case q.items <- item:
 		return true
 	default:
 		// should not happen, as overflows should have been captured earlier
 		q.size.Add(^uint32(0))
+		q.queueWG.Done()
 		return false
 	}
 }
@@ -85,6 +89,7 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 // and releases the items channel. It blocks until all consumers have stopped.
 func (q *boundedMemoryQueue) Stop() {
 	q.stopped.Store(true) // disable producer
+	q.queueWG.Wait()
 	close(q.items)
 	q.stopWG.Wait()
 }
