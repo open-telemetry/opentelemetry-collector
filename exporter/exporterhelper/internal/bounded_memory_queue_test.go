@@ -202,6 +202,43 @@ func queueUsage(b *testing.B, capacity int, numConsumers int, numberOfItems int)
 	}
 }
 
+func TestShutdownWhileInFlight(t *testing.T) {
+	q := NewBoundedMemoryQueue(10000, 1)
+
+	consumerState := newConsumerState(t)
+
+	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {
+		consumerState.record(item.(stringRequest).str)
+	})))
+
+	waitDone := sync.WaitGroup{}
+	done := &atomic.Bool{}
+
+	for i := 0; i < 20; i++ {
+		go func() {
+			for {
+				waitDone.Add(1)
+				defer waitDone.Done()
+				q.Produce(newStringRequest("a"))
+				if done.Load() {
+					break
+				}
+			}
+		}()
+	}
+
+	// accumulate elements in the queue by waiting a second.
+	time.Sleep(1 * time.Second)
+
+	q.Stop()
+	// stop sending after stopping.
+	done.Store(true)
+	waitDone.Wait()
+
+	assert.False(t, q.Produce(newStringRequest("x")), "cannot push to closed queue")
+	assert.Equal(t, 0, q.Size())
+}
+
 type consumerState struct {
 	sync.Mutex
 	t            *testing.T
