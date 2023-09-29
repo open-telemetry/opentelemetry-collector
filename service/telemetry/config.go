@@ -5,6 +5,7 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"fmt"
+	"time"
 
 	"go.uber.org/zap/zapcore"
 
@@ -54,7 +55,14 @@ type LogsConfig struct {
 	// (default = false)
 	DisableStacktrace bool `mapstructure:"disable_stacktrace"`
 
-	// Sampling sets a sampling policy. A nil SamplingConfig disables sampling.
+	// Sampling sets a sampling policy.
+	// Default:
+	// 		sampling:
+	//	   		enabled: true
+	//	   		tick: 10s
+	//	   		initial: 10
+	//	   		thereafter: 100
+	// Sampling can be disabled by setting 'enabled' to false
 	Sampling *LogsSamplingConfig `mapstructure:"sampling"`
 
 	// OutputPaths is a list of URLs or file paths to write logging output to.
@@ -91,7 +99,14 @@ type LogsConfig struct {
 // global CPU and I/O load that logging puts on your process while attempting
 // to preserve a representative subset of your logs.
 type LogsSamplingConfig struct {
-	Initial    int `mapstructure:"initial"`
+	// Enabled enable sampling logging
+	Enabled bool `mapstructure:"enabled"`
+	// Tick represents the interval in seconds that the logger apply each sampling.
+	Tick time.Duration `mapstructure:"tick"`
+	// Initial represents the first M messages logged each Tick.
+	Initial int `mapstructure:"initial"`
+	// Thereafter represents the sampling rate, every Nth message will be sampled after Initial messages are logged during each Tick.
+	// If Thereafter is zero, the logger will drop all the messages after the Initial each Tick.
 	Thereafter int `mapstructure:"thereafter"`
 }
 

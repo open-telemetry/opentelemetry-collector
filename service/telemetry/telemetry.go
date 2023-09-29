@@ -59,7 +59,6 @@ func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	zapCfg := &zap.Config{
 		Level:             zap.NewAtomicLevelAt(cfg.Level),
 		Development:       cfg.Development,
-		Sampling:          toSamplingConfig(cfg.Sampling),
 		Encoding:          cfg.Encoding,
 		EncoderConfig:     zap.NewProductionEncoderConfig(),
 		OutputPaths:       cfg.OutputPaths,
@@ -78,16 +77,23 @@ func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	if err != nil {
 		return nil, err
 	}
+	if cfg.Sampling != nil && cfg.Sampling.Enabled {
+		logger = newSampledLogger(logger, cfg.Sampling)
+	}
 
 	return logger, nil
 }
 
-func toSamplingConfig(sc *LogsSamplingConfig) *zap.SamplingConfig {
-	if sc == nil {
-		return nil
-	}
-	return &zap.SamplingConfig{
-		Initial:    sc.Initial,
-		Thereafter: sc.Thereafter,
-	}
+func newSampledLogger(logger *zap.Logger, sc *LogsSamplingConfig) *zap.Logger {
+	// Create a logger that samples every Nth message after the first M messages every S seconds
+	// where N = sc.Thereafter, M = sc.Initial, S = sc.Tick.
+	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewSamplerWithOptions(
+			core,
+			sc.Tick,
+			sc.Initial,
+			sc.Thereafter,
+		)
+	})
+	return logger.WithOptions(opts)
 }

@@ -5,10 +5,6 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
-	"time"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -101,7 +97,7 @@ func WithTimeout(timeoutSettings TimeoutSettings) Option {
 // The default RetrySettings is to disable retries.
 func WithRetry(retrySettings RetrySettings) Option {
 	return func(o *baseExporter) {
-		o.retrySender = newRetrySender(o.set.ID, retrySettings, o.sampledLogger, o.onTemporaryFailure)
+		o.retrySender = newRetrySender(o.set.ID, retrySettings, o.set.Logger, o.onTemporaryFailure)
 	}
 }
 
@@ -121,7 +117,7 @@ func WithQueue(config QueueSettings) Option {
 				queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID, o.marshaler, o.unmarshaler)
 			}
 		}
-		qs := newQueueSender(o.set.ID, o.signal, queue, o.sampledLogger)
+		qs := newQueueSender(o.set.ID, o.signal, queue, o.set.Logger)
 		o.queueSender = qs
 		o.setOnTemporaryFailure(qs.onTemporaryFailure)
 	}
@@ -146,9 +142,8 @@ type baseExporter struct {
 	unmarshaler     internal.RequestUnmarshaler
 	signal          component.DataType
 
-	set           exporter.CreateSettings
-	obsrep        *obsExporter
-	sampledLogger *zap.Logger
+	set    exporter.CreateSettings
+	obsrep *obsExporter
 
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
@@ -184,9 +179,8 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 		retrySender:   &baseRequestSender{},
 		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutSettings()},
 
-		set:           set,
-		obsrep:        obsrep,
-		sampledLogger: createSampledLogger(set.Logger),
+		set:    set,
+		obsrep: obsrep,
 	}
 
 	for _, op := range options {
@@ -235,23 +229,4 @@ func (be *baseExporter) setOnTemporaryFailure(onTemporaryFailure onRequestHandli
 	if rs, ok := be.retrySender.(*retrySender); ok {
 		rs.onTemporaryFailure = onTemporaryFailure
 	}
-}
-
-func createSampledLogger(logger *zap.Logger) *zap.Logger {
-	if logger.Core().Enabled(zapcore.DebugLevel) {
-		// Debugging is enabled. Don't do any sampling.
-		return logger
-	}
-
-	// Create a logger that samples all messages to 1 per 10 seconds initially,
-	// and 1/100 of messages after that.
-	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		return zapcore.NewSamplerWithOptions(
-			core,
-			10*time.Second,
-			1,
-			100,
-		)
-	})
-	return logger.WithOptions(opts)
 }
