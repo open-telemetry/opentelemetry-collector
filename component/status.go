@@ -156,39 +156,25 @@ func StatusIsError(status Status) bool {
 		status == StatusFatalError
 }
 
-// LastStatusEvent returns the key and last StatusEvent by timestamp from the map provided.
-// Results will be nil for an empty map.
-func LastStatusEvent[K comparable](eventMap map[K]*StatusEvent) (lastKey K, lastEvent *StatusEvent) {
-	for key, event := range eventMap {
-		if lastEvent == nil || lastEvent.timestamp.Before(event.timestamp) {
-			lastKey = key
-			lastEvent = event
-		}
-	}
-	return
-}
-
-// LastEventByStatus returns the key and last StatusEvent of the given status from the provided map.
-// Results will be nil if there is not an event with the given status in the map.
-func LastEventByStatus[K comparable](eventMap map[K]*StatusEvent, status Status) (lastKey K, lastEvent *StatusEvent) {
-	for key, event := range eventMap {
-		if status == event.Status() &&
-			(lastEvent == nil || lastEvent.timestamp.Before(event.timestamp)) {
-			lastKey = key
-			lastEvent = event
-		}
-	}
-	return
-}
-
 // AggregateStatusEvent returns a status event where:
 //   - The status is set to the aggregate status of the events in the eventMap
 //   - The timestamp is set to the latest timestamp of the events in the eventMap
 //   - For an error status, the event will have same error as the most current event of the same
 //     error type from the eventMap
 func AggregateStatusEvent[K comparable](eventMap map[K]*StatusEvent) *StatusEvent {
+	var lastEvent, lastMatchingEvent *StatusEvent
 	aggregateStatus := AggregateStatus[K](eventMap)
-	_, lastEvent := LastStatusEvent[K](eventMap)
+
+	for _, ev := range eventMap {
+		if lastEvent == nil || lastEvent.timestamp.Before(ev.timestamp) {
+			lastEvent = ev
+		}
+		if aggregateStatus == ev.Status() &&
+			(lastMatchingEvent == nil || lastMatchingEvent.timestamp.Before(ev.timestamp)) {
+			lastMatchingEvent = ev
+		}
+	}
+
 	// the effective status matches an existing event
 	if lastEvent.Status() == aggregateStatus {
 		return lastEvent
@@ -200,8 +186,7 @@ func AggregateStatusEvent[K comparable](eventMap map[K]*StatusEvent) *StatusEven
 		timestamp: lastEvent.timestamp,
 	}
 	if StatusIsError(aggregateStatus) {
-		_, errorEvent := LastEventByStatus[K](eventMap, aggregateStatus)
-		aggregateEvent.err = errorEvent.err
+		aggregateEvent.err = lastMatchingEvent.err
 	}
 
 	return aggregateEvent
