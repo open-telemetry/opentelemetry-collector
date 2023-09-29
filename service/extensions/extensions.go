@@ -98,7 +98,7 @@ func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) err
 
 func (bes *Extensions) NotifyComponentStatusChange(source *component.InstanceID, event *component.StatusEvent) {
 	for _, ext := range bes.extMap {
-		if sw, ok := ext.(component.StatusWatcher); ok {
+		if sw, ok := ext.(extension.StatusWatcher); ok {
 			sw.ComponentStatusChanged(source, event)
 		}
 	}

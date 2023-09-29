@@ -40,6 +40,17 @@ type ConfigWatcher interface {
 	NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 }
 
+// StatusWatcher is an extra interface for Extension hosted by the OpenTelemetry
+// Collector that is to be implemented by extensions interested in changes to component
+// status.
+type StatusWatcher interface {
+	// ComponentStatusChanged notifies about a change in the source component status.
+	// Extensions that implement this interface must be ready that the ComponentStatusChanged
+	// may be called before, after or concurrently with calls to Component.Start() and Component.Shutdown().
+	// The function may be called concurrently with itself.
+	ComponentStatusChanged(source *component.InstanceID, event *component.StatusEvent)
+}
+
 // CreateSettings is passed to Factory.Create(...) function.
 type CreateSettings struct {
 	// ID returns the ID of the component that will be created.

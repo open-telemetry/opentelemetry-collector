@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension"
 )
 
 func TestStatusWatcherExtension(t *testing.T) {
@@ -31,7 +32,7 @@ func TestStatusWatcherExtension(t *testing.T) {
 	assert.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 	assert.False(t, statusChanged)
 
-	ext.(component.StatusWatcher).ComponentStatusChanged(&component.InstanceID{}, &component.StatusEvent{})
+	ext.(extension.StatusWatcher).ComponentStatusChanged(&component.InstanceID{}, &component.StatusEvent{})
 
 	assert.True(t, statusChanged)
 	assert.NoError(t, ext.Shutdown(context.Background()))

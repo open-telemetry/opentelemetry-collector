@@ -98,17 +98,6 @@ func NewFatalErrorEvent(err error) *StatusEvent {
 	return ev
 }
 
-// StatusWatcher is an extra interface for Extension hosted by the OpenTelemetry
-// Collector that is to be implemented by extensions interested in changes to component
-// status.
-type StatusWatcher interface {
-	// ComponentStatusChanged notifies about a change in the source component status.
-	// Extensions that implement this interface must be ready that the ComponentStatusChanged
-	// may be called before, after or concurrently with calls to Component.Start() and Component.Shutdown().
-	// The function may be called concurrently with itself.
-	ComponentStatusChanged(source *InstanceID, event *StatusEvent)
-}
-
 // StatusFunc is the expected type of ReportComponentStatus for component.TelemetrySettings
 type StatusFunc func(*StatusEvent) error
 
