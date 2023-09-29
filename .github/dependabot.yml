@@ -98,6 +98,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/exporter/debugexporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/exporter/loggingexporter"
     schedule:
       interval: "weekly"
@@ -143,6 +148,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/otelcol"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/pdata"
     schedule:
       interval: "weekly"
@@ -174,6 +184,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/semconv"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/service"
     schedule:
       interval: "weekly"
       day: "wednesday"

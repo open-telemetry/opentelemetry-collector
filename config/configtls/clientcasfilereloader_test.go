@@ -90,17 +90,23 @@ func createTempFile(t *testing.T) string {
 }
 
 type testLoader struct {
-	err     error
+	err     atomic.Value
 	counter atomic.Uint32
 }
 
 func (r *testLoader) loadClientCAFile() (*x509.CertPool, error) {
 	r.counter.Add(1)
-	return nil, r.err
+
+	v := r.err.Load()
+	if v == nil {
+		return nil, nil
+	}
+
+	return nil, v.(error)
 }
 
 func (r *testLoader) returnErrorOnSubsequentCalls(msg string) {
-	r.err = fmt.Errorf(msg)
+	r.err.Store(fmt.Errorf(msg))
 }
 
 func (r *testLoader) reloadNumber() int {

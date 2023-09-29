@@ -23,10 +23,9 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/resource"
 
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -105,14 +104,14 @@ func InitPrometheusServer(registry *prometheus.Registry, address string, asyncEr
 func batchViews(disableHighCardinality bool) []sdkmetric.View {
 	views := []sdkmetric.View{
 		sdkmetric.NewView(
-			sdkmetric.Instrument{Name: obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size")},
-			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
+			sdkmetric.Instrument{Name: processorhelper.BuildCustomMetricName("batch", "batch_send_size")},
+			sdkmetric.Stream{Aggregation: sdkmetric.AggregationExplicitBucketHistogram{
 				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
 			}},
 		),
 		sdkmetric.NewView(
-			sdkmetric.Instrument{Name: obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size_bytes")},
-			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
+			sdkmetric.Instrument{Name: processorhelper.BuildCustomMetricName("batch", "batch_send_size_bytes")},
+			sdkmetric.Stream{Aggregation: sdkmetric.AggregationExplicitBucketHistogram{
 				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
 					100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
 					1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
@@ -159,12 +158,12 @@ func initPrometheusExporter(prometheusConfig *telemetry.Prometheus, asyncErrorCh
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/8043
 		otelprom.WithoutUnits(),
 		// Disabled for the moment until this becomes stable, and we are ready to break backwards compatibility.
-		otelprom.WithoutScopeInfo())
+		otelprom.WithoutScopeInfo(),
+		otelprom.WithProducer(opencensus.NewMetricProducer()))
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
 
-	exporter.RegisterProducer(opencensus.NewMetricProducer())
 	return exporter, InitPrometheusServer(promRegistry, fmt.Sprintf("%s:%d", *prometheusConfig.Host, *prometheusConfig.Port), asyncErrorChannel), nil
 }
 

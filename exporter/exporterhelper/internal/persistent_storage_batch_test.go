@@ -12,9 +12,7 @@ import (
 )
 
 func TestPersistentStorageBatch_Operations(t *testing.T) {
-	path := t.TempDir()
-
-	ext := createStorageExtension(path)
+	ext := NewMockStorageExtension(nil)
 	client := createTestClient(ext)
 	ps := createTestPersistentStorage(client)
 

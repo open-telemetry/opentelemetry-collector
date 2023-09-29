@@ -81,15 +81,16 @@ var (
 
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
 // queueName parameter must be a unique value that identifies the queue.
-func newPersistentContiguousStorage(ctx context.Context, queueName string, set PersistentQueueSettings) *persistentContiguousStorage {
+func newPersistentContiguousStorage(ctx context.Context, queueName string, client storage.Client,
+	logger *zap.Logger, capacity uint64, marshaler RequestMarshaler, unmarshaler RequestUnmarshaler) *persistentContiguousStorage {
 	pcs := &persistentContiguousStorage{
-		logger:      set.Logger,
-		client:      set.Client,
+		logger:      logger,
+		client:      client,
 		queueName:   queueName,
-		unmarshaler: set.Unmarshaler,
-		marshaler:   set.Marshaler,
-		capacity:    set.Capacity,
-		putChan:     make(chan struct{}, set.Capacity),
+		unmarshaler: unmarshaler,
+		marshaler:   marshaler,
+		capacity:    capacity,
+		putChan:     make(chan struct{}, capacity),
 		reqChan:     make(chan Request),
 		stopChan:    make(chan struct{}),
 		itemsCount:  &atomic.Uint64{},

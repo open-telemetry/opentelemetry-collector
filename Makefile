@@ -306,6 +306,7 @@ check-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/connector/forwardconnector=$(CURDIR)/connector/forwardconnector"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/consumer=$(CURDIR)/consumer"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/exporter=$(CURDIR)/exporter"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/exporter/debugexporter=$(CURDIR)/exporter/debugexporter"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/exporter/loggingexporter=$(CURDIR)/exporter/loggingexporter"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/exporter/otlpexporter=$(CURDIR)/exporter/otlpexporter"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/exporter/otlphttpexporter=$(CURDIR)/exporter/otlphttpexporter"
@@ -314,6 +315,7 @@ check-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/extension/ballastextension=$(CURDIR)/extension/ballastextension"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/extension/zpagesextension=$(CURDIR)/extension/zpagesextension"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/featuregate=$(CURDIR)/featuregate"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/otelcol=$(CURDIR)/otelcol"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/pdata=$(CURDIR)/pdata"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/processor=$(CURDIR)/processor"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/processor/batchprocessor=$(CURDIR)/processor/batchprocessor"
@@ -321,6 +323,7 @@ check-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/receiver=$(CURDIR)/receiver"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/receiver/otlpreceiver=$(CURDIR)/receiver/otlpreceiver"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/service=$(CURDIR)/service"
 	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
 	@$(MAKE) -C $(CONTRIB_PATH) test
 	@if [ -z "$(SKIP_RESTORE_CONTRIB)" ]; then \
@@ -346,6 +349,7 @@ restore-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/connector/forwardconnector"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/consumer"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/exporter"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/exporter/debugexporter"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/exporter/loggingexporter"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/exporter/otlpexporter"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -354,6 +358,7 @@ restore-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/extension/ballastextension"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/extension/zpagestextension"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/featuregate"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/otelcol"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/pdata"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/processor"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/processor/batchprocessor"
@@ -361,6 +366,7 @@ restore-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/receiver"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/receiver/otlpreceiver"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/semconv"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/service"
 	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
 
 # List of directories where certificates are stored for unit tests.
@@ -427,43 +433,11 @@ push-tags: $(MULTIMOD)
 
 .PHONY: check-changes
 check-changes: $(YQ)
-ifndef MODSET
-	@echo "MODSET not defined"
-	@echo "usage: make check-changes PREVIOUS_VERSION=<version eg 0.52.0> MODSET=beta"
-	exit 1
-endif
-ifndef PREVIOUS_VERSION
-	@echo "PREVIOUS_VERSION not defined"
-	@echo "usage: make check-changes PREVIOUS_VERSION=<version eg 0.52.0> MODSET=beta"
-	exit 1
-else
-ifeq (, $(findstring v,$(PREVIOUS_VERSION)))
-NORMALIZED_PREVIOUS_VERSION="v$(PREVIOUS_VERSION)"
-else
-NORMALIZED_PREVIOUS_VERSION="$(PREVIOUS_VERSION)"
-endif
-endif
-	@all_submods=$$($(YQ) e '.module-sets.*.modules[] | select(. != "go.opentelemetry.io/collector")' versions.yaml | sed 's/^go\.opentelemetry\.io\/collector\///'); \
-	mods=$$($(YQ) e '.module-sets.$(MODSET).modules[]' versions.yaml | sed 's/^go\.opentelemetry\.io\/collector\///'); \
-	changed_files=""; \
-	for mod in $${mods}; do \
-		if [ "$${mod}" == "go.opentelemetry.io/collector" ]; then \
-			changed_files+=$$(git diff --name-only $(NORMALIZED_PREVIOUS_VERSION) -- $$(printf '%s\n' $${all_submods[@]} | sed 's/^/:!/' | paste -sd' ' -) | grep -E '.+\.go$$'); \
-		elif ! git rev-parse --quiet --verify $${mod}/$(NORMALIZED_PREVIOUS_VERSION) >/dev/null; then \
-			echo "Module $${mod} does not have a $(NORMALIZED_PREVIOUS_VERSION) tag"; \
-			echo "$(MODSET) release is required."; \
-			exit 0; \
-		else \
-			changed_files+=$$(git diff --name-only $${mod}/$(NORMALIZED_PREVIOUS_VERSION) -- $${mod} | grep -E '.+\.go$$'); \
-		fi; \
-	done; \
-	if [ -n "$${changed_files}" ]; then \
-		echo "The following files changed in $(MODSET) modules since $(NORMALIZED_PREVIOUS_VERSION): $${changed_files}"; \
-	else \
-		echo "No $(MODSET) modules have changed since $(NORMALIZED_PREVIOUS_VERSION)"; \
-		echo "No need to release $(MODSET)."; \
-		exit 1; \
-	fi
+	# NOTE: ! inverses the return code of multimod diff. This is
+	# because prepare-release expects a 0 if there are diffs and
+	# non-0 if there are no diffs, which is the inverse of most
+	# diff tools
+	! $(MULTIMOD) diff -p $(PREVIOUS_VERSION) -m $(MODSET)
 
 .PHONY: prepare-release
 prepare-release:

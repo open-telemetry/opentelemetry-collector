@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/iruntime"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -431,14 +430,14 @@ func (be *ballastExtension) GetBallastSize() uint64 {
 	return be.ballastSize
 }
 
-func newObsReport(t *testing.T) *obsreport.Processor {
-	set := obsreport.ProcessorSettings{
+func newObsReport(t *testing.T) *processorhelper.ObsReport {
+	set := processorhelper.ObsReportSettings{
 		ProcessorID:             component.NewID(typeStr),
 		ProcessorCreateSettings: processortest.NewNopCreateSettings(),
 	}
 	set.ProcessorCreateSettings.MetricsLevel = configtelemetry.LevelNone
 
-	proc, err := obsreport.NewProcessor(set)
+	proc, err := processorhelper.NewObsReport(set)
 	require.NoError(t, err)
 
 	return proc

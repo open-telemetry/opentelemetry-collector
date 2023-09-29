@@ -15,11 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.20.7
+          go-version: ~1.20.8
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -37,11 +37,11 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.20.7
+          go-version: ~1.20.8
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -60,11 +60,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.20.7
+          go-version: ~1.20.8
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -84,11 +84,11 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.20.7
+          go-version: ~1.20.8
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -133,12 +133,12 @@ jobs:
   unittest-matrix:
     strategy:
       matrix:
-        go-version: ["1.21", "1.20"] # 1.20 needs quotes otherwise it's interpreted as 1.2
+        go-version: ["~1.21.1", "~1.20.8"] # 1.20 needs quotes otherwise it's interpreted as 1.2
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -180,7 +180,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -238,6 +238,8 @@ jobs:
           - goos: linux
             goarch: arm
             goarm: 7
+          - goos: linux
+            goarch: s390x
           - goos: windows
             goarch: 386
           - goos: windows
@@ -245,11 +247,11 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.20.7
+          go-version: ~1.20.8
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3

@@ -7,6 +7,52 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.0.0-rcv0015/v0.86.0
+
+### 🚩 Deprecations 🚩
+
+- `loggingexporter`: Mark the logging exporter as deprecated, in favour of debug exporter (#7769)
+
+### 🚀 New components 🚀
+
+- `debugexporter`: Add debug exporter, which replaces the logging exporter (#7769)
+
+### 💡 Enhancements 💡
+
+- `featuregate`: List valid feature gates when failing to load invalid gate (#8505)
+- `supported platforms`: Add `linux/s390x` architecture to cross build tests in CI (#8213)
+
+### 🧰 Bug fixes 🧰
+
+- `builder`: fix setting `dist.*` keys from env (#8239)
+- `configtls`: fix incorrect use of fsnotify (#8438)
+
+## v0.85.0
+
+### 💡 Enhancements 💡
+
+- `components command`: The "components" command now lists the component's stability levels. (#8289)
+  Note that the format of this output is NOT stable and can change between versions.
+- `confighttp`: Add option to disable HTTP keep-alives (#8260)
+
+### 🧰 Bug fixes 🧰
+
+- `confmap`: fix bugs of unmarshalling slice values (#4001)
+- `exporterhelper`: Stop logging error messages suggesting user to enable `retry_on_failure` or `sending_queue` when they are not available. (#8369)
+
+## v0.84.0
+
+### 💡 Enhancements 💡
+
+- `loggingexporter`: Adds exemplars logging to the logging exporter when `detailed` verbosity level is set. (#7912)
+- `configgrpc`: Allow any registered gRPC load balancer name to be used. (#8262)
+- `service`: add OTLP export for internal traces (#8106)
+- `configgrpc`: Add support for :authority pseudo-header in grpc client (#8228)
+
+### 🧰 Bug fixes 🧰
+
+- `otlphttpexporter`: Fix the handling of the HTTP response to ignore responses not encoded as protobuf (#8263)
+
 ## v0.83.0
 
 ### 💡 Enhancements 💡
