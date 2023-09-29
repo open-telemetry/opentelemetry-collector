@@ -104,7 +104,7 @@ func NewFatalErrorEvent(err error) *StatusEvent {
 type StatusWatcher interface {
 	// ComponentStatusChanged notifies about a change in the source component status.
 	// Extensions that implement this interface must be ready that the ComponentStatusChanged
-	// may be called  before, after or concurrently with Component.Shutdown() call.
+	// may be called before, after or concurrently with calls to Component.Start() and Component.Shutdown().
 	// The function may be called concurrently with itself.
 	ComponentStatusChanged(source *InstanceID, event *StatusEvent)
 }
@@ -117,7 +117,7 @@ type StatusFunc func(*StatusEvent) error
 //  2. If any instance encounters a fatal error, the component is in a Fatal Error state.
 //  3. If any instance is in a Permanent Error state, the component status is Permanent Error.
 //  4. If any instance is Stopping, the component is in a Stopping state.
-//  5. An instance is Stopped, but not all instances are Stopping, we must be in the process of Stopping the component.
+//  5. An instance is Stopped, but not all instances are Stopped, we must be in the process of Stopping the component.
 //  6. If any instance is in a Recoverable Error state, the component status is Recoverable Error.
 //  7. By process of elimination, the only remaining state is starting.
 func AggregateStatus[K comparable](eventMap map[K]*StatusEvent) Status {
