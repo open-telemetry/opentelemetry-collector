@@ -6,6 +6,7 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 import (
 	"context"
 	"errors"
+
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver"
