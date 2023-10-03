@@ -65,7 +65,7 @@ func (ev *StatusEvent) Timestamp() time.Time {
 }
 
 // NewStatusEvent creates and returns a StatusEvent with the specified status and sets the timestamp
-// time.Now(). To provide set an error on the event for an error status use one of the dedicated
+// time.Now(). To set an error on the event for an error status use one of the dedicated
 // constructors (e.g. NewRecoverableErrorEvent, NewPermanentErrorEvent, NewFatalErrorEvent)
 func NewStatusEvent(status Status) *StatusEvent {
 	return &StatusEvent{
