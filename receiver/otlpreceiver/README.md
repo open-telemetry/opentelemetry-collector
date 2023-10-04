@@ -30,7 +30,9 @@ The following settings are configurable:
 
 - `endpoint` (default = 0.0.0.0:4317 for grpc protocol, 0.0.0.0:4318 http protocol):
   host:port to which the receiver is going to receive data. The valid syntax is
-  described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
+  described at https://github.com/grpc/grpc/blob/master/doc/naming.md. The 
+  `component.UseLocalHostAsDefaultHost` feature gate changes these to localhost:4317 and 
+  localhost:4318 respectively.
 
 ## Advanced Configuration
 

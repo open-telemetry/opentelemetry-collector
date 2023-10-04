@@ -18,8 +18,8 @@ import (
 const (
 	typeStr = "otlp"
 
-	defaultGRPCEndpoint = "0.0.0.0:4317"
-	defaultHTTPEndpoint = "0.0.0.0:4318"
+	grpcPort = 4317
+	httpPort = 4318
 
 	defaultTracesURLPath  = "/v1/traces"
 	defaultMetricsURLPath = "/v1/metrics"
@@ -42,7 +42,7 @@ func createDefaultConfig() component.Config {
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
-					Endpoint:  defaultGRPCEndpoint,
+					Endpoint:  component.EndpointForPort(grpcPort),
 					Transport: "tcp",
 				},
 				// We almost write 0 bytes, so no need to tune WriteBufferSize.
@@ -50,7 +50,7 @@ func createDefaultConfig() component.Config {
 			},
 			HTTP: &HTTPConfig{
 				HTTPServerSettings: &confighttp.HTTPServerSettings{
-					Endpoint: defaultHTTPEndpoint,
+					Endpoint: component.EndpointForPort(httpPort),
 				},
 				TracesURLPath:  defaultTracesURLPath,
 				MetricsURLPath: defaultMetricsURLPath,
