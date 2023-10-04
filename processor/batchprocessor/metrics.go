@@ -5,14 +5,12 @@ package batchprocessor // import "go.opentelemetry.io/collector/processor/batchp
 
 import (
 	"context"
-	"errors"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -120,11 +118,7 @@ func newBatchProcessorTelemetry(set processor.CreateSettings, currentMetadataCar
 		detailed:      set.MetricsLevel == configtelemetry.LevelDetailed,
 	}
 
-	// ignore instrument name error as per workaround in https://github.com/open-telemetry/opentelemetry-collector/issues/8346
-	// if err != nil {
-	// 	return nil, err
-	// }
-	if err = bpt.createOtelMetrics(set.MeterProvider, currentMetadataCardinality); err != nil && !errors.Is(err, sdkmetric.ErrInstrumentName) {
+	if err = bpt.createOtelMetrics(set.MeterProvider, currentMetadataCardinality); err != nil {
 		return nil, err
 	}
 
