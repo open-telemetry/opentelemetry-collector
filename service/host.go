@@ -33,7 +33,7 @@ type serviceHost struct {
 // ReportFatalError is used to report to the host that the receiver encountered
 // a fatal error (i.e.: an error that the instance can't recover from) after
 // its start function has already returned.
-// Deprecated: [x.x.x] Replaced by servicetelemetry.Settings.ReportComponentStatus
+// Deprecated: [0.87.0] Replaced by servicetelemetry.Settings.ReportComponentStatus
 func (host *serviceHost) ReportFatalError(err error) {
 	host.asyncErrorChannel <- err
 }
