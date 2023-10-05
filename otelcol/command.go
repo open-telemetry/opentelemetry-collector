@@ -12,20 +12,6 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-// NewCommandFeatureGate constructs a new cobra.Command used to parse given FeatureGates.
-func NewCommandFeatureGate() *cobra.Command {
-	flagSet := new(flag.FlagSet)
-	flagFeatureGate(flagSet, featuregate.GlobalRegistry())
-	rootCmd := &cobra.Command{
-		SilenceUsage: true,
-		FParseErrWhitelist: cobra.FParseErrWhitelist{
-			UnknownFlags: true,
-		},
-	}
-	rootCmd.Flags().AddGoFlagSet(flagSet)
-	return rootCmd
-}
-
 // NewCommand constructs a new cobra.Command using the given CollectorSettings.
 func NewCommand(set CollectorSettings) *cobra.Command {
 	flagSet := flags(featuregate.GlobalRegistry())
