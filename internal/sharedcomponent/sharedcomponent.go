@@ -85,7 +85,14 @@ func (r *SharedComponent[V]) Unwrap() V {
 func (r *SharedComponent[V]) Start(ctx context.Context, host component.Host) error {
 	var err error
 	r.startOnce.Do(func() {
-		err = r.component.Start(ctx, host)
+		// It's important that status for a sharedcomponent is reported through its
+		// telemetrysettings to keep status in sync and avoid race conditions. This logic duplicates
+		// and takes priority over the automated status reporting that happens in graph, making the
+		// status reporting in graph a no-op.
+		_ = r.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStarting))
+		if err = r.component.Start(ctx, host); err != nil {
+			_ = r.telemetry.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+		}
 	})
 	return err
 }
@@ -94,7 +101,17 @@ func (r *SharedComponent[V]) Start(ctx context.Context, host component.Host) err
 func (r *SharedComponent[V]) Shutdown(ctx context.Context) error {
 	var err error
 	r.stopOnce.Do(func() {
+		// It's important that status for a sharedcomponent is reported through its
+		// telemetrysettings to keep status in sync and avoid race conditions. This logic duplicates
+		// and takes priority over the automated status reporting that happens in graph, making the
+		// the status reporting in graph a no-op.
+		_ = r.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopping))
 		err = r.component.Shutdown(ctx)
+		if err != nil {
+			_ = r.telemetry.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+		} else {
+			_ = r.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopped))
+		}
 		r.removeFunc()
 	})
 	return err

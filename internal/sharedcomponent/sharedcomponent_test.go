@@ -188,6 +188,101 @@ func TestSharedComponentsReportStatus(t *testing.T) {
 	}
 }
 
+func TestReportStatusOnStartShutdown(t *testing.T) {
+	for _, tc := range []struct {
+		name             string
+		startErr         error
+		shutdownErr      error
+		expectedStatuses []component.Status
+	}{
+		{
+			name:        "successful start/stop",
+			startErr:    nil,
+			shutdownErr: nil,
+			expectedStatuses: []component.Status{
+				component.StatusStarting,
+				component.StatusOK,
+				component.StatusStopping,
+				component.StatusStopped,
+			},
+		},
+		{
+			name:        "start error",
+			startErr:    assert.AnError,
+			shutdownErr: nil,
+			expectedStatuses: []component.Status{
+				component.StatusStarting,
+				component.StatusPermanentError,
+			},
+		},
+		{
+			name:        "shutdown error",
+			shutdownErr: assert.AnError,
+			expectedStatuses: []component.Status{
+				component.StatusStarting,
+				component.StatusOK,
+				component.StatusStopping,
+				component.StatusPermanentError,
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			reportedStatuses := make(map[*component.InstanceID][]component.Status)
+			newStatusFunc := func() func(*component.StatusEvent) error {
+				instanceID := &component.InstanceID{}
+				return func(ev *component.StatusEvent) error {
+					reportedStatuses[instanceID] = append(reportedStatuses[instanceID], ev.Status())
+					return nil
+				}
+			}
+			base := &baseComponent{}
+			if tc.startErr != nil {
+				base.StartFunc = func(context.Context, component.Host) error {
+					return tc.startErr
+				}
+			}
+			if tc.shutdownErr != nil {
+				base.ShutdownFunc = func(context.Context) error {
+					return tc.shutdownErr
+				}
+			}
+			comps := NewSharedComponents[component.ID, *baseComponent]()
+			var comp *SharedComponent[*baseComponent]
+			var err error
+			for i := 0; i < 3; i++ {
+				telemetrySettings := newNopTelemetrySettings()
+				telemetrySettings.ReportComponentStatus = newStatusFunc()
+				if i == 0 {
+					base.telemetry = telemetrySettings
+				}
+				comp, err = comps.GetOrAdd(
+					id,
+					func() (*baseComponent, error) { return base, nil },
+					telemetrySettings,
+				)
+				require.NoError(t, err)
+			}
+
+			err = comp.Start(context.Background(), componenttest.NewNopHost())
+			require.Equal(t, tc.startErr, err)
+
+			if tc.startErr == nil {
+				err = comp.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
+				require.NoError(t, err)
+
+				err = comp.Shutdown(context.Background())
+				require.Equal(t, tc.shutdownErr, err)
+			}
+
+			require.Equal(t, 3, len(reportedStatuses))
+
+			for _, actualStatuses := range reportedStatuses {
+				require.Equal(t, tc.expectedStatuses, actualStatuses)
+			}
+		})
+	}
+}
+
 // newNopTelemetrySettings streamlines getting a pointer to a NopTelemetrySettings
 func newNopTelemetrySettings() *component.TelemetrySettings {
 	set := componenttest.NewNopTelemetrySettings()
