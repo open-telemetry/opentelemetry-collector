@@ -11,17 +11,20 @@ import (
 	"testing"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 type TestComplexStruct struct {
 	Skipped   TestEmptyStruct             `mapstructure:",squash"`
 	Nested    TestSimpleStruct            `mapstructure:",squash"`
 	Slice     []TestSimpleStruct          `mapstructure:"slice,omitempty"`
+	Array     [2]string                   `mapstructure:"array,omitempty"`
 	Pointer   *TestSimpleStruct           `mapstructure:"ptr"`
 	Map       map[string]TestSimpleStruct `mapstructure:"map,omitempty"`
 	Remain    map[string]any              `mapstructure:",remain"`
 	Interface encoding.TextMarshaler
+	Function  func() string
+	Channel   chan string
 }
 
 type TestSimpleStruct struct {
@@ -49,7 +52,10 @@ func (tID TestID) MarshalText() (text []byte, err error) {
 
 func TestEncode(t *testing.T) {
 	enc := New(&EncoderConfig{
-		EncodeHook: TextMarshalerHookFunc(),
+		EncodeHook: mapstructure.ComposeDecodeHookFunc(
+			TextMarshalerHookFunc(),
+			UnsupportedKindHookFunc(),
+		),
 	})
 	testCases := map[string]struct {
 		input any
@@ -87,6 +93,7 @@ func TestEncode(t *testing.T) {
 				Slice: []TestSimpleStruct{
 					{Value: "slice"},
 				},
+				Array: [2]string{"one", "two"},
 				Map: map[string]TestSimpleStruct{
 					"Key": {Value: "map"},
 				},
@@ -98,10 +105,15 @@ func TestEncode(t *testing.T) {
 					"remain2": "value",
 				},
 				Interface: TestID("value"),
+				Function: func() string {
+					return "ignore"
+				},
+				Channel: make(chan string),
 			},
 			want: map[string]any{
 				"value": "nested",
 				"slice": []any{map[string]any{"value": "slice"}},
+				"array": []any{"one", "two"},
 				"map": map[string]any{
 					"Key": map[string]any{"value": "map"},
 				},
@@ -115,16 +127,16 @@ func TestEncode(t *testing.T) {
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			got, err := enc.Encode(testCase.input)
-			require.NoError(t, err)
-			require.Equal(t, testCase.want, got)
+			assert.NoError(t, err)
+			assert.Equal(t, testCase.want, got)
 		})
 	}
 	// without the TextMarshalerHookFunc
 	enc.config.EncodeHook = nil
 	testCase := TestID("test")
 	got, err := enc.Encode(testCase)
-	require.NoError(t, err)
-	require.Equal(t, testCase, got)
+	assert.NoError(t, err)
+	assert.Equal(t, testCase, got)
 }
 
 func TestGetTagInfo(t *testing.T) {
@@ -180,9 +192,9 @@ func TestGetTagInfo(t *testing.T) {
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			got := getTagInfo(testCase.field)
-			require.Equal(t, testCase.wantName, got.name)
-			require.Equal(t, testCase.wantOmit, got.omitEmpty)
-			require.Equal(t, testCase.wantSquash, got.squash)
+			assert.Equal(t, testCase.wantName, got.name)
+			assert.Equal(t, testCase.wantOmit, got.omitEmpty)
+			assert.Equal(t, testCase.wantSquash, got.squash)
 		})
 	}
 }
@@ -200,9 +212,9 @@ func TestEncodeValueError(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		got, err := testCase.encodeFn(testValue)
-		require.Error(t, err)
-		require.Equal(t, testCase.wantErr, err)
-		require.Nil(t, got)
+		assert.Error(t, err)
+		assert.Equal(t, testCase.wantErr, err)
+		assert.Nil(t, got)
 	}
 }
 
@@ -220,9 +232,9 @@ func TestEncodeNonStringEncodedKey(t *testing.T) {
 		},
 	}
 	got, err := enc.Encode(testCase)
-	require.Error(t, err)
-	require.True(t, errors.Is(err, errNonStringEncodedKey))
-	require.Nil(t, got)
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, errNonStringEncodedKey))
+	assert.Nil(t, got)
 }
 
 func TestDuplicateKey(t *testing.T) {
@@ -234,8 +246,8 @@ func TestDuplicateKey(t *testing.T) {
 		"test_": "other value",
 	}
 	got, err := enc.Encode(testCase)
-	require.Error(t, err)
-	require.Nil(t, got)
+	assert.Error(t, err)
+	assert.Nil(t, got)
 }
 
 func TestTextMarshalerError(t *testing.T) {
@@ -246,8 +258,8 @@ func TestTextMarshalerError(t *testing.T) {
 		"error": "value",
 	}
 	got, err := enc.Encode(testCase)
-	require.Error(t, err)
-	require.Nil(t, got)
+	assert.Error(t, err)
+	assert.Nil(t, got)
 }
 
 func TestEncodeStruct(t *testing.T) {
@@ -259,8 +271,8 @@ func TestEncodeStruct(t *testing.T) {
 		skipped: "final",
 	}
 	got, err := enc.Encode(testCase)
-	require.NoError(t, err)
-	require.Equal(t, "final", got)
+	assert.NoError(t, err)
+	assert.Equal(t, "final", got)
 }
 
 func TestEncodeStructError(t *testing.T) {
@@ -272,16 +284,57 @@ func TestEncodeStructError(t *testing.T) {
 		{err: wantErr}: "value",
 	}
 	got, err := enc.Encode(testCase)
-	require.Error(t, err)
-	require.True(t, errors.Is(err, wantErr))
-	require.Nil(t, got)
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, wantErr))
+	assert.Nil(t, got)
 }
 
 func TestEncodeNil(t *testing.T) {
 	enc := New(nil)
 	got, err := enc.Encode(nil)
-	require.NoError(t, err)
-	require.Nil(t, got)
+	assert.NoError(t, err)
+	assert.Nil(t, got)
+}
+
+func TestUnsupportedKind(t *testing.T) {
+	enc := New(&EncoderConfig{
+		EncodeHook: UnsupportedKindHookFunc(),
+	})
+	testCases := map[reflect.Kind]any{
+		reflect.Func: func() string {
+			return "unsupported"
+		},
+		reflect.Chan: make(chan string),
+	}
+	for kind, input := range testCases {
+		t.Run(kind.String(), func(t *testing.T) {
+			got, err := enc.Encode(input)
+			assert.Error(t, err)
+			assert.ErrorIs(t, err, errUnsupportedKind)
+			assert.Nil(t, got)
+		})
+	}
+}
+
+type TestFunction func() string
+
+func (tf TestFunction) MarshalText() (text []byte, err error) {
+	return []byte(tf()), nil
+}
+
+func TestUnsupportedKindWithMarshaler(t *testing.T) {
+	enc := New(&EncoderConfig{
+		EncodeHook: mapstructure.ComposeDecodeHookFunc(
+			TextMarshalerHookFunc(),
+			UnsupportedKindHookFunc(),
+		),
+	})
+	testCase := TestFunction(func() string {
+		return "marshal"
+	})
+	got, err := enc.Encode(testCase)
+	assert.NoError(t, err)
+	assert.Equal(t, "marshal", got)
 }
 
 func testHookFunc() mapstructure.DecodeHookFuncValue {

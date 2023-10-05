@@ -24,6 +24,7 @@ const (
 
 var (
 	errNonStringEncodedKey = errors.New("non string-encoded key")
+	errUnsupportedKind     = errors.New("unsupported kind")
 )
 
 // tagInfo stores the mapstructure tag details.
@@ -61,11 +62,11 @@ func (e *Encoder) Encode(input any) (any, error) {
 func (e *Encoder) encode(value reflect.Value) (any, error) {
 	if value.IsValid() {
 		switch value.Kind() {
-		case reflect.Interface, reflect.Ptr:
+		case reflect.Interface, reflect.Pointer:
 			return e.encode(value.Elem())
 		case reflect.Map:
 			return e.encodeMap(value)
-		case reflect.Slice:
+		case reflect.Slice, reflect.Array:
 			return e.encodeSlice(value)
 		case reflect.Struct:
 			return e.encodeStruct(value)
@@ -118,6 +119,9 @@ func (e *Encoder) encodeStruct(value reflect.Value) (any, error) {
 			}
 			encoded, err := e.encode(field)
 			if err != nil {
+				if errors.Is(err, errUnsupportedKind) {
+					continue
+				}
 				return nil, fmt.Errorf("error encoding field %q: %w", info.name, err)
 			}
 			if info.squash {
@@ -136,7 +140,7 @@ func (e *Encoder) encodeStruct(value reflect.Value) (any, error) {
 
 // encodeSlice iterates over the slice and encodes each of the elements.
 func (e *Encoder) encodeSlice(value reflect.Value) (any, error) {
-	if value.Kind() != reflect.Slice {
+	if value.Kind() != reflect.Slice && value.Kind() != reflect.Array {
 		return nil, &reflect.ValueError{
 			Method: "encodeSlice",
 			Kind:   value.Kind(),
@@ -219,5 +223,18 @@ func TextMarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 			return nil, err
 		}
 		return string(out), nil
+	}
+}
+
+// UnsupportedKindHookFunc returns a DecodeHookFuncValue that checks
+// that the kind isn't one unsupported by the YAML encoder.
+func UnsupportedKindHookFunc() mapstructure.DecodeHookFuncValue {
+	return func(from reflect.Value, _ reflect.Value) (any, error) {
+		switch from.Kind() {
+		case reflect.Chan, reflect.Func:
+			return nil, fmt.Errorf("%w: %s", errUnsupportedKind, from.Kind())
+		default:
+			return from.Interface(), nil
+		}
 	}
 }

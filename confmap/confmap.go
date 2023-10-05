@@ -175,6 +175,7 @@ func encoderConfig(rawVal any) *encoder.EncoderConfig {
 		EncodeHook: mapstructure.ComposeDecodeHookFunc(
 			encoder.TextMarshalerHookFunc(),
 			marshalerHookFunc(rawVal),
+			encoder.UnsupportedKindHookFunc(),
 		),
 	}
 }
