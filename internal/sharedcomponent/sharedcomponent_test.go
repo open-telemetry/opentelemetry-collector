@@ -161,7 +161,6 @@ func TestSharedComponentsReportStatus(t *testing.T) {
 
 	// simulate an error
 	err = comp.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusNone))
-	require.Error(t, err)
 	require.ErrorIs(t, err, assert.AnError)
 
 	// stopping

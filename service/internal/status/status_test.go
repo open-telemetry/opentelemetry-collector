@@ -163,13 +163,11 @@ func TestValidSeqsToStopped(t *testing.T) {
 			require.NoError(t, fsm.transition(ev))
 			// skipping to stopped is not allowed
 			err := fsm.transition(component.NewStatusEvent(component.StatusStopped))
-			require.Error(t, err)
 			require.ErrorIs(t, err, errInvalidStateTransition)
 
 			// stopping -> stopped is allowed for non-fatal, non-permanent errors
 			err = fsm.transition(component.NewStatusEvent(component.StatusStopping))
 			if ev.Status() == component.StatusPermanentError || ev.Status() == component.StatusFatalError {
-				require.Error(t, err)
 				require.ErrorIs(t, err, errInvalidStateTransition)
 			} else {
 				require.NoError(t, err)
@@ -261,7 +259,6 @@ func TestStatusFuncReady(t *testing.T) {
 	id := &component.InstanceID{}
 
 	err := serviceStatusFn(id, component.NewStatusEvent(component.StatusStarting))
-	require.Error(t, err)
 	require.ErrorIs(t, err, errStatusNotReady)
 
 	init()

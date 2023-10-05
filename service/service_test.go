@@ -433,7 +433,6 @@ func TestServiceFatalError(t *testing.T) {
 
 	err = <-srv.host.asyncErrorChannel
 
-	require.Error(t, err)
 	require.ErrorIs(t, err, assert.AnError)
 }
 
