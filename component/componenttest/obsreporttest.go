@@ -37,6 +37,7 @@ const (
 )
 
 type TestTelemetry struct {
+	// Deprecated: [0.87.0] use TelemetrySettingsFunc() instead.
 	component.TelemetrySettings
 	id           component.ID
 	SpanRecorder *tracetest.SpanRecorder
@@ -133,6 +134,11 @@ func (tts *TestTelemetry) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, tts.meterProvider.Shutdown(ctx))
 	}
 	return errs
+}
+
+// TelemetrySettingsFunc returns the TestTelemetry's TelemetrySettings
+func (tts *TestTelemetry) TelemetrySettingsFunc() component.TelemetrySettings {
+	return tts.TelemetrySettings
 }
 
 // SetupTelemetry does setup the testing environment to check the metrics recorded by receivers, producers or exporters.

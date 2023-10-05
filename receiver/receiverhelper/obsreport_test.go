@@ -39,7 +39,7 @@ type testParams struct {
 
 func TestReceiveTraceDataOp(t *testing.T) {
 	testTelemetry(t, receiverID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		parentCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		params := []testParams{
@@ -86,7 +86,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 
 func TestReceiveLogsOp(t *testing.T) {
 	testTelemetry(t, receiverID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		parentCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		params := []testParams{
@@ -134,7 +134,7 @@ func TestReceiveLogsOp(t *testing.T) {
 
 func TestReceiveMetricsOp(t *testing.T) {
 	testTelemetry(t, receiverID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		parentCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		params := []testParams{
@@ -186,7 +186,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	longLivedCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	longLivedCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	params := []testParams{

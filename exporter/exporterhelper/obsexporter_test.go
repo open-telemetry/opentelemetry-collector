@@ -29,7 +29,7 @@ var (
 
 func TestExportTraceDataOp(t *testing.T) {
 	testTelemetry(t, exporterID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		parentCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		obsrep, err := newExporter(ObsReportSettings{
@@ -77,7 +77,7 @@ func TestExportTraceDataOp(t *testing.T) {
 
 func TestExportMetricsOp(t *testing.T) {
 	testTelemetry(t, exporterID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		parentCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		obsrep, err := newExporter(ObsReportSettings{
@@ -126,7 +126,7 @@ func TestExportMetricsOp(t *testing.T) {
 
 func TestExportLogsOp(t *testing.T) {
 	testTelemetry(t, exporterID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		parentCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		obsrep, err := newExporter(ObsReportSettings{

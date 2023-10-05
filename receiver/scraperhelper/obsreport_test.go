@@ -37,7 +37,7 @@ type testParams struct {
 
 func TestScrapeMetricsDataOp(t *testing.T) {
 	testTelemetry(t, receiverID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		parentCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		params := []testParams{
