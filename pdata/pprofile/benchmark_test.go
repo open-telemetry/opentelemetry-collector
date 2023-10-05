@@ -122,45 +122,45 @@ func benchmark(b *testing.B, profileName string, flavor string) {
 // benchmarks
 //
 
-// func BenchmarkSimplePprof(b *testing.B) {
-// 	benchmark(b, "simple", "pprof")
-// }
-// func BenchmarkSimplePprofExtended(b *testing.B) {
-// 	benchmark(b, "simple", "pprofextended")
-// }
-// func BenchmarkSimpleArrays(b *testing.B) {
-// 	benchmark(b, "simple", "arrays")
-// }
+func BenchmarkSimplePprof(b *testing.B) {
+	benchmark(b, "simple", "pprof")
+}
+func BenchmarkSimplePprofExtended(b *testing.B) {
+	benchmark(b, "simple", "pprofextended")
+}
+func BenchmarkSimpleArrays(b *testing.B) {
+	benchmark(b, "simple", "arrays")
+}
 
-// func BenchmarkSimpleWithLabelsAndTimestampsPprof(b *testing.B) {
-// 	benchmark(b, "simpleWithLabelsAndTimestamps", "pprof")
-// }
-// func BenchmarkSimpleWithLabelsAndTimestampsPprofExtended(b *testing.B) {
-// 	benchmark(b, "simpleWithLabelsAndTimestamps", "pprofextended")
-// }
-// func BenchmarkSimpleWithLabelsAndTimestampsArrays(b *testing.B) {
-// 	benchmark(b, "simpleWithLabelsAndTimestamps", "arrays")
-// }
+func BenchmarkSimpleWithLabelsAndTimestampsPprof(b *testing.B) {
+	benchmark(b, "simpleWithLabelsAndTimestamps", "pprof")
+}
+func BenchmarkSimpleWithLabelsAndTimestampsPprofExtended(b *testing.B) {
+	benchmark(b, "simpleWithLabelsAndTimestamps", "pprofextended")
+}
+func BenchmarkSimpleWithLabelsAndTimestampsArrays(b *testing.B) {
+	benchmark(b, "simpleWithLabelsAndTimestamps", "arrays")
+}
 
-// func BenchmarkAveragePprof(b *testing.B) {
-// 	benchmark(b, "average", "pprof")
-// }
-// func BenchmarkAveragePprofExtended(b *testing.B) {
-// 	benchmark(b, "average", "pprofextended")
-// }
-// func BenchmarkAverageArrays(b *testing.B) {
-// 	benchmark(b, "average", "arrays")
-// }
+func BenchmarkAveragePprof(b *testing.B) {
+	benchmark(b, "average", "pprof")
+}
+func BenchmarkAveragePprofExtended(b *testing.B) {
+	benchmark(b, "average", "pprofextended")
+}
+func BenchmarkAverageArrays(b *testing.B) {
+	benchmark(b, "average", "arrays")
+}
 
-// func BenchmarkAverageTimestampsPprof(b *testing.B) {
-// 	benchmark(b, "averageTimestamps", "pprof")
-// }
-// func BenchmarkAverageTimestampsPprofExtended(b *testing.B) {
-// 	benchmark(b, "averageTimestamps", "pprofextended")
-// }
-// func BenchmarkAverageTimestampsArrays(b *testing.B) {
-// 	benchmark(b, "averageTimestamps", "arrays")
-// }
+func BenchmarkAverageTimestampsPprof(b *testing.B) {
+	benchmark(b, "averageTimestamps", "pprof")
+}
+func BenchmarkAverageTimestampsPprofExtended(b *testing.B) {
+	benchmark(b, "averageTimestamps", "pprofextended")
+}
+func BenchmarkAverageTimestampsArrays(b *testing.B) {
+	benchmark(b, "averageTimestamps", "arrays")
+}
 
 func BenchmarkRubyPprof(b *testing.B) {
 	benchmark(b, "ruby", "pprof")
@@ -172,272 +172,272 @@ func BenchmarkRubyArrays(b *testing.B) {
 	benchmark(b, "ruby", "arrays")
 }
 
-// func BenchmarkLarge10percentPprof(b *testing.B) {
-// 	benchmark(b, "large10percent", "pprof")
-// }
-// func BenchmarkLarge10percentPprofExtended(b *testing.B) {
-// 	benchmark(b, "large10percent", "pprofextended")
-// }
-// func BenchmarkLarge10percentArrays(b *testing.B) {
-// 	benchmark(b, "large10percent", "arrays")
-// }
+func BenchmarkLarge10percentPprof(b *testing.B) {
+	benchmark(b, "large10percent", "pprof")
+}
+func BenchmarkLarge10percentPprofExtended(b *testing.B) {
+	benchmark(b, "large10percent", "pprofextended")
+}
+func BenchmarkLarge10percentArrays(b *testing.B) {
+	benchmark(b, "large10percent", "arrays")
+}
 
-// func BenchmarkLarge1percentPprof(b *testing.B) {
-// 	benchmark(b, "large1percent", "pprof")
-// }
-// func BenchmarkLarge1percentPprofExtended(b *testing.B) {
-// 	benchmark(b, "large1percent", "pprofextended")
-// }
-// func BenchmarkLarge1percentArrays(b *testing.B) {
-// 	benchmark(b, "large1percent", "arrays")
-// }
+func BenchmarkLarge1percentPprof(b *testing.B) {
+	benchmark(b, "large1percent", "pprof")
+}
+func BenchmarkLarge1percentPprofExtended(b *testing.B) {
+	benchmark(b, "large1percent", "pprofextended")
+}
+func BenchmarkLarge1percentArrays(b *testing.B) {
+	benchmark(b, "large1percent", "arrays")
+}
 
-// func BenchmarkLargePprof(b *testing.B) {
-// 	benchmark(b, "large", "pprof")
-// }
-// func BenchmarkLargePprofExtended(b *testing.B) {
-// 	benchmark(b, "large", "pprofextended")
-// }
-// func BenchmarkLargeArrays(b *testing.B) {
-// 	benchmark(b, "large", "arrays")
-// }
+func BenchmarkLargePprof(b *testing.B) {
+	benchmark(b, "large", "pprof")
+}
+func BenchmarkLargePprofExtended(b *testing.B) {
+	benchmark(b, "large", "pprofextended")
+}
+func BenchmarkLargeArrays(b *testing.B) {
+	benchmark(b, "large", "arrays")
+}
 
-// func BenchmarkProfile_1Pprof(b *testing.B) {
-// 	benchmark(b, "profile_1", "pprof")
-// }
-// func BenchmarkProfile_1PprofExtended(b *testing.B) {
-// 	benchmark(b, "profile_1", "pprofextended")
-// }
-// func BenchmarkProfile_1Arrays(b *testing.B) {
-// 	benchmark(b, "profile_1", "arrays")
-// }
+func BenchmarkProfile_1Pprof(b *testing.B) {
+	benchmark(b, "profile_1", "pprof")
+}
+func BenchmarkProfile_1PprofExtended(b *testing.B) {
+	benchmark(b, "profile_1", "pprofextended")
+}
+func BenchmarkProfile_1Arrays(b *testing.B) {
+	benchmark(b, "profile_1", "arrays")
+}
 
-// func BenchmarkProfile_2Pprof(b *testing.B) {
-// 	benchmark(b, "profile_2", "pprof")
-// }
-// func BenchmarkProfile_2PprofExtended(b *testing.B) {
-// 	benchmark(b, "profile_2", "pprofextended")
-// }
-// func BenchmarkProfile_2Arrays(b *testing.B) {
-// 	benchmark(b, "profile_2", "arrays")
-// }
+func BenchmarkProfile_2Pprof(b *testing.B) {
+	benchmark(b, "profile_2", "pprof")
+}
+func BenchmarkProfile_2PprofExtended(b *testing.B) {
+	benchmark(b, "profile_2", "pprofextended")
+}
+func BenchmarkProfile_2Arrays(b *testing.B) {
+	benchmark(b, "profile_2", "arrays")
+}
 
-// func BenchmarkProfile_3Pprof(b *testing.B) {
-// 	benchmark(b, "profile_3", "pprof")
-// }
-// func BenchmarkProfile_3PprofExtended(b *testing.B) {
-// 	benchmark(b, "profile_3", "pprofextended")
-// }
-// func BenchmarkProfile_3Arrays(b *testing.B) {
-// 	benchmark(b, "profile_3", "arrays")
-// }
+func BenchmarkProfile_3Pprof(b *testing.B) {
+	benchmark(b, "profile_3", "pprof")
+}
+func BenchmarkProfile_3PprofExtended(b *testing.B) {
+	benchmark(b, "profile_3", "pprofextended")
+}
+func BenchmarkProfile_3Arrays(b *testing.B) {
+	benchmark(b, "profile_3", "arrays")
+}
 
-// func BenchmarkProfile_4Pprof(b *testing.B) {
-// 	benchmark(b, "profile_4", "pprof")
-// }
-// func BenchmarkProfile_4PprofExtended(b *testing.B) {
-// 	benchmark(b, "profile_4", "pprofextended")
-// }
-// func BenchmarkProfile_4Arrays(b *testing.B) {
-// 	benchmark(b, "profile_4", "arrays")
-// }
+func BenchmarkProfile_4Pprof(b *testing.B) {
+	benchmark(b, "profile_4", "pprof")
+}
+func BenchmarkProfile_4PprofExtended(b *testing.B) {
+	benchmark(b, "profile_4", "pprofextended")
+}
+func BenchmarkProfile_4Arrays(b *testing.B) {
+	benchmark(b, "profile_4", "arrays")
+}
 
-// func BenchmarkProfile_5Pprof(b *testing.B) {
-// 	benchmark(b, "profile_5", "pprof")
-// }
-// func BenchmarkProfile_5PprofExtended(b *testing.B) {
-// 	benchmark(b, "profile_5", "pprofextended")
-// }
-// func BenchmarkProfile_5Arrays(b *testing.B) {
-// 	benchmark(b, "profile_5", "arrays")
-// }
+func BenchmarkProfile_5Pprof(b *testing.B) {
+	benchmark(b, "profile_5", "pprof")
+}
+func BenchmarkProfile_5PprofExtended(b *testing.B) {
+	benchmark(b, "profile_5", "pprofextended")
+}
+func BenchmarkProfile_5Arrays(b *testing.B) {
+	benchmark(b, "profile_5", "arrays")
+}
 
-// func BenchmarkProfile_6Pprof(b *testing.B) {
-// 	benchmark(b, "profile_6", "pprof")
-// }
-// func BenchmarkProfile_6PprofExtended(b *testing.B) {
-// 	benchmark(b, "profile_6", "pprofextended")
-// }
-// func BenchmarkProfile_6Arrays(b *testing.B) {
-// 	benchmark(b, "profile_6", "arrays")
-// }
+func BenchmarkProfile_6Pprof(b *testing.B) {
+	benchmark(b, "profile_6", "pprof")
+}
+func BenchmarkProfile_6PprofExtended(b *testing.B) {
+	benchmark(b, "profile_6", "pprofextended")
+}
+func BenchmarkProfile_6Arrays(b *testing.B) {
+	benchmark(b, "profile_6", "arrays")
+}
 
-// func BenchmarkProfile_7Pprof(b *testing.B) {
-// 	benchmark(b, "profile_7", "pprof")
-// }
-// func BenchmarkProfile_7PprofExtended(b *testing.B) {
-// 	benchmark(b, "profile_7", "pprofextended")
-// }
-// func BenchmarkProfile_7Arrays(b *testing.B) {
-// 	benchmark(b, "profile_7", "arrays")
-// }
+func BenchmarkProfile_7Pprof(b *testing.B) {
+	benchmark(b, "profile_7", "pprof")
+}
+func BenchmarkProfile_7PprofExtended(b *testing.B) {
+	benchmark(b, "profile_7", "pprofextended")
+}
+func BenchmarkProfile_7Arrays(b *testing.B) {
+	benchmark(b, "profile_7", "arrays")
+}
 
-// func BenchmarkProfile_8Pprof(b *testing.B) {
-// 	benchmark(b, "profile_8", "pprof")
-// }
-// func BenchmarkProfile_8PprofExtended(b *testing.B) {
-// 	benchmark(b, "profile_8", "pprofextended")
-// }
-// func BenchmarkProfile_8Arrays(b *testing.B) {
-// 	benchmark(b, "profile_8", "arrays")
-// }
+func BenchmarkProfile_8Pprof(b *testing.B) {
+	benchmark(b, "profile_8", "pprof")
+}
+func BenchmarkProfile_8PprofExtended(b *testing.B) {
+	benchmark(b, "profile_8", "pprofextended")
+}
+func BenchmarkProfile_8Arrays(b *testing.B) {
+	benchmark(b, "profile_8", "arrays")
+}
 
-// func BenchmarkProfile_9Pprof(b *testing.B) {
-// 	benchmark(b, "profile_9", "pprof")
-// }
-// func BenchmarkProfile_9PprofExtended(b *testing.B) {
-// 	benchmark(b, "profile_9", "pprofextended")
-// }
-// func BenchmarkProfile_9Arrays(b *testing.B) {
-// 	benchmark(b, "profile_9", "arrays")
-// }
+func BenchmarkProfile_9Pprof(b *testing.B) {
+	benchmark(b, "profile_9", "pprof")
+}
+func BenchmarkProfile_9PprofExtended(b *testing.B) {
+	benchmark(b, "profile_9", "pprofextended")
+}
+func BenchmarkProfile_9Arrays(b *testing.B) {
+	benchmark(b, "profile_9", "arrays")
+}
 
-// func BenchmarkProfile_10Pprof(b *testing.B) {
-// 	benchmark(b, "profile_10", "pprof")
-// }
-// func BenchmarkProfile_10PprofExtended(b *testing.B) {
-// 	benchmark(b, "profile_10", "pprofextended")
-// }
-// func BenchmarkProfile_10Arrays(b *testing.B) {
-// 	benchmark(b, "profile_10", "arrays")
-// }
+func BenchmarkProfile_10Pprof(b *testing.B) {
+	benchmark(b, "profile_10", "pprof")
+}
+func BenchmarkProfile_10PprofExtended(b *testing.B) {
+	benchmark(b, "profile_10", "pprofextended")
+}
+func BenchmarkProfile_10Arrays(b *testing.B) {
+	benchmark(b, "profile_10", "arrays")
+}
 
-// func BenchmarkProfile_11Pprof(b *testing.B) {
-// 	benchmark(b, "profile_11", "pprof")
-// }
-// func BenchmarkProfile_11PprofExtended(b *testing.B) {
-// 	benchmark(b, "profile_11", "pprofextended")
-// }
-// func BenchmarkProfile_11Arrays(b *testing.B) {
-// 	benchmark(b, "profile_11", "arrays")
-// }
+func BenchmarkProfile_11Pprof(b *testing.B) {
+	benchmark(b, "profile_11", "pprof")
+}
+func BenchmarkProfile_11PprofExtended(b *testing.B) {
+	benchmark(b, "profile_11", "pprofextended")
+}
+func BenchmarkProfile_11Arrays(b *testing.B) {
+	benchmark(b, "profile_11", "arrays")
+}
 
-// func BenchmarkProfile_12Pprof(b *testing.B) {
-// 	benchmark(b, "profile_12", "pprof")
-// }
-// func BenchmarkProfile_12PprofExtended(b *testing.B) {
-// 	benchmark(b, "profile_12", "pprofextended")
-// }
-// func BenchmarkProfile_12Arrays(b *testing.B) {
-// 	benchmark(b, "profile_12", "arrays")
-// }
+func BenchmarkProfile_12Pprof(b *testing.B) {
+	benchmark(b, "profile_12", "pprof")
+}
+func BenchmarkProfile_12PprofExtended(b *testing.B) {
+	benchmark(b, "profile_12", "pprofextended")
+}
+func BenchmarkProfile_12Arrays(b *testing.B) {
+	benchmark(b, "profile_12", "arrays")
+}
 
-// func BenchmarkProfile_13Pprof(b *testing.B) {
-// 	benchmark(b, "profile_13", "pprof")
-// }
-// func BenchmarkProfile_13PprofExtended(b *testing.B) {
-// 	benchmark(b, "profile_13", "pprofextended")
-// }
-// func BenchmarkProfile_13Arrays(b *testing.B) {
-// 	benchmark(b, "profile_13", "arrays")
-// }
+func BenchmarkProfile_13Pprof(b *testing.B) {
+	benchmark(b, "profile_13", "pprof")
+}
+func BenchmarkProfile_13PprofExtended(b *testing.B) {
+	benchmark(b, "profile_13", "pprofextended")
+}
+func BenchmarkProfile_13Arrays(b *testing.B) {
+	benchmark(b, "profile_13", "arrays")
+}
 
-// func BenchmarkJfr_1_1Pprof(b *testing.B) {
-// 	benchmark(b, "jfr_1_1", "pprof")
-// }
-// func BenchmarkJfr_1_1PprofExtended(b *testing.B) {
-// 	benchmark(b, "jfr_1_1", "pprofextended")
-// }
-// func BenchmarkJfr_1_1Arrays(b *testing.B) {
-// 	benchmark(b, "jfr_1_1", "arrays")
-// }
+func BenchmarkJfr_1_1Pprof(b *testing.B) {
+	benchmark(b, "jfr_1_1", "pprof")
+}
+func BenchmarkJfr_1_1PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_1_1", "pprofextended")
+}
+func BenchmarkJfr_1_1Arrays(b *testing.B) {
+	benchmark(b, "jfr_1_1", "arrays")
+}
 
-// func BenchmarkJfr_1_2Pprof(b *testing.B) {
-// 	benchmark(b, "jfr_1_2", "pprof")
-// }
-// func BenchmarkJfr_1_2PprofExtended(b *testing.B) {
-// 	benchmark(b, "jfr_1_2", "pprofextended")
-// }
-// func BenchmarkJfr_1_2Arrays(b *testing.B) {
-// 	benchmark(b, "jfr_1_2", "arrays")
-// }
+func BenchmarkJfr_1_2Pprof(b *testing.B) {
+	benchmark(b, "jfr_1_2", "pprof")
+}
+func BenchmarkJfr_1_2PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_1_2", "pprofextended")
+}
+func BenchmarkJfr_1_2Arrays(b *testing.B) {
+	benchmark(b, "jfr_1_2", "arrays")
+}
 
-// func BenchmarkJfr_1_3Pprof(b *testing.B) {
-// 	benchmark(b, "jfr_1_3", "pprof")
-// }
-// func BenchmarkJfr_1_3PprofExtended(b *testing.B) {
-// 	benchmark(b, "jfr_1_3", "pprofextended")
-// }
-// func BenchmarkJfr_1_3Arrays(b *testing.B) {
-// 	benchmark(b, "jfr_1_3", "arrays")
-// }
+func BenchmarkJfr_1_3Pprof(b *testing.B) {
+	benchmark(b, "jfr_1_3", "pprof")
+}
+func BenchmarkJfr_1_3PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_1_3", "pprofextended")
+}
+func BenchmarkJfr_1_3Arrays(b *testing.B) {
+	benchmark(b, "jfr_1_3", "arrays")
+}
 
-// func BenchmarkJfr_1_4Pprof(b *testing.B) {
-// 	benchmark(b, "jfr_1_4", "pprof")
-// }
-// func BenchmarkJfr_1_4PprofExtended(b *testing.B) {
-// 	benchmark(b, "jfr_1_4", "pprofextended")
-// }
-// func BenchmarkJfr_1_4Arrays(b *testing.B) {
-// 	benchmark(b, "jfr_1_4", "arrays")
-// }
+func BenchmarkJfr_1_4Pprof(b *testing.B) {
+	benchmark(b, "jfr_1_4", "pprof")
+}
+func BenchmarkJfr_1_4PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_1_4", "pprofextended")
+}
+func BenchmarkJfr_1_4Arrays(b *testing.B) {
+	benchmark(b, "jfr_1_4", "arrays")
+}
 
-// func BenchmarkJfr_1_5Pprof(b *testing.B) {
-// 	benchmark(b, "jfr_1_5", "pprof")
-// }
-// func BenchmarkJfr_1_5PprofExtended(b *testing.B) {
-// 	benchmark(b, "jfr_1_5", "pprofextended")
-// }
-// func BenchmarkJfr_1_5Arrays(b *testing.B) {
-// 	benchmark(b, "jfr_1_5", "arrays")
-// }
+func BenchmarkJfr_1_5Pprof(b *testing.B) {
+	benchmark(b, "jfr_1_5", "pprof")
+}
+func BenchmarkJfr_1_5PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_1_5", "pprofextended")
+}
+func BenchmarkJfr_1_5Arrays(b *testing.B) {
+	benchmark(b, "jfr_1_5", "arrays")
+}
 
-// func BenchmarkJfr_1_6Pprof(b *testing.B) {
-// 	benchmark(b, "jfr_1_6", "pprof")
-// }
-// func BenchmarkJfr_1_6PprofExtended(b *testing.B) {
-// 	benchmark(b, "jfr_1_6", "pprofextended")
-// }
-// func BenchmarkJfr_1_6Arrays(b *testing.B) {
-// 	benchmark(b, "jfr_1_6", "arrays")
-// }
+func BenchmarkJfr_1_6Pprof(b *testing.B) {
+	benchmark(b, "jfr_1_6", "pprof")
+}
+func BenchmarkJfr_1_6PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_1_6", "pprofextended")
+}
+func BenchmarkJfr_1_6Arrays(b *testing.B) {
+	benchmark(b, "jfr_1_6", "arrays")
+}
 
-// func BenchmarkJfr_1_7Pprof(b *testing.B) {
-// 	benchmark(b, "jfr_1_7", "pprof")
-// }
-// func BenchmarkJfr_1_7PprofExtended(b *testing.B) {
-// 	benchmark(b, "jfr_1_7", "pprofextended")
-// }
-// func BenchmarkJfr_1_7Arrays(b *testing.B) {
-// 	benchmark(b, "jfr_1_7", "arrays")
-// }
+func BenchmarkJfr_1_7Pprof(b *testing.B) {
+	benchmark(b, "jfr_1_7", "pprof")
+}
+func BenchmarkJfr_1_7PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_1_7", "pprofextended")
+}
+func BenchmarkJfr_1_7Arrays(b *testing.B) {
+	benchmark(b, "jfr_1_7", "arrays")
+}
 
-// func BenchmarkJfr_2_1Pprof(b *testing.B) {
-// 	benchmark(b, "jfr_2_1", "pprof")
-// }
-// func BenchmarkJfr_2_1PprofExtended(b *testing.B) {
-// 	benchmark(b, "jfr_2_1", "pprofextended")
-// }
-// func BenchmarkJfr_2_1Arrays(b *testing.B) {
-// 	benchmark(b, "jfr_2_1", "arrays")
-// }
+func BenchmarkJfr_2_1Pprof(b *testing.B) {
+	benchmark(b, "jfr_2_1", "pprof")
+}
+func BenchmarkJfr_2_1PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_2_1", "pprofextended")
+}
+func BenchmarkJfr_2_1Arrays(b *testing.B) {
+	benchmark(b, "jfr_2_1", "arrays")
+}
 
-// func BenchmarkJfr_3_1Pprof(b *testing.B) {
-// 	benchmark(b, "jfr_3_1", "pprof")
-// }
-// func BenchmarkJfr_3_1PprofExtended(b *testing.B) {
-// 	benchmark(b, "jfr_3_1", "pprofextended")
-// }
-// func BenchmarkJfr_3_1Arrays(b *testing.B) {
-// 	benchmark(b, "jfr_3_1", "arrays")
-// }
+func BenchmarkJfr_3_1Pprof(b *testing.B) {
+	benchmark(b, "jfr_3_1", "pprof")
+}
+func BenchmarkJfr_3_1PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_3_1", "pprofextended")
+}
+func BenchmarkJfr_3_1Arrays(b *testing.B) {
+	benchmark(b, "jfr_3_1", "arrays")
+}
 
-// func BenchmarkJfr_4_1Pprof(b *testing.B) {
-// 	benchmark(b, "jfr_4_1", "pprof")
-// }
-// func BenchmarkJfr_4_1PprofExtended(b *testing.B) {
-// 	benchmark(b, "jfr_4_1", "pprofextended")
-// }
-// func BenchmarkJfr_4_1Arrays(b *testing.B) {
-// 	benchmark(b, "jfr_4_1", "arrays")
-// }
+func BenchmarkJfr_4_1Pprof(b *testing.B) {
+	benchmark(b, "jfr_4_1", "pprof")
+}
+func BenchmarkJfr_4_1PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_4_1", "pprofextended")
+}
+func BenchmarkJfr_4_1Arrays(b *testing.B) {
+	benchmark(b, "jfr_4_1", "arrays")
+}
 
-// func BenchmarkJava_1Pprof(b *testing.B) {
-// 	benchmark(b, "java_1", "pprof")
-// }
-// func BenchmarkJava_1PprofExtended(b *testing.B) {
-// 	benchmark(b, "java_1", "pprofextended")
-// }
-// func BenchmarkJava_1Arrays(b *testing.B) {
-// 	benchmark(b, "java_1", "arrays")
-// }
+func BenchmarkJava_1Pprof(b *testing.B) {
+	benchmark(b, "java_1", "pprof")
+}
+func BenchmarkJava_1PprofExtended(b *testing.B) {
+	benchmark(b, "java_1", "pprofextended")
+}
+func BenchmarkJava_1Arrays(b *testing.B) {
+	benchmark(b, "java_1", "arrays")
+}
