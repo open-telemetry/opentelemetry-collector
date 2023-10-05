@@ -92,6 +92,27 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	})
 }
 
+func TestCheckScraperMetricsViews(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(receiverID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	s, err := NewObsReport(ObsReportSettings{
+		ReceiverID:             receiverID,
+		Scraper:                scraperID,
+		ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+	ctx := s.StartMetricsOp(context.Background())
+	require.NotNil(t, ctx)
+	s.EndMetricsOp(ctx, 7, nil)
+
+	assert.NoError(t, componenttest.CheckScraperMetrics(tt, receiverID, scraperID, 7, 0))
+	assert.Error(t, componenttest.CheckScraperMetrics(tt, receiverID, scraperID, 7, 7))
+	assert.Error(t, componenttest.CheckScraperMetrics(tt, receiverID, scraperID, 0, 0))
+	assert.Error(t, componenttest.CheckScraperMetrics(tt, receiverID, scraperID, 0, 7))
+}
+
 func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool)) {
 	t.Run("WithOC", func(t *testing.T) {
 		originalValue := obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled()

@@ -235,6 +235,69 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	}
 }
 
+func TestCheckReceiverTracesViews(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(receiverID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	rec, err := NewObsReport(ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              transport,
+		ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+	ctx := rec.StartTracesOp(context.Background())
+	require.NotNil(t, ctx)
+	rec.EndTracesOp(ctx, format, 7, nil)
+
+	assert.NoError(t, tt.CheckReceiverTraces(transport, 7, 0))
+	assert.Error(t, tt.CheckReceiverTraces(transport, 7, 7))
+	assert.Error(t, tt.CheckReceiverTraces(transport, 0, 0))
+	assert.Error(t, tt.CheckReceiverTraces(transport, 0, 7))
+}
+
+func TestCheckReceiverMetricsViews(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(receiverID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	rec, err := NewObsReport(ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              transport,
+		ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+	ctx := rec.StartMetricsOp(context.Background())
+	require.NotNil(t, ctx)
+	rec.EndMetricsOp(ctx, format, 7, nil)
+
+	assert.NoError(t, tt.CheckReceiverMetrics(transport, 7, 0))
+	assert.Error(t, tt.CheckReceiverMetrics(transport, 7, 7))
+	assert.Error(t, tt.CheckReceiverMetrics(transport, 0, 0))
+	assert.Error(t, tt.CheckReceiverMetrics(transport, 0, 7))
+}
+
+func TestCheckReceiverLogsViews(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(receiverID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	rec, err := NewObsReport(ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              transport,
+		ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+	ctx := rec.StartLogsOp(context.Background())
+	require.NotNil(t, ctx)
+	rec.EndLogsOp(ctx, format, 7, nil)
+
+	assert.NoError(t, tt.CheckReceiverLogs(transport, 7, 0))
+	assert.Error(t, tt.CheckReceiverLogs(transport, 7, 7))
+	assert.Error(t, tt.CheckReceiverLogs(transport, 0, 0))
+	assert.Error(t, tt.CheckReceiverLogs(transport, 0, 7))
+}
+
 func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool)) {
 	t.Run("WithOC", func(t *testing.T) {
 		originalValue := obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled()

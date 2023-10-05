@@ -99,6 +99,81 @@ func TestProcessorLogRecords(t *testing.T) {
 	})
 }
 
+func TestCheckProcessorTracesViews(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(processorID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	por, err := NewObsReport(ObsReportSettings{
+		ProcessorID:             processorID,
+		ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	assert.NoError(t, err)
+
+	por.TracesAccepted(context.Background(), 7)
+	por.TracesRefused(context.Background(), 8)
+	por.TracesDropped(context.Background(), 9)
+
+	assert.NoError(t, tt.CheckProcessorTraces(7, 8, 9))
+	assert.Error(t, tt.CheckProcessorTraces(0, 0, 0))
+	assert.Error(t, tt.CheckProcessorTraces(7, 0, 0))
+	assert.Error(t, tt.CheckProcessorTraces(7, 8, 0))
+	assert.Error(t, tt.CheckProcessorTraces(7, 0, 9))
+	assert.Error(t, tt.CheckProcessorTraces(0, 8, 0))
+	assert.Error(t, tt.CheckProcessorTraces(0, 8, 9))
+	assert.Error(t, tt.CheckProcessorTraces(0, 0, 9))
+}
+
+func TestCheckProcessorMetricsViews(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(processorID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	por, err := NewObsReport(ObsReportSettings{
+		ProcessorID:             processorID,
+		ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	assert.NoError(t, err)
+
+	por.MetricsAccepted(context.Background(), 7)
+	por.MetricsRefused(context.Background(), 8)
+	por.MetricsDropped(context.Background(), 9)
+
+	assert.NoError(t, tt.CheckProcessorMetrics(7, 8, 9))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(7, 0, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(7, 8, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(7, 0, 9))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 8, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 8, 9))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 9))
+}
+
+func TestCheckProcessorLogViews(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(processorID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	por, err := NewObsReport(ObsReportSettings{
+		ProcessorID:             processorID,
+		ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	assert.NoError(t, err)
+
+	por.LogsAccepted(context.Background(), 7)
+	por.LogsRefused(context.Background(), 8)
+	por.LogsDropped(context.Background(), 9)
+
+	assert.NoError(t, tt.CheckProcessorLogs(7, 8, 9))
+	assert.Error(t, tt.CheckProcessorLogs(0, 0, 0))
+	assert.Error(t, tt.CheckProcessorLogs(7, 0, 0))
+	assert.Error(t, tt.CheckProcessorLogs(7, 8, 0))
+	assert.Error(t, tt.CheckProcessorLogs(7, 0, 9))
+	assert.Error(t, tt.CheckProcessorLogs(0, 8, 0))
+	assert.Error(t, tt.CheckProcessorLogs(0, 8, 9))
+	assert.Error(t, tt.CheckProcessorLogs(0, 0, 9))
+}
+
 func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool)) {
 	t.Run("WithOC", func(t *testing.T) {
 		originalValue := obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled()

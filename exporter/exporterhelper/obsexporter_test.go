@@ -173,6 +173,66 @@ func TestExportLogsOp(t *testing.T) {
 	})
 }
 
+func TestCheckExporterTracesViews(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(exporterID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	obsrep, err := NewObsReport(ObsReportSettings{
+		ExporterID:             exporterID,
+		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+	ctx := obsrep.StartTracesOp(context.Background())
+	require.NotNil(t, ctx)
+	obsrep.EndTracesOp(ctx, 7, nil)
+
+	assert.NoError(t, tt.CheckExporterTraces(7, 0))
+	assert.Error(t, tt.CheckExporterTraces(7, 7))
+	assert.Error(t, tt.CheckExporterTraces(0, 0))
+	assert.Error(t, tt.CheckExporterTraces(0, 7))
+}
+
+func TestCheckExporterMetricsViews(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(exporterID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	obsrep, err := NewObsReport(ObsReportSettings{
+		ExporterID:             exporterID,
+		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+	ctx := obsrep.StartMetricsOp(context.Background())
+	require.NotNil(t, ctx)
+	obsrep.EndMetricsOp(ctx, 7, nil)
+
+	assert.NoError(t, tt.CheckExporterMetrics(7, 0))
+	assert.Error(t, tt.CheckExporterMetrics(7, 7))
+	assert.Error(t, tt.CheckExporterMetrics(0, 0))
+	assert.Error(t, tt.CheckExporterMetrics(0, 7))
+}
+
+func TestCheckExporterLogsViews(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(exporterID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	obsrep, err := NewObsReport(ObsReportSettings{
+		ExporterID:             exporterID,
+		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+	ctx := obsrep.StartLogsOp(context.Background())
+	require.NotNil(t, ctx)
+	obsrep.EndLogsOp(ctx, 7, nil)
+
+	assert.NoError(t, tt.CheckExporterLogs(7, 0))
+	assert.Error(t, tt.CheckExporterLogs(7, 7))
+	assert.Error(t, tt.CheckExporterLogs(0, 0))
+	assert.Error(t, tt.CheckExporterLogs(0, 7))
+}
+
 type testParams struct {
 	items int
 	err   error
