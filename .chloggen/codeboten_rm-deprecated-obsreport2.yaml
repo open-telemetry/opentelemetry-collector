@@ -19,7 +19,7 @@ subtext: |
   The following methods/structs have been moved from obsreporttest to componenttest:
   - obsreporttest.TestTelemetry -> componenttest.TestTelemetry
   - obsreporttest.SetupTelemetry -> componenttest.SetupTelemetry
-  - obsreporttest.CheckScraperMetrics -> componenttest.CheckScraperMetrics
+  - obsreporttest.CheckScraperMetrics -> TestTelemetry.CheckScraperMetrics
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

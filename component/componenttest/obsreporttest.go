@@ -117,6 +117,12 @@ func (tts *TestTelemetry) CheckReceiverMetrics(protocol string, acceptedMetricPo
 	return tts.prometheusChecker.checkReceiverMetrics(tts.id, protocol, acceptedMetricPoints, droppedMetricPoints)
 }
 
+// CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func (tts *TestTelemetry) CheckScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
+	return tts.otelPrometheusChecker.checkScraperMetrics(receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
+}
+
 // Shutdown unregisters any views and shuts down the SpanRecorder
 func (tts *TestTelemetry) Shutdown(ctx context.Context) error {
 	view.Unregister(tts.views...)
@@ -176,10 +182,4 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	}
 
 	return settings, nil
-}
-
-// CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
-// When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckScraperMetrics(tts TestTelemetry, receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
-	return tts.prometheusChecker.checkScraperMetrics(receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
 }

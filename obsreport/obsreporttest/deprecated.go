@@ -23,7 +23,7 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 // CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 //
-// Deprecated: [0.87.0] Use componenttest.CheckScraperMetrics instead
+// Deprecated: [0.87.0] Use TestTelemetry.CheckScraperMetrics instead
 func CheckScraperMetrics(tts TestTelemetry, receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
-	return componenttest.CheckScraperMetrics(tts, receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
+	return tts.CheckScraperMetrics(receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
 }

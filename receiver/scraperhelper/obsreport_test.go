@@ -88,7 +88,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 			}
 		}
 
-		require.NoError(t, componenttest.CheckScraperMetrics(tt, receiverID, scraperID, int64(scrapedMetricPoints), int64(erroredMetricPoints)))
+		require.NoError(t, tt.CheckScraperMetrics(receiverID, scraperID, int64(scrapedMetricPoints), int64(erroredMetricPoints)))
 	})
 }
 
@@ -107,10 +107,10 @@ func TestCheckScraperMetricsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	s.EndMetricsOp(ctx, 7, nil)
 
-	assert.NoError(t, componenttest.CheckScraperMetrics(tt, receiverID, scraperID, 7, 0))
-	assert.Error(t, componenttest.CheckScraperMetrics(tt, receiverID, scraperID, 7, 7))
-	assert.Error(t, componenttest.CheckScraperMetrics(tt, receiverID, scraperID, 0, 0))
-	assert.Error(t, componenttest.CheckScraperMetrics(tt, receiverID, scraperID, 0, 7))
+	assert.NoError(t, tt.CheckScraperMetrics(receiverID, scraperID, 7, 0))
+	assert.Error(t, tt.CheckScraperMetrics(receiverID, scraperID, 7, 7))
+	assert.Error(t, tt.CheckScraperMetrics(receiverID, scraperID, 0, 0))
+	assert.Error(t, tt.CheckScraperMetrics(receiverID, scraperID, 0, 7))
 }
 
 func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool)) {

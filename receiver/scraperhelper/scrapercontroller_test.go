@@ -326,7 +326,7 @@ func assertScraperViews(t *testing.T, tt componenttest.TestTelemetry, expectedEr
 		}
 	}
 
-	require.NoError(t, componenttest.CheckScraperMetrics(tt, component.NewID("receiver"), component.NewID("scraper"), expectedScraped, expectedErrored))
+	require.NoError(t, tt.CheckScraperMetrics(component.NewID("receiver"), component.NewID("scraper"), expectedScraped, expectedErrored))
 }
 
 func TestSingleScrapePerInterval(t *testing.T) {
