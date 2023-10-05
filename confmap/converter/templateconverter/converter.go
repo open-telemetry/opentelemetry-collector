@@ -50,7 +50,14 @@ func (c *converter) Convert(_ context.Context, conf *confmap.Conf) error {
 	}
 
 	c.cfg = conf.ToStringMap()
-	for templateID, parameters := range c.cfg["receivers"].(map[string]any) {
+	if c.cfg["receivers"] == nil {
+		return nil // invalid, but let the unmarshaler handle it
+	}
+	receiverCfgs, ok := c.cfg["receivers"].(map[string]any)
+	if !ok {
+		return nil // invalid, but let the unmarshaler handle it
+	}
+	for templateID, parameters := range receiverCfgs {
 		if !strings.HasPrefix(templateID, "template") {
 			continue
 		}
