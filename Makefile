@@ -513,4 +513,12 @@ builder-integration-test: $(ENVSUBST)
 profile-benchmark: $(ENVSUBST)
 	cd ./pdata/pprofile && go test -bench . -run=^$$ | tee /tmp/benchmarks.txt
 	@echo "Benchmark results for posting to Google Sheets:"
-	cat /tmp/benchmarks.txt | grep 'Benchmark' | sed -E "s/[[:space:]]+/ /g"
+	cat /tmp/benchmarks.txt | grep 'Benchmark' | grep 'retained_objects' | grep -v 'not found' | sed -E "s/[[:space:]]+/ /g"
+
+.PHONY: profile-benchmark-generate
+profile-benchmark-generate:
+	cd pdata/pprofile && go run ./benchmarks-generator
+
+.PHONY: profile-maligned
+profile-maligned:
+	cd pdata/internal/data/protogen/profiles/v1 && maligned .

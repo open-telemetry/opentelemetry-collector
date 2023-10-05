@@ -28,16 +28,13 @@ func findAllBenchmarks(b []byte) []string {
 
 var tmpltString = `
 func Benchmark{{.CapitalizedName}}Pprof(b *testing.B) {
-	benchmark(b, "{{.Name}}", "pprof", false)
+	benchmark(b, "{{.Name}}", "pprof")
 }
-// func Benchmark{{.CapitalizedName}}Denormalized(b *testing.B) {
-//   benchmark(b, "{{.Name}}", "denormalized", false)
-// }
-func Benchmark{{.CapitalizedName}}Normalized(b *testing.B) {
-	benchmark(b, "{{.Name}}", "normalized", false)
+func Benchmark{{.CapitalizedName}}PprofExtended(b *testing.B) {
+	benchmark(b, "{{.Name}}", "pprofextended")
 }
 func Benchmark{{.CapitalizedName}}Arrays(b *testing.B) {
-	benchmark(b, "{{.Name}}", "arrays", false)
+	benchmark(b, "{{.Name}}", "arrays")
 }
 `
 
