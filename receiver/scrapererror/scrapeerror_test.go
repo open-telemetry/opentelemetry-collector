@@ -58,7 +58,7 @@ func TestScrapeErrorsCombine(t *testing.T) {
 				errs.AddPartial(1, fmt.Errorf("err: %w", errors.New("bad scrape")))
 				return errs
 			},
-			expectedErr:         "bad scrapes; err: bad scrape",
+			expectedErr:         "bad scrapes\nerr: bad scrape",
 			expectedFailedCount: 11,
 			expectedScrape:      true,
 		},
@@ -69,7 +69,7 @@ func TestScrapeErrorsCombine(t *testing.T) {
 				errs.Add(fmt.Errorf("err: %w", errors.New("bad reg")))
 				return errs
 			},
-			expectedErr: "bad regular; err: bad reg",
+			expectedErr: "bad regular\nerr: bad reg",
 		},
 		{
 			errs: func() ScrapeErrors {
@@ -80,7 +80,7 @@ func TestScrapeErrorsCombine(t *testing.T) {
 				errs.Add(fmt.Errorf("event: %w", errors.New("something happened")))
 				return errs
 			},
-			expectedErr:         "bad two scrapes; 10 scrapes failed: bad things happened; bad event; event: something happened",
+			expectedErr:         "bad two scrapes\n10 scrapes failed: bad things happened\nbad event\nevent: something happened",
 			expectedFailedCount: 12,
 			expectedScrape:      true,
 		},
