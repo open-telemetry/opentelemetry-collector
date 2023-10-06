@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
+package servicetelemetry // import "go.opentelemetry.io/collector/service/internal/servicetelemetry"
 
 import (
 	"go.opentelemetry.io/otel/metric/noop"
@@ -13,15 +13,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// NewNopTelemetrySettings returns a new nop telemetry settings for Create* functions.
-func NewNopTelemetrySettings() component.TelemetrySettings {
-	return component.TelemetrySettings{
+// NewNopTelemetrySettings returns a new nop settings for Create* functions.
+func NewNopTelemetrySettings() TelemetrySettings {
+	return TelemetrySettings{
 		Logger:         zap.NewNop(),
 		TracerProvider: trace.NewNoopTracerProvider(),
 		MeterProvider:  noop.NewMeterProvider(),
 		MetricsLevel:   configtelemetry.LevelNone,
 		Resource:       pcommon.NewResource(),
-		ReportComponentStatus: func(*component.StatusEvent) error {
+		ReportComponentStatus: func(*component.InstanceID, *component.StatusEvent) error {
 			return nil
 		},
 	}
