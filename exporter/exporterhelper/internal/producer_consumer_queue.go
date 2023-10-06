@@ -27,8 +27,6 @@ type ProducerConsumerQueue interface {
 	// Produce is used by the producer to submit new item to the queue. Returns false if the item wasn't added
 	// to the queue due to queue overflow.
 	Produce(item Request) bool
-	// ProduceAndWait is like Produce but blocks instead of returning when queue is at capacity
-	ProduceAndWait(item Request)
 	// Size returns the current Size of the queue
 	Size() int
 	// Stop stops all consumers, as well as the length reporter if started,
@@ -40,4 +38,5 @@ type ProducerConsumerQueue interface {
 	// TODO: Do not expose this method if the interface moves to a public package.
 	IsPersistent() bool
 	// GetErrCh returns the channel that represents a queue of responses from calls to Produce
+	GetErrCh() chan error
 }

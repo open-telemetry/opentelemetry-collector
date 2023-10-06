@@ -33,6 +33,7 @@ type persistentQueue struct {
 	numConsumers int
 	marshaler    RequestMarshaler
 	unmarshaler  RequestUnmarshaler
+	errCh        chan error
 }
 
 // buildPersistentStorageName returns a name that is constructed out of queue name and signal type. This is done
@@ -51,6 +52,7 @@ func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, 
 		marshaler:    marshaler,
 		unmarshaler:  unmarshaler,
 		stopChan:     make(chan struct{}),
+		errCh:        make(chan error, numConsumers)
 	}
 }
 
@@ -61,7 +63,7 @@ func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set Q
 		return err
 	}
 	storageName := buildPersistentStorageName(set.ID.Name(), set.DataType)
-	pq.storage = newPersistentContiguousStorage(ctx, storageName, storageClient, set.Logger, pq.capacity, pq.marshaler, pq.unmarshaler)
+	pq.storage = newPersistentContiguousStorage(ctx, storageName, storageClient, set.Logger, pq.capacity, pq.marshaler, pq.unmarshaler, set.WaitOnSend)
 	for i := 0; i < pq.numConsumers; i++ {
 		pq.stopWG.Add(1)
 		go func() {

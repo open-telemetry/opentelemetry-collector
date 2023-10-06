@@ -35,12 +35,12 @@ type QueueSettings struct {
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue
 	StorageID *component.ID `mapstructure:"storage"`
-	// WaitOnSend if enabled will wait when queue is full instead of dropping requests
+	// WaitOnSend if enabled will wait when queue is full instead of dropping requests.
 	WaitOnSend WaitOnSendSettings `mapstructure:"wait_on_send"`
 }
 
 type WaitOnSendSettings struct {
-	// Enabled indicates whether sending requests will block instead of dropping while queue is full. Default is disabled. 
+	// Enabled indicates whether sending requests will block instead of dropping while queue is full. Default is disabled.
 	Enabled bool `mapstructure:"enabled"`
 	// Timeout is the duration to wait before dropping a request. Default is 60s.
 	Timeout time.Duration `mapstructure:"timeout"`
@@ -132,7 +132,6 @@ func (qs *queueSender) start(ctx context.Context, host component.Host, set expor
 		return nil
 	}
 
-	item.
 	err := qs.queue.Start(ctx, host, internal.QueueSettings{
 		CreateSettings: set,
 		DataType:       qs.signal,
@@ -200,13 +199,25 @@ func (qs *queueSender) send(req internal.Request) error {
 	req.SetContext(noCancellationContext{Context: req.Context()})
 
 	span := trace.SpanFromContext(req.Context())
-	if !qs.queue.Produce(req) {
-		qs.logger.Error(
-			"Dropping data because sending_queue is full. Try increasing queue_size.",
-			zap.Int("dropped_items", req.Count()),
-		)
-		span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qs.traceAttribute))
-		return errSendingQueueIsFull
+	if !qs.waitset.Enabled {
+		if !qs.queue.Produce(req) {
+			qs.logger.Error(
+				"Dropping data because sending_queue is full. Try increasing queue_size.",
+				zap.Int("dropped_items", req.Count()),
+			)
+			span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qs.traceAttribute))
+			return errSendingQueueIsFull
+		}
+	} else { // wait for response
+		err := qs.sendAndWait(req)
+		if err != nil {
+			qs.logger.Error(
+				"Dropping data: found error when sending", err,
+				zap.Int("dropped_items", req.Count()),
+			)
+			span.AddEvent("Dropped item, found error when sending.", trace.WithAttributes(qs.traceAttribute))
+			return err
+		}
 	}
 
 	span.AddEvent("Enqueued item.", trace.WithAttributes(qs.traceAttribute))
@@ -215,28 +226,21 @@ func (qs *queueSender) send(req internal.Request) error {
 
 func (qs *queueSender) sendAndWait(req internal.Request) error {
 	span := trace.SpanFromContext(req.Context())
+	// should this call to ProduceAndWait be in a goroutine,
+	// so fetching a response will not be blocked by a full queue
 	err := ProduceAndWait(req, qs.waitset.Timeout)
 	if err != nil {
 		return err
 	}
-	err, ok := <-qs.queue.GetErrCh() 
+	// blocks until we get first ready response.
+	err, ok := <-qs.queue.GetErrCh()
 
 	if !ok {
 		// channel closed
 		return nil
 	}
 
-	if err != nil {
-		qs.logger.Error(
-			"Exporting failed. Dropping data.", 
-			zap.Int("dropped_items", req.Count()),
-			err,
-		)
-		return err
-	}
-
-	span.AddEvent("Enqueued item.", trace.WithAttributes(qs.traceAttribute))
-	return nil
+	return err
 }
 
 type noCancellationContext struct {

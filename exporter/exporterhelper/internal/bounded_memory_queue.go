@@ -7,8 +7,10 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -24,11 +26,13 @@ type boundedMemoryQueue struct {
 	capacity     uint32
 	numConsumers int
 	errCh        chan error
+	waitEnabled  bool
+	waitTimeout  time.Duration
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
 // callback for dropped items (e.g. useful to emit metrics).
-func NewBoundedMemoryQueue(capacity int, numConsumers int) ProducerConsumerQueue {
+func NewBoundedMemoryQueue(capacity int, numConsumers int, waitSettings WaitOnSendSettings) ProducerConsumerQueue {
 	return &boundedMemoryQueue{
 		items:        make(chan Request, capacity),
 		stopped:      &atomic.Bool{},
@@ -36,6 +40,8 @@ func NewBoundedMemoryQueue(capacity int, numConsumers int) ProducerConsumerQueue
 		capacity:     uint32(capacity),
 		numConsumers: numConsumers,
 		errCh:        make(chan error, numConsumers),
+		waitEnabled:  waitSettings.Enabled,
+		waitTimeout:  waitSettings.Timeout,
 	}
 }
 
@@ -68,8 +74,10 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 	// we might have two concurrent backing queues at the moment
 	// their combined size is stored in q.size, and their combined capacity
 	// should match the capacity of the new queue
-	if q.size.Load() >= q.capacity {
+	if !q.waitEnabled && q.size.Load() >= q.capacity {
 		return false
+	} else { // wait until there is space in the queue
+		return q.produceAndWait(item)
 	}
 
 	q.size.Add(1)
@@ -84,11 +92,8 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 }
 
 // // Same as Produce but waits for response before queuing the next item
-func (q *boundedMemoryQueue) ProduceAndWait(item Request, timeout time.Duration) error {
-	timer := time.NewTimer(timeout)
-	if q.stopped.Load() {
-		return fmt.Errorf("queue stopped")
-	}
+func (q *boundedMemoryQueue) produceAndWait(item Request) bool {
+	timer := time.NewTimer(q.waitTimeout)
 
 	if q.size.Load() < q.capacity {
 		q.size.Add(1)
@@ -96,10 +101,15 @@ func (q *boundedMemoryQueue) ProduceAndWait(item Request, timeout time.Duration)
 
 	select {
 	case <-timer.C:
-		return fmt.Errorf("failed to add item to queue, timeout exceeded")
+		return false
 	case q.items <- item:
-		return nil
+		return true
 	}
+}
+
+// GetErrCh gets the channel that stores responses for sent requests.
+func (q *boundedMemoryQueue) GetErrCh(item Request, timeout time.Duration)  {
+	return q.ErrCh
 }
 
 // Stop stops all consumers, as well as the length reporter if started,

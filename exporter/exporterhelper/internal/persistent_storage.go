@@ -57,7 +57,9 @@ type persistentContiguousStorage struct {
 	writeIndex               itemIndex
 	currentlyDispatchedItems []itemIndex
 
-	itemsCount *atomic.Uint64
+	itemsCount  *atomic.Uint64
+	waitEnabled bool
+	waitTimeout time.Duration
 }
 
 type itemIndex uint64
@@ -81,8 +83,8 @@ var (
 
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
 // queueName parameter must be a unique value that identifies the queue.
-func newPersistentContiguousStorage(ctx context.Context, queueName string, client storage.Client,
-	logger *zap.Logger, capacity uint64, marshaler RequestMarshaler, unmarshaler RequestUnmarshaler) *persistentContiguousStorage {
+func newPersistentContiguousStorage(ctx context.Context, queueName string, client storage.Client, logger *zap.Logger,
+	capacity uint64, marshaler RequestMarshaler, unmarshaler RequestUnmarshaler, waitSettings WaitOnSendSettings) *persistentContiguousStorage {
 	pcs := &persistentContiguousStorage{
 		logger:      logger,
 		client:      client,
@@ -94,6 +96,8 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, clien
 		reqChan:     make(chan Request),
 		stopChan:    make(chan struct{}),
 		itemsCount:  &atomic.Uint64{},
+		waitEnabled: waitSettings.Enabled,
+		waitTimeout: waitSettings.Timeout,
 	}
 
 	initPersistentContiguousStorage(ctx, pcs)
@@ -174,9 +178,15 @@ func (pcs *persistentContiguousStorage) loop() {
 		case <-pcs.stopChan:
 			return
 		case <-pcs.putChan:
+			waitAtCapacity := (pcs.waitEnabled && pcs.size() == pcs.capacity)
 			req, found := pcs.getNextItem(context.Background())
 			if found {
 				pcs.reqChan <- req
+				if waitAtCapacity {
+					// was at capacity but just removed item from storage
+					// so signal to waiter to add item to storage.
+					Signal()
+				}
 			}
 		}
 	}
@@ -212,9 +222,16 @@ func (pcs *persistentContiguousStorage) put(req Request) error {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 
-	if pcs.size() >= pcs.capacity {
+	if !pcs.waitEnabled && pcs.size() >= pcs.capacity {
 		pcs.logger.Warn("Maximum queue capacity reached", zap.String(zapQueueNameKey, pcs.queueName))
 		return errMaxCapacityReached
+	} else { // waiting on queue to have room
+		timer := time.NewTimer(pcs.waitTimeout)
+		select {
+		case timer.C:
+			return fmt.Errorf("Item dropped while waiting, timeout exceeded.")
+		case Wait():
+		}
 	}
 
 	itemKey := pcs.itemKey(pcs.writeIndex)
