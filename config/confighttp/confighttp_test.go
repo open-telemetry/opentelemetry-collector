@@ -872,6 +872,63 @@ func TestHttpServerHeaders(t *testing.T) {
 	}
 }
 
+func TestHttpServerMaxConnSettings(t *testing.T) {
+	t.Run("has max connection", func(t *testing.T) {
+		waitTime := 100 * time.Millisecond
+		hss := &HTTPServerSettings{
+			Endpoint:                 "localhost:0",
+			MaxConcurrentConnections: 1,
+		}
+
+		ln, err := hss.ToListener()
+		require.NoError(t, err)
+
+		s, err := hss.ToServer(
+			componenttest.NewNopHost(),
+			componenttest.NewNopTelemetrySettings(),
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				time.Sleep(waitTime)
+				w.WriteHeader(http.StatusOK)
+			}))
+		require.NoError(t, err)
+
+		go func() {
+			_ = s.Serve(ln)
+		}()
+
+		// TODO: make starting server deterministic
+		// Wait for the servers to start
+		<-time.After(10 * time.Millisecond)
+
+		url := fmt.Sprintf("http://%s", ln.Addr().String())
+
+		// Verify allowed domain gets responses that allow CORS.
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		require.NoError(t, err, "Error creating request: %v", err)
+		startTime := time.Now()
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err, "Error sending request to http server: %v", err)
+		resp2, err := http.DefaultClient.Do(req)
+		require.NoError(t, err, "Error sending request to http server: %v", err)
+
+		err = resp.Body.Close()
+		if err != nil {
+			t.Errorf("Error closing response body, %v", err)
+		}
+		err = resp2.Body.Close()
+		if err != nil {
+			t.Errorf("Error closing response body, %v", err)
+		}
+		endtime := time.Now()
+		timeElapsed := endtime.UnixMilli() - startTime.UnixMilli()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, http.StatusOK, resp2.StatusCode)
+		assert.True(t, timeElapsed > (2*waitTime.Milliseconds()))
+
+		require.NoError(t, s.Close())
+	})
+}
+
 func verifyCorsResp(t *testing.T, url string, origin string, set *CORSSettings, extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest(http.MethodOptions, url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)

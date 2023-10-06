@@ -7,6 +7,7 @@ require (
 	github.com/klauspost/compress v1.17.0
 	github.com/rs/cors v1.10.1
 	github.com/stretchr/testify v1.8.4
+	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.87.0
 	go.opentelemetry.io/collector/component v0.87.0
 	go.opentelemetry.io/collector/config/configauth v0.87.0

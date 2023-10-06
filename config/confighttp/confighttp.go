@@ -4,6 +4,7 @@
 package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"io"
@@ -12,10 +13,7 @@ import (
 	"time"
 
 	"github.com/rs/cors"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel"
-	"golang.org/x/net/http2"
-
+	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -23,6 +21,10 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/netutil"
 )
 
 const headerContentEncoding = "Content-Encoding"
@@ -226,6 +228,8 @@ type HTTPServerSettings struct {
 
 	// MaxRequestBodySize sets the maximum request body size in bytes
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
+	// MaxConcurrentConnections is used to set a limit to the maximum HTTP connections the server can keep open.
+	MaxConcurrentConnections int `mapstructure:"max_concurrent_connections"`
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
 	// Experimental: *NOTE* this option is subject to change or removal in the future.
@@ -234,6 +238,9 @@ type HTTPServerSettings struct {
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
+
+	// Telemetry is to enable and configure observability.
+	Telemetry HttpServerTelemetryConfig `mapstructure:"telemetry"`
 }
 
 // ToListener creates a net.Listener.
@@ -251,6 +258,10 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 		}
 		tlsCfg.NextProtos = []string{http2.NextProtoTLS, "http/1.1"}
 		listener = tls.NewListener(listener, tlsCfg)
+	}
+
+	if hss.MaxConcurrentConnections > 0 {
+		listener = netutil.LimitListener(listener, hss.MaxConcurrentConnections)
 	}
 	return listener, nil
 }
@@ -322,6 +333,10 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 
 	if hss.ResponseHeaders != nil {
 		handler = responseHeadersHandler(handler, hss.ResponseHeaders)
+	}
+
+	if hss.Telemetry.Enabled {
+		handler = maxConnectionsObservabilityInterceptor(handler, hss.MaxConcurrentConnections, hss.Telemetry)
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -397,6 +412,21 @@ func authInterceptor(next http.Handler, server auth.Server) http.Handler {
 func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, maxRecvSize)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func maxConnectionsObservabilityInterceptor(next http.Handler, maxConn int, c HttpServerTelemetryConfig) http.Handler {
+	t := newHttpServerTelemetryInstruments(c)
+	if t == nil {
+		return next
+	}
+	_ = stats.RecordWithTags(context.Background(), t.tags, t.maxConn.M(int64(maxConn)))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = stats.RecordWithTags(context.Background(), t.tags, t.conn.M(1))
+		defer func() {
+			_ = stats.RecordWithTags(context.Background(), t.tags, t.conn.M(-1))
+		}()
 		next.ServeHTTP(w, r)
 	})
 }

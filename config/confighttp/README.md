@@ -71,6 +71,8 @@ will not be enabled.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
+- `max_concurrent_connections`: Sets value for maximum number of allowed http connections. defaults to 0.
+- [`telemetry`]: enables server metrics. currently, only supports opencensus and have metrics for `max_concurrent_connections`
 
 You can enable [`attribute processor`][attribute-processor] to append any http header to span's attribute using custom key. You also need to enable the "include_metadata"
 
@@ -92,6 +94,7 @@ receivers:
             - Example-Header
           max_age: 7200
         endpoint: 0.0.0.0:55690
+        max_concurrent_connections: 10000
 processors:
   attributes:
     actions:
