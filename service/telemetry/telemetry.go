@@ -5,10 +5,10 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"context"
+	"errors"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -28,7 +28,7 @@ func (t *Telemetry) Logger() *zap.Logger {
 
 func (t *Telemetry) Shutdown(ctx context.Context) error {
 	// TODO: Sync logger.
-	return multierr.Combine(
+	return errors.Join(
 		t.tracerProvider.Shutdown(ctx),
 	)
 }

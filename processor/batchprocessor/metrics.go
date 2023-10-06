@@ -5,13 +5,13 @@ package batchprocessor // import "go.opentelemetry.io/collector/processor/batchp
 
 import (
 	"context"
+	"errors"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -130,7 +130,8 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider, c
 		return nil
 	}
 
-	var errors, err error
+	var errs []error
+	var err error
 	meter := mp.Meter(scopeName)
 
 	bpt.batchSizeTriggerSend, err = meter.Int64Counter(
@@ -138,28 +139,28 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider, c
 		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	bpt.timeoutTriggerSend, err = meter.Int64Counter(
 		processorhelper.BuildCustomMetricName(typeStr, "timeout_trigger_send"),
 		metric.WithDescription("Number of times the batch was sent due to a timeout trigger"),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	bpt.batchSendSize, err = meter.Int64Histogram(
 		processorhelper.BuildCustomMetricName(typeStr, "batch_send_size"),
 		metric.WithDescription("Number of units in the batch"),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	bpt.batchSendSizeBytes, err = meter.Int64Histogram(
 		processorhelper.BuildCustomMetricName(typeStr, "batch_send_size_bytes"),
 		metric.WithDescription("Number of bytes in batch that was sent"),
 		metric.WithUnit("By"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	bpt.batchMetadataCardinality, err = meter.Int64ObservableUpDownCounter(
 		processorhelper.BuildCustomMetricName(typeStr, "metadata_cardinality"),
@@ -170,9 +171,9 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider, c
 			return nil
 		}),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
-	return errors
+	return errors.Join(errs...)
 }
 
 func (bpt *batchProcessorTelemetry) record(trigger trigger, sent, bytes int64) {

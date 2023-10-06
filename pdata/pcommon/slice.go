@@ -4,7 +4,7 @@
 package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
 
 import (
-	"go.uber.org/multierr"
+	"errors"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
@@ -145,11 +145,11 @@ func (es Slice) FromRaw(rawSlice []any) error {
 		*es.getOrig() = nil
 		return nil
 	}
-	var errs error
+	var errs []error
 	origs := make([]otlpcommon.AnyValue, len(rawSlice))
 	for ix, iv := range rawSlice {
-		errs = multierr.Append(errs, newValue(&origs[ix]).FromRaw(iv))
+		errs = append(errs, newValue(&origs[ix]).FromRaw(iv))
 	}
 	*es.getOrig() = origs
-	return errs
+	return errors.Join(errs...)
 }

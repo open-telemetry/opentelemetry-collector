@@ -5,6 +5,7 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 
@@ -12,7 +13,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/resource"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -124,7 +124,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	if err = srv.initExtensionsAndPipeline(ctx, set, cfg); err != nil {
 		// If pipeline initialization fails then shut down the telemetry server
 		if shutdownErr := srv.telemetryInitializer.shutdown(); shutdownErr != nil {
-			err = multierr.Append(err, fmt.Errorf("failed to shutdown collector telemetry: %w", shutdownErr))
+			err = errors.Join(err, fmt.Errorf("failed to shutdown collector telemetry: %w", shutdownErr))
 		}
 
 		return nil, err
@@ -164,33 +164,33 @@ func (srv *Service) Start(ctx context.Context) error {
 
 func (srv *Service) Shutdown(ctx context.Context) error {
 	// Accumulate errors and proceed with shutting down remaining components.
-	var errs error
+	var errs []error
 
 	// Begin shutdown sequence.
 	srv.telemetrySettings.Logger.Info("Starting shutdown...")
 
 	if err := srv.host.serviceExtensions.NotifyPipelineNotReady(); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
+		errs = append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
 	}
 
 	if err := srv.host.pipelines.ShutdownAll(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown pipelines: %w", err))
+		errs = append(errs, fmt.Errorf("failed to shutdown pipelines: %w", err))
 	}
 
 	if err := srv.host.serviceExtensions.Shutdown(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
+		errs = append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}
 
 	srv.telemetrySettings.Logger.Info("Shutdown complete.")
 
 	if err := srv.telemetry.Shutdown(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown telemetry: %w", err))
+		errs = append(errs, fmt.Errorf("failed to shutdown telemetry: %w", err))
 	}
 
 	if err := srv.telemetryInitializer.shutdown(); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
+		errs = append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
 	}
-	return errs
+	return errors.Join(errs...)
 }
 
 func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings, cfg Config) error {

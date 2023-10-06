@@ -108,7 +108,9 @@ linters-settings:
           - pkg: github.com/pkg/errors
             desc: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
           - pkg: github.com/hashicorp/go-multierror
-            desc: "Use go.uber.org/multierr instead of github.com/hashicorp/go-multierror"
+            desc: "Use errors.Join instead of github.com/hashicorp/go-multierror"
+          - pkg: go.uber.org/multierr
+            desc: "Use errors.Join instead of go.uber.org/multierr"
         # Add a different guard rule so that we can ignore tests.
       ignore-in-test:
           deny:

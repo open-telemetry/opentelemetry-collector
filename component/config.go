@@ -4,9 +4,8 @@
 package component // import "go.opentelemetry.io/collector/component"
 
 import (
+	"errors"
 	"reflect"
-
-	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -55,33 +54,33 @@ func validate(v reflect.Value) error {
 	case reflect.Ptr:
 		return validate(v.Elem())
 	case reflect.Struct:
-		var errs error
-		errs = multierr.Append(errs, callValidateIfPossible(v))
+		var errs []error
+		errs = append(errs, callValidateIfPossible(v))
 		// Reflect on the pointed data and check each of its fields.
 		for i := 0; i < v.NumField(); i++ {
 			if !v.Type().Field(i).IsExported() {
 				continue
 			}
-			errs = multierr.Append(errs, validate(v.Field(i)))
+			errs = append(errs, validate(v.Field(i)))
 		}
-		return errs
+		return errors.Join(errs...)
 	case reflect.Slice, reflect.Array:
-		var errs error
-		errs = multierr.Append(errs, callValidateIfPossible(v))
+		var errs []error
+		errs = append(errs, callValidateIfPossible(v))
 		// Reflect on the pointed data and check each of its fields.
 		for i := 0; i < v.Len(); i++ {
-			errs = multierr.Append(errs, validate(v.Index(i)))
+			errs = append(errs, validate(v.Index(i)))
 		}
-		return errs
+		return errors.Join(errs...)
 	case reflect.Map:
-		var errs error
-		errs = multierr.Append(errs, callValidateIfPossible(v))
+		var errs []error
+		errs = append(errs, callValidateIfPossible(v))
 		iter := v.MapRange()
 		for iter.Next() {
-			errs = multierr.Append(errs, validate(iter.Key()))
-			errs = multierr.Append(errs, validate(iter.Value()))
+			errs = append(errs, validate(iter.Key()))
+			errs = append(errs, validate(iter.Value()))
 		}
-		return errs
+		return errors.Join(errs...)
 	default:
 		return callValidateIfPossible(v)
 	}

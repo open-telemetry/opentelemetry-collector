@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -87,23 +86,24 @@ func (s *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
 	}
 	meter := cfg.ReceiverCreateSettings.MeterProvider.Meter(scraperScope)
 
-	var errors, err error
+	var errs []error
+	var err error
 
 	s.scrapedMetricsPoints, err = meter.Int64Counter(
 		obsmetrics.ScraperPrefix+obsmetrics.ScrapedMetricPointsKey,
 		metric.WithDescription("Number of metric points successfully scraped."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	s.erroredMetricsPoints, err = meter.Int64Counter(
 		obsmetrics.ScraperPrefix+obsmetrics.ErroredMetricPointsKey,
 		metric.WithDescription("Number of metric points that were unable to be scraped."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
-	return errors
+	return errors.Join(errs...)
 }
 
 // StartMetricsOp is called when a scrape operation is started. The

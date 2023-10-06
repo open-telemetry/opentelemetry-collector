@@ -4,12 +4,11 @@
 package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
-
-	"go.uber.org/multierr"
 )
 
 // The regular expression for valid config field tag.
@@ -37,17 +36,17 @@ func CheckConfigStruct(config any) error {
 // If the type is a struct it goes to each of its fields to check for the proper
 // tags.
 func validateConfigDataType(t reflect.Type) error {
-	var errs error
+	var errs []error
 
 	switch t.Kind() {
 	case reflect.Ptr:
-		errs = multierr.Append(errs, validateConfigDataType(t.Elem()))
+		errs = append(errs, validateConfigDataType(t.Elem()))
 	case reflect.Struct:
 		// Reflect on the pointed data and check each of its fields.
 		nf := t.NumField()
 		for i := 0; i < nf; i++ {
 			f := t.Field(i)
-			errs = multierr.Append(errs, checkStructFieldTags(f))
+			errs = append(errs, checkStructFieldTags(f))
 		}
 	default:
 		// The config object can carry other types but they are not used when
@@ -56,8 +55,8 @@ func validateConfigDataType(t reflect.Type) error {
 		// reflect.UnsafePointer.
 	}
 
-	if errs != nil {
-		return fmt.Errorf("type %q from package %q has invalid config settings: %w", t.Name(), t.PkgPath(), errs)
+	if err := errors.Join(errs...); err != nil {
+		return fmt.Errorf("type %q from package %q has invalid config settings: %w", t.Name(), t.PkgPath(), err)
 	}
 
 	return nil

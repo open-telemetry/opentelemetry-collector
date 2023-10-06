@@ -3,9 +3,7 @@
 
 package scrapererror // import "go.opentelemetry.io/collector/receiver/scrapererror"
 
-import (
-	"go.uber.org/multierr"
-)
+import "errors"
 
 // ScrapeErrors contains multiple PartialScrapeErrors and can also contain generic errors.
 type ScrapeErrors struct {
@@ -34,7 +32,7 @@ func (s *ScrapeErrors) Combine() error {
 		}
 	}
 
-	combined := multierr.Combine(s.errs...)
+	combined := errors.Join(s.errs...)
 	if !partialScrapeErr {
 		return combined
 	}

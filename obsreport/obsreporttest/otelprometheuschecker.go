@@ -4,6 +4,7 @@
 package obsreporttest // import "go.opentelemetry.io/collector/obsreport/obsreporttest"
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -13,7 +14,6 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -25,35 +25,35 @@ type prometheusChecker struct {
 
 func (pc *prometheusChecker) checkScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
 	scraperAttrs := attributesForScraperMetrics(receiver, scraper)
-	return multierr.Combine(
+	return errors.Join(
 		pc.checkCounter("scraper_scraped_metric_points", scrapedMetricPoints, scraperAttrs),
 		pc.checkCounter("scraper_errored_metric_points", erroredMetricPoints, scraperAttrs))
 }
 
 func (pc *prometheusChecker) checkReceiverTraces(receiver component.ID, protocol string, acceptedSpans, droppedSpans int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
-	return multierr.Combine(
+	return errors.Join(
 		pc.checkCounter("receiver_accepted_spans", acceptedSpans, receiverAttrs),
 		pc.checkCounter("receiver_refused_spans", droppedSpans, receiverAttrs))
 }
 
 func (pc *prometheusChecker) checkReceiverLogs(receiver component.ID, protocol string, acceptedLogRecords, droppedLogRecords int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
-	return multierr.Combine(
+	return errors.Join(
 		pc.checkCounter("receiver_accepted_log_records", acceptedLogRecords, receiverAttrs),
 		pc.checkCounter("receiver_refused_log_records", droppedLogRecords, receiverAttrs))
 }
 
 func (pc *prometheusChecker) checkReceiverMetrics(receiver component.ID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
-	return multierr.Combine(
+	return errors.Join(
 		pc.checkCounter("receiver_accepted_metric_points", acceptedMetricPoints, receiverAttrs),
 		pc.checkCounter("receiver_refused_metric_points", droppedMetricPoints, receiverAttrs))
 }
 
 func (pc *prometheusChecker) checkProcessorTraces(processor component.ID, acceptedSpans, refusedSpans, droppedSpans int64) error {
 	processorAttrs := attributesForProcessorMetrics(processor)
-	return multierr.Combine(
+	return errors.Join(
 		pc.checkCounter("processor_accepted_spans", acceptedSpans, processorAttrs),
 		pc.checkCounter("processor_refused_spans", refusedSpans, processorAttrs),
 		pc.checkCounter("processor_dropped_spans", droppedSpans, processorAttrs))
@@ -61,7 +61,7 @@ func (pc *prometheusChecker) checkProcessorTraces(processor component.ID, accept
 
 func (pc *prometheusChecker) checkProcessorMetrics(processor component.ID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
 	processorAttrs := attributesForProcessorMetrics(processor)
-	return multierr.Combine(
+	return errors.Join(
 		pc.checkCounter("processor_accepted_metric_points", acceptedMetricPoints, processorAttrs),
 		pc.checkCounter("processor_refused_metric_points", refusedMetricPoints, processorAttrs),
 		pc.checkCounter("processor_dropped_metric_points", droppedMetricPoints, processorAttrs))
@@ -69,7 +69,7 @@ func (pc *prometheusChecker) checkProcessorMetrics(processor component.ID, accep
 
 func (pc *prometheusChecker) checkProcessorLogs(processor component.ID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
 	processorAttrs := attributesForProcessorMetrics(processor)
-	return multierr.Combine(
+	return errors.Join(
 		pc.checkCounter("processor_accepted_log_records", acceptedLogRecords, processorAttrs),
 		pc.checkCounter("processor_refused_log_records", refusedLogRecords, processorAttrs),
 		pc.checkCounter("processor_dropped_log_records", droppedLogRecords, processorAttrs))
@@ -78,33 +78,33 @@ func (pc *prometheusChecker) checkProcessorLogs(processor component.ID, accepted
 func (pc *prometheusChecker) checkExporterTraces(exporter component.ID, sentSpans, sendFailedSpans int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
 	if sendFailedSpans > 0 {
-		return multierr.Combine(
+		return errors.Join(
 			pc.checkCounter("exporter_sent_spans", sentSpans, exporterAttrs),
 			pc.checkCounter("exporter_send_failed_spans", sendFailedSpans, exporterAttrs))
 	}
-	return multierr.Combine(
+	return errors.Join(
 		pc.checkCounter("exporter_sent_spans", sentSpans, exporterAttrs))
 }
 
 func (pc *prometheusChecker) checkExporterLogs(exporter component.ID, sentLogRecords, sendFailedLogRecords int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
 	if sendFailedLogRecords > 0 {
-		return multierr.Combine(
+		return errors.Join(
 			pc.checkCounter("exporter_sent_log_records", sentLogRecords, exporterAttrs),
 			pc.checkCounter("exporter_send_failed_log_records", sendFailedLogRecords, exporterAttrs))
 	}
-	return multierr.Combine(
+	return errors.Join(
 		pc.checkCounter("exporter_sent_log_records", sentLogRecords, exporterAttrs))
 }
 
 func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sentMetricPoints, sendFailedMetricPoints int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
 	if sendFailedMetricPoints > 0 {
-		return multierr.Combine(
+		return errors.Join(
 			pc.checkCounter("exporter_sent_metric_points", sentMetricPoints, exporterAttrs),
 			pc.checkCounter("exporter_send_failed_metric_points", sendFailedMetricPoints, exporterAttrs))
 	}
-	return multierr.Combine(
+	return errors.Join(
 		pc.checkCounter("exporter_sent_metric_points", sentMetricPoints, exporterAttrs))
 }
 

@@ -4,10 +4,9 @@
 package featuregate // import "go.opentelemetry.io/collector/featuregate"
 
 import (
+	"errors"
 	"flag"
 	"strings"
-
-	"go.uber.org/multierr"
 )
 
 // NewFlag returns a flag.Value that directly applies feature gate statuses to a Registry.
@@ -37,7 +36,7 @@ func (f *flagValue) Set(s string) error {
 		return nil
 	}
 
-	var errs error
+	var errs []error
 	ids := strings.Split(s, ",")
 	for i := range ids {
 		id := ids[i]
@@ -49,7 +48,7 @@ func (f *flagValue) Set(s string) error {
 		case '+':
 			id = id[1:]
 		}
-		errs = multierr.Append(errs, f.reg.Set(id, val))
+		errs = append(errs, f.reg.Set(id, val))
 	}
-	return errs
+	return errors.Join(errs...)
 }

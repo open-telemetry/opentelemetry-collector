@@ -14,7 +14,6 @@ import (
 	"sync/atomic"
 	"syscall"
 
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -184,7 +183,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	if err = col.service.Start(ctx); err != nil {
-		return multierr.Combine(err, col.service.Shutdown(ctx))
+		return errors.Join(err, col.service.Shutdown(ctx))
 	}
 	col.setCollectorState(StateRunning)
 
@@ -270,20 +269,20 @@ func (col *Collector) shutdown(ctx context.Context) error {
 	col.setCollectorState(StateClosing)
 
 	// Accumulate errors and proceed with shutting down remaining components.
-	var errs error
+	var errs []error
 
 	if err := col.set.ConfigProvider.Shutdown(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown config provider: %w", err))
+		errs = append(errs, fmt.Errorf("failed to shutdown config provider: %w", err))
 	}
 
 	// shutdown service
 	if err := col.service.Shutdown(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown service after error: %w", err))
+		errs = append(errs, fmt.Errorf("failed to shutdown service after error: %w", err))
 	}
 
 	col.setCollectorState(StateClosed)
 
-	return errs
+	return errors.Join(errs...)
 }
 
 // setCollectorState provides current state of the collector

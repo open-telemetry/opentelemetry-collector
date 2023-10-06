@@ -7,9 +7,8 @@ package fanoutconsumer // import "go.opentelemetry.io/collector/internal/fanoutc
 
 import (
 	"context"
+	"errors"
 	"fmt"
-
-	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
@@ -58,19 +57,19 @@ func (lsc *logsConsumer) Capabilities() consumer.Capabilities {
 
 // ConsumeLogs exports the plog.Logs to all consumers wrapped by the current one.
 func (lsc *logsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	var errs error
+	var errs []error
 	// Initially pass to clone exporter to avoid the case where the optimization of sending
 	// the incoming data to a mutating consumer is used that may change the incoming data before
 	// cloning.
 	for _, lc := range lsc.clone {
 		clonedLogs := plog.NewLogs()
 		ld.CopyTo(clonedLogs)
-		errs = multierr.Append(errs, lc.ConsumeLogs(ctx, clonedLogs))
+		errs = append(errs, lc.ConsumeLogs(ctx, clonedLogs))
 	}
 	for _, lc := range lsc.pass {
-		errs = multierr.Append(errs, lc.ConsumeLogs(ctx, ld))
+		errs = append(errs, lc.ConsumeLogs(ctx, ld))
 	}
-	return errs
+	return errors.Join(errs...)
 }
 
 var _ connector.LogsRouter = (*logsRouter)(nil)
@@ -104,18 +103,18 @@ func (r *logsRouter) Consumer(pipelineIDs ...component.ID) (consumer.Logs, error
 		return nil, fmt.Errorf("missing consumers")
 	}
 	consumers := make([]consumer.Logs, 0, len(pipelineIDs))
-	var errors error
+	var errs []error
 	for _, pipelineID := range pipelineIDs {
 		c, ok := r.consumers[pipelineID]
 		if ok {
 			consumers = append(consumers, c)
 		} else {
-			errors = multierr.Append(errors, fmt.Errorf("missing consumer: %q", pipelineID))
+			errs = append(errs, fmt.Errorf("missing consumer: %q", pipelineID))
 		}
 	}
-	if errors != nil {
+	if err := errors.Join(errs...); err != nil {
 		// TODO potentially this could return a NewLogs with the valid consumers
-		return nil, errors
+		return nil, err
 	}
 	return NewLogs(consumers), nil
 }

@@ -5,13 +5,13 @@ package processorhelper // import "go.opentelemetry.io/collector/processor/proce
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -94,72 +94,73 @@ func (or *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
 		return nil
 	}
 	meter := cfg.ProcessorCreateSettings.MeterProvider.Meter(processorScope)
-	var errors, err error
+	var errs []error
+	var err error
 
 	or.acceptedSpansCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.AcceptedSpansKey,
 		metric.WithDescription("Number of spans successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	or.refusedSpansCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.RefusedSpansKey,
 		metric.WithDescription("Number of spans that were rejected by the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	or.droppedSpansCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.DroppedSpansKey,
 		metric.WithDescription("Number of spans that were dropped."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	or.acceptedMetricPointsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.AcceptedMetricPointsKey,
 		metric.WithDescription("Number of metric points successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	or.refusedMetricPointsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.RefusedMetricPointsKey,
 		metric.WithDescription("Number of metric points that were rejected by the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	or.droppedMetricPointsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.DroppedMetricPointsKey,
 		metric.WithDescription("Number of metric points that were dropped."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	or.acceptedLogRecordsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.AcceptedLogRecordsKey,
 		metric.WithDescription("Number of log records successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	or.refusedLogRecordsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.RefusedLogRecordsKey,
 		metric.WithDescription("Number of log records that were rejected by the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	or.droppedLogRecordsCounter, err = meter.Int64Counter(
 		obsmetrics.ProcessorPrefix+obsmetrics.DroppedLogRecordsKey,
 		metric.WithDescription("Number of log records that were dropped."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
-	return errors
+	return errors.Join(errs...)
 }
 
 func (or *ObsReport) recordWithOtel(ctx context.Context, dataType component.DataType, accepted, refused, dropped int64) {

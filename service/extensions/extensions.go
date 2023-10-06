@@ -5,11 +5,10 @@ package extensions // import "go.opentelemetry.io/collector/service/extensions"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
-
-	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -43,12 +42,12 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 // Shutdown stops all extensions.
 func (bes *Extensions) Shutdown(ctx context.Context) error {
 	bes.telemetry.Logger.Info("Stopping extensions...")
-	var errs error
+	var errs []error
 	for _, ext := range bes.extMap {
-		errs = multierr.Append(errs, ext.Shutdown(ctx))
+		errs = append(errs, ext.Shutdown(ctx))
 	}
 
-	return errs
+	return errors.Join(errs...)
 }
 
 func (bes *Extensions) NotifyPipelineReady() error {
@@ -64,24 +63,24 @@ func (bes *Extensions) NotifyPipelineReady() error {
 
 func (bes *Extensions) NotifyPipelineNotReady() error {
 	// Notify extensions in reverse order.
-	var errs error
+	var errs []error
 	for _, ext := range bes.extMap {
 		if pw, ok := ext.(extension.PipelineWatcher); ok {
-			errs = multierr.Append(errs, pw.NotReady())
+			errs = append(errs, pw.NotReady())
 		}
 	}
-	return errs
+	return errors.Join(errs...)
 }
 
 func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
-	var errs error
+	var errs []error
 	for _, ext := range bes.extMap {
 		if cw, ok := ext.(extension.ConfigWatcher); ok {
 			clonedConf := confmap.NewFromStringMap(conf.ToStringMap())
-			errs = multierr.Append(errs, cw.NotifyConfig(ctx, clonedConf))
+			errs = append(errs, cw.NotifyConfig(ctx, clonedConf))
 		}
 	}
-	return errs
+	return errors.Join(errs...)
 }
 
 func (bes *Extensions) GetExtensions() map[component.ID]component.Component {

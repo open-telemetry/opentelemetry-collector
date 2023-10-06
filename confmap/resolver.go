@@ -10,8 +10,6 @@ import (
 	"regexp"
 	"strings"
 
-	"go.uber.org/multierr"
-
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -175,13 +173,13 @@ func (mr *Resolver) Watch() <-chan error {
 func (mr *Resolver) Shutdown(ctx context.Context) error {
 	close(mr.watcher)
 
-	var errs error
-	errs = multierr.Append(errs, mr.closeIfNeeded(ctx))
+	var errs []error
+	errs = append(errs, mr.closeIfNeeded(ctx))
 	for _, p := range mr.providers {
-		errs = multierr.Append(errs, p.Shutdown(ctx))
+		errs = append(errs, p.Shutdown(ctx))
 	}
 
-	return errs
+	return errors.Join(errs...)
 }
 
 func (mr *Resolver) onChange(event *ChangeEvent) {
@@ -189,12 +187,12 @@ func (mr *Resolver) onChange(event *ChangeEvent) {
 }
 
 func (mr *Resolver) closeIfNeeded(ctx context.Context) error {
-	var err error
+	var errs []error
 	for _, ret := range mr.closers {
-		err = multierr.Append(err, ret(ctx))
+		errs = append(errs, ret(ctx))
 	}
 	mr.closers = nil
-	return err
+	return errors.Join(errs...)
 }
 
 func (mr *Resolver) retrieveValue(ctx context.Context, uri location) (*Retrieved, error) {

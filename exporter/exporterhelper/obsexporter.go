@@ -5,6 +5,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
+	"errors"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -12,7 +13,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -82,45 +82,46 @@ func (or *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
 	}
 	meter := cfg.ExporterCreateSettings.MeterProvider.Meter(exporterScope)
 
-	var errors, err error
+	var errs []error
+	var err error
 
 	or.sentSpans, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentSpansKey,
 		metric.WithDescription("Number of spans successfully sent to destination."),
 		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	or.failedToSendSpans, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendSpansKey,
 		metric.WithDescription("Number of spans in failed attempts to send to destination."),
 		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	or.sentMetricPoints, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentMetricPointsKey,
 		metric.WithDescription("Number of metric points successfully sent to destination."),
 		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	or.failedToSendMetricPoints, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendMetricPointsKey,
 		metric.WithDescription("Number of metric points in failed attempts to send to destination."),
 		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	or.sentLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentLogRecordsKey,
 		metric.WithDescription("Number of log record successfully sent to destination."),
 		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	or.failedToSendLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendLogRecordsKey,
 		metric.WithDescription("Number of log records in failed attempts to send to destination."),
 		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
-	return errors
+	return errors.Join(errs...)
 }
 
 // StartTracesOp is called at the start of an Export operation.

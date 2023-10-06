@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -83,7 +82,7 @@ func NewDefaultConfig() Config {
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
-	return multierr.Combine(
+	return errors.Join(
 		validateModules(c.Extensions),
 		validateModules(c.Receivers),
 		validateModules(c.Exporters),

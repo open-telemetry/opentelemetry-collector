@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"strings"
 
-	"go.uber.org/multierr"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
@@ -348,16 +347,16 @@ func (g *Graph) ShutdownAll(ctx context.Context) error {
 	// are stopped before downstream components.  This ensures
 	// that each component has a chance to drain to its consumer
 	// before the consumer is stopped.
-	var errs error
+	var errs []error
 	for i := 0; i < len(nodes); i++ {
 		comp, ok := nodes[i].(component.Component)
 		if !ok {
 			// Skip capabilities/fanout nodes
 			continue
 		}
-		errs = multierr.Append(errs, comp.Shutdown(ctx))
+		errs = append(errs, comp.Shutdown(ctx))
 	}
-	return errs
+	return errors.Join(errs...)
 }
 
 // Deprecated: [0.79.0] This function will be removed in the future.

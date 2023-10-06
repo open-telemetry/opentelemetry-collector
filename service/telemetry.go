@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -211,13 +210,13 @@ func (tel *telemetryInitializer) shutdown() error {
 	metricproducer.GlobalManager().DeleteProducer(tel.ocRegistry)
 	view.Unregister(tel.views...)
 
-	var errs error
+	var errs []error
 	for _, server := range tel.servers {
 		if server != nil {
-			errs = multierr.Append(errs, server.Close())
+			errs = append(errs, server.Close())
 		}
 	}
-	return errs
+	return errors.Join(errs...)
 }
 
 func sanitizePrometheusKey(str string) string {

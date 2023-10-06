@@ -5,6 +5,7 @@ package receiverhelper // import "go.opentelemetry.io/collector/receiver/receive
 
 import (
 	"context"
+	"errors"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -12,7 +13,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -99,51 +99,52 @@ func (rec *ObsReport) createOtelMetrics() error {
 		return nil
 	}
 
-	var errors, err error
+	var errs []error
+	var err error
 
 	rec.acceptedSpansCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedSpansKey,
 		metric.WithDescription("Number of spans successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	rec.refusedSpansCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedSpansKey,
 		metric.WithDescription("Number of spans that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	rec.acceptedMetricPointsCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedMetricPointsKey,
 		metric.WithDescription("Number of metric points successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	rec.refusedMetricPointsCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedMetricPointsKey,
 		metric.WithDescription("Number of metric points that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	rec.acceptedLogRecordsCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedLogRecordsKey,
 		metric.WithDescription("Number of log records successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
 	rec.refusedLogRecordsCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedLogRecordsKey,
 		metric.WithDescription("Number of log records that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = append(errs, err)
 
-	return errors
+	return errors.Join(errs...)
 }
 
 // StartTracesOp is called when a request is received from a client.
