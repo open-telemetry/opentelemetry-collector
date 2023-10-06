@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
@@ -34,6 +35,8 @@ type persistentQueue struct {
 	marshaler    RequestMarshaler
 	unmarshaler  RequestUnmarshaler
 	errCh        chan error
+	waitEnabled  bool
+	waitTimeout  time.Duration
 }
 
 // buildPersistentStorageName returns a name that is constructed out of queue name and signal type. This is done
@@ -44,7 +47,7 @@ func buildPersistentStorageName(name string, signal component.DataType) string {
 
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
 func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, marshaler RequestMarshaler,
-	unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
+	unmarshaler RequestUnmarshaler, waitEnabled bool, waitTimeout time.Duration) ProducerConsumerQueue {
 	return &persistentQueue{
 		capacity:     uint64(capacity),
 		numConsumers: numConsumers,
@@ -52,7 +55,9 @@ func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, 
 		marshaler:    marshaler,
 		unmarshaler:  unmarshaler,
 		stopChan:     make(chan struct{}),
-		errCh:        make(chan error, numConsumers)
+		errCh:        make(chan error, numConsumers),
+		waitEnabled:  waitEnabled,
+		waitTimeout:  waitTimeout,
 	}
 }
 
@@ -63,7 +68,7 @@ func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set Q
 		return err
 	}
 	storageName := buildPersistentStorageName(set.ID.Name(), set.DataType)
-	pq.storage = newPersistentContiguousStorage(ctx, storageName, storageClient, set.Logger, pq.capacity, pq.marshaler, pq.unmarshaler, set.WaitOnSend)
+	pq.storage = newPersistentContiguousStorage(ctx, storageName, storageClient, set.Logger, pq.capacity, pq.marshaler, pq.unmarshaler, pq.waitEnabled, pq.waitTimeout)
 	for i := 0; i < pq.numConsumers; i++ {
 		pq.stopWG.Add(1)
 		go func() {
@@ -85,6 +90,11 @@ func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set Q
 func (pq *persistentQueue) Produce(item Request) bool {
 	err := pq.storage.put(item)
 	return err == nil
+}
+
+// GetErrCh gets the channel that stores responses for sent requests.
+func (pq *persistentQueue) GetErrCh() chan error {
+	return pq.errCh
 }
 
 // Stop stops accepting items, shuts down the queue and closes the persistent queue

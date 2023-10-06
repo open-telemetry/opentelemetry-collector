@@ -7,7 +7,6 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -32,7 +31,7 @@ type boundedMemoryQueue struct {
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
 // callback for dropped items (e.g. useful to emit metrics).
-func NewBoundedMemoryQueue(capacity int, numConsumers int, waitSettings WaitOnSendSettings) ProducerConsumerQueue {
+func NewBoundedMemoryQueue(capacity int, numConsumers int, waitEnabled bool, waitTimeout time.Duration) ProducerConsumerQueue {
 	return &boundedMemoryQueue{
 		items:        make(chan Request, capacity),
 		stopped:      &atomic.Bool{},
@@ -40,8 +39,8 @@ func NewBoundedMemoryQueue(capacity int, numConsumers int, waitSettings WaitOnSe
 		capacity:     uint32(capacity),
 		numConsumers: numConsumers,
 		errCh:        make(chan error, numConsumers),
-		waitEnabled:  waitSettings.Enabled,
-		waitTimeout:  waitSettings.Timeout,
+		waitEnabled:  waitEnabled,
+		waitTimeout:  waitTimeout,
 	}
 }
 
@@ -108,8 +107,8 @@ func (q *boundedMemoryQueue) produceAndWait(item Request) bool {
 }
 
 // GetErrCh gets the channel that stores responses for sent requests.
-func (q *boundedMemoryQueue) GetErrCh(item Request, timeout time.Duration)  {
-	return q.ErrCh
+func (q *boundedMemoryQueue) GetErrCh() chan error {
+	return q.errCh
 }
 
 // Stop stops all consumers, as well as the length reporter if started,

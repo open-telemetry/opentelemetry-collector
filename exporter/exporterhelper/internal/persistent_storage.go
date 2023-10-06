@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -47,6 +48,7 @@ type persistentContiguousStorage struct {
 
 	putChan  chan struct{}
 	stopChan chan struct{}
+	readyChan chan struct{}
 	stopOnce sync.Once
 	capacity uint64
 
@@ -84,7 +86,7 @@ var (
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
 // queueName parameter must be a unique value that identifies the queue.
 func newPersistentContiguousStorage(ctx context.Context, queueName string, client storage.Client, logger *zap.Logger,
-	capacity uint64, marshaler RequestMarshaler, unmarshaler RequestUnmarshaler, waitSettings WaitOnSendSettings) *persistentContiguousStorage {
+	capacity uint64, marshaler RequestMarshaler, unmarshaler RequestUnmarshaler, waitEnabled bool, waitTimeout time.Duration) *persistentContiguousStorage {
 	pcs := &persistentContiguousStorage{
 		logger:      logger,
 		client:      client,
@@ -95,9 +97,10 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, clien
 		putChan:     make(chan struct{}, capacity),
 		reqChan:     make(chan Request),
 		stopChan:    make(chan struct{}),
+		readyChan:   make(chan struct{}, 1),
 		itemsCount:  &atomic.Uint64{},
-		waitEnabled: waitSettings.Enabled,
-		waitTimeout: waitSettings.Timeout,
+		waitEnabled: waitEnabled,
+		waitTimeout: waitTimeout,
 	}
 
 	initPersistentContiguousStorage(ctx, pcs)
@@ -185,7 +188,7 @@ func (pcs *persistentContiguousStorage) loop() {
 				if waitAtCapacity {
 					// was at capacity but just removed item from storage
 					// so signal to waiter to add item to storage.
-					Signal()
+					pcs.readyChan <- struct{}{}
 				}
 			}
 		}
@@ -225,12 +228,12 @@ func (pcs *persistentContiguousStorage) put(req Request) error {
 	if !pcs.waitEnabled && pcs.size() >= pcs.capacity {
 		pcs.logger.Warn("Maximum queue capacity reached", zap.String(zapQueueNameKey, pcs.queueName))
 		return errMaxCapacityReached
-	} else { // waiting on queue to have room
+	} else if pcs.size() == pcs.capacity { // waiting on queue to have room
 		timer := time.NewTimer(pcs.waitTimeout)
 		select {
-		case timer.C:
+		case <-timer.C:
 			return fmt.Errorf("Item dropped while waiting, timeout exceeded.")
-		case Wait():
+		case <-pcs.readyChan: // signals queue is no longer at capacity
 		}
 	}
 

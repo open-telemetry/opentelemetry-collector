@@ -112,9 +112,9 @@ func WithQueue(config QueueSettings) Option {
 		var queue internal.ProducerConsumerQueue
 		if config.Enabled {
 			if config.StorageID == nil {
-				queue = internal.NewBoundedMemoryQueue(config.QueueSize, config.NumConsumers)
+				queue = internal.NewBoundedMemoryQueue(config.QueueSize, config.NumConsumers, config.WaitOnSend.Enabled, config.WaitOnSend.Timeout)
 			} else {
-				queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID, o.marshaler, o.unmarshaler)
+				queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID, o.marshaler, o.unmarshaler, config.WaitOnSend.Enabled, config.WaitOnSend.Timeout)
 			}
 		}
 		qs := newQueueSender(o.set.ID, o.signal, queue, o.set.Logger, config.WaitOnSend)

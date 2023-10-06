@@ -212,7 +212,7 @@ func (qs *queueSender) send(req internal.Request) error {
 		err := qs.sendAndWait(req)
 		if err != nil {
 			qs.logger.Error(
-				"Dropping data: found error when sending", err,
+				"Dropping data: found error when sending", zap.Error(err),
 				zap.Int("dropped_items", req.Count()),
 			)
 			span.AddEvent("Dropped item, found error when sending.", trace.WithAttributes(qs.traceAttribute))
@@ -225,12 +225,10 @@ func (qs *queueSender) send(req internal.Request) error {
 }
 
 func (qs *queueSender) sendAndWait(req internal.Request) error {
-	span := trace.SpanFromContext(req.Context())
-	// should this call to ProduceAndWait be in a goroutine,
-	// so fetching a response will not be blocked by a full queue
-	err := ProduceAndWait(req, qs.waitset.Timeout)
-	if err != nil {
-		return err
+	// should this call to Produce be in a goroutine,
+	// so fetching a response will not be blocked by a full queue?
+	if !qs.queue.Produce(req) {
+		return fmt.Errorf("Unable to add item to queue")
 	}
 	// blocks until we get first ready response.
 	err, ok := <-qs.queue.GetErrCh()
