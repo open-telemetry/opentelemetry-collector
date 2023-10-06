@@ -109,7 +109,6 @@ func TestNotifyConfig(t *testing.T) {
 		extensionsConfigs map[component.ID]component.Config
 		serviceExtensions []component.ID
 		wantErrMsg        string
-		want              error
 	}{
 		{
 			name: "No notifiable extensions",
@@ -161,7 +160,7 @@ func TestNotifyConfig(t *testing.T) {
 			serviceExtensions: []component.ID{
 				component.NewID("notifiableErr"),
 			},
-			want: notificationError,
+			wantErrMsg: notificationError.Error(),
 		},
 	}
 
@@ -175,7 +174,11 @@ func TestNotifyConfig(t *testing.T) {
 			}, tt.serviceExtensions)
 			assert.NoError(t, err)
 			errs := extensions.NotifyConfig(context.Background(), confmap.NewFromStringMap(map[string]interface{}{}))
-			assert.Equal(t, tt.want, errs)
+			if tt.wantErrMsg != "" {
+				assert.EqualError(t, errs, tt.wantErrMsg)
+			} else {
+				assert.Nil(t, errs)
+			}
 		})
 	}
 }
