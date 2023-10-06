@@ -9,6 +9,7 @@ package ptrace
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
@@ -20,18 +21,20 @@ import (
 // Must use NewResourceSpansSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceSpansSlice struct {
-	orig *[]*otlptrace.ResourceSpans
+	orig  *[]*otlptrace.ResourceSpans
+	state *internal.State
 }
 
-func newResourceSpansSlice(orig *[]*otlptrace.ResourceSpans) ResourceSpansSlice {
-	return ResourceSpansSlice{orig}
+func newResourceSpansSlice(orig *[]*otlptrace.ResourceSpans, state *internal.State) ResourceSpansSlice {
+	return ResourceSpansSlice{orig: orig, state: state}
 }
 
 // NewResourceSpansSlice creates a ResourceSpansSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceSpansSlice() ResourceSpansSlice {
 	orig := []*otlptrace.ResourceSpans(nil)
-	return newResourceSpansSlice(&orig)
+	state := internal.StateMutable
+	return newResourceSpansSlice(&orig, &state)
 }
 
 // Len returns the number of elements in the slice.
@@ -50,7 +53,7 @@ func (es ResourceSpansSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ResourceSpansSlice) At(i int) ResourceSpans {
-	return newResourceSpans((*es.orig)[i])
+	return newResourceSpans((*es.orig)[i], es.state)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -66,6 +69,7 @@ func (es ResourceSpansSlice) At(i int) ResourceSpans {
 //	    // Here should set all the values for e.
 //	}
 func (es ResourceSpansSlice) EnsureCapacity(newCap int) {
+	es.state.AssertMutable()
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -79,6 +83,7 @@ func (es ResourceSpansSlice) EnsureCapacity(newCap int) {
 // AppendEmpty will append to the end of the slice an empty ResourceSpans.
 // It returns the newly added ResourceSpans.
 func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
+	es.state.AssertMutable()
 	*es.orig = append(*es.orig, &otlptrace.ResourceSpans{})
 	return es.At(es.Len() - 1)
 }
@@ -86,6 +91,8 @@ func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
+	es.state.AssertMutable()
+	dest.state.AssertMutable()
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -98,6 +105,7 @@ func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
+	es.state.AssertMutable()
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -117,12 +125,13 @@ func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
+	dest.state.AssertMutable()
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newResourceSpans((*es.orig)[i]).CopyTo(newResourceSpans((*dest.orig)[i]))
+			newResourceSpans((*es.orig)[i], es.state).CopyTo(newResourceSpans((*dest.orig)[i], dest.state))
 		}
 		return
 	}
@@ -130,7 +139,7 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 	wrappers := make([]*otlptrace.ResourceSpans, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newResourceSpans((*es.orig)[i]).CopyTo(newResourceSpans(wrappers[i]))
+		newResourceSpans((*es.orig)[i], es.state).CopyTo(newResourceSpans(wrappers[i], dest.state))
 	}
 	*dest.orig = wrappers
 }
@@ -139,5 +148,6 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 // provided less function so that two instances of ResourceSpansSlice
 // can be compared.
 func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) {
+	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

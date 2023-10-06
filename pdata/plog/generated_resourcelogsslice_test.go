@@ -12,13 +12,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
 func TestResourceLogsSlice(t *testing.T) {
 	es := NewResourceLogsSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newResourceLogsSlice(&[]*otlplogs.ResourceLogs{})
+	state := internal.StateMutable
+	es = newResourceLogsSlice(&[]*otlplogs.ResourceLogs{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewResourceLogs()
@@ -30,6 +32,19 @@ func TestResourceLogsSlice(t *testing.T) {
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
+}
+
+func TestResourceLogsSliceReadOnly(t *testing.T) {
+	sharedState := internal.StateReadOnly
+	es := newResourceLogsSlice(&[]*otlplogs.ResourceLogs{}, &sharedState)
+	assert.Equal(t, 0, es.Len())
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.EnsureCapacity(2) })
+	es2 := NewResourceLogsSlice()
+	es.CopyTo(es2)
+	assert.Panics(t, func() { es2.CopyTo(es) })
+	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
+	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
 }
 
 func TestResourceLogsSlice_CopyTo(t *testing.T) {
@@ -134,6 +149,6 @@ func fillTestResourceLogsSlice(es ResourceLogsSlice) {
 	*es.orig = make([]*otlplogs.ResourceLogs, 7)
 	for i := 0; i < 7; i++ {
 		(*es.orig)[i] = &otlplogs.ResourceLogs{}
-		fillTestResourceLogs(newResourceLogs((*es.orig)[i]))
+		fillTestResourceLogs(newResourceLogs((*es.orig)[i], es.state))
 	}
 }

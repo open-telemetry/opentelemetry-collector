@@ -122,21 +122,12 @@ type Settings struct {
 	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
-	// Drepecated: [v0.68.0] use Extensions.
-	Configs map[component.ID]component.Config
-
-	// Drepecated: [v0.68.0] use Extensions.
-	Factories map[component.Type]extension.Factory
-
 	// Extensions builder for extensions.
 	Extensions *extension.Builder
 }
 
 // New creates a new Extensions from Config.
 func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
-	if set.Extensions == nil {
-		set.Extensions = extension.NewBuilder(set.Configs, set.Factories)
-	}
 	exts := &Extensions{
 		telemetry: set.Telemetry,
 		extMap:    make(map[component.ID]extension.Extension),

@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/pdata/internal"
 )
 
 func TestNewFloat64Slice(t *testing.T) {
@@ -41,6 +43,27 @@ func TestNewFloat64Slice(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, float64(1), mv.At(0))
+}
+
+func TestFloat64SliceReadOnly(t *testing.T) {
+	raw := []float64{1, 2, 3}
+	state := internal.StateReadOnly
+	ms := Float64Slice(internal.NewFloat64Slice(&raw, &state))
+
+	assert.Equal(t, 3, ms.Len())
+	assert.Equal(t, float64(1), ms.At(0))
+	assert.Panics(t, func() { ms.Append(1) })
+	assert.Panics(t, func() { ms.EnsureCapacity(2) })
+	assert.Equal(t, raw, ms.AsRaw())
+	assert.Panics(t, func() { ms.FromRaw(raw) })
+
+	ms2 := NewFloat64Slice()
+	ms.CopyTo(ms2)
+	assert.Equal(t, ms.AsRaw(), ms2.AsRaw())
+	assert.Panics(t, func() { ms2.CopyTo(ms) })
+
+	assert.Panics(t, func() { ms.MoveTo(ms2) })
+	assert.Panics(t, func() { ms2.MoveTo(ms) })
 }
 
 func TestFloat64SliceAppend(t *testing.T) {
