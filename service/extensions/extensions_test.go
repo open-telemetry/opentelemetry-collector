@@ -296,17 +296,18 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			compID := component.NewID("statustest")
 			factory := newStatusTestExtensionFactory("statustest", tc.startErr, tc.shutdownErr)
 			config := factory.CreateDefaultConfig()
+			extensionsConfigs := map[component.ID]component.Config{
+				compID: config,
+			}
+			factories := map[component.Type]extension.Factory{
+				"statustest": factory,
+			}
 			extensions, err := New(
 				context.Background(),
 				Settings{
-					Telemetry: servicetelemetry.NewNopTelemetrySettings(),
-					BuildInfo: component.NewDefaultBuildInfo(),
-					Configs: map[component.ID]component.Config{
-						compID: config,
-					},
-					Factories: map[component.Type]extension.Factory{
-						"statustest": factory,
-					},
+					Telemetry:  servicetelemetry.NewNopTelemetrySettings(),
+					BuildInfo:  component.NewDefaultBuildInfo(),
+					Extensions: extension.NewBuilder(extensionsConfigs, factories),
 				},
 				[]component.ID{compID},
 			)
