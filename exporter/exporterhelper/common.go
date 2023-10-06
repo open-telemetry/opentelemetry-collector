@@ -117,7 +117,7 @@ func WithQueue(config QueueSettings) Option {
 				queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID, o.marshaler, o.unmarshaler)
 			}
 		}
-		qs := newQueueSender(o.set.ID, o.signal, queue, o.set.Logger)
+		qs := newQueueSender(o.set.ID, o.signal, queue, o.set.Logger, config.WaitOnSend)
 		o.queueSender = qs
 		o.setOnTemporaryFailure(qs.onTemporaryFailure)
 	}

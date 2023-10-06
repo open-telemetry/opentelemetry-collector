@@ -35,6 +35,15 @@ type QueueSettings struct {
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue
 	StorageID *component.ID `mapstructure:"storage"`
+	// WaitOnSend if enabled will wait when queue is full instead of dropping requests
+	WaitOnSend WaitOnSendSettings `mapstructure:"wait_on_send"`
+}
+
+type WaitOnSendSettings struct {
+	// Enabled indicates whether sending requests will block instead of dropping while queue is full. Default is disabled. 
+	Enabled bool `mapstructure:"enabled"`
+	// Timeout is the duration to wait before dropping a request. Default is 60s.
+	Timeout time.Duration `mapstructure:"timeout"`
 }
 
 // NewDefaultQueueSettings returns the default settings for QueueSettings.
@@ -46,6 +55,10 @@ func NewDefaultQueueSettings() QueueSettings {
 		// This can be estimated at 1-4 GB worth of maximum memory usage
 		// This default is probably still too high, and may be adjusted further down in a future release
 		QueueSize: defaultQueueSize,
+		WaitOnSend: WaitOnSendSettings{
+			Enabled: true,
+			Timeout: 1 * time.Minute,
+		},
 	}
 }
 
@@ -71,9 +84,10 @@ type queueSender struct {
 	traceAttribute   attribute.KeyValue
 	logger           *zap.Logger
 	requeuingEnabled bool
+	waitset          WaitOnSendSettings
 }
 
-func newQueueSender(id component.ID, signal component.DataType, queue internal.ProducerConsumerQueue, logger *zap.Logger) *queueSender {
+func newQueueSender(id component.ID, signal component.DataType, queue internal.ProducerConsumerQueue, logger *zap.Logger, waitset WaitOnSendSettings) *queueSender {
 	return &queueSender{
 		fullName:       id.String(),
 		id:             id,
@@ -83,6 +97,7 @@ func newQueueSender(id component.ID, signal component.DataType, queue internal.P
 		logger:         logger,
 		// TODO: this can be further exposed as a config param rather than relying on a type of queue
 		requeuingEnabled: queue != nil && queue.IsPersistent(),
+		waitset:          waitset,
 	}
 }
 
@@ -117,11 +132,18 @@ func (qs *queueSender) start(ctx context.Context, host component.Host, set expor
 		return nil
 	}
 
+	item.
 	err := qs.queue.Start(ctx, host, internal.QueueSettings{
 		CreateSettings: set,
 		DataType:       qs.signal,
 		Callback: func(item internal.Request) {
-			_ = qs.nextSender.send(item)
+			err := qs.nextSender.send(item)
+			ch := qs.queue.GetErrCh()
+			// channel capacity is NumConsumers, so this callback will block
+			// until these return values are processed.
+			if ch != nil {
+				ch <- err
+			}
 			item.OnProcessingFinished()
 		},
 	})
@@ -185,6 +207,32 @@ func (qs *queueSender) send(req internal.Request) error {
 		)
 		span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qs.traceAttribute))
 		return errSendingQueueIsFull
+	}
+
+	span.AddEvent("Enqueued item.", trace.WithAttributes(qs.traceAttribute))
+	return nil
+}
+
+func (qs *queueSender) sendAndWait(req internal.Request) error {
+	span := trace.SpanFromContext(req.Context())
+	err := ProduceAndWait(req, qs.waitset.Timeout)
+	if err != nil {
+		return err
+	}
+	err, ok := <-qs.queue.GetErrCh() 
+
+	if !ok {
+		// channel closed
+		return nil
+	}
+
+	if err != nil {
+		qs.logger.Error(
+			"Exporting failed. Dropping data.", 
+			zap.Int("dropped_items", req.Count()),
+			err,
+		)
+		return err
 	}
 
 	span.AddEvent("Enqueued item.", trace.WithAttributes(qs.traceAttribute))

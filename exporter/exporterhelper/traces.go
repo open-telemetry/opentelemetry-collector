@@ -24,6 +24,7 @@ type tracesRequest struct {
 	baseRequest
 	td     ptrace.Traces
 	pusher consumer.ConsumeTracesFunc
+	errCh  chan error
 }
 
 func newTracesRequest(ctx context.Context, td ptrace.Traces, pusher consumer.ConsumeTracesFunc) internal.Request {
