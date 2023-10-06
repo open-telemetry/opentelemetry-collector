@@ -129,6 +129,9 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extensi
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
+// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
+replace cloud.google.com/go => cloud.google.com/go v0.110.2
+
 retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1

@@ -46,7 +46,7 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 	scenarios := []struct {
 		name              string
 		decisionFunc      func() error
-		checkIfTestPassed func(*testing.T, int, RequestCounter)
+		checkIfTestPassed func(*testing.T, int, requestCounter)
 	}{
 		{
 			name: "always_succeed",
@@ -79,25 +79,24 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 	}
 }
 
-func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFunc func() error, checkIfTestPassed func(*testing.T, int, RequestCounter)) {
-	mockConsumerInstance := NewMockConsumer(decisionFunc)
-	rcv := params.MockReceiverFactory(mockConsumerInstance)
+func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFunc func() error, checkIfTestPassed func(*testing.T, int, requestCounter)) {
+	mockConsumerInstance := newMockConsumer(decisionFunc)
+	rcv := params.MockReceiverFactory(&mockConsumerInstance)
 	switch params.DataType {
 	case component.DataTypeLogs:
-		checkLogs(params, rcv, checkIfTestPassed)
+		checkLogs(params, rcv, &mockConsumerInstance, checkIfTestPassed)
 	case component.DataTypeTraces:
-		checkTraces(params, rcv, checkIfTestPassed)
+		checkTraces(params, rcv, &mockConsumerInstance, checkIfTestPassed)
 	case component.DataTypeMetrics:
-		checkMetrics(params, rcv, checkIfTestPassed)
+		checkMetrics(params, rcv, &mockConsumerInstance, checkIfTestPassed)
 	default:
 		require.FailNow(params.T, "must specify a valid DataType to test for")
 	}
 
 }
 
-func checkMetrics(params CheckConsumeContractParams, mockReceiver MockReceiver, checkIfTestPassed func(*testing.T, int, RequestCounter)) {
+func checkMetrics(params CheckConsumeContractParams, mockReceiver component.Component, mockConsumer *MockConsumer, checkIfTestPassed func(*testing.T, int, requestCounter)) {
 	ctx := context.Background()
-
 	var exp exporter.Metrics
 	var err error
 	exp, err = params.Factory.CreateMetricsExporter(ctx, NewNopCreateSettings(), params.Config)
@@ -110,8 +109,9 @@ func checkMetrics(params CheckConsumeContractParams, mockReceiver MockReceiver, 
 	defer func(exp exporter.Metrics, ctx context.Context) {
 		err = exp.Shutdown(ctx)
 		require.NoError(params.T, err)
-		err = mockReceiver.Stop()
+		err = mockReceiver.Shutdown(ctx)
 		require.NoError(params.T, err)
+		mockConsumer.clear()
 	}(exp, ctx)
 
 	for i := 0; i < params.NumberOfTestElements; i++ {
@@ -122,7 +122,7 @@ func checkMetrics(params CheckConsumeContractParams, mockReceiver MockReceiver, 
 		err = exp.ConsumeMetrics(ctx, data)
 	}
 
-	reqCounter := mockReceiver.RequestCounter()
+	reqCounter := mockConsumer.reqCounter
 	// The overall number of requests sent by exporter
 	fmt.Printf("Number of export tries: %d\n", reqCounter.total)
 	// Successfully delivered items
@@ -136,9 +136,8 @@ func checkMetrics(params CheckConsumeContractParams, mockReceiver MockReceiver, 
 	}, 2*time.Second, 100*time.Millisecond)
 }
 
-func checkTraces(params CheckConsumeContractParams, mockReceiver MockReceiver, checkIfTestPassed func(*testing.T, int, RequestCounter)) {
+func checkTraces(params CheckConsumeContractParams, mockReceiver component.Component, mockConsumer *MockConsumer, checkIfTestPassed func(*testing.T, int, requestCounter)) {
 	ctx := context.Background()
-
 	var exp exporter.Traces
 	var err error
 	exp, err = params.Factory.CreateTracesExporter(ctx, NewNopCreateSettings(), params.Config)
@@ -151,8 +150,9 @@ func checkTraces(params CheckConsumeContractParams, mockReceiver MockReceiver, c
 	defer func(exp exporter.Traces, ctx context.Context) {
 		err = exp.Shutdown(ctx)
 		require.NoError(params.T, err)
-		err = mockReceiver.Stop()
+		err = mockReceiver.Shutdown(ctx)
 		require.NoError(params.T, err)
+		mockConsumer.clear()
 	}(exp, ctx)
 
 	for i := 0; i < params.NumberOfTestElements; i++ {
@@ -163,7 +163,7 @@ func checkTraces(params CheckConsumeContractParams, mockReceiver MockReceiver, c
 		err = exp.ConsumeTraces(ctx, data)
 	}
 
-	reqCounter := mockReceiver.RequestCounter()
+	reqCounter := mockConsumer.reqCounter
 	// The overall number of requests sent by exporter
 	fmt.Printf("Number of export tries: %d\n", reqCounter.total)
 	// Successfully delivered items
@@ -177,9 +177,8 @@ func checkTraces(params CheckConsumeContractParams, mockReceiver MockReceiver, c
 	}, 2*time.Second, 100*time.Millisecond)
 }
 
-func checkLogs(params CheckConsumeContractParams, mockReceiver MockReceiver, checkIfTestPassed func(*testing.T, int, RequestCounter)) {
+func checkLogs(params CheckConsumeContractParams, mockReceiver component.Component, mockConsumer *MockConsumer, checkIfTestPassed func(*testing.T, int, requestCounter)) {
 	ctx := context.Background()
-
 	var exp exporter.Logs
 	var err error
 	exp, err = params.Factory.CreateLogsExporter(ctx, NewNopCreateSettings(), params.Config)
@@ -192,8 +191,9 @@ func checkLogs(params CheckConsumeContractParams, mockReceiver MockReceiver, che
 	defer func(exp exporter.Logs, ctx context.Context) {
 		err = exp.Shutdown(ctx)
 		require.NoError(params.T, err)
-		err = mockReceiver.Stop()
+		err = mockReceiver.Shutdown(ctx)
 		require.NoError(params.T, err)
+		mockConsumer.clear()
 	}(exp, ctx)
 
 	for i := 0; i < params.NumberOfTestElements; i++ {
@@ -204,7 +204,7 @@ func checkLogs(params CheckConsumeContractParams, mockReceiver MockReceiver, che
 		err = exp.ConsumeLogs(ctx, data)
 	}
 
-	reqCounter := mockReceiver.RequestCounter()
+	reqCounter := mockConsumer.reqCounter
 	// The overall number of requests sent by exporter
 	fmt.Printf("Number of export tries: %d\n", reqCounter.total)
 	// Successfully delivered items
@@ -219,7 +219,7 @@ func checkLogs(params CheckConsumeContractParams, mockReceiver MockReceiver, che
 }
 
 // Test is successful if all the elements were received successfully and no error was returned
-func alwaysSucceedsPassed(t *testing.T, allRecordsNumber int, reqCounter RequestCounter) {
+func alwaysSucceedsPassed(t *testing.T, allRecordsNumber int, reqCounter requestCounter) {
 	require.Equal(t, allRecordsNumber, reqCounter.success)
 	require.Equal(t, reqCounter.total, allRecordsNumber)
 	require.Equal(t, reqCounter.error.nonpermanent, 0)
@@ -227,7 +227,7 @@ func alwaysSucceedsPassed(t *testing.T, allRecordsNumber int, reqCounter Request
 }
 
 // Test is successful if all the elements were retried on non-permanent errors
-func randomNonPermanentErrorConsumeDecisionPassed(t *testing.T, allRecordsNumber int, reqCounter RequestCounter) {
+func randomNonPermanentErrorConsumeDecisionPassed(t *testing.T, allRecordsNumber int, reqCounter requestCounter) {
 	// more or equal tries than successes
 	require.GreaterOrEqual(t, reqCounter.total, reqCounter.success)
 	// it is retried on every error
@@ -236,13 +236,13 @@ func randomNonPermanentErrorConsumeDecisionPassed(t *testing.T, allRecordsNumber
 }
 
 // Test is successful if the calls are not retried on permanent errors
-func randomPermanentErrorConsumeDecisionPassed(t *testing.T, allRecordsNumber int, reqCounter RequestCounter) {
+func randomPermanentErrorConsumeDecisionPassed(t *testing.T, allRecordsNumber int, reqCounter requestCounter) {
 	require.Equal(t, allRecordsNumber-reqCounter.error.permanent, reqCounter.success)
 	require.Equal(t, reqCounter.total, allRecordsNumber)
 }
 
 // Test is successful if the calls are not retried on permanent errors
-func randomErrorConsumeDecisionPassed(t *testing.T, allRecordsNumber int, reqCounter RequestCounter) {
+func randomErrorConsumeDecisionPassed(t *testing.T, allRecordsNumber int, reqCounter requestCounter) {
 	require.Equal(t, allRecordsNumber-reqCounter.error.permanent, reqCounter.success)
 	require.Equal(t, reqCounter.total, allRecordsNumber+reqCounter.error.nonpermanent)
 }

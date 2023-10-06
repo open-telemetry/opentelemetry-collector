@@ -5,6 +5,7 @@ package exportertest // import "go.opentelemetry.io/collector/exporter/exportert
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/component"
 	"math/rand"
 	"sync"
 
@@ -22,13 +23,7 @@ import (
 var errNonPermanent = status.Error(codes.DeadlineExceeded, "non Permanent error")
 var errPermanent = status.Error(codes.Internal, "Permanent error")
 
-type MockReceiver interface {
-	Start() error
-	Stop() error
-	RequestCounter() RequestCounter
-}
-
-type MockReceiverFactory func(consumer MockConsumer) MockReceiver
+type MockReceiverFactory func(consumer *MockConsumer) component.Component
 
 // // randomNonPermanentErrorConsumeDecision is a decision function that succeeds approximately
 // // half of the time and fails with a non-permanent error the rest of the time.
@@ -63,36 +58,97 @@ func randomErrorsConsumeDecision() error {
 	return nil
 }
 
-type MockConsumer interface {
-	ConsumeLogs(_ context.Context, ld plog.Logs) error
-	ConsumeMetrics(_ context.Context, md pmetric.Metrics) error
-	ConsumeTraces(_ context.Context, td ptrace.Traces) error
-	Capabilities() consumer.Capabilities
-	Clear()
-	RequestCounter() RequestCounter
-}
-
-type mockConsumer struct {
-	reqCounter          RequestCounter
+type MockConsumer struct {
+	reqCounter          requestCounter
 	mux                 sync.Mutex
 	exportErrorFunction func() error
-	ReceivedTraces      []ptrace.Traces
-	ReceivedMetrics     []pmetric.Metrics
-	ReceivedLogs        []plog.Logs
+	receivedTraces      []ptrace.Traces
+	receivedMetrics     []pmetric.Metrics
+	receivedLogs        []plog.Logs
 }
 
-func NewMockConsumer(decisionFunc func() error) MockConsumer {
-	return &mockConsumer{
+func newMockConsumer(decisionFunc func() error) MockConsumer {
+	return MockConsumer{
 		reqCounter:          newRequestCounter(),
 		mux:                 sync.Mutex{},
 		exportErrorFunction: decisionFunc,
-		ReceivedTraces:      nil,
-		ReceivedMetrics:     nil,
-		ReceivedLogs:        nil,
+		receivedTraces:      nil,
+		receivedMetrics:     nil,
+		receivedLogs:        nil,
 	}
 }
 
-type RequestCounter struct {
+func (r *MockConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	r.reqCounter.total++
+	generatedError := r.exportErrorFunction()
+	logID, _ := idFromLogs(ld)
+	if generatedError != nil {
+		r.processError(generatedError, "log", logID)
+		return generatedError
+	}
+	fmt.Println("Successfully sent log number:", logID)
+	r.reqCounter.success++
+	r.receivedLogs = append(r.receivedLogs, ld)
+	return nil
+}
+
+func (r *MockConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	r.reqCounter.total++
+	generatedError := r.exportErrorFunction()
+	traceID, _ := idFromTraces(td)
+	if generatedError != nil {
+		r.processError(generatedError, "log", traceID)
+		return generatedError
+	}
+	fmt.Println("Successfully sent log number:", traceID)
+	r.reqCounter.success++
+	r.receivedTraces = append(r.receivedTraces, td)
+	return nil
+}
+
+func (r *MockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	r.reqCounter.total++
+	generatedError := r.exportErrorFunction()
+	traceID, _ := idFromMetrics(md)
+	if generatedError != nil {
+		r.processError(generatedError, "log", traceID)
+		return generatedError
+	}
+	fmt.Println("Successfully sent log number:", traceID)
+	r.reqCounter.success++
+	r.receivedMetrics = append(r.receivedMetrics, md)
+	return nil
+}
+
+func (r *MockConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{}
+}
+
+func (r *MockConsumer) processError(err error, dataType string, idOfElement string) {
+	if consumererror.IsPermanent(err) {
+		fmt.Println("permanent error happened")
+		fmt.Printf("Dropping %s number: %s\n", dataType, idOfElement)
+		r.reqCounter.error.permanent++
+	} else {
+		fmt.Println("non-permanent error happened")
+		fmt.Printf("Retrying %s number: %s\n", dataType, idOfElement)
+		r.reqCounter.error.nonpermanent++
+	}
+}
+
+func (r *MockConsumer) clear() {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	r.reqCounter = newRequestCounter()
+}
+
+type requestCounter struct {
 	success int
 	error   errorCounter
 	total   int
@@ -110,86 +166,12 @@ func newErrorCounter() errorCounter {
 	}
 }
 
-func newRequestCounter() RequestCounter {
-	return RequestCounter{
+func newRequestCounter() requestCounter {
+	return requestCounter{
 		success: 0,
 		error:   newErrorCounter(),
 		total:   0,
 	}
-}
-
-func (r *mockConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-	r.reqCounter.total++
-	generatedError := r.exportErrorFunction()
-	logID, _ := idFromLogs(ld)
-	if generatedError != nil {
-		r.processError(generatedError, "log", logID)
-		return generatedError
-	}
-	fmt.Println("Successfully sent log number:", logID)
-	r.reqCounter.success++
-	r.ReceivedLogs = append(r.ReceivedLogs, ld)
-	return nil
-}
-
-func (r *mockConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-	r.reqCounter.total++
-	generatedError := r.exportErrorFunction()
-	traceID, _ := idFromTraces(td)
-	if generatedError != nil {
-		r.processError(generatedError, "log", traceID)
-		return generatedError
-	}
-	fmt.Println("Successfully sent log number:", traceID)
-	r.reqCounter.success++
-	r.ReceivedTraces = append(r.ReceivedTraces, td)
-	return nil
-}
-
-func (r *mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-	r.reqCounter.total++
-	generatedError := r.exportErrorFunction()
-	traceID, _ := idFromMetrics(md)
-	if generatedError != nil {
-		r.processError(generatedError, "log", traceID)
-		return generatedError
-	}
-	fmt.Println("Successfully sent log number:", traceID)
-	r.reqCounter.success++
-	r.ReceivedMetrics = append(r.ReceivedMetrics, md)
-	return nil
-}
-
-func (r *mockConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{}
-}
-
-func (r *mockConsumer) processError(err error, dataType string, idOfElement string) {
-	if consumererror.IsPermanent(err) {
-		fmt.Println("permanent error happened")
-		fmt.Printf("Dropping %s number: %s\n", dataType, idOfElement)
-		r.reqCounter.error.permanent++
-	} else {
-		fmt.Println("non-permanent error happened")
-		fmt.Printf("Retrying %s number: %s\n", dataType, idOfElement)
-		r.reqCounter.error.nonpermanent++
-	}
-}
-
-func (r *mockConsumer) Clear() {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-	r.reqCounter = newRequestCounter()
-}
-
-func (r *mockConsumer) RequestCounter() RequestCounter {
-	return r.reqCounter
 }
 
 func idFromLogs(data plog.Logs) (string, error) {

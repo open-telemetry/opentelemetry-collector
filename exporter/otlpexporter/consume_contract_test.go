@@ -4,6 +4,7 @@
 package otlpexporter
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -43,9 +44,9 @@ func testConfig() component.Config {
 }
 
 // Define a function that matches the MockReceiverFactory signature
-func createMockOtlpReceiver(mockConsumer exportertest.MockConsumer) exportertest.MockReceiver {
+func createMockOtlpReceiver(mockConsumer *exportertest.MockConsumer) component.Component {
 	rcv := newOTLPDataReceiver(mockConsumer)
-	err := rcv.Start()
+	err := rcv.Start(context.Background(), nil)
 	if err != nil {
 		return nil
 	}
