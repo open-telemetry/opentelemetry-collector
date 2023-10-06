@@ -81,10 +81,9 @@ func TestBuildExtensions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := New(context.Background(), Settings{
-				Telemetry: componenttest.NewNopTelemetrySettings(),
-				BuildInfo: component.NewDefaultBuildInfo(),
-				Configs:   tt.extensionsConfigs,
-				Factories: tt.factories,
+				Telemetry:  componenttest.NewNopTelemetrySettings(),
+				BuildInfo:  component.NewDefaultBuildInfo(),
+				Extensions: extension.NewBuilder(tt.extensionsConfigs, tt.factories),
 			}, tt.config)
 			require.Error(t, err)
 			assert.EqualError(t, err, tt.wantErrMsg)
@@ -168,10 +167,9 @@ func TestNotifyConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			extensions, err := New(context.Background(), Settings{
-				Telemetry: componenttest.NewNopTelemetrySettings(),
-				BuildInfo: component.NewDefaultBuildInfo(),
-				Configs:   tt.extensionsConfigs,
-				Factories: tt.factories,
+				Telemetry:  componenttest.NewNopTelemetrySettings(),
+				BuildInfo:  component.NewDefaultBuildInfo(),
+				Extensions: extension.NewBuilder(tt.extensionsConfigs, tt.factories),
 			}, tt.serviceExtensions)
 			assert.NoError(t, err)
 			errs := extensions.NotifyConfig(context.Background(), confmap.NewFromStringMap(map[string]interface{}{}))
