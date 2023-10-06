@@ -23,6 +23,9 @@ func TestExemplar_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewExemplar(), ms)
 	assert.Equal(t, generateTestExemplar(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newExemplar(&otlpmetrics.Exemplar{}, &sharedState)) })
+	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, &sharedState).MoveTo(dest) })
 }
 
 func TestExemplar_CopyTo(t *testing.T) {
@@ -33,6 +36,8 @@ func TestExemplar_CopyTo(t *testing.T) {
 	orig = generateTestExemplar()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newExemplar(&otlpmetrics.Exemplar{}, &sharedState)) })
 }
 
 func TestExemplar_Timestamp(t *testing.T) {
@@ -54,6 +59,8 @@ func TestExemplar_DoubleValue(t *testing.T) {
 	ms.SetDoubleValue(float64(17.13))
 	assert.Equal(t, float64(17.13), ms.DoubleValue())
 	assert.Equal(t, ExemplarValueTypeDouble, ms.ValueType())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, &sharedState).SetDoubleValue(float64(17.13)) })
 }
 
 func TestExemplar_IntValue(t *testing.T) {
@@ -62,6 +69,8 @@ func TestExemplar_IntValue(t *testing.T) {
 	ms.SetIntValue(int64(17))
 	assert.Equal(t, int64(17), ms.IntValue())
 	assert.Equal(t, ExemplarValueTypeInt, ms.ValueType())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, &sharedState).SetIntValue(int64(17)) })
 }
 
 func TestExemplar_FilteredAttributes(t *testing.T) {
@@ -96,7 +105,7 @@ func generateTestExemplar() Exemplar {
 func fillTestExemplar(tv Exemplar) {
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(17)}
-	internal.FillTestMap(internal.NewMap(&tv.orig.FilteredAttributes))
+	internal.FillTestMap(internal.NewMap(&tv.orig.FilteredAttributes, tv.state))
 	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 }

@@ -13,7 +13,8 @@ import (
 type Logs internal.Logs
 
 func newLogs(orig *otlpcollectorlog.ExportLogsServiceRequest) Logs {
-	return Logs(internal.NewLogs(orig))
+	state := internal.StateMutable
+	return Logs(internal.NewLogs(orig, &state))
 }
 
 func (ms Logs) getOrig() *otlpcollectorlog.ExportLogsServiceRequest {
@@ -47,5 +48,10 @@ func (ms Logs) LogRecordCount() int {
 
 // ResourceLogs returns the ResourceLogsSlice associated with this Logs.
 func (ms Logs) ResourceLogs() ResourceLogsSlice {
-	return newResourceLogsSlice(&ms.getOrig().ResourceLogs)
+	return newResourceLogsSlice(&ms.getOrig().ResourceLogs, internal.GetLogsState(internal.Logs(ms)))
+}
+
+// MarkReadOnly marks the Logs as shared so that no further modifications can be done on it.
+func (ms Logs) MarkReadOnly() {
+	internal.SetLogsState(internal.Logs(ms), internal.StateReadOnly)
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,6 +22,9 @@ func TestResourceLogs_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewResourceLogs(), ms)
 	assert.Equal(t, generateTestResourceLogs(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState)) })
+	assert.Panics(t, func() { newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState).MoveTo(dest) })
 }
 
 func TestResourceLogs_CopyTo(t *testing.T) {
@@ -31,6 +35,8 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 	orig = generateTestResourceLogs()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState)) })
 }
 
 func TestResourceLogs_Resource(t *testing.T) {
@@ -44,6 +50,10 @@ func TestResourceLogs_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "", ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() {
+		newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
+	})
 }
 
 func TestResourceLogs_ScopeLogs(t *testing.T) {
@@ -60,7 +70,7 @@ func generateTestResourceLogs() ResourceLogs {
 }
 
 func fillTestResourceLogs(tv ResourceLogs) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource))
+	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeLogsSlice(newScopeLogsSlice(&tv.orig.ScopeLogs))
+	fillTestScopeLogsSlice(newScopeLogsSlice(&tv.orig.ScopeLogs, tv.state))
 }

@@ -20,10 +20,15 @@ func (ms {{ .structName }}) getOrig() *[]{{ .itemType }} {
 	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
 }
 
+func (ms {{ .structName }}) getState() *internal.State {
+	return internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
+}
+
 // New{{ .structName }} creates a new empty {{ .structName }}.
 func New{{ .structName }}() {{ .structName }} {
 	orig := []{{ .itemType }}(nil)
-	return {{ .structName }}(internal.New{{ .structName }}(&orig))
+	state := internal.StateMutable
+	return {{ .structName }}(internal.New{{ .structName }}(&orig, &state))
 }
 
 // AsRaw returns a copy of the []{{ .itemType }} slice.
@@ -33,6 +38,7 @@ func (ms {{ .structName }}) AsRaw() []{{ .itemType }} {
 
 // FromRaw copies raw []{{ .itemType }} into the slice {{ .structName }}.
 func (ms {{ .structName }}) FromRaw(val []{{ .itemType }}) {
+	ms.getState().AssertMutable()
 	*ms.getOrig() = copy{{ .structName }}(*ms.getOrig(), val)
 }
 
@@ -51,6 +57,7 @@ func (ms {{ .structName }}) At(i int) {{ .itemType }} {
 // SetAt sets {{ .itemType }} item at particular index.
 // Equivalent of {{ .lowerStructName }}[i] = val
 func (ms {{ .structName }}) SetAt(i int, val {{ .itemType }}) {
+	ms.getState().AssertMutable()
 	(*ms.getOrig())[i] = val
 }
 
@@ -61,6 +68,7 @@ func (ms {{ .structName }}) SetAt(i int, val {{ .itemType }}) {
 //	copy(buf, {{ .lowerStructName }})
 //	{{ .lowerStructName }} = buf
 func (ms {{ .structName }}) EnsureCapacity(newCap int) {
+	ms.getState().AssertMutable()
 	oldCap := cap(*ms.getOrig())
 	if newCap <= oldCap {
 		return
@@ -74,18 +82,22 @@ func (ms {{ .structName }}) EnsureCapacity(newCap int) {
 // Append appends extra elements to {{ .structName }}.
 // Equivalent of {{ .lowerStructName }} = append({{ .lowerStructName }}, elms...) 
 func (ms {{ .structName }}) Append(elms ...{{ .itemType }}) {
+	ms.getState().AssertMutable()
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and 
 // resetting the current instance to its zero value.
 func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
+	ms.getState().AssertMutable()
+	dest.getState().AssertMutable()
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
+	dest.getState().AssertMutable()
 	*dest.getOrig() = copy{{ .structName }}(*dest.getOrig(), *ms.getOrig())
 }
 
@@ -125,6 +137,27 @@ const immutableSliceTestTemplate = `func TestNew{{ .structName }}(t *testing.T) 
 	assert.Equal(t, {{ .itemType }}(1), mv.At(0))
 }
 
+func Test{{ .structName }}ReadOnly(t *testing.T) {
+	raw := []{{ .itemType }}{1, 2, 3}
+	state := internal.StateReadOnly
+	ms := {{ .structName }}(internal.New{{ .structName }}(&raw, &state))
+
+	assert.Equal(t, 3, ms.Len())
+	assert.Equal(t, {{ .itemType }}(1), ms.At(0))
+	assert.Panics(t, func() { ms.Append(1) })
+	assert.Panics(t, func() { ms.EnsureCapacity(2) })
+	assert.Equal(t, raw, ms.AsRaw())
+	assert.Panics(t, func() { ms.FromRaw(raw) })
+
+	ms2 := New{{ .structName }}()
+	ms.CopyTo(ms2)
+	assert.Equal(t, ms.AsRaw(), ms2.AsRaw())
+	assert.Panics(t, func() { ms2.CopyTo(ms) })
+	
+	assert.Panics(t, func() { ms.MoveTo(ms2) })
+	assert.Panics(t, func() { ms2.MoveTo(ms) })
+}
+
 func Test{{ .structName }}Append(t *testing.T) {
 	ms := New{{ .structName }}()
 	ms.FromRaw([]{{ .itemType }}{1, 2, 3})
@@ -144,14 +177,19 @@ func Test{{ .structName }}EnsureCapacity(t *testing.T) {
 const primitiveSliceInternalTemplate = `
 type {{ .structName }} struct {
 	orig *[]{{ .itemType }}
+	state *State
 }
 
 func GetOrig{{ .structName }}(ms {{ .structName }}) *[]{{ .itemType }} {
 	return ms.orig
 }
 
-func New{{ .structName }}(orig *[]{{ .itemType }}) {{ .structName }} {
-	return {{ .structName }}{orig: orig}
+func Get{{ .structName }}State(ms {{ .structName }}) *State {
+	return ms.state
+}
+
+func New{{ .structName }}(orig *[]{{ .itemType }}, state *State) {{ .structName }} {
+	return {{ .structName }}{orig: orig, state: state}
 }`
 
 // primitiveSliceStruct generates a struct for a slice of primitive value elements. The structs are always generated

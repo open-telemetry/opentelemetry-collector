@@ -10,6 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/pdata/internal"
+	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestExponentialHistogramDataPointBuckets_MoveTo(t *testing.T) {
@@ -18,6 +21,13 @@ func TestExponentialHistogramDataPointBuckets_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewExponentialHistogramDataPointBuckets(), ms)
 	assert.Equal(t, generateTestExponentialHistogramDataPointBuckets(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() {
+		ms.MoveTo(newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &sharedState))
+	})
+	assert.Panics(t, func() {
+		newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &sharedState).MoveTo(dest)
+	})
 }
 
 func TestExponentialHistogramDataPointBuckets_CopyTo(t *testing.T) {
@@ -28,6 +38,10 @@ func TestExponentialHistogramDataPointBuckets_CopyTo(t *testing.T) {
 	orig = generateTestExponentialHistogramDataPointBuckets()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() {
+		ms.CopyTo(newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &sharedState))
+	})
 }
 
 func TestExponentialHistogramDataPointBuckets_Offset(t *testing.T) {
@@ -35,6 +49,10 @@ func TestExponentialHistogramDataPointBuckets_Offset(t *testing.T) {
 	assert.Equal(t, int32(0), ms.Offset())
 	ms.SetOffset(int32(909))
 	assert.Equal(t, int32(909), ms.Offset())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() {
+		newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &sharedState).SetOffset(int32(909))
+	})
 }
 
 func TestExponentialHistogramDataPointBuckets_BucketCounts(t *testing.T) {

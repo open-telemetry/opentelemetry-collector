@@ -9,6 +9,7 @@ package ptrace
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
@@ -20,18 +21,20 @@ import (
 // Must use NewSpanLinkSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanLinkSlice struct {
-	orig *[]*otlptrace.Span_Link
+	orig  *[]*otlptrace.Span_Link
+	state *internal.State
 }
 
-func newSpanLinkSlice(orig *[]*otlptrace.Span_Link) SpanLinkSlice {
-	return SpanLinkSlice{orig}
+func newSpanLinkSlice(orig *[]*otlptrace.Span_Link, state *internal.State) SpanLinkSlice {
+	return SpanLinkSlice{orig: orig, state: state}
 }
 
 // NewSpanLinkSlice creates a SpanLinkSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSpanLinkSlice() SpanLinkSlice {
 	orig := []*otlptrace.Span_Link(nil)
-	return newSpanLinkSlice(&orig)
+	state := internal.StateMutable
+	return newSpanLinkSlice(&orig, &state)
 }
 
 // Len returns the number of elements in the slice.
@@ -50,7 +53,7 @@ func (es SpanLinkSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es SpanLinkSlice) At(i int) SpanLink {
-	return newSpanLink((*es.orig)[i])
+	return newSpanLink((*es.orig)[i], es.state)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -66,6 +69,7 @@ func (es SpanLinkSlice) At(i int) SpanLink {
 //	    // Here should set all the values for e.
 //	}
 func (es SpanLinkSlice) EnsureCapacity(newCap int) {
+	es.state.AssertMutable()
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -79,6 +83,7 @@ func (es SpanLinkSlice) EnsureCapacity(newCap int) {
 // AppendEmpty will append to the end of the slice an empty SpanLink.
 // It returns the newly added SpanLink.
 func (es SpanLinkSlice) AppendEmpty() SpanLink {
+	es.state.AssertMutable()
 	*es.orig = append(*es.orig, &otlptrace.Span_Link{})
 	return es.At(es.Len() - 1)
 }
@@ -86,6 +91,8 @@ func (es SpanLinkSlice) AppendEmpty() SpanLink {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {
+	es.state.AssertMutable()
+	dest.state.AssertMutable()
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -98,6 +105,7 @@ func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
+	es.state.AssertMutable()
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -117,12 +125,13 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
+	dest.state.AssertMutable()
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newSpanLink((*es.orig)[i]).CopyTo(newSpanLink((*dest.orig)[i]))
+			newSpanLink((*es.orig)[i], es.state).CopyTo(newSpanLink((*dest.orig)[i], dest.state))
 		}
 		return
 	}
@@ -130,7 +139,7 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 	wrappers := make([]*otlptrace.Span_Link, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newSpanLink((*es.orig)[i]).CopyTo(newSpanLink(wrappers[i]))
+		newSpanLink((*es.orig)[i], es.state).CopyTo(newSpanLink(wrappers[i], dest.state))
 	}
 	*dest.orig = wrappers
 }
@@ -139,5 +148,6 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 // provided less function so that two instances of SpanLinkSlice
 // can be compared.
 func (es SpanLinkSlice) Sort(less func(a, b SpanLink) bool) {
+	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
