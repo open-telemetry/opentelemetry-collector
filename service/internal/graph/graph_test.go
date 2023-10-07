@@ -861,22 +861,34 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			for _, e := range allExporters[component.DataTypeTraces] {
 				tracesExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(tracesExporter.Traces))
+				expected := testdata.GenerateTraces(1)
+				if len(allExporters[component.DataTypeTraces]) > 1 {
+					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
+				}
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, testdata.GenerateTraces(1), tracesExporter.Traces[0])
+					assert.EqualValues(t, expected, tracesExporter.Traces[0])
 				}
 			}
 			for _, e := range allExporters[component.DataTypeMetrics] {
 				metricsExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(metricsExporter.Metrics))
+				expected := testdata.GenerateMetrics(1)
+				if len(allExporters[component.DataTypeMetrics]) > 1 {
+					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
+				}
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, testdata.GenerateMetrics(1), metricsExporter.Metrics[0])
+					assert.EqualValues(t, expected, metricsExporter.Metrics[0])
 				}
 			}
 			for _, e := range allExporters[component.DataTypeLogs] {
 				logsExporter := e.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(logsExporter.Logs))
+				expected := testdata.GenerateLogs(1)
+				if len(allExporters[component.DataTypeLogs]) > 1 {
+					expected.MarkReadOnly() // multiple read-only exporters should get read-only pdata
+				}
 				for i := 0; i < test.expectedPerExporter; i++ {
-					assert.EqualValues(t, testdata.GenerateLogs(1), logsExporter.Logs[0])
+					assert.EqualValues(t, expected, logsExporter.Logs[0])
 				}
 			}
 		})
