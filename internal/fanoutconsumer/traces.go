@@ -44,18 +44,19 @@ func (tsc *tracesConsumer) Capabilities() consumer.Capabilities {
 func (tsc *tracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	var errs error
 
-	// Clone the data before sending to mutable consumers.
-	// The only exception is the last consumer which is allowed to mutate the data only if there are no
-	// other non-mutating consumers and the data is mutable. Never share the same data between
-	// a mutating and a non-mutating consumer since the non-mutating consumer may process
-	// data async and the mutating consumer may change the data before that.
-	for i, tc := range tsc.mutable {
-		if i < len(tsc.mutable)-1 || td.IsReadOnly() || len(tsc.readonly) > 0 {
-			clonedTraces := ptrace.NewTraces()
-			td.CopyTo(clonedTraces)
-			errs = multierr.Append(errs, tc.ConsumeTraces(ctx, clonedTraces))
+	if len(tsc.mutable) > 0 {
+		// Clone the data before sending to all mutating consumers except the last one.
+		for i := 0; i < len(tsc.mutable)-1; i++ {
+			errs = multierr.Append(errs, tsc.mutable[i].ConsumeTraces(ctx, cloneTraces(td)))
+		}
+		// Send data as is to the last mutating consumer only if there are no other non-mutating consumers and the
+		// data is mutable. Never share the same data between a mutating and a non-mutating consumer since the
+		// non-mutating consumer may process data async and the mutating consumer may change the data before that.
+		lastConsumer := tsc.mutable[len(tsc.mutable)-1]
+		if len(tsc.readonly) == 0 && !td.IsReadOnly() {
+			errs = multierr.Append(errs, lastConsumer.ConsumeTraces(ctx, td))
 		} else {
-			errs = multierr.Append(errs, tc.ConsumeTraces(ctx, td))
+			errs = multierr.Append(errs, lastConsumer.ConsumeTraces(ctx, cloneTraces(td)))
 		}
 	}
 
@@ -68,6 +69,12 @@ func (tsc *tracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 	}
 
 	return errs
+}
+
+func cloneTraces(td ptrace.Traces) ptrace.Traces {
+	clonedTraces := ptrace.NewTraces()
+	td.CopyTo(clonedTraces)
+	return clonedTraces
 }
 
 var _ connector.TracesRouter = (*tracesRouter)(nil)

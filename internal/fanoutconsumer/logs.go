@@ -46,18 +46,19 @@ func (lsc *logsConsumer) Capabilities() consumer.Capabilities {
 func (lsc *logsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	var errs error
 
-	// Clone the data before sending to mutable consumers.
-	// The only exception is the last consumer which is allowed to mutate the data only if there are no
-	// other non-mutating consumers and the data is mutable. Never share the same data between
-	// a mutating and a non-mutating consumer since the non-mutating consumer may process
-	// data async and the mutating consumer may change the data before that.
-	for i, lc := range lsc.mutable {
-		if i < len(lsc.mutable)-1 || ld.IsReadOnly() || len(lsc.readonly) > 0 {
-			clonedLogs := plog.NewLogs()
-			ld.CopyTo(clonedLogs)
-			errs = multierr.Append(errs, lc.ConsumeLogs(ctx, clonedLogs))
+	if len(lsc.mutable) > 0 {
+		// Clone the data before sending to all mutating consumers except the last one.
+		for i := 0; i < len(lsc.mutable)-1; i++ {
+			errs = multierr.Append(errs, lsc.mutable[i].ConsumeLogs(ctx, cloneLogs(ld)))
+		}
+		// Send data as is to the last mutating consumer only if there are no other non-mutating consumers and the
+		// data is mutable. Never share the same data between a mutating and a non-mutating consumer since the
+		// non-mutating consumer may process data async and the mutating consumer may change the data before that.
+		lastConsumer := lsc.mutable[len(lsc.mutable)-1]
+		if len(lsc.readonly) == 0 && !ld.IsReadOnly() {
+			errs = multierr.Append(errs, lastConsumer.ConsumeLogs(ctx, ld))
 		} else {
-			errs = multierr.Append(errs, lc.ConsumeLogs(ctx, ld))
+			errs = multierr.Append(errs, lastConsumer.ConsumeLogs(ctx, cloneLogs(ld)))
 		}
 	}
 
@@ -70,6 +71,12 @@ func (lsc *logsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	}
 
 	return errs
+}
+
+func cloneLogs(ld plog.Logs) plog.Logs {
+	clonedLogs := plog.NewLogs()
+	ld.CopyTo(clonedLogs)
+	return clonedLogs
 }
 
 var _ connector.LogsRouter = (*logsRouter)(nil)

@@ -44,18 +44,19 @@ func (msc *metricsConsumer) Capabilities() consumer.Capabilities {
 func (msc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	var errs error
 
-	// Clone the data before sending to mutable consumers.
-	// The only exception is the last consumer which is allowed to mutate the data only if there are no
-	// other non-mutating consumers and the data is mutable. Never share the same data between
-	// a mutating and a non-mutating consumer since the non-mutating consumer may process
-	// data async and the mutating consumer may change the data before that.
-	for i, mc := range msc.mutable {
-		if i < len(msc.mutable)-1 || md.IsReadOnly() || len(msc.readonly) > 0 {
-			clonedMetrics := pmetric.NewMetrics()
-			md.CopyTo(clonedMetrics)
-			errs = multierr.Append(errs, mc.ConsumeMetrics(ctx, clonedMetrics))
+	if len(msc.mutable) > 0 {
+		// Clone the data before sending to all mutating consumers except the last one.
+		for i := 0; i < len(msc.mutable)-1; i++ {
+			errs = multierr.Append(errs, msc.mutable[i].ConsumeMetrics(ctx, cloneMetrics(md)))
+		}
+		// Send data as is to the last mutating consumer only if there are no other non-mutating consumers and the
+		// data is mutable. Never share the same data between a mutating and a non-mutating consumer since the
+		// non-mutating consumer may process data async and the mutating consumer may change the data before that.
+		lastConsumer := msc.mutable[len(msc.mutable)-1]
+		if len(msc.readonly) == 0 && !md.IsReadOnly() {
+			errs = multierr.Append(errs, lastConsumer.ConsumeMetrics(ctx, md))
 		} else {
-			errs = multierr.Append(errs, mc.ConsumeMetrics(ctx, md))
+			errs = multierr.Append(errs, lastConsumer.ConsumeMetrics(ctx, cloneMetrics(md)))
 		}
 	}
 
@@ -68,6 +69,12 @@ func (msc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	}
 
 	return errs
+}
+
+func cloneMetrics(md pmetric.Metrics) pmetric.Metrics {
+	clonedMetrics := pmetric.NewMetrics()
+	md.CopyTo(clonedMetrics)
+	return clonedMetrics
 }
 
 var _ connector.MetricsRouter = (*metricsRouter)(nil)
