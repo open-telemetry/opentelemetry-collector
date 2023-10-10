@@ -34,7 +34,7 @@ func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 // createTestQueue creates and starts a fake queue with the given capacity and number of consumers.
 func createTestQueue(t *testing.T, capacity, numConsumers int, callback func(item Request)) ProducerConsumerQueue {
 	pq := NewPersistentQueue(capacity, numConsumers, component.ID{}, newFakeTracesRequestMarshalerFunc(),
-		newFakeTracesRequestUnmarshalerFunc())
+		newFakeTracesRequestUnmarshalerFunc(), false, 1 * time.Second)
 	host := &mockHost{ext: map[component.ID]component.Component{
 		{}: NewMockStorageExtension(nil),
 	}}
@@ -47,7 +47,7 @@ func createTestQueue(t *testing.T, capacity, numConsumers int, callback func(ite
 func TestPersistentQueue_Capacity(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		pq := NewPersistentQueue(5, 1, component.ID{}, newFakeTracesRequestMarshalerFunc(),
-			newFakeTracesRequestUnmarshalerFunc())
+			newFakeTracesRequestUnmarshalerFunc(), false, 1 * time.Second)
 		host := &mockHost{ext: map[component.ID]component.Component{
 			{}: NewMockStorageExtension(nil),
 		}}

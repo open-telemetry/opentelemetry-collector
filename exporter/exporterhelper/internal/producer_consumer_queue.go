@@ -37,6 +37,6 @@ type ProducerConsumerQueue interface {
 	// IsPersistent returns true if the queue is persistent.
 	// TODO: Do not expose this method if the interface moves to a public package.
 	IsPersistent() bool
-	// GetErrCh returns the channel that represents a queue of responses from calls to Produce
+	// GetErrCh returns the channel that represents a queue of responses from calls to Produce.
 	GetErrCh() chan error
 }

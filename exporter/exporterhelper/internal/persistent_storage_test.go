@@ -32,7 +32,7 @@ func createTestClient(extension storage.Extension) storage.Client {
 
 func createTestPersistentStorageWithLoggingAndCapacity(client storage.Client, logger *zap.Logger, capacity uint64) *persistentContiguousStorage {
 	return newPersistentContiguousStorage(context.Background(), "foo", client, logger, capacity,
-		newFakeTracesRequestMarshalerFunc(), newFakeTracesRequestUnmarshalerFunc())
+		newFakeTracesRequestMarshalerFunc(), newFakeTracesRequestUnmarshalerFunc(), false, 1 * time.Second)
 }
 
 func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage {

@@ -7,7 +7,6 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -107,11 +106,6 @@ func (q *boundedMemoryQueue) produceAndWait(item Request) bool {
 // GetErrCh gets the channel that stores responses for sent requests.
 func (q *boundedMemoryQueue) GetErrCh() chan error {
 	return q.errCh
-}
-
-// WaitEnabled returns whether wait settings are enabled.
-func (q *boundedMemoryQueue) WaitEnabled() bool {
-	return q.waitEnabled
 }
 
 // Stop stops all consumers, as well as the length reporter if started,
