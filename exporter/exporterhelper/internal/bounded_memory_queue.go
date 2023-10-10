@@ -27,6 +27,7 @@ type boundedMemoryQueue struct {
 	errCh        chan error
 	waitEnabled  bool
 	waitTimeout  time.Duration
+	stoppedChan  chan int
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
@@ -41,6 +42,7 @@ func NewBoundedMemoryQueue(capacity int, numConsumers int, waitEnabled bool, wai
 		errCh:        make(chan error, numConsumers),
 		waitEnabled:  waitEnabled,
 		waitTimeout:  waitTimeout,
+		stoppedChan:  make(chan int, 1),
 	}
 }
 
@@ -55,6 +57,10 @@ func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set Queu
 			startWG.Done()
 			defer q.stopWG.Done()
 			for item := range q.items {
+				if q.stopped.Load() {
+					q.stoppedChan <- 1
+					return
+				}
 				q.size.Add(^uint32(0))
 				set.Callback(item)
 			}
@@ -75,7 +81,7 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 	// should match the capacity of the new queue
 	if !q.waitEnabled && q.size.Load() >= q.capacity {
 		return false
-	} else if q.waitEnabled { // wait until there is space in the queue
+	} else if q.waitEnabled {
 		return q.produceAndWait(item)
 	}
 
@@ -93,9 +99,16 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 // Same as Produce but waits for response before queuing the next item
 func (q *boundedMemoryQueue) produceAndWait(item Request) bool {
 	timer := time.NewTimer(q.waitTimeout)
+	if q.stopped.Load() {
+		return false
+	}
 
 	select {
 	case <-timer.C:
+		return false
+	case <-q.stoppedChan:
+		// signalled that Stop() was called so close q.items.
+		close(q.items)
 		return false
 	case q.items <- item:
 		q.size.Add(1)
@@ -112,7 +125,9 @@ func (q *boundedMemoryQueue) GetErrCh() chan error {
 // and releases the items channel. It blocks until all consumers have stopped.
 func (q *boundedMemoryQueue) Stop() {
 	q.stopped.Store(true) // disable producer
-	close(q.items)
+	// if waiting is enabled need to signal to senders that Stop()
+	// has been called and q.items needs to be gracefully closed.
+	// q.stoppedChan <- 1
 	q.stopWG.Wait()
 }
 
