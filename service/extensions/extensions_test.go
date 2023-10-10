@@ -16,8 +16,6 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
-	"go.opentelemetry.io/collector/service/internal/status"
 )
 
 func TestBuildExtensions(t *testing.T) {
@@ -83,7 +81,7 @@ func TestBuildExtensions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := New(context.Background(), Settings{
-				Telemetry:  servicetelemetry.NewNopTelemetrySettings(),
+				Telemetry:  componenttest.NewNopTelemetrySettings(),
 				BuildInfo:  component.NewDefaultBuildInfo(),
 				Extensions: extension.NewBuilder(tt.extensionsConfigs, tt.factories),
 			}, tt.config)
@@ -169,7 +167,7 @@ func TestNotifyConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			extensions, err := New(context.Background(), Settings{
-				Telemetry:  servicetelemetry.NewNopTelemetrySettings(),
+				Telemetry:  componenttest.NewNopTelemetrySettings(),
 				BuildInfo:  component.NewDefaultBuildInfo(),
 				Extensions: extension.NewBuilder(tt.extensionsConfigs, tt.factories),
 			}, tt.serviceExtensions)
@@ -239,125 +237,6 @@ func newCreateErrorExtensionFactory() extension.Factory {
 		},
 		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
 			return nil, errors.New("cannot create \"err\" extension type")
-		},
-		component.StabilityLevelDevelopment,
-	)
-}
-
-func TestStatusReportedOnStartupShutdown(t *testing.T) {
-	// compare two slices of status events ignoring timestamp
-	assertEqualStatuses := func(t *testing.T, evts1, evts2 []*component.StatusEvent) {
-		assert.Equal(t, len(evts1), len(evts2))
-		for i := 0; i < len(evts1); i++ {
-			ev1 := evts1[i]
-			ev2 := evts2[i]
-			assert.Equal(t, ev1.Status(), ev2.Status())
-			assert.Equal(t, ev1.Err(), ev2.Err())
-		}
-	}
-
-	for _, tc := range []struct {
-		name             string
-		expectedStatuses []*component.StatusEvent
-		startErr         error
-		shutdownErr      error
-	}{
-		{
-			name: "successful startup/shutdown",
-			expectedStatuses: []*component.StatusEvent{
-				component.NewStatusEvent(component.StatusStarting),
-				component.NewStatusEvent(component.StatusStopping),
-				component.NewStatusEvent(component.StatusStopped),
-			},
-			startErr:    nil,
-			shutdownErr: nil,
-		},
-		{
-			name: "start error",
-			expectedStatuses: []*component.StatusEvent{
-				component.NewStatusEvent(component.StatusStarting),
-				component.NewPermanentErrorEvent(assert.AnError),
-			},
-			startErr:    assert.AnError,
-			shutdownErr: nil,
-		},
-		{
-			name: "shutdown error",
-			expectedStatuses: []*component.StatusEvent{
-				component.NewStatusEvent(component.StatusStarting),
-				component.NewStatusEvent(component.StatusStopping),
-				component.NewPermanentErrorEvent(assert.AnError),
-			},
-			startErr:    nil,
-			shutdownErr: assert.AnError,
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			compID := component.NewID("statustest")
-			factory := newStatusTestExtensionFactory("statustest", tc.startErr, tc.shutdownErr)
-			config := factory.CreateDefaultConfig()
-			extensionsConfigs := map[component.ID]component.Config{
-				compID: config,
-			}
-			factories := map[component.Type]extension.Factory{
-				"statustest": factory,
-			}
-			extensions, err := New(
-				context.Background(),
-				Settings{
-					Telemetry:  servicetelemetry.NewNopTelemetrySettings(),
-					BuildInfo:  component.NewDefaultBuildInfo(),
-					Extensions: extension.NewBuilder(extensionsConfigs, factories),
-				},
-				[]component.ID{compID},
-			)
-
-			assert.NoError(t, err)
-
-			var actualStatuses []*component.StatusEvent
-			init, statusFunc := status.NewServiceStatusFunc(func(id *component.InstanceID, ev *component.StatusEvent) {
-				actualStatuses = append(actualStatuses, ev)
-			})
-			extensions.telemetry.ReportComponentStatus = statusFunc
-			init()
-
-			assert.Equal(t, tc.startErr, extensions.Start(context.Background(), componenttest.NewNopHost()))
-			if tc.startErr == nil {
-				assert.Equal(t, tc.shutdownErr, extensions.Shutdown(context.Background()))
-			}
-			assertEqualStatuses(t, tc.expectedStatuses, actualStatuses)
-		})
-	}
-}
-
-type statusTestExtension struct {
-	startErr    error
-	shutdownErr error
-}
-
-func (ext *statusTestExtension) Start(_ context.Context, _ component.Host) error {
-	return ext.startErr
-}
-
-func (ext *statusTestExtension) Shutdown(_ context.Context) error {
-	return ext.shutdownErr
-}
-
-func newStatusTestExtension(startErr, shutdownErr error) *statusTestExtension {
-	return &statusTestExtension{
-		startErr:    startErr,
-		shutdownErr: shutdownErr,
-	}
-}
-
-func newStatusTestExtensionFactory(name component.Type, startErr, shutdownErr error) extension.Factory {
-	return extension.NewFactory(
-		name,
-		func() component.Config {
-			return &struct{}{}
-		},
-		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
-			return newStatusTestExtension(startErr, shutdownErr), nil
 		},
 		component.StabilityLevelDevelopment,
 	)

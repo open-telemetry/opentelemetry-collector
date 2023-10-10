@@ -175,10 +175,3 @@ type CreateDefaultConfigFunc func() Config
 func (f CreateDefaultConfigFunc) CreateDefaultConfig() Config {
 	return f()
 }
-
-// InstanceID uniquely identifies a component instance
-type InstanceID struct {
-	ID          ID
-	Kind        Kind
-	PipelineIDs map[ID]struct{}
-}

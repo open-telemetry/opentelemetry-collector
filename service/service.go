@@ -29,8 +29,6 @@ import (
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
-	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -71,11 +69,10 @@ type Settings struct {
 type Service struct {
 	buildInfo            component.BuildInfo
 	telemetry            *telemetry.Telemetry
-	telemetrySettings    servicetelemetry.TelemetrySettings
+	telemetrySettings    component.TelemetrySettings
 	host                 *serviceHost
 	telemetryInitializer *telemetryInitializer
 	collectorConf        *confmap.Conf
-	statusInit           status.InitFunc
 }
 
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
@@ -107,7 +104,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	res := buildResource(set.BuildInfo, cfg.Telemetry)
 	pcommonRes := pdataFromSdk(res)
 
-	srv.telemetrySettings = servicetelemetry.TelemetrySettings{
+	srv.telemetrySettings = component.TelemetrySettings{
 		Logger:         srv.telemetry.Logger(),
 		TracerProvider: srv.telemetry.TracerProvider(),
 		MeterProvider:  noop.NewMeterProvider(),
@@ -122,8 +119,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	}
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
 	srv.telemetrySettings.TracerProvider = srv.telemetryInitializer.tp
-	srv.statusInit, srv.telemetrySettings.ReportComponentStatus =
-		status.NewServiceStatusFunc(srv.host.notifyComponentStatusChange)
 
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensionsAndPipeline(ctx, set, cfg); err != nil {
@@ -144,9 +139,6 @@ func (srv *Service) Start(ctx context.Context) error {
 		zap.String("Version", srv.buildInfo.Version),
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
-
-	// enable status reporting
-	srv.statusInit()
 
 	if err := srv.host.serviceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)

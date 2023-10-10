@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/service/internal/components"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
@@ -23,9 +22,8 @@ const zExtensionName = "zextensionname"
 
 // Extensions is a map of extensions created from extension configs.
 type Extensions struct {
-	telemetry   servicetelemetry.TelemetrySettings
-	extMap      map[component.ID]extension.Extension
-	instanceIDs map[component.ID]*component.InstanceID
+	telemetry component.TelemetrySettings
+	extMap    map[component.ID]extension.Extension
 }
 
 // Start starts all extensions.
@@ -34,10 +32,7 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 	for extID, ext := range bes.extMap {
 		extLogger := components.ExtensionLogger(bes.telemetry.Logger, extID)
 		extLogger.Info("Extension is starting...")
-		instanceID := bes.instanceIDs[extID]
-		_ = bes.telemetry.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStarting))
 		if err := ext.Start(ctx, components.NewHostWrapper(host, extLogger)); err != nil {
-			_ = bes.telemetry.ReportComponentStatus(instanceID, component.NewPermanentErrorEvent(err))
 			return err
 		}
 		extLogger.Info("Extension started.")
@@ -49,15 +44,8 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 func (bes *Extensions) Shutdown(ctx context.Context) error {
 	bes.telemetry.Logger.Info("Stopping extensions...")
 	var errs error
-	for extID, ext := range bes.extMap {
-		instanceID := bes.instanceIDs[extID]
-		_ = bes.telemetry.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStopping))
-		if err := ext.Shutdown(ctx); err != nil {
-			_ = bes.telemetry.ReportComponentStatus(instanceID, component.NewPermanentErrorEvent(err))
-			errs = multierr.Append(errs, err)
-			continue
-		}
-		_ = bes.telemetry.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStopped))
+	for _, ext := range bes.extMap {
+		errs = multierr.Append(errs, ext.Shutdown(ctx))
 	}
 
 	return errs
@@ -96,14 +84,6 @@ func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) err
 	return errs
 }
 
-func (bes *Extensions) NotifyComponentStatusChange(source *component.InstanceID, event *component.StatusEvent) {
-	for _, ext := range bes.extMap {
-		if sw, ok := ext.(extension.StatusWatcher); ok {
-			sw.ComponentStatusChanged(source, event)
-		}
-	}
-}
-
 func (bes *Extensions) GetExtensions() map[component.ID]component.Component {
 	result := make(map[component.ID]component.Component, len(bes.extMap))
 	for extID, v := range bes.extMap {
@@ -140,7 +120,7 @@ func (bes *Extensions) HandleZPages(w http.ResponseWriter, r *http.Request) {
 
 // Settings holds configuration for building Extensions.
 type Settings struct {
-	Telemetry servicetelemetry.TelemetrySettings
+	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
 	// Extensions builder for extensions.
@@ -150,18 +130,13 @@ type Settings struct {
 // New creates a new Extensions from Config.
 func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 	exts := &Extensions{
-		telemetry:   set.Telemetry,
-		extMap:      make(map[component.ID]extension.Extension),
-		instanceIDs: make(map[component.ID]*component.InstanceID),
+		telemetry: set.Telemetry,
+		extMap:    make(map[component.ID]extension.Extension),
 	}
 	for _, extID := range cfg {
-		instanceID := &component.InstanceID{
-			ID:   extID,
-			Kind: component.KindExtension,
-		}
 		extSet := extension.CreateSettings{
 			ID:                extID,
-			TelemetrySettings: set.Telemetry.ToComponentTelemetrySettings(instanceID),
+			TelemetrySettings: set.Telemetry,
 			BuildInfo:         set.BuildInfo,
 		}
 		extSet.TelemetrySettings.Logger = components.ExtensionLogger(set.Telemetry.Logger, extID)
@@ -177,7 +152,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 		}
 
 		exts.extMap[extID] = ext
-		exts.instanceIDs[extID] = instanceID
 	}
 
 	return exts, nil
