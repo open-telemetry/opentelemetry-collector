@@ -14,11 +14,6 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `service/telemetry exporter/exporterhelper`: Enable sampling logging by default and apply it to all components. (#8134)
   The sampled logger configuration can be disabled easily by setting the `service::telemetry::logs::sampling::enabled` to `false`.
 - `core`: Adds the ability for components to report status and for extensions to subscribe to status events by implementing an optional StatusWatcher interface. (#7682)
-- `pdata`: Introduce runtime assertions to catch incorrect pdata mutations (#6794)
-  This change introduces an option to enable runtime assertions to catch unintentional pdata mutations in components
-  that are claimed as non-mutating pdata. Without these assertions, runtime errors may still occur, but thrown by
-  unrelated components, making it very difficult to troubleshoot.
-  
 
 ### 🧰 Bug fixes 🧰
 
