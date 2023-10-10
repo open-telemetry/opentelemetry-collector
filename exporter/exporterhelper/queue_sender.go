@@ -227,18 +227,26 @@ func (qs *queueSender) send(req internal.Request) error {
 func (qs *queueSender) sendAndWait(req internal.Request) error {
 	// should this call to Produce be in a goroutine,
 	// so fetching a response will not be blocked by a full queue?
-	if !qs.queue.Produce(req) {
-		return fmt.Errorf("Unable to add item to queue")
-	}
-	// blocks until we get first ready response.
-	err, ok := <-qs.queue.GetErrCh()
+	go func() {
+		if !qs.queue.Produce(req) {
+			// timed out or queue was stopped.
+			qs.queue.GetErrCh() <- fmt.Errorf("Unable to add item to queue")
+		} else {
+			qs.queue.GetErrCh() <- nil	
+		}
+	}()
 
-	if !ok {
-		// channel closed
-		return nil
+	timer := time.NewTimer(qs.waitset.Timeout)
+	select {
+	case <-timer.C:
+		return fmt.Errorf("Timed out while waiting for response")
+	case err, ok := <-qs.queue.GetErrCh():
+		if !ok {
+			// channel closed
+			return nil
+		}
+		return err
 	}
-
-	return err
 }
 
 type noCancellationContext struct {

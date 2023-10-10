@@ -7,6 +7,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -75,7 +76,7 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 	// should match the capacity of the new queue
 	if !q.waitEnabled && q.size.Load() >= q.capacity {
 		return false
-	} else { // wait until there is space in the queue
+	} else if q.waitEnabled { // wait until there is space in the queue
 		return q.produceAndWait(item)
 	}
 
@@ -90,18 +91,15 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 	}
 }
 
-// // Same as Produce but waits for response before queuing the next item
+// Same as Produce but waits for response before queuing the next item
 func (q *boundedMemoryQueue) produceAndWait(item Request) bool {
 	timer := time.NewTimer(q.waitTimeout)
-
-	if q.size.Load() < q.capacity {
-		q.size.Add(1)
-	}
 
 	select {
 	case <-timer.C:
 		return false
 	case q.items <- item:
+		q.size.Add(1)
 		return true
 	}
 }
@@ -109,6 +107,11 @@ func (q *boundedMemoryQueue) produceAndWait(item Request) bool {
 // GetErrCh gets the channel that stores responses for sent requests.
 func (q *boundedMemoryQueue) GetErrCh() chan error {
 	return q.errCh
+}
+
+// WaitEnabled returns whether wait settings are enabled.
+func (q *boundedMemoryQueue) WaitEnabled() bool {
+	return q.waitEnabled
 }
 
 // Stop stops all consumers, as well as the length reporter if started,

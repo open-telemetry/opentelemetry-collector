@@ -41,8 +41,8 @@ func newStringRequest(str string) Request {
 // In this test we run a queue with capacity 1 and a single consumer.
 // We want to test the overflow behavior, so we block the consumer
 // by holding a startLock before submitting items to the queue.
-func helper(t *testing.T, startConsumers func(q ProducerConsumerQueue, consumerFn func(item Request))) {
-	q := NewBoundedMemoryQueue(1, 1)
+func helper(t *testing.T, waitEnabled, timedOut bool, startConsumers func(q ProducerConsumerQueue, consumerFn func(item Request))) {
+	q := NewBoundedMemoryQueue(1, 1, waitEnabled, 1 * time.Second)
 
 	var startLock sync.Mutex
 
@@ -73,22 +73,38 @@ func helper(t *testing.T, startConsumers func(q ProducerConsumerQueue, consumerF
 	// produce two more items. The first one should be accepted, but not consumed.
 	assert.True(t, q.Produce(newStringRequest("b")))
 	assert.Equal(t, 1, q.Size())
-	// the second should be rejected since the queue is full
-	assert.False(t, q.Produce(newStringRequest("c")))
-	assert.Equal(t, 1, q.Size())
-
-	startLock.Unlock() // unblock consumer
-
-	consumerState.assertConsumed(map[string]bool{
-		"a": true,
-		"b": true,
-	})
+	// the second should be rejected since the queue is full, unless
+	// WaitOnSend config option is enabled
+	if waitEnabled && !timedOut {
+		startLock.Unlock() // unblock consumer
+		assert.True(t, q.Produce(newStringRequest("c")))
+		consumerState.assertConsumed(map[string]bool{
+			"a": true,
+			"b": true,
+			"c": true,
+		})
+	} else { // waitSettings disabled or expected timed out.
+		assert.False(t, q.Produce(newStringRequest("c")))
+		assert.Equal(t, 1, q.Size())
+		startLock.Unlock() // unblock consumer
+		consumerState.assertConsumed(map[string]bool{
+			"a": true,
+			"b": true,
+		})
+	}
 
 	// now that consumers are unblocked, we can add more items
 	expected := map[string]bool{
 		"a": true,
 		"b": true,
 	}
+
+	if waitEnabled && !timedOut {
+		// if this option is enabled then we will not drop
+		// requests, so we expect c to be consumed.
+		expected["c"] = true
+	}
+
 	for _, item := range []string{"d", "e", "f"} {
 		assert.True(t, q.Produce(newStringRequest(item)))
 		expected[item] = true
@@ -100,9 +116,32 @@ func helper(t *testing.T, startConsumers func(q ProducerConsumerQueue, consumerF
 }
 
 func TestBoundedQueue(t *testing.T) {
-	helper(t, func(q ProducerConsumerQueue, consumerFn func(item Request)) {
-		assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(consumerFn)))
-	})
+	tests := []struct {
+		name    string
+		waitEnabled bool
+		timedOut bool
+	}{
+		{
+			name:    "original settings - wait disabled",
+			waitEnabled: false,
+		},
+		{
+			name:    "wait enabled - timed out",
+			waitEnabled: true,
+			timedOut: true,
+		},
+		{
+			name:    "wait enabled - success",
+			waitEnabled: true,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			helper(t, tc.waitEnabled, tc.timedOut, func(q ProducerConsumerQueue, consumerFn func(item Request)) {
+				assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(consumerFn)))
+			})
+		})
+	}
 }
 
 // In this test we run a queue with many items and a slow consumer.
@@ -112,7 +151,7 @@ func TestBoundedQueue(t *testing.T) {
 // only after Stop will mean the consumers are still locked while
 // trying to perform the final consumptions.
 func TestShutdownWhileNotEmpty(t *testing.T) {
-	q := NewBoundedMemoryQueue(10, 1)
+	q := NewBoundedMemoryQueue(10, 1, false, 1 * time.Second)
 
 	consumerState := newConsumerState(t)
 
@@ -196,7 +235,7 @@ func (s *consumerState) assertConsumed(expected map[string]bool) {
 }
 
 func TestZeroSize(t *testing.T) {
-	q := NewBoundedMemoryQueue(0, 1)
+	q := NewBoundedMemoryQueue(0, 1, false, 1 * time.Second)
 
 	err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {}))
 	assert.NoError(t, err)
