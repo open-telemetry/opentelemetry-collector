@@ -7,6 +7,13 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.0.0-rcv0016/v0.87.0
+
+### 🛑 Breaking changes 🛑
+
+- `obsreport`: remove methods/structs deprecated in previous release. (#8492)
+- `extension`: remove deprecated Configs and Factories (#8631)
+
 ## v1.0.0-rcv0015/v0.86.0
 
 ### 🛑 Breaking changes 🛑
