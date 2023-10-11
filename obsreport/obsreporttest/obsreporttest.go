@@ -59,6 +59,18 @@ func (tts *TestTelemetry) CheckExporterMetrics(sentMetricsPoints, sendFailedMetr
 	return tts.otelPrometheusChecker.checkExporterMetrics(tts.id, sentMetricsPoints, sendFailedMetricsPoints)
 }
 
+func (tts *TestTelemetry) CheckExporterEnqueueFailedMetrics(enqueueFailed int64) error {
+	return tts.otelPrometheusChecker.checkExporterEnqueueFailed(tts.id, "metric_points", enqueueFailed)
+}
+
+func (tts *TestTelemetry) CheckExporterEnqueueFailedTraces(enqueueFailed int64) error {
+	return tts.otelPrometheusChecker.checkExporterEnqueueFailed(tts.id, "spans", enqueueFailed)
+}
+
+func (tts *TestTelemetry) CheckExporterEnqueueFailedLogs(enqueueFailed int64) error {
+	return tts.otelPrometheusChecker.checkExporterEnqueueFailed(tts.id, "log_records", enqueueFailed)
+}
+
 // CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func (tts *TestTelemetry) CheckExporterLogs(sentLogRecords, sendFailedLogRecords int64) error {

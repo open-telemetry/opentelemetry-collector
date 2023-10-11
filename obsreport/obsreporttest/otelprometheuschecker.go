@@ -77,16 +77,30 @@ func (pc *prometheusChecker) checkExporterLogs(exporter component.ID, sent, send
 	return pc.checkExporter(exporter, "log_records", sent, sendFailed)
 }
 
-func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sentMetricPoints, sendFailedMetricPoints int64) error {
-	return pc.checkExporter(exporter, "metric_points", sentMetricPoints, sendFailedMetricPoints)
+func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sent, sendFailed int64) error {
+	return pc.checkExporter(exporter, "metric_points", sent, sendFailed)
 }
 
 func (pc *prometheusChecker) checkExporter(exporter component.ID, datatype string, sent, sendFailed int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
-	errs := pc.checkCounter(fmt.Sprintf("exporter_sent_%s", datatype), sent, exporterAttrs)
+	var errs error
+
+	errs = multierr.Append(errs,
+		pc.checkCounter(fmt.Sprintf("exporter_sent_%s", datatype), sent, exporterAttrs))
+
 	if sendFailed > 0 {
 		errs = multierr.Append(errs,
 			pc.checkCounter(fmt.Sprintf("exporter_send_failed_%s", datatype), sendFailed, exporterAttrs))
+	}
+	return errs
+}
+
+func (pc *prometheusChecker) checkExporterEnqueueFailed(exporter component.ID, datatype string, enqueueFailed int64) error {
+	exporterAttrs := attributesForExporterMetrics(exporter)
+	var errs error
+	if enqueueFailed > 0 {
+		errs = multierr.Append(errs,
+			pc.checkCounter(fmt.Sprintf("exporter_enqueue_failed_%s", datatype), enqueueFailed, exporterAttrs))
 	}
 	return errs
 }

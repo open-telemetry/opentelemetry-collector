@@ -32,7 +32,7 @@ var (
 	}
 )
 
-func newNoopObsrepSender(_ *obsExporter) requestSender {
+func newNoopObsrepSender(_ *ObsReport) requestSender {
 	return &baseRequestSender{}
 }
 

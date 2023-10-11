@@ -99,7 +99,7 @@ func NewTracesExporter(
 		req := newTracesRequest(ctx, td, pusher)
 		serr := be.send(req)
 		if errors.Is(serr, errSendingQueueIsFull) {
-			be.obsrep.recordTracesEnqueueFailure(req.Context(), int64(req.Count()))
+			be.obsrep.recordEnqueueFailure(req.Context(), component.DataTypeTraces, int64(req.Count()))
 		}
 		return serr
 	}, be.consumerOptions...)
@@ -151,7 +151,7 @@ func NewTracesRequestExporter(
 		r := newRequest(ctx, req)
 		sErr := be.send(r)
 		if errors.Is(sErr, errSendingQueueIsFull) {
-			be.obsrep.recordTracesEnqueueFailure(r.Context(), int64(r.Count()))
+			be.obsrep.recordEnqueueFailure(r.Context(), component.DataTypeTraces, int64(r.Count()))
 		}
 		return sErr
 	}, be.consumerOptions...)
@@ -164,10 +164,10 @@ func NewTracesRequestExporter(
 
 type tracesExporterWithObservability struct {
 	baseRequestSender
-	obsrep *obsExporter
+	obsrep *ObsReport
 }
 
-func newTracesExporterWithObservability(obsrep *obsExporter) requestSender {
+func newTracesExporterWithObservability(obsrep *ObsReport) requestSender {
 	return &tracesExporterWithObservability{obsrep: obsrep}
 }
 
