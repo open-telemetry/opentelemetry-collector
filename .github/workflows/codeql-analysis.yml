@@ -1,4 +1,4 @@
-name: "CodeQL Analysis"
+name: "CodeQL Analysis and Security Configuration"
 on:
   push:
     branches: [ main ]
@@ -19,7 +19,13 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.20.10
+          go-version: ~1.20.8
+
+          #Static Code Analysis with govulncheck
+          -name: Static Code Analysis with govulncheck
+          run:
+            go install golang.org/x/vuln/cmd/govulncheck@latest
+            govulncheck -o vuln.json ./...
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
@@ -32,3 +38,18 @@ jobs:
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
+
+        #Configure Repository Security settings
+        run:
+           # Enable Security Policy
+          curl -X PUT -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -d '{"security_and_analysis":{"enable_security_policy":true}}' \
+          "https://api.github.com/repos/${{ github.repository }}/vulnerability-advisories/settings"
+
+          # Enable Security Advisories, Private vulnerability reporting, Dependabot alerts, and Code scanning alerts
+          curl -X PATCH -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -d '{"vulnerability_alerts":{"dismissed":false}}' \
+          "https://api.github.com/repos/${{ github.repository }}/vulnerability-alerts"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
