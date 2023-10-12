@@ -37,6 +37,10 @@ func CreateTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+		exporterhelper.WithStatusReporting(exporterhelper.StatusSettings{
+			ReportOnStart:   true,
+			ReportOnConsume: true,
+		}),
 	)
 }
 
@@ -48,6 +52,10 @@ func CreateMetricsExporter(ctx context.Context, set exporter.CreateSettings, con
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+		exporterhelper.WithStatusReporting(exporterhelper.StatusSettings{
+			ReportOnStart:   true,
+			ReportOnConsume: true,
+		}),
 	)
 }
 
@@ -59,6 +67,10 @@ func CreateLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+		exporterhelper.WithStatusReporting(exporterhelper.StatusSettings{
+			ReportOnStart:   true,
+			ReportOnConsume: true,
+		}),
 	)
 }
 
