@@ -62,6 +62,17 @@ func (req *tracesRequest) ItemsCount() int {
 	return req.td.SpanCount()
 }
 
+func wrapTracesWithStatusReporting(consumeFunc consumer.ConsumeTracesFunc, telemetry component.TelemetrySettings) consumer.ConsumeTracesFunc {
+	return func(ctx context.Context, td ptrace.Traces) error {
+		if err := consumeFunc(ctx, td); err != nil {
+			telemetry.ReportComponentStatus(component.NewRecoverableErrorEvent(err))
+			return err
+		}
+		telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
+		return nil
+	}
+}
+
 type traceExporter struct {
 	*baseExporter
 	consumer.Traces
@@ -93,14 +104,20 @@ func NewTracesExporter(
 		return nil, err
 	}
 
-	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
+	consumeFunc := func(ctx context.Context, td ptrace.Traces) error {
 		req := newTracesRequest(td, pusher)
 		serr := be.send(ctx, req)
 		if errors.Is(serr, internal.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeTraces, int64(req.ItemsCount()))
 		}
 		return serr
-	}, be.consumerOptions...)
+	}
+
+	if be.statusSettings.ReportOnConsume {
+		consumeFunc = wrapTracesWithStatusReporting(consumeFunc, set.TelemetrySettings)
+	}
+
+	tc, err := consumer.NewTraces(consumeFunc, be.consumerOptions...)
 
 	return &traceExporter{
 		baseExporter: be,
@@ -135,7 +152,7 @@ func NewTracesRequestExporter(
 		return nil, err
 	}
 
-	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
+	consumeFunc := func(ctx context.Context, td ptrace.Traces) error {
 		req, cErr := converter(ctx, td)
 		if cErr != nil {
 			set.Logger.Error("Failed to convert traces. Dropping data.",
@@ -148,7 +165,13 @@ func NewTracesRequestExporter(
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeTraces, int64(req.ItemsCount()))
 		}
 		return sErr
-	}, be.consumerOptions...)
+	}
+
+	if be.statusSettings.ReportOnConsume {
+		consumeFunc = wrapTracesWithStatusReporting(consumeFunc, set.TelemetrySettings)
+	}
+
+	tc, err := consumer.NewTraces(consumeFunc, be.consumerOptions...)
 
 	return &traceExporter{
 		baseExporter: be,

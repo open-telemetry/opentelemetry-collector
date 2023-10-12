@@ -359,6 +359,117 @@ func TestLogsRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.Equal(t, le.Shutdown(context.Background()), want)
 }
 
+func TestLogsExporter_WithStatusReporting(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		statusSettings StatusSettings
+		expectedEvent  *component.StatusEvent
+		consumeErr     error
+	}{
+		{
+			name:           "Report status on start enabled / successful startup",
+			statusSettings: StatusSettings{ReportOnConsume: true},
+			expectedEvent:  component.NewStatusEvent(component.StatusOK),
+		},
+		{
+			name:           "Report status on start enabled / startup error",
+			statusSettings: StatusSettings{ReportOnConsume: true},
+			expectedEvent:  component.NewRecoverableErrorEvent(assert.AnError),
+			consumeErr:     assert.AnError,
+		},
+		{
+			name:           "Report status on start disabled / successful startup",
+			statusSettings: StatusSettings{ReportOnConsume: false},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ld := plog.NewLogs()
+			createSettings := exportertest.NewNopCreateSettings()
+
+			var lastEvent *component.StatusEvent
+			createSettings.TelemetrySettings.ReportComponentStatus = func(ev *component.StatusEvent) error {
+				lastEvent = ev
+				return nil
+			}
+
+			le, err := NewLogsExporter(
+				context.Background(),
+				createSettings,
+				&fakeLogsExporterConfig,
+				newPushLogsData(tc.consumeErr),
+				WithStatusReporting(tc.statusSettings),
+			)
+			assert.NotNil(t, le)
+			assert.NoError(t, err)
+
+			assert.NoError(t, le.Start(context.Background(), componenttest.NewNopHost()))
+			assert.Nil(t, lastEvent)
+			assert.Equal(t, tc.consumeErr, le.ConsumeLogs(context.Background(), ld))
+			assert.Equal(t, tc.expectedEvent == nil, lastEvent == nil)
+
+			if tc.expectedEvent != nil {
+				assert.Equal(t, tc.expectedEvent.Status(), lastEvent.Status())
+				assert.Equal(t, tc.expectedEvent.Err(), lastEvent.Err())
+			}
+		})
+	}
+}
+
+func TestLogsRequestExporter_WithStatusReporting(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		statusSettings StatusSettings
+		expectedEvent  *component.StatusEvent
+		consumeErr     error
+	}{
+		{
+			name:           "Report status on start enabled / successful startup",
+			statusSettings: StatusSettings{ReportOnConsume: true},
+			expectedEvent:  component.NewStatusEvent(component.StatusOK),
+		},
+		{
+			name:           "Report status on start enabled / startup error",
+			statusSettings: StatusSettings{ReportOnConsume: true},
+			expectedEvent:  component.NewRecoverableErrorEvent(assert.AnError),
+			consumeErr:     assert.AnError,
+		},
+		{
+			name:           "Report status on start disabled / successful startup",
+			statusSettings: StatusSettings{ReportOnConsume: false},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ld := plog.NewLogs()
+			createSettings := exportertest.NewNopCreateSettings()
+
+			var lastEvent *component.StatusEvent
+			createSettings.TelemetrySettings.ReportComponentStatus = func(ev *component.StatusEvent) error {
+				lastEvent = ev
+				return nil
+			}
+
+			le, err := NewLogsRequestExporter(
+				context.Background(),
+				createSettings,
+				(&fakeRequestConverter{requestError: tc.consumeErr}).requestFromLogsFunc,
+				WithStatusReporting(tc.statusSettings),
+			)
+			assert.NotNil(t, le)
+			assert.NoError(t, err)
+
+			assert.NoError(t, le.Start(context.Background(), componenttest.NewNopHost()))
+			assert.Nil(t, lastEvent)
+			assert.Equal(t, tc.consumeErr, le.ConsumeLogs(context.Background(), ld))
+			assert.Equal(t, tc.expectedEvent == nil, lastEvent == nil)
+
+			if tc.expectedEvent != nil {
+				assert.Equal(t, tc.expectedEvent.Status(), lastEvent.Status())
+				assert.Equal(t, tc.expectedEvent.Err(), lastEvent.Err())
+			}
+		})
+	}
+}
+
 func newPushLogsData(retError error) consumer.ConsumeLogsFunc {
 	return func(ctx context.Context, td plog.Logs) error {
 		return retError

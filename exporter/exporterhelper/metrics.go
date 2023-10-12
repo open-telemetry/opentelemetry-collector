@@ -62,6 +62,17 @@ func (req *metricsRequest) ItemsCount() int {
 	return req.md.DataPointCount()
 }
 
+func wrapMetricsWithStatusReporting(consumeFunc consumer.ConsumeMetricsFunc, telemetry component.TelemetrySettings) consumer.ConsumeMetricsFunc {
+	return func(ctx context.Context, md pmetric.Metrics) error {
+		if err := consumeFunc.ConsumeMetrics(ctx, md); err != nil {
+			telemetry.ReportComponentStatus(component.NewRecoverableErrorEvent(err))
+			return err
+		}
+		telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
+		return nil
+	}
+}
+
 type metricsExporter struct {
 	*baseExporter
 	consumer.Metrics
@@ -93,14 +104,20 @@ func NewMetricsExporter(
 		return nil, err
 	}
 
-	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
+	consumeFunc := func(ctx context.Context, md pmetric.Metrics) error {
 		req := newMetricsRequest(md, pusher)
 		serr := be.send(ctx, req)
 		if errors.Is(serr, internal.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
 		}
 		return serr
-	}, be.consumerOptions...)
+	}
+
+	if be.statusSettings.ReportOnConsume {
+		consumeFunc = wrapMetricsWithStatusReporting(consumeFunc, set.TelemetrySettings)
+	}
+
+	mc, err := consumer.NewMetrics(consumeFunc, be.consumerOptions...)
 
 	return &metricsExporter{
 		baseExporter: be,
@@ -135,7 +152,7 @@ func NewMetricsRequestExporter(
 		return nil, err
 	}
 
-	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
+	consumeFunc := func(ctx context.Context, md pmetric.Metrics) error {
 		req, cErr := converter(ctx, md)
 		if cErr != nil {
 			set.Logger.Error("Failed to convert metrics. Dropping data.",
@@ -148,7 +165,13 @@ func NewMetricsRequestExporter(
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
 		}
 		return sErr
-	}, be.consumerOptions...)
+	}
+
+	if be.statusSettings.ReportOnConsume {
+		consumeFunc = wrapMetricsWithStatusReporting(consumeFunc, set.TelemetrySettings)
+	}
+
+	mc, err := consumer.NewMetrics(consumeFunc, be.consumerOptions...)
 
 	return &metricsExporter{
 		baseExporter: be,

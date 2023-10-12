@@ -62,6 +62,17 @@ func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
 }
 
+func wrapLogsWithStatusReporting(consumeFunc consumer.ConsumeLogsFunc, telemetry component.TelemetrySettings) consumer.ConsumeLogsFunc {
+	return func(ctx context.Context, ld plog.Logs) error {
+		if err := consumeFunc(ctx, ld); err != nil {
+			telemetry.ReportComponentStatus(component.NewRecoverableErrorEvent(err))
+			return err
+		}
+		telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
+		return nil
+	}
+}
+
 type logsExporter struct {
 	*baseExporter
 	consumer.Logs
@@ -93,14 +104,20 @@ func NewLogsExporter(
 		return nil, err
 	}
 
-	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
+	consumeFunc := func(ctx context.Context, ld plog.Logs) error {
 		req := newLogsRequest(ld, pusher)
 		serr := be.send(ctx, req)
 		if errors.Is(serr, internal.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeLogs, int64(req.ItemsCount()))
 		}
 		return serr
-	}, be.consumerOptions...)
+	}
+
+	if be.statusSettings.ReportOnConsume {
+		consumeFunc = wrapLogsWithStatusReporting(consumeFunc, set.TelemetrySettings)
+	}
+
+	lc, err := consumer.NewLogs(consumeFunc, be.consumerOptions...)
 
 	return &logsExporter{
 		baseExporter: be,
@@ -135,7 +152,7 @@ func NewLogsRequestExporter(
 		return nil, err
 	}
 
-	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
+	consumeFunc := func(ctx context.Context, ld plog.Logs) error {
 		req, cErr := converter(ctx, ld)
 		if cErr != nil {
 			set.Logger.Error("Failed to convert logs. Dropping data.",
@@ -148,7 +165,13 @@ func NewLogsRequestExporter(
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeLogs, int64(req.ItemsCount()))
 		}
 		return sErr
-	}, be.consumerOptions...)
+	}
+
+	if be.statusSettings.ReportOnConsume {
+		consumeFunc = wrapLogsWithStatusReporting(consumeFunc, set.TelemetrySettings)
+	}
+
+	lc, err := consumer.NewLogs(consumeFunc, be.consumerOptions...)
 
 	return &logsExporter{
 		baseExporter: be,

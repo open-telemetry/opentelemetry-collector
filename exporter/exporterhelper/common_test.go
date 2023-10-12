@@ -8,6 +8,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -91,4 +92,48 @@ func TestBaseExporterLogging(t *testing.T) {
 	require.Error(t, sendErr)
 
 	require.Len(t, observed.FilterLevelExact(zap.ErrorLevel).All(), 1)
+}
+
+func TestStatusReportingOnStart(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		statusSettings StatusSettings
+		expectedStatus component.Status
+		startErr       error
+	}{
+		{
+			name:           "Report status on start enabled / successful startup",
+			statusSettings: StatusSettings{ReportOnStart: true},
+			expectedStatus: component.StatusOK,
+		},
+		{
+			name:           "Report status on start enabled / startup error",
+			statusSettings: StatusSettings{ReportOnStart: true},
+			startErr:       assert.AnError,
+		},
+		{
+			name:           "Report status on start disabled / successful startup",
+			statusSettings: StatusSettings{ReportOnStart: false},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			createSettings := exportertest.NewNopCreateSettings()
+			var lastStatus component.Status
+			createSettings.TelemetrySettings.ReportComponentStatus = func(ev *component.StatusEvent) error {
+				lastStatus = ev.Status()
+				return nil
+			}
+
+			be, err := newBaseExporter(
+				createSettings, "", false, nil, nil, newNoopObsrepSender,
+				WithStart(func(ctx context.Context, host component.Host) error { return tc.startErr }),
+				WithStatusReporting(tc.statusSettings),
+			)
+
+			require.NoError(t, err)
+			require.Equal(t, component.StatusNone, lastStatus)
+			require.Equal(t, tc.startErr, be.Start(context.Background(), componenttest.NewNopHost()))
+			require.Equal(t, tc.expectedStatus, lastStatus)
+		})
+	}
 }
