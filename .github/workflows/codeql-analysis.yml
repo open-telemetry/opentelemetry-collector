@@ -1,27 +1,26 @@
-name: "CodeQL Analysis"
+name: Security Tooling and Settings
+
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
-  cancel-in-progress: true
+    branches:
+      - main
 
 jobs:
-  CodeQL-Build:
+  security:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v2
         with:
-          go-version: ~1.20.10
+          go-version: 1.20.10
 
-      # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
@@ -32,3 +31,33 @@ jobs:
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
+
+      - name: Run Static Code Analysis
+        run: |
+          # Replace this with the actual command to run govulncheck
+          go get golang.org/x/vuln
+          go vet ./...
+          go list ./... | xargs gosec
+
+      - name: Set Up Repository Security Settings
+        run: |
+          # Enable Security Policy
+          # Replace the placeholder values with your actual settings
+          curl -X PUT -H "Authorization: token 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" -d '{"enabled": true}' https://api.github.com/repos/your-organization/your-repo/security/policy
+          echo "Security Policy enabled."
+
+          # Enable Security Advisories
+          curl -X PUT -H "Authorization: token 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" -d '{"enabled": true}' https://api.github.com/repos/your-organization/your-repo/security/advisories
+          echo "Security Advisories enabled."
+
+          # Enable Private Vulnerability Reporting
+          curl -X PUT -H "Authorization: token Y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" -d '{"enabled": true}' https://api.github.com/repos/your-organization/your-repo/security/vulnerability-reporting/private
+          echo "Private Vulnerability Reporting enabled."
+
+          # Enable Dependabot Alerts
+          curl -X PUT -H "Authorization: token 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" -d '{"enabled": true}' https://api.github.com/repos/your-organization/your-repo/security/automated-security-fixes
+          echo "Dependabot Alerts enabled."
+
+          # Enable Code Scanning Alerts
+          curl -X PUT -H "Authorization: token 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" -d '{"enabled": true}' https://api.github.com/repos/your-organization/your-repo/security/code-scanning
+          echo "Code Scanning Alerts enabled."
