@@ -351,7 +351,7 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 
-	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
+	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newNoopObsrepSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
 	require.NoError(t, be.Start(context.Background(), &mockHost{}))
@@ -364,19 +364,11 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	be.queueSender.(*queueSender).requeuingEnabled = true
 
 	// Invoke queuedRetrySender so the producer will put the item for consumer to poll
-
-	ocs := be.obsrepSender.(*observabilityConsumerSender)
-	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
-		require.NoError(t, be.send(newErrorRequest(context.Background())))
-	})
+	require.NoError(t, be.send(newErrorRequest(context.Background())))
 	// first wait for the item to be produced to the queue initially
 	assert.True(t, produceCounter.Load() == uint32(1))
-
 	// shuts down and ensure the item is produced in the queue again
 	require.NoError(t, be.Shutdown(context.Background()))
-
-	ocs.awaitAsyncProcessing()
 	assert.True(t, produceCounter.Load() == uint32(2))
 }
 
