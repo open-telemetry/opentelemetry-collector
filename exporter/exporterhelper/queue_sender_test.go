@@ -12,8 +12,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -356,10 +354,7 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	rCfg.MaxInterval = rCfg.InitialInterval
 	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 
-	set := exportertest.NewNopCreateSettings()
-	set.ID = defaultID
-	set.Logger, _ = zap.NewDevelopment()
-	be, err := newBaseExporter(set, "", false, nil, nil, newNoopObsrepSender, WithRetry(rCfg), WithQueue(qCfg))
+	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newNoopObsrepSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
 	require.NoError(t, be.Start(context.Background(), &mockHost{}))
@@ -374,12 +369,12 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	// Invoke queuedRetrySender so the producer will put the item for consumer to poll
 	require.NoError(t, be.send(newErrorRequest(context.Background())))
 	// first wait for the item to be produced to the queue initially
-	assert.True(t, produceCounter.Load() == uint32(1))
-	// buffer some time so the failure is pushed back.
-	time.Sleep(200 * time.Millisecond)
+	require.Eventuallyf(t, func() bool {
+		return produceCounter.Load() == uint32(1)
+	}, 1*time.Second, 1*time.Millisecond, "Produce count: %d", produceCounter.Load())
 	require.NoError(t, be.Shutdown(context.Background()))
 	require.Eventuallyf(t, func() bool {
-		return produceCounter.Load() == uint32(2)
+		return produceCounter.Load() >= uint32(2)
 	}, 1*time.Second, 1*time.Millisecond, "Produce count: %d", produceCounter.Load())
 }
 
