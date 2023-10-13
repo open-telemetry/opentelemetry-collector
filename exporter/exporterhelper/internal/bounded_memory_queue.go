@@ -30,7 +30,7 @@ type boundedMemoryQueue struct {
 	size         int
 	eventChan    chan *queueEvent
 	items        chan Request
-	capacity     uint32
+	capacity     int
 	numConsumers int
 	stopped      *atomic.Bool
 }
@@ -41,7 +41,7 @@ func NewBoundedMemoryQueue(capacity int, numConsumers int) ProducerConsumerQueue
 	return &boundedMemoryQueue{
 		items:        make(chan Request, capacity),
 		eventChan:    make(chan *queueEvent),
-		capacity:     uint32(capacity),
+		capacity:     capacity,
 		numConsumers: numConsumers,
 		stopped:      &atomic.Bool{},
 	}
@@ -72,18 +72,34 @@ func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set Queu
 }
 
 func (q *boundedMemoryQueue) eventLoop() {
+	overflow := q.capacity == 0
 	for {
 		e := <-q.eventChan
+		if e.done {
+			q.size--
+			overflow = q.capacity == 0 || q.size >= q.capacity
+			continue
+		}
+		if e.acceptChan != nil {
+			if overflow {
+				e.acceptChan <- false
+				continue
+			}
+			q.size++
+			overflow = q.capacity == 0 || q.size >= q.capacity
+			q.items <- e.request
+			e.acceptChan <- true
+			continue
+		}
 		if e.sizeChan != nil {
 			e.sizeChan <- q.size
 			continue
 		}
-		if e.done {
-			q.size--
-			continue
-		}
-		if q.stopped.Load() && e.stopChan != nil {
-			// if we have no consumers, empty the queue.
+
+		if e.stopChan != nil {
+			// mark the event loop stopped.
+			q.stopped.Store(true)
+			// if we have no consumers, empty the queue, dropping its contents.
 			if q.numConsumers == 0 {
 				for len(q.items) > 0 {
 					<-q.items
@@ -92,7 +108,6 @@ func (q *boundedMemoryQueue) eventLoop() {
 			}
 			if q.size > 0 {
 				// we have a stop signal, but there are still elements in the queue.
-
 				// Requeue:
 				go func() {
 					q.eventChan <- e
@@ -104,21 +119,6 @@ func (q *boundedMemoryQueue) eventLoop() {
 			close(e.stopChan)
 			break
 		}
-		if e.stopChan != nil {
-			// mark the event loop stopped and requeue to close.
-			q.stopped.Store(true)
-			go func() {
-				q.eventChan <- &queueEvent{stopChan: e.stopChan}
-			}()
-			continue
-		}
-		if q.size >= int(q.capacity) || q.capacity == 0 {
-			e.acceptChan <- false
-			continue
-		}
-		q.size++
-		q.items <- e.request
-		e.acceptChan <- true
 	}
 	close(q.eventChan)
 }
@@ -156,7 +156,7 @@ func (q *boundedMemoryQueue) Size() int {
 }
 
 func (q *boundedMemoryQueue) Capacity() int {
-	return int(q.capacity)
+	return q.capacity
 }
 
 func (q *boundedMemoryQueue) IsPersistent() bool {
