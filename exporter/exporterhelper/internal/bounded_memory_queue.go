@@ -7,6 +7,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 
@@ -128,6 +129,7 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 	if q.stopped.Load() {
 		return false
 	}
+	debug.PrintStack()
 	waitForAccept := make(chan bool, 1)
 	pipelineItem := &queueEvent{
 		request:    item,
