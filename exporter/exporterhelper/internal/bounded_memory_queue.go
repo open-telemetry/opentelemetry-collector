@@ -86,8 +86,16 @@ func (q *boundedMemoryQueue) eventLoop() {
 			continue
 		}
 		if q.stopped.Load() && e.stopChan != nil {
+			// if we have no consumers, empty the queue.
+			if q.numConsumers == 0 {
+				for len(q.items) > 0 {
+					<-q.items
+					q.size--
+				}
+			}
 			if q.size > 0 {
 				// we have a stop signal, but there are still elements in the queue.
+
 				// Requeue:
 				go func() {
 					q.eventChan <- e

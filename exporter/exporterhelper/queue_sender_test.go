@@ -160,6 +160,9 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 		require.NoError(t, be.send(newErrorRequest(context.Background())))
 	}
 	checkValueForGlobalManager(t, defaultExporterTags, int64(7), "exporter/queue_size")
+
+	assert.NoError(t, be.Shutdown(context.Background()))
+	checkValueForGlobalManager(t, defaultExporterTags, int64(0), "exporter/queue_size")
 }
 
 func TestQueuedRetry_QueueMetricsReportedUsingOTel(t *testing.T) {
