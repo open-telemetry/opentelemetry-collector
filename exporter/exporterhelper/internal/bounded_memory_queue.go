@@ -74,9 +74,6 @@ func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set Queu
 func (q *boundedMemoryQueue) eventLoop() {
 	for {
 		e := <-q.eventChan
-		if e == nil {
-			return
-		}
 		if e.sizeChan != nil {
 			e.sizeChan <- q.size
 			continue
@@ -104,9 +101,8 @@ func (q *boundedMemoryQueue) eventLoop() {
 			}
 
 			close(q.items)
-			close(q.eventChan)
 			close(e.stopChan)
-			return
+			break
 		}
 		if e.stopChan != nil {
 			// mark the event loop stopped and requeue to close.
@@ -121,14 +117,10 @@ func (q *boundedMemoryQueue) eventLoop() {
 			continue
 		}
 		q.size++
-		select {
-		case q.items <- e.request:
-			e.acceptChan <- true
-		default:
-			q.size--
-			e.acceptChan <- false
-		}
+		q.items <- e.request
+		e.acceptChan <- true
 	}
+	close(q.eventChan)
 }
 
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
