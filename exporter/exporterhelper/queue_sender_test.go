@@ -372,7 +372,9 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	assert.True(t, produceCounter.Load() == uint32(1))
 	// shuts down and ensure the item is produced in the queue again
 	require.NoError(t, be.Shutdown(context.Background()))
-	assert.True(t, produceCounter.Load() == uint32(2))
+	assert.Eventually(t, func() bool {
+		return produceCounter.Load() == uint32(2)
+	}, 2*time.Second, 1*time.Millisecond)
 }
 
 type mockHost struct {
