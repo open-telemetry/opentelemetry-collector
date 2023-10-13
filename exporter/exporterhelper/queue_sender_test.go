@@ -379,7 +379,8 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	// buffer some time so the failure is pushed back.
 	time.Sleep(1 * time.Second)
 	require.NoError(t, be.Shutdown(context.Background()))
-	assert.True(t, produceCounter.Load() == uint32(2))
+	time.Sleep(1 * time.Second)
+	assert.Equal(t, uint32(2), produceCounter.Load())
 }
 
 type mockHost struct {
