@@ -7,7 +7,6 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -134,10 +133,7 @@ func (q *boundedMemoryQueue) eventLoop() {
 
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
 func (q *boundedMemoryQueue) Produce(item Request) bool {
-	fmt.Println("produce")
-	//debug.PrintStack()
 	if q.stopped.Load() {
-		fmt.Println("stopped")
 		return false
 	}
 	waitForAccept := make(chan bool, 1)
