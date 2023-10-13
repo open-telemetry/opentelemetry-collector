@@ -6,7 +6,7 @@ The `--config` flag accepts either a file path or values in the form of a config
 Currently, the OpenTelemetry Collector supports the following providers `scheme`:
 - [file](../confmap/provider/fileprovider/provider.go) - Reads configuration from a file. E.g. `file:path/to/config.yaml`.
 - [env](../confmap/provider/envprovider/provider.go) - Reads configuration from an environment variable. E.g. `env:MY_CONFIG_IN_AN_ENVVAR`.
-- [yaml](../confmap/provider/yamlprovider/provider.go) - Reads configuration from yaml bytes. E.g. `yaml:exporters::logging::loglevel: debug`.
+- [yaml](../confmap/provider/yamlprovider/provider.go) - Reads configuration from yaml bytes. E.g. `yaml:exporters::debug::verbosity: detailed`.
 - [http](../confmap/provider/httpprovider/provider.go) - Reads configuration from a HTTP URI. E.g. `http://www.example.com`
 
 For more technical details about how configuration is resolved you can read the [configuration resolving design](../confmap/README.md#configuration-resolving).
@@ -32,9 +32,9 @@ For more technical details about how configuration is resolved you can read the 
      
     `./otelcorecol --config=file:examples/local/otel-config.yaml --config=env:MY_OTHER_CONFIG`
 
-2. Merge a `config.yaml` file with the content of a yaml bytes configuration (overwrites the `exporters::logging::loglevel` config) and use the content as the config:
+2. Merge a `config.yaml` file with the content of a yaml bytes configuration (overwrites the `exporters::debug::verbosity` config) and use the content as the config:
 
-    `./otelcorecol --config=file:examples/local/otel-config.yaml --config="yaml:exporters::logging::loglevel: info"`
+    `./otelcorecol --config=file:examples/local/otel-config.yaml --config="yaml:exporters::debug::verbosity: normal"`
 
 ### Embedding other configuration providers
 
@@ -139,7 +139,7 @@ processors:
 exporters:
    - otlp
    - otlphttp
-   - logging
+   - debug
 extensions:
    - zpages
    - memory_ballast

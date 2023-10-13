@@ -12,6 +12,8 @@ type Host interface {
 	//
 	// ReportFatalError should be called by the component anytime after Component.Start() ends and
 	// before Component.Shutdown() begins.
+	// Deprecated: [0.87.0] Use TelemetrySettings.ReportComponentStatus instead (with an event
+	// component.StatusFatalError)
 	ReportFatalError(err error)
 
 	// GetFactory of the specified kind. Returns the factory for a component type.

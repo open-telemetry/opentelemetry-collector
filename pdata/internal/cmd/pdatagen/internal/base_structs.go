@@ -21,14 +21,15 @@ type {{ .structName }} internal.{{ .structName }}
 {{- else }}
 type {{ .structName }} struct {
 	orig *{{ .originName }}
+	state *internal.State
 }
 {{- end }}
 
-func new{{ .structName }}(orig *{{ .originName }}) {{ .structName }} {
+func new{{ .structName }}(orig *{{ .originName }}, state *internal.State) {{ .structName }} {
 	{{- if .isCommon }}
-	return {{ .structName }}(internal.New{{ .structName }}(orig))
+	return {{ .structName }}(internal.New{{ .structName }}(orig, state))
 	{{- else }}
-	return {{ .structName }}{orig}
+	return {{ .structName }}{orig: orig, state: state}
 	{{- end }}
 }
 
@@ -37,12 +38,15 @@ func new{{ .structName }}(orig *{{ .originName }}) {{ .structName }} {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func New{{ .structName }}() {{ .structName }} {
-	return new{{ .structName }}(&{{ .originName }}{})
+	state := internal.StateMutable
+	return new{{ .structName }}(&{{ .originName }}{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
+	ms.{{- if .isCommon }}getState(){{ else }}state{{ end }}.AssertMutable()
+	dest.{{- if .isCommon }}getState(){{ else }}state{{ end }}.AssertMutable()
 	*dest.{{ .origAccessor }} = *ms.{{ .origAccessor }}
 	*ms.{{ .origAccessor }} = {{ .originName }}{}
 }
@@ -50,6 +54,10 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 {{ if .isCommon -}}
 func (ms {{ .structName }}) getOrig() *{{ .originName }} {
 	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
+}
+
+func (ms {{ .structName }}) getState() *internal.State {
+	return internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
 }
 {{- end }}
 
@@ -59,9 +67,10 @@ func (ms {{ .structName }}) getOrig() *{{ .originName }} {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
-{{- range .fields }}
-{{ .GenerateCopyToValue $.messageStruct }}
-{{- end }}
+	dest.{{- if .isCommon }}getState(){{ else }}state{{ end }}.AssertMutable()
+	{{- range .fields }}
+	{{ .GenerateCopyToValue $.messageStruct }}
+	{{- end }}
 }`
 
 const messageValueTestTemplate = `
@@ -71,6 +80,9 @@ func Test{{ .structName }}_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, New{{ .structName }}(), ms)
 	assert.Equal(t, {{ .generateTestData }}, dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(new{{ .structName }}(&{{ .originName }}{}, &sharedState)) })
+	assert.Panics(t, func() { new{{ .structName }}(&{{ .originName }}{}, &sharedState).MoveTo(dest) })
 }
 
 func Test{{ .structName }}_CopyTo(t *testing.T) {
@@ -81,6 +93,8 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 	orig = {{ .generateTestData }}
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(new{{ .structName }}(&{{ .originName }}{}, &sharedState)) })
 }
 
 {{ range .fields }}
@@ -90,8 +104,9 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 const messageValueGenerateTestTemplate = `func {{ upperIfInternal "g" }}enerateTest{{ .structName }}() {{ .structName }} {
 	{{- if .isCommon }}
 	orig := {{ .originName }}{}
+	state := StateMutable
 	{{- end }}
-	tv := New{{ .structName }}({{ if .isCommon }}&orig{{ end }})
+	tv := New{{ .structName }}({{ if .isCommon }}&orig, &state{{ end }})
 	{{ upperIfInternal "f" }}illTest{{ .structName }}(tv)
 	return tv
 }
@@ -105,19 +120,23 @@ func {{ upperIfInternal "f" }}illTest{{ .structName }}(tv {{ .structName }}) {
 const messageValueAliasTemplate = `
 type {{ .structName }} struct {
 	orig *{{ .originName }}
+	state *State
 }
 
 func GetOrig{{ .structName }}(ms {{ .structName }}) *{{ .originName }} {
 	return ms.orig
 }
 
-func New{{ .structName }}(orig *{{ .originName }}) {{ .structName }} {
-	return {{ .structName }}{orig: orig}
+func Get{{ .structName }}State(ms {{ .structName }}) *State {
+	return ms.state
+}
+
+func New{{ .structName }}(orig *{{ .originName }}, state *State) {{ .structName }} {
+	return {{ .structName }}{orig: orig, state: state}
 }`
 
 type baseStruct interface {
 	getName() string
-	getPackageName() string
 	generateStruct(sb *bytes.Buffer)
 	generateTests(sb *bytes.Buffer)
 	generateTestValueHelpers(sb *bytes.Buffer)
@@ -136,10 +155,6 @@ type messageValueStruct struct {
 
 func (ms *messageValueStruct) getName() string {
 	return ms.structName
-}
-
-func (ms *messageValueStruct) getPackageName() string {
-	return ms.packageName
 }
 
 func (ms *messageValueStruct) generateStruct(sb *bytes.Buffer) {

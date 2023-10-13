@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -22,6 +23,9 @@ func TestSpanLink_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSpanLink(), ms)
 	assert.Equal(t, generateTestSpanLink(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newSpanLink(&otlptrace.Span_Link{}, &sharedState)) })
+	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, &sharedState).MoveTo(dest) })
 }
 
 func TestSpanLink_CopyTo(t *testing.T) {
@@ -32,6 +36,8 @@ func TestSpanLink_CopyTo(t *testing.T) {
 	orig = generateTestSpanLink()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newSpanLink(&otlptrace.Span_Link{}, &sharedState)) })
 }
 
 func TestSpanLink_TraceID(t *testing.T) {
@@ -68,6 +74,8 @@ func TestSpanLink_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
 	ms.SetDroppedAttributesCount(uint32(17))
 	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, &sharedState).SetDroppedAttributesCount(uint32(17)) })
 }
 
 func generateTestSpanLink() SpanLink {
@@ -79,7 +87,7 @@ func generateTestSpanLink() SpanLink {
 func fillTestSpanLink(tv SpanLink) {
 	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	internal.FillTestTraceState(internal.NewTraceState(&tv.orig.TraceState))
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
+	internal.FillTestTraceState(internal.NewTraceState(&tv.orig.TraceState, tv.state))
+	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.DroppedAttributesCount = uint32(17)
 }

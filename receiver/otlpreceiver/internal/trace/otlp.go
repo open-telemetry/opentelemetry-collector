@@ -8,8 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -20,14 +20,14 @@ const dataFormatProtobuf = "protobuf"
 type Receiver struct {
 	ptraceotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Traces
-	obsrecv      *obsreport.Receiver
+	obsreport    *receiverhelper.ObsReport
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumer.Traces, obsrecv *obsreport.Receiver) *Receiver {
+func New(nextConsumer consumer.Traces, obsreport *receiverhelper.ObsReport) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
-		obsrecv:      obsrecv,
+		obsreport:    obsreport,
 	}
 }
 
@@ -40,9 +40,9 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 		return ptraceotlp.NewExportResponse(), nil
 	}
 
-	ctx = r.obsrecv.StartTracesOp(ctx)
+	ctx = r.obsreport.StartTracesOp(ctx)
 	err := r.nextConsumer.ConsumeTraces(ctx, td)
-	r.obsrecv.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
+	r.obsreport.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
 
 	// Use appropiate status codes for permanent/non-permanent errors
 	if err != nil {

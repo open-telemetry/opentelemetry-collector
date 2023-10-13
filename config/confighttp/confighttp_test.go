@@ -73,6 +73,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:     &idleConnTimeout,
 				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:         "",
+				DisableKeepAlives:   true,
 			},
 			shouldError: false,
 		},
@@ -91,6 +92,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:     &idleConnTimeout,
 				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:         "none",
+				DisableKeepAlives:   true,
 			},
 			shouldError: false,
 		},
@@ -109,6 +111,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:     &idleConnTimeout,
 				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:         "gzip",
+				DisableKeepAlives:   true,
 			},
 			shouldError: false,
 		},
@@ -145,6 +148,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
 				assert.EqualValues(t, 45, transport.MaxConnsPerHost)
 				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
+				assert.EqualValues(t, true, transport.DisableKeepAlives)
 			case *compressRoundTripper:
 				assert.EqualValues(t, "gzip", transport.compressionType)
 			}
@@ -192,6 +196,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			assert.EqualValues(t, 0, transport.MaxIdleConnsPerHost)
 			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
 			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
+			assert.EqualValues(t, false, transport.DisableKeepAlives)
 
 		})
 	}
@@ -661,7 +666,7 @@ func TestHttpCors(t *testing.T) {
 	tests := []struct {
 		name string
 
-		CORSSettings
+		*CORSSettings
 
 		allowedWorks     bool
 		disallowedWorks  bool
@@ -674,8 +679,15 @@ func TestHttpCors(t *testing.T) {
 			extraHeaderWorks: false,
 		},
 		{
+			name:             "emptyCORS",
+			CORSSettings:     &CORSSettings{},
+			allowedWorks:     false,
+			disallowedWorks:  false,
+			extraHeaderWorks: false,
+		},
+		{
 			name: "OriginCORS",
-			CORSSettings: CORSSettings{
+			CORSSettings: &CORSSettings{
 				AllowedOrigins: []string{"allowed-*.com"},
 			},
 			allowedWorks:     true,
@@ -684,7 +696,7 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name: "CacheableCORS",
-			CORSSettings: CORSSettings{
+			CORSSettings: &CORSSettings{
 				AllowedOrigins: []string{"allowed-*.com"},
 				MaxAge:         360,
 			},
@@ -694,7 +706,7 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name: "HeaderCORS",
-			CORSSettings: CORSSettings{
+			CORSSettings: &CORSSettings{
 				AllowedOrigins: []string{"allowed-*.com"},
 				AllowedHeaders: []string{"ExtraHeader"},
 			},
@@ -708,7 +720,7 @@ func TestHttpCors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			hss := &HTTPServerSettings{
 				Endpoint: "localhost:0",
-				CORS:     &tt.CORSSettings,
+				CORS:     tt.CORSSettings,
 			}
 
 			ln, err := hss.ToListener()
@@ -733,17 +745,18 @@ func TestHttpCors(t *testing.T) {
 			url := fmt.Sprintf("http://%s", ln.Addr().String())
 
 			expectedStatus := http.StatusNoContent
-			if len(tt.AllowedOrigins) == 0 {
+			if tt.CORSSettings == nil || len(tt.AllowedOrigins) == 0 {
 				expectedStatus = http.StatusOK
 			}
+
 			// Verify allowed domain gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", tt.MaxAge, false, expectedStatus, tt.allowedWorks)
+			verifyCorsResp(t, url, "allowed-origin.com", tt.CORSSettings, false, expectedStatus, tt.allowedWorks)
 
 			// Verify allowed domain and extra headers gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", tt.MaxAge, true, expectedStatus, tt.extraHeaderWorks)
+			verifyCorsResp(t, url, "allowed-origin.com", tt.CORSSettings, true, expectedStatus, tt.extraHeaderWorks)
 
 			// Verify disallowed domain gets responses that disallow CORS.
-			verifyCorsResp(t, url, "disallowed-origin.com", tt.MaxAge, false, expectedStatus, tt.disallowedWorks)
+			verifyCorsResp(t, url, "disallowed-origin.com", tt.CORSSettings, false, expectedStatus, tt.disallowedWorks)
 
 			require.NoError(t, s.Close())
 		})
@@ -859,7 +872,7 @@ func TestHttpServerHeaders(t *testing.T) {
 	}
 }
 
-func verifyCorsResp(t *testing.T, url string, origin string, maxAge int, extraHeader bool, wantStatus int, wantAllowed bool) {
+func verifyCorsResp(t *testing.T, url string, origin string, set *CORSSettings, extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest(http.MethodOptions, url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
@@ -888,8 +901,8 @@ func verifyCorsResp(t *testing.T, url string, origin string, maxAge int, extraHe
 	if wantAllowed {
 		wantAllowOrigin = origin
 		wantAllowMethods = "POST"
-		if maxAge != 0 {
-			wantMaxAge = fmt.Sprintf("%d", maxAge)
+		if set != nil && set.MaxAge != 0 {
+			wantMaxAge = fmt.Sprintf("%d", set.MaxAge)
 		}
 	}
 	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)

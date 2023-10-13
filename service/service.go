@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
@@ -28,6 +29,8 @@ import (
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
+	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
+	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -35,6 +38,9 @@ import (
 type Settings struct {
 	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
+
+	// CollectorConf contains the Collector's current configuration
+	CollectorConf *confmap.Conf
 
 	// Receivers builder for receivers.
 	Receivers *receiver.Builder
@@ -65,9 +71,11 @@ type Settings struct {
 type Service struct {
 	buildInfo            component.BuildInfo
 	telemetry            *telemetry.Telemetry
-	telemetrySettings    component.TelemetrySettings
+	telemetrySettings    servicetelemetry.TelemetrySettings
 	host                 *serviceHost
 	telemetryInitializer *telemetryInitializer
+	collectorConf        *confmap.Conf
+	statusInit           status.InitFunc
 }
 
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
@@ -89,6 +97,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
 		telemetryInitializer: newColTelemetry(useOtel, disableHighCard, extendedConfig),
+		collectorConf:        set.CollectorConf,
 	}
 	var err error
 	srv.telemetry, err = telemetry.New(ctx, telemetry.Settings{ZapOptions: set.LoggingOptions}, cfg.Telemetry)
@@ -98,7 +107,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	res := buildResource(set.BuildInfo, cfg.Telemetry)
 	pcommonRes := pdataFromSdk(res)
 
-	srv.telemetrySettings = component.TelemetrySettings{
+	srv.telemetrySettings = servicetelemetry.TelemetrySettings{
 		Logger:         srv.telemetry.Logger(),
 		TracerProvider: srv.telemetry.TracerProvider(),
 		MeterProvider:  noop.NewMeterProvider(),
@@ -112,6 +121,9 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
+	srv.telemetrySettings.TracerProvider = srv.telemetryInitializer.tp
+	srv.statusInit, srv.telemetrySettings.ReportComponentStatus =
+		status.NewServiceStatusFunc(srv.host.notifyComponentStatusChange)
 
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensionsAndPipeline(ctx, set, cfg); err != nil {
@@ -133,8 +145,17 @@ func (srv *Service) Start(ctx context.Context) error {
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
 
+	// enable status reporting
+	srv.statusInit()
+
 	if err := srv.host.serviceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
+	}
+
+	if srv.collectorConf != nil {
+		if err := srv.host.serviceExtensions.NotifyConfig(ctx, srv.collectorConf); err != nil {
+			return err
+		}
 	}
 
 	if err := srv.host.pipelines.StartAll(ctx, srv.host); err != nil {

@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -42,9 +44,8 @@ func newTraceRequestUnmarshalerFunc(pusher consumer.ConsumeTracesFunc) internal.
 	}
 }
 
-// Marshal provides serialization capabilities required by persistent queue
-func (req *tracesRequest) Marshal() ([]byte, error) {
-	return tracesMarshaler.MarshalTraces(req.td)
+func tracesRequestMarshaler(req internal.Request) ([]byte, error) {
+	return tracesMarshaler.MarshalTraces(req.(*tracesRequest).td)
 }
 
 func (req *tracesRequest) OnError(err error) internal.Request {
@@ -88,26 +89,72 @@ func NewTracesExporter(
 		return nil, errNilPushTraceData
 	}
 
-	bs := fromOptions(options...)
-	be, err := newBaseExporter(set, bs, component.DataTypeTraces, newTraceRequestUnmarshalerFunc(pusher))
+	be, err := newBaseExporter(set, component.DataTypeTraces, false, tracesRequestMarshaler,
+		newTraceRequestUnmarshalerFunc(pusher), newTracesExporterWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
-	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
-		return &tracesExporterWithObservability{
-			obsrep:     be.obsrep,
-			nextSender: nextSender,
-		}
-	})
 
 	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		req := newTracesRequest(ctx, td, pusher)
-		serr := be.sender.send(req)
+		serr := be.send(req)
 		if errors.Is(serr, errSendingQueueIsFull) {
 			be.obsrep.recordTracesEnqueueFailure(req.Context(), int64(req.Count()))
 		}
 		return serr
-	}, bs.consumerOptions...)
+	}, be.consumerOptions...)
+
+	return &traceExporter{
+		baseExporter: be,
+		Traces:       tc,
+	}, err
+}
+
+// TracesConverter provides an interface for converting ptrace.Traces into a request.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+type TracesConverter interface {
+	// RequestFromTraces converts ptrace.Traces into a Request.
+	RequestFromTraces(context.Context, ptrace.Traces) (Request, error)
+}
+
+// NewTracesRequestExporter creates a new traces exporter based on a custom TracesConverter and RequestSender.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewTracesRequestExporter(
+	_ context.Context,
+	set exporter.CreateSettings,
+	converter TracesConverter,
+	options ...Option,
+) (exporter.Traces, error) {
+	if set.Logger == nil {
+		return nil, errNilLogger
+	}
+
+	if converter == nil {
+		return nil, errNilTracesConverter
+	}
+
+	be, err := newBaseExporter(set, component.DataTypeTraces, true, nil, nil, newTracesExporterWithObservability, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
+		req, cErr := converter.RequestFromTraces(ctx, td)
+		if cErr != nil {
+			set.Logger.Error("Failed to convert traces. Dropping data.",
+				zap.Int("dropped_spans", td.SpanCount()),
+				zap.Error(err))
+			return consumererror.NewPermanent(cErr)
+		}
+		r := newRequest(ctx, req)
+		sErr := be.send(r)
+		if errors.Is(sErr, errSendingQueueIsFull) {
+			be.obsrep.recordTracesEnqueueFailure(r.Context(), int64(r.Count()))
+		}
+		return sErr
+	}, be.consumerOptions...)
 
 	return &traceExporter{
 		baseExporter: be,
@@ -116,8 +163,12 @@ func NewTracesExporter(
 }
 
 type tracesExporterWithObservability struct {
-	obsrep     *obsExporter
-	nextSender requestSender
+	baseRequestSender
+	obsrep *obsExporter
+}
+
+func newTracesExporterWithObservability(obsrep *obsExporter) requestSender {
+	return &tracesExporterWithObservability{obsrep: obsrep}
 }
 
 func (tewo *tracesExporterWithObservability) send(req internal.Request) error {

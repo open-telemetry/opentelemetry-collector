@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/pdata/internal"
 )
 
 func TestNewByteSlice(t *testing.T) {
@@ -41,6 +43,27 @@ func TestNewByteSlice(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, byte(1), mv.At(0))
+}
+
+func TestByteSliceReadOnly(t *testing.T) {
+	raw := []byte{1, 2, 3}
+	state := internal.StateReadOnly
+	ms := ByteSlice(internal.NewByteSlice(&raw, &state))
+
+	assert.Equal(t, 3, ms.Len())
+	assert.Equal(t, byte(1), ms.At(0))
+	assert.Panics(t, func() { ms.Append(1) })
+	assert.Panics(t, func() { ms.EnsureCapacity(2) })
+	assert.Equal(t, raw, ms.AsRaw())
+	assert.Panics(t, func() { ms.FromRaw(raw) })
+
+	ms2 := NewByteSlice()
+	ms.CopyTo(ms2)
+	assert.Equal(t, ms.AsRaw(), ms2.AsRaw())
+	assert.Panics(t, func() { ms2.CopyTo(ms) })
+
+	assert.Panics(t, func() { ms.MoveTo(ms2) })
+	assert.Panics(t, func() { ms2.MoveTo(ms) })
 }
 
 func TestByteSliceAppend(t *testing.T) {

@@ -5,17 +5,13 @@ package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggin
 
 import (
 	"context"
-	"sync"
-	"time"
 
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/internal/common"
 )
 
 const (
@@ -25,16 +21,14 @@ const (
 	defaultSamplingThereafter = 500
 )
 
-var onceWarnLogLevel sync.Once
-
 // NewFactory creates a factory for Logging exporter
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, component.StabilityLevelDevelopment),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDevelopment),
-		exporter.WithLogs(createLogsExporter, component.StabilityLevelDevelopment),
+		exporter.WithTraces(createTracesExporter, component.StabilityLevelDeprecated),
+		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDeprecated),
+		exporter.WithLogs(createLogsExporter, component.StabilityLevelDeprecated),
 	)
 }
 
@@ -49,66 +43,33 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
-	return exporterhelper.NewTracesExporter(ctx, set, cfg,
-		s.pushTraces,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// Disable Timeout/RetryOnFailure and SendingQueue
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-		exporterhelper.WithShutdown(loggerSync(exporterLogger)),
-	)
+	return common.CreateTracesExporter(ctx, set, config, &common.Common{
+		Verbosity:          cfg.Verbosity,
+		WarnLogLevel:       cfg.warnLogLevel,
+		LogLevel:           cfg.LogLevel,
+		SamplingInitial:    cfg.SamplingInitial,
+		SamplingThereafter: cfg.SamplingThereafter,
+	})
 }
 
 func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
-	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
-		s.pushMetrics,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// Disable Timeout/RetryOnFailure and SendingQueue
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-		exporterhelper.WithShutdown(loggerSync(exporterLogger)),
-	)
+	return common.CreateMetricsExporter(ctx, set, config, &common.Common{
+		Verbosity:          cfg.Verbosity,
+		WarnLogLevel:       cfg.warnLogLevel,
+		LogLevel:           cfg.LogLevel,
+		SamplingInitial:    cfg.SamplingInitial,
+		SamplingThereafter: cfg.SamplingThereafter,
+	})
 }
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
-	return exporterhelper.NewLogsExporter(ctx, set, cfg,
-		s.pushLogs,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// Disable Timeout/RetryOnFailure and SendingQueue
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-		exporterhelper.WithShutdown(loggerSync(exporterLogger)),
-	)
-}
-
-func createLogger(cfg *Config, logger *zap.Logger) *zap.Logger {
-	if cfg.warnLogLevel {
-		onceWarnLogLevel.Do(func() {
-			logger.Warn(
-				"'loglevel' option is deprecated in favor of 'verbosity'. Set 'verbosity' to equivalent value to preserve behavior.",
-				zap.Stringer("loglevel", cfg.LogLevel),
-				zap.Stringer("equivalent verbosity level", cfg.Verbosity),
-			)
-		})
-	}
-
-	core := zapcore.NewSamplerWithOptions(
-		logger.Core(),
-		1*time.Second,
-		cfg.SamplingInitial,
-		cfg.SamplingThereafter,
-	)
-
-	return zap.New(core)
+	return common.CreateLogsExporter(ctx, set, config, &common.Common{
+		Verbosity:          cfg.Verbosity,
+		WarnLogLevel:       cfg.warnLogLevel,
+		LogLevel:           cfg.LogLevel,
+		SamplingInitial:    cfg.SamplingInitial,
+		SamplingThereafter: cfg.SamplingThereafter,
+	})
 }

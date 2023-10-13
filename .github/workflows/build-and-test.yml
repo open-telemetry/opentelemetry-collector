@@ -15,11 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.11
+          go-version: ~1.20.10
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -37,11 +37,11 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.11
+          go-version: ~1.20.10
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -60,11 +60,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.11
+          go-version: ~1.20.10
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -84,11 +84,11 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.11
+          go-version: ~1.20.10
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -130,15 +130,15 @@ jobs:
           make crosslink
           git diff -s --exit-code || (echo 'Replace statements are out of date, please run "make crosslink" and commit the changes in this PR.' && exit 1)
 
-  unittest:
+  unittest-matrix:
     strategy:
       matrix:
-        go-version: ["1.20", 1.19] # 1.20 needs quotes otherwise it's interpreted as 1.2
+        go-version: ["~1.21.3", "~1.20.10"] # 1.20 needs quotes otherwise it's interpreted as 1.2
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -158,13 +158,29 @@ jobs:
           key: unittest-${{ runner.os }}-go-build-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
         run: make gotest
+  unittest:
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [setup-environment, unittest-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.unittest-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.unittest-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi
 
   test-coverage:
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -185,11 +201,15 @@ jobs:
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: Wandalen/wretry.action@v1.3.0
         with:
-          file: ./coverage.txt
-          fail_ci_if_error: true
-          verbose: true
+          action: codecov/codecov-action@v3
+          with: |
+            file: ./coverage.txt
+            fail_ci_if_error: true
+            verbose: true
+          attempt_limit: 10
+          attempt_delay: 15000
 
   cross-build-collector:
     needs: [setup-environment]
@@ -218,6 +238,8 @@ jobs:
           - goos: linux
             goarch: arm
             goarm: 7
+          - goos: linux
+            goarch: s390x
           - goos: windows
             goarch: 386
           - goos: windows
@@ -225,11 +247,11 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.11
+          go-version: ~1.20.10
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3

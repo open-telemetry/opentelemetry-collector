@@ -9,6 +9,7 @@ package ptrace
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
@@ -20,18 +21,20 @@ import (
 // Must use NewScopeSpansSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ScopeSpansSlice struct {
-	orig *[]*otlptrace.ScopeSpans
+	orig  *[]*otlptrace.ScopeSpans
+	state *internal.State
 }
 
-func newScopeSpansSlice(orig *[]*otlptrace.ScopeSpans) ScopeSpansSlice {
-	return ScopeSpansSlice{orig}
+func newScopeSpansSlice(orig *[]*otlptrace.ScopeSpans, state *internal.State) ScopeSpansSlice {
+	return ScopeSpansSlice{orig: orig, state: state}
 }
 
 // NewScopeSpansSlice creates a ScopeSpansSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeSpansSlice() ScopeSpansSlice {
 	orig := []*otlptrace.ScopeSpans(nil)
-	return newScopeSpansSlice(&orig)
+	state := internal.StateMutable
+	return newScopeSpansSlice(&orig, &state)
 }
 
 // Len returns the number of elements in the slice.
@@ -50,7 +53,7 @@ func (es ScopeSpansSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ScopeSpansSlice) At(i int) ScopeSpans {
-	return newScopeSpans((*es.orig)[i])
+	return newScopeSpans((*es.orig)[i], es.state)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -66,6 +69,7 @@ func (es ScopeSpansSlice) At(i int) ScopeSpans {
 //	    // Here should set all the values for e.
 //	}
 func (es ScopeSpansSlice) EnsureCapacity(newCap int) {
+	es.state.AssertMutable()
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -79,6 +83,7 @@ func (es ScopeSpansSlice) EnsureCapacity(newCap int) {
 // AppendEmpty will append to the end of the slice an empty ScopeSpans.
 // It returns the newly added ScopeSpans.
 func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
+	es.state.AssertMutable()
 	*es.orig = append(*es.orig, &otlptrace.ScopeSpans{})
 	return es.At(es.Len() - 1)
 }
@@ -86,6 +91,8 @@ func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ScopeSpansSlice) MoveAndAppendTo(dest ScopeSpansSlice) {
+	es.state.AssertMutable()
+	dest.state.AssertMutable()
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -98,6 +105,7 @@ func (es ScopeSpansSlice) MoveAndAppendTo(dest ScopeSpansSlice) {
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es ScopeSpansSlice) RemoveIf(f func(ScopeSpans) bool) {
+	es.state.AssertMutable()
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -117,12 +125,13 @@ func (es ScopeSpansSlice) RemoveIf(f func(ScopeSpans) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
+	dest.state.AssertMutable()
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newScopeSpans((*es.orig)[i]).CopyTo(newScopeSpans((*dest.orig)[i]))
+			newScopeSpans((*es.orig)[i], es.state).CopyTo(newScopeSpans((*dest.orig)[i], dest.state))
 		}
 		return
 	}
@@ -130,7 +139,7 @@ func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 	wrappers := make([]*otlptrace.ScopeSpans, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newScopeSpans((*es.orig)[i]).CopyTo(newScopeSpans(wrappers[i]))
+		newScopeSpans((*es.orig)[i], es.state).CopyTo(newScopeSpans(wrappers[i], dest.state))
 	}
 	*dest.orig = wrappers
 }
@@ -139,5 +148,6 @@ func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 // provided less function so that two instances of ScopeSpansSlice
 // can be compared.
 func (es ScopeSpansSlice) Sort(less func(a, b ScopeSpans) bool) {
+	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

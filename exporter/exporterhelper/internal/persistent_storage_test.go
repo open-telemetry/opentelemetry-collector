@@ -22,11 +22,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func createStorageExtension(_ string) storage.Extension {
-	// After having storage moved to core, we could leverage storagetest.NewTestExtension(nil, path)
-	return newMockStorageExtension()
-}
-
 func createTestClient(extension storage.Extension) storage.Client {
 	client, err := extension.GetClient(context.Background(), component.KindReceiver, component.ID{}, "")
 	if err != nil {
@@ -36,7 +31,8 @@ func createTestClient(extension storage.Extension) storage.Client {
 }
 
 func createTestPersistentStorageWithLoggingAndCapacity(client storage.Client, logger *zap.Logger, capacity uint64) *persistentContiguousStorage {
-	return newPersistentContiguousStorage(context.Background(), "foo", capacity, logger, client, newFakeTracesRequestUnmarshalerFunc())
+	return newPersistentContiguousStorage(context.Background(), "foo", client, logger, capacity,
+		newFakeTracesRequestMarshalerFunc(), newFakeTracesRequestUnmarshalerFunc())
 }
 
 func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage {
@@ -54,11 +50,6 @@ func newFakeTracesRequest(td ptrace.Traces) *fakeTracesRequest {
 	return &fakeTracesRequest{
 		td: td,
 	}
-}
-
-func (fd *fakeTracesRequest) Marshal() ([]byte, error) {
-	marshaler := &ptrace.ProtoMarshaler{}
-	return marshaler.MarshalTraces(fd.td)
 }
 
 func (fd *fakeTracesRequest) OnProcessingFinished() {
@@ -82,9 +73,14 @@ func newFakeTracesRequestUnmarshalerFunc() RequestUnmarshaler {
 	}
 }
 
-func TestPersistentStorage_CorruptedData(t *testing.T) {
-	path := t.TempDir()
+func newFakeTracesRequestMarshalerFunc() RequestMarshaler {
+	return func(req Request) ([]byte, error) {
+		marshaler := ptrace.ProtoMarshaler{}
+		return marshaler.MarshalTraces(req.(*fakeTracesRequest).td)
+	}
+}
 
+func TestPersistentStorage_CorruptedData(t *testing.T) {
 	traces := newTraces(5, 10)
 	req := newFakeTracesRequest(traces)
 
@@ -149,7 +145,7 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ext := createStorageExtension(path)
+			ext := NewMockStorageExtension(nil)
 			client := createTestClient(ext)
 			ps := createTestPersistentStorage(client)
 
@@ -199,12 +195,10 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 }
 
 func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
-	path := t.TempDir()
-
 	traces := newTraces(5, 10)
 	req := newFakeTracesRequest(traces)
 
-	ext := createStorageExtension(path)
+	ext := NewMockStorageExtension(nil)
 	client := createTestClient(ext)
 	ps := createTestPersistentStorage(client)
 
@@ -266,13 +260,12 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 // close to full and with some items dispatched
 func TestPersistentStorage_StartWithNonDispatched(t *testing.T) {
 	var capacity uint64 = 5 // arbitrary small number
-	path := t.TempDir()
 	logger := zap.NewNop()
 
 	traces := newTraces(5, 10)
 	req := newFakeTracesRequest(traces)
 
-	ext := createStorageExtension(path)
+	ext := NewMockStorageExtension(nil)
 	client := createTestClient(ext)
 	ps := createTestPersistentStorageWithLoggingAndCapacity(client, logger, capacity)
 
@@ -304,13 +297,11 @@ func TestPersistentStorage_StartWithNonDispatched(t *testing.T) {
 }
 
 func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
-	path := t.TempDir()
-
 	traces := newTraces(5, 10)
 	req := newFakeTracesRequest(traces)
 
 	for i := 0; i < 10; i++ {
-		ext := createStorageExtension(path)
+		ext := NewMockStorageExtension(nil)
 		client := createTestClient(ext)
 		ps := createTestPersistentStorage(client)
 		require.Equal(t, uint64(0), ps.size())
@@ -325,7 +316,7 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 		require.NoError(t, err)
 
 		// TODO: when replacing mock with real storage, this could actually be uncommented
-		// ext = createStorageExtension(path)
+		// ext = NewMockStorageExtension(nil)
 		// ps = createTestPersistentStorage(ext)
 
 		// The first element should be already picked by loop
@@ -346,16 +337,14 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 	}
 
 	// No more items
-	ext := createStorageExtension(path)
-	wq := createTestQueue(ext, 1000)
+	ext := NewMockStorageExtension(nil)
+	wq := createTestQueue(t, 1000, 1, func(Request) {})
 	require.Equal(t, 0, wq.Size())
 	require.NoError(t, ext.Shutdown(context.Background()))
 }
 
 func TestPersistentStorage_EmptyRequest(t *testing.T) {
-	path := t.TempDir()
-
-	ext := createStorageExtension(path)
+	ext := NewMockStorageExtension(nil)
 	client := createTestClient(ext)
 	ps := createTestPersistentStorage(client)
 
@@ -391,8 +380,7 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 
 	for _, c := range cases {
 		b.Run(fmt.Sprintf("#traces: %d #spansPerTrace: %d", c.numTraces, c.numSpansPerTrace), func(bb *testing.B) {
-			path := bb.TempDir()
-			ext := createStorageExtension(path)
+			ext := NewMockStorageExtension(nil)
 			client := createTestClient(ext)
 			ps := createTestPersistentStorageWithLoggingAndCapacity(client, zap.NewNop(), 10000000)
 
@@ -450,9 +438,7 @@ func TestPersistentStorage_ItemIndexMarshaling(t *testing.T) {
 }
 
 func TestPersistentStorage_StopShouldCloseClient(t *testing.T) {
-	path := t.TempDir()
-
-	ext := createStorageExtension(path)
+	ext := NewMockStorageExtension(nil)
 	client := createTestClient(ext)
 	ps := createTestPersistentStorage(client)
 
@@ -467,7 +453,7 @@ func TestPersistentStorage_StorageFull(t *testing.T) {
 	var err error
 	traces := newTraces(5, 10)
 	req := newFakeTracesRequest(traces)
-	marshaled, err := req.Marshal()
+	marshaled, err := newFakeTracesRequestMarshalerFunc()(req)
 	require.NoError(t, err)
 	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
 	freeSpaceInBytes := 1
@@ -565,82 +551,6 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguou
 		defer pcs.mu.Unlock()
 		return reflect.DeepEqual(pcs.currentlyDispatchedItems, compare)
 	}, 5*time.Second, 10*time.Millisecond)
-}
-
-type mockStorageExtension struct {
-	component.StartFunc
-	component.ShutdownFunc
-}
-
-func (m mockStorageExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, _ string) (storage.Client, error) {
-	return &mockStorageClient{st: map[string][]byte{}}, nil
-}
-
-func newMockStorageExtension() storage.Extension {
-	return &mockStorageExtension{}
-}
-
-type mockStorageClient struct {
-	st           map[string][]byte
-	mux          sync.Mutex
-	closeCounter uint64
-}
-
-func (m *mockStorageClient) Get(_ context.Context, s string) ([]byte, error) {
-	m.mux.Lock()
-	defer m.mux.Unlock()
-
-	val, found := m.st[s]
-	if !found {
-		return nil, nil
-	}
-
-	return val, nil
-}
-
-func (m *mockStorageClient) Set(_ context.Context, s string, bytes []byte) error {
-	m.mux.Lock()
-	defer m.mux.Unlock()
-
-	m.st[s] = bytes
-	return nil
-}
-
-func (m *mockStorageClient) Delete(_ context.Context, s string) error {
-	m.mux.Lock()
-	defer m.mux.Unlock()
-
-	delete(m.st, s)
-	return nil
-}
-
-func (m *mockStorageClient) Close(_ context.Context) error {
-	m.closeCounter++
-	return nil
-}
-
-func (m *mockStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
-	m.mux.Lock()
-	defer m.mux.Unlock()
-
-	for _, op := range ops {
-		switch op.Type {
-		case storage.Get:
-			op.Value = m.st[op.Key]
-		case storage.Set:
-			m.st[op.Key] = op.Value
-		case storage.Delete:
-			delete(m.st, op.Key)
-		default:
-			return errors.New("wrong operation type")
-		}
-	}
-
-	return nil
-}
-
-func (m *mockStorageClient) getCloseCount() uint64 {
-	return m.closeCounter
 }
 
 func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {

@@ -12,13 +12,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestExponentialHistogramDataPointSlice(t *testing.T) {
 	es := NewExponentialHistogramDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newExponentialHistogramDataPointSlice(&[]*otlpmetrics.ExponentialHistogramDataPoint{})
+	state := internal.StateMutable
+	es = newExponentialHistogramDataPointSlice(&[]*otlpmetrics.ExponentialHistogramDataPoint{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewExponentialHistogramDataPoint()
@@ -30,6 +32,19 @@ func TestExponentialHistogramDataPointSlice(t *testing.T) {
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
+}
+
+func TestExponentialHistogramDataPointSliceReadOnly(t *testing.T) {
+	sharedState := internal.StateReadOnly
+	es := newExponentialHistogramDataPointSlice(&[]*otlpmetrics.ExponentialHistogramDataPoint{}, &sharedState)
+	assert.Equal(t, 0, es.Len())
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.EnsureCapacity(2) })
+	es2 := NewExponentialHistogramDataPointSlice()
+	es.CopyTo(es2)
+	assert.Panics(t, func() { es2.CopyTo(es) })
+	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
+	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
 }
 
 func TestExponentialHistogramDataPointSlice_CopyTo(t *testing.T) {
@@ -134,6 +149,6 @@ func fillTestExponentialHistogramDataPointSlice(es ExponentialHistogramDataPoint
 	*es.orig = make([]*otlpmetrics.ExponentialHistogramDataPoint, 7)
 	for i := 0; i < 7; i++ {
 		(*es.orig)[i] = &otlpmetrics.ExponentialHistogramDataPoint{}
-		fillTestExponentialHistogramDataPoint(newExponentialHistogramDataPoint((*es.orig)[i]))
+		fillTestExponentialHistogramDataPoint(newExponentialHistogramDataPoint((*es.orig)[i], es.state))
 	}
 }

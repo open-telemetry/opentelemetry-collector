@@ -8,8 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -20,14 +20,14 @@ const dataFormatProtobuf = "protobuf"
 type Receiver struct {
 	plogotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Logs
-	obsrecv      *obsreport.Receiver
+	obsreport    *receiverhelper.ObsReport
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumer.Logs, obsrecv *obsreport.Receiver) *Receiver {
+func New(nextConsumer consumer.Logs, obsreport *receiverhelper.ObsReport) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
-		obsrecv:      obsrecv,
+		obsreport:    obsreport,
 	}
 }
 
@@ -39,9 +39,9 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 		return plogotlp.NewExportResponse(), nil
 	}
 
-	ctx = r.obsrecv.StartLogsOp(ctx)
+	ctx = r.obsreport.StartLogsOp(ctx)
 	err := r.nextConsumer.ConsumeLogs(ctx, ld)
-	r.obsrecv.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)
+	r.obsreport.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)
 	// Use appropiate status codes for permanent/non-permanent errors
 	if err != nil {
 		s, ok := status.FromError(err)

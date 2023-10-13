@@ -5,28 +5,34 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
-
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
-// Monkey patching for unit test
 var (
+	// Monkey patching for unit test
 	stopStorage = func(queue *persistentQueue) {
 		queue.storage.stop()
 	}
+	errNoStorageClient    = errors.New("no storage client extension found")
+	errWrongExtensionType = errors.New("requested extension is not a storage extension")
 )
 
 // persistentQueue holds the queue backed by file storage
 type persistentQueue struct {
-	stopWG   sync.WaitGroup
-	stopOnce sync.Once
-	stopChan chan struct{}
-	storage  *persistentContiguousStorage
+	stopWG       sync.WaitGroup
+	stopOnce     sync.Once
+	stopChan     chan struct{}
+	storageID    component.ID
+	storage      *persistentContiguousStorage
+	capacity     uint64
+	numConsumers int
+	marshaler    RequestMarshaler
+	unmarshaler  RequestUnmarshaler
 }
 
 // buildPersistentStorageName returns a name that is constructed out of queue name and signal type. This is done
@@ -36,29 +42,41 @@ func buildPersistentStorageName(name string, signal component.DataType) string {
 }
 
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func NewPersistentQueue(ctx context.Context, name string, signal component.DataType, capacity int, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
+func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, marshaler RequestMarshaler,
+	unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
 	return &persistentQueue{
-		stopChan: make(chan struct{}),
-		storage:  newPersistentContiguousStorage(ctx, buildPersistentStorageName(name, signal), uint64(capacity), logger, client, unmarshaler),
+		capacity:     uint64(capacity),
+		numConsumers: numConsumers,
+		storageID:    storageID,
+		marshaler:    marshaler,
+		unmarshaler:  unmarshaler,
+		stopChan:     make(chan struct{}),
 	}
 }
 
-// StartConsumers starts the given number of consumers which will be consuming items
-func (pq *persistentQueue) StartConsumers(numWorkers int, callback func(item Request)) {
-	for i := 0; i < numWorkers; i++ {
+// Start starts the persistentQueue with the given number of consumers.
+func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set QueueSettings) error {
+	storageClient, err := toStorageClient(ctx, pq.storageID, host, set.ID, set.DataType)
+	if err != nil {
+		return err
+	}
+	storageName := buildPersistentStorageName(set.ID.Name(), set.DataType)
+	pq.storage = newPersistentContiguousStorage(ctx, storageName, storageClient, set.Logger, pq.capacity, pq.marshaler, pq.unmarshaler)
+	for i := 0; i < pq.numConsumers; i++ {
 		pq.stopWG.Add(1)
 		go func() {
 			defer pq.stopWG.Done()
 			for {
 				select {
 				case req := <-pq.storage.get():
-					callback(req)
+					set.Callback(req)
 				case <-pq.stopChan:
 					return
 				}
 			}
 		}()
 	}
+	return nil
 }
 
 // Produce adds an item to the queue and returns true if it was accepted
@@ -80,4 +98,36 @@ func (pq *persistentQueue) Stop() {
 // Size returns the current depth of the queue, excluding the item already in the storage channel (if any)
 func (pq *persistentQueue) Size() int {
 	return int(pq.storage.size())
+}
+
+func (pq *persistentQueue) Capacity() int {
+	return int(pq.capacity)
+}
+
+func (pq *persistentQueue) IsPersistent() bool {
+	return true
+}
+
+func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal component.DataType) (storage.Client, error) {
+	extension, err := getStorageExtension(host.GetExtensions(), storageID)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := extension.GetClient(ctx, component.KindExporter, ownerID, string(signal))
+	if err != nil {
+		return nil, err
+	}
+
+	return client, err
+}
+
+func getStorageExtension(extensions map[component.ID]component.Component, storageID component.ID) (storage.Extension, error) {
+	if ext, found := extensions[storageID]; found {
+		if storageExt, ok := ext.(storage.Extension); ok {
+			return storageExt, nil
+		}
+		return nil, errWrongExtensionType
+	}
+	return nil, errNoStorageClient
 }

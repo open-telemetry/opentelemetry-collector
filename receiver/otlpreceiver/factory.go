@@ -20,6 +20,10 @@ const (
 
 	defaultGRPCEndpoint = "0.0.0.0:4317"
 	defaultHTTPEndpoint = "0.0.0.0:4318"
+
+	defaultTracesURLPath  = "/v1/traces"
+	defaultMetricsURLPath = "/v1/metrics"
+	defaultLogsURLPath    = "/v1/logs"
 )
 
 // NewFactory creates a new OTLP receiver factory.
@@ -44,8 +48,13 @@ func createDefaultConfig() component.Config {
 				// We almost write 0 bytes, so no need to tune WriteBufferSize.
 				ReadBufferSize: 512 * 1024,
 			},
-			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPEndpoint,
+			HTTP: &HTTPConfig{
+				HTTPServerSettings: &confighttp.HTTPServerSettings{
+					Endpoint: defaultHTTPEndpoint,
+				},
+				TracesURLPath:  defaultTracesURLPath,
+				MetricsURLPath: defaultMetricsURLPath,
+				LogsURLPath:    defaultLogsURLPath,
 			},
 		},
 	}
@@ -59,9 +68,13 @@ func createTraces(
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.GetOrAdd(oCfg, func() (*otlpReceiver, error) {
-		return newOtlpReceiver(oCfg, set)
-	})
+	r, err := receivers.GetOrAdd(
+		oCfg,
+		func() (*otlpReceiver, error) {
+			return newOtlpReceiver(oCfg, &set)
+		},
+		&set.TelemetrySettings,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -80,9 +93,13 @@ func createMetrics(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.GetOrAdd(oCfg, func() (*otlpReceiver, error) {
-		return newOtlpReceiver(oCfg, set)
-	})
+	r, err := receivers.GetOrAdd(
+		oCfg,
+		func() (*otlpReceiver, error) {
+			return newOtlpReceiver(oCfg, &set)
+		},
+		&set.TelemetrySettings,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -101,9 +118,13 @@ func createLog(
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.GetOrAdd(oCfg, func() (*otlpReceiver, error) {
-		return newOtlpReceiver(oCfg, set)
-	})
+	r, err := receivers.GetOrAdd(
+		oCfg,
+		func() (*otlpReceiver, error) {
+			return newOtlpReceiver(oCfg, &set)
+		},
+		&set.TelemetrySettings,
+	)
 	if err != nil {
 		return nil, err
 	}

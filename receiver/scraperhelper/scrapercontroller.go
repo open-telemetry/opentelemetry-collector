@@ -13,28 +13,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
-
-// ScraperControllerSettings defines common settings for a scraper controller
-// configuration. Scraper controller receivers can embed this struct, instead
-// of receiver.Settings, and extend it with more fields if needed.
-type ScraperControllerSettings struct {
-	CollectionInterval time.Duration `mapstructure:"collection_interval"`
-	InitialDelay       time.Duration `mapstructure:"initial_delay"`
-}
-
-// NewDefaultScraperControllerSettings returns default scraper controller
-// settings with a collection interval of one minute.
-func NewDefaultScraperControllerSettings(component.Type) ScraperControllerSettings {
-	return ScraperControllerSettings{
-		CollectionInterval: time.Minute,
-		InitialDelay:       time.Second,
-	}
-}
 
 // ScraperControllerOption apply changes to internal options.
 type ScraperControllerOption func(*controller)
@@ -64,10 +47,11 @@ type controller struct {
 	logger             *zap.Logger
 	collectionInterval time.Duration
 	initialDelay       time.Duration
+	timeout            time.Duration
 	nextConsumer       consumer.Metrics
 
 	scrapers    []Scraper
-	obsScrapers []*obsreport.Scraper
+	obsScrapers []*ObsReport
 
 	tickerCh <-chan time.Time
 
@@ -75,7 +59,7 @@ type controller struct {
 	done        chan struct{}
 	terminated  chan struct{}
 
-	obsrecv      *obsreport.Receiver
+	obsrecv      *receiverhelper.ObsReport
 	recvSettings receiver.CreateSettings
 }
 
@@ -94,7 +78,7 @@ func NewScraperControllerReceiver(
 		return nil, errors.New("collection_interval must be a positive duration")
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "",
 		ReceiverCreateSettings: set,
@@ -108,6 +92,7 @@ func NewScraperControllerReceiver(
 		logger:             set.Logger,
 		collectionInterval: cfg.CollectionInterval,
 		initialDelay:       cfg.InitialDelay,
+		timeout:            cfg.Timeout,
 		nextConsumer:       nextConsumer,
 		done:               make(chan struct{}),
 		terminated:         make(chan struct{}),
@@ -119,9 +104,9 @@ func NewScraperControllerReceiver(
 		op(sc)
 	}
 
-	sc.obsScrapers = make([]*obsreport.Scraper, len(sc.scrapers))
+	sc.obsScrapers = make([]*ObsReport, len(sc.scrapers))
 	for i, scraper := range sc.scrapers {
-		scrp, err := obsreport.NewScraper(obsreport.ScraperSettings{
+		scrp, err := NewObsReport(ObsReportSettings{
 			ReceiverID:             sc.id,
 			Scraper:                scraper.ID(),
 			ReceiverCreateSettings: sc.recvSettings,
@@ -181,15 +166,14 @@ func (sc *controller) startScraping() {
 
 			sc.tickerCh = ticker.C
 		}
-
 		// Call scrape method on initialision to ensure
 		// that scrapers start from when the component starts
 		// instead of waiting for the full duration to start.
-		sc.scrapeMetricsAndReport(context.Background())
+		sc.scrapeMetricsAndReport()
 		for {
 			select {
 			case <-sc.tickerCh:
-				sc.scrapeMetricsAndReport(context.Background())
+				sc.scrapeMetricsAndReport()
 			case <-sc.done:
 				sc.terminated <- struct{}{}
 				return
@@ -201,7 +185,10 @@ func (sc *controller) startScraping() {
 // scrapeMetricsAndReport calls the Scrape function for each of the configured
 // Scrapers, records observability information, and passes the scraped metrics
 // to the next component.
-func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
+func (sc *controller) scrapeMetricsAndReport() {
+	ctx, done := withScrapeContext(sc.timeout)
+	defer done()
+
 	metrics := pmetric.NewMetrics()
 
 	for i, scraper := range sc.scrapers {
@@ -229,4 +216,14 @@ func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 // stopScraping stops the ticker
 func (sc *controller) stopScraping() {
 	close(sc.done)
+}
+
+// withScrapeContext will return a context that has no deadline if timeout is 0
+// which implies no explicit timeout had occurred, otherwise, a context
+// with a deadline of the provided timeout is returned.
+func withScrapeContext(timeout time.Duration) (context.Context, context.CancelFunc) {
+	if timeout == 0 {
+		return context.WithCancel(context.Background())
+	}
+	return context.WithTimeout(context.Background(), timeout)
 }
