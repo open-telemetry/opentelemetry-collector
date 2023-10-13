@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -351,10 +352,13 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := NewDefaultRetrySettings()
-	rCfg.InitialInterval = 5 * time.Millisecond
+	rCfg.InitialInterval = 1 * time.Millisecond
 	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 
-	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newNoopObsrepSender, WithRetry(rCfg), WithQueue(qCfg))
+	set := exportertest.NewNopCreateSettings()
+	set.ID = defaultID
+	set.Logger, _ = zap.NewDevelopment()
+	be, err := newBaseExporter(set, "", false, nil, nil, newNoopObsrepSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
 	require.NoError(t, be.Start(context.Background(), &mockHost{}))
@@ -370,11 +374,8 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	require.NoError(t, be.send(newErrorRequest(context.Background())))
 	// first wait for the item to be produced to the queue initially
 	assert.True(t, produceCounter.Load() == uint32(1))
-	// shuts down and ensure the item is produced in the queue again
 	require.NoError(t, be.Shutdown(context.Background()))
-	assert.Eventually(t, func() bool {
-		return produceCounter.Load() == uint32(2)
-	}, 2*time.Second, 1*time.Millisecond)
+	assert.True(t, produceCounter.Load() == uint32(2))
 }
 
 type mockHost struct {
