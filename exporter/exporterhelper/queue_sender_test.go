@@ -6,7 +6,6 @@ package exporterhelper
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -348,13 +347,13 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 
 func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 
-	fmt.Println("start of test")
 	produceCounter := &atomic.Uint32{}
 
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := NewDefaultRetrySettings()
-	rCfg.InitialInterval = 1 * time.Millisecond
+	rCfg.InitialInterval = 100 * time.Millisecond
+	rCfg.MaxInterval = rCfg.InitialInterval
 	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 
 	set := exportertest.NewNopCreateSettings()
@@ -377,7 +376,7 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	// first wait for the item to be produced to the queue initially
 	assert.True(t, produceCounter.Load() == uint32(1))
 	// buffer some time so the failure is pushed back.
-	time.Sleep(1 * time.Second)
+	time.Sleep(200 * time.Millisecond)
 	require.NoError(t, be.Shutdown(context.Background()))
 	require.Eventually(t, func() bool {
 		return produceCounter.Load() == uint32(2)
