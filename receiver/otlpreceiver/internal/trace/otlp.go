@@ -6,12 +6,13 @@ package trace // import "go.opentelemetry.io/collector/receiver/otlpreceiver/int
 import (
 	"context"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const dataFormatProtobuf = "protobuf"
