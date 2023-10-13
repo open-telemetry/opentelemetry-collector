@@ -13,16 +13,26 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+// queueEvent is an internal event passed in through the event loop channel
+// of the queue.
+type queueEvent struct {
+	request    Request
+	stopChan   chan struct{}
+	acceptChan chan bool
+	done       bool
+	sizeChan   chan int
+}
+
 // boundedMemoryQueue implements a producer-consumer exchange similar to a ring buffer queue,
 // where the queue is bounded and if it fills up due to slow consumers, the new items written by
 // the producer are dropped.
 type boundedMemoryQueue struct {
-	size         *atomic.Uint32
-	sizeWG       sync.WaitGroup
-	stopped      *atomic.Bool
+	size         int
+	eventChan    chan *queueEvent
 	items        chan Request
 	capacity     uint32
 	numConsumers int
+	stopped      *atomic.Bool
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
@@ -30,25 +40,30 @@ type boundedMemoryQueue struct {
 func NewBoundedMemoryQueue(capacity int, numConsumers int) ProducerConsumerQueue {
 	return &boundedMemoryQueue{
 		items:        make(chan Request, capacity),
-		stopped:      &atomic.Bool{},
-		size:         &atomic.Uint32{},
+		eventChan:    make(chan *queueEvent),
 		capacity:     uint32(capacity),
 		numConsumers: numConsumers,
+		stopped:      &atomic.Bool{},
 	}
 }
 
-// StartConsumers starts a given number of goroutines consuming items from the queue
+// Start starts a given number of goroutines consuming items from the queue
 // and passing them into the consumer callback.
 func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set QueueSettings) error {
 	var startWG sync.WaitGroup
+	startWG.Add(1)
+	go func() {
+		startWG.Done()
+		q.eventLoop()
+	}()
+
 	for i := 0; i < q.numConsumers; i++ {
 		startWG.Add(1)
 		go func() {
 			startWG.Done()
 			for item := range q.items {
-				q.size.Add(^uint32(0))
 				set.Callback(item)
-				q.sizeWG.Done()
+				q.eventChan <- &queueEvent{done: true}
 			}
 		}()
 	}
@@ -56,43 +71,88 @@ func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set Queu
 	return nil
 }
 
+func (q *boundedMemoryQueue) eventLoop() {
+	for {
+		e := <-q.eventChan
+		if e == nil {
+			return
+		}
+		if e.sizeChan != nil {
+			e.sizeChan <- q.size
+			continue
+		}
+		if e.done {
+			q.size--
+			continue
+		}
+		if q.stopped.Load() && e.stopChan != nil {
+			if q.size > 0 {
+				// we have a stop signal, but there are still elements in the queue.
+				// Requeue:
+				go func() {
+					q.eventChan <- e
+				}()
+				continue
+			}
+
+			close(q.items)
+			close(q.eventChan)
+			close(e.stopChan)
+			return
+		}
+		if e.stopChan != nil {
+			// mark the event loop stopped and requeue to close.
+			q.stopped.Store(true)
+			go func() {
+				q.eventChan <- &queueEvent{stopChan: e.stopChan}
+			}()
+			continue
+		}
+		if q.size >= int(q.capacity) || q.capacity == 0 {
+			e.acceptChan <- false
+			continue
+		}
+		q.size++
+		select {
+		case q.items <- e.request:
+			e.acceptChan <- true
+		default:
+			q.size--
+			e.acceptChan <- false
+		}
+	}
+}
+
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
 func (q *boundedMemoryQueue) Produce(item Request) bool {
 	if q.stopped.Load() {
 		return false
 	}
-
-	// we might have two concurrent backing queues at the moment
-	// their combined size is stored in q.size, and their combined capacity
-	// should match the capacity of the new queue
-	if q.size.Load() >= q.capacity {
-		return false
+	waitForAccept := make(chan bool, 1)
+	pipelineItem := &queueEvent{
+		request:    item,
+		acceptChan: waitForAccept,
 	}
-
-	q.size.Add(1)
-	q.sizeWG.Add(1)
-	select {
-	case q.items <- item:
-		return true
-	default:
-		// should not happen, as overflows should have been captured earlier
-		q.size.Add(^uint32(0))
-		q.sizeWG.Done()
-		return false
-	}
+	q.eventChan <- pipelineItem
+	return <-waitForAccept
 }
 
 // Stop stops all consumers, as well as the length reporter if started,
 // and releases the items channel. It blocks until all consumers have stopped.
 func (q *boundedMemoryQueue) Stop() {
-	q.stopped.Store(true) // disable producer
-	q.sizeWG.Wait()
-	close(q.items)
+	stopChan := make(chan struct{})
+	q.eventChan <- &queueEvent{stopChan: stopChan}
+	<-stopChan
 }
 
 // Size returns the current size of the queue
 func (q *boundedMemoryQueue) Size() int {
-	return int(q.size.Load())
+	if q.stopped.Load() {
+		return 0
+	}
+	sizeChan := make(chan int)
+	q.eventChan <- &queueEvent{sizeChan: sizeChan}
+	return <-sizeChan
 }
 
 func (q *boundedMemoryQueue) Capacity() int {

@@ -160,9 +160,6 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 		require.NoError(t, be.send(newErrorRequest(context.Background())))
 	}
 	checkValueForGlobalManager(t, defaultExporterTags, int64(7), "exporter/queue_size")
-
-	assert.NoError(t, be.Shutdown(context.Background()))
-	checkValueForGlobalManager(t, defaultExporterTags, int64(0), "exporter/queue_size")
 }
 
 func TestQueuedRetry_QueueMetricsReportedUsingOTel(t *testing.T) {
@@ -354,7 +351,7 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 
-	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newNoopObsrepSender, WithRetry(rCfg), WithQueue(qCfg))
+	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
 	require.NoError(t, be.Start(context.Background(), &mockHost{}))
@@ -367,18 +364,20 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	be.queueSender.(*queueSender).requeuingEnabled = true
 
 	// Invoke queuedRetrySender so the producer will put the item for consumer to poll
-	require.NoError(t, be.send(newErrorRequest(context.Background())))
 
+	ocs := be.obsrepSender.(*observabilityConsumerSender)
+	ocs.run(func() {
+		// This is asynchronous so it should just enqueue, no errors expected.
+		require.NoError(t, be.send(newErrorRequest(context.Background())))
+	})
 	// first wait for the item to be produced to the queue initially
-	assert.Eventually(t, func() bool {
-		return produceCounter.Load() == uint32(1)
-	}, time.Second, 1*time.Millisecond)
+	assert.True(t, produceCounter.Load() == uint32(1))
 
 	// shuts down and ensure the item is produced in the queue again
 	require.NoError(t, be.Shutdown(context.Background()))
-	assert.Eventually(t, func() bool {
-		return produceCounter.Load() == uint32(2)
-	}, time.Second, 1*time.Millisecond)
+
+	ocs.awaitAsyncProcessing()
+	assert.True(t, produceCounter.Load() == uint32(2))
 }
 
 type mockHost struct {

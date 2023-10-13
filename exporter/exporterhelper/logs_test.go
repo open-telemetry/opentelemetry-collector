@@ -239,6 +239,11 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	te, err := NewLogsExporter(context.Background(), exporter.CreateSettings{ID: fakeLogsExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, &fakeLogsExporterConfig, newPushLogsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NotNil(t, te)
+	err = te.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		_ = te.Shutdown(context.Background())
+	}()
 
 	md := testdata.GenerateLogs(3)
 	const numBatches = 7

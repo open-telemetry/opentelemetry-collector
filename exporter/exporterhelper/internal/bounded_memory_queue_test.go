@@ -43,7 +43,7 @@ func newStringRequest(str string) Request {
 // We want to test the overflow behavior, so we block the consumer
 // by holding a startLock before submitting items to the queue.
 func TestBoundedQueue(t *testing.T) {
-	q := NewBoundedMemoryQueue(1, 1)
+	q := NewBoundedMemoryQueue(2, 1)
 
 	var startLock sync.Mutex
 
@@ -66,17 +66,17 @@ func TestBoundedQueue(t *testing.T) {
 	consumerState.waitToConsumeOnce()
 
 	// at this point the item must have been read off the queue, but the consumer is blocked
-	assert.Equal(t, 0, q.Size())
+	assert.Equal(t, 1, q.Size())
 	consumerState.assertConsumed(map[string]bool{
 		"a": true,
 	})
 
 	// produce two more items. The first one should be accepted, but not consumed.
 	assert.True(t, q.Produce(newStringRequest("b")))
-	assert.Equal(t, 1, q.Size())
+	assert.Equal(t, 2, q.Size())
 	// the second should be rejected since the queue is full
 	assert.False(t, q.Produce(newStringRequest("c")))
-	assert.Equal(t, 1, q.Size())
+	assert.Equal(t, 2, q.Size())
 
 	startLock.Unlock() // unblock consumer
 
@@ -113,7 +113,7 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 
 	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {
 		consumerState.record(item.(stringRequest).str)
-		time.Sleep(1 * time.Second)
+		time.Sleep(100 * time.Millisecond)
 	})))
 
 	q.Produce(newStringRequest("a"))
