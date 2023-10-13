@@ -381,7 +381,7 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 	require.Eventually(t, func() bool {
 		return produceCounter.Load() == uint32(2)
-	}, 1*time.Millisecond, 1*time.Second)
+	}, 1*time.Second, 1*time.Millisecond)
 }
 
 type mockHost struct {
