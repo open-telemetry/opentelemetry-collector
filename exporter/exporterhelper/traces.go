@@ -65,10 +65,10 @@ func (req *tracesRequest) ItemsCount() int {
 func wrapTracesWithStatusReporting(consumeFunc consumer.ConsumeTracesFunc, telemetry component.TelemetrySettings) consumer.ConsumeTracesFunc {
 	return func(ctx context.Context, td ptrace.Traces) error {
 		if err := consumeFunc(ctx, td); err != nil {
-			telemetry.ReportComponentStatus(component.NewRecoverableErrorEvent(err))
+			_ = telemetry.ReportComponentStatus(component.NewRecoverableErrorEvent(err))
 			return err
 		}
-		telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
+		_ = telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
 		return nil
 	}
 }

@@ -135,7 +135,7 @@ func wrapStartWithStatusReporting(startFunc component.StartFunc, telemetry compo
 			// automatic status reporting for errors returned from Start will be handled by graph
 			return err
 		}
-		telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
+		_ = telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
 		return nil
 	}
 }
