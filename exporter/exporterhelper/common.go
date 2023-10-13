@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/statushelper"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -111,12 +112,10 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 // WithStatusReporting will wrap the start and/or consume functions with automatic status reporting.
 // If ReportOnStart is true and start completes without an error StatusOK will be reported. If
 // ReportOnConsume is true, StatusOK will be reported when consume returns without an error. When it
-// returns an error, StatusRecoverableError will be reported.
-//
-// Note: StatusRecoverableError is the status from the perspective of the exporter, and not
-// necessarily that of the request. A request may fail with a permanent error, indicating it should
-// not be retried, but the exporter itself will continue processing requests, and report an updated
-// status when successful.
+// returns an error, StatusRecoverableError will be reported. If a component wants to report a more
+// severe error status (e.g. StatusPermamentError or StatusFatalError), it can report it manually
+// while still usinging this option. The more severe statuses will transition the component state
+// ahead of the wrapper, making the automatic status reporting effectively a no-op.
 func WithStatusReporting(statusSettings StatusSettings) Option {
 	return func(o *baseExporter) {
 		o.statusSettings = statusSettings
@@ -127,17 +126,6 @@ func WithStatusReporting(statusSettings StatusSettings) Option {
 type StatusSettings struct {
 	ReportOnStart   bool
 	ReportOnConsume bool
-}
-
-func wrapStartWithStatusReporting(startFunc component.StartFunc, telemetry component.TelemetrySettings) component.StartFunc {
-	return func(ctx context.Context, host component.Host) error {
-		if err := startFunc.Start(ctx, host); err != nil {
-			// automatic status reporting for errors returned from Start will be handled by graph
-			return err
-		}
-		_ = telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
-		return nil
-	}
 }
 
 // baseExporter contains common fields between different exporter types.
@@ -199,7 +187,7 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 	be.connectSenders()
 
 	if be.statusSettings.ReportOnStart {
-		be.StartFunc = wrapStartWithStatusReporting(be.StartFunc, set.TelemetrySettings)
+		be.StartFunc = statushelper.WrapStart(be.StartFunc, set.TelemetrySettings)
 	}
 
 	return be, nil

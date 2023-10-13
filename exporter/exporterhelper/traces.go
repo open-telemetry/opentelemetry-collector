@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/statushelper"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -62,17 +63,6 @@ func (req *tracesRequest) ItemsCount() int {
 	return req.td.SpanCount()
 }
 
-func wrapTracesWithStatusReporting(consumeFunc consumer.ConsumeTracesFunc, telemetry component.TelemetrySettings) consumer.ConsumeTracesFunc {
-	return func(ctx context.Context, td ptrace.Traces) error {
-		if err := consumeFunc(ctx, td); err != nil {
-			_ = telemetry.ReportComponentStatus(component.NewRecoverableErrorEvent(err))
-			return err
-		}
-		_ = telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
-		return nil
-	}
-}
-
 type traceExporter struct {
 	*baseExporter
 	consumer.Traces
@@ -114,7 +104,7 @@ func NewTracesExporter(
 	}
 
 	if be.statusSettings.ReportOnConsume {
-		consumeFunc = wrapTracesWithStatusReporting(consumeFunc, set.TelemetrySettings)
+		consumeFunc = statushelper.WrapConsumeTraces(consumeFunc, set.TelemetrySettings)
 	}
 
 	tc, err := consumer.NewTraces(consumeFunc, be.consumerOptions...)
@@ -168,7 +158,7 @@ func NewTracesRequestExporter(
 	}
 
 	if be.statusSettings.ReportOnConsume {
-		consumeFunc = wrapTracesWithStatusReporting(consumeFunc, set.TelemetrySettings)
+		consumeFunc = statushelper.WrapConsumeTraces(consumeFunc, set.TelemetrySettings)
 	}
 
 	tc, err := consumer.NewTraces(consumeFunc, be.consumerOptions...)

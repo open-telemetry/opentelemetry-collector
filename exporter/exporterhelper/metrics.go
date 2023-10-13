@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/statushelper"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -62,17 +63,6 @@ func (req *metricsRequest) ItemsCount() int {
 	return req.md.DataPointCount()
 }
 
-func wrapMetricsWithStatusReporting(consumeFunc consumer.ConsumeMetricsFunc, telemetry component.TelemetrySettings) consumer.ConsumeMetricsFunc {
-	return func(ctx context.Context, md pmetric.Metrics) error {
-		if err := consumeFunc.ConsumeMetrics(ctx, md); err != nil {
-			_ = telemetry.ReportComponentStatus(component.NewRecoverableErrorEvent(err))
-			return err
-		}
-		_ = telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
-		return nil
-	}
-}
-
 type metricsExporter struct {
 	*baseExporter
 	consumer.Metrics
@@ -114,7 +104,7 @@ func NewMetricsExporter(
 	}
 
 	if be.statusSettings.ReportOnConsume {
-		consumeFunc = wrapMetricsWithStatusReporting(consumeFunc, set.TelemetrySettings)
+		consumeFunc = statushelper.WrapConsumeMetrics(consumeFunc, set.TelemetrySettings)
 	}
 
 	mc, err := consumer.NewMetrics(consumeFunc, be.consumerOptions...)
@@ -168,7 +158,7 @@ func NewMetricsRequestExporter(
 	}
 
 	if be.statusSettings.ReportOnConsume {
-		consumeFunc = wrapMetricsWithStatusReporting(consumeFunc, set.TelemetrySettings)
+		consumeFunc = statushelper.WrapConsumeMetrics(consumeFunc, set.TelemetrySettings)
 	}
 
 	mc, err := consumer.NewMetrics(consumeFunc, be.consumerOptions...)
