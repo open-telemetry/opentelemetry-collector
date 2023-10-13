@@ -114,7 +114,7 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 // ReportOnConsume is true, StatusOK will be reported when consume returns without an error. When it
 // returns an error, StatusRecoverableError will be reported. If a component wants to report a more
 // severe error status (e.g. StatusPermamentError or StatusFatalError), it can report it manually
-// while still usinging this option. The more severe statuses will transition the component state
+// while still using this option. The more severe statuses will transition the component state
 // ahead of the wrapper, making the automatic status reporting effectively a no-op.
 func WithStatusReporting(statusSettings StatusSettings) Option {
 	return func(o *baseExporter) {
