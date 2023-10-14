@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -429,6 +430,11 @@ func pprofToDenormalizedProfile(pprofProfile *pprof.Profile) *denormalized.Profi
 	return p
 }
 
+type stacktraceLocation struct {
+	offset uint64
+	length uint64
+}
+
 func pprofToPprofextendedProfile(pprofProfile *pprof.Profile) *pprofextended.Profile {
 	p := &pprofextended.Profile{}
 	stb := newStringTableBuilder(pprofProfile.StringTable)
@@ -467,18 +473,24 @@ func pprofToPprofextendedProfile(pprofProfile *pprof.Profile) *pprofextended.Pro
 			Line:         lines,
 		}
 	}
-	p.Stacktrace = make([]*pprofextended.Stacktrace, 0)
 	p.Sample = make([]*pprofextended.Sample, len(pprofProfile.Sample))
-	stacktracesMap := make(map[string]uint64)
+	// stacktracesMap := make(map[string]stacktraceLocation)
+	samples := make([]*pprof.Sample, len(pprofProfile.Sample))
 	for i, s := range pprofProfile.Sample {
+		samples[i] = s
+	}
+
+	sort.Slice(samples, func(i, j int) bool {
+		return len(samples[i].LocationId) > len(samples[j].LocationId)
+	})
+
+	for i, s := range samples {
 		values := make([]int64, len(s.Value))
 		for j, v := range s.Value {
 			values[j] = int64(v)
 		}
 		attributes := make([]*common.KeyValueInterned, 0)
 
-		// labelsKey := ""
-		// var links []*normalized.Link
 		var timestamp uint64
 
 		var span_id string
@@ -495,15 +507,9 @@ func pprofToPprofextendedProfile(pprofProfile *pprof.Profile) *pprofextended.Pro
 				trace_id = stb.resolveString(l.Str)
 				continue
 			}
-			// labelsKey += fmt.Sprintf("%d=%d,", l.Key, l.Str)
 		}
 
 		if span_id != "" && trace_id != "" {
-			// links = append(links, &normalized.Link{
-			// 	SpanId:  stringToSpanId(span_id),
-			// 	TraceId: stringToTraceId(trace_id),
-			// })
-
 			attributes = append(attributes, &common.KeyValueInterned{
 				Key:   int64(stb.add("trace_id")),
 				Value: &common.AnyValueInterned{Value: &common.AnyValueInterned_BytesValue{BytesValue: int64(btb.add([]byte(span_id)))}},
@@ -530,30 +536,37 @@ func pprofToPprofextendedProfile(pprofProfile *pprof.Profile) *pprofextended.Pro
 			})
 		}
 
-		var stacktracesKey string
-		for j := 0; j < len(s.LocationId); j++ {
-			stacktracesKey += strconv.FormatUint(uint64(s.LocationId[j]), 10) + ","
+		var stacktraceStart uint64
+		var stacktraceLength uint64
+		stacktraceLength = uint64(len(s.LocationId))
+
+		var foundMatch bool
+
+		for i := 0; i < len(p.LocationIndices)-len(s.LocationId); i++ {
+			for j := 0; j < len(s.LocationId); j++ {
+				if p.LocationIndices[i+j] != int64(s.LocationId[j]) {
+					break
+				}
+				if j == len(s.LocationId)-1 {
+					stacktraceStart = uint64(i)
+					foundMatch = true
+					break
+				}
+			}
 		}
 
-		var stacktraceIndex uint64
-
-		if v, ok := stacktracesMap[stacktracesKey]; ok {
-			stacktraceIndex = v
-		} else {
-			stacktraceIndex = uint64(len(p.Stacktrace))
-			stacktracesMap[stacktracesKey] = stacktraceIndex
-			p.Stacktrace = append(p.Stacktrace, &pprofextended.Stacktrace{
-				LocationIndex: make([]uint64, len(s.LocationId)),
-			})
+		if !foundMatch {
+			stacktraceStart = uint64(len(p.LocationIndices))
 			for j := 0; j < len(s.LocationId); j++ {
-				p.Stacktrace[stacktraceIndex].LocationIndex[j] = s.LocationId[j]
+				p.LocationIndices = append(p.LocationIndices, int64(s.LocationId[j]))
 			}
 		}
 
 		p.Sample[i] = &pprofextended.Sample{
-			Value:           values,
-			StacktraceIndex: stacktraceIndex,
-			Attributes:      attributes,
+			Value:               values,
+			Attributes:          attributes,
+			LocationsStartIndex: stacktraceStart,
+			LocationsEndIndex:   stacktraceLength,
 		}
 		if timestamp != 0 {
 			p.Sample[i].Timestamps = []uint64{timestamp}
