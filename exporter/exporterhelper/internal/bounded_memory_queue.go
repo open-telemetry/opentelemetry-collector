@@ -13,26 +13,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// queueEvent is an internal event passed in through the event loop channel
-// of the queue.
-type queueEvent struct {
-	request    Request
-	stopChan   chan struct{}
-	acceptChan chan bool
-	done       bool
-	sizeChan   chan int
-}
-
 // boundedMemoryQueue implements a producer-consumer exchange similar to a ring buffer queue,
 // where the queue is bounded and if it fills up due to slow consumers, the new items written by
 // the producer are dropped.
 type boundedMemoryQueue struct {
 	size         int
-	eventChan    chan *queueEvent
+	eventChan    chan any
 	items        chan Request
 	capacity     int
 	numConsumers int
 	stopped      *atomic.Bool
+	overflow     *atomic.Bool
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
@@ -40,10 +31,17 @@ type boundedMemoryQueue struct {
 func NewBoundedMemoryQueue(capacity int, numConsumers int) ProducerConsumerQueue {
 	return &boundedMemoryQueue{
 		items:        make(chan Request, capacity),
-		eventChan:    make(chan *queueEvent),
+		eventChan:    make(chan any),
 		capacity:     capacity,
 		numConsumers: numConsumers,
 		stopped:      &atomic.Bool{},
+		overflow: func() *atomic.Bool {
+			o := &atomic.Bool{}
+			if capacity == 0 {
+				o.Store(true)
+			}
+			return o
+		}(),
 	}
 }
 
@@ -63,7 +61,7 @@ func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set Queu
 			startWG.Done()
 			for item := range q.items {
 				set.Callback(item)
-				q.eventChan <- &queueEvent{done: true}
+				q.eventChan <- true
 			}
 		}()
 	}
@@ -73,30 +71,39 @@ func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set Queu
 
 func (q *boundedMemoryQueue) eventLoop() {
 	overflow := q.capacity == 0
+	var exitChan chan struct{}
 	for {
 		e := <-q.eventChan
-		if e.done {
-			q.size--
-			overflow = q.capacity == 0 || q.size >= q.capacity
-			continue
-		}
-		if e.acceptChan != nil {
+		if req, ok := e.(Request); ok {
 			if overflow {
-				e.acceptChan <- false
 				continue
 			}
 			q.size++
 			overflow = q.capacity == 0 || q.size >= q.capacity
-			q.items <- e.request
-			e.acceptChan <- true
+			if overflow {
+				q.overflow.Store(true)
+			}
+			q.items <- req
 			continue
 		}
-		if e.sizeChan != nil {
-			e.sizeChan <- q.size
+		if done, ok := e.(bool); ok && done {
+			q.size--
+			if exitChan != nil && q.size == 0 {
+				break
+			}
+			previousOverflow := overflow
+			overflow = q.capacity == 0 || q.size >= q.capacity
+			if overflow != previousOverflow {
+				q.overflow.Store(false)
+			}
+			continue
+		}
+		if sizeChan, ok := e.(chan int); ok {
+			sizeChan <- q.size
 			continue
 		}
 
-		if e.stopChan != nil {
+		if stopChan, ok := e.(chan struct{}); ok {
 			// mark the event loop stopped.
 			q.stopped.Store(true)
 			// if we have no consumers, empty the queue, dropping its contents.
@@ -106,42 +113,33 @@ func (q *boundedMemoryQueue) eventLoop() {
 					q.size--
 				}
 			}
+			exitChan = stopChan
 			if q.size > 0 {
 				// we have a stop signal, but there are still elements in the queue.
-				// Requeue:
-				go func() {
-					q.eventChan <- e
-				}()
 				continue
 			}
-
-			close(q.items)
-			close(e.stopChan)
 			break
 		}
 	}
+	close(q.items)
+	close(exitChan)
 	close(q.eventChan)
 }
 
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
 func (q *boundedMemoryQueue) Produce(item Request) bool {
-	if q.stopped.Load() {
+	if q.stopped.Load() || q.overflow.Load() {
 		return false
 	}
-	waitForAccept := make(chan bool, 1)
-	pipelineItem := &queueEvent{
-		request:    item,
-		acceptChan: waitForAccept,
-	}
-	q.eventChan <- pipelineItem
-	return <-waitForAccept
+	q.eventChan <- item
+	return true
 }
 
 // Stop stops all consumers, as well as the length reporter if started,
 // and releases the items channel. It blocks until all consumers have stopped.
 func (q *boundedMemoryQueue) Stop() {
 	stopChan := make(chan struct{})
-	q.eventChan <- &queueEvent{stopChan: stopChan}
+	q.eventChan <- stopChan
 	<-stopChan
 }
 
@@ -151,7 +149,7 @@ func (q *boundedMemoryQueue) Size() int {
 		return 0
 	}
 	sizeChan := make(chan int)
-	q.eventChan <- &queueEvent{sizeChan: sizeChan}
+	q.eventChan <- sizeChan
 	return <-sizeChan
 }
 
