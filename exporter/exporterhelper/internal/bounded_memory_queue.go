@@ -79,11 +79,11 @@ func (q *boundedMemoryQueue) eventLoop() {
 				continue
 			}
 			q.size++
+			q.items <- req
 			overflow = q.capacity == 0 || q.size >= q.capacity
 			if overflow {
 				q.overflow.Store(true)
 			}
-			q.items <- req
 			continue
 		}
 		if done, ok := e.(bool); ok && done {
