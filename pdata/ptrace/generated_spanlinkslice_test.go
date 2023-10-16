@@ -12,13 +12,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
 func TestSpanLinkSlice(t *testing.T) {
 	es := NewSpanLinkSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSpanLinkSlice(&[]*otlptrace.Span_Link{})
+	state := internal.StateMutable
+	es = newSpanLinkSlice(&[]*otlptrace.Span_Link{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSpanLink()
@@ -30,6 +32,19 @@ func TestSpanLinkSlice(t *testing.T) {
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
+}
+
+func TestSpanLinkSliceReadOnly(t *testing.T) {
+	sharedState := internal.StateReadOnly
+	es := newSpanLinkSlice(&[]*otlptrace.Span_Link{}, &sharedState)
+	assert.Equal(t, 0, es.Len())
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.EnsureCapacity(2) })
+	es2 := NewSpanLinkSlice()
+	es.CopyTo(es2)
+	assert.Panics(t, func() { es2.CopyTo(es) })
+	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
+	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
 }
 
 func TestSpanLinkSlice_CopyTo(t *testing.T) {
@@ -134,6 +149,6 @@ func fillTestSpanLinkSlice(es SpanLinkSlice) {
 	*es.orig = make([]*otlptrace.Span_Link, 7)
 	for i := 0; i < 7; i++ {
 		(*es.orig)[i] = &otlptrace.Span_Link{}
-		fillTestSpanLink(newSpanLink((*es.orig)[i]))
+		fillTestSpanLink(newSpanLink((*es.orig)[i], es.state))
 	}
 }

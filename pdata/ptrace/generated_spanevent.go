@@ -21,11 +21,12 @@ import (
 // Must use NewSpanEvent function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanEvent struct {
-	orig *otlptrace.Span_Event
+	orig  *otlptrace.Span_Event
+	state *internal.State
 }
 
-func newSpanEvent(orig *otlptrace.Span_Event) SpanEvent {
-	return SpanEvent{orig}
+func newSpanEvent(orig *otlptrace.Span_Event, state *internal.State) SpanEvent {
+	return SpanEvent{orig: orig, state: state}
 }
 
 // NewSpanEvent creates a new empty SpanEvent.
@@ -33,12 +34,15 @@ func newSpanEvent(orig *otlptrace.Span_Event) SpanEvent {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSpanEvent() SpanEvent {
-	return newSpanEvent(&otlptrace.Span_Event{})
+	state := internal.StateMutable
+	return newSpanEvent(&otlptrace.Span_Event{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms SpanEvent) MoveTo(dest SpanEvent) {
+	ms.state.AssertMutable()
+	dest.state.AssertMutable()
 	*dest.orig = *ms.orig
 	*ms.orig = otlptrace.Span_Event{}
 }
@@ -50,6 +54,7 @@ func (ms SpanEvent) Timestamp() pcommon.Timestamp {
 
 // SetTimestamp replaces the timestamp associated with this SpanEvent.
 func (ms SpanEvent) SetTimestamp(v pcommon.Timestamp) {
+	ms.state.AssertMutable()
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
@@ -60,12 +65,13 @@ func (ms SpanEvent) Name() string {
 
 // SetName replaces the name associated with this SpanEvent.
 func (ms SpanEvent) SetName(v string) {
+	ms.state.AssertMutable()
 	ms.orig.Name = v
 }
 
 // Attributes returns the Attributes associated with this SpanEvent.
 func (ms SpanEvent) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanEvent.
@@ -75,11 +81,13 @@ func (ms SpanEvent) DroppedAttributesCount() uint32 {
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this SpanEvent.
 func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
+	ms.state.AssertMutable()
 	ms.orig.DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanEvent) CopyTo(dest SpanEvent) {
+	dest.state.AssertMutable()
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetName(ms.Name())
 	ms.Attributes().CopyTo(dest.Attributes())

@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/service/internal/graph"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
+	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
+	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -66,10 +68,11 @@ type Settings struct {
 type Service struct {
 	buildInfo            component.BuildInfo
 	telemetry            *telemetry.Telemetry
-	telemetrySettings    component.TelemetrySettings
+	telemetrySettings    servicetelemetry.TelemetrySettings
 	host                 *serviceHost
 	telemetryInitializer *telemetryInitializer
 	collectorConf        *confmap.Conf
+	statusInit           status.InitFunc
 }
 
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
@@ -106,7 +109,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
 
-	srv.telemetrySettings = component.TelemetrySettings{
+	srv.telemetrySettings = servicetelemetry.TelemetrySettings{
 		Logger:         logger,
 		TracerProvider: srv.telemetry.TracerProvider(),
 		MeterProvider:  srv.telemetryInitializer.mp,
@@ -116,6 +119,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		Resource: pcommonRes,
 	}
 
+	srv.statusInit, srv.telemetrySettings.ReportComponentStatus =
+		status.NewServiceStatusFunc(srv.host.notifyComponentStatusChange)
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensionsAndPipeline(ctx, set, cfg); err != nil {
 		// If pipeline initialization fails then shut down the telemetry server
@@ -135,6 +140,9 @@ func (srv *Service) Start(ctx context.Context) error {
 		zap.String("Version", srv.buildInfo.Version),
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
+
+	// enable status reporting
+	srv.statusInit()
 
 	if err := srv.host.serviceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)

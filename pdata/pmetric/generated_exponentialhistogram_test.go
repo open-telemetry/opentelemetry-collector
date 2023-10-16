@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
@@ -20,6 +21,9 @@ func TestExponentialHistogram_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewExponentialHistogram(), ms)
 	assert.Equal(t, generateTestExponentialHistogram(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, &sharedState)) })
+	assert.Panics(t, func() { newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, &sharedState).MoveTo(dest) })
 }
 
 func TestExponentialHistogram_CopyTo(t *testing.T) {
@@ -30,6 +34,8 @@ func TestExponentialHistogram_CopyTo(t *testing.T) {
 	orig = generateTestExponentialHistogram()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, &sharedState)) })
 }
 
 func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
@@ -55,5 +61,5 @@ func generateTestExponentialHistogram() ExponentialHistogram {
 
 func fillTestExponentialHistogram(tv ExponentialHistogram) {
 	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	fillTestExponentialHistogramDataPointSlice(newExponentialHistogramDataPointSlice(&tv.orig.DataPoints))
+	fillTestExponentialHistogramDataPointSlice(newExponentialHistogramDataPointSlice(&tv.orig.DataPoints, tv.state))
 }

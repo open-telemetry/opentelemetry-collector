@@ -404,12 +404,3 @@ func (pcq *producerConsumerQueueWithCounter) Produce(item internal.Request) bool
 	pcq.produceCounter.Add(1)
 	return pcq.ProducerConsumerQueue.Produce(item)
 }
-
-type errorRequestSender struct {
-	baseRequestSender
-	errToReturn error
-}
-
-func (rs *errorRequestSender) send(_ internal.Request) error {
-	return rs.errToReturn
-}

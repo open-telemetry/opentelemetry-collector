@@ -22,6 +22,9 @@ func TestNumberDataPoint_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewNumberDataPoint(), ms)
 	assert.Equal(t, generateTestNumberDataPoint(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState)) })
+	assert.Panics(t, func() { newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState).MoveTo(dest) })
 }
 
 func TestNumberDataPoint_CopyTo(t *testing.T) {
@@ -32,6 +35,8 @@ func TestNumberDataPoint_CopyTo(t *testing.T) {
 	orig = generateTestNumberDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState)) })
 }
 
 func TestNumberDataPoint_Attributes(t *testing.T) {
@@ -68,6 +73,10 @@ func TestNumberDataPoint_DoubleValue(t *testing.T) {
 	ms.SetDoubleValue(float64(17.13))
 	assert.Equal(t, float64(17.13), ms.DoubleValue())
 	assert.Equal(t, NumberDataPointValueTypeDouble, ms.ValueType())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() {
+		newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState).SetDoubleValue(float64(17.13))
+	})
 }
 
 func TestNumberDataPoint_IntValue(t *testing.T) {
@@ -76,6 +85,8 @@ func TestNumberDataPoint_IntValue(t *testing.T) {
 	ms.SetIntValue(int64(17))
 	assert.Equal(t, int64(17), ms.IntValue())
 	assert.Equal(t, NumberDataPointValueTypeInt, ms.ValueType())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState).SetIntValue(int64(17)) })
 }
 
 func TestNumberDataPoint_Exemplars(t *testing.T) {
@@ -100,10 +111,10 @@ func generateTestNumberDataPoint() NumberDataPoint {
 }
 
 func fillTestNumberDataPoint(tv NumberDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
+	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(17.13)}
-	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars))
+	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars, tv.state))
 	tv.orig.Flags = 1
 }

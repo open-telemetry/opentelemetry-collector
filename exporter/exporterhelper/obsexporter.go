@@ -5,14 +5,12 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
-	"errors"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -71,11 +69,7 @@ func newExporter(cfg ObsReportSettings, useOtel bool) (*ObsReport, error) {
 		},
 	}
 
-	// ignore instrument name error as per workaround in https://github.com/open-telemetry/opentelemetry-collector/issues/8346
-	// if err := exp.createOtelMetrics(cfg); err != nil {
-	// 	return nil, err
-	// }
-	if err := exp.createOtelMetrics(cfg); err != nil && !errors.Is(err, sdkmetric.ErrInstrumentName) {
+	if err := exp.createOtelMetrics(cfg); err != nil {
 		return nil, err
 	}
 

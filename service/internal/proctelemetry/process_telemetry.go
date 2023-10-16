@@ -5,7 +5,6 @@ package proctelemetry // import "go.opentelemetry.io/collector/service/internal/
 
 import (
 	"context"
-	"errors"
 	"os"
 	"runtime"
 	"sync"
@@ -16,7 +15,6 @@ import (
 	"go.opencensus.io/metric"
 	"go.opencensus.io/stats"
 	otelmetric "go.opentelemetry.io/otel/metric"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/multierr"
 )
 
@@ -99,11 +97,7 @@ func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProv
 	}
 
 	if useOtel {
-		// ignore instrument name error as per workaround in https://github.com/open-telemetry/opentelemetry-collector/issues/8346
-		if err = pm.recordWithOtel(mp.Meter(scopeName)); err != nil && !errors.Is(err, sdkmetric.ErrInstrumentName) {
-			return err
-		}
-		return nil
+		return pm.recordWithOtel(mp.Meter(scopeName))
 	}
 	return pm.recordWithOC(ocRegistry)
 }

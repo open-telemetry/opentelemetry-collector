@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,6 +22,9 @@ func TestSpanEvent_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSpanEvent(), ms)
 	assert.Equal(t, generateTestSpanEvent(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newSpanEvent(&otlptrace.Span_Event{}, &sharedState)) })
+	assert.Panics(t, func() { newSpanEvent(&otlptrace.Span_Event{}, &sharedState).MoveTo(dest) })
 }
 
 func TestSpanEvent_CopyTo(t *testing.T) {
@@ -31,6 +35,8 @@ func TestSpanEvent_CopyTo(t *testing.T) {
 	orig = generateTestSpanEvent()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newSpanEvent(&otlptrace.Span_Event{}, &sharedState)) })
 }
 
 func TestSpanEvent_Timestamp(t *testing.T) {
@@ -46,6 +52,8 @@ func TestSpanEvent_Name(t *testing.T) {
 	assert.Equal(t, "", ms.Name())
 	ms.SetName("test_name")
 	assert.Equal(t, "test_name", ms.Name())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newSpanEvent(&otlptrace.Span_Event{}, &sharedState).SetName("test_name") })
 }
 
 func TestSpanEvent_Attributes(t *testing.T) {
@@ -60,6 +68,8 @@ func TestSpanEvent_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
 	ms.SetDroppedAttributesCount(uint32(17))
 	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newSpanEvent(&otlptrace.Span_Event{}, &sharedState).SetDroppedAttributesCount(uint32(17)) })
 }
 
 func generateTestSpanEvent() SpanEvent {
@@ -71,6 +81,6 @@ func generateTestSpanEvent() SpanEvent {
 func fillTestSpanEvent(tv SpanEvent) {
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Name = "test_name"
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
+	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.DroppedAttributesCount = uint32(17)
 }
