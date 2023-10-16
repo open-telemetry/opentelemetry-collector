@@ -118,9 +118,11 @@ func TestTracesCopyTo(t *testing.T) {
 
 func TestReadOnlyTracesInvalidUsage(t *testing.T) {
 	traces := NewTraces()
+	assert.False(t, traces.IsReadOnly())
 	res := traces.ResourceSpans().AppendEmpty().Resource()
 	res.Attributes().PutStr("k1", "v1")
 	traces.MarkReadOnly()
+	assert.True(t, traces.IsReadOnly())
 	assert.Panics(t, func() { res.Attributes().PutStr("k2", "v2") })
 }
 
