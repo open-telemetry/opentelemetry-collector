@@ -20,6 +20,11 @@ import (
 //   - Clones only to the consumer that needs to mutate the data.
 //   - If all consumers needs to mutate the data one will get the original mutable data.
 func NewMetrics(mcs []consumer.Metrics) consumer.Metrics {
+	// Don't wrap if there is only one non-mutating consumer.
+	if len(mcs) == 1 && !mcs[0].Capabilities().MutatesData {
+		return mcs[0]
+	}
+
 	mc := &metricsConsumer{}
 	for i := 0; i < len(mcs); i++ {
 		if mcs[i].Capabilities().MutatesData {

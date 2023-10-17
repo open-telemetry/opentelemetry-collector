@@ -20,6 +20,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
+func TestMetricsNotMultiplexing(t *testing.T) {
+	nop := consumertest.NewNop()
+	mfc := NewMetrics([]consumer.Metrics{nop})
+	assert.Same(t, nop, mfc)
+}
+
 func TestMetricsMultiplexingNonMutating(t *testing.T) {
 	p1 := new(consumertest.MetricsSink)
 	p2 := new(consumertest.MetricsSink)
