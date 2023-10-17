@@ -20,6 +20,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
+func TestLogsNotMultiplexing(t *testing.T) {
+	nop := consumertest.NewNop()
+	lfc := NewLogs([]consumer.Logs{nop})
+	assert.Same(t, nop, lfc)
+}
+
 func TestLogsMultiplexingNonMutating(t *testing.T) {
 	p1 := new(consumertest.LogsSink)
 	p2 := new(consumertest.LogsSink)

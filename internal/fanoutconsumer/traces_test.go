@@ -20,6 +20,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+func TestTracesNotMultiplexing(t *testing.T) {
+	nop := consumertest.NewNop()
+	tfc := NewTraces([]consumer.Traces{nop})
+	assert.Same(t, nop, tfc)
+}
+
 func TestTracesMultiplexingNonMutating(t *testing.T) {
 	p1 := new(consumertest.TracesSink)
 	p2 := new(consumertest.TracesSink)

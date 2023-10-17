@@ -22,6 +22,11 @@ import (
 //   - Clones only to the consumer that needs to mutate the data.
 //   - If all consumers needs to mutate the data one will get the original mutable data.
 func NewLogs(lcs []consumer.Logs) consumer.Logs {
+	// Don't wrap if there is only one non-mutating consumer.
+	if len(lcs) == 1 && !lcs[0].Capabilities().MutatesData {
+		return lcs[0]
+	}
+
 	lc := &logsConsumer{}
 	for i := 0; i < len(lcs); i++ {
 		if lcs[i].Capabilities().MutatesData {
