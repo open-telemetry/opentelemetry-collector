@@ -8,7 +8,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver"
