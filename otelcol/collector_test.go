@@ -197,6 +197,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 	// An unhealthy processor asynchronously reports a recoverable error.
 	expectedStatuses := []component.Status{
 		component.StatusStarting,
+		component.StatusOK,
 		component.StatusRecoverableError,
 	}
 

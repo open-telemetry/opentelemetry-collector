@@ -15,6 +15,7 @@ import (
 	"gonum.org/v1/gonum/graph/topo"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -385,11 +386,7 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
 			continue
 		}
 
-		instanceID := g.instanceIDs[node.ID()]
-		_ = g.telemetry.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStarting))
-
-		if compErr := comp.Start(ctx, host); compErr != nil {
-			_ = g.telemetry.ReportComponentStatus(instanceID, component.NewPermanentErrorEvent(compErr))
+		if compErr := comp.Start(ctx, host); compErr != nil && !componenterror.IsRecoverable(err) {
 			return compErr
 		}
 	}
@@ -416,16 +413,10 @@ func (g *Graph) ShutdownAll(ctx context.Context) error {
 			continue
 		}
 
-		instanceID := g.instanceIDs[node.ID()]
-		_ = g.telemetry.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStopping))
-
 		if compErr := comp.Shutdown(ctx); compErr != nil {
 			errs = multierr.Append(errs, compErr)
-			_ = g.telemetry.ReportComponentStatus(instanceID, component.NewPermanentErrorEvent(compErr))
 			continue
 		}
-
-		_ = g.telemetry.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStopped))
 	}
 	return errs
 }

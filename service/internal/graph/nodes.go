@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
+	statuswrappers "go.opentelemetry.io/collector/service/internal/status/wrappers"
 )
 
 const (
@@ -82,19 +83,28 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Traces))
 		}
-		n.Component, err = builder.CreateTraces(ctx, set, fanoutconsumer.NewTraces(consumers))
+		comp, err := builder.CreateTraces(ctx, set, fanoutconsumer.NewTraces(consumers))
+		if err == nil {
+			n.Component = statuswrappers.WrapComponent(comp, &set.TelemetrySettings)
+		}
 	case component.DataTypeMetrics:
 		var consumers []consumer.Metrics
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Metrics))
 		}
-		n.Component, err = builder.CreateMetrics(ctx, set, fanoutconsumer.NewMetrics(consumers))
+		comp, err := builder.CreateMetrics(ctx, set, fanoutconsumer.NewMetrics(consumers))
+		if err == nil {
+			n.Component = statuswrappers.WrapComponent(comp, &set.TelemetrySettings)
+		}
 	case component.DataTypeLogs:
 		var consumers []consumer.Logs
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Logs))
 		}
-		n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
+		comp, err := builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
+		if err == nil {
+			n.Component = statuswrappers.WrapComponent(comp, &set.TelemetrySettings)
+		}
 	default:
 		return fmt.Errorf("error creating receiver %q for data type %q is not supported", set.ID, n.pipelineType)
 	}
@@ -138,11 +148,20 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	var err error
 	switch n.pipelineID.Type() {
 	case component.DataTypeTraces:
-		n.Component, err = builder.CreateTraces(ctx, set, next.(consumer.Traces))
+		comp, err := builder.CreateTraces(ctx, set, next.(consumer.Traces))
+		if err == nil {
+			n.Component = statuswrappers.WrapTracesProcessor(comp, &set.TelemetrySettings)
+		}
 	case component.DataTypeMetrics:
-		n.Component, err = builder.CreateMetrics(ctx, set, next.(consumer.Metrics))
+		comp, err := builder.CreateMetrics(ctx, set, next.(consumer.Metrics))
+		if err == nil {
+			n.Component = statuswrappers.WrapMetricsProcessor(comp, &set.TelemetrySettings)
+		}
 	case component.DataTypeLogs:
-		n.Component, err = builder.CreateLogs(ctx, set, next.(consumer.Logs))
+		comp, err := builder.CreateLogs(ctx, set, next.(consumer.Logs))
+		if err == nil {
+			n.Component = statuswrappers.WrapLogsProcessor(comp, &set.TelemetrySettings)
+		}
 	default:
 		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID, n.pipelineID.Type())
 	}
@@ -186,11 +205,20 @@ func (n *exporterNode) buildComponent(
 	var err error
 	switch n.pipelineType {
 	case component.DataTypeTraces:
-		n.Component, err = builder.CreateTraces(ctx, set)
+		comp, err := builder.CreateTraces(ctx, set)
+		if err == nil {
+			n.Component = statuswrappers.WrapTracesExporter(comp, &set.TelemetrySettings)
+		}
 	case component.DataTypeMetrics:
-		n.Component, err = builder.CreateMetrics(ctx, set)
+		comp, err := builder.CreateMetrics(ctx, set)
+		if err == nil {
+			n.Component = statuswrappers.WrapMetricsExporter(comp, &set.TelemetrySettings)
+		}
 	case component.DataTypeLogs:
-		n.Component, err = builder.CreateLogs(ctx, set)
+		comp, err := builder.CreateLogs(ctx, set)
+		if err == nil {
+			n.Component = statuswrappers.WrapLogsExporter(comp, &set.TelemetrySettings)
+		}
 	default:
 		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
 	}
@@ -252,6 +280,7 @@ func (n *connectorNode) buildComponent(
 			if err != nil {
 				return err
 			}
+			conn = statuswrappers.WrapTracesConnector(conn, &set.TelemetrySettings)
 			n.Component = conn
 			// When connecting pipelines of the same data type, the connector must
 			// inherit the capabilities of pipelines in which it is acting as a receiver.
@@ -261,12 +290,14 @@ func (n *connectorNode) buildComponent(
 			if err != nil {
 				return err
 			}
+			conn = statuswrappers.WrapMetricsConnector(conn, &set.TelemetrySettings)
 			n.Component, n.baseConsumer = conn, conn
 		case component.DataTypeLogs:
 			conn, err := builder.CreateLogsToTraces(ctx, set, next)
 			if err != nil {
 				return err
 			}
+			conn = statuswrappers.WrapLogsConnector(conn, &set.TelemetrySettings)
 			n.Component, n.baseConsumer = conn, conn
 		}
 
@@ -285,12 +316,14 @@ func (n *connectorNode) buildComponent(
 			if err != nil {
 				return err
 			}
+			conn = statuswrappers.WrapTracesConnector(conn, &set.TelemetrySettings)
 			n.Component, n.baseConsumer = conn, conn
 		case component.DataTypeMetrics:
 			conn, err := builder.CreateMetricsToMetrics(ctx, set, next)
 			if err != nil {
 				return err
 			}
+			conn = statuswrappers.WrapMetricsConnector(conn, &set.TelemetrySettings)
 			n.Component = conn
 			// When connecting pipelines of the same data type, the connector must
 			// inherit the capabilities of pipelines in which it is acting as a receiver.
@@ -300,6 +333,7 @@ func (n *connectorNode) buildComponent(
 			if err != nil {
 				return err
 			}
+			conn = statuswrappers.WrapLogsConnector(conn, &set.TelemetrySettings)
 			n.Component, n.baseConsumer = conn, conn
 		}
 	case component.DataTypeLogs:
@@ -317,18 +351,21 @@ func (n *connectorNode) buildComponent(
 			if err != nil {
 				return err
 			}
+			conn = statuswrappers.WrapTracesConnector(conn, &set.TelemetrySettings)
 			n.Component, n.baseConsumer = conn, conn
 		case component.DataTypeMetrics:
 			conn, err := builder.CreateMetricsToLogs(ctx, set, next)
 			if err != nil {
 				return err
 			}
+			conn = statuswrappers.WrapMetricsConnector(conn, &set.TelemetrySettings)
 			n.Component, n.baseConsumer = conn, conn
 		case component.DataTypeLogs:
 			conn, err := builder.CreateLogsToLogs(ctx, set, next)
 			if err != nil {
 				return err
 			}
+			conn = statuswrappers.WrapLogsConnector(conn, &set.TelemetrySettings)
 			n.Component = conn
 			// When connecting pipelines of the same data type, the connector must
 			// inherit the capabilities of pipelines in which it is acting as a receiver.

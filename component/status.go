@@ -5,6 +5,8 @@ package component // import "go.opentelemetry.io/collector/component"
 
 import (
 	"time"
+
+	"go.opentelemetry.io/collector/component/componenterror"
 )
 
 type Status int32
@@ -96,6 +98,29 @@ func NewFatalErrorEvent(err error) *StatusEvent {
 	ev := NewStatusEvent(StatusFatalError)
 	ev.err = err
 	return ev
+}
+
+// NewEventFromError returns a StatusEvent with the following rules:
+//   - If the error is nil, it returns an event with StatusOK.
+//   - If the error is a componenterror, the event status will be the
+//     status matching the corresponding error type.
+//   - If the error is not a component error, the event will be created using
+//     the fallback status.
+func NewEventFromError(err error, fallback Status) *StatusEvent {
+	switch {
+	case err == nil:
+		return NewStatusEvent(StatusOK)
+	case componenterror.IsRecoverable(err):
+		return NewRecoverableErrorEvent(err)
+	case componenterror.IsPermanent(err):
+		return NewPermanentErrorEvent(err)
+	case componenterror.IsFatal(err):
+		return NewFatalErrorEvent(err)
+	default:
+		ev := NewStatusEvent(fallback)
+		ev.err = err
+		return ev
+	}
 }
 
 // StatusFunc is the expected type of ReportComponentStatus for component.TelemetrySettings
