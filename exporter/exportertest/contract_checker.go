@@ -122,7 +122,7 @@ func checkMetrics(params CheckConsumeContractParams, mockReceiver component.Comp
 		err = exp.ConsumeMetrics(ctx, data)
 	}
 
-	reqCounter := mockConsumer.reqCounter
+	reqCounter := mockConsumer.getRequestCounter()
 	// The overall number of requests sent by exporter
 	fmt.Printf("Number of export tries: %d\n", reqCounter.total)
 	// Successfully delivered items
@@ -132,7 +132,7 @@ func checkMetrics(params CheckConsumeContractParams, mockReceiver component.Comp
 	fmt.Printf("Number of non-permanent errors: %d\n", reqCounter.error.nonpermanent)
 
 	assert.EventuallyWithT(params.T, func(c *assert.CollectT) {
-		checkIfTestPassed(params.T, params.NumberOfTestElements, reqCounter)
+		checkIfTestPassed(params.T, params.NumberOfTestElements, *reqCounter)
 	}, 2*time.Second, 100*time.Millisecond)
 }
 
@@ -163,7 +163,7 @@ func checkTraces(params CheckConsumeContractParams, mockReceiver component.Compo
 		err = exp.ConsumeTraces(ctx, data)
 	}
 
-	reqCounter := mockConsumer.reqCounter
+	reqCounter := mockConsumer.getRequestCounter()
 	// The overall number of requests sent by exporter
 	fmt.Printf("Number of export tries: %d\n", reqCounter.total)
 	// Successfully delivered items
@@ -173,7 +173,7 @@ func checkTraces(params CheckConsumeContractParams, mockReceiver component.Compo
 	fmt.Printf("Number of non-permanent errors: %d\n", reqCounter.error.nonpermanent)
 
 	assert.EventuallyWithT(params.T, func(c *assert.CollectT) {
-		checkIfTestPassed(params.T, params.NumberOfTestElements, reqCounter)
+		checkIfTestPassed(params.T, params.NumberOfTestElements, *reqCounter)
 	}, 2*time.Second, 100*time.Millisecond)
 }
 
@@ -203,8 +203,7 @@ func checkLogs(params CheckConsumeContractParams, mockReceiver component.Compone
 
 		err = exp.ConsumeLogs(ctx, data)
 	}
-
-	reqCounter := mockConsumer.reqCounter
+	reqCounter := mockConsumer.getRequestCounter()
 	// The overall number of requests sent by exporter
 	fmt.Printf("Number of export tries: %d\n", reqCounter.total)
 	// Successfully delivered items
@@ -214,7 +213,7 @@ func checkLogs(params CheckConsumeContractParams, mockReceiver component.Compone
 	fmt.Printf("Number of non-permanent errors: %d\n", reqCounter.error.nonpermanent)
 
 	assert.EventuallyWithT(params.T, func(c *assert.CollectT) {
-		checkIfTestPassed(params.T, params.NumberOfTestElements, reqCounter)
+		checkIfTestPassed(params.T, params.NumberOfTestElements, *reqCounter)
 	}, 2*time.Second, 100*time.Millisecond)
 }
 

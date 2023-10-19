@@ -59,7 +59,7 @@ func randomErrorsConsumeDecision() error {
 }
 
 type MockConsumer struct {
-	reqCounter          requestCounter
+	reqCounter          *requestCounter
 	mux                 sync.Mutex
 	exportErrorFunction func() error
 	receivedTraces      []ptrace.Traces
@@ -79,6 +79,7 @@ func newMockConsumer(decisionFunc func() error) MockConsumer {
 }
 
 func (r *MockConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+	fmt.Println("Inside CreateLogsExporter")
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.reqCounter.total++
@@ -148,6 +149,10 @@ func (r *MockConsumer) clear() {
 	r.reqCounter = newRequestCounter()
 }
 
+func (r *MockConsumer) getRequestCounter() *requestCounter {
+	return r.reqCounter
+}
+
 type requestCounter struct {
 	success int
 	error   errorCounter
@@ -166,8 +171,8 @@ func newErrorCounter() errorCounter {
 	}
 }
 
-func newRequestCounter() requestCounter {
-	return requestCounter{
+func newRequestCounter() *requestCounter {
+	return &requestCounter{
 		success: 0,
 		error:   newErrorCounter(),
 		total:   0,
