@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package exportertest
 
 import (
@@ -32,8 +35,6 @@ func newExampleFactory() exporter.Factory {
 	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, component.StabilityLevelStable),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelStable),
 		exporter.WithLogs(CreateLogsExporter, component.StabilityLevelBeta),
 		exporter.WithTraces(CreateTracesExporter, component.StabilityLevelBeta),
 		exporter.WithMetrics(CreateMetricsExporter, component.StabilityLevelBeta),
@@ -61,8 +62,7 @@ func CreateLogsExporter(_ context.Context, _ exporter.CreateSettings, cfg compon
 		pushLogs,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(expConfig.RetrySettings),
-		exporterhelper.WithQueue(expConfig.QueueSettings),
-		exporterhelper.WithStart(startLogs))
+		exporterhelper.WithQueue(expConfig.QueueSettings))
 	return le, err
 }
 
@@ -87,13 +87,8 @@ func CreateTracesExporter(_ context.Context, _ exporter.CreateSettings, cfg comp
 		pushTraces,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(expConfig.RetrySettings),
-		exporterhelper.WithQueue(expConfig.QueueSettings),
-		exporterhelper.WithStart(startTraces))
+		exporterhelper.WithQueue(expConfig.QueueSettings))
 	return le, err
-}
-
-func startTraces(_ context.Context, _ component.Host) error {
-	return nil
 }
 
 func pushTraces(_ context.Context, _ ptrace.Traces) error {
@@ -121,8 +116,7 @@ func CreateMetricsExporter(_ context.Context, _ exporter.CreateSettings, cfg com
 		pushMetrics,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(expConfig.RetrySettings),
-		exporterhelper.WithQueue(expConfig.QueueSettings),
-		exporterhelper.WithStart(startMetrics))
+		exporterhelper.WithQueue(expConfig.QueueSettings))
 	return le, err
 }
 
@@ -143,14 +137,6 @@ func pushAny() error {
 
 func pushMetrics(_ context.Context, _ pmetric.Metrics) error {
 	return pushAny()
-}
-
-func startMetrics(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func startLogs(_ context.Context, _ component.Host) error {
-	return nil
 }
 
 func pushLogs(_ context.Context, _ plog.Logs) error {
@@ -218,7 +204,6 @@ func createMockOtlpReceiver(mockConsumer *MockConsumer) component.Component {
 
 func TestCheckConsumeContractLogs(t *testing.T) {
 
-	// Create a CheckConsumeContractParams
 	params := CheckConsumeContractParams{
 		T:                    t,
 		Factory:              newExampleFactory(),    // Replace with your exporter factory
@@ -228,7 +213,6 @@ func TestCheckConsumeContractLogs(t *testing.T) {
 		MockReceiverFactory:  createMockOtlpReceiver,
 	}
 
-	// Run the contract tests
 	CheckConsumeContract(params)
 }
 
@@ -244,13 +228,11 @@ func TestCheckConsumeContractMetrics(t *testing.T) {
 		MockReceiverFactory:  createMockOtlpReceiver,
 	}
 
-	// Run the contract tests
 	CheckConsumeContract(params)
 }
 
 func TestCheckConsumeContractTraces(t *testing.T) {
 
-	// Create a CheckConsumeContractParams
 	params := CheckConsumeContractParams{
 		T:                    t,
 		Factory:              newExampleFactory(),      // Replace with your exporter factory
@@ -260,6 +242,5 @@ func TestCheckConsumeContractTraces(t *testing.T) {
 		MockReceiverFactory:  createMockOtlpReceiver,
 	}
 
-	// Run the contract tests
 	CheckConsumeContract(params)
 }
