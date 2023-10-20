@@ -96,13 +96,11 @@ func (pc *prometheusChecker) checkExporter(exporter component.ID, datatype strin
 }
 
 func (pc *prometheusChecker) checkExporterEnqueueFailed(exporter component.ID, datatype string, enqueueFailed int64) error {
-	exporterAttrs := attributesForExporterMetrics(exporter)
-	var errs error
-	if enqueueFailed > 0 {
-		errs = multierr.Append(errs,
-			pc.checkCounter(fmt.Sprintf("exporter_enqueue_failed_%s", datatype), enqueueFailed, exporterAttrs))
+	if enqueueFailed == 0 {
+		return nil
 	}
-	return errs
+	exporterAttrs := attributesForExporterMetrics(exporter)
+	return pc.checkCounter(fmt.Sprintf("exporter_enqueue_failed_%s", datatype), enqueueFailed, exporterAttrs)
 }
 
 func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, attrs []attribute.KeyValue) error {
