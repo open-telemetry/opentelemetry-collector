@@ -83,11 +83,7 @@ func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sent, s
 
 func (pc *prometheusChecker) checkExporter(exporter component.ID, datatype string, sent, sendFailed int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
-	var errs error
-
-	errs = multierr.Append(errs,
-		pc.checkCounter(fmt.Sprintf("exporter_sent_%s", datatype), sent, exporterAttrs))
-
+	errs := pc.checkCounter(fmt.Sprintf("exporter_sent_%s", datatype), sent, exporterAttrs)
 	if sendFailed > 0 {
 		errs = multierr.Append(errs,
 			pc.checkCounter(fmt.Sprintf("exporter_send_failed_%s", datatype), sendFailed, exporterAttrs))
