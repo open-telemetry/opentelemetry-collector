@@ -11,18 +11,24 @@ import (
 
 	"go.opencensus.io/metric/metricdata"
 	"go.opentelemetry.io/otel/attribute"
+	otelmetric "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 const defaultQueueSize = 1000
 
-var errSendingQueueIsFull = errors.New("sending_queue is full")
+var (
+	errSendingQueueIsFull = errors.New("sending_queue is full")
+	scopeName             = "go.opentelemetry.io/collector/exporterhelper/queue_sender"
+)
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
 type QueueSettings struct {
@@ -74,6 +80,9 @@ type queueSender struct {
 	traceAttribute   attribute.KeyValue
 	logger           *zap.Logger
 	requeuingEnabled bool
+
+	metricCapacity otelmetric.Int64ObservableGauge
+	metricSize     otelmetric.Int64ObservableGauge
 }
 
 func newQueueSender(id component.ID, signal component.DataType, queue internal.ProducerConsumerQueue, logger *zap.Logger) *queueSender {
@@ -131,8 +140,44 @@ func (qs *queueSender) start(ctx context.Context, host component.Host, set expor
 		return err
 	}
 
+	if obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled() {
+		return qs.recordWithOtel(set.MeterProvider.Meter(scopeName))
+	}
+	return qs.recordWithOC()
+}
+
+func (qs *queueSender) recordWithOtel(meter otelmetric.Meter) error {
+	var err, errs error
+
+	attrs := otelmetric.WithAttributeSet(attribute.NewSet(attribute.String(obsmetrics.ExporterKey, qs.fullName)))
+
+	qs.metricSize, err = meter.Int64ObservableGauge(
+		obsmetrics.ExporterKey+"/queue_size",
+		otelmetric.WithDescription("Current size of the retry queue (in batches)"),
+		otelmetric.WithUnit("1"),
+		otelmetric.WithInt64Callback(func(_ context.Context, o otelmetric.Int64Observer) error {
+			o.Observe(int64(qs.queue.Size()), attrs)
+			return nil
+		}),
+	)
+	errs = multierr.Append(errs, err)
+
+	qs.metricCapacity, err = meter.Int64ObservableGauge(
+		obsmetrics.ExporterKey+"/queue_capacity",
+		otelmetric.WithDescription("Fixed capacity of the retry queue (in batches)"),
+		otelmetric.WithUnit("1"),
+		otelmetric.WithInt64Callback(func(_ context.Context, o otelmetric.Int64Observer) error {
+			o.Observe(int64(qs.queue.Capacity()), attrs)
+			return nil
+		}))
+
+	errs = multierr.Append(errs, err)
+	return errs
+}
+
+func (qs *queueSender) recordWithOC() error {
 	// Start reporting queue length metric
-	err = globalInstruments.queueSize.UpsertEntry(func() int64 {
+	err := globalInstruments.queueSize.UpsertEntry(func() int64 {
 		return int64(qs.queue.Size())
 	}, metricdata.NewLabelValue(qs.fullName))
 	if err != nil {

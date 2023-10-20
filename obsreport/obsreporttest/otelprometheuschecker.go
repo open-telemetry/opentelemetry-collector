@@ -101,6 +101,24 @@ func (pc *prometheusChecker) checkExporterEnqueueFailed(exporter component.ID, d
 	return pc.checkCounter(fmt.Sprintf("exporter_enqueue_failed_%s", datatype), enqueueFailed, exporterAttrs)
 }
 
+func (pc *prometheusChecker) checkExporterMetricGauge(exporter component.ID, metric string, val int64) error {
+	exporterAttrs := attributesForExporterMetrics(exporter)
+	// Forces a flush for the opencensus view data.
+	_, _ = view.RetrieveData(metric)
+
+	ts, err := pc.getMetric(metric, io_prometheus_client.MetricType_GAUGE, exporterAttrs)
+	if err != nil {
+		return err
+	}
+
+	expected := float64(val)
+	if math.Abs(ts.GetGauge().GetValue()-expected) > 0.0001 {
+		return fmt.Errorf("values for metric '%s' did not match, expected '%f' got '%f'", metric, expected, ts.GetGauge().GetValue())
+	}
+
+	return nil
+}
+
 func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, attrs []attribute.KeyValue) error {
 	// Forces a flush for the opencensus view data.
 	_, _ = view.RetrieveData(expectedMetric)
