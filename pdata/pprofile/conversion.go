@@ -253,6 +253,9 @@ func readPprof(filename string) *pprof.Profile {
 }
 
 func limitSamples(p *pprof.Profile, percentage float64) *pprof.Profile {
+	if p == nil {
+		return nil
+	}
 	p.Sample = p.Sample[:int(float64(len(p.Sample))*percentage)]
 	return p
 }
