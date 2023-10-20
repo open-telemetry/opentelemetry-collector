@@ -248,7 +248,7 @@ func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	}
 
 	// 2 batched must be in queue, and 10 metric points rejected due to queue overflow
-	checkExporterEnqueueFailedMetricsStats(t, globalInstruments, fakeMetricsExporterName, int64(10))
+	require.NoError(t, tt.CheckExporterEnqueueFailedMetrics(int64(10)))
 }
 
 func TestMetricsExporter_WithSpan(t *testing.T) {

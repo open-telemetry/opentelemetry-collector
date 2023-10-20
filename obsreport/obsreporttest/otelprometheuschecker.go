@@ -77,8 +77,8 @@ func (pc *prometheusChecker) checkExporterLogs(exporter component.ID, sent, send
 	return pc.checkExporter(exporter, "log_records", sent, sendFailed)
 }
 
-func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sentMetricPoints, sendFailedMetricPoints int64) error {
-	return pc.checkExporter(exporter, "metric_points", sentMetricPoints, sendFailedMetricPoints)
+func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sent, sendFailed int64) error {
+	return pc.checkExporter(exporter, "metric_points", sent, sendFailed)
 }
 
 func (pc *prometheusChecker) checkExporter(exporter component.ID, datatype string, sent, sendFailed int64) error {
@@ -89,6 +89,14 @@ func (pc *prometheusChecker) checkExporter(exporter component.ID, datatype strin
 			pc.checkCounter(fmt.Sprintf("exporter_send_failed_%s", datatype), sendFailed, exporterAttrs))
 	}
 	return errs
+}
+
+func (pc *prometheusChecker) checkExporterEnqueueFailed(exporter component.ID, datatype string, enqueueFailed int64) error {
+	if enqueueFailed == 0 {
+		return nil
+	}
+	exporterAttrs := attributesForExporterMetrics(exporter)
+	return pc.checkCounter(fmt.Sprintf("exporter_enqueue_failed_%s", datatype), enqueueFailed, exporterAttrs)
 }
 
 func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, attrs []attribute.KeyValue) error {
