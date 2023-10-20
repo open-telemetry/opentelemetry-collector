@@ -21,7 +21,9 @@ require (
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}
 	go.opentelemetry.io/collector v{{.Distribution.OtelColVersion}}
+	{{if .Distribution.RequireOtelColModule}}
 	go.opentelemetry.io/collector/otelcol v{{.Distribution.OtelColVersion}}
+	{{- end}}
 )
 
 require (
