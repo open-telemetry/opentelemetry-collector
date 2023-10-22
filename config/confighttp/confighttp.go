@@ -144,7 +144,7 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 		}
 		transport.Proxy = http.ProxyURL(proxyURL)
 	}
-  
+
 	transport.DisableKeepAlives = hcs.DisableKeepAlives
 
 	clientTransport := (http.RoundTripper)(transport)
