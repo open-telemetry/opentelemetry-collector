@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.87.0
 	go.opentelemetry.io/collector/confmap v0.87.0
 	go.opentelemetry.io/collector/consumer v0.87.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0016
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017
 	go.opentelemetry.io/collector/processor v0.87.0
 	go.opentelemetry.io/otel v1.19.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.42.0
@@ -49,7 +49,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0016 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017 // indirect
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
