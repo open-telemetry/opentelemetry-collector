@@ -113,18 +113,18 @@ func TestNewFlag(t *testing.T) {
 			reg.MustRegister("beta", StageBeta)
 			reg.MustRegister("deprecated", StageDeprecated, WithRegisterToVersion("1.0.0"))
 			reg.MustRegister("stable", StageStable, WithRegisterToVersion("1.0.0"))
-			v := NewFlag(reg)
+			flags := NewFlags(reg)
 			if tt.expectedSetErr {
-				require.Error(t, v.Set(tt.input))
+				require.Error(t, flags.RegistrationFlag.Set(tt.input))
 			} else {
-				require.NoError(t, v.Set(tt.input))
+				require.NoError(t, flags.RegistrationFlag.Set(tt.input))
 			}
 			got := map[string]bool{}
 			reg.VisitAll(func(g *Gate) {
 				got[g.ID()] = g.IsEnabled()
 			})
 			assert.Equal(t, tt.expected, got)
-			assert.Equal(t, tt.expectedStr, v.String())
+			assert.Equal(t, tt.expectedStr, flags.RegistrationFlag.String())
 		})
 	}
 }

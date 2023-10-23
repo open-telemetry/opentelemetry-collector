@@ -50,7 +50,8 @@ func flags(reg *featuregate.Registry) *flag.FlagSet {
 			return nil
 		})
 
-	flagSet.Var(featuregate.NewFlag(reg), featureGatesFlag,
+	featuregateFlags := featuregate.NewFlags(reg)
+	flagSet.Var(featuregateFlags.RegistrationFlag, featureGatesFlag,
 		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
 
 	return flagSet
