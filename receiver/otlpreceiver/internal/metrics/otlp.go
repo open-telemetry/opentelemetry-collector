@@ -43,7 +43,8 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	ctx = r.obsreport.StartMetricsOp(ctx)
 	err := r.nextConsumer.ConsumeMetrics(ctx, md)
 	r.obsreport.EndMetricsOp(ctx, dataFormatProtobuf, dataPointCount, err)
-	// Use appropiate status codes for permanent/non-permanent errors
+
+	// Use appropriate status codes for permanent/non-permanent errors
 	if err != nil {
 		s, ok := status.FromError(err)
 		if !ok {

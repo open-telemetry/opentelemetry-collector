@@ -45,7 +45,7 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	err := r.nextConsumer.ConsumeTraces(ctx, td)
 	r.obsreport.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
 
-	// Use appropiate status codes for permanent/non-permanent errors
+	// Use appropriate status codes for permanent/non-permanent errors
 	if err != nil {
 		s, ok := status.FromError(err)
 		if !ok {

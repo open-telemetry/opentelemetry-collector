@@ -43,7 +43,8 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 	ctx = r.obsreport.StartLogsOp(ctx)
 	err := r.nextConsumer.ConsumeLogs(ctx, ld)
 	r.obsreport.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)
-	// Use appropiate status codes for permanent/non-permanent errors
+
+	// Use appropriate status codes for permanent/non-permanent errors
 	if err != nil {
 		s, ok := status.FromError(err)
 		if !ok {
