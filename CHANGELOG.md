@@ -7,6 +7,22 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.0.0-rcv0017/v0.88.0
+
+### 💡 Enhancements 💡
+
+- `fanoutconsumer`: Enable runtime assertions to catch incorrect pdata mutations in the components claiming as non-mutating pdata. (#6794)
+  This change enables the runtime assertions to catch unintentional pdata mutations in components that are claimed
+  as non-mutating pdata. Without these assertions, runtime errors may still occur, but thrown by unrelated components, 
+  making it very difficult to troubleshoot.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: make enqueue failures available for otel metrics (#8673)
+- `exporterhelper`: Fix nil pointer dereference when stopping persistent queue after a start encountered an error (#8718)
+- `cmd/builder`: Fix ocb ignoring `otelcol_version` when set to v0.86.0 or later (#8692)
+
 ## v1.0.0-rcv0016/v0.87.0
 
 ### 💡 Enhancements 💡
