@@ -138,9 +138,9 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 
 	// Setting the Proxy URL
 	if hcs.ProxyURL != "" {
-		proxyURL, err := url.ParseRequestURI(hcs.ProxyURL)
-		if err != nil {
-			return nil, err
+		proxyURL, parseErr := url.ParseRequestURI(hcs.ProxyURL)
+		if parseErr != nil {
+			return nil, parseErr
 		}
 		transport.Proxy = http.ProxyURL(proxyURL)
 	}
