@@ -79,7 +79,6 @@ func newMockConsumer(decisionFunc func() error) MockConsumer {
 }
 
 func (r *MockConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
-	fmt.Println("Inside CreateLogsExporter")
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.reqCounter.total++
