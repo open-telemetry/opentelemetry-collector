@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
@@ -33,12 +35,13 @@ type baseExporter struct {
 	config *Config
 
 	// gRPC clients and connection.
-	traceExporter  ptraceotlp.GRPCClient
-	metricExporter pmetricotlp.GRPCClient
-	logExporter    plogotlp.GRPCClient
-	clientConn     *grpc.ClientConn
-	metadata       metadata.MD
-	callOptions    []grpc.CallOption
+	traceExporter   ptraceotlp.GRPCClient
+	metricExporter  pmetricotlp.GRPCClient
+	logExporter     plogotlp.GRPCClient
+	profileExporter pprofileotlp.GRPCClient
+	clientConn      *grpc.ClientConn
+	metadata        metadata.MD
+	callOptions     []grpc.CallOption
 
 	settings component.TelemetrySettings
 
@@ -70,6 +73,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
+	e.profileExporter = pprofileotlp.NewGRPCClient(e.clientConn)
 	headers := map[string]string{}
 	for k, v := range e.config.GRPCClientSettings.Headers {
 		headers[k] = string(v)
@@ -124,6 +128,19 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
 		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedLogRecords()))
+	}
+	return nil
+}
+
+func (e *baseExporter) pushProfiles(ctx context.Context, pd pprofile.Profiles) error {
+	req := pprofileotlp.NewExportRequestFromProfiles(pd)
+	resp, respErr := e.profileExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+	if err := processError(respErr); err != nil {
+		return err
+	}
+	partialSuccess := resp.PartialSuccess()
+	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedProfiles() == 0) {
+		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedProfiles()))
 	}
 	return nil
 }

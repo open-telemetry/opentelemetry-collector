@@ -21,10 +21,12 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/profiles"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
 )
 
@@ -35,10 +37,11 @@ type otlpReceiver struct {
 	httpMux    *http.ServeMux
 	serverHTTP *http.Server
 
-	tracesReceiver  *trace.Receiver
-	metricsReceiver *metrics.Receiver
-	logsReceiver    *logs.Receiver
-	shutdownWG      sync.WaitGroup
+	tracesReceiver   *trace.Receiver
+	metricsReceiver  *metrics.Receiver
+	logsReceiver     *logs.Receiver
+	profilesReceiver *profiles.Receiver
+	shutdownWG       sync.WaitGroup
 
 	obsrepGRPC *obsreport.Receiver
 	obsrepHTTP *obsreport.Receiver
@@ -133,6 +136,10 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 
 		if r.logsReceiver != nil {
 			plogotlp.RegisterGRPCServer(r.serverGRPC, r.logsReceiver)
+		}
+
+		if r.profilesReceiver != nil {
+			pprofileotlp.RegisterGRPCServer(r.serverGRPC, r.profilesReceiver)
 		}
 
 		err = r.startGRPCServer(r.cfg.GRPC, host)
@@ -249,6 +256,31 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 				handleLogs(resp, req, httpLogsReceiver, pbEncoder)
 			case jsonContentType:
 				handleLogs(resp, req, httpLogsReceiver, jsEncoder)
+			default:
+				handleUnmatchedContentType(resp)
+			}
+		})
+	}
+	return nil
+}
+
+func (r *otlpReceiver) registerProfilesConsumer(lc consumer.Profiles) error {
+	if lc == nil {
+		return component.ErrNilNextConsumer
+	}
+	r.profilesReceiver = profiles.New(lc, r.obsrepGRPC)
+	httpProfilesReceiver := profiles.New(lc, r.obsrepHTTP)
+	if r.httpMux != nil {
+		r.httpMux.HandleFunc("/v1/profiles", func(resp http.ResponseWriter, req *http.Request) {
+			if req.Method != http.MethodPost {
+				handleUnmatchedMethod(resp)
+				return
+			}
+			switch getMimeTypeFromContentType(req.Header.Get("Content-Type")) {
+			case pbContentType:
+				handleProfiles(resp, req, httpProfilesReceiver, pbEncoder)
+			case jsonContentType:
+				handleProfiles(resp, req, httpProfilesReceiver, jsEncoder)
 			default:
 				handleUnmatchedContentType(resp)
 			}

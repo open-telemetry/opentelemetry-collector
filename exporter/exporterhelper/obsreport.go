@@ -33,6 +33,7 @@ type instruments struct {
 	failedToEnqueueTraceSpans   *metric.Int64Cumulative
 	failedToEnqueueMetricPoints *metric.Int64Cumulative
 	failedToEnqueueLogRecords   *metric.Int64Cumulative
+	failedToEnqueueProfiles     *metric.Int64Cumulative
 }
 
 func newInstruments(registry *metric.Registry) *instruments {
@@ -69,6 +70,12 @@ func newInstruments(registry *metric.Registry) *instruments {
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
 
+	insts.failedToEnqueueProfiles, _ = registry.AddInt64Cumulative(
+		obsmetrics.ExporterKey+"/enqueue_failed_profiles",
+		metric.WithDescription("Number of profile records failed to be added to the sending queue."),
+		metric.WithLabelKeys(obsmetrics.ExporterKey),
+		metric.WithUnit(metricdata.UnitDimensionless))
+
 	return insts
 }
 
@@ -78,6 +85,7 @@ type obsExporter struct {
 	failedToEnqueueTraceSpansEntry   *metric.Int64CumulativeEntry
 	failedToEnqueueMetricPointsEntry *metric.Int64CumulativeEntry
 	failedToEnqueueLogRecordsEntry   *metric.Int64CumulativeEntry
+	failedToEnqueueProfilesEntry     *metric.Int64CumulativeEntry
 }
 
 // newObsExporter creates a new observability exporter.
@@ -86,6 +94,7 @@ func newObsExporter(cfg obsreport.ExporterSettings, insts *instruments) (*obsExp
 	failedToEnqueueTraceSpansEntry, _ := insts.failedToEnqueueTraceSpans.GetEntry(labelValue)
 	failedToEnqueueMetricPointsEntry, _ := insts.failedToEnqueueMetricPoints.GetEntry(labelValue)
 	failedToEnqueueLogRecordsEntry, _ := insts.failedToEnqueueLogRecords.GetEntry(labelValue)
+	failedToEnqueueProfilesEntry, _ := insts.failedToEnqueueProfiles.GetEntry(labelValue)
 
 	exp, err := obsreport.NewExporter(cfg)
 	if err != nil {
@@ -97,6 +106,7 @@ func newObsExporter(cfg obsreport.ExporterSettings, insts *instruments) (*obsExp
 		failedToEnqueueTraceSpansEntry:   failedToEnqueueTraceSpansEntry,
 		failedToEnqueueMetricPointsEntry: failedToEnqueueMetricPointsEntry,
 		failedToEnqueueLogRecordsEntry:   failedToEnqueueLogRecordsEntry,
+		failedToEnqueueProfilesEntry:     failedToEnqueueProfilesEntry,
 	}, nil
 }
 
@@ -113,4 +123,9 @@ func (eor *obsExporter) recordMetricsEnqueueFailure(_ context.Context, numMetric
 // recordLogsEnqueueFailure records number of log records that failed to be added to the sending queue.
 func (eor *obsExporter) recordLogsEnqueueFailure(_ context.Context, numLogRecords int64) {
 	eor.failedToEnqueueLogRecordsEntry.Inc(numLogRecords)
+}
+
+// recordProfilesEnqueueFailure records number of log records that failed to be added to the sending queue.
+func (eor *obsExporter) recordProfilesEnqueueFailure(_ context.Context, numProfiles int64) {
+	eor.failedToEnqueueProfilesEntry.Inc(numProfiles)
 }

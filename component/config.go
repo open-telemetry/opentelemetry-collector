@@ -124,4 +124,7 @@ const (
 
 	// DataTypeLogs is the data type tag for logs.
 	DataTypeLogs DataType = "logs"
+
+	// DataTypeProfiles is the data type tag for profiles.
+	DataTypeProfiles DataType = "profiles"
 )

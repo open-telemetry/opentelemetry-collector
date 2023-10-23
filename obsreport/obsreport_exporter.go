@@ -43,6 +43,8 @@ type Exporter struct {
 	failedToSendMetricPoints metric.Int64Counter
 	sentLogRecords           metric.Int64Counter
 	failedToSendLogRecords   metric.Int64Counter
+	sentProfiles             metric.Int64Counter
+	failedToSendProfiles     metric.Int64Counter
 }
 
 // ExporterSettings are settings for creating an Exporter.
@@ -121,6 +123,18 @@ func (exp *Exporter) createOtelMetrics(cfg ExporterSettings) error {
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
+	exp.sentProfiles, err = meter.Int64Counter(
+		obsmetrics.ExporterPrefix+obsmetrics.SentProfilesKey,
+		metric.WithDescription("Number of profile record successfully sent to destination."),
+		metric.WithUnit("1"))
+	errors = multierr.Append(errors, err)
+
+	exp.failedToSendProfiles, err = meter.Int64Counter(
+		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendProfilesKey,
+		metric.WithDescription("Number of profile records in failed attempts to send to destination."),
+		metric.WithUnit("1"))
+	errors = multierr.Append(errors, err)
+
 	return errors
 }
 
@@ -167,6 +181,20 @@ func (exp *Exporter) EndLogsOp(ctx context.Context, numLogRecords int, err error
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
 }
 
+// StartProfilesOp is called at the start of an Export operation.
+// The returned context should be used in other calls to the Exporter functions
+// dealing with the same export operation.
+func (exp *Exporter) StartProfilesOp(ctx context.Context) context.Context {
+	return exp.startOp(ctx, obsmetrics.ExportProfilesOperationSuffix)
+}
+
+// EndProfilesOp completes the export operation that was started with StartProfilesOp.
+func (exp *Exporter) EndProfilesOp(ctx context.Context, numProfiles int, err error) {
+	numSent, numFailedToSend := toNumItems(numProfiles, err)
+	exp.recordMetrics(ctx, component.DataTypeProfiles, numSent, numFailedToSend)
+	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentProfilesKey, obsmetrics.FailedToSendProfilesKey)
+}
+
 // startOp creates the span used to trace the operation. Returning
 // the updated context and the created span.
 func (exp *Exporter) startOp(ctx context.Context, operationSuffix string) context.Context {
@@ -198,6 +226,9 @@ func (exp *Exporter) recordWithOtel(ctx context.Context, dataType component.Data
 	case component.DataTypeLogs:
 		sentMeasure = exp.sentLogRecords
 		failedMeasure = exp.failedToSendLogRecords
+	case component.DataTypeProfiles:
+		sentMeasure = exp.sentProfiles
+		failedMeasure = exp.failedToSendProfiles
 	}
 
 	sentMeasure.Add(ctx, sent, metric.WithAttributes(exp.otelAttrs...))
@@ -216,6 +247,9 @@ func (exp *Exporter) recordWithOC(ctx context.Context, dataType component.DataTy
 	case component.DataTypeLogs:
 		sentMeasure = obsmetrics.ExporterSentLogRecords
 		failedMeasure = obsmetrics.ExporterFailedToSendLogRecords
+	case component.DataTypeProfiles:
+		sentMeasure = obsmetrics.ExporterSentProfiles
+		failedMeasure = obsmetrics.ExporterFailedToSendProfiles
 	}
 
 	if failed > 0 {

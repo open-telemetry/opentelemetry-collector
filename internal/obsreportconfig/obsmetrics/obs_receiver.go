@@ -32,6 +32,12 @@ const (
 	// RefusedLogRecordsKey used to identify log records refused (ie.: not ingested) by the
 	// Collector.
 	RefusedLogRecordsKey = "refused_log_records"
+
+	// AcceptedProfilesKey used to identify profile records accepted by the Collector.
+	AcceptedProfilesKey = "accepted_profiles"
+	// RefusedProfilesKey used to identify profile records refused (ie.: not ingested) by the
+	// Collector.
+	RefusedProfilesKey = "refused_profiles"
 )
 
 var (
@@ -42,6 +48,7 @@ var (
 	ReceiveTraceDataOperationSuffix = NameSep + "TraceDataReceived"
 	ReceiverMetricsOperationSuffix  = NameSep + "MetricsReceived"
 	ReceiverLogsOperationSuffix     = NameSep + "LogsReceived"
+	ReceiverProfilesOperationSuffix = NameSep + "ProfilesReceived"
 
 	// Receiver metrics. Any count of data items below is in the original format
 	// that they were received, reasoning: reconciliation is easier if measurement
@@ -71,5 +78,13 @@ var (
 	ReceiverRefusedLogRecords = stats.Int64(
 		ReceiverPrefix+RefusedLogRecordsKey,
 		"Number of log records that could not be pushed into the pipeline.",
+		stats.UnitDimensionless)
+	ReceiverAcceptedProfiles = stats.Int64(
+		ReceiverPrefix+AcceptedLogRecordsKey,
+		"Number of profile records successfully pushed into the pipeline.",
+		stats.UnitDimensionless)
+	ReceiverRefusedProfiles = stats.Int64(
+		ReceiverPrefix+RefusedLogRecordsKey,
+		"Number of profile records that could not be pushed into the pipeline.",
 		stats.UnitDimensionless)
 )

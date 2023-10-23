@@ -44,6 +44,13 @@ func (pc *prometheusChecker) checkReceiverLogs(receiver component.ID, protocol s
 		pc.checkCounter("receiver_refused_log_records", droppedLogRecords, receiverAttrs))
 }
 
+func (pc *prometheusChecker) checkReceiverProfiles(receiver component.ID, protocol string, acceptedProfiles, droppedProfiles int64) error {
+	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
+	return multierr.Combine(
+		pc.checkCounter("receiver_accepted_profiles", acceptedProfiles, receiverAttrs),
+		pc.checkCounter("receiver_refused_profiles", droppedProfiles, receiverAttrs))
+}
+
 func (pc *prometheusChecker) checkReceiverMetrics(receiver component.ID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(
@@ -75,6 +82,14 @@ func (pc *prometheusChecker) checkProcessorLogs(processor component.ID, accepted
 		pc.checkCounter("processor_dropped_log_records", droppedLogRecords, processorAttrs))
 }
 
+func (pc *prometheusChecker) checkProcessorProfiles(processor component.ID, acceptedProfiles, refusedProfiles, droppedProfiles int64) error {
+	processorAttrs := attributesForProcessorMetrics(processor)
+	return multierr.Combine(
+		pc.checkCounter("processor_accepted_profiles", acceptedProfiles, processorAttrs),
+		pc.checkCounter("processor_refused_profiles", refusedProfiles, processorAttrs),
+		pc.checkCounter("processor_dropped_profiles", droppedProfiles, processorAttrs))
+}
+
 func (pc *prometheusChecker) checkExporterTraces(exporter component.ID, sentSpans, sendFailedSpans int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
 	if sendFailedSpans > 0 {
@@ -95,6 +110,17 @@ func (pc *prometheusChecker) checkExporterLogs(exporter component.ID, sentLogRec
 	}
 	return multierr.Combine(
 		pc.checkCounter("exporter_sent_log_records", sentLogRecords, exporterAttrs))
+}
+
+func (pc *prometheusChecker) checkExporterProfiles(exporter component.ID, sentProfiles, sendFailedProfiles int64) error {
+	exporterAttrs := attributesForExporterMetrics(exporter)
+	if sendFailedProfiles > 0 {
+		return multierr.Combine(
+			pc.checkCounter("exporter_sent_profiles", sentProfiles, exporterAttrs),
+			pc.checkCounter("exporter_send_failed_profiles", sendFailedProfiles, exporterAttrs))
+	}
+	return multierr.Combine(
+		pc.checkCounter("exporter_sent_profiles", sentProfiles, exporterAttrs))
 }
 
 func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sentMetricPoints, sendFailedMetricPoints int64) error {

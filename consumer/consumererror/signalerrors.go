@@ -6,10 +6,11 @@ package consumererror // import "go.opentelemetry.io/collector/consumer/consumer
 import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type retryable[V ptrace.Traces | pmetric.Metrics | plog.Logs] struct {
+type retryable[V ptrace.Traces | pmetric.Metrics | plog.Logs | pprofile.Profiles] struct {
 	error
 	data V
 }
@@ -50,6 +51,22 @@ type Logs struct {
 func NewLogs(err error, data plog.Logs) error {
 	return Logs{
 		retryable: retryable[plog.Logs]{
+			error: err,
+			data:  data,
+		},
+	}
+}
+
+// Profiles is an error that may carry associated Profile data for a subset of received data
+// that failed to be processed or sent.
+type Profiles struct {
+	retryable[pprofile.Profiles]
+}
+
+// NewProfiles creates a Profiles that can encapsulate received data that failed to be processed or sent.
+func NewProfiles(err error, data pprofile.Profiles) error {
+	return Profiles{
+		retryable: retryable[pprofile.Profiles]{
 			error: err,
 			data:  data,
 		},

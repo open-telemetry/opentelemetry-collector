@@ -47,6 +47,8 @@ type Receiver struct {
 	refusedMetricPointsCounter  metric.Int64Counter
 	acceptedLogRecordsCounter   metric.Int64Counter
 	refusedLogRecordsCounter    metric.Int64Counter
+	acceptedProfilesCounter     metric.Int64Counter
+	refusedProfilesCounter      metric.Int64Counter
 }
 
 // ReceiverSettings are settings for creating an Receiver.
@@ -144,6 +146,20 @@ func (rec *Receiver) createOtelMetrics() error {
 	)
 	errors = multierr.Append(errors, err)
 
+	rec.acceptedProfilesCounter, err = rec.meter.Int64Counter(
+		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedProfilesKey,
+		metric.WithDescription("Number of profile records successfully pushed into the pipeline."),
+		metric.WithUnit("1"),
+	)
+	errors = multierr.Append(errors, err)
+
+	rec.refusedProfilesCounter, err = rec.meter.Int64Counter(
+		obsmetrics.ReceiverPrefix+obsmetrics.RefusedProfilesKey,
+		metric.WithDescription("Number of profile records that could not be pushed into the pipeline."),
+		metric.WithUnit("1"),
+	)
+	errors = multierr.Append(errors, err)
+
 	return errors
 }
 
@@ -181,6 +197,24 @@ func (rec *Receiver) EndLogsOp(
 	err error,
 ) {
 	rec.endOp(receiverCtx, format, numReceivedLogRecords, err, component.DataTypeLogs)
+}
+
+// StartProfilesOp is called when a request is received from a client.
+// The returned context should be used in other calls to the obsreport functions
+// dealing with the same receive operation.
+func (rec *Receiver) StartProfilesOp(operationCtx context.Context) context.Context {
+	return rec.startOp(operationCtx, obsmetrics.ReceiverProfilesOperationSuffix)
+}
+
+// EndProfilesOp completes the receive operation that was started with
+// StartProfilesOp.
+func (rec *Receiver) EndProfilesOp(
+	receiverCtx context.Context,
+	format string,
+	numReceivedProfiles int,
+	err error,
+) {
+	rec.endOp(receiverCtx, format, numReceivedProfiles, err, component.DataTypeProfiles)
 }
 
 // StartMetricsOp is called when a request is received from a client.
@@ -260,6 +294,9 @@ func (rec *Receiver) endOp(
 		case component.DataTypeLogs:
 			acceptedItemsKey = obsmetrics.AcceptedLogRecordsKey
 			refusedItemsKey = obsmetrics.RefusedLogRecordsKey
+		case component.DataTypeProfiles:
+			acceptedItemsKey = obsmetrics.AcceptedProfilesKey
+			refusedItemsKey = obsmetrics.RefusedProfilesKey
 		}
 
 		span.SetAttributes(
@@ -292,6 +329,9 @@ func (rec *Receiver) recordWithOtel(receiverCtx context.Context, dataType compon
 	case component.DataTypeLogs:
 		acceptedMeasure = rec.acceptedLogRecordsCounter
 		refusedMeasure = rec.refusedLogRecordsCounter
+	case component.DataTypeProfiles:
+		acceptedMeasure = rec.acceptedProfilesCounter
+		refusedMeasure = rec.refusedProfilesCounter
 	}
 
 	acceptedMeasure.Add(receiverCtx, int64(numAccepted), metric.WithAttributes(rec.otelAttrs...))
@@ -310,6 +350,9 @@ func (rec *Receiver) recordWithOC(receiverCtx context.Context, dataType componen
 	case component.DataTypeLogs:
 		acceptedMeasure = obsmetrics.ReceiverAcceptedLogRecords
 		refusedMeasure = obsmetrics.ReceiverRefusedLogRecords
+	case component.DataTypeProfiles:
+		acceptedMeasure = obsmetrics.ReceiverAcceptedProfiles
+		refusedMeasure = obsmetrics.ReceiverRefusedProfiles
 	}
 
 	stats.Record(

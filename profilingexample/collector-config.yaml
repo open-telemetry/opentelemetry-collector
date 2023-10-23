@@ -1,0 +1,31 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  batch:
+
+exporters:
+  otlp:
+    endpoint: backend:9095
+    tls:
+      insecure: true
+  # otlphttp:
+  #   endpoint: http://backend:4100
+  logging:
+    verbosity: detailed
+
+extensions:
+
+service:
+  extensions: []
+  pipelines:
+    profiles:
+      receivers: [otlp]
+      processors: [batch]
+      exporters:
+        - logging
+        # - otlphttp
+        - otlp

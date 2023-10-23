@@ -64,6 +64,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/jzelinskie/must v0.0.1
 	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
@@ -83,6 +84,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/contrib/zpages v0.42.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
+	golang.org/x/exp v0.0.0-20230725012225-302865e7556b // indirect
 	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/protobuf v1.30.0 // indirect

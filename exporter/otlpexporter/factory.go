@@ -28,6 +28,7 @@ func NewFactory() exporter.Factory {
 		exporter.WithTraces(createTracesExporter, component.StabilityLevelStable),
 		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelStable),
 		exporter.WithLogs(createLogsExporter, component.StabilityLevelBeta),
+		exporter.WithProfiles(createProfilesExporter, component.StabilityLevelBeta),
 	)
 }
 
@@ -99,6 +100,27 @@ func createLogsExporter(
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewLogsExporter(ctx, set, cfg,
 		oce.pushLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithShutdown(oce.shutdown),
+	)
+}
+
+func createProfilesExporter(
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Profiles, error) {
+	oce, err := newExporter(cfg, set)
+	if err != nil {
+		return nil, err
+	}
+	oCfg := cfg.(*Config)
+	return exporterhelper.NewProfilesExporter(ctx, set, cfg,
+		oce.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),

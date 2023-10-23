@@ -31,6 +31,12 @@ type Logs interface {
 	consumer.Logs
 }
 
+// Profiles is an exporter that can consume profiles.
+type Profiles interface {
+	component.Component
+	consumer.Profiles
+}
+
 // CreateSettings configures exporter creators.
 type CreateSettings struct {
 	// ID returns the ID of the component that will be created.
@@ -72,6 +78,14 @@ type Factory interface {
 
 	// LogsExporterStability gets the stability level of the LogsExporter.
 	LogsExporterStability() component.StabilityLevel
+
+	// CreateProfilesExporter creates a ProfilesExporter based on the config.
+	// If the exporter type does not support logs or if the config is not valid,
+	// an error will be returned instead.
+	CreateProfilesExporter(ctx context.Context, set CreateSettings, cfg component.Config) (Profiles, error)
+
+	// ProfilesExporterStability gets the stability level of the ProfilesExporter.
+	ProfilesExporterStability() component.StabilityLevel
 
 	unexportedFactoryFunc()
 }
@@ -124,6 +138,17 @@ func (f CreateLogsFunc) CreateLogsExporter(ctx context.Context, set CreateSettin
 	return f(ctx, set, cfg)
 }
 
+// CreateProfilesFunc is the equivalent of Factory.CreateProfiles.
+type CreateProfilesFunc func(context.Context, CreateSettings, component.Config) (Profiles, error)
+
+// CreateProfilesExporter implements Factory.CreateProfilesExporter().
+func (f CreateProfilesFunc) CreateProfilesExporter(ctx context.Context, set CreateSettings, cfg component.Config) (Profiles, error) {
+	if f == nil {
+		return nil, component.ErrDataTypeIsNotSupported
+	}
+	return f(ctx, set, cfg)
+}
+
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
@@ -133,6 +158,8 @@ type factory struct {
 	metricsStabilityLevel component.StabilityLevel
 	CreateLogsFunc
 	logsStabilityLevel component.StabilityLevel
+	CreateProfilesFunc
+	profilesStabilityLevel component.StabilityLevel
 }
 
 func (f *factory) Type() component.Type {
@@ -151,6 +178,10 @@ func (f *factory) MetricsExporterStability() component.StabilityLevel {
 
 func (f *factory) LogsExporterStability() component.StabilityLevel {
 	return f.logsStabilityLevel
+}
+
+func (f *factory) ProfilesExporterStability() component.StabilityLevel {
+	return f.profilesStabilityLevel
 }
 
 // WithTraces overrides the default "error not supported" implementation for CreateTracesExporter and the default "undefined" stability level.
@@ -174,6 +205,14 @@ func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOpt
 	return factoryOptionFunc(func(o *factory) {
 		o.logsStabilityLevel = sl
 		o.CreateLogsFunc = createLogs
+	})
+}
+
+// WithProfiles overrides the default "error not supported" implementation for CreateProfilesExporter and the default "undefined" stability level.
+func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.profilesStabilityLevel = sl
+		o.CreateProfilesFunc = createProfiles
 	})
 }
 
@@ -259,6 +298,22 @@ func (b *Builder) CreateLogs(ctx context.Context, set CreateSettings) (Logs, err
 
 	logStabilityLevel(set.Logger, f.LogsExporterStability())
 	return f.CreateLogsExporter(ctx, set, cfg)
+}
+
+// CreateProfiles creates a Profiles exporter based on the settings and config.
+func (b *Builder) CreateProfiles(ctx context.Context, set CreateSettings) (Profiles, error) {
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("exporter %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("exporter factory not available for: %q", set.ID)
+	}
+
+	logStabilityLevel(set.Logger, f.LogsExporterStability())
+	return f.CreateProfilesExporter(ctx, set, cfg)
 }
 
 func (b *Builder) Factory(componentType component.Type) component.Factory {

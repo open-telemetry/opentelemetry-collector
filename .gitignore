@@ -29,3 +29,8 @@ coverage.html
 
 # golang
 go.work*
+
+# TODO(@petethepig): remove this
+pdata/pprofile/profiles
+pdata/pprofile/profiles-all
+*.pprof

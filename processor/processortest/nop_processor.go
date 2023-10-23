@@ -31,6 +31,7 @@ func NewNopFactory() processor.Factory {
 		processor.WithTraces(createTracesProcessor, component.StabilityLevelStable),
 		processor.WithMetrics(createMetricsProcessor, component.StabilityLevelStable),
 		processor.WithLogs(createLogsProcessor, component.StabilityLevelStable),
+		processor.WithProfiles(createProfilesProcessor, component.StabilityLevelStable),
 	)
 }
 
@@ -43,6 +44,10 @@ func createMetricsProcessor(context.Context, processor.CreateSettings, component
 }
 
 func createLogsProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Logs) (processor.Logs, error) {
+	return nopInstance, nil
+}
+
+func createProfilesProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Profiles) (processor.Profiles, error) {
 	return nopInstance, nil
 }
 

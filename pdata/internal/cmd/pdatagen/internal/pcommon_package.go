@@ -120,6 +120,14 @@ var traceIDType = &primitiveType{
 	testVal:     "data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
 }
 
+var profileIDType = &primitiveType{
+	structName:  "ProfileID",
+	packageName: "pcommon",
+	rawType:     "data.ProfileID",
+	defaultVal:  "data.ProfileID([16]byte{})",
+	testVal:     "data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
+}
+
 var spanIDField = &primitiveTypedField{
 	fieldName:       "SpanID",
 	originFieldName: "SpanId",

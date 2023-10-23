@@ -23,6 +23,22 @@ func (mts capLogs) Capabilities() consumer.Capabilities {
 	return mts.cap
 }
 
+func NewProfiles(profiles consumer.Profiles, cap consumer.Capabilities) consumer.Profiles {
+	if profiles.Capabilities() == cap {
+		return profiles
+	}
+	return capProfiles{Profiles: profiles, cap: cap}
+}
+
+type capProfiles struct {
+	consumer.Profiles
+	cap consumer.Capabilities
+}
+
+func (mts capProfiles) Capabilities() consumer.Capabilities {
+	return mts.cap
+}
+
 func NewMetrics(metrics consumer.Metrics, cap consumer.Capabilities) consumer.Metrics {
 	if metrics.Capabilities() == cap {
 		return metrics

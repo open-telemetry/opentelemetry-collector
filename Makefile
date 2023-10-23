@@ -189,7 +189,7 @@ OPENTELEMETRY_PROTO_SRC_DIR=pdata/internal/opentelemetry-proto
 OPENTELEMETRY_PROTO_VERSION=v0.20.0
 
 # Find all .proto files.
-OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
+OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/alternatives/*/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
 
 # Target directory to write generated files to.
 PROTO_TARGET_GEN_DIR=pdata/internal/data/protogen
@@ -210,9 +210,11 @@ genproto-cleanup:
 
 # Generate OTLP Protobuf Go files. This will place generated files in PROTO_TARGET_GEN_DIR.
 genproto: genproto-cleanup
-	mkdir -p ${OPENTELEMETRY_PROTO_SRC_DIR}
-	curl -sSL https://api.github.com/repos/open-telemetry/opentelemetry-proto/tarball/${OPENTELEMETRY_PROTO_VERSION} | tar xz --strip 1 -C ${OPENTELEMETRY_PROTO_SRC_DIR}
-	# Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated
+# TODO(@petethepig): undo this
+# mkdir -p ${OPENTELEMETRY_PROTO_SRC_DIR}
+# curl -sSL https://api.github.com/repos/open-telemetry/opentelemetry-proto/tarball/${OPENTELEMETRY_PROTO_VERSION} | tar xz --strip 1 -C ${OPENTELEMETRY_PROTO_SRC_DIR}
+# # Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated
+	rsync -av ../opentelemetry-proto/ ${OPENTELEMETRY_PROTO_SRC_DIR}
 	$(MAKE) genproto_sub
 	$(MAKE) fmt
 	$(MAKE) genproto-cleanup
@@ -235,6 +237,8 @@ genproto_sub:
 	# HACK: Workaround for istio 1.15 / envoy 1.23.1 mistakenly emitting deprecated field.
 	# reserved 1000 -> repeated ScopeLogs deprecated_scope_logs = 1000;
 	sed 's/reserved 1000;/repeated ScopeLogs deprecated_scope_logs = 1000;/g' $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/logs/v1/logs.proto 1<> $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/logs/v1/logs.proto
+	# reserved 1000 -> repeated ScopeProfiles deprecated_scope_profiles = 1000;
+	sed 's/reserved 1000;/repeated ScopeProfiles deprecated_scope_profiles = 1000;/g' $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/profiles/v1/profiles.proto 1<> $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/profiles/v1/profiles.proto
 	# reserved 1000 -> repeated ScopeMetrics deprecated_scope_metrics = 1000;
 	sed 's/reserved 1000;/repeated ScopeMetrics deprecated_scope_metrics = 1000;/g' $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/metrics/v1/metrics.proto 1<> $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/metrics/v1/metrics.proto
 	# reserved 1000 -> repeated ScopeSpans deprecated_scope_spans = 1000;
@@ -504,3 +508,17 @@ chlog-update: $(CHLOG)
 .PHONY: builder-integration-test
 builder-integration-test: $(ENVSUBST)
 	cd ./cmd/builder && ./test/test.sh
+
+.PHONY: profile-benchmark
+profile-benchmark: $(ENVSUBST)
+	cd ./pdata/pprofile && go test -bench . -run=^$$ | tee /tmp/benchmarks.txt
+	@echo "Benchmark results for posting to Google Sheets:"
+	cat /tmp/benchmarks.txt | grep 'Benchmark' | grep 'retained_objects' | grep -v 'not found' | sed -E "s/[[:space:]]+/ /g"
+
+.PHONY: profile-benchmark-generate
+profile-benchmark-generate:
+	cd pdata/pprofile && go run ./benchmarks-generator
+
+.PHONY: profile-maligned
+profile-maligned:
+	cd pdata/internal/data/protogen/profiles/v1 && maligned .

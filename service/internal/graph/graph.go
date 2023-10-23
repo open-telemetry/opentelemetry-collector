@@ -200,6 +200,10 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 				cc := capabilityconsumer.NewLogs(next.(consumer.Logs), capability)
 				n.baseConsumer = cc
 				n.ConsumeLogsFunc = cc.ConsumeLogs
+			case component.DataTypeProfiles:
+				cc := capabilityconsumer.NewProfiles(next.(consumer.Profiles), capability)
+				n.baseConsumer = cc
+				n.ConsumeProfilesFunc = cc.ConsumeProfiles
 			}
 		case *fanOutNode:
 			nexts := g.nextConsumers(n.ID())
@@ -223,6 +227,12 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 					consumers = append(consumers, next.(consumer.Logs))
 				}
 				n.baseConsumer = fanoutconsumer.NewLogs(consumers)
+			case component.DataTypeProfiles:
+				consumers := make([]consumer.Profiles, 0, len(nexts))
+				for _, next := range nexts {
+					consumers = append(consumers, next.(consumer.Profiles))
+				}
+				n.baseConsumer = fanoutconsumer.NewProfiles(consumers)
 			}
 		}
 		if err != nil {
@@ -316,6 +326,7 @@ func (g *Graph) GetExporters() map[component.DataType]map[component.ID]component
 	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Component)
 	exportersMap[component.DataTypeMetrics] = make(map[component.ID]component.Component)
 	exportersMap[component.DataTypeLogs] = make(map[component.ID]component.Component)
+	exportersMap[component.DataTypeProfiles] = make(map[component.ID]component.Component)
 
 	for _, pg := range g.pipelines {
 		for _, expNode := range pg.exporters {

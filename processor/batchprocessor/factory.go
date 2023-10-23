@@ -33,7 +33,8 @@ func NewFactory() processor.Factory {
 		createDefaultConfig,
 		processor.WithTraces(createTraces, component.StabilityLevelStable),
 		processor.WithMetrics(createMetrics, component.StabilityLevelStable),
-		processor.WithLogs(createLogs, component.StabilityLevelStable))
+		processor.WithLogs(createLogs, component.StabilityLevelStable),
+		processor.WithProfiles(createProfiles, component.StabilityLevelStable))
 }
 
 func createDefaultConfig() component.Config {
@@ -69,4 +70,13 @@ func createLogs(
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
 	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config), obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
+}
+
+func createProfiles(
+	_ context.Context,
+	set processor.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Profiles,
+) (processor.Profiles, error) {
+	return newBatchProfilesProcessor(set, nextConsumer, cfg.(*Config), obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
 }

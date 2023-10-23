@@ -1,0 +1,23 @@
+version: '3'
+services:
+  client:
+    build:
+      context: .
+      dockerfile: client.Dockerfile
+    environment:
+      - SERVER_ADDRESS=https://collector:4317
+
+  collector:
+    build:
+      context: ..
+      dockerfile: profilingexample/collector.Dockerfile
+    volumes:
+      - ./collector-config.yaml:/collector-config.yaml
+    command: --config=file:/collector-config.yaml
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    ports:
+      - "4100:4100"
