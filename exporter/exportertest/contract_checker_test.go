@@ -8,239 +8,135 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
-	"go.opentelemetry.io/otel/metric/noop"
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
 )
 
-func (bor *testMockReceiver) Start(_ context.Context, _ component.Host) error {
-	return nil
+// retryConfig is a configuration to quickly retry failed exports.
+var retryConfig = func() exporterhelper.RetrySettings {
+	c := exporterhelper.NewDefaultRetrySettings()
+	c.InitialInterval = time.Millisecond
+	return c
+}()
+
+// mockReceiver is a receiver with pass-through consumers.
+type mockReceiver struct {
+	component.StartFunc
+	component.ShutdownFunc
+	consumer.Traces
+	consumer.Metrics
+	consumer.Logs
 }
 
-func (bor *testMockReceiver) Shutdown(_ context.Context) error {
-	return nil
+// mockExporterFactory is a factory to create exporters sending data to the mockReceiver.
+type mockExporterFactory struct {
+	mr *mockReceiver
+	component.StartFunc
+	component.ShutdownFunc
 }
 
-func newExampleFactory() exporter.Factory {
-	return exporter.NewFactory(
-		typeStr,
-		createDefaultConfig,
-		exporter.WithLogs(CreateLogsExporter, component.StabilityLevelBeta),
-		exporter.WithTraces(CreateTracesExporter, component.StabilityLevelBeta),
-		exporter.WithMetrics(CreateMetricsExporter, component.StabilityLevelBeta),
+func (mef *mockExporterFactory) createMockTracesExporter(
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Traces, error) {
+	return exporterhelper.NewTracesExporter(ctx, set, cfg,
+		mef.mr.Traces.ConsumeTraces,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithRetry(retryConfig),
 	)
 }
 
-func CreateLogsExporter(_ context.Context, _ exporter.CreateSettings, cfg component.Config) (exporter.Logs, error) {
-	set := exporter.CreateSettings{
-		ID: component.NewIDWithName(component.DataTypeLogs, "test-exporter"),
-		TelemetrySettings: component.TelemetrySettings{
-			Logger:                zap.NewNop(),
-			TracerProvider:        trace.NewNoopTracerProvider(),
-			MeterProvider:         noop.NewMeterProvider(),
-			MetricsLevel:          0,
-			Resource:              pcommon.Resource{},
-			ReportComponentStatus: nil,
-		},
-		BuildInfo: component.BuildInfo{Version: "0.0.0"},
-	}
-	expConfig := cfg.(*ConnectionConfig)
-	le, err := exporterhelper.NewLogsExporter(
-		context.Background(),
-		set,
-		cfg,
-		pushLogs,
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expConfig.RetrySettings),
-		exporterhelper.WithQueue(expConfig.QueueSettings))
-	return le, err
+func (mef *mockExporterFactory) createMockMetricsExporter(
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Metrics, error) {
+	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
+		mef.mr.Metrics.ConsumeMetrics,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithRetry(retryConfig),
+	)
 }
 
-func CreateTracesExporter(_ context.Context, _ exporter.CreateSettings, cfg component.Config) (exporter.Traces, error) {
-	set := exporter.CreateSettings{
-		ID: component.NewIDWithName(component.DataTypeTraces, "test-exporter"),
-		TelemetrySettings: component.TelemetrySettings{
-			Logger:                zap.NewNop(),
-			TracerProvider:        trace.NewNoopTracerProvider(),
-			MeterProvider:         noop.NewMeterProvider(),
-			MetricsLevel:          0,
-			Resource:              pcommon.Resource{},
-			ReportComponentStatus: nil,
-		},
-		BuildInfo: component.BuildInfo{Version: "0.0.0"},
-	}
-	expConfig := cfg.(*ConnectionConfig)
-	le, err := exporterhelper.NewTracesExporter(
-		context.Background(),
-		set,
-		cfg,
-		pushTraces,
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expConfig.RetrySettings),
-		exporterhelper.WithQueue(expConfig.QueueSettings))
-	return le, err
+func (mef *mockExporterFactory) createMockLogsExporter(
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Logs, error) {
+	return exporterhelper.NewLogsExporter(ctx, set, cfg,
+		mef.mr.Logs.ConsumeLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithRetry(retryConfig),
+	)
 }
 
-func pushTraces(_ context.Context, _ ptrace.Traces) error {
-	return pushAny()
+func newMockExporterFactory(mr *mockReceiver) exporter.Factory {
+	mef := &mockExporterFactory{mr: mr}
+	return exporter.NewFactory(
+		"pass_through_exporter",
+		func() component.Config { return &nopConfig{} },
+		exporter.WithTraces(mef.createMockTracesExporter, component.StabilityLevelBeta),
+		exporter.WithMetrics(mef.createMockMetricsExporter, component.StabilityLevelBeta),
+		exporter.WithLogs(mef.createMockLogsExporter, component.StabilityLevelBeta),
+	)
 }
 
-func CreateMetricsExporter(_ context.Context, _ exporter.CreateSettings, cfg component.Config) (exporter.Metrics, error) {
-	set := exporter.CreateSettings{
-		ID: component.NewIDWithName(component.DataTypeMetrics, "test-exporter"),
-		TelemetrySettings: component.TelemetrySettings{
-			Logger:                zap.NewNop(),
-			TracerProvider:        trace.NewNoopTracerProvider(),
-			MeterProvider:         noop.NewMeterProvider(),
-			MetricsLevel:          0,
-			Resource:              pcommon.Resource{},
-			ReportComponentStatus: nil,
-		},
-		BuildInfo: component.BuildInfo{Version: "0.0.0"},
-	}
-	expConfig := cfg.(*ConnectionConfig)
-	le, err := exporterhelper.NewMetricsExporter(
-		context.Background(),
-		set,
-		cfg,
-		pushMetrics,
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expConfig.RetrySettings),
-		exporterhelper.WithQueue(expConfig.QueueSettings))
-	return le, err
-}
-
-func pushAny() error {
-	joinedRequestCounter.total++
-	generatedError := fakeMockConsumer.exportErrorFunction()
-	if generatedError != nil {
-		if consumererror.IsPermanent(generatedError) {
-			joinedRequestCounter.error.permanent++
-		} else {
-			joinedRequestCounter.error.nonpermanent++
-		}
-		return generatedError
-	}
-	joinedRequestCounter.success++
-	return nil
-}
-
-func pushMetrics(_ context.Context, _ pmetric.Metrics) error {
-	return pushAny()
-}
-
-func pushLogs(_ context.Context, _ plog.Logs) error {
-	return pushAny()
-}
-
-func createDefaultConfig() component.Config {
-	return &ConnectionConfig{
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-	}
-}
-
-func newTestRetrySettings() exporterhelper.RetrySettings {
-	return exporterhelper.RetrySettings{
-		Enabled: true,
-		// interval is short for the test purposes
-		InitialInterval:     10 * time.Millisecond,
-		RandomizationFactor: backoff.DefaultRandomizationFactor,
-		Multiplier:          1.1,
-		MaxInterval:         10 * time.Second,
-		MaxElapsedTime:      1 * time.Minute,
-	}
-}
-
-type ConnectionConfig struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
-}
-
-func testConfig() *ConnectionConfig {
-	return &ConnectionConfig{
-		TimeoutSettings: exporterhelper.TimeoutSettings{},
-		QueueSettings:   exporterhelper.QueueSettings{Enabled: false},
-		RetrySettings:   newTestRetrySettings(),
-	}
-}
-
-type testMockReceiver struct {
-	mockConsumer *MockConsumer
-}
-
-func newOTLPDataReceiver(mockConsumer *MockConsumer) *testMockReceiver {
-	return &testMockReceiver{mockConsumer: mockConsumer}
-}
-
-var joinedRequestCounter = newRequestCounter()
-
-var fakeMockConsumer = &MockConsumer{reqCounter: joinedRequestCounter}
-
-// Define a function that matches the MockReceiverFactory signature
-func createMockOtlpReceiver(mockConsumer *MockConsumer) component.Component {
-	rcv := newOTLPDataReceiver(mockConsumer)
-	joinedRequestCounter = newRequestCounter()
-	fakeMockConsumer.exportErrorFunction = mockConsumer.exportErrorFunction
-	mockConsumer.reqCounter = joinedRequestCounter
-	err := rcv.Start(context.Background(), nil)
-	if err != nil {
-		return nil
-	}
-	return rcv
+func newMockReceiverFactory(mr *mockReceiver) receiver.Factory {
+	return receiver.NewFactory("pass_through_receiver",
+		func() component.Config { return &nopConfig{} },
+		receiver.WithTraces(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c consumer.Traces) (receiver.Traces, error) {
+			mr.Traces = c
+			return mr, nil
+		}, component.StabilityLevelStable),
+		receiver.WithMetrics(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c consumer.Metrics) (receiver.Metrics, error) {
+			mr.Metrics = c
+			return mr, nil
+		}, component.StabilityLevelStable),
+		receiver.WithLogs(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c consumer.Logs) (receiver.Logs, error) {
+			mr.Logs = c
+			return mr, nil
+		}, component.StabilityLevelStable),
+	)
 }
 
 func TestCheckConsumeContractLogs(t *testing.T) {
-
+	mr := &mockReceiver{}
 	params := CheckConsumeContractParams{
 		T:                    t,
-		Factory:              newExampleFactory(),    // Replace with your exporter factory
-		DataType:             component.DataTypeLogs, // Change to the appropriate data type
-		Config:               testConfig(),
-		NumberOfTestElements: 10, // Number of test elements you want to send
-		MockReceiverFactory:  createMockOtlpReceiver,
+		ExporterFactory:      newMockExporterFactory(mr),
+		DataType:             component.DataTypeLogs,
+		ExporterConfig:       nopConfig{},
+		NumberOfTestElements: 10,
+		ReceiverFactory:      newMockReceiverFactory(mr),
 	}
 
 	CheckConsumeContract(params)
 }
 
 func TestCheckConsumeContractMetrics(t *testing.T) {
-
-	// Create a CheckConsumeContractParams
-	params := CheckConsumeContractParams{
+	mr := &mockReceiver{}
+	CheckConsumeContract(CheckConsumeContractParams{
 		T:                    t,
-		Factory:              newExampleFactory(),       // Replace with your exporter factory
+		ExporterFactory:      newMockExporterFactory(mr),
 		DataType:             component.DataTypeMetrics, // Change to the appropriate data type
-		Config:               testConfig(),
-		NumberOfTestElements: 10, // Number of test elements you want to send
-		MockReceiverFactory:  createMockOtlpReceiver,
-	}
-
-	CheckConsumeContract(params)
+		ExporterConfig:       nopConfig{},
+		NumberOfTestElements: 10,
+		ReceiverFactory:      newMockReceiverFactory(mr),
+	})
 }
 
 func TestCheckConsumeContractTraces(t *testing.T) {
-
-	params := CheckConsumeContractParams{
+	mr := &mockReceiver{}
+	CheckConsumeContract(CheckConsumeContractParams{
 		T:                    t,
-		Factory:              newExampleFactory(),      // Replace with your exporter factory
-		DataType:             component.DataTypeTraces, // Change to the appropriate data type
-		Config:               testConfig(),
-		NumberOfTestElements: 10, // Number of test elements you want to send
-		MockReceiverFactory:  createMockOtlpReceiver,
-	}
-
-	CheckConsumeContract(params)
+		ExporterFactory:      newMockExporterFactory(mr),
+		DataType:             component.DataTypeTraces,
+		ExporterConfig:       nopConfig{},
+		NumberOfTestElements: 10,
+		ReceiverFactory:      newMockReceiverFactory(mr),
+	})
 }

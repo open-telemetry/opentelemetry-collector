@@ -19,24 +19,27 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-// UniqueIDAttrName is the attribute name that is used in log records/spans/datapoints as the unique identifier.
-const UniqueIDAttrName = "test_id"
+// uniqueIDAttrName is the attribute name that is used in log records/spans/datapoints as the unique identifier.
+const uniqueIDAttrName = "test_id"
 
-// UniqueIDAttrVal is the value type of the UniqueIDAttrName.
-type UniqueIDAttrVal string
+// uniqueIDAttrVal is the value type of the uniqueIDAttrName.
+type uniqueIDAttrVal string
 
 type CheckConsumeContractParams struct {
-	T *testing.T
-	// Factory that allows to create an exporter.
-	Factory exporter.Factory
+	T                    *testing.T
+	NumberOfTestElements int
 	// DataType to test for.
 	DataType component.DataType
-	// Config of the exporter to use.
-	Config               component.Config
-	NumberOfTestElements int
-	MockReceiverFactory  MockReceiverFactory
+	// ExporterFactory to create an exporter to be tested.
+	ExporterFactory exporter.Factory
+	ExporterConfig  component.Config
+	// ReceiverFactory to create a mock receiver.
+	ReceiverFactory receiver.Factory
+	ReceiverConfig  component.Config
 }
 
 func CheckConsumeContract(params CheckConsumeContractParams) {
@@ -73,50 +76,57 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 	for _, scenario := range scenarios {
 		params.T.Run(
 			scenario.name, func(t *testing.T) {
-				checkConsumeContractScenario(params, scenario.decisionFunc, scenario.checkIfTestPassed)
+				checkConsumeContractScenario(t, params, scenario.decisionFunc, scenario.checkIfTestPassed)
 			},
 		)
 	}
 }
 
-func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFunc func() error, checkIfTestPassed func(*testing.T, int, requestCounter)) {
+func checkConsumeContractScenario(t *testing.T, params CheckConsumeContractParams, decisionFunc func() error, checkIfTestPassed func(*testing.T, int, requestCounter)) {
 	mockConsumerInstance := newMockConsumer(decisionFunc)
-	rcv := params.MockReceiverFactory(&mockConsumerInstance)
 	switch params.DataType {
 	case component.DataTypeLogs:
-		checkLogs(params, rcv, &mockConsumerInstance, checkIfTestPassed)
+		r, err := params.ReceiverFactory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), params.ReceiverConfig, &mockConsumerInstance)
+		require.NoError(t, err)
+		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+		checkLogs(t, params, r, &mockConsumerInstance, checkIfTestPassed)
 	case component.DataTypeTraces:
-		checkTraces(params, rcv, &mockConsumerInstance, checkIfTestPassed)
+		r, err := params.ReceiverFactory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), params.ReceiverConfig, &mockConsumerInstance)
+		require.NoError(t, err)
+		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+		checkTraces(t, params, r, &mockConsumerInstance, checkIfTestPassed)
 	case component.DataTypeMetrics:
-		checkMetrics(params, rcv, &mockConsumerInstance, checkIfTestPassed)
+		r, err := params.ReceiverFactory.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), params.ReceiverConfig, &mockConsumerInstance)
+		require.NoError(t, err)
+		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+		checkMetrics(t, params, r, &mockConsumerInstance, checkIfTestPassed)
 	default:
-		require.FailNow(params.T, "must specify a valid DataType to test for")
+		require.FailNow(t, "must specify a valid DataType to test for")
 	}
-
 }
 
-func checkMetrics(params CheckConsumeContractParams, mockReceiver component.Component, mockConsumer *MockConsumer, checkIfTestPassed func(*testing.T, int, requestCounter)) {
+func checkMetrics(t *testing.T, params CheckConsumeContractParams, mockReceiver component.Component,
+	mockConsumer *mockConsumer, checkIfTestPassed func(*testing.T, int, requestCounter)) {
 	ctx := context.Background()
 	var exp exporter.Metrics
 	var err error
-	exp, err = params.Factory.CreateMetricsExporter(ctx, NewNopCreateSettings(), params.Config)
-	require.NoError(params.T, err)
-	require.NotNil(params.T, exp)
+	exp, err = params.ExporterFactory.CreateMetricsExporter(ctx, NewNopCreateSettings(), params.ExporterConfig)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
 
 	err = exp.Start(ctx, componenttest.NewNopHost())
-	require.NoError(params.T, err)
+	require.NoError(t, err)
 
 	defer func(exp exporter.Metrics, ctx context.Context) {
 		err = exp.Shutdown(ctx)
-		require.NoError(params.T, err)
+		require.NoError(t, err)
 		err = mockReceiver.Shutdown(ctx)
-		require.NoError(params.T, err)
+		require.NoError(t, err)
 		mockConsumer.clear()
 	}(exp, ctx)
 
 	for i := 0; i < params.NumberOfTestElements; i++ {
-		id := UniqueIDAttrVal(strconv.Itoa(i))
-		fmt.Println("Preparing metric number: ", id)
+		id := uniqueIDAttrVal(strconv.Itoa(i))
 		data := createOneMetricWithID(id)
 
 		err = exp.ConsumeMetrics(ctx, data)
@@ -131,33 +141,32 @@ func checkMetrics(params CheckConsumeContractParams, mockReceiver component.Comp
 	fmt.Printf("Number of permanent errors: %d\n", reqCounter.error.permanent)
 	fmt.Printf("Number of non-permanent errors: %d\n", reqCounter.error.nonpermanent)
 
-	assert.EventuallyWithT(params.T, func(c *assert.CollectT) {
-		checkIfTestPassed(params.T, params.NumberOfTestElements, *reqCounter)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		checkIfTestPassed(t, params.NumberOfTestElements, *reqCounter)
 	}, 2*time.Second, 100*time.Millisecond)
 }
 
-func checkTraces(params CheckConsumeContractParams, mockReceiver component.Component, mockConsumer *MockConsumer, checkIfTestPassed func(*testing.T, int, requestCounter)) {
+func checkTraces(t *testing.T, params CheckConsumeContractParams, mockReceiver component.Component, mockConsumer *mockConsumer, checkIfTestPassed func(*testing.T, int, requestCounter)) {
 	ctx := context.Background()
 	var exp exporter.Traces
 	var err error
-	exp, err = params.Factory.CreateTracesExporter(ctx, NewNopCreateSettings(), params.Config)
-	require.NoError(params.T, err)
-	require.NotNil(params.T, exp)
+	exp, err = params.ExporterFactory.CreateTracesExporter(ctx, NewNopCreateSettings(), params.ExporterConfig)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
 
 	err = exp.Start(ctx, componenttest.NewNopHost())
-	require.NoError(params.T, err)
+	require.NoError(t, err)
 
 	defer func(exp exporter.Traces, ctx context.Context) {
 		err = exp.Shutdown(ctx)
-		require.NoError(params.T, err)
+		require.NoError(t, err)
 		err = mockReceiver.Shutdown(ctx)
-		require.NoError(params.T, err)
+		require.NoError(t, err)
 		mockConsumer.clear()
 	}(exp, ctx)
 
 	for i := 0; i < params.NumberOfTestElements; i++ {
-		id := UniqueIDAttrVal(strconv.Itoa(i))
-		fmt.Println("Preparing trace number: ", id)
+		id := uniqueIDAttrVal(strconv.Itoa(i))
 		data := createOneTraceWithID(id)
 
 		err = exp.ConsumeTraces(ctx, data)
@@ -172,33 +181,32 @@ func checkTraces(params CheckConsumeContractParams, mockReceiver component.Compo
 	fmt.Printf("Number of permanent errors: %d\n", reqCounter.error.permanent)
 	fmt.Printf("Number of non-permanent errors: %d\n", reqCounter.error.nonpermanent)
 
-	assert.EventuallyWithT(params.T, func(c *assert.CollectT) {
-		checkIfTestPassed(params.T, params.NumberOfTestElements, *reqCounter)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		checkIfTestPassed(t, params.NumberOfTestElements, *reqCounter)
 	}, 2*time.Second, 100*time.Millisecond)
 }
 
-func checkLogs(params CheckConsumeContractParams, mockReceiver component.Component, mockConsumer *MockConsumer, checkIfTestPassed func(*testing.T, int, requestCounter)) {
+func checkLogs(t *testing.T, params CheckConsumeContractParams, mockReceiver component.Component, mockConsumer *mockConsumer, checkIfTestPassed func(*testing.T, int, requestCounter)) {
 	ctx := context.Background()
 	var exp exporter.Logs
 	var err error
-	exp, err = params.Factory.CreateLogsExporter(ctx, NewNopCreateSettings(), params.Config)
-	require.NoError(params.T, err)
-	require.NotNil(params.T, exp)
+	exp, err = params.ExporterFactory.CreateLogsExporter(ctx, NewNopCreateSettings(), params.ExporterConfig)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
 
 	err = exp.Start(ctx, componenttest.NewNopHost())
-	require.NoError(params.T, err)
+	require.NoError(t, err)
 
 	defer func(exp exporter.Logs, ctx context.Context) {
 		err = exp.Shutdown(ctx)
-		require.NoError(params.T, err)
+		require.NoError(t, err)
 		err = mockReceiver.Shutdown(ctx)
-		require.NoError(params.T, err)
+		require.NoError(t, err)
 		mockConsumer.clear()
 	}(exp, ctx)
 
 	for i := 0; i < params.NumberOfTestElements; i++ {
-		id := UniqueIDAttrVal(strconv.Itoa(i))
-		fmt.Println("Preparing log number: ", id)
+		id := uniqueIDAttrVal(strconv.Itoa(i))
 		data := createOneLogWithID(id)
 
 		err = exp.ConsumeLogs(ctx, data)
@@ -212,8 +220,8 @@ func checkLogs(params CheckConsumeContractParams, mockReceiver component.Compone
 	fmt.Printf("Number of permanent errors: %d\n", reqCounter.error.permanent)
 	fmt.Printf("Number of non-permanent errors: %d\n", reqCounter.error.nonpermanent)
 
-	assert.EventuallyWithT(params.T, func(c *assert.CollectT) {
-		checkIfTestPassed(params.T, params.NumberOfTestElements, *reqCounter)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		checkIfTestPassed(t, params.NumberOfTestElements, *reqCounter)
 	}, 2*time.Second, 100*time.Millisecond)
 }
 
@@ -246,26 +254,27 @@ func randomErrorConsumeDecisionPassed(t *testing.T, allRecordsNumber int, reqCou
 	require.Equal(t, reqCounter.total, allRecordsNumber+reqCounter.error.nonpermanent)
 }
 
-func createOneLogWithID(id UniqueIDAttrVal) plog.Logs {
+func createOneLogWithID(id uniqueIDAttrVal) plog.Logs {
 	data := plog.NewLogs()
 	data.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr(
-		UniqueIDAttrName,
+		uniqueIDAttrName,
 		string(id),
 	)
 	return data
 }
 
-func createOneTraceWithID(id UniqueIDAttrVal) ptrace.Traces {
+func createOneTraceWithID(id uniqueIDAttrVal) ptrace.Traces {
 	data := ptrace.NewTraces()
 	data.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().PutStr(
-		UniqueIDAttrName,
+		uniqueIDAttrName,
 		string(id),
 	)
 	return data
 }
 
-func createOneMetricWithID(id UniqueIDAttrVal) pmetric.Metrics {
+func createOneMetricWithID(id uniqueIDAttrVal) pmetric.Metrics {
 	data := pmetric.NewMetrics()
-	data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyHistogram().DataPoints().AppendEmpty().Attributes().PutStr(UniqueIDAttrName, string(id))
+	data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyHistogram().
+		DataPoints().AppendEmpty().Attributes().PutStr(uniqueIDAttrName, string(id))
 	return data
 }

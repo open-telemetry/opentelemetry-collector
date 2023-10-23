@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -22,8 +21,6 @@ import (
 
 var errNonPermanent = status.Error(codes.DeadlineExceeded, "non Permanent error")
 var errPermanent = status.Error(codes.Internal, "Permanent error")
-
-type MockReceiverFactory func(consumer *MockConsumer) component.Component
 
 // // randomNonPermanentErrorConsumeDecision is a decision function that succeeds approximately
 // // half of the time and fails with a non-permanent error the rest of the time.
@@ -58,7 +55,10 @@ func randomErrorsConsumeDecision() error {
 	return nil
 }
 
-type MockConsumer struct {
+type mockConsumer struct {
+	consumer.Traces
+	consumer.Logs
+	consumer.Metrics
 	reqCounter          *requestCounter
 	mux                 sync.Mutex
 	exportErrorFunction func() error
@@ -67,8 +67,8 @@ type MockConsumer struct {
 	receivedLogs        []plog.Logs
 }
 
-func newMockConsumer(decisionFunc func() error) MockConsumer {
-	return MockConsumer{
+func newMockConsumer(decisionFunc func() error) mockConsumer {
+	return mockConsumer{
 		reqCounter:          newRequestCounter(),
 		mux:                 sync.Mutex{},
 		exportErrorFunction: decisionFunc,
@@ -78,77 +78,67 @@ func newMockConsumer(decisionFunc func() error) MockConsumer {
 	}
 }
 
-func (r *MockConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+func (r *mockConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.reqCounter.total++
 	generatedError := r.exportErrorFunction()
-	logID, _ := idFromLogs(ld)
 	if generatedError != nil {
-		r.processError(generatedError, "log", logID)
+		r.processError(generatedError)
 		return generatedError
 	}
-	fmt.Println("Successfully sent log number:", logID)
 	r.reqCounter.success++
 	r.receivedLogs = append(r.receivedLogs, ld)
 	return nil
 }
 
-func (r *MockConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+func (r *mockConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.reqCounter.total++
 	generatedError := r.exportErrorFunction()
-	traceID, _ := idFromTraces(td)
 	if generatedError != nil {
-		r.processError(generatedError, "log", traceID)
+		r.processError(generatedError)
 		return generatedError
 	}
-	fmt.Println("Successfully sent log number:", traceID)
 	r.reqCounter.success++
 	r.receivedTraces = append(r.receivedTraces, td)
 	return nil
 }
 
-func (r *MockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+func (r *mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.reqCounter.total++
 	generatedError := r.exportErrorFunction()
-	traceID, _ := idFromMetrics(md)
 	if generatedError != nil {
-		r.processError(generatedError, "log", traceID)
+		r.processError(generatedError)
 		return generatedError
 	}
-	fmt.Println("Successfully sent log number:", traceID)
 	r.reqCounter.success++
 	r.receivedMetrics = append(r.receivedMetrics, md)
 	return nil
 }
 
-func (r *MockConsumer) Capabilities() consumer.Capabilities {
+func (r *mockConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
-func (r *MockConsumer) processError(err error, dataType string, idOfElement string) {
+func (r *mockConsumer) processError(err error) {
 	if consumererror.IsPermanent(err) {
-		fmt.Println("permanent error happened")
-		fmt.Printf("Dropping %s number: %s\n", dataType, idOfElement)
 		r.reqCounter.error.permanent++
 	} else {
-		fmt.Println("non-permanent error happened")
-		fmt.Printf("Retrying %s number: %s\n", dataType, idOfElement)
 		r.reqCounter.error.nonpermanent++
 	}
 }
 
-func (r *MockConsumer) clear() {
+func (r *mockConsumer) clear() {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.reqCounter = newRequestCounter()
 }
 
-func (r *MockConsumer) getRequestCounter() *requestCounter {
+func (r *mockConsumer) getRequestCounter() *requestCounter {
 	return r.reqCounter
 }
 
@@ -181,12 +171,12 @@ func newRequestCounter() *requestCounter {
 func idFromLogs(data plog.Logs) (string, error) {
 	var logID string
 	rss := data.ResourceLogs()
-	key, exists := rss.At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(UniqueIDAttrName)
+	key, exists := rss.At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(uniqueIDAttrName)
 	if !exists {
-		return "", fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
+		return "", fmt.Errorf("invalid data element, attribute %q is missing", uniqueIDAttrName)
 	}
 	if key.Type() != pcommon.ValueTypeStr {
-		return "", fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
+		return "", fmt.Errorf("invalid data element, attribute %q is wrong type %v", uniqueIDAttrName, key.Type())
 	}
 	logID = key.Str()
 	return logID, nil
@@ -195,12 +185,12 @@ func idFromLogs(data plog.Logs) (string, error) {
 func idFromTraces(data ptrace.Traces) (string, error) {
 	var traceID string
 	rss := data.ResourceSpans()
-	key, exists := rss.At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Get(UniqueIDAttrName)
+	key, exists := rss.At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Get(uniqueIDAttrName)
 	if !exists {
-		return "", fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
+		return "", fmt.Errorf("invalid data element, attribute %q is missing", uniqueIDAttrName)
 	}
 	if key.Type() != pcommon.ValueTypeStr {
-		return "", fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
+		return "", fmt.Errorf("invalid data element, attribute %q is wrong type %v", uniqueIDAttrName, key.Type())
 	}
 	traceID = key.Str()
 	return traceID, nil
@@ -209,12 +199,13 @@ func idFromTraces(data ptrace.Traces) (string, error) {
 func idFromMetrics(data pmetric.Metrics) (string, error) {
 	var metricID string
 	rss := data.ResourceMetrics()
-	key, exists := rss.At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().Get(UniqueIDAttrName)
+	key, exists := rss.At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().Get(
+		uniqueIDAttrName)
 	if !exists {
-		return "", fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
+		return "", fmt.Errorf("invalid data element, attribute %q is missing", uniqueIDAttrName)
 	}
 	if key.Type() != pcommon.ValueTypeStr {
-		return "", fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
+		return "", fmt.Errorf("invalid data element, attribute %q is wrong type %v", uniqueIDAttrName, key.Type())
 	}
 	metricID = key.Str()
 	return metricID, nil

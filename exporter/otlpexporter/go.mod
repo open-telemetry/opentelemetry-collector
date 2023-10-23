@@ -3,7 +3,6 @@ module go.opentelemetry.io/collector/exporter/otlpexporter
 go 1.20
 
 require (
-	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.88.0
 	go.opentelemetry.io/collector/component v0.88.0
@@ -16,12 +15,14 @@ require (
 	go.opentelemetry.io/collector/consumer v0.88.0
 	go.opentelemetry.io/collector/exporter v0.88.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.88.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231012201019-e917dd12ba7a
 	google.golang.org/grpc v1.59.0
 	google.golang.org/protobuf v1.31.0
 )
 
 require (
+	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
@@ -44,12 +45,14 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
+	go.opentelemetry.io/collector/config/confighttp v0.88.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.88.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.88.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.88.0 // indirect
 	go.opentelemetry.io/collector/extension v0.88.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.88.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017 // indirect
+	go.opentelemetry.io/collector/receiver v0.88.0 // indirect
 	go.opentelemetry.io/collector/service v0.88.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.45.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0 // indirect

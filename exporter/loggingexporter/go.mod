@@ -33,6 +33,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.88.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017 // indirect
+	go.opentelemetry.io/collector/receiver v0.88.0 // indirect
 	go.opentelemetry.io/otel v1.19.0 // indirect
 	go.opentelemetry.io/otel/metric v1.19.0 // indirect
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect

@@ -4,95 +4,77 @@
 package otlpexporter
 
 import (
-	"context"
 	"testing"
 	"time"
-
-	"github.com/cenkalti/backoff/v4"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
-// newTestRetrySettings returns the default settings for otlp exporter test.
-func newTestRetrySettings() exporterhelper.RetrySettings {
-	return exporterhelper.RetrySettings{
-		Enabled: true,
-		// interval is short for the test purposes
-		InitialInterval:     10 * time.Millisecond,
-		RandomizationFactor: backoff.DefaultRandomizationFactor,
-		Multiplier:          1.1,
-		MaxInterval:         10 * time.Second,
-		MaxElapsedTime:      1 * time.Minute,
-	}
-}
-
-func testConfig() component.Config {
+func testExporterConfig(endpoint string) component.Config {
+	retryConfig := exporterhelper.NewDefaultRetrySettings()
+	retryConfig.InitialInterval = time.Millisecond // interval is short for the test purposes
 	return &Config{
-		TimeoutSettings: exporterhelper.TimeoutSettings{},
-		QueueSettings:   exporterhelper.QueueSettings{Enabled: false},
-		RetrySettings:   newTestRetrySettings(),
+		QueueSettings: exporterhelper.QueueSettings{Enabled: false},
+		RetrySettings: retryConfig,
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			Endpoint: "0.0.0.0:4317",
+			Endpoint: endpoint,
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure: true,
-			}},
+			},
+		},
 	}
 }
 
-// Define a function that matches the MockReceiverFactory signature
-func createMockOtlpReceiver(mockConsumer *exportertest.MockConsumer) component.Component {
-	rcv := newOTLPDataReceiver(mockConsumer)
-	err := rcv.Start(context.Background(), nil)
-	if err != nil {
-		return nil
-	}
-	return rcv
+func testRecieverConfig(endpoint string) component.Config {
+	cfg := otlpreceiver.NewFactory().CreateDefaultConfig()
+	cfg.(*otlpreceiver.Config).HTTP = nil
+	cfg.(*otlpreceiver.Config).GRPC.NetAddr.Endpoint = endpoint
+	return cfg
 }
 
 // TestConsumeContract is an example of testing of the exporter for the contract between the
 // exporter and the receiver.
 func TestConsumeContractOtlpLogs(t *testing.T) {
-
-	params := exportertest.CheckConsumeContractParams{
+	addr := testutil.GetAvailableLocalAddress(t)
+	exportertest.CheckConsumeContract(exportertest.CheckConsumeContractParams{
 		T:                    t,
-		Factory:              NewFactory(),
-		DataType:             component.DataTypeLogs,
-		Config:               testConfig(),
 		NumberOfTestElements: 10,
-		MockReceiverFactory:  createMockOtlpReceiver,
-	}
-
-	exportertest.CheckConsumeContract(params)
+		ExporterFactory:      NewFactory(),
+		DataType:             component.DataTypeLogs,
+		ExporterConfig:       testExporterConfig(addr),
+		ReceiverFactory:      otlpreceiver.NewFactory(),
+		ReceiverConfig:       testRecieverConfig(addr),
+	})
 }
 
 func TestConsumeContractOtlpTraces(t *testing.T) {
-
-	params := exportertest.CheckConsumeContractParams{
+	addr := testutil.GetAvailableLocalAddress(t)
+	exportertest.CheckConsumeContract(exportertest.CheckConsumeContractParams{
 		T:                    t,
-		Factory:              NewFactory(),
-		DataType:             component.DataTypeTraces,
-		Config:               testConfig(),
 		NumberOfTestElements: 10,
-		MockReceiverFactory:  createMockOtlpReceiver,
-	}
-
-	exportertest.CheckConsumeContract(params)
+		DataType:             component.DataTypeTraces,
+		ExporterFactory:      NewFactory(),
+		ExporterConfig:       testExporterConfig(addr),
+		ReceiverFactory:      otlpreceiver.NewFactory(),
+		ReceiverConfig:       testRecieverConfig(addr),
+	})
 }
 
 func TestConsumeContractOtlpMetrics(t *testing.T) {
-
-	params := exportertest.CheckConsumeContractParams{
+	addr := testutil.GetAvailableLocalAddress(t)
+	exportertest.CheckConsumeContract(exportertest.CheckConsumeContractParams{
 		T:                    t,
-		Factory:              NewFactory(),
-		DataType:             component.DataTypeMetrics,
-		Config:               testConfig(),
 		NumberOfTestElements: 10,
-		MockReceiverFactory:  createMockOtlpReceiver,
-	}
-
-	exportertest.CheckConsumeContract(params)
+		ExporterFactory:      NewFactory(),
+		DataType:             component.DataTypeMetrics,
+		ExporterConfig:       testExporterConfig(addr),
+		ReceiverFactory:      otlpreceiver.NewFactory(),
+		ReceiverConfig:       testRecieverConfig(addr),
+	})
 }
