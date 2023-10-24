@@ -120,7 +120,7 @@ replace go.opentelemetry.io/collector/connector => ../../connector
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
-replace cloud.google.com/go => cloud.google.com/go v0.110.2
+replace cloud.google.com/go => cloud.google.com/go v0.110.9
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
 
