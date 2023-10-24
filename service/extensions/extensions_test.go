@@ -93,6 +93,44 @@ func TestBuildExtensions(t *testing.T) {
 	}
 }
 
+func TestOrdering(t *testing.T) {
+	var startOrder []string
+	var shutdownOrder []string
+
+	recordingExtensionFactory := newRecordingExtensionFactory(func(set extension.CreateSettings, host component.Host) error {
+		startOrder = append(startOrder, set.ID.String())
+		return nil
+	}, func(set extension.CreateSettings) error {
+		shutdownOrder = append(shutdownOrder, set.ID.String())
+		return nil
+	})
+
+	exts, err := New(context.Background(), Settings{
+		Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Extensions: extension.NewBuilder(
+			map[component.ID]component.Config{
+				component.NewID(recordingExtensionFactory.Type()):                struct{}{},
+				component.NewIDWithName(recordingExtensionFactory.Type(), "foo"): struct{}{},
+				component.NewIDWithName(recordingExtensionFactory.Type(), "bar"): struct{}{},
+			},
+			map[component.Type]extension.Factory{
+				recordingExtensionFactory.Type(): recordingExtensionFactory,
+			}),
+	}, Config{
+		component.NewID(recordingExtensionFactory.Type()),
+		component.NewIDWithName(recordingExtensionFactory.Type(), "foo"),
+		component.NewIDWithName(recordingExtensionFactory.Type(), "bar"),
+	})
+	require.NoError(t, err)
+	err = exts.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	require.Equal(t, []string{"recording", "recording/foo", "recording/bar"}, startOrder)
+	err = exts.Shutdown(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, []string{"recording", "recording/foo", "recording/bar"}, shutdownOrder)
+}
+
 func TestNotifyConfig(t *testing.T) {
 	notificationError := errors.New("Error processing config")
 	nopExtensionFactory := extensiontest.NewNopFactory()
@@ -361,4 +399,35 @@ func newStatusTestExtensionFactory(name component.Type, startErr, shutdownErr er
 		},
 		component.StabilityLevelDevelopment,
 	)
+}
+
+func newRecordingExtensionFactory(startCallback func(set extension.CreateSettings, host component.Host) error, shutdownCallback func(set extension.CreateSettings) error) extension.Factory {
+	return extension.NewFactory(
+		"recording",
+		func() component.Config {
+			return &struct{}{}
+		},
+		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
+			return &recordingExtension{
+				createSettings:   set,
+				startCallback:    startCallback,
+				shutdownCallback: shutdownCallback,
+			}, nil
+		},
+		component.StabilityLevelDevelopment,
+	)
+}
+
+type recordingExtension struct {
+	startCallback    func(set extension.CreateSettings, host component.Host) error
+	shutdownCallback func(set extension.CreateSettings) error
+	createSettings   extension.CreateSettings
+}
+
+func (ext *recordingExtension) Start(_ context.Context, host component.Host) error {
+	return ext.startCallback(ext.createSettings, host)
+}
+
+func (ext *recordingExtension) Shutdown(_ context.Context) error {
+	return ext.shutdownCallback(ext.createSettings)
 }
