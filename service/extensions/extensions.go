@@ -24,18 +24,25 @@ const zExtensionName = "zextensionname"
 // Extensions is a map of extensions created from extension configs.
 type Extensions struct {
 	telemetry    servicetelemetry.TelemetrySettings
+<<<<<<< HEAD
 	extMap       map[component.ID]extension.Extension
 	instanceIDs  map[component.ID]*component.InstanceID
 	extensionIDs []component.ID // start order (and reverse stop order)
+=======
+	extensionIDs []component.ID
+	extMap       map[component.ID]extension.Extension
+	instanceIDs  map[component.ID]*component.InstanceID
+>>>>>>> 24dfe7690 ([service/extensions] enforce order of start and shutdown of extensions according to configuration)
 }
 
 // Start starts all extensions.
 func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 	bes.telemetry.Logger.Info("Starting extensions...")
-	for extID, ext := range bes.extMap {
+	for _, extID := range bes.extensionIDs {
 		extLogger := components.ExtensionLogger(bes.telemetry.Logger, extID)
 		extLogger.Info("Extension is starting...")
 		instanceID := bes.instanceIDs[extID]
+		ext := bes.extMap[extID]
 		_ = bes.telemetry.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStarting))
 		if err := ext.Start(ctx, components.NewHostWrapper(host, extLogger)); err != nil {
 			_ = bes.telemetry.ReportComponentStatus(instanceID, component.NewPermanentErrorEvent(err))
@@ -50,8 +57,9 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 func (bes *Extensions) Shutdown(ctx context.Context) error {
 	bes.telemetry.Logger.Info("Stopping extensions...")
 	var errs error
-	for extID, ext := range bes.extMap {
+	for _, extID := range bes.extensionIDs {
 		instanceID := bes.instanceIDs[extID]
+		ext := bes.extMap[extID]
 		_ = bes.telemetry.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStopping))
 		if err := ext.Shutdown(ctx); err != nil {
 			_ = bes.telemetry.ReportComponentStatus(instanceID, component.NewPermanentErrorEvent(err))
@@ -65,7 +73,8 @@ func (bes *Extensions) Shutdown(ctx context.Context) error {
 }
 
 func (bes *Extensions) NotifyPipelineReady() error {
-	for extID, ext := range bes.extMap {
+	for _, extID := range bes.extensionIDs {
+		ext := bes.extMap[extID]
 		if pw, ok := ext.(extension.PipelineWatcher); ok {
 			if err := pw.Ready(); err != nil {
 				return fmt.Errorf("failed to notify extension %q: %w", extID, err)
@@ -78,7 +87,8 @@ func (bes *Extensions) NotifyPipelineReady() error {
 func (bes *Extensions) NotifyPipelineNotReady() error {
 	// Notify extensions in reverse order.
 	var errs error
-	for _, ext := range bes.extMap {
+	for _, extID := range bes.extensionIDs {
+		ext := bes.extMap[extID]
 		if pw, ok := ext.(extension.PipelineWatcher); ok {
 			errs = multierr.Append(errs, pw.NotReady())
 		}
@@ -88,7 +98,8 @@ func (bes *Extensions) NotifyPipelineNotReady() error {
 
 func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
 	var errs error
-	for _, ext := range bes.extMap {
+	for _, extID := range bes.extensionIDs {
+		ext := bes.extMap[extID]
 		if cw, ok := ext.(extension.ConfigWatcher); ok {
 			clonedConf := confmap.NewFromStringMap(conf.ToStringMap())
 			errs = multierr.Append(errs, cw.NotifyConfig(ctx, clonedConf))
@@ -98,7 +109,8 @@ func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) err
 }
 
 func (bes *Extensions) NotifyComponentStatusChange(source *component.InstanceID, event *component.StatusEvent) {
-	for _, ext := range bes.extMap {
+	for _, extID := range bes.extensionIDs {
+		ext := bes.extMap[extID]
 		if sw, ok := ext.(extension.StatusWatcher); ok {
 			sw.ComponentStatusChanged(source, event)
 		}
@@ -121,7 +133,7 @@ func (bes *Extensions) HandleZPages(w http.ResponseWriter, r *http.Request) {
 	data := zpages.SummaryExtensionsTableData{}
 
 	data.Rows = make([]zpages.SummaryExtensionsTableRowData, 0, len(bes.extMap))
-	for id := range bes.extMap {
+	for _, id := range bes.extensionIDs {
 		row := zpages.SummaryExtensionsTableRowData{FullName: id.String()}
 		data.Rows = append(data.Rows, row)
 	}
@@ -151,9 +163,10 @@ type Settings struct {
 // New creates a new Extensions from Config.
 func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 	exts := &Extensions{
-		telemetry:   set.Telemetry,
-		extMap:      make(map[component.ID]extension.Extension),
-		instanceIDs: make(map[component.ID]*component.InstanceID),
+		telemetry:    set.Telemetry,
+		extMap:       make(map[component.ID]extension.Extension),
+		instanceIDs:  make(map[component.ID]*component.InstanceID),
+		extensionIDs: make([]component.ID, 0, len(cfg)),
 	}
 	graph := newDependencyGraph()
 	for _, extID := range cfg {
@@ -180,12 +193,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 
 		exts.extMap[extID] = ext
 		exts.instanceIDs[extID] = instanceID
-		graph.addNode(extID)
-		if dep, ok := ext.(extension.DependentExtension); ok {
-			for _, depID := range dep.Dependencies() {
-				graph.addDependency(extID, depID)
-			}
-		}
+		exts.extensionIDs = append(exts.extensionIDs, extID)
 	}
 	order, err := graph.sort()
 	if err != nil {
