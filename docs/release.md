@@ -145,10 +145,10 @@ The following documents the procedure to release a bugfix
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2023-10-23 | v0.88.0 | @mx-psi         |
 | 2023-11-13 | v0.89.0 | @jpkrohling     |
 | 2023-11-27 | v0.90.0 | @djaglowski     |
 | 2023-12-11 | v0.91.0 | @dmitryax       |
 | 2024-01-08 | v0.92.0 | @codeboten      |
 | 2024-01-22 | v0.93.0 | @bogdandrutu    |
 | 2024-02-05 | v0.94.0 | @Aneurysm9      |
+| 2023-02-19 | v0.95.0 | @mx-psi         |
