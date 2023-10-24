@@ -26,11 +26,20 @@ func runGoCommand(cfg Config, args ...string) error {
 	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path and the caller is assumed to have carried out necessary input validation
 	cmd := exec.Command(cfg.Distribution.Go, args...)
 	cmd.Dir = cfg.Distribution.OutputPath
-	writer := &zapio.Writer{Log: cfg.Logger}
-	defer func() { _ = writer.Close() }()
-	cmd.Stdout = writer
-	cmd.Stderr = writer
-	return cmd.Run()
+
+	if cfg.Verbose {
+		writer := &zapio.Writer{Log: cfg.Logger}
+		defer func() { _ = writer.Close() }()
+		cmd.Stdout = writer
+		cmd.Stderr = writer
+		return cmd.Run()
+	}
+
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("go subcommand failed with args '%v': %w. Output:\n%s", args, err, out)
+	}
+
+	return nil
 }
 
 // GenerateAndCompile will generate the source files based on the given configuration, update go mod, and will compile into a binary

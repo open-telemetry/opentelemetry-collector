@@ -7,7 +7,7 @@ change_type: enhancement
 component: cmd/builder
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add logging for `go` subcommands that are ran as part of a build"
+note: "Add --verbose flag to log `go` subcommands output that are ran as part of a build"
 
 # One or more tracking issues or pull requests related to the change
 issues: [8715]
