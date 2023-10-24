@@ -15,15 +15,16 @@ require (
 	go.opentelemetry.io/collector/consumer v0.88.0
 	go.opentelemetry.io/collector/exporter v0.88.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.88.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231012201019-e917dd12ba7a
 	google.golang.org/grpc v1.59.0
 	google.golang.org/protobuf v1.31.0
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.2.4-0.20230617002413-005d2dfb6b68 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -42,15 +43,19 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.2.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rs/cors v1.10.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
+	go.opentelemetry.io/collector/config/confighttp v0.88.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.88.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.88.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.88.0 // indirect
 	go.opentelemetry.io/collector/extension v0.88.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.88.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017 // indirect
+	go.opentelemetry.io/collector/receiver v0.88.0 // indirect
 	go.opentelemetry.io/collector/service v0.88.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.45.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0 // indirect
 	go.opentelemetry.io/otel v1.19.0 // indirect
 	go.opentelemetry.io/otel/metric v1.19.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.19.0 // indirect
@@ -113,3 +118,10 @@ retract (
 replace go.opentelemetry.io/collector/connector => ../../connector
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
+
+// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
+replace cloud.google.com/go => cloud.google.com/go v0.110.2
+
+replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
+
+replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
