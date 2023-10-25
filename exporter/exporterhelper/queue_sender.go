@@ -27,7 +27,7 @@ const defaultQueueSize = 1000
 
 var (
 	errSendingQueueIsFull = errors.New("sending_queue is full")
-	scopeName             = "go.opentelemetry.io/collector/exporterhelper/queue_sender"
+	scopeName             = "go.opentelemetry.io/collector/exporterhelper"
 )
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
