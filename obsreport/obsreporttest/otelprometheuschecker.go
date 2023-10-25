@@ -112,7 +112,7 @@ func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, at
 
 	expected := float64(value)
 	if math.Abs(expected-ts.GetCounter().GetValue()) > 0.0001 {
-		return fmt.Errorf("values for metric '%s' did no match, expected '%f' got '%f'", expectedMetric, expected, ts.GetCounter().GetValue())
+		return fmt.Errorf("values for metric '%s' did not match, expected '%f' got '%f'", expectedMetric, expected, ts.GetCounter().GetValue())
 	}
 
 	return nil
