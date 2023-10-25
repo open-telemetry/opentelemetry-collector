@@ -34,8 +34,8 @@ var (
 	}
 )
 
-func newNoopObsrepSender(_ *ObsReport) requestSender {
-	return &baseRequestSender{}
+func newNoopObsrepSender(_ *ObsReport, nextSender *senderWrapper) requestSender {
+	return &senderWrapper{nextSender: nextSender}
 }
 
 func TestBaseExporter(t *testing.T) {

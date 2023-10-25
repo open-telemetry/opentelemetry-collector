@@ -13,7 +13,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	intrequest "go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/request"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -21,37 +22,35 @@ var logsMarshaler = &plog.ProtoMarshaler{}
 var logsUnmarshaler = &plog.ProtoUnmarshaler{}
 
 type logsRequest struct {
-	baseRequest
 	ld     plog.Logs
 	pusher consumer.ConsumeLogsFunc
 }
 
-func newLogsRequest(ctx context.Context, ld plog.Logs, pusher consumer.ConsumeLogsFunc) internal.Request {
+func newLogsRequest(ld plog.Logs, pusher consumer.ConsumeLogsFunc) request.Request {
 	return &logsRequest{
-		baseRequest: baseRequest{ctx: ctx},
-		ld:          ld,
-		pusher:      pusher,
+		ld:     ld,
+		pusher: pusher,
 	}
 }
 
-func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) internal.RequestUnmarshaler {
-	return func(bytes []byte) (internal.Request, error) {
+func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) request.Unmarshaler {
+	return func(bytes []byte) (request.Request, error) {
 		logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
 		if err != nil {
 			return nil, err
 		}
-		return newLogsRequest(context.Background(), logs, pusher), nil
+		return newLogsRequest(logs, pusher), nil
 	}
 }
 
-func logsRequestMarshaler(req internal.Request) ([]byte, error) {
+func logsRequestMarshaler(req request.Request) ([]byte, error) {
 	return logsMarshaler.MarshalLogs(req.(*logsRequest).ld)
 }
 
-func (req *logsRequest) OnError(err error) internal.Request {
+func (req *logsRequest) OnError(err error) request.Request {
 	var logError consumererror.Logs
 	if errors.As(err, &logError) {
-		return newLogsRequest(req.ctx, logError.Data(), req.pusher)
+		return newLogsRequest(logError.Data(), req.pusher)
 	}
 	return req
 }
@@ -60,7 +59,7 @@ func (req *logsRequest) Export(ctx context.Context) error {
 	return req.pusher(ctx, req.ld)
 }
 
-func (req *logsRequest) Count() int {
+func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
 }
 
@@ -96,7 +95,7 @@ func NewLogsExporter(
 	}
 
 	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
-		req := newLogsRequest(ctx, ld, pusher)
+		req := intrequest.New(ctx, newLogsRequest(ld, pusher))
 		serr := be.send(req)
 		if errors.Is(serr, errSendingQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(req.Context(), component.DataTypeLogs, int64(req.Count()))
@@ -115,7 +114,7 @@ func NewLogsExporter(
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type LogsConverter interface {
 	// RequestFromLogs converts plog.Logs data into a request.
-	RequestFromLogs(context.Context, plog.Logs) (Request, error)
+	RequestFromLogs(context.Context, plog.Logs) (request.Request, error)
 }
 
 // NewLogsRequestExporter creates new logs exporter based on custom LogsConverter and RequestSender.
@@ -148,7 +147,7 @@ func NewLogsRequestExporter(
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}
-		r := newRequest(ctx, req)
+		r := intrequest.New(ctx, req)
 		sErr := be.send(r)
 		if errors.Is(sErr, errSendingQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(r.Context(), component.DataTypeLogs, int64(r.Count()))
@@ -163,15 +162,15 @@ func NewLogsRequestExporter(
 }
 
 type logsExporterWithObservability struct {
-	baseRequestSender
-	obsrep *ObsReport
+	obsrep     *ObsReport
+	nextSender *senderWrapper
 }
 
-func newLogsExporterWithObservability(obsrep *ObsReport) requestSender {
-	return &logsExporterWithObservability{obsrep: obsrep}
+func newLogsExporterWithObservability(obsrep *ObsReport, nextSender *senderWrapper) requestSender {
+	return &logsExporterWithObservability{obsrep: obsrep, nextSender: nextSender}
 }
 
-func (lewo *logsExporterWithObservability) send(req internal.Request) error {
+func (lewo *logsExporterWithObservability) send(req *intrequest.Request) error {
 	req.SetContext(lewo.obsrep.StartLogsOp(req.Context()))
 	err := lewo.nextSender.send(req)
 	lewo.obsrep.EndLogsOp(req.Context(), req.Count(), err)

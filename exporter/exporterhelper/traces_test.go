@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	intrequest "go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -41,10 +42,12 @@ var (
 )
 
 func TestTracesRequest(t *testing.T) {
-	mr := newTracesRequest(context.Background(), testdata.GenerateTraces(1), nil)
+	ctx := context.Background()
+	mr := intrequest.New(ctx, newTracesRequest(testdata.GenerateTraces(1), nil))
 
 	traceErr := consumererror.NewTraces(errors.New("some error"), ptrace.NewTraces())
-	assert.EqualValues(t, newTracesRequest(context.Background(), ptrace.NewTraces(), nil), mr.OnError(traceErr))
+	assert.EqualValues(t, intrequest.New(ctx, newTracesRequest(ptrace.NewTraces(), nil)),
+		mr.OnError(traceErr))
 }
 
 func TestTracesExporter_InvalidName(t *testing.T) {

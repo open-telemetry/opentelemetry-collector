@@ -10,6 +10,10 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
+	intrequest "go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/queue"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/request"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
@@ -33,8 +37,11 @@ type persistentQueue struct {
 	storage      *persistentContiguousStorage
 	capacity     uint64
 	numConsumers int
-	marshaler    RequestMarshaler
-	unmarshaler  RequestUnmarshaler
+	marshaler    request.Marshaler
+	unmarshaler  request.Unmarshaler
+	set          exporter.CreateSettings
+	dataType     component.DataType
+	callback     func(*intrequest.Request)
 }
 
 // buildPersistentStorageName returns a name that is constructed out of queue name and signal type. This is done
@@ -44,8 +51,8 @@ func buildPersistentStorageName(name string, signal component.DataType) string {
 }
 
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, marshaler RequestMarshaler,
-	unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
+func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, set queue.Settings, marshaler request.Marshaler,
+	unmarshaler request.Unmarshaler) queue.Queue {
 	return &persistentQueue{
 		capacity:     uint64(capacity),
 		numConsumers: numConsumers,
@@ -53,17 +60,20 @@ func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, 
 		marshaler:    marshaler,
 		unmarshaler:  unmarshaler,
 		stopChan:     make(chan struct{}),
+		set:          set.CreateSettings,
+		dataType:     set.DataType,
+		callback:     set.Callback,
 	}
 }
 
 // Start starts the persistentQueue with the given number of consumers.
-func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set QueueSettings) error {
-	storageClient, err := toStorageClient(ctx, pq.storageID, host, set.ID, set.DataType)
+func (pq *persistentQueue) Start(ctx context.Context, host component.Host) error {
+	storageClient, err := toStorageClient(ctx, pq.storageID, host, pq.set.ID, pq.dataType)
 	if err != nil {
 		return err
 	}
-	storageName := buildPersistentStorageName(set.ID.Name(), set.DataType)
-	pq.storage = newPersistentContiguousStorage(ctx, storageName, storageClient, set.Logger, pq.capacity, pq.marshaler, pq.unmarshaler)
+	storageName := buildPersistentStorageName(pq.set.ID.Name(), pq.dataType)
+	pq.storage = newPersistentContiguousStorage(ctx, storageName, storageClient, pq.set.Logger, pq.capacity, pq.marshaler, pq.unmarshaler)
 	for i := 0; i < pq.numConsumers; i++ {
 		pq.stopWG.Add(1)
 		go func() {
@@ -71,7 +81,7 @@ func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set Q
 			for {
 				select {
 				case req := <-pq.storage.get():
-					set.Callback(req)
+					pq.callback(req)
 				case <-pq.stopChan:
 					return
 				}
@@ -82,8 +92,8 @@ func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set Q
 }
 
 // Produce adds an item to the queue and returns true if it was accepted
-func (pq *persistentQueue) Produce(item Request) bool {
-	err := pq.storage.put(item)
+func (pq *persistentQueue) Produce(req *intrequest.Request) bool {
+	err := pq.storage.put(req)
 	return err == nil
 }
 

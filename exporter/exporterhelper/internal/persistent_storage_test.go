@@ -18,6 +18,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	intrequest "go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/request"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -41,9 +43,15 @@ func createTestPersistentStorage(client storage.Client) *persistentContiguousSto
 }
 
 type fakeTracesRequest struct {
-	td                         ptrace.Traces
-	processingFinishedCallback func()
-	Request
+	td ptrace.Traces
+}
+
+func (ftr *fakeTracesRequest) Export(context.Context) error {
+	return nil
+}
+
+func (ftr *fakeTracesRequest) ItemsCount() int {
+	return ftr.td.SpanCount()
 }
 
 func newFakeTracesRequest(td ptrace.Traces) *fakeTracesRequest {
@@ -52,18 +60,8 @@ func newFakeTracesRequest(td ptrace.Traces) *fakeTracesRequest {
 	}
 }
 
-func (fd *fakeTracesRequest) OnProcessingFinished() {
-	if fd.processingFinishedCallback != nil {
-		fd.processingFinishedCallback()
-	}
-}
-
-func (fd *fakeTracesRequest) SetOnProcessingFinished(callback func()) {
-	fd.processingFinishedCallback = callback
-}
-
-func newFakeTracesRequestUnmarshalerFunc() RequestUnmarshaler {
-	return func(bytes []byte) (Request, error) {
+func newFakeTracesRequestUnmarshalerFunc() request.Unmarshaler {
+	return func(bytes []byte) (request.Request, error) {
 		unmarshaler := ptrace.ProtoUnmarshaler{}
 		traces, err := unmarshaler.UnmarshalTraces(bytes)
 		if err != nil {
@@ -73,8 +71,8 @@ func newFakeTracesRequestUnmarshalerFunc() RequestUnmarshaler {
 	}
 }
 
-func newFakeTracesRequestMarshalerFunc() RequestMarshaler {
-	return func(req Request) ([]byte, error) {
+func newFakeTracesRequestMarshalerFunc() request.Marshaler {
+	return func(req request.Request) ([]byte, error) {
 		marshaler := ptrace.ProtoMarshaler{}
 		return marshaler.MarshalTraces(req.(*fakeTracesRequest).td)
 	}
@@ -153,7 +151,7 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 
 			// Put some items, make sure they are loaded and shutdown the storage...
 			for i := 0; i < 3; i++ {
-				err := ps.put(req)
+				err := ps.put(intrequest.New(context.Background(), req))
 				require.NoError(t, err)
 			}
 			require.Eventually(t, func() bool {
@@ -203,7 +201,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	ps := createTestPersistentStorage(client)
 
 	for i := 0; i < 5; i++ {
-		err := ps.put(req)
+		err := ps.put(intrequest.New(context.Background(), req))
 		require.NoError(t, err)
 	}
 
@@ -212,7 +210,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 
 	// Now, this will take item 0 and pull item 1 into the unbuffered channel
 	readReq := <-ps.get()
-	assert.Equal(t, req.td, readReq.(*fakeTracesRequest).td)
+	assert.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 1})
 
 	// This takes item 1 from channel and pulls another one (item 2) into the unbuffered channel
@@ -263,7 +261,7 @@ func TestPersistentStorage_StartWithNonDispatched(t *testing.T) {
 	logger := zap.NewNop()
 
 	traces := newTraces(5, 10)
-	req := newFakeTracesRequest(traces)
+	req := intrequest.New(context.Background(), newFakeTracesRequest(traces))
 
 	ext := NewMockStorageExtension(nil)
 	client := createTestClient(ext)
@@ -307,9 +305,9 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 		require.Equal(t, uint64(0), ps.size())
 
 		// Put two elements
-		err := ps.put(req)
+		err := ps.put(intrequest.New(context.Background(), req))
 		require.NoError(t, err)
-		err = ps.put(req)
+		err = ps.put(intrequest.New(context.Background(), req))
 		require.NoError(t, err)
 
 		err = ext.Shutdown(context.Background())
@@ -326,10 +324,10 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 
 		// Lets read both of the elements we put
 		readReq := <-ps.get()
-		require.Equal(t, req.td, readReq.(*fakeTracesRequest).td)
+		require.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
 
 		readReq = <-ps.get()
-		require.Equal(t, req.td, readReq.(*fakeTracesRequest).td)
+		require.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
 		require.Equal(t, uint64(0), ps.size())
 
 		err = ext.Shutdown(context.Background())
@@ -338,7 +336,7 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 
 	// No more items
 	ext := NewMockStorageExtension(nil)
-	wq := createTestQueue(t, 1000, 1, func(Request) {})
+	wq := createTestQueue(t, 1000, 1, func(*intrequest.Request) {})
 	require.Equal(t, 0, wq.Size())
 	require.NoError(t, ext.Shutdown(context.Background()))
 }
@@ -390,7 +388,7 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 			bb.ResetTimer()
 
 			for i := 0; i < bb.N; i++ {
-				err := ps.put(req)
+				err := ps.put(intrequest.New(context.Background(), req))
 				require.NoError(bb, err)
 			}
 
@@ -464,7 +462,7 @@ func TestPersistentStorage_StorageFull(t *testing.T) {
 	// Put enough items in to fill the underlying storage
 	reqCount := 0
 	for {
-		err = ps.put(req)
+		err = ps.put(intrequest.New(context.Background(), req))
 		if errors.Is(err, syscall.ENOSPC) {
 			break
 		}
@@ -477,7 +475,7 @@ func TestPersistentStorage_StorageFull(t *testing.T) {
 	client.SetMaxSizeInBytes(newMaxSize)
 
 	// Try to put an item in, should fail
-	err = ps.put(req)
+	err = ps.put(intrequest.New(context.Background(), req))
 	require.Error(t, err)
 
 	// Take out all the items
@@ -488,7 +486,7 @@ func TestPersistentStorage_StorageFull(t *testing.T) {
 
 	// We should be able to put a new item in
 	// However, this will fail if deleting items fails with full storage
-	err = ps.put(req)
+	err = ps.put(intrequest.New(context.Background(), req))
 	require.NoError(t, err)
 }
 

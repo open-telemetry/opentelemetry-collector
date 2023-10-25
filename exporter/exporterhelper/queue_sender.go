@@ -18,7 +18,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	intrequest "go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/queue"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
@@ -73,32 +74,39 @@ func (qCfg *QueueSettings) Validate() error {
 }
 
 type queueSender struct {
-	baseRequestSender
+	nextSender       *senderWrapper
 	fullName         string
-	signal           component.DataType
-	queue            internal.ProducerConsumerQueue
+	queue            queue.Queue
 	traceAttribute   attribute.KeyValue
-	logger           *zap.Logger
+	telSettings      component.TelemetrySettings
 	requeuingEnabled bool
 
 	metricCapacity otelmetric.Int64ObservableGauge
 	metricSize     otelmetric.Int64ObservableGauge
 }
 
-func newQueueSender(id component.ID, signal component.DataType, queue internal.ProducerConsumerQueue, logger *zap.Logger) *queueSender {
+func newQueueSender(set exporter.CreateSettings, signal component.DataType, queueFactory queue.Factory, nextSender *senderWrapper) *queueSender {
+	q := queueFactory.Create(queue.Settings{
+		CreateSettings: set,
+		DataType:       signal,
+		Callback: func(req *intrequest.Request) {
+			_ = nextSender.send(req)
+			req.OnProcessingFinished()
+		},
+	})
 	return &queueSender{
-		fullName:       id.String(),
-		signal:         signal,
-		queue:          queue,
-		traceAttribute: attribute.String(obsmetrics.ExporterKey, id.String()),
-		logger:         logger,
-		// TODO: this can be further exposed as a config param rather than relying on a type of queue
-		requeuingEnabled: queue != nil && queue.IsPersistent(),
+		fullName:       set.ID.String(),
+		queue:          q,
+		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
+		telSettings:    set.TelemetrySettings,
+		// TODO: Move this to a configuration option.
+		requeuingEnabled: q != nil && q.IsPersistent(),
+		nextSender:       nextSender,
 	}
 }
 
-func (qs *queueSender) onTemporaryFailure(logger *zap.Logger, req internal.Request, err error) error {
-	if !qs.requeuingEnabled || qs.queue == nil {
+func (qs *queueSender) onTemporaryFailure(logger *zap.Logger, req *intrequest.Request, err error) error {
+	if !qs.requeuingEnabled {
 		logger.Error(
 			"Exporting failed. No more retries left. Dropping data.",
 			zap.Error(err),
@@ -123,25 +131,18 @@ func (qs *queueSender) onTemporaryFailure(logger *zap.Logger, req internal.Reque
 }
 
 // start is invoked during service startup.
-func (qs *queueSender) start(ctx context.Context, host component.Host, set exporter.CreateSettings) error {
+func (qs *queueSender) start(ctx context.Context, host component.Host) error {
 	if qs.queue == nil {
 		return nil
 	}
 
-	err := qs.queue.Start(ctx, host, internal.QueueSettings{
-		CreateSettings: set,
-		DataType:       qs.signal,
-		Callback: func(item internal.Request) {
-			_ = qs.nextSender.send(item)
-			item.OnProcessingFinished()
-		},
-	})
+	err := qs.queue.Start(ctx, host)
 	if err != nil {
 		return err
 	}
 
 	if obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled() {
-		return qs.recordWithOtel(set.MeterProvider.Meter(scopeName))
+		return qs.recordWithOtel(qs.telSettings.MeterProvider.Meter(scopeName))
 	}
 	return qs.recordWithOC()
 }
@@ -208,11 +209,11 @@ func (qs *queueSender) shutdown() {
 }
 
 // send implements the requestSender interface
-func (qs *queueSender) send(req internal.Request) error {
+func (qs *queueSender) send(req *intrequest.Request) error {
 	if qs.queue == nil {
 		err := qs.nextSender.send(req)
 		if err != nil {
-			qs.logger.Error(
+			qs.telSettings.Logger.Error(
 				"Exporting failed. Dropping data. Try enabling sending_queue to survive temporary failures.",
 				zap.Int("dropped_items", req.Count()),
 			)
@@ -226,7 +227,7 @@ func (qs *queueSender) send(req internal.Request) error {
 
 	span := trace.SpanFromContext(req.Context())
 	if !qs.queue.Produce(req) {
-		qs.logger.Error(
+		qs.telSettings.Logger.Error(
 			"Dropping data because sending_queue is full. Try increasing queue_size.",
 			zap.Int("dropped_items", req.Count()),
 		)

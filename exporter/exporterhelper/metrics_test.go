@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	intrequest "go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -41,12 +42,13 @@ var (
 )
 
 func TestMetricsRequest(t *testing.T) {
-	mr := newMetricsRequest(context.Background(), testdata.GenerateMetrics(1), nil)
+	ctx := context.Background()
+	mr := intrequest.New(ctx, newMetricsRequest(testdata.GenerateMetrics(1), nil))
 
 	metricsErr := consumererror.NewMetrics(errors.New("some error"), pmetric.NewMetrics())
 	assert.EqualValues(
 		t,
-		newMetricsRequest(context.Background(), pmetric.NewMetrics(), nil),
+		intrequest.New(ctx, newMetricsRequest(pmetric.NewMetrics(), nil)),
 		mr.OnError(metricsErr),
 	)
 }

@@ -11,6 +11,8 @@ import (
 	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
+	intrequest "go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/queue"
 )
 
 // boundedMemoryQueue implements a producer-consumer exchange similar to a ring buffer queue,
@@ -20,26 +22,28 @@ type boundedMemoryQueue struct {
 	stopWG       sync.WaitGroup
 	size         *atomic.Uint32
 	stopped      *atomic.Bool
-	items        chan Request
+	items        chan *intrequest.Request
 	capacity     uint32
 	numConsumers int
+	callback     func(item *intrequest.Request)
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
 // callback for dropped items (e.g. useful to emit metrics).
-func NewBoundedMemoryQueue(capacity int, numConsumers int) ProducerConsumerQueue {
+func NewBoundedMemoryQueue(capacity int, numConsumers int, callback func(item *intrequest.Request)) queue.Queue {
 	return &boundedMemoryQueue{
-		items:        make(chan Request, capacity),
+		items:        make(chan *intrequest.Request, capacity),
 		stopped:      &atomic.Bool{},
 		size:         &atomic.Uint32{},
 		capacity:     uint32(capacity),
 		numConsumers: numConsumers,
+		callback:     callback,
 	}
 }
 
 // StartConsumers starts a given number of goroutines consuming items from the queue
 // and passing them into the consumer callback.
-func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set QueueSettings) error {
+func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host) error {
 	var startWG sync.WaitGroup
 	for i := 0; i < q.numConsumers; i++ {
 		q.stopWG.Add(1)
@@ -49,7 +53,7 @@ func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set Queu
 			defer q.stopWG.Done()
 			for item := range q.items {
 				q.size.Add(^uint32(0))
-				set.Callback(item)
+				q.callback(item)
 			}
 		}()
 	}
@@ -58,7 +62,7 @@ func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set Queu
 }
 
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
-func (q *boundedMemoryQueue) Produce(item Request) bool {
+func (q *boundedMemoryQueue) Produce(item *intrequest.Request) bool {
 	if q.stopped.Load() {
 		return false
 	}

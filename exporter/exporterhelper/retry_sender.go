@@ -15,7 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	intrequest "go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
@@ -73,20 +73,21 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 	}
 }
 
-type onRequestHandlingFinishedFunc func(*zap.Logger, internal.Request, error) error
+type onRequestHandlingFinishedFunc func(*zap.Logger, *intrequest.Request, error) error
 
 type retrySender struct {
-	baseRequestSender
 	traceAttribute     attribute.KeyValue
 	cfg                RetrySettings
 	stopCh             chan struct{}
 	logger             *zap.Logger
 	onTemporaryFailure onRequestHandlingFinishedFunc
+	nextSender         *senderWrapper
 }
 
-func newRetrySender(id component.ID, rCfg RetrySettings, logger *zap.Logger, onTemporaryFailure onRequestHandlingFinishedFunc) *retrySender {
+func newRetrySender(id component.ID, rCfg RetrySettings, logger *zap.Logger,
+	onTemporaryFailure onRequestHandlingFinishedFunc, nextSender *senderWrapper) *retrySender {
 	if onTemporaryFailure == nil {
-		onTemporaryFailure = func(logger *zap.Logger, req internal.Request, err error) error {
+		onTemporaryFailure = func(logger *zap.Logger, req *intrequest.Request, err error) error {
 			return err
 		}
 	}
@@ -96,6 +97,7 @@ func newRetrySender(id component.ID, rCfg RetrySettings, logger *zap.Logger, onT
 		stopCh:             make(chan struct{}),
 		logger:             logger,
 		onTemporaryFailure: onTemporaryFailure,
+		nextSender:         nextSender,
 	}
 }
 
@@ -104,7 +106,7 @@ func (rs *retrySender) shutdown() {
 }
 
 // send implements the requestSender interface
-func (rs *retrySender) send(req internal.Request) error {
+func (rs *retrySender) send(req *intrequest.Request) error {
 	if !rs.cfg.Enabled {
 		err := rs.nextSender.send(req)
 		if err != nil {
