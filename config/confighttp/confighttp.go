@@ -6,11 +6,13 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"time"
 
+	"github.com/peterbourgon/unixtransport"
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
@@ -189,6 +191,8 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 		}
 	}
 
+	unixtransport.Register(transport)
+
 	return &http.Client{
 		Transport: clientTransport,
 		Timeout:   hcs.Timeout,
@@ -215,6 +219,10 @@ type HTTPServerSettings struct {
 	// Endpoint configures the listening address for the server.
 	Endpoint string `mapstructure:"endpoint"`
 
+	// Network configures the network associated with the server.
+	// The network must be "tcp", "tcp4", "tcp6", "unix" or "unixpacket".
+	Network string `mapstructure:"network"`
+
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls"`
 
@@ -238,7 +246,14 @@ type HTTPServerSettings struct {
 
 // ToListener creates a net.Listener.
 func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
-	listener, err := net.Listen("tcp", hss.Endpoint)
+	network := hss.Network
+	if network == "" {
+		network = "tcp"
+	}
+	if network == "http+unix" || network == "https+unix" || network == "unixpacket" {
+		network = "unix"
+	}
+	listener, err := net.Listen(network, hss.Endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -253,6 +268,15 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 		listener = tls.NewListener(listener, tlsCfg)
 	}
 	return listener, nil
+}
+
+func (hss *HTTPServerSettings) Validate() error {
+	switch hss.Network {
+	case "tcp", "tcp4", "tcp6", "unix", "unixpacket", "http+unix", "https+unix", "":
+	default:
+		return fmt.Errorf("invalid network %q", hss.Network)
+	}
+	return nil
 }
 
 // toServerOptions has options that change the behavior of the HTTP server

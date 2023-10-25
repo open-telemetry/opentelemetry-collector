@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -1300,6 +1301,135 @@ func BenchmarkHttpRequest(b *testing.B) {
 			})
 			// Wait for connections to close before closing server to prevent log spam
 			<-time.After(10 * time.Millisecond)
+		})
+	}
+}
+
+type recordingHandler struct {
+	requests []*http.Request
+}
+
+func (r *recordingHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	r.requests = append(r.requests, req)
+	resp.WriteHeader(200)
+}
+
+func TestUnixSocket(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping for Windows")
+	}
+	socketLocation := filepath.Join(t.TempDir(), "foo")
+	hss := &HTTPServerSettings{Endpoint: socketLocation, Network: "unix"}
+	handler := &recordingHandler{}
+	s, err := hss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), handler)
+	require.NoError(t, err)
+	l, err := hss.ToListener()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, s.Close())
+	})
+	go func() {
+		_ = s.Serve(l)
+	}()
+	hcs := NewDefaultHTTPClientSettings()
+	hcs.Endpoint = fmt.Sprintf("http+unix:%s:/", socketLocation)
+	c, err := hcs.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	resp, err := c.Get(hcs.Endpoint)
+	require.NoError(t, err)
+	require.Equal(t, 200, resp.StatusCode)
+}
+
+func TestHTTPServerSettings_Validate(t *testing.T) {
+	unixSocket := filepath.Join(t.TempDir(), "socket")
+	tests := []struct {
+		name    string
+		hss     *HTTPServerSettings
+		wantErr error
+	}{
+		{
+			"default",
+			&HTTPServerSettings{
+				Endpoint: "localhost:0",
+			},
+			nil,
+		},
+		{
+			"tcp",
+			&HTTPServerSettings{
+				Network:  "tcp",
+				Endpoint: "localhost:0",
+			},
+			nil,
+		},
+		{
+			"tcp4",
+			&HTTPServerSettings{
+				Network:  "tcp4",
+				Endpoint: "localhost:0",
+			},
+			nil,
+		},
+		{
+			"tcp6",
+			&HTTPServerSettings{
+				Network:  "tcp6",
+				Endpoint: "localhost:0",
+			},
+			nil,
+		},
+		{
+			"unix",
+			&HTTPServerSettings{
+				Network:  "unix",
+				Endpoint: unixSocket,
+			},
+			nil,
+		},
+		{
+			"unixpacket",
+			&HTTPServerSettings{
+				Network:  "unixpacket",
+				Endpoint: unixSocket,
+			},
+			nil,
+		},
+		{
+			"http+unix",
+			&HTTPServerSettings{
+				Network:  "http+unix",
+				Endpoint: unixSocket,
+			},
+			nil,
+		},
+		{
+			"https+unix",
+			&HTTPServerSettings{
+				Network:  "https+unix",
+				Endpoint: unixSocket,
+			},
+			nil,
+		},
+		{
+			"invalid",
+			&HTTPServerSettings{
+				Network: "invalid",
+			},
+			errors.New("invalid network \"invalid\""),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.hss.Validate()
+			if tt.wantErr == nil {
+				assert.NoError(t, err)
+				l, err2 := tt.hss.ToListener()
+				assert.NoError(t, err2)
+				require.NoError(t, l.Close())
+			} else {
+				assert.Equal(t, tt.wantErr, err)
+			}
 		})
 	}
 }
