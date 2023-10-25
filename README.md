@@ -117,6 +117,7 @@ Here is a list of community roles with current and previous members:
 
   - [Andrzej Stencel](https://github.com/astencel-sumo), Sumo Logic
   - [Antoine Toulme](https://github.com/atoulme), Splunk
+  - [Yang Song](https://github.com/songy23), Datadog
   - Actively seeking contributors to triage issues
 
 - Emeritus Triagers:
@@ -141,7 +142,6 @@ Here is a list of community roles with current and previous members:
    - [Owais Lone](https://github.com/owais), Splunk
    - [Rahul Patel](https://github.com/rghetia), Google
    - [Steven Karis](https://github.com/sjkaris), Splunk
-   - [Yang Song](https://github.com/songy23), Google
 
 - Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 
