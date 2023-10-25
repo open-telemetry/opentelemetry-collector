@@ -57,7 +57,8 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 func (bes *Extensions) Shutdown(ctx context.Context) error {
 	bes.telemetry.Logger.Info("Stopping extensions...")
 	var errs error
-	for _, extID := range bes.extensionIDs {
+	for i := len(bes.extensionIDs) - 1; i >= 0; i-- {
+		extID := bes.extensionIDs[i]
 		instanceID := bes.instanceIDs[extID]
 		ext := bes.extMap[extID]
 		_ = bes.telemetry.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStopping))
