@@ -16,11 +16,13 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
 // prometheusChecker is used to assert exported metrics from a prometheus handler.
 type prometheusChecker struct {
-	promHandler http.Handler
+	ocHandler   http.Handler
+	otelHandler http.Handler
 }
 
 func (pc *prometheusChecker) checkScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
@@ -119,7 +121,11 @@ func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, at
 // getMetric returns the metric time series that matches the given name, type and set of attributes
 // it fetches data from the prometheus endpoint and parse them, ideally OTel Go should provide a MeterRecorder of some kind.
 func (pc *prometheusChecker) getMetric(expectedName string, expectedType io_prometheus_client.MetricType, expectedAttrs []attribute.KeyValue) (*io_prometheus_client.Metric, error) {
-	parsed, err := fetchPrometheusMetrics(pc.promHandler)
+	handler := pc.ocHandler
+	if obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled() {
+		handler = pc.otelHandler
+	}
+	parsed, err := fetchPrometheusMetrics(handler)
 	if err != nil {
 		return nil, err
 	}
