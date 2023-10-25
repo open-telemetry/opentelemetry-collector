@@ -128,7 +128,7 @@ func TestOrdering(t *testing.T) {
 	require.Equal(t, []string{"recording", "recording/foo", "recording/bar"}, startOrder)
 	err = exts.Shutdown(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, []string{"recording", "recording/foo", "recording/bar"}, shutdownOrder)
+	require.Equal(t, []string{"recording/bar", "recording/foo", "recording"}, shutdownOrder)
 }
 
 func TestNotifyConfig(t *testing.T) {
