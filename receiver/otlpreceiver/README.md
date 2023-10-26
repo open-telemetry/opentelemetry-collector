@@ -32,7 +32,7 @@ The following settings are configurable:
   host:port to which the receiver is going to receive data. The valid syntax is
   described at https://github.com/grpc/grpc/blob/master/doc/naming.md. The 
   `component.UseLocalHostAsDefaultHost` feature gate changes these to localhost:4317 and 
-  localhost:4318 respectively.
+  localhost:4318 respectively. This will become the default in a future release.
 
 ## Advanced Configuration
 
