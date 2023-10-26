@@ -78,6 +78,10 @@ func (tts *TestTelemetry) CheckExporterLogs(sentLogRecords, sendFailedLogRecords
 	return tts.prometheusChecker.checkExporterLogs(tts.id, sentLogRecords, sendFailedLogRecords)
 }
 
+func (tts *TestTelemetry) CheckExporterMetricGauge(metric string, val int64) error {
+	return tts.prometheusChecker.checkExporterMetricGauge(tts.id, metric, val)
+}
+
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func (tts *TestTelemetry) CheckProcessorTraces(acceptedSpans, refusedSpans, droppedSpans int64) error {
