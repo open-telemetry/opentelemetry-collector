@@ -64,7 +64,8 @@ func TestMetricsExporter_NilLogger(t *testing.T) {
 }
 
 func TestMetricsRequestExporter_NilLogger(t *testing.T) {
-	me, err := NewMetricsRequestExporter(context.Background(), exporter.CreateSettings{}, fakeRequestConverter{})
+	me, err := NewMetricsRequestExporter(context.Background(), exporter.CreateSettings{},
+		(&fakeRequestConverter{}).requestFromMetricsFunc)
 	require.Nil(t, me)
 	require.Equal(t, errNilLogger, err)
 }
@@ -95,7 +96,8 @@ func TestMetricsExporter_Default(t *testing.T) {
 
 func TestMetricsRequestExporter_Default(t *testing.T) {
 	md := pmetric.NewMetrics()
-	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), fakeRequestConverter{})
+	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(),
+		(&fakeRequestConverter{}).requestFromMetricsFunc)
 	assert.NoError(t, err)
 	assert.NotNil(t, me)
 
@@ -116,8 +118,8 @@ func TestMetricsExporter_WithCapabilities(t *testing.T) {
 
 func TestMetricsRequestExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
-	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), fakeRequestConverter{},
-		WithCapabilities(capabilities))
+	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(),
+		(&fakeRequestConverter{}).requestFromMetricsFunc, WithCapabilities(capabilities))
 	assert.NoError(t, err)
 	assert.NotNil(t, me)
 
@@ -136,7 +138,8 @@ func TestMetricsExporter_Default_ReturnError(t *testing.T) {
 func TestMetricsRequestExporter_Default_ConvertError(t *testing.T) {
 	md := pmetric.NewMetrics()
 	want := errors.New("convert_error")
-	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(), fakeRequestConverter{metricsError: want})
+	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(),
+		(&fakeRequestConverter{metricsError: want}).requestFromMetricsFunc)
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	require.Equal(t, consumererror.NewPermanent(want), me.ConsumeMetrics(context.Background(), md))
@@ -146,7 +149,7 @@ func TestMetricsRequestExporter_Default_ExportError(t *testing.T) {
 	md := pmetric.NewMetrics()
 	want := errors.New("export_error")
 	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(),
-		fakeRequestConverter{requestError: want})
+		(&fakeRequestConverter{requestError: want}).requestFromMetricsFunc)
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	require.Equal(t, want, me.ConsumeMetrics(context.Background(), md))
@@ -193,7 +196,9 @@ func TestMetricsRequestExporter_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	me, err := NewMetricsRequestExporter(context.Background(), exporter.CreateSettings{ID: fakeMetricsExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, fakeRequestConverter{})
+	me, err := NewMetricsRequestExporter(context.Background(),
+		exporter.CreateSettings{ID: fakeMetricsExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+		(&fakeRequestConverter{}).requestFromMetricsFunc)
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -219,7 +224,9 @@ func TestMetricsRequestExporter_WithRecordMetrics_ExportError(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	me, err := NewMetricsRequestExporter(context.Background(), exporter.CreateSettings{ID: fakeMetricsExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, fakeRequestConverter{requestError: want})
+	me, err := NewMetricsRequestExporter(context.Background(),
+		exporter.CreateSettings{ID: fakeMetricsExporterName, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+		(&fakeRequestConverter{requestError: want}).requestFromMetricsFunc)
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -271,7 +278,7 @@ func TestMetricsRequestExporter_WithSpan(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
-	me, err := NewMetricsRequestExporter(context.Background(), set, fakeRequestConverter{})
+	me, err := NewMetricsRequestExporter(context.Background(), set, (&fakeRequestConverter{}).requestFromMetricsFunc)
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetricsExporter(t, sr, set.TracerProvider.Tracer("test"), me, nil, 2)
@@ -299,7 +306,7 @@ func TestMetricsRequestExporter_WithSpan_ExportError(t *testing.T) {
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
 
 	want := errors.New("my_error")
-	me, err := NewMetricsRequestExporter(context.Background(), set, fakeRequestConverter{requestError: want})
+	me, err := NewMetricsRequestExporter(context.Background(), set, (&fakeRequestConverter{requestError: want}).requestFromMetricsFunc)
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetricsExporter(t, sr, set.TracerProvider.Tracer("test"), me, want, 2)
@@ -323,7 +330,7 @@ func TestMetricsRequestExporter_WithShutdown(t *testing.T) {
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
 	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(),
-		&fakeRequestConverter{}, WithShutdown(shutdown))
+		(&fakeRequestConverter{}).requestFromMetricsFunc, WithShutdown(shutdown))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
@@ -349,7 +356,7 @@ func TestMetricsRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 	shutdownErr := func(context.Context) error { return want }
 
 	me, err := NewMetricsRequestExporter(context.Background(), exportertest.NewNopCreateSettings(),
-		&fakeRequestConverter{}, WithShutdown(shutdownErr))
+		(&fakeRequestConverter{}).requestFromMetricsFunc, WithShutdown(shutdownErr))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
