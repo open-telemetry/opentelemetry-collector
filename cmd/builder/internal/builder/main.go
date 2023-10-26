@@ -111,8 +111,15 @@ func GetModules(cfg Config) error {
 		return nil
 	}
 
+	// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
+	cmd := exec.Command(cfg.Distribution.Go, "get", "cloud.google.com/go")
+	cmd.Dir = cfg.Distribution.OutputPath
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to go get: %w. Output:\n%s", err, out)
+	}
+
 	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path
-	cmd := exec.Command(cfg.Distribution.Go, "mod", "tidy", "-compat=1.20")
+	cmd = exec.Command(cfg.Distribution.Go, "mod", "tidy", "-compat=1.20")
 	cmd.Dir = cfg.Distribution.OutputPath
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w. Output:\n%s", err, out)
