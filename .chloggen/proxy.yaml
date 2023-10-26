@@ -7,7 +7,7 @@ change_type: enhancement
 component: confighttp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Support proxy configuration field in all exporters
+note: Support proxy configuration field in all exporters that support confighttp
 
 # One or more tracking issues or pull requests related to the change
 issues: [5761]
