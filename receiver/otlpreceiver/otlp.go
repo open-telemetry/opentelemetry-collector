@@ -28,9 +28,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
-// onceLogLocalHost is used to log the info log about changing the default once.
-var onceLogLocalHost sync.Once
-
 // otlpReceiver is the type that exposes Trace and Metrics reception.
 type otlpReceiver struct {
 	cfg        *Config
@@ -47,6 +44,8 @@ type otlpReceiver struct {
 	obsrepHTTP *receiverhelper.ObsReport
 
 	settings receiver.CreateSettings
+
+	onceLogLocalHost sync.Once
 }
 
 // newOtlpReceiver just creates the OpenTelemetry receiver services. It is the caller's
@@ -166,8 +165,10 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
 func (r *otlpReceiver) Start(_ context.Context, host component.Host) error {
-	onceLogLocalHost.Do(func() {
-		component.LogAboutUseLocalHostAsDefault(r.settings.Logger)
+	r.onceLogLocalHost.Do(func() {
+		if r.cfg.logLocalHostWarning {
+			component.LogAboutUseLocalHostAsDefault(r.settings.Logger)
+		}
 	})
 	return r.startProtocolServers(host)
 }

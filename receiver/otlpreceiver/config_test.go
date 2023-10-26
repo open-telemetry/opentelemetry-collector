@@ -134,6 +134,7 @@ func TestUnmarshalConfig(t *testing.T) {
 					LogsURLPath:    "/log/ingest",
 				},
 			},
+			logLocalHostWarning: true,
 		}, cfg)
 
 }

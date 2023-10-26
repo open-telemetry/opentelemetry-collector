@@ -44,6 +44,10 @@ type Protocols struct {
 type Config struct {
 	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
 	Protocols `mapstructure:"protocols"`
+
+	// logLocalHostWarning is used to log a warning if the default unspecified endpoint is used.
+	// Can be removed once component.UseLocalHostAsDefaultHost moves to stable.
+	logLocalHostWarning bool
 }
 
 var _ component.Config = (*Config)(nil)
@@ -67,11 +71,16 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 
 	if !conf.IsSet(protoGRPC) {
 		cfg.GRPC = nil
+		cfg.logLocalHostWarning = true // default endpoint used
+	} else {
+		cfg.logLocalHostWarning = cfg.logLocalHostWarning || !conf.IsSet(protoGRPC+confmap.KeyDelimiter+"endpoint")
 	}
 
 	if !conf.IsSet(protoHTTP) {
 		cfg.HTTP = nil
+		cfg.logLocalHostWarning = true // default endpoint used
 	} else {
+		cfg.logLocalHostWarning = cfg.logLocalHostWarning || !conf.IsSet(protoHTTP+confmap.KeyDelimiter+"endpoint")
 		var err error
 
 		if cfg.HTTP.TracesURLPath, err = sanitizeURLPath(cfg.HTTP.TracesURLPath); err != nil {
