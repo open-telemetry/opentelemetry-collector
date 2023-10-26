@@ -112,6 +112,7 @@ func GetModules(cfg Config) error {
 	}
 
 	// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
+	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path
 	cmd := exec.Command(cfg.Distribution.Go, "get", "cloud.google.com/go")
 	cmd.Dir = cfg.Distribution.OutputPath
 	if out, err := cmd.CombinedOutput(); err != nil {
