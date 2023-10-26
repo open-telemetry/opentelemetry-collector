@@ -43,15 +43,15 @@ type otlpReceiver struct {
 	obsrepGRPC *receiverhelper.ObsReport
 	obsrepHTTP *receiverhelper.ObsReport
 
-	settings receiver.CreateSettings
+	settings *receiver.CreateSettings
 
-	onceLogLocalHost sync.Once
+  onceLogLocalHost sync.Once
 }
 
 // newOtlpReceiver just creates the OpenTelemetry receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func newOtlpReceiver(cfg *Config, set receiver.CreateSettings) (*otlpReceiver, error) {
+func newOtlpReceiver(cfg *Config, set *receiver.CreateSettings) (*otlpReceiver, error) {
 	r := &otlpReceiver{
 		cfg:      cfg,
 		settings: set,
@@ -64,7 +64,7 @@ func newOtlpReceiver(cfg *Config, set receiver.CreateSettings) (*otlpReceiver, e
 	r.obsrepGRPC, err = receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "grpc",
-		ReceiverCreateSettings: set,
+		ReceiverCreateSettings: *set,
 	})
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func newOtlpReceiver(cfg *Config, set receiver.CreateSettings) (*otlpReceiver, e
 	r.obsrepHTTP, err = receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "http",
-		ReceiverCreateSettings: set,
+		ReceiverCreateSettings: *set,
 	})
 	if err != nil {
 		return nil, err

@@ -9,6 +9,7 @@ package ptrace
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
@@ -20,18 +21,20 @@ import (
 // Must use NewSpanEventSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanEventSlice struct {
-	orig *[]*otlptrace.Span_Event
+	orig  *[]*otlptrace.Span_Event
+	state *internal.State
 }
 
-func newSpanEventSlice(orig *[]*otlptrace.Span_Event) SpanEventSlice {
-	return SpanEventSlice{orig}
+func newSpanEventSlice(orig *[]*otlptrace.Span_Event, state *internal.State) SpanEventSlice {
+	return SpanEventSlice{orig: orig, state: state}
 }
 
 // NewSpanEventSlice creates a SpanEventSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewSpanEventSlice() SpanEventSlice {
 	orig := []*otlptrace.Span_Event(nil)
-	return newSpanEventSlice(&orig)
+	state := internal.StateMutable
+	return newSpanEventSlice(&orig, &state)
 }
 
 // Len returns the number of elements in the slice.
@@ -50,7 +53,7 @@ func (es SpanEventSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es SpanEventSlice) At(i int) SpanEvent {
-	return newSpanEvent((*es.orig)[i])
+	return newSpanEvent((*es.orig)[i], es.state)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -66,6 +69,7 @@ func (es SpanEventSlice) At(i int) SpanEvent {
 //	    // Here should set all the values for e.
 //	}
 func (es SpanEventSlice) EnsureCapacity(newCap int) {
+	es.state.AssertMutable()
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -79,6 +83,7 @@ func (es SpanEventSlice) EnsureCapacity(newCap int) {
 // AppendEmpty will append to the end of the slice an empty SpanEvent.
 // It returns the newly added SpanEvent.
 func (es SpanEventSlice) AppendEmpty() SpanEvent {
+	es.state.AssertMutable()
 	*es.orig = append(*es.orig, &otlptrace.Span_Event{})
 	return es.At(es.Len() - 1)
 }
@@ -86,6 +91,8 @@ func (es SpanEventSlice) AppendEmpty() SpanEvent {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
+	es.state.AssertMutable()
+	dest.state.AssertMutable()
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -98,6 +105,7 @@ func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
+	es.state.AssertMutable()
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -117,12 +125,13 @@ func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
+	dest.state.AssertMutable()
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newSpanEvent((*es.orig)[i]).CopyTo(newSpanEvent((*dest.orig)[i]))
+			newSpanEvent((*es.orig)[i], es.state).CopyTo(newSpanEvent((*dest.orig)[i], dest.state))
 		}
 		return
 	}
@@ -130,7 +139,7 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 	wrappers := make([]*otlptrace.Span_Event, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newSpanEvent((*es.orig)[i]).CopyTo(newSpanEvent(wrappers[i]))
+		newSpanEvent((*es.orig)[i], es.state).CopyTo(newSpanEvent(wrappers[i], dest.state))
 	}
 	*dest.orig = wrappers
 }
@@ -139,5 +148,6 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 // provided less function so that two instances of SpanEventSlice
 // can be compared.
 func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) {
+	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

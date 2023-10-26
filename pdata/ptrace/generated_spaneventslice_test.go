@@ -12,13 +12,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
 func TestSpanEventSlice(t *testing.T) {
 	es := NewSpanEventSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSpanEventSlice(&[]*otlptrace.Span_Event{})
+	state := internal.StateMutable
+	es = newSpanEventSlice(&[]*otlptrace.Span_Event{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSpanEvent()
@@ -30,6 +32,19 @@ func TestSpanEventSlice(t *testing.T) {
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
+}
+
+func TestSpanEventSliceReadOnly(t *testing.T) {
+	sharedState := internal.StateReadOnly
+	es := newSpanEventSlice(&[]*otlptrace.Span_Event{}, &sharedState)
+	assert.Equal(t, 0, es.Len())
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.EnsureCapacity(2) })
+	es2 := NewSpanEventSlice()
+	es.CopyTo(es2)
+	assert.Panics(t, func() { es2.CopyTo(es) })
+	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
+	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
 }
 
 func TestSpanEventSlice_CopyTo(t *testing.T) {
@@ -134,6 +149,6 @@ func fillTestSpanEventSlice(es SpanEventSlice) {
 	*es.orig = make([]*otlptrace.Span_Event, 7)
 	for i := 0; i < 7; i++ {
 		(*es.orig)[i] = &otlptrace.Span_Event{}
-		fillTestSpanEvent(newSpanEvent((*es.orig)[i]))
+		fillTestSpanEvent(newSpanEvent((*es.orig)[i], es.state))
 	}
 }

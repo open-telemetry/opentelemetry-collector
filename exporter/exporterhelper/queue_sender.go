@@ -59,13 +59,16 @@ func (qCfg *QueueSettings) Validate() error {
 		return errors.New("queue size must be positive")
 	}
 
+	if qCfg.NumConsumers <= 0 {
+		return errors.New("number of queue consumers must be positive")
+	}
+
 	return nil
 }
 
 type queueSender struct {
 	baseRequestSender
 	fullName         string
-	id               component.ID
 	signal           component.DataType
 	queue            internal.ProducerConsumerQueue
 	traceAttribute   attribute.KeyValue
@@ -76,7 +79,6 @@ type queueSender struct {
 func newQueueSender(id component.ID, signal component.DataType, queue internal.ProducerConsumerQueue, logger *zap.Logger) *queueSender {
 	return &queueSender{
 		fullName:       id.String(),
-		id:             id,
 		signal:         signal,
 		queue:          queue,
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, id.String()),

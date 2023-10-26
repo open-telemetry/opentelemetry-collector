@@ -13,16 +13,26 @@ import (
 type Traces internal.Traces
 
 func newTraces(orig *otlpcollectortrace.ExportTraceServiceRequest) Traces {
-	return Traces(internal.NewTraces(orig))
+	state := internal.StateMutable
+	return Traces(internal.NewTraces(orig, &state))
 }
 
 func (ms Traces) getOrig() *otlpcollectortrace.ExportTraceServiceRequest {
 	return internal.GetOrigTraces(internal.Traces(ms))
 }
 
+func (ms Traces) getState() *internal.State {
+	return internal.GetTracesState(internal.Traces(ms))
+}
+
 // NewTraces creates a new Traces struct.
 func NewTraces() Traces {
 	return newTraces(&otlpcollectortrace.ExportTraceServiceRequest{})
+}
+
+// IsReadOnly returns true if this Traces instance is read-only.
+func (ms Traces) IsReadOnly() bool {
+	return *ms.getState() == internal.StateReadOnly
 }
 
 // CopyTo copies the Traces instance overriding the destination.
@@ -46,5 +56,10 @@ func (ms Traces) SpanCount() int {
 
 // ResourceSpans returns the ResourceSpansSlice associated with this Metrics.
 func (ms Traces) ResourceSpans() ResourceSpansSlice {
-	return newResourceSpansSlice(&ms.getOrig().ResourceSpans)
+	return newResourceSpansSlice(&ms.getOrig().ResourceSpans, internal.GetTracesState(internal.Traces(ms)))
+}
+
+// MarkReadOnly marks the Traces as shared so that no further modifications can be done on it.
+func (ms Traces) MarkReadOnly() {
+	internal.SetTracesState(internal.Traces(ms), internal.StateReadOnly)
 }

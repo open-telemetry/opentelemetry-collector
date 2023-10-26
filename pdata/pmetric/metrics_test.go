@@ -5,6 +5,7 @@ package pmetric
 
 import (
 	"testing"
+	"time"
 
 	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
@@ -635,6 +636,16 @@ func TestMetricsCopyTo(t *testing.T) {
 	assert.EqualValues(t, metrics, metricsCopy)
 }
 
+func TestReadOnlyMetricsInvalidUsage(t *testing.T) {
+	metrics := NewMetrics()
+	assert.False(t, metrics.IsReadOnly())
+	res := metrics.ResourceMetrics().AppendEmpty().Resource()
+	res.Attributes().PutStr("k1", "v1")
+	metrics.MarkReadOnly()
+	assert.True(t, metrics.IsReadOnly())
+	assert.Panics(t, func() { res.Attributes().PutStr("k2", "v2") })
+}
+
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -930,4 +941,58 @@ func generateMetricsEmptyDataPoints() Metrics {
 			},
 		},
 	})
+}
+
+func BenchmarkMetricsUsage(b *testing.B) {
+	metrics := NewMetrics()
+	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+
+	ts := pcommon.NewTimestampFromTime(time.Now())
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for bb := 0; bb < b.N; bb++ {
+		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+			rm := metrics.ResourceMetrics().At(i)
+			res := rm.Resource()
+			res.Attributes().PutStr("foo", "bar")
+			v, ok := res.Attributes().Get("foo")
+			assert.True(b, ok)
+			assert.Equal(b, "bar", v.Str())
+			v.SetStr("new-bar")
+			assert.Equal(b, "new-bar", v.Str())
+			res.Attributes().Remove("foo")
+			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+				sm := rm.ScopeMetrics().At(j)
+				for k := 0; k < sm.Metrics().Len(); k++ {
+					m := sm.Metrics().At(k)
+					m.SetName("new_metric_name")
+					assert.Equal(b, "new_metric_name", m.Name())
+					assert.Equal(b, MetricTypeSum, m.Type())
+					m.Sum().SetAggregationTemporality(AggregationTemporalityCumulative)
+					assert.Equal(b, AggregationTemporalityCumulative, m.Sum().AggregationTemporality())
+					m.Sum().SetIsMonotonic(true)
+					assert.True(b, m.Sum().IsMonotonic())
+					for l := 0; l < m.Sum().DataPoints().Len(); l++ {
+						dp := m.Sum().DataPoints().At(l)
+						dp.SetIntValue(123)
+						assert.Equal(b, int64(123), dp.IntValue())
+						assert.Equal(b, NumberDataPointValueTypeInt, dp.ValueType())
+						dp.SetStartTimestamp(ts)
+						assert.Equal(b, ts, dp.StartTimestamp())
+					}
+					dp := m.Sum().DataPoints().AppendEmpty()
+					dp.Attributes().PutStr("foo", "bar")
+					dp.SetDoubleValue(123)
+					dp.SetStartTimestamp(ts)
+					dp.SetTimestamp(ts)
+					m.Sum().DataPoints().RemoveIf(func(dp NumberDataPoint) bool {
+						_, ok := dp.Attributes().Get("foo")
+						return ok
+					})
+				}
+			}
+		}
+	}
 }

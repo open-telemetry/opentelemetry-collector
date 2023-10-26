@@ -173,6 +173,11 @@ func TestQueueSettings_Validate(t *testing.T) {
 	qCfg.QueueSize = 0
 	assert.EqualError(t, qCfg.Validate(), "queue size must be positive")
 
+	qCfg = NewDefaultQueueSettings()
+	qCfg.NumConsumers = 0
+
+	assert.EqualError(t, qCfg.Validate(), "number of queue consumers must be positive")
+
 	// Confirm Validate doesn't return error with invalid config when feature is disabled
 	qCfg.Enabled = false
 	assert.NoError(t, qCfg.Validate())
@@ -306,8 +311,6 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 
-	req := newMockRequest(context.Background(), 3, errors.New("some error"))
-
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newNoopObsrepSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
@@ -320,13 +323,8 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	}
 	be.queueSender.(*queueSender).requeuingEnabled = true
 
-	// replace nextSender inside retrySender to always return error so it doesn't exit send loop
-	be.retrySender.setNextSender(&errorRequestSender{
-		errToReturn: errors.New("some error"),
-	})
-
 	// Invoke queuedRetrySender so the producer will put the item for consumer to poll
-	require.NoError(t, be.send(req))
+	require.NoError(t, be.send(newErrorRequest(context.Background())))
 
 	// first wait for the item to be produced to the queue initially
 	assert.Eventually(t, func() bool {

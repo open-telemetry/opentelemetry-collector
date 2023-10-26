@@ -23,11 +23,12 @@ import (
 // Must use NewSpanLink function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanLink struct {
-	orig *otlptrace.Span_Link
+	orig  *otlptrace.Span_Link
+	state *internal.State
 }
 
-func newSpanLink(orig *otlptrace.Span_Link) SpanLink {
-	return SpanLink{orig}
+func newSpanLink(orig *otlptrace.Span_Link, state *internal.State) SpanLink {
+	return SpanLink{orig: orig, state: state}
 }
 
 // NewSpanLink creates a new empty SpanLink.
@@ -35,12 +36,15 @@ func newSpanLink(orig *otlptrace.Span_Link) SpanLink {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSpanLink() SpanLink {
-	return newSpanLink(&otlptrace.Span_Link{})
+	state := internal.StateMutable
+	return newSpanLink(&otlptrace.Span_Link{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms SpanLink) MoveTo(dest SpanLink) {
+	ms.state.AssertMutable()
+	dest.state.AssertMutable()
 	*dest.orig = *ms.orig
 	*ms.orig = otlptrace.Span_Link{}
 }
@@ -52,6 +56,7 @@ func (ms SpanLink) TraceID() pcommon.TraceID {
 
 // SetTraceID replaces the traceid associated with this SpanLink.
 func (ms SpanLink) SetTraceID(v pcommon.TraceID) {
+	ms.state.AssertMutable()
 	ms.orig.TraceId = data.TraceID(v)
 }
 
@@ -62,17 +67,18 @@ func (ms SpanLink) SpanID() pcommon.SpanID {
 
 // SetSpanID replaces the spanid associated with this SpanLink.
 func (ms SpanLink) SetSpanID(v pcommon.SpanID) {
+	ms.state.AssertMutable()
 	ms.orig.SpanId = data.SpanID(v)
 }
 
 // TraceState returns the tracestate associated with this SpanLink.
 func (ms SpanLink) TraceState() pcommon.TraceState {
-	return pcommon.TraceState(internal.NewTraceState(&ms.orig.TraceState))
+	return pcommon.TraceState(internal.NewTraceState(&ms.orig.TraceState, ms.state))
 }
 
 // Attributes returns the Attributes associated with this SpanLink.
 func (ms SpanLink) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanLink.
@@ -82,11 +88,13 @@ func (ms SpanLink) DroppedAttributesCount() uint32 {
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this SpanLink.
 func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
+	ms.state.AssertMutable()
 	ms.orig.DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanLink) CopyTo(dest SpanLink) {
+	dest.state.AssertMutable()
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
 	ms.TraceState().CopyTo(dest.TraceState())

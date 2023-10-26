@@ -48,7 +48,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 7. A new `v0.85.0` release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md and CHANGELOG-API.md as the release's description.
 
-8. If you created a draft PR to Contrib in step 3, update the PR to use the newly released Core version and set it to Ready for Review.
+8. Update the draft PR to Contrib created in step 1 to use the newly released Core version and set it to Ready for Review.
    - Run `make update-otel OTEL_VERSION=v0.85.0 OTEL_RC_VERSION=v1.0.0-rcv0014`
    - Manually update `cmd/otelcontribcol/builder-config.yaml`
    - Manually update `cmd/oteltestbedcol/builder-config.yaml`
@@ -145,10 +145,10 @@ The following documents the procedure to release a bugfix
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2023-09-25 | v0.86.0 | @bogdandrutu    |
-| 2023-10-09 | v0.87.0 | @Aneurysm9      |
-| 2023-10-23 | v0.88.0 | @mx-psi         |
-| 2023-11-06 | v0.89.0 | @jpkrohling     |
-| 2023-11-20 | v0.90.0 | @djaglowski     |
-| 2023-12-04 | v0.91.0 | @dmitryax       |
-| 2023-12-18 | v0.92.0 | @codeboten      |
+| 2023-11-13 | v0.89.0 | @jpkrohling     |
+| 2023-11-27 | v0.90.0 | @djaglowski     |
+| 2023-12-11 | v0.91.0 | @dmitryax       |
+| 2024-01-08 | v0.92.0 | @codeboten      |
+| 2024-01-22 | v0.93.0 | @bogdandrutu    |
+| 2024-02-05 | v0.94.0 | @Aneurysm9      |
+| 2023-02-19 | v0.95.0 | @mx-psi         |

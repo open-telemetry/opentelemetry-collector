@@ -5,6 +5,7 @@ package plog
 
 import (
 	"testing"
+	"time"
 
 	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
@@ -13,6 +14,7 @@ import (
 
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestLogRecordCount(t *testing.T) {
@@ -111,4 +113,61 @@ func TestLogsCopyTo(t *testing.T) {
 	logsCopy := NewLogs()
 	logs.CopyTo(logsCopy)
 	assert.EqualValues(t, logs, logsCopy)
+}
+
+func TestReadOnlyLogsInvalidUsage(t *testing.T) {
+	logs := NewLogs()
+	assert.False(t, logs.IsReadOnly())
+	res := logs.ResourceLogs().AppendEmpty().Resource()
+	res.Attributes().PutStr("k1", "v1")
+	logs.MarkReadOnly()
+	assert.True(t, logs.IsReadOnly())
+	assert.Panics(t, func() { res.Attributes().PutStr("k2", "v2") })
+}
+
+func BenchmarkLogsUsage(b *testing.B) {
+	logs := NewLogs()
+	fillTestResourceLogsSlice(logs.ResourceLogs())
+
+	ts := pcommon.NewTimestampFromTime(time.Now())
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for bb := 0; bb < b.N; bb++ {
+		for i := 0; i < logs.ResourceLogs().Len(); i++ {
+			rl := logs.ResourceLogs().At(i)
+			res := rl.Resource()
+			res.Attributes().PutStr("foo", "bar")
+			v, ok := res.Attributes().Get("foo")
+			assert.True(b, ok)
+			assert.Equal(b, "bar", v.Str())
+			v.SetStr("new-bar")
+			assert.Equal(b, "new-bar", v.Str())
+			res.Attributes().Remove("foo")
+			for j := 0; j < rl.ScopeLogs().Len(); j++ {
+				sl := rl.ScopeLogs().At(j)
+				sl.Scope().SetName("new_test_name")
+				assert.Equal(b, "new_test_name", sl.Scope().Name())
+				for k := 0; k < sl.LogRecords().Len(); k++ {
+					lr := sl.LogRecords().At(k)
+					lr.Body().SetStr("new_body")
+					assert.Equal(b, "new_body", lr.Body().Str())
+					lr.SetTimestamp(ts)
+					assert.Equal(b, ts, lr.Timestamp())
+				}
+				lr := sl.LogRecords().AppendEmpty()
+				lr.Body().SetStr("another_log_record")
+				lr.SetTimestamp(ts)
+				lr.SetObservedTimestamp(ts)
+				lr.SetSeverityText("info")
+				lr.SetSeverityNumber(SeverityNumberInfo)
+				lr.Attributes().PutStr("foo", "bar")
+				lr.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+				sl.LogRecords().RemoveIf(func(lr LogRecord) bool {
+					return lr.Body().Str() == "another_log_record"
+				})
+			}
+		}
+	}
 }

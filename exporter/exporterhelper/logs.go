@@ -99,7 +99,7 @@ func NewLogsExporter(
 		req := newLogsRequest(ctx, ld, pusher)
 		serr := be.send(req)
 		if errors.Is(serr, errSendingQueueIsFull) {
-			be.obsrep.recordLogsEnqueueFailure(req.Context(), int64(req.Count()))
+			be.obsrep.recordEnqueueFailure(req.Context(), component.DataTypeLogs, int64(req.Count()))
 		}
 		return serr
 	}, be.consumerOptions...)
@@ -151,7 +151,7 @@ func NewLogsRequestExporter(
 		r := newRequest(ctx, req)
 		sErr := be.send(r)
 		if errors.Is(sErr, errSendingQueueIsFull) {
-			be.obsrep.recordLogsEnqueueFailure(r.Context(), int64(r.Count()))
+			be.obsrep.recordEnqueueFailure(r.Context(), component.DataTypeLogs, int64(r.Count()))
 		}
 		return sErr
 	}, be.consumerOptions...)
@@ -164,10 +164,10 @@ func NewLogsRequestExporter(
 
 type logsExporterWithObservability struct {
 	baseRequestSender
-	obsrep *obsExporter
+	obsrep *ObsReport
 }
 
-func newLogsExporterWithObservability(obsrep *obsExporter) requestSender {
+func newLogsExporterWithObservability(obsrep *ObsReport) requestSender {
 	return &logsExporterWithObservability{obsrep: obsrep}
 }
 

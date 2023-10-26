@@ -7,6 +7,28 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.0.0-rcv0017/v0.88.0
+
+### 💡 Enhancements 💡
+
+- `pdata`: Add IsReadOnly() method to p[metrics|logs|traces].[Metrics|Logs|Spans] pdata structs allowing to check if the struct is read-only. (#6794)
+
+## v1.0.0-rcv0016/v0.87.0
+
+### 💡 Enhancements 💡
+
+- `pdata`: Introduce API to control pdata mutability (#6794)
+  This change introduces new API pdata methods to control the mutability:
+  - p[metric|trace|log].[Metrics|Traces|Logs].MarkReadOnly() - marks the pdata as read-only. Any subsequent
+    mutations will result in a panic.
+  - p[metric|trace|log].[Metrics|Traces|Logs].IsReadOnly() - returns true if the pdata is marked as read-only.
+  Currently, all the data is kept mutable. This API will be used by fanout consumer in the following releases. 
+
+### 🛑 Breaking changes 🛑
+
+- `obsreport`: remove methods/structs deprecated in previous release. (#8492)
+- `extension`: remove deprecated Configs and Factories (#8631)
+
 ## v1.0.0-rcv0015/v0.86.0
 
 ### 🛑 Breaking changes 🛑

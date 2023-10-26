@@ -22,11 +22,12 @@ import (
 // Must use NewSpan function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Span struct {
-	orig *otlptrace.Span
+	orig  *otlptrace.Span
+	state *internal.State
 }
 
-func newSpan(orig *otlptrace.Span) Span {
-	return Span{orig}
+func newSpan(orig *otlptrace.Span, state *internal.State) Span {
+	return Span{orig: orig, state: state}
 }
 
 // NewSpan creates a new empty Span.
@@ -34,12 +35,15 @@ func newSpan(orig *otlptrace.Span) Span {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSpan() Span {
-	return newSpan(&otlptrace.Span{})
+	state := internal.StateMutable
+	return newSpan(&otlptrace.Span{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Span) MoveTo(dest Span) {
+	ms.state.AssertMutable()
+	dest.state.AssertMutable()
 	*dest.orig = *ms.orig
 	*ms.orig = otlptrace.Span{}
 }
@@ -51,6 +55,7 @@ func (ms Span) TraceID() pcommon.TraceID {
 
 // SetTraceID replaces the traceid associated with this Span.
 func (ms Span) SetTraceID(v pcommon.TraceID) {
+	ms.state.AssertMutable()
 	ms.orig.TraceId = data.TraceID(v)
 }
 
@@ -61,12 +66,13 @@ func (ms Span) SpanID() pcommon.SpanID {
 
 // SetSpanID replaces the spanid associated with this Span.
 func (ms Span) SetSpanID(v pcommon.SpanID) {
+	ms.state.AssertMutable()
 	ms.orig.SpanId = data.SpanID(v)
 }
 
 // TraceState returns the tracestate associated with this Span.
 func (ms Span) TraceState() pcommon.TraceState {
-	return pcommon.TraceState(internal.NewTraceState(&ms.orig.TraceState))
+	return pcommon.TraceState(internal.NewTraceState(&ms.orig.TraceState, ms.state))
 }
 
 // ParentSpanID returns the parentspanid associated with this Span.
@@ -76,6 +82,7 @@ func (ms Span) ParentSpanID() pcommon.SpanID {
 
 // SetParentSpanID replaces the parentspanid associated with this Span.
 func (ms Span) SetParentSpanID(v pcommon.SpanID) {
+	ms.state.AssertMutable()
 	ms.orig.ParentSpanId = data.SpanID(v)
 }
 
@@ -86,6 +93,7 @@ func (ms Span) Name() string {
 
 // SetName replaces the name associated with this Span.
 func (ms Span) SetName(v string) {
+	ms.state.AssertMutable()
 	ms.orig.Name = v
 }
 
@@ -96,6 +104,7 @@ func (ms Span) Kind() SpanKind {
 
 // SetKind replaces the kind associated with this Span.
 func (ms Span) SetKind(v SpanKind) {
+	ms.state.AssertMutable()
 	ms.orig.Kind = otlptrace.Span_SpanKind(v)
 }
 
@@ -106,6 +115,7 @@ func (ms Span) StartTimestamp() pcommon.Timestamp {
 
 // SetStartTimestamp replaces the starttimestamp associated with this Span.
 func (ms Span) SetStartTimestamp(v pcommon.Timestamp) {
+	ms.state.AssertMutable()
 	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
@@ -116,12 +126,13 @@ func (ms Span) EndTimestamp() pcommon.Timestamp {
 
 // SetEndTimestamp replaces the endtimestamp associated with this Span.
 func (ms Span) SetEndTimestamp(v pcommon.Timestamp) {
+	ms.state.AssertMutable()
 	ms.orig.EndTimeUnixNano = uint64(v)
 }
 
 // Attributes returns the Attributes associated with this Span.
 func (ms Span) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this Span.
@@ -131,12 +142,13 @@ func (ms Span) DroppedAttributesCount() uint32 {
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this Span.
 func (ms Span) SetDroppedAttributesCount(v uint32) {
+	ms.state.AssertMutable()
 	ms.orig.DroppedAttributesCount = v
 }
 
 // Events returns the Events associated with this Span.
 func (ms Span) Events() SpanEventSlice {
-	return newSpanEventSlice(&ms.orig.Events)
+	return newSpanEventSlice(&ms.orig.Events, ms.state)
 }
 
 // DroppedEventsCount returns the droppedeventscount associated with this Span.
@@ -146,12 +158,13 @@ func (ms Span) DroppedEventsCount() uint32 {
 
 // SetDroppedEventsCount replaces the droppedeventscount associated with this Span.
 func (ms Span) SetDroppedEventsCount(v uint32) {
+	ms.state.AssertMutable()
 	ms.orig.DroppedEventsCount = v
 }
 
 // Links returns the Links associated with this Span.
 func (ms Span) Links() SpanLinkSlice {
-	return newSpanLinkSlice(&ms.orig.Links)
+	return newSpanLinkSlice(&ms.orig.Links, ms.state)
 }
 
 // DroppedLinksCount returns the droppedlinkscount associated with this Span.
@@ -161,16 +174,18 @@ func (ms Span) DroppedLinksCount() uint32 {
 
 // SetDroppedLinksCount replaces the droppedlinkscount associated with this Span.
 func (ms Span) SetDroppedLinksCount(v uint32) {
+	ms.state.AssertMutable()
 	ms.orig.DroppedLinksCount = v
 }
 
 // Status returns the status associated with this Span.
 func (ms Span) Status() Status {
-	return newStatus(&ms.orig.Status)
+	return newStatus(&ms.orig.Status, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Span) CopyTo(dest Span) {
+	dest.state.AssertMutable()
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
 	ms.TraceState().CopyTo(dest.TraceState())

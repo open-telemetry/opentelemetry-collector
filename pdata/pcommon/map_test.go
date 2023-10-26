@@ -17,7 +17,8 @@ func TestMap(t *testing.T) {
 
 	val, exist := NewMap().Get("test_key")
 	assert.False(t, exist)
-	assert.EqualValues(t, newValue(nil), val)
+	state := internal.StateMutable
+	assert.EqualValues(t, newValue(nil, &state), val)
 
 	putString := NewMap()
 	putString.PutStr("k", "v")
@@ -50,6 +51,44 @@ func TestMap(t *testing.T) {
 	removeMap := NewMap()
 	assert.False(t, removeMap.Remove("k"))
 	assert.EqualValues(t, NewMap(), removeMap)
+}
+
+func TestMapReadOnly(t *testing.T) {
+	state := internal.StateReadOnly
+	m := newMap(&[]otlpcommon.KeyValue{
+		{Key: "k1", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v1"}}},
+	}, &state)
+
+	assert.Equal(t, 1, m.Len())
+
+	v, ok := m.Get("k1")
+	assert.True(t, ok)
+	assert.EqualValues(t, "v1", v.Str())
+
+	m.Range(func(k string, v Value) bool {
+		assert.Equal(t, "k1", k)
+		assert.Equal(t, "v1", v.Str())
+		return true
+	})
+
+	assert.Panics(t, func() { m.PutStr("k2", "v2") })
+	assert.Panics(t, func() { m.PutInt("k2", 123) })
+	assert.Panics(t, func() { m.PutDouble("k2", 1.23) })
+	assert.Panics(t, func() { m.PutBool("k2", true) })
+	assert.Panics(t, func() { m.PutEmptyBytes("k2") })
+	assert.Panics(t, func() { m.PutEmptyMap("k2") })
+	assert.Panics(t, func() { m.PutEmptySlice("k2") })
+	assert.Panics(t, func() { m.Remove("k1") })
+	assert.Panics(t, func() { m.RemoveIf(func(k string, v Value) bool { return true }) })
+	assert.Panics(t, func() { m.EnsureCapacity(2) })
+
+	m2 := NewMap()
+	m.CopyTo(m2)
+	assert.Equal(t, m2.AsRaw(), m.AsRaw())
+	assert.Panics(t, func() { NewMap().CopyTo(m) })
+
+	assert.Equal(t, map[string]any{"k1": "v1"}, m.AsRaw())
+	assert.Panics(t, func() { _ = m.FromRaw(map[string]any{"k1": "v1"}) })
 }
 
 func TestMapPutEmpty(t *testing.T) {
@@ -148,7 +187,8 @@ func TestMapWithEmpty(t *testing.T) {
 			Value: otlpcommon.AnyValue{Value: nil},
 		},
 	}
-	sm := newMap(&origWithNil)
+	state := internal.StateMutable
+	sm := newMap(&origWithNil, &state)
 	val, exist := sm.Get("test_key")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeStr, val.Type())

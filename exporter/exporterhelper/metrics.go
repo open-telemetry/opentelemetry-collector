@@ -99,7 +99,7 @@ func NewMetricsExporter(
 		req := newMetricsRequest(ctx, md, pusher)
 		serr := be.send(req)
 		if errors.Is(serr, errSendingQueueIsFull) {
-			be.obsrep.recordMetricsEnqueueFailure(req.Context(), int64(req.Count()))
+			be.obsrep.recordEnqueueFailure(req.Context(), component.DataTypeMetrics, int64(req.Count()))
 		}
 		return serr
 	}, be.consumerOptions...)
@@ -151,7 +151,7 @@ func NewMetricsRequestExporter(
 		r := newRequest(ctx, req)
 		sErr := be.send(r)
 		if errors.Is(sErr, errSendingQueueIsFull) {
-			be.obsrep.recordMetricsEnqueueFailure(r.Context(), int64(r.Count()))
+			be.obsrep.recordEnqueueFailure(r.Context(), component.DataTypeMetrics, int64(r.Count()))
 		}
 		return sErr
 	}, be.consumerOptions...)
@@ -164,10 +164,10 @@ func NewMetricsRequestExporter(
 
 type metricsSenderWithObservability struct {
 	baseRequestSender
-	obsrep *obsExporter
+	obsrep *ObsReport
 }
 
-func newMetricsSenderWithObservability(obsrep *obsExporter) requestSender {
+func newMetricsSenderWithObservability(obsrep *ObsReport) requestSender {
 	return &metricsSenderWithObservability{obsrep: obsrep}
 }
 

@@ -5,14 +5,12 @@ package processorhelper // import "go.opentelemetry.io/collector/processor/proce
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -84,11 +82,7 @@ func newObsReport(cfg ObsReportSettings, useOtel bool) (*ObsReport, error) {
 		},
 	}
 
-	// ignore instrument name error as per workaround in https://github.com/open-telemetry/opentelemetry-collector/issues/8346
-	// if err := proc.createOtelMetrics(cfg); err != nil {
-	// 	return nil, err
-	// }
-	if err := report.createOtelMetrics(cfg); err != nil && !errors.Is(err, sdkmetric.ErrInstrumentName) {
+	if err := report.createOtelMetrics(cfg); err != nil {
 		return nil, err
 	}
 

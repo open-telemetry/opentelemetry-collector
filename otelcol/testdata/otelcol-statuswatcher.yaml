@@ -1,0 +1,31 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+  unhealthy:
+
+exporters:
+  nop:
+
+extensions:
+  statuswatcher:
+
+service:
+  telemetry:
+    metrics:
+      address: localhost:8888
+  extensions: [statuswatcher]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop,unhealthy]
+      exporters: [nop]
+    metrics:
+      receivers: [nop]
+      processors: [nop,unhealthy]
+      exporters: [nop]
+    logs:
+      receivers: [nop]
+      processors: [nop,unhealthy]
+      exporters: [nop]

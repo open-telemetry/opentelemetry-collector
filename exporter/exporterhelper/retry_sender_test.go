@@ -315,7 +315,7 @@ type observabilityConsumerSender struct {
 	droppedItemsCount *atomic.Int64
 }
 
-func newObservabilityConsumerSender(_ *obsExporter) requestSender {
+func newObservabilityConsumerSender(_ *ObsReport) requestSender {
 	return &observabilityConsumerSender{
 		waitGroup:         new(sync.WaitGroup),
 		droppedItemsCount: &atomic.Int64{},
@@ -403,13 +403,4 @@ type producerConsumerQueueWithCounter struct {
 func (pcq *producerConsumerQueueWithCounter) Produce(item internal.Request) bool {
 	pcq.produceCounter.Add(1)
 	return pcq.ProducerConsumerQueue.Produce(item)
-}
-
-type errorRequestSender struct {
-	baseRequestSender
-	errToReturn error
-}
-
-func (rs *errorRequestSender) send(_ internal.Request) error {
-	return rs.errToReturn
 }

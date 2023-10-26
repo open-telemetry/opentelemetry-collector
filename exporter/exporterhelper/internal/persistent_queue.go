@@ -16,7 +16,9 @@ import (
 var (
 	// Monkey patching for unit test
 	stopStorage = func(queue *persistentQueue) {
-		queue.storage.stop()
+		if queue.storage != nil {
+			queue.storage.stop()
+		}
 	}
 	errNoStorageClient    = errors.New("no storage client extension found")
 	errWrongExtensionType = errors.New("requested extension is not a storage extension")

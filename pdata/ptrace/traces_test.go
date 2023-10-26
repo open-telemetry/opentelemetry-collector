@@ -5,6 +5,7 @@ package ptrace
 
 import (
 	"testing"
+	"time"
 
 	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
@@ -13,6 +14,7 @@ import (
 
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestSpanCount(t *testing.T) {
@@ -112,4 +114,67 @@ func TestTracesCopyTo(t *testing.T) {
 	tracesCopy := NewTraces()
 	traces.CopyTo(tracesCopy)
 	assert.EqualValues(t, traces, tracesCopy)
+}
+
+func TestReadOnlyTracesInvalidUsage(t *testing.T) {
+	traces := NewTraces()
+	assert.False(t, traces.IsReadOnly())
+	res := traces.ResourceSpans().AppendEmpty().Resource()
+	res.Attributes().PutStr("k1", "v1")
+	traces.MarkReadOnly()
+	assert.True(t, traces.IsReadOnly())
+	assert.Panics(t, func() { res.Attributes().PutStr("k2", "v2") })
+}
+
+func BenchmarkTracesUsage(b *testing.B) {
+	traces := NewTraces()
+	fillTestResourceSpansSlice(traces.ResourceSpans())
+	ts := pcommon.NewTimestampFromTime(time.Now())
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for bb := 0; bb < b.N; bb++ {
+		for i := 0; i < traces.ResourceSpans().Len(); i++ {
+			rs := traces.ResourceSpans().At(i)
+			res := rs.Resource()
+			res.Attributes().PutStr("foo", "bar")
+			v, ok := res.Attributes().Get("foo")
+			assert.True(b, ok)
+			assert.Equal(b, "bar", v.Str())
+			v.SetStr("new-bar")
+			assert.Equal(b, "new-bar", v.Str())
+			res.Attributes().Remove("foo")
+			for j := 0; j < rs.ScopeSpans().Len(); j++ {
+				iss := rs.ScopeSpans().At(j)
+				iss.Scope().SetName("new_test_name")
+				assert.Equal(b, "new_test_name", iss.Scope().Name())
+				for k := 0; k < iss.Spans().Len(); k++ {
+					s := iss.Spans().At(k)
+					s.SetName("new_span")
+					assert.Equal(b, "new_span", s.Name())
+					s.SetStartTimestamp(ts)
+					assert.Equal(b, ts, s.StartTimestamp())
+					s.SetEndTimestamp(ts)
+					assert.Equal(b, ts, s.EndTimestamp())
+					s.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+					assert.Equal(b, pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), s.TraceID())
+					s.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+					assert.Equal(b, pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}), s.SpanID())
+				}
+				s := iss.Spans().AppendEmpty()
+				s.SetName("another_span")
+				s.SetStartTimestamp(ts)
+				s.SetEndTimestamp(ts)
+				s.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+				s.SetParentSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+				s.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+				s.Attributes().PutStr("foo1", "bar1")
+				s.Attributes().PutStr("foo2", "bar2")
+				iss.Spans().RemoveIf(func(lr Span) bool {
+					return lr.Name() == "another_span"
+				})
+			}
+		}
+	}
 }
