@@ -78,17 +78,17 @@ func TestRegisterGateLifecycle(t *testing.T) {
 	}{
 		{
 			name:      "StageAlpha Flag",
-			id:        "test-gate",
+			id:        "test.gate",
 			stage:     StageAlpha,
 			enabled:   false,
 			shouldErr: false,
 		},
 		{
 			name:  "StageAlpha Flag with all options",
-			id:    "test-gate",
+			id:    "test.gate",
 			stage: StageAlpha,
 			opts: []RegisterOption{
-				WithRegisterDescription("test-gate"),
+				WithRegisterDescription("test.gate"),
 				WithRegisterReferenceURL("http://example.com/issue/1"),
 				WithRegisterToVersion("v0.88.0"),
 			},
@@ -97,24 +97,24 @@ func TestRegisterGateLifecycle(t *testing.T) {
 		},
 		{
 			name:      "StageBeta Flag",
-			id:        "test-gate",
+			id:        "test.gate",
 			stage:     StageBeta,
 			enabled:   true,
 			shouldErr: false,
 		},
 		{
 			name:  "StageStable Flag",
-			id:    "test-gate",
+			id:    "test.gate",
 			stage: StageStable,
 			opts: []RegisterOption{
-				WithRegisterToVersion("v1.0.0-rcv-0014"),
+				WithRegisterToVersion("v1.0.0-rcv.0014"),
 			},
 			enabled:   true,
 			shouldErr: false,
 		},
 		{
 			name:  "StageDeprecated Flag",
-			id:    "test-gate",
+			id:    "test.gate",
 			stage: StageDeprecated,
 			opts: []RegisterOption{
 				WithRegisterToVersion("v0.89.0"),
@@ -124,31 +124,31 @@ func TestRegisterGateLifecycle(t *testing.T) {
 		},
 		{
 			name:      "Invalid stage",
-			id:        "test-gate",
+			id:        "test.gate",
 			stage:     Stage(-1),
 			shouldErr: true,
 		},
 		{
 			name:      "StageStable gate missing removal version",
-			id:        "test-gate",
+			id:        "test.gate",
 			stage:     StageStable,
 			shouldErr: true,
 		},
 		{
 			name:      "StageDeprecated gate missing removal version",
-			id:        "test-gate",
+			id:        "test.gate",
 			stage:     StageDeprecated,
 			shouldErr: true,
 		},
 		{
 			name:      "Duplicate gate",
-			id:        "existing-gate",
+			id:        "existing.gate",
 			stage:     StageStable,
 			shouldErr: true,
 		},
 		{
 			name:      "Invalid gate name",
-			id:        "invalid+gate+name",
+			id:        "+invalid.gate.name",
 			stage:     StageAlpha,
 			shouldErr: true,
 		},
@@ -160,28 +160,28 @@ func TestRegisterGateLifecycle(t *testing.T) {
 		},
 		{
 			name:      "Invalid gate to version",
-			id:        "invalid-gate-to-version",
+			id:        "invalid.gate.to.version",
 			stage:     StageAlpha,
 			opts:      []RegisterOption{WithRegisterToVersion("invalid-version")},
 			shouldErr: true,
 		},
 		{
 			name:      "Invalid gate from version",
-			id:        "invalid-gate-from-version",
+			id:        "invalid.gate.from.version",
 			stage:     StageAlpha,
 			opts:      []RegisterOption{WithRegisterFromVersion("invalid-version")},
 			shouldErr: true,
 		},
 		{
 			name:      "Invalid gate reference URL",
-			id:        "invalid-gate-reference-URL",
+			id:        "invalid.gate.reference.URL",
 			stage:     StageAlpha,
 			opts:      []RegisterOption{WithRegisterReferenceURL(":invalid-url")},
 			shouldErr: true,
 		},
 		{
 			name:  "Empty version range",
-			id:    "invalid-gate-version-range",
+			id:    "invalid.gate.version.range",
 			stage: StageAlpha,
 			opts: []RegisterOption{
 				WithRegisterFromVersion("v0.88.0"),
@@ -192,7 +192,7 @@ func TestRegisterGateLifecycle(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			r := NewRegistry()
-			r.MustRegister("existing-gate", StageBeta)
+			r.MustRegister("existing.gate", StageBeta)
 			if tc.shouldErr {
 				_, err := r.Register(tc.id, tc.stage, tc.opts...)
 				assert.Error(t, err)
