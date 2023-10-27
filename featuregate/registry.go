@@ -5,12 +5,22 @@ package featuregate // import "go.opentelemetry.io/collector/featuregate"
 
 import (
 	"fmt"
+	"net/url"
+	"regexp"
 	"sort"
 	"sync"
 	"sync/atomic"
+
+	"github.com/hashicorp/go-version"
 )
 
-var globalRegistry = NewRegistry()
+var (
+	globalRegistry = NewRegistry()
+
+	// idRegexp is used to validate the ID of a Gate.
+	// IDs' characters must be alphanumeric, dots, or dashes.
+	idRegexp = regexp.MustCompile(`^[0-9a-zA-Z\.\-]+$`)
+)
 
 // GlobalRegistry returns the global Registry.
 func GlobalRegistry() *Registry {
@@ -46,17 +56,32 @@ func WithRegisterDescription(description string) RegisterOption {
 }
 
 // WithRegisterReferenceURL adds a URL that has all the contextual information about the Gate.
-func WithRegisterReferenceURL(url string) RegisterOption {
+func WithRegisterReferenceURL(referenceURL string) RegisterOption {
 	return registerOptionFunc(func(g *Gate) error {
-		g.referenceURL = url
+		if _, err := url.Parse(referenceURL); err != nil {
+			return fmt.Errorf("WithRegisterReferenceURL: invalid reference URL %q: %w", referenceURL, err)
+		}
+
+		g.referenceURL = referenceURL
 		return nil
 	})
+}
+
+func validateVersion(v string) error {
+	if _, err := version.NewVersion(v); err != nil {
+		return err
+	}
+	return nil
 }
 
 // WithRegisterFromVersion is used to set the Gate "FromVersion".
 // The "FromVersion" contains the Collector release when a feature is introduced.
 func WithRegisterFromVersion(fromVersion string) RegisterOption {
 	return registerOptionFunc(func(g *Gate) error {
+		if err := validateVersion(fromVersion); err != nil {
+			return fmt.Errorf("WithRegisterFromVersion: %w", err)
+		}
+
 		g.fromVersion = fromVersion
 		return nil
 	})
@@ -67,6 +92,10 @@ func WithRegisterFromVersion(fromVersion string) RegisterOption {
 // If the feature stage is either "Deprecated" or "Stable", the "ToVersion" is the Collector release when the feature is removed.
 func WithRegisterToVersion(toVersion string) RegisterOption {
 	return registerOptionFunc(func(g *Gate) error {
+		if err := validateVersion(toVersion); err != nil {
+			return fmt.Errorf("WithRegisterToVersion: %w", err)
+		}
+
 		g.toVersion = toVersion
 		return nil
 	})
@@ -81,8 +110,23 @@ func (r *Registry) MustRegister(id string, stage Stage, opts ...RegisterOption) 
 	return g
 }
 
+func validateID(id string) error {
+	if id == "" {
+		return fmt.Errorf("empty ID")
+	}
+
+	if !idRegexp.MatchString(id) {
+		return fmt.Errorf("invalid character(s) in ID")
+	}
+	return nil
+}
+
 // Register a Gate and return it. The returned Gate can be used to check if is enabled or not.
 func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Gate, error) {
+	if err := validateID(id); err != nil {
+		return nil, fmt.Errorf("invalid ID %q: %w", id, err)
+	}
+
 	g := &Gate{
 		id:    id,
 		stage: stage,
