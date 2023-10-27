@@ -7,7 +7,7 @@ change_type: deprecation
 component: featuregate
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate `featuregate.NewFlag` in favor of `featuregate.NewFlags`
+note: Deprecate `featuregate.NewFlag` in favor of `featuregate.RegisterFlags`
 
 # One or more tracking issues or pull requests related to the change
 issues: [8727]
