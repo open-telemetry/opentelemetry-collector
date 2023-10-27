@@ -48,14 +48,14 @@ func TestRegistryApplyError(t *testing.T) {
 	_, err := r.Register("foo", StageStable)
 	assert.Error(t, err)
 	assert.Error(t, r.Set("foo", true))
-	r.MustRegister("foo", StageStable, WithRegisterToVersion("next"))
+	r.MustRegister("foo", StageStable, WithRegisterToVersion("v1.0.0"))
 	assert.Error(t, r.Set("foo", false))
 
 	assert.Error(t, r.Set("deprecated", true))
 	_, err = r.Register("deprecated", StageDeprecated)
 	assert.Error(t, err)
 	assert.Error(t, r.Set("deprecated", true))
-	r.MustRegister("deprecated", StageDeprecated, WithRegisterToVersion("next"))
+	r.MustRegister("deprecated", StageDeprecated, WithRegisterToVersion("v1.0.0"))
 	assert.Error(t, r.Set("deprecated", true))
 }
 
