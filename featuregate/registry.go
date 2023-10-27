@@ -28,34 +28,37 @@ func NewRegistry() *Registry {
 
 // RegisterOption allows to configure additional information about a Gate during registration.
 type RegisterOption interface {
-	apply(g *Gate)
+	apply(g *Gate) error
 }
 
-type registerOptionFunc func(g *Gate)
+type registerOptionFunc func(g *Gate) error
 
-func (ro registerOptionFunc) apply(g *Gate) {
-	ro(g)
+func (ro registerOptionFunc) apply(g *Gate) error {
+	return ro(g)
 }
 
 // WithRegisterDescription adds description for the Gate.
 func WithRegisterDescription(description string) RegisterOption {
-	return registerOptionFunc(func(g *Gate) {
+	return registerOptionFunc(func(g *Gate) error {
 		g.description = description
+		return nil
 	})
 }
 
 // WithRegisterReferenceURL adds a URL that has all the contextual information about the Gate.
 func WithRegisterReferenceURL(url string) RegisterOption {
-	return registerOptionFunc(func(g *Gate) {
+	return registerOptionFunc(func(g *Gate) error {
 		g.referenceURL = url
+		return nil
 	})
 }
 
 // WithRegisterFromVersion is used to set the Gate "FromVersion".
 // The "FromVersion" contains the Collector release when a feature is introduced.
 func WithRegisterFromVersion(fromVersion string) RegisterOption {
-	return registerOptionFunc(func(g *Gate) {
+	return registerOptionFunc(func(g *Gate) error {
 		g.fromVersion = fromVersion
+		return nil
 	})
 }
 
@@ -63,8 +66,9 @@ func WithRegisterFromVersion(fromVersion string) RegisterOption {
 // The "ToVersion", if not empty, contains the last Collector release in which you can still use a feature gate.
 // If the feature stage is either "Deprecated" or "Stable", the "ToVersion" is the Collector release when the feature is removed.
 func WithRegisterToVersion(toVersion string) RegisterOption {
-	return registerOptionFunc(func(g *Gate) {
+	return registerOptionFunc(func(g *Gate) error {
 		g.toVersion = toVersion
+		return nil
 	})
 }
 
@@ -84,7 +88,10 @@ func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Ga
 		stage: stage,
 	}
 	for _, opt := range opts {
-		opt.apply(g)
+		err := opt.apply(g)
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply option: %w", err)
+		}
 	}
 	switch g.stage {
 	case StageAlpha, StageDeprecated:
