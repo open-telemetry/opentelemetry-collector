@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	configFlag       = "config"
-	featureGatesFlag = "feature-gates"
+	configFlag = "config"
 )
 
 type configFlagValue struct {
@@ -50,10 +49,7 @@ func flags(reg *featuregate.Registry) *flag.FlagSet {
 			return nil
 		})
 
-	featuregateFlags := featuregate.NewFlags(reg)
-	flagSet.Var(featuregateFlags.RegistrationFlag, featureGatesFlag,
-		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
-
+	featuregate.RegisterFlags(*flagSet, reg)
 	return flagSet
 }
 

@@ -10,23 +10,29 @@ import (
 	"go.uber.org/multierr"
 )
 
-// Flags related to feature gates.
-type Flags struct {
-	// RegistrationFlag is the flag used to register feature gates.
-	RegistrationFlag flag.Value
-}
+const (
+	featureGatesFlag            = "feature-gates"
+	featureGatesFlagDescription = "Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature."
+)
 
 // NewFlag returns a flag.Value that directly applies feature gate statuses to a Registry.
-// Deprecated: Use NewFlags instead.
+// Deprecated: Use RegisterFlags instead.
 func NewFlag(reg *Registry) flag.Value {
+	return newFeatureGateValue(reg)
+}
+
+func newFeatureGateValue(reg *Registry) flag.Value {
 	return &flagValue{reg: reg}
 }
 
-// NewFlags returns Flags that control building the global Registry.
-func NewFlags(reg *Registry) Flags {
-	return Flags{
-		RegistrationFlag: &flagValue{reg: reg},
-	}
+// FlagsOption is an option for RegisterFlags.
+type FlagsOption interface {
+	private()
+}
+
+// RegisterFlags that directly applies feature gate statuses to a Registry.
+func RegisterFlags(flagSet flag.FlagSet, reg *Registry, opts ...FlagsOption) {
+	flagSet.Var(newFeatureGateValue(reg), featureGatesFlag, featureGatesFlagDescription)
 }
 
 // flagValue implements the flag.Value interface and directly applies feature gate statuses to a Registry.
