@@ -150,6 +150,21 @@ func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Ga
 	if (g.stage == StageStable || g.stage == StageDeprecated) && g.toVersion == "" {
 		return nil, fmt.Errorf("no removal version set for %v gate %q", g.stage.String(), id)
 	}
+
+	if g.fromVersion != "" && g.toVersion != "" {
+		from, err := version.NewVersion(g.fromVersion)
+		if err != nil {
+			return nil, fmt.Errorf("invalid fromVersion %q: %w", g.fromVersion, err)
+		}
+		to, err := version.NewVersion(g.toVersion)
+		if err != nil {
+			return nil, fmt.Errorf("invalid toVersion %q: %w", g.toVersion, err)
+		}
+		if to.LessThan(from) {
+			return nil, fmt.Errorf("toVersion %q is before fromVersion %q", g.toVersion, g.fromVersion)
+		}
+	}
+
 	if _, loaded := r.gates.LoadOrStore(id, g); loaded {
 		return nil, fmt.Errorf("attempted to add pre-existing gate %q", id)
 	}

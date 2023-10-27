@@ -179,6 +179,16 @@ func TestRegisterGateLifecycle(t *testing.T) {
 			opts:      []RegisterOption{WithRegisterReferenceURL(":invalid-url")},
 			shouldErr: true,
 		},
+		{
+			name:  "Empty version range",
+			id:    "invalid-gate-version-range",
+			stage: StageAlpha,
+			opts: []RegisterOption{
+				WithRegisterFromVersion("v0.88.0"),
+				WithRegisterToVersion("v0.87.0"),
+			},
+			shouldErr: true,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			r := NewRegistry()
