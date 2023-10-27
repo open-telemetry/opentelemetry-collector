@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package storage // import "go.opentelemetry.io/collector/extension/experimental/storage"
+package storage // import "go.opentelemetry.io/collector/extension/storage"
 
 import "context"
 
@@ -10,7 +10,6 @@ type nopClient struct{}
 var nopClientInstance Client = &nopClient{}
 
 // NewNopClient returns a nop client
-// Deprecated: [0.89.0] Use go.opentelemetry.io/collector/extension/storage.NewNopClient instead.
 func NewNopClient() Client {
 	return nopClientInstance
 }

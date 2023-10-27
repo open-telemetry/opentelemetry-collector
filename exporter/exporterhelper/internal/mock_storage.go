@@ -12,7 +12,7 @@ import (
 	"syscall"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/storage"
 )
 
 type mockStorageExtension struct {

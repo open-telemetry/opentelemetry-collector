@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package storage // import "go.opentelemetry.io/collector/extension/experimental/storage"
+package storage // import "go.opentelemetry.io/collector/extension/storage"
 
 import (
 	"context"
@@ -10,8 +10,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 )
 
-// Extension is the interface that storage extensions must implement
-// Deprecated: [0.89.0] Use go.opentelemetry.io/collector/extension/storage.Extension instead.
+// Extension is the interface that storage extensions must implement.
 type Extension interface {
 	extension.Extension
 
@@ -35,8 +34,6 @@ type Extension interface {
 // This also provides a way to differentiate data operations
 //
 //	[overwrite | not-found | no-op] from "real" problems
-//
-// Deprecated: [0.89.0] Use go.opentelemetry.io/collector/extension/storage.Client instead.
 type Client interface {
 
 	// Get will retrieve data from storage that corresponds to the
@@ -74,10 +71,8 @@ type operation struct {
 	Type opType
 }
 
-// Deprecated: [0.89.0] Use go.opentelemetry.io/collector/extension/storage.Operation instead.
 type Operation *operation
 
-// Deprecated: [0.89.0] Use go.opentelemetry.io/collector/extension/storage.SetOperation instead.
 func SetOperation(key string, value []byte) Operation {
 	return &operation{
 		Key:   key,
@@ -86,7 +81,6 @@ func SetOperation(key string, value []byte) Operation {
 	}
 }
 
-// Deprecated: [0.89.0] Use go.opentelemetry.io/collector/extension/storage.GetOperation instead.
 func GetOperation(key string) Operation {
 	return &operation{
 		Key:  key,
@@ -94,7 +88,6 @@ func GetOperation(key string) Operation {
 	}
 }
 
-// Deprecated: [0.89.0] Use go.opentelemetry.io/collector/extension/storage.DeleteOperation instead.
 func DeleteOperation(key string) Operation {
 	return &operation{
 		Key:  key,

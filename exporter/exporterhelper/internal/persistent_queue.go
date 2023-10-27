@@ -15,7 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/storage"
 )
 
 // persistentQueue provides a persistent queue implementation backed by file storage extension
