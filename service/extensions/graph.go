@@ -57,7 +57,7 @@ func (dg *dependencyGraph) sort() ([]component.ID, error) {
 	if err != nil {
 		return nil, err
 	}
-	order := make([]component.ID, 0, len(nodes))
+	order := make([]component.ID, len(nodes))
 	for i, n := range nodes {
 		order[i] = n.(*node).extID
 	}
