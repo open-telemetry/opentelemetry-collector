@@ -16,6 +16,11 @@ import (
 // to the service, examples: health check endpoint, z-pages, etc.
 type Extension = component.Component
 
+// TODO this can even be DependentComponent, but not sure if there's a use case for that.
+type DependentExtension interface {
+	Dependencies() []component.ID
+}
+
 // PipelineWatcher is an extra interface for Extension hosted by the OpenTelemetry
 // Collector that is to be implemented by extensions interested in changes to pipeline
 // states. Typically this will be used by extensions that change their behavior if data is
