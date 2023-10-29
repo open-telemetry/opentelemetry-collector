@@ -98,10 +98,18 @@ func TestOrdering(t *testing.T) {
 	var shutdownOrder []string
 
 	recordingExtensionFactory := newRecordingExtensionFactory(func(set extension.CreateSettings, host component.Host) error {
-		startOrder = append(startOrder, set.ID.String())
+		id := set.ID.String()
+		if id != "recording" {
+			// we're only interested in the bar/baz order
+			startOrder = append(startOrder, set.ID.String())
+		}
 		return nil
 	}, func(set extension.CreateSettings) error {
-		shutdownOrder = append(shutdownOrder, set.ID.String())
+		id := set.ID.String()
+		if id != "recording" {
+			// we're only interested in the bar/baz order
+			shutdownOrder = append(shutdownOrder, set.ID.String())
+		}
 		return nil
 	})
 
@@ -130,12 +138,13 @@ func TestOrdering(t *testing.T) {
 	require.NoError(t, err)
 	err = exts.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	// TODO fix test since the exact order of starting and stopping is not guaranteed.
-	// What is meant to be guaranteed is "foo" starting before "bar", while "recording" can be anywhere.
-	require.Equal(t, []string{"recording", "recording/foo", "recording/bar"}, startOrder)
+	// The exact order of starting and stopping is not guaranteed, because the first extension is
+	// not comparable with the other two, and can occur in any place.
+	// What is guaranteed is "foo" starting before "bar".
+	require.Equal(t, []string{"recording/foo", "recording/bar"}, startOrder)
 	err = exts.Shutdown(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, []string{"recording/bar", "recording/foo", "recording"}, shutdownOrder)
+	require.Equal(t, []string{"recording/bar", "recording/foo"}, shutdownOrder)
 }
 
 func TestNotifyConfig(t *testing.T) {

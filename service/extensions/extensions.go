@@ -188,8 +188,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 		exts.extMap[extID] = ext
 		exts.instanceIDs[extID] = instanceID
 	}
-	graph := newDependencyGraph(exts)
-	order, err := graph.computeOrder()
+	order, err := computeOrder(exts)
 	if err != nil {
 		return nil, err
 	}
