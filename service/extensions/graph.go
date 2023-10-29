@@ -2,7 +2,6 @@ package extensions
 
 import (
 	"fmt"
-	"hash/fnv"
 
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
@@ -17,14 +16,12 @@ type node struct {
 }
 
 func (n node) ID() int64 {
-	return int64(n.nodeID)
+	return n.nodeID
 }
 
-func newNode(extID component.ID) *node {
-	h := fnv.New64a()
-	_, _ = h.Write([]byte(extID.String()))
+func newNode(id int, extID component.ID) *node {
 	return &node{
-		nodeID: int64(h.Sum64()),
+		nodeID: int64(id),
 		extID:  extID,
 	}
 }
@@ -33,7 +30,7 @@ func computeOrder(exts *Extensions) ([]component.ID, error) {
 	graph := simple.NewDirectedGraph()
 	nodes := make(map[component.ID]*node)
 	for extID := range exts.extMap {
-		n := newNode(extID)
+		n := newNode(len(nodes)+1, extID)
 		graph.AddNode(n)
 		nodes[extID] = n
 	}
