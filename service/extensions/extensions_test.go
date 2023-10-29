@@ -110,9 +110,14 @@ func TestOrdering(t *testing.T) {
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Extensions: extension.NewBuilder(
 			map[component.ID]component.Config{
-				component.NewID(recordingExtensionFactory.Type()):                struct{}{},
-				component.NewIDWithName(recordingExtensionFactory.Type(), "foo"): struct{}{},
-				component.NewIDWithName(recordingExtensionFactory.Type(), "bar"): struct{}{},
+				component.NewID(recordingExtensionFactory.Type()): recordingExtensionConfig{},
+				component.NewIDWithName(recordingExtensionFactory.Type(), "foo"): recordingExtensionConfig{
+					// has a dependency on bar. In the real world this would be expressed by user via config.
+					dependencies: []component.ID{
+						component.NewIDWithName(recordingExtensionFactory.Type(), "bar"),
+					},
+				},
+				component.NewIDWithName(recordingExtensionFactory.Type(), "bar"): recordingExtensionConfig{},
 			},
 			map[component.Type]extension.Factory{
 				recordingExtensionFactory.Type(): recordingExtensionFactory,
@@ -125,6 +130,8 @@ func TestOrdering(t *testing.T) {
 	require.NoError(t, err)
 	err = exts.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
+	// TODO fix test since the exact order of starting and stopping is not guaranteed.
+	// What is meant to be guaranteed is "foo" starting before "bar", while "recording" can be anywhere.
 	require.Equal(t, []string{"recording", "recording/foo", "recording/bar"}, startOrder)
 	err = exts.Shutdown(context.Background())
 	require.NoError(t, err)
@@ -405,10 +412,11 @@ func newRecordingExtensionFactory(startCallback func(set extension.CreateSetting
 	return extension.NewFactory(
 		"recording",
 		func() component.Config {
-			return &struct{}{}
+			return &recordingExtensionConfig{}
 		},
-		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
+		func(ctx context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
 			return &recordingExtension{
+				config:           cfg.(recordingExtensionConfig),
 				createSettings:   set,
 				startCallback:    startCallback,
 				shutdownCallback: shutdownCallback,
@@ -418,10 +426,21 @@ func newRecordingExtensionFactory(startCallback func(set extension.CreateSetting
 	)
 }
 
+type recordingExtensionConfig struct {
+	dependencies []component.ID
+}
+
 type recordingExtension struct {
+	config           recordingExtensionConfig
 	startCallback    func(set extension.CreateSettings, host component.Host) error
 	shutdownCallback func(set extension.CreateSettings) error
 	createSettings   extension.CreateSettings
+}
+
+var _ extension.DependentExtension = (*recordingExtension)(nil)
+
+func (ext *recordingExtension) Dependencies() []component.ID {
+	return ext.config.dependencies
 }
 
 func (ext *recordingExtension) Start(_ context.Context, host component.Host) error {

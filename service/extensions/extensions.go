@@ -24,15 +24,9 @@ const zExtensionName = "zextensionname"
 // Extensions is a map of extensions created from extension configs.
 type Extensions struct {
 	telemetry    servicetelemetry.TelemetrySettings
-<<<<<<< HEAD
 	extMap       map[component.ID]extension.Extension
 	instanceIDs  map[component.ID]*component.InstanceID
 	extensionIDs []component.ID // start order (and reverse stop order)
-=======
-	extensionIDs []component.ID
-	extMap       map[component.ID]extension.Extension
-	instanceIDs  map[component.ID]*component.InstanceID
->>>>>>> 24dfe7690 ([service/extensions] enforce order of start and shutdown of extensions according to configuration)
 }
 
 // Start starts all extensions.
@@ -169,7 +163,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 		instanceIDs:  make(map[component.ID]*component.InstanceID),
 		extensionIDs: make([]component.ID, 0, len(cfg)),
 	}
-	graph := newDependencyGraph()
 	for _, extID := range cfg {
 		instanceID := &component.InstanceID{
 			ID:   extID,
@@ -194,9 +187,9 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 
 		exts.extMap[extID] = ext
 		exts.instanceIDs[extID] = instanceID
-		exts.extensionIDs = append(exts.extensionIDs, extID)
 	}
-	order, err := graph.sort()
+	graph := newDependencyGraph(exts)
+	order, err := graph.computeOrder()
 	if err != nil {
 		return nil, err
 	}
