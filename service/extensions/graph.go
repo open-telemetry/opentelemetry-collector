@@ -19,18 +19,14 @@ func (n node) ID() int64 {
 	return n.nodeID
 }
 
-func newNode(id int, extID component.ID) *node {
-	return &node{
-		nodeID: int64(id),
-		extID:  extID,
-	}
-}
-
 func computeOrder(exts *Extensions) ([]component.ID, error) {
 	graph := simple.NewDirectedGraph()
 	nodes := make(map[component.ID]*node)
 	for extID := range exts.extMap {
-		n := newNode(len(nodes)+1, extID)
+		n := &node{
+			nodeID: int64(len(nodes) + 1),
+			extID:  extID,
+		}
 		graph.AddNode(n)
 		nodes[extID] = n
 	}
@@ -48,7 +44,7 @@ func computeOrder(exts *Extensions) ([]component.ID, error) {
 	}
 	orderedNodes, err := topo.Sort(graph)
 	if err != nil {
-		return nil, fmt.Errorf("unable to sort the dependency graph: %w", err)
+		return nil, fmt.Errorf("unable to sort the extenions dependency graph: %w", err)
 	}
 
 	order := make([]component.ID, len(orderedNodes))
