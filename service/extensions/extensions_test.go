@@ -100,14 +100,14 @@ func TestOrdering(t *testing.T) {
 	recordingExtensionFactory := newRecordingExtensionFactory(func(set extension.CreateSettings, host component.Host) error {
 		id := set.ID.String()
 		if id != "recording" {
-			// we're only interested in the bar/baz order
+			// we're only interested in the relative foo/bar order
 			startOrder = append(startOrder, set.ID.String())
 		}
 		return nil
 	}, func(set extension.CreateSettings) error {
 		id := set.ID.String()
 		if id != "recording" {
-			// we're only interested in the bar/baz order
+			// we're only interested in the relative foo/bar order
 			shutdownOrder = append(shutdownOrder, set.ID.String())
 		}
 		return nil
