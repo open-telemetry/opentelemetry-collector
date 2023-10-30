@@ -49,7 +49,7 @@ func flags(reg *featuregate.Registry) *flag.FlagSet {
 			return nil
 		})
 
-	featuregate.RegisterFlags(*flagSet, reg)
+	featuregate.RegisterFlags(flagSet, reg)
 	return flagSet
 }
 
