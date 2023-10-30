@@ -4,6 +4,7 @@
 package featuregate
 
 import (
+	"flag"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -113,18 +114,21 @@ func TestNewFlag(t *testing.T) {
 			reg.MustRegister("beta", StageBeta)
 			reg.MustRegister("deprecated", StageDeprecated, WithRegisterToVersion("1.0.0"))
 			reg.MustRegister("stable", StageStable, WithRegisterToVersion("1.0.0"))
-			flags := NewFlags(reg)
+			fs := flag.NewFlagSet("test", flag.ContinueOnError)
+			RegisterFlags(fs, reg)
+			registrationFlag := fs.Lookup(featureGatesFlag)
+			require.NotNil(t, registrationFlag)
 			if tt.expectedSetErr {
-				require.Error(t, flags.RegistrationFlag.Set(tt.input))
+				require.Error(t, registrationFlag.Value.Set(tt.input))
 			} else {
-				require.NoError(t, flags.RegistrationFlag.Set(tt.input))
+				require.NoError(t, registrationFlag.Value.Set(tt.input))
 			}
 			got := map[string]bool{}
 			reg.VisitAll(func(g *Gate) {
 				got[g.ID()] = g.IsEnabled()
 			})
 			assert.Equal(t, tt.expected, got)
-			assert.Equal(t, tt.expectedStr, flags.RegistrationFlag.String())
+			assert.Equal(t, tt.expectedStr, registrationFlag.Value.String())
 		})
 	}
 }
