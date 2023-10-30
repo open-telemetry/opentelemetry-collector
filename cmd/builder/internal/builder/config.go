@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.87.0"
+const defaultOtelColVersion = "0.88.0"
 
 // ErrInvalidGoMod indicates an invalid gomod
 var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
@@ -98,7 +98,7 @@ func (c *Config) Validate() error {
 func (c *Config) SetGoPath() error {
 	if !c.SkipCompilation || !c.SkipGetModules {
 		// #nosec G204
-		if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil {
+		if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil { // nolint G204
 			path, err := exec.LookPath("go")
 			if err != nil {
 				return ErrGoNotFound
