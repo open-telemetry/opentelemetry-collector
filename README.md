@@ -132,7 +132,6 @@ Here is a list of community roles with current and previous members:
    - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
    - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
    - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
-   - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
 - Emeritus Approvers:
 
@@ -148,6 +147,7 @@ Here is a list of community roles with current and previous members:
    - [Alex Boten](https://github.com/codeboten), Lightstep
    - [Bogdan Drutu](https://github.com/BogdanDrutu), Snowflake
    - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
+   - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
 - Emeritus Maintainers:
 
