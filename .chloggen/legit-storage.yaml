@@ -17,7 +17,10 @@ issues: [8767]
 # Use pipe (|) for multiline entries.
 subtext: |
   'extension/experimental/storage' package is deprecated in favor of 'extension/storage' package.
-  There are no functional changes between the two packages.
+  There are no functional changes between the two packages, however, a few minor changes were made to the API.
+  - `storage.Extension.GetClient` renamed to `storage.Extension.NewClient`.
+  - `storage.Operation` no longer aliases unexported `*operation`, instead contains fields previously in `operation`.
+  - `storage.Client.Batch` now expects `...*Operation` instead of `...Operation`.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

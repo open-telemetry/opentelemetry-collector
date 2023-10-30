@@ -22,7 +22,7 @@ type mockStorageExtension struct {
 	getClientError error
 }
 
-func (m *mockStorageExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, _ string) (storage.Client, error) {
+func (m *mockStorageExtension) NewClient(_ context.Context, _ component.Kind, _ component.ID, _ string) (storage.Client, error) {
 	if m.getClientError != nil {
 		return nil, m.getClientError
 	}
@@ -57,7 +57,7 @@ func (m *mockStorageClient) Close(_ context.Context) error {
 	return nil
 }
 
-func (m *mockStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+func (m *mockStorageClient) Batch(_ context.Context, ops ...*storage.Operation) error {
 	if m.isClosed() {
 		panic("client already closed")
 	}
@@ -124,7 +124,7 @@ func (m *fakeBoundedStorageClient) Close(_ context.Context) error {
 	return nil
 }
 
-func (m *fakeBoundedStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+func (m *fakeBoundedStorageClient) Batch(_ context.Context, ops ...*storage.Operation) error {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 
@@ -167,7 +167,7 @@ func (m *fakeBoundedStorageClient) GetSizeInBytes() int {
 	return m.sizeInBytes
 }
 
-func (m *fakeBoundedStorageClient) getTotalSizeChange(ops []storage.Operation) (totalAdded int, totalRemoved int) {
+func (m *fakeBoundedStorageClient) getTotalSizeChange(ops []*storage.Operation) (totalAdded int, totalRemoved int) {
 	totalAdded, totalRemoved = 0, 0
 	for _, op := range ops {
 		switch op.Type {
@@ -225,7 +225,7 @@ func (m *fakeStorageClientWithErrors) Close(_ context.Context) error {
 	return nil
 }
 
-func (m *fakeStorageClientWithErrors) Batch(_ context.Context, _ ...storage.Operation) error {
+func (m *fakeStorageClientWithErrors) Batch(_ context.Context, _ ...*storage.Operation) error {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 

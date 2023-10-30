@@ -35,6 +35,6 @@ func (c nopClient) Close(context.Context) error {
 }
 
 // Batch does nothing, and returns nil, nil
-func (c nopClient) Batch(context.Context, ...Operation) error {
+func (c nopClient) Batch(context.Context, ...*Operation) error {
 	return nil // no result, but no problem
 }

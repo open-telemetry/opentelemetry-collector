@@ -223,7 +223,7 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	}
 
 	// Carry out a transaction where we both add the item and update the write index
-	ops := []storage.Operation{
+	ops := []*storage.Operation{
 		storage.SetOperation(writeIndexKey, itemIndexToBytes(newIndex)),
 		storage.SetOperation(itemKey, reqBuf),
 	}
@@ -318,8 +318,8 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 
 	pq.set.Logger.Info("Fetching items left for dispatch by consumers", zap.Int(zapNumberOfItems,
 		len(dispatchedItems)))
-	retrieveBatch := make([]storage.Operation, len(dispatchedItems))
-	cleanupBatch := make([]storage.Operation, len(dispatchedItems))
+	retrieveBatch := make([]*storage.Operation, len(dispatchedItems))
+	cleanupBatch := make([]*storage.Operation, len(dispatchedItems))
 	for i, it := range dispatchedItems {
 		key := getItemKey(it)
 		retrieveBatch[i] = storage.GetOperation(key)
@@ -410,7 +410,7 @@ func toStorageClient(ctx context.Context, storageID component.ID, host component
 		return nil, errWrongExtensionType
 	}
 
-	return storageExt.GetClient(ctx, component.KindExporter, ownerID, string(signal))
+	return storageExt.NewClient(ctx, component.KindExporter, ownerID, string(signal))
 }
 
 func getItemKey(index uint64) string {

@@ -54,7 +54,7 @@ func createAndStartTestPersistentQueue(t *testing.T, capacity, numConsumers int,
 }
 
 func createTestClient(t testing.TB, extension storage.Extension) storage.Client {
-	client, err := extension.GetClient(context.Background(), component.KindReceiver, component.ID{}, "")
+	client, err := extension.NewClient(context.Background(), component.KindReceiver, component.ID{}, "")
 	require.NoError(t, err)
 	return client
 }
