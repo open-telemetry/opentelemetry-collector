@@ -67,22 +67,16 @@ func WithRegisterReferenceURL(referenceURL string) RegisterOption {
 	})
 }
 
-func validateVersion(v string) error {
-	if _, err := version.NewVersion(v); err != nil {
-		return err
-	}
-	return nil
-}
-
 // WithRegisterFromVersion is used to set the Gate "FromVersion".
 // The "FromVersion" contains the Collector release when a feature is introduced.
 func WithRegisterFromVersion(fromVersion string) RegisterOption {
 	return registerOptionFunc(func(g *Gate) error {
-		if err := validateVersion(fromVersion); err != nil {
+		from, err := version.NewVersion(fromVersion)
+		if err != nil {
 			return fmt.Errorf("WithRegisterFromVersion: %w", err)
 		}
 
-		g.fromVersion = fromVersion
+		g.fromVersion = from
 		return nil
 	})
 }
@@ -92,11 +86,12 @@ func WithRegisterFromVersion(fromVersion string) RegisterOption {
 // If the feature stage is either "Deprecated" or "Stable", the "ToVersion" is the Collector release when the feature is removed.
 func WithRegisterToVersion(toVersion string) RegisterOption {
 	return registerOptionFunc(func(g *Gate) error {
-		if err := validateVersion(toVersion); err != nil {
+		to, err := version.NewVersion(toVersion)
+		if err != nil {
 			return fmt.Errorf("WithRegisterToVersion: %w", err)
 		}
 
-		g.toVersion = toVersion
+		g.toVersion = to
 		return nil
 	})
 }
@@ -147,22 +142,12 @@ func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Ga
 	default:
 		return nil, fmt.Errorf("unknown stage value %q for gate %q", stage, id)
 	}
-	if (g.stage == StageStable || g.stage == StageDeprecated) && g.toVersion == "" {
+	if (g.stage == StageStable || g.stage == StageDeprecated) && g.toVersion == nil {
 		return nil, fmt.Errorf("no removal version set for %v gate %q", g.stage.String(), id)
 	}
 
-	if g.fromVersion != "" && g.toVersion != "" {
-		from, err := version.NewVersion(g.fromVersion)
-		if err != nil {
-			return nil, fmt.Errorf("invalid fromVersion %q: %w", g.fromVersion, err)
-		}
-		to, err := version.NewVersion(g.toVersion)
-		if err != nil {
-			return nil, fmt.Errorf("invalid toVersion %q: %w", g.toVersion, err)
-		}
-		if to.LessThan(from) {
-			return nil, fmt.Errorf("toVersion %q is before fromVersion %q", g.toVersion, g.fromVersion)
-		}
+	if g.fromVersion != nil && g.toVersion != nil && g.toVersion.LessThan(g.fromVersion) {
+		return nil, fmt.Errorf("toVersion %q is before fromVersion %q", g.toVersion, g.fromVersion)
 	}
 
 	if _, loaded := r.gates.LoadOrStore(id, g); loaded {
