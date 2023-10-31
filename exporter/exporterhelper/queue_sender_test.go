@@ -271,7 +271,10 @@ func TestQueuedRetry_RequeuingEnabledQueueFull(t *testing.T) {
 	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
 	mockR := newMockRequest(context.Background(), 1, traceErr)
 
-	require.Error(t, be.retrySender.send(mockR), "sending_queue is full")
+	ocs := be.obsrepSender.(*observabilityConsumerSender)
+	ocs.run(func() {
+		require.Error(t, be.retrySender.send(mockR), "sending_queue is full")
+	})
 	mockR.checkNumRequests(t, 1)
 }
 
