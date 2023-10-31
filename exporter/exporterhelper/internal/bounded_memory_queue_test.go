@@ -7,6 +7,7 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -142,6 +143,63 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 		"j": true,
 	})
 	assert.Equal(t, 0, q.Size())
+}
+
+func Benchmark_QueueUsage_10000_1_50000(b *testing.B) {
+	queueUsage(b, 10000, 1, 50000)
+}
+
+func Benchmark_QueueUsage_10000_2_50000(b *testing.B) {
+	queueUsage(b, 10000, 2, 50000)
+}
+func Benchmark_QueueUsage_10000_5_50000(b *testing.B) {
+	queueUsage(b, 10000, 5, 50000)
+}
+func Benchmark_QueueUsage_10000_10_50000(b *testing.B) {
+	queueUsage(b, 10000, 10, 50000)
+}
+
+func Benchmark_QueueUsage_50000_1_50000(b *testing.B) {
+	queueUsage(b, 50000, 1, 50000)
+}
+
+func Benchmark_QueueUsage_50000_2_50000(b *testing.B) {
+	queueUsage(b, 50000, 2, 50000)
+}
+func Benchmark_QueueUsage_50000_5_50000(b *testing.B) {
+	queueUsage(b, 50000, 5, 50000)
+}
+func Benchmark_QueueUsage_50000_10_50000(b *testing.B) {
+	queueUsage(b, 50000, 10, 50000)
+}
+
+func Benchmark_QueueUsage_10000_1_250000(b *testing.B) {
+	queueUsage(b, 10000, 1, 250000)
+}
+
+func Benchmark_QueueUsage_10000_2_250000(b *testing.B) {
+	queueUsage(b, 10000, 2, 250000)
+}
+func Benchmark_QueueUsage_10000_5_250000(b *testing.B) {
+	queueUsage(b, 10000, 5, 250000)
+}
+func Benchmark_QueueUsage_10000_10_250000(b *testing.B) {
+	queueUsage(b, 10000, 10, 250000)
+}
+
+func queueUsage(b *testing.B, capacity int, numConsumers int, numberOfItems int) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		q := NewBoundedMemoryQueue(capacity, numConsumers)
+		err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {
+			time.Sleep(1 * time.Millisecond)
+		}))
+		require.NoError(b, err)
+		for j := 0; j < numberOfItems; j++ {
+			q.Produce(newStringRequest(fmt.Sprintf("%d", j)))
+		}
+		q.Stop()
+	}
 }
 
 type consumerState struct {
