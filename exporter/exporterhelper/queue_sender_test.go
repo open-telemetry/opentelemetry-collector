@@ -370,12 +370,12 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	// Invoke queuedRetrySender so the producer will put the item for consumer to poll
 	require.NoError(t, be.send(newErrorRequest(context.Background())))
 	// first wait for the item to be produced to the queue initially
-	require.Eventuallyf(t, func() bool {
-		return produceCounter.Load() == uint32(1)
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, uint32(1), produceCounter.Load())
 	}, 1*time.Second, 1*time.Millisecond, "Produce count: %d", produceCounter.Load())
 	require.NoError(t, be.Shutdown(context.Background()))
-	require.Eventuallyf(t, func() bool {
-		return produceCounter.Load() >= uint32(2)
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.True(c, produceCounter.Load() >= uint32(2))
 	}, 1*time.Second, 1*time.Millisecond, "Produce count: %d", produceCounter.Load())
 }
 
