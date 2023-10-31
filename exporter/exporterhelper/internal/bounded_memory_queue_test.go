@@ -194,6 +194,7 @@ func Benchmark_QueueUsage_10000_10_250000(b *testing.B) {
 }
 
 func queueUsage(b *testing.B, capacity int, numConsumers int, numberOfItems int) {
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		q := NewBoundedMemoryQueue(capacity, numConsumers)
 		err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {
