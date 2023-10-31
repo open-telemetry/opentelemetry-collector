@@ -185,7 +185,9 @@ func TestQueuedRetry_QueueMetricsReportedUsingOTel(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		require.NoError(t, be.send(newErrorRequest(context.Background())))
 	}
-	require.NoError(t, tt.CheckExporterMetricGauge("exporter_queue_size", int64(7)))
+	require.EventuallyWithT(t, func(collect *assert.CollectT) {
+		assert.NoError(collect, tt.CheckExporterMetricGauge("exporter_queue_size", int64(7)))
+	}, 1*time.Second, 1*time.Millisecond)
 
 	assert.NoError(t, be.Shutdown(context.Background()))
 }

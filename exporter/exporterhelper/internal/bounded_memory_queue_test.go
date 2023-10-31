@@ -73,6 +73,7 @@ func TestBoundedQueue(t *testing.T) {
 
 	// produce two more items. The first one should be accepted, but not consumed.
 	assert.True(t, q.Produce(newStringRequest("b")))
+	consumerState.waitToConsumeOnce()
 	assert.Equal(t, 2, q.Size())
 	// the second should be rejected since the queue is full
 	assert.False(t, q.Produce(newStringRequest("c")))
