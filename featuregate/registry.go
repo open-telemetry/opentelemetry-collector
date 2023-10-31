@@ -56,6 +56,7 @@ func WithRegisterDescription(description string) RegisterOption {
 }
 
 // WithRegisterReferenceURL adds a URL that has all the contextual information about the Gate.
+// referenceURL must be a valid URL as defined by `net/url.Parse`.
 func WithRegisterReferenceURL(referenceURL string) RegisterOption {
 	return registerOptionFunc(func(g *Gate) error {
 		if _, err := url.Parse(referenceURL); err != nil {
@@ -69,6 +70,8 @@ func WithRegisterReferenceURL(referenceURL string) RegisterOption {
 
 // WithRegisterFromVersion is used to set the Gate "FromVersion".
 // The "FromVersion" contains the Collector release when a feature is introduced.
+// fromVersion must be a valid version string: it may start with 'v' and must be in the format Major.Minor.Patch[-PreRelease].
+// PreRelease is optional and may have dashes, tildes and ASCII alphanumeric characters.
 func WithRegisterFromVersion(fromVersion string) RegisterOption {
 	return registerOptionFunc(func(g *Gate) error {
 		from, err := version.NewVersion(fromVersion)
@@ -84,6 +87,8 @@ func WithRegisterFromVersion(fromVersion string) RegisterOption {
 // WithRegisterToVersion is used to set the Gate "ToVersion".
 // The "ToVersion", if not empty, contains the last Collector release in which you can still use a feature gate.
 // If the feature stage is either "Deprecated" or "Stable", the "ToVersion" is the Collector release when the feature is removed.
+// toVersion must be a valid version string: it may start with 'v' and must be in the format Major.Minor.Patch[-PreRelease].
+// PreRelease is optional and may have dashes, tildes and ASCII alphanumeric characters.
 func WithRegisterToVersion(toVersion string) RegisterOption {
 	return registerOptionFunc(func(g *Gate) error {
 		to, err := version.NewVersion(toVersion)
@@ -117,6 +122,7 @@ func validateID(id string) error {
 }
 
 // Register a Gate and return it. The returned Gate can be used to check if is enabled or not.
+// id must be an ASCII alphanumeric nonempty string. Dots are allowed for namespacing.
 func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Gate, error) {
 	if err := validateID(id); err != nil {
 		return nil, fmt.Errorf("invalid ID %q: %w", id, err)
