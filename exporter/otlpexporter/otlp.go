@@ -92,7 +92,7 @@ func (e *baseExporter) shutdown(context.Context) error {
 func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	req := ptraceotlp.NewExportRequestFromTraces(td)
 	resp, respErr := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err := processError(respErr); err != nil {
+	if err := e.processError(respErr); err != nil {
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
@@ -105,7 +105,7 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 	resp, respErr := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err := processError(respErr); err != nil {
+	if err := e.processError(respErr); err != nil {
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
@@ -118,7 +118,7 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	req := plogotlp.NewExportRequestFromLogs(ld)
 	resp, respErr := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err := processError(respErr); err != nil {
+	if err := e.processError(respErr); err != nil {
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
@@ -135,7 +135,7 @@ func (e *baseExporter) enhanceContext(ctx context.Context) context.Context {
 	return ctx
 }
 
-func processError(err error) error {
+func (e *baseExporter) processError(err error) error {
 	if err == nil {
 		// Request is successful, we are done.
 		return nil
@@ -149,6 +149,10 @@ func processError(err error) error {
 	}
 
 	// Now, this is this a real error.
+
+	if isComponentPermanentError(st) {
+		_ = e.settings.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+	}
 
 	retryInfo := getRetryInfo(st)
 
@@ -205,4 +209,20 @@ func getThrottleDuration(t *errdetails.RetryInfo) time.Duration {
 		return time.Duration(t.RetryDelay.Seconds)*time.Second + time.Duration(t.RetryDelay.Nanos)*time.Nanosecond
 	}
 	return 0
+}
+
+// A component status of PermanentError indicates the component is in a state that will require user
+// intervention to fix. Typically this is a misconfiguration detected at runtime.
+func isComponentPermanentError(st *status.Status) bool {
+	switch st.Code() {
+	case codes.NotFound:
+		return true
+	case codes.PermissionDenied:
+		return true
+	case codes.Unauthenticated:
+		return true
+	default:
+		return false
+	}
+
 }

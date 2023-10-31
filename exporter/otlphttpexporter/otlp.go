@@ -118,6 +118,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	e.logger.Debug("Preparing to make HTTP request", zap.String("url", url))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
+		_ = e.settings.ReportComponentStatus(component.NewPermanentErrorEvent(err))
 		return consumererror.NewPermanent(err)
 	}
 	req.Header.Set("Content-Type", protobufContentType)
@@ -169,6 +170,10 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 		return exporterhelper.NewThrottleRetry(formattedErr, time.Duration(retryAfter)*time.Second)
 	}
 
+	if isComponentPermanentError(resp.StatusCode) {
+		_ = e.settings.ReportComponentStatus(component.NewPermanentErrorEvent(formattedErr))
+	}
+
 	return consumererror.NewPermanent(formattedErr)
 }
 
@@ -183,6 +188,27 @@ func isRetryableStatusCode(code int) bool {
 	case http.StatusServiceUnavailable:
 		return true
 	case http.StatusGatewayTimeout:
+		return true
+	default:
+		return false
+	}
+}
+
+// A component status of PermanentError indicates the component is in a state that will require user
+// intervention to fix. Typically this is a misconfiguration detected at runtime.
+func isComponentPermanentError(code int) bool {
+	switch code {
+	case http.StatusUnauthorized:
+		return true
+	case http.StatusForbidden:
+		return true
+	case http.StatusNotFound:
+		return true
+	case http.StatusMethodNotAllowed:
+		return true
+	case http.StatusRequestURITooLong:
+		return true
+	case http.StatusRequestHeaderFieldsTooLarge:
 		return true
 	default:
 		return false
