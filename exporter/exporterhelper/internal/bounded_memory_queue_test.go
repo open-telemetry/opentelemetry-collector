@@ -41,7 +41,7 @@ func newStringRequest(str string) Request {
 // In this test we run a queue with capacity 1 and a single consumer.
 // We want to test the overflow behavior, so we block the consumer
 // by holding a startLock before submitting items to the queue.
-func helper(t *testing.T, startConsumers func(q ProducerConsumerQueue, consumerFn func(item Request))) {
+func TestBoundedQueue(t *testing.T) {
 	q := NewBoundedMemoryQueue(1, 1)
 
 	var startLock sync.Mutex
@@ -49,14 +49,14 @@ func helper(t *testing.T, startConsumers func(q ProducerConsumerQueue, consumerF
 	startLock.Lock() // block consumers
 	consumerState := newConsumerState(t)
 
-	startConsumers(q, func(item Request) {
+	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {
 		consumerState.record(item.(stringRequest).str)
 
 		// block further processing until startLock is released
 		startLock.Lock()
 		//nolint:staticcheck // SA2001 ignore this!
 		startLock.Unlock()
-	})
+	})))
 
 	assert.True(t, q.Produce(newStringRequest("a")))
 
@@ -97,12 +97,6 @@ func helper(t *testing.T, startConsumers func(q ProducerConsumerQueue, consumerF
 
 	q.Stop()
 	assert.False(t, q.Produce(newStringRequest("x")), "cannot push to closed queue")
-}
-
-func TestBoundedQueue(t *testing.T) {
-	helper(t, func(q ProducerConsumerQueue, consumerFn func(item Request)) {
-		assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(consumerFn)))
-	})
 }
 
 // In this test we run a queue with many items and a slow consumer.
