@@ -16,7 +16,7 @@ const (
 )
 
 // NewFlag returns a flag.Value that directly applies feature gate statuses to a Registry.
-// Deprecated: Use RegisterFlags instead.
+// Deprecated: Use Registry's RegisterFlags method instead.
 func NewFlag(reg *Registry) flag.Value {
 	return newFeatureGateValue(reg)
 }
@@ -25,14 +25,14 @@ func newFeatureGateValue(reg *Registry) flag.Value {
 	return &flagValue{reg: reg}
 }
 
-// FlagsOption is an option for RegisterFlags.
-type FlagsOption interface {
+// RegisterFlagsOption is an option for RegisterFlags.
+type RegisterFlagsOption interface {
 	private()
 }
 
 // RegisterFlags that directly applies feature gate statuses to a Registry.
-func RegisterFlags(flagSet *flag.FlagSet, reg *Registry, opts ...FlagsOption) {
-	flagSet.Var(newFeatureGateValue(reg), featureGatesFlag, featureGatesFlagDescription)
+func (r *Registry) RegisterFlags(flagSet *flag.FlagSet, opts ...RegisterFlagsOption) {
+	flagSet.Var(newFeatureGateValue(r), featureGatesFlag, featureGatesFlagDescription)
 }
 
 // flagValue implements the flag.Value interface and directly applies feature gate statuses to a Registry.

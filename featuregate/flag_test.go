@@ -115,7 +115,7 @@ func TestNewFlag(t *testing.T) {
 			reg.MustRegister("deprecated", StageDeprecated, WithRegisterToVersion("1.0.0"))
 			reg.MustRegister("stable", StageStable, WithRegisterToVersion("1.0.0"))
 			fs := flag.NewFlagSet("test", flag.ContinueOnError)
-			RegisterFlags(fs, reg)
+			reg.RegisterFlags(fs)
 			registrationFlag := fs.Lookup(featureGatesFlag)
 			require.NotNil(t, registrationFlag)
 			if tt.expectedSetErr {
