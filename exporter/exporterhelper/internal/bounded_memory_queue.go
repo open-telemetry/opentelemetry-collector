@@ -18,7 +18,7 @@ import (
 // the producer are dropped.
 type boundedMemoryQueue struct {
 	size         *atomic.Int32
-	stopChan     chan struct{}
+	stopChan     *atomic.Pointer[chan struct{}]
 	items        chan Request
 	capacity     int
 	numConsumers int
@@ -35,6 +35,7 @@ func NewBoundedMemoryQueue(capacity int, numConsumers int) ProducerConsumerQueue
 		numConsumers: numConsumers,
 		size:         &atomic.Int32{},
 		stopped:      &atomic.Bool{},
+		stopChan:     &atomic.Pointer[chan struct{}]{},
 		overflow: func() *atomic.Bool {
 			o := &atomic.Bool{}
 			if capacity == 0 {
@@ -58,8 +59,9 @@ func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set Queu
 				set.Callback(item)
 				newSize := q.size.Add(-1)
 				q.overflow.Store(q.capacity == 0 || newSize >= int32(q.capacity))
-				if q.stopChan != nil && newSize == 0 {
-					q.stopChan <- struct{}{}
+				stopChan := q.stopChan.Load()
+				if stopChan != nil && newSize == 0 {
+					*stopChan <- struct{}{}
 				}
 			}
 		}()
@@ -96,10 +98,10 @@ func (q *boundedMemoryQueue) Stop() {
 		return
 	}
 	s := make(chan struct{})
-	q.stopChan = s
+	q.stopChan.Store(&s)
 	<-s
 	close(q.items)
-	close(q.stopChan)
+	close(s)
 }
 
 // Size returns the current size of the queue
