@@ -80,7 +80,6 @@ func (bes *Extensions) NotifyPipelineReady() error {
 }
 
 func (bes *Extensions) NotifyPipelineNotReady() error {
-	// Notify extensions in reverse order.
 	var errs error
 	for _, extID := range bes.extensionIDs {
 		ext := bes.extMap[extID]
