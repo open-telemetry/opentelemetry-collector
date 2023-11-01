@@ -5,7 +5,9 @@ package extensions // import "go.opentelemetry.io/collector/service/extensions"
 
 import (
 	"fmt"
+	"strings"
 
+	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
 
@@ -35,7 +37,7 @@ func computeOrder(exts *Extensions) ([]component.ID, error) {
 	}
 	for extID, ext := range exts.extMap {
 		n := nodes[extID]
-		if dep, ok := ext.(extension.DependentExtension); ok {
+		if dep, ok := ext.(extension.Dependent); ok {
 			for _, depID := range dep.Dependencies() {
 				if d, ok := nodes[depID]; ok {
 					graph.SetEdge(graph.NewEdge(d, n))
@@ -47,7 +49,7 @@ func computeOrder(exts *Extensions) ([]component.ID, error) {
 	}
 	orderedNodes, err := topo.Sort(graph)
 	if err != nil {
-		return nil, fmt.Errorf("unable to sort the extenions dependency graph: %w", err)
+		return nil, cycleErr(err, topo.DirectedCyclesIn(graph))
 	}
 
 	order := make([]component.ID, len(orderedNodes))
@@ -55,4 +57,19 @@ func computeOrder(exts *Extensions) ([]component.ID, error) {
 		order[i] = n.(*node).extID
 	}
 	return order, nil
+}
+
+func cycleErr(err error, cycles [][]graph.Node) error {
+	var cycleStr = ""
+	for _, cycle := range cycles {
+		var names []string
+		for _, n := range cycle {
+			node := n.(*node)
+			names = append(names, node.extID.String())
+		}
+		cycleStr = "[" + strings.Join(names, " -> ") + "]"
+		//lint:ignore SA4004 only report the first cycle
+		break
+	}
+	return fmt.Errorf("unable to sort the extenions dependency graph (cycle %s): %w", cycleStr, err)
 }

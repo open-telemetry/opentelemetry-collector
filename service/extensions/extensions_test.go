@@ -507,7 +507,7 @@ type recordingExtension struct {
 	createSettings   extension.CreateSettings
 }
 
-var _ extension.DependentExtension = (*recordingExtension)(nil)
+var _ extension.Dependent = (*recordingExtension)(nil)
 
 func (ext *recordingExtension) Dependencies() []component.ID {
 	if len(ext.config.dependencies) == 0 {
