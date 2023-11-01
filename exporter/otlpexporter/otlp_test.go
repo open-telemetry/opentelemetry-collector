@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -649,6 +650,83 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return rcv.requestCount.Load() > 1
 	}, 10*time.Second, 5*time.Millisecond, "Should retry if RetryInfo is included into status details by the server.")
+}
+
+func TestComponentStatus(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		exportError     error
+		componentStatus component.Status
+	}{
+		{
+			name:            "No Error",
+			exportError:     nil,
+			componentStatus: component.StatusOK,
+		},
+		{
+			name:            "Permission Denied",
+			exportError:     status.Error(codes.PermissionDenied, "permission denied"),
+			componentStatus: component.StatusPermanentError,
+		},
+		{
+			name:            "Not Found",
+			exportError:     status.Error(codes.NotFound, "not found"),
+			componentStatus: component.StatusPermanentError,
+		},
+		{
+			name:            "Unauthenticated",
+			exportError:     status.Error(codes.Unauthenticated, "unauthenticated"),
+			componentStatus: component.StatusPermanentError,
+		},
+		{
+			name:            "Resource Exhausted",
+			exportError:     status.Error(codes.ResourceExhausted, "resource exhausted"),
+			componentStatus: component.StatusRecoverableError,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ln, err := net.Listen("tcp", "localhost:")
+			require.NoError(t, err)
+			rcv, _ := otlpTracesReceiverOnGRPCServer(ln, false)
+			rcv.setExportError(tc.exportError)
+			defer rcv.srv.GracefulStop()
+
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.QueueSettings.Enabled = false
+			cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+				Endpoint: ln.Addr().String(),
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: true,
+				},
+			}
+			var lastStatus component.Status
+			set := exportertest.NewNopCreateSettings()
+			set.TelemetrySettings.ReportComponentStatus = func(ev *component.StatusEvent) error {
+				// simulate the finite-state machine used in real world status reporting
+				if lastStatus != component.StatusPermanentError {
+					lastStatus = ev.Status()
+				}
+				return nil
+			}
+			exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+			require.NoError(t, err)
+			require.NotNil(t, exp)
+
+			defer func() {
+				assert.NoError(t, exp.Shutdown(context.Background()))
+			}()
+
+			host := componenttest.NewNopHost()
+			assert.NoError(t, exp.Start(context.Background(), host))
+
+			td := ptrace.NewTraces()
+			err = exp.ConsumeTraces(context.Background(), td)
+
+			assert.Equal(t, tc.componentStatus != component.StatusOK, err != nil)
+			assert.Equal(t, tc.componentStatus, lastStatus)
+		})
+	}
 }
 
 func startServerAndMakeRequest(t *testing.T, exp exporter.Traces, td ptrace.Traces, ln net.Listener) {

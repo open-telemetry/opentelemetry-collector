@@ -82,6 +82,7 @@ func (e *baseExporter) start(_ context.Context, host component.Host) error {
 		return err
 	}
 	e.client = client
+	_ = e.settings.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
 	return nil
 }
 
@@ -114,18 +115,24 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	return e.export(ctx, e.logsURL, request, logsPartialSuccessHandler)
 }
 
-func (e *baseExporter) export(ctx context.Context, url string, request []byte, partialSuccessHandler partialSuccessHandler) error {
+func (e *baseExporter) export(ctx context.Context, url string, request []byte, partialSuccessHandler partialSuccessHandler) (err error) {
+	defer func() {
+		e.reportStatusFromError(err)
+	}()
 	e.logger.Debug("Preparing to make HTTP request", zap.String("url", url))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
-		return consumererror.NewPermanent(err)
+		_ = e.settings.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+		err = consumererror.NewPermanent(err)
+		return
 	}
 	req.Header.Set("Content-Type", protobufContentType)
 	req.Header.Set("User-Agent", e.userAgent)
 
 	resp, err := e.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to make an HTTP request: %w", err)
+		err = fmt.Errorf("failed to make an HTTP request: %w", err)
+		return
 	}
 
 	defer func() {
@@ -166,10 +173,24 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 			}
 		}
 
-		return exporterhelper.NewThrottleRetry(formattedErr, time.Duration(retryAfter)*time.Second)
+		err = exporterhelper.NewThrottleRetry(formattedErr, time.Duration(retryAfter)*time.Second)
+		return
 	}
 
-	return consumererror.NewPermanent(formattedErr)
+	if isComponentPermanentError(resp.StatusCode) {
+		_ = e.settings.ReportComponentStatus(component.NewPermanentErrorEvent(formattedErr))
+	}
+
+	err = consumererror.NewPermanent(formattedErr)
+	return
+}
+
+func (e *baseExporter) reportStatusFromError(err error) {
+	if err != nil {
+		_ = e.settings.ReportComponentStatus(component.NewRecoverableErrorEvent(err))
+		return
+	}
+	_ = e.settings.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
 }
 
 // Determine if the status code is retryable according to the specification.
@@ -183,6 +204,27 @@ func isRetryableStatusCode(code int) bool {
 	case http.StatusServiceUnavailable:
 		return true
 	case http.StatusGatewayTimeout:
+		return true
+	default:
+		return false
+	}
+}
+
+// A component status of PermanentError indicates the component is in a state that will require user
+// intervention to fix. Typically this is a misconfiguration detected at runtime.
+func isComponentPermanentError(code int) bool {
+	switch code {
+	case http.StatusUnauthorized:
+		return true
+	case http.StatusForbidden:
+		return true
+	case http.StatusNotFound:
+		return true
+	case http.StatusMethodNotAllowed:
+		return true
+	case http.StatusRequestURITooLong:
+		return true
+	case http.StatusRequestHeaderFieldsTooLarge:
 		return true
 	default:
 		return false

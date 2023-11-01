@@ -78,7 +78,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.GRPCClientSettings.WaitForReady),
 	}
-
+	_ = e.settings.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
 	return
 }
 
@@ -89,43 +89,55 @@ func (e *baseExporter) shutdown(context.Context) error {
 	return nil
 }
 
-func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) (err error) {
+	defer func() {
+		e.reportStatusFromError(err)
+	}()
 	req := ptraceotlp.NewExportRequestFromTraces(td)
 	resp, respErr := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err := processError(respErr); err != nil {
-		return err
+	if err = e.processError(respErr); err != nil {
+		return
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
-		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedSpans()))
+		err = consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedSpans()))
+		return
 	}
-	return nil
+	return
 }
 
-func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) (err error) {
+	defer func() {
+		e.reportStatusFromError(err)
+	}()
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 	resp, respErr := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err := processError(respErr); err != nil {
-		return err
+	if err = e.processError(respErr); err != nil {
+		return
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
-		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedDataPoints()))
+		err = consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedDataPoints()))
+		return
 	}
-	return nil
+	return
 }
 
-func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) (err error) {
+	defer func() {
+		e.reportStatusFromError(err)
+	}()
 	req := plogotlp.NewExportRequestFromLogs(ld)
 	resp, respErr := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	if err := processError(respErr); err != nil {
-		return err
+	if err = e.processError(respErr); err != nil {
+		return
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
-		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedLogRecords()))
+		err = consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedLogRecords()))
+		return
 	}
-	return nil
+	return
 }
 
 func (e *baseExporter) enhanceContext(ctx context.Context) context.Context {
@@ -135,7 +147,7 @@ func (e *baseExporter) enhanceContext(ctx context.Context) context.Context {
 	return ctx
 }
 
-func processError(err error) error {
+func (e *baseExporter) processError(err error) error {
 	if err == nil {
 		// Request is successful, we are done.
 		return nil
@@ -149,6 +161,10 @@ func processError(err error) error {
 	}
 
 	// Now, this is this a real error.
+
+	if isComponentPermanentError(st) {
+		_ = e.settings.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+	}
 
 	retryInfo := getRetryInfo(st)
 
@@ -167,6 +183,14 @@ func processError(err error) error {
 	// Need to retry.
 
 	return err
+}
+
+func (e *baseExporter) reportStatusFromError(err error) {
+	if err != nil {
+		_ = e.settings.ReportComponentStatus(component.NewRecoverableErrorEvent(err))
+		return
+	}
+	_ = e.settings.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
 }
 
 func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) bool {
@@ -205,4 +229,20 @@ func getThrottleDuration(t *errdetails.RetryInfo) time.Duration {
 		return time.Duration(t.RetryDelay.Seconds)*time.Second + time.Duration(t.RetryDelay.Nanos)*time.Nanosecond
 	}
 	return 0
+}
+
+// A component status of PermanentError indicates the component is in a state that will require user
+// intervention to fix. Typically this is a misconfiguration detected at runtime.
+func isComponentPermanentError(st *status.Status) bool {
+	switch st.Code() {
+	case codes.NotFound:
+		return true
+	case codes.PermissionDenied:
+		return true
+	case codes.Unauthenticated:
+		return true
+	default:
+		return false
+	}
+
 }
