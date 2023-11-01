@@ -16,7 +16,9 @@ import (
 // to the service, examples: health check endpoint, z-pages, etc.
 type Extension = component.Component
 
-// TODO this can even be DependentComponent, but not sure if there's a use case for that.
+// DependentExtension is an optional interface that can be implemented by extensions
+// that depend on other extensions and must be started only after their dependencies.
+// See https://github.com/open-telemetry/opentelemetry-collector/pull/8768 for examples.
 type DependentExtension interface {
 	Dependencies() []component.ID
 }
