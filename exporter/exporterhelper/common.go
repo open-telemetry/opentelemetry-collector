@@ -6,6 +6,8 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -38,6 +40,22 @@ func (b *baseRequestSender) send(req internal.Request) error {
 
 func (b *baseRequestSender) setNextSender(nextSender requestSender) {
 	b.nextSender = nextSender
+}
+
+type errorLoggingRequestSender struct {
+	baseRequestSender
+	logger *zap.Logger
+}
+
+func (l *errorLoggingRequestSender) send(req internal.Request) error {
+	err := l.baseRequestSender.send(req)
+	if err != nil {
+		l.logger.Error(
+			"Exporting failed",
+			zap.Error(err),
+		)
+	}
+	return err
 }
 
 type obsrepSenderFactory func(obsrep *ObsReport) requestSender
@@ -176,7 +194,7 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 
 		queueSender:   &baseRequestSender{},
 		obsrepSender:  osf(obsReport),
-		retrySender:   &baseRequestSender{},
+		retrySender:   &errorLoggingRequestSender{logger: set.Logger},
 		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutSettings()},
 
 		set:    set,
