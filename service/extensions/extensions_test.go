@@ -6,6 +6,7 @@ package extensions
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -93,58 +94,112 @@ func TestBuildExtensions(t *testing.T) {
 	}
 }
 
+type testOrderExt struct {
+	name string
+	deps []string
+}
+
+type testOrderCase struct {
+	testName   string
+	extensions []testOrderExt
+	order      []string
+	err        string
+}
+
 func TestOrdering(t *testing.T) {
+	tests := []testOrderCase{
+		{
+			testName:   "no_deps",
+			extensions: []testOrderExt{{name: ""}, {name: "foo"}, {name: "bar"}},
+			order:      nil, // no predictable order
+		},
+		{
+			testName: "deps",
+			extensions: []testOrderExt{
+				{name: "foo", deps: []string{"bar"}}, // foo -> bar
+				{name: "baz", deps: []string{"foo"}}, // baz -> foo
+				{name: "bar"},
+			},
+			// baz -> foo -> bar
+			order: []string{"recording/bar", "recording/foo", "recording/baz"},
+		},
+		{
+			testName: "deps_double",
+			extensions: []testOrderExt{
+				{name: "foo", deps: []string{"bar"}},        // foo -> bar
+				{name: "baz", deps: []string{"foo", "bar"}}, // baz -> {foo, bar}
+				{name: "bar"},
+			},
+			// baz -> foo -> bar
+			order: []string{"recording/bar", "recording/foo", "recording/baz"},
+		},
+		{
+			testName: "unknown_dep",
+			extensions: []testOrderExt{
+				{name: "foo", deps: []string{"BAZ"}},
+				{name: "bar"},
+			},
+			err: "unable to find extension",
+		},
+		{
+			testName: "circular",
+			extensions: []testOrderExt{
+				{name: "foo", deps: []string{"bar"}},
+				{name: "bar", deps: []string{"foo"}},
+			},
+			err: "unable to sort the extenions",
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.testName, testCase.testOrdering)
+	}
+}
+
+func (tc testOrderCase) testOrdering(t *testing.T) {
 	var startOrder []string
 	var shutdownOrder []string
 
 	recordingExtensionFactory := newRecordingExtensionFactory(func(set extension.CreateSettings, host component.Host) error {
-		id := set.ID.String()
-		if id != "recording" {
-			// we're only interested in the relative foo/bar order
-			startOrder = append(startOrder, set.ID.String())
-		}
+		startOrder = append(startOrder, set.ID.String())
 		return nil
 	}, func(set extension.CreateSettings) error {
-		id := set.ID.String()
-		if id != "recording" {
-			// we're only interested in the relative foo/bar order
-			shutdownOrder = append(shutdownOrder, set.ID.String())
-		}
+		shutdownOrder = append(shutdownOrder, set.ID.String())
 		return nil
 	})
+
+	extCfgs := make(map[component.ID]component.Config)
+	extIDs := make([]component.ID, len(tc.extensions))
+	for i, ext := range tc.extensions {
+		extID := component.NewIDWithName(recordingExtensionFactory.Type(), ext.name)
+		extIDs[i] = extID
+		extCfgs[extID] = recordingExtensionConfig{dependencies: ext.deps}
+	}
 
 	exts, err := New(context.Background(), Settings{
 		Telemetry: servicetelemetry.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Extensions: extension.NewBuilder(
-			map[component.ID]component.Config{
-				component.NewID(recordingExtensionFactory.Type()): recordingExtensionConfig{},
-				component.NewIDWithName(recordingExtensionFactory.Type(), "foo"): recordingExtensionConfig{
-					// has a dependency on bar. In the real world this would be expressed by user via config.
-					dependencies: []component.ID{
-						component.NewIDWithName(recordingExtensionFactory.Type(), "bar"),
-					},
-				},
-				component.NewIDWithName(recordingExtensionFactory.Type(), "bar"): recordingExtensionConfig{},
-			},
+			extCfgs,
 			map[component.Type]extension.Factory{
 				recordingExtensionFactory.Type(): recordingExtensionFactory,
 			}),
-	}, Config{
-		component.NewID(recordingExtensionFactory.Type()),
-		component.NewIDWithName(recordingExtensionFactory.Type(), "foo"),
-		component.NewIDWithName(recordingExtensionFactory.Type(), "bar"),
-	})
+	}, Config(extIDs))
+	if tc.err != "" {
+		require.ErrorContains(t, err, tc.err)
+		return
+	}
 	require.NoError(t, err)
+
 	err = exts.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	// The exact order of starting and stopping is not guaranteed, because the first extension is
-	// not comparable with the other two, and can occur in any place.
-	// What is guaranteed is "foo" starting before "bar".
-	require.Equal(t, []string{"recording/foo", "recording/bar"}, startOrder)
 	err = exts.Shutdown(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, []string{"recording/bar", "recording/foo"}, shutdownOrder)
+
+	if len(tc.order) > 0 {
+		require.Equal(t, tc.order, startOrder)
+		slices.Reverse(shutdownOrder)
+		require.Equal(t, tc.order, shutdownOrder)
+	}
 }
 
 func TestNotifyConfig(t *testing.T) {
@@ -436,7 +491,7 @@ func newRecordingExtensionFactory(startCallback func(set extension.CreateSetting
 }
 
 type recordingExtensionConfig struct {
-	dependencies []component.ID
+	dependencies []string // names of dependencies of the same extension type
 }
 
 type recordingExtension struct {
@@ -449,7 +504,14 @@ type recordingExtension struct {
 var _ extension.DependentExtension = (*recordingExtension)(nil)
 
 func (ext *recordingExtension) Dependencies() []component.ID {
-	return ext.config.dependencies
+	if len(ext.config.dependencies) == 0 {
+		return nil
+	}
+	deps := make([]component.ID, len(ext.config.dependencies))
+	for i, dep := range ext.config.dependencies {
+		deps[i] = component.NewIDWithName("recording", dep)
+	}
+	return deps
 }
 
 func (ext *recordingExtension) Start(_ context.Context, host component.Host) error {
