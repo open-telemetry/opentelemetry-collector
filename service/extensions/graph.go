@@ -4,6 +4,7 @@
 package extensions // import "go.opentelemetry.io/collector/service/extensions"
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -60,16 +61,17 @@ func computeOrder(exts *Extensions) ([]component.ID, error) {
 }
 
 func cycleErr(err error, cycles [][]graph.Node) error {
-	var cycleStr = ""
-	for _, cycle := range cycles {
-		var names []string
-		for _, n := range cycle {
-			node := n.(*node)
-			names = append(names, node.extID.String())
-		}
-		cycleStr = "[" + strings.Join(names, " -> ") + "]"
-		//lint:ignore SA4004 only report the first cycle
-		break
+	var topoErr topo.Unorderable
+	if !errors.As(err, &topoErr) || len(cycles) == 0 || len(cycles[0]) == 0 {
+		return err
 	}
-	return fmt.Errorf("unable to sort the extenions dependency graph (cycle %s): %w", cycleStr, err)
+
+	cycle := cycles[0]
+	var names []string
+	for _, n := range cycle {
+		node := n.(*node)
+		names = append(names, node.extID.String())
+	}
+	cycleStr := "[" + strings.Join(names, " -> ") + "]"
+	return fmt.Errorf("unable to order extenions by dependencies, cycle found %s: %w", cycleStr, err)
 }

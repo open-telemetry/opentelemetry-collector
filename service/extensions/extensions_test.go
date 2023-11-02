@@ -146,7 +146,7 @@ func TestOrdering(t *testing.T) {
 				{name: "foo", deps: []string{"bar"}},
 				{name: "bar", deps: []string{"foo"}},
 			},
-			err: "unable to sort the extenions",
+			err: "unable to order extenions",
 		},
 	}
 	for _, testCase := range tests {
