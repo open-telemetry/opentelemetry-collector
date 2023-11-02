@@ -93,6 +93,121 @@ func TestBuildExtensions(t *testing.T) {
 	}
 }
 
+type testOrderExt struct {
+	name string
+	deps []string
+}
+
+type testOrderCase struct {
+	testName   string
+	extensions []testOrderExt
+	order      []string
+	err        string
+}
+
+func TestOrdering(t *testing.T) {
+	tests := []testOrderCase{
+		{
+			testName:   "no_deps",
+			extensions: []testOrderExt{{name: ""}, {name: "foo"}, {name: "bar"}},
+			order:      nil, // no predictable order
+		},
+		{
+			testName: "deps",
+			extensions: []testOrderExt{
+				{name: "foo", deps: []string{"bar"}}, // foo -> bar
+				{name: "baz", deps: []string{"foo"}}, // baz -> foo
+				{name: "bar"},
+			},
+			// baz -> foo -> bar
+			order: []string{"recording/bar", "recording/foo", "recording/baz"},
+		},
+		{
+			testName: "deps_double",
+			extensions: []testOrderExt{
+				{name: "foo", deps: []string{"bar"}},        // foo -> bar
+				{name: "baz", deps: []string{"foo", "bar"}}, // baz -> {foo, bar}
+				{name: "bar"},
+			},
+			// baz -> foo -> bar
+			order: []string{"recording/bar", "recording/foo", "recording/baz"},
+		},
+		{
+			testName: "unknown_dep",
+			extensions: []testOrderExt{
+				{name: "foo", deps: []string{"BAZ"}},
+				{name: "bar"},
+			},
+			err: "unable to find extension",
+		},
+		{
+			testName: "circular",
+			extensions: []testOrderExt{
+				{name: "foo", deps: []string{"bar"}},
+				{name: "bar", deps: []string{"foo"}},
+			},
+			err: "unable to order extenions",
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.testName, testCase.testOrdering)
+	}
+}
+
+func (tc testOrderCase) testOrdering(t *testing.T) {
+	var startOrder []string
+	var shutdownOrder []string
+
+	recordingExtensionFactory := newRecordingExtensionFactory(func(set extension.CreateSettings, host component.Host) error {
+		startOrder = append(startOrder, set.ID.String())
+		return nil
+	}, func(set extension.CreateSettings) error {
+		shutdownOrder = append(shutdownOrder, set.ID.String())
+		return nil
+	})
+
+	extCfgs := make(map[component.ID]component.Config)
+	extIDs := make([]component.ID, len(tc.extensions))
+	for i, ext := range tc.extensions {
+		extID := component.NewIDWithName(recordingExtensionFactory.Type(), ext.name)
+		extIDs[i] = extID
+		extCfgs[extID] = recordingExtensionConfig{dependencies: ext.deps}
+	}
+
+	exts, err := New(context.Background(), Settings{
+		Telemetry: servicetelemetry.NewNopTelemetrySettings(),
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Extensions: extension.NewBuilder(
+			extCfgs,
+			map[component.Type]extension.Factory{
+				recordingExtensionFactory.Type(): recordingExtensionFactory,
+			}),
+	}, Config(extIDs))
+	if tc.err != "" {
+		require.ErrorContains(t, err, tc.err)
+		return
+	}
+	require.NoError(t, err)
+
+	err = exts.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	err = exts.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	// TODO From Go 1.21 can use slices.Reverse()
+	reverseSlice := func(s []string) {
+		for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+			s[i], s[j] = s[j], s[i]
+		}
+	}
+
+	if len(tc.order) > 0 {
+		require.Equal(t, tc.order, startOrder)
+		reverseSlice(shutdownOrder)
+		require.Equal(t, tc.order, shutdownOrder)
+	}
+}
+
 func TestNotifyConfig(t *testing.T) {
 	notificationError := errors.New("Error processing config")
 	nopExtensionFactory := extensiontest.NewNopFactory()
@@ -361,4 +476,54 @@ func newStatusTestExtensionFactory(name component.Type, startErr, shutdownErr er
 		},
 		component.StabilityLevelDevelopment,
 	)
+}
+
+func newRecordingExtensionFactory(startCallback func(set extension.CreateSettings, host component.Host) error, shutdownCallback func(set extension.CreateSettings) error) extension.Factory {
+	return extension.NewFactory(
+		"recording",
+		func() component.Config {
+			return &recordingExtensionConfig{}
+		},
+		func(ctx context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+			return &recordingExtension{
+				config:           cfg.(recordingExtensionConfig),
+				createSettings:   set,
+				startCallback:    startCallback,
+				shutdownCallback: shutdownCallback,
+			}, nil
+		},
+		component.StabilityLevelDevelopment,
+	)
+}
+
+type recordingExtensionConfig struct {
+	dependencies []string // names of dependencies of the same extension type
+}
+
+type recordingExtension struct {
+	config           recordingExtensionConfig
+	startCallback    func(set extension.CreateSettings, host component.Host) error
+	shutdownCallback func(set extension.CreateSettings) error
+	createSettings   extension.CreateSettings
+}
+
+var _ extension.Dependent = (*recordingExtension)(nil)
+
+func (ext *recordingExtension) Dependencies() []component.ID {
+	if len(ext.config.dependencies) == 0 {
+		return nil
+	}
+	deps := make([]component.ID, len(ext.config.dependencies))
+	for i, dep := range ext.config.dependencies {
+		deps[i] = component.NewIDWithName("recording", dep)
+	}
+	return deps
+}
+
+func (ext *recordingExtension) Start(_ context.Context, host component.Host) error {
+	return ext.startCallback(ext.createSettings, host)
+}
+
+func (ext *recordingExtension) Shutdown(_ context.Context) error {
+	return ext.shutdownCallback(ext.createSettings)
 }

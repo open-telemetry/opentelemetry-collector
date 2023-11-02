@@ -16,6 +16,14 @@ import (
 // to the service, examples: health check endpoint, z-pages, etc.
 type Extension = component.Component
 
+// Dependent is an optional interface that can be implemented by extensions
+// that depend on other extensions and must be started only after their dependencies.
+// See https://github.com/open-telemetry/opentelemetry-collector/pull/8768 for examples.
+type Dependent interface {
+	Extension
+	Dependencies() []component.ID
+}
+
 // PipelineWatcher is an extra interface for Extension hosted by the OpenTelemetry
 // Collector that is to be implemented by extensions interested in changes to pipeline
 // states. Typically this will be used by extensions that change their behavior if data is
