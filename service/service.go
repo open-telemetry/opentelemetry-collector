@@ -75,7 +75,7 @@ type Service struct {
 	host                 *serviceHost
 	telemetryInitializer *telemetryInitializer
 	collectorConf        *confmap.Conf
-	statusInit           status.InitFunc
+	statusReporter       *status.Reporter
 }
 
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
@@ -99,6 +99,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		telemetryInitializer: newColTelemetry(useOtel, disableHighCard, extendedConfig),
 		collectorConf:        set.CollectorConf,
 	}
+	srv.statusReporter = status.NewReporter(srv.host.notifyComponentStatusChange)
 	var err error
 	srv.telemetry, err = telemetry.New(ctx, telemetry.Settings{ZapOptions: set.LoggingOptions}, cfg.Telemetry)
 	if err != nil {
@@ -114,7 +115,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 
 		// Construct telemetry attributes from build info and config's resource attributes.
-		Resource: pcommonRes,
+		Resource:              pcommonRes,
+		ReportComponentStatus: srv.statusReporter.ReportComponentStatus,
 	}
 
 	if err = srv.telemetryInitializer.init(res, srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
@@ -122,8 +124,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	}
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
 	srv.telemetrySettings.TracerProvider = srv.telemetryInitializer.tp
-	srv.statusInit, srv.telemetrySettings.ReportComponentStatus =
-		status.NewServiceStatusFunc(srv.host.notifyComponentStatusChange)
 
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensionsAndPipeline(ctx, set, cfg); err != nil {
@@ -151,7 +151,7 @@ func (srv *Service) Start(ctx context.Context) error {
 	)
 
 	// enable status reporting
-	srv.statusInit()
+	srv.statusReporter.Ready()
 
 	if err := srv.host.serviceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)

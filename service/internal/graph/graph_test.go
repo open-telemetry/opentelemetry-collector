@@ -2240,12 +2240,12 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			pg.telemetry = servicetelemetry.NewNopTelemetrySettings()
 
 			actualStatuses := make(map[*component.InstanceID][]*component.StatusEvent)
-			init, statusFunc := status.NewServiceStatusFunc(func(id *component.InstanceID, ev *component.StatusEvent) {
+			rep := status.NewReporter(func(id *component.InstanceID, ev *component.StatusEvent) {
 				actualStatuses[id] = append(actualStatuses[id], ev)
 			})
 
-			pg.telemetry.ReportComponentStatus = statusFunc
-			init()
+			pg.telemetry.ReportComponentStatus = rep.ReportComponentStatus
+			rep.Ready()
 
 			e0, e1 := tc.edge[0], tc.edge[1]
 			pg.instanceIDs = map[int64]*component.InstanceID{

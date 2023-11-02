@@ -83,32 +83,6 @@ func newFSM(onTransition onTransitionFunc) *fsm {
 	}
 }
 
-// InitFunc can be used to toggle a ready flag to true
-type InitFunc func()
-
-// readFunc can be used to check the value of a ready flag
-type readyFunc func() bool
-
-// initAndReadyFuncs returns a pair of functions to set and check a boolean ready flag
-func initAndReadyFuncs() (InitFunc, readyFunc) {
-	mu := sync.RWMutex{}
-	isReady := false
-
-	init := func() {
-		mu.Lock()
-		defer mu.Unlock()
-		isReady = true
-	}
-
-	ready := func() bool {
-		mu.RLock()
-		defer mu.RUnlock()
-		return isReady
-	}
-
-	return init, ready
-}
-
 // NotifyStatusFunc is the receiver of status events after successful state transitions
 type NotifyStatusFunc func(*component.InstanceID, *component.StatusEvent)
 
@@ -118,38 +92,91 @@ type ServiceStatusFunc func(*component.InstanceID, *component.StatusEvent) error
 // errStatusNotReady is returned when trying to report status before service start
 var errStatusNotReady = errors.New("report component status is not ready until service start")
 
-// NewServiceStatusFunc returns a function to be used as ReportComponentStatus for
-// servicetelemetry.Settings, which differs from component.TelemetrySettings in that
-// the service version does not correspond to a specific component, and thus needs
-// the a component.InstanceID as a parameter.
-func NewServiceStatusFunc(notifyStatusChange NotifyStatusFunc) (InitFunc, ServiceStatusFunc) {
-	init, isReady := initAndReadyFuncs()
-	// mu synchronizes access to the fsmMap and the underlying fsm during a state transition
-	mu := sync.Mutex{}
-	fsmMap := make(map[*component.InstanceID]*fsm)
-	return init,
-		func(id *component.InstanceID, ev *component.StatusEvent) error {
-			if !isReady() {
-				return errStatusNotReady
-			}
-			mu.Lock()
-			defer mu.Unlock()
-			fsm, ok := fsmMap[id]
-			if !ok {
-				fsm = newFSM(func(ev *component.StatusEvent) {
-					notifyStatusChange(id, ev)
-				})
-				fsmMap[id] = fsm
-			}
-			return fsm.transition(ev)
-		}
+// Reporter handles component status reporting
+type Reporter struct {
+	fsmMap map[*component.InstanceID]*fsm
+	fsmMu  sync.RWMutex
 
+	ready   bool
+	readyMu sync.RWMutex
+
+	onStatusChange NotifyStatusFunc
+}
+
+// NewReporter a reporter that will invoke the NotifyStatusFunc when a component's status
+// has changed.
+func NewReporter(onStatusChange NotifyStatusFunc) *Reporter {
+	return &Reporter{
+		fsmMap:         make(map[*component.InstanceID]*fsm),
+		fsmMu:          sync.RWMutex{},
+		readyMu:        sync.RWMutex{},
+		onStatusChange: onStatusChange,
+	}
+}
+
+// ReportComponentStatus reports status for the given InstanceID
+func (r *Reporter) ReportComponentStatus(
+	id *component.InstanceID,
+	ev *component.StatusEvent,
+) error {
+	if !r.isReady() {
+		return errStatusNotReady
+	}
+	r.fsmMu.Lock()
+	defer r.fsmMu.Unlock()
+	return r.componentFSM(id).transition(ev)
+}
+
+// ReportComponentStatusIf reports status for the given InstanceID, if cond, a predicate that
+// receives the current status as an argument, evaluates to true.
+func (r *Reporter) ReportComponentStatusIf(
+	id *component.InstanceID,
+	ev *component.StatusEvent,
+	cond func(component.Status) bool,
+) error {
+	if !r.isReady() {
+		return errStatusNotReady
+	}
+	r.fsmMu.Lock()
+	defer r.fsmMu.Unlock()
+	fsm := r.componentFSM(id)
+	if cond(fsm.current.Status()) {
+		return fsm.transition(ev)
+	}
+	return nil
+}
+
+func (r *Reporter) componentFSM(id *component.InstanceID) *fsm {
+	fsm, ok := r.fsmMap[id]
+	if !ok {
+		fsm = newFSM(func(ev *component.StatusEvent) {
+			r.onStatusChange(id, ev)
+		})
+		r.fsmMap[id] = fsm
+	}
+	return fsm
+}
+
+// Ready enables status reporting
+func (r *Reporter) Ready() {
+	r.readyMu.Lock()
+	defer r.readyMu.Unlock()
+	r.ready = true
+}
+
+func (r *Reporter) isReady() bool {
+	r.readyMu.RLock()
+	defer r.readyMu.RUnlock()
+	return r.ready
 }
 
 // NewComponentStatusFunc returns a function to be used as ReportComponentStatus for
 // component.TelemetrySettings, which differs from servicetelemetry.Settings in that
 // the component version is tied to specific component instance.
-func NewComponentStatusFunc(id *component.InstanceID, srvStatus ServiceStatusFunc) component.StatusFunc {
+func NewComponentStatusFunc(
+	id *component.InstanceID,
+	srvStatus ServiceStatusFunc,
+) component.StatusFunc {
 	return func(ev *component.StatusEvent) error {
 		return srvStatus(id, ev)
 	}
