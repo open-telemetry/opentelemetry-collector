@@ -31,7 +31,7 @@ type RegisterFlagsOption interface {
 }
 
 // RegisterFlags that directly applies feature gate statuses to a Registry.
-func (r *Registry) RegisterFlags(flagSet *flag.FlagSet, opts ...RegisterFlagsOption) {
+func (r *Registry) RegisterFlags(flagSet *flag.FlagSet, _ ...RegisterFlagsOption) {
 	flagSet.Var(newFeatureGateValue(r), featureGatesFlag, featureGatesFlagDescription)
 }
 
