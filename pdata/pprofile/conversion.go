@@ -170,49 +170,49 @@ func PprofToOprof(profile []byte, flavor string) Profiles {
 var profileId = go_opentelemetry_io_collector_pdata_internal_data.ProfileID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 
 func pprofStructToOprof(pprof *pprof.Profile, op []byte, flavor string) Profiles {
-	var otlpProfile *otlpprofile.Profile
+	var otlpProfile *otlpprofile.ProfileContainer
 	switch flavor {
 	case "pprof":
-		otlpProfile = &otlpprofile.Profile{
+		otlpProfile = &otlpprofile.ProfileContainer{
 			ProfileId:          profileId,
 			OriginalPayload:    op,
-			AlternativeProfile: &otlpprofile.Profile_Pprof{Pprof: pprofToPprofProfile(pprof)},
+			AlternativeProfile: &otlpprofile.ProfileContainer_Pprof{Pprof: pprofToPprofProfile(pprof)},
 		}
 	case "normalized":
-		otlpProfile = &otlpprofile.Profile{
+		otlpProfile = &otlpprofile.ProfileContainer{
 			ProfileId:          profileId,
 			OriginalPayload:    op,
-			AlternativeProfile: &otlpprofile.Profile_Normalized{Normalized: pprofToNormalizedProfile(pprof)},
+			AlternativeProfile: &otlpprofile.ProfileContainer_Normalized{Normalized: pprofToNormalizedProfile(pprof)},
 		}
 	case "arrays":
-		otlpProfile = &otlpprofile.Profile{
+		otlpProfile = &otlpprofile.ProfileContainer{
 			ProfileId:          profileId,
 			OriginalPayload:    op,
-			AlternativeProfile: &otlpprofile.Profile_Arrays{Arrays: pprofToArraysProfile(pprof)},
+			AlternativeProfile: &otlpprofile.ProfileContainer_Arrays{Arrays: pprofToArraysProfile(pprof)},
 		}
 	case "denormalized":
-		otlpProfile = &otlpprofile.Profile{
+		otlpProfile = &otlpprofile.ProfileContainer{
 			ProfileId:          profileId,
 			OriginalPayload:    op,
-			AlternativeProfile: &otlpprofile.Profile_Denormalized{Denormalized: pprofToDenormalizedProfile(pprof)},
+			AlternativeProfile: &otlpprofile.ProfileContainer_Denormalized{Denormalized: pprofToDenormalizedProfile(pprof)},
 		}
 	case "pprofextended":
-		otlpProfile = &otlpprofile.Profile{
+		otlpProfile = &otlpprofile.ProfileContainer{
 			ProfileId:          profileId,
 			OriginalPayload:    op,
-			AlternativeProfile: &otlpprofile.Profile_Pprofextended{Pprofextended: pprofToPprofextendedProfile(pprof, pprofextendedFlavorEmbedded)},
+			AlternativeProfile: &otlpprofile.ProfileContainer_Pprofextended{Pprofextended: pprofToPprofextendedProfile(pprof, pprofextendedFlavorEmbedded)},
 		}
 	case "pprofextendedinterned":
-		otlpProfile = &otlpprofile.Profile{
+		otlpProfile = &otlpprofile.ProfileContainer{
 			ProfileId:          profileId,
 			OriginalPayload:    op,
-			AlternativeProfile: &otlpprofile.Profile_Pprofextended{Pprofextended: pprofToPprofextendedProfile(pprof, pprofextendedFlavorInterned)},
+			AlternativeProfile: &otlpprofile.ProfileContainer_Pprofextended{Pprofextended: pprofToPprofextendedProfile(pprof, pprofextendedFlavorInterned)},
 		}
 	case "pprofextendedlookup":
-		otlpProfile = &otlpprofile.Profile{
+		otlpProfile = &otlpprofile.ProfileContainer{
 			ProfileId:          profileId,
 			OriginalPayload:    op,
-			AlternativeProfile: &otlpprofile.Profile_Pprofextended{Pprofextended: pprofToPprofextendedProfile(pprof, pprofextendedFlavorLookup)},
+			AlternativeProfile: &otlpprofile.ProfileContainer_Pprofextended{Pprofextended: pprofToPprofextendedProfile(pprof, pprofextendedFlavorLookup)},
 		}
 	default:
 		panic("unknown flavor: " + flavor)
@@ -224,7 +224,7 @@ func pprofStructToOprof(pprof *pprof.Profile, op []byte, flavor string) Profiles
 		Resource: resource.Resource{},
 		ScopeProfiles: []*otlpprofile.ScopeProfiles{
 			{
-				Profiles: []*otlpprofile.Profile{otlpProfile},
+				Profiles: []*otlpprofile.ProfileContainer{otlpProfile},
 			},
 		},
 		SchemaUrl: "todo",
@@ -461,7 +461,7 @@ const (
 func pprofToPprofextendedProfile(pprofProfile *pprof.Profile, flavor pprofextendedFlavor) *pprofextended.Profile {
 	p := &pprofextended.Profile{}
 	stb := newStringTableBuilder(pprofProfile.StringTable)
-	btb := newBytesTableBuilder(pprofProfile.StringTable)
+	// btb := newBytesTableBuilder(pprofProfile.StringTable)
 	p.Mapping = make([]*pprofextended.Mapping, len(pprofProfile.Mapping))
 	for i, m := range pprofProfile.Mapping {
 		p.Mapping[i] = &pprofextended.Mapping{
@@ -514,8 +514,6 @@ func pprofToPprofextendedProfile(pprofProfile *pprof.Profile, flavor pprofextend
 		for j, v := range s.Value {
 			values[j] = int64(v)
 		}
-		attributes := make([]*common.KeyValueInterned, 0)
-		attributes2 := make([]common.KeyValue, 0)
 
 		var timestamp uint64
 
@@ -537,39 +535,41 @@ func pprofToPprofextendedProfile(pprofProfile *pprof.Profile, flavor pprofextend
 
 		if span_id != "" && trace_id != "" {
 			if flavor == pprofextendedFlavorInterned {
-				attributes = append(attributes, &common.KeyValueInterned{
-					Key:   int64(stb.add("trace_id")),
-					Value: &common.AnyValueInterned{Value: &common.AnyValueInterned_BytesValue{BytesValue: int64(btb.add([]byte(trace_id)))}},
-				})
-				attributes = append(attributes, &common.KeyValueInterned{
-					Key:   int64(stb.add("span_id")),
-					Value: &common.AnyValueInterned{Value: &common.AnyValueInterned_BytesValue{BytesValue: int64(btb.add([]byte(span_id)))}},
-				})
+				// attributes = append(attributes, &common.KeyValueInterned{
+				// 	Key:   int64(stb.add("trace_id")),
+				// 	Value: &common.AnyValueInterned{Value: &common.AnyValueInterned_BytesValue{BytesValue: int64(btb.add([]byte(trace_id)))}},
+				// })
+				// attributes = append(attributes, &common.KeyValueInterned{
+				// 	Key:   int64(stb.add("span_id")),
+				// 	Value: &common.AnyValueInterned{Value: &common.AnyValueInterned_BytesValue{BytesValue: int64(btb.add([]byte(span_id)))}},
+				// })
 			} else if flavor == pprofextendedFlavorEmbedded {
-				attributes2 = append(attributes2, common.KeyValue{
-					Key:   "trace_id",
-					Value: common.AnyValue{Value: &common.AnyValue_BytesValue{BytesValue: []byte(trace_id)}},
-				})
-				attributes2 = append(attributes2, common.KeyValue{
-					Key:   "span_id",
-					Value: common.AnyValue{Value: &common.AnyValue_BytesValue{BytesValue: []byte(span_id)}},
-				})
+				// attributes2 = append(attributes2, common.KeyValue{
+				// 	Key:   "trace_id",
+				// 	Value: common.AnyValue{Value: &common.AnyValue_BytesValue{BytesValue: []byte(trace_id)}},
+				// })
+				// attributes2 = append(attributes2, common.KeyValue{
+				// 	Key:   "span_id",
+				// 	Value: common.AnyValue{Value: &common.AnyValue_BytesValue{BytesValue: []byte(span_id)}},
+				// })
 			} else if flavor == pprofextendedFlavorLookup {
 				aKey := "trace_id" + trace_id
 				if _, ok := attributesMap[aKey]; !ok {
-					p.Attributes3 = append(p.Attributes3, common.KeyValue{
+					v := stringToTraceId(trace_id)
+					p.AttributeTable = append(p.AttributeTable, common.KeyValue{
 						Key:   "trace_id",
-						Value: common.AnyValue{Value: &common.AnyValue_StringValue{StringValue: trace_id}},
+						Value: common.AnyValue{Value: &common.AnyValue_BytesValue{BytesValue: v[:]}},
 					})
-					attributesMap[aKey] = uint32(len(p.Attributes3) - 1)
+					attributesMap[aKey] = uint32(len(p.AttributeTable) - 1)
 				}
 				aKey = "span_id" + span_id
 				if _, ok := attributesMap[aKey]; !ok {
-					p.Attributes3 = append(p.Attributes3, common.KeyValue{
+					v := stringToSpanId(span_id)
+					p.AttributeTable = append(p.AttributeTable, common.KeyValue{
 						Key:   "span_id",
-						Value: common.AnyValue{Value: &common.AnyValue_StringValue{StringValue: span_id}},
+						Value: common.AnyValue{Value: &common.AnyValue_BytesValue{BytesValue: v[:]}},
 					})
-					attributesMap[aKey] = uint32(len(p.Attributes3) - 1)
+					attributesMap[aKey] = uint32(len(p.AttributeTable) - 1)
 				}
 			}
 		}
@@ -585,23 +585,23 @@ func pprofToPprofextendedProfile(pprofProfile *pprof.Profile, flavor pprofextend
 			}
 			// valStr := stb.resolveString(l.Str)
 			if flavor == pprofextendedFlavorInterned {
-				attributes = append(attributes, &common.KeyValueInterned{
-					Key:   stb.convertStringIndex64(l.Key),
-					Value: &common.AnyValueInterned{Value: &common.AnyValueInterned_StringValue{StringValue: stb.convertStringIndex64(l.Str)}},
-				})
+				// attributes = append(attributes, &common.KeyValueInterned{
+				// 	Key:   stb.convertStringIndex64(l.Key),
+				// 	Value: &common.AnyValueInterned{Value: &common.AnyValueInterned_StringValue{StringValue: stb.convertStringIndex64(l.Str)}},
+				// })
 			} else if flavor == pprofextendedFlavorEmbedded {
-				attributes2 = append(attributes2, common.KeyValue{
-					Key:   stb.resolveString(l.Key),
-					Value: common.AnyValue{Value: &common.AnyValue_StringValue{StringValue: stb.resolveString(l.Str)}},
-				})
+				// attributes2 = append(attributes2, common.KeyValue{
+				// 	Key:   stb.resolveString(l.Key),
+				// 	Value: common.AnyValue{Value: &common.AnyValue_StringValue{StringValue: stb.resolveString(l.Str)}},
+				// })
 			} else if flavor == pprofextendedFlavorLookup {
 				aKey := keyStr + stb.resolveString(l.Str)
 				if _, ok := attributesMap[aKey]; !ok {
-					p.Attributes3 = append(p.Attributes3, common.KeyValue{
+					p.AttributeTable = append(p.AttributeTable, common.KeyValue{
 						Key:   stb.resolveString(l.Key),
 						Value: common.AnyValue{Value: &common.AnyValue_StringValue{StringValue: stb.resolveString(l.Str)}},
 					})
-					attributesMap[aKey] = uint32(len(p.Attributes3) - 1)
+					attributesMap[aKey] = uint32(len(p.AttributeTable) - 1)
 				}
 			}
 		}
@@ -639,9 +639,9 @@ func pprofToPprofextendedProfile(pprofProfile *pprof.Profile, flavor pprofextend
 		}
 
 		if flavor == pprofextendedFlavorInterned {
-			p.Sample[i].Attributes = attributes
+			// p.Sample[i].Attributes = attributes
 		} else if flavor == pprofextendedFlavorEmbedded {
-			p.Sample[i].Attributes2 = attributes2
+			// p.Sample[i].Attributes2 = attributes2
 		} else if flavor == pprofextendedFlavorLookup {
 			// already done above
 		}
@@ -652,7 +652,7 @@ func pprofToPprofextendedProfile(pprofProfile *pprof.Profile, flavor pprofextend
 	}
 
 	p.StringTable = stb.newStringTable
-	p.BytesTable = btb.newBytesTable
+	// p.BytesTable = btb.newBytesTable
 	return p
 }
 
@@ -1160,8 +1160,8 @@ func OprofToPprof(pWrapper Profile) []byte {
 	// 	for _, sp := range rp.ScopeProfiles {
 	// 		for _, p := range sp.Profiles {
 	switch p.AlternativeProfile.(type) {
-	case *otlpprofile.Profile_Arrays:
-		arrays := p.AlternativeProfile.(*otlpprofile.Profile_Arrays)
+	case *otlpprofile.ProfileContainer_Arrays:
+		arrays := p.AlternativeProfile.(*otlpprofile.ProfileContainer_Arrays)
 		src := arrays.Arrays
 		dst.StringTable = src.StringTable
 		dst.Function = make([]*pprof.Function, len(src.Functions))

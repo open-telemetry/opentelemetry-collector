@@ -56,7 +56,7 @@ func TestProfileCountWithEmpty(t *testing.T) {
 			{
 				ScopeProfiles: []*otlpprofiles.ScopeProfiles{
 					{
-						Profiles: []*otlpprofiles.Profile{{}},
+						Profiles: []*otlpprofiles.ProfileContainer{{}},
 					},
 				},
 			},

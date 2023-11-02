@@ -18,78 +18,78 @@ import (
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewProfile function to create new instances.
+// Must use NewProfileContainer function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type Profile struct {
+type ProfileContainer struct {
 	orig *otlpprofiles.ProfileContainer
 }
 
-func newProfile(orig *otlpprofiles.ProfileContainer) Profile {
-	return Profile{orig}
+func newProfileContainer(orig *otlpprofiles.ProfileContainer) ProfileContainer {
+	return ProfileContainer{orig}
 }
 
-// NewProfile creates a new empty Profile.
+// NewProfileContainer creates a new empty ProfileContainer.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewProfile() Profile {
-	return newProfile(&otlpprofiles.ProfileContainer{})
+func NewProfileContainer() ProfileContainer {
+	return newProfileContainer(&otlpprofiles.ProfileContainer{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Profile) MoveTo(dest Profile) {
+func (ms ProfileContainer) MoveTo(dest ProfileContainer) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpprofiles.ProfileContainer{}
 }
 
-// ProfileID returns the profileid associated with this Profile.
-func (ms Profile) ProfileID() pcommon.ProfileID {
+// ProfileID returns the profileid associated with this ProfileContainer.
+func (ms ProfileContainer) ProfileID() pcommon.ProfileID {
 	return pcommon.ProfileID(ms.orig.ProfileId)
 }
 
-// SetProfileID replaces the profileid associated with this Profile.
-func (ms Profile) SetProfileID(v pcommon.ProfileID) {
+// SetProfileID replaces the profileid associated with this ProfileContainer.
+func (ms ProfileContainer) SetProfileID(v pcommon.ProfileID) {
 	ms.orig.ProfileId = data.ProfileID(v)
 }
 
-// StartTime returns the starttime associated with this Profile.
-func (ms Profile) StartTime() pcommon.Timestamp {
+// StartTime returns the starttime associated with this ProfileContainer.
+func (ms ProfileContainer) StartTime() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.StartTimeUnixNano)
 }
 
-// SetStartTime replaces the starttime associated with this Profile.
-func (ms Profile) SetStartTime(v pcommon.Timestamp) {
+// SetStartTime replaces the starttime associated with this ProfileContainer.
+func (ms ProfileContainer) SetStartTime(v pcommon.Timestamp) {
 	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
-// EndTime returns the endtime associated with this Profile.
-func (ms Profile) EndTime() pcommon.Timestamp {
+// EndTime returns the endtime associated with this ProfileContainer.
+func (ms ProfileContainer) EndTime() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.EndTimeUnixNano)
 }
 
-// SetEndTime replaces the endtime associated with this Profile.
-func (ms Profile) SetEndTime(v pcommon.Timestamp) {
+// SetEndTime replaces the endtime associated with this ProfileContainer.
+func (ms ProfileContainer) SetEndTime(v pcommon.Timestamp) {
 	ms.orig.EndTimeUnixNano = uint64(v)
 }
 
-// Attributes returns the Attributes associated with this Profile.
-func (ms Profile) Attributes() pcommon.Map {
+// Attributes returns the Attributes associated with this ProfileContainer.
+func (ms ProfileContainer) Attributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
 }
 
-// DroppedAttributesCount returns the droppedattributescount associated with this Profile.
-func (ms Profile) DroppedAttributesCount() uint32 {
+// DroppedAttributesCount returns the droppedattributescount associated with this ProfileContainer.
+func (ms ProfileContainer) DroppedAttributesCount() uint32 {
 	return ms.orig.DroppedAttributesCount
 }
 
-// SetDroppedAttributesCount replaces the droppedattributescount associated with this Profile.
-func (ms Profile) SetDroppedAttributesCount(v uint32) {
+// SetDroppedAttributesCount replaces the droppedattributescount associated with this ProfileContainer.
+func (ms ProfileContainer) SetDroppedAttributesCount(v uint32) {
 	ms.orig.DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Profile) CopyTo(dest Profile) {
+func (ms ProfileContainer) CopyTo(dest ProfileContainer) {
 	dest.SetProfileID(ms.ProfileID())
 	dest.SetStartTime(ms.StartTime())
 	dest.SetEndTime(ms.EndTime())

@@ -18,15 +18,15 @@ import (
 func TestProfileSlice(t *testing.T) {
 	es := NewProfileSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newProfileSlice(&[]*otlpprofiles.Profile{})
+	es = newProfileSlice(&[]*otlpprofiles.ProfileContainer{})
 	assert.Equal(t, 0, es.Len())
 
-	emptyVal := NewProfile()
-	testVal := generateTestProfile()
+	emptyVal := NewProfileContainer()
+	testVal := generateTestProfileContainer()
 	for i := 0; i < 7; i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestProfile(el)
+		fillTestProfileContainer(el)
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -93,7 +93,7 @@ func TestProfileSlice_MoveAndAppendTo(t *testing.T) {
 func TestProfileSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
 	emptySlice := NewProfileSlice()
-	emptySlice.RemoveIf(func(el Profile) bool {
+	emptySlice.RemoveIf(func(el ProfileContainer) bool {
 		t.Fail()
 		return false
 	})
@@ -101,7 +101,7 @@ func TestProfileSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTestProfileSlice()
 	pos := 0
-	filtered.RemoveIf(func(el Profile) bool {
+	filtered.RemoveIf(func(el ProfileContainer) bool {
 		pos++
 		return pos%3 == 0
 	})
@@ -110,13 +110,13 @@ func TestProfileSlice_RemoveIf(t *testing.T) {
 
 func TestProfileSlice_Sort(t *testing.T) {
 	es := generateTestProfileSlice()
-	es.Sort(func(a, b Profile) bool {
+	es.Sort(func(a, b ProfileContainer) bool {
 		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) < uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
-	es.Sort(func(a, b Profile) bool {
+	es.Sort(func(a, b ProfileContainer) bool {
 		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
 	})
 	for i := 1; i < es.Len(); i++ {
@@ -131,9 +131,9 @@ func generateTestProfileSlice() ProfileSlice {
 }
 
 func fillTestProfileSlice(es ProfileSlice) {
-	*es.orig = make([]*otlpprofiles.Profile, 7)
+	*es.orig = make([]*otlpprofiles.ProfileContainer, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpprofiles.Profile{}
-		fillTestProfile(newProfile((*es.orig)[i]))
+		(*es.orig)[i] = &otlpprofiles.ProfileContainer{}
+		fillTestProfileContainer(newProfileContainer((*es.orig)[i]))
 	}
 }

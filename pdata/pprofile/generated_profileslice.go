@@ -12,7 +12,7 @@ import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1"
 )
 
-// ProfileSlice logically represents a slice of Profile.
+// ProfileSlice logically represents a slice of ProfileContainer.
 //
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
@@ -20,17 +20,17 @@ import (
 // Must use NewProfileSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ProfileSlice struct {
-	orig *[]*otlpprofiles.Profile
+	orig *[]*otlpprofiles.ProfileContainer
 }
 
-func newProfileSlice(orig *[]*otlpprofiles.Profile) ProfileSlice {
+func newProfileSlice(orig *[]*otlpprofiles.ProfileContainer) ProfileSlice {
 	return ProfileSlice{orig}
 }
 
 // NewProfileSlice creates a ProfileSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewProfileSlice() ProfileSlice {
-	orig := []*otlpprofiles.Profile(nil)
+	orig := []*otlpprofiles.ProfileContainer(nil)
 	return newProfileSlice(&orig)
 }
 
@@ -49,8 +49,8 @@ func (es ProfileSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es ProfileSlice) At(i int) Profile {
-	return newProfile((*es.orig)[i])
+func (es ProfileSlice) At(i int) ProfileContainer {
+	return newProfileContainer((*es.orig)[i])
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -71,15 +71,15 @@ func (es ProfileSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpprofiles.Profile, len(*es.orig), newCap)
+	newOrig := make([]*otlpprofiles.ProfileContainer, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
 
-// AppendEmpty will append to the end of the slice an empty Profile.
-// It returns the newly added Profile.
-func (es ProfileSlice) AppendEmpty() Profile {
-	*es.orig = append(*es.orig, &otlpprofiles.Profile{})
+// AppendEmpty will append to the end of the slice an empty ProfileContainer.
+// It returns the newly added ProfileContainer.
+func (es ProfileSlice) AppendEmpty() ProfileContainer {
+	*es.orig = append(*es.orig, &otlpprofiles.ProfileContainer{})
 	return es.At(es.Len() - 1)
 }
 
@@ -97,7 +97,7 @@ func (es ProfileSlice) MoveAndAppendTo(dest ProfileSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ProfileSlice) RemoveIf(f func(Profile) bool) {
+func (es ProfileSlice) RemoveIf(f func(ProfileContainer) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -122,22 +122,22 @@ func (es ProfileSlice) CopyTo(dest ProfileSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newProfile((*es.orig)[i]).CopyTo(newProfile((*dest.orig)[i]))
+			newProfileContainer((*es.orig)[i]).CopyTo(newProfileContainer((*dest.orig)[i]))
 		}
 		return
 	}
-	origs := make([]otlpprofiles.Profile, srcLen)
-	wrappers := make([]*otlpprofiles.Profile, srcLen)
+	origs := make([]otlpprofiles.ProfileContainer, srcLen)
+	wrappers := make([]*otlpprofiles.ProfileContainer, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newProfile((*es.orig)[i]).CopyTo(newProfile(wrappers[i]))
+		newProfileContainer((*es.orig)[i]).CopyTo(newProfileContainer(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
 
-// Sort sorts the Profile elements within ProfileSlice given the
+// Sort sorts the ProfileContainer elements within ProfileSlice given the
 // provided less function so that two instances of ProfileSlice
 // can be compared.
-func (es ProfileSlice) Sort(less func(a, b Profile) bool) {
+func (es ProfileSlice) Sort(less func(a, b ProfileContainer) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

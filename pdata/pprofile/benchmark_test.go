@@ -129,527 +129,527 @@ func benchmark(b *testing.B, profileName string, flavor string) {
 func BenchmarkSimplePprof(b *testing.B) {
 	benchmark(b, "simple", "pprof")
 }
-func BenchmarkSimplePprofExtended(b *testing.B) {
-	benchmark(b, "simple", "pprofextended")
+func BenchmarkSimpleDenormalized(b *testing.B) {
+	benchmark(b, "simple", "denormalized")
 }
-func BenchmarkSimplePprofExtendedInterned(b *testing.B) {
-	benchmark(b, "simple", "pprofextendedinterned")
-}
-func BenchmarkSimplePprofExtendedLookup(b *testing.B) {
-	benchmark(b, "simple", "pprofextendedlookup")
+func BenchmarkSimpleNormalized(b *testing.B) {
+	benchmark(b, "simple", "normalized")
 }
 func BenchmarkSimpleArrays(b *testing.B) {
 	benchmark(b, "simple", "arrays")
+}
+func BenchmarkSimplePprofExtended(b *testing.B) {
+	benchmark(b, "simple", "pprofextended")
 }
 
 func BenchmarkSimpleWithLabelsAndTimestampsPprof(b *testing.B) {
 	benchmark(b, "simpleWithLabelsAndTimestamps", "pprof")
 }
-func BenchmarkSimpleWithLabelsAndTimestampsPprofExtended(b *testing.B) {
-	benchmark(b, "simpleWithLabelsAndTimestamps", "pprofextended")
+func BenchmarkSimpleWithLabelsAndTimestampsDenormalized(b *testing.B) {
+	benchmark(b, "simpleWithLabelsAndTimestamps", "denormalized")
 }
-func BenchmarkSimpleWithLabelsAndTimestampsPprofExtendedInterned(b *testing.B) {
-	benchmark(b, "simpleWithLabelsAndTimestamps", "pprofextendedinterned")
-}
-func BenchmarkSimpleWithLabelsAndTimestampsPprofExtendedLookup(b *testing.B) {
-	benchmark(b, "simpleWithLabelsAndTimestamps", "pprofextendedlookup")
+func BenchmarkSimpleWithLabelsAndTimestampsNormalized(b *testing.B) {
+	benchmark(b, "simpleWithLabelsAndTimestamps", "normalized")
 }
 func BenchmarkSimpleWithLabelsAndTimestampsArrays(b *testing.B) {
 	benchmark(b, "simpleWithLabelsAndTimestamps", "arrays")
+}
+func BenchmarkSimpleWithLabelsAndTimestampsPprofExtended(b *testing.B) {
+	benchmark(b, "simpleWithLabelsAndTimestamps", "pprofextended")
 }
 
 func BenchmarkAveragePprof(b *testing.B) {
 	benchmark(b, "average", "pprof")
 }
-func BenchmarkAveragePprofExtended(b *testing.B) {
-	benchmark(b, "average", "pprofextended")
+func BenchmarkAverageDenormalized(b *testing.B) {
+	benchmark(b, "average", "denormalized")
 }
-func BenchmarkAveragePprofExtendedInterned(b *testing.B) {
-	benchmark(b, "average", "pprofextendedinterned")
-}
-func BenchmarkAveragePprofExtendedLookup(b *testing.B) {
-	benchmark(b, "average", "pprofextendedlookup")
+func BenchmarkAverageNormalized(b *testing.B) {
+	benchmark(b, "average", "normalized")
 }
 func BenchmarkAverageArrays(b *testing.B) {
 	benchmark(b, "average", "arrays")
+}
+func BenchmarkAveragePprofExtended(b *testing.B) {
+	benchmark(b, "average", "pprofextended")
 }
 
 func BenchmarkAverageTimestampsPprof(b *testing.B) {
 	benchmark(b, "averageTimestamps", "pprof")
 }
-func BenchmarkAverageTimestampsPprofExtended(b *testing.B) {
-	benchmark(b, "averageTimestamps", "pprofextended")
+func BenchmarkAverageTimestampsDenormalized(b *testing.B) {
+	benchmark(b, "averageTimestamps", "denormalized")
 }
-func BenchmarkAverageTimestampsPprofExtendedInterned(b *testing.B) {
-	benchmark(b, "averageTimestamps", "pprofextendedinterned")
-}
-func BenchmarkAverageTimestampsPprofExtendedLookup(b *testing.B) {
-	benchmark(b, "averageTimestamps", "pprofextendedlookup")
+func BenchmarkAverageTimestampsNormalized(b *testing.B) {
+	benchmark(b, "averageTimestamps", "normalized")
 }
 func BenchmarkAverageTimestampsArrays(b *testing.B) {
 	benchmark(b, "averageTimestamps", "arrays")
+}
+func BenchmarkAverageTimestampsPprofExtended(b *testing.B) {
+	benchmark(b, "averageTimestamps", "pprofextended")
 }
 
 func BenchmarkRubyPprof(b *testing.B) {
 	benchmark(b, "ruby", "pprof")
 }
-func BenchmarkRubyPprofExtended(b *testing.B) {
-	benchmark(b, "ruby", "pprofextended")
+func BenchmarkRubyDenormalized(b *testing.B) {
+	benchmark(b, "ruby", "denormalized")
 }
-func BenchmarkRubyPprofExtendedInterned(b *testing.B) {
-	benchmark(b, "ruby", "pprofextendedinterned")
-}
-func BenchmarkRubyPprofExtendedLookup(b *testing.B) {
-	benchmark(b, "ruby", "pprofextendedlookup")
+func BenchmarkRubyNormalized(b *testing.B) {
+	benchmark(b, "ruby", "normalized")
 }
 func BenchmarkRubyArrays(b *testing.B) {
 	benchmark(b, "ruby", "arrays")
+}
+func BenchmarkRubyPprofExtended(b *testing.B) {
+	benchmark(b, "ruby", "pprofextended")
 }
 
 func BenchmarkLarge10percentPprof(b *testing.B) {
 	benchmark(b, "large10percent", "pprof")
 }
-func BenchmarkLarge10percentPprofExtended(b *testing.B) {
-	benchmark(b, "large10percent", "pprofextended")
+func BenchmarkLarge10percentDenormalized(b *testing.B) {
+	benchmark(b, "large10percent", "denormalized")
 }
-func BenchmarkLarge10percentPprofExtendedInterned(b *testing.B) {
-	benchmark(b, "large10percent", "pprofextendedinterned")
-}
-func BenchmarkLarge10percentPprofExtendedLookup(b *testing.B) {
-	benchmark(b, "large10percent", "pprofextendedlookup")
+func BenchmarkLarge10percentNormalized(b *testing.B) {
+	benchmark(b, "large10percent", "normalized")
 }
 func BenchmarkLarge10percentArrays(b *testing.B) {
 	benchmark(b, "large10percent", "arrays")
+}
+func BenchmarkLarge10percentPprofExtended(b *testing.B) {
+	benchmark(b, "large10percent", "pprofextended")
 }
 
 func BenchmarkLarge50percentPprof(b *testing.B) {
 	benchmark(b, "large50percent", "pprof")
 }
-func BenchmarkLarge50percentPprofExtended(b *testing.B) {
-	benchmark(b, "large50percent", "pprofextended")
+func BenchmarkLarge50percentDenormalized(b *testing.B) {
+	benchmark(b, "large50percent", "denormalized")
 }
-func BenchmarkLarge50percentPprofExtendedInterned(b *testing.B) {
-	benchmark(b, "large50percent", "pprofextendedinterned")
-}
-func BenchmarkLarge50percentPprofExtendedLookup(b *testing.B) {
-	benchmark(b, "large50percent", "pprofextendedlookup")
+func BenchmarkLarge50percentNormalized(b *testing.B) {
+	benchmark(b, "large50percent", "normalized")
 }
 func BenchmarkLarge50percentArrays(b *testing.B) {
 	benchmark(b, "large50percent", "arrays")
+}
+func BenchmarkLarge50percentPprofExtended(b *testing.B) {
+	benchmark(b, "large50percent", "pprofextended")
 }
 
 func BenchmarkLarge1percentPprof(b *testing.B) {
 	benchmark(b, "large1percent", "pprof")
 }
-func BenchmarkLarge1percentPprofExtended(b *testing.B) {
-	benchmark(b, "large1percent", "pprofextended")
+func BenchmarkLarge1percentDenormalized(b *testing.B) {
+	benchmark(b, "large1percent", "denormalized")
 }
-func BenchmarkLarge1percentPprofExtendedInterned(b *testing.B) {
-	benchmark(b, "large1percent", "pprofextendedinterned")
-}
-func BenchmarkLarge1percentPprofExtendedLookup(b *testing.B) {
-	benchmark(b, "large1percent", "pprofextendedlookup")
+func BenchmarkLarge1percentNormalized(b *testing.B) {
+	benchmark(b, "large1percent", "normalized")
 }
 func BenchmarkLarge1percentArrays(b *testing.B) {
 	benchmark(b, "large1percent", "arrays")
+}
+func BenchmarkLarge1percentPprofExtended(b *testing.B) {
+	benchmark(b, "large1percent", "pprofextended")
 }
 
 func BenchmarkLargePprof(b *testing.B) {
 	benchmark(b, "large", "pprof")
 }
-func BenchmarkLargePprofExtended(b *testing.B) {
-	benchmark(b, "large", "pprofextended")
+func BenchmarkLargeDenormalized(b *testing.B) {
+	benchmark(b, "large", "denormalized")
 }
-func BenchmarkLargePprofExtendedInterned(b *testing.B) {
-	benchmark(b, "large", "pprofextendedinterned")
-}
-func BenchmarkLargePprofExtendedLookup(b *testing.B) {
-	benchmark(b, "large", "pprofextendedlookup")
+func BenchmarkLargeNormalized(b *testing.B) {
+	benchmark(b, "large", "normalized")
 }
 func BenchmarkLargeArrays(b *testing.B) {
 	benchmark(b, "large", "arrays")
+}
+func BenchmarkLargePprofExtended(b *testing.B) {
+	benchmark(b, "large", "pprofextended")
 }
 
 func BenchmarkProfile_1Pprof(b *testing.B) {
 	benchmark(b, "profile_1", "pprof")
 }
-func BenchmarkProfile_1PprofExtended(b *testing.B) {
-	benchmark(b, "profile_1", "pprofextended")
+func BenchmarkProfile_1Denormalized(b *testing.B) {
+	benchmark(b, "profile_1", "denormalized")
 }
-func BenchmarkProfile_1PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "profile_1", "pprofextendedinterned")
-}
-func BenchmarkProfile_1PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "profile_1", "pprofextendedlookup")
+func BenchmarkProfile_1Normalized(b *testing.B) {
+	benchmark(b, "profile_1", "normalized")
 }
 func BenchmarkProfile_1Arrays(b *testing.B) {
 	benchmark(b, "profile_1", "arrays")
+}
+func BenchmarkProfile_1PprofExtended(b *testing.B) {
+	benchmark(b, "profile_1", "pprofextended")
 }
 
 func BenchmarkProfile_2Pprof(b *testing.B) {
 	benchmark(b, "profile_2", "pprof")
 }
-func BenchmarkProfile_2PprofExtended(b *testing.B) {
-	benchmark(b, "profile_2", "pprofextended")
+func BenchmarkProfile_2Denormalized(b *testing.B) {
+	benchmark(b, "profile_2", "denormalized")
 }
-func BenchmarkProfile_2PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "profile_2", "pprofextendedinterned")
-}
-func BenchmarkProfile_2PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "profile_2", "pprofextendedlookup")
+func BenchmarkProfile_2Normalized(b *testing.B) {
+	benchmark(b, "profile_2", "normalized")
 }
 func BenchmarkProfile_2Arrays(b *testing.B) {
 	benchmark(b, "profile_2", "arrays")
+}
+func BenchmarkProfile_2PprofExtended(b *testing.B) {
+	benchmark(b, "profile_2", "pprofextended")
 }
 
 func BenchmarkProfile_3Pprof(b *testing.B) {
 	benchmark(b, "profile_3", "pprof")
 }
-func BenchmarkProfile_3PprofExtended(b *testing.B) {
-	benchmark(b, "profile_3", "pprofextended")
+func BenchmarkProfile_3Denormalized(b *testing.B) {
+	benchmark(b, "profile_3", "denormalized")
 }
-func BenchmarkProfile_3PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "profile_3", "pprofextendedinterned")
-}
-func BenchmarkProfile_3PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "profile_3", "pprofextendedlookup")
+func BenchmarkProfile_3Normalized(b *testing.B) {
+	benchmark(b, "profile_3", "normalized")
 }
 func BenchmarkProfile_3Arrays(b *testing.B) {
 	benchmark(b, "profile_3", "arrays")
+}
+func BenchmarkProfile_3PprofExtended(b *testing.B) {
+	benchmark(b, "profile_3", "pprofextended")
 }
 
 func BenchmarkProfile_4Pprof(b *testing.B) {
 	benchmark(b, "profile_4", "pprof")
 }
-func BenchmarkProfile_4PprofExtended(b *testing.B) {
-	benchmark(b, "profile_4", "pprofextended")
+func BenchmarkProfile_4Denormalized(b *testing.B) {
+	benchmark(b, "profile_4", "denormalized")
 }
-func BenchmarkProfile_4PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "profile_4", "pprofextendedinterned")
-}
-func BenchmarkProfile_4PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "profile_4", "pprofextendedlookup")
+func BenchmarkProfile_4Normalized(b *testing.B) {
+	benchmark(b, "profile_4", "normalized")
 }
 func BenchmarkProfile_4Arrays(b *testing.B) {
 	benchmark(b, "profile_4", "arrays")
+}
+func BenchmarkProfile_4PprofExtended(b *testing.B) {
+	benchmark(b, "profile_4", "pprofextended")
 }
 
 func BenchmarkProfile_5Pprof(b *testing.B) {
 	benchmark(b, "profile_5", "pprof")
 }
-func BenchmarkProfile_5PprofExtended(b *testing.B) {
-	benchmark(b, "profile_5", "pprofextended")
+func BenchmarkProfile_5Denormalized(b *testing.B) {
+	benchmark(b, "profile_5", "denormalized")
 }
-func BenchmarkProfile_5PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "profile_5", "pprofextendedinterned")
-}
-func BenchmarkProfile_5PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "profile_5", "pprofextendedlookup")
+func BenchmarkProfile_5Normalized(b *testing.B) {
+	benchmark(b, "profile_5", "normalized")
 }
 func BenchmarkProfile_5Arrays(b *testing.B) {
 	benchmark(b, "profile_5", "arrays")
+}
+func BenchmarkProfile_5PprofExtended(b *testing.B) {
+	benchmark(b, "profile_5", "pprofextended")
 }
 
 func BenchmarkProfile_6Pprof(b *testing.B) {
 	benchmark(b, "profile_6", "pprof")
 }
-func BenchmarkProfile_6PprofExtended(b *testing.B) {
-	benchmark(b, "profile_6", "pprofextended")
+func BenchmarkProfile_6Denormalized(b *testing.B) {
+	benchmark(b, "profile_6", "denormalized")
 }
-func BenchmarkProfile_6PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "profile_6", "pprofextendedinterned")
-}
-func BenchmarkProfile_6PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "profile_6", "pprofextendedlookup")
+func BenchmarkProfile_6Normalized(b *testing.B) {
+	benchmark(b, "profile_6", "normalized")
 }
 func BenchmarkProfile_6Arrays(b *testing.B) {
 	benchmark(b, "profile_6", "arrays")
+}
+func BenchmarkProfile_6PprofExtended(b *testing.B) {
+	benchmark(b, "profile_6", "pprofextended")
 }
 
 func BenchmarkProfile_7Pprof(b *testing.B) {
 	benchmark(b, "profile_7", "pprof")
 }
-func BenchmarkProfile_7PprofExtended(b *testing.B) {
-	benchmark(b, "profile_7", "pprofextended")
+func BenchmarkProfile_7Denormalized(b *testing.B) {
+	benchmark(b, "profile_7", "denormalized")
 }
-func BenchmarkProfile_7PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "profile_7", "pprofextendedinterned")
-}
-func BenchmarkProfile_7PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "profile_7", "pprofextendedlookup")
+func BenchmarkProfile_7Normalized(b *testing.B) {
+	benchmark(b, "profile_7", "normalized")
 }
 func BenchmarkProfile_7Arrays(b *testing.B) {
 	benchmark(b, "profile_7", "arrays")
+}
+func BenchmarkProfile_7PprofExtended(b *testing.B) {
+	benchmark(b, "profile_7", "pprofextended")
 }
 
 func BenchmarkProfile_8Pprof(b *testing.B) {
 	benchmark(b, "profile_8", "pprof")
 }
-func BenchmarkProfile_8PprofExtended(b *testing.B) {
-	benchmark(b, "profile_8", "pprofextended")
+func BenchmarkProfile_8Denormalized(b *testing.B) {
+	benchmark(b, "profile_8", "denormalized")
 }
-func BenchmarkProfile_8PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "profile_8", "pprofextendedinterned")
-}
-func BenchmarkProfile_8PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "profile_8", "pprofextendedlookup")
+func BenchmarkProfile_8Normalized(b *testing.B) {
+	benchmark(b, "profile_8", "normalized")
 }
 func BenchmarkProfile_8Arrays(b *testing.B) {
 	benchmark(b, "profile_8", "arrays")
+}
+func BenchmarkProfile_8PprofExtended(b *testing.B) {
+	benchmark(b, "profile_8", "pprofextended")
 }
 
 func BenchmarkProfile_9Pprof(b *testing.B) {
 	benchmark(b, "profile_9", "pprof")
 }
-func BenchmarkProfile_9PprofExtended(b *testing.B) {
-	benchmark(b, "profile_9", "pprofextended")
+func BenchmarkProfile_9Denormalized(b *testing.B) {
+	benchmark(b, "profile_9", "denormalized")
 }
-func BenchmarkProfile_9PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "profile_9", "pprofextendedinterned")
-}
-func BenchmarkProfile_9PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "profile_9", "pprofextendedlookup")
+func BenchmarkProfile_9Normalized(b *testing.B) {
+	benchmark(b, "profile_9", "normalized")
 }
 func BenchmarkProfile_9Arrays(b *testing.B) {
 	benchmark(b, "profile_9", "arrays")
+}
+func BenchmarkProfile_9PprofExtended(b *testing.B) {
+	benchmark(b, "profile_9", "pprofextended")
 }
 
 func BenchmarkProfile_10Pprof(b *testing.B) {
 	benchmark(b, "profile_10", "pprof")
 }
-func BenchmarkProfile_10PprofExtended(b *testing.B) {
-	benchmark(b, "profile_10", "pprofextended")
+func BenchmarkProfile_10Denormalized(b *testing.B) {
+	benchmark(b, "profile_10", "denormalized")
 }
-func BenchmarkProfile_10PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "profile_10", "pprofextendedinterned")
-}
-func BenchmarkProfile_10PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "profile_10", "pprofextendedlookup")
+func BenchmarkProfile_10Normalized(b *testing.B) {
+	benchmark(b, "profile_10", "normalized")
 }
 func BenchmarkProfile_10Arrays(b *testing.B) {
 	benchmark(b, "profile_10", "arrays")
+}
+func BenchmarkProfile_10PprofExtended(b *testing.B) {
+	benchmark(b, "profile_10", "pprofextended")
 }
 
 func BenchmarkProfile_11Pprof(b *testing.B) {
 	benchmark(b, "profile_11", "pprof")
 }
-func BenchmarkProfile_11PprofExtended(b *testing.B) {
-	benchmark(b, "profile_11", "pprofextended")
+func BenchmarkProfile_11Denormalized(b *testing.B) {
+	benchmark(b, "profile_11", "denormalized")
 }
-func BenchmarkProfile_11PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "profile_11", "pprofextendedinterned")
-}
-func BenchmarkProfile_11PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "profile_11", "pprofextendedlookup")
+func BenchmarkProfile_11Normalized(b *testing.B) {
+	benchmark(b, "profile_11", "normalized")
 }
 func BenchmarkProfile_11Arrays(b *testing.B) {
 	benchmark(b, "profile_11", "arrays")
+}
+func BenchmarkProfile_11PprofExtended(b *testing.B) {
+	benchmark(b, "profile_11", "pprofextended")
 }
 
 func BenchmarkProfile_12Pprof(b *testing.B) {
 	benchmark(b, "profile_12", "pprof")
 }
-func BenchmarkProfile_12PprofExtended(b *testing.B) {
-	benchmark(b, "profile_12", "pprofextended")
+func BenchmarkProfile_12Denormalized(b *testing.B) {
+	benchmark(b, "profile_12", "denormalized")
 }
-func BenchmarkProfile_12PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "profile_12", "pprofextendedinterned")
-}
-func BenchmarkProfile_12PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "profile_12", "pprofextendedlookup")
+func BenchmarkProfile_12Normalized(b *testing.B) {
+	benchmark(b, "profile_12", "normalized")
 }
 func BenchmarkProfile_12Arrays(b *testing.B) {
 	benchmark(b, "profile_12", "arrays")
+}
+func BenchmarkProfile_12PprofExtended(b *testing.B) {
+	benchmark(b, "profile_12", "pprofextended")
 }
 
 func BenchmarkProfile_13Pprof(b *testing.B) {
 	benchmark(b, "profile_13", "pprof")
 }
-func BenchmarkProfile_13PprofExtended(b *testing.B) {
-	benchmark(b, "profile_13", "pprofextended")
+func BenchmarkProfile_13Denormalized(b *testing.B) {
+	benchmark(b, "profile_13", "denormalized")
 }
-func BenchmarkProfile_13PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "profile_13", "pprofextendedinterned")
-}
-func BenchmarkProfile_13PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "profile_13", "pprofextendedlookup")
+func BenchmarkProfile_13Normalized(b *testing.B) {
+	benchmark(b, "profile_13", "normalized")
 }
 func BenchmarkProfile_13Arrays(b *testing.B) {
 	benchmark(b, "profile_13", "arrays")
+}
+func BenchmarkProfile_13PprofExtended(b *testing.B) {
+	benchmark(b, "profile_13", "pprofextended")
 }
 
 func BenchmarkJfr_1_1Pprof(b *testing.B) {
 	benchmark(b, "jfr_1_1", "pprof")
 }
-func BenchmarkJfr_1_1PprofExtended(b *testing.B) {
-	benchmark(b, "jfr_1_1", "pprofextended")
+func BenchmarkJfr_1_1Denormalized(b *testing.B) {
+	benchmark(b, "jfr_1_1", "denormalized")
 }
-func BenchmarkJfr_1_1PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "jfr_1_1", "pprofextendedinterned")
-}
-func BenchmarkJfr_1_1PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "jfr_1_1", "pprofextendedlookup")
+func BenchmarkJfr_1_1Normalized(b *testing.B) {
+	benchmark(b, "jfr_1_1", "normalized")
 }
 func BenchmarkJfr_1_1Arrays(b *testing.B) {
 	benchmark(b, "jfr_1_1", "arrays")
+}
+func BenchmarkJfr_1_1PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_1_1", "pprofextended")
 }
 
 func BenchmarkJfr_1_2Pprof(b *testing.B) {
 	benchmark(b, "jfr_1_2", "pprof")
 }
-func BenchmarkJfr_1_2PprofExtended(b *testing.B) {
-	benchmark(b, "jfr_1_2", "pprofextended")
+func BenchmarkJfr_1_2Denormalized(b *testing.B) {
+	benchmark(b, "jfr_1_2", "denormalized")
 }
-func BenchmarkJfr_1_2PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "jfr_1_2", "pprofextendedinterned")
-}
-func BenchmarkJfr_1_2PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "jfr_1_2", "pprofextendedlookup")
+func BenchmarkJfr_1_2Normalized(b *testing.B) {
+	benchmark(b, "jfr_1_2", "normalized")
 }
 func BenchmarkJfr_1_2Arrays(b *testing.B) {
 	benchmark(b, "jfr_1_2", "arrays")
+}
+func BenchmarkJfr_1_2PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_1_2", "pprofextended")
 }
 
 func BenchmarkJfr_1_3Pprof(b *testing.B) {
 	benchmark(b, "jfr_1_3", "pprof")
 }
-func BenchmarkJfr_1_3PprofExtended(b *testing.B) {
-	benchmark(b, "jfr_1_3", "pprofextended")
+func BenchmarkJfr_1_3Denormalized(b *testing.B) {
+	benchmark(b, "jfr_1_3", "denormalized")
 }
-func BenchmarkJfr_1_3PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "jfr_1_3", "pprofextendedinterned")
-}
-func BenchmarkJfr_1_3PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "jfr_1_3", "pprofextendedlookup")
+func BenchmarkJfr_1_3Normalized(b *testing.B) {
+	benchmark(b, "jfr_1_3", "normalized")
 }
 func BenchmarkJfr_1_3Arrays(b *testing.B) {
 	benchmark(b, "jfr_1_3", "arrays")
+}
+func BenchmarkJfr_1_3PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_1_3", "pprofextended")
 }
 
 func BenchmarkJfr_1_4Pprof(b *testing.B) {
 	benchmark(b, "jfr_1_4", "pprof")
 }
-func BenchmarkJfr_1_4PprofExtended(b *testing.B) {
-	benchmark(b, "jfr_1_4", "pprofextended")
+func BenchmarkJfr_1_4Denormalized(b *testing.B) {
+	benchmark(b, "jfr_1_4", "denormalized")
 }
-func BenchmarkJfr_1_4PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "jfr_1_4", "pprofextendedinterned")
-}
-func BenchmarkJfr_1_4PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "jfr_1_4", "pprofextendedlookup")
+func BenchmarkJfr_1_4Normalized(b *testing.B) {
+	benchmark(b, "jfr_1_4", "normalized")
 }
 func BenchmarkJfr_1_4Arrays(b *testing.B) {
 	benchmark(b, "jfr_1_4", "arrays")
+}
+func BenchmarkJfr_1_4PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_1_4", "pprofextended")
 }
 
 func BenchmarkJfr_1_5Pprof(b *testing.B) {
 	benchmark(b, "jfr_1_5", "pprof")
 }
-func BenchmarkJfr_1_5PprofExtended(b *testing.B) {
-	benchmark(b, "jfr_1_5", "pprofextended")
+func BenchmarkJfr_1_5Denormalized(b *testing.B) {
+	benchmark(b, "jfr_1_5", "denormalized")
 }
-func BenchmarkJfr_1_5PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "jfr_1_5", "pprofextendedinterned")
-}
-func BenchmarkJfr_1_5PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "jfr_1_5", "pprofextendedlookup")
+func BenchmarkJfr_1_5Normalized(b *testing.B) {
+	benchmark(b, "jfr_1_5", "normalized")
 }
 func BenchmarkJfr_1_5Arrays(b *testing.B) {
 	benchmark(b, "jfr_1_5", "arrays")
+}
+func BenchmarkJfr_1_5PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_1_5", "pprofextended")
 }
 
 func BenchmarkJfr_1_6Pprof(b *testing.B) {
 	benchmark(b, "jfr_1_6", "pprof")
 }
-func BenchmarkJfr_1_6PprofExtended(b *testing.B) {
-	benchmark(b, "jfr_1_6", "pprofextended")
+func BenchmarkJfr_1_6Denormalized(b *testing.B) {
+	benchmark(b, "jfr_1_6", "denormalized")
 }
-func BenchmarkJfr_1_6PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "jfr_1_6", "pprofextendedinterned")
-}
-func BenchmarkJfr_1_6PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "jfr_1_6", "pprofextendedlookup")
+func BenchmarkJfr_1_6Normalized(b *testing.B) {
+	benchmark(b, "jfr_1_6", "normalized")
 }
 func BenchmarkJfr_1_6Arrays(b *testing.B) {
 	benchmark(b, "jfr_1_6", "arrays")
+}
+func BenchmarkJfr_1_6PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_1_6", "pprofextended")
 }
 
 func BenchmarkJfr_1_7Pprof(b *testing.B) {
 	benchmark(b, "jfr_1_7", "pprof")
 }
-func BenchmarkJfr_1_7PprofExtended(b *testing.B) {
-	benchmark(b, "jfr_1_7", "pprofextended")
+func BenchmarkJfr_1_7Denormalized(b *testing.B) {
+	benchmark(b, "jfr_1_7", "denormalized")
 }
-func BenchmarkJfr_1_7PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "jfr_1_7", "pprofextendedinterned")
-}
-func BenchmarkJfr_1_7PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "jfr_1_7", "pprofextendedlookup")
+func BenchmarkJfr_1_7Normalized(b *testing.B) {
+	benchmark(b, "jfr_1_7", "normalized")
 }
 func BenchmarkJfr_1_7Arrays(b *testing.B) {
 	benchmark(b, "jfr_1_7", "arrays")
+}
+func BenchmarkJfr_1_7PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_1_7", "pprofextended")
 }
 
 func BenchmarkJfr_2_1Pprof(b *testing.B) {
 	benchmark(b, "jfr_2_1", "pprof")
 }
-func BenchmarkJfr_2_1PprofExtended(b *testing.B) {
-	benchmark(b, "jfr_2_1", "pprofextended")
+func BenchmarkJfr_2_1Denormalized(b *testing.B) {
+	benchmark(b, "jfr_2_1", "denormalized")
 }
-func BenchmarkJfr_2_1PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "jfr_2_1", "pprofextendedinterned")
-}
-func BenchmarkJfr_2_1PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "jfr_2_1", "pprofextendedlookup")
+func BenchmarkJfr_2_1Normalized(b *testing.B) {
+	benchmark(b, "jfr_2_1", "normalized")
 }
 func BenchmarkJfr_2_1Arrays(b *testing.B) {
 	benchmark(b, "jfr_2_1", "arrays")
+}
+func BenchmarkJfr_2_1PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_2_1", "pprofextended")
 }
 
 func BenchmarkJfr_3_1Pprof(b *testing.B) {
 	benchmark(b, "jfr_3_1", "pprof")
 }
-func BenchmarkJfr_3_1PprofExtended(b *testing.B) {
-	benchmark(b, "jfr_3_1", "pprofextended")
+func BenchmarkJfr_3_1Denormalized(b *testing.B) {
+	benchmark(b, "jfr_3_1", "denormalized")
 }
-func BenchmarkJfr_3_1PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "jfr_3_1", "pprofextendedinterned")
-}
-func BenchmarkJfr_3_1PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "jfr_3_1", "pprofextendedlookup")
+func BenchmarkJfr_3_1Normalized(b *testing.B) {
+	benchmark(b, "jfr_3_1", "normalized")
 }
 func BenchmarkJfr_3_1Arrays(b *testing.B) {
 	benchmark(b, "jfr_3_1", "arrays")
+}
+func BenchmarkJfr_3_1PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_3_1", "pprofextended")
 }
 
 func BenchmarkJfr_4_1Pprof(b *testing.B) {
 	benchmark(b, "jfr_4_1", "pprof")
 }
-func BenchmarkJfr_4_1PprofExtended(b *testing.B) {
-	benchmark(b, "jfr_4_1", "pprofextended")
+func BenchmarkJfr_4_1Denormalized(b *testing.B) {
+	benchmark(b, "jfr_4_1", "denormalized")
 }
-func BenchmarkJfr_4_1PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "jfr_4_1", "pprofextendedinterned")
-}
-func BenchmarkJfr_4_1PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "jfr_4_1", "pprofextendedlookup")
+func BenchmarkJfr_4_1Normalized(b *testing.B) {
+	benchmark(b, "jfr_4_1", "normalized")
 }
 func BenchmarkJfr_4_1Arrays(b *testing.B) {
 	benchmark(b, "jfr_4_1", "arrays")
+}
+func BenchmarkJfr_4_1PprofExtended(b *testing.B) {
+	benchmark(b, "jfr_4_1", "pprofextended")
 }
 
 func BenchmarkJava_1Pprof(b *testing.B) {
 	benchmark(b, "java_1", "pprof")
 }
-func BenchmarkJava_1PprofExtended(b *testing.B) {
-	benchmark(b, "java_1", "pprofextended")
+func BenchmarkJava_1Denormalized(b *testing.B) {
+	benchmark(b, "java_1", "denormalized")
 }
-func BenchmarkJava_1PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "java_1", "pprofextendedinterned")
-}
-func BenchmarkJava_1PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "java_1", "pprofextendedlookup")
+func BenchmarkJava_1Normalized(b *testing.B) {
+	benchmark(b, "java_1", "normalized")
 }
 func BenchmarkJava_1Arrays(b *testing.B) {
 	benchmark(b, "java_1", "arrays")
+}
+func BenchmarkJava_1PprofExtended(b *testing.B) {
+	benchmark(b, "java_1", "pprofextended")
 }

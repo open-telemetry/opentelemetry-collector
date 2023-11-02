@@ -92,7 +92,7 @@ func (ms ScopeProfiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (ms Profile) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms ProfileContainer) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "startTimeUnixNano", "start_time_unix_nano":

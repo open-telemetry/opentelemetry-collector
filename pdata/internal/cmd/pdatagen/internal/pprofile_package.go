@@ -79,9 +79,9 @@ var profileSlice = &sliceOfPtrs{
 }
 
 var profile = &messageValueStruct{
-	structName:     "Profile",
+	structName:     "ProfileContainer",
 	description:    "// Profile are experimental implementation of OpenTelemetry Profile Data Model.\n",
-	originFullName: "otlpprofiles.Profile",
+	originFullName: "otlpprofiles.ProfileContainer",
 	fields: []baseField{
 		&primitiveTypedField{
 			fieldName:       "ProfileID",

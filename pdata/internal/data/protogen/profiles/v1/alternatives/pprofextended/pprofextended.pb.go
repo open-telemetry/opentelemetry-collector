@@ -26,32 +26,90 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type ValueType_AggregationTemporality int32
+type AggregationTemporality int32
 
 const (
-	ValueType_AGGREGATION_TEMPORALITY_UNSPECIFIED ValueType_AggregationTemporality = 0
-	ValueType_AGGREGATION_TEMPORALITY_DELTA       ValueType_AggregationTemporality = 1
-	ValueType_AGGREGATION_TEMPORALITY_CUMULATIVE  ValueType_AggregationTemporality = 2
+	// UNSPECIFIED is the default AggregationTemporality, it MUST not be used.
+	AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED AggregationTemporality = 0
+	//* DELTA is an AggregationTemporality for a profiler which reports
+	//changes since last report time. Successive metrics contain aggregation of
+	//values from continuous and non-overlapping intervals.
+	//
+	//The values for a DELTA metric are based only on the time interval
+	//associated with one measurement cycle. There is no dependency on
+	//previous measurements like is the case for CUMULATIVE metrics.
+	//
+	//For example, consider a system measuring the number of requests that
+	//it receives and reports the sum of these requests every second as a
+	//DELTA metric:
+	//
+	//1. The system starts receiving at time=t_0.
+	//2. A request is received, the system measures 1 request.
+	//3. A request is received, the system measures 1 request.
+	//4. A request is received, the system measures 1 request.
+	//5. The 1 second collection cycle ends. A metric is exported for the
+	//number of requests received over the interval of time t_0 to
+	//t_0+1 with a value of 3.
+	//6. A request is received, the system measures 1 request.
+	//7. A request is received, the system measures 1 request.
+	//8. The 1 second collection cycle ends. A metric is exported for the
+	//number of requests received over the interval of time t_0+1 to
+	//t_0+2 with a value of 2.
+	AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA AggregationTemporality = 1
+	//* CUMULATIVE is an AggregationTemporality for a profiler which
+	//reports changes since a fixed start time. This means that current values
+	//of a CUMULATIVE metric depend on all previous measurements since the
+	//start time. Because of this, the sender is required to retain this state
+	//in some form. If this state is lost or invalidated, the CUMULATIVE metric
+	//values MUST be reset and a new fixed start time following the last
+	//reported measurement time sent MUST be used.
+	//
+	//For example, consider a system measuring the number of requests that
+	//it receives and reports the sum of these requests every second as a
+	//CUMULATIVE metric:
+	//
+	//1. The system starts receiving at time=t_0.
+	//2. A request is received, the system measures 1 request.
+	//3. A request is received, the system measures 1 request.
+	//4. A request is received, the system measures 1 request.
+	//5. The 1 second collection cycle ends. A metric is exported for the
+	//number of requests received over the interval of time t_0 to
+	//t_0+1 with a value of 3.
+	//6. A request is received, the system measures 1 request.
+	//7. A request is received, the system measures 1 request.
+	//8. The 1 second collection cycle ends. A metric is exported for the
+	//number of requests received over the interval of time t_0 to
+	//t_0+2 with a value of 5.
+	//9. The system experiences a fault and loses state.
+	//10. The system recovers and resumes receiving at time=t_1.
+	//11. A request is received, the system measures 1 request.
+	//12. The 1 second collection cycle ends. A metric is exported for the
+	//number of requests received over the interval of time t_1 to
+	//t_0+1 with a value of 1.
+	//
+	//Note: Even though, when reporting changes since last report time, using
+	//CUMULATIVE is valid, it is not recommended.
+	AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE AggregationTemporality = 2
 )
 
-var ValueType_AggregationTemporality_name = map[int32]string{
+var AggregationTemporality_name = map[int32]string{
 	0: "AGGREGATION_TEMPORALITY_UNSPECIFIED",
 	1: "AGGREGATION_TEMPORALITY_DELTA",
 	2: "AGGREGATION_TEMPORALITY_CUMULATIVE",
 }
 
-var ValueType_AggregationTemporality_value = map[string]int32{
+var AggregationTemporality_value = map[string]int32{
 	"AGGREGATION_TEMPORALITY_UNSPECIFIED": 0,
 	"AGGREGATION_TEMPORALITY_DELTA":       1,
 	"AGGREGATION_TEMPORALITY_CUMULATIVE":  2,
 }
 
-func (x ValueType_AggregationTemporality) String() string {
-	return proto.EnumName(ValueType_AggregationTemporality_name, int32(x))
+func (x AggregationTemporality) String() string {
+	return proto.EnumName(AggregationTemporality_name, int32(x))
 }
 
-func (ValueType_AggregationTemporality) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_9cb689ea05ecfd2e, []int{1, 0}
+func (AggregationTemporality) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_9cb689ea05ecfd2e, []int{0}
 }
 
 type Profile struct {
@@ -69,7 +127,7 @@ type Profile struct {
 	// Mapping from address ranges to the image/binary/library mapped
 	// into that address range.  mapping[0] will be the main binary.
 	Mapping []*Mapping `protobuf:"bytes,3,rep,name=mapping,proto3" json:"mapping,omitempty"`
-	// Locations referenced by samples. [deprecated, superseded by stacktrace]
+	// Locations referenced by samples via location_indices.
 	Location []*Location `protobuf:"bytes,4,rep,name=location,proto3" json:"location,omitempty"`
 	// Functions referenced by locations.
 	Function []*Function `protobuf:"bytes,5,rep,name=function,proto3" json:"function,omitempty"`
@@ -102,10 +160,8 @@ type Profile struct {
 	DefaultSampleType int64 `protobuf:"varint,14,opt,name=default_sample_type,json=defaultSampleType,proto3" json:"default_sample_type,omitempty"`
 	// Array of locations referenced by samples.
 	LocationIndices []int64 `protobuf:"varint,15,rep,packed,name=location_indices,json=locationIndices,proto3" json:"location_indices,omitempty"`
-	// A common table for bytes referenced by various messages.
-	// bytes_table[0] must always be "".
-	BytesTable  [][]byte      `protobuf:"bytes,16,rep,name=bytes_table,json=bytesTable,proto3" json:"bytes_table,omitempty"`
-	Attributes3 []v1.KeyValue `protobuf:"bytes,17,rep,name=attributes3,proto3" json:"attributes3"`
+	// Lookup table for attributes.
+	AttributeTable []v1.KeyValue `protobuf:"bytes,16,rep,name=attribute_table,json=attributeTable,proto3" json:"attribute_table"`
 }
 
 func (m *Profile) Reset()         { *m = Profile{} }
@@ -246,25 +302,18 @@ func (m *Profile) GetLocationIndices() []int64 {
 	return nil
 }
 
-func (m *Profile) GetBytesTable() [][]byte {
+func (m *Profile) GetAttributeTable() []v1.KeyValue {
 	if m != nil {
-		return m.BytesTable
-	}
-	return nil
-}
-
-func (m *Profile) GetAttributes3() []v1.KeyValue {
-	if m != nil {
-		return m.Attributes3
+		return m.AttributeTable
 	}
 	return nil
 }
 
 // ValueType describes the semantics and measurement units of a value.
 type ValueType struct {
-	Type                   int64                            `protobuf:"varint,1,opt,name=type,proto3" json:"type,omitempty"`
-	Unit                   int64                            `protobuf:"varint,2,opt,name=unit,proto3" json:"unit,omitempty"`
-	AggregationTemporality ValueType_AggregationTemporality `protobuf:"varint,3,opt,name=aggregation_temporality,json=aggregationTemporality,proto3,enum=opentelemetry.proto.profiles.v1.alternatives.pprofextended.ValueType_AggregationTemporality" json:"aggregation_temporality,omitempty"`
+	Type                   int64                  `protobuf:"varint,1,opt,name=type,proto3" json:"type,omitempty"`
+	Unit                   int64                  `protobuf:"varint,2,opt,name=unit,proto3" json:"unit,omitempty"`
+	AggregationTemporality AggregationTemporality `protobuf:"varint,3,opt,name=aggregation_temporality,json=aggregationTemporality,proto3,enum=opentelemetry.proto.profiles.v1.alternatives.pprofextended.AggregationTemporality" json:"aggregation_temporality,omitempty"`
 }
 
 func (m *ValueType) Reset()         { *m = ValueType{} }
@@ -314,11 +363,11 @@ func (m *ValueType) GetUnit() int64 {
 	return 0
 }
 
-func (m *ValueType) GetAggregationTemporality() ValueType_AggregationTemporality {
+func (m *ValueType) GetAggregationTemporality() AggregationTemporality {
 	if m != nil {
 		return m.AggregationTemporality
 	}
-	return ValueType_AGGREGATION_TEMPORALITY_UNSPECIFIED
+	return AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED
 }
 
 // Each Sample records values encountered in some program
@@ -348,13 +397,12 @@ type Sample struct {
 	Label []*Label `protobuf:"bytes,3,rep,name=label,proto3" json:"label,omitempty"`
 	// This is a reference to a stacktrace in Profile.stacktrace.
 	// Supersedes location_index.
-	LocationsStartIndex    uint64                 `protobuf:"varint,4,opt,name=locations_start_index,json=locationsStartIndex,proto3" json:"locations_start_index,omitempty"`
-	LocationsEndIndex      uint64                 `protobuf:"varint,5,opt,name=locations_end_index,json=locationsEndIndex,proto3" json:"locations_end_index,omitempty"`
-	Attributes             []*v1.KeyValueInterned `protobuf:"bytes,6,rep,name=attributes,proto3" json:"attributes,omitempty"`
-	DroppedAttributesCount uint32                 `protobuf:"varint,7,opt,name=dropped_attributes_count,json=droppedAttributesCount,proto3" json:"dropped_attributes_count,omitempty"`
-	Timestamps             []uint64               `protobuf:"varint,8,rep,packed,name=timestamps,proto3" json:"timestamps,omitempty"`
-	Attributes2            []v1.KeyValue          `protobuf:"bytes,9,rep,name=attributes2,proto3" json:"attributes2"`
-	Attributes3            []uint64               `protobuf:"varint,10,rep,packed,name=attributes3,proto3" json:"attributes3,omitempty"`
+	LocationsStartIndex uint64 `protobuf:"varint,4,opt,name=locations_start_index,json=locationsStartIndex,proto3" json:"locations_start_index,omitempty"`
+	LocationsEndIndex   uint64 `protobuf:"varint,5,opt,name=locations_end_index,json=locationsEndIndex,proto3" json:"locations_end_index,omitempty"`
+	// Timestamps associated with Sample represented in ms. These timestamps are expected to fall within the Profile's time range. [optional]
+	Timestamps []uint64 `protobuf:"varint,6,rep,packed,name=timestamps,proto3" json:"timestamps,omitempty"`
+	// References to attributes in Profile.attribute_table. [optional]
+	Attributes []uint64 `protobuf:"varint,7,rep,packed,name=attributes,proto3" json:"attributes,omitempty"`
 }
 
 func (m *Sample) Reset()         { *m = Sample{} }
@@ -425,20 +473,6 @@ func (m *Sample) GetLocationsEndIndex() uint64 {
 	return 0
 }
 
-func (m *Sample) GetAttributes() []*v1.KeyValueInterned {
-	if m != nil {
-		return m.Attributes
-	}
-	return nil
-}
-
-func (m *Sample) GetDroppedAttributesCount() uint32 {
-	if m != nil {
-		return m.DroppedAttributesCount
-	}
-	return 0
-}
-
 func (m *Sample) GetTimestamps() []uint64 {
 	if m != nil {
 		return m.Timestamps
@@ -446,63 +480,9 @@ func (m *Sample) GetTimestamps() []uint64 {
 	return nil
 }
 
-func (m *Sample) GetAttributes2() []v1.KeyValue {
+func (m *Sample) GetAttributes() []uint64 {
 	if m != nil {
-		return m.Attributes2
-	}
-	return nil
-}
-
-func (m *Sample) GetAttributes3() []uint64 {
-	if m != nil {
-		return m.Attributes3
-	}
-	return nil
-}
-
-// Stacktrace is a list of locations that represent a stack trace.
-type Stacktrace struct {
-	// The indices recorded here correspond to locations in Profile.location.
-	// The leaf is at location_index[0].
-	LocationIndex []uint64 `protobuf:"varint,1,rep,packed,name=location_index,json=locationIndex,proto3" json:"location_index,omitempty"`
-}
-
-func (m *Stacktrace) Reset()         { *m = Stacktrace{} }
-func (m *Stacktrace) String() string { return proto.CompactTextString(m) }
-func (*Stacktrace) ProtoMessage()    {}
-func (*Stacktrace) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9cb689ea05ecfd2e, []int{3}
-}
-func (m *Stacktrace) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Stacktrace) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Stacktrace.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *Stacktrace) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Stacktrace.Merge(m, src)
-}
-func (m *Stacktrace) XXX_Size() int {
-	return m.Size()
-}
-func (m *Stacktrace) XXX_DiscardUnknown() {
-	xxx_messageInfo_Stacktrace.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Stacktrace proto.InternalMessageInfo
-
-func (m *Stacktrace) GetLocationIndex() []uint64 {
-	if m != nil {
-		return m.LocationIndex
+		return m.Attributes
 	}
 	return nil
 }
@@ -526,7 +506,7 @@ func (m *Label) Reset()         { *m = Label{} }
 func (m *Label) String() string { return proto.CompactTextString(m) }
 func (*Label) ProtoMessage()    {}
 func (*Label) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9cb689ea05ecfd2e, []int{4}
+	return fileDescriptor_9cb689ea05ecfd2e, []int{3}
 }
 func (m *Label) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -605,13 +585,19 @@ type Mapping struct {
 	HasFilenames    bool `protobuf:"varint,8,opt,name=has_filenames,json=hasFilenames,proto3" json:"has_filenames,omitempty"`
 	HasLineNumbers  bool `protobuf:"varint,9,opt,name=has_line_numbers,json=hasLineNumbers,proto3" json:"has_line_numbers,omitempty"`
 	HasInlineFrames bool `protobuf:"varint,10,opt,name=has_inline_frames,json=hasInlineFrames,proto3" json:"has_inline_frames,omitempty"`
+	// A string that uniquely identifies a particular binary with high probability.
+	// It is meant to work around deficiencies in the GNU Build ID that may compromise
+	// uniqueness / correlatability. Index into string table.
+	FileIdIndex uint32 `protobuf:"varint,11,opt,name=file_id_index,json=fileIdIndex,proto3" json:"file_id_index,omitempty"`
+	// References to attributes in Profile.attribute_table. [optional]
+	Attributes []uint64 `protobuf:"varint,12,rep,packed,name=attributes,proto3" json:"attributes,omitempty"`
 }
 
 func (m *Mapping) Reset()         { *m = Mapping{} }
 func (m *Mapping) String() string { return proto.CompactTextString(m) }
 func (*Mapping) ProtoMessage()    {}
 func (*Mapping) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9cb689ea05ecfd2e, []int{5}
+	return fileDescriptor_9cb689ea05ecfd2e, []int{4}
 }
 func (m *Mapping) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -710,6 +696,20 @@ func (m *Mapping) GetHasInlineFrames() bool {
 	return false
 }
 
+func (m *Mapping) GetFileIdIndex() uint32 {
+	if m != nil {
+		return m.FileIdIndex
+	}
+	return 0
+}
+
+func (m *Mapping) GetAttributes() []uint64 {
+	if m != nil {
+		return m.Attributes
+	}
+	return nil
+}
+
 // Describes function and line table debug information.
 type Location struct {
 	// Unique nonzero id for the location.  A profile could use
@@ -739,13 +739,17 @@ type Location struct {
 	// symbols. This field must be recomputed when the symbolization state of the
 	// profile changes.
 	IsFolded bool `protobuf:"varint,5,opt,name=is_folded,json=isFolded,proto3" json:"is_folded,omitempty"`
+	// Type of frame (e.g. kernel, native, python, hotspot, php). Index into string table.
+	TypeIndex uint32 `protobuf:"varint,6,opt,name=type_index,json=typeIndex,proto3" json:"type_index,omitempty"`
+	// References to attributes in Profile.attribute_table. [optional]
+	Attributes []uint64 `protobuf:"varint,7,rep,packed,name=attributes,proto3" json:"attributes,omitempty"`
 }
 
 func (m *Location) Reset()         { *m = Location{} }
 func (m *Location) String() string { return proto.CompactTextString(m) }
 func (*Location) ProtoMessage()    {}
 func (*Location) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9cb689ea05ecfd2e, []int{6}
+	return fileDescriptor_9cb689ea05ecfd2e, []int{5}
 }
 func (m *Location) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -809,6 +813,20 @@ func (m *Location) GetIsFolded() bool {
 	return false
 }
 
+func (m *Location) GetTypeIndex() uint32 {
+	if m != nil {
+		return m.TypeIndex
+	}
+	return 0
+}
+
+func (m *Location) GetAttributes() []uint64 {
+	if m != nil {
+		return m.Attributes
+	}
+	return nil
+}
+
 type Line struct {
 	// The index of the corresponding profile.Function for this line.
 	FunctionIndex uint64 `protobuf:"varint,1,opt,name=function_index,json=functionIndex,proto3" json:"function_index,omitempty"`
@@ -820,7 +838,7 @@ func (m *Line) Reset()         { *m = Line{} }
 func (m *Line) String() string { return proto.CompactTextString(m) }
 func (*Line) ProtoMessage()    {}
 func (*Line) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9cb689ea05ecfd2e, []int{7}
+	return fileDescriptor_9cb689ea05ecfd2e, []int{6}
 }
 func (m *Line) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -881,7 +899,7 @@ func (m *Function) Reset()         { *m = Function{} }
 func (m *Function) String() string { return proto.CompactTextString(m) }
 func (*Function) ProtoMessage()    {}
 func (*Function) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9cb689ea05ecfd2e, []int{8}
+	return fileDescriptor_9cb689ea05ecfd2e, []int{7}
 }
 func (m *Function) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -946,11 +964,10 @@ func (m *Function) GetStartLine() int64 {
 }
 
 func init() {
-	proto.RegisterEnum("opentelemetry.proto.profiles.v1.alternatives.pprofextended.ValueType_AggregationTemporality", ValueType_AggregationTemporality_name, ValueType_AggregationTemporality_value)
+	proto.RegisterEnum("opentelemetry.proto.profiles.v1.alternatives.pprofextended.AggregationTemporality", AggregationTemporality_name, AggregationTemporality_value)
 	proto.RegisterType((*Profile)(nil), "opentelemetry.proto.profiles.v1.alternatives.pprofextended.Profile")
 	proto.RegisterType((*ValueType)(nil), "opentelemetry.proto.profiles.v1.alternatives.pprofextended.ValueType")
 	proto.RegisterType((*Sample)(nil), "opentelemetry.proto.profiles.v1.alternatives.pprofextended.Sample")
-	proto.RegisterType((*Stacktrace)(nil), "opentelemetry.proto.profiles.v1.alternatives.pprofextended.Stacktrace")
 	proto.RegisterType((*Label)(nil), "opentelemetry.proto.profiles.v1.alternatives.pprofextended.Label")
 	proto.RegisterType((*Mapping)(nil), "opentelemetry.proto.profiles.v1.alternatives.pprofextended.Mapping")
 	proto.RegisterType((*Location)(nil), "opentelemetry.proto.profiles.v1.alternatives.pprofextended.Location")
@@ -963,86 +980,83 @@ func init() {
 }
 
 var fileDescriptor_9cb689ea05ecfd2e = []byte{
-	// 1263 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x57, 0x41, 0x6f, 0x1b, 0x45,
-	0x14, 0xce, 0xc6, 0x9b, 0xd8, 0x7e, 0x8e, 0x53, 0x67, 0x5a, 0xc2, 0x52, 0x54, 0xd7, 0x75, 0x05,
-	0x35, 0x3d, 0xd8, 0x6a, 0x7a, 0x41, 0x9c, 0x70, 0x53, 0xa7, 0xb2, 0x48, 0x93, 0x6a, 0xe2, 0x14,
-	0xa8, 0x40, 0xcb, 0xd8, 0x3b, 0x76, 0x46, 0xdd, 0x9d, 0x5d, 0xed, 0x8e, 0xa3, 0x5a, 0xdc, 0x38,
-	0x22, 0x0e, 0x5c, 0xb8, 0xf3, 0x73, 0x7a, 0xe0, 0xd0, 0x1b, 0x88, 0x03, 0x42, 0xed, 0x1f, 0x41,
-	0xf3, 0x66, 0xd6, 0x71, 0xda, 0x54, 0xaa, 0x70, 0x2f, 0xd6, 0xbc, 0x6f, 0xde, 0x7c, 0xef, 0xcd,
-	0xcc, 0xf7, 0xde, 0xac, 0xe1, 0x20, 0x4e, 0xb8, 0x54, 0x3c, 0xe4, 0x11, 0x57, 0xe9, 0xac, 0x93,
-	0xa4, 0xb1, 0x8a, 0xf5, 0xef, 0x58, 0x84, 0x3c, 0xeb, 0x9c, 0xde, 0xe9, 0xb0, 0x50, 0xf1, 0x54,
-	0x32, 0x25, 0x4e, 0x79, 0xd6, 0x49, 0xf4, 0x0c, 0x7f, 0xa6, 0xb8, 0x0c, 0x78, 0x70, 0xde, 0x6a,
-	0xe3, 0x52, 0xf2, 0xc5, 0x39, 0x3e, 0x03, 0xb6, 0x73, 0xbe, 0xf6, 0xe9, 0x9d, 0xf6, 0x22, 0x5f,
-	0xfb, 0x1c, 0xc3, 0xd5, 0x2b, 0x93, 0x78, 0x12, 0x9b, 0x0c, 0xf4, 0xc8, 0x2c, 0xbe, 0x7a, 0xfb,
-	0xa2, 0x0c, 0x47, 0x71, 0x14, 0xc5, 0x52, 0xe7, 0x67, 0x46, 0xc6, 0xb7, 0xf9, 0x53, 0x09, 0x8a,
-	0x8f, 0x4c, 0x30, 0x32, 0x86, 0x4a, 0xc6, 0xa2, 0x24, 0xe4, 0xbe, 0x9a, 0x25, 0xdc, 0x73, 0x1a,
-	0x85, 0x56, 0x65, 0xa7, 0xd7, 0xfe, 0xff, 0xf9, 0xb5, 0x1f, 0xb3, 0x70, 0xca, 0x07, 0xb3, 0x84,
-	0x53, 0x30, 0xcc, 0x7a, 0x4c, 0x9e, 0xc0, 0xba, 0xb1, 0xbc, 0x55, 0x0c, 0x71, 0x6f, 0x99, 0x10,
-	0x47, 0xc8, 0x44, 0x2d, 0x23, 0xf9, 0x1e, 0x8a, 0x11, 0x4b, 0x12, 0x21, 0x27, 0x5e, 0x01, 0xc9,
-	0x77, 0x97, 0x21, 0x7f, 0x68, 0xa8, 0x68, 0xce, 0x49, 0x7e, 0x80, 0x52, 0x18, 0x8f, 0x98, 0x12,
-	0xb1, 0xf4, 0x5c, 0xe4, 0xbf, 0xbf, 0x0c, 0xff, 0xbe, 0xe5, 0xa2, 0x73, 0x56, 0x1d, 0x61, 0x3c,
-	0x95, 0x23, 0x8c, 0xb0, 0xb6, 0x7c, 0x84, 0x3d, 0xcb, 0x45, 0xe7, 0xac, 0xe4, 0x06, 0x6c, 0x64,
-	0x2a, 0x15, 0x72, 0xe2, 0x2b, 0x36, 0x0c, 0xb9, 0xb7, 0xde, 0x28, 0xb4, 0xca, 0xb4, 0x62, 0xb0,
-	0x81, 0x86, 0xc8, 0x75, 0xa8, 0x04, 0x69, 0x9c, 0xf8, 0xe3, 0x94, 0x45, 0x3c, 0xf3, 0x8a, 0x0d,
-	0xa7, 0x55, 0xa0, 0xa0, 0xa1, 0x3d, 0x44, 0xb4, 0xc3, 0x53, 0xce, 0xe7, 0x0e, 0x25, 0xe3, 0xa0,
-	0x21, 0xeb, 0x70, 0x0d, 0x40, 0x89, 0x88, 0xfb, 0x92, 0xc9, 0x38, 0xf3, 0xca, 0x38, 0x5f, 0xd6,
-	0xc8, 0x81, 0x06, 0xc8, 0x27, 0xb0, 0x19, 0x4c, 0x53, 0xdc, 0xb1, 0x75, 0x01, 0x74, 0xa9, 0xe6,
-	0xa8, 0x71, 0x1b, 0x43, 0x25, 0xe1, 0xa9, 0x88, 0x03, 0xa3, 0xc8, 0x4a, 0xc3, 0x79, 0x8f, 0x8a,
-	0x34, 0xcc, 0xa8, 0xc8, 0x6d, 0x58, 0x37, 0x96, 0xb7, 0x81, 0x69, 0x58, 0x8b, 0x78, 0x50, 0xd4,
-	0xd5, 0xc2, 0xa5, 0xf2, 0xaa, 0x8d, 0x42, 0xab, 0x40, 0x73, 0x93, 0xb4, 0xe1, 0x72, 0xc0, 0xc7,
-	0x6c, 0x1a, 0x2a, 0x7f, 0xb1, 0x66, 0x36, 0x71, 0xf9, 0x96, 0x9d, 0x3a, 0x3a, 0xd3, 0xfc, 0x67,
-	0x50, 0xcb, 0xaf, 0xd8, 0x17, 0x32, 0x10, 0x23, 0x9e, 0x79, 0x97, 0x90, 0xf2, 0x52, 0x8e, 0xf7,
-	0x0d, 0xac, 0xcf, 0x76, 0x38, 0x53, 0x3c, 0xb3, 0xd7, 0x53, 0x6b, 0x14, 0x5a, 0x1b, 0x14, 0x10,
-	0x32, 0xb7, 0x73, 0x08, 0x15, 0xa6, 0x54, 0x2a, 0x86, 0x53, 0xc5, 0xb3, 0xbb, 0xde, 0x16, 0xaa,
-	0xe4, 0xd6, 0x85, 0xa7, 0x62, 0x6b, 0xfd, 0xf4, 0x4e, 0xfb, 0x2b, 0x3e, 0xc3, 0xbd, 0xdf, 0x73,
-	0x9f, 0xff, 0x73, 0x7d, 0x85, 0x2e, 0x32, 0x34, 0xff, 0x5e, 0x85, 0xf2, 0xfc, 0x60, 0x08, 0x01,
-	0xd7, 0xd6, 0xbf, 0xde, 0x0b, 0x8e, 0x35, 0x36, 0x95, 0x42, 0x79, 0xab, 0x06, 0xd3, 0x63, 0xf2,
-	0x9b, 0x03, 0x1f, 0xb2, 0xc9, 0x24, 0xe5, 0x13, 0xb3, 0x2d, 0xc5, 0xa3, 0x24, 0x4e, 0x59, 0x28,
-	0xd4, 0xcc, 0x2b, 0x34, 0x9c, 0xd6, 0xe6, 0xce, 0x77, 0xef, 0xe5, 0xa6, 0xda, 0xdd, 0xb3, 0x20,
-	0x83, 0xb3, 0x18, 0x74, 0x9b, 0x5d, 0x88, 0x37, 0x7f, 0x71, 0x60, 0xfb, 0xe2, 0x25, 0xe4, 0x16,
-	0xdc, 0xec, 0x3e, 0x78, 0x40, 0x7b, 0x0f, 0xba, 0x83, 0xfe, 0xe1, 0x81, 0x3f, 0xe8, 0x3d, 0x7c,
-	0x74, 0x48, 0xbb, 0xfb, 0xfd, 0xc1, 0xb7, 0xfe, 0xf1, 0xc1, 0xd1, 0xa3, 0xde, 0x6e, 0x7f, 0xaf,
-	0xdf, 0xbb, 0x5f, 0x5b, 0x21, 0x37, 0xe0, 0xda, 0xdb, 0x1c, 0xef, 0xf7, 0xf6, 0x07, 0xdd, 0x9a,
-	0x43, 0x3e, 0x85, 0xe6, 0xdb, 0x5c, 0x76, 0x8f, 0x1f, 0x1e, 0xef, 0x77, 0x07, 0xfd, 0xc7, 0xbd,
-	0xda, 0x6a, 0xf3, 0x77, 0x17, 0xd6, 0x8d, 0x10, 0xb4, 0xea, 0x17, 0x45, 0xc0, 0x9f, 0x61, 0x8f,
-	0x75, 0x69, 0x75, 0x41, 0x02, 0xfc, 0x19, 0xb9, 0x02, 0x6b, 0xa7, 0x7a, 0xf3, 0xd8, 0x1e, 0x0b,
-	0xd4, 0x18, 0xe4, 0x6b, 0x58, 0x0b, 0xd9, 0x90, 0x87, 0xb6, 0xaf, 0x75, 0x97, 0xea, 0x3b, 0x9a,
-	0x88, 0x1a, 0x3e, 0xb2, 0x03, 0x1f, 0xe4, 0xf1, 0x33, 0x3f, 0x53, 0x2c, 0x55, 0x36, 0x39, 0xb7,
-	0xe1, 0xb4, 0x5c, 0x7a, 0x79, 0x3e, 0x79, 0xa4, 0xe7, 0x4c, 0x8a, 0x6d, 0x38, 0x83, 0x7d, 0x2e,
-	0x03, 0xbb, 0x62, 0x0d, 0x57, 0x6c, 0xcd, 0xa7, 0x7a, 0x32, 0x30, 0xfe, 0x87, 0x00, 0x67, 0x82,
-	0xc3, 0x8e, 0x53, 0xd9, 0xe9, 0xbc, 0xa3, 0x62, 0xfb, 0x52, 0xef, 0x83, 0x07, 0x74, 0x81, 0x82,
-	0x7c, 0x0e, 0x9e, 0x6e, 0x47, 0x09, 0x0f, 0xfc, 0x33, 0xd4, 0x1f, 0xc5, 0x53, 0xa9, 0xb0, 0x5d,
-	0x55, 0xe9, 0xb6, 0x9d, 0xef, 0xce, 0xa7, 0x77, 0xf5, 0x2c, 0xa9, 0x9b, 0xce, 0x94, 0x29, 0x16,
-	0x25, 0xba, 0x73, 0xe9, 0x0b, 0x58, 0x40, 0xce, 0x57, 0xd7, 0x8e, 0x57, 0x5e, 0xb2, 0xba, 0x76,
-	0x48, 0xe3, 0x7c, 0xb9, 0x02, 0x46, 0x3c, 0x57, 0x7f, 0x77, 0x01, 0x8e, 0x14, 0x1b, 0x3d, 0x55,
-	0x29, 0x1b, 0xbd, 0xab, 0x4a, 0x9a, 0xdf, 0xc0, 0x1a, 0x5e, 0x23, 0xa9, 0x41, 0xe1, 0x29, 0x9f,
-	0xd9, 0x72, 0xd5, 0x43, 0x8d, 0x64, 0x2a, 0xb5, 0xc5, 0xaa, 0x87, 0x1a, 0x91, 0xd3, 0x08, 0xcb,
-	0xb2, 0x40, 0xf5, 0x90, 0x7c, 0x04, 0x25, 0x39, 0x8d, 0x7c, 0xac, 0x6a, 0x17, 0xe1, 0xa2, 0x9c,
-	0x46, 0xc7, 0x52, 0xa8, 0xe6, 0x9f, 0xab, 0x50, 0xb4, 0x2f, 0x1f, 0xd9, 0x84, 0x55, 0x11, 0x20,
-	0xb7, 0x4b, 0x57, 0x45, 0xa0, 0x1f, 0x8f, 0x88, 0x47, 0x71, 0x3a, 0x33, 0x4a, 0xc1, 0x18, 0x2e,
-	0xad, 0x18, 0x0c, 0x05, 0xb2, 0xe0, 0x12, 0x8a, 0x48, 0x28, 0x0c, 0x3a, 0x77, 0xd9, 0xd7, 0x90,
-	0x6e, 0x71, 0x5a, 0xa6, 0x7e, 0x3c, 0x1e, 0x67, 0x5c, 0x59, 0xa1, 0x81, 0x86, 0x0e, 0x11, 0x21,
-	0x57, 0xa1, 0xa4, 0x2d, 0xc9, 0x22, 0x8e, 0xa2, 0x2a, 0xd0, 0xb9, 0xad, 0x33, 0x1f, 0x4e, 0x45,
-	0x18, 0xf8, 0x22, 0xf0, 0xd6, 0x4d, 0xe6, 0x68, 0xf7, 0x03, 0x72, 0x13, 0xaa, 0x27, 0x2c, 0xf3,
-	0xf3, 0xa7, 0xce, 0xbc, 0x5c, 0x25, 0xba, 0x71, 0xc2, 0xb2, 0xfc, 0x21, 0xcc, 0xe6, 0x4e, 0x96,
-	0xcf, 0xbc, 0x5e, 0xd6, 0x29, 0xc7, 0x48, 0x0b, 0x6a, 0xda, 0x29, 0x14, 0x92, 0xfb, 0x72, 0x1a,
-	0x0d, 0x79, 0x6a, 0x5e, 0xb1, 0x12, 0xdd, 0x3c, 0x61, 0xd9, 0xbe, 0x90, 0xfc, 0xc0, 0xa0, 0xe4,
-	0x36, 0x6c, 0x69, 0x4f, 0x21, 0xd1, 0xd7, 0x3e, 0x88, 0x80, 0xae, 0x97, 0x4e, 0x58, 0xd6, 0x47,
-	0xdc, 0xbc, 0x8a, 0xcd, 0x3f, 0x1c, 0x28, 0xe5, 0x6f, 0xfe, 0x1b, 0x47, 0x7b, 0x13, 0xaa, 0xf6,
-	0x33, 0xc3, 0x5e, 0xbb, 0x39, 0xdb, 0x0d, 0x0b, 0x9a, 0x42, 0xf2, 0xa0, 0xc8, 0x82, 0x20, 0xe5,
-	0x59, 0x66, 0xcf, 0x35, 0x37, 0xc9, 0x00, 0x5c, 0x1d, 0xc9, 0x7e, 0x96, 0x7c, 0xb9, 0x54, 0x7b,
-	0x10, 0x92, 0x53, 0x64, 0x23, 0x1f, 0x43, 0x59, 0x64, 0xfe, 0x38, 0x0e, 0x03, 0x1e, 0xe0, 0x4d,
-	0x94, 0x68, 0x49, 0x64, 0x7b, 0x68, 0x37, 0xbb, 0xe0, 0x6a, 0x57, 0xad, 0xd8, 0xfc, 0xc8, 0xe7,
-	0x8a, 0xd5, 0xb9, 0x55, 0x73, 0xd4, 0xe4, 0x4e, 0x6c, 0x86, 0xf6, 0x11, 0xd1, 0xe3, 0xe6, 0xcf,
-	0x0e, 0x94, 0xf2, 0xab, 0x79, 0xe3, 0x44, 0x08, 0xb8, 0xa8, 0x00, 0xbb, 0x00, 0x6f, 0xff, 0x3a,
-	0x54, 0xb2, 0x59, 0xa6, 0x78, 0xe4, 0xe3, 0x94, 0x51, 0x34, 0x18, 0xe8, 0x40, 0x3b, 0x2c, 0x4a,
-	0xc7, 0x7d, 0x4d, 0x3a, 0xd7, 0x00, 0x4c, 0x83, 0xc3, 0x3c, 0x8c, 0xb0, 0xca, 0x88, 0xe8, 0x7d,
-	0xdc, 0xfb, 0xf1, 0xf9, 0xcb, 0xba, 0xf3, 0xe2, 0x65, 0xdd, 0xf9, 0xf7, 0x65, 0xdd, 0xf9, 0xf5,
-	0x55, 0x7d, 0xe5, 0xc5, 0xab, 0xfa, 0xca, 0x5f, 0xaf, 0xea, 0x2b, 0x4f, 0xd8, 0x24, 0x7e, 0xed,
-	0x40, 0x85, 0xfe, 0xa4, 0x0e, 0x43, 0x3e, 0x52, 0x71, 0xda, 0x49, 0x02, 0xa6, 0x58, 0x47, 0x60,
-	0xa3, 0x62, 0x61, 0x07, 0x2d, 0x3c, 0xf1, 0x09, 0x97, 0xef, 0xf8, 0xdf, 0x60, 0xb8, 0x8e, 0x0b,
-	0xee, 0xfe, 0x17, 0x00, 0x00, 0xff, 0xff, 0x19, 0xfa, 0x06, 0x63, 0x60, 0x0c, 0x00, 0x00,
+	// 1213 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x56, 0xcf, 0x6e, 0x1b, 0xb7,
+	0x13, 0xf6, 0x4a, 0x6b, 0xfd, 0x19, 0x59, 0xb6, 0xc2, 0xe4, 0x97, 0xdf, 0x36, 0x45, 0x14, 0x45,
+	0x41, 0x1b, 0x35, 0x07, 0x09, 0x49, 0x6f, 0x3d, 0x55, 0x49, 0xe4, 0x40, 0xa8, 0xe3, 0x04, 0xb4,
+	0x9c, 0xb6, 0x01, 0x8a, 0x2d, 0xed, 0xa5, 0x64, 0x22, 0xbb, 0xdc, 0xc5, 0x2e, 0x65, 0x44, 0xe8,
+	0x1b, 0x34, 0x3d, 0xf4, 0xde, 0xa7, 0x69, 0x4f, 0x39, 0xe6, 0xd8, 0x53, 0x51, 0x24, 0x97, 0x3e,
+	0x46, 0xc1, 0x21, 0x77, 0x25, 0xc7, 0x0e, 0x50, 0x54, 0xbd, 0x08, 0x9c, 0x8f, 0xc3, 0x6f, 0x86,
+	0x9c, 0x6f, 0x66, 0x05, 0xfb, 0x71, 0xc2, 0xa5, 0xe2, 0x21, 0x8f, 0xb8, 0x4a, 0x17, 0x83, 0x24,
+	0x8d, 0x55, 0xac, 0x7f, 0xa7, 0x22, 0xe4, 0xd9, 0xe0, 0xf4, 0xee, 0x80, 0x85, 0x8a, 0xa7, 0x92,
+	0x29, 0x71, 0xca, 0xb3, 0x41, 0xa2, 0x77, 0xf8, 0x4b, 0xc5, 0x65, 0xc0, 0x83, 0xb3, 0x56, 0x1f,
+	0x8f, 0x92, 0x2f, 0xce, 0xf0, 0x19, 0xb0, 0x9f, 0xf3, 0xf5, 0x4f, 0xef, 0xf6, 0x57, 0xf9, 0xfa,
+	0x67, 0x18, 0xae, 0x5d, 0x99, 0xc5, 0xb3, 0xd8, 0x64, 0xa0, 0x57, 0xe6, 0xf0, 0xb5, 0x3b, 0x17,
+	0x65, 0x78, 0x1c, 0x47, 0x51, 0x2c, 0x75, 0x7e, 0x66, 0x65, 0x7c, 0xbb, 0x7f, 0x55, 0xa1, 0xfa,
+	0xd4, 0x04, 0x23, 0x53, 0x68, 0x64, 0x2c, 0x4a, 0x42, 0xee, 0xab, 0x45, 0xc2, 0x3d, 0xa7, 0x53,
+	0xee, 0x35, 0xee, 0x8d, 0xfa, 0xff, 0x3e, 0xbf, 0xfe, 0x33, 0x16, 0xce, 0xf9, 0x64, 0x91, 0x70,
+	0x0a, 0x86, 0x59, 0xaf, 0xc9, 0x73, 0xa8, 0x18, 0xcb, 0x2b, 0x61, 0x88, 0xfb, 0xeb, 0x84, 0x38,
+	0x40, 0x26, 0x6a, 0x19, 0xc9, 0x77, 0x50, 0x8d, 0x58, 0x92, 0x08, 0x39, 0xf3, 0xca, 0x48, 0xfe,
+	0x60, 0x1d, 0xf2, 0xc7, 0x86, 0x8a, 0xe6, 0x9c, 0xe4, 0x7b, 0xa8, 0x85, 0xf1, 0x31, 0x53, 0x22,
+	0x96, 0x9e, 0x8b, 0xfc, 0x0f, 0xd7, 0xe1, 0xdf, 0xb3, 0x5c, 0xb4, 0x60, 0xd5, 0x11, 0xa6, 0x73,
+	0x79, 0x8c, 0x11, 0x36, 0xd7, 0x8f, 0xb0, 0x6b, 0xb9, 0x68, 0xc1, 0x4a, 0x6e, 0xc2, 0x56, 0xa6,
+	0x52, 0x21, 0x67, 0xbe, 0x62, 0x47, 0x21, 0xf7, 0x2a, 0x9d, 0x72, 0xaf, 0x4e, 0x1b, 0x06, 0x9b,
+	0x68, 0x88, 0xdc, 0x80, 0x46, 0x90, 0xc6, 0x89, 0x3f, 0x4d, 0x59, 0xc4, 0x33, 0xaf, 0xda, 0x71,
+	0x7a, 0x65, 0x0a, 0x1a, 0xda, 0x45, 0x44, 0x3b, 0xbc, 0xe0, 0xbc, 0x70, 0xa8, 0x19, 0x07, 0x0d,
+	0x59, 0x87, 0xeb, 0x00, 0x4a, 0x44, 0xdc, 0x97, 0x4c, 0xc6, 0x99, 0x57, 0xc7, 0xfd, 0xba, 0x46,
+	0xf6, 0x35, 0x40, 0x3e, 0x81, 0xed, 0x60, 0x9e, 0xe2, 0x8d, 0xad, 0x0b, 0xa0, 0x4b, 0x33, 0x47,
+	0x8d, 0xdb, 0x14, 0x1a, 0x09, 0x4f, 0x45, 0x1c, 0x18, 0x45, 0x36, 0x3a, 0xce, 0x7f, 0xa8, 0x48,
+	0xc3, 0x8c, 0x8a, 0xbc, 0x0a, 0x15, 0x63, 0x79, 0x5b, 0x98, 0x86, 0xb5, 0x88, 0x07, 0x55, 0xdd,
+	0x2d, 0x5c, 0x2a, 0xaf, 0xd9, 0x29, 0xf7, 0xca, 0x34, 0x37, 0x49, 0x1f, 0x2e, 0x07, 0x7c, 0xca,
+	0xe6, 0xa1, 0xf2, 0x57, 0x7b, 0x66, 0x1b, 0x8f, 0x5f, 0xb2, 0x5b, 0x07, 0x4b, 0xcd, 0x7f, 0x06,
+	0xad, 0xbc, 0xc4, 0xbe, 0x90, 0x81, 0x38, 0xe6, 0x99, 0xb7, 0x83, 0x94, 0x3b, 0x39, 0x3e, 0x36,
+	0x30, 0x79, 0x06, 0x3b, 0x4c, 0xa9, 0x54, 0x1c, 0xcd, 0x15, 0xb7, 0x25, 0x6a, 0xa1, 0x10, 0x6e,
+	0x5f, 0x78, 0x71, 0xdb, 0xce, 0xa7, 0x77, 0xfb, 0x5f, 0xf1, 0x05, 0x5e, 0xef, 0xbe, 0xfb, 0xfa,
+	0x8f, 0x1b, 0x1b, 0x74, 0xbb, 0x60, 0xc1, 0xa2, 0x76, 0x7f, 0x75, 0xa0, 0x5e, 0x5c, 0x9f, 0x10,
+	0x70, 0x6d, 0x97, 0xeb, 0x8c, 0x71, 0xad, 0xb1, 0xb9, 0x14, 0xca, 0x2b, 0x19, 0x4c, 0xaf, 0xc9,
+	0x2b, 0x07, 0xfe, 0xcf, 0x66, 0xb3, 0x94, 0xcf, 0x4c, 0xf2, 0x8a, 0x47, 0x49, 0x9c, 0xb2, 0x50,
+	0xa8, 0x85, 0x57, 0xee, 0x38, 0xbd, 0xed, 0x7b, 0x74, 0x9d, 0x7a, 0x0c, 0x97, 0xd4, 0x93, 0x25,
+	0x33, 0xbd, 0xca, 0x2e, 0xc4, 0xbb, 0xbf, 0x95, 0xa0, 0x62, 0x5e, 0x55, 0x4b, 0x68, 0xf5, 0x45,
+	0xf9, 0x4b, 0x1c, 0x58, 0x2e, 0x6d, 0xae, 0xbc, 0x27, 0x7f, 0x49, 0xae, 0xc0, 0xe6, 0xa9, 0xbe,
+	0x34, 0xce, 0x9a, 0x32, 0x35, 0x06, 0xf9, 0x1a, 0x36, 0x43, 0x76, 0xc4, 0x43, 0x3b, 0x24, 0x86,
+	0x6b, 0x35, 0xb1, 0x26, 0xa2, 0x86, 0x8f, 0xdc, 0x83, 0xff, 0xe5, 0xf1, 0x33, 0x3f, 0x53, 0x2c,
+	0x55, 0x36, 0x39, 0xb7, 0xe3, 0xf4, 0x5c, 0x7a, 0xb9, 0xd8, 0x3c, 0xd0, 0x7b, 0x26, 0xc5, 0x3e,
+	0x2c, 0x61, 0x9f, 0xcb, 0xc0, 0x9e, 0xd8, 0xc4, 0x13, 0x97, 0x8a, 0xad, 0x91, 0x0c, 0x8c, 0x7f,
+	0xdb, 0xf4, 0x56, 0xa6, 0x58, 0x94, 0x64, 0xd8, 0xbe, 0x2e, 0x5d, 0x41, 0xf4, 0x7e, 0x51, 0x7a,
+	0xdd, 0xbc, 0xb8, 0xbf, 0x44, 0xba, 0xdf, 0xc0, 0x26, 0xe6, 0x4c, 0x5a, 0x50, 0x7e, 0xc1, 0x17,
+	0x56, 0x02, 0x7a, 0xa9, 0x91, 0x4c, 0xa5, 0x56, 0x00, 0x7a, 0xa9, 0x11, 0x39, 0x8f, 0xb0, 0xd4,
+	0x65, 0xaa, 0x97, 0xe4, 0x23, 0xa8, 0xc9, 0x79, 0xe4, 0xa3, 0x52, 0x5c, 0x84, 0xab, 0x72, 0x1e,
+	0x1d, 0x4a, 0xa1, 0xba, 0xbf, 0x94, 0xa1, 0x6a, 0x67, 0x26, 0xd9, 0x86, 0x92, 0x08, 0x90, 0xdb,
+	0xa5, 0x25, 0x11, 0xe8, 0xb1, 0x13, 0xf1, 0x28, 0x4e, 0x17, 0xe6, 0x59, 0x30, 0x86, 0x4b, 0x1b,
+	0x06, 0xc3, 0xd7, 0x58, 0x71, 0x09, 0x45, 0x24, 0x14, 0x06, 0x2d, 0x5c, 0xf6, 0x34, 0xa4, 0x07,
+	0x8f, 0xae, 0x89, 0x1f, 0x4f, 0xa7, 0x19, 0x57, 0xf6, 0x55, 0x41, 0x43, 0x4f, 0x10, 0x21, 0xd7,
+	0xa0, 0xa6, 0x2d, 0xc9, 0x22, 0x8e, 0x2f, 0x58, 0xa6, 0x85, 0xad, 0x33, 0x3f, 0x9a, 0x8b, 0x30,
+	0xf0, 0x45, 0xe0, 0x55, 0x4c, 0xe6, 0x68, 0x8f, 0x03, 0x72, 0x0b, 0x9a, 0x27, 0x2c, 0xf3, 0xf3,
+	0x21, 0x69, 0x66, 0x5e, 0x8d, 0x6e, 0x9d, 0xb0, 0x2c, 0x1f, 0xa1, 0x59, 0xe1, 0x64, 0xf9, 0xcc,
+	0xdc, 0xb3, 0x4e, 0x39, 0x46, 0x7a, 0xd0, 0xd2, 0x4e, 0xa1, 0x90, 0xdc, 0x97, 0xf3, 0xe8, 0x88,
+	0xa7, 0x66, 0xfe, 0xd5, 0xe8, 0xf6, 0x09, 0xcb, 0xf6, 0x84, 0xe4, 0xfb, 0x06, 0x25, 0x77, 0xe0,
+	0x92, 0xf6, 0x14, 0x12, 0x7d, 0xed, 0x28, 0x05, 0x74, 0xdd, 0x39, 0x61, 0xd9, 0x18, 0x71, 0x3b,
+	0x4f, 0xbb, 0xd0, 0xc4, 0x7b, 0x8b, 0x5c, 0x1d, 0x7a, 0x16, 0x36, 0x29, 0x3e, 0xc6, 0x78, 0xa9,
+	0x8b, 0x95, 0xba, 0x6f, 0x9d, 0xab, 0xfb, 0xab, 0x12, 0xd4, 0xf2, 0x2f, 0xce, 0xb9, 0xf2, 0xdc,
+	0x82, 0xa6, 0xfd, 0xc8, 0xd9, 0x00, 0xa6, 0x3e, 0x5b, 0x16, 0x34, 0x11, 0x3c, 0xa8, 0xb2, 0x20,
+	0x48, 0x79, 0x96, 0xd9, 0xda, 0xe4, 0x26, 0x99, 0x80, 0xab, 0xb3, 0xb5, 0x1f, 0xc5, 0x2f, 0xd7,
+	0xea, 0x27, 0x21, 0x39, 0x45, 0x36, 0xf2, 0x31, 0xd4, 0x45, 0xe6, 0x4f, 0xe3, 0x30, 0xe0, 0x01,
+	0x56, 0xb3, 0x46, 0x6b, 0x22, 0xdb, 0x45, 0x1b, 0x3f, 0x31, 0x8b, 0x84, 0xdb, 0x74, 0x2b, 0xf8,
+	0x1e, 0x75, 0x8d, 0x5c, 0xf4, 0x1a, 0xe7, 0xbb, 0x60, 0x08, 0xae, 0x8e, 0xa4, 0xe7, 0x48, 0x5e,
+	0xf5, 0x62, 0x8e, 0xe8, 0xab, 0x35, 0x73, 0xd4, 0xd0, 0x11, 0x7b, 0x41, 0x3b, 0x1b, 0xf5, 0xba,
+	0xfb, 0xa3, 0x03, 0xb5, 0x5c, 0x1d, 0xe7, 0x1e, 0x94, 0x80, 0x8b, 0x22, 0xb4, 0x07, 0x50, 0x80,
+	0x37, 0xa0, 0x91, 0x2d, 0x32, 0xc5, 0x23, 0x1f, 0xb7, 0x4c, 0x53, 0x81, 0x81, 0xf6, 0xb5, 0xc3,
+	0xaa, 0x7a, 0xdd, 0xf7, 0xd4, 0x7b, 0x1d, 0xc0, 0x0c, 0x14, 0xcc, 0xc3, 0x68, 0xbb, 0x8e, 0x88,
+	0xbe, 0xc7, 0x9d, 0x9f, 0x1c, 0xb8, 0x7a, 0xf1, 0x34, 0x25, 0xb7, 0xe1, 0xd6, 0xf0, 0xd1, 0x23,
+	0x3a, 0x7a, 0x34, 0x9c, 0x8c, 0x9f, 0xec, 0xfb, 0x93, 0xd1, 0xe3, 0xa7, 0x4f, 0xe8, 0x70, 0x6f,
+	0x3c, 0xf9, 0xd6, 0x3f, 0xdc, 0x3f, 0x78, 0x3a, 0x7a, 0x30, 0xde, 0x1d, 0x8f, 0x1e, 0xb6, 0x36,
+	0xc8, 0x4d, 0xb8, 0xfe, 0x21, 0xc7, 0x87, 0xa3, 0xbd, 0xc9, 0xb0, 0xe5, 0x90, 0x4f, 0xa1, 0xfb,
+	0x21, 0x97, 0x07, 0x87, 0x8f, 0x0f, 0xf7, 0x86, 0x93, 0xf1, 0xb3, 0x51, 0xab, 0x74, 0xff, 0x87,
+	0xd7, 0x6f, 0xdb, 0xce, 0x9b, 0xb7, 0x6d, 0xe7, 0xcf, 0xb7, 0x6d, 0xe7, 0xe7, 0x77, 0xed, 0x8d,
+	0x37, 0xef, 0xda, 0x1b, 0xbf, 0xbf, 0x6b, 0x6f, 0x3c, 0x67, 0xb3, 0xf8, 0x3d, 0x79, 0x08, 0xfd,
+	0xf7, 0x34, 0x0c, 0xf9, 0xb1, 0x8a, 0xd3, 0x41, 0x12, 0x30, 0xc5, 0x06, 0x42, 0xa2, 0x3e, 0xc2,
+	0x01, 0x5a, 0xa8, 0x9f, 0x19, 0x97, 0xff, 0xf0, 0x7f, 0xf6, 0x51, 0x05, 0x0f, 0x7c, 0xfe, 0x77,
+	0x00, 0x00, 0x00, 0xff, 0xff, 0xd4, 0xa0, 0xab, 0xd3, 0xac, 0x0b, 0x00, 0x00,
 }
 
 func (m *Profile) Marshal() (dAtA []byte, err error) {
@@ -1065,27 +1079,16 @@ func (m *Profile) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.Attributes3) > 0 {
-		for iNdEx := len(m.Attributes3) - 1; iNdEx >= 0; iNdEx-- {
+	if len(m.AttributeTable) > 0 {
+		for iNdEx := len(m.AttributeTable) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.Attributes3[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.AttributeTable[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
 				i -= size
 				i = encodeVarintPprofextended(dAtA, i, uint64(size))
 			}
-			i--
-			dAtA[i] = 0x1
-			i--
-			dAtA[i] = 0x8a
-		}
-	}
-	if len(m.BytesTable) > 0 {
-		for iNdEx := len(m.BytesTable) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.BytesTable[iNdEx])
-			copy(dAtA[i:], m.BytesTable[iNdEx])
-			i = encodeVarintPprofextended(dAtA, i, uint64(len(m.BytesTable[iNdEx])))
 			i--
 			dAtA[i] = 0x1
 			i--
@@ -1312,10 +1315,10 @@ func (m *Sample) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.Attributes3) > 0 {
-		dAtA7 := make([]byte, len(m.Attributes3)*10)
+	if len(m.Attributes) > 0 {
+		dAtA7 := make([]byte, len(m.Attributes)*10)
 		var j6 int
-		for _, num := range m.Attributes3 {
+		for _, num := range m.Attributes {
 			for num >= 1<<7 {
 				dAtA7[j6] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
@@ -1328,21 +1331,7 @@ func (m *Sample) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		copy(dAtA[i:], dAtA7[:j6])
 		i = encodeVarintPprofextended(dAtA, i, uint64(j6))
 		i--
-		dAtA[i] = 0x52
-	}
-	if len(m.Attributes2) > 0 {
-		for iNdEx := len(m.Attributes2) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Attributes2[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintPprofextended(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x4a
-		}
+		dAtA[i] = 0x3a
 	}
 	if len(m.Timestamps) > 0 {
 		dAtA9 := make([]byte, len(m.Timestamps)*10)
@@ -1360,26 +1349,7 @@ func (m *Sample) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		copy(dAtA[i:], dAtA9[:j8])
 		i = encodeVarintPprofextended(dAtA, i, uint64(j8))
 		i--
-		dAtA[i] = 0x42
-	}
-	if m.DroppedAttributesCount != 0 {
-		i = encodeVarintPprofextended(dAtA, i, uint64(m.DroppedAttributesCount))
-		i--
-		dAtA[i] = 0x38
-	}
-	if len(m.Attributes) > 0 {
-		for iNdEx := len(m.Attributes) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Attributes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintPprofextended(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x32
-		}
+		dAtA[i] = 0x32
 	}
 	if m.LocationsEndIndex != 0 {
 		i = encodeVarintPprofextended(dAtA, i, uint64(m.LocationsEndIndex))
@@ -1439,47 +1409,6 @@ func (m *Sample) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= j12
 		copy(dAtA[i:], dAtA13[:j12])
 		i = encodeVarintPprofextended(dAtA, i, uint64(j12))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *Stacktrace) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Stacktrace) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Stacktrace) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.LocationIndex) > 0 {
-		dAtA15 := make([]byte, len(m.LocationIndex)*10)
-		var j14 int
-		for _, num := range m.LocationIndex {
-			for num >= 1<<7 {
-				dAtA15[j14] = uint8(uint64(num)&0x7f | 0x80)
-				num >>= 7
-				j14++
-			}
-			dAtA15[j14] = uint8(num)
-			j14++
-		}
-		i -= j14
-		copy(dAtA[i:], dAtA15[:j14])
-		i = encodeVarintPprofextended(dAtA, i, uint64(j14))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -1549,6 +1478,29 @@ func (m *Mapping) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.Attributes) > 0 {
+		dAtA15 := make([]byte, len(m.Attributes)*10)
+		var j14 int
+		for _, num := range m.Attributes {
+			for num >= 1<<7 {
+				dAtA15[j14] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j14++
+			}
+			dAtA15[j14] = uint8(num)
+			j14++
+		}
+		i -= j14
+		copy(dAtA[i:], dAtA15[:j14])
+		i = encodeVarintPprofextended(dAtA, i, uint64(j14))
+		i--
+		dAtA[i] = 0x62
+	}
+	if m.FileIdIndex != 0 {
+		i = encodeVarintPprofextended(dAtA, i, uint64(m.FileIdIndex))
+		i--
+		dAtA[i] = 0x58
+	}
 	if m.HasInlineFrames {
 		i--
 		if m.HasInlineFrames {
@@ -1642,6 +1594,29 @@ func (m *Location) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.Attributes) > 0 {
+		dAtA17 := make([]byte, len(m.Attributes)*10)
+		var j16 int
+		for _, num := range m.Attributes {
+			for num >= 1<<7 {
+				dAtA17[j16] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j16++
+			}
+			dAtA17[j16] = uint8(num)
+			j16++
+		}
+		i -= j16
+		copy(dAtA[i:], dAtA17[:j16])
+		i = encodeVarintPprofextended(dAtA, i, uint64(j16))
+		i--
+		dAtA[i] = 0x3a
+	}
+	if m.TypeIndex != 0 {
+		i = encodeVarintPprofextended(dAtA, i, uint64(m.TypeIndex))
+		i--
+		dAtA[i] = 0x30
+	}
 	if m.IsFolded {
 		i--
 		if m.IsFolded {
@@ -1854,14 +1829,8 @@ func (m *Profile) Size() (n int) {
 		}
 		n += 1 + sovPprofextended(uint64(l)) + l
 	}
-	if len(m.BytesTable) > 0 {
-		for _, b := range m.BytesTable {
-			l = len(b)
-			n += 2 + l + sovPprofextended(uint64(l))
-		}
-	}
-	if len(m.Attributes3) > 0 {
-		for _, e := range m.Attributes3 {
+	if len(m.AttributeTable) > 0 {
+		for _, e := range m.AttributeTable {
 			l = e.Size()
 			n += 2 + l + sovPprofextended(uint64(l))
 		}
@@ -1919,15 +1888,6 @@ func (m *Sample) Size() (n int) {
 	if m.LocationsEndIndex != 0 {
 		n += 1 + sovPprofextended(uint64(m.LocationsEndIndex))
 	}
-	if len(m.Attributes) > 0 {
-		for _, e := range m.Attributes {
-			l = e.Size()
-			n += 1 + l + sovPprofextended(uint64(l))
-		}
-	}
-	if m.DroppedAttributesCount != 0 {
-		n += 1 + sovPprofextended(uint64(m.DroppedAttributesCount))
-	}
 	if len(m.Timestamps) > 0 {
 		l = 0
 		for _, e := range m.Timestamps {
@@ -1935,31 +1895,9 @@ func (m *Sample) Size() (n int) {
 		}
 		n += 1 + sovPprofextended(uint64(l)) + l
 	}
-	if len(m.Attributes2) > 0 {
-		for _, e := range m.Attributes2 {
-			l = e.Size()
-			n += 1 + l + sovPprofextended(uint64(l))
-		}
-	}
-	if len(m.Attributes3) > 0 {
+	if len(m.Attributes) > 0 {
 		l = 0
-		for _, e := range m.Attributes3 {
-			l += sovPprofextended(uint64(e))
-		}
-		n += 1 + sovPprofextended(uint64(l)) + l
-	}
-	return n
-}
-
-func (m *Stacktrace) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.LocationIndex) > 0 {
-		l = 0
-		for _, e := range m.LocationIndex {
+		for _, e := range m.Attributes {
 			l += sovPprofextended(uint64(e))
 		}
 		n += 1 + sovPprofextended(uint64(l)) + l
@@ -2024,6 +1962,16 @@ func (m *Mapping) Size() (n int) {
 	if m.HasInlineFrames {
 		n += 2
 	}
+	if m.FileIdIndex != 0 {
+		n += 1 + sovPprofextended(uint64(m.FileIdIndex))
+	}
+	if len(m.Attributes) > 0 {
+		l = 0
+		for _, e := range m.Attributes {
+			l += sovPprofextended(uint64(e))
+		}
+		n += 1 + sovPprofextended(uint64(l)) + l
+	}
 	return n
 }
 
@@ -2050,6 +1998,16 @@ func (m *Location) Size() (n int) {
 	}
 	if m.IsFolded {
 		n += 2
+	}
+	if m.TypeIndex != 0 {
+		n += 1 + sovPprofextended(uint64(m.TypeIndex))
+	}
+	if len(m.Attributes) > 0 {
+		l = 0
+		for _, e := range m.Attributes {
+			l += sovPprofextended(uint64(e))
+		}
+		n += 1 + sovPprofextended(uint64(l)) + l
 	}
 	return n
 }
@@ -2634,39 +2592,7 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 			}
 		case 16:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BytesTable", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPprofextended
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthPprofextended
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthPprofextended
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.BytesTable = append(m.BytesTable, make([]byte, postIndex-iNdEx))
-			copy(m.BytesTable[len(m.BytesTable)-1], dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 17:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Attributes3", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeTable", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -2693,8 +2619,8 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Attributes3 = append(m.Attributes3, v1.KeyValue{})
-			if err := m.Attributes3[len(m.Attributes3)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.AttributeTable = append(m.AttributeTable, v1.KeyValue{})
+			if err := m.AttributeTable[len(m.AttributeTable)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2800,7 +2726,7 @@ func (m *ValueType) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AggregationTemporality |= ValueType_AggregationTemporality(b&0x7F) << shift
+				m.AggregationTemporality |= AggregationTemporality(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3080,59 +3006,6 @@ func (m *Sample) Unmarshal(dAtA []byte) error {
 				}
 			}
 		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPprofextended
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthPprofextended
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthPprofextended
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Attributes = append(m.Attributes, &v1.KeyValueInterned{})
-			if err := m.Attributes[len(m.Attributes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 7:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DroppedAttributesCount", wireType)
-			}
-			m.DroppedAttributesCount = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPprofextended
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.DroppedAttributesCount |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 8:
 			if wireType == 0 {
 				var v uint64
 				for shift := uint(0); ; shift += 7 {
@@ -3208,41 +3081,7 @@ func (m *Sample) Unmarshal(dAtA []byte) error {
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field Timestamps", wireType)
 			}
-		case 9:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Attributes2", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPprofextended
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthPprofextended
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthPprofextended
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Attributes2 = append(m.Attributes2, v1.KeyValue{})
-			if err := m.Attributes2[len(m.Attributes2)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 10:
+		case 7:
 			if wireType == 0 {
 				var v uint64
 				for shift := uint(0); ; shift += 7 {
@@ -3259,7 +3098,7 @@ func (m *Sample) Unmarshal(dAtA []byte) error {
 						break
 					}
 				}
-				m.Attributes3 = append(m.Attributes3, v)
+				m.Attributes = append(m.Attributes, v)
 			} else if wireType == 2 {
 				var packedLen int
 				for shift := uint(0); ; shift += 7 {
@@ -3294,8 +3133,8 @@ func (m *Sample) Unmarshal(dAtA []byte) error {
 					}
 				}
 				elementCount = count
-				if elementCount != 0 && len(m.Attributes3) == 0 {
-					m.Attributes3 = make([]uint64, 0, elementCount)
+				if elementCount != 0 && len(m.Attributes) == 0 {
+					m.Attributes = make([]uint64, 0, elementCount)
 				}
 				for iNdEx < postIndex {
 					var v uint64
@@ -3313,136 +3152,10 @@ func (m *Sample) Unmarshal(dAtA []byte) error {
 							break
 						}
 					}
-					m.Attributes3 = append(m.Attributes3, v)
+					m.Attributes = append(m.Attributes, v)
 				}
 			} else {
-				return fmt.Errorf("proto: wrong wireType = %d for field Attributes3", wireType)
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipPprofextended(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthPprofextended
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Stacktrace) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowPprofextended
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Stacktrace: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Stacktrace: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType == 0 {
-				var v uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowPprofextended
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.LocationIndex = append(m.LocationIndex, v)
-			} else if wireType == 2 {
-				var packedLen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowPprofextended
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					packedLen |= int(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if packedLen < 0 {
-					return ErrInvalidLengthPprofextended
-				}
-				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthPprofextended
-				}
-				if postIndex > l {
-					return io.ErrUnexpectedEOF
-				}
-				var elementCount int
-				var count int
-				for _, integer := range dAtA[iNdEx:postIndex] {
-					if integer < 128 {
-						count++
-					}
-				}
-				elementCount = count
-				if elementCount != 0 && len(m.LocationIndex) == 0 {
-					m.LocationIndex = make([]uint64, 0, elementCount)
-				}
-				for iNdEx < postIndex {
-					var v uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowPprofextended
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						v |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					m.LocationIndex = append(m.LocationIndex, v)
-				}
-			} else {
-				return fmt.Errorf("proto: wrong wireType = %d for field LocationIndex", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
 			}
 		default:
 			iNdEx = preIndex
@@ -3814,6 +3527,101 @@ func (m *Mapping) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.HasInlineFrames = bool(v != 0)
+		case 11:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FileIdIndex", wireType)
+			}
+			m.FileIdIndex = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPprofextended
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.FileIdIndex |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 12:
+			if wireType == 0 {
+				var v uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowPprofextended
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.Attributes = append(m.Attributes, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowPprofextended
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthPprofextended
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthPprofextended
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				var count int
+				for _, integer := range dAtA[iNdEx:postIndex] {
+					if integer < 128 {
+						count++
+					}
+				}
+				elementCount = count
+				if elementCount != 0 && len(m.Attributes) == 0 {
+					m.Attributes = make([]uint64, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowPprofextended
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.Attributes = append(m.Attributes, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipPprofextended(dAtA[iNdEx:])
@@ -3975,6 +3783,101 @@ func (m *Location) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.IsFolded = bool(v != 0)
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TypeIndex", wireType)
+			}
+			m.TypeIndex = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPprofextended
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TypeIndex |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 7:
+			if wireType == 0 {
+				var v uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowPprofextended
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.Attributes = append(m.Attributes, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowPprofextended
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthPprofextended
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthPprofextended
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				var count int
+				for _, integer := range dAtA[iNdEx:postIndex] {
+					if integer < 128 {
+						count++
+					}
+				}
+				elementCount = count
+				if elementCount != 0 && len(m.Attributes) == 0 {
+					m.Attributes = make([]uint64, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowPprofextended
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.Attributes = append(m.Attributes, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipPprofextended(dAtA[iNdEx:])

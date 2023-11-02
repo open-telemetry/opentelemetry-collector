@@ -173,8 +173,8 @@ type ScopeProfiles struct {
 	// Semantically when InstrumentationScope isn't set, it is equivalent with
 	// an empty instrumentation scope name (unknown).
 	Scope v11.InstrumentationScope `protobuf:"bytes,1,opt,name=scope,proto3" json:"scope"`
-	// A list of Profiles that originate from an instrumentation scope.
-	Profiles []*Profile `protobuf:"bytes,2,rep,name=profiles,proto3" json:"profiles,omitempty"`
+	// A list of ProfileContainers that originate from an instrumentation scope.
+	Profiles []*ProfileContainer `protobuf:"bytes,2,rep,name=profiles,proto3" json:"profiles,omitempty"`
 	// This schema_url applies to all profiles and profile events in the "profiles" field.
 	SchemaUrl string `protobuf:"bytes,3,opt,name=schema_url,json=schemaUrl,proto3" json:"schema_url,omitempty"`
 }
@@ -219,7 +219,7 @@ func (m *ScopeProfiles) GetScope() v11.InstrumentationScope {
 	return v11.InstrumentationScope{}
 }
 
-func (m *ScopeProfiles) GetProfiles() []*Profile {
+func (m *ScopeProfiles) GetProfiles() []*ProfileContainer {
 	if m != nil {
 		return m.Profiles
 	}
@@ -233,8 +233,8 @@ func (m *ScopeProfiles) GetSchemaUrl() string {
 	return ""
 }
 
-// A Profile represents a single profile.
-type Profile struct {
+// A ProfileContainer represents a single profile. It wraps pprof profile with OpenTelemetry specific metadata.
+type ProfileContainer struct {
 	// A unique identifier for a profile. The ID is a 16-byte array. An ID with
 	// all zeroes is considered invalid.
 	//
@@ -267,32 +267,41 @@ type Profile struct {
 	// can be discarded because their keys are too long or because there are too many
 	// attributes. If this value is 0, then no attributes were dropped.
 	DroppedAttributesCount uint32 `protobuf:"varint,5,opt,name=dropped_attributes_count,json=droppedAttributesCount,proto3" json:"dropped_attributes_count,omitempty"`
-	// This can be original pprof or jfr encoded profile.
+	// Specifies format of the original payload. Common values are defined in semantic conventions. [required if original_payload is present]
+	OriginalPayloadFormat string `protobuf:"bytes,6,opt,name=original_payload_format,json=originalPayloadFormat,proto3" json:"original_payload_format,omitempty"`
+	// Original payload can be stored in this field. This can be useful for users who want to get the original payload.
+	// Formats such as JFR are highly extensible and can contain more information than what is defined in this spec.
+	// Inclusion of original payload should be configurable by the user. Default behavior should be to not include the original payload.
+	// If the original payload is in pprof format, it SHOULD not be included in this field.
+	// The field is optional, however if it is present `profile` MUST be present and contain the same profiling information.
 	OriginalPayload []byte `protobuf:"bytes,7,opt,name=original_payload,json=originalPayload,proto3" json:"original_payload,omitempty"`
+	// This is a reference to a pprof profile. Required, even when original_payload is present.
+	Profile *pprofextended.Profile `protobuf:"bytes,8,opt,name=profile,proto3" json:"profile,omitempty"`
+	// THIS IS TEMPORARY AND WILL BE REMOVED. ONLY USED FOR BENCHMARKS
 	// this is temporary until we pick one of these formats
 	// fields from one of these will be embedded in Profile message:
 	//
 	// Types that are valid to be assigned to AlternativeProfile:
-	//	*Profile_Pprof
-	//	*Profile_Normalized
-	//	*Profile_Arrays
-	//	*Profile_Denormalized
-	//	*Profile_Pprofextended
-	AlternativeProfile isProfile_AlternativeProfile `protobuf_oneof:"alternative_profile"`
+	//	*ProfileContainer_Pprof
+	//	*ProfileContainer_Normalized
+	//	*ProfileContainer_Arrays
+	//	*ProfileContainer_Denormalized
+	//	*ProfileContainer_Pprofextended
+	AlternativeProfile isProfileContainer_AlternativeProfile `protobuf_oneof:"alternative_profile"`
 }
 
-func (m *Profile) Reset()         { *m = Profile{} }
-func (m *Profile) String() string { return proto.CompactTextString(m) }
-func (*Profile) ProtoMessage()    {}
-func (*Profile) Descriptor() ([]byte, []int) {
+func (m *ProfileContainer) Reset()         { *m = ProfileContainer{} }
+func (m *ProfileContainer) String() string { return proto.CompactTextString(m) }
+func (*ProfileContainer) ProtoMessage()    {}
+func (*ProfileContainer) Descriptor() ([]byte, []int) {
 	return fileDescriptor_57ba5958fad9a734, []int{3}
 }
-func (m *Profile) XXX_Unmarshal(b []byte) error {
+func (m *ProfileContainer) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *Profile) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ProfileContainer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_Profile.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ProfileContainer.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -302,131 +311,145 @@ func (m *Profile) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *Profile) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Profile.Merge(m, src)
+func (m *ProfileContainer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProfileContainer.Merge(m, src)
 }
-func (m *Profile) XXX_Size() int {
+func (m *ProfileContainer) XXX_Size() int {
 	return m.Size()
 }
-func (m *Profile) XXX_DiscardUnknown() {
-	xxx_messageInfo_Profile.DiscardUnknown(m)
+func (m *ProfileContainer) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProfileContainer.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_Profile proto.InternalMessageInfo
+var xxx_messageInfo_ProfileContainer proto.InternalMessageInfo
 
-type isProfile_AlternativeProfile interface {
-	isProfile_AlternativeProfile()
+type isProfileContainer_AlternativeProfile interface {
+	isProfileContainer_AlternativeProfile()
 	MarshalTo([]byte) (int, error)
 	Size() int
 }
 
-type Profile_Pprof struct {
-	Pprof *pprof.Profile `protobuf:"bytes,8,opt,name=pprof,proto3,oneof" json:"pprof,omitempty"`
+type ProfileContainer_Pprof struct {
+	Pprof *pprof.Profile `protobuf:"bytes,101,opt,name=pprof,proto3,oneof" json:"pprof,omitempty"`
 }
-type Profile_Normalized struct {
-	Normalized *normalized.Profile `protobuf:"bytes,9,opt,name=normalized,proto3,oneof" json:"normalized,omitempty"`
+type ProfileContainer_Normalized struct {
+	Normalized *normalized.Profile `protobuf:"bytes,102,opt,name=normalized,proto3,oneof" json:"normalized,omitempty"`
 }
-type Profile_Arrays struct {
-	Arrays *arrays.Profile `protobuf:"bytes,10,opt,name=arrays,proto3,oneof" json:"arrays,omitempty"`
+type ProfileContainer_Arrays struct {
+	Arrays *arrays.Profile `protobuf:"bytes,103,opt,name=arrays,proto3,oneof" json:"arrays,omitempty"`
 }
-type Profile_Denormalized struct {
-	Denormalized *denormalized.Profile `protobuf:"bytes,11,opt,name=denormalized,proto3,oneof" json:"denormalized,omitempty"`
+type ProfileContainer_Denormalized struct {
+	Denormalized *denormalized.Profile `protobuf:"bytes,104,opt,name=denormalized,proto3,oneof" json:"denormalized,omitempty"`
 }
-type Profile_Pprofextended struct {
-	Pprofextended *pprofextended.Profile `protobuf:"bytes,12,opt,name=pprofextended,proto3,oneof" json:"pprofextended,omitempty"`
+type ProfileContainer_Pprofextended struct {
+	Pprofextended *pprofextended.Profile `protobuf:"bytes,105,opt,name=pprofextended,proto3,oneof" json:"pprofextended,omitempty"`
 }
 
-func (*Profile_Pprof) isProfile_AlternativeProfile()         {}
-func (*Profile_Normalized) isProfile_AlternativeProfile()    {}
-func (*Profile_Arrays) isProfile_AlternativeProfile()        {}
-func (*Profile_Denormalized) isProfile_AlternativeProfile()  {}
-func (*Profile_Pprofextended) isProfile_AlternativeProfile() {}
+func (*ProfileContainer_Pprof) isProfileContainer_AlternativeProfile()         {}
+func (*ProfileContainer_Normalized) isProfileContainer_AlternativeProfile()    {}
+func (*ProfileContainer_Arrays) isProfileContainer_AlternativeProfile()        {}
+func (*ProfileContainer_Denormalized) isProfileContainer_AlternativeProfile()  {}
+func (*ProfileContainer_Pprofextended) isProfileContainer_AlternativeProfile() {}
 
-func (m *Profile) GetAlternativeProfile() isProfile_AlternativeProfile {
+func (m *ProfileContainer) GetAlternativeProfile() isProfileContainer_AlternativeProfile {
 	if m != nil {
 		return m.AlternativeProfile
 	}
 	return nil
 }
 
-func (m *Profile) GetStartTimeUnixNano() uint64 {
+func (m *ProfileContainer) GetStartTimeUnixNano() uint64 {
 	if m != nil {
 		return m.StartTimeUnixNano
 	}
 	return 0
 }
 
-func (m *Profile) GetEndTimeUnixNano() uint64 {
+func (m *ProfileContainer) GetEndTimeUnixNano() uint64 {
 	if m != nil {
 		return m.EndTimeUnixNano
 	}
 	return 0
 }
 
-func (m *Profile) GetAttributes() []v11.KeyValue {
+func (m *ProfileContainer) GetAttributes() []v11.KeyValue {
 	if m != nil {
 		return m.Attributes
 	}
 	return nil
 }
 
-func (m *Profile) GetDroppedAttributesCount() uint32 {
+func (m *ProfileContainer) GetDroppedAttributesCount() uint32 {
 	if m != nil {
 		return m.DroppedAttributesCount
 	}
 	return 0
 }
 
-func (m *Profile) GetOriginalPayload() []byte {
+func (m *ProfileContainer) GetOriginalPayloadFormat() string {
+	if m != nil {
+		return m.OriginalPayloadFormat
+	}
+	return ""
+}
+
+func (m *ProfileContainer) GetOriginalPayload() []byte {
 	if m != nil {
 		return m.OriginalPayload
 	}
 	return nil
 }
 
-func (m *Profile) GetPprof() *pprof.Profile {
-	if x, ok := m.GetAlternativeProfile().(*Profile_Pprof); ok {
+func (m *ProfileContainer) GetProfile() *pprofextended.Profile {
+	if m != nil {
+		return m.Profile
+	}
+	return nil
+}
+
+func (m *ProfileContainer) GetPprof() *pprof.Profile {
+	if x, ok := m.GetAlternativeProfile().(*ProfileContainer_Pprof); ok {
 		return x.Pprof
 	}
 	return nil
 }
 
-func (m *Profile) GetNormalized() *normalized.Profile {
-	if x, ok := m.GetAlternativeProfile().(*Profile_Normalized); ok {
+func (m *ProfileContainer) GetNormalized() *normalized.Profile {
+	if x, ok := m.GetAlternativeProfile().(*ProfileContainer_Normalized); ok {
 		return x.Normalized
 	}
 	return nil
 }
 
-func (m *Profile) GetArrays() *arrays.Profile {
-	if x, ok := m.GetAlternativeProfile().(*Profile_Arrays); ok {
+func (m *ProfileContainer) GetArrays() *arrays.Profile {
+	if x, ok := m.GetAlternativeProfile().(*ProfileContainer_Arrays); ok {
 		return x.Arrays
 	}
 	return nil
 }
 
-func (m *Profile) GetDenormalized() *denormalized.Profile {
-	if x, ok := m.GetAlternativeProfile().(*Profile_Denormalized); ok {
+func (m *ProfileContainer) GetDenormalized() *denormalized.Profile {
+	if x, ok := m.GetAlternativeProfile().(*ProfileContainer_Denormalized); ok {
 		return x.Denormalized
 	}
 	return nil
 }
 
-func (m *Profile) GetPprofextended() *pprofextended.Profile {
-	if x, ok := m.GetAlternativeProfile().(*Profile_Pprofextended); ok {
+func (m *ProfileContainer) GetPprofextended() *pprofextended.Profile {
+	if x, ok := m.GetAlternativeProfile().(*ProfileContainer_Pprofextended); ok {
 		return x.Pprofextended
 	}
 	return nil
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*Profile) XXX_OneofWrappers() []interface{} {
+func (*ProfileContainer) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
-		(*Profile_Pprof)(nil),
-		(*Profile_Normalized)(nil),
-		(*Profile_Arrays)(nil),
-		(*Profile_Denormalized)(nil),
-		(*Profile_Pprofextended)(nil),
+		(*ProfileContainer_Pprof)(nil),
+		(*ProfileContainer_Normalized)(nil),
+		(*ProfileContainer_Arrays)(nil),
+		(*ProfileContainer_Denormalized)(nil),
+		(*ProfileContainer_Pprofextended)(nil),
 	}
 }
 
@@ -434,7 +457,7 @@ func init() {
 	proto.RegisterType((*ProfilesData)(nil), "opentelemetry.proto.profiles.v1.ProfilesData")
 	proto.RegisterType((*ResourceProfiles)(nil), "opentelemetry.proto.profiles.v1.ResourceProfiles")
 	proto.RegisterType((*ScopeProfiles)(nil), "opentelemetry.proto.profiles.v1.ScopeProfiles")
-	proto.RegisterType((*Profile)(nil), "opentelemetry.proto.profiles.v1.Profile")
+	proto.RegisterType((*ProfileContainer)(nil), "opentelemetry.proto.profiles.v1.ProfileContainer")
 }
 
 func init() {
@@ -442,57 +465,59 @@ func init() {
 }
 
 var fileDescriptor_57ba5958fad9a734 = []byte{
-	// 793 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x95, 0xcf, 0x4f, 0xdb, 0x48,
-	0x14, 0xc7, 0xe3, 0x00, 0x81, 0x0c, 0xc9, 0x02, 0xb3, 0xec, 0xae, 0x17, 0x69, 0x93, 0x28, 0x97,
-	0x0d, 0xbb, 0x92, 0xa3, 0xc0, 0x65, 0x25, 0x56, 0x2b, 0x36, 0xa0, 0x0a, 0x44, 0x0b, 0x91, 0xf9,
-	0x71, 0xe8, 0xa1, 0xd6, 0x10, 0x4f, 0xc3, 0x08, 0x7b, 0xc6, 0x1a, 0x4f, 0x22, 0xd2, 0xbf, 0xa2,
-	0x7f, 0x47, 0xff, 0x81, 0xde, 0x2b, 0x55, 0xe2, 0xc8, 0xb1, 0xea, 0x01, 0x55, 0x70, 0xe9, 0x5f,
-	0x51, 0x55, 0x1e, 0x8f, 0x1d, 0x3b, 0x8d, 0x64, 0x99, 0x4b, 0x32, 0x33, 0xef, 0xbd, 0xcf, 0x7b,
-	0x6f, 0x66, 0xfc, 0x1d, 0x60, 0x30, 0x0f, 0x53, 0x81, 0x1d, 0xec, 0x62, 0xc1, 0xc7, 0x6d, 0x8f,
-	0x33, 0xc1, 0x82, 0xdf, 0xd7, 0xc4, 0xc1, 0x7e, 0x7b, 0xd4, 0x89, 0xc7, 0x86, 0x34, 0xc1, 0x7a,
-	0xca, 0x3f, 0x5c, 0x34, 0x62, 0x9f, 0x51, 0x67, 0x63, 0x7d, 0xc0, 0x06, 0x2c, 0xc4, 0x04, 0xa3,
-	0xd0, 0x63, 0xe3, 0xaf, 0x59, 0x69, 0xfa, 0xcc, 0x75, 0x19, 0x0d, 0x92, 0x84, 0x23, 0xe5, 0x3b,
-	0xb3, 0x24, 0x8e, 0x7d, 0x36, 0xe4, 0x7d, 0x1c, 0x78, 0x47, 0x63, 0xe5, 0xff, 0x5f, 0x56, 0x0b,
-	0xc8, 0x11, 0x98, 0x53, 0x24, 0xc8, 0x08, 0xfb, 0x6d, 0x2f, 0xb0, 0x84, 0xbf, 0x2a, 0xfe, 0x79,
-	0xae, 0x78, 0x1b, 0x53, 0xc6, 0x5d, 0xe4, 0x90, 0x37, 0xd8, 0x4e, 0x4d, 0x14, 0xed, 0x20, 0x17,
-	0x2d, 0xc1, 0xfa, 0x81, 0xb4, 0x9b, 0x8b, 0x84, 0x38, 0x47, 0xe3, 0xe8, 0x4f, 0x11, 0x8e, 0xf3,
-	0xef, 0x0c, 0xbe, 0x11, 0x98, 0xda, 0xd8, 0x4e, 0xcf, 0x42, 0x5e, 0x93, 0x82, 0x4a, 0x4f, 0x45,
-	0xef, 0x23, 0x81, 0xe0, 0x2b, 0xb0, 0x16, 0x9d, 0x85, 0x15, 0x61, 0x75, 0xad, 0x31, 0xd7, 0x5a,
-	0xde, 0xea, 0x18, 0x19, 0x17, 0xc5, 0x30, 0x55, 0x64, 0x44, 0x34, 0x57, 0xf9, 0xd4, 0x4a, 0xf3,
-	0x43, 0x11, 0xac, 0x4e, 0xbb, 0xc1, 0x6b, 0xf0, 0xbb, 0x8d, 0x3d, 0x8e, 0xfb, 0x48, 0x60, 0xdb,
-	0xf2, 0xfb, 0xcc, 0x4b, 0x24, 0xff, 0xba, 0x28, 0xb3, 0x1b, 0x99, 0xd9, 0x4f, 0x83, 0xb8, 0x38,
-	0xf5, 0x6f, 0x13, 0x62, 0xca, 0x00, 0x8f, 0xc0, 0x52, 0x54, 0x95, 0xae, 0x35, 0xb4, 0xd6, 0xf2,
-	0xd6, 0xe6, 0x4c, 0x74, 0x7c, 0x25, 0x13, 0x8d, 0x75, 0xe7, 0x6f, 0xef, 0xeb, 0x05, 0x33, 0x06,
-	0xc0, 0x73, 0xf0, 0xd3, 0x54, 0xb9, 0xc5, 0x27, 0x55, 0x5b, 0xf5, 0x53, 0x35, 0xfe, 0x01, 0x80,
-	0xdf, 0xbf, 0xc2, 0x2e, 0xb2, 0x86, 0xdc, 0xd1, 0xe7, 0x1a, 0x5a, 0xab, 0x6c, 0x96, 0xc3, 0x95,
-	0x73, 0xee, 0x34, 0x3f, 0x6a, 0xa0, 0x9a, 0x6e, 0xea, 0x04, 0x2c, 0x48, 0x82, 0xea, 0x68, 0x7b,
-	0x66, 0x7a, 0xf5, 0x49, 0x8e, 0x3a, 0xc6, 0x21, 0xf5, 0x05, 0x1f, 0xba, 0x98, 0x0a, 0x24, 0x08,
-	0xa3, 0x92, 0xa5, 0x7a, 0x0b, 0x39, 0x70, 0x1f, 0x2c, 0x4d, 0xb5, 0xd4, 0xca, 0x6c, 0x49, 0x55,
-	0x63, 0xc6, 0x91, 0x59, 0x7d, 0x7c, 0x2b, 0x81, 0x45, 0x15, 0x04, 0x2f, 0x01, 0x50, 0x61, 0x16,
-	0xb1, 0x65, 0x1b, 0x95, 0xee, 0x5e, 0x50, 0xd1, 0xe7, 0xfb, 0xfa, 0xce, 0x80, 0x4d, 0x25, 0x27,
-	0x81, 0xd4, 0x38, 0x0e, 0xee, 0x0b, 0xc6, 0xdb, 0x9e, 0x8d, 0x04, 0x6a, 0x13, 0x2a, 0x2f, 0xbe,
-	0xd3, 0x0e, 0x66, 0x51, 0x2d, 0x87, 0xfb, 0x66, 0x59, 0x61, 0x0f, 0x6d, 0xd8, 0x06, 0xeb, 0xbe,
-	0x40, 0x5c, 0x58, 0x82, 0xb8, 0xd8, 0x1a, 0x52, 0x72, 0x63, 0x51, 0x44, 0x99, 0x5e, 0x6c, 0x68,
-	0xad, 0x92, 0xb9, 0x26, 0x6d, 0x67, 0xc4, 0xc5, 0xe7, 0x94, 0xdc, 0x1c, 0x23, 0xca, 0xe0, 0xdf,
-	0x00, 0x62, 0x6a, 0x4f, 0xbb, 0xcf, 0x49, 0xf7, 0x15, 0x4c, 0xed, 0x94, 0xf3, 0x0b, 0x00, 0x90,
-	0x10, 0x9c, 0x5c, 0x0e, 0x05, 0xf6, 0xf5, 0x79, 0xb9, 0x69, 0x7f, 0x66, 0x1c, 0xc4, 0x11, 0x1e,
-	0x5f, 0x20, 0x67, 0x18, 0x6d, 0x7e, 0x02, 0x00, 0xff, 0x01, 0xba, 0xcd, 0x99, 0xe7, 0x61, 0xdb,
-	0x9a, 0xac, 0x5a, 0x7d, 0x36, 0xa4, 0x42, 0x5f, 0x68, 0x68, 0xad, 0xaa, 0xf9, 0xab, 0xb2, 0xff,
-	0x1f, 0x9b, 0xf7, 0x02, 0x2b, 0xdc, 0x04, 0xab, 0x8c, 0x93, 0x01, 0xa1, 0xc8, 0xb1, 0x3c, 0x34,
-	0x76, 0x18, 0xb2, 0xf5, 0xc5, 0x60, 0x43, 0xcd, 0x95, 0x68, 0xbd, 0x17, 0x2e, 0xc3, 0x53, 0xb0,
-	0x20, 0x55, 0x41, 0x5f, 0x92, 0xf7, 0x66, 0x27, 0xf3, 0x8c, 0x93, 0xf2, 0x62, 0x84, 0x92, 0xab,
-	0xb6, 0xfa, 0xa0, 0x60, 0x86, 0xac, 0xe0, 0x28, 0x27, 0xca, 0xa7, 0x97, 0x25, 0x79, 0x37, 0x1f,
-	0x39, 0xa1, 0x9c, 0x13, 0x7c, 0x82, 0x0a, 0x2f, 0x40, 0x29, 0xd4, 0x45, 0x1d, 0x48, 0xfe, 0xbf,
-	0xf9, 0xf8, 0x4a, 0x53, 0x27, 0x6c, 0x45, 0x83, 0x57, 0xa0, 0x92, 0x7c, 0x01, 0xf4, 0x65, 0x49,
-	0xef, 0xe6, 0xa3, 0xa7, 0xde, 0x90, 0x49, 0x8e, 0x14, 0x19, 0x5e, 0x83, 0x6a, 0x4a, 0x90, 0xf5,
-	0x8a, 0x4c, 0xb5, 0xf7, 0x84, 0x23, 0x88, 0x35, 0x7d, 0x92, 0x2b, 0xcd, 0xee, 0xfe, 0x02, 0x7e,
-	0x4e, 0x84, 0x45, 0x6a, 0xd5, 0x7d, 0xaf, 0xdd, 0x3e, 0xd4, 0xb4, 0xbb, 0x87, 0x9a, 0xf6, 0xe5,
-	0xa1, 0xa6, 0xbd, 0x7d, 0xac, 0x15, 0xee, 0x1e, 0x6b, 0x85, 0x4f, 0x8f, 0xb5, 0x02, 0x68, 0x12,
-	0x96, 0x55, 0x49, 0xb7, 0x1a, 0xe9, 0x4f, 0x2f, 0x30, 0xf5, 0xb4, 0x97, 0xcf, 0x72, 0x7f, 0xa8,
-	0xe1, 0x0b, 0x36, 0xc0, 0x34, 0xf9, 0x88, 0xbd, 0x2b, 0xd6, 0x4f, 0x3c, 0x4c, 0xcf, 0x62, 0x8a,
-	0xe4, 0x47, 0xdd, 0xf9, 0xc6, 0x45, 0xe7, 0xb2, 0x24, 0xe3, 0xb6, 0xbf, 0x07, 0x00, 0x00, 0xff,
-	0xff, 0x97, 0x31, 0xc7, 0xa2, 0xed, 0x08, 0x00, 0x00,
+	// 831 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x95, 0xcd, 0x4e, 0xeb, 0x46,
+	0x14, 0xc7, 0xe3, 0x70, 0x09, 0x61, 0x2e, 0xe9, 0xcd, 0x9d, 0xde, 0x5b, 0x5c, 0xa4, 0x26, 0x51,
+	0x36, 0x0d, 0xad, 0xe4, 0x28, 0x20, 0x55, 0x95, 0xa8, 0x2a, 0x9a, 0x20, 0x04, 0xa2, 0x40, 0x64,
+	0x3e, 0x16, 0x95, 0x5a, 0x6b, 0x88, 0x87, 0x30, 0xc2, 0x9e, 0xb1, 0xc6, 0x93, 0x88, 0xf4, 0x29,
+	0xfa, 0x04, 0x7d, 0x80, 0xbe, 0x40, 0xf7, 0x5d, 0xb1, 0xaa, 0x58, 0x56, 0x5d, 0xa0, 0x0a, 0x36,
+	0x7d, 0x8c, 0xca, 0xe3, 0xb1, 0x63, 0xbb, 0x91, 0x2c, 0xa3, 0xbb, 0x49, 0xc6, 0x73, 0xce, 0xf9,
+	0x9d, 0x73, 0x7c, 0xc6, 0xff, 0x01, 0x06, 0xf3, 0x30, 0x15, 0xd8, 0xc1, 0x2e, 0x16, 0x7c, 0xd6,
+	0xf5, 0x38, 0x13, 0x2c, 0xf8, 0xbd, 0x26, 0x0e, 0xf6, 0xbb, 0xd3, 0x5e, 0xbc, 0x36, 0xa4, 0x09,
+	0x36, 0x53, 0xfe, 0xe1, 0xa6, 0x11, 0xfb, 0x4c, 0x7b, 0x1b, 0xef, 0xc6, 0x6c, 0xcc, 0x42, 0x4c,
+	0xb0, 0x0a, 0x3d, 0x36, 0xbe, 0x58, 0x94, 0x66, 0xc4, 0x5c, 0x97, 0xd1, 0x20, 0x49, 0xb8, 0x52,
+	0xbe, 0x0b, 0x4b, 0xe2, 0xd8, 0x67, 0x13, 0x3e, 0xc2, 0x81, 0x77, 0xb4, 0x56, 0xfe, 0xdf, 0xe6,
+	0xb5, 0x80, 0x1c, 0x81, 0x39, 0x45, 0x82, 0x4c, 0xb1, 0xdf, 0xf5, 0x02, 0x4b, 0xf8, 0xab, 0xe2,
+	0xbf, 0x2f, 0x14, 0x6f, 0x63, 0xca, 0xb8, 0x8b, 0x1c, 0xf2, 0x33, 0xb6, 0x53, 0x0f, 0x8a, 0x76,
+	0x50, 0x88, 0x96, 0x60, 0xfd, 0x8f, 0xb4, 0x5b, 0x88, 0x84, 0x38, 0x47, 0xb3, 0xe8, 0x4f, 0x11,
+	0x4e, 0x8a, 0xbf, 0x19, 0x7c, 0x27, 0x30, 0xb5, 0xb1, 0x9d, 0x7e, 0x0a, 0x79, 0x6d, 0x0a, 0xd6,
+	0x86, 0x2a, 0x7a, 0x0f, 0x09, 0x04, 0x7f, 0x02, 0x6f, 0xa3, 0x59, 0x58, 0x11, 0x56, 0xd7, 0x5a,
+	0x4b, 0x9d, 0xd7, 0x5b, 0x3d, 0x23, 0xe7, 0xa0, 0x18, 0xa6, 0x8a, 0x8c, 0x88, 0x66, 0x9d, 0x67,
+	0x76, 0xda, 0x7f, 0x94, 0x41, 0x3d, 0xeb, 0x06, 0x6f, 0xc1, 0xa7, 0x36, 0xf6, 0x38, 0x1e, 0x21,
+	0x81, 0x6d, 0xcb, 0x1f, 0x31, 0x2f, 0x91, 0xfc, 0xdf, 0x15, 0x99, 0xdd, 0xc8, 0xcd, 0x7e, 0x16,
+	0xc4, 0xc5, 0xa9, 0xd7, 0xe7, 0xc4, 0x94, 0x01, 0x1e, 0x81, 0x6a, 0x54, 0x95, 0xae, 0xb5, 0xb4,
+	0xce, 0xeb, 0xad, 0xcd, 0x85, 0xe8, 0xf8, 0x48, 0x26, 0x1a, 0xeb, 0xbf, 0xba, 0x7f, 0x6c, 0x96,
+	0xcc, 0x18, 0x00, 0x2f, 0xc0, 0x47, 0x99, 0x72, 0xcb, 0x2f, 0xaa, 0xb6, 0xe6, 0xa7, 0x6a, 0xfc,
+	0x0c, 0x00, 0x7f, 0x74, 0x83, 0x5d, 0x64, 0x4d, 0xb8, 0xa3, 0x2f, 0xb5, 0xb4, 0xce, 0xaa, 0xb9,
+	0x1a, 0xee, 0x5c, 0x70, 0xa7, 0xfd, 0xa7, 0x06, 0x6a, 0xe9, 0xa6, 0x4e, 0xc1, 0xb2, 0x24, 0xa8,
+	0x8e, 0xb6, 0x17, 0xa6, 0x57, 0x9f, 0xe4, 0xb4, 0x67, 0x1c, 0x52, 0x5f, 0xf0, 0x89, 0x8b, 0xa9,
+	0x40, 0x82, 0x30, 0x2a, 0x59, 0xaa, 0xb7, 0x90, 0x03, 0x8f, 0x41, 0x35, 0xd3, 0x52, 0xfe, 0xf8,
+	0x55, 0x35, 0x03, 0x46, 0x05, 0x22, 0x14, 0x73, 0x33, 0x46, 0xe4, 0x35, 0xf4, 0x6b, 0x15, 0xd4,
+	0xb3, 0xd1, 0xf0, 0x0a, 0x00, 0x15, 0x6f, 0x11, 0x5b, 0x36, 0xb6, 0xd6, 0x1f, 0x04, 0x35, 0xfe,
+	0xfd, 0xd8, 0xdc, 0x19, 0xb3, 0x4c, 0x39, 0x24, 0x10, 0x1f, 0xc7, 0xc1, 0x23, 0xc1, 0x78, 0xd7,
+	0xb3, 0x91, 0x40, 0x5d, 0x42, 0xe5, 0xa7, 0xe0, 0x74, 0x83, 0xa7, 0xa8, 0xba, 0xc3, 0x3d, 0x73,
+	0x55, 0x61, 0x0f, 0x6d, 0xd8, 0x05, 0xef, 0x7c, 0x81, 0xb8, 0xb0, 0x04, 0x71, 0xb1, 0x35, 0xa1,
+	0xe4, 0xce, 0xa2, 0x88, 0x32, 0xbd, 0xdc, 0xd2, 0x3a, 0x15, 0xf3, 0xad, 0xb4, 0x9d, 0x13, 0x17,
+	0x5f, 0x50, 0x72, 0x77, 0x82, 0x28, 0x83, 0x5f, 0x02, 0x88, 0xa9, 0x9d, 0x75, 0x5f, 0x92, 0xee,
+	0x6f, 0x30, 0xb5, 0x53, 0xce, 0xc7, 0x00, 0x20, 0x21, 0x38, 0xb9, 0x9a, 0x08, 0xec, 0xeb, 0xaf,
+	0xe4, 0x6b, 0xfc, 0x3c, 0x67, 0x34, 0x47, 0x78, 0x76, 0x89, 0x9c, 0x49, 0x34, 0x8e, 0x04, 0x00,
+	0x7e, 0x0d, 0x74, 0x9b, 0x33, 0xcf, 0xc3, 0xb6, 0x35, 0xdf, 0xb5, 0x46, 0x6c, 0x42, 0x85, 0xbe,
+	0xdc, 0xd2, 0x3a, 0x35, 0xf3, 0x13, 0x65, 0xff, 0x2e, 0x36, 0x0f, 0x02, 0x2b, 0xfc, 0x0a, 0xac,
+	0x33, 0x4e, 0xc6, 0x84, 0x22, 0xc7, 0xf2, 0xd0, 0xcc, 0x61, 0xc8, 0xb6, 0xae, 0x03, 0x71, 0x12,
+	0x7a, 0x45, 0xce, 0xe2, 0x7d, 0x64, 0x1e, 0x86, 0xd6, 0x7d, 0x69, 0x84, 0x9b, 0xa0, 0x9e, 0x8d,
+	0xd3, 0x57, 0x82, 0x41, 0x98, 0x6f, 0x32, 0x01, 0xf0, 0x47, 0xb0, 0xa2, 0x5e, 0xab, 0x5e, 0x95,
+	0x67, 0x70, 0x90, 0x7b, 0x5e, 0x92, 0x52, 0x65, 0xa4, 0xc5, 0x49, 0x0d, 0xcb, 0x8c, 0x98, 0xf0,
+	0x0c, 0x2c, 0x4b, 0x0f, 0x1d, 0x4b, 0xf8, 0xce, 0x0b, 0xe0, 0x11, 0xf4, 0xa0, 0x64, 0x86, 0xac,
+	0xe0, 0x84, 0xcd, 0x25, 0x5a, 0xbf, 0x96, 0xe4, 0xdd, 0x62, 0xe4, 0x84, 0xc4, 0xcf, 0xf1, 0x09,
+	0x2a, 0xbc, 0x04, 0x95, 0x50, 0xc0, 0xf5, 0xb1, 0xe4, 0x7f, 0x53, 0x8c, 0xaf, 0xc4, 0x7f, 0xce,
+	0x56, 0x34, 0x78, 0x03, 0xd6, 0x92, 0x57, 0x95, 0x7e, 0x23, 0xe9, 0xfd, 0x62, 0xf4, 0xd4, 0x65,
+	0x37, 0xcf, 0x91, 0x22, 0xc3, 0x5b, 0x50, 0x4b, 0x0d, 0x47, 0x27, 0x1f, 0x6c, 0xbe, 0x07, 0x25,
+	0x33, 0xcd, 0xee, 0xbf, 0x07, 0x1f, 0x27, 0xc2, 0x22, 0x59, 0xed, 0xff, 0xae, 0xdd, 0x3f, 0x35,
+	0xb4, 0x87, 0xa7, 0x86, 0xf6, 0xcf, 0x53, 0x43, 0xfb, 0xe5, 0xb9, 0x51, 0x7a, 0x78, 0x6e, 0x94,
+	0xfe, 0x7a, 0x6e, 0x94, 0x40, 0x9b, 0xb0, 0xbc, 0x4a, 0xfa, 0xb5, 0x48, 0x28, 0x87, 0x81, 0x69,
+	0xa8, 0xfd, 0xb0, 0x5f, 0x58, 0x3f, 0xc2, 0xab, 0x76, 0x8c, 0x69, 0xf2, 0xb6, 0xfd, 0xad, 0xdc,
+	0x3c, 0xf5, 0x30, 0x3d, 0x8f, 0x29, 0x92, 0x1f, 0x75, 0xe7, 0x1b, 0x97, 0xbd, 0xab, 0x8a, 0x8c,
+	0xdb, 0xfe, 0x2f, 0x00, 0x00, 0xff, 0xff, 0xfb, 0x45, 0x21, 0xf6, 0x96, 0x09, 0x00, 0x00,
 }
 
 func (m *ProfilesData) Marshal() (dAtA []byte, err error) {
@@ -656,7 +681,7 @@ func (m *ScopeProfiles) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *Profile) Marshal() (dAtA []byte, err error) {
+func (m *ProfileContainer) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -666,12 +691,12 @@ func (m *Profile) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *Profile) MarshalTo(dAtA []byte) (int, error) {
+func (m *ProfileContainer) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *Profile) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ProfileContainer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -685,12 +710,31 @@ func (m *Profile) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			}
 		}
 	}
+	if m.Profile != nil {
+		{
+			size, err := m.Profile.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintProfiles(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x42
+	}
 	if len(m.OriginalPayload) > 0 {
 		i -= len(m.OriginalPayload)
 		copy(dAtA[i:], m.OriginalPayload)
 		i = encodeVarintProfiles(dAtA, i, uint64(len(m.OriginalPayload)))
 		i--
 		dAtA[i] = 0x3a
+	}
+	if len(m.OriginalPayloadFormat) > 0 {
+		i -= len(m.OriginalPayloadFormat)
+		copy(dAtA[i:], m.OriginalPayloadFormat)
+		i = encodeVarintProfiles(dAtA, i, uint64(len(m.OriginalPayloadFormat)))
+		i--
+		dAtA[i] = 0x32
 	}
 	if m.DroppedAttributesCount != 0 {
 		i = encodeVarintProfiles(dAtA, i, uint64(m.DroppedAttributesCount))
@@ -736,12 +780,12 @@ func (m *Profile) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *Profile_Pprof) MarshalTo(dAtA []byte) (int, error) {
+func (m *ProfileContainer_Pprof) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *Profile_Pprof) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ProfileContainer_Pprof) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	if m.Pprof != nil {
 		{
@@ -753,16 +797,18 @@ func (m *Profile_Pprof) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintProfiles(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x42
+		dAtA[i] = 0x6
+		i--
+		dAtA[i] = 0xaa
 	}
 	return len(dAtA) - i, nil
 }
-func (m *Profile_Normalized) MarshalTo(dAtA []byte) (int, error) {
+func (m *ProfileContainer_Normalized) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *Profile_Normalized) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ProfileContainer_Normalized) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	if m.Normalized != nil {
 		{
@@ -774,16 +820,18 @@ func (m *Profile_Normalized) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintProfiles(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x4a
+		dAtA[i] = 0x6
+		i--
+		dAtA[i] = 0xb2
 	}
 	return len(dAtA) - i, nil
 }
-func (m *Profile_Arrays) MarshalTo(dAtA []byte) (int, error) {
+func (m *ProfileContainer_Arrays) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *Profile_Arrays) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ProfileContainer_Arrays) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	if m.Arrays != nil {
 		{
@@ -795,16 +843,18 @@ func (m *Profile_Arrays) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintProfiles(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x52
+		dAtA[i] = 0x6
+		i--
+		dAtA[i] = 0xba
 	}
 	return len(dAtA) - i, nil
 }
-func (m *Profile_Denormalized) MarshalTo(dAtA []byte) (int, error) {
+func (m *ProfileContainer_Denormalized) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *Profile_Denormalized) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ProfileContainer_Denormalized) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	if m.Denormalized != nil {
 		{
@@ -816,16 +866,18 @@ func (m *Profile_Denormalized) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintProfiles(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x5a
+		dAtA[i] = 0x6
+		i--
+		dAtA[i] = 0xc2
 	}
 	return len(dAtA) - i, nil
 }
-func (m *Profile_Pprofextended) MarshalTo(dAtA []byte) (int, error) {
+func (m *ProfileContainer_Pprofextended) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *Profile_Pprofextended) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ProfileContainer_Pprofextended) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	if m.Pprofextended != nil {
 		{
@@ -837,7 +889,9 @@ func (m *Profile_Pprofextended) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintProfiles(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x62
+		dAtA[i] = 0x6
+		i--
+		dAtA[i] = 0xca
 	}
 	return len(dAtA) - i, nil
 }
@@ -915,7 +969,7 @@ func (m *ScopeProfiles) Size() (n int) {
 	return n
 }
 
-func (m *Profile) Size() (n int) {
+func (m *ProfileContainer) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -938,8 +992,16 @@ func (m *Profile) Size() (n int) {
 	if m.DroppedAttributesCount != 0 {
 		n += 1 + sovProfiles(uint64(m.DroppedAttributesCount))
 	}
+	l = len(m.OriginalPayloadFormat)
+	if l > 0 {
+		n += 1 + l + sovProfiles(uint64(l))
+	}
 	l = len(m.OriginalPayload)
 	if l > 0 {
+		n += 1 + l + sovProfiles(uint64(l))
+	}
+	if m.Profile != nil {
+		l = m.Profile.Size()
 		n += 1 + l + sovProfiles(uint64(l))
 	}
 	if m.AlternativeProfile != nil {
@@ -948,7 +1010,7 @@ func (m *Profile) Size() (n int) {
 	return n
 }
 
-func (m *Profile_Pprof) Size() (n int) {
+func (m *ProfileContainer_Pprof) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -956,11 +1018,11 @@ func (m *Profile_Pprof) Size() (n int) {
 	_ = l
 	if m.Pprof != nil {
 		l = m.Pprof.Size()
-		n += 1 + l + sovProfiles(uint64(l))
+		n += 2 + l + sovProfiles(uint64(l))
 	}
 	return n
 }
-func (m *Profile_Normalized) Size() (n int) {
+func (m *ProfileContainer_Normalized) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -968,11 +1030,11 @@ func (m *Profile_Normalized) Size() (n int) {
 	_ = l
 	if m.Normalized != nil {
 		l = m.Normalized.Size()
-		n += 1 + l + sovProfiles(uint64(l))
+		n += 2 + l + sovProfiles(uint64(l))
 	}
 	return n
 }
-func (m *Profile_Arrays) Size() (n int) {
+func (m *ProfileContainer_Arrays) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -980,11 +1042,11 @@ func (m *Profile_Arrays) Size() (n int) {
 	_ = l
 	if m.Arrays != nil {
 		l = m.Arrays.Size()
-		n += 1 + l + sovProfiles(uint64(l))
+		n += 2 + l + sovProfiles(uint64(l))
 	}
 	return n
 }
-func (m *Profile_Denormalized) Size() (n int) {
+func (m *ProfileContainer_Denormalized) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -992,11 +1054,11 @@ func (m *Profile_Denormalized) Size() (n int) {
 	_ = l
 	if m.Denormalized != nil {
 		l = m.Denormalized.Size()
-		n += 1 + l + sovProfiles(uint64(l))
+		n += 2 + l + sovProfiles(uint64(l))
 	}
 	return n
 }
-func (m *Profile_Pprofextended) Size() (n int) {
+func (m *ProfileContainer_Pprofextended) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1004,7 +1066,7 @@ func (m *Profile_Pprofextended) Size() (n int) {
 	_ = l
 	if m.Pprofextended != nil {
 		l = m.Pprofextended.Size()
-		n += 1 + l + sovProfiles(uint64(l))
+		n += 2 + l + sovProfiles(uint64(l))
 	}
 	return n
 }
@@ -1373,7 +1435,7 @@ func (m *ScopeProfiles) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Profiles = append(m.Profiles, &Profile{})
+			m.Profiles = append(m.Profiles, &ProfileContainer{})
 			if err := m.Profiles[len(m.Profiles)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -1431,7 +1493,7 @@ func (m *ScopeProfiles) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *Profile) Unmarshal(dAtA []byte) error {
+func (m *ProfileContainer) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1454,10 +1516,10 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: Profile: wiretype end group for non-group")
+			return fmt.Errorf("proto: ProfileContainer: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Profile: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ProfileContainer: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1566,6 +1628,38 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OriginalPayloadFormat", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProfiles
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthProfiles
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthProfiles
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OriginalPayloadFormat = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field OriginalPayload", wireType)
@@ -1602,6 +1696,42 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 8:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Profile", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProfiles
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthProfiles
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthProfiles
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Profile == nil {
+				m.Profile = &pprofextended.Profile{}
+			}
+			if err := m.Profile.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 101:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Pprof", wireType)
 			}
 			var msglen int
@@ -1633,9 +1763,9 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.AlternativeProfile = &Profile_Pprof{v}
+			m.AlternativeProfile = &ProfileContainer_Pprof{v}
 			iNdEx = postIndex
-		case 9:
+		case 102:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Normalized", wireType)
 			}
@@ -1668,9 +1798,9 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.AlternativeProfile = &Profile_Normalized{v}
+			m.AlternativeProfile = &ProfileContainer_Normalized{v}
 			iNdEx = postIndex
-		case 10:
+		case 103:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Arrays", wireType)
 			}
@@ -1703,9 +1833,9 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.AlternativeProfile = &Profile_Arrays{v}
+			m.AlternativeProfile = &ProfileContainer_Arrays{v}
 			iNdEx = postIndex
-		case 11:
+		case 104:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Denormalized", wireType)
 			}
@@ -1738,9 +1868,9 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.AlternativeProfile = &Profile_Denormalized{v}
+			m.AlternativeProfile = &ProfileContainer_Denormalized{v}
 			iNdEx = postIndex
-		case 12:
+		case 105:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Pprofextended", wireType)
 			}
@@ -1773,7 +1903,7 @@ func (m *Profile) Unmarshal(dAtA []byte) error {
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.AlternativeProfile = &Profile_Pprofextended{v}
+			m.AlternativeProfile = &ProfileContainer_Pprofextended{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

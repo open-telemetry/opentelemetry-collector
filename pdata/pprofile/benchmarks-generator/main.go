@@ -30,17 +30,17 @@ var tmpltString = `
 func Benchmark{{.CapitalizedName}}Pprof(b *testing.B) {
 	benchmark(b, "{{.Name}}", "pprof")
 }
-func Benchmark{{.CapitalizedName}}PprofExtended(b *testing.B) {
-	benchmark(b, "{{.Name}}", "pprofextended")
+func Benchmark{{.CapitalizedName}}Denormalized(b *testing.B) {
+	benchmark(b, "{{.Name}}", "denormalized")
 }
-func Benchmark{{.CapitalizedName}}PprofExtendedInterned(b *testing.B) {
-	benchmark(b, "{{.Name}}", "pprofextendedinterned")
-}
-func Benchmark{{.CapitalizedName}}PprofExtendedLookup(b *testing.B) {
-	benchmark(b, "{{.Name}}", "pprofextendedlookup")
+func Benchmark{{.CapitalizedName}}Normalized(b *testing.B) {
+	benchmark(b, "{{.Name}}", "normalized")
 }
 func Benchmark{{.CapitalizedName}}Arrays(b *testing.B) {
 	benchmark(b, "{{.Name}}", "arrays")
+}
+func Benchmark{{.CapitalizedName}}PprofExtended(b *testing.B) {
+	benchmark(b, "{{.Name}}", "pprofextended")
 }
 `
 
