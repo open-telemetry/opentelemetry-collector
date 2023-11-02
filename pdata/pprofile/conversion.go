@@ -635,7 +635,7 @@ func pprofToPprofextendedProfile(pprofProfile *pprof.Profile, flavor pprofextend
 		p.Sample[i] = &pprofextended.Sample{
 			Value:               values,
 			LocationsStartIndex: stacktraceStart,
-			LocationsEndIndex:   stacktraceLength,
+			LocationsLength:     stacktraceLength,
 		}
 
 		if flavor == pprofextendedFlavorInterned {
