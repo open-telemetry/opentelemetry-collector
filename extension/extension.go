@@ -20,6 +20,7 @@ type Extension = component.Component
 // that depend on other extensions and must be started only after their dependencies.
 // See https://github.com/open-telemetry/opentelemetry-collector/pull/8768 for examples.
 type Dependent interface {
+	Extension
 	Dependencies() []component.ID
 }
 
