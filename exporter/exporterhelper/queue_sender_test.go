@@ -19,6 +19,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -132,11 +134,24 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 	ocs.checkDroppedItemsCount(t, 0)
 }
 
+// Force the state of feature gate for a test
+func setFeatureGateForTest(t testing.TB, gate *featuregate.Gate, enabled bool) func() {
+	originalValue := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	return func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), originalValue))
+	}
+}
+
 func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry(defaultID)
+	require.NoError(t, err)
+
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 0 // to make every request go straight to the queue
 	rCfg := NewDefaultRetrySettings()
-	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
+	set := exporter.CreateSettings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}
+	be, err := newBaseExporter(set, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -148,6 +163,31 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 
 	assert.NoError(t, be.Shutdown(context.Background()))
 	checkValueForGlobalManager(t, defaultExporterTags, int64(0), "exporter/queue_size")
+}
+
+func TestQueuedRetry_QueueMetricsReportedUsingOTel(t *testing.T) {
+	resetFlag := setFeatureGateForTest(t, obsreportconfig.UseOtelForInternalMetricsfeatureGate, true)
+	defer resetFlag()
+
+	tt, err := obsreporttest.SetupTelemetry(defaultID)
+	require.NoError(t, err)
+
+	qCfg := NewDefaultQueueSettings()
+	qCfg.NumConsumers = 0 // to make every request go straight to the queue
+	rCfg := NewDefaultRetrySettings()
+	set := exporter.CreateSettings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}
+	be, err := newBaseExporter(set, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+
+	require.NoError(t, tt.CheckExporterMetricGauge("exporter_queue_capacity", int64(defaultQueueSize)))
+
+	for i := 0; i < 7; i++ {
+		require.NoError(t, be.send(newErrorRequest(context.Background())))
+	}
+	require.NoError(t, tt.CheckExporterMetricGauge("exporter_queue_size", int64(7)))
+
+	assert.NoError(t, be.Shutdown(context.Background()))
 }
 
 func TestNoCancellationContext(t *testing.T) {
@@ -231,7 +271,10 @@ func TestQueuedRetry_RequeuingEnabledQueueFull(t *testing.T) {
 	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
 	mockR := newMockRequest(context.Background(), 1, traceErr)
 
-	require.Error(t, be.retrySender.send(mockR), "sending_queue is full")
+	ocs := be.obsrepSender.(*observabilityConsumerSender)
+	ocs.run(func() {
+		require.Error(t, be.retrySender.send(mockR), "sending_queue is full")
+	})
 	mockR.checkNumRequests(t, 1)
 }
 

@@ -130,7 +130,12 @@ func GetModules(cfg Config) error {
 		return nil
 	}
 
-	if err := runGoCommand(cfg, "mod", "tidy", "-compat=1.20"); err != nil {
+	// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
+	if err := runGoCommand(cfg, "get", "cloud.google.com/go"); err != nil {
+		return fmt.Errorf("failed to go get: %w", err)
+	}
+  
+  if err := runGoCommand(cfg, "mod", "tidy", "-compat=1.20"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 

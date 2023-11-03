@@ -5,16 +5,16 @@ go 1.20
 require (
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.87.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.87.0
-	go.opentelemetry.io/collector/confmap v0.87.0
-	go.opentelemetry.io/collector/connector v0.87.0
-	go.opentelemetry.io/collector/exporter v0.87.0
-	go.opentelemetry.io/collector/extension v0.87.0
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0016
-	go.opentelemetry.io/collector/processor v0.87.0
-	go.opentelemetry.io/collector/receiver v0.87.0
-	go.opentelemetry.io/collector/service v0.87.0
+	go.opentelemetry.io/collector/component v0.88.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.88.0
+	go.opentelemetry.io/collector/confmap v0.88.0
+	go.opentelemetry.io/collector/connector v0.88.0
+	go.opentelemetry.io/collector/exporter v0.88.0
+	go.opentelemetry.io/collector/extension v0.88.0
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017
+	go.opentelemetry.io/collector/processor v0.88.0
+	go.opentelemetry.io/collector/receiver v0.88.0
+	go.opentelemetry.io/collector/service v0.88.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/sys v0.13.0
@@ -36,7 +36,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/google/uuid v1.3.1 // indirect
+	github.com/google/uuid v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -44,7 +44,7 @@ require (
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
+	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -54,20 +54,20 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.17.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
-	github.com/prometheus/common v0.44.0 // indirect
+	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
-	github.com/shirou/gopsutil/v3 v3.23.9 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.10 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.87.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.87.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0016 // indirect
-	go.opentelemetry.io/collector/semconv v0.87.0 // indirect
+	go.opentelemetry.io/collector v0.88.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.88.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017 // indirect
+	go.opentelemetry.io/collector/semconv v0.88.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.20.0 // indirect
 	go.opentelemetry.io/otel v1.19.0 // indirect
 	go.opentelemetry.io/otel/bridge/opencensus v0.42.0 // indirect
