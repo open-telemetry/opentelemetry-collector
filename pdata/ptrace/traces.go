@@ -21,9 +21,18 @@ func (ms Traces) getOrig() *otlpcollectortrace.ExportTraceServiceRequest {
 	return internal.GetOrigTraces(internal.Traces(ms))
 }
 
+func (ms Traces) getState() *internal.State {
+	return internal.GetTracesState(internal.Traces(ms))
+}
+
 // NewTraces creates a new Traces struct.
 func NewTraces() Traces {
 	return newTraces(&otlpcollectortrace.ExportTraceServiceRequest{})
+}
+
+// IsReadOnly returns true if this Traces instance is read-only.
+func (ms Traces) IsReadOnly() bool {
+	return *ms.getState() == internal.StateReadOnly
 }
 
 // CopyTo copies the Traces instance overriding the destination.

@@ -18,36 +18,27 @@ import (
 // NewMetrics wraps multiple metrics consumers in a single one.
 // It fanouts the incoming data to all the consumers, and does smart routing:
 //   - Clones only to the consumer that needs to mutate the data.
-//   - If all consumers needs to mutate the data one will get the original data.
+//   - If all consumers needs to mutate the data one will get the original mutable data.
 func NewMetrics(mcs []consumer.Metrics) consumer.Metrics {
-	if len(mcs) == 1 {
-		// Don't wrap if no need to do it.
+	// Don't wrap if there is only one non-mutating consumer.
+	if len(mcs) == 1 && !mcs[0].Capabilities().MutatesData {
 		return mcs[0]
 	}
-	var pass []consumer.Metrics
-	var clone []consumer.Metrics
-	for i := 0; i < len(mcs)-1; i++ {
-		if !mcs[i].Capabilities().MutatesData {
-			pass = append(pass, mcs[i])
+
+	mc := &metricsConsumer{}
+	for i := 0; i < len(mcs); i++ {
+		if mcs[i].Capabilities().MutatesData {
+			mc.mutable = append(mc.mutable, mcs[i])
 		} else {
-			clone = append(clone, mcs[i])
+			mc.readonly = append(mc.readonly, mcs[i])
 		}
 	}
-	// Give the original data to the last consumer if no other read-only consumer,
-	// otherwise put it in the right bucket. Never share the same data between
-	// a mutating and a non-mutating consumer since the non-mutating consumer may process
-	// data async and the mutating consumer may change the data before that.
-	if len(pass) == 0 || !mcs[len(mcs)-1].Capabilities().MutatesData {
-		pass = append(pass, mcs[len(mcs)-1])
-	} else {
-		clone = append(clone, mcs[len(mcs)-1])
-	}
-	return &metricsConsumer{pass: pass, clone: clone}
+	return mc
 }
 
 type metricsConsumer struct {
-	pass  []consumer.Metrics
-	clone []consumer.Metrics
+	mutable  []consumer.Metrics
+	readonly []consumer.Metrics
 }
 
 func (msc *metricsConsumer) Capabilities() consumer.Capabilities {
@@ -57,18 +48,38 @@ func (msc *metricsConsumer) Capabilities() consumer.Capabilities {
 // ConsumeMetrics exports the pmetric.Metrics to all consumers wrapped by the current one.
 func (msc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	var errs error
-	// Initially pass to clone exporter to avoid the case where the optimization of sending
-	// the incoming data to a mutating consumer is used that may change the incoming data before
-	// cloning.
-	for _, mc := range msc.clone {
-		clonedMetrics := pmetric.NewMetrics()
-		md.CopyTo(clonedMetrics)
-		errs = multierr.Append(errs, mc.ConsumeMetrics(ctx, clonedMetrics))
+
+	if len(msc.mutable) > 0 {
+		// Clone the data before sending to all mutating consumers except the last one.
+		for i := 0; i < len(msc.mutable)-1; i++ {
+			errs = multierr.Append(errs, msc.mutable[i].ConsumeMetrics(ctx, cloneMetrics(md)))
+		}
+		// Send data as is to the last mutating consumer only if there are no other non-mutating consumers and the
+		// data is mutable. Never share the same data between a mutating and a non-mutating consumer since the
+		// non-mutating consumer may process data async and the mutating consumer may change the data before that.
+		lastConsumer := msc.mutable[len(msc.mutable)-1]
+		if len(msc.readonly) == 0 && !md.IsReadOnly() {
+			errs = multierr.Append(errs, lastConsumer.ConsumeMetrics(ctx, md))
+		} else {
+			errs = multierr.Append(errs, lastConsumer.ConsumeMetrics(ctx, cloneMetrics(md)))
+		}
 	}
-	for _, mc := range msc.pass {
+
+	// Mark the data as read-only if it will be sent to more than one read-only consumer.
+	if len(msc.readonly) > 1 && !md.IsReadOnly() {
+		md.MarkReadOnly()
+	}
+	for _, mc := range msc.readonly {
 		errs = multierr.Append(errs, mc.ConsumeMetrics(ctx, md))
 	}
+
 	return errs
+}
+
+func cloneMetrics(md pmetric.Metrics) pmetric.Metrics {
+	clonedMetrics := pmetric.NewMetrics()
+	md.CopyTo(clonedMetrics)
+	return clonedMetrics
 }
 
 var _ connector.MetricsRouter = (*metricsRouter)(nil)

@@ -16,11 +16,13 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
 // prometheusChecker is used to assert exported metrics from a prometheus handler.
 type prometheusChecker struct {
-	promHandler http.Handler
+	ocHandler   http.Handler
+	otelHandler http.Handler
 }
 
 func (pc *prometheusChecker) checkScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
@@ -77,8 +79,8 @@ func (pc *prometheusChecker) checkExporterLogs(exporter component.ID, sent, send
 	return pc.checkExporter(exporter, "log_records", sent, sendFailed)
 }
 
-func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sentMetricPoints, sendFailedMetricPoints int64) error {
-	return pc.checkExporter(exporter, "metric_points", sentMetricPoints, sendFailedMetricPoints)
+func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sent, sendFailed int64) error {
+	return pc.checkExporter(exporter, "metric_points", sent, sendFailed)
 }
 
 func (pc *prometheusChecker) checkExporter(exporter component.ID, datatype string, sent, sendFailed int64) error {
@@ -89,6 +91,32 @@ func (pc *prometheusChecker) checkExporter(exporter component.ID, datatype strin
 			pc.checkCounter(fmt.Sprintf("exporter_send_failed_%s", datatype), sendFailed, exporterAttrs))
 	}
 	return errs
+}
+
+func (pc *prometheusChecker) checkExporterEnqueueFailed(exporter component.ID, datatype string, enqueueFailed int64) error {
+	if enqueueFailed == 0 {
+		return nil
+	}
+	exporterAttrs := attributesForExporterMetrics(exporter)
+	return pc.checkCounter(fmt.Sprintf("exporter_enqueue_failed_%s", datatype), enqueueFailed, exporterAttrs)
+}
+
+func (pc *prometheusChecker) checkExporterMetricGauge(exporter component.ID, metric string, val int64) error {
+	exporterAttrs := attributesForExporterMetrics(exporter)
+	// Forces a flush for the opencensus view data.
+	_, _ = view.RetrieveData(metric)
+
+	ts, err := pc.getMetric(metric, io_prometheus_client.MetricType_GAUGE, exporterAttrs)
+	if err != nil {
+		return err
+	}
+
+	expected := float64(val)
+	if math.Abs(ts.GetGauge().GetValue()-expected) > 0.0001 {
+		return fmt.Errorf("values for metric '%s' did not match, expected '%f' got '%f'", metric, expected, ts.GetGauge().GetValue())
+	}
+
+	return nil
 }
 
 func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, attrs []attribute.KeyValue) error {
@@ -102,7 +130,7 @@ func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, at
 
 	expected := float64(value)
 	if math.Abs(expected-ts.GetCounter().GetValue()) > 0.0001 {
-		return fmt.Errorf("values for metric '%s' did no match, expected '%f' got '%f'", expectedMetric, expected, ts.GetCounter().GetValue())
+		return fmt.Errorf("values for metric '%s' did not match, expected '%f' got '%f'", expectedMetric, expected, ts.GetCounter().GetValue())
 	}
 
 	return nil
@@ -111,7 +139,11 @@ func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, at
 // getMetric returns the metric time series that matches the given name, type and set of attributes
 // it fetches data from the prometheus endpoint and parse them, ideally OTel Go should provide a MeterRecorder of some kind.
 func (pc *prometheusChecker) getMetric(expectedName string, expectedType io_prometheus_client.MetricType, expectedAttrs []attribute.KeyValue) (*io_prometheus_client.Metric, error) {
-	parsed, err := fetchPrometheusMetrics(pc.promHandler)
+	handler := pc.ocHandler
+	if obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled() {
+		handler = pc.otelHandler
+	}
+	parsed, err := fetchPrometheusMetrics(handler)
 	if err != nil {
 		return nil, err
 	}

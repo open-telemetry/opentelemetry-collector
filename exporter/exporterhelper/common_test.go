@@ -12,6 +12,8 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -32,7 +34,7 @@ var (
 	}
 )
 
-func newNoopObsrepSender(_ *obsExporter) requestSender {
+func newNoopObsrepSender(_ *ObsReport) requestSender {
 	return &baseRequestSender{}
 }
 
@@ -78,4 +80,17 @@ func TestQueueRetryOptionsWithRequestExporter(t *testing.T) {
 		_, _ = newBaseExporter(exportertest.NewNopCreateSettings(), "", true, nil, nil, newNoopObsrepSender,
 			WithRetry(NewDefaultRetrySettings()), WithQueue(NewDefaultQueueSettings()))
 	})
+}
+
+func TestBaseExporterLogging(t *testing.T) {
+	set := exportertest.NewNopCreateSettings()
+	logger, observed := observer.New(zap.DebugLevel)
+	set.Logger = zap.New(logger)
+	bs, err := newBaseExporter(set, "", true, nil, nil, newNoopObsrepSender)
+	require.Nil(t, err)
+	require.True(t, bs.requestExporter)
+	sendErr := bs.send(newErrorRequest(context.Background()))
+	require.Error(t, sendErr)
+
+	require.Len(t, observed.FilterLevelExact(zap.ErrorLevel).All(), 1)
 }

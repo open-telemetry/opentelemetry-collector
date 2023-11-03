@@ -6,6 +6,8 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -40,7 +42,23 @@ func (b *baseRequestSender) setNextSender(nextSender requestSender) {
 	b.nextSender = nextSender
 }
 
-type obsrepSenderFactory func(obsrep *obsExporter) requestSender
+type errorLoggingRequestSender struct {
+	baseRequestSender
+	logger *zap.Logger
+}
+
+func (l *errorLoggingRequestSender) send(req internal.Request) error {
+	err := l.baseRequestSender.send(req)
+	if err != nil {
+		l.logger.Error(
+			"Exporting failed",
+			zap.Error(err),
+		)
+	}
+	return err
+}
+
+type obsrepSenderFactory func(obsrep *ObsReport) requestSender
 
 // baseRequest is a base implementation for the internal.Request.
 type baseRequest struct {
@@ -143,7 +161,7 @@ type baseExporter struct {
 	signal          component.DataType
 
 	set    exporter.CreateSettings
-	obsrep *obsExporter
+	obsrep *ObsReport
 
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
@@ -163,7 +181,7 @@ type baseExporter struct {
 func newBaseExporter(set exporter.CreateSettings, signal component.DataType, requestExporter bool, marshaler internal.RequestMarshaler,
 	unmarshaler internal.RequestUnmarshaler, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
 
-	obsrep, err := newObsExporter(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set}, globalInstruments)
+	obsReport, err := NewObsReport(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set})
 	if err != nil {
 		return nil, err
 	}
@@ -175,12 +193,12 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 		signal:          signal,
 
 		queueSender:   &baseRequestSender{},
-		obsrepSender:  osf(obsrep),
-		retrySender:   &baseRequestSender{},
+		obsrepSender:  osf(obsReport),
+		retrySender:   &errorLoggingRequestSender{logger: set.Logger},
 		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutSettings()},
 
 		set:    set,
-		obsrep: obsrep,
+		obsrep: obsReport,
 	}
 
 	for _, op := range options {

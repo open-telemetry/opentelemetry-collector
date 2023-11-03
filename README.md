@@ -117,6 +117,7 @@ Here is a list of community roles with current and previous members:
 
   - [Andrzej Stencel](https://github.com/astencel-sumo), Sumo Logic
   - [Antoine Toulme](https://github.com/atoulme), Splunk
+  - [Yang Song](https://github.com/songy23), Datadog
   - Actively seeking contributors to triage issues
 
 - Emeritus Triagers:
@@ -131,7 +132,6 @@ Here is a list of community roles with current and previous members:
    - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
    - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
    - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
-   - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
 - Emeritus Approvers:
 
@@ -141,13 +141,13 @@ Here is a list of community roles with current and previous members:
    - [Owais Lone](https://github.com/owais), Splunk
    - [Rahul Patel](https://github.com/rghetia), Google
    - [Steven Karis](https://github.com/sjkaris), Splunk
-   - [Yang Song](https://github.com/songy23), Google
 
 - Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 
    - [Alex Boten](https://github.com/codeboten), Lightstep
    - [Bogdan Drutu](https://github.com/BogdanDrutu), Snowflake
    - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
+   - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
 - Emeritus Maintainers:
 

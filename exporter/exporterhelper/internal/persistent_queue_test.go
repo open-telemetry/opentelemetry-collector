@@ -292,3 +292,12 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	assert.ErrorIs(t, err, errWrongExtensionType)
 	assert.Nil(t, client)
 }
+
+func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
+	pq := NewPersistentQueue(1, 1, component.ID{}, newFakeTracesRequestMarshalerFunc(),
+		newFakeTracesRequestUnmarshalerFunc())
+	// verify that stopping a un-start/started w/error queue does not panic
+	assert.NotPanics(t, func() {
+		pq.Stop()
+	})
+}

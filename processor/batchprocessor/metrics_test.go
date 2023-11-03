@@ -195,7 +195,7 @@ func (tt *testTelemetry) assertBoundaries(t *testing.T, expected []float64, hist
 
 	for i := range expected {
 		if math.Abs(expected[i]-got[i]) > 0.00001 {
-			assert.Failf(t, "unexpected boundary", "boundary for metric '%s' did no match, expected '%f' got '%f'", metric, expected[i], got[i])
+			assert.Failf(t, "unexpected boundary", "boundary for metric '%s' did not match, expected '%f' got '%f'", metric, expected[i], got[i])
 		}
 	}
 
@@ -232,7 +232,7 @@ func getSingleMetric(metric *io_prometheus_client.MetricFamily) (*io_prometheus_
 
 func assertFloat(t *testing.T, expected, got float64, metric string) {
 	if math.Abs(expected-got) > 0.00001 {
-		assert.Failf(t, "unexpected metric value", "value for metric '%s' did no match, expected '%f' got '%f'", metric, expected, got)
+		assert.Failf(t, "unexpected metric value", "value for metric '%s' did not match, expected '%f' got '%f'", metric, expected, got)
 	}
 }
 

@@ -20,36 +20,27 @@ import (
 // NewLogs wraps multiple log consumers in a single one.
 // It fanouts the incoming data to all the consumers, and does smart routing:
 //   - Clones only to the consumer that needs to mutate the data.
-//   - If all consumers needs to mutate the data one will get the original data.
+//   - If all consumers needs to mutate the data one will get the original mutable data.
 func NewLogs(lcs []consumer.Logs) consumer.Logs {
-	if len(lcs) == 1 {
-		// Don't wrap if no need to do it.
+	// Don't wrap if there is only one non-mutating consumer.
+	if len(lcs) == 1 && !lcs[0].Capabilities().MutatesData {
 		return lcs[0]
 	}
-	var pass []consumer.Logs
-	var clone []consumer.Logs
-	for i := 0; i < len(lcs)-1; i++ {
-		if !lcs[i].Capabilities().MutatesData {
-			pass = append(pass, lcs[i])
+
+	lc := &logsConsumer{}
+	for i := 0; i < len(lcs); i++ {
+		if lcs[i].Capabilities().MutatesData {
+			lc.mutable = append(lc.mutable, lcs[i])
 		} else {
-			clone = append(clone, lcs[i])
+			lc.readonly = append(lc.readonly, lcs[i])
 		}
 	}
-	// Give the original data to the last consumer if no other read-only consumer,
-	// otherwise put it in the right bucket. Never share the same data between
-	// a mutating and a non-mutating consumer since the non-mutating consumer may process
-	// data async and the mutating consumer may change the data before that.
-	if len(pass) == 0 || !lcs[len(lcs)-1].Capabilities().MutatesData {
-		pass = append(pass, lcs[len(lcs)-1])
-	} else {
-		clone = append(clone, lcs[len(lcs)-1])
-	}
-	return &logsConsumer{pass: pass, clone: clone}
+	return lc
 }
 
 type logsConsumer struct {
-	pass  []consumer.Logs
-	clone []consumer.Logs
+	mutable  []consumer.Logs
+	readonly []consumer.Logs
 }
 
 func (lsc *logsConsumer) Capabilities() consumer.Capabilities {
@@ -59,18 +50,38 @@ func (lsc *logsConsumer) Capabilities() consumer.Capabilities {
 // ConsumeLogs exports the plog.Logs to all consumers wrapped by the current one.
 func (lsc *logsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	var errs error
-	// Initially pass to clone exporter to avoid the case where the optimization of sending
-	// the incoming data to a mutating consumer is used that may change the incoming data before
-	// cloning.
-	for _, lc := range lsc.clone {
-		clonedLogs := plog.NewLogs()
-		ld.CopyTo(clonedLogs)
-		errs = multierr.Append(errs, lc.ConsumeLogs(ctx, clonedLogs))
+
+	if len(lsc.mutable) > 0 {
+		// Clone the data before sending to all mutating consumers except the last one.
+		for i := 0; i < len(lsc.mutable)-1; i++ {
+			errs = multierr.Append(errs, lsc.mutable[i].ConsumeLogs(ctx, cloneLogs(ld)))
+		}
+		// Send data as is to the last mutating consumer only if there are no other non-mutating consumers and the
+		// data is mutable. Never share the same data between a mutating and a non-mutating consumer since the
+		// non-mutating consumer may process data async and the mutating consumer may change the data before that.
+		lastConsumer := lsc.mutable[len(lsc.mutable)-1]
+		if len(lsc.readonly) == 0 && !ld.IsReadOnly() {
+			errs = multierr.Append(errs, lastConsumer.ConsumeLogs(ctx, ld))
+		} else {
+			errs = multierr.Append(errs, lastConsumer.ConsumeLogs(ctx, cloneLogs(ld)))
+		}
 	}
-	for _, lc := range lsc.pass {
+
+	// Mark the data as read-only if it will be sent to more than one read-only consumer.
+	if len(lsc.readonly) > 1 && !ld.IsReadOnly() {
+		ld.MarkReadOnly()
+	}
+	for _, lc := range lsc.readonly {
 		errs = multierr.Append(errs, lc.ConsumeLogs(ctx, ld))
 	}
+
 	return errs
+}
+
+func cloneLogs(ld plog.Logs) plog.Logs {
+	clonedLogs := plog.NewLogs()
+	ld.CopyTo(clonedLogs)
+	return clonedLogs
 }
 
 var _ connector.LogsRouter = (*logsRouter)(nil)
