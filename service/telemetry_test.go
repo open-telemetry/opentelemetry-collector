@@ -274,8 +274,10 @@ func TestTelemetryInit(t *testing.T) {
 			otelRes := buildResource(buildInfo, *tc.cfg)
 			res := pdataFromSdk(otelRes)
 			settings := servicetelemetry.TelemetrySettings{
-				Logger:   zap.NewNop(),
-				Resource: res,
+				TelemetrySettingsBase: &component.TelemetrySettingsBase{
+					Logger:   zap.NewNop(),
+					Resource: res,
+				},
 			}
 			err := tel.init(otelRes, settings, *tc.cfg, make(chan error))
 			require.NoError(t, err)

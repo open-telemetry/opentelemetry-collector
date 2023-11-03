@@ -433,7 +433,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			rep := status.NewReporter(func(id *component.InstanceID, ev *component.StatusEvent) {
 				actualStatuses = append(actualStatuses, ev)
 			})
-			extensions.telemetry.ReportComponentStatus = rep.ReportComponentStatus
+			extensions.telemetry.Status = rep
 			rep.Ready()
 
 			assert.Equal(t, tc.startErr, extensions.Start(context.Background(), componenttest.NewNopHost()))

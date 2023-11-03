@@ -2244,7 +2244,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 				actualStatuses[id] = append(actualStatuses[id], ev)
 			})
 
-			pg.telemetry.ReportComponentStatus = rep.ReportComponentStatus
+			pg.telemetry.Status = rep
 			rep.Ready()
 
 			e0, e1 := tc.edge[0], tc.edge[1]

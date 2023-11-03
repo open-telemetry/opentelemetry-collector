@@ -11,18 +11,19 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/service/internal/status"
 )
 
 // NewNopTelemetrySettings returns a new nop settings for Create* functions.
 func NewNopTelemetrySettings() TelemetrySettings {
 	return TelemetrySettings{
-		Logger:         zap.NewNop(),
-		TracerProvider: nooptrace.NewTracerProvider(),
-		MeterProvider:  noopmetric.NewMeterProvider(),
-		MetricsLevel:   configtelemetry.LevelNone,
-		Resource:       pcommon.NewResource(),
-		ReportComponentStatus: func(*component.InstanceID, *component.StatusEvent) error {
-			return nil
+		TelemetrySettingsBase: &component.TelemetrySettingsBase{
+			Logger:         zap.NewNop(),
+			TracerProvider: nooptrace.NewTracerProvider(),
+			MeterProvider:  noopmetric.NewMeterProvider(),
+			MetricsLevel:   configtelemetry.LevelNone,
+			Resource:       pcommon.NewResource(),
 		},
+		Status: status.NewReporter(func(*component.InstanceID, *component.StatusEvent) {}),
 	}
 }
