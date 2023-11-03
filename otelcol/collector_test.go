@@ -174,7 +174,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 	// Create a collector
 	col, err := NewCollector(CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      factories,
+		Factories:      func() (Factories, error) { return factories, nil },
 		ConfigProvider: validProvider,
 	})
 	require.NoError(t, err)
