@@ -16,19 +16,13 @@ import (
 )
 
 func TestValidateSubCommandNoConfig(t *testing.T) {
-	factories, err := nopFactories()
-	require.NoError(t, err)
-
-	cmd := newValidateSubCommand(CollectorSettings{Factories: factories}, flags(featuregate.GlobalRegistry()))
-	err = cmd.Execute()
+	cmd := newValidateSubCommand(CollectorSettings{Factories: nopFactories}, flags(featuregate.GlobalRegistry()))
+	err := cmd.Execute()
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "at least one config flag must be provided")
 }
 
 func TestValidateSubCommandInvalidComponents(t *testing.T) {
-	factories, err := nopFactories()
-	require.NoError(t, err)
-
 	cfgProvider, err := NewConfigProvider(
 		ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
@@ -39,7 +33,7 @@ func TestValidateSubCommandInvalidComponents(t *testing.T) {
 		})
 	require.NoError(t, err)
 
-	cmd := newValidateSubCommand(CollectorSettings{Factories: factories, ConfigProvider: cfgProvider}, flags(featuregate.GlobalRegistry()))
+	cmd := newValidateSubCommand(CollectorSettings{Factories: nopFactories, ConfigProvider: cfgProvider}, flags(featuregate.GlobalRegistry()))
 	err = cmd.Execute()
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unknown type: \"nosuchprocessor\"")

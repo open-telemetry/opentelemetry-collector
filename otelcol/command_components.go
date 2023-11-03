@@ -35,60 +35,65 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
+			factories, err := set.Factories()
+			if err != nil {
+				return fmt.Errorf("failed to initialize factories: %w", err)
+			}
+
 			components := componentsOutput{}
-			for con := range set.Factories.Connectors {
+			for con := range factories.Connectors {
 				components.Connectors = append(components.Connectors, componentWithStability{
 					Name: con,
 					Stability: map[string]string{
-						"logs-to-logs":    set.Factories.Connectors[con].LogsToLogsStability().String(),
-						"logs-to-metrics": set.Factories.Connectors[con].LogsToMetricsStability().String(),
-						"logs-to-traces":  set.Factories.Connectors[con].LogsToTracesStability().String(),
+						"logs-to-logs":    factories.Connectors[con].LogsToLogsStability().String(),
+						"logs-to-metrics": factories.Connectors[con].LogsToMetricsStability().String(),
+						"logs-to-traces":  factories.Connectors[con].LogsToTracesStability().String(),
 
-						"metrics-to-logs":    set.Factories.Connectors[con].MetricsToLogsStability().String(),
-						"metrics-to-metrics": set.Factories.Connectors[con].MetricsToMetricsStability().String(),
-						"metrics-to-traces":  set.Factories.Connectors[con].MetricsToTracesStability().String(),
+						"metrics-to-logs":    factories.Connectors[con].MetricsToLogsStability().String(),
+						"metrics-to-metrics": factories.Connectors[con].MetricsToMetricsStability().String(),
+						"metrics-to-traces":  factories.Connectors[con].MetricsToTracesStability().String(),
 
-						"traces-to-logs":    set.Factories.Connectors[con].TracesToLogsStability().String(),
-						"traces-to-metrics": set.Factories.Connectors[con].TracesToMetricsStability().String(),
-						"traces-to-traces":  set.Factories.Connectors[con].TracesToTracesStability().String(),
+						"traces-to-logs":    factories.Connectors[con].TracesToLogsStability().String(),
+						"traces-to-metrics": factories.Connectors[con].TracesToMetricsStability().String(),
+						"traces-to-traces":  factories.Connectors[con].TracesToTracesStability().String(),
 					},
 				})
 			}
-			for ext := range set.Factories.Extensions {
+			for ext := range factories.Extensions {
 				components.Extensions = append(components.Extensions, componentWithStability{
 					Name: ext,
 					Stability: map[string]string{
-						"extension": set.Factories.Extensions[ext].ExtensionStability().String(),
+						"extension": factories.Extensions[ext].ExtensionStability().String(),
 					},
 				})
 			}
-			for prs := range set.Factories.Processors {
+			for prs := range factories.Processors {
 				components.Processors = append(components.Processors, componentWithStability{
 					Name: prs,
 					Stability: map[string]string{
-						"logs":    set.Factories.Processors[prs].LogsProcessorStability().String(),
-						"metrics": set.Factories.Processors[prs].MetricsProcessorStability().String(),
-						"traces":  set.Factories.Processors[prs].TracesProcessorStability().String(),
+						"logs":    factories.Processors[prs].LogsProcessorStability().String(),
+						"metrics": factories.Processors[prs].MetricsProcessorStability().String(),
+						"traces":  factories.Processors[prs].TracesProcessorStability().String(),
 					},
 				})
 			}
-			for rcv := range set.Factories.Receivers {
+			for rcv := range factories.Receivers {
 				components.Receivers = append(components.Receivers, componentWithStability{
 					Name: rcv,
 					Stability: map[string]string{
-						"logs":    set.Factories.Receivers[rcv].LogsReceiverStability().String(),
-						"metrics": set.Factories.Receivers[rcv].MetricsReceiverStability().String(),
-						"traces":  set.Factories.Receivers[rcv].TracesReceiverStability().String(),
+						"logs":    factories.Receivers[rcv].LogsReceiverStability().String(),
+						"metrics": factories.Receivers[rcv].MetricsReceiverStability().String(),
+						"traces":  factories.Receivers[rcv].TracesReceiverStability().String(),
 					},
 				})
 			}
-			for exp := range set.Factories.Exporters {
+			for exp := range factories.Exporters {
 				components.Exporters = append(components.Exporters, componentWithStability{
 					Name: exp,
 					Stability: map[string]string{
-						"logs":    set.Factories.Exporters[exp].LogsExporterStability().String(),
-						"metrics": set.Factories.Exporters[exp].MetricsExporterStability().String(),
-						"traces":  set.Factories.Exporters[exp].TracesExporterStability().String(),
+						"logs":    factories.Exporters[exp].LogsExporterStability().String(),
+						"metrics": factories.Exporters[exp].MetricsExporterStability().String(),
+						"traces":  factories.Exporters[exp].TracesExporterStability().String(),
 					},
 				})
 			}
