@@ -4,6 +4,7 @@
 package confighttp
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -1187,6 +1188,94 @@ func TestServerWithDecoder(t *testing.T) {
 	// verify
 	assert.Equal(t, response.Result().StatusCode, http.StatusOK)
 
+}
+
+func TestAllowIPRanges(t *testing.T) {
+	_, n, err := net.ParseCIDR("2.10.15.4/32")
+	require.NoError(t, err)
+	_, n2, err := net.ParseCIDR("192.10.15.132/32")
+	require.NoError(t, err)
+
+	h := allowIPRanges(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		_, _ = writer.Write([]byte("hello world"))
+	}), []*net.IPNet{n, n2})
+
+	tests := []struct {
+		name               string
+		req                *http.Request
+		expectedStatusCode int
+	}{
+		{
+			"allowed",
+			func() *http.Request {
+				r := httptest.NewRequest("GET", "/", bytes.NewReader([]byte{}))
+				r.RemoteAddr = "2.10.15.4"
+				return r
+			}(),
+			200,
+		},
+		{
+			"forbidden",
+			func() *http.Request {
+				r := httptest.NewRequest("GET", "/", bytes.NewReader([]byte{}))
+				r.RemoteAddr = "192.168.1.24"
+				return r
+			}(),
+			403,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			resp := httptest.NewRecorder()
+			h.ServeHTTP(resp, test.req)
+			assert.Equal(t, test.expectedStatusCode, resp.Code)
+		})
+	}
+}
+
+func TestRejectIPRanges(t *testing.T) {
+	_, n, err := net.ParseCIDR("2.10.15.4/32")
+	require.NoError(t, err)
+	_, n2, err := net.ParseCIDR("192.10.15.132/32")
+	require.NoError(t, err)
+
+	h := rejectIPRanges(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		_, _ = writer.Write([]byte("hello world"))
+	}), []*net.IPNet{n, n2})
+
+	tests := []struct {
+		name               string
+		req                *http.Request
+		expectedStatusCode int
+	}{
+		{
+			"allowed",
+			func() *http.Request {
+				r := httptest.NewRequest("GET", "/", bytes.NewReader([]byte{}))
+				r.RemoteAddr = "192.168.1.24"
+				return r
+			}(),
+			200,
+		},
+		{
+			"forbidden",
+			func() *http.Request {
+				r := httptest.NewRequest("GET", "/", bytes.NewReader([]byte{}))
+				r.RemoteAddr = "2.10.15.4"
+				return r
+			}(),
+			403,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			resp := httptest.NewRecorder()
+			h.ServeHTTP(resp, test.req)
+			assert.Equal(t, test.expectedStatusCode, resp.Code)
+		})
+	}
 }
 
 type mockHost struct {

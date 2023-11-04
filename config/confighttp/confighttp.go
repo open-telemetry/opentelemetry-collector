@@ -234,6 +234,20 @@ type HTTPServerSettings struct {
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
+
+	// AllowedIPRanges limits incoming requests to specific IP ranges.
+	// If empty, all IPs are allowed.
+	// IPs outside the ranges will receive a 403 HTTP response code.
+	// IP ranges are represented using the CIDR notation.
+	// `RejectedIPRanges` are evaluated before `AllowedIPRanges`.
+	AllowedIPRanges []*net.IPNet `mapstructure:"allowed_ip_ranges"`
+
+	// RejectedIPRanges rejects incoming requests from specific IP ranges.
+	// If empty, all IPs are allowed.
+	// IPs in the ranges will receive a 403 HTTP response code.
+	// IP ranges are represented using the CIDR notation.
+	// `RejectedIPRanges` are evaluated before `AllowedIPRanges`.
+	RejectedIPRanges []*net.IPNet `mapstructure:"rejected_ip_ranges"`
 }
 
 // ToListener creates a net.Listener.
@@ -292,6 +306,14 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 	serverOpts := &toServerOptions{}
 	for _, o := range opts {
 		o(serverOpts)
+	}
+
+	if len(hss.RejectedIPRanges) > 0 {
+		handler = rejectIPRanges(handler, hss.RejectedIPRanges)
+	}
+
+	if len(hss.AllowedIPRanges) > 0 {
+		handler = allowIPRanges(handler, hss.AllowedIPRanges)
 	}
 
 	handler = httpContentDecompressor(handler, serverOpts.errHandler, serverOpts.decoders)
@@ -397,6 +419,42 @@ func authInterceptor(next http.Handler, server auth.Server) http.Handler {
 func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, maxRecvSize)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func rejectIPRanges(next http.Handler, ipRanges []*net.IPNet) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ip := net.ParseIP(r.RemoteAddr)
+		var rejected bool
+		for _, n := range ipRanges {
+			if n.Contains(ip) {
+				rejected = true
+				break
+			}
+		}
+		if rejected {
+			http.Error(w, "", 403)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func allowIPRanges(next http.Handler, ipRanges []*net.IPNet) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ip := net.ParseIP(r.RemoteAddr)
+		var allowed bool
+		for _, n := range ipRanges {
+			if n.Contains(ip) {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			http.Error(w, "", 403)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }

@@ -46,6 +46,11 @@ exporter:
       test1: "value1"
       "test 2": "value 2"
     compression: zstd
+    allowed_ip_ranges:
+     - 10.0.0.1/16
+     - 192.168.1.1/32
+    rejected_ip_ranges:
+     - 5.0.0.0/8
 ```
 
 ## Server Configuration
@@ -71,6 +76,15 @@ will not be enabled.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
+- `allowed_ip_ranges`: limits incoming requests to specific IP ranges.
+If empty, all IPs are allowed.
+IPs outside the ranges will receive a 403 HTTP response code.
+IP ranges are represented using the CIDR notation.
+- `rejected_ip_ranges`: rejects incoming requests from specific IP ranges.
+If empty, all IPs are allowed.
+IPs in the ranges will receive a 403 HTTP response code.
+IP ranges are represented using the CIDR notation.
+`rejected_ip_ranges` are evaluated before `allowed_ip_ranges`.
 
 You can enable [`attribute processor`][attribute-processor] to append any http header to span's attribute using custom key. You also need to enable the "include_metadata"
 
