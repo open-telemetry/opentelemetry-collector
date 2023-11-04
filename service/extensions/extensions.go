@@ -37,11 +37,22 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 		extLogger.Info("Extension is starting...")
 		instanceID := bes.instanceIDs[extID]
 		ext := bes.extMap[extID]
-		_ = bes.telemetry.Status.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStarting))
+		_ = bes.telemetry.Status.ReportComponentStatus(
+			instanceID,
+			component.NewStatusEvent(component.StatusStarting),
+		)
 		if err := ext.Start(ctx, components.NewHostWrapper(host, extLogger)); err != nil {
-			_ = bes.telemetry.Status.ReportComponentStatus(instanceID, component.NewPermanentErrorEvent(err))
+			_ = bes.telemetry.Status.ReportComponentStatus(
+				instanceID,
+				component.NewPermanentErrorEvent(err),
+			)
 			return err
 		}
+		_ = bes.telemetry.Status.ReportComponentStatusIf(
+			instanceID,
+			component.NewStatusEvent(component.StatusOK),
+			func(st component.Status) bool { return st == component.StatusStarting },
+		)
 		extLogger.Info("Extension started.")
 	}
 	return nil

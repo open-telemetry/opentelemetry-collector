@@ -386,12 +386,24 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
 		}
 
 		instanceID := g.instanceIDs[node.ID()]
-		_ = g.telemetry.Status.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStarting))
+		_ = g.telemetry.Status.ReportComponentStatus(
+			instanceID,
+			component.NewStatusEvent(component.StatusStarting),
+		)
 
 		if compErr := comp.Start(ctx, host); compErr != nil {
-			_ = g.telemetry.Status.ReportComponentStatus(instanceID, component.NewPermanentErrorEvent(compErr))
+			_ = g.telemetry.Status.ReportComponentStatus(
+				instanceID,
+				component.NewPermanentErrorEvent(compErr),
+			)
 			return compErr
 		}
+
+		_ = g.telemetry.Status.ReportComponentStatusIf(
+			instanceID,
+			component.NewStatusEvent(component.StatusOK),
+			func(st component.Status) bool { return st == component.StatusStarting },
+		)
 	}
 	return nil
 }

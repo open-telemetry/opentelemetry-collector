@@ -381,6 +381,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			name: "successful startup/shutdown",
 			expectedStatuses: []*component.StatusEvent{
 				component.NewStatusEvent(component.StatusStarting),
+				component.NewStatusEvent(component.StatusOK),
 				component.NewStatusEvent(component.StatusStopping),
 				component.NewStatusEvent(component.StatusStopped),
 			},
@@ -400,6 +401,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			name: "shutdown error",
 			expectedStatuses: []*component.StatusEvent{
 				component.NewStatusEvent(component.StatusStarting),
+				component.NewStatusEvent(component.StatusOK),
 				component.NewStatusEvent(component.StatusStopping),
 				component.NewPermanentErrorEvent(assert.AnError),
 			},

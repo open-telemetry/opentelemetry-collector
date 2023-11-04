@@ -2163,11 +2163,13 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
 				instanceIDs[rNoErr]: {
 					component.NewStatusEvent(component.StatusStarting),
+					component.NewStatusEvent(component.StatusOK),
 					component.NewStatusEvent(component.StatusStopping),
 					component.NewStatusEvent(component.StatusStopped),
 				},
 				instanceIDs[eNoErr]: {
 					component.NewStatusEvent(component.StatusStarting),
+					component.NewStatusEvent(component.StatusOK),
 					component.NewStatusEvent(component.StatusStopping),
 					component.NewStatusEvent(component.StatusStopped),
 				},
@@ -2194,6 +2196,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 				},
 				instanceIDs[eNoErr]: {
 					component.NewStatusEvent(component.StatusStarting),
+					component.NewStatusEvent(component.StatusOK),
 					component.NewStatusEvent(component.StatusStopping),
 					component.NewStatusEvent(component.StatusStopped),
 				},
@@ -2206,11 +2209,13 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
 				instanceIDs[rSdErr]: {
 					component.NewStatusEvent(component.StatusStarting),
+					component.NewStatusEvent(component.StatusOK),
 					component.NewStatusEvent(component.StatusStopping),
 					component.NewPermanentErrorEvent(assert.AnError),
 				},
 				instanceIDs[eNoErr]: {
 					component.NewStatusEvent(component.StatusStarting),
+					component.NewStatusEvent(component.StatusOK),
 					component.NewStatusEvent(component.StatusStopping),
 					component.NewStatusEvent(component.StatusStopped),
 				},
@@ -2223,11 +2228,13 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			expectedStatuses: map[*component.InstanceID][]*component.StatusEvent{
 				instanceIDs[rNoErr]: {
 					component.NewStatusEvent(component.StatusStarting),
+					component.NewStatusEvent(component.StatusOK),
 					component.NewStatusEvent(component.StatusStopping),
 					component.NewStatusEvent(component.StatusStopped),
 				},
 				instanceIDs[eSdErr]: {
 					component.NewStatusEvent(component.StatusStarting),
+					component.NewStatusEvent(component.StatusOK),
 					component.NewStatusEvent(component.StatusStopping),
 					component.NewPermanentErrorEvent(assert.AnError),
 				},
