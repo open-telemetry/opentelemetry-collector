@@ -134,8 +134,8 @@ func GetModules(cfg Config) error {
 	if err := runGoCommand(cfg, "get", "cloud.google.com/go"); err != nil {
 		return fmt.Errorf("failed to go get: %w", err)
 	}
-  
-  if err := runGoCommand(cfg, "mod", "tidy", "-compat=1.20"); err != nil {
+
+	if err := runGoCommand(cfg, "mod", "tidy", "-compat=1.20"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 
