@@ -815,12 +815,12 @@ func TestHttpCorsWithSettings(t *testing.T) {
 	assert.Equal(t, "*", rec.Header().Get("Access-Control-Allow-Origin"))
 }
 
-func TestIPRejected(t *testing.T) {
+func TestIPDenied(t *testing.T) {
 	_, r, err := net.ParseCIDR("192.168.1.1/16")
 	require.NoError(t, err)
 	hss := &HTTPServerSettings{
-		Endpoint:         "localhost:0",
-		RejectedIPRanges: []*net.IPNet{r},
+		Endpoint:       "localhost:0",
+		DeniedIPRanges: []*net.IPNet{r},
 	}
 
 	host := &mockHost{}
@@ -837,7 +837,7 @@ func TestIPRejected(t *testing.T) {
 		statusCode int
 	}{
 		{
-			"192.168.1.3 rejected",
+			"192.168.1.3 denied",
 			func() *http.Request {
 				req := httptest.NewRequest(http.MethodOptions, "/", nil)
 				req.RemoteAddr = "192.168.1.3"
@@ -890,7 +890,7 @@ func TestIPAllowed(t *testing.T) {
 		statusCode int
 	}{
 		{
-			"192.168.1.3 rejected",
+			"192.168.1.3 denied",
 			func() *http.Request {
 				req := httptest.NewRequest(http.MethodOptions, "/", nil)
 				req.RemoteAddr = "192.168.1.3"
@@ -1339,13 +1339,13 @@ func TestAllowIPRanges(t *testing.T) {
 	}
 }
 
-func TestRejectIPRanges(t *testing.T) {
+func TestDenyIPRanges(t *testing.T) {
 	_, n, err := net.ParseCIDR("2.10.15.4/32")
 	require.NoError(t, err)
 	_, n2, err := net.ParseCIDR("192.10.15.132/32")
 	require.NoError(t, err)
 
-	h := rejectIPRanges(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+	h := denyIPRanges(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		_, _ = writer.Write([]byte("hello world"))
 	}), []*net.IPNet{n, n2})
 

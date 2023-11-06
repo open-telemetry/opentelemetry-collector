@@ -7,7 +7,7 @@ change_type: enhancement
 component: confighttp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `AllowedIPRanges` (`allowed_ip_ranges`)  and `RejectedIPRanges` (`rejected_ip_ranges`) to `confighttp.HTTPServerOptions`.
+note: Add `AllowedIPRanges` (`allowed_ip_ranges`)  and `DeniedIPRanges` (`denied_ip_ranges`) to `confighttp.HTTPServerOptions`.
 
 # One or more tracking issues or pull requests related to the change
 issues: [8798]

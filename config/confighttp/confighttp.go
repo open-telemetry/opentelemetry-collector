@@ -239,15 +239,15 @@ type HTTPServerSettings struct {
 	// If empty, all IPs are allowed.
 	// IPs outside the ranges will receive a 403 HTTP response code.
 	// IP ranges are represented using the CIDR notation.
-	// `RejectedIPRanges` are evaluated before `AllowedIPRanges`.
+	// `DeniedIPRanges` are evaluated before `AllowedIPRanges`.
 	AllowedIPRanges []*net.IPNet `mapstructure:"allowed_ip_ranges"`
 
-	// RejectedIPRanges rejects incoming requests from specific IP ranges.
+	// DeniedIPRanges rejects incoming requests from specific IP ranges.
 	// If empty, all IPs are allowed.
 	// IPs in the ranges will receive a 403 HTTP response code.
 	// IP ranges are represented using the CIDR notation.
-	// `RejectedIPRanges` are evaluated before `AllowedIPRanges`.
-	RejectedIPRanges []*net.IPNet `mapstructure:"rejected_ip_ranges"`
+	// `DeniedIPRanges` are evaluated before `AllowedIPRanges`.
+	DeniedIPRanges []*net.IPNet `mapstructure:"denied_ip_ranges"`
 }
 
 // ToListener creates a net.Listener.
@@ -308,8 +308,8 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		o(serverOpts)
 	}
 
-	if len(hss.RejectedIPRanges) > 0 {
-		handler = rejectIPRanges(handler, hss.RejectedIPRanges)
+	if len(hss.DeniedIPRanges) > 0 {
+		handler = denyIPRanges(handler, hss.DeniedIPRanges)
 	}
 
 	if len(hss.AllowedIPRanges) > 0 {
@@ -423,17 +423,17 @@ func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Ha
 	})
 }
 
-func rejectIPRanges(next http.Handler, ipRanges []*net.IPNet) http.Handler {
+func denyIPRanges(next http.Handler, ipRanges []*net.IPNet) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip := net.ParseIP(r.RemoteAddr)
-		var rejected bool
+		var denied bool
 		for _, n := range ipRanges {
 			if n.Contains(ip) {
-				rejected = true
+				denied = true
 				break
 			}
 		}
-		if rejected {
+		if denied {
 			http.Error(w, "", http.StatusForbidden)
 			return
 		}
