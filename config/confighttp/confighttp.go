@@ -434,7 +434,7 @@ func rejectIPRanges(next http.Handler, ipRanges []*net.IPNet) http.Handler {
 			}
 		}
 		if rejected {
-			http.Error(w, "", 403)
+			http.Error(w, "", http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -452,7 +452,7 @@ func allowIPRanges(next http.Handler, ipRanges []*net.IPNet) http.Handler {
 			}
 		}
 		if !allowed {
-			http.Error(w, "", 403)
+			http.Error(w, "", http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)

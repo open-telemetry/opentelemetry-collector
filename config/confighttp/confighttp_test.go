@@ -815,6 +815,111 @@ func TestHttpCorsWithSettings(t *testing.T) {
 	assert.Equal(t, "*", rec.Header().Get("Access-Control-Allow-Origin"))
 }
 
+func TestIPRejected(t *testing.T) {
+	_, r, err := net.ParseCIDR("192.168.1.1/16")
+	require.NoError(t, err)
+	hss := &HTTPServerSettings{
+		Endpoint:         "localhost:0",
+		RejectedIPRanges: []*net.IPNet{r},
+	}
+
+	host := &mockHost{}
+
+	srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(412)
+	}))
+	require.NoError(t, err)
+	require.NotNil(t, srv)
+
+	tests := []struct {
+		name       string
+		req        *http.Request
+		statusCode int
+	}{
+		{
+			"192.168.1.3 rejected",
+			func() *http.Request {
+				req := httptest.NewRequest(http.MethodOptions, "/", nil)
+				req.RemoteAddr = "192.168.1.3"
+				return req
+			}(),
+			http.StatusForbidden,
+		},
+		{
+			"127.0.0.1 allowed",
+			func() *http.Request {
+				req := httptest.NewRequest(http.MethodOptions, "/", nil)
+				req.RemoteAddr = "127.0.0.1"
+				return req
+			}(),
+			412,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			req := test.req
+
+			srv.Handler.ServeHTTP(rec, req)
+
+			assert.Equal(t, test.statusCode, rec.Result().StatusCode)
+		})
+	}
+}
+
+func TestIPAllowed(t *testing.T) {
+	_, r, err := net.ParseCIDR("127.0.0.1/32")
+	require.NoError(t, err)
+	hss := &HTTPServerSettings{
+		Endpoint:        "localhost:0",
+		AllowedIPRanges: []*net.IPNet{r},
+	}
+
+	host := &mockHost{}
+
+	srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(412)
+	}))
+	require.NoError(t, err)
+	require.NotNil(t, srv)
+
+	tests := []struct {
+		name       string
+		req        *http.Request
+		statusCode int
+	}{
+		{
+			"192.168.1.3 rejected",
+			func() *http.Request {
+				req := httptest.NewRequest(http.MethodOptions, "/", nil)
+				req.RemoteAddr = "192.168.1.3"
+				return req
+			}(),
+			http.StatusForbidden,
+		},
+		{
+			"127.0.0.1 allowed",
+			func() *http.Request {
+				req := httptest.NewRequest(http.MethodOptions, "/", nil)
+				req.RemoteAddr = "127.0.0.1"
+				return req
+			}(),
+			412,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			req := test.req
+			srv.Handler.ServeHTTP(rec, req)
+
+			assert.Equal(t, test.statusCode, rec.Result().StatusCode)
+		})
+	}
+}
+
 func TestHttpServerHeaders(t *testing.T) {
 	tests := []struct {
 		name    string
