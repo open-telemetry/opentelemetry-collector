@@ -220,7 +220,7 @@ type HTTPServerSettings struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// Network configures the network associated with the server.
-	// The network must be "tcp", "tcp4", "tcp6", "unix" or "unixpacket".
+	// The network must be "tcp", "tcp4", "tcp6" or "unix".
 	Network string `mapstructure:"network"`
 
 	// TLSSetting struct exposes TLS client configuration.
@@ -250,9 +250,6 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 	if network == "" {
 		network = "tcp"
 	}
-	if network == "http+unix" || network == "https+unix" || network == "unixpacket" {
-		network = "unix"
-	}
 	listener, err := net.Listen(network, hss.Endpoint)
 	if err != nil {
 		return nil, err
@@ -272,7 +269,7 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 
 func (hss *HTTPServerSettings) Validate() error {
 	switch hss.Network {
-	case "tcp", "tcp4", "tcp6", "unix", "unixpacket", "http+unix", "https+unix", "":
+	case "tcp", "tcp4", "tcp6", "unix", "":
 	default:
 		return fmt.Errorf("invalid network %q", hss.Network)
 	}

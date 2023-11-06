@@ -1387,30 +1387,6 @@ func TestHTTPServerSettings_Validate(t *testing.T) {
 			nil,
 		},
 		{
-			"unixpacket",
-			&HTTPServerSettings{
-				Network:  "unixpacket",
-				Endpoint: unixSocket,
-			},
-			nil,
-		},
-		{
-			"http+unix",
-			&HTTPServerSettings{
-				Network:  "http+unix",
-				Endpoint: unixSocket,
-			},
-			nil,
-		},
-		{
-			"https+unix",
-			&HTTPServerSettings{
-				Network:  "https+unix",
-				Endpoint: unixSocket,
-			},
-			nil,
-		},
-		{
 			"invalid",
 			&HTTPServerSettings{
 				Network: "invalid",
