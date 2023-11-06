@@ -1,6 +1,4 @@
 extensions:
-  memory_ballast:
-    size_mib: 512
   zpages:
     endpoint: 0.0.0.0:55679
 
@@ -34,4 +32,4 @@ service:
       processors: [memory_limiter, batch]
       exporters: [debug]
 
-  extensions: [memory_ballast, zpages]
+  extensions: [zpages]
