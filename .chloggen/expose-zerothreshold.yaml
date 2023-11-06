@@ -7,6 +7,9 @@ component: pdata
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add ZeroThreshold field to exponentialHistogramDataPoint in pmetric package.
 
+# One or more tracking issues or pull requests related to the change
+issues: [8802]
+
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
 # Include 'user' if the change is relevant to end users.
