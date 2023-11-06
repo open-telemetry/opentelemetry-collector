@@ -22,17 +22,11 @@ func TestNewCommandVersion(t *testing.T) {
 }
 
 func TestNewCommandNoConfigURI(t *testing.T) {
-	factories, err := nopFactories()
-	require.NoError(t, err)
-
-	cmd := NewCommand(CollectorSettings{Factories: factories})
+	cmd := NewCommand(CollectorSettings{Factories: nopFactories})
 	require.Error(t, cmd.Execute())
 }
 
 func TestNewCommandInvalidComponent(t *testing.T) {
-	factories, err := nopFactories()
-	require.NoError(t, err)
-
 	cfgProvider, err := NewConfigProvider(
 		ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
@@ -43,6 +37,6 @@ func TestNewCommandInvalidComponent(t *testing.T) {
 		})
 	require.NoError(t, err)
 
-	cmd := NewCommand(CollectorSettings{Factories: factories, ConfigProvider: cfgProvider})
+	cmd := NewCommand(CollectorSettings{Factories: nopFactories, ConfigProvider: cfgProvider})
 	require.Error(t, cmd.Execute())
 }
