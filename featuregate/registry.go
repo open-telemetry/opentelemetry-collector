@@ -76,7 +76,7 @@ func WithRegisterFromVersion(fromVersion string) RegisterOption {
 	return registerOptionFunc(func(g *Gate) error {
 		from, err := version.NewVersion(fromVersion)
 		if err != nil {
-			return fmt.Errorf("WithRegisterFromVersion: %w", err)
+			return fmt.Errorf("WithRegisterFromVersion: invalid version %q: %w", fromVersion, err)
 		}
 
 		g.fromVersion = from
@@ -93,7 +93,7 @@ func WithRegisterToVersion(toVersion string) RegisterOption {
 	return registerOptionFunc(func(g *Gate) error {
 		to, err := version.NewVersion(toVersion)
 		if err != nil {
-			return fmt.Errorf("WithRegisterToVersion: %w", err)
+			return fmt.Errorf("WithRegisterToVersion: invalid version %q:  %w", toVersion, err)
 		}
 
 		g.toVersion = to
