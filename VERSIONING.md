@@ -13,24 +13,24 @@ As a general rule, stability guarantees of modules versioned as `v1` or higher a
 ### General Go API considerations
 
 OpenTelemetry authors reserve the right to introduce API changes breaking compatibility between minor versions in the following scenarios:
-    * **Struct literals.** It may be necessary to add new fields to exported structs in the API. Code that uses unkeyed
-      struct literals (such as pkg.T{3, "x"}) to create values of these types would fail to compile after such a change.
-      However, code that uses keyed literals (pkg.T{A: 3, B: "x"}) will continue to compile. We therefore recommend 
-      using OpenTelemetry collector structs with the keyed literals only.
-    * **Methods.** As with struct fields, it may be necessary to add methods to types. Under some circumstances,
-      such as when the type is embedded in a struct along with another type, the addition of the new method may 
-      break the struct by creating a conflict with an existing method of the other embedded type. We cannot protect 
-      against this rare case and do not guarantee compatibility in such scenarios.
-    * **Dot imports.** If a program imports a package using `import .`, additional names defined in the imported package
-      in future releases may conflict with other names defined in the program. We do not recommend the use of
-      `import .` with OpenTelemetry Collector modules.
+* **Struct literals.** It may be necessary to add new fields to exported structs in the API. Code that uses unkeyed
+  struct literals (such as pkg.T{3, "x"}) to create values of these types would fail to compile after such a change.
+  However, code that uses keyed literals (pkg.T{A: 3, B: "x"}) will continue to compile. We therefore recommend 
+  using OpenTelemetry collector structs with the keyed literals only.
+* **Methods.** As with struct fields, it may be necessary to add methods to types. Under some circumstances,
+  such as when the type is embedded in a struct along with another type, the addition of the new method may 
+  break the struct by creating a conflict with an existing method of the other embedded type. We cannot protect 
+  against this rare case and do not guarantee compatibility in such scenarios.
+* **Dot imports.** If a program imports a package using `import .`, additional names defined in the imported package
+  in future releases may conflict with other names defined in the program. We do not recommend the use of
+  `import .` with OpenTelemetry Collector modules.
 
 Unless otherwise specified in the documentation, the following may change in any way between minor versions:
-    * **String representation**. The `String` method of any struct is intended to be human-readable and may change its output
-      in any way.
-    * **Go version compatibility**. Removing support for an unsupported Go version is not considered a breaking change.
-    * **Dependency updates**. Updating dependencies is not considered a breaking change except when their types are part of the
-    public API or the update may change the behavior of applications in an incompatible way.
+* **String representation**. The `String` method of any struct is intended to be human-readable and may change its output
+  in any way.
+* **Go version compatibility**. Removing support for an unsupported Go version is not considered a breaking change.
+* **Dependency updates**. Updating dependencies is not considered a breaking change except when their types are part of the
+public API or the update may change the behavior of applications in an incompatible way.
 
 ### Configuration structures
 
@@ -38,17 +38,17 @@ Configuration structures are part of the public API and backwards
 compatibility should be maintained through any changes made to configuration structures.
 
 Unless otherwise specified in the documentation, the following may change in any way between minor versions:
-    * **Adding new fields to configuration structures**. Because configuration structures are typically instantiated through 
-    unmarshalling a serialized representation of the structure, and not through structure literals, additive changes to 
-    the set of exported fields in a configuration structure are not considered to break backward compatibility.
+* **Adding new fields to configuration structures**. Because configuration structures are typically instantiated through 
+unmarshalling a serialized representation of the structure, and not through structure literals, additive changes to 
+the set of exported fields in a configuration structure are not considered to break backward compatibility.
 
 The following are explicitly considered to be breaking changes:
-    * **Modifying struct tags related to serialization**. Struct tags used to configure serialization mechanisms (`yaml:`, 
-    `mapstructure:`, etc) are part of the structure definition and must maintain compatibility to the same extent as the 
-    structure.
-    * **Making validation rules more strict**. A valid configuration struct as defined by its `Validate` method return value
-    must continue to be valid after a change to the validation rules, except when the configuration struct would cause an error
-    on its intended usage (e.g. when calling a method or when passed to any method or function in any module under opentelemetry-collector).
+* **Modifying struct tags related to serialization**. Struct tags used to configure serialization mechanisms (`yaml:`, 
+`mapstructure:`, etc) are part of the structure definition and must maintain compatibility to the same extent as the 
+structure.
+* **Making validation rules more strict**. A valid configuration struct as defined by its `Validate` method return value
+must continue to be valid after a change to the validation rules, except when the configuration struct would cause an error
+on its intended usage (e.g. when calling a method or when passed to any method or function in any module under opentelemetry-collector).
 
 ## Versioning and module schema
 
