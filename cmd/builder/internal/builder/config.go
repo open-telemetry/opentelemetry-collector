@@ -28,6 +28,7 @@ type Config struct {
 	SkipCompilation bool   `mapstructure:"-"`
 	SkipGetModules  bool   `mapstructure:"-"`
 	LDFlags         string `mapstructure:"-"`
+	Verbose         bool   `mapstructure:"-"`
 
 	Distribution Distribution `mapstructure:"dist"`
 	Exporters    []Module     `mapstructure:"exporters"`
