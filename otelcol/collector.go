@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"sync/atomic"
 	"syscall"
 
@@ -94,6 +95,7 @@ type Collector struct {
 
 	service *service.Service
 	state   *atomic.Int32
+	runWg   sync.WaitGroup
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -136,6 +138,9 @@ func (col *Collector) Shutdown() {
 			recover() // nolint:errcheck
 		}()
 		close(col.shutdownChan)
+
+		// wait for all running Runs to finish
+		col.runWg.Wait()
 	}
 }
 
@@ -226,6 +231,16 @@ func (col *Collector) DryRun(ctx context.Context) error {
 // Run starts the collector according to the given configuration, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 func (col *Collector) Run(ctx context.Context) error {
+	col.runWg.Add(1)
+	defer col.runWg.Done()
+
+	// early return in case shutdown was finished (state check)
+	if state := col.GetState(); state == StateClosing || state == StateClosed || isChannelClosed(col.shutdownChan) {
+		// shutdown is indepotent and should be called in case chan was closed
+		// but execution not triggered
+		return col.shutdown(ctx)
+	}
+
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(StateClosed)
 		return err
@@ -275,6 +290,11 @@ LOOP:
 }
 
 func (col *Collector) shutdown(ctx context.Context) error {
+	if state := col.GetState(); state == StateClosing || state == StateClosed {
+		// shutdown already started
+		return nil
+	}
+
 	col.setCollectorState(StateClosing)
 
 	// Accumulate errors and proceed with shutting down remaining components.
@@ -284,9 +304,11 @@ func (col *Collector) shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown config provider: %w", err))
 	}
 
-	// shutdown service
-	if err := col.service.Shutdown(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown service after error: %w", err))
+	// shutdown service in case service is initialized
+	if col.service != nil {
+		if err := col.service.Shutdown(ctx); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("failed to shutdown service after error: %w", err))
+		}
 	}
 
 	col.setCollectorState(StateClosed)
@@ -297,4 +319,13 @@ func (col *Collector) shutdown(ctx context.Context) error {
 // setCollectorState provides current state of the collector
 func (col *Collector) setCollectorState(state State) {
 	col.state.Store(int32(state))
+}
+
+func isChannelClosed(ch chan struct{}) bool {
+	select {
+	case _, isOk := <-ch:
+		return !isOk
+	default:
+	}
+	return false
 }

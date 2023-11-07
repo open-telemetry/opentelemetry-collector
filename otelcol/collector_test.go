@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
@@ -437,6 +438,60 @@ func TestPassConfmapToServiceFailure(t *testing.T) {
 
 	err = col.Run(context.Background())
 	require.Error(t, err)
+}
+
+type mockShutdownConfigProvider struct {
+	mock.Mock
+	provider ConfigProvider
+}
+
+func (p mockShutdownConfigProvider) Shutdown(ctx context.Context) error {
+	args := p.Called(ctx)
+	return args.Error(0)
+}
+
+func (p mockShutdownConfigProvider) Get(ctx context.Context, factories Factories) (*Config, error) {
+	args := p.Called(ctx, factories)
+	if p.provider != nil {
+		return p.provider.Get(ctx, factories)
+	}
+
+	return args.Get(0).(*Config), args.Error(1)
+}
+func (p mockShutdownConfigProvider) Watch() <-chan error {
+	args := p.Called()
+	return args.Get(0).(chan error)
+}
+
+func TestShutdownIdempotency(t *testing.T) {
+	provider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
+	require.NoError(t, err)
+
+	mockConfigProvider := &mockShutdownConfigProvider{
+		provider: provider,
+	}
+
+	mockConfigProvider.On("Shutdown", mock.Anything).Return(nil).Once()
+	mockConfigProvider.On("Watch").Return(make(chan error, 1))
+	mockConfigProvider.On("Get", mock.Anything, mock.Anything).Return(nil, nil) // will be called with actual provider
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      nopFactories,
+		ConfigProvider: mockConfigProvider,
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	col.Shutdown()
+	wg.Wait()
+
+	col.Shutdown()
+	mockConfigProvider.AssertExpectations(t)
 }
 
 func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.WaitGroup {
