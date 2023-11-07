@@ -38,7 +38,8 @@ valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 To use the persistent queue, the following setting needs to be set:
 
 - `sending_queue`
-  - `storage` (default = none): When set, enables persistence and uses the component specified as a storage extension for the persistent queue
+  - `storage` (default = none): When set, enables persistence and uses the component specified as a storage extension for the persistent queue.
+    There is no in-memory queue when set.
 
 The maximum number of batches stored to disk can be controlled using `sending_queue.queue_size` parameter (which,
 similarly as for in-memory buffering, defaults to 1000 batches).
