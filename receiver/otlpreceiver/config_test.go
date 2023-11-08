@@ -20,13 +20,20 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
+// defaultCfgWithLog creates default config with warning log enabled.
+func defaultCfgWithLog() component.Config {
+	cfg := NewFactory().CreateDefaultConfig()
+	cfg.(*Config).logLocalHostWarning = true
+	return cfg
+}
+
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "default.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
-	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+	assert.Equal(t, defaultCfgWithLog(), cfg)
 }
 
 func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
@@ -36,7 +43,7 @@ func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
 
-	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
+	defaultOnlyGRPC := defaultCfgWithLog().(*Config)
 	defaultOnlyGRPC.HTTP = nil
 	assert.Equal(t, defaultOnlyGRPC, cfg)
 }
@@ -48,7 +55,7 @@ func TestUnmarshalConfigOnlyHTTP(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
 
-	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
+	defaultOnlyHTTP := defaultCfgWithLog().(*Config)
 	defaultOnlyHTTP.GRPC = nil
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
@@ -60,7 +67,7 @@ func TestUnmarshalConfigOnlyHTTPNull(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
 
-	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
+	defaultOnlyHTTP := defaultCfgWithLog().(*Config)
 	defaultOnlyHTTP.GRPC = nil
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
@@ -72,7 +79,7 @@ func TestUnmarshalConfigOnlyHTTPEmptyMap(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
 
-	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
+	defaultOnlyHTTP := defaultCfgWithLog().(*Config)
 	defaultOnlyHTTP.GRPC = nil
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
