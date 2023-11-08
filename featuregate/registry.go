@@ -4,6 +4,7 @@
 package featuregate // import "go.opentelemetry.io/collector/featuregate"
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -11,6 +12,11 @@ import (
 )
 
 var globalRegistry = NewRegistry()
+
+var (
+	// ErrAlreadyRegistered is returned when adding a Gate that is already registered.
+	ErrAlreadyRegistered = errors.New("gate is already registered")
+)
 
 // GlobalRegistry returns the global Registry.
 func GlobalRegistry() *Registry {
@@ -100,7 +106,7 @@ func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Ga
 		return nil, fmt.Errorf("no removal version set for %v gate %q", g.stage.String(), id)
 	}
 	if _, loaded := r.gates.LoadOrStore(id, g); loaded {
-		return nil, fmt.Errorf("attempted to add pre-existing gate %q", id)
+		return nil, fmt.Errorf("failed to register %q: %w", id, ErrAlreadyRegistered)
 	}
 	return g, nil
 }

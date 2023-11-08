@@ -33,7 +33,7 @@ func TestRegistry(t *testing.T) {
 	assert.False(t, g.IsEnabled())
 
 	_, err = r.Register(id, StageBeta)
-	assert.Error(t, err)
+	assert.ErrorIs(t, err, ErrAlreadyRegistered)
 	assert.Panics(t, func() {
 		r.MustRegister(id, StageBeta)
 	})

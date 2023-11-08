@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/localhostgate"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -45,7 +46,7 @@ type otlpReceiver struct {
 
 	settings *receiver.CreateSettings
 
-  onceLogLocalHost sync.Once
+	onceLogLocalHost sync.Once
 }
 
 // newOtlpReceiver just creates the OpenTelemetry receiver services. It is the caller's
@@ -167,7 +168,7 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 func (r *otlpReceiver) Start(_ context.Context, host component.Host) error {
 	r.onceLogLocalHost.Do(func() {
 		if r.cfg.logLocalHostWarning {
-			component.LogAboutUseLocalHostAsDefault(r.settings.Logger)
+			localhostgate.LogAboutUseLocalHostAsDefault(r.settings.Logger)
 		}
 	})
 	return r.startProtocolServers(host)
