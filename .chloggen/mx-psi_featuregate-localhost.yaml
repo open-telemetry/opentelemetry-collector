@@ -4,23 +4,23 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: component
+component: featuregate
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add `component.UseLocalHostAsDefaultHost` feature gate that changes default endpoints from 0.0.0.0 to localhost"
+note: "Add the `featuregate.ErrAlreadyRegistered` error, which is returned by `featuregate.Registry`'s `Register` when adding a feature gate that is already registered."
 
 # One or more tracking issues or pull requests related to the change
-issues: [8510]
+issues: [8622]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: | 
-    The only component in this repository affected by this is the OTLP receiver.
+  Use `errors.Is` to check for this error.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: []
+change_logs: [api]
