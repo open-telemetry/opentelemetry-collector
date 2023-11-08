@@ -23,7 +23,7 @@ func NewDefaultTimeoutSettings() TimeoutSettings {
 	}
 }
 
-// timeoutSender is a requestSender that adds a `timeout` to every request that passes this sender.
+// timeoutSender is a RequestSender that adds a `timeout` to every request that passes this sender.
 type timeoutSender struct {
 	baseRequestSender
 	cfg TimeoutSettings

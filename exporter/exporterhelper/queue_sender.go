@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"go.opencensus.io/metric/metricdata"
@@ -76,24 +77,29 @@ type queueSender struct {
 	baseRequestSender
 	fullName         string
 	signal           component.DataType
-	queue            internal.ProducerConsumerQueue
+	queue            internal.Queue
 	traceAttribute   attribute.KeyValue
 	logger           *zap.Logger
+	numConsumers     int
+	stopWG           sync.WaitGroup
 	requeuingEnabled bool
 
+	meter          otelmetric.Meter
 	metricCapacity otelmetric.Int64ObservableGauge
 	metricSize     otelmetric.Int64ObservableGauge
 }
 
-func newQueueSender(id component.ID, signal component.DataType, queue internal.ProducerConsumerQueue, logger *zap.Logger) *queueSender {
+func newQueueSender(set exporter.CreateSettings, numConsumers int, signal component.DataType, queue internal.Queue) *queueSender {
 	return &queueSender{
-		fullName:       id.String(),
+		fullName:       set.ID.String(),
 		signal:         signal,
 		queue:          queue,
-		traceAttribute: attribute.String(obsmetrics.ExporterKey, id.String()),
-		logger:         logger,
+		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
+		logger:         set.Logger,
+		numConsumers:   numConsumers,
 		// TODO: this can be further exposed as a config param rather than relying on a type of queue
 		requeuingEnabled: queue != nil && queue.IsPersistent(),
+		meter:            set.MeterProvider.Meter(scopeName),
 	}
 }
 
@@ -107,7 +113,7 @@ func (qs *queueSender) onTemporaryFailure(logger *zap.Logger, req internal.Reque
 		return err
 	}
 
-	if qs.queue.Produce(req) {
+	if qs.queue.Offer(req) {
 		logger.Error(
 			"Exporting failed. Putting back to the end of the queue.",
 			zap.Error(err),
@@ -122,36 +128,43 @@ func (qs *queueSender) onTemporaryFailure(logger *zap.Logger, req internal.Reque
 	return err
 }
 
-// start is invoked during service startup.
-func (qs *queueSender) start(ctx context.Context, host component.Host, set exporter.CreateSettings) error {
+// Start is invoked during service startup.
+func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 	if qs.queue == nil {
 		return nil
 	}
 
-	err := qs.queue.Start(ctx, host, internal.QueueSettings{
-		CreateSettings: set,
-		DataType:       qs.signal,
-		Callback: func(item internal.Request) {
-			_ = qs.nextSender.send(item)
-			item.OnProcessingFinished()
-		},
-	})
-	if err != nil {
+	if err := qs.queue.Start(ctx, host); err != nil {
 		return err
 	}
 
+	var startWG sync.WaitGroup
+	for i := 0; i < qs.numConsumers; i++ {
+		qs.stopWG.Add(1)
+		startWG.Add(1)
+		go func() {
+			startWG.Done()
+			defer qs.stopWG.Done()
+			for item := range qs.queue.Poll() {
+				_ = qs.nextSender.send(item)
+				item.OnProcessingFinished()
+			}
+		}()
+	}
+	startWG.Wait()
+
 	if obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled() {
-		return qs.recordWithOtel(set.MeterProvider.Meter(scopeName))
+		return qs.recordWithOtel()
 	}
 	return qs.recordWithOC()
 }
 
-func (qs *queueSender) recordWithOtel(meter otelmetric.Meter) error {
+func (qs *queueSender) recordWithOtel() error {
 	var err, errs error
 
 	attrs := otelmetric.WithAttributeSet(attribute.NewSet(attribute.String(obsmetrics.ExporterKey, qs.fullName)))
 
-	qs.metricSize, err = meter.Int64ObservableGauge(
+	qs.metricSize, err = qs.meter.Int64ObservableGauge(
 		obsmetrics.ExporterKey+"/queue_size",
 		otelmetric.WithDescription("Current size of the retry queue (in batches)"),
 		otelmetric.WithUnit("1"),
@@ -162,7 +175,7 @@ func (qs *queueSender) recordWithOtel(meter otelmetric.Meter) error {
 	)
 	errs = multierr.Append(errs, err)
 
-	qs.metricCapacity, err = meter.Int64ObservableGauge(
+	qs.metricCapacity, err = qs.meter.Int64ObservableGauge(
 		obsmetrics.ExporterKey+"/queue_capacity",
 		otelmetric.WithDescription("Fixed capacity of the retry queue (in batches)"),
 		otelmetric.WithUnit("1"),
@@ -203,11 +216,11 @@ func (qs *queueSender) shutdown() {
 
 		// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
 		// try once every request.
-		qs.queue.Stop()
+		_ = qs.queue.Shutdown(context.Background())
 	}
 }
 
-// send implements the requestSender interface
+// send implements the RequestSender interface
 func (qs *queueSender) send(req internal.Request) error {
 	if qs.queue == nil {
 		err := qs.nextSender.send(req)
@@ -225,7 +238,7 @@ func (qs *queueSender) send(req internal.Request) error {
 	req.SetContext(noCancellationContext{Context: req.Context()})
 
 	span := trace.SpanFromContext(req.Context())
-	if !qs.queue.Produce(req) {
+	if !qs.queue.Offer(req) {
 		qs.logger.Error(
 			"Dropping data because sending_queue is full. Try increasing queue_size.",
 			zap.Int("dropped_items", req.Count()),

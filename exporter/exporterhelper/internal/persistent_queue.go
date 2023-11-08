@@ -7,7 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
+	"go.opentelemetry.io/collector/exporter"
+	"go.uber.org/zap"
+	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
@@ -26,15 +28,15 @@ var (
 
 // persistentQueue holds the queue backed by file storage
 type persistentQueue struct {
-	stopWG       sync.WaitGroup
-	stopOnce     sync.Once
-	stopChan     chan struct{}
-	storageID    component.ID
-	storage      *persistentContiguousStorage
-	capacity     uint64
-	numConsumers int
-	marshaler    RequestMarshaler
-	unmarshaler  RequestUnmarshaler
+	logger      *zap.Logger
+	stopped     *atomic.Bool
+	compID      component.ID
+	storageID   component.ID
+	storage     *persistentContiguousStorage
+	capacity    uint64
+	marshaler   RequestMarshaler
+	unmarshaler RequestUnmarshaler
+	dataType    component.DataType
 }
 
 // buildPersistentStorageName returns a name that is constructed out of queue name and signal type. This is done
@@ -44,57 +46,52 @@ func buildPersistentStorageName(name string, signal component.DataType) string {
 }
 
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, marshaler RequestMarshaler,
-	unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
+func NewPersistentQueue(set exporter.CreateSettings, capacity int, storageID component.ID, marshaler RequestMarshaler,
+	unmarshaler RequestUnmarshaler, dataType component.DataType) Queue {
 	return &persistentQueue{
-		capacity:     uint64(capacity),
-		numConsumers: numConsumers,
-		storageID:    storageID,
-		marshaler:    marshaler,
-		unmarshaler:  unmarshaler,
-		stopChan:     make(chan struct{}),
+		logger:      set.Logger,
+		capacity:    uint64(capacity),
+		stopped:     &atomic.Bool{},
+		compID:      set.ID,
+		storageID:   storageID,
+		marshaler:   marshaler,
+		unmarshaler: unmarshaler,
+		dataType:    dataType,
 	}
 }
 
 // Start starts the persistentQueue with the given number of consumers.
-func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set QueueSettings) error {
-	storageClient, err := toStorageClient(ctx, pq.storageID, host, set.ID, set.DataType)
+func (pq *persistentQueue) Start(ctx context.Context, host component.Host) error {
+	storageClient, err := toStorageClient(ctx, pq.storageID, host, pq.compID, pq.dataType)
 	if err != nil {
 		return err
 	}
-	storageName := buildPersistentStorageName(set.ID.Name(), set.DataType)
-	pq.storage = newPersistentContiguousStorage(ctx, storageName, storageClient, set.Logger, pq.capacity, pq.marshaler, pq.unmarshaler)
-	for i := 0; i < pq.numConsumers; i++ {
-		pq.stopWG.Add(1)
-		go func() {
-			defer pq.stopWG.Done()
-			for {
-				select {
-				case req := <-pq.storage.get():
-					set.Callback(req)
-				case <-pq.stopChan:
-					return
-				}
-			}
-		}()
-	}
+	storageName := buildPersistentStorageName(pq.compID.Name(), pq.dataType)
+	pq.storage = newPersistentContiguousStorage(ctx, storageName, storageClient, pq.logger, pq.capacity, pq.marshaler, pq.unmarshaler)
 	return nil
 }
 
-// Produce adds an item to the queue and returns true if it was accepted
-func (pq *persistentQueue) Produce(item Request) bool {
-	err := pq.storage.put(item)
-	return err == nil
+// Offer inserts the specified element into this queue if it is possible to do so immediately without violating
+// capacity restrictions, returning true upon success and false if no space is currently available.
+func (pq *persistentQueue) Offer(item Request) bool {
+	if pq.stopped.Load() {
+		return false
+	}
+
+	return pq.storage.put(item) == nil
+}
+
+// Poll retrieves and removes the head of this queue.
+func (pq *persistentQueue) Poll() <-chan Request {
+	return pq.storage.get()
 }
 
 // Stop stops accepting items, shuts down the queue and closes the persistent queue
-func (pq *persistentQueue) Stop() {
-	pq.stopOnce.Do(func() {
-		// stop the consumers before the storage or the successful processing result will fail to write to persistent storage
-		close(pq.stopChan)
-		pq.stopWG.Wait()
-		stopStorage(pq)
-	})
+func (pq *persistentQueue) Shutdown(context.Context) error {
+	// stop accepting requests before the storage or the successful processing result will fail to write to persistent storage
+	pq.stopped.Store(true)
+	stopStorage(pq)
+	return nil
 }
 
 // Size returns the current depth of the queue, excluding the item already in the storage channel (if any)

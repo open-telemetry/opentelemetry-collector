@@ -14,11 +14,11 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 )
 
-// requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
+// RequestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 type requestSender interface {
-	start(ctx context.Context, host component.Host, set exporter.CreateSettings) error
-	shutdown()
+	start(ctx context.Context, host component.Host) error
 	send(req internal.Request) error
+	shutdown()
 	setNextSender(nextSender requestSender)
 }
 
@@ -28,7 +28,7 @@ type baseRequestSender struct {
 
 var _ requestSender = (*baseRequestSender)(nil)
 
-func (b *baseRequestSender) start(context.Context, component.Host, exporter.CreateSettings) error {
+func (b *baseRequestSender) start(context.Context, component.Host) error {
 	return nil
 }
 
@@ -127,15 +127,15 @@ func WithQueue(config QueueSettings) Option {
 		if o.requestExporter {
 			panic("queueing is not available for the new request exporters yet")
 		}
-		var queue internal.ProducerConsumerQueue
+		var queue internal.Queue
 		if config.Enabled {
 			if config.StorageID == nil {
-				queue = internal.NewBoundedMemoryQueue(config.QueueSize, config.NumConsumers)
+				queue = internal.NewBoundedMemoryQueue(config.QueueSize)
 			} else {
-				queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID, o.marshaler, o.unmarshaler)
+				queue = internal.NewPersistentQueue(o.set.Logger, config.QueueSize, o.set.ID, *config.StorageID, o.marshaler, o.unmarshaler, o.signal)
 			}
 		}
-		qs := newQueueSender(o.set.ID, o.signal, queue, o.set.Logger)
+		qs := newQueueSender(o.set, config.NumConsumers, o.signal, queue)
 		o.queueSender = qs
 		o.setOnTemporaryFailure(qs.onTemporaryFailure)
 	}
@@ -228,7 +228,7 @@ func (be *baseExporter) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// If no error then start the queueSender.
-	return be.queueSender.start(ctx, host, be.set)
+	return be.queueSender.start(ctx, host)
 }
 
 func (be *baseExporter) Shutdown(ctx context.Context) error {

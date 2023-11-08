@@ -7,7 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -32,79 +34,60 @@ func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 // createTestQueue creates and starts a fake queue with the given capacity and number of consumers.
-func createTestQueue(t *testing.T, capacity, numConsumers int, callback func(item Request)) ProducerConsumerQueue {
-	pq := NewPersistentQueue(capacity, numConsumers, component.ID{}, newFakeTracesRequestMarshalerFunc(),
-		newFakeTracesRequestUnmarshalerFunc())
+func createTestQueue(t *testing.T, capacity int) Queue {
+	pq := NewPersistentQueue(exportertest.NewNopCreateSettings(), capacity, component.ID{}, newFakeTracesRequestMarshalerFunc(),
+		newFakeTracesRequestUnmarshalerFunc(), component.DataTypeMetrics)
 	host := &mockHost{ext: map[component.ID]component.Component{
 		{}: NewMockStorageExtension(nil),
 	}}
-	err := pq.Start(context.Background(), host, newNopQueueSettings(callback))
-	require.NoError(t, err)
-	t.Cleanup(pq.Stop)
+	require.NoError(t, pq.Start(context.Background(), host))
+	t.Cleanup(func() {
+		assert.NoError(t, pq.Shutdown(context.Background()))
+	})
 	return pq
 }
 
-func TestPersistentQueue_Capacity(t *testing.T) {
-	for i := 0; i < 100; i++ {
-		pq := NewPersistentQueue(5, 1, component.ID{}, newFakeTracesRequestMarshalerFunc(),
-			newFakeTracesRequestUnmarshalerFunc())
-		host := &mockHost{ext: map[component.ID]component.Component{
-			{}: NewMockStorageExtension(nil),
-		}}
-		err := pq.Start(context.Background(), host, newNopQueueSettings(func(req Request) {}))
-		require.NoError(t, err)
+func TestPersistentQueueCapacity(t *testing.T) {
+	pq := createTestQueue(t, 5)
+	assert.Equal(t, 0, pq.Size())
 
-		// Stop consumer to imitate queue overflow
-		close(pq.(*persistentQueue).stopChan)
-		pq.(*persistentQueue).stopWG.Wait()
+	traces := newTraces(1, 10)
+	req := newFakeTracesRequest(traces)
 
-		assert.Equal(t, 0, pq.Size())
-
-		traces := newTraces(1, 10)
-		req := newFakeTracesRequest(traces)
-
-		for i := 0; i < 10; i++ {
-			result := pq.Produce(req)
-			if i < 6 {
-				assert.True(t, result)
-			} else {
-				assert.False(t, result)
-			}
-
-			// Let's make sure the loop picks the first element into the channel,
-			// so the capacity could be used in full
-			if i == 0 {
-				assert.Eventually(t, func() bool {
-					return pq.Size() == 0
-				}, 5*time.Second, 10*time.Millisecond)
-			}
+	for i := 0; i < 10; i++ {
+		result := pq.Offer(req)
+		if i < 6 {
+			assert.True(t, result)
+		} else {
+			assert.False(t, result)
 		}
-		assert.Equal(t, 5, pq.Size())
-		stopStorage(pq.(*persistentQueue))
+
+		// Let's make sure the loop picks the first element into the channel,
+		// so the capacity could be used in full
+		if i == 0 {
+			assert.Eventually(t, func() bool {
+				return pq.Size() == 0
+			}, 5*time.Second, 10*time.Millisecond)
+		}
 	}
+	assert.Equal(t, 5, pq.Size())
 }
 
-func TestPersistentQueue_Close(t *testing.T) {
-	wq := createTestQueue(t, 1001, 100, func(item Request) {})
+func TestPersistentQueueShutdown(t *testing.T) {
+	wq := createTestQueue(t, 1001)
 	traces := newTraces(1, 10)
 	req := newFakeTracesRequest(traces)
 
 	for i := 0; i < 1000; i++ {
-		wq.Produce(req)
+		wq.Offer(req)
 	}
 	// This will close the queue very quickly, consumers might not be able to consume anything and should finish gracefully
-	assert.NotPanics(t, func() {
-		wq.Stop()
-	})
-	// The additional stop should not panic
-	assert.NotPanics(t, func() {
-		wq.Stop()
-	})
+	assert.NoError(t, wq.Shutdown(context.Background()))
 }
 
 // Verify storage closes after queue consumers. If not in this order, successfully consumed items won't be updated in storage
 func TestPersistentQueue_Close_StorageCloseAfterConsumers(t *testing.T) {
-	wq := createTestQueue(t, 1001, 1, func(item Request) {})
+	wq := createTestQueue(t, 1001)
 	traces := newTraces(1, 10)
 
 	lastRequestProcessedTime := time.Now()
@@ -121,11 +104,9 @@ func TestPersistentQueue_Close_StorageCloseAfterConsumers(t *testing.T) {
 	}
 
 	for i := 0; i < 1000; i++ {
-		wq.Produce(req)
+		wq.Offer(req)
 	}
-	assert.NotPanics(t, func() {
-		wq.Stop()
-	})
+	assert.NoError(t, wq.Shutdown(context.Background()))
 	assert.True(t, stopStorageTime.After(lastRequestProcessedTime), "storage stop time should be after last request processed time")
 	stopStorage = fnBefore
 }
@@ -163,19 +144,20 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			req := newFakeTracesRequest(traces)
 
 			numMessagesConsumed := &atomic.Int32{}
-			tq := createTestQueue(t, 1000, c.numConsumers, func(item Request) {
-				if item != nil {
+			pq := createTestQueue(t, 1000)
+
+			stopWG := sync.WaitGroup{}
+			startConsumers(pq, c.numConsumers, &stopWG, func(request Request) {
+				if request != nil {
 					numMessagesConsumed.Add(int32(1))
 				}
 			})
 
 			for i := 0; i < c.numMessagesProduced; i++ {
-				tq.Produce(req)
+				pq.Offer(req)
 			}
-
-			assert.Eventually(t, func() bool {
-				return c.numMessagesProduced == int(numMessagesConsumed.Load())
-			}, 5*time.Second, 10*time.Millisecond)
+			stopWG.Wait()
+			assert.Equal(t, c.numMessagesProduced, int(numMessagesConsumed.Load()))
 		})
 	}
 }
@@ -293,11 +275,9 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	assert.Nil(t, client)
 }
 
-func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
-	pq := NewPersistentQueue(1, 1, component.ID{}, newFakeTracesRequestMarshalerFunc(),
-		newFakeTracesRequestUnmarshalerFunc())
+func TestPersistentQueueStopAfterBadStart(t *testing.T) {
+	pq := NewPersistentQueue(exportertest.NewNopCreateSettings(), 1, component.ID{}, newFakeTracesRequestMarshalerFunc(),
+		newFakeTracesRequestUnmarshalerFunc(), component.DataTypeMetrics)
 	// verify that stopping a un-start/started w/error queue does not panic
-	assert.NotPanics(t, func() {
-		pq.Stop()
-	})
+	assert.NoError(t, pq.Shutdown(context.Background()))
 }

@@ -172,6 +172,7 @@ func (pcs *persistentContiguousStorage) loop() {
 	for {
 		select {
 		case <-pcs.stopChan:
+			close(pcs.reqChan)
 			return
 		case <-pcs.putChan:
 			req, found := pcs.getNextItem(context.Background())

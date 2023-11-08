@@ -8,27 +8,14 @@ package internal
 import (
 	"context"
 	"fmt"
-	"reflect"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 )
-
-func newNopQueueSettings(callback func(item Request)) QueueSettings {
-	return QueueSettings{
-		CreateSettings: exportertest.NewNopCreateSettings(),
-		DataType:       component.DataTypeMetrics,
-		Callback:       callback,
-	}
-}
 
 type stringRequest struct {
 	Request
@@ -39,110 +26,75 @@ func newStringRequest(str string) Request {
 	return stringRequest{str: str}
 }
 
-// In this test we run a queue with capacity 1 and a single consumer.
-// We want to test the overflow behavior, so we block the consumer
-// by holding a startLock before submitting items to the queue.
+// In this test we run a queue with capacity 1 and we want to test the overflow behavior.
 func TestBoundedQueue(t *testing.T) {
-	q := NewBoundedMemoryQueue(1, 1)
+	q := NewBoundedMemoryQueue(1)
 
-	var startLock sync.Mutex
+	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 
-	startLock.Lock() // block consumers
-	consumerState := newConsumerState(t)
-
-	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {
-		consumerState.record(item.(stringRequest).str)
-
-		// block further processing until startLock is released
-		startLock.Lock()
-		//nolint:staticcheck // SA2001 ignore this!
-		startLock.Unlock()
-	})))
-
-	assert.True(t, q.Produce(newStringRequest("a")))
-
-	// at this point "a" may or may not have been received by the consumer go-routine
-	// so let's make sure it has been
-	consumerState.waitToConsumeOnce()
-
-	// at this point the item must have been read off the queue, but the consumer is blocked
-	assert.Equal(t, 0, q.Size())
-	consumerState.assertConsumed(map[string]bool{
-		"a": true,
-	})
-
-	// produce two more items. The first one should be accepted, but not consumed.
-	assert.True(t, q.Produce(newStringRequest("b")))
+	// Offer two items. The first one should be accepted.
+	assert.True(t, q.Offer(newStringRequest("a")))
 	assert.Equal(t, 1, q.Size())
 	// the second should be rejected since the queue is full
-	assert.False(t, q.Produce(newStringRequest("c")))
+	assert.False(t, q.Offer(newStringRequest("b")))
 	assert.Equal(t, 1, q.Size())
 
-	startLock.Unlock() // unblock consumer
+	pollAndCheck(t, q, "a")
+	assert.Equal(t, 0, q.Size())
 
-	consumerState.assertConsumed(map[string]bool{
-		"a": true,
-		"b": true,
-	})
-
-	// now that consumers are unblocked, we can add more items
-	expected := map[string]bool{
-		"a": true,
-		"b": true,
-	}
+	// Add more items and poll
 	for _, item := range []string{"d", "e", "f"} {
-		assert.True(t, q.Produce(newStringRequest(item)))
-		expected[item] = true
-		consumerState.assertConsumed(expected)
+		assert.True(t, q.Offer(newStringRequest(item)))
+		pollAndCheck(t, q, item)
 	}
 
-	q.Stop()
-	assert.False(t, q.Produce(newStringRequest("x")), "cannot push to closed queue")
+	assert.NoError(t, q.Shutdown(context.Background()))
+	assert.False(t, q.Offer(newStringRequest("x")))
+	_, ok := <-q.Poll()
+	assert.False(t, ok)
 }
 
-// In this test we run a queue with many items and a slow consumer.
-// When the queue is stopped, the remaining items should be processed.
-// Due to the way q.Stop() waits for all consumers to finish, the
-// same lock strategy use above will not work, as calling Unlock
-// only after Stop will mean the consumers are still locked while
-// trying to perform the final consumptions.
+func pollAndCheck(t *testing.T, q Queue, result string) {
+	newReq, ok := <-q.Poll()
+	assert.True(t, ok)
+	assert.Equal(t, result, newReq.(stringRequest).str)
+}
+
+// In this test we run a queue with many items when the queue is stopped,
+// the remaining items should be processable.
 func TestShutdownWhileNotEmpty(t *testing.T) {
-	q := NewBoundedMemoryQueue(10, 1)
+	q := NewBoundedMemoryQueue(10)
 
-	consumerState := newConsumerState(t)
+	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 
-	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {
-		consumerState.record(item.(stringRequest).str)
-		time.Sleep(1 * time.Second)
-	})))
+	q.Offer(newStringRequest("a"))
+	q.Offer(newStringRequest("b"))
+	q.Offer(newStringRequest("c"))
+	q.Offer(newStringRequest("d"))
+	q.Offer(newStringRequest("e"))
+	q.Offer(newStringRequest("f"))
+	q.Offer(newStringRequest("g"))
+	q.Offer(newStringRequest("h"))
+	q.Offer(newStringRequest("i"))
+	q.Offer(newStringRequest("j"))
 
-	q.Produce(newStringRequest("a"))
-	q.Produce(newStringRequest("b"))
-	q.Produce(newStringRequest("c"))
-	q.Produce(newStringRequest("d"))
-	q.Produce(newStringRequest("e"))
-	q.Produce(newStringRequest("f"))
-	q.Produce(newStringRequest("g"))
-	q.Produce(newStringRequest("h"))
-	q.Produce(newStringRequest("i"))
-	q.Produce(newStringRequest("j"))
+	assert.NoError(t, q.Shutdown(context.Background()))
+	assert.False(t, q.Offer(newStringRequest("x")))
 
-	q.Stop()
-
-	assert.False(t, q.Produce(newStringRequest("x")), "cannot push to closed queue")
-	consumerState.assertConsumed(map[string]bool{
-		"a": true,
-		"b": true,
-		"c": true,
-		"d": true,
-		"e": true,
-		"f": true,
-		"g": true,
-		"h": true,
-		"i": true,
-		"j": true,
-	})
+	for _, item := range []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"} {
+		pollAndCheck(t, q, item)
+	}
 	assert.Equal(t, 0, q.Size())
+}
+
+func TestZeroSize(t *testing.T) {
+	q := NewBoundedMemoryQueue(0)
+
+	err := q.Start(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+
+	assert.False(t, q.Offer(newStringRequest("a"))) // in process
+	assert.NoError(t, q.Shutdown(context.Background()))
 }
 
 func Benchmark_QueueUsage_10000_1_50000(b *testing.B) {
@@ -190,68 +142,32 @@ func Benchmark_QueueUsage_10000_10_250000(b *testing.B) {
 func queueUsage(b *testing.B, capacity int, numConsumers int, numberOfItems int) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		q := NewBoundedMemoryQueue(capacity, numConsumers)
-		err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {
+		q := NewBoundedMemoryQueue(capacity)
+		require.NoError(b, q.Start(context.Background(), componenttest.NewNopHost()))
+		stopWG := sync.WaitGroup{}
+		startConsumers(q, numConsumers, &stopWG, func(request Request) {
 			time.Sleep(1 * time.Millisecond)
-		}))
-		require.NoError(b, err)
+		})
 		for j := 0; j < numberOfItems; j++ {
-			q.Produce(newStringRequest(fmt.Sprintf("%d", j)))
+			q.Offer(newStringRequest(fmt.Sprintf("%d", j)))
 		}
-		q.Stop()
+		require.NoError(b, q.Shutdown(context.Background()))
+		stopWG.Wait()
 	}
 }
 
-type consumerState struct {
-	sync.Mutex
-	t            *testing.T
-	consumed     map[string]bool
-	consumedOnce *atomic.Bool
-}
-
-func newConsumerState(t *testing.T) *consumerState {
-	return &consumerState{
-		t:            t,
-		consumed:     make(map[string]bool),
-		consumedOnce: &atomic.Bool{},
+func startConsumers(queue Queue, numConsumers int, stopWG *sync.WaitGroup, consume func(request Request)) {
+	var startWG sync.WaitGroup
+	for i := 0; i < numConsumers; i++ {
+		stopWG.Add(1)
+		startWG.Add(1)
+		go func() {
+			startWG.Done()
+			defer stopWG.Done()
+			for item := range queue.Poll() {
+				consume(item)
+			}
+		}()
 	}
-}
-
-func (s *consumerState) record(val string) {
-	s.Lock()
-	defer s.Unlock()
-	s.consumed[val] = true
-	s.consumedOnce.Store(true)
-}
-
-func (s *consumerState) snapshot() map[string]bool {
-	s.Lock()
-	defer s.Unlock()
-	out := make(map[string]bool)
-	for k, v := range s.consumed {
-		out[k] = v
-	}
-	return out
-}
-
-func (s *consumerState) waitToConsumeOnce() {
-	require.Eventually(s.t, s.consumedOnce.Load, 2*time.Second, 10*time.Millisecond, "expected to consumer once")
-}
-
-func (s *consumerState) assertConsumed(expected map[string]bool) {
-	for i := 0; i < 1000; i++ {
-		if snapshot := s.snapshot(); !reflect.DeepEqual(snapshot, expected) {
-			time.Sleep(time.Millisecond)
-		}
-	}
-	assert.Equal(s.t, expected, s.snapshot())
-}
-
-func TestZeroSize(t *testing.T) {
-	q := NewBoundedMemoryQueue(0, 1)
-
-	err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {}))
-	assert.NoError(t, err)
-
-	assert.False(t, q.Produce(newStringRequest("a"))) // in process
+	startWG.Wait()
 }

@@ -103,7 +103,7 @@ func (rs *retrySender) shutdown() {
 	close(rs.stopCh)
 }
 
-// send implements the requestSender interface
+// send implements the RequestSender interface
 func (rs *retrySender) send(req internal.Request) error {
 	if !rs.cfg.Enabled {
 		err := rs.nextSender.send(req)
