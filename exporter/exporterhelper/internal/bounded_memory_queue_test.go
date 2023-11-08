@@ -247,11 +247,24 @@ func (s *consumerState) assertConsumed(expected map[string]bool) {
 	assert.Equal(s.t, expected, s.snapshot())
 }
 
-func TestZeroSize(t *testing.T) {
+func TestZeroSizeWithConsumers(t *testing.T) {
 	q := NewBoundedMemoryQueue(0, 1)
 
 	err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {}))
 	assert.NoError(t, err)
 
+	assert.True(t, q.Produce(newStringRequest("a"))) // in process
+
+	q.Stop()
+}
+
+func TestZeroSizeNoConsumers(t *testing.T) {
+	q := NewBoundedMemoryQueue(0, 0)
+
+	err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {}))
+	assert.NoError(t, err)
+
 	assert.False(t, q.Produce(newStringRequest("a"))) // in process
+
+	q.Stop()
 }
