@@ -156,6 +156,121 @@ func TestAllHTTPClientSettings(t *testing.T) {
 	}
 }
 
+func TestHTTPClientSettingWithRoundTripper(t *testing.T) {
+	host := &mockHost{
+		ext: map[component.ID]component.Component{
+			component.NewID("testauth"): &authtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+		},
+	}
+
+	maxIdleConns := 50
+	maxIdleConnsPerHost := 40
+	maxConnsPerHost := 45
+	idleConnTimeout := 30 * time.Second
+	tests := []struct {
+		name               string
+		settings           HTTPClientSettings
+		customRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
+		shouldError        bool
+	}{
+		{
+			name: "all_valid_settings",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:      1024,
+				WriteBufferSize:     512,
+				MaxIdleConns:        &maxIdleConns,
+				MaxIdleConnsPerHost: &maxIdleConnsPerHost,
+				MaxConnsPerHost:     &maxConnsPerHost,
+				IdleConnTimeout:     &idleConnTimeout,
+				Compression:         "",
+				DisableKeepAlives:   true,
+			},
+			customRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+			shouldError:        false,
+		},
+		{
+			name: "all_valid_settings_with_none_compression",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:      1024,
+				WriteBufferSize:     512,
+				MaxIdleConns:        &maxIdleConns,
+				MaxIdleConnsPerHost: &maxIdleConnsPerHost,
+				MaxConnsPerHost:     &maxConnsPerHost,
+				IdleConnTimeout:     &idleConnTimeout,
+				Compression:         "none",
+				DisableKeepAlives:   true,
+			},
+			customRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+			shouldError:        false,
+		},
+		{
+			name: "all_valid_settings_with_gzip_compression",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:      1024,
+				WriteBufferSize:     512,
+				MaxIdleConns:        &maxIdleConns,
+				MaxIdleConnsPerHost: &maxIdleConnsPerHost,
+				MaxConnsPerHost:     &maxConnsPerHost,
+				IdleConnTimeout:     &idleConnTimeout,
+				Compression:         "gzip",
+				DisableKeepAlives:   true,
+			},
+			customRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+			shouldError:        false,
+		},
+		{
+			name: "error_round_tripper_returned",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:  1024,
+				WriteBufferSize: 512,
+			},
+			customRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return nil, errors.New("error") },
+			shouldError:        true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			tt := componenttest.NewNopTelemetrySettings()
+			tt.TracerProvider = nil
+			client, err := test.settings.ToClient(host, tt, WithRoundTripper(test.customRoundTripper))
+			if test.shouldError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			switch transport := client.Transport.(type) {
+			case *http.Transport:
+				assert.EqualValues(t, 1024, transport.ReadBufferSize)
+				assert.EqualValues(t, 512, transport.WriteBufferSize)
+				assert.EqualValues(t, 50, transport.MaxIdleConns)
+				assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
+				assert.EqualValues(t, 45, transport.MaxConnsPerHost)
+				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
+				assert.EqualValues(t, true, transport.DisableKeepAlives)
+			case *compressRoundTripper:
+				assert.EqualValues(t, "gzip", transport.compressionType)
+			}
+		})
+	}
+}
+
 func TestPartialHTTPClientSettings(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
@@ -699,7 +814,7 @@ func TestHttpReception(t *testing.T) {
 					return rt, nil
 				}
 			}
-			client, errClient := hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{})
+			client, errClient := hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{Logger: zap.NewNop()})
 			require.NoError(t, errClient)
 
 			resp, errResp := client.Get(hcs.Endpoint)

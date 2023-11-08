@@ -54,6 +54,7 @@ type HTTPClientSettings struct {
 	Headers map[string]configopaque.String `mapstructure:"headers"`
 
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
+	// Deprecated: [0.89.0] Replaced by confighttp.WithRoundTripper
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
 
 	// Auth configuration for outgoing HTTP calls.
@@ -103,8 +104,31 @@ func NewDefaultHTTPClientSettings() HTTPClientSettings {
 	}
 }
 
+// toClientOptions has options that change the behavior of the HTTP client
+// returned by HTTPClientSettings.ToClient().
+type toClientOptions struct {
+	customRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
+}
+
+// ToClientOption is an option to change the behavior of the HTTP client
+// returned by HTTPClientSettings.ToClient().
+type ToClientOption func(opts *toClientOptions)
+
+// WithRoundTripper allow for individual components to intercept HTTP requests
+func WithRoundTripper(customRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)) ToClientOption {
+	return func(opts *toClientOptions) {
+		opts.customRoundTripper = customRoundTripper
+	}
+}
+
 // ToClient creates an HTTP client.
-func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.TelemetrySettings, opts ...ToClientOption) (*http.Client, error) {
+
+	clientOpts := &toClientOptions{}
+	for _, o := range opts {
+		o(clientOpts)
+	}
+
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
@@ -196,7 +220,14 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 	}
 
 	if hcs.CustomRoundTripper != nil {
+		settings.Logger.Warn("You are using a deprecated `CustomRoundTripper` field which will be removed soon; use `WithRoundTripper` instead")
 		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if clientOpts.customRoundTripper != nil {
+		clientTransport, err = clientOpts.customRoundTripper(clientTransport)
 		if err != nil {
 			return nil, err
 		}
