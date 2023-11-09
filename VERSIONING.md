@@ -107,7 +107,7 @@ on its intended usage (e.g. when calling a method or when passed to any method o
           whenever you are using the module name).
         * If a module is version `v0` or `v1`, do not include the major version
           in either the module path or the import path.
-    * Modules will be used to encapsulate receivers, processor, exporters,
+    * Modules will be used to encapsulate receivers, processors, exporters,
       extensions, connectors and any other independent sets of related components.
         * Experimental modules still under active development will be versioned with a major
           version of `v0` to imply the stability guarantee defined by
