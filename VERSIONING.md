@@ -29,6 +29,7 @@ Unless otherwise specified in the documentation, the following may change in any
 * **String representation**. The `String` method of any struct is intended to be human-readable and may change its output
   in any way.
 * **Go version compatibility**. Removing support for an unsupported Go version is not considered a breaking change.
+* **OS version compatibility**. Removing support for an unsupported OS version is not considered a breaking change. Upgrading or downgrading OS version support per the [platform support](docs/platform-support.md) document is not considered a breaking change.
 * **Dependency updates**. Updating dependencies is not considered a breaking change except when their types are part of the
 public API or the update may change the behavior of applications in an incompatible way.
 
@@ -41,6 +42,8 @@ Unless otherwise specified in the documentation, the following may change in any
 * **Adding new fields to configuration structures**. Because configuration structures are typically instantiated through 
 unmarshalling a serialized representation of the structure, and not through structure literals, additive changes to 
 the set of exported fields in a configuration structure are not considered to break backward compatibility.
+* **Relaxing validation rules**. An invalid configuration struct as defined by its `Validate` method return value
+may become valid after a change to the validation rules.
 
 The following are explicitly considered to be breaking changes:
 * **Modifying struct tags related to serialization**. Struct tags used to configure serialization mechanisms (`yaml:`, 
