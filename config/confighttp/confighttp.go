@@ -55,7 +55,7 @@ type HTTPClientSettings struct {
 
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
 	// Deprecated: [0.89.0] Replaced by confighttp.WithRoundTripper
-	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
+	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error) `mapstructure:"-"`
 
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth"`
