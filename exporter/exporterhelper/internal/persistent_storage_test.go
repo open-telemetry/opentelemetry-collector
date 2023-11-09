@@ -250,7 +250,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 
 	// There should be no items left in the storage
 	for i := 0; i < int(newPs.writeIndex); i++ {
-		bb, err := client.Get(context.Background(), newPs.itemKey(itemIndex(i)))
+		bb, err := client.Get(context.Background(), getItemKey(itemIndex(i)))
 		require.NoError(t, err)
 		require.Nil(t, bb)
 	}
@@ -403,36 +403,60 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 	}
 }
 
-func TestPersistentStorage_ItemIndexMarshaling(t *testing.T) {
+func TestItemIndexMarshaling(t *testing.T) {
 	cases := []struct {
-		arr1 []itemIndex
-		arr2 []itemIndex
+		in  itemIndex
+		out itemIndex
 	}{
 		{
-			arr1: []itemIndex{0, 1, 2},
-			arr2: []itemIndex{0, 1, 2},
+			in:  0,
+			out: 0,
 		},
 		{
-			arr1: []itemIndex{},
-			arr2: []itemIndex{},
+			in:  1,
+			out: 1,
 		},
 		{
-			arr1: nil,
-			arr2: []itemIndex{},
+			in:  0xFFFFFFFFFFFFFFFF,
+			out: 0xFFFFFFFFFFFFFFFF,
 		},
 	}
 
 	for _, c := range cases {
-		count := 0
-		if c.arr1 != nil {
-			count = len(c.arr1)
-		}
-		t.Run(fmt.Sprintf("#elements:%d", count), func(tt *testing.T) {
-			barr, err := itemIndexArrayToBytes(c.arr1)
+		t.Run(fmt.Sprintf("#elements:%v", c.in), func(tt *testing.T) {
+			buf := itemIndexToBytes(c.in)
+			out, err := bytesToItemIndex(buf)
 			require.NoError(t, err)
-			arr2, err := bytesToItemIndexArray(barr)
+			require.Equal(t, c.out, out)
+		})
+	}
+}
+
+func TestItemIndexArrayMarshaling(t *testing.T) {
+	cases := []struct {
+		in  []itemIndex
+		out []itemIndex
+	}{
+		{
+			in:  []itemIndex{0, 1, 2},
+			out: []itemIndex{0, 1, 2},
+		},
+		{
+			in:  []itemIndex{},
+			out: []itemIndex{},
+		},
+		{
+			in:  nil,
+			out: []itemIndex{},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(fmt.Sprintf("#elements:%v", c.in), func(tt *testing.T) {
+			buf := itemIndexArrayToBytes(c.in)
+			out, err := bytesToItemIndexArray(buf)
 			require.NoError(t, err)
-			require.Equal(t, c.arr2, arr2)
+			require.Equal(t, c.out, out)
 		})
 	}
 }
