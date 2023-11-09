@@ -35,8 +35,17 @@ func NewLogs(consume ConsumeLogsFunc, options ...Option) (Logs, error) {
 	if consume == nil {
 		return nil, errNilFunc
 	}
+
+	baseImpl := newBaseImpl(options...)
+	fn := func(ctx context.Context, ld plog.Logs) error {
+		baseImpl.obsreport.StartTracesOp(ctx)
+		err := consume(ctx, ld)
+		baseImpl.obsreport.EndTracesOp(ctx, ld.LogRecordCount(), err)
+		return err
+	}
+
 	return &baseLogs{
-		baseImpl:        newBaseImpl(options...),
-		ConsumeLogsFunc: consume,
+		baseImpl:        baseImpl,
+		ConsumeLogsFunc: fn,
 	}, nil
 }

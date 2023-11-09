@@ -35,8 +35,17 @@ func NewMetrics(consume ConsumeMetricsFunc, options ...Option) (Metrics, error) 
 	if consume == nil {
 		return nil, errNilFunc
 	}
+
+	baseImpl := newBaseImpl(options...)
+	fn := func(ctx context.Context, ld pmetric.Metrics) error {
+		ctx = baseImpl.obsreport.StartTracesOp(ctx)
+		err := consume(ctx, ld)
+		baseImpl.obsreport.EndTracesOp(ctx, ld.DataPointCount(), err)
+		return err
+	}
+
 	return &baseMetrics{
-		baseImpl:           newBaseImpl(options...),
-		ConsumeMetricsFunc: consume,
+		baseImpl:           baseImpl,
+		ConsumeMetricsFunc: fn,
 	}, nil
 }

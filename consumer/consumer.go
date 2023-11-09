@@ -25,6 +25,7 @@ var errNilFunc = errors.New("nil consumer func")
 
 type baseImpl struct {
 	capabilities Capabilities
+	obsreport    ObsReport
 }
 
 // Option to construct new consumers.
@@ -38,6 +39,12 @@ func WithCapabilities(capabilities Capabilities) Option {
 	}
 }
 
+func WithObsReport(report ObsReport) Option {
+	return func(o *baseImpl) {
+		o.obsreport = report
+	}
+}
+
 // Capabilities implementation of the base
 func (bs baseImpl) Capabilities() Capabilities {
 	return bs.capabilities
@@ -46,6 +53,7 @@ func (bs baseImpl) Capabilities() Capabilities {
 func newBaseImpl(options ...Option) *baseImpl {
 	bs := &baseImpl{
 		capabilities: Capabilities{MutatesData: false},
+		obsreport:    noopObsReport,
 	}
 
 	for _, op := range options {

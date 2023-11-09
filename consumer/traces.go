@@ -35,8 +35,17 @@ func NewTraces(consume ConsumeTracesFunc, options ...Option) (Traces, error) {
 	if consume == nil {
 		return nil, errNilFunc
 	}
+
+	baseImpl := newBaseImpl(options...)
+	fn := func(ctx context.Context, td ptrace.Traces) error {
+		ctx = baseImpl.obsreport.StartTracesOp(ctx)
+		err := consume(ctx, td)
+		baseImpl.obsreport.EndTracesOp(ctx, td.SpanCount(), err)
+		return err
+	}
+
 	return &baseTraces{
-		baseImpl:          newBaseImpl(options...),
-		ConsumeTracesFunc: consume,
+		baseImpl:          baseImpl,
+		ConsumeTracesFunc: fn,
 	}, nil
 }
