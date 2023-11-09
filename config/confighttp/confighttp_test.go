@@ -132,9 +132,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			tt := componenttest.NewNopTelemetrySettings()
-			tt.TracerProvider = nil
-			client, err := test.settings.ToClient(host, tt)
+			client, err := test.settings.ToClient(host, componenttest.NewNopTelemetrySettings())
 			if test.shouldError {
 				assert.Error(t, err)
 				return
@@ -247,9 +245,7 @@ func TestHTTPClientSettingWithRoundTripper(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			tt := componenttest.NewNopTelemetrySettings()
-			tt.TracerProvider = nil
-			client, err := test.settings.ToClient(host, tt, WithRoundTripper(test.customRoundTripper))
+			client, err := test.settings.ToClient(host, componenttest.NewNopTelemetrySettings(), WithRoundTripper(test.customRoundTripper))
 			if test.shouldError {
 				assert.Error(t, err)
 				return
@@ -300,9 +296,8 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			tt := componenttest.NewNopTelemetrySettings()
-			tt.TracerProvider = nil
-			client, err := test.settings.ToClient(host, tt)
+			// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
+			client, err := test.settings.ToClient(host, component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone})
 			assert.NoError(t, err)
 			transport := client.Transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
@@ -814,7 +809,8 @@ func TestHttpReception(t *testing.T) {
 					return rt, nil
 				}
 			}
-			client, errClient := hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{Logger: zap.NewNop()})
+			// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
+			client, errClient := hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone})
 			require.NoError(t, errClient)
 
 			resp, errResp := client.Get(hcs.Endpoint)
@@ -1449,13 +1445,15 @@ func BenchmarkHttpRequest(b *testing.B) {
 		}
 		b.Run(bb.name, func(b *testing.B) {
 			var c *http.Client
+			// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
+			set := component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone}
 			if !bb.clientPerThread {
-				c, err = hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{})
+				c, err = hcs.ToClient(componenttest.NewNopHost(), set)
 				require.NoError(b, err)
 			}
 			b.RunParallel(func(pb *testing.PB) {
 				if c == nil {
-					c, err = hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{})
+					c, err = hcs.ToClient(componenttest.NewNopHost(), set)
 					require.NoError(b, err)
 				}
 				for pb.Next() {
