@@ -112,21 +112,29 @@ type toClientOptions struct {
 
 // ToClientOption is an option to change the behavior of the HTTP client
 // returned by HTTPClientSettings.ToClient().
-type ToClientOption func(opts *toClientOptions)
+type ToClientOption interface {
+	apply(*toClientOptions)
+}
+
+type toClientOptionFunc func(*toClientOptions)
+
+func (fn toClientOptionFunc) apply(opts *toClientOptions) {
+	fn(opts)
+}
 
 // WithRoundTripper allow for individual components to intercept HTTP requests
 func WithRoundTripper(customRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)) ToClientOption {
-	return func(opts *toClientOptions) {
+	return toClientOptionFunc(func(opts *toClientOptions) {
 		opts.customRoundTripper = customRoundTripper
-	}
+	})
 }
 
 // ToClient creates an HTTP client.
 func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.TelemetrySettings, opts ...ToClientOption) (*http.Client, error) {
 
 	clientOpts := &toClientOptions{}
-	for _, o := range opts {
-		o(clientOpts)
+	for _, opt := range opts {
+		opt.apply(clientOpts)
 	}
 
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
@@ -308,25 +316,33 @@ type toServerOptions struct {
 
 // ToServerOption is an option to change the behavior of the HTTP server
 // returned by HTTPServerSettings.ToServer().
-type ToServerOption func(opts *toServerOptions)
+type ToServerOption interface {
+	apply(opts *toServerOptions)
+}
+
+type toServerOptionFunc func(opts *toServerOptions)
+
+func (fn toServerOptionFunc) apply(opts *toServerOptions) {
+	fn(opts)
+}
 
 // WithErrorHandler overrides the HTTP error handler that gets invoked
 // when there is a failure inside httpContentDecompressor.
 func WithErrorHandler(e func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)) ToServerOption {
-	return func(opts *toServerOptions) {
+	return toServerOptionFunc(func(opts *toServerOptions) {
 		opts.errHandler = e
-	}
+	})
 }
 
 // WithDecoder provides support for additional decoders to be configured
 // by the caller.
 func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)) ToServerOption {
-	return func(opts *toServerOptions) {
+	return toServerOptionFunc(func(opts *toServerOptions) {
 		if opts.decoders == nil {
 			opts.decoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
 		}
 		opts.decoders[key] = dec
-	}
+	})
 }
 
 // ToServer creates an http.Server from settings object.
@@ -334,8 +350,8 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 	internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
 
 	serverOpts := &toServerOptions{}
-	for _, o := range opts {
-		o(serverOpts)
+	for _, opt := range opts {
+		opt.apply(serverOpts)
 	}
 
 	handler = httpContentDecompressor(handler, serverOpts.errHandler, serverOpts.decoders)
