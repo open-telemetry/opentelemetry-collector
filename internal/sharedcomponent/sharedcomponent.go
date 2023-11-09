@@ -36,10 +36,11 @@ func (scs *SharedComponents[K, V]) GetOrAdd(key K, create func() (V, error), tel
 			c.seenSettings[telemetrySettings] = struct{}{}
 			prev := c.telemetry.ReportComponentStatus
 			c.telemetry.ReportComponentStatus = func(ev *component.StatusEvent) error {
-				if err := telemetrySettings.ReportComponentStatus(ev); err != nil {
-					return err
+				err := telemetrySettings.ReportComponentStatus(ev)
+				if prevErr := prev(ev); prevErr != nil {
+					err = prevErr
 				}
-				return prev(ev)
+				return err
 			}
 		}
 		return c, nil
