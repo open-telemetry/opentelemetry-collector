@@ -31,8 +31,8 @@ type TelemetrySettingsBase struct {
 	Resource pcommon.Resource
 }
 
-// TelemetrySettings and servicetelemetry.Settings differ in the method signature for
-// ReportComponentStatus
+// TelemetrySettings and servicetelemetry.TelemetrySettings differ in their
+// mechanism for reporting component status.
 type TelemetrySettings struct {
 	*TelemetrySettingsBase
 

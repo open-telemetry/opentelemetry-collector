@@ -59,13 +59,30 @@ func TestMetricsExporter_NilConfig(t *testing.T) {
 }
 
 func TestMetricsExporter_NilLogger(t *testing.T) {
-	me, err := NewMetricsExporter(context.Background(), exporter.CreateSettings{}, &fakeMetricsExporterConfig, newPushMetricsData(nil))
+	me, err := NewMetricsExporter(
+		context.Background(),
+		exporter.CreateSettings{
+			TelemetrySettings: component.TelemetrySettings{
+				TelemetrySettingsBase: &component.TelemetrySettingsBase{},
+			},
+		},
+		&fakeMetricsExporterConfig,
+		newPushMetricsData(nil),
+	)
 	require.Nil(t, me)
 	require.Equal(t, errNilLogger, err)
 }
 
 func TestMetricsRequestExporter_NilLogger(t *testing.T) {
-	me, err := NewMetricsRequestExporter(context.Background(), exporter.CreateSettings{}, fakeRequestConverter{})
+	me, err := NewMetricsRequestExporter(
+		context.Background(),
+		exporter.CreateSettings{
+			TelemetrySettings: component.TelemetrySettings{
+				TelemetrySettingsBase: &component.TelemetrySettingsBase{},
+			},
+		},
+		fakeRequestConverter{},
+	)
 	require.Nil(t, me)
 	require.Equal(t, errNilLogger, err)
 }

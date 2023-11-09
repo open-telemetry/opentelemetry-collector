@@ -429,15 +429,24 @@ func (g *Graph) ShutdownAll(ctx context.Context) error {
 		}
 
 		instanceID := g.instanceIDs[node.ID()]
-		_ = g.telemetry.Status.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStopping))
+		_ = g.telemetry.Status.ReportComponentStatus(
+			instanceID,
+			component.NewStatusEvent(component.StatusStopping),
+		)
 
 		if compErr := comp.Shutdown(ctx); compErr != nil {
 			errs = multierr.Append(errs, compErr)
-			_ = g.telemetry.Status.ReportComponentStatus(instanceID, component.NewPermanentErrorEvent(compErr))
+			_ = g.telemetry.Status.ReportComponentStatus(
+				instanceID,
+				component.NewPermanentErrorEvent(compErr),
+			)
 			continue
 		}
 
-		_ = g.telemetry.Status.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStopped))
+		_ = g.telemetry.Status.ReportComponentStatus(
+			instanceID,
+			component.NewStatusEvent(component.StatusStopped),
+		)
 	}
 	return errs
 }

@@ -18,7 +18,7 @@ import (
 
 func TestNewNopSettings(t *testing.T) {
 	set := NewNopTelemetrySettings()
-
+	set.Status.Ready()
 	require.NotNil(t, set)
 	require.IsType(t, TelemetrySettings{}, set)
 	require.Equal(t, zap.NewNop(), set.Logger)

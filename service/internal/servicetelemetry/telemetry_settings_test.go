@@ -28,20 +28,21 @@ func TestSettings(t *testing.T) {
 		},
 		Status: status.NewReporter(func(*component.InstanceID, *component.StatusEvent) {}),
 	}
+	set.Status.Ready()
 	require.NoError(t,
 		set.Status.ReportComponentStatus(
 			&component.InstanceID{},
-			component.NewStatusEvent(component.StatusOK),
+			component.NewStatusEvent(component.StatusStarting),
 		),
 	)
 	require.NoError(t,
 		set.Status.ReportComponentStatusIf(
 			&component.InstanceID{},
-			component.NewStatusEvent(component.StatusOK),
+			component.NewStatusEvent(component.StatusStarting),
 			func(component.Status) bool { return true },
 		),
 	)
 
 	compSet := set.ToComponentTelemetrySettings(&component.InstanceID{})
-	require.NoError(t, compSet.ReportComponentStatus(component.NewStatusEvent(component.StatusOK)))
+	require.NoError(t, compSet.ReportComponentStatus(component.NewStatusEvent(component.StatusStarting)))
 }

@@ -100,7 +100,7 @@ type Reporter struct {
 	onStatusChange NotifyStatusFunc
 }
 
-// NewReporter a reporter that will invoke the NotifyStatusFunc when a component's status
+// NewReporter returns a reporter that will invoke the NotifyStatusFunc when a component's status
 // has changed.
 func NewReporter(onStatusChange NotifyStatusFunc) *Reporter {
 	return &Reporter{
@@ -148,6 +148,7 @@ func (r *Reporter) ReportComponentStatusIf(
 	return nil
 }
 
+// Note: a lock must be acquired before calling this method.
 func (r *Reporter) componentFSM(id *component.InstanceID) *fsm {
 	fsm, ok := r.fsmMap[id]
 	if !ok {

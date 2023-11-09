@@ -8,9 +8,9 @@ import (
 	"go.opentelemetry.io/collector/service/internal/status"
 )
 
-// TelemetrySettings mirrors component.TelemetrySettings except for the method signature of
-// ReportComponentStatus. The service level TelemetrySettings is not bound a specific component, and
-// therefore takes a component.InstanceID as an argument.
+// TelemetrySettings mirrors component.TelemetrySettings except for the mechanism for reporting
+// status. Service-level status reporting has additional methods which can report status for
+// components by their InstanceID whereas the component versions are tied to a specific component.
 type TelemetrySettings struct {
 	*component.TelemetrySettingsBase
 	Status *status.Reporter
