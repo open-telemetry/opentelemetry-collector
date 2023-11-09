@@ -94,12 +94,9 @@ var errStatusNotReady = errors.New("report component status is not ready until s
 
 // Reporter handles component status reporting
 type Reporter struct {
-	fsmMap map[*component.InstanceID]*fsm
-	fsmMu  sync.RWMutex
-
-	ready   bool
-	readyMu sync.RWMutex
-
+	mu             sync.Mutex
+	ready          bool
+	fsmMap         map[*component.InstanceID]*fsm
 	onStatusChange NotifyStatusFunc
 }
 
@@ -108,10 +105,15 @@ type Reporter struct {
 func NewReporter(onStatusChange NotifyStatusFunc) *Reporter {
 	return &Reporter{
 		fsmMap:         make(map[*component.InstanceID]*fsm),
-		fsmMu:          sync.RWMutex{},
-		readyMu:        sync.RWMutex{},
 		onStatusChange: onStatusChange,
 	}
+}
+
+// Ready enables status reporting
+func (r *Reporter) Ready() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.ready = true
 }
 
 // ReportComponentStatus reports status for the given InstanceID
@@ -119,11 +121,11 @@ func (r *Reporter) ReportComponentStatus(
 	id *component.InstanceID,
 	ev *component.StatusEvent,
 ) error {
-	if !r.isReady() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.ready {
 		return errStatusNotReady
 	}
-	r.fsmMu.Lock()
-	defer r.fsmMu.Unlock()
 	return r.componentFSM(id).transition(ev)
 }
 
@@ -134,11 +136,11 @@ func (r *Reporter) ReportComponentStatusIf(
 	ev *component.StatusEvent,
 	cond func(component.Status) bool,
 ) error {
-	if !r.isReady() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.ready {
 		return errStatusNotReady
 	}
-	r.fsmMu.Lock()
-	defer r.fsmMu.Unlock()
 	fsm := r.componentFSM(id)
 	if cond(fsm.current.Status()) {
 		return fsm.transition(ev)
@@ -149,25 +151,10 @@ func (r *Reporter) ReportComponentStatusIf(
 func (r *Reporter) componentFSM(id *component.InstanceID) *fsm {
 	fsm, ok := r.fsmMap[id]
 	if !ok {
-		fsm = newFSM(func(ev *component.StatusEvent) {
-			r.onStatusChange(id, ev)
-		})
+		fsm = newFSM(func(ev *component.StatusEvent) { r.onStatusChange(id, ev) })
 		r.fsmMap[id] = fsm
 	}
 	return fsm
-}
-
-// Ready enables status reporting
-func (r *Reporter) Ready() {
-	r.readyMu.Lock()
-	defer r.readyMu.Unlock()
-	r.ready = true
-}
-
-func (r *Reporter) isReady() bool {
-	r.readyMu.RLock()
-	defer r.readyMu.RUnlock()
-	return r.ready
 }
 
 // NewComponentStatusFunc returns a function to be used as ReportComponentStatus for
