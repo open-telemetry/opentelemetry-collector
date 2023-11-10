@@ -94,11 +94,13 @@ func NewTracesExporter(
 	}
 
 	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
+		ctx = be.obsrep.StartTracesOp(ctx)
 		req := newTracesRequest(td, pusher)
 		serr := be.send(ctx, req)
 		if errors.Is(serr, internal.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeTraces, int64(req.ItemsCount()))
 		}
+		be.obsrep.EndTracesOp(ctx, td.SpanCount(), serr)
 		return serr
 	}, be.consumerOptions...)
 
@@ -139,6 +141,7 @@ func NewTracesRequestExporter(
 	}
 
 	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
+		ctx = be.obsrep.StartTracesOp(ctx)
 		req, cErr := converter.RequestFromTraces(ctx, td)
 		if cErr != nil {
 			set.Logger.Error("Failed to convert traces. Dropping data.",
@@ -150,6 +153,7 @@ func NewTracesRequestExporter(
 		if errors.Is(sErr, internal.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeTraces, int64(req.ItemsCount()))
 		}
+		be.obsrep.EndTracesOp(ctx, td.SpanCount(), sErr)
 		return sErr
 	}, be.consumerOptions...)
 
@@ -159,6 +163,7 @@ func NewTracesRequestExporter(
 	}, err
 }
 
+// TODO: remove the code below
 type tracesExporterWithObservability struct {
 	baseRequestSender
 	obsrep *ObsReport
@@ -169,9 +174,7 @@ func newTracesExporterWithObservability(obsrep *ObsReport) requestSender {
 }
 
 func (tewo *tracesExporterWithObservability) send(ctx context.Context, req Request) error {
-	c := tewo.obsrep.StartTracesOp(ctx)
 	// Forward the data to the next consumer (this pusher is the next).
-	err := tewo.nextSender.send(c, req)
-	tewo.obsrep.EndTracesOp(c, req.ItemsCount(), err)
+	err := tewo.nextSender.send(ctx, req)
 	return err
 }

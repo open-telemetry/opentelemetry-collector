@@ -94,11 +94,13 @@ func NewMetricsExporter(
 	}
 
 	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
+		ctx = be.obsrep.StartMetricsOp(ctx)
 		req := newMetricsRequest(md, pusher)
 		serr := be.send(ctx, req)
 		if errors.Is(serr, internal.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
 		}
+		be.obsrep.EndTracesOp(ctx, md.DataPointCount(), serr)
 		return serr
 	}, be.consumerOptions...)
 
@@ -139,6 +141,7 @@ func NewMetricsRequestExporter(
 	}
 
 	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
+		ctx = be.obsrep.StartMetricsOp(ctx)
 		req, cErr := converter.RequestFromMetrics(ctx, md)
 		if cErr != nil {
 			set.Logger.Error("Failed to convert metrics. Dropping data.",
@@ -150,6 +153,7 @@ func NewMetricsRequestExporter(
 		if errors.Is(sErr, internal.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
 		}
+		be.obsrep.EndTracesOp(ctx, md.DataPointCount(), sErr)
 		return sErr
 	}, be.consumerOptions...)
 

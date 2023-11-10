@@ -94,11 +94,13 @@ func NewLogsExporter(
 	}
 
 	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
+		ctx = be.obsrep.StartLogsOp(ctx)
 		req := newLogsRequest(ld, pusher)
 		serr := be.send(ctx, req)
 		if errors.Is(serr, internal.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeLogs, int64(req.ItemsCount()))
 		}
+		be.obsrep.EndLogsOp(ctx, ld.LogRecordCount(), serr)
 		return serr
 	}, be.consumerOptions...)
 
@@ -139,6 +141,7 @@ func NewLogsRequestExporter(
 	}
 
 	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
+		ctx = be.obsrep.StartLogsOp(ctx)
 		req, cErr := converter.RequestFromLogs(ctx, ld)
 		if cErr != nil {
 			set.Logger.Error("Failed to convert logs. Dropping data.",
@@ -150,6 +153,7 @@ func NewLogsRequestExporter(
 		if errors.Is(sErr, internal.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeLogs, int64(req.ItemsCount()))
 		}
+		be.obsrep.EndLogsOp(ctx, ld.LogRecordCount(), sErr)
 		return sErr
 	}, be.consumerOptions...)
 
