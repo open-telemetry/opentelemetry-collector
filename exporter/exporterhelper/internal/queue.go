@@ -18,9 +18,9 @@ type QueueSettings struct {
 	Callback func(item Request)
 }
 
-// ProducerConsumerQueue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
+// Queue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
 // (boundedMemoryQueue) or via a disk-based queue (persistentQueue)
-type ProducerConsumerQueue interface {
+type Queue interface {
 	// Start starts the queue with a given number of goroutines consuming items from the queue
 	// and passing them into the consumer callback.
 	Start(ctx context.Context, host component.Host, set QueueSettings) error
@@ -29,9 +29,8 @@ type ProducerConsumerQueue interface {
 	Produce(item Request) bool
 	// Size returns the current Size of the queue
 	Size() int
-	// Stop stops all consumers, as well as the length reporter if started,
-	// and releases the items channel. It blocks until all consumers have stopped.
-	Stop()
+	// Shutdown stops accepting items, and stops all consumers. It blocks until all consumers have stopped.
+	Shutdown(ctx context.Context) error
 	// Capacity returns the capacity of the queue.
 	Capacity() int
 	// IsPersistent returns true if the queue is persistent.

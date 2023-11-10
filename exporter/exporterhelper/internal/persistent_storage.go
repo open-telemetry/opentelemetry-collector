@@ -48,7 +48,6 @@ type persistentContiguousStorage struct {
 
 	putChan  chan struct{}
 	stopChan chan struct{}
-	stopOnce sync.Once
 	capacity uint64
 
 	reqChan chan Request
@@ -96,7 +95,7 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, clien
 	}
 
 	pcs.initPersistentContiguousStorage(ctx)
-	notDispatchedReqs := pcs.retrieveNotDispatchedReqs(context.Background())
+	notDispatchedReqs := pcs.retrieveNotDispatchedReqs(ctx)
 
 	// Make sure the leftover requests are handled
 	pcs.enqueueNotDispatchedReqs(notDispatchedReqs)
@@ -184,14 +183,10 @@ func (pcs *persistentContiguousStorage) size() uint64 {
 	return pcs.itemsCount.Load()
 }
 
-func (pcs *persistentContiguousStorage) stop() {
+func (pcs *persistentContiguousStorage) stop(ctx context.Context) error {
 	pcs.logger.Debug("Stopping persistentContiguousStorage")
-	pcs.stopOnce.Do(func() {
-		close(pcs.stopChan)
-		if err := pcs.client.Close(context.Background()); err != nil {
-			pcs.logger.Warn("failed to close client", zap.Error(err))
-		}
-	})
+	close(pcs.stopChan)
+	return pcs.client.Close(ctx)
 }
 
 // put marshals the request and puts it into the persistent queue

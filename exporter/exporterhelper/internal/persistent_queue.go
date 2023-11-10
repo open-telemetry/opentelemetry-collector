@@ -15,10 +15,11 @@ import (
 
 var (
 	// Monkey patching for unit test
-	stopStorage = func(queue *persistentQueue) {
-		if queue.storage != nil {
-			queue.storage.stop()
+	stopStorage = func(storage *persistentContiguousStorage, ctx context.Context) error {
+		if storage == nil {
+			return nil
 		}
+		return storage.stop(ctx)
 	}
 	errNoStorageClient    = errors.New("no storage client extension found")
 	errWrongExtensionType = errors.New("requested extension is not a storage extension")
@@ -27,7 +28,6 @@ var (
 // persistentQueue holds the queue backed by file storage
 type persistentQueue struct {
 	stopWG       sync.WaitGroup
-	stopOnce     sync.Once
 	stopChan     chan struct{}
 	storageID    component.ID
 	storage      *persistentContiguousStorage
@@ -45,7 +45,7 @@ func buildPersistentStorageName(name string, signal component.DataType) string {
 
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
 func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, marshaler RequestMarshaler,
-	unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
+	unmarshaler RequestUnmarshaler) Queue {
 	return &persistentQueue{
 		capacity:     uint64(capacity),
 		numConsumers: numConsumers,
@@ -87,14 +87,11 @@ func (pq *persistentQueue) Produce(item Request) bool {
 	return err == nil
 }
 
-// Stop stops accepting items, shuts down the queue and closes the persistent queue
-func (pq *persistentQueue) Stop() {
-	pq.stopOnce.Do(func() {
-		// stop the consumers before the storage or the successful processing result will fail to write to persistent storage
-		close(pq.stopChan)
-		pq.stopWG.Wait()
-		stopStorage(pq)
-	})
+// Shutdown stops accepting items, shuts down the queue and closes the persistent queue
+func (pq *persistentQueue) Shutdown(ctx context.Context) error {
+	close(pq.stopChan)
+	pq.stopWG.Wait()
+	return stopStorage(pq.storage, ctx)
 }
 
 // Size returns the current depth of the queue, excluding the item already in the storage channel (if any)

@@ -15,14 +15,15 @@ import (
 type mockStorageExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
+	st             sync.Map
 	getClientError error
 }
 
-func (m mockStorageExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, _ string) (storage.Client, error) {
+func (m *mockStorageExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, _ string) (storage.Client, error) {
 	if m.getClientError != nil {
 		return nil, m.getClientError
 	}
-	return &mockStorageClient{st: map[string][]byte{}}, nil
+	return &mockStorageClient{st: &m.st}, nil
 }
 
 func NewMockStorageExtension(getClientError error) storage.Extension {
@@ -30,36 +31,26 @@ func NewMockStorageExtension(getClientError error) storage.Extension {
 }
 
 type mockStorageClient struct {
-	st           map[string][]byte
-	mux          sync.Mutex
+	st           *sync.Map
 	closeCounter uint64
 }
 
 func (m *mockStorageClient) Get(_ context.Context, s string) ([]byte, error) {
-	m.mux.Lock()
-	defer m.mux.Unlock()
-
-	val, found := m.st[s]
+	val, found := m.st.Load(s)
 	if !found {
 		return nil, nil
 	}
 
-	return val, nil
+	return val.([]byte), nil
 }
 
 func (m *mockStorageClient) Set(_ context.Context, s string, bytes []byte) error {
-	m.mux.Lock()
-	defer m.mux.Unlock()
-
-	m.st[s] = bytes
+	m.st.Store(s, bytes)
 	return nil
 }
 
 func (m *mockStorageClient) Delete(_ context.Context, s string) error {
-	m.mux.Lock()
-	defer m.mux.Unlock()
-
-	delete(m.st, s)
+	m.st.Delete(s)
 	return nil
 }
 
@@ -69,17 +60,18 @@ func (m *mockStorageClient) Close(_ context.Context) error {
 }
 
 func (m *mockStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
-	m.mux.Lock()
-	defer m.mux.Unlock()
-
 	for _, op := range ops {
 		switch op.Type {
 		case storage.Get:
-			op.Value = m.st[op.Key]
+			val, found := m.st.Load(op.Key)
+			if !found {
+				break
+			}
+			op.Value = val.([]byte)
 		case storage.Set:
-			m.st[op.Key] = op.Value
+			m.st.Store(op.Key, op.Value)
 		case storage.Delete:
-			delete(m.st, op.Key)
+			m.st.Delete(op.Key)
 		default:
 			return errors.New("wrong operation type")
 		}

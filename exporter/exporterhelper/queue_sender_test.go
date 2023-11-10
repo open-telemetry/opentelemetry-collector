@@ -362,8 +362,8 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 
 	// wraps original queue so we can count operations
 	be.queueSender.(*queueSender).queue = &producerConsumerQueueWithCounter{
-		ProducerConsumerQueue: be.queueSender.(*queueSender).queue,
-		produceCounter:        produceCounter,
+		Queue:          be.queueSender.(*queueSender).queue,
+		produceCounter: produceCounter,
 	}
 	be.queueSender.(*queueSender).requeuingEnabled = true
 

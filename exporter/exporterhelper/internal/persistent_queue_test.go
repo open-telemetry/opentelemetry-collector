@@ -32,7 +32,7 @@ func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 // createTestQueue creates and starts a fake queue with the given capacity and number of consumers.
-func createTestQueue(t *testing.T, capacity, numConsumers int, callback func(item Request)) ProducerConsumerQueue {
+func createTestQueue(t *testing.T, capacity, numConsumers int, callback func(item Request)) Queue {
 	pq := NewPersistentQueue(capacity, numConsumers, component.ID{}, newFakeTracesRequestMarshalerFunc(),
 		newFakeTracesRequestUnmarshalerFunc())
 	host := &mockHost{ext: map[component.ID]component.Component{
@@ -40,92 +40,77 @@ func createTestQueue(t *testing.T, capacity, numConsumers int, callback func(ite
 	}}
 	err := pq.Start(context.Background(), host, newNopQueueSettings(callback))
 	require.NoError(t, err)
-	t.Cleanup(pq.Stop)
 	return pq
 }
 
 func TestPersistentQueue_Capacity(t *testing.T) {
-	for i := 0; i < 100; i++ {
-		pq := NewPersistentQueue(5, 1, component.ID{}, newFakeTracesRequestMarshalerFunc(),
-			newFakeTracesRequestUnmarshalerFunc())
-		host := &mockHost{ext: map[component.ID]component.Component{
-			{}: NewMockStorageExtension(nil),
-		}}
-		err := pq.Start(context.Background(), host, newNopQueueSettings(func(req Request) {}))
-		require.NoError(t, err)
+	pq := NewPersistentQueue(5, 1, component.ID{}, newFakeTracesRequestMarshalerFunc(),
+		newFakeTracesRequestUnmarshalerFunc())
+	host := &mockHost{ext: map[component.ID]component.Component{
+		{}: NewMockStorageExtension(nil),
+	}}
+	err := pq.Start(context.Background(), host, newNopQueueSettings(func(req Request) {}))
+	require.NoError(t, err)
 
-		// Stop consumer to imitate queue overflow
-		close(pq.(*persistentQueue).stopChan)
-		pq.(*persistentQueue).stopWG.Wait()
+	// Stop consumer to imitate queue overflow
+	close(pq.(*persistentQueue).stopChan)
+	pq.(*persistentQueue).stopWG.Wait()
 
-		assert.Equal(t, 0, pq.Size())
+	assert.Equal(t, 0, pq.Size())
 
-		traces := newTraces(1, 10)
-		req := newFakeTracesRequest(traces)
+	req := newFakeTracesRequest(newTraces(1, 10))
 
-		for i := 0; i < 10; i++ {
-			result := pq.Produce(req)
-			if i < 6 {
-				assert.True(t, result)
-			} else {
-				assert.False(t, result)
-			}
-
-			// Let's make sure the loop picks the first element into the channel,
-			// so the capacity could be used in full
-			if i == 0 {
-				assert.Eventually(t, func() bool {
-					return pq.Size() == 0
-				}, 5*time.Second, 10*time.Millisecond)
-			}
+	for i := 0; i < 10; i++ {
+		result := pq.Produce(req)
+		if i < 6 {
+			assert.True(t, result)
+		} else {
+			assert.False(t, result)
 		}
-		assert.Equal(t, 5, pq.Size())
-		stopStorage(pq.(*persistentQueue))
+
+		// Let's make sure the loop picks the first element into the channel,
+		// so the capacity could be used in full
+		if i == 0 {
+			assert.Eventually(t, func() bool {
+				return pq.Size() == 0
+			}, 5*time.Second, 10*time.Millisecond)
+		}
 	}
+	assert.Equal(t, 5, pq.Size())
+	assert.NoError(t, stopStorage(pq.(*persistentQueue).storage, context.Background()))
 }
 
-func TestPersistentQueue_Close(t *testing.T) {
-	wq := createTestQueue(t, 1001, 100, func(item Request) {})
-	traces := newTraces(1, 10)
-	req := newFakeTracesRequest(traces)
+func TestPersistentQueueShutdown(t *testing.T) {
+	pq := createTestQueue(t, 1001, 100, func(item Request) {})
+	req := newFakeTracesRequest(newTraces(1, 10))
 
 	for i := 0; i < 1000; i++ {
-		wq.Produce(req)
+		pq.Produce(req)
 	}
-	// This will close the queue very quickly, consumers might not be able to consume anything and should finish gracefully
-	assert.NotPanics(t, func() {
-		wq.Stop()
-	})
-	// The additional stop should not panic
-	assert.NotPanics(t, func() {
-		wq.Stop()
-	})
+	assert.NoError(t, pq.Shutdown(context.Background()))
 }
 
 // Verify storage closes after queue consumers. If not in this order, successfully consumed items won't be updated in storage
 func TestPersistentQueue_Close_StorageCloseAfterConsumers(t *testing.T) {
-	wq := createTestQueue(t, 1001, 1, func(item Request) {})
-	traces := newTraces(1, 10)
+	pq := createTestQueue(t, 1001, 1, func(item Request) {})
 
 	lastRequestProcessedTime := time.Now()
-	req := newFakeTracesRequest(traces)
+	req := newFakeTracesRequest(newTraces(1, 10))
 	req.processingFinishedCallback = func() {
 		lastRequestProcessedTime = time.Now()
 	}
 
 	fnBefore := stopStorage
 	stopStorageTime := time.Now()
-	stopStorage = func(queue *persistentQueue) {
+	stopStorage = func(storage *persistentContiguousStorage, ctx context.Context) error {
 		stopStorageTime = time.Now()
-		queue.storage.stop()
+		return storage.stop(ctx)
 	}
 
 	for i := 0; i < 1000; i++ {
-		wq.Produce(req)
+		pq.Produce(req)
 	}
-	assert.NotPanics(t, func() {
-		wq.Stop()
-	})
+	assert.NoError(t, pq.Shutdown(context.Background()))
 	assert.True(t, stopStorageTime.After(lastRequestProcessedTime), "storage stop time should be after last request processed time")
 	stopStorage = fnBefore
 }
@@ -159,23 +144,23 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(fmt.Sprintf("#messages: %d #consumers: %d", c.numMessagesProduced, c.numConsumers), func(t *testing.T) {
-			traces := newTraces(1, 10)
-			req := newFakeTracesRequest(traces)
+			req := newFakeTracesRequest(newTraces(1, 10))
 
 			numMessagesConsumed := &atomic.Int32{}
-			tq := createTestQueue(t, 1000, c.numConsumers, func(item Request) {
+			pq := createTestQueue(t, 1000, c.numConsumers, func(item Request) {
 				if item != nil {
 					numMessagesConsumed.Add(int32(1))
 				}
 			})
 
 			for i := 0; i < c.numMessagesProduced; i++ {
-				tq.Produce(req)
+				pq.Produce(req)
 			}
 
 			assert.Eventually(t, func() bool {
 				return c.numMessagesProduced == int(numMessagesConsumed.Load())
 			}, 5*time.Second, 10*time.Millisecond)
+			assert.NoError(t, pq.Shutdown(context.Background()))
 		})
 	}
 }
@@ -297,7 +282,5 @@ func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
 	pq := NewPersistentQueue(1, 1, component.ID{}, newFakeTracesRequestMarshalerFunc(),
 		newFakeTracesRequestUnmarshalerFunc())
 	// verify that stopping a un-start/started w/error queue does not panic
-	assert.NotPanics(t, func() {
-		pq.Stop()
-	})
+	assert.NoError(t, pq.Shutdown(context.Background()))
 }
