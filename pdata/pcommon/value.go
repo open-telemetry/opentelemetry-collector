@@ -418,12 +418,12 @@ func float64AsString(f float64) string {
 	scratch := [64]byte{}
 	b := scratch[:0]
 	abs := math.Abs(f)
-	fmt := byte('f')
+	fmtF := byte('f')
 	if abs != 0 && (abs < 1e-6 || abs >= 1e21) {
-		fmt = 'e'
+		fmtF = 'e'
 	}
-	b = strconv.AppendFloat(b, f, fmt, -1, 64)
-	if fmt == 'e' {
+	b = strconv.AppendFloat(b, f, fmtF, -1, 64)
+	if fmtF == 'e' {
 		// clean up e-09 to e-9
 		n := len(b)
 		if n >= 4 && b[n-4] == 'e' && b[n-3] == '-' && b[n-2] == '0' {

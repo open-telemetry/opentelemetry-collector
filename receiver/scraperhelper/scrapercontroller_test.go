@@ -341,7 +341,7 @@ func TestSingleScrapePerInterval(t *testing.T) {
 	scp, err := NewScraper("", tsm.scrape)
 	assert.NoError(t, err)
 
-	receiver, err := NewScraperControllerReceiver(
+	scraperControllerReceiver, err := NewScraperControllerReceiver(
 		cfg,
 		receivertest.NewNopCreateSettings(),
 		new(consumertest.MetricsSink),
@@ -350,7 +350,7 @@ func TestSingleScrapePerInterval(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, scraperControllerReceiver.Start(context.Background(), componenttest.NewNopHost()))
 
 	tickerCh <- time.Now()
 

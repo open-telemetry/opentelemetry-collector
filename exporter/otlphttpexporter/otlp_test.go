@@ -547,8 +547,8 @@ func TestErrorResponseInvalidResponseBody(t *testing.T) {
 		Body:          io.NopCloser(badReader{}),
 		ContentLength: 100,
 	}
-	status := readResponseStatus(resp)
-	assert.Nil(t, status)
+	respStatus := readResponseStatus(resp)
+	assert.Nil(t, respStatus)
 }
 
 func TestUserAgent(t *testing.T) {
@@ -685,10 +685,10 @@ func TestPartialSuccess_traces(t *testing.T) {
 		partial := response.PartialSuccess()
 		partial.SetErrorMessage("hello")
 		partial.SetRejectedSpans(1)
-		bytes, err := response.MarshalProto()
+		c, err := response.MarshalProto()
 		require.NoError(t, err)
 		writer.Header().Set("Content-Type", "application/x-protobuf")
-		_, err = writer.Write(bytes)
+		_, err = writer.Write(c)
 		require.NoError(t, err)
 	})
 	defer srv.Close()
@@ -719,10 +719,10 @@ func TestPartialSuccess_metrics(t *testing.T) {
 		partial := response.PartialSuccess()
 		partial.SetErrorMessage("hello")
 		partial.SetRejectedDataPoints(1)
-		bytes, err := response.MarshalProto()
+		respStatus, err := response.MarshalProto()
 		require.NoError(t, err)
 		writer.Header().Set("Content-Type", "application/x-protobuf")
-		_, err = writer.Write(bytes)
+		_, err = writer.Write(respStatus)
 		require.NoError(t, err)
 	})
 	defer srv.Close()
@@ -949,5 +949,5 @@ func createBackend(endpoint string, handler func(writer http.ResponseWriter, req
 type badReader struct{}
 
 func (b badReader) Read([]byte) (int, error) {
-	return 0, errors.New("Bad read")
+	return 0, errors.New("bad read")
 }

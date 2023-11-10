@@ -643,7 +643,7 @@ func (m *fakeBoundedStorageClient) Batch(_ context.Context, ops ...storage.Opera
 		}
 	}
 
-	m.sizeInBytes += (totalAdded - totalRemoved)
+	m.sizeInBytes += totalAdded - totalRemoved
 
 	return nil
 }

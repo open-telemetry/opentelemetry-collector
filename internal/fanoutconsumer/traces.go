@@ -91,8 +91,8 @@ type tracesRouter struct {
 
 func NewTracesRouter(cm map[component.ID]consumer.Traces) consumer.Traces {
 	consumers := make([]consumer.Traces, 0, len(cm))
-	for _, consumer := range cm {
-		consumers = append(consumers, consumer)
+	for _, c := range cm {
+		consumers = append(consumers, c)
 	}
 	return &tracesRouter{
 		Traces:    NewTraces(consumers),

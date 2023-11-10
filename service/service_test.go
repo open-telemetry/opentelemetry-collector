@@ -193,7 +193,7 @@ func TestServiceGetFactory(t *testing.T) {
 	assert.Nil(t, srv.host.GetFactory(component.KindExtension, "wrongtype"))
 	assert.Equal(t, set.Extensions.Factory("nop"), srv.host.GetFactory(component.KindExtension, "nop"))
 
-	// Try retrieve non existing component.Kind.
+	// Try retrieve non-existing component.Kind.
 	assert.Nil(t, srv.host.GetFactory(42, "nop"))
 }
 
@@ -596,7 +596,7 @@ func (comp *configWatcherExtension) Shutdown(_ context.Context) error {
 }
 
 func (comp *configWatcherExtension) NotifyConfig(_ context.Context, _ *confmap.Conf) error {
-	return errors.New("Failed to resolve config")
+	return errors.New("failed to resolve config")
 }
 
 func newConfigWatcherExtensionFactory(name component.Type) extension.Factory {

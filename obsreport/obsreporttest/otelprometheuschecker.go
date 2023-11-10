@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	io_prometheus_client "github.com/prometheus/client_model/go"
+	ioprometheusclient "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/otel/attribute"
@@ -106,7 +106,7 @@ func (pc *prometheusChecker) checkExporterMetricGauge(exporter component.ID, met
 	// Forces a flush for the opencensus view data.
 	_, _ = view.RetrieveData(metric)
 
-	ts, err := pc.getMetric(metric, io_prometheus_client.MetricType_GAUGE, exporterAttrs)
+	ts, err := pc.getMetric(metric, ioprometheusclient.MetricType_GAUGE, exporterAttrs)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, at
 	// Forces a flush for the opencensus view data.
 	_, _ = view.RetrieveData(expectedMetric)
 
-	ts, err := pc.getMetric(expectedMetric, io_prometheus_client.MetricType_COUNTER, attrs)
+	ts, err := pc.getMetric(expectedMetric, ioprometheusclient.MetricType_COUNTER, attrs)
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, at
 
 // getMetric returns the metric time series that matches the given name, type and set of attributes
 // it fetches data from the prometheus endpoint and parse them, ideally OTel Go should provide a MeterRecorder of some kind.
-func (pc *prometheusChecker) getMetric(expectedName string, expectedType io_prometheus_client.MetricType, expectedAttrs []attribute.KeyValue) (*io_prometheus_client.Metric, error) {
+func (pc *prometheusChecker) getMetric(expectedName string, expectedType ioprometheusclient.MetricType, expectedAttrs []attribute.KeyValue) (*ioprometheusclient.Metric, error) {
 	handler := pc.ocHandler
 	if obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled() {
 		handler = pc.otelHandler
@@ -179,7 +179,7 @@ func (pc *prometheusChecker) getMetric(expectedName string, expectedType io_prom
 	return nil, fmt.Errorf("metric '%s' doesn't have a timeseries with the given attributes: %s", expectedName, expectedSet.Encoded(attribute.DefaultEncoder()))
 }
 
-func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_client.MetricFamily, error) {
+func fetchPrometheusMetrics(handler http.Handler) (map[string]*ioprometheusclient.MetricFamily, error) {
 	req, err := http.NewRequest(http.MethodGet, "/metrics", nil)
 	if err != nil {
 		return nil, err

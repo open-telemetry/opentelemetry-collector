@@ -93,8 +93,8 @@ type logsRouter struct {
 
 func NewLogsRouter(cm map[component.ID]consumer.Logs) consumer.Logs {
 	consumers := make([]consumer.Logs, 0, len(cm))
-	for _, consumer := range cm {
-		consumers = append(consumers, consumer)
+	for _, c := range cm {
+		consumers = append(consumers, c)
 	}
 	return &logsRouter{
 		Logs:      NewLogs(consumers),

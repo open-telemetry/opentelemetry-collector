@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"go.uber.org/multierr"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 var (
@@ -21,12 +19,12 @@ var (
 // configuration. Scraper controller receivers can embed this struct, instead
 // of receiver.Settings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
-	// CollectionInterval sets the how frequently the scraper
+	// CollectionInterval sets how frequently the scraper
 	// should be called and used as the context timeout
 	// to ensure that scrapers don't exceed the interval.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// InitialDelay sets the initial start delay for the scraper,
-	// any non positive value is assumed to be immediately.
+	// any non-positive value is assumed to be immediately.
 	InitialDelay time.Duration `mapstructure:"initial_delay"`
 	// Timeout is an optional value used to set scraper's context deadline.
 	Timeout time.Duration `mapstructure:"timeout"`
@@ -34,7 +32,7 @@ type ScraperControllerSettings struct {
 
 // NewDefaultScraperControllerSettings returns default scraper controller
 // settings with a collection interval of one minute.
-func NewDefaultScraperControllerSettings(component.Type) ScraperControllerSettings {
+func NewDefaultScraperControllerSettings() ScraperControllerSettings {
 	return ScraperControllerSettings{
 		CollectionInterval: time.Minute,
 		InitialDelay:       time.Second,

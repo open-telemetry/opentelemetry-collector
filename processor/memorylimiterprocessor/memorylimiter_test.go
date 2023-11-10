@@ -473,7 +473,7 @@ func TestNoDataLoss(t *testing.T) {
 	limiter, err := newMemoryLimiter(set, cfg)
 	require.NoError(t, err)
 
-	processor, err := processorhelper.NewLogsProcessor(context.Background(), processor.CreateSettings{}, cfg, exporter,
+	logsProcessor, err := processorhelper.NewLogsProcessor(context.Background(), processor.CreateSettings{}, cfg, exporter,
 		limiter.processLogs,
 		processorhelper.WithStart(limiter.start),
 		processorhelper.WithShutdown(limiter.shutdown))
@@ -483,10 +483,10 @@ func TestNoDataLoss(t *testing.T) {
 
 	receiver := &internal.MockReceiver{
 		ProduceCount: 1e5, // Must produce enough logs to make sure memory increases by at least expectedMemoryIncreaseMiB
-		NextConsumer: processor,
+		NextConsumer: logsProcessor,
 	}
 
-	err = processor.Start(context.Background(), componenttest.NewNopHost())
+	err = logsProcessor.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// Start producing data.
@@ -522,6 +522,6 @@ func TestNoDataLoss(t *testing.T) {
 	// Double check that the number of logs accepted by exporter matches the number of produced by receiver.
 	assert.Equal(t, receiver.ProduceCount, exporter.AcceptedLogCount())
 
-	err = processor.Shutdown(context.Background())
+	err = logsProcessor.Shutdown(context.Background())
 	require.NoError(t, err)
 }

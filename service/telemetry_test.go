@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	io_prometheus_client "github.com/prometheus/client_model/go"
+	ioprometheusclient "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -291,7 +291,7 @@ func TestTelemetryInit(t *testing.T) {
 			metrics := getMetricsFromPrometheus(t, tel.servers[0].Handler)
 			require.Equal(t, len(tc.expectedMetrics), len(metrics))
 
-			for metricName, metricValue := range tc.expectedMetrics {
+			for metricName, metricVal := range tc.expectedMetrics {
 				mf, present := metrics[metricName]
 				require.True(t, present, "expected metric %q was not present", metricName)
 				require.Len(t, mf.Metric, 1, "only one measure should exist for metric %q", metricName)
@@ -301,8 +301,8 @@ func TestTelemetryInit(t *testing.T) {
 					labels[pair.GetName()] = pair.GetValue()
 				}
 
-				require.Equal(t, metricValue.labels, labels, "labels for metric %q was different than expected", metricName)
-				require.Equal(t, metricValue.value, mf.Metric[0].Counter.GetValue(), "value for metric %q was different than expected", metricName)
+				require.Equal(t, metricVal.labels, labels, "labels for metric %q was different than expected", metricName)
+				require.Equal(t, metricVal.value, mf.Metric[0].Counter.GetValue(), "value for metric %q was different than expected", metricName)
 			}
 		})
 
@@ -342,7 +342,7 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 	return v
 }
 
-func getMetricsFromPrometheus(t *testing.T, handler http.Handler) map[string]*io_prometheus_client.MetricFamily {
+func getMetricsFromPrometheus(t *testing.T, handler http.Handler) map[string]*ioprometheusclient.MetricFamily {
 	req, err := http.NewRequest(http.MethodGet, "/metrics", nil)
 	require.NoError(t, err)
 

@@ -184,8 +184,8 @@ func (tID *TestID) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (tID TestID) MarshalText() (text []byte, err error) {
-	out := string(tID)
+func (tID *TestID) MarshalText() (text []byte, err error) {
+	out := string(*tID)
 	if !strings.HasSuffix(out, "_") {
 		out += "_"
 	}

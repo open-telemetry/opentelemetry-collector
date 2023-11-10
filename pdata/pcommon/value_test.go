@@ -486,8 +486,8 @@ func TestNewValueFromRaw(t *testing.T) {
 		},
 		{
 			name:     "float64",
-			input:    float64(2.345),
-			expected: NewValueDouble(float64(2.345)),
+			input:    2.345,
+			expected: NewValueDouble(2.345),
 		},
 		{
 			name:     "bool",

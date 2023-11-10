@@ -134,13 +134,13 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tt := componenttest.NewNopTelemetrySettings()
 			tt.TracerProvider = nil
-			client, err := test.settings.ToClient(host, tt)
+			toClient, err := test.settings.ToClient(host, tt)
 			if test.shouldError {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
-			switch transport := client.Transport.(type) {
+			switch transport := toClient.Transport.(type) {
 			case *http.Transport:
 				assert.EqualValues(t, 1024, transport.ReadBufferSize)
 				assert.EqualValues(t, 512, transport.WriteBufferSize)
@@ -187,9 +187,9 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tt := componenttest.NewNopTelemetrySettings()
 			tt.TracerProvider = nil
-			client, err := test.settings.ToClient(host, tt)
+			toClient, err := test.settings.ToClient(host, tt)
 			assert.NoError(t, err)
-			transport := client.Transport.(*http.Transport)
+			transport := toClient.Transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
 			assert.EqualValues(t, 512, transport.WriteBufferSize)
 			assert.EqualValues(t, 100, transport.MaxIdleConns)
@@ -361,14 +361,14 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
-			client, err := test.settings.ToClient(test.host, component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone})
+			toClient, err := test.settings.ToClient(test.host, component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone})
 			if test.shouldErr {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
-			assert.NotNil(t, client)
-			transport := client.Transport
+			assert.NotNil(t, toClient)
+			transport := toClient.Transport
 
 			// Compression should wrap Auth, unwrap it
 			if configcompression.IsCompressed(test.settings.Compression) {
@@ -644,10 +644,10 @@ func TestHttpReception(t *testing.T) {
 					return rt, nil
 				}
 			}
-			client, errClient := hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{})
+			toClient, errClient := hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{})
 			require.NoError(t, errClient)
 
-			resp, errResp := client.Get(hcs.Endpoint)
+			resp, errResp := toClient.Get(hcs.Endpoint)
 			if tt.hasError {
 				assert.Error(t, errResp)
 			} else {
@@ -742,7 +742,7 @@ func TestHttpCors(t *testing.T) {
 			// Wait for the servers to start
 			<-time.After(10 * time.Millisecond)
 
-			url := fmt.Sprintf("http://%s", ln.Addr().String())
+			u := fmt.Sprintf("http://%s", ln.Addr().String())
 
 			expectedStatus := http.StatusNoContent
 			if tt.CORSSettings == nil || len(tt.AllowedOrigins) == 0 {
@@ -750,13 +750,13 @@ func TestHttpCors(t *testing.T) {
 			}
 
 			// Verify allowed domain gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", tt.CORSSettings, false, expectedStatus, tt.allowedWorks)
+			verifyCorsResp(t, u, "allowed-origin.com", tt.CORSSettings, false, expectedStatus, tt.allowedWorks)
 
 			// Verify allowed domain and extra headers gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", tt.CORSSettings, true, expectedStatus, tt.extraHeaderWorks)
+			verifyCorsResp(t, u, "allowed-origin.com", tt.CORSSettings, true, expectedStatus, tt.extraHeaderWorks)
 
 			// Verify disallowed domain gets responses that disallow CORS.
-			verifyCorsResp(t, url, "disallowed-origin.com", tt.CORSSettings, false, expectedStatus, tt.disallowedWorks)
+			verifyCorsResp(t, u, "disallowed-origin.com", tt.CORSSettings, false, expectedStatus, tt.disallowedWorks)
 
 			require.NoError(t, s.Close())
 		})
@@ -794,7 +794,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 		ext: map[component.ID]component.Component{
 			component.NewID("mock"): auth.NewServer(
 				auth.WithServerAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
-					return ctx, errors.New("Settings failed")
+					return ctx, errors.New("settings failed")
 				}),
 			),
 		},
@@ -862,10 +862,10 @@ func TestHttpServerHeaders(t *testing.T) {
 			// Wait for the servers to start
 			<-time.After(10 * time.Millisecond)
 
-			url := fmt.Sprintf("http://%s", ln.Addr().String())
+			u := fmt.Sprintf("http://%s", ln.Addr().String())
 
 			// Verify allowed domain gets responses that allow CORS.
-			verifyHeadersResp(t, url, tt.headers)
+			verifyHeadersResp(t, u, tt.headers)
 
 			require.NoError(t, s.Close())
 		})
@@ -980,10 +980,10 @@ func TestHttpClientHeaders(t *testing.T) {
 				Timeout:         0,
 				Headers:         tt.headers,
 			}
-			client, _ := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			toClient, _ := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			req, err := http.NewRequest(http.MethodGet, setting.Endpoint, nil)
 			assert.NoError(t, err)
-			_, err = client.Do(req)
+			_, err = toClient.Do(req)
 			assert.NoError(t, err)
 		})
 	}
@@ -1111,7 +1111,7 @@ func TestFailedServerAuth(t *testing.T) {
 		ext: map[component.ID]component.Component{
 			component.NewID("mock"): auth.NewServer(
 				auth.WithServerAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
-					return ctx, errors.New("Settings failed")
+					return ctx, errors.New("settings failed")
 				}),
 			),
 		},

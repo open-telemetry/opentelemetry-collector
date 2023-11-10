@@ -160,7 +160,7 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 	return err
 }
 
-// Start runs the trace receiver on the gRPC server. Currently
+// Start runs the trace receiver on the gRPC server. Currently,
 // it also enables the metrics receiver too.
 func (r *otlpReceiver) Start(_ context.Context, host component.Host) error {
 	return r.startProtocolServers(host)

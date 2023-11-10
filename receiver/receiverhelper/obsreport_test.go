@@ -195,7 +195,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	}
 	for i := range params {
 		// Use a new context on each operation to simulate distinct operations
-		// under the same long lived context.
+		// under the same long-lived context.
 		rec, rerr := NewObsReport(ObsReportSettings{
 			ReceiverID:             receiverID,
 			Transport:              transport,

@@ -68,7 +68,7 @@ func TestZPagesExtensionUsage(t *testing.T) {
 	client := &http.Client{}
 	resp, err := client.Get("http://localhost:" + zpagesPort + "/debug/tracez")
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
@@ -77,7 +77,7 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", endpoint)
 	require.NoError(t, err)
-	defer ln.Close()
+	defer func() { _ = ln.Close() }()
 
 	cfg := &Config{
 		TCPAddr: confignet.TCPAddr{

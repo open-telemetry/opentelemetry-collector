@@ -182,7 +182,7 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 			map[component.Type]extension.Factory{
 				recordingExtensionFactory.Type(): recordingExtensionFactory,
 			}),
-	}, Config(extIDs))
+	}, extIDs)
 	if tc.err != "" {
 		require.ErrorContains(t, err, tc.err)
 		return
@@ -209,7 +209,7 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 }
 
 func TestNotifyConfig(t *testing.T) {
-	notificationError := errors.New("Error processing config")
+	notificationError := errors.New("error processing config")
 	nopExtensionFactory := extensiontest.NewNopFactory()
 	nopExtensionConfig := nopExtensionFactory.CreateDefaultConfig()
 	n1ExtensionFactory := newConfigWatcherExtensionFactory("notifiable1", func() error { return nil })

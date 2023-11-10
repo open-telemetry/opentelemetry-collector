@@ -26,14 +26,14 @@ func (n node) ID() int64 {
 }
 
 func computeOrder(exts *Extensions) ([]component.ID, error) {
-	graph := simple.NewDirectedGraph()
+	directedGraph := simple.NewDirectedGraph()
 	nodes := make(map[component.ID]*node)
 	for extID := range exts.extMap {
 		n := &node{
 			nodeID: int64(len(nodes) + 1),
 			extID:  extID,
 		}
-		graph.AddNode(n)
+		directedGraph.AddNode(n)
 		nodes[extID] = n
 	}
 	for extID, ext := range exts.extMap {
@@ -41,16 +41,16 @@ func computeOrder(exts *Extensions) ([]component.ID, error) {
 		if dep, ok := ext.(extension.Dependent); ok {
 			for _, depID := range dep.Dependencies() {
 				if d, ok := nodes[depID]; ok {
-					graph.SetEdge(graph.NewEdge(d, n))
+					directedGraph.SetEdge(directedGraph.NewEdge(d, n))
 				} else {
 					return nil, fmt.Errorf("unable to find extension %s on which extension %s depends", depID, extID)
 				}
 			}
 		}
 	}
-	orderedNodes, err := topo.Sort(graph)
+	orderedNodes, err := topo.Sort(directedGraph)
 	if err != nil {
-		return nil, cycleErr(err, topo.DirectedCyclesIn(graph))
+		return nil, cycleErr(err, topo.DirectedCyclesIn(directedGraph))
 	}
 
 	order := make([]component.ID, len(orderedNodes))

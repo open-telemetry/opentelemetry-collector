@@ -71,7 +71,7 @@ func InitMetricReader(ctx context.Context, reader telemetry.MetricReader, asyncE
 		return initPullExporter(reader.Pull.Exporter, asyncErrorChannel)
 	}
 	if reader.Periodic != nil {
-		opts := []sdkmetric.PeriodicReaderOption{}
+		var opts []sdkmetric.PeriodicReaderOption
 		if reader.Periodic.Interval != nil {
 			opts = append(opts, sdkmetric.WithInterval(time.Duration(*reader.Periodic.Interval)*time.Millisecond))
 		}
@@ -265,7 +265,7 @@ func normalizeEndpoint(endpoint string) string {
 }
 
 func initOTLPgRPCExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric) (sdkmetric.Exporter, error) {
-	opts := []otlpmetricgrpc.Option{}
+	var opts []otlpmetricgrpc.Option
 
 	if len(otlpConfig.Endpoint) > 0 {
 		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
@@ -299,7 +299,7 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric)
 }
 
 func initOTLPHTTPExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric) (sdkmetric.Exporter, error) {
-	opts := []otlpmetrichttp.Option{}
+	var opts []otlpmetrichttp.Option
 
 	if len(otlpConfig.Endpoint) > 0 {
 		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
@@ -336,7 +336,7 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric)
 }
 
 func initOTLPgRPCSpanExporter(ctx context.Context, otlpConfig *telemetry.Otlp) (sdktrace.SpanExporter, error) {
-	opts := []otlptracegrpc.Option{}
+	var opts []otlptracegrpc.Option
 
 	if len(otlpConfig.Endpoint) > 0 {
 		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
@@ -370,7 +370,7 @@ func initOTLPgRPCSpanExporter(ctx context.Context, otlpConfig *telemetry.Otlp) (
 }
 
 func initOTLPHTTPSpanExporter(ctx context.Context, otlpConfig *telemetry.Otlp) (sdktrace.SpanExporter, error) {
-	opts := []otlptracehttp.Option{}
+	var opts []otlptracehttp.Option
 
 	if len(otlpConfig.Endpoint) > 0 {
 		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
@@ -407,7 +407,7 @@ func initOTLPHTTPSpanExporter(ctx context.Context, otlpConfig *telemetry.Otlp) (
 }
 
 func initBatchSpanProcessor(bsp *telemetry.BatchSpanProcessor, exp sdktrace.SpanExporter) (sdktrace.SpanProcessor, error) {
-	opts := []sdktrace.BatchSpanProcessorOption{}
+	var opts []sdktrace.BatchSpanProcessorOption
 	if bsp.ExportTimeout != nil {
 		if *bsp.ExportTimeout < 0 {
 			return nil, fmt.Errorf("invalid export timeout %d", *bsp.ExportTimeout)

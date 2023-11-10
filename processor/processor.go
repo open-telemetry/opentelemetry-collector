@@ -155,15 +155,15 @@ func (f *factory) Type() component.Type {
 
 func (f *factory) unexportedFactoryFunc() {}
 
-func (f factory) TracesProcessorStability() component.StabilityLevel {
+func (f *factory) TracesProcessorStability() component.StabilityLevel {
 	return f.tracesStabilityLevel
 }
 
-func (f factory) MetricsProcessorStability() component.StabilityLevel {
+func (f *factory) MetricsProcessorStability() component.StabilityLevel {
 	return f.metricsStabilityLevel
 }
 
-func (f factory) LogsProcessorStability() component.StabilityLevel {
+func (f *factory) LogsProcessorStability() component.StabilityLevel {
 	return f.logsStabilityLevel
 }
 

@@ -96,7 +96,7 @@ func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 	if err != nil {
 		return nil, fmt.Errorf("unable to download the file via HTTP GET for uri %q: %w ", uri, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// check the HTTP status code
 	if resp.StatusCode != http.StatusOK {

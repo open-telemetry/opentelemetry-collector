@@ -33,8 +33,9 @@ type Level int32
 var _ encoding.TextMarshaler = (*Level)(nil)
 var _ encoding.TextUnmarshaler = (*Level)(nil)
 
-func (l Level) String() string {
-	switch l {
+func (l *Level) String() string {
+	lVal := *l
+	switch lVal {
 	case LevelNone:
 		return levelNoneStr
 	case LevelBasic:
@@ -48,7 +49,7 @@ func (l Level) String() string {
 }
 
 // MarshalText marshals Level to text.
-func (l Level) MarshalText() (text []byte, err error) {
+func (l *Level) MarshalText() (text []byte, err error) {
 	return []byte(l.String()), nil
 }
 

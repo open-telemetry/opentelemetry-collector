@@ -23,7 +23,7 @@ type TraceID [traceIDSize]byte
 var _ proto.Sizer = (*SpanID)(nil)
 
 // Size returns the size of the data to serialize.
-func (tid TraceID) Size() int {
+func (tid *TraceID) Size() int {
 	if tid.IsEmpty() {
 		return 0
 	}
@@ -36,7 +36,7 @@ func (tid TraceID) IsEmpty() bool {
 }
 
 // MarshalTo converts trace ID into a binary representation. Called by Protobuf serialization.
-func (tid TraceID) MarshalTo(data []byte) (n int, err error) {
+func (tid *TraceID) MarshalTo(data []byte) (n int, err error) {
 	if tid.IsEmpty() {
 		return 0, nil
 	}
@@ -64,7 +64,7 @@ func (tid *TraceID) Unmarshal(data []byte) error {
 }
 
 // MarshalJSON converts trace id into a hex string enclosed in quotes.
-func (tid TraceID) MarshalJSON() ([]byte, error) {
+func (tid *TraceID) MarshalJSON() ([]byte, error) {
 	if tid.IsEmpty() {
 		return []byte(`""`), nil
 	}

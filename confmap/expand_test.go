@@ -327,7 +327,7 @@ func newEnvProvider() Provider {
 		case "env:FLOAT32":
 			return NewRetrieved(float32(3.25))
 		case "env:FLOAT64":
-			return NewRetrieved(float64(6.4))
+			return NewRetrieved(6.4)
 		case "env:BOOL":
 			return NewRetrieved(true)
 		}

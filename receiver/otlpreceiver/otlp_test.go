@@ -1016,7 +1016,7 @@ func compressGzip(body []byte) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
 	gw := gzip.NewWriter(&buf)
-	defer gw.Close()
+	defer func() { _ = gw.Close() }()
 
 	_, err := gw.Write(body)
 	if err != nil {
@@ -1034,7 +1034,7 @@ func compressZstd(body []byte) (*bytes.Buffer, error) {
 		return nil, err
 	}
 
-	defer zw.Close()
+	defer func() { _ = zw.Close() }()
 
 	_, err = zw.Write(body)
 	if err != nil {
@@ -1070,7 +1070,7 @@ func TestShutdown(t *testing.T) {
 
 	conn, err := grpc.Dial(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	doneSignalGrpc := make(chan bool)
 	doneSignalHTTP := make(chan bool)
@@ -1089,7 +1089,7 @@ func TestShutdown(t *testing.T) {
 		client := &http.Client{}
 		resp, err2 := client.Do(req)
 		if err2 == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 	}
 
@@ -1119,7 +1119,7 @@ func TestShutdown(t *testing.T) {
 	doneSignalGrpc <- true
 	doneSignalHTTP <- true
 
-	// Wait until all follow up traces are sent.
+	// Wait until all follow-up traces are sent.
 	<-doneSignalGrpc
 	<-doneSignalHTTP
 

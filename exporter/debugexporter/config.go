@@ -13,7 +13,7 @@ import (
 var (
 	// supportedLevels in this exporter's configuration.
 	// configtelemetry.LevelNone and other future values are not supported.
-	supportedLevels map[configtelemetry.Level]struct{} = map[configtelemetry.Level]struct{}{
+	supportedLevels = map[configtelemetry.Level]struct{}{
 		configtelemetry.LevelBasic:    {},
 		configtelemetry.LevelNormal:   {},
 		configtelemetry.LevelDetailed: {},

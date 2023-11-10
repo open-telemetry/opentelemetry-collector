@@ -239,10 +239,10 @@ func (mts *mutatingTracesSink) Capabilities() consumer.Capabilities {
 }
 
 func TestTracesRouterMultiplexing(t *testing.T) {
-	var max = 20
-	for numIDs := 1; numIDs < max; numIDs++ {
-		for numCons := 1; numCons < max; numCons++ {
-			for numTraces := 1; numTraces < max; numTraces++ {
+	var maxNum = 20
+	for numIDs := 1; numIDs < maxNum; numIDs++ {
+		for numCons := 1; numCons < maxNum; numCons++ {
+			for numTraces := 1; numTraces < maxNum; numTraces++ {
 				t.Run(
 					fmt.Sprintf("%d-ids/%d-cons/%d-logs", numIDs, numCons, numTraces),
 					fuzzTracesRouter(numIDs, numCons, numTraces),
@@ -300,7 +300,7 @@ func fuzzTracesRouter(numIDs, numCons, numTraces int) func(*testing.T) {
 
 			// Validate expectations for all consumers
 			for id := range expected {
-				traces := []ptrace.Traces{}
+				var traces []ptrace.Traces
 				switch con := allConsMap[id].(type) {
 				case *consumertest.TracesSink:
 					traces = con.AllTraces()

@@ -91,8 +91,8 @@ type metricsRouter struct {
 
 func NewMetricsRouter(cm map[component.ID]consumer.Metrics) consumer.Metrics {
 	consumers := make([]consumer.Metrics, 0, len(cm))
-	for _, consumer := range cm {
-		consumers = append(consumers, consumer)
+	for _, c := range cm {
+		consumers = append(consumers, c)
 	}
 	return &metricsRouter{
 		Metrics:   NewMetrics(consumers),

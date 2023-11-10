@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	version "github.com/hashicorp/go-version"
+	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/assert"
 )
 

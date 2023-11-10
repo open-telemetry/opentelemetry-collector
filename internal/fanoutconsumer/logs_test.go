@@ -246,10 +246,10 @@ func (mts mutatingErr) Capabilities() consumer.Capabilities {
 }
 
 func TestLogsRouterMultiplexing(t *testing.T) {
-	var max = 20
-	for numIDs := 1; numIDs < max; numIDs++ {
-		for numCons := 1; numCons < max; numCons++ {
-			for numLogs := 1; numLogs < max; numLogs++ {
+	var maxNum = 20
+	for numIDs := 1; numIDs < maxNum; numIDs++ {
+		for numCons := 1; numCons < maxNum; numCons++ {
+			for numLogs := 1; numLogs < maxNum; numLogs++ {
 				t.Run(
 					fmt.Sprintf("%d-ids/%d-cons/%d-logs", numIDs, numCons, numLogs),
 					fuzzLogsRouter(numIDs, numCons, numLogs),
@@ -307,7 +307,7 @@ func fuzzLogsRouter(numIDs, numCons, numLogs int) func(*testing.T) {
 
 			// Validate expectations for all consumers
 			for id := range expected {
-				logs := []plog.Logs{}
+				var logs []plog.Logs
 				switch con := allConsMap[id].(type) {
 				case *consumertest.LogsSink:
 					logs = con.AllLogs()

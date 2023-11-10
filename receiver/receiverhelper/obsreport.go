@@ -54,8 +54,8 @@ type ObsReportSettings struct {
 	Transport  string
 	// LongLivedCtx when true indicates that the context passed in the call
 	// outlives the individual receive operation.
-	// Typically the long lived context is associated to a connection,
-	// eg.: a gRPC stream, for which many batches of data are received in individual
+	// Typically, the long-lived context is associated to a connection,
+	// e.g. a gRPC stream, for which many batches of data are received in individual
 	// operations without a corresponding new context per operation.
 	LongLivedCtx           bool
 	ReceiverCreateSettings receiver.CreateSettings
@@ -209,7 +209,7 @@ func (rec *ObsReport) startOp(receiverCtx context.Context, operationSuffix strin
 	if !rec.longLivedCtx {
 		ctx, span = rec.tracer.Start(ctx, spanName)
 	} else {
-		// Since the receiverCtx is long lived do not use it to start the span.
+		// Since the receiverCtx is long-lived do not use it to start the span.
 		// This way this trace ends when the EndTracesOp is called.
 		// Here is safe to ignore the returned context since it is not used below.
 		_, span = rec.tracer.Start(context.Background(), spanName, trace.WithLinks(trace.Link{

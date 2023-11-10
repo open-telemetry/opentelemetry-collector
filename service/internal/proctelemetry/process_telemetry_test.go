@@ -13,7 +13,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	io_prometheus_client "github.com/prometheus/client_model/go"
+	ioprometheusclient "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -89,7 +89,7 @@ func setupTelemetry(t *testing.T) testTelemetry {
 	return settings
 }
 
-func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_client.MetricFamily, error) {
+func fetchPrometheusMetrics(handler http.Handler) (map[string]*ioprometheusclient.MetricFamily, error) {
 	req, err := http.NewRequest(http.MethodGet, "/metrics", nil)
 	if err != nil {
 		return nil, err
@@ -111,18 +111,18 @@ func TestOtelProcessTelemetry(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, metricName := range tel.expectedMetrics {
-		metric, ok := mp[metricName]
+		metricVal, ok := mp[metricName]
 		if !ok {
 			withSuffix := metricName + "_total"
-			metric, ok = mp[withSuffix]
+			metricVal, ok = mp[withSuffix]
 		}
 		require.True(t, ok)
-		require.True(t, len(metric.Metric) == 1)
+		require.True(t, len(metricVal.Metric) == 1)
 		var metricValue float64
-		if metric.GetType() == io_prometheus_client.MetricType_COUNTER {
-			metricValue = metric.Metric[0].GetCounter().GetValue()
+		if metricVal.GetType() == ioprometheusclient.MetricType_COUNTER {
+			metricValue = metricVal.Metric[0].GetCounter().GetValue()
 		} else {
-			metricValue = metric.Metric[0].GetGauge().GetValue()
+			metricValue = metricVal.Metric[0].GetGauge().GetValue()
 		}
 		if strings.HasPrefix(metricName, "process_uptime") || strings.HasPrefix(metricName, "process_cpu_seconds") {
 			// This likely will still be zero when running the test.

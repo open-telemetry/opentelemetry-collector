@@ -22,7 +22,7 @@ var ErrSkipProcessingData = errors.New("sentinel error to skip processing data f
 // Option apply changes to internalOptions.
 type Option func(*baseSettings)
 
-// WithStart overrides the default Start function for an processor.
+// WithStart overrides the default Start function for a processor.
 // The default shutdown function does nothing and always returns nil.
 func WithStart(start component.StartFunc) Option {
 	return func(o *baseSettings) {
@@ -30,7 +30,7 @@ func WithStart(start component.StartFunc) Option {
 	}
 }
 
-// WithShutdown overrides the default Shutdown function for an processor.
+// WithShutdown overrides the default Shutdown function for a processor.
 // The default shutdown function does nothing and always returns nil.
 func WithShutdown(shutdown component.ShutdownFunc) Option {
 	return func(o *baseSettings) {
@@ -38,7 +38,7 @@ func WithShutdown(shutdown component.ShutdownFunc) Option {
 	}
 }
 
-// WithCapabilities overrides the default GetCapabilities function for an processor.
+// WithCapabilities overrides the default GetCapabilities function for a processor.
 // The default GetCapabilities function returns mutable capabilities.
 func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return func(o *baseSettings) {

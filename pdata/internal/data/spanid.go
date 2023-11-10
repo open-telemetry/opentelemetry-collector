@@ -23,7 +23,7 @@ type SpanID [spanIDSize]byte
 var _ proto.Sizer = (*SpanID)(nil)
 
 // Size returns the size of the data to serialize.
-func (sid SpanID) Size() int {
+func (sid *SpanID) Size() int {
 	if sid.IsEmpty() {
 		return 0
 	}
@@ -36,7 +36,7 @@ func (sid SpanID) IsEmpty() bool {
 }
 
 // MarshalTo converts trace ID into a binary representation. Called by Protobuf serialization.
-func (sid SpanID) MarshalTo(data []byte) (n int, err error) {
+func (sid *SpanID) MarshalTo(data []byte) (n int, err error) {
 	if sid.IsEmpty() {
 		return 0, nil
 	}
@@ -64,7 +64,7 @@ func (sid *SpanID) Unmarshal(data []byte) error {
 }
 
 // MarshalJSON converts SpanID into a hex string enclosed in quotes.
-func (sid SpanID) MarshalJSON() ([]byte, error) {
+func (sid *SpanID) MarshalJSON() ([]byte, error) {
 	if sid.IsEmpty() {
 		return []byte(`""`), nil
 	}

@@ -54,23 +54,23 @@ type Graph struct {
 }
 
 func Build(ctx context.Context, set Settings) (*Graph, error) {
-	pipelines := &Graph{
+	pipelineGraph := &Graph{
 		componentGraph: simple.NewDirectedGraph(),
 		pipelines:      make(map[component.ID]*pipelineNodes, len(set.PipelineConfigs)),
 		instanceIDs:    make(map[int64]*component.InstanceID),
 		telemetry:      set.Telemetry,
 	}
 	for pipelineID := range set.PipelineConfigs {
-		pipelines.pipelines[pipelineID] = &pipelineNodes{
+		pipelineGraph.pipelines[pipelineID] = &pipelineNodes{
 			receivers: make(map[int64]graph.Node),
 			exporters: make(map[int64]graph.Node),
 		}
 	}
-	if err := pipelines.createNodes(set); err != nil {
+	if err := pipelineGraph.createNodes(set); err != nil {
 		return nil, err
 	}
-	pipelines.createEdges()
-	return pipelines, pipelines.buildComponents(ctx, set)
+	pipelineGraph.createEdges()
+	return pipelineGraph, pipelineGraph.buildComponents(ctx, set)
 }
 
 // Creates a node for each instance of a component and adds it to the graph
@@ -243,22 +243,22 @@ func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID, connID component
 
 func (g *Graph) createEdges() {
 	for _, pg := range g.pipelines {
-		for _, receiver := range pg.receivers {
-			g.componentGraph.SetEdge(g.componentGraph.NewEdge(receiver, pg.capabilitiesNode))
+		for _, pgReceiver := range pg.receivers {
+			g.componentGraph.SetEdge(g.componentGraph.NewEdge(pgReceiver, pg.capabilitiesNode))
 		}
 
 		var from, to graph.Node
 		from = pg.capabilitiesNode
-		for _, processor := range pg.processors {
-			to = processor
+		for _, pgProcessor := range pg.processors {
+			to = pgProcessor
 			g.componentGraph.SetEdge(g.componentGraph.NewEdge(from, to))
-			from = processor
+			from = pgProcessor
 		}
 		to = pg.fanOutNode
 		g.componentGraph.SetEdge(g.componentGraph.NewEdge(from, to))
 
-		for _, exporter := range pg.exporters {
-			g.componentGraph.SetEdge(g.componentGraph.NewEdge(pg.fanOutNode, exporter))
+		for _, pgExporter := range pg.exporters {
+			g.componentGraph.SetEdge(g.componentGraph.NewEdge(pg.fanOutNode, pgExporter))
 		}
 	}
 }

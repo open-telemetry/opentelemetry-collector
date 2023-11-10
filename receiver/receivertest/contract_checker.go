@@ -104,17 +104,17 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 }
 
 func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFunc func(ids idSet) error) {
-	consumer := &mockConsumer{t: params.T, consumeDecisionFunc: decisionFunc}
+	mConsumer := &mockConsumer{t: params.T, consumeDecisionFunc: decisionFunc}
 	ctx := context.Background()
 
 	// Create and start the receiver.
-	var receiver component.Component
+	var componentReceiver component.Component
 	var err error
 	switch params.DataType {
 	case component.DataTypeLogs:
-		receiver, err = params.Factory.CreateLogsReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
+		componentReceiver, err = params.Factory.CreateLogsReceiver(ctx, NewNopCreateSettings(), params.Config, mConsumer)
 	case component.DataTypeTraces:
-		receiver, err = params.Factory.CreateTracesReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
+		componentReceiver, err = params.Factory.CreateTracesReceiver(ctx, NewNopCreateSettings(), params.Config, mConsumer)
 	case component.DataTypeMetrics:
 		// TODO: add metrics support to mockConsumer so that this case can be also implemented.
 		require.FailNow(params.T, "DataTypeMetrics is not implemented")
@@ -124,7 +124,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 
 	require.NoError(params.T, err)
 
-	err = receiver.Start(ctx, componenttest.NewNopHost())
+	err = componentReceiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(params.T, err)
 
 	// Begin generating data to the receiver.
@@ -167,7 +167,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	// Wait until all data is seen by the consumer.
 	assert.Eventually(params.T, func() bool {
 		// Calculate the union of accepted and dropped data.
-		acceptedAndDropped, duplicates := consumer.acceptedAndDropped()
+		acceptedAndDropped, duplicates := mConsumer.acceptedAndDropped()
 		if len(duplicates) != 0 {
 			assert.Failf(params.T, "found duplicate elements in received and dropped data", "keys=%v", duplicates)
 		}
@@ -177,7 +177,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Do some final checks. Need the union of accepted and dropped data again.
-	acceptedAndDropped, duplicates := consumer.acceptedAndDropped()
+	acceptedAndDropped, duplicates := mConsumer.acceptedAndDropped()
 	if len(duplicates) != 0 {
 		assert.Failf(params.T, "found duplicate elements in accepted and dropped data", "keys=%v", duplicates)
 	}
@@ -192,16 +192,16 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 		assert.Failf(params.T, "found elements in accepted and dropped data that was never sent", "keys=%v", onlyInOther)
 	}
 
-	err = receiver.Shutdown(ctx)
+	err = componentReceiver.Shutdown(ctx)
 	assert.NoError(params.T, err)
 
 	// Print some stats to help debug test failures.
 	fmt.Printf(
 		"Sent %d, accepted=%d, expected dropped=%d, non-permanent errors retried=%d\n",
 		len(generatedIds),
-		len(consumer.acceptedIds),
-		len(consumer.droppedIds),
-		consumer.nonPermanentFailures,
+		len(mConsumer.acceptedIds),
+		len(mConsumer.droppedIds),
+		mConsumer.nonPermanentFailures,
 	)
 }
 
@@ -209,14 +209,15 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 type idSet map[UniqueIDAttrVal]bool
 
 // compare to another set and calculate the differences from this set.
-func (ds idSet) compare(other idSet) (missingInOther, onlyInOther []UniqueIDAttrVal) {
-	for k := range ds {
+func (ds *idSet) compare(other idSet) (missingInOther, onlyInOther []UniqueIDAttrVal) {
+	dsVal := *ds
+	for k := range dsVal {
 		if _, ok := other[k]; !ok {
 			missingInOther = append(missingInOther, k)
 		}
 	}
 	for k := range other {
-		if _, ok := ds[k]; !ok {
+		if _, ok := dsVal[k]; !ok {
 			onlyInOther = append(onlyInOther, k)
 		}
 	}

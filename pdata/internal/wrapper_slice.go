@@ -25,7 +25,7 @@ func NewSlice(orig *[]otlpcommon.AnyValue, state *State) Slice {
 }
 
 func GenerateTestSlice() Slice {
-	orig := []otlpcommon.AnyValue{}
+	var orig []otlpcommon.AnyValue
 	state := StateMutable
 	tv := NewSlice(&orig, &state)
 	FillTestSlice(tv)

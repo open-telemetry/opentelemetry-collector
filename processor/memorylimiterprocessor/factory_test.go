@@ -53,7 +53,7 @@ func TestCreateProcessor(t *testing.T) {
 	tp, err = factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
-	// test if we can shutdown a monitoring routine that has not started
+	// test if we can shut down a monitoring routine that has not started
 	assert.ErrorIs(t, tp.Shutdown(context.Background()), errShutdownNotStarted)
 	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
 

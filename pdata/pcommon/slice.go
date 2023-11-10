@@ -64,9 +64,9 @@ func (es Slice) CopyTo(dest Slice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
-		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
+		*dest.getOrig() = (*dest.getOrig())[:srcLen:destCap]
 	} else {
-		(*dest.getOrig()) = make([]otlpcommon.AnyValue, srcLen)
+		*dest.getOrig() = make([]otlpcommon.AnyValue, srcLen)
 	}
 
 	for i := range *es.getOrig() {

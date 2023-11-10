@@ -20,7 +20,7 @@ func TestScrapeControllerSettings(t *testing.T) {
 	}{
 		{
 			name:   "default configuration",
-			set:    NewDefaultScraperControllerSettings(""),
+			set:    NewDefaultScraperControllerSettings(),
 			errVal: "",
 		},
 		{

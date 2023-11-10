@@ -32,18 +32,18 @@ func NewIDWithName(typeVal Type, nameVal string) ID {
 }
 
 // Type returns the type of the component.
-func (id ID) Type() Type {
+func (id *ID) Type() Type {
 	return id.typeVal
 }
 
 // Name returns the custom name of the component.
-func (id ID) Name() string {
+func (id *ID) Name() string {
 	return id.nameVal
 }
 
 // MarshalText implements the encoding.TextMarshaler interface.
 // This marshals the type and name as one string in the config.
-func (id ID) MarshalText() (text []byte, err error) {
+func (id *ID) MarshalText() (text []byte, err error) {
 	return []byte(id.String()), nil
 }
 

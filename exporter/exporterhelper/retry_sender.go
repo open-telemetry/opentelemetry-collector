@@ -157,14 +157,14 @@ func (rs *retrySender) send(req internal.Request) error {
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
 			// throw away the batch
-			err = fmt.Errorf("max elapsed time expired %w", err)
+			err = fmt.Errorf("maximum elapsed time expired %w", err)
 			return rs.onTemporaryFailure(rs.logger, req, err)
 		}
 
 		throttleErr := throttleRetry{}
 		isThrottle := errors.As(err, &throttleErr)
 		if isThrottle {
-			backoffDelay = max(backoffDelay, throttleErr.delay)
+			backoffDelay = maximum(backoffDelay, throttleErr.delay)
 		}
 
 		backoffDelayStr := backoffDelay.String()
@@ -184,7 +184,7 @@ func (rs *retrySender) send(req internal.Request) error {
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
 		case <-req.Context().Done():
-			return fmt.Errorf("Request is cancelled or timed out %w", err)
+			return fmt.Errorf("request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
 			return rs.onTemporaryFailure(rs.logger, req, fmt.Errorf("interrupted due to shutdown %w", err))
 		case <-time.After(backoffDelay):
@@ -192,8 +192,8 @@ func (rs *retrySender) send(req internal.Request) error {
 	}
 }
 
-// max returns the larger of x or y.
-func max(x, y time.Duration) time.Duration {
+// maximum returns the larger of x or y.
+func maximum(x, y time.Duration) time.Duration {
 	if x < y {
 		return y
 	}

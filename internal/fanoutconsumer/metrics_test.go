@@ -238,10 +238,10 @@ func (mts *mutatingMetricsSink) Capabilities() consumer.Capabilities {
 }
 
 func TestMetricsRouterMultiplexing(t *testing.T) {
-	var max = 20
-	for numIDs := 1; numIDs < max; numIDs++ {
-		for numCons := 1; numCons < max; numCons++ {
-			for numMetrics := 1; numMetrics < max; numMetrics++ {
+	var maxNum = 20
+	for numIDs := 1; numIDs < maxNum; numIDs++ {
+		for numCons := 1; numCons < maxNum; numCons++ {
+			for numMetrics := 1; numMetrics < maxNum; numMetrics++ {
 				t.Run(
 					fmt.Sprintf("%d-ids/%d-cons/%d-logs", numIDs, numCons, numMetrics),
 					fuzzMetricsRouter(numIDs, numCons, numMetrics),
@@ -299,7 +299,7 @@ func fuzzMetricsRouter(numIDs, numCons, numMetrics int) func(*testing.T) {
 
 			// Validate expectations for all consumers
 			for id := range expected {
-				metrics := []pmetric.Metrics{}
+				var metrics []pmetric.Metrics
 				switch con := allConsMap[id].(type) {
 				case *consumertest.MetricsSink:
 					metrics = con.AllMetrics()

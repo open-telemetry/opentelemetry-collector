@@ -99,7 +99,9 @@ func (r *clientCAsFileReloader) startWatching() error {
 }
 
 func (r *clientCAsFileReloader) handleWatcherEvents() {
-	defer r.watcher.Close()
+	defer func() {
+		_ = r.watcher.Close()
+	}()
 	for {
 		select {
 		case _, ok := <-r.shutdownCH:

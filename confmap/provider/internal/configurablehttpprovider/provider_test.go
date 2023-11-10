@@ -53,7 +53,7 @@ func generateCertificate(hostname string) (cert string, key string, err error) {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 
 	if err != nil {
-		return "", "", fmt.Errorf("Failed to generate private key: %w", err)
+		return "", "", fmt.Errorf("failed to generate private key: %w", err)
 	}
 
 	keyUsage := x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageCertSign
@@ -63,7 +63,7 @@ func generateCertificate(hostname string) (cert string, key string, err error) {
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 
 	if err != nil {
-		return "", "", fmt.Errorf("Failed to generate serial number: %w", err)
+		return "", "", fmt.Errorf("failed to generate serial number: %w", err)
 	}
 
 	template := x509.Certificate{
@@ -82,40 +82,40 @@ func generateCertificate(hostname string) (cert string, key string, err error) {
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
 
 	if err != nil {
-		return "", "", fmt.Errorf("Failed to create certificate: %w", err)
+		return "", "", fmt.Errorf("failed to create certificate: %w", err)
 	}
 
 	certOut, err := os.CreateTemp("", "cert*.pem")
 	if err != nil {
-		return "", "", fmt.Errorf("Failed to open cert.pem for writing: %w", err)
+		return "", "", fmt.Errorf("failed to open cert.pem for writing: %w", err)
 	}
 
 	if err = pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}); err != nil {
-		return "", "", fmt.Errorf("Failed to write data to cert.pem: %w", err)
+		return "", "", fmt.Errorf("failed to write data to cert.pem: %w", err)
 	}
 
 	if err = certOut.Close(); err != nil {
-		return "", "", fmt.Errorf("Error closing cert.pem: %w", err)
+		return "", "", fmt.Errorf("error closing cert.pem: %w", err)
 	}
 
 	keyOut, err := os.CreateTemp("", "key*.pem")
 
 	if err != nil {
-		return "", "", fmt.Errorf("Failed to open key.pem for writing: %w", err)
+		return "", "", fmt.Errorf("failed to open key.pem for writing: %w", err)
 	}
 
 	privBytes, err := x509.MarshalPKCS8PrivateKey(priv)
 
 	if err != nil {
-		return "", "", fmt.Errorf("Unable to marshal private key: %w", err)
+		return "", "", fmt.Errorf("unable to marshal private key: %w", err)
 	}
 
 	if err := pem.Encode(keyOut, &pem.Block{Type: "PRIVATE KEY", Bytes: privBytes}); err != nil {
-		return "", "", fmt.Errorf("Failed to write data to key.pem: %w", err)
+		return "", "", fmt.Errorf("failed to write data to key.pem: %w", err)
 	}
 
 	if err := keyOut.Close(); err != nil {
-		return "", "", fmt.Errorf("Error closing key.pem: %w", err)
+		return "", "", fmt.Errorf("error closing key.pem: %w", err)
 	}
 
 	return certOut.Name(), keyOut.Name(), nil
@@ -145,9 +145,9 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 	ts.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
 	ts.StartTLS()
 
-	defer os.Remove(certPath)
-	defer os.Remove(keyPath)
-	defer os.Remove(invalidCert.Name())
+	defer func() { _ = os.Remove(certPath) }()
+	defer func() { _ = os.Remove(keyPath) }()
+	defer func() { _ = os.Remove(invalidCert.Name()) }()
 	defer ts.Close()
 
 	tests := []struct {

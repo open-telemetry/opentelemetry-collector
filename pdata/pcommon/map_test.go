@@ -300,7 +300,7 @@ func TestMap_Range(t *testing.T) {
 	rawMap := map[string]any{
 		"k_string": "123",
 		"k_int":    int64(123),
-		"k_double": float64(1.23),
+		"k_double": 1.23,
 		"k_bool":   true,
 		"k_empty":  nil,
 	}
@@ -462,7 +462,7 @@ func TestMap_RemoveIf(t *testing.T) {
 	am := NewMap()
 	am.PutStr("k_string", "123")
 	am.PutInt("k_int", int64(123))
-	am.PutDouble("k_double", float64(1.23))
+	am.PutDouble("k_double", 1.23)
 	am.PutBool("k_bool", true)
 	am.PutEmpty("k_empty")
 

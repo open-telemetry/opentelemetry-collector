@@ -99,7 +99,7 @@ func (tel *telemetryInitializer) init(res *resource.Resource, settings servicete
 }
 
 func (tel *telemetryInitializer) initTraces(res *resource.Resource, cfg telemetry.Config) (trace.TracerProvider, error) {
-	opts := []sdktrace.TracerProviderOption{}
+	var opts []sdktrace.TracerProviderOption
 	for _, processor := range cfg.Traces.Processors {
 		sp, err := proctelemetry.InitSpanProcessor(context.Background(), processor)
 		if err != nil {
@@ -145,7 +145,7 @@ func (tel *telemetryInitializer) initMetrics(res *resource.Resource, logger *zap
 	}
 
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
-	opts := []sdkmetric.Option{}
+	var opts []sdkmetric.Option
 	for _, reader := range cfg.Metrics.Readers {
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/8045
 		r, server, err := proctelemetry.InitMetricReader(context.Background(), reader, asyncErrorChannel)

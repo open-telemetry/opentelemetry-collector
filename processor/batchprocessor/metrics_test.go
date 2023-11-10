@@ -14,7 +14,7 @@ import (
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	io_prometheus_client "github.com/prometheus/client_model/go"
+	ioprometheusclient "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -139,7 +139,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 
 	if expected.sendSizeBytesSum > 0 {
 		name := "processor_batch_batch_send_size_bytes"
-		metric := tt.getMetric(t, name, io_prometheus_client.MetricType_HISTOGRAM, metrics)
+		metric := tt.getMetric(t, name, ioprometheusclient.MetricType_HISTOGRAM, metrics)
 
 		assertFloat(t, expected.sendSizeBytesSum, metric.GetHistogram().GetSampleSum(), name)
 		assertFloat(t, expected.sendCount, float64(metric.GetHistogram().GetSampleCount()), name)
@@ -155,7 +155,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 
 	if expected.sendSizeSum > 0 {
 		name := "processor_batch_batch_send_size"
-		metric := tt.getMetric(t, name, io_prometheus_client.MetricType_HISTOGRAM, metrics)
+		metric := tt.getMetric(t, name, ioprometheusclient.MetricType_HISTOGRAM, metrics)
 
 		assertFloat(t, expected.sendSizeSum, metric.GetHistogram().GetSampleSum(), name)
 		assertFloat(t, expected.sendCount, float64(metric.GetHistogram().GetSampleCount()), name)
@@ -169,20 +169,20 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 
 	if expected.sizeTrigger > 0 {
 		name := "processor_batch_batch_size_trigger_send"
-		metric := tt.getMetric(t, name, io_prometheus_client.MetricType_COUNTER, metrics)
+		metric := tt.getMetric(t, name, ioprometheusclient.MetricType_COUNTER, metrics)
 
 		assertFloat(t, expected.sizeTrigger, metric.GetCounter().GetValue(), name)
 	}
 
 	if expected.timeoutTrigger > 0 {
 		name := "processor_batch_timeout_trigger_send"
-		metric := tt.getMetric(t, name, io_prometheus_client.MetricType_COUNTER, metrics)
+		metric := tt.getMetric(t, name, ioprometheusclient.MetricType_COUNTER, metrics)
 
 		assertFloat(t, expected.timeoutTrigger, metric.GetCounter().GetValue(), name)
 	}
 }
 
-func (tt *testTelemetry) assertBoundaries(t *testing.T, expected []float64, histogram *io_prometheus_client.Histogram, metric string) {
+func (tt *testTelemetry) assertBoundaries(t *testing.T, expected []float64, histogram *ioprometheusclient.Histogram, metric string) {
 	var got []float64
 	for _, bucket := range histogram.GetBucket() {
 		got = append(got, bucket.GetUpperBound())
@@ -201,8 +201,8 @@ func (tt *testTelemetry) assertBoundaries(t *testing.T, expected []float64, hist
 
 }
 
-func (tt *testTelemetry) getMetric(t *testing.T, name string, mtype io_prometheus_client.MetricType, got map[string]*io_prometheus_client.MetricFamily) *io_prometheus_client.Metric {
-	if tt.useOtel && mtype == io_prometheus_client.MetricType_COUNTER {
+func (tt *testTelemetry) getMetric(t *testing.T, name string, mtype ioprometheusclient.MetricType, got map[string]*ioprometheusclient.MetricFamily) *ioprometheusclient.Metric {
+	if tt.useOtel && mtype == ioprometheusclient.MetricType_COUNTER {
 		// OTel Go suffixes counters with `_total`
 		name += "_total"
 	}
@@ -217,7 +217,7 @@ func (tt *testTelemetry) getMetric(t *testing.T, name string, mtype io_prometheu
 	return metric
 }
 
-func getSingleMetric(metric *io_prometheus_client.MetricFamily) (*io_prometheus_client.Metric, error) {
+func getSingleMetric(metric *ioprometheusclient.MetricFamily) (*ioprometheusclient.Metric, error) {
 	if l := len(metric.Metric); l != 1 {
 		return nil, fmt.Errorf("expected metric '%s' with one set of attributes, but found %d", metric.GetName(), l)
 	}

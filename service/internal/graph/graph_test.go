@@ -2058,10 +2058,10 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			}
-			pipelines, err := Build(context.Background(), set)
+			pipelineGraphs, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
-			assert.Error(t, pipelines.ShutdownAll(context.Background()))
+			assert.Error(t, pipelineGraphs.StartAll(context.Background(), componenttest.NewNopHost()))
+			assert.Error(t, pipelineGraphs.ShutdownAll(context.Background()))
 		})
 
 		t.Run(string(dt)+"/processor", func(t *testing.T) {
@@ -2072,10 +2072,10 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			}
-			pipelines, err := Build(context.Background(), set)
+			pipelineGraphs, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
-			assert.Error(t, pipelines.ShutdownAll(context.Background()))
+			assert.Error(t, pipelineGraphs.StartAll(context.Background(), componenttest.NewNopHost()))
+			assert.Error(t, pipelineGraphs.ShutdownAll(context.Background()))
 		})
 
 		t.Run(string(dt)+"/exporter", func(t *testing.T) {
@@ -2086,10 +2086,10 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop"), component.NewID("err")},
 				},
 			}
-			pipelines, err := Build(context.Background(), set)
+			pipelineGraphs, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
-			assert.Error(t, pipelines.ShutdownAll(context.Background()))
+			assert.Error(t, pipelineGraphs.StartAll(context.Background(), componenttest.NewNopHost()))
+			assert.Error(t, pipelineGraphs.ShutdownAll(context.Background()))
 		})
 
 		for _, dt2 := range dataTypes {
@@ -2106,10 +2106,10 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 						Exporters:  []component.ID{component.NewID("nop")},
 					},
 				}
-				pipelines, err := Build(context.Background(), set)
+				pipelineGraphs, err := Build(context.Background(), set)
 				assert.NoError(t, err)
-				assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
-				assert.Error(t, pipelines.ShutdownAll(context.Background()))
+				assert.Error(t, pipelineGraphs.StartAll(context.Background(), componenttest.NewNopHost()))
+				assert.Error(t, pipelineGraphs.ShutdownAll(context.Background()))
 			})
 		}
 	}

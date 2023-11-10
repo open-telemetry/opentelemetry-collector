@@ -36,7 +36,7 @@ func Example_receiver() {
 
 	// When you are done, propagate the context down the pipeline to the next
 	// consumer
-	next.ConsumeTraces(ctx, td) // nolint
+	_ = next.ConsumeTraces(ctx, td) // nolint
 }
 
 func Example_processor() {
