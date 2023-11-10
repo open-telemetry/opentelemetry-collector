@@ -76,7 +76,7 @@ type queueSender struct {
 	baseRequestSender
 	fullName         string
 	signal           component.DataType
-	queue            internal.ProducerConsumerQueue
+	queue            internal.Queue
 	traceAttribute   attribute.KeyValue
 	logger           *zap.Logger
 	requeuingEnabled bool
@@ -85,7 +85,7 @@ type queueSender struct {
 	metricSize     otelmetric.Int64ObservableGauge
 }
 
-func newQueueSender(id component.ID, signal component.DataType, queue internal.ProducerConsumerQueue, logger *zap.Logger) *queueSender {
+func newQueueSender(id component.ID, signal component.DataType, queue internal.Queue, logger *zap.Logger) *queueSender {
 	return &queueSender{
 		fullName:       id.String(),
 		signal:         signal,
@@ -194,7 +194,7 @@ func (qs *queueSender) recordWithOC() error {
 }
 
 // shutdown is invoked during service shutdown.
-func (qs *queueSender) shutdown() {
+func (qs *queueSender) shutdown(ctx context.Context) error {
 	if qs.queue != nil {
 		// Cleanup queue metrics reporting
 		_ = globalInstruments.queueSize.UpsertEntry(func() int64 {
@@ -203,8 +203,9 @@ func (qs *queueSender) shutdown() {
 
 		// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
 		// try once every request.
-		qs.queue.Stop()
+		return qs.queue.Shutdown(ctx)
 	}
+	return nil
 }
 
 // send implements the requestSender interface

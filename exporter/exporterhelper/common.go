@@ -6,6 +6,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -17,7 +18,7 @@ import (
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 type requestSender interface {
 	start(ctx context.Context, host component.Host, set exporter.CreateSettings) error
-	shutdown()
+	shutdown(ctx context.Context) error
 	send(req internal.Request) error
 	setNextSender(nextSender requestSender)
 }
@@ -32,7 +33,9 @@ func (b *baseRequestSender) start(context.Context, component.Host, exporter.Crea
 	return nil
 }
 
-func (b *baseRequestSender) shutdown() {}
+func (b *baseRequestSender) shutdown(context.Context) error {
+	return nil
+}
 
 func (b *baseRequestSender) send(req internal.Request) error {
 	return b.nextSender.send(req)
@@ -127,7 +130,7 @@ func WithQueue(config QueueSettings) Option {
 		if o.requestExporter {
 			panic("queueing is not available for the new request exporters yet")
 		}
-		var queue internal.ProducerConsumerQueue
+		var queue internal.Queue
 		if config.Enabled {
 			if config.StorageID == nil {
 				queue = internal.NewBoundedMemoryQueue(config.QueueSize, config.NumConsumers)
@@ -233,13 +236,13 @@ func (be *baseExporter) Start(ctx context.Context, host component.Host) error {
 
 func (be *baseExporter) Shutdown(ctx context.Context) error {
 	// First shutdown the retry sender, so it can push any pending requests to back the queue.
-	be.retrySender.shutdown()
+	err := be.retrySender.shutdown(ctx)
 
 	// Then shutdown the queue sender.
-	be.queueSender.shutdown()
+	err = multierr.Append(err, be.queueSender.shutdown(ctx))
 
 	// Last shutdown the wrapped exporter itself.
-	return be.ShutdownFunc.Shutdown(ctx)
+	return multierr.Append(err, be.ShutdownFunc.Shutdown(ctx))
 }
 
 func (be *baseExporter) setOnTemporaryFailure(onTemporaryFailure onRequestHandlingFinishedFunc) {

@@ -96,7 +96,7 @@ func TestBoundedQueue(t *testing.T) {
 		consumerState.assertConsumed(expected)
 	}
 
-	q.Stop()
+	assert.NoError(t, q.Shutdown(context.Background()))
 	assert.False(t, q.Produce(newStringRequest("x")), "cannot push to closed queue")
 }
 
@@ -127,7 +127,7 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	q.Produce(newStringRequest("i"))
 	q.Produce(newStringRequest("j"))
 
-	q.Stop()
+	assert.NoError(t, q.Shutdown(context.Background()))
 
 	assert.False(t, q.Produce(newStringRequest("x")), "cannot push to closed queue")
 	consumerState.assertConsumed(map[string]bool{
@@ -198,7 +198,7 @@ func queueUsage(b *testing.B, capacity int, numConsumers int, numberOfItems int)
 		for j := 0; j < numberOfItems; j++ {
 			q.Produce(newStringRequest(fmt.Sprintf("%d", j)))
 		}
-		q.Stop()
+		assert.NoError(b, q.Shutdown(context.Background()))
 	}
 }
 
@@ -255,7 +255,7 @@ func TestZeroSizeWithConsumers(t *testing.T) {
 
 	assert.True(t, q.Produce(newStringRequest("a"))) // in process
 
-	q.Stop()
+	assert.NoError(t, q.Shutdown(context.Background()))
 }
 
 func TestZeroSizeNoConsumers(t *testing.T) {
@@ -266,5 +266,5 @@ func TestZeroSizeNoConsumers(t *testing.T) {
 
 	assert.False(t, q.Produce(newStringRequest("a"))) // in process
 
-	q.Stop()
+	assert.NoError(t, q.Shutdown(context.Background()))
 }

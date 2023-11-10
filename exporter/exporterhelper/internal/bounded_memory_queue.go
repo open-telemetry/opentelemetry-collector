@@ -24,7 +24,7 @@ type boundedMemoryQueue struct {
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity. Capacity cannot be 0.
-func NewBoundedMemoryQueue(capacity int, numConsumers int) ProducerConsumerQueue {
+func NewBoundedMemoryQueue(capacity int, numConsumers int) Queue {
 	return &boundedMemoryQueue{
 		items:        make(chan Request, capacity),
 		stopped:      &atomic.Bool{},
@@ -65,12 +65,12 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 	}
 }
 
-// Stop stops all consumers, as well as the length reporter if started,
-// and releases the items channel. It blocks until all consumers have stopped.
-func (q *boundedMemoryQueue) Stop() {
+// Shutdown stops accepting items, and stops all consumers. It blocks until all consumers have stopped.
+func (q *boundedMemoryQueue) Shutdown(context.Context) error {
 	q.stopped.Store(true) // disable producer
 	close(q.items)
 	q.stopWG.Wait()
+	return nil
 }
 
 // Size returns the current size of the queue

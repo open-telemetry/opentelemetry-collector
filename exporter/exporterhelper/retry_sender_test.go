@@ -396,11 +396,11 @@ func tagsMatchLabelKeys(tags []tag.Tag, keys []metricdata.LabelKey, labels []met
 }
 
 type producerConsumerQueueWithCounter struct {
-	internal.ProducerConsumerQueue
+	internal.Queue
 	produceCounter *atomic.Uint32
 }
 
 func (pcq *producerConsumerQueueWithCounter) Produce(item internal.Request) bool {
 	pcq.produceCounter.Add(1)
-	return pcq.ProducerConsumerQueue.Produce(item)
+	return pcq.Queue.Produce(item)
 }

@@ -4,6 +4,7 @@
 package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -99,8 +100,9 @@ func newRetrySender(id component.ID, rCfg RetrySettings, logger *zap.Logger, onT
 	}
 }
 
-func (rs *retrySender) shutdown() {
+func (rs *retrySender) shutdown(context.Context) error {
 	close(rs.stopCh)
+	return nil
 }
 
 // send implements the requestSender interface
