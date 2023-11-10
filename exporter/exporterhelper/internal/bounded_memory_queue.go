@@ -18,26 +18,21 @@ import (
 // the producer are dropped.
 type boundedMemoryQueue struct {
 	stopWG       sync.WaitGroup
-	size         *atomic.Uint32
 	stopped      *atomic.Bool
 	items        chan Request
-	capacity     uint32
 	numConsumers int
 }
 
-// NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
-// callback for dropped items (e.g. useful to emit metrics).
+// NewBoundedMemoryQueue constructs the new queue of specified capacity. Capacity cannot be 0.
 func NewBoundedMemoryQueue(capacity int, numConsumers int) ProducerConsumerQueue {
 	return &boundedMemoryQueue{
 		items:        make(chan Request, capacity),
 		stopped:      &atomic.Bool{},
-		size:         &atomic.Uint32{},
-		capacity:     uint32(capacity),
 		numConsumers: numConsumers,
 	}
 }
 
-// StartConsumers starts a given number of goroutines consuming items from the queue
+// Start starts a given number of goroutines consuming items from the queue
 // and passing them into the consumer callback.
 func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set QueueSettings) error {
 	var startWG sync.WaitGroup
@@ -48,7 +43,6 @@ func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set Queu
 			startWG.Done()
 			defer q.stopWG.Done()
 			for item := range q.items {
-				q.size.Add(^uint32(0))
 				set.Callback(item)
 			}
 		}()
@@ -63,20 +57,10 @@ func (q *boundedMemoryQueue) Produce(item Request) bool {
 		return false
 	}
 
-	// we might have two concurrent backing queues at the moment
-	// their combined size is stored in q.size, and their combined capacity
-	// should match the capacity of the new queue
-	if q.size.Load() >= q.capacity {
-		return false
-	}
-
-	q.size.Add(1)
 	select {
 	case q.items <- item:
 		return true
 	default:
-		// should not happen, as overflows should have been captured earlier
-		q.size.Add(^uint32(0))
 		return false
 	}
 }
@@ -91,11 +75,11 @@ func (q *boundedMemoryQueue) Stop() {
 
 // Size returns the current size of the queue
 func (q *boundedMemoryQueue) Size() int {
-	return int(q.size.Load())
+	return len(q.items)
 }
 
 func (q *boundedMemoryQueue) Capacity() int {
-	return int(q.capacity)
+	return cap(q.items)
 }
 
 func (q *boundedMemoryQueue) IsPersistent() bool {
