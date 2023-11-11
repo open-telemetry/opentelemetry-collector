@@ -18,7 +18,7 @@ See also the [Troubleshooting][troubleshooting_docs] document for examples on us
 
 The following settings are optional:
 
-- `verbosity` (default = `normal`): the verbosity of the logging export
+- `verbosity` (default = `basic`): the verbosity of the logging export
   (detailed|normal|basic). When set to `detailed`, pipeline data is verbosely
   logged.
 - `sampling_initial` (default = `2`): number of messages initially logged each
@@ -41,22 +41,22 @@ exporters:
 ## Verbosity levels
 
 The following subsections describe the output from the exporter depending on the configured verbosity level - `basic`, `normal` and `detailed`.
-The default verbosity level is `normal`.
+The default verbosity level is `basic`.
 
 ### Basic verbosity
 
-With `verbosity: basic`, the exporter's behavior is currently the same as with `verbosity: normal`.
-See below for more details.
-
-### Normal verbosity
-
-With `verbosity: normal`, the exporter outputs a single-line summary of received data with a total count of telemetry records for every batch of received logs, metrics or traces.
+With `verbosity: basic`, the exporter outputs a single-line summary of received data with a total count of telemetry records for every batch of received logs, metrics or traces.
 
 Here's an example output:
 
 ```console
 2023-11-10T22:49:03.510-0600    info    TracesExporter  {"kind": "exporter", "data_type": "traces", "name": "debug", "resource spans": 1, "spans": 2}
 ```
+
+### Normal verbosity
+
+With `verbosity: normal`, the exporter's behavior is currently the same as with `verbosity: basic`.
+See above for more details.
 
 ### Detailed verbosity
 
