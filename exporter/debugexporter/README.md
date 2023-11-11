@@ -8,7 +8,11 @@
 
 Exports data to the console via zap.Logger.
 
-Supported pipeline types: traces, metrics, logs
+Supported pipeline types: traces, metrics, logs.
+
+See also the [Troubleshooting][troubleshooting_docs] document for examples on using this exporter.
+
+[troubleshooting_docs]: ../../docs/troubleshooting.md
 
 ## Getting Started
 
