@@ -45,18 +45,18 @@ The default verbosity level is `normal`.
 
 ### Basic verbosity
 
-With `verbosity: basic`, the exporter outputs a single-line summary of received data with a total count of telemetry records for every batch of received logs, metrics or traces.
+With `verbosity: basic`, the exporter's behavior is currently the same as with `verbosity: normal`.
+See below for more details.
+
+### Normal verbosity
+
+With `verbosity: normal`, the exporter outputs a single-line summary of received data with a total count of telemetry records for every batch of received logs, metrics or traces.
 
 Here's an example output:
 
 ```console
 2023-11-10T22:49:03.510-0600    info    TracesExporter  {"kind": "exporter", "data_type": "traces", "name": "debug", "resource spans": 1, "spans": 2}
 ```
-
-### Normal verbosity
-
-Currently the exporter's behavior with `verbosity: normal` is the same as with `verbosity: basic`.
-See above for more details.
 
 ### Detailed verbosity
 
