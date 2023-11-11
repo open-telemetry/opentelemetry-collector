@@ -390,10 +390,10 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *errOrSinkConsumer, enco
 	var err error
 	switch encoding {
 	case "gzip":
-		buf, err = compressGzip(traceJSON)
+		buf, err = compressGzip(t, traceJSON)
 		require.NoError(t, err, "Error while gzip compressing trace: %v", err)
 	case "zstd":
-		buf, err = compressZstd(traceJSON)
+		buf, err = compressZstd(t, traceJSON)
 		require.NoError(t, err, "Error while zstd compressing trace: %v", err)
 	case "":
 		buf = bytes.NewBuffer(traceJSON)
@@ -502,10 +502,10 @@ func createHTTPProtobufRequest(
 	var err error
 	switch encoding {
 	case "gzip":
-		buf, err = compressGzip(traceBytes)
+		buf, err = compressGzip(t, traceBytes)
 		require.NoError(t, err, "Error while gzip compressing trace: %v", err)
 	case "zstd":
-		buf, err = compressZstd(traceBytes)
+		buf, err = compressZstd(t, traceBytes)
 		require.NoError(t, err, "Error while zstd compressing trace: %v", err)
 	case "":
 		buf = bytes.NewBuffer(traceBytes)
@@ -1012,11 +1012,11 @@ func newReceiver(t *testing.T, factory receiver.Factory, cfg *Config, id compone
 	return r
 }
 
-func compressGzip(body []byte) (*bytes.Buffer, error) {
+func compressGzip(t *testing.T, body []byte) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
 	gw := gzip.NewWriter(&buf)
-	defer func() { _ = gw.Close() }()
+	t.Cleanup(func() { assert.NoError(t, gw.Close()) })
 
 	_, err := gw.Write(body)
 	if err != nil {
@@ -1026,7 +1026,7 @@ func compressGzip(body []byte) (*bytes.Buffer, error) {
 	return &buf, nil
 }
 
-func compressZstd(body []byte) (*bytes.Buffer, error) {
+func compressZstd(t *testing.T, body []byte) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
 	zw, err := zstd.NewWriter(&buf)
@@ -1034,7 +1034,7 @@ func compressZstd(body []byte) (*bytes.Buffer, error) {
 		return nil, err
 	}
 
-	defer func() { _ = zw.Close() }()
+	t.Cleanup(func() { assert.NoError(t, zw.Close()) })
 
 	_, err = zw.Write(body)
 	if err != nil {
@@ -1070,7 +1070,7 @@ func TestShutdown(t *testing.T) {
 
 	conn, err := grpc.Dial(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err)
-	defer func() { _ = conn.Close() }()
+	t.Cleanup(func() { assert.NoError(t, conn.Close()) })
 
 	doneSignalGrpc := make(chan bool)
 	doneSignalHTTP := make(chan bool)

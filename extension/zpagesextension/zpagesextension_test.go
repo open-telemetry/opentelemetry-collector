@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
@@ -68,7 +69,7 @@ func TestZPagesExtensionUsage(t *testing.T) {
 	client := &http.Client{}
 	resp, err := client.Get("http://localhost:" + zpagesPort + "/debug/tracez")
 	require.NoError(t, err)
-	defer func() { _ = resp.Body.Close() }()
+	t.Cleanup(func() { assert.NoError(t, resp.Body.Close()) })
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
@@ -77,7 +78,7 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", endpoint)
 	require.NoError(t, err)
-	defer func() { _ = ln.Close() }()
+	t.Cleanup(func() { assert.NoError(t, ln.Close()) })
 
 	cfg := &Config{
 		TCPAddr: confignet.TCPAddr{

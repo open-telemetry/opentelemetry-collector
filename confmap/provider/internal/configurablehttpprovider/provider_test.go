@@ -145,9 +145,11 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 	ts.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
 	ts.StartTLS()
 
-	defer func() { _ = os.Remove(certPath) }()
-	defer func() { _ = os.Remove(keyPath) }()
-	defer func() { _ = os.Remove(invalidCert.Name()) }()
+	t.Cleanup(func() {
+		assert.NoError(t, os.Remove(certPath))
+		assert.NoError(t, os.Remove(keyPath))
+		assert.NoError(t, os.Remove(invalidCert.Name()))
+	})
 	defer ts.Close()
 
 	tests := []struct {

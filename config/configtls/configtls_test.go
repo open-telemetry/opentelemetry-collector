@@ -513,11 +513,11 @@ func TestCertificateReload(t *testing.T) {
 			// Copy certs into a temp dir so we can safely modify them
 			certFile, err := os.CreateTemp("", "cert")
 			assert.NoError(t, err)
-			t.Cleanup(func() { assert.NoError(t, os.Remove(certFile.Name()) })
+			t.Cleanup(func() { assert.NoError(t, os.Remove(certFile.Name())) })
 
 			keyFile, err := os.CreateTemp("", "key")
 			assert.NoError(t, err)
-			defer func() { _ = os.Remove(keyFile.Name()) }()
+			t.Cleanup(func() { assert.NoError(t, os.Remove(keyFile.Name())) })
 
 			fdc, err := os.Open(filepath.Join("testdata", "client-1.crt"))
 			assert.NoError(t, err)
