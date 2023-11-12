@@ -95,10 +95,12 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 
 	consumerState := newConsumerState(t)
 
+	var wg sync.WaitGroup
+	wg.Add(1)
 	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	consumers := NewQueueConsumers(q, 1, func(_ context.Context, item string) {
+		wg.Wait()
 		consumerState.record(item)
-		time.Sleep(1 * time.Second)
 	})
 	consumers.Start()
 
@@ -113,10 +115,16 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	assert.NoError(t, q.Offer(context.Background(), "i"))
 	assert.NoError(t, q.Offer(context.Background(), "j"))
 
+	go func() {
+		require.EventuallyWithT(t, func(c *assert.CollectT) {
+			assert.ErrorIs(t, q.Offer(context.Background(), "x"), ErrQueueIsStopped)
+		}, 1*time.Second, 10*time.Millisecond)
+		wg.Done()
+	}()
+
 	assert.NoError(t, q.Shutdown(context.Background()))
 	consumers.Shutdown()
 
-	assert.ErrorIs(t, q.Offer(context.Background(), "x"), ErrQueueIsStopped)
 	consumerState.assertConsumed(map[string]bool{
 		"a": true,
 		"b": true,
