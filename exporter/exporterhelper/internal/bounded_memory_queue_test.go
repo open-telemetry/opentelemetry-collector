@@ -19,14 +19,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func newNopQueueSettings(callback func(item Request)) QueueSettings {
 	return QueueSettings{
-		CreateSettings: exportertest.NewNopCreateSettings(),
-		DataType:       component.DataTypeMetrics,
-		Callback:       callback,
+		DataType: component.DataTypeMetrics,
+		Callback: callback,
 	}
 }
 

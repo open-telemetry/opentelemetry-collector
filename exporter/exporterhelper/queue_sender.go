@@ -79,19 +79,21 @@ type queueSender struct {
 	queue            internal.Queue
 	traceAttribute   attribute.KeyValue
 	logger           *zap.Logger
+	meter            otelmetric.Meter
 	requeuingEnabled bool
 
 	metricCapacity otelmetric.Int64ObservableGauge
 	metricSize     otelmetric.Int64ObservableGauge
 }
 
-func newQueueSender(id component.ID, signal component.DataType, queue internal.Queue, logger *zap.Logger) *queueSender {
+func newQueueSender(set exporter.CreateSettings, signal component.DataType, queue internal.Queue) *queueSender {
 	return &queueSender{
-		fullName:       id.String(),
+		fullName:       set.ID.String(),
 		signal:         signal,
 		queue:          queue,
-		traceAttribute: attribute.String(obsmetrics.ExporterKey, id.String()),
-		logger:         logger,
+		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
+		logger:         set.TelemetrySettings.Logger,
+		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
 		// TODO: this can be further exposed as a config param rather than relying on a type of queue
 		requeuingEnabled: queue != nil && queue.IsPersistent(),
 	}
@@ -122,15 +124,14 @@ func (qs *queueSender) onTemporaryFailure(logger *zap.Logger, req internal.Reque
 	return err
 }
 
-// start is invoked during service startup.
-func (qs *queueSender) start(ctx context.Context, host component.Host, set exporter.CreateSettings) error {
+// Start is invoked during service startup.
+func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 	if qs.queue == nil {
 		return nil
 	}
 
 	err := qs.queue.Start(ctx, host, internal.QueueSettings{
-		CreateSettings: set,
-		DataType:       qs.signal,
+		DataType: qs.signal,
 		Callback: func(item internal.Request) {
 			_ = qs.nextSender.send(item)
 			item.OnProcessingFinished()
@@ -141,17 +142,17 @@ func (qs *queueSender) start(ctx context.Context, host component.Host, set expor
 	}
 
 	if obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled() {
-		return qs.recordWithOtel(set.MeterProvider.Meter(scopeName))
+		return qs.recordWithOtel()
 	}
 	return qs.recordWithOC()
 }
 
-func (qs *queueSender) recordWithOtel(meter otelmetric.Meter) error {
+func (qs *queueSender) recordWithOtel() error {
 	var err, errs error
 
 	attrs := otelmetric.WithAttributeSet(attribute.NewSet(attribute.String(obsmetrics.ExporterKey, qs.fullName)))
 
-	qs.metricSize, err = meter.Int64ObservableGauge(
+	qs.metricSize, err = qs.meter.Int64ObservableGauge(
 		obsmetrics.ExporterKey+"/queue_size",
 		otelmetric.WithDescription("Current size of the retry queue (in batches)"),
 		otelmetric.WithUnit("1"),
@@ -162,7 +163,7 @@ func (qs *queueSender) recordWithOtel(meter otelmetric.Meter) error {
 	)
 	errs = multierr.Append(errs, err)
 
-	qs.metricCapacity, err = meter.Int64ObservableGauge(
+	qs.metricCapacity, err = qs.meter.Int64ObservableGauge(
 		obsmetrics.ExporterKey+"/queue_capacity",
 		otelmetric.WithDescription("Fixed capacity of the retry queue (in batches)"),
 		otelmetric.WithUnit("1"),
@@ -193,19 +194,19 @@ func (qs *queueSender) recordWithOC() error {
 	return nil
 }
 
-// shutdown is invoked during service shutdown.
-func (qs *queueSender) shutdown(ctx context.Context) error {
-	if qs.queue != nil {
-		// Cleanup queue metrics reporting
-		_ = globalInstruments.queueSize.UpsertEntry(func() int64 {
-			return int64(0)
-		}, metricdata.NewLabelValue(qs.fullName))
-
-		// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
-		// try once every request.
-		return qs.queue.Shutdown(ctx)
+// Shutdown is invoked during service shutdown.
+func (qs *queueSender) Shutdown(ctx context.Context) error {
+	if qs.queue == nil {
+		return nil
 	}
-	return nil
+	// Cleanup queue metrics reporting
+	_ = globalInstruments.queueSize.UpsertEntry(func() int64 {
+		return int64(0)
+	}, metricdata.NewLabelValue(qs.fullName))
+
+	// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
+	// try once every request.
+	return qs.queue.Shutdown(ctx)
 }
 
 // send implements the requestSender interface

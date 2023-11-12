@@ -9,11 +9,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter"
 )
 
 type QueueSettings struct {
-	exporter.CreateSettings
 	DataType component.DataType
 	Callback func(item Request)
 }

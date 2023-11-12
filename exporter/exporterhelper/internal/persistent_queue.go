@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
@@ -29,6 +30,7 @@ var (
 type persistentQueue struct {
 	stopWG       sync.WaitGroup
 	stopChan     chan struct{}
+	set          exporter.CreateSettings
 	storageID    component.ID
 	storage      *persistentContiguousStorage
 	capacity     uint64
@@ -45,10 +47,11 @@ func buildPersistentStorageName(name string, signal component.DataType) string {
 
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
 func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, marshaler RequestMarshaler,
-	unmarshaler RequestUnmarshaler) Queue {
+	unmarshaler RequestUnmarshaler, set exporter.CreateSettings) Queue {
 	return &persistentQueue{
 		capacity:     uint64(capacity),
 		numConsumers: numConsumers,
+		set:          set,
 		storageID:    storageID,
 		marshaler:    marshaler,
 		unmarshaler:  unmarshaler,
@@ -58,12 +61,12 @@ func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, 
 
 // Start starts the persistentQueue with the given number of consumers.
 func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set QueueSettings) error {
-	storageClient, err := toStorageClient(ctx, pq.storageID, host, set.ID, set.DataType)
+	storageClient, err := toStorageClient(ctx, pq.storageID, host, pq.set.ID, set.DataType)
 	if err != nil {
 		return err
 	}
-	storageName := buildPersistentStorageName(set.ID.Name(), set.DataType)
-	pq.storage = newPersistentContiguousStorage(ctx, storageName, storageClient, set.Logger, pq.capacity, pq.marshaler, pq.unmarshaler)
+	storageName := buildPersistentStorageName(pq.set.ID.Name(), set.DataType)
+	pq.storage = newPersistentContiguousStorage(ctx, storageName, storageClient, pq.set.Logger, pq.capacity, pq.marshaler, pq.unmarshaler)
 	for i := 0; i < pq.numConsumers; i++ {
 		pq.stopWG.Add(1)
 		go func() {

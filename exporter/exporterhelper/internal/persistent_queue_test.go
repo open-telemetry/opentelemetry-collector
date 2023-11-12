@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -34,7 +35,7 @@ func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 // createTestQueue creates and starts a fake queue with the given capacity and number of consumers.
 func createTestQueue(t *testing.T, capacity, numConsumers int, callback func(item Request)) Queue {
 	pq := NewPersistentQueue(capacity, numConsumers, component.ID{}, newFakeTracesRequestMarshalerFunc(),
-		newFakeTracesRequestUnmarshalerFunc())
+		newFakeTracesRequestUnmarshalerFunc(), exportertest.NewNopCreateSettings())
 	host := &mockHost{ext: map[component.ID]component.Component{
 		{}: NewMockStorageExtension(nil),
 	}}
@@ -45,7 +46,7 @@ func createTestQueue(t *testing.T, capacity, numConsumers int, callback func(ite
 
 func TestPersistentQueue_Capacity(t *testing.T) {
 	pq := NewPersistentQueue(5, 1, component.ID{}, newFakeTracesRequestMarshalerFunc(),
-		newFakeTracesRequestUnmarshalerFunc())
+		newFakeTracesRequestUnmarshalerFunc(), exportertest.NewNopCreateSettings())
 	host := &mockHost{ext: map[component.ID]component.Component{
 		{}: NewMockStorageExtension(nil),
 	}}
@@ -280,7 +281,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 
 func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
 	pq := NewPersistentQueue(1, 1, component.ID{}, newFakeTracesRequestMarshalerFunc(),
-		newFakeTracesRequestUnmarshalerFunc())
+		newFakeTracesRequestUnmarshalerFunc(), exportertest.NewNopCreateSettings())
 	// verify that stopping a un-start/started w/error queue does not panic
 	assert.NoError(t, pq.Shutdown(context.Background()))
 }
