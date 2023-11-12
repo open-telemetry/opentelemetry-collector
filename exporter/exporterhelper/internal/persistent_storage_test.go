@@ -235,7 +235,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	}
 
 	// The queue should be now empty
-	requireCurrentlyDispatchedItemsEqual(t, newPs, nil)
+	requireCurrentlyDispatchedItemsEqual(t, newPs, []itemIndex{})
 	assert.Eventually(t, func() bool {
 		return newPs.size() == 0
 	}, 5*time.Second, 10*time.Millisecond)
