@@ -115,6 +115,8 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	assert.NoError(t, q.Offer(context.Background(), "i"))
 	assert.NoError(t, q.Offer(context.Background(), "j"))
 
+	// we block the workers and wait for the queue to start rejecting new items to release the lock.
+	// This ensures that we test that the queue has been called to shutdown while items are still in the queue.
 	go func() {
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
 			// ensure the request is rejected due to closed queue
