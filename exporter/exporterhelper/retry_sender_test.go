@@ -227,7 +227,25 @@ func TestQueueRetryWithNoQueue(t *testing.T) {
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
 	mockR := newMockRequest(context.Background(), 2, errors.New("some error"))
 	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
+		require.Error(t, be.send(mockR))
+	})
+	ocs.awaitAsyncProcessing()
+	mockR.checkNumRequests(t, 1)
+	ocs.checkSendItemsCount(t, 0)
+	ocs.checkDroppedItemsCount(t, 2)
+	require.NoError(t, be.Shutdown(context.Background()))
+}
+
+func TestQueueRetryWithDisabledRetires(t *testing.T) {
+	rCfg := NewDefaultRetrySettings()
+	rCfg.Enabled = false
+	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg))
+	require.IsType(t, &errorLoggingRequestSender{}, be.retrySender)
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	ocs := be.obsrepSender.(*observabilityConsumerSender)
+	mockR := newMockRequest(context.Background(), 2, errors.New("some error"))
+	ocs.run(func() {
 		require.Error(t, be.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
