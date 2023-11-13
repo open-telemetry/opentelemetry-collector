@@ -153,6 +153,12 @@ func TestRegisterGateLifecycle(t *testing.T) {
 			shouldErr: true,
 		},
 		{
+			name:      "Gate name with underscores",
+			id:        "gcp.untyped_double_export",
+			stage:     StageAlpha,
+			shouldErr: false,
+		},
+		{
 			name:      "Invalid empty gate",
 			id:        "",
 			stage:     StageAlpha,
