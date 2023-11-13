@@ -91,7 +91,7 @@ func TestBaseExporterLogging(t *testing.T) {
 	bs, err := newBaseExporter(set, "", true, nil, nil, newNoopObsrepSender, WithRetry(rCfg))
 	require.Nil(t, err)
 	require.True(t, bs.requestExporter)
-	sendErr := bs.send(newErrorRequest(context.Background()))
+	sendErr := bs.send(context.Background(), newErrorRequest())
 	require.Error(t, sendErr)
 
 	require.Len(t, observed.FilterLevelExact(zap.ErrorLevel).All(), 1)

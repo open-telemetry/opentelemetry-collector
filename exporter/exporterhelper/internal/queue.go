@@ -13,7 +13,7 @@ import (
 
 type QueueSettings struct {
 	DataType component.DataType
-	Callback func(item Request)
+	Callback func(QueueRequest)
 }
 
 // Queue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
@@ -24,7 +24,7 @@ type Queue interface {
 	Start(ctx context.Context, host component.Host, set QueueSettings) error
 	// Produce is used by the producer to submit new item to the queue. Returns false if the item wasn't added
 	// to the queue due to queue overflow.
-	Produce(item Request) bool
+	Produce(ctx context.Context, item any) bool
 	// Size returns the current Size of the queue
 	Size() int
 	// Shutdown stops accepting items, and stops all consumers. It blocks until all consumers have stopped.

@@ -21,19 +21,18 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-func newNopQueueSettings(callback func(item Request)) QueueSettings {
+func newNopQueueSettings(callback func(any)) QueueSettings {
 	return QueueSettings{
 		DataType: component.DataTypeMetrics,
-		Callback: callback,
+		Callback: func(item QueueRequest) { callback(item.Request) },
 	}
 }
 
 type stringRequest struct {
-	Request
 	str string
 }
 
-func newStringRequest(str string) Request {
+func newStringRequest(str string) stringRequest {
 	return stringRequest{str: str}
 }
 
@@ -48,7 +47,7 @@ func TestBoundedQueue(t *testing.T) {
 	startLock.Lock() // block consumers
 	consumerState := newConsumerState(t)
 
-	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {
+	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item any) {
 		consumerState.record(item.(stringRequest).str)
 
 		// block further processing until startLock is released
@@ -57,7 +56,7 @@ func TestBoundedQueue(t *testing.T) {
 		startLock.Unlock()
 	})))
 
-	assert.True(t, q.Produce(newStringRequest("a")))
+	assert.True(t, q.Produce(context.Background(), newStringRequest("a")))
 
 	// at this point "a" may or may not have been received by the consumer go-routine
 	// so let's make sure it has been
@@ -70,10 +69,10 @@ func TestBoundedQueue(t *testing.T) {
 	})
 
 	// produce two more items. The first one should be accepted, but not consumed.
-	assert.True(t, q.Produce(newStringRequest("b")))
+	assert.True(t, q.Produce(context.Background(), newStringRequest("b")))
 	assert.Equal(t, 1, q.Size())
 	// the second should be rejected since the queue is full
-	assert.False(t, q.Produce(newStringRequest("c")))
+	assert.False(t, q.Produce(context.Background(), newStringRequest("c")))
 	assert.Equal(t, 1, q.Size())
 
 	startLock.Unlock() // unblock consumer
@@ -89,13 +88,13 @@ func TestBoundedQueue(t *testing.T) {
 		"b": true,
 	}
 	for _, item := range []string{"d", "e", "f"} {
-		assert.True(t, q.Produce(newStringRequest(item)))
+		assert.True(t, q.Produce(context.Background(), newStringRequest(item)))
 		expected[item] = true
 		consumerState.assertConsumed(expected)
 	}
 
 	assert.NoError(t, q.Shutdown(context.Background()))
-	assert.False(t, q.Produce(newStringRequest("x")), "cannot push to closed queue")
+	assert.False(t, q.Produce(context.Background(), newStringRequest("x")), "cannot push to closed queue")
 }
 
 // In this test we run a queue with many items and a slow consumer.
@@ -109,25 +108,25 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 
 	consumerState := newConsumerState(t)
 
-	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {
+	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item any) {
 		consumerState.record(item.(stringRequest).str)
 		time.Sleep(1 * time.Second)
 	})))
 
-	q.Produce(newStringRequest("a"))
-	q.Produce(newStringRequest("b"))
-	q.Produce(newStringRequest("c"))
-	q.Produce(newStringRequest("d"))
-	q.Produce(newStringRequest("e"))
-	q.Produce(newStringRequest("f"))
-	q.Produce(newStringRequest("g"))
-	q.Produce(newStringRequest("h"))
-	q.Produce(newStringRequest("i"))
-	q.Produce(newStringRequest("j"))
+	q.Produce(context.Background(), newStringRequest("a"))
+	q.Produce(context.Background(), newStringRequest("b"))
+	q.Produce(context.Background(), newStringRequest("c"))
+	q.Produce(context.Background(), newStringRequest("d"))
+	q.Produce(context.Background(), newStringRequest("e"))
+	q.Produce(context.Background(), newStringRequest("f"))
+	q.Produce(context.Background(), newStringRequest("g"))
+	q.Produce(context.Background(), newStringRequest("h"))
+	q.Produce(context.Background(), newStringRequest("i"))
+	q.Produce(context.Background(), newStringRequest("j"))
 
 	assert.NoError(t, q.Shutdown(context.Background()))
 
-	assert.False(t, q.Produce(newStringRequest("x")), "cannot push to closed queue")
+	assert.False(t, q.Produce(context.Background(), newStringRequest("x")), "cannot push to closed queue")
 	consumerState.assertConsumed(map[string]bool{
 		"a": true,
 		"b": true,
@@ -189,12 +188,12 @@ func queueUsage(b *testing.B, capacity int, numConsumers int, numberOfItems int)
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		q := NewBoundedMemoryQueue(capacity, numConsumers)
-		err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {
+		err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item any) {
 			time.Sleep(1 * time.Millisecond)
 		}))
 		require.NoError(b, err)
 		for j := 0; j < numberOfItems; j++ {
-			q.Produce(newStringRequest(fmt.Sprintf("%d", j)))
+			q.Produce(context.Background(), newStringRequest(fmt.Sprintf("%d", j)))
 		}
 		assert.NoError(b, q.Shutdown(context.Background()))
 	}
@@ -248,10 +247,10 @@ func (s *consumerState) assertConsumed(expected map[string]bool) {
 func TestZeroSizeWithConsumers(t *testing.T) {
 	q := NewBoundedMemoryQueue(0, 1)
 
-	err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {}))
+	err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item any) {}))
 	assert.NoError(t, err)
 
-	assert.True(t, q.Produce(newStringRequest("a"))) // in process
+	assert.True(t, q.Produce(context.Background(), newStringRequest("a"))) // in process
 
 	assert.NoError(t, q.Shutdown(context.Background()))
 }
@@ -259,10 +258,10 @@ func TestZeroSizeWithConsumers(t *testing.T) {
 func TestZeroSizeNoConsumers(t *testing.T) {
 	q := NewBoundedMemoryQueue(0, 0)
 
-	err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item Request) {}))
+	err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item any) {}))
 	assert.NoError(t, err)
 
-	assert.False(t, q.Produce(newStringRequest("a"))) // in process
+	assert.False(t, q.Produce(context.Background(), newStringRequest("a"))) // in process
 
 	assert.NoError(t, q.Shutdown(context.Background()))
 }

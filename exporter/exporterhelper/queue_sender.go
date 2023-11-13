@@ -87,12 +87,13 @@ type queueSender struct {
 }
 
 func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal component.DataType,
-	marshaler internal.RequestMarshaler, unmarshaler internal.RequestUnmarshaler) *queueSender {
+	marshaler RequestMarshaler, unmarshaler RequestUnmarshaler) *queueSender {
 	var queue internal.Queue
 	if config.StorageID == nil {
 		queue = internal.NewBoundedMemoryQueue(config.QueueSize, config.NumConsumers)
 	} else {
-		queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID, marshaler, unmarshaler, set)
+		queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID,
+			queueRequestMarshaler(marshaler), queueRequestUnmarshaler(unmarshaler), set)
 	}
 	return &queueSender{
 		fullName:       set.ID.String(),
@@ -106,17 +107,17 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 	}
 }
 
-func (qs *queueSender) onTemporaryFailure(logger *zap.Logger, req internal.Request, err error) error {
+func (qs *queueSender) onTemporaryFailure(ctx context.Context, req Request, err error, logger *zap.Logger) error {
 	if !qs.requeuingEnabled {
 		logger.Error(
 			"Exporting failed. No more retries left. Dropping data.",
 			zap.Error(err),
-			zap.Int("dropped_items", req.Count()),
+			zap.Int("dropped_items", req.ItemsCount()),
 		)
 		return err
 	}
 
-	if qs.queue.Produce(req) {
+	if qs.queue.Produce(ctx, req) {
 		logger.Error(
 			"Exporting failed. Putting back to the end of the queue.",
 			zap.Error(err),
@@ -125,7 +126,7 @@ func (qs *queueSender) onTemporaryFailure(logger *zap.Logger, req internal.Reque
 		logger.Error(
 			"Exporting failed. Queue did not accept requeuing request. Dropping data.",
 			zap.Error(err),
-			zap.Int("dropped_items", req.Count()),
+			zap.Int("dropped_items", req.ItemsCount()),
 		)
 	}
 	return err
@@ -135,9 +136,10 @@ func (qs *queueSender) onTemporaryFailure(logger *zap.Logger, req internal.Reque
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 	err := qs.queue.Start(ctx, host, internal.QueueSettings{
 		DataType: qs.signal,
-		Callback: func(item internal.Request) {
-			_ = qs.nextSender.send(item)
-			item.OnProcessingFinished()
+		Callback: func(qr internal.QueueRequest) {
+			_ = qs.nextSender.send(qr.Context, qr.Request.(Request))
+			// TODO: Update OnProcessingFinished to accept error and remove the retry->queue sender callback.
+			qr.OnProcessingFinished()
 		},
 	})
 	if err != nil {
@@ -210,16 +212,16 @@ func (qs *queueSender) Shutdown(ctx context.Context) error {
 }
 
 // send implements the requestSender interface
-func (qs *queueSender) send(req internal.Request) error {
+func (qs *queueSender) send(ctx context.Context, req Request) error {
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.
-	req.SetContext(noCancellationContext{Context: req.Context()})
+	c := noCancellationContext{Context: ctx}
 
-	span := trace.SpanFromContext(req.Context())
-	if !qs.queue.Produce(req) {
+	span := trace.SpanFromContext(c)
+	if !qs.queue.Produce(c, req) {
 		qs.logger.Error(
 			"Dropping data because sending_queue is full. Try increasing queue_size.",
-			zap.Int("dropped_items", req.Count()),
+			zap.Int("dropped_items", req.ItemsCount()),
 		)
 		span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qs.traceAttribute))
 		return errSendingQueueIsFull
@@ -243,4 +245,16 @@ func (noCancellationContext) Done() <-chan struct{} {
 
 func (noCancellationContext) Err() error {
 	return nil
+}
+
+func queueRequestMarshaler(marshaler RequestMarshaler) internal.QueueRequestMarshaler {
+	return func(req any) ([]byte, error) {
+		return marshaler(req.(Request))
+	}
+}
+
+func queueRequestUnmarshaler(unmarshaler RequestUnmarshaler) internal.QueueRequestUnmarshaler {
+	return func(data []byte) (any, error) {
+		return unmarshaler(data)
+	}
 }

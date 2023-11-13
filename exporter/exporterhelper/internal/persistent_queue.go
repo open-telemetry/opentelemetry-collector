@@ -35,8 +35,8 @@ type persistentQueue struct {
 	storage      *persistentContiguousStorage
 	capacity     uint64
 	numConsumers int
-	marshaler    RequestMarshaler
-	unmarshaler  RequestUnmarshaler
+	marshaler    QueueRequestMarshaler
+	unmarshaler  QueueRequestUnmarshaler
 }
 
 // buildPersistentStorageName returns a name that is constructed out of queue name and signal type. This is done
@@ -46,8 +46,8 @@ func buildPersistentStorageName(name string, signal component.DataType) string {
 }
 
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, marshaler RequestMarshaler,
-	unmarshaler RequestUnmarshaler, set exporter.CreateSettings) Queue {
+func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, marshaler QueueRequestMarshaler,
+	unmarshaler QueueRequestUnmarshaler, set exporter.CreateSettings) Queue {
 	return &persistentQueue{
 		capacity:     uint64(capacity),
 		numConsumers: numConsumers,
@@ -85,7 +85,8 @@ func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set Q
 }
 
 // Produce adds an item to the queue and returns true if it was accepted
-func (pq *persistentQueue) Produce(item Request) bool {
+// Request context is currently ignored by the persistent queue.
+func (pq *persistentQueue) Produce(_ context.Context, item any) bool {
 	err := pq.storage.put(item)
 	return err == nil
 }
