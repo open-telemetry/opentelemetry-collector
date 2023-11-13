@@ -349,13 +349,14 @@ func (pcs *persistentContiguousStorage) itemDispatchingStart(ctx context.Context
 
 // itemDispatchingFinish removes the item from the list of currently dispatched items and deletes it from the persistent queue
 func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Context, index itemIndex) error {
-	var updatedDispatchedItems []itemIndex
-	for _, it := range pcs.currentlyDispatchedItems {
-		if it != index {
-			updatedDispatchedItems = append(updatedDispatchedItems, it)
+	lenCDI := len(pcs.currentlyDispatchedItems)
+	for i := 0; i < lenCDI; i++ {
+		if pcs.currentlyDispatchedItems[i] == index {
+			pcs.currentlyDispatchedItems[i] = pcs.currentlyDispatchedItems[lenCDI-1]
+			pcs.currentlyDispatchedItems = pcs.currentlyDispatchedItems[:lenCDI-1]
+			break
 		}
 	}
-	pcs.currentlyDispatchedItems = updatedDispatchedItems
 
 	setOp := storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pcs.currentlyDispatchedItems))
 	deleteOp := storage.DeleteOperation(getItemKey(index))
