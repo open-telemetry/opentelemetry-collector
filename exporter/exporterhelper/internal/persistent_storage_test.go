@@ -7,11 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"sync"
 	"syscall"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -87,43 +85,35 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 		corruptReadIndex                   bool
 		corruptWriteIndex                  bool
 		desiredQueueSize                   uint64
-		desiredNumberOfDispatchedItems     int
 	}{
 		{
-			name:                           "corrupted no items",
-			corruptAllData:                 false,
-			desiredQueueSize:               2,
-			desiredNumberOfDispatchedItems: 1,
+			name:             "corrupted no items",
+			desiredQueueSize: 3,
 		},
 		{
-			name:                           "corrupted all items",
-			corruptAllData:                 true,
-			desiredQueueSize:               0,
-			desiredNumberOfDispatchedItems: 0,
+			name:             "corrupted all items",
+			corruptAllData:   true,
+			desiredQueueSize: 2, // - the dispatched item which was corrupted.
 		},
 		{
-			name:                           "corrupted some items",
-			corruptSomeData:                true,
-			desiredQueueSize:               1,
-			desiredNumberOfDispatchedItems: 1,
+			name:             "corrupted some items",
+			corruptSomeData:  true,
+			desiredQueueSize: 2, // - the dispatched item which was corrupted.
 		},
 		{
 			name:                               "corrupted dispatched items key",
 			corruptCurrentlyDispatchedItemsKey: true,
-			desiredQueueSize:                   1,
-			desiredNumberOfDispatchedItems:     1,
+			desiredQueueSize:                   2,
 		},
 		{
-			name:                           "corrupted read index",
-			corruptReadIndex:               true,
-			desiredQueueSize:               0,
-			desiredNumberOfDispatchedItems: 1,
+			name:             "corrupted read index",
+			corruptReadIndex: true,
+			desiredQueueSize: 1, // The dispatched item.
 		},
 		{
-			name:                           "corrupted write index",
-			corruptWriteIndex:              true,
-			desiredQueueSize:               0,
-			desiredNumberOfDispatchedItems: 1,
+			name:              "corrupted write index",
+			corruptWriteIndex: true,
+			desiredQueueSize:  1, // The dispatched item.
 		},
 		{
 			name:                               "corrupted everything",
@@ -132,7 +122,6 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 			corruptReadIndex:                   true,
 			corruptWriteIndex:                  true,
 			desiredQueueSize:                   0,
-			desiredNumberOfDispatchedItems:     0,
 		},
 	}
 
@@ -151,40 +140,35 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 				err := ps.put(req)
 				require.NoError(t, err)
 			}
-			require.Eventually(t, func() bool {
-				return ps.size() == 2
-			}, 5*time.Second, 10*time.Millisecond)
+			assert.EqualValues(t, 3, ps.size())
+			_, _ = ps.get()
+			assert.EqualValues(t, 2, ps.size())
 			assert.NoError(t, ps.stop(context.Background()))
 
 			// ... so now we can corrupt data (in several ways)
 			if c.corruptAllData || c.corruptSomeData {
-				_ = client.Set(ctx, "0", badBytes)
+				require.NoError(t, client.Set(ctx, "0", badBytes))
 			}
 			if c.corruptAllData {
-				_ = client.Set(ctx, "1", badBytes)
-				_ = client.Set(ctx, "2", badBytes)
+				require.NoError(t, client.Set(ctx, "1", badBytes))
+				require.NoError(t, client.Set(ctx, "2", badBytes))
 			}
 
 			if c.corruptCurrentlyDispatchedItemsKey {
-				_ = client.Set(ctx, currentlyDispatchedItemsKey, badBytes)
+				require.NoError(t, client.Set(ctx, currentlyDispatchedItemsKey, badBytes))
 			}
 
 			if c.corruptReadIndex {
-				_ = client.Set(ctx, readIndexKey, badBytes)
+				require.NoError(t, client.Set(ctx, readIndexKey, badBytes))
 			}
 
 			if c.corruptWriteIndex {
-				_ = client.Set(ctx, writeIndexKey, badBytes)
+				require.NoError(t, client.Set(ctx, writeIndexKey, badBytes))
 			}
 
 			// Reload
 			newPs := createTestPersistentStorage(client)
-
-			require.Eventually(t, func() bool {
-				newPs.mu.Lock()
-				defer newPs.mu.Unlock()
-				return newPs.size() == c.desiredQueueSize && len(newPs.currentlyDispatchedItems) == c.desiredNumberOfDispatchedItems
-			}, 5*time.Second, 10*time.Millisecond)
+			assert.EqualValues(t, c.desiredQueueSize, newPs.size())
 		})
 	}
 }
@@ -201,46 +185,41 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// Item index 0 is currently in unbuffered channel
+	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{})
+
+	// Takes index 0 in process.
+	readReq, found := ps.get()
+	require.True(t, found)
+	assert.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0})
 
-	// Now, this will take item 0 and pull item 1 into the unbuffered channel
-	readReq := <-ps.get()
-	assert.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
+	// This takes item 1 to process.
+	secondReadReq, found := ps.get()
+	require.True(t, found)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 1})
 
-	// This takes item 1 from channel and pulls another one (item 2) into the unbuffered channel
-	secondReadReq := <-ps.get()
-	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 1, 2})
-
-	// Lets mark item 1 as finished, it will remove it from the currently dispatched items list
+	// Lets mark item 1 as finished, it will remove it from the currently dispatched items list.
 	secondReadReq.OnProcessingFinished()
-	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 2})
+	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0})
 
-	// Reload the storage. Since items 0 and 2 were not finished, those should be requeued at the end.
-	// The queue should be essentially {3,4,0,2} out of which item "3" should be pulled right away into
-	// the unbuffered channel. Check how many items are there, which, after the current one is fetched should go to 3.
+	// Reload the storage. Since items 0 was not finished, this should be re-enqueued at the end.
+	// The queue should be essentially {3,4,0,2}.
 	newPs := createTestPersistentStorage(client)
-	assert.Eventually(t, func() bool {
-		return newPs.size() == 3
-	}, 5*time.Second, 10*time.Millisecond)
-
-	requireCurrentlyDispatchedItemsEqual(t, newPs, []itemIndex{3})
+	assert.EqualValues(t, 4, newPs.size())
+	requireCurrentlyDispatchedItemsEqual(t, newPs, []itemIndex{})
 
 	// We should be able to pull all remaining items now
 	for i := 0; i < 4; i++ {
-		req := <-newPs.get()
-		req.OnProcessingFinished()
+		qReq, found := newPs.get()
+		require.True(t, found)
+		qReq.OnProcessingFinished()
 	}
 
 	// The queue should be now empty
 	requireCurrentlyDispatchedItemsEqual(t, newPs, []itemIndex{})
-	assert.Eventually(t, func() bool {
-		return newPs.size() == 0
-	}, 5*time.Second, 10*time.Millisecond)
-
+	assert.EqualValues(t, 0, newPs.size())
 	// The writeIndex should be now set accordingly
-	require.Equal(t, 7, int(newPs.writeIndex))
+	require.EqualValues(t, 6, newPs.writeIndex)
 
 	// There should be no items left in the storage
 	for i := 0; i < int(newPs.writeIndex); i++ {
@@ -269,60 +248,53 @@ func TestPersistentStorage_StartWithNonDispatched(t *testing.T) {
 	}
 
 	// get one item out, but don't mark it as processed
-	<-ps.get()
+	_, _ = ps.get()
 	// put one more item in
 	require.NoError(t, ps.put(req))
 
-	require.Eventually(t, func() bool {
-		return ps.size() == capacity-1
-	}, 5*time.Second, 10*time.Millisecond)
+	require.Equal(t, capacity, ps.size())
 	assert.NoError(t, ps.stop(context.Background()))
 
 	// Reload
 	newPs := createTestPersistentStorageWithCapacity(client, capacity)
-
-	require.Eventually(t, func() bool {
-		newPs.mu.Lock()
-		defer newPs.mu.Unlock()
-		return newPs.size() == capacity-1 && len(newPs.currentlyDispatchedItems) == 1
-	}, 5*time.Second, 10*time.Millisecond)
+	require.Equal(t, capacity, newPs.size())
 }
 
 func TestPersistentStorage_PutCloseReadClose(t *testing.T) {
 	req := newFakeTracesRequest(newTraces(5, 10))
 	ext := NewMockStorageExtension(nil)
 	ps := createTestPersistentStorage(createTestClient(t, ext))
-	require.Equal(t, uint64(0), ps.size())
+	assert.EqualValues(t, 0, ps.size())
 
 	// Put two elements and close the extension
-	require.NoError(t, ps.put(req))
-	require.NoError(t, ps.put(req))
+	assert.NoError(t, ps.put(req))
+	assert.NoError(t, ps.put(req))
+	assert.EqualValues(t, 2, ps.size())
+	// TODO: Remove this, after the initialization writes the readIndex.
+	_, _ = ps.get()
+	assert.NoError(t, ps.stop(context.Background()))
 
-	// TODO: Uncomment when the shutdown logic is fixed, right now loop is blocked if no consumer.
-	// ps.stop()
-	// ps = createTestPersistentStorage(createTestClient(t, ext))
-
-	// The first element should be already picked by loop
-	require.Eventually(t, func() bool {
-		return ps.size() > 0
-	}, 5*time.Second, 10*time.Millisecond)
+	newPs := createTestPersistentStorage(createTestClient(t, ext))
+	require.EqualValues(t, 2, newPs.size())
 
 	// Lets read both of the elements we put
-	readReq := <-ps.get()
+	readReq, found := newPs.get()
+	require.True(t, found)
 	require.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
 
-	readReq = <-ps.get()
+	readReq, found = newPs.get()
+	require.True(t, found)
 	require.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
-	require.Equal(t, uint64(0), ps.size())
+	require.EqualValues(t, 0, newPs.size())
 	assert.NoError(t, ps.stop(context.Background()))
 }
 
 func TestPersistentStorage_EmptyRequest(t *testing.T) {
 	ext := NewMockStorageExtension(nil)
 	ps := createTestPersistentStorage(createTestClient(t, ext))
-	require.Equal(t, uint64(0), ps.size())
+	require.EqualValues(t, 0, ps.size())
 	require.NoError(t, ps.put(nil))
-	require.Equal(t, uint64(0), ps.size())
+	require.EqualValues(t, 0, ps.size())
 	require.NoError(t, ext.Shutdown(context.Background()))
 }
 
@@ -360,7 +332,8 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 			}
 
 			for i := 0; i < bb.N; i++ {
-				req := ps.get()
+				req, found := ps.get()
+				require.True(bb, found)
 				require.NotNil(bb, req)
 			}
 			require.NoError(b, ext.Shutdown(context.Background()))
@@ -468,7 +441,8 @@ func TestPersistentStorage_StorageFull(t *testing.T) {
 
 	// Take out all the items
 	for i := reqCount; i > 0; i-- {
-		request := <-ps.get()
+		request, found := ps.get()
+		require.True(t, found)
 		request.OnProcessingFinished()
 	}
 
@@ -530,11 +504,9 @@ func TestPersistentStorage_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 }
 
 func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguousStorage, compare []itemIndex) {
-	require.Eventually(t, func() bool {
-		pcs.mu.Lock()
-		defer pcs.mu.Unlock()
-		return reflect.DeepEqual(pcs.currentlyDispatchedItems, compare)
-	}, 5*time.Second, 10*time.Millisecond)
+	pcs.mu.Lock()
+	defer pcs.mu.Unlock()
+	assert.ElementsMatch(t, compare, pcs.currentlyDispatchedItems)
 }
 
 func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {

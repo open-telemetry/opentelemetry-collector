@@ -29,7 +29,6 @@ var (
 // persistentQueue holds the queue backed by file storage
 type persistentQueue struct {
 	stopWG       sync.WaitGroup
-	stopChan     chan struct{}
 	set          exporter.CreateSettings
 	storageID    component.ID
 	storage      *persistentContiguousStorage
@@ -55,7 +54,6 @@ func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, 
 		storageID:    storageID,
 		marshaler:    marshaler,
 		unmarshaler:  unmarshaler,
-		stopChan:     make(chan struct{}),
 	}
 }
 
@@ -72,12 +70,11 @@ func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set Q
 		go func() {
 			defer pq.stopWG.Done()
 			for {
-				select {
-				case req := <-pq.storage.get():
-					set.Callback(req)
-				case <-pq.stopChan:
+				req, found := pq.storage.get()
+				if !found {
 					return
 				}
+				set.Callback(req)
 			}
 		}()
 	}
@@ -93,7 +90,9 @@ func (pq *persistentQueue) Produce(_ context.Context, item any) bool {
 
 // Shutdown stops accepting items, shuts down the queue and closes the persistent queue
 func (pq *persistentQueue) Shutdown(ctx context.Context) error {
-	close(pq.stopChan)
+	if pq.storage != nil {
+		close(pq.storage.stopChan)
+	}
 	pq.stopWG.Wait()
 	return stopStorage(pq.storage, ctx)
 }
