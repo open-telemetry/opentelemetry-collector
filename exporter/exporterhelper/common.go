@@ -17,25 +17,18 @@ import (
 
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 type requestSender interface {
-	start(ctx context.Context, host component.Host, set exporter.CreateSettings) error
-	shutdown(ctx context.Context) error
+	component.Component
 	send(req internal.Request) error
 	setNextSender(nextSender requestSender)
 }
 
 type baseRequestSender struct {
+	component.StartFunc
+	component.ShutdownFunc
 	nextSender requestSender
 }
 
 var _ requestSender = (*baseRequestSender)(nil)
-
-func (b *baseRequestSender) start(context.Context, component.Host, exporter.CreateSettings) error {
-	return nil
-}
-
-func (b *baseRequestSender) shutdown(context.Context) error {
-	return nil
-}
 
 func (b *baseRequestSender) send(req internal.Request) error {
 	return b.nextSender.send(req)
@@ -53,10 +46,7 @@ type errorLoggingRequestSender struct {
 func (l *errorLoggingRequestSender) send(req internal.Request) error {
 	err := l.baseRequestSender.send(req)
 	if err != nil {
-		l.logger.Error(
-			"Exporting failed",
-			zap.Error(err),
-		)
+		l.logger.Error("Exporting failed", zap.Error(err))
 	}
 	return err
 }
@@ -135,10 +125,10 @@ func WithQueue(config QueueSettings) Option {
 			if config.StorageID == nil {
 				queue = internal.NewBoundedMemoryQueue(config.QueueSize, config.NumConsumers)
 			} else {
-				queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID, o.marshaler, o.unmarshaler)
+				queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID, o.marshaler, o.unmarshaler, o.set)
 			}
 		}
-		qs := newQueueSender(o.set.ID, o.signal, queue, o.set.Logger)
+		qs := newQueueSender(o.set, o.signal, queue)
 		o.queueSender = qs
 		o.setOnTemporaryFailure(qs.onTemporaryFailure)
 	}
@@ -231,18 +221,17 @@ func (be *baseExporter) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// If no error then start the queueSender.
-	return be.queueSender.start(ctx, host, be.set)
+	return be.queueSender.Start(ctx, host)
 }
 
 func (be *baseExporter) Shutdown(ctx context.Context) error {
-	// First shutdown the retry sender, so it can push any pending requests to back the queue.
-	err := be.retrySender.shutdown(ctx)
-
-	// Then shutdown the queue sender.
-	err = multierr.Append(err, be.queueSender.shutdown(ctx))
-
-	// Last shutdown the wrapped exporter itself.
-	return multierr.Append(err, be.ShutdownFunc.Shutdown(ctx))
+	return multierr.Combine(
+		// First shutdown the retry sender, so it can push any pending requests to back the queue.
+		be.retrySender.Shutdown(ctx),
+		// Then shutdown the queue sender.
+		be.queueSender.Shutdown(ctx),
+		// Last shutdown the wrapped exporter itself.
+		be.ShutdownFunc.Shutdown(ctx))
 }
 
 func (be *baseExporter) setOnTemporaryFailure(onTemporaryFailure onRequestHandlingFinishedFunc) {

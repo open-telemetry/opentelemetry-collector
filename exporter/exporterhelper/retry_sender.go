@@ -100,7 +100,7 @@ func newRetrySender(id component.ID, rCfg RetrySettings, logger *zap.Logger, onT
 	}
 }
 
-func (rs *retrySender) shutdown(context.Context) error {
+func (rs *retrySender) Shutdown(context.Context) error {
 	close(rs.stopCh)
 	return nil
 }
