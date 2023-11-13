@@ -91,7 +91,7 @@ func TestBoundedQueue(t *testing.T) {
 // only after Stop will mean the consumers are still locked while
 // trying to perform the final consumptions.
 func TestShutdownWhileNotEmpty(t *testing.T) {
-	q := NewBoundedMemoryQueue[string](10)
+	q := NewBoundedMemoryQueue[string](1000)
 
 	consumerState := newConsumerState(t)
 
