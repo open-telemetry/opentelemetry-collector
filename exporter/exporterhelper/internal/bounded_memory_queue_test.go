@@ -115,7 +115,9 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	assert.NoError(t, q.Offer(context.Background(), "i"))
 	assert.NoError(t, q.Offer(context.Background(), "j"))
 
-	assert.Equal(t, 5, q.Size())
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, 5, q.Size())
+	}, 1*time.Second, 10*time.Millisecond)
 
 	go func() {
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
