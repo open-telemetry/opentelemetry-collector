@@ -40,13 +40,14 @@ func (b *baseRequestSender) setNextSender(nextSender requestSender) {
 
 type errorLoggingRequestSender struct {
 	baseRequestSender
-	logger *zap.Logger
+	logger  *zap.Logger
+	message string
 }
 
 func (l *errorLoggingRequestSender) send(req internal.Request) error {
 	err := l.baseRequestSender.send(req)
 	if err != nil {
-		l.logger.Error("Exporting failed", zap.Error(err))
+		l.logger.Error(l.message, zap.Int("dropped_items", req.Count()), zap.Error(err))
 	}
 	return err
 }
@@ -106,9 +107,16 @@ func WithTimeout(timeoutSettings TimeoutSettings) Option {
 
 // WithRetry overrides the default RetrySettings for an exporter.
 // The default RetrySettings is to disable retries.
-func WithRetry(retrySettings RetrySettings) Option {
+func WithRetry(config RetrySettings) Option {
 	return func(o *baseExporter) {
-		o.retrySender = newRetrySender(o.set.ID, retrySettings, o.set.Logger, o.onTemporaryFailure)
+		if !config.Enabled {
+			o.retrySender = &errorLoggingRequestSender{
+				logger:  o.set.Logger,
+				message: "Exporting failed. Try enabling retry_on_failure config option to retry on retryable errors",
+			}
+			return
+		}
+		o.retrySender = newRetrySender(config, o.set, o.onTemporaryFailure)
 	}
 }
 
@@ -120,15 +128,14 @@ func WithQueue(config QueueSettings) Option {
 		if o.requestExporter {
 			panic("queueing is not available for the new request exporters yet")
 		}
-		var queue internal.Queue
-		if config.Enabled {
-			if config.StorageID == nil {
-				queue = internal.NewBoundedMemoryQueue(config.QueueSize, config.NumConsumers)
-			} else {
-				queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID, o.marshaler, o.unmarshaler, o.set)
+		if !config.Enabled {
+			o.queueSender = &errorLoggingRequestSender{
+				logger:  o.set.Logger,
+				message: "Exporting failed. Dropping data. Try enabling sending_queue to survive temporary failures.",
 			}
+			return
 		}
-		qs := newQueueSender(o.set, o.signal, queue)
+		qs := newQueueSender(config, o.set, o.signal, o.marshaler, o.unmarshaler)
 		o.queueSender = qs
 		o.setOnTemporaryFailure(qs.onTemporaryFailure)
 	}
@@ -187,7 +194,7 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 
 		queueSender:   &baseRequestSender{},
 		obsrepSender:  osf(obsReport),
-		retrySender:   &errorLoggingRequestSender{logger: set.Logger},
+		retrySender:   &baseRequestSender{},
 		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutSettings()},
 
 		set:    set,

@@ -283,13 +283,12 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 	qs := NewDefaultQueueSettings()
 	qs.Enabled = false
 	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, false, nil, nil, newObservabilityConsumerSender, WithQueue(qs))
-	require.Nil(t, be.queueSender.(*queueSender).queue)
+	require.IsType(t, &errorLoggingRequestSender{}, be.queueSender)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
 	mockR := newMockRequest(context.Background(), 2, errors.New("some error"))
 	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
 		require.Error(t, be.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
