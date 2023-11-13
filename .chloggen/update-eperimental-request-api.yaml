@@ -5,7 +5,7 @@ change_type: breaking
 component: exporter/exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: The experimental Request API is updated and moved to a separate package.
+note: The experimental Request API is updated.
 
 # One or more tracking issues or pull requests related to the change
 issues: [7874]
@@ -14,13 +14,12 @@ issues: [7874]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  - The experimental `Request` interface is moved from exporter/exporterhelper to exporter/exporterhelper/request 
-    package and updated to include ItemsCount() method.
+  - `Request` interface now includes ItemsCount() method.
   - `RequestItemsCounter` is removed.
-  - Added the following APIs to exporter/exporterhelper/request package:
-    - request.ErrorHandler: an optional interface for handling errors that occur during request processing.
-    - request.Marshaler: a function that can marshal a Request into bytes.
-    - request.Unmarshaler: a function that can unmarshal bytes into a Request
+  - The following interfaces are added:
+    - Added an optional interface for handling errors that occur during request processing `RequestErrorHandler`.
+    - Added a function to unmarshal bytes into a Request `RequestUnmarshaler`.
+    - Added a function to marshal a Request into bytes `RequestMarshaler`
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
