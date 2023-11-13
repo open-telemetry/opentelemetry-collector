@@ -98,7 +98,7 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
-	consumers := NewQueueConsumers(q, 1, func(_ context.Context, item string) {
+	consumers := NewQueueConsumers(q, 5, func(_ context.Context, item string) {
 		wg.Wait()
 		consumerState.record(item)
 	})
@@ -115,8 +115,11 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	assert.NoError(t, q.Offer(context.Background(), "i"))
 	assert.NoError(t, q.Offer(context.Background(), "j"))
 
+	assert.Equal(t, 5, q.Size())
+
 	go func() {
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
+			// ensure the request is rejected due to closed queue
 			assert.ErrorIs(t, q.Offer(context.Background(), "x"), ErrQueueIsStopped)
 		}, 1*time.Second, 10*time.Millisecond)
 		wg.Done()
