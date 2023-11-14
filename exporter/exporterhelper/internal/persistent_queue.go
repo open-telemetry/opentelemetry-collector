@@ -73,11 +73,11 @@ func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set Q
 	return nil
 }
 
-// Produce adds an item to the queue and returns true if it was accepted
-// Request context is currently ignored by the persistent queue.
-func (pq *persistentQueue) Produce(_ context.Context, item any) bool {
-	err := pq.storage.put(item)
-	return err == nil
+// Offer inserts the specified element into this queue if it is possible to do so immediately
+// without violating capacity restrictions. If success returns no error.
+// It returns ErrQueueIsFull if no space is currently available.
+func (pq *persistentQueue) Offer(_ context.Context, item any) error {
+	return pq.storage.put(item)
 }
 
 // Shutdown stops accepting items, shuts down the queue and closes the persistent queue

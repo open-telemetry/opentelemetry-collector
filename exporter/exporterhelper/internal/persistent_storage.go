@@ -71,8 +71,7 @@ const (
 )
 
 var (
-	errMaxCapacityReached = errors.New("max capacity reached")
-	errValueNotSet        = errors.New("value not set")
+	errValueNotSet = errors.New("value not set")
 )
 
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
@@ -187,7 +186,7 @@ func (pcs *persistentContiguousStorage) put(req any) error {
 
 	if pcs.size() >= pcs.capacity {
 		pcs.logger.Warn("Maximum queue capacity reached")
-		return errMaxCapacityReached
+		return ErrQueueIsFull
 	}
 
 	itemKey := getItemKey(pcs.writeIndex)

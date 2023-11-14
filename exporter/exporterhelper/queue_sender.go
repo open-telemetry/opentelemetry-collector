@@ -26,8 +26,7 @@ import (
 const defaultQueueSize = 1000
 
 var (
-	errSendingQueueIsFull = errors.New("sending_queue is full")
-	scopeName             = "go.opentelemetry.io/collector/exporterhelper"
+	scopeName = "go.opentelemetry.io/collector/exporterhelper"
 )
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
@@ -119,7 +118,7 @@ func (qs *queueSender) onTemporaryFailure(ctx context.Context, req Request, err 
 		return err
 	}
 
-	if qs.queue.Produce(ctx, req) {
+	if qs.queue.Offer(ctx, req) == nil {
 		logger.Error(
 			"Exporting failed. Putting back to the end of the queue.",
 			zap.Error(err),
@@ -220,13 +219,13 @@ func (qs *queueSender) send(ctx context.Context, req Request) error {
 	c := noCancellationContext{Context: ctx}
 
 	span := trace.SpanFromContext(c)
-	if !qs.queue.Produce(c, req) {
+	if err := qs.queue.Offer(c, req); err != nil {
 		qs.logger.Error(
 			"Dropping data because sending_queue is full. Try increasing queue_size.",
 			zap.Int("dropped_items", req.ItemsCount()),
 		)
 		span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qs.traceAttribute))
-		return errSendingQueueIsFull
+		return err
 	}
 
 	span.AddEvent("Enqueued item.", trace.WithAttributes(qs.traceAttribute))

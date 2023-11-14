@@ -7,8 +7,16 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
+)
+
+var (
+	// ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full.
+	ErrQueueIsFull = errors.New("sending queue is full")
+	// ErrQueueIsStopped is the error returned when an item is offered to the Queue and the queue is stopped.
+	ErrQueueIsStopped = errors.New("sending queue is stopped")
 )
 
 type QueueSettings struct {
@@ -22,9 +30,10 @@ type Queue interface {
 	// Start starts the queue with a given number of goroutines consuming items from the queue
 	// and passing them into the consumer callback.
 	Start(ctx context.Context, host component.Host, set QueueSettings) error
-	// Produce is used by the producer to submit new item to the queue. Returns false if the item wasn't added
-	// to the queue due to queue overflow.
-	Produce(ctx context.Context, item any) bool
+	// Offer inserts the specified element into this queue if it is possible to do so immediately
+	// without violating capacity restrictions. If success returns no error.
+	// It returns ErrQueueIsFull if no space is currently available.
+	Offer(ctx context.Context, item any) error
 	// Size returns the current Size of the queue
 	Size() int
 	// Shutdown stops accepting items, and stops all consumers. It blocks until all consumers have stopped.

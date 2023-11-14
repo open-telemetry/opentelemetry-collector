@@ -52,16 +52,16 @@ func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set Queu
 }
 
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
-func (q *boundedMemoryQueue) Produce(ctx context.Context, req any) bool {
+func (q *boundedMemoryQueue) Offer(ctx context.Context, req any) error {
 	if q.stopped.Load() {
-		return false
+		return ErrQueueIsStopped
 	}
 
 	select {
 	case q.items <- newQueueRequest(ctx, req):
-		return true
+		return nil
 	default:
-		return false
+		return ErrQueueIsFull
 	}
 }
 

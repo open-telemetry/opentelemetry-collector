@@ -411,7 +411,7 @@ type producerConsumerQueueWithCounter struct {
 	produceCounter *atomic.Uint32
 }
 
-func (pcq *producerConsumerQueueWithCounter) Produce(ctx context.Context, item any) bool {
+func (pcq *producerConsumerQueueWithCounter) Offer(ctx context.Context, item any) error {
 	pcq.produceCounter.Add(1)
-	return pcq.Queue.Produce(ctx, item)
+	return pcq.Queue.Offer(ctx, item)
 }
