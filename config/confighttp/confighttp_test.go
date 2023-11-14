@@ -364,7 +364,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			client, err := test.settings.ToClient(
 				test.host,
 				component.TelemetrySettings{
-					TelemetrySettingsBase: &component.TelemetrySettingsBase{
+					TelemetrySettingsBase: component.TelemetrySettingsBase{
 						Logger:       zap.NewNop(),
 						MetricsLevel: configtelemetry.LevelNone,
 					},
@@ -652,12 +652,7 @@ func TestHttpReception(t *testing.T) {
 					return rt, nil
 				}
 			}
-			client, errClient := hcs.ToClient(
-				componenttest.NewNopHost(),
-				component.TelemetrySettings{
-					TelemetrySettingsBase: &component.TelemetrySettingsBase{},
-				},
-			)
+			client, errClient := hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{})
 			require.NoError(t, errClient)
 
 			resp, errResp := client.Get(hcs.Endpoint)
@@ -1293,21 +1288,12 @@ func BenchmarkHttpRequest(b *testing.B) {
 		b.Run(bb.name, func(b *testing.B) {
 			var c *http.Client
 			if !bb.clientPerThread {
-				c, err = hcs.ToClient(
-					componenttest.NewNopHost(),
-					component.TelemetrySettings{
-						TelemetrySettingsBase: &component.TelemetrySettingsBase{},
-					},
-				)
+				c, err = hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{})
 				require.NoError(b, err)
 			}
 			b.RunParallel(func(pb *testing.PB) {
 				if c == nil {
-					c, err = hcs.ToClient(componenttest.NewNopHost(),
-						component.TelemetrySettings{
-							TelemetrySettingsBase: &component.TelemetrySettingsBase{},
-						},
-					)
+					c, err = hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{})
 					require.NoError(b, err)
 				}
 				for pb.Next() {

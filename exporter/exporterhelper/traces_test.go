@@ -55,30 +55,13 @@ func TestTracesExporter_InvalidName(t *testing.T) {
 }
 
 func TestTracesExporter_NilLogger(t *testing.T) {
-	te, err := NewTracesExporter(
-		context.Background(),
-		exporter.CreateSettings{
-			TelemetrySettings: component.TelemetrySettings{
-				TelemetrySettingsBase: &component.TelemetrySettingsBase{},
-			},
-		},
-		&fakeTracesExporterConfig,
-		newTraceDataPusher(nil),
-	)
+	te, err := NewTracesExporter(context.Background(), exporter.CreateSettings{}, &fakeTracesExporterConfig, newTraceDataPusher(nil))
 	require.Nil(t, te)
 	require.Equal(t, errNilLogger, err)
 }
 
 func TestTracesRequestExporter_NilLogger(t *testing.T) {
-	te, err := NewTracesRequestExporter(
-		context.Background(),
-		exporter.CreateSettings{
-			TelemetrySettings: component.TelemetrySettings{
-				TelemetrySettingsBase: &component.TelemetrySettingsBase{},
-			},
-		},
-		&fakeRequestConverter{},
-	)
+	te, err := NewTracesRequestExporter(context.Background(), exporter.CreateSettings{}, &fakeRequestConverter{})
 	require.Nil(t, te)
 	require.Equal(t, errNilLogger, err)
 }

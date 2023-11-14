@@ -19,7 +19,7 @@ import (
 
 func TestSettings(t *testing.T) {
 	set := TelemetrySettings{
-		TelemetrySettingsBase: &component.TelemetrySettingsBase{
+		TelemetrySettingsBase: component.TelemetrySettingsBase{
 			Logger:         zap.NewNop(),
 			TracerProvider: nooptrace.NewTracerProvider(),
 			MeterProvider:  noopmetric.NewMeterProvider(),

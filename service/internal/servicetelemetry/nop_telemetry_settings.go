@@ -17,7 +17,7 @@ import (
 // NewNopTelemetrySettings returns a new nop settings for Create* functions.
 func NewNopTelemetrySettings() TelemetrySettings {
 	return TelemetrySettings{
-		TelemetrySettingsBase: &component.TelemetrySettingsBase{
+		TelemetrySettingsBase: component.TelemetrySettingsBase{
 			Logger:         zap.NewNop(),
 			TracerProvider: nooptrace.NewTracerProvider(),
 			MeterProvider:  noopmetric.NewMeterProvider(),

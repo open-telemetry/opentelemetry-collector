@@ -34,7 +34,7 @@ type TelemetrySettingsBase struct {
 // TelemetrySettings and servicetelemetry.TelemetrySettings differ in their
 // mechanism for reporting component status.
 type TelemetrySettings struct {
-	*TelemetrySettingsBase
+	TelemetrySettingsBase
 
 	// ReportComponentStatus allows a component to report runtime changes in status. The service
 	// will automatically report status for a component during startup and shutdown. Components can

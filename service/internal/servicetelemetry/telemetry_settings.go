@@ -12,7 +12,7 @@ import (
 // status. Service-level status reporting has additional methods which can report status for
 // components by their InstanceID whereas the component versions are tied to a specific component.
 type TelemetrySettings struct {
-	*component.TelemetrySettingsBase
+	component.TelemetrySettingsBase
 	Status *status.Reporter
 }
 
@@ -20,7 +20,7 @@ type TelemetrySettings struct {
 // this service level Settings object.
 func (s TelemetrySettings) ToComponentTelemetrySettings(id *component.InstanceID) component.TelemetrySettings {
 	return component.TelemetrySettings{
-		TelemetrySettingsBase: &component.TelemetrySettingsBase{
+		TelemetrySettingsBase: component.TelemetrySettingsBase{
 			Logger:         s.Logger,
 			TracerProvider: s.TracerProvider,
 			MeterProvider:  s.MeterProvider,

@@ -107,7 +107,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	pcommonRes := pdataFromSdk(res)
 
 	srv.telemetrySettings = servicetelemetry.TelemetrySettings{
-		TelemetrySettingsBase: &component.TelemetrySettingsBase{
+		TelemetrySettingsBase: component.TelemetrySettingsBase{
 			Logger:         srv.telemetry.Logger(),
 			TracerProvider: srv.telemetry.TracerProvider(),
 			MeterProvider:  noop.NewMeterProvider(),
