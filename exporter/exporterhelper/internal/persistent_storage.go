@@ -165,7 +165,7 @@ func (pcs *persistentContiguousStorage) put(req any) error {
 	return pcs.putInternal(req)
 }
 
-// putInternal is the internal version that requires caller to hold the
+// putInternal is the internal version that requires caller to hold the mutex lock.
 func (pcs *persistentContiguousStorage) putInternal(req any) error {
 	if pcs.size() >= pcs.capacity {
 		pcs.logger.Warn("Maximum queue capacity reached")
