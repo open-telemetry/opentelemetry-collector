@@ -6,7 +6,6 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -39,12 +38,6 @@ type persistentQueue struct {
 	unmarshaler  QueueRequestUnmarshaler
 }
 
-// buildPersistentStorageName returns a name that is constructed out of queue name and signal type. This is done
-// to avoid conflicts between different signals, which require unique persistent storage name
-func buildPersistentStorageName(name string, signal component.DataType) string {
-	return fmt.Sprintf("%s-%s", name, signal)
-}
-
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
 func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, marshaler QueueRequestMarshaler,
 	unmarshaler QueueRequestUnmarshaler, set exporter.CreateSettings) Queue {
@@ -65,8 +58,7 @@ func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set Q
 	if err != nil {
 		return err
 	}
-	storageName := buildPersistentStorageName(pq.set.ID.Name(), set.DataType)
-	pq.storage = newPersistentContiguousStorage(ctx, storageName, storageClient, pq.set.Logger, pq.capacity, pq.marshaler, pq.unmarshaler)
+	pq.storage = newPersistentContiguousStorage(ctx, storageClient, pq.set.Logger, pq.capacity, pq.marshaler, pq.unmarshaler)
 	for i := 0; i < pq.numConsumers; i++ {
 		pq.stopWG.Add(1)
 		go func() {
