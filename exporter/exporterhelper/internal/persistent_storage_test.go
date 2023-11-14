@@ -27,8 +27,10 @@ func createTestClient(t testing.TB, extension storage.Extension) storage.Client 
 }
 
 func createTestPersistentStorageWithCapacity(client storage.Client, capacity uint64) *persistentContiguousStorage {
-	return newPersistentContiguousStorage(context.Background(), client, zap.NewNop(), capacity,
+	pcs := newPersistentContiguousStorage(zap.NewNop(), capacity,
 		newFakeTracesRequestMarshalerFunc(), newFakeTracesRequestUnmarshalerFunc())
+	pcs.start(context.Background(), client)
+	return pcs
 }
 
 func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage {
@@ -84,7 +86,7 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 		corruptCurrentlyDispatchedItemsKey bool
 		corruptReadIndex                   bool
 		corruptWriteIndex                  bool
-		desiredQueueSize                   uint64
+		desiredQueueSize                   int
 	}{
 		{
 			name:             "corrupted no items",
@@ -137,12 +139,12 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 
 			// Put some items, make sure they are loaded and shutdown the storage...
 			for i := 0; i < 3; i++ {
-				err := ps.put(req)
+				err := ps.Offer(context.Background(), req)
 				require.NoError(t, err)
 			}
-			assert.EqualValues(t, 3, ps.size())
+			assert.Equal(t, 3, ps.Size())
 			_, _ = ps.get()
-			assert.EqualValues(t, 2, ps.size())
+			assert.Equal(t, 2, ps.Size())
 			assert.NoError(t, ps.stop(context.Background()))
 
 			// ... so now we can corrupt data (in several ways)
@@ -168,7 +170,7 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 
 			// Reload
 			newPs := createTestPersistentStorage(client)
-			assert.EqualValues(t, c.desiredQueueSize, newPs.size())
+			assert.Equal(t, c.desiredQueueSize, newPs.Size())
 		})
 	}
 }
@@ -181,7 +183,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	ps := createTestPersistentStorage(client)
 
 	for i := 0; i < 5; i++ {
-		err := ps.put(req)
+		err := ps.Offer(context.Background(), req)
 		require.NoError(t, err)
 	}
 
@@ -205,7 +207,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	// Reload the storage. Since items 0 was not finished, this should be re-enqueued at the end.
 	// The queue should be essentially {3,4,0,2}.
 	newPs := createTestPersistentStorage(client)
-	assert.EqualValues(t, 4, newPs.size())
+	assert.Equal(t, 4, newPs.Size())
 	requireCurrentlyDispatchedItemsEqual(t, newPs, []itemIndex{})
 
 	// We should be able to pull all remaining items now
@@ -217,7 +219,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 
 	// The queue should be now empty
 	requireCurrentlyDispatchedItemsEqual(t, newPs, []itemIndex{})
-	assert.EqualValues(t, 0, newPs.size())
+	assert.Equal(t, 0, newPs.Size())
 	// The writeIndex should be now set accordingly
 	require.EqualValues(t, 6, newPs.writeIndex)
 
@@ -232,50 +234,48 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 // this test attempts to check if all the invariants are kept if the queue is recreated while
 // close to full and with some items dispatched
 func TestPersistentStorage_StartWithNonDispatched(t *testing.T) {
-	var capacity uint64 = 5 // arbitrary small number
-
 	traces := newTraces(5, 10)
 	req := newFakeTracesRequest(traces)
 
 	ext := NewMockStorageExtension(nil)
 	client := createTestClient(t, ext)
-	ps := createTestPersistentStorageWithCapacity(client, capacity)
+	ps := createTestPersistentStorageWithCapacity(client, 5)
 
 	// Put in items up to capacity
-	for i := 0; i < int(capacity); i++ {
-		err := ps.put(req)
+	for i := 0; i < 5; i++ {
+		err := ps.Offer(context.Background(), req)
 		require.NoError(t, err)
 	}
 
 	// get one item out, but don't mark it as processed
 	_, _ = ps.get()
 	// put one more item in
-	require.NoError(t, ps.put(req))
+	require.NoError(t, ps.Offer(context.Background(), req))
 
-	require.Equal(t, capacity, ps.size())
+	require.Equal(t, 5, ps.Size())
 	assert.NoError(t, ps.stop(context.Background()))
 
 	// Reload
-	newPs := createTestPersistentStorageWithCapacity(client, capacity)
-	require.Equal(t, capacity, newPs.size())
+	newPs := createTestPersistentStorageWithCapacity(client, 5)
+	require.Equal(t, 5, newPs.Size())
 }
 
 func TestPersistentStorage_PutCloseReadClose(t *testing.T) {
 	req := newFakeTracesRequest(newTraces(5, 10))
 	ext := NewMockStorageExtension(nil)
 	ps := createTestPersistentStorage(createTestClient(t, ext))
-	assert.EqualValues(t, 0, ps.size())
+	assert.Equal(t, 0, ps.Size())
 
 	// Put two elements and close the extension
-	assert.NoError(t, ps.put(req))
-	assert.NoError(t, ps.put(req))
-	assert.EqualValues(t, 2, ps.size())
+	assert.NoError(t, ps.Offer(context.Background(), req))
+	assert.NoError(t, ps.Offer(context.Background(), req))
+	assert.Equal(t, 2, ps.Size())
 	// TODO: Remove this, after the initialization writes the readIndex.
 	_, _ = ps.get()
 	assert.NoError(t, ps.stop(context.Background()))
 
 	newPs := createTestPersistentStorage(createTestClient(t, ext))
-	require.EqualValues(t, 2, newPs.size())
+	require.Equal(t, 2, newPs.Size())
 
 	// Lets read both of the elements we put
 	readReq, found := newPs.get()
@@ -285,16 +285,16 @@ func TestPersistentStorage_PutCloseReadClose(t *testing.T) {
 	readReq, found = newPs.get()
 	require.True(t, found)
 	require.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
-	require.EqualValues(t, 0, newPs.size())
+	require.Equal(t, 0, newPs.Size())
 	assert.NoError(t, ps.stop(context.Background()))
 }
 
 func TestPersistentStorage_EmptyRequest(t *testing.T) {
 	ext := NewMockStorageExtension(nil)
 	ps := createTestPersistentStorage(createTestClient(t, ext))
-	require.EqualValues(t, 0, ps.size())
-	require.NoError(t, ps.put(nil))
-	require.EqualValues(t, 0, ps.size())
+	require.Equal(t, 0, ps.Size())
+	require.NoError(t, ps.Offer(context.Background(), nil))
+	require.Equal(t, 0, ps.Size())
 	require.NoError(t, ext.Shutdown(context.Background()))
 }
 
@@ -328,7 +328,7 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 			bb.ResetTimer()
 
 			for i := 0; i < bb.N; i++ {
-				require.NoError(bb, ps.put(req))
+				require.NoError(bb, ps.Offer(context.Background(), req))
 			}
 
 			for i := 0; i < bb.N; i++ {
@@ -424,7 +424,7 @@ func TestPersistentStorage_StorageFull(t *testing.T) {
 	// Put enough items in to fill the underlying storage
 	reqCount := 0
 	for {
-		err = ps.put(req)
+		err = ps.Offer(context.Background(), req)
 		if errors.Is(err, syscall.ENOSPC) {
 			break
 		}
@@ -437,7 +437,7 @@ func TestPersistentStorage_StorageFull(t *testing.T) {
 	client.SetMaxSizeInBytes(newMaxSize)
 
 	// Try to put an item in, should fail
-	require.Error(t, ps.put(req))
+	require.Error(t, ps.Offer(context.Background(), req))
 
 	// Take out all the items
 	for i := reqCount; i > 0; i-- {
@@ -448,7 +448,7 @@ func TestPersistentStorage_StorageFull(t *testing.T) {
 
 	// We should be able to put a new item in
 	// However, this will fail if deleting items fails with full storage
-	require.NoError(t, ps.put(req))
+	require.NoError(t, ps.Offer(context.Background(), req))
 }
 
 func TestPersistentStorage_ItemDispatchingFinish_ErrorHandling(t *testing.T) {

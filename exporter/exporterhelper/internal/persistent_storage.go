@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
-	"sync/atomic"
 
 	"go.uber.org/zap"
 
@@ -54,8 +53,6 @@ type persistentContiguousStorage struct {
 	readIndex                itemIndex
 	writeIndex               itemIndex
 	currentlyDispatchedItems []itemIndex
-
-	itemsCount *atomic.Uint64
 }
 
 type itemIndex uint64
@@ -76,19 +73,21 @@ var (
 
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
 // queueName parameter must be a unique value that identifies the queue.
-func newPersistentContiguousStorage(ctx context.Context, client storage.Client,
+func newPersistentContiguousStorage(
 	logger *zap.Logger, capacity uint64, marshaler QueueRequestMarshaler, unmarshaler QueueRequestUnmarshaler) *persistentContiguousStorage {
-	pcs := &persistentContiguousStorage{
+	return &persistentContiguousStorage{
 		logger:      logger,
-		client:      client,
 		unmarshaler: unmarshaler,
 		marshaler:   marshaler,
 		capacity:    capacity,
 		putChan:     make(chan struct{}, capacity),
 		stopChan:    make(chan struct{}),
-		itemsCount:  &atomic.Uint64{},
 	}
 
+}
+
+func (pcs *persistentContiguousStorage) start(ctx context.Context, client storage.Client) {
+	pcs.client = client
 	pcs.initPersistentContiguousStorage(ctx)
 	// Make sure the leftover requests are handled
 	pcs.retrieveAndEnqueueNotDispatchedReqs(ctx)
@@ -98,8 +97,6 @@ func newPersistentContiguousStorage(ctx context.Context, client storage.Client,
 	for len(pcs.putChan) < int(pcs.size()) {
 		pcs.putChan <- struct{}{}
 	}
-
-	return pcs
 }
 
 func (pcs *persistentContiguousStorage) initPersistentContiguousStorage(ctx context.Context) {
@@ -124,8 +121,6 @@ func (pcs *persistentContiguousStorage) initPersistentContiguousStorage(ctx cont
 		pcs.readIndex = 0
 		pcs.writeIndex = 0
 	}
-
-	pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
 }
 
 // get returns the request channel that all the requests will be send on
@@ -143,9 +138,20 @@ func (pcs *persistentContiguousStorage) get() (QueueRequest, bool) {
 	}
 }
 
-// size returns the number of currently available items, which were not picked by consumers yet
 func (pcs *persistentContiguousStorage) size() uint64 {
-	return pcs.itemsCount.Load()
+	return uint64(pcs.writeIndex - pcs.readIndex)
+}
+
+// Size returns the number of currently available items, which were not picked by consumers yet
+func (pcs *persistentContiguousStorage) Size() int {
+	pcs.mu.Lock()
+	defer pcs.mu.Unlock()
+	return int(pcs.size())
+}
+
+// Capacity returns the number of currently available items, which were not picked by consumers yet
+func (pcs *persistentContiguousStorage) Capacity() int {
+	return int(pcs.capacity)
 }
 
 func (pcs *persistentContiguousStorage) stop(ctx context.Context) error {
@@ -153,8 +159,10 @@ func (pcs *persistentContiguousStorage) stop(ctx context.Context) error {
 	return pcs.client.Close(ctx)
 }
 
-// put marshals the request and puts it into the persistent queue
-func (pcs *persistentContiguousStorage) put(req any) error {
+// Offer inserts the specified element into this queue if it is possible to do so immediately
+// without violating capacity restrictions. If success returns no error.
+// It returns ErrQueueIsFull if no space is currently available.
+func (pcs *persistentContiguousStorage) Offer(ctx context.Context, req any) error {
 	// Nil requests are ignored
 	if req == nil {
 		return nil
@@ -162,11 +170,11 @@ func (pcs *persistentContiguousStorage) put(req any) error {
 
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
-	return pcs.putInternal(req)
+	return pcs.putInternal(ctx, req)
 }
 
 // putInternal is the internal version that requires caller to hold the mutex lock.
-func (pcs *persistentContiguousStorage) putInternal(req any) error {
+func (pcs *persistentContiguousStorage) putInternal(ctx context.Context, req any) error {
 	if pcs.size() >= pcs.capacity {
 		pcs.logger.Warn("Maximum queue capacity reached")
 		return ErrQueueIsFull
@@ -174,13 +182,11 @@ func (pcs *persistentContiguousStorage) putInternal(req any) error {
 
 	itemKey := getItemKey(pcs.writeIndex)
 	pcs.writeIndex++
-	pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
 
 	reqBuf, err := pcs.marshaler(req)
 	if err != nil {
 		return err
 	}
-	ctx := context.Background()
 	err = pcs.client.Batch(ctx,
 		storage.SetOperation(writeIndexKey, itemIndexToBytes(pcs.writeIndex)),
 		storage.SetOperation(itemKey, reqBuf))
@@ -202,7 +208,6 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) QueueRe
 	index := pcs.readIndex
 	// Increase here, so even if errors happen below, it always iterates
 	pcs.readIndex++
-	pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
 
 	pcs.currentlyDispatchedItems = append(pcs.currentlyDispatchedItems, index)
 	getOp := storage.GetOperation(getItemKey(index))
@@ -291,7 +296,7 @@ func (pcs *persistentContiguousStorage) retrieveAndEnqueueNotDispatchedReqs(ctx 
 			pcs.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
 			continue
 		}
-		if req == nil || pcs.putInternal(req) != nil {
+		if req == nil || pcs.putInternal(ctx, req) != nil {
 			errCount++
 		}
 	}
