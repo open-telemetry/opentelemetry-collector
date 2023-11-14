@@ -1,6 +1,8 @@
 module go.opentelemetry.io/collector/internal/tools
 
-go 1.20
+go 1.21
+
+toolchain go1.21.4
 
 require (
 	github.com/a8m/envsubst v1.4.2
@@ -8,7 +10,7 @@ require (
 	github.com/client9/misspell v0.3.4
 	github.com/golangci/golangci-lint v1.55.2
 	github.com/google/addlicense v1.1.1
-	github.com/jcchavezs/porto v0.5.1
+	github.com/jcchavezs/porto v0.6.0
 	github.com/mikefarah/yq/v4 v4.40.1
 	github.com/pavius/impi v0.0.3
 	go.opentelemetry.io/build-tools/checkfile v0.12.0
