@@ -3,6 +3,9 @@
     "labels": [
       "dependencies"
     ],
+    "constraints": {
+      "go": "1.20"
+    },
     "extends": [
       "config:base"
     ],
