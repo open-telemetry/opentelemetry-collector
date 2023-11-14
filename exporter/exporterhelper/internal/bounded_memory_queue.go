@@ -81,7 +81,3 @@ func (q *boundedMemoryQueue) Size() int {
 func (q *boundedMemoryQueue) Capacity() int {
 	return cap(q.items)
 }
-
-func (q *boundedMemoryQueue) IsPersistent() bool {
-	return false
-}
