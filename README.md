@@ -35,8 +35,6 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/monitoring.md">Monitoring</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="docs/performance.md">Performance</a>
-    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/security-best-practices.md">Security</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/roadmap.md">Roadmap</a>
