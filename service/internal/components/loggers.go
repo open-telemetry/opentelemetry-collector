@@ -15,10 +15,10 @@ const (
 	zapKindProcessor      = "processor"
 	zapKindExporter       = "exporter"
 	zapKindExtension      = "extension"
-	zapKindPipeline       = "pipeline"
 	zapNameKey            = "name"
 	zapDataTypeKey        = "data_type"
 	zapStabilityKey       = "stability"
+	zapPipelineKey        = "pipeline"
 	zapExporterInPipeline = "exporter_in_pipeline"
 	zapReceiverInPipeline = "receiver_in_pipeline"
 )
@@ -34,7 +34,7 @@ func ProcessorLogger(logger *zap.Logger, id component.ID, pipelineID component.I
 	return logger.With(
 		zap.String(zapKindKey, zapKindProcessor),
 		zap.String(zapNameKey, id.String()),
-		zap.String(zapKindPipeline, pipelineID.String()))
+		zap.String(zapPipelineKey, pipelineID.String()))
 }
 
 func ExporterLogger(logger *zap.Logger, id component.ID, dt component.DataType) *zap.Logger {
