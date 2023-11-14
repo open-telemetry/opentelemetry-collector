@@ -108,25 +108,15 @@ func (pq *persistentQueue) Capacity() int {
 }
 
 func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal component.DataType) (storage.Client, error) {
-	extension, err := getStorageExtension(host.GetExtensions(), storageID)
-	if err != nil {
-		return nil, err
+	ext, found := host.GetExtensions()[storageID]
+	if !found {
+		return nil, errNoStorageClient
 	}
 
-	client, err := extension.GetClient(ctx, component.KindExporter, ownerID, string(signal))
-	if err != nil {
-		return nil, err
-	}
-
-	return client, err
-}
-
-func getStorageExtension(extensions map[component.ID]component.Component, storageID component.ID) (storage.Extension, error) {
-	if ext, found := extensions[storageID]; found {
-		if storageExt, ok := ext.(storage.Extension); ok {
-			return storageExt, nil
-		}
+	storageExt, ok := ext.(storage.Extension)
+	if !ok {
 		return nil, errWrongExtensionType
 	}
-	return nil, errNoStorageClient
+
+	return storageExt.GetClient(ctx, component.KindExporter, ownerID, string(signal))
 }
