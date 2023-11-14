@@ -226,8 +226,7 @@ The Collector may exit/restart because:
 - Memory pressure due to missing or misconfigured
   [memory_limiter](https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md)
   processor.
-- [Improperly sized](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/performance.md)
-  for load.
+- Improperly sized for load.
 - Improperly configured (for example, a queue size configured higher
   than available memory).
 - Infrastructure resource limits (for example Kubernetes).
@@ -236,7 +235,7 @@ The Collector may exit/restart because:
 
 Data may be dropped for a variety of reasons, but most commonly because of an:
 
-- [Improperly sized Collector](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/performance.md) resulting in Collector being unable to process and export the data as fast as it is received.
+- Improperly sized Collector resulting in Collector being unable to process and export the data as fast as it is received.
 - Exporter destination unavailable or accepting the data too slowly.
 
 To mitigate drops, it is highly recommended to configure the
