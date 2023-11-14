@@ -107,10 +107,6 @@ func (pq *persistentQueue) Capacity() int {
 	return int(pq.capacity)
 }
 
-func (pq *persistentQueue) IsPersistent() bool {
-	return true
-}
-
 func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal component.DataType) (storage.Client, error) {
 	extension, err := getStorageExtension(host.GetExtensions(), storageID)
 	if err != nil {

@@ -88,12 +88,14 @@ type queueSender struct {
 
 func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal component.DataType,
 	marshaler RequestMarshaler, unmarshaler RequestUnmarshaler) *queueSender {
+
+	isPersistent := config.StorageID != nil
 	var queue internal.Queue
-	if config.StorageID == nil {
-		queue = internal.NewBoundedMemoryQueue(config.QueueSize, config.NumConsumers)
-	} else {
+	if isPersistent {
 		queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID,
 			queueRequestMarshaler(marshaler), queueRequestUnmarshaler(unmarshaler), set)
+	} else {
+		queue = internal.NewBoundedMemoryQueue(config.QueueSize, config.NumConsumers)
 	}
 	return &queueSender{
 		fullName:       set.ID.String(),
@@ -103,7 +105,7 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 		logger:         set.TelemetrySettings.Logger,
 		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
 		// TODO: this can be further exposed as a config param rather than relying on a type of queue
-		requeuingEnabled: queue.IsPersistent(),
+		requeuingEnabled: isPersistent,
 	}
 }
 

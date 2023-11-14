@@ -31,7 +31,4 @@ type Queue interface {
 	Shutdown(ctx context.Context) error
 	// Capacity returns the capacity of the queue.
 	Capacity() int
-	// IsPersistent returns true if the queue is persistent.
-	// TODO: Do not expose this method if the interface moves to a public package.
-	IsPersistent() bool
 }
