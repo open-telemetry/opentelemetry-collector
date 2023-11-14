@@ -42,13 +42,13 @@ var (
 )
 
 func TestLogsRequest(t *testing.T) {
-	lr := newLogsRequest(context.Background(), testdata.GenerateLogs(1), nil)
+	lr := newLogsRequest(testdata.GenerateLogs(1), nil)
 
 	logErr := consumererror.NewLogs(errors.New("some error"), plog.NewLogs())
 	assert.EqualValues(
 		t,
-		newLogsRequest(context.Background(), plog.NewLogs(), nil),
-		lr.OnError(logErr),
+		newLogsRequest(plog.NewLogs(), nil),
+		lr.(RequestErrorHandler).OnError(logErr),
 	)
 }
 

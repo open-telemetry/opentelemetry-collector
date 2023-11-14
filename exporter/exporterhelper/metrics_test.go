@@ -42,13 +42,13 @@ var (
 )
 
 func TestMetricsRequest(t *testing.T) {
-	mr := newMetricsRequest(context.Background(), testdata.GenerateMetrics(1), nil)
+	mr := newMetricsRequest(testdata.GenerateMetrics(1), nil)
 
 	metricsErr := consumererror.NewMetrics(errors.New("some error"), pmetric.NewMetrics())
 	assert.EqualValues(
 		t,
-		newMetricsRequest(context.Background(), pmetric.NewMetrics(), nil),
-		mr.OnError(metricsErr),
+		newMetricsRequest(pmetric.NewMetrics(), nil),
+		mr.(RequestErrorHandler).OnError(metricsErr),
 	)
 }
 

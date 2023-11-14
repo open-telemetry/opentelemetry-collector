@@ -42,10 +42,10 @@ var (
 )
 
 func TestTracesRequest(t *testing.T) {
-	mr := newTracesRequest(context.Background(), testdata.GenerateTraces(1), nil)
+	mr := newTracesRequest(testdata.GenerateTraces(1), nil)
 
 	traceErr := consumererror.NewTraces(errors.New("some error"), ptrace.NewTraces())
-	assert.EqualValues(t, newTracesRequest(context.Background(), ptrace.NewTraces(), nil), mr.OnError(traceErr))
+	assert.EqualValues(t, newTracesRequest(ptrace.NewTraces(), nil), mr.(RequestErrorHandler).OnError(traceErr))
 }
 
 func TestTracesExporter_InvalidName(t *testing.T) {

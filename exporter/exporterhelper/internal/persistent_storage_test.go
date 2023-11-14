@@ -40,7 +40,6 @@ func createTestPersistentStorage(client storage.Client) *persistentContiguousSto
 type fakeTracesRequest struct {
 	td                         ptrace.Traces
 	processingFinishedCallback func()
-	Request
 }
 
 func newFakeTracesRequest(td ptrace.Traces) *fakeTracesRequest {
@@ -59,8 +58,8 @@ func (fd *fakeTracesRequest) SetOnProcessingFinished(callback func()) {
 	fd.processingFinishedCallback = callback
 }
 
-func newFakeTracesRequestUnmarshalerFunc() RequestUnmarshaler {
-	return func(bytes []byte) (Request, error) {
+func newFakeTracesRequestUnmarshalerFunc() QueueRequestUnmarshaler {
+	return func(bytes []byte) (any, error) {
 		unmarshaler := ptrace.ProtoUnmarshaler{}
 		traces, err := unmarshaler.UnmarshalTraces(bytes)
 		if err != nil {
@@ -70,8 +69,8 @@ func newFakeTracesRequestUnmarshalerFunc() RequestUnmarshaler {
 	}
 }
 
-func newFakeTracesRequestMarshalerFunc() RequestMarshaler {
-	return func(req Request) ([]byte, error) {
+func newFakeTracesRequestMarshalerFunc() QueueRequestMarshaler {
+	return func(req any) ([]byte, error) {
 		marshaler := ptrace.ProtoMarshaler{}
 		return marshaler.MarshalTraces(req.(*fakeTracesRequest).td)
 	}
@@ -207,7 +206,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 
 	// Now, this will take item 0 and pull item 1 into the unbuffered channel
 	readReq := <-ps.get()
-	assert.Equal(t, req.td, readReq.(*fakeTracesRequest).td)
+	assert.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 1})
 
 	// This takes item 1 from channel and pulls another one (item 2) into the unbuffered channel
@@ -310,10 +309,10 @@ func TestPersistentStorage_PutCloseReadClose(t *testing.T) {
 
 	// Lets read both of the elements we put
 	readReq := <-ps.get()
-	require.Equal(t, req.td, readReq.(*fakeTracesRequest).td)
+	require.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
 
 	readReq = <-ps.get()
-	require.Equal(t, req.td, readReq.(*fakeTracesRequest).td)
+	require.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
 	require.Equal(t, uint64(0), ps.size())
 	assert.NoError(t, ps.stop(context.Background()))
 }

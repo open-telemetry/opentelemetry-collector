@@ -12,13 +12,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 )
 
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 type requestSender interface {
 	component.Component
-	send(req internal.Request) error
+	send(context.Context, Request) error
 	setNextSender(nextSender requestSender)
 }
 
@@ -30,8 +29,8 @@ type baseRequestSender struct {
 
 var _ requestSender = (*baseRequestSender)(nil)
 
-func (b *baseRequestSender) send(req internal.Request) error {
-	return b.nextSender.send(req)
+func (b *baseRequestSender) send(ctx context.Context, req Request) error {
+	return b.nextSender.send(ctx, req)
 }
 
 func (b *baseRequestSender) setNextSender(nextSender requestSender) {
@@ -44,39 +43,15 @@ type errorLoggingRequestSender struct {
 	message string
 }
 
-func (l *errorLoggingRequestSender) send(req internal.Request) error {
-	err := l.baseRequestSender.send(req)
+func (l *errorLoggingRequestSender) send(ctx context.Context, req Request) error {
+	err := l.baseRequestSender.send(ctx, req)
 	if err != nil {
-		l.logger.Error(l.message, zap.Int("dropped_items", req.Count()), zap.Error(err))
+		l.logger.Error(l.message, zap.Int("dropped_items", req.ItemsCount()), zap.Error(err))
 	}
 	return err
 }
 
 type obsrepSenderFactory func(obsrep *ObsReport) requestSender
-
-// baseRequest is a base implementation for the internal.Request.
-type baseRequest struct {
-	ctx                        context.Context
-	processingFinishedCallback func()
-}
-
-func (req *baseRequest) Context() context.Context {
-	return req.ctx
-}
-
-func (req *baseRequest) SetContext(ctx context.Context) {
-	req.ctx = ctx
-}
-
-func (req *baseRequest) SetOnProcessingFinished(callback func()) {
-	req.processingFinishedCallback = callback
-}
-
-func (req *baseRequest) OnProcessingFinished() {
-	if req.processingFinishedCallback != nil {
-		req.processingFinishedCallback()
-	}
-}
 
 // Option apply changes to baseExporter.
 type Option func(*baseExporter)
@@ -156,8 +131,8 @@ type baseExporter struct {
 	component.ShutdownFunc
 
 	requestExporter bool
-	marshaler       internal.RequestMarshaler
-	unmarshaler     internal.RequestUnmarshaler
+	marshaler       RequestMarshaler
+	unmarshaler     RequestUnmarshaler
 	signal          component.DataType
 
 	set    exporter.CreateSettings
@@ -178,8 +153,8 @@ type baseExporter struct {
 }
 
 // TODO: requestExporter, marshaler, and unmarshaler arguments can be removed when the old exporter helpers will be updated to call the new ones.
-func newBaseExporter(set exporter.CreateSettings, signal component.DataType, requestExporter bool, marshaler internal.RequestMarshaler,
-	unmarshaler internal.RequestUnmarshaler, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
+func newBaseExporter(set exporter.CreateSettings, signal component.DataType, requestExporter bool, marshaler RequestMarshaler,
+	unmarshaler RequestUnmarshaler, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
 
 	obsReport, err := NewObsReport(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set})
 	if err != nil {
@@ -210,8 +185,8 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 }
 
 // send sends the request using the first sender in the chain.
-func (be *baseExporter) send(req internal.Request) error {
-	return be.queueSender.send(req)
+func (be *baseExporter) send(ctx context.Context, req Request) error {
+	return be.queueSender.send(ctx, req)
 }
 
 // connectSenders connects the senders in the predefined order.
