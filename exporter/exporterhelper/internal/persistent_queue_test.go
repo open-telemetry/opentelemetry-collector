@@ -54,7 +54,7 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 	require.NoError(t, err)
 
 	// Stop consumer to imitate queue overflow
-	close(pq.(*persistentQueue).storage.stopChan)
+	close(pq.(*persistentQueue).persistentContiguousStorage.stopChan)
 	pq.(*persistentQueue).stopWG.Wait()
 
 	assert.Equal(t, 0, pq.Size())
@@ -70,7 +70,7 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 5, pq.Size())
-	assert.NoError(t, stopStorage(pq.(*persistentQueue).storage, context.Background()))
+	assert.NoError(t, stopStorage(pq.(*persistentQueue).persistentContiguousStorage.client, context.Background()))
 }
 
 func TestPersistentQueueShutdown(t *testing.T) {
@@ -95,9 +95,9 @@ func TestPersistentQueue_Close_StorageCloseAfterConsumers(t *testing.T) {
 
 	fnBefore := stopStorage
 	stopStorageTime := time.Now()
-	stopStorage = func(storage *persistentContiguousStorage, ctx context.Context) error {
+	stopStorage = func(storage storage.Client, ctx context.Context) error {
 		stopStorageTime = time.Now()
-		return storage.stop(ctx)
+		return storage.Close(ctx)
 	}
 
 	for i := 0; i < 1000; i++ {
