@@ -96,6 +96,22 @@ const (
 	KindConnector
 )
 
+func (k Kind) String() string {
+	switch k {
+	case KindReceiver:
+		return "Receiver"
+	case KindProcessor:
+		return "Processor"
+	case KindExporter:
+		return "Exporter"
+	case KindExtension:
+		return "Extension"
+	case KindConnector:
+		return "Connector"
+	}
+	return ""
+}
+
 // StabilityLevel represents the stability level of the component created by the factory.
 // The stability level is used to determine if the component should be used in production
 // or not. For more details see:
