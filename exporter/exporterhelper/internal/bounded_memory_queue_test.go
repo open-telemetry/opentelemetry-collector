@@ -95,11 +95,10 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 
 	consumerState := newConsumerState(t)
 
-	var wg sync.WaitGroup
-	wg.Add(1)
+	waitChan := make(chan struct{})
 	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	consumers := NewQueueConsumers(q, 5, func(_ context.Context, item string) {
-		wg.Wait()
+		<-waitChan
 		consumerState.record(item)
 	})
 	consumers.Start()
@@ -122,7 +121,7 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 			// ensure the request is rejected due to closed queue
 			assert.ErrorIs(t, q.Offer(context.Background(), "x"), ErrQueueIsStopped)
 		}, 1*time.Second, 10*time.Millisecond)
-		wg.Done()
+		close(waitChan)
 	}()
 
 	assert.NoError(t, q.Shutdown(context.Background()))
