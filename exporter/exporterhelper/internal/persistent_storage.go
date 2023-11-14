@@ -53,6 +53,7 @@ type persistentContiguousStorage struct {
 	readIndex                itemIndex
 	writeIndex               itemIndex
 	currentlyDispatchedItems []itemIndex
+	refClient                int64
 }
 
 type itemIndex uint64
@@ -88,6 +89,7 @@ func newPersistentContiguousStorage(
 
 func (pcs *persistentContiguousStorage) start(ctx context.Context, client storage.Client) {
 	pcs.client = client
+	pcs.refClient = 1
 	pcs.initPersistentContiguousStorage(ctx)
 	// Make sure the leftover requests are handled
 	pcs.retrieveAndEnqueueNotDispatchedReqs(ctx)
@@ -154,9 +156,22 @@ func (pcs *persistentContiguousStorage) Capacity() int {
 	return int(pcs.capacity)
 }
 
-func (pcs *persistentContiguousStorage) stop(ctx context.Context) error {
-	pcs.logger.Debug("Stopping persistentContiguousStorage")
-	return pcs.client.Close(ctx)
+func (pcs *persistentContiguousStorage) Shutdown(ctx context.Context) error {
+	close(pcs.stopChan)
+	// Hold the lock only for `refClient`.
+	pcs.mu.Lock()
+	defer pcs.mu.Unlock()
+	return pcs.unrefClient(ctx)
+}
+
+// unrefClient unrefs the client, and closes if no more references. Callers MUST hold the mutex.
+// This is needed because consumers of the queue may still process the requests while the queue is shutting down or immediately after.
+func (pcs *persistentContiguousStorage) unrefClient(ctx context.Context) error {
+	pcs.refClient--
+	if pcs.refClient == 0 {
+		return pcs.client.Close(ctx)
+	}
+	return nil
 }
 
 // Offer inserts the specified element into this queue if it is possible to do so immediately
@@ -202,6 +217,11 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) QueueRe
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 
+	// If called in the same time with Shutdown, make sure client is not closed.
+	if pcs.refClient <= 0 {
+		return QueueRequest{}
+	}
+
 	if pcs.readIndex == pcs.writeIndex {
 		return QueueRequest{}
 	}
@@ -224,7 +244,7 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) QueueRe
 	if err != nil || req.Request == nil {
 		pcs.logger.Debug("Failed to dispatch item", zap.Error(err))
 		// We need to make sure that currently dispatched items list is cleaned
-		if err := pcs.itemDispatchingFinish(ctx, index); err != nil {
+		if err = pcs.itemDispatchingFinish(ctx, index); err != nil {
 			pcs.logger.Error("Error deleting item from queue", zap.Error(err))
 		}
 
@@ -232,11 +252,15 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) QueueRe
 	}
 
 	// If all went well so far, cleanup will be handled by callback
+	pcs.refClient++
 	req.onProcessingFinishedFunc = func() {
 		pcs.mu.Lock()
 		defer pcs.mu.Unlock()
-		if err := pcs.itemDispatchingFinish(ctx, index); err != nil {
+		if err = pcs.itemDispatchingFinish(ctx, index); err != nil {
 			pcs.logger.Error("Error deleting item from queue", zap.Error(err))
+		}
+		if err = pcs.unrefClient(ctx); err != nil {
+			pcs.logger.Error("Error closing the storage client", zap.Error(err))
 		}
 	}
 	return req

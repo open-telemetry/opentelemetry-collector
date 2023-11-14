@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
@@ -23,7 +24,7 @@ func (m *mockStorageExtension) GetClient(_ context.Context, _ component.Kind, _ 
 	if m.getClientError != nil {
 		return nil, m.getClientError
 	}
-	return &mockStorageClient{st: &m.st}, nil
+	return &mockStorageClient{st: &m.st, closed: &atomic.Bool{}}, nil
 }
 
 func NewMockStorageExtension(getClientError error) storage.Extension {
@@ -31,35 +32,33 @@ func NewMockStorageExtension(getClientError error) storage.Extension {
 }
 
 type mockStorageClient struct {
-	st           *sync.Map
-	closeCounter uint64
+	st     *sync.Map
+	closed *atomic.Bool
 }
 
-func (m *mockStorageClient) Get(_ context.Context, s string) ([]byte, error) {
-	val, found := m.st.Load(s)
-	if !found {
-		return nil, nil
-	}
-
-	return val.([]byte), nil
+func (m *mockStorageClient) Get(ctx context.Context, s string) ([]byte, error) {
+	getOp := storage.GetOperation(s)
+	err := m.Batch(ctx, getOp)
+	return getOp.Value, err
 }
 
-func (m *mockStorageClient) Set(_ context.Context, s string, bytes []byte) error {
-	m.st.Store(s, bytes)
-	return nil
+func (m *mockStorageClient) Set(ctx context.Context, s string, bytes []byte) error {
+	return m.Batch(ctx, storage.SetOperation(s, bytes))
 }
 
-func (m *mockStorageClient) Delete(_ context.Context, s string) error {
-	m.st.Delete(s)
-	return nil
+func (m *mockStorageClient) Delete(ctx context.Context, s string) error {
+	return m.Batch(ctx, storage.DeleteOperation(s))
 }
 
 func (m *mockStorageClient) Close(_ context.Context) error {
-	m.closeCounter++
+	m.closed.Store(true)
 	return nil
 }
 
 func (m *mockStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+	if m.isClosed() {
+		panic("client already closed")
+	}
 	for _, op := range ops {
 		switch op.Type {
 		case storage.Get:
@@ -80,6 +79,6 @@ func (m *mockStorageClient) Batch(_ context.Context, ops ...storage.Operation) e
 	return nil
 }
 
-func (m *mockStorageClient) getCloseCount() uint64 {
-	return m.closeCounter
+func (m *mockStorageClient) isClosed() bool {
+	return m.closed.Load()
 }

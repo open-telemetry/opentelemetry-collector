@@ -39,27 +39,25 @@ func createTestQueue(t *testing.T, capacity, numConsumers int, set QueueSettings
 	host := &mockHost{ext: map[component.ID]component.Component{
 		{}: NewMockStorageExtension(nil),
 	}}
-	err := pq.Start(context.Background(), host, set)
-	require.NoError(t, err)
+	require.NoError(t, pq.Start(context.Background(), host, set))
 	return pq
 }
 
-func TestPersistentQueue_Capacity(t *testing.T) {
-	pq := NewPersistentQueue(5, 1, component.ID{}, newFakeTracesRequestMarshalerFunc(),
-		newFakeTracesRequestUnmarshalerFunc(), exportertest.NewNopCreateSettings())
-	host := &mockHost{ext: map[component.ID]component.Component{
-		{}: NewMockStorageExtension(nil),
-	}}
-	err := pq.Start(context.Background(), host, newNopQueueSettings())
-	require.NoError(t, err)
-
-	// Stop consumer to imitate queue overflow
-	close(pq.(*persistentQueue).persistentContiguousStorage.stopChan)
-	pq.(*persistentQueue).stopWG.Wait()
-
+func TestPersistentQueue_FullCapacity(t *testing.T) {
+	start := make(chan struct{})
+	done := make(chan struct{})
+	pq := createTestQueue(t, 5, 1, newQueueSettings(func(item QueueRequest) {
+		start <- struct{}{}
+		<-done
+		item.OnProcessingFinished()
+	}))
 	assert.Equal(t, 0, pq.Size())
 
 	req := newFakeTracesRequest(newTraces(1, 10))
+
+	// First request is picked by the consumer. Wait until the consumer is blocked on done.
+	assert.NoError(t, pq.Offer(context.Background(), req))
+	<-start
 
 	for i := 0; i < 10; i++ {
 		result := pq.Offer(context.Background(), req)
@@ -70,7 +68,8 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 5, pq.Size())
-	assert.NoError(t, stopStorage(pq.(*persistentQueue).persistentContiguousStorage.client, context.Background()))
+	close(done)
+	assert.NoError(t, pq.Shutdown(context.Background()))
 }
 
 func TestPersistentQueueShutdown(t *testing.T) {
@@ -81,31 +80,6 @@ func TestPersistentQueueShutdown(t *testing.T) {
 		assert.NoError(t, pq.Offer(context.Background(), req))
 	}
 	assert.NoError(t, pq.Shutdown(context.Background()))
-}
-
-// Verify storage closes after queue consumers. If not in this order, successfully consumed items won't be updated in storage
-func TestPersistentQueue_Close_StorageCloseAfterConsumers(t *testing.T) {
-	pq := createTestQueue(t, 1001, 1, newNopQueueSettings())
-
-	lastRequestProcessedTime := time.Now()
-	req := newFakeTracesRequest(newTraces(1, 10))
-	req.processingFinishedCallback = func() {
-		lastRequestProcessedTime = time.Now()
-	}
-
-	fnBefore := stopStorage
-	stopStorageTime := time.Now()
-	stopStorage = func(storage storage.Client, ctx context.Context) error {
-		stopStorageTime = time.Now()
-		return storage.Close(ctx)
-	}
-
-	for i := 0; i < 1000; i++ {
-		assert.NoError(t, pq.Offer(context.Background(), req))
-	}
-	assert.NoError(t, pq.Shutdown(context.Background()))
-	assert.True(t, stopStorageTime.After(lastRequestProcessedTime), "storage stop time should be after last request processed time")
-	stopStorage = fnBefore
 }
 
 func TestPersistentQueue_ConsumersProducers(t *testing.T) {

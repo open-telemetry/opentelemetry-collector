@@ -14,13 +14,6 @@ import (
 )
 
 var (
-	// Monkey patching for unit test
-	stopStorage = func(client storage.Client, ctx context.Context) error {
-		if client == nil {
-			return nil
-		}
-		return client.Close(ctx)
-	}
 	errNoStorageClient    = errors.New("no storage client extension found")
 	errWrongExtensionType = errors.New("requested extension is not a storage extension")
 )
@@ -70,9 +63,9 @@ func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set Q
 
 // Shutdown stops accepting items, shuts down the queue and closes the persistent queue
 func (pq *persistentQueue) Shutdown(ctx context.Context) error {
-	close(pq.persistentContiguousStorage.stopChan)
+	err := pq.persistentContiguousStorage.Shutdown(ctx)
 	pq.stopWG.Wait()
-	return stopStorage(pq.persistentContiguousStorage.client, ctx)
+	return err
 }
 
 func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal component.DataType) (storage.Client, error) {
