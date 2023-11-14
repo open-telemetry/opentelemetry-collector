@@ -54,7 +54,7 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 	require.NoError(t, err)
 
 	// Stop consumer to imitate queue overflow
-	close(pq.(*persistentQueue).stopChan)
+	close(pq.(*persistentQueue).storage.stopChan)
 	pq.(*persistentQueue).stopWG.Wait()
 
 	assert.Equal(t, 0, pq.Size())
@@ -63,18 +63,10 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		result := pq.Produce(context.Background(), req)
-		if i < 6 {
+		if i < 5 {
 			assert.True(t, result)
 		} else {
 			assert.False(t, result)
-		}
-
-		// Let's make sure the loop picks the first element into the channel,
-		// so the capacity could be used in full
-		if i == 0 {
-			assert.Eventually(t, func() bool {
-				return pq.Size() == 0
-			}, 5*time.Second, 10*time.Millisecond)
 		}
 	}
 	assert.Equal(t, 5, pq.Size())
