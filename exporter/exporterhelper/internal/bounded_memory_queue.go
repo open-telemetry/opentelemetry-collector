@@ -19,14 +19,14 @@ import (
 type boundedMemoryQueue struct {
 	stopWG       sync.WaitGroup
 	stopped      *atomic.Bool
-	items        chan Request
+	items        chan QueueRequest
 	numConsumers int
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity. Capacity cannot be 0.
 func NewBoundedMemoryQueue(capacity int, numConsumers int) Queue {
 	return &boundedMemoryQueue{
-		items:        make(chan Request, capacity),
+		items:        make(chan QueueRequest, capacity),
 		stopped:      &atomic.Bool{},
 		numConsumers: numConsumers,
 	}
@@ -52,16 +52,16 @@ func (q *boundedMemoryQueue) Start(_ context.Context, _ component.Host, set Queu
 }
 
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
-func (q *boundedMemoryQueue) Produce(item Request) bool {
+func (q *boundedMemoryQueue) Offer(ctx context.Context, req any) error {
 	if q.stopped.Load() {
-		return false
+		return ErrQueueIsStopped
 	}
 
 	select {
-	case q.items <- item:
-		return true
+	case q.items <- newQueueRequest(ctx, req):
+		return nil
 	default:
-		return false
+		return ErrQueueIsFull
 	}
 }
 
@@ -80,8 +80,4 @@ func (q *boundedMemoryQueue) Size() int {
 
 func (q *boundedMemoryQueue) Capacity() int {
 	return cap(q.items)
-}
-
-func (q *boundedMemoryQueue) IsPersistent() bool {
-	return false
 }

@@ -43,14 +43,12 @@ import (
 type persistentContiguousStorage struct {
 	logger      *zap.Logger
 	client      storage.Client
-	unmarshaler RequestUnmarshaler
-	marshaler   RequestMarshaler
+	unmarshaler QueueRequestUnmarshaler
+	marshaler   QueueRequestMarshaler
 
 	putChan  chan struct{}
 	stopChan chan struct{}
 	capacity uint64
-
-	reqChan chan Request
 
 	mu                       sync.Mutex
 	readIndex                itemIndex
@@ -64,7 +62,6 @@ type itemIndex uint64
 
 const (
 	zapKey           = "key"
-	zapQueueNameKey  = "queueName"
 	zapErrorCount    = "errorCount"
 	zapNumberOfItems = "numberOfItems"
 
@@ -74,22 +71,20 @@ const (
 )
 
 var (
-	errMaxCapacityReached = errors.New("max capacity reached")
-	errValueNotSet        = errors.New("value not set")
+	errValueNotSet = errors.New("value not set")
 )
 
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
 // queueName parameter must be a unique value that identifies the queue.
-func newPersistentContiguousStorage(ctx context.Context, queueName string, client storage.Client,
-	logger *zap.Logger, capacity uint64, marshaler RequestMarshaler, unmarshaler RequestUnmarshaler) *persistentContiguousStorage {
+func newPersistentContiguousStorage(ctx context.Context, client storage.Client,
+	logger *zap.Logger, capacity uint64, marshaler QueueRequestMarshaler, unmarshaler QueueRequestUnmarshaler) *persistentContiguousStorage {
 	pcs := &persistentContiguousStorage{
-		logger:      logger.With(zap.String(zapQueueNameKey, queueName)),
+		logger:      logger,
 		client:      client,
 		unmarshaler: unmarshaler,
 		marshaler:   marshaler,
 		capacity:    capacity,
 		putChan:     make(chan struct{}, capacity),
-		reqChan:     make(chan Request),
 		stopChan:    make(chan struct{}),
 		itemsCount:  &atomic.Uint64{},
 	}
@@ -105,9 +100,6 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, clien
 	for len(pcs.putChan) < int(pcs.size()) {
 		pcs.putChan <- struct{}{}
 	}
-
-	// start the loop which moves items from storage to the outbound channel
-	go pcs.loop()
 
 	return pcs
 }
@@ -138,7 +130,7 @@ func (pcs *persistentContiguousStorage) initPersistentContiguousStorage(ctx cont
 	pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
 }
 
-func (pcs *persistentContiguousStorage) enqueueNotDispatchedReqs(reqs []Request) {
+func (pcs *persistentContiguousStorage) enqueueNotDispatchedReqs(reqs []any) {
 	if len(reqs) > 0 {
 		errCount := 0
 		for _, req := range reqs {
@@ -153,29 +145,23 @@ func (pcs *persistentContiguousStorage) enqueueNotDispatchedReqs(reqs []Request)
 		} else {
 			pcs.logger.Info("Moved items for dispatching back to queue",
 				zap.Int(zapNumberOfItems, len(reqs)))
-
-		}
-	}
-}
-
-// loop is the main loop that handles fetching items from the persistent buffer
-func (pcs *persistentContiguousStorage) loop() {
-	for {
-		select {
-		case <-pcs.stopChan:
-			return
-		case <-pcs.putChan:
-			req, found := pcs.getNextItem(context.Background())
-			if found {
-				pcs.reqChan <- req
-			}
 		}
 	}
 }
 
 // get returns the request channel that all the requests will be send on
-func (pcs *persistentContiguousStorage) get() <-chan Request {
-	return pcs.reqChan
+func (pcs *persistentContiguousStorage) get() (QueueRequest, bool) {
+	for {
+		select {
+		case <-pcs.stopChan:
+			return QueueRequest{}, false
+		case <-pcs.putChan:
+			req := pcs.getNextItem(context.Background())
+			if req.Request != nil {
+				return req, true
+			}
+		}
+	}
 }
 
 // size returns the number of currently available items, which were not picked by consumers yet
@@ -185,12 +171,11 @@ func (pcs *persistentContiguousStorage) size() uint64 {
 
 func (pcs *persistentContiguousStorage) stop(ctx context.Context) error {
 	pcs.logger.Debug("Stopping persistentContiguousStorage")
-	close(pcs.stopChan)
 	return pcs.client.Close(ctx)
 }
 
 // put marshals the request and puts it into the persistent queue
-func (pcs *persistentContiguousStorage) put(req Request) error {
+func (pcs *persistentContiguousStorage) put(req any) error {
 	// Nil requests are ignored
 	if req == nil {
 		return nil
@@ -201,7 +186,7 @@ func (pcs *persistentContiguousStorage) put(req Request) error {
 
 	if pcs.size() >= pcs.capacity {
 		pcs.logger.Warn("Maximum queue capacity reached")
-		return errMaxCapacityReached
+		return ErrQueueIsFull
 	}
 
 	itemKey := getItemKey(pcs.writeIndex)
@@ -224,54 +209,52 @@ func (pcs *persistentContiguousStorage) put(req Request) error {
 }
 
 // getNextItem pulls the next available item from the persistent storage; if none is found, returns (nil, false)
-func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (Request, bool) {
+func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) QueueRequest {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 
-	if pcs.readIndex != pcs.writeIndex {
-		index := pcs.readIndex
-		// Increase here, so even if errors happen below, it always iterates
-		pcs.readIndex++
-		pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
+	if pcs.readIndex == pcs.writeIndex {
+		return QueueRequest{}
+	}
+	index := pcs.readIndex
+	// Increase here, so even if errors happen below, it always iterates
+	pcs.readIndex++
+	pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
 
-		pcs.updateReadIndex(ctx)
-		pcs.itemDispatchingStart(ctx, index)
+	pcs.updateReadIndex(ctx)
+	pcs.itemDispatchingStart(ctx, index)
 
-		var req Request
-		itemKey := getItemKey(index)
-		buf, err := pcs.client.Get(ctx, itemKey)
-		if err == nil {
-			req, err = pcs.unmarshaler(buf)
-		}
-
-		if err != nil || req == nil {
-			// We need to make sure that currently dispatched items list is cleaned
-			if err := pcs.itemDispatchingFinish(ctx, index); err != nil {
-				pcs.logger.Error("Error deleting item from queue", zap.Error(err))
-			}
-
-			return nil, false
-		}
-
-		// If all went well so far, cleanup will be handled by callback
-		req.SetOnProcessingFinished(func() {
-			pcs.mu.Lock()
-			defer pcs.mu.Unlock()
-			if err := pcs.itemDispatchingFinish(ctx, index); err != nil {
-				pcs.logger.Error("Error deleting item from queue", zap.Error(err))
-			}
-		})
-		return req, true
+	req := newQueueRequest(context.Background(), nil)
+	itemKey := getItemKey(index)
+	buf, err := pcs.client.Get(ctx, itemKey)
+	if err == nil {
+		req.Request, err = pcs.unmarshaler(buf)
 	}
 
-	return nil, false
+	if err != nil || req.Request == nil {
+		// We need to make sure that currently dispatched items list is cleaned
+		if err := pcs.itemDispatchingFinish(ctx, index); err != nil {
+			pcs.logger.Error("Error deleting item from queue", zap.Error(err))
+		}
+
+		return QueueRequest{}
+	}
+
+	// If all went well so far, cleanup will be handled by callback
+	req.onProcessingFinishedFunc = func() {
+		pcs.mu.Lock()
+		defer pcs.mu.Unlock()
+		if err := pcs.itemDispatchingFinish(ctx, index); err != nil {
+			pcs.logger.Error("Error deleting item from queue", zap.Error(err))
+		}
+	}
+	return req
 }
 
 // retrieveNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
 // and moves the items back to the queue. The function returns an array which might contain nils
 // if unmarshalling of the value at a given index was not possible.
-func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Context) []Request {
-	var reqs []Request
+func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Context) []any {
 	var dispatchedItems []itemIndex
 
 	pcs.mu.Lock()
@@ -284,7 +267,7 @@ func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Co
 	}
 	if err != nil {
 		pcs.logger.Error("Could not fetch items left for dispatch by consumers", zap.Error(err))
-		return reqs
+		return nil
 	}
 
 	if len(dispatchedItems) > 0 {
@@ -293,7 +276,7 @@ func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Co
 		pcs.logger.Debug("No items left for dispatch by consumers")
 	}
 
-	reqs = make([]Request, len(dispatchedItems))
+	reqs := make([]any, len(dispatchedItems))
 	retrieveBatch := make([]storage.Operation, len(dispatchedItems))
 	cleanupBatch := make([]storage.Operation, len(dispatchedItems))
 	for i, it := range dispatchedItems {
@@ -349,13 +332,14 @@ func (pcs *persistentContiguousStorage) itemDispatchingStart(ctx context.Context
 
 // itemDispatchingFinish removes the item from the list of currently dispatched items and deletes it from the persistent queue
 func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Context, index itemIndex) error {
-	var updatedDispatchedItems []itemIndex
-	for _, it := range pcs.currentlyDispatchedItems {
-		if it != index {
-			updatedDispatchedItems = append(updatedDispatchedItems, it)
+	lenCDI := len(pcs.currentlyDispatchedItems)
+	for i := 0; i < lenCDI; i++ {
+		if pcs.currentlyDispatchedItems[i] == index {
+			pcs.currentlyDispatchedItems[i] = pcs.currentlyDispatchedItems[lenCDI-1]
+			pcs.currentlyDispatchedItems = pcs.currentlyDispatchedItems[:lenCDI-1]
+			break
 		}
 	}
-	pcs.currentlyDispatchedItems = updatedDispatchedItems
 
 	setOp := storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pcs.currentlyDispatchedItems))
 	deleteOp := storage.DeleteOperation(getItemKey(index))

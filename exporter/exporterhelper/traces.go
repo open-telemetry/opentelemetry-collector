@@ -21,37 +21,35 @@ var tracesMarshaler = &ptrace.ProtoMarshaler{}
 var tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
 
 type tracesRequest struct {
-	baseRequest
 	td     ptrace.Traces
 	pusher consumer.ConsumeTracesFunc
 }
 
-func newTracesRequest(ctx context.Context, td ptrace.Traces, pusher consumer.ConsumeTracesFunc) internal.Request {
+func newTracesRequest(td ptrace.Traces, pusher consumer.ConsumeTracesFunc) Request {
 	return &tracesRequest{
-		baseRequest: baseRequest{ctx: ctx},
-		td:          td,
-		pusher:      pusher,
+		td:     td,
+		pusher: pusher,
 	}
 }
 
-func newTraceRequestUnmarshalerFunc(pusher consumer.ConsumeTracesFunc) internal.RequestUnmarshaler {
-	return func(bytes []byte) (internal.Request, error) {
+func newTraceRequestUnmarshalerFunc(pusher consumer.ConsumeTracesFunc) RequestUnmarshaler {
+	return func(bytes []byte) (Request, error) {
 		traces, err := tracesUnmarshaler.UnmarshalTraces(bytes)
 		if err != nil {
 			return nil, err
 		}
-		return newTracesRequest(context.Background(), traces, pusher), nil
+		return newTracesRequest(traces, pusher), nil
 	}
 }
 
-func tracesRequestMarshaler(req internal.Request) ([]byte, error) {
+func tracesRequestMarshaler(req Request) ([]byte, error) {
 	return tracesMarshaler.MarshalTraces(req.(*tracesRequest).td)
 }
 
-func (req *tracesRequest) OnError(err error) internal.Request {
+func (req *tracesRequest) OnError(err error) Request {
 	var traceError consumererror.Traces
 	if errors.As(err, &traceError) {
-		return newTracesRequest(req.ctx, traceError.Data(), req.pusher)
+		return newTracesRequest(traceError.Data(), req.pusher)
 	}
 	return req
 }
@@ -60,7 +58,7 @@ func (req *tracesRequest) Export(ctx context.Context) error {
 	return req.pusher(ctx, req.td)
 }
 
-func (req *tracesRequest) Count() int {
+func (req *tracesRequest) ItemsCount() int {
 	return req.td.SpanCount()
 }
 
@@ -96,10 +94,10 @@ func NewTracesExporter(
 	}
 
 	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
-		req := newTracesRequest(ctx, td, pusher)
-		serr := be.send(req)
-		if errors.Is(serr, errSendingQueueIsFull) {
-			be.obsrep.recordEnqueueFailure(req.Context(), component.DataTypeTraces, int64(req.Count()))
+		req := newTracesRequest(td, pusher)
+		serr := be.send(ctx, req)
+		if errors.Is(serr, internal.ErrQueueIsFull) {
+			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeTraces, int64(req.ItemsCount()))
 		}
 		return serr
 	}, be.consumerOptions...)
@@ -148,10 +146,9 @@ func NewTracesRequestExporter(
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}
-		r := newRequest(ctx, req)
-		sErr := be.send(r)
-		if errors.Is(sErr, errSendingQueueIsFull) {
-			be.obsrep.recordEnqueueFailure(r.Context(), component.DataTypeTraces, int64(r.Count()))
+		sErr := be.send(ctx, req)
+		if errors.Is(sErr, internal.ErrQueueIsFull) {
+			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeTraces, int64(req.ItemsCount()))
 		}
 		return sErr
 	}, be.consumerOptions...)
@@ -171,10 +168,10 @@ func newTracesExporterWithObservability(obsrep *ObsReport) requestSender {
 	return &tracesExporterWithObservability{obsrep: obsrep}
 }
 
-func (tewo *tracesExporterWithObservability) send(req internal.Request) error {
-	req.SetContext(tewo.obsrep.StartTracesOp(req.Context()))
+func (tewo *tracesExporterWithObservability) send(ctx context.Context, req Request) error {
+	c := tewo.obsrep.StartTracesOp(ctx)
 	// Forward the data to the next consumer (this pusher is the next).
-	err := tewo.nextSender.send(req)
-	tewo.obsrep.EndTracesOp(req.Context(), req.Count(), err)
+	err := tewo.nextSender.send(c, req)
+	tewo.obsrep.EndTracesOp(c, req.ItemsCount(), err)
 	return err
 }

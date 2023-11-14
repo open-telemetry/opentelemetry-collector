@@ -16,6 +16,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -41,13 +42,13 @@ var (
 )
 
 func TestLogsRequest(t *testing.T) {
-	lr := newLogsRequest(context.Background(), testdata.GenerateLogs(1), nil)
+	lr := newLogsRequest(testdata.GenerateLogs(1), nil)
 
 	logErr := consumererror.NewLogs(errors.New("some error"), plog.NewLogs())
 	assert.EqualValues(
 		t,
-		newLogsRequest(context.Background(), plog.NewLogs(), nil),
-		lr.OnError(logErr),
+		newLogsRequest(plog.NewLogs(), nil),
+		lr.(RequestErrorHandler).OnError(logErr),
 	)
 }
 
@@ -256,7 +257,7 @@ func TestLogsExporter_WithSpan(t *testing.T) {
 	sr := new(tracetest.SpanRecorder)
 	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(set.TracerProvider)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	le, err := NewLogsExporter(context.Background(), set, &fakeLogsExporterConfig, newPushLogsData(nil))
 	require.Nil(t, err)
@@ -269,7 +270,7 @@ func TestLogsRequestExporter_WithSpan(t *testing.T) {
 	sr := new(tracetest.SpanRecorder)
 	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(set.TracerProvider)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	le, err := NewLogsRequestExporter(context.Background(), set, &fakeRequestConverter{})
 	require.Nil(t, err)
@@ -282,7 +283,7 @@ func TestLogsExporter_WithSpan_ReturnError(t *testing.T) {
 	sr := new(tracetest.SpanRecorder)
 	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(set.TracerProvider)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("my_error")
 	le, err := NewLogsExporter(context.Background(), set, &fakeLogsExporterConfig, newPushLogsData(want))
@@ -296,7 +297,7 @@ func TestLogsRequestExporter_WithSpan_ReturnError(t *testing.T) {
 	sr := new(tracetest.SpanRecorder)
 	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(set.TracerProvider)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("my_error")
 	le, err := NewLogsRequestExporter(context.Background(), set, &fakeRequestConverter{requestError: want})

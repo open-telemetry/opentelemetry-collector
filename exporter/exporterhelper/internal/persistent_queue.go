@@ -6,10 +6,10 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
@@ -28,68 +28,63 @@ var (
 // persistentQueue holds the queue backed by file storage
 type persistentQueue struct {
 	stopWG       sync.WaitGroup
-	stopChan     chan struct{}
+	set          exporter.CreateSettings
 	storageID    component.ID
 	storage      *persistentContiguousStorage
 	capacity     uint64
 	numConsumers int
-	marshaler    RequestMarshaler
-	unmarshaler  RequestUnmarshaler
-}
-
-// buildPersistentStorageName returns a name that is constructed out of queue name and signal type. This is done
-// to avoid conflicts between different signals, which require unique persistent storage name
-func buildPersistentStorageName(name string, signal component.DataType) string {
-	return fmt.Sprintf("%s-%s", name, signal)
+	marshaler    QueueRequestMarshaler
+	unmarshaler  QueueRequestUnmarshaler
 }
 
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, marshaler RequestMarshaler,
-	unmarshaler RequestUnmarshaler) Queue {
+func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, marshaler QueueRequestMarshaler,
+	unmarshaler QueueRequestUnmarshaler, set exporter.CreateSettings) Queue {
 	return &persistentQueue{
 		capacity:     uint64(capacity),
 		numConsumers: numConsumers,
+		set:          set,
 		storageID:    storageID,
 		marshaler:    marshaler,
 		unmarshaler:  unmarshaler,
-		stopChan:     make(chan struct{}),
 	}
 }
 
 // Start starts the persistentQueue with the given number of consumers.
 func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set QueueSettings) error {
-	storageClient, err := toStorageClient(ctx, pq.storageID, host, set.ID, set.DataType)
+	storageClient, err := toStorageClient(ctx, pq.storageID, host, pq.set.ID, set.DataType)
 	if err != nil {
 		return err
 	}
-	storageName := buildPersistentStorageName(set.ID.Name(), set.DataType)
-	pq.storage = newPersistentContiguousStorage(ctx, storageName, storageClient, set.Logger, pq.capacity, pq.marshaler, pq.unmarshaler)
+	pq.storage = newPersistentContiguousStorage(ctx, storageClient, pq.set.Logger, pq.capacity, pq.marshaler, pq.unmarshaler)
 	for i := 0; i < pq.numConsumers; i++ {
 		pq.stopWG.Add(1)
 		go func() {
 			defer pq.stopWG.Done()
 			for {
-				select {
-				case req := <-pq.storage.get():
-					set.Callback(req)
-				case <-pq.stopChan:
+				req, found := pq.storage.get()
+				if !found {
 					return
 				}
+				set.Callback(req)
 			}
 		}()
 	}
 	return nil
 }
 
-// Produce adds an item to the queue and returns true if it was accepted
-func (pq *persistentQueue) Produce(item Request) bool {
-	err := pq.storage.put(item)
-	return err == nil
+// Offer inserts the specified element into this queue if it is possible to do so immediately
+// without violating capacity restrictions. If success returns no error.
+// It returns ErrQueueIsFull if no space is currently available.
+func (pq *persistentQueue) Offer(_ context.Context, item any) error {
+	return pq.storage.put(item)
 }
 
 // Shutdown stops accepting items, shuts down the queue and closes the persistent queue
 func (pq *persistentQueue) Shutdown(ctx context.Context) error {
-	close(pq.stopChan)
+	if pq.storage != nil {
+		close(pq.storage.stopChan)
+	}
 	pq.stopWG.Wait()
 	return stopStorage(pq.storage, ctx)
 }
@@ -103,30 +98,16 @@ func (pq *persistentQueue) Capacity() int {
 	return int(pq.capacity)
 }
 
-func (pq *persistentQueue) IsPersistent() bool {
-	return true
-}
-
 func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal component.DataType) (storage.Client, error) {
-	extension, err := getStorageExtension(host.GetExtensions(), storageID)
-	if err != nil {
-		return nil, err
+	ext, found := host.GetExtensions()[storageID]
+	if !found {
+		return nil, errNoStorageClient
 	}
 
-	client, err := extension.GetClient(ctx, component.KindExporter, ownerID, string(signal))
-	if err != nil {
-		return nil, err
-	}
-
-	return client, err
-}
-
-func getStorageExtension(extensions map[component.ID]component.Component, storageID component.ID) (storage.Extension, error) {
-	if ext, found := extensions[storageID]; found {
-		if storageExt, ok := ext.(storage.Extension); ok {
-			return storageExt, nil
-		}
+	storageExt, ok := ext.(storage.Extension)
+	if !ok {
 		return nil, errWrongExtensionType
 	}
-	return nil, errNoStorageClient
+
+	return storageExt.GetClient(ctx, component.KindExporter, ownerID, string(signal))
 }

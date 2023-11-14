@@ -34,17 +34,17 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
-	firstMockR := newErrorRequest(context.Background())
+	firstMockR := newErrorRequest()
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		require.NoError(t, be.send(firstMockR))
+		require.NoError(t, be.send(context.Background(), firstMockR))
 	})
 
 	// Enqueue another request to ensure when calling shutdown we drain the queue.
-	secondMockR := newMockRequest(context.Background(), 3, nil)
+	secondMockR := newMockRequest(3, nil)
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		require.NoError(t, be.send(secondMockR))
+		require.NoError(t, be.send(context.Background(), secondMockR))
 	})
 
 	require.LessOrEqual(t, 1, be.queueSender.(*queueSender).queue.Size())
@@ -71,10 +71,10 @@ func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	cancelFunc()
-	mockR := newMockRequest(ctx, 2, nil)
+	mockR := newMockRequest(2, nil)
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		require.NoError(t, be.send(mockR))
+		require.NoError(t, be.send(ctx, mockR))
 	})
 	ocs.awaitAsyncProcessing()
 
@@ -94,7 +94,7 @@ func TestQueuedRetry_DropOnFull(t *testing.T) {
 	t.Cleanup(func() {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
-	require.Error(t, be.send(newMockRequest(context.Background(), 2, nil)))
+	require.Error(t, be.send(context.Background(), newMockRequest(2, nil)))
 }
 
 func TestQueuedRetryHappyPath(t *testing.T) {
@@ -117,9 +117,9 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 	reqs := make([]*mockRequest, 0, 10)
 	for i := 0; i < wantRequests; i++ {
 		ocs.run(func() {
-			req := newMockRequest(context.Background(), 2, nil)
+			req := newMockRequest(2, nil)
 			reqs = append(reqs, req)
-			require.NoError(t, be.send(req))
+			require.NoError(t, be.send(context.Background(), req))
 		})
 	}
 
@@ -158,7 +158,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 
 	checkValueForGlobalManager(t, defaultExporterTags, int64(defaultQueueSize), "exporter/queue_capacity")
 	for i := 0; i < 7; i++ {
-		require.NoError(t, be.send(newErrorRequest(context.Background())))
+		require.NoError(t, be.send(context.Background(), newErrorRequest()))
 	}
 	checkValueForGlobalManager(t, defaultExporterTags, int64(7), "exporter/queue_size")
 
@@ -184,7 +184,7 @@ func TestQueuedRetry_QueueMetricsReportedUsingOTel(t *testing.T) {
 	require.NoError(t, tt.CheckExporterMetricGauge("exporter_queue_capacity", int64(defaultQueueSize)))
 
 	for i := 0; i < 7; i++ {
-		require.NoError(t, be.send(newErrorRequest(context.Background())))
+		require.NoError(t, be.send(context.Background(), newErrorRequest()))
 	}
 	require.NoError(t, tt.CheckExporterMetricGauge("exporter_queue_size", int64(7)))
 
@@ -240,10 +240,10 @@ func TestQueuedRetry_RequeuingEnabled(t *testing.T) {
 	})
 
 	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
-	mockR := newMockRequest(context.Background(), 1, traceErr)
+	mockR := newMockRequest(1, traceErr)
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
-		require.NoError(t, be.send(mockR))
+		require.NoError(t, be.send(context.Background(), mockR))
 		ocs.waitGroup.Add(1) // necessary because we'll call send() again after requeueing
 	})
 	ocs.awaitAsyncProcessing()
@@ -270,11 +270,11 @@ func TestQueuedRetry_RequeuingEnabledQueueFull(t *testing.T) {
 	})
 
 	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
-	mockR := newMockRequest(context.Background(), 1, traceErr)
+	mockR := newMockRequest(1, traceErr)
 
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
 	ocs.run(func() {
-		require.Error(t, be.retrySender.send(mockR), "sending_queue is full")
+		require.Error(t, be.retrySender.send(context.Background(), mockR), "sending_queue is full")
 	})
 	mockR.checkNumRequests(t, 1)
 }
@@ -283,14 +283,13 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 	qs := NewDefaultQueueSettings()
 	qs.Enabled = false
 	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, false, nil, nil, newObservabilityConsumerSender, WithQueue(qs))
-	require.Nil(t, be.queueSender.(*queueSender).queue)
+	require.IsType(t, &errorLoggingRequestSender{}, be.queueSender)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
-	mockR := newMockRequest(context.Background(), 2, errors.New("some error"))
+	mockR := newMockRequest(2, errors.New("some error"))
 	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
-		require.Error(t, be.send(mockR))
+		require.Error(t, be.send(context.Background(), mockR))
 	})
 	ocs.awaitAsyncProcessing()
 	mockR.checkNumRequests(t, 1)
@@ -368,7 +367,7 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	be.queueSender.(*queueSender).requeuingEnabled = true
 
 	// Invoke queuedRetrySender so the producer will put the item for consumer to poll
-	require.NoError(t, be.send(newErrorRequest(context.Background())))
+	require.NoError(t, be.send(context.Background(), newErrorRequest()))
 
 	// first wait for the item to be produced to the queue initially
 	assert.Eventually(t, func() bool {
