@@ -407,11 +407,11 @@ func tagsMatchLabelKeys(tags []tag.Tag, keys []metricdata.LabelKey, labels []met
 }
 
 type producerConsumerQueueWithCounter struct {
-	internal.Queue
+	internal.Queue[Request]
 	produceCounter *atomic.Uint32
 }
 
-func (pcq *producerConsumerQueueWithCounter) Offer(ctx context.Context, item any) error {
+func (pcq *producerConsumerQueueWithCounter) Offer(ctx context.Context, item Request) error {
 	pcq.produceCounter.Add(1)
 	return pcq.Queue.Offer(ctx, item)
 }

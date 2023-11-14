@@ -39,11 +39,11 @@ import (
 //	 write          read    x     └── currently dispatched item
 //	 index          index   x
 //	                        xxxx deleted
-type persistentContiguousStorage struct {
+type persistentContiguousStorage[T any] struct {
 	logger      *zap.Logger
 	client      storage.Client
-	unmarshaler QueueRequestUnmarshaler
-	marshaler   QueueRequestMarshaler
+	unmarshaler func(data []byte) (T, error)
+	marshaler   func(req T) ([]byte, error)
 
 	putChan  chan struct{}
 	stopChan chan struct{}
@@ -72,9 +72,9 @@ var (
 
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
 // queueName parameter must be a unique value that identifies the queue.
-func newPersistentContiguousStorage(
-	logger *zap.Logger, capacity uint64, marshaler QueueRequestMarshaler, unmarshaler QueueRequestUnmarshaler) *persistentContiguousStorage {
-	return &persistentContiguousStorage{
+func newPersistentContiguousStorage[T any](
+	logger *zap.Logger, capacity uint64, marshaler func(req T) ([]byte, error), unmarshaler func([]byte) (T, error)) *persistentContiguousStorage[T] {
+	return &persistentContiguousStorage[T]{
 		logger:      logger,
 		unmarshaler: unmarshaler,
 		marshaler:   marshaler,
@@ -85,7 +85,7 @@ func newPersistentContiguousStorage(
 
 }
 
-func (pcs *persistentContiguousStorage) start(ctx context.Context, client storage.Client) {
+func (pcs *persistentContiguousStorage[T]) start(ctx context.Context, client storage.Client) {
 	pcs.client = client
 	pcs.refClient = 1
 	pcs.initPersistentContiguousStorage(ctx)
@@ -99,7 +99,7 @@ func (pcs *persistentContiguousStorage) start(ctx context.Context, client storag
 	}
 }
 
-func (pcs *persistentContiguousStorage) initPersistentContiguousStorage(ctx context.Context) {
+func (pcs *persistentContiguousStorage[T]) initPersistentContiguousStorage(ctx context.Context) {
 	riOp := storage.GetOperation(readIndexKey)
 	wiOp := storage.GetOperation(writeIndexKey)
 
@@ -124,37 +124,37 @@ func (pcs *persistentContiguousStorage) initPersistentContiguousStorage(ctx cont
 }
 
 // get returns the request channel that all the requests will be send on
-func (pcs *persistentContiguousStorage) get() (QueueRequest, bool) {
+func (pcs *persistentContiguousStorage[T]) get() (QueueRequest[T], bool) {
 	for {
 		select {
 		case <-pcs.stopChan:
-			return QueueRequest{}, false
+			return QueueRequest[T]{}, false
 		case <-pcs.putChan:
-			req := pcs.getNextItem(context.Background())
-			if req.Request != nil {
+			req, found := pcs.getNextItem(context.Background())
+			if found {
 				return req, true
 			}
 		}
 	}
 }
 
-func (pcs *persistentContiguousStorage) size() uint64 {
+func (pcs *persistentContiguousStorage[T]) size() uint64 {
 	return pcs.writeIndex - pcs.readIndex
 }
 
 // Size returns the number of currently available items, which were not picked by consumers yet
-func (pcs *persistentContiguousStorage) Size() int {
+func (pcs *persistentContiguousStorage[T]) Size() int {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 	return int(pcs.size())
 }
 
 // Capacity returns the number of currently available items, which were not picked by consumers yet
-func (pcs *persistentContiguousStorage) Capacity() int {
+func (pcs *persistentContiguousStorage[T]) Capacity() int {
 	return int(pcs.capacity)
 }
 
-func (pcs *persistentContiguousStorage) Shutdown(ctx context.Context) error {
+func (pcs *persistentContiguousStorage[T]) Shutdown(ctx context.Context) error {
 	close(pcs.stopChan)
 	// Hold the lock only for `refClient`.
 	pcs.mu.Lock()
@@ -164,7 +164,7 @@ func (pcs *persistentContiguousStorage) Shutdown(ctx context.Context) error {
 
 // unrefClient unrefs the client, and closes if no more references. Callers MUST hold the mutex.
 // This is needed because consumers of the queue may still process the requests while the queue is shutting down or immediately after.
-func (pcs *persistentContiguousStorage) unrefClient(ctx context.Context) error {
+func (pcs *persistentContiguousStorage[T]) unrefClient(ctx context.Context) error {
 	pcs.refClient--
 	if pcs.refClient == 0 {
 		return pcs.client.Close(ctx)
@@ -175,19 +175,14 @@ func (pcs *persistentContiguousStorage) unrefClient(ctx context.Context) error {
 // Offer inserts the specified element into this queue if it is possible to do so immediately
 // without violating capacity restrictions. If success returns no error.
 // It returns ErrQueueIsFull if no space is currently available.
-func (pcs *persistentContiguousStorage) Offer(ctx context.Context, req any) error {
-	// Nil requests are ignored
-	if req == nil {
-		return nil
-	}
-
+func (pcs *persistentContiguousStorage[T]) Offer(ctx context.Context, req T) error {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 	return pcs.putInternal(ctx, req)
 }
 
 // putInternal is the internal version that requires caller to hold the mutex lock.
-func (pcs *persistentContiguousStorage) putInternal(ctx context.Context, req any) error {
+func (pcs *persistentContiguousStorage[T]) putInternal(ctx context.Context, req T) error {
 	if pcs.size() >= pcs.capacity {
 		pcs.logger.Warn("Maximum queue capacity reached")
 		return ErrQueueIsFull
@@ -211,17 +206,17 @@ func (pcs *persistentContiguousStorage) putInternal(ctx context.Context, req any
 }
 
 // getNextItem pulls the next available item from the persistent storage; if none is found, returns (nil, false)
-func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) QueueRequest {
+func (pcs *persistentContiguousStorage[T]) getNextItem(ctx context.Context) (QueueRequest[T], bool) {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 
 	// If called in the same time with Shutdown, make sure client is not closed.
 	if pcs.refClient <= 0 {
-		return QueueRequest{}
+		return QueueRequest[T]{}, false
 	}
 
 	if pcs.readIndex == pcs.writeIndex {
-		return QueueRequest{}
+		return QueueRequest[T]{}, false
 	}
 	index := pcs.readIndex
 	// Increase here, so even if errors happen below, it always iterates
@@ -234,21 +229,22 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) QueueRe
 		storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pcs.currentlyDispatchedItems)),
 		getOp)
 
-	req := newQueueRequest(context.Background(), nil)
+	var request T
 	if err == nil {
-		req.Request, err = pcs.unmarshaler(getOp.Value)
+		request, err = pcs.unmarshaler(getOp.Value)
 	}
 
-	if err != nil || req.Request == nil {
+	if err != nil {
 		pcs.logger.Debug("Failed to dispatch item", zap.Error(err))
 		// We need to make sure that currently dispatched items list is cleaned
 		if err = pcs.itemDispatchingFinish(ctx, index); err != nil {
 			pcs.logger.Error("Error deleting item from queue", zap.Error(err))
 		}
 
-		return QueueRequest{}
+		return QueueRequest[T]{}, false
 	}
 
+	req := newQueueRequest[T](context.Background(), request)
 	// If all went well so far, cleanup will be handled by callback
 	pcs.refClient++
 	req.onProcessingFinishedFunc = func() {
@@ -261,12 +257,12 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) QueueRe
 			pcs.logger.Error("Error closing the storage client", zap.Error(err))
 		}
 	}
-	return req
+	return req, true
 }
 
 // retrieveAndEnqueueNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
 // and moves the items at the back of the queue.
-func (pcs *persistentContiguousStorage) retrieveAndEnqueueNotDispatchedReqs(ctx context.Context) {
+func (pcs *persistentContiguousStorage[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Context) {
 	var dispatchedItems []uint64
 
 	pcs.mu.Lock()
@@ -318,7 +314,7 @@ func (pcs *persistentContiguousStorage) retrieveAndEnqueueNotDispatchedReqs(ctx 
 			pcs.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
 			continue
 		}
-		if req == nil || pcs.putInternal(ctx, req) != nil {
+		if pcs.putInternal(ctx, req) != nil {
 			errCount++
 		}
 	}
@@ -333,7 +329,7 @@ func (pcs *persistentContiguousStorage) retrieveAndEnqueueNotDispatchedReqs(ctx 
 }
 
 // itemDispatchingFinish removes the item from the list of currently dispatched items and deletes it from the persistent queue
-func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Context, index uint64) error {
+func (pcs *persistentContiguousStorage[T]) itemDispatchingFinish(ctx context.Context, index uint64) error {
 	lenCDI := len(pcs.currentlyDispatchedItems)
 	for i := 0; i < lenCDI; i++ {
 		if pcs.currentlyDispatchedItems[i] == index {

@@ -75,7 +75,7 @@ type queueSender struct {
 	baseRequestSender
 	fullName         string
 	signal           component.DataType
-	queue            internal.Queue
+	queue            internal.Queue[Request]
 	traceAttribute   attribute.KeyValue
 	logger           *zap.Logger
 	meter            otelmetric.Meter
@@ -89,12 +89,12 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 	marshaler RequestMarshaler, unmarshaler RequestUnmarshaler) *queueSender {
 
 	isPersistent := config.StorageID != nil
-	var queue internal.Queue
+	var queue internal.Queue[Request]
 	if isPersistent {
-		queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID,
-			queueRequestMarshaler(marshaler), queueRequestUnmarshaler(unmarshaler), set)
+		queue = internal.NewPersistentQueue[Request](
+			config.QueueSize, config.NumConsumers, *config.StorageID, marshaler, unmarshaler, set)
 	} else {
-		queue = internal.NewBoundedMemoryQueue(config.QueueSize, config.NumConsumers)
+		queue = internal.NewBoundedMemoryQueue[Request](config.QueueSize, config.NumConsumers)
 	}
 	return &queueSender{
 		fullName:       set.ID.String(),
@@ -135,10 +135,10 @@ func (qs *queueSender) onTemporaryFailure(ctx context.Context, req Request, err 
 
 // Start is invoked during service startup.
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
-	err := qs.queue.Start(ctx, host, internal.QueueSettings{
+	err := qs.queue.Start(ctx, host, internal.QueueSettings[Request]{
 		DataType: qs.signal,
-		Callback: func(qr internal.QueueRequest) {
-			_ = qs.nextSender.send(qr.Context, qr.Request.(Request))
+		Callback: func(qr internal.QueueRequest[Request]) {
+			_ = qs.nextSender.send(qr.Context, qr.Request)
 			// TODO: Update OnProcessingFinished to accept error and remove the retry->queue sender callback.
 			qr.OnProcessingFinished()
 		},
@@ -246,16 +246,4 @@ func (noCancellationContext) Done() <-chan struct{} {
 
 func (noCancellationContext) Err() error {
 	return nil
-}
-
-func queueRequestMarshaler(marshaler RequestMarshaler) internal.QueueRequestMarshaler {
-	return func(req any) ([]byte, error) {
-		return marshaler(req.(Request))
-	}
-}
-
-func queueRequestUnmarshaler(unmarshaler RequestUnmarshaler) internal.QueueRequestUnmarshaler {
-	return func(data []byte) (any, error) {
-		return unmarshaler(data)
-	}
 }

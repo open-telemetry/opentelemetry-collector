@@ -33,9 +33,8 @@ func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 // createTestQueue creates and starts a fake queue with the given capacity and number of consumers.
-func createTestQueue(t *testing.T, capacity, numConsumers int, set QueueSettings) Queue {
-	pq := NewPersistentQueue(capacity, numConsumers, component.ID{}, newFakeTracesRequestMarshalerFunc(),
-		newFakeTracesRequestUnmarshalerFunc(), exportertest.NewNopCreateSettings())
+func createTestQueue(t *testing.T, capacity, numConsumers int, set QueueSettings[ptrace.Traces]) Queue[ptrace.Traces] {
+	pq := NewPersistentQueue[ptrace.Traces](capacity, numConsumers, component.ID{}, marshaler.MarshalTraces, unmarshaler.UnmarshalTraces, exportertest.NewNopCreateSettings())
 	host := &mockHost{ext: map[component.ID]component.Component{
 		{}: NewMockStorageExtension(nil),
 	}}
@@ -46,21 +45,21 @@ func createTestQueue(t *testing.T, capacity, numConsumers int, set QueueSettings
 func TestPersistentQueue_FullCapacity(t *testing.T) {
 	start := make(chan struct{})
 	done := make(chan struct{})
-	pq := createTestQueue(t, 5, 1, newQueueSettings(func(item QueueRequest) {
+	pq := createTestQueue(t, 5, 1, newQueueSettings(func(item QueueRequest[ptrace.Traces]) {
 		start <- struct{}{}
 		<-done
 		item.OnProcessingFinished()
 	}))
 	assert.Equal(t, 0, pq.Size())
 
-	req := newFakeTracesRequest(newTraces(1, 10))
+	req := newTraces(1, 10)
 
 	// First request is picked by the consumer. Wait until the consumer is blocked on done.
 	assert.NoError(t, pq.Offer(context.Background(), req))
 	<-start
 
 	for i := 0; i < 10; i++ {
-		result := pq.Offer(context.Background(), req)
+		result := pq.Offer(context.Background(), newTraces(1, 10))
 		if i < 5 {
 			assert.NoError(t, result)
 		} else {
@@ -73,8 +72,8 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 }
 
 func TestPersistentQueueShutdown(t *testing.T) {
-	pq := createTestQueue(t, 1001, 100, newNopQueueSettings())
-	req := newFakeTracesRequest(newTraces(1, 10))
+	pq := createTestQueue(t, 1001, 100, newNopQueueSettings[ptrace.Traces]())
+	req := newTraces(1, 10)
 
 	for i := 0; i < 1000; i++ {
 		assert.NoError(t, pq.Offer(context.Background(), req))
@@ -111,10 +110,10 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(fmt.Sprintf("#messages: %d #consumers: %d", c.numMessagesProduced, c.numConsumers), func(t *testing.T) {
-			req := newFakeTracesRequest(newTraces(1, 10))
+			req := newTraces(1, 10)
 
 			numMessagesConsumed := &atomic.Int32{}
-			pq := createTestQueue(t, 1000, c.numConsumers, newQueueSettings(func(item QueueRequest) {
+			pq := createTestQueue(t, 1000, c.numConsumers, newQueueSettings(func(item QueueRequest[ptrace.Traces]) {
 				defer item.OnProcessingFinished()
 				numMessagesConsumed.Add(int32(1))
 			}))
@@ -245,8 +244,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 }
 
 func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
-	pq := NewPersistentQueue(1, 1, component.ID{}, newFakeTracesRequestMarshalerFunc(),
-		newFakeTracesRequestUnmarshalerFunc(), exportertest.NewNopCreateSettings())
+	pq := NewPersistentQueue[ptrace.Traces](1, 1, component.ID{}, marshaler.MarshalTraces, unmarshaler.UnmarshalTraces, exportertest.NewNopCreateSettings())
 	// verify that stopping a un-start/started w/error queue does not panic
 	assert.NoError(t, pq.Shutdown(context.Background()))
 }
