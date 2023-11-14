@@ -31,7 +31,7 @@ jobs:
           gh release create ${{ github.ref_name }} -t ${{ github.ref_name }} -n "### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/${{ github.ref_name }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/github-script@v6
+      - uses: actions/github-script@v7
         with:
           script: |
             const milestones = await github.rest.issues.listMilestones({
