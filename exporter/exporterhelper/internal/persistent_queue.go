@@ -19,8 +19,8 @@ var (
 )
 
 // persistentQueue holds the queue backed by file storage
-type persistentQueue struct {
-	*persistentContiguousStorage
+type persistentQueue[T any] struct {
+	*persistentContiguousStorage[T]
 	stopWG       sync.WaitGroup
 	set          exporter.CreateSettings
 	storageID    component.ID
@@ -28,9 +28,8 @@ type persistentQueue struct {
 }
 
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, marshaler QueueRequestMarshaler,
-	unmarshaler QueueRequestUnmarshaler, set exporter.CreateSettings) Queue {
-	return &persistentQueue{
+func NewPersistentQueue[T any](capacity int, numConsumers int, storageID component.ID, marshaler func(req T) ([]byte, error), unmarshaler func([]byte) (T, error), set exporter.CreateSettings) Queue[T] {
+	return &persistentQueue[T]{
 		persistentContiguousStorage: newPersistentContiguousStorage(set.Logger, uint64(capacity), marshaler, unmarshaler),
 		numConsumers:                numConsumers,
 		set:                         set,
@@ -39,7 +38,7 @@ func NewPersistentQueue(capacity int, numConsumers int, storageID component.ID, 
 }
 
 // Start starts the persistentQueue with the given number of consumers.
-func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set QueueSettings) error {
+func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host, set QueueSettings[T]) error {
 	storageClient, err := toStorageClient(ctx, pq.storageID, host, pq.set.ID, set.DataType)
 	if err != nil {
 		return err
@@ -62,7 +61,7 @@ func (pq *persistentQueue) Start(ctx context.Context, host component.Host, set Q
 }
 
 // Shutdown stops accepting items, shuts down the queue and closes the persistent queue
-func (pq *persistentQueue) Shutdown(ctx context.Context) error {
+func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
 	err := pq.persistentContiguousStorage.Shutdown(ctx)
 	pq.stopWG.Wait()
 	return err

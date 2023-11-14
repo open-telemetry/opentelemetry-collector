@@ -20,64 +20,29 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+var (
+	marshaler   = ptrace.ProtoMarshaler{}
+	unmarshaler = ptrace.ProtoUnmarshaler{}
+)
+
 func createTestClient(t testing.TB, extension storage.Extension) storage.Client {
 	client, err := extension.GetClient(context.Background(), component.KindReceiver, component.ID{}, "")
 	require.NoError(t, err)
 	return client
 }
 
-func createTestPersistentStorageWithCapacity(client storage.Client, capacity uint64) *persistentContiguousStorage {
-	pcs := newPersistentContiguousStorage(zap.NewNop(), capacity,
-		newFakeTracesRequestMarshalerFunc(), newFakeTracesRequestUnmarshalerFunc())
+func createTestPersistentStorageWithCapacity(client storage.Client, capacity uint64) *persistentContiguousStorage[ptrace.Traces] {
+	pcs := newPersistentContiguousStorage(zap.NewNop(), capacity, marshaler.MarshalTraces, unmarshaler.UnmarshalTraces)
 	pcs.start(context.Background(), client)
 	return pcs
 }
 
-func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage {
+func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage[ptrace.Traces] {
 	return createTestPersistentStorageWithCapacity(client, 1000)
 }
 
-type fakeTracesRequest struct {
-	td                         ptrace.Traces
-	processingFinishedCallback func()
-}
-
-func newFakeTracesRequest(td ptrace.Traces) *fakeTracesRequest {
-	return &fakeTracesRequest{
-		td: td,
-	}
-}
-
-func (fd *fakeTracesRequest) OnProcessingFinished() {
-	if fd.processingFinishedCallback != nil {
-		fd.processingFinishedCallback()
-	}
-}
-
-func (fd *fakeTracesRequest) SetOnProcessingFinished(callback func()) {
-	fd.processingFinishedCallback = callback
-}
-
-func newFakeTracesRequestUnmarshalerFunc() QueueRequestUnmarshaler {
-	return func(bytes []byte) (any, error) {
-		unmarshaler := ptrace.ProtoUnmarshaler{}
-		traces, err := unmarshaler.UnmarshalTraces(bytes)
-		if err != nil {
-			return nil, err
-		}
-		return newFakeTracesRequest(traces), nil
-	}
-}
-
-func newFakeTracesRequestMarshalerFunc() QueueRequestMarshaler {
-	return func(req any) ([]byte, error) {
-		marshaler := ptrace.ProtoMarshaler{}
-		return marshaler.MarshalTraces(req.(*fakeTracesRequest).td)
-	}
-}
-
 func TestPersistentStorage_CorruptedData(t *testing.T) {
-	req := newFakeTracesRequest(newTraces(5, 10))
+	req := newTraces(5, 10)
 
 	cases := []struct {
 		name                               string
@@ -176,7 +141,7 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 }
 
 func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
-	req := newFakeTracesRequest(newTraces(5, 10))
+	req := newTraces(5, 10)
 
 	ext := NewMockStorageExtension(nil)
 	client := createTestClient(t, ext)
@@ -192,7 +157,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	// Takes index 0 in process.
 	readReq, found := ps.get()
 	require.True(t, found)
-	assert.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
+	assert.Equal(t, req, readReq.Request)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
 	// This takes item 1 to process.
@@ -234,8 +199,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 // this test attempts to check if all the invariants are kept if the queue is recreated while
 // close to full and with some items dispatched
 func TestPersistentStorage_StartWithNonDispatched(t *testing.T) {
-	traces := newTraces(5, 10)
-	req := newFakeTracesRequest(traces)
+	req := newTraces(5, 10)
 
 	ext := NewMockStorageExtension(nil)
 	client := createTestClient(t, ext)
@@ -261,7 +225,7 @@ func TestPersistentStorage_StartWithNonDispatched(t *testing.T) {
 }
 
 func TestPersistentStorage_PutCloseReadClose(t *testing.T) {
-	req := newFakeTracesRequest(newTraces(5, 10))
+	req := newTraces(5, 10)
 	ext := NewMockStorageExtension(nil)
 	ps := createTestPersistentStorage(createTestClient(t, ext))
 	assert.Equal(t, 0, ps.Size())
@@ -280,22 +244,13 @@ func TestPersistentStorage_PutCloseReadClose(t *testing.T) {
 	// Lets read both of the elements we put
 	readReq, found := newPs.get()
 	require.True(t, found)
-	require.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
+	require.Equal(t, req, readReq.Request)
 
 	readReq, found = newPs.get()
 	require.True(t, found)
-	require.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
+	require.Equal(t, req, readReq.Request)
 	require.Equal(t, 0, newPs.Size())
 	assert.NoError(t, newPs.Shutdown(context.Background()))
-}
-
-func TestPersistentStorage_EmptyRequest(t *testing.T) {
-	ext := NewMockStorageExtension(nil)
-	ps := createTestPersistentStorage(createTestClient(t, ext))
-	require.Equal(t, 0, ps.Size())
-	require.NoError(t, ps.Offer(context.Background(), nil))
-	require.Equal(t, 0, ps.Size())
-	require.NoError(t, ext.Shutdown(context.Background()))
 }
 
 func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
@@ -323,7 +278,7 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 			client := createTestClient(b, ext)
 			ps := createTestPersistentStorageWithCapacity(client, 10000000)
 
-			req := newFakeTracesRequest(newTraces(c.numTraces, c.numSpansPerTrace))
+			req := newTraces(c.numTraces, c.numSpansPerTrace)
 
 			bb.ResetTimer()
 
@@ -406,7 +361,7 @@ func TestPersistentStorage_ShutdownWhileConsuming(t *testing.T) {
 	assert.Equal(t, 0, ps.Size())
 	assert.False(t, client.(*mockStorageClient).isClosed())
 
-	assert.NoError(t, ps.Offer(context.Background(), newFakeTracesRequest(newTraces(5, 10))))
+	assert.NoError(t, ps.Offer(context.Background(), newTraces(5, 10)))
 
 	req, ok := ps.get()
 	require.True(t, ok)
@@ -418,8 +373,8 @@ func TestPersistentStorage_ShutdownWhileConsuming(t *testing.T) {
 }
 
 func TestPersistentStorage_StorageFull(t *testing.T) {
-	req := newFakeTracesRequest(newTraces(5, 10))
-	marshaled, err := newFakeTracesRequestMarshalerFunc()(req)
+	req := newTraces(5, 10)
+	marshaled, err := marshaler.MarshalTraces(req)
 	require.NoError(t, err)
 	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
 	freeSpaceInBytes := 1
@@ -509,7 +464,7 @@ func TestPersistentStorage_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 	}
 }
 
-func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguousStorage, compare []uint64) {
+func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguousStorage[ptrace.Traces], compare []uint64) {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 	assert.ElementsMatch(t, compare, pcs.currentlyDispatchedItems)
