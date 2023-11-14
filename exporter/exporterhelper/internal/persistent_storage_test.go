@@ -145,7 +145,7 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 			assert.Equal(t, 3, ps.Size())
 			_, _ = ps.get()
 			assert.Equal(t, 2, ps.Size())
-			assert.NoError(t, ps.stop(context.Background()))
+			assert.NoError(t, ps.Shutdown(context.Background()))
 
 			// ... so now we can corrupt data (in several ways)
 			if c.corruptAllData || c.corruptSomeData {
@@ -253,7 +253,7 @@ func TestPersistentStorage_StartWithNonDispatched(t *testing.T) {
 	require.NoError(t, ps.Offer(context.Background(), req))
 
 	require.Equal(t, 5, ps.Size())
-	assert.NoError(t, ps.stop(context.Background()))
+	assert.NoError(t, ps.Shutdown(context.Background()))
 
 	// Reload
 	newPs := createTestPersistentStorageWithCapacity(client, 5)
@@ -272,7 +272,7 @@ func TestPersistentStorage_PutCloseReadClose(t *testing.T) {
 	assert.Equal(t, 2, ps.Size())
 	// TODO: Remove this, after the initialization writes the readIndex.
 	_, _ = ps.get()
-	assert.NoError(t, ps.stop(context.Background()))
+	assert.NoError(t, ps.Shutdown(context.Background()))
 
 	newPs := createTestPersistentStorage(createTestClient(t, ext))
 	require.Equal(t, 2, newPs.Size())
@@ -286,7 +286,7 @@ func TestPersistentStorage_PutCloseReadClose(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
 	require.Equal(t, 0, newPs.Size())
-	assert.NoError(t, ps.stop(context.Background()))
+	assert.NoError(t, newPs.Shutdown(context.Background()))
 }
 
 func TestPersistentStorage_EmptyRequest(t *testing.T) {
@@ -399,16 +399,22 @@ func TestItemIndexArrayMarshaling(t *testing.T) {
 	}
 }
 
-func TestPersistentStorage_StopShouldCloseClient(t *testing.T) {
-	ext := NewMockStorageExtension(nil)
-	client := createTestClient(t, ext)
+func TestPersistentStorage_ShutdownWhileConsuming(t *testing.T) {
+	client := createTestClient(t, NewMockStorageExtension(nil))
 	ps := createTestPersistentStorage(client)
 
-	assert.NoError(t, ps.stop(context.Background()))
+	assert.Equal(t, 0, ps.Size())
+	assert.False(t, client.(*mockStorageClient).isClosed())
 
-	castedClient, ok := client.(*mockStorageClient)
-	require.True(t, ok, "expected client to be mockStorageClient")
-	require.Equal(t, uint64(1), castedClient.getCloseCount())
+	assert.NoError(t, ps.Offer(context.Background(), newFakeTracesRequest(newTraces(5, 10))))
+
+	req, ok := ps.get()
+	require.True(t, ok)
+	assert.False(t, client.(*mockStorageClient).isClosed())
+	assert.NoError(t, ps.Shutdown(context.Background()))
+	assert.False(t, client.(*mockStorageClient).isClosed())
+	req.OnProcessingFinished()
+	assert.True(t, client.(*mockStorageClient).isClosed())
 }
 
 func TestPersistentStorage_StorageFull(t *testing.T) {
