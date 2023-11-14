@@ -62,11 +62,11 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 	req := newFakeTracesRequest(newTraces(1, 10))
 
 	for i := 0; i < 10; i++ {
-		result := pq.Produce(context.Background(), req)
+		result := pq.Offer(context.Background(), req)
 		if i < 5 {
-			assert.True(t, result)
+			assert.NoError(t, result)
 		} else {
-			assert.False(t, result)
+			assert.ErrorIs(t, result, ErrQueueIsFull)
 		}
 	}
 	assert.Equal(t, 5, pq.Size())
@@ -78,7 +78,7 @@ func TestPersistentQueueShutdown(t *testing.T) {
 	req := newFakeTracesRequest(newTraces(1, 10))
 
 	for i := 0; i < 1000; i++ {
-		pq.Produce(context.Background(), req)
+		assert.NoError(t, pq.Offer(context.Background(), req))
 	}
 	assert.NoError(t, pq.Shutdown(context.Background()))
 }
@@ -101,7 +101,7 @@ func TestPersistentQueue_Close_StorageCloseAfterConsumers(t *testing.T) {
 	}
 
 	for i := 0; i < 1000; i++ {
-		pq.Produce(context.Background(), req)
+		assert.NoError(t, pq.Offer(context.Background(), req))
 	}
 	assert.NoError(t, pq.Shutdown(context.Background()))
 	assert.True(t, stopStorageTime.After(lastRequestProcessedTime), "storage stop time should be after last request processed time")
@@ -147,7 +147,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			})
 
 			for i := 0; i < c.numMessagesProduced; i++ {
-				pq.Produce(context.Background(), req)
+				assert.NoError(t, pq.Offer(context.Background(), req))
 			}
 
 			assert.Eventually(t, func() bool {

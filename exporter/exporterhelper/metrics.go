@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -95,7 +96,7 @@ func NewMetricsExporter(
 	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		req := newMetricsRequest(md, pusher)
 		serr := be.send(ctx, req)
-		if errors.Is(serr, errSendingQueueIsFull) {
+		if errors.Is(serr, internal.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
 		}
 		return serr
@@ -146,7 +147,7 @@ func NewMetricsRequestExporter(
 			return consumererror.NewPermanent(cErr)
 		}
 		sErr := be.send(ctx, req)
-		if errors.Is(sErr, errSendingQueueIsFull) {
+		if errors.Is(sErr, internal.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
 		}
 		return sErr
