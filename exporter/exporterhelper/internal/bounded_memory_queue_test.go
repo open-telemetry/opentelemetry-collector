@@ -21,10 +21,19 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-func newNopQueueSettings(callback func(any)) QueueSettings {
+func newNopQueueSettings() QueueSettings {
 	return QueueSettings{
 		DataType: component.DataTypeMetrics,
-		Callback: func(item QueueRequest) { callback(item.Request) },
+		Callback: func(request QueueRequest) {
+			request.OnProcessingFinished()
+		},
+	}
+}
+
+func newQueueSettings(callback func(QueueRequest)) QueueSettings {
+	return QueueSettings{
+		DataType: component.DataTypeMetrics,
+		Callback: callback,
 	}
 }
 
@@ -47,8 +56,9 @@ func TestBoundedQueue(t *testing.T) {
 	startLock.Lock() // block consumers
 	consumerState := newConsumerState(t)
 
-	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item any) {
-		consumerState.record(item.(stringRequest).str)
+	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newQueueSettings(func(item QueueRequest) {
+		defer item.OnProcessingFinished()
+		consumerState.record(item.Request.(stringRequest).str)
 
 		// block further processing until startLock is released
 		startLock.Lock()
@@ -108,8 +118,9 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 
 	consumerState := newConsumerState(t)
 
-	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item any) {
-		consumerState.record(item.(stringRequest).str)
+	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost(), newQueueSettings(func(item QueueRequest) {
+		defer item.OnProcessingFinished()
+		consumerState.record(item.Request.(stringRequest).str)
 		time.Sleep(1 * time.Second)
 	})))
 
@@ -188,7 +199,8 @@ func queueUsage(b *testing.B, capacity int, numConsumers int, numberOfItems int)
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		q := NewBoundedMemoryQueue(capacity, numConsumers)
-		err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item any) {
+		err := q.Start(context.Background(), componenttest.NewNopHost(), newQueueSettings(func(item QueueRequest) {
+			defer item.OnProcessingFinished()
 			time.Sleep(1 * time.Millisecond)
 		}))
 		require.NoError(b, err)
@@ -247,7 +259,7 @@ func (s *consumerState) assertConsumed(expected map[string]bool) {
 func TestZeroSizeWithConsumers(t *testing.T) {
 	q := NewBoundedMemoryQueue(0, 1)
 
-	err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item any) {}))
+	err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings())
 	assert.NoError(t, err)
 
 	assert.NoError(t, q.Offer(context.Background(), newStringRequest("a"))) // in process
@@ -258,7 +270,7 @@ func TestZeroSizeWithConsumers(t *testing.T) {
 func TestZeroSizeNoConsumers(t *testing.T) {
 	q := NewBoundedMemoryQueue(0, 0)
 
-	err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings(func(item any) {}))
+	err := q.Start(context.Background(), componenttest.NewNopHost(), newNopQueueSettings())
 	assert.NoError(t, err)
 
 	assert.ErrorIs(t, q.Offer(context.Background(), newStringRequest("a")), ErrQueueIsFull) // in process
