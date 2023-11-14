@@ -357,14 +357,14 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newNoopObsrepSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
-	require.NoError(t, be.Start(context.Background(), &mockHost{}))
-
 	// wraps original queue so we can count operations
 	be.queueSender.(*queueSender).queue = &producerConsumerQueueWithCounter{
 		Queue:          be.queueSender.(*queueSender).queue,
 		produceCounter: produceCounter,
 	}
 	be.queueSender.(*queueSender).requeuingEnabled = true
+
+	require.NoError(t, be.Start(context.Background(), &mockHost{}))
 
 	// Invoke queuedRetrySender so the producer will put the item for consumer to poll
 	require.NoError(t, be.send(context.Background(), newErrorRequest()))
