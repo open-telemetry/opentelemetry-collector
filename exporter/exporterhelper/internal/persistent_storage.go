@@ -204,17 +204,20 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) QueueRe
 	pcs.readIndex++
 	pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
 
-	pcs.updateReadIndex(ctx)
-	pcs.itemDispatchingStart(ctx, index)
+	pcs.currentlyDispatchedItems = append(pcs.currentlyDispatchedItems, index)
+	getOp := storage.GetOperation(getItemKey(index))
+	err := pcs.client.Batch(ctx,
+		storage.SetOperation(readIndexKey, itemIndexToBytes(pcs.readIndex)),
+		storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pcs.currentlyDispatchedItems)),
+		getOp)
 
 	req := newQueueRequest(context.Background(), nil)
-	itemKey := getItemKey(index)
-	buf, err := pcs.client.Get(ctx, itemKey)
 	if err == nil {
-		req.Request, err = pcs.unmarshaler(buf)
+		req.Request, err = pcs.unmarshaler(getOp.Value)
 	}
 
 	if err != nil || req.Request == nil {
+		pcs.logger.Debug("Failed to dispatch item", zap.Error(err))
 		// We need to make sure that currently dispatched items list is cleaned
 		if err := pcs.itemDispatchingFinish(ctx, index); err != nil {
 			pcs.logger.Error("Error deleting item from queue", zap.Error(err))
@@ -302,15 +305,6 @@ func (pcs *persistentContiguousStorage) retrieveAndEnqueueNotDispatchedReqs(ctx 
 	}
 }
 
-// itemDispatchingStart appends the item to the list of currently dispatched items
-func (pcs *persistentContiguousStorage) itemDispatchingStart(ctx context.Context, index itemIndex) {
-	pcs.currentlyDispatchedItems = append(pcs.currentlyDispatchedItems, index)
-	err := pcs.client.Set(ctx, currentlyDispatchedItemsKey, itemIndexArrayToBytes(pcs.currentlyDispatchedItems))
-	if err != nil {
-		pcs.logger.Debug("Failed updating currently dispatched items", zap.Error(err))
-	}
-}
-
 // itemDispatchingFinish removes the item from the list of currently dispatched items and deletes it from the persistent queue
 func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Context, index itemIndex) error {
 	lenCDI := len(pcs.currentlyDispatchedItems)
@@ -344,13 +338,6 @@ func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Contex
 	}
 
 	return nil
-}
-
-func (pcs *persistentContiguousStorage) updateReadIndex(ctx context.Context) {
-	err := pcs.client.Set(ctx, readIndexKey, itemIndexToBytes(pcs.readIndex))
-	if err != nil {
-		pcs.logger.Debug("Failed updating read index", zap.Error(err))
-	}
 }
 
 func getItemKey(index itemIndex) string {
