@@ -7,6 +7,30 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.0.0-rcv0018/v0.89.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: CollectorSettings.Factories now expects: `func() (Factories, error)` (#8478)
+- `exporter/exporterhelper`: The experimental Request API is updated. (#7874)
+  - `Request` interface now includes ItemsCount() method.
+  - `RequestItemsCounter` is removed.
+  - The following interfaces are added:
+    - Added an optional interface for handling errors that occur during request processing `RequestErrorHandler`.
+    - Added a function to unmarshal bytes into a Request `RequestUnmarshaler`.
+    - Added a function to marshal a Request into bytes `RequestMarshaler`
+  
+
+### 🚩 Deprecations 🚩
+
+- `featuregate`: Deprecate `featuregate.NewFlag` in favor of `featuregate.Registry`'s `RegisterFlags` method (#8727)
+
+### 💡 Enhancements 💡
+
+- `featuregate`: Add validation for feature gates ID, URL and versions. (#8766)
+  Feature gates IDs are now explicitly restricted to ASCII alphanumerics and dots.
+  
+
 ## v1.0.0-rcv0017/v0.88.0
 
 ### 💡 Enhancements 💡
