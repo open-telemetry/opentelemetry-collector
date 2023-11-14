@@ -64,7 +64,6 @@ type itemIndex uint64
 
 const (
 	zapKey           = "key"
-	zapQueueNameKey  = "queueName"
 	zapErrorCount    = "errorCount"
 	zapNumberOfItems = "numberOfItems"
 
@@ -80,10 +79,10 @@ var (
 
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
 // queueName parameter must be a unique value that identifies the queue.
-func newPersistentContiguousStorage(ctx context.Context, queueName string, client storage.Client,
+func newPersistentContiguousStorage(ctx context.Context, client storage.Client,
 	logger *zap.Logger, capacity uint64, marshaler QueueRequestMarshaler, unmarshaler QueueRequestUnmarshaler) *persistentContiguousStorage {
 	pcs := &persistentContiguousStorage{
-		logger:      logger.With(zap.String(zapQueueNameKey, queueName)),
+		logger:      logger,
 		client:      client,
 		unmarshaler: unmarshaler,
 		marshaler:   marshaler,
