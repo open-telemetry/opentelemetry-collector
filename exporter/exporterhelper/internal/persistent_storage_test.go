@@ -187,28 +187,28 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{})
+	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{})
 
 	// Takes index 0 in process.
 	readReq, found := ps.get()
 	require.True(t, found)
 	assert.Equal(t, req.td, readReq.Request.(*fakeTracesRequest).td)
-	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0})
+	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
 	// This takes item 1 to process.
 	secondReadReq, found := ps.get()
 	require.True(t, found)
-	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0, 1})
+	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0, 1})
 
 	// Lets mark item 1 as finished, it will remove it from the currently dispatched items list.
 	secondReadReq.OnProcessingFinished()
-	requireCurrentlyDispatchedItemsEqual(t, ps, []itemIndex{0})
+	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
 	// Reload the storage. Since items 0 was not finished, this should be re-enqueued at the end.
 	// The queue should be essentially {3,4,0,2}.
 	newPs := createTestPersistentStorage(client)
 	assert.Equal(t, 4, newPs.Size())
-	requireCurrentlyDispatchedItemsEqual(t, newPs, []itemIndex{})
+	requireCurrentlyDispatchedItemsEqual(t, newPs, []uint64{})
 
 	// We should be able to pull all remaining items now
 	for i := 0; i < 4; i++ {
@@ -218,14 +218,14 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	}
 
 	// The queue should be now empty
-	requireCurrentlyDispatchedItemsEqual(t, newPs, []itemIndex{})
+	requireCurrentlyDispatchedItemsEqual(t, newPs, []uint64{})
 	assert.Equal(t, 0, newPs.Size())
 	// The writeIndex should be now set accordingly
 	require.EqualValues(t, 6, newPs.writeIndex)
 
 	// There should be no items left in the storage
 	for i := 0; i < int(newPs.writeIndex); i++ {
-		bb, err := client.Get(context.Background(), getItemKey(itemIndex(i)))
+		bb, err := client.Get(context.Background(), getItemKey(uint64(i)))
 		require.NoError(t, err)
 		require.Nil(t, bb)
 	}
@@ -343,8 +343,8 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 
 func TestItemIndexMarshaling(t *testing.T) {
 	cases := []struct {
-		in  itemIndex
-		out itemIndex
+		in  uint64
+		out uint64
 	}{
 		{
 			in:  0,
@@ -372,20 +372,20 @@ func TestItemIndexMarshaling(t *testing.T) {
 
 func TestItemIndexArrayMarshaling(t *testing.T) {
 	cases := []struct {
-		in  []itemIndex
-		out []itemIndex
+		in  []uint64
+		out []uint64
 	}{
 		{
-			in:  []itemIndex{0, 1, 2},
-			out: []itemIndex{0, 1, 2},
+			in:  []uint64{0, 1, 2},
+			out: []uint64{0, 1, 2},
 		},
 		{
-			in:  []itemIndex{},
-			out: []itemIndex{},
+			in:  []uint64{},
+			out: []uint64{},
 		},
 		{
 			in:  nil,
-			out: []itemIndex{},
+			out: []uint64{},
 		},
 	}
 
@@ -509,7 +509,7 @@ func TestPersistentStorage_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 	}
 }
 
-func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguousStorage, compare []itemIndex) {
+func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguousStorage, compare []uint64) {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 	assert.ElementsMatch(t, compare, pcs.currentlyDispatchedItems)

@@ -50,13 +50,11 @@ type persistentContiguousStorage struct {
 	capacity uint64
 
 	mu                       sync.Mutex
-	readIndex                itemIndex
-	writeIndex               itemIndex
-	currentlyDispatchedItems []itemIndex
+	readIndex                uint64
+	writeIndex               uint64
+	currentlyDispatchedItems []uint64
 	refClient                int64
 }
-
-type itemIndex uint64
 
 const (
 	zapKey           = "key"
@@ -141,7 +139,7 @@ func (pcs *persistentContiguousStorage) get() (QueueRequest, bool) {
 }
 
 func (pcs *persistentContiguousStorage) size() uint64 {
-	return uint64(pcs.writeIndex - pcs.readIndex)
+	return pcs.writeIndex - pcs.readIndex
 }
 
 // Size returns the number of currently available items, which were not picked by consumers yet
@@ -269,7 +267,7 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) QueueRe
 // retrieveAndEnqueueNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
 // and moves the items at the back of the queue.
 func (pcs *persistentContiguousStorage) retrieveAndEnqueueNotDispatchedReqs(ctx context.Context) {
-	var dispatchedItems []itemIndex
+	var dispatchedItems []uint64
 
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
@@ -335,7 +333,7 @@ func (pcs *persistentContiguousStorage) retrieveAndEnqueueNotDispatchedReqs(ctx 
 }
 
 // itemDispatchingFinish removes the item from the list of currently dispatched items and deletes it from the persistent queue
-func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Context, index itemIndex) error {
+func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Context, index uint64) error {
 	lenCDI := len(pcs.currentlyDispatchedItems)
 	for i := 0; i < lenCDI; i++ {
 		if pcs.currentlyDispatchedItems[i] == index {
@@ -369,16 +367,16 @@ func (pcs *persistentContiguousStorage) itemDispatchingFinish(ctx context.Contex
 	return nil
 }
 
-func getItemKey(index itemIndex) string {
-	return strconv.FormatUint(uint64(index), 10)
+func getItemKey(index uint64) string {
+	return strconv.FormatUint(index, 10)
 }
 
-func itemIndexToBytes(value itemIndex) []byte {
-	return binary.LittleEndian.AppendUint64([]byte{}, uint64(value))
+func itemIndexToBytes(value uint64) []byte {
+	return binary.LittleEndian.AppendUint64([]byte{}, value)
 }
 
-func bytesToItemIndex(b []byte) (itemIndex, error) {
-	val := itemIndex(0)
+func bytesToItemIndex(b []byte) (uint64, error) {
+	val := uint64(0)
 	if b == nil {
 		return val, errValueNotSet
 	}
@@ -386,17 +384,17 @@ func bytesToItemIndex(b []byte) (itemIndex, error) {
 	return val, err
 }
 
-func itemIndexArrayToBytes(arr []itemIndex) []byte {
+func itemIndexArrayToBytes(arr []uint64) []byte {
 	size := len(arr)
 	buf := make([]byte, 0, 4+size*8)
 	buf = binary.LittleEndian.AppendUint32(buf, uint32(size))
 	for _, item := range arr {
-		buf = binary.LittleEndian.AppendUint64(buf, uint64(item))
+		buf = binary.LittleEndian.AppendUint64(buf, item)
 	}
 	return buf
 }
 
-func bytesToItemIndexArray(b []byte) ([]itemIndex, error) {
+func bytesToItemIndexArray(b []byte) ([]uint64, error) {
 	if len(b) == 0 {
 		return nil, nil
 	}
@@ -406,7 +404,7 @@ func bytesToItemIndexArray(b []byte) ([]itemIndex, error) {
 		return nil, err
 	}
 
-	val := make([]itemIndex, size)
+	val := make([]uint64, size)
 	err := binary.Read(reader, binary.LittleEndian, &val)
 	return val, err
 }
