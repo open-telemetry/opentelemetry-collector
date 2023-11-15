@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/a8m/envsubst v1.4.2
-	github.com/atombender/go-jsonschema v0.13.0
+	github.com/atombender/go-jsonschema v0.14.1
 	github.com/client9/misspell v0.3.4
 	github.com/golangci/golangci-lint v1.55.2
 	github.com/google/addlicense v1.1.1
@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.12.0
 	go.opentelemetry.io/build-tools/multimod v0.12.0
 	go.opentelemetry.io/build-tools/semconvgen v0.12.0
-	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
+	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	golang.org/x/tools v0.15.0
 	golang.org/x/vuln v1.0.1
 )
