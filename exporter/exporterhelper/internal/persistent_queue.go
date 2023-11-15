@@ -6,7 +6,6 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 import (
 	"context"
 	"errors"
-	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -21,50 +20,29 @@ var (
 // persistentQueue holds the queue backed by file storage
 type persistentQueue[T any] struct {
 	*persistentContiguousStorage[T]
-	stopWG       sync.WaitGroup
-	set          exporter.CreateSettings
-	storageID    component.ID
-	numConsumers int
+	set       exporter.CreateSettings
+	storageID component.ID
+	dataType  component.DataType
 }
 
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func NewPersistentQueue[T any](capacity int, numConsumers int, storageID component.ID, marshaler func(req T) ([]byte, error), unmarshaler func([]byte) (T, error), set exporter.CreateSettings) Queue[T] {
+func NewPersistentQueue[T any](capacity int, dataType component.DataType, storageID component.ID, marshaler func(req T) ([]byte, error), unmarshaler func([]byte) (T, error), set exporter.CreateSettings) Queue[T] {
 	return &persistentQueue[T]{
 		persistentContiguousStorage: newPersistentContiguousStorage(set.Logger, uint64(capacity), marshaler, unmarshaler),
-		numConsumers:                numConsumers,
 		set:                         set,
 		storageID:                   storageID,
+		dataType:                    dataType,
 	}
 }
 
 // Start starts the persistentQueue with the given number of consumers.
-func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host, set QueueSettings[T]) error {
-	storageClient, err := toStorageClient(ctx, pq.storageID, host, pq.set.ID, set.DataType)
+func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) error {
+	storageClient, err := toStorageClient(ctx, pq.storageID, host, pq.set.ID, pq.dataType)
 	if err != nil {
 		return err
 	}
 	pq.persistentContiguousStorage.start(ctx, storageClient)
-	for i := 0; i < pq.numConsumers; i++ {
-		pq.stopWG.Add(1)
-		go func() {
-			defer pq.stopWG.Done()
-			for {
-				req, found := pq.persistentContiguousStorage.get()
-				if !found {
-					return
-				}
-				set.Callback(req)
-			}
-		}()
-	}
 	return nil
-}
-
-// Shutdown stops accepting items, shuts down the queue and closes the persistent queue
-func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
-	err := pq.persistentContiguousStorage.Shutdown(ctx)
-	pq.stopWG.Wait()
-	return err
 }
 
 func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal component.DataType) (storage.Client, error) {
