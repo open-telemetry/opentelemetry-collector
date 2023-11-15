@@ -21,8 +21,6 @@ require (
 	google.golang.org/protobuf v1.31.0
 )
 
-require go.opentelemetry.io/otel/sdk/metric v1.20.0 // indirect
-
 require (
 	cloud.google.com/go/compute/metadata v0.2.4-0.20230617002413-005d2dfb6b68 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
@@ -63,6 +61,7 @@ require (
 	go.opentelemetry.io/otel v1.20.0 // indirect
 	go.opentelemetry.io/otel/metric v1.20.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.20.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.20.0 // indirect
 	go.opentelemetry.io/otel/trace v1.20.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect

@@ -6,113 +6,113 @@ import (
 	"go.opentelemetry.io/contrib/config"
 )
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".Attributes instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".Attributes instead.
 type Attributes = config.Attributes
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".BatchLogRecordProcessor instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".BatchLogRecordProcessor instead.
 type BatchLogRecordProcessor = config.BatchLogRecordProcessor
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".BatchSpanProcessor instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".BatchSpanProcessor instead.
 type BatchSpanProcessor = config.BatchSpanProcessor
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".Common instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".Common instead.
 type CommonJson = config.Common
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".Console instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".Console instead.
 type Console = config.Console
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".Headers instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".Headers instead.
 type Headers = config.Headers
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".LogRecordExporter instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".LogRecordExporter instead.
 type LogRecordExporter = config.LogRecordExporter
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".LogRecordLimits instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".LogRecordLimits instead.
 type LogRecordLimits = config.LogRecordLimits
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".LogRecordProcessor instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".LogRecordProcessor instead.
 type LogRecordProcessor = config.LogRecordProcessor
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".LoggerProvider instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".LoggerProvider instead.
 type LoggerProviderJson = config.LoggerProvider
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".MeterProvider instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".MeterProvider instead.
 type MeterProviderJson = config.MeterProvider
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".MetricExporter instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".MetricExporter instead.
 type MetricExporter = config.MetricExporter
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".MetricReader instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".MetricReader instead.
 type MetricReader = config.MetricReader
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".OTLP instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".OTLP instead.
 type Otlp = config.OTLP
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".OTLPMetric instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".OTLPMetric instead.
 type OtlpMetric = config.OTLPMetric
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".PeriodicMetricReader instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".PeriodicMetricReader instead.
 type PeriodicMetricReader = config.PeriodicMetricReader
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".Prometheus instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".Prometheus instead.
 type Prometheus = config.Prometheus
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".PullMetricReader instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".PullMetricReader instead.
 type PullMetricReader = config.PullMetricReader
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".Resource instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".Resource instead.
 type ResourceJson = config.Resource
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".Sampler instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".Sampler instead.
 type Sampler = config.Sampler
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".SamplerAlwaysOff instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SamplerAlwaysOff instead.
 type SamplerAlwaysOff = config.SamplerAlwaysOff
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".SamplerAlwaysOn instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SamplerAlwaysOn instead.
 type SamplerAlwaysOn = config.SamplerAlwaysOn
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".ViewStreamAggregationExplicitBucketHistogram instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".ViewStreamAggregationExplicitBucketHistogram instead.
 type ViewStreamAggregationExplicitBucketHistogram = config.ViewStreamAggregationExplicitBucketHistogram
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".ViewStreamAggregationBase2ExponentialBucketHistogram instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".ViewStreamAggregationBase2ExponentialBucketHistogram instead.
 type ViewStreamAggregationExponentialBucketHistogram = config.ViewStreamAggregationBase2ExponentialBucketHistogram
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".ViewStreamAggregation instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".ViewStreamAggregation instead.
 type ViewStreamAggregation = config.ViewStreamAggregation
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".ViewStream instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".ViewStream instead.
 type ViewStream = config.ViewStream
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".View instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".View instead.
 type View = config.View
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".SpanExporter instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SpanExporter instead.
 type SpanExporter = config.SpanExporter
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".ViewSelector instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".ViewSelector instead.
 type ViewSelector = config.ViewSelector
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".SimpleLogRecordProcessor instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SimpleLogRecordProcessor instead.
 type SimpleLogRecordProcessor = config.SimpleLogRecordProcessor
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".SamplerJaegerRemote instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SamplerJaegerRemote instead.
 type SamplerJaegerRemote = config.SamplerJaegerRemote
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".SamplerParentBased instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SamplerParentBased instead.
 type SamplerParentBased = config.SamplerParentBased
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".SamplerTraceIDRatioBased instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SamplerTraceIDRatioBased instead.
 type SamplerTraceIdRatioBased = config.SamplerTraceIDRatioBased
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".SimpleSpanProcessor instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SimpleSpanProcessor instead.
 type SimpleSpanProcessor = config.SimpleSpanProcessor
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".SpanLimits instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SpanLimits instead.
 type SpanLimits = config.SpanLimits
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".SpanProcessor instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SpanProcessor instead.
 type SpanProcessor = config.SpanProcessor
 
-// Deprecated: [v0.87.0] Use "go.opentelemetry.io/contrib/config".TracerProvider instead.
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".TracerProvider instead.
 type TracerProviderJson = config.TracerProvider

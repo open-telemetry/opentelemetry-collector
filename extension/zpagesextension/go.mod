@@ -15,8 +15,6 @@ require (
 	go.uber.org/zap v1.26.0
 )
 
-require go.opentelemetry.io/otel/sdk/metric v1.20.0 // indirect
-
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.3.0 // indirect
@@ -37,6 +35,7 @@ require (
 	go.opentelemetry.io/contrib/config v0.1.0 // indirect
 	go.opentelemetry.io/otel v1.20.0 // indirect
 	go.opentelemetry.io/otel/metric v1.20.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.20.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
