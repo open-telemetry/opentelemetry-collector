@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"go.opencensus.io/metric/metricdata"
@@ -79,6 +80,9 @@ type queueSender struct {
 	traceAttribute   attribute.KeyValue
 	logger           *zap.Logger
 	meter            otelmetric.Meter
+	numConsumers     int
+	consumers        *internal.QueueConsumers[Request]
+	stopWG           sync.WaitGroup
 	requeuingEnabled bool
 
 	metricCapacity otelmetric.Int64ObservableGauge
@@ -92,9 +96,9 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 	var queue internal.Queue[Request]
 	if isPersistent {
 		queue = internal.NewPersistentQueue[Request](
-			config.QueueSize, config.NumConsumers, *config.StorageID, marshaler, unmarshaler, set)
+			config.QueueSize, signal, *config.StorageID, marshaler, unmarshaler, set)
 	} else {
-		queue = internal.NewBoundedMemoryQueue[Request](config.QueueSize, config.NumConsumers)
+		queue = internal.NewBoundedMemoryQueue[Request](config.QueueSize)
 	}
 	return &queueSender{
 		fullName:       set.ID.String(),
@@ -103,6 +107,8 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		logger:         set.TelemetrySettings.Logger,
 		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
+		numConsumers:   config.NumConsumers,
+		stopWG:         sync.WaitGroup{},
 		// TODO: this can be further exposed as a config param rather than relying on a type of queue
 		requeuingEnabled: isPersistent,
 	}
@@ -135,17 +141,16 @@ func (qs *queueSender) onTemporaryFailure(ctx context.Context, req Request, err 
 
 // Start is invoked during service startup.
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
-	err := qs.queue.Start(ctx, host, internal.QueueSettings[Request]{
-		DataType: qs.signal,
-		Callback: func(qr internal.QueueRequest[Request]) {
-			_ = qs.nextSender.send(qr.Context, qr.Request)
-			// TODO: Update OnProcessingFinished to accept error and remove the retry->queue sender callback.
-			qr.OnProcessingFinished()
-		},
-	})
+	err := qs.queue.Start(ctx, host)
 	if err != nil {
 		return err
 	}
+
+	qs.consumers = internal.NewQueueConsumers(qs.queue, qs.numConsumers, func(ctx context.Context, req Request) {
+		// TODO: Update item.OnProcessingFinished to accept error and remove the retry->queue sender callback.
+		_ = qs.nextSender.send(ctx, req)
+	})
+	qs.consumers.Start()
 
 	if obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled() {
 		return qs.recordWithOtel()
@@ -209,7 +214,12 @@ func (qs *queueSender) Shutdown(ctx context.Context) error {
 
 	// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
-	return qs.queue.Shutdown(ctx)
+	err := qs.queue.Shutdown(ctx)
+	if err != nil {
+		return err
+	}
+	qs.consumers.Shutdown()
+	return nil
 }
 
 // send implements the requestSender interface

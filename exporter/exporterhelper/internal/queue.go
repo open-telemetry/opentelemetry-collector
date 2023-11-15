@@ -19,25 +19,19 @@ var (
 	ErrQueueIsStopped = errors.New("sending queue is stopped")
 )
 
-type QueueSettings[T any] struct {
-	DataType component.DataType
-	Callback func(QueueRequest[T])
-}
-
 // Queue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
 // (boundedMemoryQueue) or via a disk-based queue (persistentQueue)
 type Queue[T any] interface {
-	// Start starts the queue with a given number of goroutines consuming items from the queue
-	// and passing them into the consumer callback.
-	Start(ctx context.Context, host component.Host, set QueueSettings[T]) error
+	component.Component
 	// Offer inserts the specified element into this queue if it is possible to do so immediately
 	// without violating capacity restrictions. If success returns no error.
 	// It returns ErrQueueIsFull if no space is currently available.
 	Offer(ctx context.Context, item T) error
+	// Poll returns the head of this queue. The call blocks until there is an item available.
+	// It returns false if the queue is stopped.
+	Poll() (QueueRequest[T], bool)
 	// Size returns the current Size of the queue
 	Size() int
-	// Shutdown stops accepting items, and stops all consumers. It blocks until all consumers have stopped.
-	Shutdown(ctx context.Context) error
 	// Capacity returns the capacity of the queue.
 	Capacity() int
 }

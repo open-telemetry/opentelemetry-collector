@@ -108,7 +108,7 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 				require.NoError(t, err)
 			}
 			assert.Equal(t, 3, ps.Size())
-			_, _ = ps.get()
+			_, _ = ps.Poll()
 			assert.Equal(t, 2, ps.Size())
 			assert.NoError(t, ps.Shutdown(context.Background()))
 
@@ -155,13 +155,13 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{})
 
 	// Takes index 0 in process.
-	readReq, found := ps.get()
+	readReq, found := ps.Poll()
 	require.True(t, found)
 	assert.Equal(t, req, readReq.Request)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
 	// This takes item 1 to process.
-	secondReadReq, found := ps.get()
+	secondReadReq, found := ps.Poll()
 	require.True(t, found)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0, 1})
 
@@ -177,7 +177,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 
 	// We should be able to pull all remaining items now
 	for i := 0; i < 4; i++ {
-		qReq, found := newPs.get()
+		qReq, found := newPs.Poll()
 		require.True(t, found)
 		qReq.OnProcessingFinished()
 	}
@@ -212,7 +212,7 @@ func TestPersistentStorage_StartWithNonDispatched(t *testing.T) {
 	}
 
 	// get one item out, but don't mark it as processed
-	_, _ = ps.get()
+	_, _ = ps.Poll()
 	// put one more item in
 	require.NoError(t, ps.Offer(context.Background(), req))
 
@@ -235,18 +235,18 @@ func TestPersistentStorage_PutCloseReadClose(t *testing.T) {
 	assert.NoError(t, ps.Offer(context.Background(), req))
 	assert.Equal(t, 2, ps.Size())
 	// TODO: Remove this, after the initialization writes the readIndex.
-	_, _ = ps.get()
+	_, _ = ps.Poll()
 	assert.NoError(t, ps.Shutdown(context.Background()))
 
 	newPs := createTestPersistentStorage(createTestClient(t, ext))
 	require.Equal(t, 2, newPs.Size())
 
 	// Lets read both of the elements we put
-	readReq, found := newPs.get()
+	readReq, found := newPs.Poll()
 	require.True(t, found)
 	require.Equal(t, req, readReq.Request)
 
-	readReq, found = newPs.get()
+	readReq, found = newPs.Poll()
 	require.True(t, found)
 	require.Equal(t, req, readReq.Request)
 	require.Equal(t, 0, newPs.Size())
@@ -287,7 +287,7 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 			}
 
 			for i := 0; i < bb.N; i++ {
-				req, found := ps.get()
+				req, found := ps.Poll()
 				require.True(bb, found)
 				require.NotNil(bb, req)
 			}
@@ -363,7 +363,7 @@ func TestPersistentStorage_ShutdownWhileConsuming(t *testing.T) {
 
 	assert.NoError(t, ps.Offer(context.Background(), newTraces(5, 10)))
 
-	req, ok := ps.get()
+	req, ok := ps.Poll()
 	require.True(t, ok)
 	assert.False(t, client.(*mockStorageClient).isClosed())
 	assert.NoError(t, ps.Shutdown(context.Background()))
@@ -402,7 +402,7 @@ func TestPersistentStorage_StorageFull(t *testing.T) {
 
 	// Take out all the items
 	for i := reqCount; i > 0; i-- {
-		request, found := ps.get()
+		request, found := ps.Poll()
 		require.True(t, found)
 		request.OnProcessingFinished()
 	}

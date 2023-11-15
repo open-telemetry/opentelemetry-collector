@@ -345,7 +345,6 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 }
 
 func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
-
 	produceCounter := &atomic.Uint32{}
 
 	qCfg := NewDefaultQueueSettings()

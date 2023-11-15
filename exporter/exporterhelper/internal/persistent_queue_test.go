@@ -33,23 +33,29 @@ func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 // createTestQueue creates and starts a fake queue with the given capacity and number of consumers.
-func createTestQueue(t *testing.T, capacity, numConsumers int, set QueueSettings[ptrace.Traces]) Queue[ptrace.Traces] {
-	pq := NewPersistentQueue[ptrace.Traces](capacity, numConsumers, component.ID{}, marshaler.MarshalTraces, unmarshaler.UnmarshalTraces, exportertest.NewNopCreateSettings())
+func createTestQueue(t *testing.T, capacity, numConsumers int, callback func(_ context.Context, item ptrace.Traces)) Queue[ptrace.Traces] {
+	pq := NewPersistentQueue[ptrace.Traces](capacity, component.DataTypeTraces, component.ID{}, marshaler.MarshalTraces,
+		unmarshaler.UnmarshalTraces, exportertest.NewNopCreateSettings())
 	host := &mockHost{ext: map[component.ID]component.Component{
 		{}: NewMockStorageExtension(nil),
 	}}
-	require.NoError(t, pq.Start(context.Background(), host, set))
+	require.NoError(t, pq.Start(context.Background(), host))
+	consumers := NewQueueConsumers(pq, numConsumers, callback)
+	consumers.Start()
+	t.Cleanup(func() {
+		assert.NoError(t, pq.Shutdown(context.Background()))
+		consumers.Shutdown()
+	})
 	return pq
 }
 
 func TestPersistentQueue_FullCapacity(t *testing.T) {
 	start := make(chan struct{})
 	done := make(chan struct{})
-	pq := createTestQueue(t, 5, 1, newQueueSettings(func(item QueueRequest[ptrace.Traces]) {
+	pq := createTestQueue(t, 5, 1, func(context.Context, ptrace.Traces) {
 		start <- struct{}{}
 		<-done
-		item.OnProcessingFinished()
-	}))
+	})
 	assert.Equal(t, 0, pq.Size())
 
 	req := newTraces(1, 10)
@@ -68,17 +74,15 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 	}
 	assert.Equal(t, 5, pq.Size())
 	close(done)
-	assert.NoError(t, pq.Shutdown(context.Background()))
 }
 
 func TestPersistentQueueShutdown(t *testing.T) {
-	pq := createTestQueue(t, 1001, 100, newNopQueueSettings[ptrace.Traces]())
+	pq := createTestQueue(t, 1001, 100, func(context.Context, ptrace.Traces) {})
 	req := newTraces(1, 10)
 
 	for i := 0; i < 1000; i++ {
 		assert.NoError(t, pq.Offer(context.Background(), req))
 	}
-	assert.NoError(t, pq.Shutdown(context.Background()))
 }
 
 func TestPersistentQueue_ConsumersProducers(t *testing.T) {
@@ -113,10 +117,9 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			req := newTraces(1, 10)
 
 			numMessagesConsumed := &atomic.Int32{}
-			pq := createTestQueue(t, 1000, c.numConsumers, newQueueSettings(func(item QueueRequest[ptrace.Traces]) {
-				defer item.OnProcessingFinished()
+			pq := createTestQueue(t, 1000, c.numConsumers, func(context.Context, ptrace.Traces) {
 				numMessagesConsumed.Add(int32(1))
-			}))
+			})
 
 			for i := 0; i < c.numMessagesProduced; i++ {
 				assert.NoError(t, pq.Offer(context.Background(), req))
@@ -125,7 +128,6 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			assert.Eventually(t, func() bool {
 				return c.numMessagesProduced == int(numMessagesConsumed.Load())
 			}, 5*time.Second, 10*time.Millisecond)
-			assert.NoError(t, pq.Shutdown(context.Background()))
 		})
 	}
 }
@@ -244,7 +246,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 }
 
 func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
-	pq := NewPersistentQueue[ptrace.Traces](1, 1, component.ID{}, marshaler.MarshalTraces, unmarshaler.UnmarshalTraces, exportertest.NewNopCreateSettings())
+	pq := NewPersistentQueue[ptrace.Traces](1, component.DataTypeTraces, component.ID{}, marshaler.MarshalTraces, unmarshaler.UnmarshalTraces, exportertest.NewNopCreateSettings())
 	// verify that stopping a un-start/started w/error queue does not panic
 	assert.NoError(t, pq.Shutdown(context.Background()))
 }
