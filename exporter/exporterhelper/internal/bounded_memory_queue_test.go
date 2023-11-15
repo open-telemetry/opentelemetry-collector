@@ -91,14 +91,15 @@ func TestBoundedQueue(t *testing.T) {
 // only after Stop will mean the consumers are still locked while
 // trying to perform the final consumptions.
 func TestShutdownWhileNotEmpty(t *testing.T) {
-	q := NewBoundedMemoryQueue[string](10)
+	q := NewBoundedMemoryQueue[string](1000)
 
 	consumerState := newConsumerState(t)
 
+	waitChan := make(chan struct{})
 	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
-	consumers := NewQueueConsumers(q, 1, func(_ context.Context, item string) {
+	consumers := NewQueueConsumers(q, 5, func(_ context.Context, item string) {
+		<-waitChan
 		consumerState.record(item)
-		time.Sleep(1 * time.Second)
 	})
 	consumers.Start()
 
@@ -113,10 +114,19 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	assert.NoError(t, q.Offer(context.Background(), "i"))
 	assert.NoError(t, q.Offer(context.Background(), "j"))
 
+	// we block the workers and wait for the queue to start rejecting new items to release the lock.
+	// This ensures that we test that the queue has been called to shutdown while items are still in the queue.
+	go func() {
+		require.EventuallyWithT(t, func(c *assert.CollectT) {
+			// ensure the request is rejected due to closed queue
+			assert.ErrorIs(t, q.Offer(context.Background(), "x"), ErrQueueIsStopped)
+		}, 1*time.Second, 10*time.Millisecond)
+		close(waitChan)
+	}()
+
 	assert.NoError(t, q.Shutdown(context.Background()))
 	consumers.Shutdown()
 
-	assert.ErrorIs(t, q.Offer(context.Background(), "x"), ErrQueueIsStopped)
 	consumerState.assertConsumed(map[string]bool{
 		"a": true,
 		"b": true,
