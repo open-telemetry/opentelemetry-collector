@@ -165,7 +165,7 @@ func TestMetricsExporter_WithPersistentQueue(t *testing.T) {
 	require.NoError(t, err)
 
 	host := &mockHost{ext: map[component.ID]component.Component{
-		storageID: internal.NewMockStorageExtension(nil),
+		storageID: internal.NewMockStorageExtension(internal.NewMockStorageClient()),
 	}}
 	require.NoError(t, te.Start(context.Background(), host))
 	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })

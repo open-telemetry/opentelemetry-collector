@@ -312,7 +312,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	require.NoError(t, err)
 
 	var extensions = map[component.ID]component.Component{
-		storageID: internal.NewMockStorageExtension(nil),
+		storageID: internal.NewMockStorageExtension(internal.NewMockStorageClient()),
 	}
 	host := &mockHost{ext: extensions}
 
@@ -336,7 +336,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	require.NoError(t, err)
 
 	var extensions = map[component.ID]component.Component{
-		storageID: internal.NewMockStorageExtension(storageError),
+		storageID: internal.NewFailingStorageExtension(storageError),
 	}
 	host := &mockHost{ext: extensions}
 
