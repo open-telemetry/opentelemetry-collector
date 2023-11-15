@@ -1,7 +1,7 @@
 name: "CodeQL Analysis"
 on:
   push:
-    branches: [ main, 'renovatebot/**' ]
+    branches: [ main ]
   pull_request:
 
 concurrency:
