@@ -78,11 +78,11 @@ will not be enabled.
 - [`auth`](../configauth/README.md)
 - `allowed_ip_ranges`: limits incoming requests to specific IP ranges.
 If empty, all IPs are allowed.
-IPs outside the ranges will receive a 403 HTTP response code.
+Connections outside the ranges will be closed.
 IP ranges are represented using the CIDR notation.
 - `denied_ip_ranges`: denies incoming requests from specific IP ranges.
 If empty, all IPs are allowed.
-IPs in the ranges will receive a 403 HTTP response code.
+Connections inside the ranges will be closed.
 IP ranges are represented using the CIDR notation.
 `denied_ip_ranges` are evaluated before `allowed_ip_ranges`.
 

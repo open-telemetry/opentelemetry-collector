@@ -237,14 +237,14 @@ type HTTPServerSettings struct {
 
 	// AllowedIPRanges limits incoming requests to specific IP ranges.
 	// If empty, all IPs are allowed.
-	// IPs outside the ranges will receive a 403 HTTP response code.
+	// Connections outside the ranges will be closed.
 	// IP ranges are represented using the CIDR notation.
 	// `DeniedIPRanges` are evaluated before `AllowedIPRanges`.
 	AllowedIPRanges []*net.IPNet `mapstructure:"allowed_ip_ranges"`
 
 	// DeniedIPRanges rejects incoming requests from specific IP ranges.
 	// If empty, all IPs are allowed.
-	// IPs in the ranges will receive a 403 HTTP response code.
+	// Connections inside the ranges will be closed.
 	// IP ranges are represented using the CIDR notation.
 	// `DeniedIPRanges` are evaluated before `AllowedIPRanges`.
 	DeniedIPRanges []*net.IPNet `mapstructure:"denied_ip_ranges"`
@@ -308,14 +308,6 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		o(serverOpts)
 	}
 
-	if len(hss.DeniedIPRanges) > 0 {
-		handler = denyIPRanges(handler, hss.DeniedIPRanges)
-	}
-
-	if len(hss.AllowedIPRanges) > 0 {
-		handler = allowIPRanges(handler, hss.AllowedIPRanges)
-	}
-
 	handler = httpContentDecompressor(handler, serverOpts.errHandler, serverOpts.decoders)
 
 	if hss.MaxRequestBodySize > 0 {
@@ -365,9 +357,46 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		includeMetadata: hss.IncludeMetadata,
 	}
 
+	var connStateFn func(conn net.Conn, state http.ConnState)
+	if len(hss.DeniedIPRanges) > 0 || len(hss.AllowedIPRanges) > 0 {
+		connStateFn = connStateWithIPRanges(hss.DeniedIPRanges, hss.AllowedIPRanges)
+	}
+
 	return &http.Server{
-		Handler: handler,
+		Handler:   handler,
+		ConnState: connStateFn,
 	}, nil
+}
+
+func connStateWithIPRanges(deniedIPRanges []*net.IPNet, allowedIPRanges []*net.IPNet) func(conn net.Conn, state http.ConnState) {
+	return func(conn net.Conn, state http.ConnState) {
+		if state != http.StateNew {
+			return
+		}
+		ip := conn.RemoteAddr().(*net.TCPAddr).IP
+		for _, n := range deniedIPRanges {
+			if n.Contains(ip) {
+				_ = conn.Close()
+				return
+			}
+		}
+
+		if len(allowedIPRanges) == 0 {
+			return
+		}
+
+		var allowed bool
+		for _, n := range allowedIPRanges {
+			if n.Contains(ip) {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			_ = conn.Close()
+			return
+		}
+	}
 }
 
 func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {
@@ -419,42 +448,6 @@ func authInterceptor(next http.Handler, server auth.Server) http.Handler {
 func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, maxRecvSize)
-		next.ServeHTTP(w, r)
-	})
-}
-
-func denyIPRanges(next http.Handler, ipRanges []*net.IPNet) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := net.ParseIP(r.RemoteAddr)
-		var denied bool
-		for _, n := range ipRanges {
-			if n.Contains(ip) {
-				denied = true
-				break
-			}
-		}
-		if denied {
-			http.Error(w, "", http.StatusForbidden)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-func allowIPRanges(next http.Handler, ipRanges []*net.IPNet) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := net.ParseIP(r.RemoteAddr)
-		var allowed bool
-		for _, n := range ipRanges {
-			if n.Contains(ip) {
-				allowed = true
-				break
-			}
-		}
-		if !allowed {
-			http.Error(w, "", http.StatusForbidden)
-			return
-		}
 		next.ServeHTTP(w, r)
 	})
 }
