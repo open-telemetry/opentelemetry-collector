@@ -3,7 +3,7 @@ name: Builder - Integration tests
 on:
   # on changes to the main branch touching the builder
   push:
-    branches: [ main ]
+    branches: [ main, 'renovatebot/**' ]
 
   # on PRs touching the builder
   pull_request:
