@@ -336,11 +336,11 @@ func TestItemIndexArrayMarshaling(t *testing.T) {
 		},
 		{
 			in:  []uint64{},
-			out: []uint64{},
+			out: nil,
 		},
 		{
 			in:  nil,
-			out: []uint64{},
+			out: nil,
 		},
 	}
 
