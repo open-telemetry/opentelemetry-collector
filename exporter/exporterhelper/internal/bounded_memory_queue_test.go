@@ -31,7 +31,6 @@ func TestBoundedQueue(t *testing.T) {
 	startLock.Lock() // block consumers
 	consumerState := newConsumerState(t)
 
-	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	consumers := NewQueueConsumers(q, 1, func(_ context.Context, item string) {
 		consumerState.record(item)
 
@@ -40,7 +39,7 @@ func TestBoundedQueue(t *testing.T) {
 		//nolint:staticcheck // SA2001 ignore this!
 		startLock.Unlock()
 	})
-	consumers.Start()
+	assert.NoError(t, consumers.Start(context.Background(), componenttest.NewNopHost()))
 
 	assert.NoError(t, q.Offer(context.Background(), "a"))
 
@@ -79,8 +78,7 @@ func TestBoundedQueue(t *testing.T) {
 		consumerState.assertConsumed(expected)
 	}
 
-	assert.NoError(t, q.Shutdown(context.Background()))
-	consumers.Shutdown()
+	assert.NoError(t, consumers.Shutdown(context.Background()))
 	assert.ErrorIs(t, q.Offer(context.Background(), "x"), ErrQueueIsStopped)
 }
 
@@ -96,12 +94,11 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	consumerState := newConsumerState(t)
 
 	waitChan := make(chan struct{})
-	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	consumers := NewQueueConsumers(q, 5, func(_ context.Context, item string) {
 		<-waitChan
 		consumerState.record(item)
 	})
-	consumers.Start()
+	assert.NoError(t, consumers.Start(context.Background(), componenttest.NewNopHost()))
 
 	assert.NoError(t, q.Offer(context.Background(), "a"))
 	assert.NoError(t, q.Offer(context.Background(), "b"))
@@ -124,8 +121,7 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 		close(waitChan)
 	}()
 
-	assert.NoError(t, q.Shutdown(context.Background()))
-	consumers.Shutdown()
+	assert.NoError(t, consumers.Shutdown(context.Background()))
 
 	consumerState.assertConsumed(map[string]bool{
 		"a": true,
@@ -195,16 +191,14 @@ func queueUsage(b *testing.B, capacity int, numConsumers int, numberOfItems int)
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		q := NewBoundedMemoryQueue[string](capacity)
-		require.NoError(b, q.Start(context.Background(), componenttest.NewNopHost()))
 		consumers := NewQueueConsumers(q, numConsumers, func(context.Context, string) {
 			time.Sleep(1 * time.Millisecond)
 		})
-		consumers.Start()
+		require.NoError(b, consumers.Start(context.Background(), componenttest.NewNopHost()))
 		for j := 0; j < numberOfItems; j++ {
 			_ = q.Offer(context.Background(), fmt.Sprintf("%d", j))
 		}
-		assert.NoError(b, q.Shutdown(context.Background()))
-		consumers.Shutdown()
+		assert.NoError(b, consumers.Shutdown(context.Background()))
 	}
 }
 
@@ -256,15 +250,12 @@ func (s *consumerState) assertConsumed(expected map[string]bool) {
 func TestZeroSizeWithConsumers(t *testing.T) {
 	q := NewBoundedMemoryQueue[string](0)
 
-	err := q.Start(context.Background(), componenttest.NewNopHost())
 	consumers := NewQueueConsumers(q, 1, func(context.Context, string) {})
-	consumers.Start()
-	assert.NoError(t, err)
+	assert.NoError(t, consumers.Start(context.Background(), componenttest.NewNopHost()))
 
 	assert.NoError(t, q.Offer(context.Background(), "a")) // in process
 
-	assert.NoError(t, q.Shutdown(context.Background()))
-	consumers.Shutdown()
+	assert.NoError(t, consumers.Shutdown(context.Background()))
 }
 
 func TestZeroSizeNoConsumers(t *testing.T) {

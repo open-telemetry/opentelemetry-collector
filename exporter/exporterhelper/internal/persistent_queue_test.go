@@ -39,12 +39,10 @@ func createTestQueue(t *testing.T, capacity, numConsumers int, callback func(_ c
 	host := &mockHost{ext: map[component.ID]component.Component{
 		{}: NewMockStorageExtension(nil),
 	}}
-	require.NoError(t, pq.Start(context.Background(), host))
 	consumers := NewQueueConsumers(pq, numConsumers, callback)
-	consumers.Start()
+	require.NoError(t, consumers.Start(context.Background(), host))
 	t.Cleanup(func() {
-		assert.NoError(t, pq.Shutdown(context.Background()))
-		consumers.Shutdown()
+		assert.NoError(t, consumers.Shutdown(context.Background()))
 	})
 	return pq
 }
