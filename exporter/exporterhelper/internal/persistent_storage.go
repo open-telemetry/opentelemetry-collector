@@ -4,7 +4,6 @@
 package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -67,7 +66,8 @@ const (
 )
 
 var (
-	errValueNotSet = errors.New("value not set")
+	errValueNotSet  = errors.New("value not set")
+	errInvalidValue = errors.New("invalid value")
 )
 
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
@@ -371,13 +371,16 @@ func itemIndexToBytes(value uint64) []byte {
 	return binary.LittleEndian.AppendUint64([]byte{}, value)
 }
 
-func bytesToItemIndex(b []byte) (uint64, error) {
+func bytesToItemIndex(buf []byte) (uint64, error) {
 	val := uint64(0)
-	if b == nil {
+	if buf == nil {
 		return val, errValueNotSet
 	}
-	err := binary.Read(bytes.NewReader(b), binary.LittleEndian, &val)
-	return val, err
+	// The sizeof uint64 in binary is 8.
+	if len(buf) < 8 {
+		return 0, errInvalidValue
+	}
+	return binary.LittleEndian.Uint64(buf), nil
 }
 
 func itemIndexArrayToBytes(arr []uint64) []byte {
@@ -390,17 +393,30 @@ func itemIndexArrayToBytes(arr []uint64) []byte {
 	return buf
 }
 
-func bytesToItemIndexArray(b []byte) ([]uint64, error) {
-	if len(b) == 0 {
+func bytesToItemIndexArray(buf []byte) ([]uint64, error) {
+	if len(buf) == 0 {
 		return nil, nil
 	}
-	var size uint32
-	reader := bytes.NewReader(b)
-	if err := binary.Read(reader, binary.LittleEndian, &size); err != nil {
-		return nil, err
+
+	// The sizeof uint32 in binary is 4.
+	if len(buf) < 4 {
+		return nil, errInvalidValue
+	}
+	size := int(binary.LittleEndian.Uint32(buf))
+	if size == 0 {
+		return nil, nil
+	}
+
+	buf = buf[4:]
+	// The sizeof uint64 in binary is 8, so we need to have size*8 bytes.
+	if len(buf) < size*8 {
+		return nil, errInvalidValue
 	}
 
 	val := make([]uint64, size)
-	err := binary.Read(reader, binary.LittleEndian, &val)
-	return val, err
+	for i := 0; i < size; i++ {
+		val[i] = binary.LittleEndian.Uint64(buf)
+		buf = buf[8:]
+	}
+	return val, nil
 }
