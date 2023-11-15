@@ -6,6 +6,8 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 import (
 	"context"
 	"sync"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 type QueueConsumers[T any] struct {
@@ -24,29 +26,39 @@ func NewQueueConsumers[T any](q Queue[T], numConsumers int, callback func(contex
 	}
 }
 
-// Start ensures that all consumers are started.
-func (c *QueueConsumers[T]) Start() {
+// Start ensures that queue and all consumers are started.
+func (qc *QueueConsumers[T]) Start(ctx context.Context, host component.Host) error {
+	if err := qc.queue.Start(ctx, host); err != nil {
+		return err
+	}
+
 	var startWG sync.WaitGroup
-	for i := 0; i < c.numConsumers; i++ {
-		c.stopWG.Add(1)
+	for i := 0; i < qc.numConsumers; i++ {
+		qc.stopWG.Add(1)
 		startWG.Add(1)
 		go func() {
 			startWG.Done()
-			defer c.stopWG.Done()
+			defer qc.stopWG.Done()
 			for {
-				item, success := c.queue.Poll()
+				item, success := qc.queue.Poll()
 				if !success {
 					return
 				}
-				c.callback(item.Context, item.Request)
+				qc.callback(item.Context, item.Request)
 				item.OnProcessingFinished()
 			}
 		}()
 	}
 	startWG.Wait()
+
+	return nil
 }
 
-// Shutdown ensures that all consumers are stopped.
-func (c *QueueConsumers[T]) Shutdown() {
-	c.stopWG.Wait()
+// Shutdown ensures that queue and all consumers are stopped.
+func (qc *QueueConsumers[T]) Shutdown(ctx context.Context) error {
+	if err := qc.queue.Shutdown(ctx); err != nil {
+		return err
+	}
+	qc.stopWG.Wait()
+	return nil
 }

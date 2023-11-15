@@ -141,16 +141,13 @@ func (qs *queueSender) onTemporaryFailure(ctx context.Context, req Request, err 
 
 // Start is invoked during service startup.
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
-	err := qs.queue.Start(ctx, host)
-	if err != nil {
-		return err
-	}
-
 	qs.consumers = internal.NewQueueConsumers(qs.queue, qs.numConsumers, func(ctx context.Context, req Request) {
 		// TODO: Update item.OnProcessingFinished to accept error and remove the retry->queue sender callback.
 		_ = qs.nextSender.send(ctx, req)
 	})
-	qs.consumers.Start()
+	if err := qs.consumers.Start(ctx, host); err != nil {
+		return err
+	}
 
 	if obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled() {
 		return qs.recordWithOtel()
@@ -212,14 +209,9 @@ func (qs *queueSender) Shutdown(ctx context.Context) error {
 		return int64(0)
 	}, metricdata.NewLabelValue(qs.fullName))
 
-	// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
+	// Stop the queue and consumers, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
-	err := qs.queue.Shutdown(ctx)
-	if err != nil {
-		return err
-	}
-	qs.consumers.Shutdown()
-	return nil
+	return qs.consumers.Shutdown(ctx)
 }
 
 // send implements the requestSender interface
