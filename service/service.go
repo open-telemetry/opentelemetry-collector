@@ -107,16 +107,13 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	pcommonRes := pdataFromSdk(res)
 
 	srv.telemetrySettings = servicetelemetry.TelemetrySettings{
-		TelemetrySettingsBase: component.TelemetrySettingsBase{
-			Logger:         srv.telemetry.Logger(),
-			TracerProvider: srv.telemetry.TracerProvider(),
-			MeterProvider:  noop.NewMeterProvider(),
-			MetricsLevel:   cfg.Telemetry.Metrics.Level,
-
-			// Construct telemetry attributes from build info and config's resource attributes.
-			Resource: pcommonRes,
-		},
-		Status: status.NewReporter(srv.host.notifyComponentStatusChange),
+		Logger:         srv.telemetry.Logger(),
+		TracerProvider: srv.telemetry.TracerProvider(),
+		MeterProvider:  noop.NewMeterProvider(),
+		MetricsLevel:   cfg.Telemetry.Metrics.Level,
+		// Construct telemetry attributes from build info and config's resource attributes.
+		Resource: pcommonRes,
+		Status:   status.NewReporter(srv.host.notifyComponentStatusChange),
 	}
 
 	if err = srv.telemetryInitializer.init(res, srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {

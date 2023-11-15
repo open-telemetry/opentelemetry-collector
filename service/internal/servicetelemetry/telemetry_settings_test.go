@@ -19,14 +19,12 @@ import (
 
 func TestSettings(t *testing.T) {
 	set := TelemetrySettings{
-		TelemetrySettingsBase: component.TelemetrySettingsBase{
-			Logger:         zap.NewNop(),
-			TracerProvider: nooptrace.NewTracerProvider(),
-			MeterProvider:  noopmetric.NewMeterProvider(),
-			MetricsLevel:   configtelemetry.LevelNone,
-			Resource:       pcommon.NewResource(),
-		},
-		Status: status.NewReporter(func(*component.InstanceID, *component.StatusEvent) {}),
+		Logger:         zap.NewNop(),
+		TracerProvider: nooptrace.NewTracerProvider(),
+		MeterProvider:  noopmetric.NewMeterProvider(),
+		MetricsLevel:   configtelemetry.LevelNone,
+		Resource:       pcommon.NewResource(),
+		Status:         status.NewReporter(func(*component.InstanceID, *component.StatusEvent) {}),
 	}
 	set.Status.Ready()
 	require.NoError(t,

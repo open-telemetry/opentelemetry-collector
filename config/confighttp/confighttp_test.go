@@ -361,15 +361,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
-			client, err := test.settings.ToClient(
-				test.host,
-				component.TelemetrySettings{
-					TelemetrySettingsBase: component.TelemetrySettingsBase{
-						Logger:       zap.NewNop(),
-						MetricsLevel: configtelemetry.LevelNone,
-					},
-				},
-			)
+			client, err := test.settings.ToClient(test.host, component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone})
 			if test.shouldErr {
 				assert.Error(t, err)
 				return

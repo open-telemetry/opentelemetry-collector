@@ -17,13 +17,11 @@ import (
 // NewNopTelemetrySettings returns a new nop settings for Create* functions.
 func NewNopTelemetrySettings() TelemetrySettings {
 	return TelemetrySettings{
-		TelemetrySettingsBase: component.TelemetrySettingsBase{
-			Logger:         zap.NewNop(),
-			TracerProvider: nooptrace.NewTracerProvider(),
-			MeterProvider:  noopmetric.NewMeterProvider(),
-			MetricsLevel:   configtelemetry.LevelNone,
-			Resource:       pcommon.NewResource(),
-		},
-		Status: status.NewReporter(func(*component.InstanceID, *component.StatusEvent) {}),
+		Logger:         zap.NewNop(),
+		TracerProvider: nooptrace.NewTracerProvider(),
+		MeterProvider:  noopmetric.NewMeterProvider(),
+		MetricsLevel:   configtelemetry.LevelNone,
+		Resource:       pcommon.NewResource(),
+		Status:         status.NewReporter(func(*component.InstanceID, *component.StatusEvent) {}),
 	}
 }
