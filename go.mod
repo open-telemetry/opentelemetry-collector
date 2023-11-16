@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018
 	go.opentelemetry.io/collector/processor v0.89.0
 	go.opentelemetry.io/collector/receiver v0.89.0
-	go.opentelemetry.io/collector/service v0.89.0
+	go.opentelemetry.io/contrib/config v0.1.0
 	go.opentelemetry.io/otel v1.20.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.43.0
 	go.opentelemetry.io/otel/sdk v1.20.0
@@ -79,8 +79,6 @@ replace go.opentelemetry.io/collector/component => ./component
 
 replace go.opentelemetry.io/collector/confmap => ./confmap
 
-replace go.opentelemetry.io/collector/config/confignet => ./config/confignet
-
 replace go.opentelemetry.io/collector/config/configtelemetry => ./config/configtelemetry
 
 replace go.opentelemetry.io/collector/connector => ./connector
@@ -93,17 +91,11 @@ replace go.opentelemetry.io/collector/extension => ./extension
 
 replace go.opentelemetry.io/collector/featuregate => ./featuregate
 
-replace go.opentelemetry.io/collector/semconv => ./semconv
-
 replace go.opentelemetry.io/collector/pdata => ./pdata
 
 replace go.opentelemetry.io/collector/processor => ./processor
 
 replace go.opentelemetry.io/collector/receiver => ./receiver
-
-replace go.opentelemetry.io/collector/service => ./service
-
-replace go.opentelemetry.io/collector/extension/zpagesextension => ./extension/zpagesextension
 
 retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1

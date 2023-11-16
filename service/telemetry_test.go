@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
@@ -197,11 +198,11 @@ func TestTelemetryInit(t *testing.T) {
 					Level: configtelemetry.LevelDetailed,
 				},
 				Traces: telemetry.TracesConfig{
-					Processors: []telemetry.SpanProcessor{
+					Processors: []config.SpanProcessor{
 						{
-							Batch: &telemetry.BatchSpanProcessor{
-								Exporter: telemetry.SpanExporter{
-									Console: telemetry.Console{},
+							Batch: &config.BatchSpanProcessor{
+								Exporter: config.SpanExporter{
+									Console: config.Console{},
 								},
 							},
 						},
@@ -250,10 +251,10 @@ func TestTelemetryInit(t *testing.T) {
 			tel := newColTelemetry(tc.useOtel, tc.disableHighCard, tc.extendedConfig)
 			buildInfo := component.NewDefaultBuildInfo()
 			if tc.extendedConfig {
-				tc.cfg.Metrics.Readers = []telemetry.MetricReader{
+				tc.cfg.Metrics.Readers = []config.MetricReader{
 					{
-						Pull: &telemetry.PullMetricReader{
-							Exporter: telemetry.MetricExporter{
+						Pull: &config.PullMetricReader{
+							Exporter: config.MetricExporter{
 								Prometheus: testutil.GetAvailableLocalAddressPrometheus(t),
 							},
 						},
