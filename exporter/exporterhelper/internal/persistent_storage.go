@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
-// persistentContiguousStorage provides a persistent queue implementation backed by file storage extension
+// persistentQueue provides a persistent queue implementation backed by file storage extension
 //
 // Write index describes the position at which next item is going to be stored.
 // Read index describes which item needs to be read next.
@@ -40,7 +40,7 @@ import (
 //	 write          read    x     └── currently dispatched item
 //	 index          index   x
 //	                        xxxx deleted
-type persistentContiguousStorage[T any] struct {
+type persistentQueue[T any] struct {
 	set         exporter.CreateSettings
 	storageID   component.ID
 	dataType    component.DataType
@@ -74,53 +74,53 @@ var (
 	errInvalidValue = errors.New("invalid value")
 )
 
-func (pcs *persistentContiguousStorage[T]) initClient(ctx context.Context, client storage.Client) {
-	pcs.client = client
-	pcs.refClient = 1
-	pcs.initPersistentContiguousStorage(ctx)
+func (pq *persistentQueue[T]) initClient(ctx context.Context, client storage.Client) {
+	pq.client = client
+	pq.refClient = 1
+	pq.initPersistentContiguousStorage(ctx)
 	// Make sure the leftover requests are handled
-	pcs.retrieveAndEnqueueNotDispatchedReqs(ctx)
+	pq.retrieveAndEnqueueNotDispatchedReqs(ctx)
 
 	// Ensure the communication channel has the same size as the queue
 	// We might already have items here from requeueing non-dispatched requests
-	for len(pcs.putChan) < int(pcs.size()) {
-		pcs.putChan <- struct{}{}
+	for len(pq.putChan) < int(pq.size()) {
+		pq.putChan <- struct{}{}
 	}
 }
 
-func (pcs *persistentContiguousStorage[T]) initPersistentContiguousStorage(ctx context.Context) {
+func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Context) {
 	riOp := storage.GetOperation(readIndexKey)
 	wiOp := storage.GetOperation(writeIndexKey)
 
-	err := pcs.client.Batch(ctx, riOp, wiOp)
+	err := pq.client.Batch(ctx, riOp, wiOp)
 	if err == nil {
-		pcs.readIndex, err = bytesToItemIndex(riOp.Value)
+		pq.readIndex, err = bytesToItemIndex(riOp.Value)
 	}
 
 	if err == nil {
-		pcs.writeIndex, err = bytesToItemIndex(wiOp.Value)
+		pq.writeIndex, err = bytesToItemIndex(wiOp.Value)
 	}
 
 	if err != nil {
 		if errors.Is(err, errValueNotSet) {
-			pcs.set.Logger.Info("Initializing new persistent queue")
+			pq.set.Logger.Info("Initializing new persistent queue")
 		} else {
-			pcs.set.Logger.Error("Failed getting read/write index, starting with new ones", zap.Error(err))
+			pq.set.Logger.Error("Failed getting read/write index, starting with new ones", zap.Error(err))
 		}
-		pcs.readIndex = 0
-		pcs.writeIndex = 0
+		pq.readIndex = 0
+		pq.writeIndex = 0
 	}
 }
 
 // Poll returns the next available item from the queue, or blocks until one is available.
 // If the queue is stopped, returns (QueueRequest{}, false)
-func (pcs *persistentContiguousStorage[T]) Poll() (QueueRequest[T], bool) {
+func (pq *persistentQueue[T]) Poll() (QueueRequest[T], bool) {
 	for {
 		select {
-		case <-pcs.stopChan:
+		case <-pq.stopChan:
 			return QueueRequest[T]{}, false
-		case <-pcs.putChan:
-			req, found := pcs.getNextItem(context.Background())
+		case <-pq.putChan:
+			req, found := pq.getNextItem(context.Background())
 			if found {
 				return req, true
 			}
@@ -128,36 +128,36 @@ func (pcs *persistentContiguousStorage[T]) Poll() (QueueRequest[T], bool) {
 	}
 }
 
-func (pcs *persistentContiguousStorage[T]) size() uint64 {
-	return pcs.writeIndex - pcs.readIndex
+func (pq *persistentQueue[T]) size() uint64 {
+	return pq.writeIndex - pq.readIndex
 }
 
 // Size returns the number of currently available items, which were not picked by consumers yet
-func (pcs *persistentContiguousStorage[T]) Size() int {
-	pcs.mu.Lock()
-	defer pcs.mu.Unlock()
-	return int(pcs.size())
+func (pq *persistentQueue[T]) Size() int {
+	pq.mu.Lock()
+	defer pq.mu.Unlock()
+	return int(pq.size())
 }
 
 // Capacity returns the number of currently available items, which were not picked by consumers yet
-func (pcs *persistentContiguousStorage[T]) Capacity() int {
-	return int(pcs.capacity)
+func (pq *persistentQueue[T]) Capacity() int {
+	return int(pq.capacity)
 }
 
-func (pcs *persistentContiguousStorage[T]) Shutdown(ctx context.Context) error {
-	close(pcs.stopChan)
+func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
+	close(pq.stopChan)
 	// Hold the lock only for `refClient`.
-	pcs.mu.Lock()
-	defer pcs.mu.Unlock()
-	return pcs.unrefClient(ctx)
+	pq.mu.Lock()
+	defer pq.mu.Unlock()
+	return pq.unrefClient(ctx)
 }
 
 // unrefClient unrefs the client, and closes if no more references. Callers MUST hold the mutex.
 // This is needed because consumers of the queue may still process the requests while the queue is shutting down or immediately after.
-func (pcs *persistentContiguousStorage[T]) unrefClient(ctx context.Context) error {
-	pcs.refClient--
-	if pcs.refClient == 0 {
-		return pcs.client.Close(ctx)
+func (pq *persistentQueue[T]) unrefClient(ctx context.Context) error {
+	pq.refClient--
+	if pq.refClient == 0 {
+		return pq.client.Close(ctx)
 	}
 	return nil
 }
@@ -165,70 +165,70 @@ func (pcs *persistentContiguousStorage[T]) unrefClient(ctx context.Context) erro
 // Offer inserts the specified element into this queue if it is possible to do so immediately
 // without violating capacity restrictions. If success returns no error.
 // It returns ErrQueueIsFull if no space is currently available.
-func (pcs *persistentContiguousStorage[T]) Offer(ctx context.Context, req T) error {
-	pcs.mu.Lock()
-	defer pcs.mu.Unlock()
-	return pcs.putInternal(ctx, req)
+func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
+	pq.mu.Lock()
+	defer pq.mu.Unlock()
+	return pq.putInternal(ctx, req)
 }
 
 // putInternal is the internal version that requires caller to hold the mutex lock.
-func (pcs *persistentContiguousStorage[T]) putInternal(ctx context.Context, req T) error {
-	if pcs.size() >= pcs.capacity {
-		pcs.set.Logger.Warn("Maximum queue capacity reached")
+func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
+	if pq.size() >= pq.capacity {
+		pq.set.Logger.Warn("Maximum queue capacity reached")
 		return ErrQueueIsFull
 	}
 
-	itemKey := getItemKey(pcs.writeIndex)
-	pcs.writeIndex++
+	itemKey := getItemKey(pq.writeIndex)
+	pq.writeIndex++
 
-	reqBuf, err := pcs.marshaler(req)
+	reqBuf, err := pq.marshaler(req)
 	if err != nil {
 		return err
 	}
-	err = pcs.client.Batch(ctx,
-		storage.SetOperation(writeIndexKey, itemIndexToBytes(pcs.writeIndex)),
+	err = pq.client.Batch(ctx,
+		storage.SetOperation(writeIndexKey, itemIndexToBytes(pq.writeIndex)),
 		storage.SetOperation(itemKey, reqBuf))
 
 	// Inform the loop that there's some data to process
-	pcs.putChan <- struct{}{}
+	pq.putChan <- struct{}{}
 
 	return err
 }
 
 // getNextItem pulls the next available item from the persistent storage; if none is found, returns (nil, false)
-func (pcs *persistentContiguousStorage[T]) getNextItem(ctx context.Context) (QueueRequest[T], bool) {
-	pcs.mu.Lock()
-	defer pcs.mu.Unlock()
+func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (QueueRequest[T], bool) {
+	pq.mu.Lock()
+	defer pq.mu.Unlock()
 
 	// If called in the same time with Shutdown, make sure client is not closed.
-	if pcs.refClient <= 0 {
+	if pq.refClient <= 0 {
 		return QueueRequest[T]{}, false
 	}
 
-	if pcs.readIndex == pcs.writeIndex {
+	if pq.readIndex == pq.writeIndex {
 		return QueueRequest[T]{}, false
 	}
-	index := pcs.readIndex
+	index := pq.readIndex
 	// Increase here, so even if errors happen below, it always iterates
-	pcs.readIndex++
+	pq.readIndex++
 
-	pcs.currentlyDispatchedItems = append(pcs.currentlyDispatchedItems, index)
+	pq.currentlyDispatchedItems = append(pq.currentlyDispatchedItems, index)
 	getOp := storage.GetOperation(getItemKey(index))
-	err := pcs.client.Batch(ctx,
-		storage.SetOperation(readIndexKey, itemIndexToBytes(pcs.readIndex)),
-		storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pcs.currentlyDispatchedItems)),
+	err := pq.client.Batch(ctx,
+		storage.SetOperation(readIndexKey, itemIndexToBytes(pq.readIndex)),
+		storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems)),
 		getOp)
 
 	var request T
 	if err == nil {
-		request, err = pcs.unmarshaler(getOp.Value)
+		request, err = pq.unmarshaler(getOp.Value)
 	}
 
 	if err != nil {
-		pcs.set.Logger.Debug("Failed to dispatch item", zap.Error(err))
+		pq.set.Logger.Debug("Failed to dispatch item", zap.Error(err))
 		// We need to make sure that currently dispatched items list is cleaned
-		if err = pcs.itemDispatchingFinish(ctx, index); err != nil {
-			pcs.set.Logger.Error("Error deleting item from queue", zap.Error(err))
+		if err = pq.itemDispatchingFinish(ctx, index); err != nil {
+			pq.set.Logger.Error("Error deleting item from queue", zap.Error(err))
 		}
 
 		return QueueRequest[T]{}, false
@@ -236,15 +236,15 @@ func (pcs *persistentContiguousStorage[T]) getNextItem(ctx context.Context) (Que
 
 	req := newQueueRequest[T](context.Background(), request)
 	// If all went well so far, cleanup will be handled by callback
-	pcs.refClient++
+	pq.refClient++
 	req.onProcessingFinishedFunc = func() {
-		pcs.mu.Lock()
-		defer pcs.mu.Unlock()
-		if err = pcs.itemDispatchingFinish(ctx, index); err != nil {
-			pcs.set.Logger.Error("Error deleting item from queue", zap.Error(err))
+		pq.mu.Lock()
+		defer pq.mu.Unlock()
+		if err = pq.itemDispatchingFinish(ctx, index); err != nil {
+			pq.set.Logger.Error("Error deleting item from queue", zap.Error(err))
 		}
-		if err = pcs.unrefClient(ctx); err != nil {
-			pcs.set.Logger.Error("Error closing the storage client", zap.Error(err))
+		if err = pq.unrefClient(ctx); err != nil {
+			pq.set.Logger.Error("Error closing the storage client", zap.Error(err))
 		}
 	}
 	return req, true
@@ -252,27 +252,27 @@ func (pcs *persistentContiguousStorage[T]) getNextItem(ctx context.Context) (Que
 
 // retrieveAndEnqueueNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
 // and moves the items at the back of the queue.
-func (pcs *persistentContiguousStorage[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Context) {
+func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Context) {
 	var dispatchedItems []uint64
 
-	pcs.mu.Lock()
-	defer pcs.mu.Unlock()
-	pcs.set.Logger.Debug("Checking if there are items left for dispatch by consumers")
-	itemKeysBuf, err := pcs.client.Get(ctx, currentlyDispatchedItemsKey)
+	pq.mu.Lock()
+	defer pq.mu.Unlock()
+	pq.set.Logger.Debug("Checking if there are items left for dispatch by consumers")
+	itemKeysBuf, err := pq.client.Get(ctx, currentlyDispatchedItemsKey)
 	if err == nil {
 		dispatchedItems, err = bytesToItemIndexArray(itemKeysBuf)
 	}
 	if err != nil {
-		pcs.set.Logger.Error("Could not fetch items left for dispatch by consumers", zap.Error(err))
+		pq.set.Logger.Error("Could not fetch items left for dispatch by consumers", zap.Error(err))
 		return
 	}
 
 	if len(dispatchedItems) == 0 {
-		pcs.set.Logger.Debug("No items left for dispatch by consumers")
+		pq.set.Logger.Debug("No items left for dispatch by consumers")
 		return
 	}
 
-	pcs.set.Logger.Info("Fetching items left for dispatch by consumers", zap.Int(zapNumberOfItems,
+	pq.set.Logger.Info("Fetching items left for dispatch by consumers", zap.Int(zapNumberOfItems,
 		len(dispatchedItems)))
 	retrieveBatch := make([]storage.Operation, len(dispatchedItems))
 	cleanupBatch := make([]storage.Operation, len(dispatchedItems))
@@ -281,72 +281,72 @@ func (pcs *persistentContiguousStorage[T]) retrieveAndEnqueueNotDispatchedReqs(c
 		retrieveBatch[i] = storage.GetOperation(key)
 		cleanupBatch[i] = storage.DeleteOperation(key)
 	}
-	retrieveErr := pcs.client.Batch(ctx, retrieveBatch...)
-	cleanupErr := pcs.client.Batch(ctx, cleanupBatch...)
+	retrieveErr := pq.client.Batch(ctx, retrieveBatch...)
+	cleanupErr := pq.client.Batch(ctx, cleanupBatch...)
 
 	if cleanupErr != nil {
-		pcs.set.Logger.Debug("Failed cleaning items left by consumers", zap.Error(cleanupErr))
+		pq.set.Logger.Debug("Failed cleaning items left by consumers", zap.Error(cleanupErr))
 	}
 
 	if retrieveErr != nil {
-		pcs.set.Logger.Warn("Failed retrieving items left by consumers", zap.Error(retrieveErr))
+		pq.set.Logger.Warn("Failed retrieving items left by consumers", zap.Error(retrieveErr))
 		return
 	}
 
 	errCount := 0
 	for _, op := range retrieveBatch {
 		if op.Value == nil {
-			pcs.set.Logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
+			pq.set.Logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
 			continue
 		}
-		req, err := pcs.unmarshaler(op.Value)
+		req, err := pq.unmarshaler(op.Value)
 		// If error happened or item is nil, it will be efficiently ignored
 		if err != nil {
-			pcs.set.Logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
+			pq.set.Logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
 			continue
 		}
-		if pcs.putInternal(ctx, req) != nil {
+		if pq.putInternal(ctx, req) != nil {
 			errCount++
 		}
 	}
 
 	if errCount > 0 {
-		pcs.set.Logger.Error("Errors occurred while moving items for dispatching back to queue",
+		pq.set.Logger.Error("Errors occurred while moving items for dispatching back to queue",
 			zap.Int(zapNumberOfItems, len(retrieveBatch)), zap.Int(zapErrorCount, errCount))
 	} else {
-		pcs.set.Logger.Info("Moved items for dispatching back to queue",
+		pq.set.Logger.Info("Moved items for dispatching back to queue",
 			zap.Int(zapNumberOfItems, len(retrieveBatch)))
 	}
 }
 
 // itemDispatchingFinish removes the item from the list of currently dispatched items and deletes it from the persistent queue
-func (pcs *persistentContiguousStorage[T]) itemDispatchingFinish(ctx context.Context, index uint64) error {
-	lenCDI := len(pcs.currentlyDispatchedItems)
+func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index uint64) error {
+	lenCDI := len(pq.currentlyDispatchedItems)
 	for i := 0; i < lenCDI; i++ {
-		if pcs.currentlyDispatchedItems[i] == index {
-			pcs.currentlyDispatchedItems[i] = pcs.currentlyDispatchedItems[lenCDI-1]
-			pcs.currentlyDispatchedItems = pcs.currentlyDispatchedItems[:lenCDI-1]
+		if pq.currentlyDispatchedItems[i] == index {
+			pq.currentlyDispatchedItems[i] = pq.currentlyDispatchedItems[lenCDI-1]
+			pq.currentlyDispatchedItems = pq.currentlyDispatchedItems[:lenCDI-1]
 			break
 		}
 	}
 
-	setOp := storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pcs.currentlyDispatchedItems))
+	setOp := storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems))
 	deleteOp := storage.DeleteOperation(getItemKey(index))
-	if err := pcs.client.Batch(ctx, setOp, deleteOp); err != nil {
+	if err := pq.client.Batch(ctx, setOp, deleteOp); err != nil {
 		// got an error, try to gracefully handle it
-		pcs.set.Logger.Warn("Failed updating currently dispatched items, trying to delete the item first",
+		pq.set.Logger.Warn("Failed updating currently dispatched items, trying to delete the item first",
 			zap.Error(err))
 	} else {
 		// Everything ok, exit
 		return nil
 	}
 
-	if err := pcs.client.Batch(ctx, deleteOp); err != nil {
+	if err := pq.client.Batch(ctx, deleteOp); err != nil {
 		// Return an error here, as this indicates an issue with the underlying storage medium
 		return fmt.Errorf("failed deleting item from queue, got error from storage: %w", err)
 	}
 
-	if err := pcs.client.Batch(ctx, setOp); err != nil {
+	if err := pq.client.Batch(ctx, setOp); err != nil {
 		// even if this fails, we still have the right dispatched items in memory
 		// at worst, we'll have the wrong list in storage, and we'll discard the nonexistent items during startup
 		return fmt.Errorf("failed updating currently dispatched items, but deleted item successfully: %w", err)

@@ -19,7 +19,7 @@ var (
 
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
 func NewPersistentQueue[T any](capacity int, dataType component.DataType, storageID component.ID, marshaler func(req T) ([]byte, error), unmarshaler func([]byte) (T, error), set exporter.CreateSettings) Queue[T] {
-	return &persistentContiguousStorage[T]{
+	return &persistentQueue[T]{
 		set:         set,
 		storageID:   storageID,
 		dataType:    dataType,
@@ -32,12 +32,12 @@ func NewPersistentQueue[T any](capacity int, dataType component.DataType, storag
 }
 
 // Start starts the persistentQueue with the given number of consumers.
-func (pcs *persistentContiguousStorage[T]) Start(ctx context.Context, host component.Host) error {
-	storageClient, err := toStorageClient(ctx, pcs.storageID, host, pcs.set.ID, pcs.dataType)
+func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) error {
+	storageClient, err := toStorageClient(ctx, pq.storageID, host, pq.set.ID, pq.dataType)
 	if err != nil {
 		return err
 	}
-	pcs.initClient(ctx, storageClient)
+	pq.initClient(ctx, storageClient)
 	return nil
 }
 
