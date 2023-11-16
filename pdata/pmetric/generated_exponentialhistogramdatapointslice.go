@@ -165,3 +165,14 @@ func (es ExponentialHistogramDataPointSlice) ForEachIndex(f func(int, Exponentia
 		f(i, es.At(i))
 	}
 }
+
+// ForEachWhile iterates over ExponentialHistogramDataPointSlice and executes f against each element.
+// The function also passes the iteration index.
+func (es ExponentialHistogramDataPointSlice) ForEachWhile(f func(ExponentialHistogramDataPoint) bool) bool {
+	for i := 0; i < es.Len(); i++ {
+		if !f(es.At(i)) {
+			return false
+		}
+	}
+	return true
+}

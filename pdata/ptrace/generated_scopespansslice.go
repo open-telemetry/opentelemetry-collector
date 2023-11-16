@@ -165,3 +165,14 @@ func (es ScopeSpansSlice) ForEachIndex(f func(int, ScopeSpans)) {
 		f(i, es.At(i))
 	}
 }
+
+// ForEachWhile iterates over ScopeSpansSlice and executes f against each element.
+// The function also passes the iteration index.
+func (es ScopeSpansSlice) ForEachWhile(f func(ScopeSpans) bool) bool {
+	for i := 0; i < es.Len(); i++ {
+		if !f(es.At(i)) {
+			return false
+		}
+	}
+	return true
+}

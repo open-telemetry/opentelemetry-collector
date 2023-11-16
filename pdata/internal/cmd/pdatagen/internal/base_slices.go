@@ -171,6 +171,17 @@ func (es {{ .structName }}) ForEachIndex(f func(int, {{ .elementName }})) {
 	for i := 0; i < es.Len(); i++ {
 		f(i, es.At(i))
 	}
+}
+
+// ForEachWhile iterates over {{ .structName }} and executes f against each element.
+// The function also passes the iteration index.
+func (es {{ .structName }}) ForEachWhile(f func({{ .elementName }}) bool) bool {
+	for i := 0; i < es.Len(); i++ {
+		if !f(es.At(i)) {
+			return false
+		}
+	}
+	return true
 }`
 
 const sliceTestTemplate = `func Test{{ .structName }}(t *testing.T) {
@@ -315,19 +326,50 @@ func Test{{ .structName }}_ForEach(t *testing.T) {
 }
 
 func Test{{ .structName }}_ForEachIndex(t *testing.T) {
-	// Test ForEach on empty slice
+	// Test _ForEachIndex on empty slice
 	emptySlice := New{{ .structName }}()
 	emptySlice.ForEachIndex(func(i int, el {{ .elementName }}) {
 		t.Fail()
 	})
 
-	// Test ForEach
+	// Test _ForEachIndex
 	slice := generateTest{{ .structName }}()
 	total := 0
 	slice.ForEachIndex(func(i int, el {{ .elementName }}) {
 		total+=i
 	})
 	assert.Equal(t, 0+1+2+3+4+5+6, total)
+}
+
+func Test{{ .structName }}_ForEachWhile(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := New{{ .structName }}()
+	emptySlice.ForEachWhile(func(el {{ .elementName }}) bool {
+		t.Fail()
+		return false
+	})
+
+	// Test ForEachWhile stops short
+	slice := generateTest{{ .structName }}()
+	last := 0
+	proceed := slice.ForEachWhile(func(el {{ .elementName }}) bool{
+		last++
+		if last == 4 {
+			return false
+		}
+		return true
+	})
+	assert.False(t, proceed)
+	assert.Equal(t, 4, last)
+
+	// Test ForEachWhile completes
+	last = 0
+	proceed = slice.ForEachWhile(func(el {{ .elementName }}) bool{
+		last++
+		return true
+	})
+	assert.True(t, proceed)
+	assert.Equal(t, 7, last)
 }`
 
 const sliceGenerateTest = `func generateTest{{ .structName }}() {{ .structName }} {

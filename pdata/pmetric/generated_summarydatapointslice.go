@@ -165,3 +165,14 @@ func (es SummaryDataPointSlice) ForEachIndex(f func(int, SummaryDataPoint)) {
 		f(i, es.At(i))
 	}
 }
+
+// ForEachWhile iterates over SummaryDataPointSlice and executes f against each element.
+// The function also passes the iteration index.
+func (es SummaryDataPointSlice) ForEachWhile(f func(SummaryDataPoint) bool) bool {
+	for i := 0; i < es.Len(); i++ {
+		if !f(es.At(i)) {
+			return false
+		}
+	}
+	return true
+}

@@ -165,3 +165,14 @@ func (es SpanEventSlice) ForEachIndex(f func(int, SpanEvent)) {
 		f(i, es.At(i))
 	}
 }
+
+// ForEachWhile iterates over SpanEventSlice and executes f against each element.
+// The function also passes the iteration index.
+func (es SpanEventSlice) ForEachWhile(f func(SpanEvent) bool) bool {
+	for i := 0; i < es.Len(); i++ {
+		if !f(es.At(i)) {
+			return false
+		}
+	}
+	return true
+}

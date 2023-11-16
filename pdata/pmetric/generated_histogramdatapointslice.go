@@ -165,3 +165,14 @@ func (es HistogramDataPointSlice) ForEachIndex(f func(int, HistogramDataPoint)) 
 		f(i, es.At(i))
 	}
 }
+
+// ForEachWhile iterates over HistogramDataPointSlice and executes f against each element.
+// The function also passes the iteration index.
+func (es HistogramDataPointSlice) ForEachWhile(f func(HistogramDataPoint) bool) bool {
+	for i := 0; i < es.Len(); i++ {
+		if !f(es.At(i)) {
+			return false
+		}
+	}
+	return true
+}

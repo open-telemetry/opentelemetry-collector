@@ -165,3 +165,14 @@ func (es MetricSlice) ForEachIndex(f func(int, Metric)) {
 		f(i, es.At(i))
 	}
 }
+
+// ForEachWhile iterates over MetricSlice and executes f against each element.
+// The function also passes the iteration index.
+func (es MetricSlice) ForEachWhile(f func(Metric) bool) bool {
+	for i := 0; i < es.Len(); i++ {
+		if !f(es.At(i)) {
+			return false
+		}
+	}
+	return true
+}

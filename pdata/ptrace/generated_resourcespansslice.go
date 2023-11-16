@@ -165,3 +165,14 @@ func (es ResourceSpansSlice) ForEachIndex(f func(int, ResourceSpans)) {
 		f(i, es.At(i))
 	}
 }
+
+// ForEachWhile iterates over ResourceSpansSlice and executes f against each element.
+// The function also passes the iteration index.
+func (es ResourceSpansSlice) ForEachWhile(f func(ResourceSpans) bool) bool {
+	for i := 0; i < es.Len(); i++ {
+		if !f(es.At(i)) {
+			return false
+		}
+	}
+	return true
+}
