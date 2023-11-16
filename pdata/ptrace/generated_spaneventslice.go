@@ -152,8 +152,16 @@ func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) {
 }
 
 // ForEach iterates over SpanEventSlice and executes f against each element.
-func (es SpanEventSlice) ForEach(f func(el SpanEvent)) {
+func (es SpanEventSlice) ForEach(f func(SpanEvent)) {
 	for i := 0; i < es.Len(); i++ {
 		f(es.At(i))
+	}
+}
+
+// ForEachIndex iterates over SpanEventSlice and executes f against each element.
+// The function also passes the iteration index.
+func (es SpanEventSlice) ForEachIndex(f func(int, SpanEvent)) {
+	for i := 0; i < es.Len(); i++ {
+		f(i, es.At(i))
 	}
 }

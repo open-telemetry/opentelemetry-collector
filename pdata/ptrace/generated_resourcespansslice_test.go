@@ -148,11 +148,27 @@ func TestResourceSpansSlice_ForEach(t *testing.T) {
 
 	// Test ForEach
 	slice := generateTestResourceSpansSlice()
-	pos := 0
+	count := 0
 	slice.ForEach(func(el ResourceSpans) {
-		pos++
+		count++
 	})
-	assert.Equal(t, 7, slice.Len())
+	assert.Equal(t, 7, count)
+}
+
+func TestResourceSpansSlice_ForEachIndex(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewResourceSpansSlice()
+	emptySlice.ForEachIndex(func(i int, el ResourceSpans) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestResourceSpansSlice()
+	total := 0
+	slice.ForEachIndex(func(i int, el ResourceSpans) {
+		total += i
+	})
+	assert.Equal(t, 0+1+2+3+4+5+6, total)
 }
 
 func generateTestResourceSpansSlice() ResourceSpansSlice {

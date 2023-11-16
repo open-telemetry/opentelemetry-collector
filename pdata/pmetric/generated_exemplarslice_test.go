@@ -131,11 +131,27 @@ func TestExemplarSlice_ForEach(t *testing.T) {
 
 	// Test ForEach
 	slice := generateTestExemplarSlice()
-	pos := 0
+	count := 0
 	slice.ForEach(func(el Exemplar) {
-		pos++
+		count++
 	})
-	assert.Equal(t, 7, slice.Len())
+	assert.Equal(t, 7, count)
+}
+
+func TestExemplarSlice_ForEachIndex(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewExemplarSlice()
+	emptySlice.ForEachIndex(func(i int, el Exemplar) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestExemplarSlice()
+	total := 0
+	slice.ForEachIndex(func(i int, el Exemplar) {
+		total += i
+	})
+	assert.Equal(t, 0+1+2+3+4+5+6, total)
 }
 
 func generateTestExemplarSlice() ExemplarSlice {

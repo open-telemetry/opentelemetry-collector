@@ -148,11 +148,27 @@ func TestSummaryDataPointSlice_ForEach(t *testing.T) {
 
 	// Test ForEach
 	slice := generateTestSummaryDataPointSlice()
-	pos := 0
+	count := 0
 	slice.ForEach(func(el SummaryDataPoint) {
-		pos++
+		count++
 	})
-	assert.Equal(t, 7, slice.Len())
+	assert.Equal(t, 7, count)
+}
+
+func TestSummaryDataPointSlice_ForEachIndex(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewSummaryDataPointSlice()
+	emptySlice.ForEachIndex(func(i int, el SummaryDataPoint) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestSummaryDataPointSlice()
+	total := 0
+	slice.ForEachIndex(func(i int, el SummaryDataPoint) {
+		total += i
+	})
+	assert.Equal(t, 0+1+2+3+4+5+6, total)
 }
 
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {

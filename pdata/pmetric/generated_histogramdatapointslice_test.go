@@ -148,11 +148,27 @@ func TestHistogramDataPointSlice_ForEach(t *testing.T) {
 
 	// Test ForEach
 	slice := generateTestHistogramDataPointSlice()
-	pos := 0
+	count := 0
 	slice.ForEach(func(el HistogramDataPoint) {
-		pos++
+		count++
 	})
-	assert.Equal(t, 7, slice.Len())
+	assert.Equal(t, 7, count)
+}
+
+func TestHistogramDataPointSlice_ForEachIndex(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewHistogramDataPointSlice()
+	emptySlice.ForEachIndex(func(i int, el HistogramDataPoint) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestHistogramDataPointSlice()
+	total := 0
+	slice.ForEachIndex(func(i int, el HistogramDataPoint) {
+		total += i
+	})
+	assert.Equal(t, 0+1+2+3+4+5+6, total)
 }
 
 func generateTestHistogramDataPointSlice() HistogramDataPointSlice {

@@ -148,11 +148,27 @@ func TestExponentialHistogramDataPointSlice_ForEach(t *testing.T) {
 
 	// Test ForEach
 	slice := generateTestExponentialHistogramDataPointSlice()
-	pos := 0
+	count := 0
 	slice.ForEach(func(el ExponentialHistogramDataPoint) {
-		pos++
+		count++
 	})
-	assert.Equal(t, 7, slice.Len())
+	assert.Equal(t, 7, count)
+}
+
+func TestExponentialHistogramDataPointSlice_ForEachIndex(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewExponentialHistogramDataPointSlice()
+	emptySlice.ForEachIndex(func(i int, el ExponentialHistogramDataPoint) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestExponentialHistogramDataPointSlice()
+	total := 0
+	slice.ForEachIndex(func(i int, el ExponentialHistogramDataPoint) {
+		total += i
+	})
+	assert.Equal(t, 0+1+2+3+4+5+6, total)
 }
 
 func generateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {

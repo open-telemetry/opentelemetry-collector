@@ -159,9 +159,17 @@ func (es {{ .structName }}) Sort(less func(a, b {{ .elementName }}) bool) {
 {{- end }}
 
 // ForEach iterates over {{ .structName }} and executes f against each element.
-func (es {{ .structName }}) ForEach(f func(el {{ .elementName }})) {
+func (es {{ .structName }}) ForEach(f func({{ .elementName }})) {
 	for i := 0; i < es.Len(); i++ {
 		f(es.At(i))
+	}
+}
+
+// ForEachIndex iterates over {{ .structName }} and executes f against each element.
+// The function also passes the iteration index.
+func (es {{ .structName }}) ForEachIndex(f func(int, {{ .elementName }})) {
+	for i := 0; i < es.Len(); i++ {
+		f(i, es.At(i))
 	}
 }`
 
@@ -299,11 +307,27 @@ func Test{{ .structName }}_ForEach(t *testing.T) {
 
 	// Test ForEach
 	slice := generateTest{{ .structName }}()
-	pos := 0
+	count := 0
 	slice.ForEach(func(el {{ .elementName }}) {
-		pos++
+		count++
 	})
-	assert.Equal(t, 7, slice.Len())
+	assert.Equal(t, 7, count)
+}
+
+func Test{{ .structName }}_ForEachIndex(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := New{{ .structName }}()
+	emptySlice.ForEachIndex(func(i int, el {{ .elementName }}) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTest{{ .structName }}()
+	total := 0
+	slice.ForEachIndex(func(i int, el {{ .elementName }}) {
+		total+=i
+	})
+	assert.Equal(t, 0+1+2+3+4+5+6, total)
 }`
 
 const sliceGenerateTest = `func generateTest{{ .structName }}() {{ .structName }} {

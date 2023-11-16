@@ -152,8 +152,16 @@ func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) {
 }
 
 // ForEach iterates over ResourceSpansSlice and executes f against each element.
-func (es ResourceSpansSlice) ForEach(f func(el ResourceSpans)) {
+func (es ResourceSpansSlice) ForEach(f func(ResourceSpans)) {
 	for i := 0; i < es.Len(); i++ {
 		f(es.At(i))
+	}
+}
+
+// ForEachIndex iterates over ResourceSpansSlice and executes f against each element.
+// The function also passes the iteration index.
+func (es ResourceSpansSlice) ForEachIndex(f func(int, ResourceSpans)) {
+	for i := 0; i < es.Len(); i++ {
+		f(i, es.At(i))
 	}
 }

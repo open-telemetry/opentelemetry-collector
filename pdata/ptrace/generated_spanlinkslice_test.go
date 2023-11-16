@@ -148,11 +148,27 @@ func TestSpanLinkSlice_ForEach(t *testing.T) {
 
 	// Test ForEach
 	slice := generateTestSpanLinkSlice()
-	pos := 0
+	count := 0
 	slice.ForEach(func(el SpanLink) {
-		pos++
+		count++
 	})
-	assert.Equal(t, 7, slice.Len())
+	assert.Equal(t, 7, count)
+}
+
+func TestSpanLinkSlice_ForEachIndex(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewSpanLinkSlice()
+	emptySlice.ForEachIndex(func(i int, el SpanLink) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestSpanLinkSlice()
+	total := 0
+	slice.ForEachIndex(func(i int, el SpanLink) {
+		total += i
+	})
+	assert.Equal(t, 0+1+2+3+4+5+6, total)
 }
 
 func generateTestSpanLinkSlice() SpanLinkSlice {

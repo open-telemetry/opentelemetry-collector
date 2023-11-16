@@ -148,11 +148,27 @@ func TestLogRecordSlice_ForEach(t *testing.T) {
 
 	// Test ForEach
 	slice := generateTestLogRecordSlice()
-	pos := 0
+	count := 0
 	slice.ForEach(func(el LogRecord) {
-		pos++
+		count++
 	})
-	assert.Equal(t, 7, slice.Len())
+	assert.Equal(t, 7, count)
+}
+
+func TestLogRecordSlice_ForEachIndex(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewLogRecordSlice()
+	emptySlice.ForEachIndex(func(i int, el LogRecord) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestLogRecordSlice()
+	total := 0
+	slice.ForEachIndex(func(i int, el LogRecord) {
+		total += i
+	})
+	assert.Equal(t, 0+1+2+3+4+5+6, total)
 }
 
 func generateTestLogRecordSlice() LogRecordSlice {

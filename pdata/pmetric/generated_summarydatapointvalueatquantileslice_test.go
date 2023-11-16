@@ -148,11 +148,27 @@ func TestSummaryDataPointValueAtQuantileSlice_ForEach(t *testing.T) {
 
 	// Test ForEach
 	slice := generateTestSummaryDataPointValueAtQuantileSlice()
-	pos := 0
+	count := 0
 	slice.ForEach(func(el SummaryDataPointValueAtQuantile) {
-		pos++
+		count++
 	})
-	assert.Equal(t, 7, slice.Len())
+	assert.Equal(t, 7, count)
+}
+
+func TestSummaryDataPointValueAtQuantileSlice_ForEachIndex(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewSummaryDataPointValueAtQuantileSlice()
+	emptySlice.ForEachIndex(func(i int, el SummaryDataPointValueAtQuantile) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestSummaryDataPointValueAtQuantileSlice()
+	total := 0
+	slice.ForEachIndex(func(i int, el SummaryDataPointValueAtQuantile) {
+		total += i
+	})
+	assert.Equal(t, 0+1+2+3+4+5+6, total)
 }
 
 func generateTestSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {

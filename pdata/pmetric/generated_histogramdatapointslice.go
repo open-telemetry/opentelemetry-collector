@@ -152,8 +152,16 @@ func (es HistogramDataPointSlice) Sort(less func(a, b HistogramDataPoint) bool) 
 }
 
 // ForEach iterates over HistogramDataPointSlice and executes f against each element.
-func (es HistogramDataPointSlice) ForEach(f func(el HistogramDataPoint)) {
+func (es HistogramDataPointSlice) ForEach(f func(HistogramDataPoint)) {
 	for i := 0; i < es.Len(); i++ {
 		f(es.At(i))
+	}
+}
+
+// ForEachIndex iterates over HistogramDataPointSlice and executes f against each element.
+// The function also passes the iteration index.
+func (es HistogramDataPointSlice) ForEachIndex(f func(int, HistogramDataPoint)) {
+	for i := 0; i < es.Len(); i++ {
+		f(i, es.At(i))
 	}
 }

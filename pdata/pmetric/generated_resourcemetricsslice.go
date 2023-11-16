@@ -152,8 +152,16 @@ func (es ResourceMetricsSlice) Sort(less func(a, b ResourceMetrics) bool) {
 }
 
 // ForEach iterates over ResourceMetricsSlice and executes f against each element.
-func (es ResourceMetricsSlice) ForEach(f func(el ResourceMetrics)) {
+func (es ResourceMetricsSlice) ForEach(f func(ResourceMetrics)) {
 	for i := 0; i < es.Len(); i++ {
 		f(es.At(i))
+	}
+}
+
+// ForEachIndex iterates over ResourceMetricsSlice and executes f against each element.
+// The function also passes the iteration index.
+func (es ResourceMetricsSlice) ForEachIndex(f func(int, ResourceMetrics)) {
+	for i := 0; i < es.Len(); i++ {
+		f(i, es.At(i))
 	}
 }

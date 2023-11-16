@@ -152,8 +152,16 @@ func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) {
 }
 
 // ForEach iterates over ScopeLogsSlice and executes f against each element.
-func (es ScopeLogsSlice) ForEach(f func(el ScopeLogs)) {
+func (es ScopeLogsSlice) ForEach(f func(ScopeLogs)) {
 	for i := 0; i < es.Len(); i++ {
 		f(es.At(i))
+	}
+}
+
+// ForEachIndex iterates over ScopeLogsSlice and executes f against each element.
+// The function also passes the iteration index.
+func (es ScopeLogsSlice) ForEachIndex(f func(int, ScopeLogs)) {
+	for i := 0; i < es.Len(); i++ {
+		f(i, es.At(i))
 	}
 }

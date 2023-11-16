@@ -148,11 +148,27 @@ func TestScopeSpansSlice_ForEach(t *testing.T) {
 
 	// Test ForEach
 	slice := generateTestScopeSpansSlice()
-	pos := 0
+	count := 0
 	slice.ForEach(func(el ScopeSpans) {
-		pos++
+		count++
 	})
-	assert.Equal(t, 7, slice.Len())
+	assert.Equal(t, 7, count)
+}
+
+func TestScopeSpansSlice_ForEachIndex(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewScopeSpansSlice()
+	emptySlice.ForEachIndex(func(i int, el ScopeSpans) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestScopeSpansSlice()
+	total := 0
+	slice.ForEachIndex(func(i int, el ScopeSpans) {
+		total += i
+	})
+	assert.Equal(t, 0+1+2+3+4+5+6, total)
 }
 
 func generateTestScopeSpansSlice() ScopeSpansSlice {

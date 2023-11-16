@@ -148,11 +148,27 @@ func TestScopeMetricsSlice_ForEach(t *testing.T) {
 
 	// Test ForEach
 	slice := generateTestScopeMetricsSlice()
-	pos := 0
+	count := 0
 	slice.ForEach(func(el ScopeMetrics) {
-		pos++
+		count++
 	})
-	assert.Equal(t, 7, slice.Len())
+	assert.Equal(t, 7, count)
+}
+
+func TestScopeMetricsSlice_ForEachIndex(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewScopeMetricsSlice()
+	emptySlice.ForEachIndex(func(i int, el ScopeMetrics) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestScopeMetricsSlice()
+	total := 0
+	slice.ForEachIndex(func(i int, el ScopeMetrics) {
+		total += i
+	})
+	assert.Equal(t, 0+1+2+3+4+5+6, total)
 }
 
 func generateTestScopeMetricsSlice() ScopeMetricsSlice {

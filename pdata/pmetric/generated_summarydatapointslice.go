@@ -152,8 +152,16 @@ func (es SummaryDataPointSlice) Sort(less func(a, b SummaryDataPoint) bool) {
 }
 
 // ForEach iterates over SummaryDataPointSlice and executes f against each element.
-func (es SummaryDataPointSlice) ForEach(f func(el SummaryDataPoint)) {
+func (es SummaryDataPointSlice) ForEach(f func(SummaryDataPoint)) {
 	for i := 0; i < es.Len(); i++ {
 		f(es.At(i))
+	}
+}
+
+// ForEachIndex iterates over SummaryDataPointSlice and executes f against each element.
+// The function also passes the iteration index.
+func (es SummaryDataPointSlice) ForEachIndex(f func(int, SummaryDataPoint)) {
+	for i := 0; i < es.Len(); i++ {
+		f(i, es.At(i))
 	}
 }

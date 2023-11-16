@@ -148,11 +148,27 @@ func TestMetricSlice_ForEach(t *testing.T) {
 
 	// Test ForEach
 	slice := generateTestMetricSlice()
-	pos := 0
+	count := 0
 	slice.ForEach(func(el Metric) {
-		pos++
+		count++
 	})
-	assert.Equal(t, 7, slice.Len())
+	assert.Equal(t, 7, count)
+}
+
+func TestMetricSlice_ForEachIndex(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewMetricSlice()
+	emptySlice.ForEachIndex(func(i int, el Metric) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestMetricSlice()
+	total := 0
+	slice.ForEachIndex(func(i int, el Metric) {
+		total += i
+	})
+	assert.Equal(t, 0+1+2+3+4+5+6, total)
 }
 
 func generateTestMetricSlice() MetricSlice {
