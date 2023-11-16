@@ -75,14 +75,17 @@ func Generate(cfg Config) error {
 		return fmt.Errorf("failed to create output path: %w", err)
 	}
 
-	for _, tmpl := range []*template.Template{
-		mainTemplate,
-		mainOthersTemplate,
-		mainWindowsTemplate,
+	templates := []*template.Template{
 		componentsTemplate,
 		componentsTestTemplate,
 		goModTemplate,
-	} {
+	}
+	if !cfg.SkipGenerateMain {
+		templates = append(templates, mainTemplate,
+			mainOthersTemplate,
+			mainWindowsTemplate)
+	}
+	for _, tmpl := range templates {
 		if err := processAndWrite(cfg, tmpl, tmpl.Name(), cfg); err != nil {
 			return fmt.Errorf("failed to generate source file %q: %w", tmpl.Name(), err)
 		}
