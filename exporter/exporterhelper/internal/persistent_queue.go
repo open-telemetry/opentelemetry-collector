@@ -17,31 +17,27 @@ var (
 	errWrongExtensionType = errors.New("requested extension is not a storage extension")
 )
 
-// persistentQueue holds the queue backed by file storage
-type persistentQueue[T any] struct {
-	*persistentContiguousStorage[T]
-	set       exporter.CreateSettings
-	storageID component.ID
-	dataType  component.DataType
-}
-
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
 func NewPersistentQueue[T any](capacity int, dataType component.DataType, storageID component.ID, marshaler func(req T) ([]byte, error), unmarshaler func([]byte) (T, error), set exporter.CreateSettings) Queue[T] {
-	return &persistentQueue[T]{
-		persistentContiguousStorage: newPersistentContiguousStorage(set.Logger, uint64(capacity), marshaler, unmarshaler),
-		set:                         set,
-		storageID:                   storageID,
-		dataType:                    dataType,
+	return &persistentContiguousStorage[T]{
+		set:         set,
+		storageID:   storageID,
+		dataType:    dataType,
+		unmarshaler: unmarshaler,
+		marshaler:   marshaler,
+		capacity:    uint64(capacity),
+		putChan:     make(chan struct{}, capacity),
+		stopChan:    make(chan struct{}),
 	}
 }
 
 // Start starts the persistentQueue with the given number of consumers.
-func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) error {
-	storageClient, err := toStorageClient(ctx, pq.storageID, host, pq.set.ID, pq.dataType)
+func (pcs *persistentContiguousStorage[T]) Start(ctx context.Context, host component.Host) error {
+	storageClient, err := toStorageClient(ctx, pcs.storageID, host, pcs.set.ID, pcs.dataType)
 	if err != nil {
 		return err
 	}
-	pq.persistentContiguousStorage.start(ctx, storageClient)
+	pcs.initClient(ctx, storageClient)
 	return nil
 }
 
