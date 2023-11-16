@@ -139,6 +139,22 @@ func TestLogRecordSlice_Sort(t *testing.T) {
 	}
 }
 
+func TestLogRecordSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewLogRecordSlice()
+	emptySlice.ForEach(func(el LogRecord) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestLogRecordSlice()
+	pos := 0
+	slice.ForEach(func(el LogRecord) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestLogRecordSlice() LogRecordSlice {
 	es := NewLogRecordSlice()
 	fillTestLogRecordSlice(es)

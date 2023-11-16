@@ -139,6 +139,22 @@ func TestSpanLinkSlice_Sort(t *testing.T) {
 	}
 }
 
+func TestSpanLinkSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewSpanLinkSlice()
+	emptySlice.ForEach(func(el SpanLink) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestSpanLinkSlice()
+	pos := 0
+	slice.ForEach(func(el SpanLink) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestSpanLinkSlice() SpanLinkSlice {
 	es := NewSpanLinkSlice()
 	fillTestSpanLinkSlice(es)

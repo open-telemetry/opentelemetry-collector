@@ -150,3 +150,10 @@ func (es MetricSlice) Sort(less func(a, b Metric) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
+
+// ForEach iterates over MetricSlice and executes f against each element.
+func (es MetricSlice) ForEach(f func(el Metric)) {
+	for i := 0; i < es.Len(); i++ {
+		f(es.At(i))
+	}
+}

@@ -150,3 +150,10 @@ func (es HistogramDataPointSlice) Sort(less func(a, b HistogramDataPoint) bool) 
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
+
+// ForEach iterates over HistogramDataPointSlice and executes f against each element.
+func (es HistogramDataPointSlice) ForEach(f func(el HistogramDataPoint)) {
+	for i := 0; i < es.Len(); i++ {
+		f(es.At(i))
+	}
+}

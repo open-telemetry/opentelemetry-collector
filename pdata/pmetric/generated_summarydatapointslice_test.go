@@ -139,6 +139,22 @@ func TestSummaryDataPointSlice_Sort(t *testing.T) {
 	}
 }
 
+func TestSummaryDataPointSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewSummaryDataPointSlice()
+	emptySlice.ForEach(func(el SummaryDataPoint) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestSummaryDataPointSlice()
+	pos := 0
+	slice.ForEach(func(el SummaryDataPoint) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
 	es := NewSummaryDataPointSlice()
 	fillTestSummaryDataPointSlice(es)

@@ -139,6 +139,22 @@ func TestSpanSlice_Sort(t *testing.T) {
 	}
 }
 
+func TestSpanSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewSpanSlice()
+	emptySlice.ForEach(func(el Span) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestSpanSlice()
+	pos := 0
+	slice.ForEach(func(el Span) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestSpanSlice() SpanSlice {
 	es := NewSpanSlice()
 	fillTestSpanSlice(es)

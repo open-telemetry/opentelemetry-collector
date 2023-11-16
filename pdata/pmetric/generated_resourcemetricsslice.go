@@ -150,3 +150,10 @@ func (es ResourceMetricsSlice) Sort(less func(a, b ResourceMetrics) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
+
+// ForEach iterates over ResourceMetricsSlice and executes f against each element.
+func (es ResourceMetricsSlice) ForEach(f func(el ResourceMetrics)) {
+	for i := 0; i < es.Len(); i++ {
+		f(es.At(i))
+	}
+}

@@ -150,3 +150,10 @@ func (es ExponentialHistogramDataPointSlice) Sort(less func(a, b ExponentialHist
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
+
+// ForEach iterates over ExponentialHistogramDataPointSlice and executes f against each element.
+func (es ExponentialHistogramDataPointSlice) ForEach(f func(el ExponentialHistogramDataPoint)) {
+	for i := 0; i < es.Len(); i++ {
+		f(es.At(i))
+	}
+}

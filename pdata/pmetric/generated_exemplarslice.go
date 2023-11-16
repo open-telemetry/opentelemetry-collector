@@ -134,3 +134,10 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 		newExemplar(&(*es.orig)[i], es.state).CopyTo(newExemplar(&(*dest.orig)[i], dest.state))
 	}
 }
+
+// ForEach iterates over ExemplarSlice and executes f against each element.
+func (es ExemplarSlice) ForEach(f func(el Exemplar)) {
+	for i := 0; i < es.Len(); i++ {
+		f(es.At(i))
+	}
+}

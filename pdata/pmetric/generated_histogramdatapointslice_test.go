@@ -139,6 +139,22 @@ func TestHistogramDataPointSlice_Sort(t *testing.T) {
 	}
 }
 
+func TestHistogramDataPointSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewHistogramDataPointSlice()
+	emptySlice.ForEach(func(el HistogramDataPoint) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestHistogramDataPointSlice()
+	pos := 0
+	slice.ForEach(func(el HistogramDataPoint) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
 	es := NewHistogramDataPointSlice()
 	fillTestHistogramDataPointSlice(es)

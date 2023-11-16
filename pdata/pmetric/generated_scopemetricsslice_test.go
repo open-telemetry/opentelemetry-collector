@@ -139,6 +139,22 @@ func TestScopeMetricsSlice_Sort(t *testing.T) {
 	}
 }
 
+func TestScopeMetricsSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewScopeMetricsSlice()
+	emptySlice.ForEach(func(el ScopeMetrics) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestScopeMetricsSlice()
+	pos := 0
+	slice.ForEach(func(el ScopeMetrics) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestScopeMetricsSlice() ScopeMetricsSlice {
 	es := NewScopeMetricsSlice()
 	fillTestScopeMetricsSlice(es)

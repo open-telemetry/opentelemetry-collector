@@ -150,3 +150,10 @@ func (es SpanSlice) Sort(less func(a, b Span) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
+
+// ForEach iterates over SpanSlice and executes f against each element.
+func (es SpanSlice) ForEach(f func(el Span)) {
+	for i := 0; i < es.Len(); i++ {
+		f(es.At(i))
+	}
+}

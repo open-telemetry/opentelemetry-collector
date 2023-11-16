@@ -139,6 +139,22 @@ func TestMetricSlice_Sort(t *testing.T) {
 	}
 }
 
+func TestMetricSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewMetricSlice()
+	emptySlice.ForEach(func(el Metric) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestMetricSlice()
+	pos := 0
+	slice.ForEach(func(el Metric) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestMetricSlice() MetricSlice {
 	es := NewMetricSlice()
 	fillTestMetricSlice(es)

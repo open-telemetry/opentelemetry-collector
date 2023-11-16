@@ -150,3 +150,10 @@ func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
+
+// ForEach iterates over ScopeLogsSlice and executes f against each element.
+func (es ScopeLogsSlice) ForEach(f func(el ScopeLogs)) {
+	for i := 0; i < es.Len(); i++ {
+		f(es.At(i))
+	}
+}

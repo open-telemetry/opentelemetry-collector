@@ -139,6 +139,22 @@ func TestResourceLogsSlice_Sort(t *testing.T) {
 	}
 }
 
+func TestResourceLogsSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewResourceLogsSlice()
+	emptySlice.ForEach(func(el ResourceLogs) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestResourceLogsSlice()
+	pos := 0
+	slice.ForEach(func(el ResourceLogs) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestResourceLogsSlice() ResourceLogsSlice {
 	es := NewResourceLogsSlice()
 	fillTestResourceLogsSlice(es)

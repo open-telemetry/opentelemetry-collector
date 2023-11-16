@@ -139,6 +139,22 @@ func TestResourceMetricsSlice_Sort(t *testing.T) {
 	}
 }
 
+func TestResourceMetricsSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewResourceMetricsSlice()
+	emptySlice.ForEach(func(el ResourceMetrics) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestResourceMetricsSlice()
+	pos := 0
+	slice.ForEach(func(el ResourceMetrics) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestResourceMetricsSlice() ResourceMetricsSlice {
 	es := NewResourceMetricsSlice()
 	fillTestResourceMetricsSlice(es)

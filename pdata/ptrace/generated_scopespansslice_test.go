@@ -139,6 +139,22 @@ func TestScopeSpansSlice_Sort(t *testing.T) {
 	}
 }
 
+func TestScopeSpansSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewScopeSpansSlice()
+	emptySlice.ForEach(func(el ScopeSpans) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestScopeSpansSlice()
+	pos := 0
+	slice.ForEach(func(el ScopeSpans) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestScopeSpansSlice() ScopeSpansSlice {
 	es := NewScopeSpansSlice()
 	fillTestScopeSpansSlice(es)

@@ -156,7 +156,14 @@ func (es {{ .structName }}) Sort(less func(a, b {{ .elementName }}) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
-{{- end }}`
+{{- end }}
+
+// ForEach iterates over {{ .structName }} and executes f against each element.
+func (es {{ .structName }}) ForEach(f func(el {{ .elementName }})) {
+	for i := 0; i < es.Len(); i++ {
+		f(es.At(i))
+	}
+}`
 
 const sliceTestTemplate = `func Test{{ .structName }}(t *testing.T) {
 	es := New{{ .structName }}()
@@ -281,7 +288,23 @@ func Test{{ .structName }}_Sort(t *testing.T) {
 		assert.True(t, uintptr(unsafe.Pointer(es.At(i-1).orig)) > uintptr(unsafe.Pointer(es.At(i).orig)))
 	}
 }
-{{- end }}`
+{{- end }}
+
+func Test{{ .structName }}_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := New{{ .structName }}()
+	emptySlice.ForEach(func(el {{ .elementName }}) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTest{{ .structName }}()
+	pos := 0
+	slice.ForEach(func(el {{ .elementName }}) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}`
 
 const sliceGenerateTest = `func generateTest{{ .structName }}() {{ .structName }} {
 	es := New{{ .structName }}()

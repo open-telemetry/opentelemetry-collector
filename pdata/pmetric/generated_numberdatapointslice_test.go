@@ -139,6 +139,22 @@ func TestNumberDataPointSlice_Sort(t *testing.T) {
 	}
 }
 
+func TestNumberDataPointSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewNumberDataPointSlice()
+	emptySlice.ForEach(func(el NumberDataPoint) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestNumberDataPointSlice()
+	pos := 0
+	slice.ForEach(func(el NumberDataPoint) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestNumberDataPointSlice() NumberDataPointSlice {
 	es := NewNumberDataPointSlice()
 	fillTestNumberDataPointSlice(es)

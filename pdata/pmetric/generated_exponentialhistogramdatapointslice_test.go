@@ -139,6 +139,22 @@ func TestExponentialHistogramDataPointSlice_Sort(t *testing.T) {
 	}
 }
 
+func TestExponentialHistogramDataPointSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewExponentialHistogramDataPointSlice()
+	emptySlice.ForEach(func(el ExponentialHistogramDataPoint) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestExponentialHistogramDataPointSlice()
+	pos := 0
+	slice.ForEach(func(el ExponentialHistogramDataPoint) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
 	es := NewExponentialHistogramDataPointSlice()
 	fillTestExponentialHistogramDataPointSlice(es)

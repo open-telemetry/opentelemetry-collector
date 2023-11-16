@@ -150,3 +150,10 @@ func (es NumberDataPointSlice) Sort(less func(a, b NumberDataPoint) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
+
+// ForEach iterates over NumberDataPointSlice and executes f against each element.
+func (es NumberDataPointSlice) ForEach(f func(el NumberDataPoint)) {
+	for i := 0; i < es.Len(); i++ {
+		f(es.At(i))
+	}
+}

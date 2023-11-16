@@ -122,6 +122,22 @@ func TestExemplarSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestExemplarSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewExemplarSlice()
+	emptySlice.ForEach(func(el Exemplar) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestExemplarSlice()
+	pos := 0
+	slice.ForEach(func(el Exemplar) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestExemplarSlice() ExemplarSlice {
 	es := NewExemplarSlice()
 	fillTestExemplarSlice(es)

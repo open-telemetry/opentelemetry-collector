@@ -150,3 +150,10 @@ func (es SummaryDataPointValueAtQuantileSlice) Sort(less func(a, b SummaryDataPo
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
+
+// ForEach iterates over SummaryDataPointValueAtQuantileSlice and executes f against each element.
+func (es SummaryDataPointValueAtQuantileSlice) ForEach(f func(el SummaryDataPointValueAtQuantile)) {
+	for i := 0; i < es.Len(); i++ {
+		f(es.At(i))
+	}
+}

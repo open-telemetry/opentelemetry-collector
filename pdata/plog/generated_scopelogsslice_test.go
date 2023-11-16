@@ -139,6 +139,22 @@ func TestScopeLogsSlice_Sort(t *testing.T) {
 	}
 }
 
+func TestScopeLogsSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewScopeLogsSlice()
+	emptySlice.ForEach(func(el ScopeLogs) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestScopeLogsSlice()
+	pos := 0
+	slice.ForEach(func(el ScopeLogs) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestScopeLogsSlice() ScopeLogsSlice {
 	es := NewScopeLogsSlice()
 	fillTestScopeLogsSlice(es)

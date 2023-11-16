@@ -139,6 +139,22 @@ func TestResourceSpansSlice_Sort(t *testing.T) {
 	}
 }
 
+func TestResourceSpansSlice_ForEach(t *testing.T) {
+	// Test ForEach on empty slice
+	emptySlice := NewResourceSpansSlice()
+	emptySlice.ForEach(func(el ResourceSpans) {
+		t.Fail()
+	})
+
+	// Test ForEach
+	slice := generateTestResourceSpansSlice()
+	pos := 0
+	slice.ForEach(func(el ResourceSpans) {
+		pos++
+	})
+	assert.Equal(t, 7, slice.Len())
+}
+
 func generateTestResourceSpansSlice() ResourceSpansSlice {
 	es := NewResourceSpansSlice()
 	fillTestResourceSpansSlice(es)
