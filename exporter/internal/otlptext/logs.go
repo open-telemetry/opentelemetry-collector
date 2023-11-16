@@ -17,23 +17,16 @@ type textLogsMarshaler struct{}
 // MarshalLogs plog.Logs to OTLP text.
 func (textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	buf := dataBuffer{}
-	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
+	ld.ResourceLogs().ForEachIndex(func(i int, rl plog.ResourceLogs) {
 		buf.logEntry("ResourceLog #%d", i)
-		rl := rls.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rl.SchemaUrl())
 		buf.logAttributes("Resource attributes", rl.Resource().Attributes())
-		ills := rl.ScopeLogs()
-		for j := 0; j < ills.Len(); j++ {
+		rl.ScopeLogs().ForEachIndex(func(j int, ils plog.ScopeLogs) {
 			buf.logEntry("ScopeLogs #%d", j)
-			ils := ills.At(j)
 			buf.logEntry("ScopeLogs SchemaURL: %s", ils.SchemaUrl())
 			buf.logInstrumentationScope(ils.Scope())
-
-			logs := ils.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
+			ils.LogRecords().ForEachIndex(func(k int, lr plog.LogRecord) {
 				buf.logEntry("LogRecord #%d", k)
-				lr := logs.At(k)
 				buf.logEntry("ObservedTimestamp: %s", lr.ObservedTimestamp())
 				buf.logEntry("Timestamp: %s", lr.Timestamp())
 				buf.logEntry("SeverityText: %s", lr.SeverityText())
@@ -43,9 +36,8 @@ func (textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 				buf.logEntry("Trace ID: %s", lr.TraceID())
 				buf.logEntry("Span ID: %s", lr.SpanID())
 				buf.logEntry("Flags: %d", lr.Flags())
-			}
-		}
-	}
-
+			})
+		})
+	})
 	return buf.buf.Bytes(), nil
 }

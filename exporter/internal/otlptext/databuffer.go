@@ -89,8 +89,7 @@ func (b *dataBuffer) logMetricDataPoints(m pmetric.Metric) {
 }
 
 func (b *dataBuffer) logNumberDataPoints(ps pmetric.NumberDataPointSlice) {
-	for i := 0; i < ps.Len(); i++ {
-		p := ps.At(i)
+	ps.ForEachIndex(func(i int, p pmetric.NumberDataPoint) {
 		b.logEntry("NumberDataPoints #%d", i)
 		b.logDataPointAttributes(p.Attributes())
 
@@ -104,12 +103,11 @@ func (b *dataBuffer) logNumberDataPoints(ps pmetric.NumberDataPointSlice) {
 		}
 
 		b.logExemplars("Exemplars", p.Exemplars())
-	}
+	})
 }
 
 func (b *dataBuffer) logHistogramDataPoints(ps pmetric.HistogramDataPointSlice) {
-	for i := 0; i < ps.Len(); i++ {
-		p := ps.At(i)
+	ps.ForEachIndex(func(i int, p pmetric.HistogramDataPoint) {
 		b.logEntry("HistogramDataPoints #%d", i)
 		b.logDataPointAttributes(p.Attributes())
 
@@ -138,12 +136,11 @@ func (b *dataBuffer) logHistogramDataPoints(ps pmetric.HistogramDataPointSlice) 
 		}
 
 		b.logExemplars("Exemplars", p.Exemplars())
-	}
+	})
 }
 
 func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHistogramDataPointSlice) {
-	for i := 0; i < ps.Len(); i++ {
-		p := ps.At(i)
+	ps.ForEachIndex(func(i int, p pmetric.ExponentialHistogramDataPoint) {
 		b.logEntry("ExponentialHistogramDataPoints #%d", i)
 		b.logDataPointAttributes(p.Attributes())
 
@@ -197,12 +194,11 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 		}
 
 		b.logExemplars("Exemplars", p.Exemplars())
-	}
+	})
 }
 
 func (b *dataBuffer) logDoubleSummaryDataPoints(ps pmetric.SummaryDataPointSlice) {
-	for i := 0; i < ps.Len(); i++ {
-		p := ps.At(i)
+	ps.ForEachIndex(func(i int, p pmetric.SummaryDataPoint) {
 		b.logEntry("SummaryDataPoints #%d", i)
 		b.logDataPointAttributes(p.Attributes())
 
@@ -211,12 +207,10 @@ func (b *dataBuffer) logDoubleSummaryDataPoints(ps pmetric.SummaryDataPointSlice
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %f", p.Sum())
 
-		quantiles := p.QuantileValues()
-		for i := 0; i < quantiles.Len(); i++ {
-			quantile := quantiles.At(i)
+		p.QuantileValues().ForEachIndex(func(i int, quantile pmetric.SummaryDataPointValueAtQuantile) {
 			b.logEntry("QuantileValue #%d: Quantile %f, Value %f", i, quantile.Quantile(), quantile.Value())
-		}
-	}
+		})
+	})
 }
 
 func (b *dataBuffer) logDataPointAttributes(attributes pcommon.Map) {
@@ -229,14 +223,14 @@ func (b *dataBuffer) logEvents(description string, se ptrace.SpanEventSlice) {
 	}
 
 	b.logEntry("%s:", description)
-	for i := 0; i < se.Len(); i++ {
+	se.ForEachIndex(func(i int, el ptrace.SpanEvent) {
 		e := se.At(i)
 		b.logEntry("SpanEvent #%d", i)
 		b.logEntry("     -> Name: %s", e.Name())
 		b.logEntry("     -> Timestamp: %s", e.Timestamp())
 		b.logEntry("     -> DroppedAttributesCount: %d", e.DroppedAttributesCount())
 		b.logAttributes("     -> Attributes:", e.Attributes())
-	}
+	})
 }
 
 func (b *dataBuffer) logLinks(description string, sl ptrace.SpanLinkSlice) {
@@ -246,15 +240,14 @@ func (b *dataBuffer) logLinks(description string, sl ptrace.SpanLinkSlice) {
 
 	b.logEntry("%s:", description)
 
-	for i := 0; i < sl.Len(); i++ {
-		l := sl.At(i)
+	sl.ForEachIndex(func(i int, l ptrace.SpanLink) {
 		b.logEntry("SpanLink #%d", i)
 		b.logEntry("     -> Trace ID: %s", l.TraceID())
 		b.logEntry("     -> ID: %s", l.SpanID())
 		b.logEntry("     -> TraceState: %s", l.TraceState().AsRaw())
 		b.logEntry("     -> DroppedAttributesCount: %d", l.DroppedAttributesCount())
 		b.logAttributes("     -> Attributes:", l.Attributes())
-	}
+	})
 }
 
 func (b *dataBuffer) logExemplars(description string, se pmetric.ExemplarSlice) {
@@ -264,8 +257,7 @@ func (b *dataBuffer) logExemplars(description string, se pmetric.ExemplarSlice) 
 
 	b.logEntry("%s:", description)
 
-	for i := 0; i < se.Len(); i++ {
-		e := se.At(i)
+	se.ForEachIndex(func(i int, e pmetric.Exemplar) {
 		b.logEntry("Exemplar #%d", i)
 		b.logEntry("     -> Trace ID: %s", e.TraceID())
 		b.logEntry("     -> Span ID: %s", e.SpanID())
@@ -277,7 +269,7 @@ func (b *dataBuffer) logExemplars(description string, se pmetric.ExemplarSlice) 
 			b.logEntry("     -> Value: %f", e.DoubleValue())
 		}
 		b.logAttributes("     -> FilteredAttributes", e.FilteredAttributes())
-	}
+	})
 }
 
 func valueToString(v pcommon.Value) string {

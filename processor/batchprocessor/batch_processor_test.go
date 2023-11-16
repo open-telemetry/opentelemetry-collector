@@ -552,18 +552,14 @@ func getTestSpanName(requestNum, index int) string {
 
 func spansReceivedByName(tds []ptrace.Traces) map[string]ptrace.Span {
 	spansReceivedByName := map[string]ptrace.Span{}
-	for i := range tds {
-		rss := tds[i].ResourceSpans()
-		for i := 0; i < rss.Len(); i++ {
-			ilss := rss.At(i).ScopeSpans()
-			for j := 0; j < ilss.Len(); j++ {
-				spans := ilss.At(j).Spans()
-				for k := 0; k < spans.Len(); k++ {
-					span := spans.At(k)
-					spansReceivedByName[spans.At(k).Name()] = span
-				}
-			}
-		}
+	for _, td := range tds {
+		td.ResourceSpans().ForEach(func(rs ptrace.ResourceSpans) {
+			rs.ScopeSpans().ForEach(func(ss ptrace.ScopeSpans) {
+				ss.Spans().ForEach(func(span ptrace.Span) {
+					spansReceivedByName[span.Name()] = span
+				})
+			})
+		})
 	}
 	return spansReceivedByName
 }
@@ -571,17 +567,13 @@ func spansReceivedByName(tds []ptrace.Traces) map[string]ptrace.Span {
 func metricsReceivedByName(mds []pmetric.Metrics) map[string]pmetric.Metric {
 	metricsReceivedByName := map[string]pmetric.Metric{}
 	for _, md := range mds {
-		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
-			ilms := rms.At(i).ScopeMetrics()
-			for j := 0; j < ilms.Len(); j++ {
-				metrics := ilms.At(j).Metrics()
-				for k := 0; k < metrics.Len(); k++ {
-					metric := metrics.At(k)
+		md.ResourceMetrics().ForEach(func(rm pmetric.ResourceMetrics) {
+			rm.ScopeMetrics().ForEach(func(rm pmetric.ScopeMetrics) {
+				rm.Metrics().ForEach(func(metric pmetric.Metric) {
 					metricsReceivedByName[metric.Name()] = metric
-				}
-			}
-		}
+				})
+			})
+		})
 	}
 	return metricsReceivedByName
 }
@@ -850,19 +842,14 @@ func getTestLogSeverityText(requestNum, index int) string {
 
 func logsReceivedBySeverityText(lds []plog.Logs) map[string]plog.LogRecord {
 	logsReceivedBySeverityText := map[string]plog.LogRecord{}
-	for i := range lds {
-		ld := lds[i]
-		rms := ld.ResourceLogs()
-		for i := 0; i < rms.Len(); i++ {
-			ilms := rms.At(i).ScopeLogs()
-			for j := 0; j < ilms.Len(); j++ {
-				logs := ilms.At(j).LogRecords()
-				for k := 0; k < logs.Len(); k++ {
-					log := logs.At(k)
+	for _, ld := range lds {
+		ld.ResourceLogs().ForEach(func(rl plog.ResourceLogs) {
+			rl.ScopeLogs().ForEach(func(sl plog.ScopeLogs) {
+				sl.LogRecords().ForEach(func(log plog.LogRecord) {
 					logsReceivedBySeverityText[log.SeverityText()] = log
-				}
-			}
-		}
+				})
+			})
+		})
 	}
 	return logsReceivedBySeverityText
 }
