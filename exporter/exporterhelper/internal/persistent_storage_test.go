@@ -31,14 +31,14 @@ func createTestClient(t testing.TB, extension storage.Extension) storage.Client 
 	return client
 }
 
-func createTestPersistentStorageWithCapacity(client storage.Client, capacity int) *persistentContiguousStorage[ptrace.Traces] {
-	pcs := NewPersistentQueue[ptrace.Traces](capacity, component.DataTypeTraces, component.ID{}, marshaler.MarshalTraces,
-		unmarshaler.UnmarshalTraces, exportertest.NewNopCreateSettings()).(*persistentContiguousStorage[ptrace.Traces])
-	pcs.initClient(context.Background(), client)
-	return pcs
+func createTestPersistentStorageWithCapacity(client storage.Client, capacity int) *persistentQueue[ptrace.Traces] {
+	pq := NewPersistentQueue[ptrace.Traces](capacity, component.DataTypeTraces, component.ID{}, marshaler.MarshalTraces,
+		unmarshaler.UnmarshalTraces, exportertest.NewNopCreateSettings()).(*persistentQueue[ptrace.Traces])
+	pq.initClient(context.Background(), client)
+	return pq
 }
 
-func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage[ptrace.Traces] {
+func createTestPersistentStorage(client storage.Client) *persistentQueue[ptrace.Traces] {
 	return createTestPersistentStorageWithCapacity(client, 1000)
 }
 
@@ -465,10 +465,10 @@ func TestPersistentStorage_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 	}
 }
 
-func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguousStorage[ptrace.Traces], compare []uint64) {
-	pcs.mu.Lock()
-	defer pcs.mu.Unlock()
-	assert.ElementsMatch(t, compare, pcs.currentlyDispatchedItems)
+func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[ptrace.Traces], compare []uint64) {
+	pq.mu.Lock()
+	defer pq.mu.Unlock()
+	assert.ElementsMatch(t, compare, pq.currentlyDispatchedItems)
 }
 
 func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
