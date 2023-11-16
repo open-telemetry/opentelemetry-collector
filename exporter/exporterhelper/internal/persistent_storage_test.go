@@ -13,9 +13,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -31,9 +31,10 @@ func createTestClient(t testing.TB, extension storage.Extension) storage.Client 
 	return client
 }
 
-func createTestPersistentStorageWithCapacity(client storage.Client, capacity uint64) *persistentContiguousStorage[ptrace.Traces] {
-	pcs := newPersistentContiguousStorage(zap.NewNop(), capacity, marshaler.MarshalTraces, unmarshaler.UnmarshalTraces)
-	pcs.start(context.Background(), client)
+func createTestPersistentStorageWithCapacity(client storage.Client, capacity int) *persistentContiguousStorage[ptrace.Traces] {
+	pcs := NewPersistentQueue[ptrace.Traces](capacity, component.DataTypeTraces, component.ID{}, marshaler.MarshalTraces,
+		unmarshaler.UnmarshalTraces, exportertest.NewNopCreateSettings()).(*persistentContiguousStorage[ptrace.Traces])
+	pcs.initClient(context.Background(), client)
 	return pcs
 }
 
