@@ -48,11 +48,7 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 			)
 			return err
 		}
-		_ = bes.telemetry.Status.ReportComponentStatusIf(
-			instanceID,
-			component.NewStatusEvent(component.StatusOK),
-			func(st component.Status) bool { return st == component.StatusStarting },
-		)
+		_ = bes.telemetry.Status.ReportComponentOKIfStarting(instanceID)
 		extLogger.Info("Extension started.")
 	}
 	return nil

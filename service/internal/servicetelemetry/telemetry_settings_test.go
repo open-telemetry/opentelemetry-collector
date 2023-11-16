@@ -33,13 +33,7 @@ func TestSettings(t *testing.T) {
 			component.NewStatusEvent(component.StatusStarting),
 		),
 	)
-	require.NoError(t,
-		set.Status.ReportComponentStatusIf(
-			&component.InstanceID{},
-			component.NewStatusEvent(component.StatusStarting),
-			func(component.Status) bool { return true },
-		),
-	)
+	require.NoError(t, set.Status.ReportComponentOKIfStarting(&component.InstanceID{}))
 
 	compSet := set.ToComponentTelemetrySettings(&component.InstanceID{})
 	require.NoError(t, compSet.ReportComponentStatus(component.NewStatusEvent(component.StatusStarting)))

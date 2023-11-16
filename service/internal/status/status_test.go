@@ -267,7 +267,7 @@ func TestReporterReady(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestReportStatusIf(t *testing.T) {
+func TestReportComponentOKIfStarting(t *testing.T) {
 	for _, tc := range []struct {
 		name             string
 		initialStatuses  []component.Status
@@ -333,11 +333,7 @@ func TestReportStatusIf(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			err := rep.ReportComponentStatusIf(
-				id,
-				component.NewStatusEvent(component.StatusOK),
-				func(st component.Status) bool { return st == component.StatusStarting },
-			)
+			err := rep.ReportComponentOKIfStarting(id)
 
 			require.NoError(t, err)
 			require.Equal(t, tc.expectedStatuses, receivedStatuses)

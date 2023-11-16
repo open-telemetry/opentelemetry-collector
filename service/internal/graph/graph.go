@@ -399,11 +399,7 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
 			return compErr
 		}
 
-		_ = g.telemetry.Status.ReportComponentStatusIf(
-			instanceID,
-			component.NewStatusEvent(component.StatusOK),
-			func(st component.Status) bool { return st == component.StatusStarting },
-		)
+		_ = g.telemetry.Status.ReportComponentOKIfStarting(instanceID)
 	}
 	return nil
 }

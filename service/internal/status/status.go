@@ -129,21 +129,16 @@ func (r *Reporter) ReportComponentStatus(
 	return r.componentFSM(id).transition(ev)
 }
 
-// ReportComponentStatusIf reports status for the given InstanceID, if cond, a predicate that
-// receives the current status as an argument, evaluates to true.
-func (r *Reporter) ReportComponentStatusIf(
-	id *component.InstanceID,
-	ev *component.StatusEvent,
-	cond func(component.Status) bool,
-) error {
+// ReportComponentOkIfStarting reports StatusOK if the component's current status is Starting
+func (r *Reporter) ReportComponentOKIfStarting(id *component.InstanceID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if !r.ready {
 		return errStatusNotReady
 	}
 	fsm := r.componentFSM(id)
-	if cond(fsm.current.Status()) {
-		return fsm.transition(ev)
+	if fsm.current.Status() == component.StatusStarting {
+		return fsm.transition(component.NewStatusEvent(component.StatusOK))
 	}
 	return nil
 }
