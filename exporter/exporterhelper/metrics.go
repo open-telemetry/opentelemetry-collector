@@ -108,13 +108,10 @@ func NewMetricsExporter(
 	}, err
 }
 
-// MetricsConverter provides an interface for converting pmetric.Metrics into a request.
+// RequestFromMetricsFunc converts pdata.Metrics into a user-defined request.
 // This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type MetricsConverter interface {
-	// RequestFromMetrics converts pdata.Metrics into a request.
-	RequestFromMetrics(context.Context, pmetric.Metrics) (Request, error)
-}
+type RequestFromMetricsFunc func(context.Context, pmetric.Metrics) (Request, error)
 
 // NewMetricsRequestExporter creates a new metrics exporter based on a custom MetricsConverter and RequestSender.
 // This API is at the early stage of development and may change without backward compatibility
@@ -122,7 +119,7 @@ type MetricsConverter interface {
 func NewMetricsRequestExporter(
 	_ context.Context,
 	set exporter.CreateSettings,
-	converter MetricsConverter,
+	converter RequestFromMetricsFunc,
 	options ...Option,
 ) (exporter.Metrics, error) {
 	if set.Logger == nil {
@@ -139,7 +136,7 @@ func NewMetricsRequestExporter(
 	}
 
 	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
-		req, cErr := converter.RequestFromMetrics(ctx, md)
+		req, cErr := converter(ctx, md)
 		if cErr != nil {
 			set.Logger.Error("Failed to convert metrics. Dropping data.",
 				zap.Int("dropped_data_points", md.DataPointCount()),
