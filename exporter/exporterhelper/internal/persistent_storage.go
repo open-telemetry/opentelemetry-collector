@@ -70,9 +70,35 @@ const (
 )
 
 var (
-	errValueNotSet  = errors.New("value not set")
-	errInvalidValue = errors.New("invalid value")
+	errValueNotSet        = errors.New("value not set")
+	errInvalidValue       = errors.New("invalid value")
+	errNoStorageClient    = errors.New("no storage client extension found")
+	errWrongExtensionType = errors.New("requested extension is not a storage extension")
 )
+
+// NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
+func NewPersistentQueue[T any](capacity int, dataType component.DataType, storageID component.ID, marshaler func(req T) ([]byte, error), unmarshaler func([]byte) (T, error), set exporter.CreateSettings) Queue[T] {
+	return &persistentQueue[T]{
+		set:         set,
+		storageID:   storageID,
+		dataType:    dataType,
+		unmarshaler: unmarshaler,
+		marshaler:   marshaler,
+		capacity:    uint64(capacity),
+		putChan:     make(chan struct{}, capacity),
+		stopChan:    make(chan struct{}),
+	}
+}
+
+// Start starts the persistentQueue with the given number of consumers.
+func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) error {
+	storageClient, err := toStorageClient(ctx, pq.storageID, host, pq.set.ID, pq.dataType)
+	if err != nil {
+		return err
+	}
+	pq.initClient(ctx, storageClient)
+	return nil
+}
 
 func (pq *persistentQueue[T]) initClient(ctx context.Context, client storage.Client) {
 	pq.client = client
@@ -353,6 +379,20 @@ func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index u
 	}
 
 	return nil
+}
+
+func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal component.DataType) (storage.Client, error) {
+	ext, found := host.GetExtensions()[storageID]
+	if !found {
+		return nil, errNoStorageClient
+	}
+
+	storageExt, ok := ext.(storage.Extension)
+	if !ok {
+		return nil, errWrongExtensionType
+	}
+
+	return storageExt.GetClient(ctx, component.KindExporter, ownerID, string(signal))
 }
 
 func getItemKey(index uint64) string {
