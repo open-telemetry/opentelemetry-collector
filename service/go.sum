@@ -294,8 +294,8 @@ go.opentelemetry.io/contrib/config v0.1.0 h1:5N2zOlUsAy4khX3ftfMWQRRl9HoSPbZ+96m
 go.opentelemetry.io/contrib/config v0.1.0/go.mod h1:h1OB+0kulQiQH9U2pp2RYjWUV127hc47wtFutejyofg=
 go.opentelemetry.io/contrib/propagators/b3 v1.21.1 h1:WPYiUgmw3+b7b3sQ1bFBFAf0q+Di9dvNc3AtYfnT4RQ=
 go.opentelemetry.io/contrib/propagators/b3 v1.21.1/go.mod h1:EmzokPoSqsYMBVK4nRnhsfm5mbn8J1eDuz/U1UaQaWg=
-go.opentelemetry.io/contrib/zpages v0.46.0 h1:6P4PorJOWf9dE3a2J7L3LedyDeuZsGPQESVLyDucznM=
-go.opentelemetry.io/contrib/zpages v0.46.0/go.mod h1:K7ziE9syrS1YVzpdZPFuApm/kM7LORVadiwnWz48sJY=
+go.opentelemetry.io/contrib/zpages v0.46.1 h1:U8Hh84dc+vJTVgRnL+QKWtWD2iqTSKibrQ85EeQqsNg=
+go.opentelemetry.io/contrib/zpages v0.46.1/go.mod h1:1Wq9YTzkhr3Jkyi/sVrasFSppVzJQcvFf2Vc2ExZd6c=
 go.opentelemetry.io/otel v1.21.0 h1:hzLeKBZEL7Okw2mGzZ0cc4k/A7Fta0uoPgaJCr8fsFc=
 go.opentelemetry.io/otel v1.21.0/go.mod h1:QZzNPQPm1zLX4gZK4cMi+71eaorMSGT3A4znnUvNNEo=
 go.opentelemetry.io/otel/bridge/opencensus v0.44.0 h1:/inELPJztkn6Xx3ap9qw8i8XdeWF0B/OjGHOdRTePZ8=
