@@ -4,11 +4,11 @@
 module-sets:
   stable-v1:
     version: v1.0.0
-    modules: []
+    modules:
+      - go.opentelemetry.io/collector/featuregate
   stable:
     version: v1.0.0-rcv0018
     modules:
-      - go.opentelemetry.io/collector/featuregate
       - go.opentelemetry.io/collector/pdata
   beta:
     version: v0.89.0
