@@ -3,17 +3,20 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 
-if [ "${CANDIDATE_STABLE}" == "" ] && [ "${CANDIDATE_BETA}" == "" ]; then
-    echo "One of CANDIDATE_STABLE or CANDIDATE_BETA must be set"
+if [ "${CANDIDATE_STABLE_V1}" == "" ] && [ "${CANDIDATE_STABLE}" == "" ] && [ "${CANDIDATE_BETA}" == "" ]; then
+    echo "One of CANDIDATE_STABLE_V1, CANDIDATE_STABLE or CANDIDATE_BETA must be set"
     exit 1
 fi
 
-RELEASE_VERSION=v${CANDIDATE_STABLE}/v${CANDIDATE_BETA}
-if [ "${CANDIDATE_STABLE}" == "" ]; then
-    RELEASE_VERSION="v${CANDIDATE_BETA}"
+RELEASE_VERSION=""
+if [ "${CANDIDATE_STABLE_V1}" == "" ]; then
+    RELEASE_VERSION="${RELEASE_VERSION}/v${CANDIDATE_STABLE_V1}"
 fi
-if [ "${CANDIDATE_BETA}" == "" ]; then
-    RELEASE_VERSION="v${CANDIDATE_STABLE}"
+if [ "${CANDIDATE_STABLE}" != "" ]; then
+    RELEASE_VERSION="${RELEASE_VERSION}/v${CANDIDATE_STABLE}"
+fi
+if [ "${CANDIDATE_BETA}" != "" ]; then
+    RELEASE_VERSION="${RELEASE_VERSION}/v${CANDIDATE_BETA}"
 fi
 
 make chlog-update VERSION="${RELEASE_VERSION}"
@@ -25,6 +28,11 @@ git checkout -b "${BRANCH}"
 git add --all
 git commit -m "Changelog update ${RELEASE_VERSION}"
 
+if [ "${CANDIDATE_STABLE_V1}" != "" ]; then
+    make prepare-release GH=none PREVIOUS_VERSION="${CURRENT_STABLE_V1}" RELEASE_CANDIDATE="${CANDIDATE_STABLE_V1}" MODSET=stable-v1
+    COMMANDS+="
+- make prepare-release GH=none PREVIOUS_VERSION=${CURRENT_STABLE_V1} RELEASE_CANDIDATE=${CURRENT_STABLE_V1} MODSET=stable-v1"
+fi
 if [ "${CANDIDATE_STABLE}" != "" ]; then
     make prepare-release GH=none PREVIOUS_VERSION="${CURRENT_STABLE}" RELEASE_CANDIDATE="${CANDIDATE_STABLE}" MODSET=stable
     COMMANDS+="

@@ -5,6 +5,12 @@ on:
     # Determine the version number that will be assigned to the release. During the beta phase, we increment
     # the minor version number and set the patch number to 0.
     inputs:
+      candidate-stable-v1:
+        description: Stable v1 candidate version (stable-v1, like 1.1.0). Don't include a leading `v`.
+
+      current-stable-v1:
+        description: Current v1 version (stable-v1, like 1.0.0). Don't include a leading `v`.
+
       candidate-stable:
         description: Release candidate version (stable, like 1.0.0-rcv0014). Don't include a leading `v`.
 
@@ -56,7 +62,8 @@ jobs:
           go-version: ~1.20.11
       # Prepare Core for release.
       #   - Update CHANGELOG.md file, this is done via chloggen
-      #   - Run make prepare-release PREVIOUS_VERSION=1.0.0 RELEASE_CANDIDATE=1.1.0 MODSET=stable
+      #   - Run make prepare-release PREVIOUS_VERSION=1.0.0 RELEASE_CANDIDATE=1.1.0 MODSET=stable-v1
+      #   - Run make prepare-release PREVIOUS_VERSION=1.0.0-rcv0017 RELEASE_CANDIDATE=1.0.0-rcv0018 MODSET=stable
       #   - Run make prepare-release PREVIOUS_VERSION=0.52.0 RELEASE_CANDIDATE=0.53.0 MODSET=beta
       - name: Prepare release for core
         env:
@@ -64,8 +71,10 @@ jobs:
           REPO: open-telemetry/opentelemetry-collector
           CANDIDATE_BETA: ${{ inputs.candidate-beta }}
           CANDIDATE_STABLE: ${{ inputs.candidate-stable }}
+          CANDIDATE_STABLE_V1: ${{ inputs.candidate-stable-v1 }} 
           CURRENT_BETA: ${{ inputs.current-beta }}
           CURRENT_STABLE: ${{ inputs.current-stable }}
+          CURRENT_STABLE_V1: ${{ inputs.current-stable-v1 }}
         run: ./.github/workflows/scripts/release-prepare-release.sh
       # To keep track of the progress, it might be helpful to create a tracking issue similar to #6067. You are responsible
       # for all of the steps under the "Performed by collector release manager" heading. Once the issue is created, you can
@@ -75,7 +84,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CANDIDATE_BETA: ${{ inputs.candidate-beta }}
           CANDIDATE_STABLE: ${{ inputs.candidate-stable }}
+          CANDIDATE_STABLE_V1: ${{ inputs.candidate-stable-v1 }} 
           CURRENT_BETA: ${{ inputs.current-beta }}
           CURRENT_STABLE: ${{ inputs.current-stable }}
+          CURRENT_STABLE_V1: ${{ inputs.current-stable-v1 }}
           REPO: open-telemetry/opentelemetry-collector
         run: ./.github/workflows/scripts/release-create-tracking-issue.sh

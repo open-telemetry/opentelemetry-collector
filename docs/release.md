@@ -41,7 +41,8 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 5. Make sure you are on `release/<release-series>`. Tag the module groups with the new release version by running:
    - `make push-tags MODSET=beta` for beta modules group,
    - `make push-tags MODSET=stable` beta stable modules group, only if there were changes since the last release.
-   
+   - `make push-tags MODSET=stable-v1` stable v1.x modules group, only if there were changes since the last release.
+
    If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector.git` in each command. Wait for the new tag build to pass successfully.
 
 6. The release script for the collector builder should create a new GitHub release for the builder. This is a separate release from the core, but we might join them in the future if it makes sense.

@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 module-sets:
+  stable-v1:
+    version: v1.0.0
+    modules: []
   stable:
     version: v1.0.0-rcv0018
     modules:

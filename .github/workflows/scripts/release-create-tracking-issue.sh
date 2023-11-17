@@ -3,12 +3,15 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 
-RELEASE_VERSION=v${CANDIDATE_STABLE}/v${CANDIDATE_BETA}
-if [ "${CANDIDATE_STABLE}" == "" ]; then
-    RELEASE_VERSION="v${CANDIDATE_BETA}"
+RELEASE_VERSION=""
+if [ "${CANDIDATE_STABLE_V1}" == "" ]; then
+    RELEASE_VERSION="${RELEASE_VERSION}/v${CANDIDATE_STABLE_V1}"
 fi
-if [ "${CANDIDATE_BETA}" == "" ]; then
-    RELEASE_VERSION="v${CANDIDATE_STABLE}"
+if [ "${CANDIDATE_STABLE}" != "" ]; then
+    RELEASE_VERSION="${RELEASE_VERSION}/v${CANDIDATE_STABLE}"
+fi
+if [ "${CANDIDATE_BETA}" != "" ]; then
+    RELEASE_VERSION="${RELEASE_VERSION}/v${CANDIDATE_BETA}"
 fi
 
 EXISTING_ISSUE=$( gh issue list --search "in:title Release ${RELEASE_VERSION}" --json url --jq '.[].url' --repo "${REPO}" --state open --label release )
