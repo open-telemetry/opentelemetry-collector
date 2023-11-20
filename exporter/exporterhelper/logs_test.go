@@ -361,25 +361,25 @@ func TestLogsRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 
 func TestLogsExporter_WithStatusReporting(t *testing.T) {
 	for _, tc := range []struct {
-		name           string
-		statusSettings StatusSettings
-		expectedEvent  *component.StatusEvent
-		consumeErr     error
+		name          string
+		reportStatus  bool
+		expectedEvent *component.StatusEvent
+		consumeErr    error
 	}{
 		{
-			name:           "Report status on start enabled / successful startup",
-			statusSettings: StatusSettings{ReportOnConsume: true},
-			expectedEvent:  component.NewStatusEvent(component.StatusOK),
+			name:          "Report status enabled / no error",
+			reportStatus:  true,
+			expectedEvent: component.NewStatusEvent(component.StatusOK),
 		},
 		{
-			name:           "Report status on start enabled / startup error",
-			statusSettings: StatusSettings{ReportOnConsume: true},
-			expectedEvent:  component.NewRecoverableErrorEvent(assert.AnError),
-			consumeErr:     assert.AnError,
+			name:          "Report status enabled / with error",
+			reportStatus:  true,
+			expectedEvent: component.NewRecoverableErrorEvent(assert.AnError),
+			consumeErr:    assert.AnError,
 		},
 		{
-			name:           "Report status on start disabled / successful startup",
-			statusSettings: StatusSettings{ReportOnConsume: false},
+			name:         "Report status disabled / no error",
+			reportStatus: false,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -392,12 +392,17 @@ func TestLogsExporter_WithStatusReporting(t *testing.T) {
 				return nil
 			}
 
+			var opts []Option
+			if tc.reportStatus {
+				opts = append(opts, WithStatusReporting())
+			}
+
 			le, err := NewLogsExporter(
 				context.Background(),
 				createSettings,
 				&fakeLogsExporterConfig,
 				newPushLogsData(tc.consumeErr),
-				WithStatusReporting(tc.statusSettings),
+				opts...,
 			)
 			assert.NotNil(t, le)
 			assert.NoError(t, err)
@@ -417,25 +422,25 @@ func TestLogsExporter_WithStatusReporting(t *testing.T) {
 
 func TestLogsRequestExporter_WithStatusReporting(t *testing.T) {
 	for _, tc := range []struct {
-		name           string
-		statusSettings StatusSettings
-		expectedEvent  *component.StatusEvent
-		consumeErr     error
+		name          string
+		reportStatus  bool
+		expectedEvent *component.StatusEvent
+		consumeErr    error
 	}{
 		{
-			name:           "Report status on start enabled / successful startup",
-			statusSettings: StatusSettings{ReportOnConsume: true},
-			expectedEvent:  component.NewStatusEvent(component.StatusOK),
+			name:          "Report status enabled / no error",
+			reportStatus:  true,
+			expectedEvent: component.NewStatusEvent(component.StatusOK),
 		},
 		{
-			name:           "Report status on start enabled / startup error",
-			statusSettings: StatusSettings{ReportOnConsume: true},
-			expectedEvent:  component.NewRecoverableErrorEvent(assert.AnError),
-			consumeErr:     assert.AnError,
+			name:          "Report status enabled / with error",
+			reportStatus:  true,
+			expectedEvent: component.NewRecoverableErrorEvent(assert.AnError),
+			consumeErr:    assert.AnError,
 		},
 		{
-			name:           "Report status on start disabled / successful startup",
-			statusSettings: StatusSettings{ReportOnConsume: false},
+			name:         "Report status disabled / no error",
+			reportStatus: false,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -448,11 +453,16 @@ func TestLogsRequestExporter_WithStatusReporting(t *testing.T) {
 				return nil
 			}
 
+			var opts []Option
+			if tc.reportStatus {
+				opts = append(opts, WithStatusReporting())
+			}
+
 			le, err := NewLogsRequestExporter(
 				context.Background(),
 				createSettings,
 				(&fakeRequestConverter{requestError: tc.consumeErr}).requestFromLogsFunc,
-				WithStatusReporting(tc.statusSettings),
+				opts...,
 			)
 			assert.NotNil(t, le)
 			assert.NoError(t, err)

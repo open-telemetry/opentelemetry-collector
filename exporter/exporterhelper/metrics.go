@@ -103,7 +103,7 @@ func NewMetricsExporter(
 		return serr
 	}
 
-	if be.statusSettings.ReportOnConsume {
+	if be.reportStatus {
 		consumeFunc = statushelper.WrapConsumeMetrics(consumeFunc, set.TelemetrySettings)
 	}
 
@@ -157,7 +157,7 @@ func NewMetricsRequestExporter(
 		return sErr
 	}
 
-	if be.statusSettings.ReportOnConsume {
+	if be.reportStatus {
 		consumeFunc = statushelper.WrapConsumeMetrics(consumeFunc, set.TelemetrySettings)
 	}
 

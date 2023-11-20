@@ -103,7 +103,7 @@ func NewTracesExporter(
 		return serr
 	}
 
-	if be.statusSettings.ReportOnConsume {
+	if be.reportStatus {
 		consumeFunc = statushelper.WrapConsumeTraces(consumeFunc, set.TelemetrySettings)
 	}
 
@@ -157,7 +157,7 @@ func NewTracesRequestExporter(
 		return sErr
 	}
 
-	if be.statusSettings.ReportOnConsume {
+	if be.reportStatus {
 		consumeFunc = statushelper.WrapConsumeTraces(consumeFunc, set.TelemetrySettings)
 	}
 

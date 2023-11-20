@@ -368,25 +368,25 @@ func TestTracesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 
 func TestTracesExporter_WithStatusReporting(t *testing.T) {
 	for _, tc := range []struct {
-		name           string
-		statusSettings StatusSettings
-		expectedEvent  *component.StatusEvent
-		consumeErr     error
+		name          string
+		reportStatus  bool
+		expectedEvent *component.StatusEvent
+		consumeErr    error
 	}{
 		{
-			name:           "Report status on start enabled / successful startup",
-			statusSettings: StatusSettings{ReportOnConsume: true},
-			expectedEvent:  component.NewStatusEvent(component.StatusOK),
+			name:          "Report status enabled / no error",
+			reportStatus:  true,
+			expectedEvent: component.NewStatusEvent(component.StatusOK),
 		},
 		{
-			name:           "Report status on start enabled / startup error",
-			statusSettings: StatusSettings{ReportOnConsume: true},
-			expectedEvent:  component.NewRecoverableErrorEvent(assert.AnError),
-			consumeErr:     assert.AnError,
+			name:          "Report status enabled / with error",
+			reportStatus:  true,
+			expectedEvent: component.NewRecoverableErrorEvent(assert.AnError),
+			consumeErr:    assert.AnError,
 		},
 		{
-			name:           "Report status on start disabled / successful startup",
-			statusSettings: StatusSettings{ReportOnConsume: false},
+			name:         "Report status disabled / no error",
+			reportStatus: false,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -399,12 +399,17 @@ func TestTracesExporter_WithStatusReporting(t *testing.T) {
 				return nil
 			}
 
+			var opts []Option
+			if tc.reportStatus {
+				opts = append(opts, WithStatusReporting())
+			}
+
 			te, err := NewTracesExporter(
 				context.Background(),
 				createSettings,
 				fakeRequestConverter{},
 				newTraceDataPusher(tc.consumeErr),
-				WithStatusReporting(tc.statusSettings),
+				opts...,
 			)
 			assert.NotNil(t, te)
 			assert.NoError(t, err)
@@ -424,25 +429,25 @@ func TestTracesExporter_WithStatusReporting(t *testing.T) {
 
 func TestTracesRequestExporter_WithStatusReporting(t *testing.T) {
 	for _, tc := range []struct {
-		name           string
-		statusSettings StatusSettings
-		expectedEvent  *component.StatusEvent
-		consumeErr     error
+		name          string
+		reportStatus  bool
+		expectedEvent *component.StatusEvent
+		consumeErr    error
 	}{
 		{
-			name:           "Report status on start enabled / successful startup",
-			statusSettings: StatusSettings{ReportOnConsume: true},
-			expectedEvent:  component.NewStatusEvent(component.StatusOK),
+			name:          "Report status enabled / no error",
+			reportStatus:  true,
+			expectedEvent: component.NewStatusEvent(component.StatusOK),
 		},
 		{
-			name:           "Report status on start enabled / startup error",
-			statusSettings: StatusSettings{ReportOnConsume: true},
-			expectedEvent:  component.NewRecoverableErrorEvent(assert.AnError),
-			consumeErr:     assert.AnError,
+			name:          "Report status enabled / with error",
+			reportStatus:  true,
+			expectedEvent: component.NewRecoverableErrorEvent(assert.AnError),
+			consumeErr:    assert.AnError,
 		},
 		{
-			name:           "Report status on start disabled / successful startup",
-			statusSettings: StatusSettings{ReportOnConsume: false},
+			name:         "Report status enabled / no error",
+			reportStatus: false,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -455,11 +460,16 @@ func TestTracesRequestExporter_WithStatusReporting(t *testing.T) {
 				return nil
 			}
 
+			var opts []Option
+			if tc.reportStatus {
+				opts = append(opts, WithStatusReporting())
+			}
+
 			te, err := NewTracesRequestExporter(
 				context.Background(),
 				createSettings,
 				(&fakeRequestConverter{requestError: tc.consumeErr}).requestFromTracesFunc,
-				WithStatusReporting(tc.statusSettings),
+				opts...,
 			)
 			assert.NotNil(t, te)
 			assert.NoError(t, err)

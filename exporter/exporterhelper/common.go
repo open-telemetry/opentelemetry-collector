@@ -109,16 +109,15 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 	}
 }
 
-// WithStatusReporting will wrap the start and/or consume functions with automatic status reporting.
-// If ReportOnStart is true and start completes without an error StatusOK will be reported. If
-// ReportOnConsume is true, StatusOK will be reported when consume returns without an error. When it
-// returns an error, StatusRecoverableError will be reported. If a component wants to report a more
-// severe error status (e.g. StatusPermamentError or StatusFatalError), it can report it manually
-// while still using this option. The more severe statuses will transition the component state
-// ahead of the wrapper, making the automatic status reporting effectively a no-op.
-func WithStatusReporting(statusSettings StatusSettings) Option {
+// WithStatusReporting will wrap consume functions with automatic status reporting. StatusOK will be
+// reported when consume returns without an error. When it returns an error, StatusRecoverableError
+// will be reported. If a component wants to report a more severe error status (e.g.
+// StatusPermamentError or StatusFatalError), it can report it manually while still using this
+// option. The more severe statuses will transition the component state ahead of the wrapper, making
+// the automatic status reporting effectively a no-op.
+func WithStatusReporting() Option {
 	return func(o *baseExporter) {
-		o.statusSettings = statusSettings
+		o.reportStatus = true
 	}
 }
 
@@ -137,7 +136,7 @@ type baseExporter struct {
 	marshaler       RequestMarshaler
 	unmarshaler     RequestUnmarshaler
 	signal          component.DataType
-	statusSettings  StatusSettings
+	reportStatus    bool
 
 	set    exporter.CreateSettings
 	obsrep *ObsReport
@@ -171,11 +170,10 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 		unmarshaler:     unmarshaler,
 		signal:          signal,
 
-		statusSettings: StatusSettings{},
-		queueSender:    &baseRequestSender{},
-		obsrepSender:   osf(obsReport),
-		retrySender:    &baseRequestSender{},
-		timeoutSender:  &timeoutSender{cfg: NewDefaultTimeoutSettings()},
+		queueSender:   &baseRequestSender{},
+		obsrepSender:  osf(obsReport),
+		retrySender:   &baseRequestSender{},
+		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutSettings()},
 
 		set:    set,
 		obsrep: obsReport,
@@ -186,7 +184,7 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 	}
 	be.connectSenders()
 
-	if be.statusSettings.ReportOnStart {
+	if be.reportStatus {
 		be.StartFunc = statushelper.WrapStart(be.StartFunc, set.TelemetrySettings)
 	}
 
