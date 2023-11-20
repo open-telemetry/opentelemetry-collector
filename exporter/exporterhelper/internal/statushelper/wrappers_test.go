@@ -16,45 +16,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func TestWrapStart(t *testing.T) {
-	for _, tc := range []struct {
-		name          string
-		retErr        error
-		expectedEvent *component.StatusEvent
-	}{
-		{
-			name:          "start no error",
-			expectedEvent: component.NewStatusEvent(component.StatusOK),
-		},
-		{
-			name:   "start with error",
-			retErr: assert.AnError,
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			telemetrySettings := componenttest.NewNopTelemetrySettings()
-			var lastEvent *component.StatusEvent
-			telemetrySettings.ReportComponentStatus = func(ev *component.StatusEvent) error {
-				lastEvent = ev
-				return nil
-			}
-
-			startFunc := func(context.Context, component.Host) error {
-				return tc.retErr
-			}
-
-			wrappedStart := WrapStart(startFunc, telemetrySettings)
-
-			assert.Equal(t, tc.retErr, wrappedStart(context.Background(), componenttest.NewNopHost()))
-			assert.Equal(t, tc.expectedEvent == nil, lastEvent == nil)
-			if tc.expectedEvent != nil {
-				assert.Equal(t, tc.expectedEvent.Status(), lastEvent.Status())
-				assert.Equal(t, tc.expectedEvent.Err(), lastEvent.Err())
-			}
-		})
-	}
-}
-
 func TestWrapConsumeTraces(t *testing.T) {
 	for _, tc := range []struct {
 		name          string

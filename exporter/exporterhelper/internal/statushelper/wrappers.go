@@ -13,21 +13,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// WrapStart wraps a component.StartFunc and will report StatusOK if Start returns without an error.
-// If Start returns an error, the automatic status reporting in graph will report
-// StatusPermanentError. Components that wish to report a recoverable error from start should not
-// use this wrapper and report status manually (or by other means).
-func WrapStart(startFunc component.StartFunc, telemetry component.TelemetrySettings) component.StartFunc {
-	return func(ctx context.Context, host component.Host) error {
-		if err := startFunc.Start(ctx, host); err != nil {
-			// automatic status reporting for errors returned from Start will be handled by graph
-			return err
-		}
-		_ = telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
-		return nil
-	}
-}
-
 // WrapConsumeTraces wraps a consumer.ConsumeTracesFunc to automatically report status based on the
 // return value ConsumeTraces. If it returns without an error, StatusOK will be reported. If it
 // with an error, StatusRecoverableError will be reported. If a component wants to report a more
