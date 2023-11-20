@@ -74,7 +74,7 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 	start := make(chan struct{})
 	done := make(chan struct{})
 	pq := createAndStartTestPersistentQueue(t, 5, 1, func(context.Context, ptrace.Traces) {
-		start <- struct{}{}
+		<-start
 		<-done
 	})
 	assert.Equal(t, 0, pq.Size())
@@ -83,7 +83,7 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 
 	// First request is picked by the consumer. Wait until the consumer is blocked on done.
 	assert.NoError(t, pq.Offer(context.Background(), req))
-	<-start
+	close(start)
 
 	for i := 0; i < 10; i++ {
 		result := pq.Offer(context.Background(), newTraces(1, 10))
