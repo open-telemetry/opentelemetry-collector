@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package statushelper // import "go.opentelemetry.io/collector/component/statushelper"
+package statushelper // import "go.opentelemetry.io/collector/exporterhelper/internal/statushelper"
 
 import (
 	"context"
