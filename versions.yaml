@@ -37,6 +37,7 @@ module-sets:
       - go.opentelemetry.io/collector/extension/auth
       - go.opentelemetry.io/collector/extension/ballastextension
       - go.opentelemetry.io/collector/extension/zpagesextension
+      - go.opentelemetry.io/collector/extension/memorylimiterextension
       - go.opentelemetry.io/collector/otelcol
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/processor/batchprocessor
