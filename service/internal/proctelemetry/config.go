@@ -210,7 +210,10 @@ func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChann
 		otelprom.WithoutUnits(),
 		// Disabled for the moment until this becomes stable, and we are ready to break backwards compatibility.
 		otelprom.WithoutScopeInfo(),
-		otelprom.WithProducer(opencensus.NewMetricProducer()))
+		otelprom.WithProducer(opencensus.NewMetricProducer()),
+		// This allows us to produce metrics that are backwards compatible w/ opencensus
+		otelprom.WithoutCounterSuffixes(),
+	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
