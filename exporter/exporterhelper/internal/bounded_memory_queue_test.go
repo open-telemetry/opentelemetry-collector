@@ -26,18 +26,13 @@ import (
 func TestBoundedQueue(t *testing.T) {
 	q := NewBoundedMemoryQueue[string](1)
 
-	var startLock sync.Mutex
+	waitCh := make(chan struct{})
 
-	startLock.Lock() // block consumers
 	consumerState := newConsumerState(t)
 
 	consumers := NewQueueConsumers(q, 1, func(_ context.Context, item string) {
 		consumerState.record(item)
-
-		// block further processing until startLock is released
-		startLock.Lock()
-		//nolint:staticcheck // SA2001 ignore this!
-		startLock.Unlock()
+		<-waitCh
 	})
 	assert.NoError(t, consumers.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -60,7 +55,7 @@ func TestBoundedQueue(t *testing.T) {
 	assert.ErrorIs(t, q.Offer(context.Background(), "c"), ErrQueueIsFull)
 	assert.Equal(t, 1, q.Size())
 
-	startLock.Unlock() // unblock consumer
+	close(waitCh) // unblock consumer
 
 	consumerState.assertConsumed(map[string]bool{
 		"a": true,
