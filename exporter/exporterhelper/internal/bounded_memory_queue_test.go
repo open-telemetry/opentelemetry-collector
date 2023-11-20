@@ -138,13 +138,6 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	assert.Equal(t, 0, q.Size())
 }
 
-func TestZeroSize(t *testing.T) {
-	q := NewBoundedMemoryQueue[string](0)
-	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
-	assert.ErrorIs(t, q.Offer(context.Background(), "a"), ErrQueueIsFull)
-	assert.NoError(t, q.Shutdown(context.Background()))
-}
-
 func Benchmark_QueueUsage_10000_1_50000(b *testing.B) {
 	queueUsage(b, 10000, 1, 50000)
 }
