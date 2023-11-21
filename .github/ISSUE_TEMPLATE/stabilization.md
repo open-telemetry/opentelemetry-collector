@@ -6,7 +6,7 @@ labels: 'stabilization'
 assignees: ''
 ---
 
-Before stabilizing a module, an approver or maintainer must make sure that the following criteria have been met for at least two minor version releases:
+Before stabilizing a module, an approver or maintainer must make sure that the following criteria have been met for at least two successive minor version releases:
 
 - [ ] No open issues or PRs in the module that would require breaking changes
 - [ ] No TODOs in the module code that would require breaking changes
