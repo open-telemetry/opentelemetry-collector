@@ -126,15 +126,15 @@ func TestTelemetryInit(t *testing.T) {
 			name:    "UseOpenTelemetryForInternalMetrics",
 			useOtel: true,
 			expectedMetrics: map[string]metricValue{
-				metricPrefix + ocPrefix + counterName + "_total": {
+				metricPrefix + ocPrefix + counterName: {
 					value:  13,
 					labels: map[string]string{},
 				},
-				metricPrefix + otelPrefix + counterName + "_total": {
+				metricPrefix + otelPrefix + counterName: {
 					value:  13,
 					labels: map[string]string{},
 				},
-				metricPrefix + grpcPrefix + counterName + "_total": {
+				metricPrefix + grpcPrefix + counterName: {
 					value: 11,
 					labels: map[string]string{
 						"net_sock_peer_addr": "",
@@ -142,7 +142,7 @@ func TestTelemetryInit(t *testing.T) {
 						"net_sock_peer_port": "",
 					},
 				},
-				metricPrefix + httpPrefix + counterName + "_total": {
+				metricPrefix + httpPrefix + counterName: {
 					value: 10,
 					labels: map[string]string{
 						"net_host_name": "",
@@ -164,19 +164,19 @@ func TestTelemetryInit(t *testing.T) {
 			useOtel:         true,
 			disableHighCard: true,
 			expectedMetrics: map[string]metricValue{
-				metricPrefix + ocPrefix + counterName + "_total": {
+				metricPrefix + ocPrefix + counterName: {
 					value:  13,
 					labels: map[string]string{},
 				},
-				metricPrefix + otelPrefix + counterName + "_total": {
+				metricPrefix + otelPrefix + counterName: {
 					value:  13,
 					labels: map[string]string{},
 				},
-				metricPrefix + grpcPrefix + counterName + "_total": {
+				metricPrefix + grpcPrefix + counterName: {
 					value:  11,
 					labels: map[string]string{},
 				},
-				metricPrefix + httpPrefix + counterName + "_total": {
+				metricPrefix + httpPrefix + counterName: {
 					value:  10,
 					labels: map[string]string{},
 				},
@@ -213,15 +213,15 @@ func TestTelemetryInit(t *testing.T) {
 				},
 			},
 			expectedMetrics: map[string]metricValue{
-				metricPrefix + ocPrefix + counterName + "_total": {
+				metricPrefix + ocPrefix + counterName: {
 					value:  13,
 					labels: map[string]string{},
 				},
-				metricPrefix + otelPrefix + counterName + "_total": {
+				metricPrefix + otelPrefix + counterName: {
 					value:  13,
 					labels: map[string]string{},
 				},
-				metricPrefix + grpcPrefix + counterName + "_total": {
+				metricPrefix + grpcPrefix + counterName: {
 					value: 11,
 					labels: map[string]string{
 						"net_sock_peer_addr": "",
@@ -229,7 +229,7 @@ func TestTelemetryInit(t *testing.T) {
 						"net_sock_peer_port": "",
 					},
 				},
-				metricPrefix + httpPrefix + counterName + "_total": {
+				metricPrefix + httpPrefix + counterName: {
 					value: 10,
 					labels: map[string]string{
 						"net_host_name": "",
