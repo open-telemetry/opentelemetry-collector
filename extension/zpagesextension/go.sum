@@ -37,8 +37,8 @@ github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcU
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.opentelemetry.io/contrib/config v0.1.0 h1:5N2zOlUsAy4khX3ftfMWQRRl9HoSPbZ+96muywRdaLs=
-go.opentelemetry.io/contrib/config v0.1.0/go.mod h1:h1OB+0kulQiQH9U2pp2RYjWUV127hc47wtFutejyofg=
+go.opentelemetry.io/contrib/config v0.1.1 h1:lIUTrMWkfDE0GvzBLhwv6ATDB1vntrnTsRvUMkZKnfQ=
+go.opentelemetry.io/contrib/config v0.1.1/go.mod h1:rDrK4+PS6Cs+WIphU/GO5Sk4TGV36lEQqk/Z1vZkaLI=
 go.opentelemetry.io/contrib/zpages v0.46.1 h1:U8Hh84dc+vJTVgRnL+QKWtWD2iqTSKibrQ85EeQqsNg=
 go.opentelemetry.io/contrib/zpages v0.46.1/go.mod h1:1Wq9YTzkhr3Jkyi/sVrasFSppVzJQcvFf2Vc2ExZd6c=
 go.opentelemetry.io/otel v1.21.0 h1:hzLeKBZEL7Okw2mGzZ0cc4k/A7Fta0uoPgaJCr8fsFc=
