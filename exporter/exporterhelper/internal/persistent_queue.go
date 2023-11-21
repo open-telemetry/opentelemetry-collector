@@ -205,20 +205,25 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	}
 
 	itemKey := getItemKey(pq.writeIndex)
-	pq.writeIndex++
+	newIndex := pq.writeIndex + 1
 
 	reqBuf, err := pq.marshaler(req)
 	if err != nil {
 		return err
 	}
-	err = pq.client.Batch(ctx,
-		storage.SetOperation(writeIndexKey, itemIndexToBytes(pq.writeIndex)),
-		storage.SetOperation(itemKey, reqBuf))
 
+	// Carry out a transaction where we both add the item and update the write index
+	setWriteIndexOp := storage.SetOperation(writeIndexKey, itemIndexToBytes(newIndex))
+	setItemOp := storage.SetOperation(itemKey, reqBuf)
+	if err := pq.client.Batch(ctx, setWriteIndexOp, setItemOp); err != nil {
+		return err
+	}
+
+	pq.writeIndex = newIndex
 	// Inform the loop that there's some data to process
 	pq.putChan <- struct{}{}
 
-	return err
+	return nil
 }
 
 // getNextItem pulls the next available item from the persistent storage; if none is found, returns (nil, false)
