@@ -83,6 +83,7 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 
 	// First request is picked by the consumer. Wait until the consumer is blocked on done.
 	assert.NoError(t, pq.Offer(context.Background(), req))
+	start <- struct{}{}
 	close(start)
 
 	for i := 0; i < 10; i++ {
