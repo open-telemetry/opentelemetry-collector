@@ -18,14 +18,14 @@ import (
 type boundedMemoryQueue[T any] struct {
 	component.StartFunc
 	stopped *atomic.Bool
-	items   chan QueueRequest[T]
+	items   chan queueRequest[T]
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
 // callback for dropped items (e.g. useful to emit metrics).
 func NewBoundedMemoryQueue[T any](capacity int) Queue[T] {
 	return &boundedMemoryQueue[T]{
-		items:   make(chan QueueRequest[T], capacity),
+		items:   make(chan queueRequest[T], capacity),
 		stopped: &atomic.Bool{},
 	}
 }
@@ -37,17 +37,23 @@ func (q *boundedMemoryQueue[T]) Offer(ctx context.Context, req T) error {
 	}
 
 	select {
-	case q.items <- newQueueRequest(ctx, req):
+	case q.items <- queueRequest[T]{ctx: ctx, req: req}:
 		return nil
 	default:
 		return ErrQueueIsFull
 	}
 }
 
-// Poll returns a request from the queue once it's available. It returns false if the queue is stopped.
-func (q *boundedMemoryQueue[T]) Poll() (QueueRequest[T], bool) {
+// Consume applies the provided function on the head of queue.
+// The call blocks until there is an item available or the queue is stopped.
+// The function returns true when an item is consumed or false if the queue is stopped.
+func (q *boundedMemoryQueue[T]) Consume(consumeFunc func(context.Context, T)) bool {
 	item, ok := <-q.items
-	return item, ok
+	if !ok {
+		return false
+	}
+	consumeFunc(item.ctx, item.req)
+	return true
 }
 
 // Shutdown stops accepting items, and stops all consumers. It blocks until all consumers have stopped.
@@ -64,4 +70,9 @@ func (q *boundedMemoryQueue[T]) Size() int {
 
 func (q *boundedMemoryQueue[T]) Capacity() int {
 	return cap(q.items)
+}
+
+type queueRequest[T any] struct {
+	req T
+	ctx context.Context
 }
