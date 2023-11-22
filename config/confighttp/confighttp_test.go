@@ -223,6 +223,11 @@ func TestProxyURL(t *testing.T) {
 			proxyURL:    "http://proxy.example.com:8080",
 			expectedURL: &url.URL{Scheme: "http", Host: "proxy.example.com:8080"},
 		},
+		{
+			desc:        "proxy is invalid",
+			proxyURL:    "http://example.com",
+			expectedURL: &url.URL{Scheme:"http", Host:"example.com"},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
