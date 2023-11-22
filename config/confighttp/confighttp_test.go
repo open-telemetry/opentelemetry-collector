@@ -213,6 +213,7 @@ func TestProxyURL(t *testing.T) {
 		desc        string
 		proxyURL    string
 		expectedURL *url.URL
+		err         bool
 	}{
 		{
 			desc:        "default config",
@@ -224,9 +225,9 @@ func TestProxyURL(t *testing.T) {
 			expectedURL: &url.URL{Scheme: "http", Host: "proxy.example.com:8080"},
 		},
 		{
-			desc:        "proxy is invalid",
-			proxyURL:    "http://example.com",
-			expectedURL: &url.URL{Scheme:"http", Host:"example.com"},
+			desc:     "proxy is invalid",
+			proxyURL: "://example.com",
+			err:      true,
 		},
 	}
 	for _, tC := range testCases {
@@ -237,19 +238,26 @@ func TestProxyURL(t *testing.T) {
 			tt := componenttest.NewNopTelemetrySettings()
 			tt.TracerProvider = nil
 			client, err := s.ToClient(componenttest.NewNopHost(), tt)
-			require.NoError(t, err)
 
-			transport := client.Transport.(*http.Transport)
-			require.NotNil(t, transport.Proxy)
-
-			url, err := transport.Proxy(&http.Request{URL: &url.URL{Scheme: "http", Host: "example.com"}})
-			require.NoError(t, err)
-
-			if tC.expectedURL == nil {
-				assert.Nil(t, url)
+			if tC.err {
+				require.Error(t, err)
 			} else {
-				require.NotNil(t, url)
-				assert.Equal(t, tC.expectedURL, url)
+				require.NoError(t, err)
+			}
+
+			if err == nil {
+				transport := client.Transport.(*http.Transport)
+				require.NotNil(t, transport.Proxy)
+
+				url, err := transport.Proxy(&http.Request{URL: &url.URL{Scheme: "http", Host: "example.com"}})
+				require.NoError(t, err)
+
+				if tC.expectedURL == nil {
+					assert.Nil(t, url)
+				} else {
+					require.NotNil(t, url)
+					assert.Equal(t, tC.expectedURL, url)
+				}
 			}
 		})
 	}
