@@ -213,10 +213,12 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	}
 
 	// Carry out a transaction where we both add the item and update the write index
-	setWriteIndexOp := storage.SetOperation(writeIndexKey, itemIndexToBytes(newIndex))
-	setItemOp := storage.SetOperation(itemKey, reqBuf)
-	if err := pq.client.Batch(ctx, setWriteIndexOp, setItemOp); err != nil {
-		return err
+	ops := []storage.Operation{
+		storage.SetOperation(writeIndexKey, itemIndexToBytes(newIndex)),
+		storage.SetOperation(itemKey, reqBuf),
+	}
+	if storageErr := pq.client.Batch(ctx, ops...); storageErr != nil {
+		return storageErr
 	}
 
 	pq.writeIndex = newIndex
