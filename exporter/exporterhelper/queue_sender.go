@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
@@ -41,6 +42,9 @@ type QueueSettings struct {
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue
 	StorageID *component.ID `mapstructure:"storage"`
+	// ReenqueueOnFailure indicates whether to re-enqueue items on send failure. If false, items will be dropped after
+	// failed send. If true, items will be re-enqueued and retried after the current queue is drained.
+	ReenqueueOnFailure bool `mapstructure:"reenqueue_on_failure"`
 }
 
 // NewDefaultQueueSettings returns the default settings for QueueSettings.
@@ -101,50 +105,53 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 		queue = internal.NewBoundedMemoryQueue[Request](config.QueueSize)
 	}
 	return &queueSender{
-		fullName:       set.ID.String(),
-		signal:         signal,
-		queue:          queue,
-		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
-		logger:         set.TelemetrySettings.Logger,
-		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
-		numConsumers:   config.NumConsumers,
-		stopWG:         sync.WaitGroup{},
-		// TODO: this can be further exposed as a config param rather than relying on a type of queue
-		requeuingEnabled: isPersistent,
+		fullName:         set.ID.String(),
+		signal:           signal,
+		queue:            queue,
+		traceAttribute:   attribute.String(obsmetrics.ExporterKey, set.ID.String()),
+		logger:           set.TelemetrySettings.Logger,
+		meter:            set.TelemetrySettings.MeterProvider.Meter(scopeName),
+		numConsumers:     config.NumConsumers,
+		stopWG:           sync.WaitGroup{},
+		requeuingEnabled: config.ReenqueueOnFailure,
 	}
 }
 
-func (qs *queueSender) onTemporaryFailure(ctx context.Context, req Request, err error, logger *zap.Logger) error {
+// consume is the function that is executed by the queue consumers to send the data to the next consumerSender.
+func (qs *queueSender) consume(ctx context.Context, req Request) {
+	err := qs.nextSender.send(ctx, req)
+
+	// Nothing to do if the error is nil or permanent. Permanent errors are already logged by retrySender.
+	if err == nil || consumererror.IsPermanent(err) {
+		return
+	}
+
 	if !qs.requeuingEnabled {
-		logger.Error(
+		qs.logger.Error(
 			"Exporting failed. No more retries left. Dropping data.",
 			zap.Error(err),
 			zap.Int("dropped_items", req.ItemsCount()),
 		)
-		return err
+		return
 	}
 
 	if qs.queue.Offer(ctx, req) == nil {
-		logger.Error(
+		qs.logger.Error(
 			"Exporting failed. Putting back to the end of the queue.",
 			zap.Error(err),
 		)
 	} else {
-		logger.Error(
+		qs.logger.Error(
 			"Exporting failed. Queue did not accept requeuing request. Dropping data.",
 			zap.Error(err),
 			zap.Int("dropped_items", req.ItemsCount()),
 		)
 	}
-	return err
 }
 
 // Start is invoked during service startup.
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
-	qs.consumers = internal.NewQueueConsumers(qs.queue, qs.numConsumers, func(ctx context.Context, req Request) {
-		// TODO: Update item.OnProcessingFinished to accept error and remove the retry->queue sender callback.
-		_ = qs.nextSender.send(ctx, req)
-	})
+	qs.consumers = internal.NewQueueConsumers(qs.queue, qs.numConsumers, qs.consume)
 	if err := qs.consumers.Start(ctx, host); err != nil {
 		return err
 	}
@@ -214,7 +221,7 @@ func (qs *queueSender) Shutdown(ctx context.Context) error {
 	return qs.consumers.Shutdown(ctx)
 }
 
-// send implements the requestSender interface
+// send implements the requestSender interface. It enqueues the request to be sent by the queue consumers.
 func (qs *queueSender) send(ctx context.Context, req Request) error {
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.

@@ -91,7 +91,7 @@ func WithRetry(config RetrySettings) Option {
 			}
 			return
 		}
-		o.retrySender = newRetrySender(config, o.set, o.onTemporaryFailure)
+		o.retrySender = newRetrySender(config, o.set)
 	}
 }
 
@@ -110,9 +110,7 @@ func WithQueue(config QueueSettings) Option {
 			}
 			return
 		}
-		qs := newQueueSender(config, o.set, o.signal, o.marshaler, o.unmarshaler)
-		o.queueSender = qs
-		o.setOnTemporaryFailure(qs.onTemporaryFailure)
+		o.queueSender = newQueueSender(config, o.set, o.signal, o.marshaler, o.unmarshaler)
 	}
 }
 
@@ -145,9 +143,6 @@ type baseExporter struct {
 	obsrepSender  requestSender
 	retrySender   requestSender
 	timeoutSender *timeoutSender // timeoutSender is always initialized.
-
-	// onTemporaryFailure is a function that is called when the retrySender is unable to send data to the next consumer.
-	onTemporaryFailure onRequestHandlingFinishedFunc
 
 	consumerOptions []consumer.Option
 }
@@ -214,11 +209,4 @@ func (be *baseExporter) Shutdown(ctx context.Context) error {
 		be.queueSender.Shutdown(ctx),
 		// Last shutdown the wrapped exporter itself.
 		be.ShutdownFunc.Shutdown(ctx))
-}
-
-func (be *baseExporter) setOnTemporaryFailure(onTemporaryFailure onRequestHandlingFinishedFunc) {
-	be.onTemporaryFailure = onTemporaryFailure
-	if rs, ok := be.retrySender.(*retrySender); ok {
-		rs.onTemporaryFailure = onTemporaryFailure
-	}
 }

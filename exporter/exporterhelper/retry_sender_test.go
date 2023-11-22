@@ -59,7 +59,7 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 	ocs.checkDroppedItemsCount(t, 2)
 }
 
-func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
+func TestQueuedRetry_DropOnNoReenqueue(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	rCfg := NewDefaultRetrySettings()
 	rCfg.Enabled = false

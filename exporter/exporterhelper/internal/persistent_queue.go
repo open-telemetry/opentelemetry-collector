@@ -278,10 +278,10 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(), bool)
 		// Delete the item from the persistent storage after it was processed.
 		pq.mu.Lock()
 		defer pq.mu.Unlock()
-		if err = pq.itemDispatchingFinish(ctx, index); err != nil {
+		if err = pq.itemDispatchingFinish(context.Background(), index); err != nil {
 			pq.set.Logger.Error("Error deleting item from queue", zap.Error(err))
 		}
-		if err = pq.unrefClient(ctx); err != nil {
+		if err = pq.unrefClient(context.Background()); err != nil {
 			pq.set.Logger.Error("Error closing the storage client", zap.Error(err))
 		}
 	}, true
