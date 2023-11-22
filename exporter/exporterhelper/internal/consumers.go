@@ -13,15 +13,15 @@ import (
 type QueueConsumers[T any] struct {
 	queue        Queue[T]
 	numConsumers int
-	callback     func(context.Context, T)
+	consumeFunc  func(context.Context, T)
 	stopWG       sync.WaitGroup
 }
 
-func NewQueueConsumers[T any](q Queue[T], numConsumers int, callback func(context.Context, T)) *QueueConsumers[T] {
+func NewQueueConsumers[T any](q Queue[T], numConsumers int, consumeFunc func(context.Context, T)) *QueueConsumers[T] {
 	return &QueueConsumers[T]{
 		queue:        q,
 		numConsumers: numConsumers,
-		callback:     callback,
+		consumeFunc:  consumeFunc,
 		stopWG:       sync.WaitGroup{},
 	}
 }
@@ -40,12 +40,10 @@ func (qc *QueueConsumers[T]) Start(ctx context.Context, host component.Host) err
 			startWG.Done()
 			defer qc.stopWG.Done()
 			for {
-				item, success := qc.queue.Poll()
-				if !success {
+				ok := qc.queue.Consume(qc.consumeFunc)
+				if !ok {
 					return
 				}
-				qc.callback(item.Context, item.Request)
-				item.OnProcessingFinished()
 			}
 		}()
 	}

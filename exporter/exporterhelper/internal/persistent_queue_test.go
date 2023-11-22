@@ -340,7 +340,7 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 				require.NoError(t, err)
 			}
 			assert.Equal(t, 3, ps.Size())
-			_, _ = ps.Poll()
+			_, _, _ = ps.getNextItem(context.Background())
 			assert.Equal(t, 2, ps.Size())
 			assert.NoError(t, ps.Shutdown(context.Background()))
 
@@ -387,18 +387,19 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{})
 
 	// Takes index 0 in process.
-	readReq, found := ps.Poll()
+	readReq, _, found := ps.getNextItem(context.Background())
 	require.True(t, found)
-	assert.Equal(t, req, readReq.Request)
+	assert.Equal(t, req, readReq)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
 	// This takes item 1 to process.
-	secondReadReq, found := ps.Poll()
+	secondReadReq, onProcessingFinished, found := ps.getNextItem(context.Background())
 	require.True(t, found)
+	assert.Equal(t, req, secondReadReq)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0, 1})
 
 	// Lets mark item 1 as finished, it will remove it from the currently dispatched items list.
-	secondReadReq.OnProcessingFinished()
+	onProcessingFinished()
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
 	// Reload the storage. Since items 0 was not finished, this should be re-enqueued at the end.
@@ -409,9 +410,10 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 
 	// We should be able to pull all remaining items now
 	for i := 0; i < 4; i++ {
-		qReq, found := newPs.Poll()
+		r, onProcessingFinished, found := newPs.getNextItem(context.Background())
 		require.True(t, found)
-		qReq.OnProcessingFinished()
+		assert.Equal(t, req, r)
+		onProcessingFinished()
 	}
 
 	// The queue should be now empty
@@ -444,7 +446,8 @@ func TestPersistentQueue_StartWithNonDispatched(t *testing.T) {
 	}
 
 	// get one item out, but don't mark it as processed
-	_, _ = ps.Poll()
+	<-ps.putChan
+	_, _, _ = ps.getNextItem(context.Background())
 	// put one more item in
 	require.NoError(t, ps.Offer(context.Background(), req))
 
@@ -467,20 +470,20 @@ func TestPersistentQueue_PutCloseReadClose(t *testing.T) {
 	assert.NoError(t, ps.Offer(context.Background(), req))
 	assert.Equal(t, 2, ps.Size())
 	// TODO: Remove this, after the initialization writes the readIndex.
-	_, _ = ps.Poll()
+	_, _, _ = ps.getNextItem(context.Background())
 	assert.NoError(t, ps.Shutdown(context.Background()))
 
 	newPs := createTestPersistentQueue(createTestClient(t, ext))
 	require.Equal(t, 2, newPs.Size())
 
 	// Lets read both of the elements we put
-	readReq, found := newPs.Poll()
+	readReq, _, found := newPs.getNextItem(context.Background())
 	require.True(t, found)
-	require.Equal(t, req, readReq.Request)
+	require.Equal(t, req, readReq)
 
-	readReq, found = newPs.Poll()
+	readReq, _, found = newPs.getNextItem(context.Background())
 	require.True(t, found)
-	require.Equal(t, req, readReq.Request)
+	require.Equal(t, req, readReq)
 	require.Equal(t, 0, newPs.Size())
 	assert.NoError(t, newPs.Shutdown(context.Background()))
 }
@@ -519,9 +522,7 @@ func BenchmarkPersistentQueue_TraceSpans(b *testing.B) {
 			}
 
 			for i := 0; i < bb.N; i++ {
-				req, found := ps.Poll()
-				require.True(bb, found)
-				require.NotNil(bb, req)
+				require.True(bb, ps.Consume(func(context.Context, ptrace.Traces) {}))
 			}
 			require.NoError(b, ext.Shutdown(context.Background()))
 		})
@@ -595,12 +596,12 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 
 	assert.NoError(t, ps.Offer(context.Background(), newTraces(5, 10)))
 
-	req, ok := ps.Poll()
+	_, onProcessingFinished, ok := ps.getNextItem(context.Background())
 	require.True(t, ok)
 	assert.False(t, client.(*mockStorageClient).isClosed())
 	assert.NoError(t, ps.Shutdown(context.Background()))
 	assert.False(t, client.(*mockStorageClient).isClosed())
-	req.OnProcessingFinished()
+	onProcessingFinished()
 	assert.True(t, client.(*mockStorageClient).isClosed())
 }
 
@@ -634,9 +635,7 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 
 	// Take out all the items
 	for i := reqCount; i > 0; i-- {
-		request, found := ps.Poll()
-		require.True(t, found)
-		request.OnProcessingFinished()
+		require.True(t, ps.Consume(func(context.Context, ptrace.Traces) {}))
 	}
 
 	// We should be able to put a new item in
