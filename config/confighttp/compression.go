@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/golang/snappy"
 	"github.com/klauspost/compress/zstd"
 
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -117,6 +118,25 @@ func httpContentDecompressor(h http.Handler, eh func(w http.ResponseWriter, r *h
 				}
 				return zr, nil
 			},
+			"snappy": func(body io.ReadCloser) (io.ReadCloser, error) {
+
+				compressed, err := io.ReadAll(body)
+				if err != nil {
+					return nil, err
+				}
+
+				reqBuf, err := snappy.Decode(nil, compressed)
+				if err != nil {
+					return nil, err
+				}
+
+				sr := &SnappyReadCloser{
+					r: bytes.NewReader(reqBuf),
+					c: body,
+				}
+
+				return sr, nil
+			},
 		},
 	}
 	d.decoders["deflate"] = d.decoders["zlib"]
@@ -159,4 +179,17 @@ func (d *decompressor) newBodyReader(r *http.Request) (io.ReadCloser, error) {
 // defaultErrorHandler writes the error message in plain text.
 func defaultErrorHandler(w http.ResponseWriter, _ *http.Request, errMsg string, statusCode int) {
 	http.Error(w, errMsg, statusCode)
+}
+
+type SnappyReadCloser struct {
+	r io.Reader
+	c io.Closer
+}
+
+func (src *SnappyReadCloser) Read(p []byte) (n int, err error) {
+	return src.r.Read(p)
+}
+
+func (src *SnappyReadCloser) Close() error {
+	return src.c.Close()
 }

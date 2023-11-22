@@ -191,6 +191,12 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: http.StatusOK,
 		},
 		{
+			name:     "ValidSnappy",
+			encoding: "snappy",
+			reqBody:  compressSnappy(t, testBody),
+			respCode: http.StatusOK,
+		},
+		{
 			name:     "InvalidDeflate",
 			encoding: "deflate",
 			reqBody:  bytes.NewBuffer(testBody),
