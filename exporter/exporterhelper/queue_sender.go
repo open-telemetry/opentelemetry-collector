@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
@@ -114,37 +115,41 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 	}
 }
 
-func (qs *queueSender) onTemporaryFailure(ctx context.Context, req Request, err error, logger *zap.Logger) error {
+// consume is the function that is executed by the queue consumers to send the data to the next consumerSender.
+func (qs *queueSender) consume(ctx context.Context, req Request) {
+	err := qs.nextSender.send(ctx, req)
+
+	// Nothing to do if the error is nil or permanent. Permanent errors are already logged by retrySender.
+	if err == nil || consumererror.IsPermanent(err) {
+		return
+	}
+
 	if !qs.requeuingEnabled {
-		logger.Error(
+		qs.logger.Error(
 			"Exporting failed. No more retries left. Dropping data.",
 			zap.Error(err),
 			zap.Int("dropped_items", req.ItemsCount()),
 		)
-		return err
+		return
 	}
 
 	if qs.queue.Offer(ctx, req) == nil {
-		logger.Error(
+		qs.logger.Error(
 			"Exporting failed. Putting back to the end of the queue.",
 			zap.Error(err),
 		)
 	} else {
-		logger.Error(
+		qs.logger.Error(
 			"Exporting failed. Queue did not accept requeuing request. Dropping data.",
 			zap.Error(err),
 			zap.Int("dropped_items", req.ItemsCount()),
 		)
 	}
-	return err
 }
 
 // Start is invoked during service startup.
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
-	qs.consumers = internal.NewQueueConsumers(qs.queue, qs.numConsumers, func(ctx context.Context, req Request) {
-		// TODO: Update item.OnProcessingFinished to accept error and remove the retry->queue sender callback.
-		_ = qs.nextSender.send(ctx, req)
-	})
+	qs.consumers = internal.NewQueueConsumers(qs.queue, qs.numConsumers, qs.consume)
 	if err := qs.consumers.Start(ctx, host); err != nil {
 		return err
 	}
@@ -214,7 +219,7 @@ func (qs *queueSender) Shutdown(ctx context.Context) error {
 	return qs.consumers.Shutdown(ctx)
 }
 
-// send implements the requestSender interface
+// send implements the requestSender interface. It puts the request in the queue.
 func (qs *queueSender) send(ctx context.Context, req Request) error {
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.
