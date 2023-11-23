@@ -212,7 +212,7 @@ func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChann
 		otelprom.WithProducer(opencensus.NewMetricProducer()),
 		// This allows us to produce metrics that are backwards compatible w/ opencensus
 		otelprom.WithoutCounterSuffixes(),
-		otelprom.WithNamespace("otelcol_"),
+		otelprom.WithNamespace("otelcol"),
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating otel prometheus exporter: %w", err)
