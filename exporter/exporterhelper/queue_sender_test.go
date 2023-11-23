@@ -244,9 +244,9 @@ func TestQueuedRetry_RequeuingEnabled(t *testing.T) {
 	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
 	mockR := newMockRequest(1, traceErr)
 	ocs.run(func() {
+		ocs.waitGroup.Add(1) // necessary because we'll call send() again after requeueing
 		// This is asynchronous so it should just enqueue, no errors expected.
 		require.NoError(t, be.send(context.Background(), mockR))
-		ocs.waitGroup.Add(1) // necessary because we'll call send() again after requeueing
 	})
 	ocs.awaitAsyncProcessing()
 
