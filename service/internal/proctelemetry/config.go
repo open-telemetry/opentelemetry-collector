@@ -203,9 +203,8 @@ func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChann
 	if prometheusConfig.Port == nil {
 		return nil, nil, fmt.Errorf("port must be specified")
 	}
-	wrappedRegisterer := prometheus.WrapRegistererWithPrefix("otelcol_", promRegistry)
 	exporter, err := otelprom.New(
-		otelprom.WithRegisterer(wrappedRegisterer),
+		otelprom.WithRegisterer(promRegistry),
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/8043
 		otelprom.WithoutUnits(),
 		// Disabled for the moment until this becomes stable, and we are ready to break backwards compatibility.
@@ -213,6 +212,7 @@ func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChann
 		otelprom.WithProducer(opencensus.NewMetricProducer()),
 		// This allows us to produce metrics that are backwards compatible w/ opencensus
 		otelprom.WithoutCounterSuffixes(),
+		otelprom.WithNamespace("otelcol"),
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating otel prometheus exporter: %w", err)
