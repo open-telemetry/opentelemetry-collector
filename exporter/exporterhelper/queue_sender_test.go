@@ -255,6 +255,39 @@ func TestQueuedRetry_RequeuingEnabled(t *testing.T) {
 	ocs.checkDroppedItemsCount(t, 1) // not actually dropped, but ocs counts each failed send here
 }
 
+// disabling retry sender should disable requeuing.
+func TestQueuedRetry_RequeuingDisabled(t *testing.T) {
+	mockR := newMockRequest(2, errors.New("transient error"))
+
+	// use persistent storage as it expected to be used with requeuing unless the retry sender is disabled
+	qCfg := NewDefaultQueueSettings()
+	storageID := component.NewIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID // enable persistence
+	rCfg := NewDefaultRetrySettings()
+	rCfg.Enabled = false
+
+	be, err := newBaseExporter(defaultSettings, "", false, mockRequestMarshaler, mockRequestUnmarshaler(mockR), newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
+	require.NoError(t, err)
+	ocs := be.obsrepSender.(*observabilityConsumerSender)
+
+	var extensions = map[component.ID]component.Component{
+		storageID: internal.NewMockStorageExtension(nil),
+	}
+	host := &mockHost{ext: extensions}
+	require.NoError(t, be.Start(context.Background(), host))
+
+	ocs.run(func() {
+		// This is asynchronous so it should just enqueue, no errors expected.
+		require.NoError(t, be.send(context.Background(), mockR))
+	})
+	ocs.awaitAsyncProcessing()
+
+	// one failed request, no retries, two items dropped.
+	mockR.checkNumRequests(t, 1)
+	ocs.checkSendItemsCount(t, 0)
+	ocs.checkDroppedItemsCount(t, 2)
+}
+
 // if requeueing is enabled, but the queue is full, we get an error
 func TestQueuedRetry_RequeuingEnabledQueueFull(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
