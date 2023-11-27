@@ -7,6 +7,22 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.0.0/v0.90.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Replace converter interface with function in the new experimental exporter helper. (#8122)
+- `featuregate`: Remove deprecate function `featuregate.NewFlag` (#8727)
+  Use `featuregate.Registry`'s `RegisterFlags` method instead.
+
+### 🚩 Deprecations 🚩
+
+- `telemetry`: deprecate jsonschema generated types (#15009)
+
+### 💡 Enhancements 💡
+
+- `pdata`: Add ZeroThreshold field to exponentialHistogramDataPoint in pmetric package. (#8802)
+
 ## v1.0.0-rcv0018/v0.89.0
 
 ### 🛑 Breaking changes 🛑
