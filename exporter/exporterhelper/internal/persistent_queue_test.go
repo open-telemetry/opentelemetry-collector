@@ -626,6 +626,9 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 		reqCount++
 	}
 
+	// Check that the size is correct
+	require.Equal(t, reqCount, ps.Size(), "Size must be equal to the number of items inserted")
+
 	// Manually set the storage to only have a small amount of free space left
 	newMaxSize := client.GetSizeInBytes() + freeSpaceInBytes
 	client.SetMaxSizeInBytes(newMaxSize)
@@ -634,6 +637,9 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 	require.Error(t, ps.Offer(context.Background(), req))
 
 	// Take out all the items
+	// Getting the first item fails, as we can't update the state in storage, so we just delete it without returning it
+	// Subsequent items succeed, as deleting the first item frees enough space for the state update
+	reqCount--
 	for i := reqCount; i > 0; i-- {
 		require.True(t, ps.Consume(func(context.Context, ptrace.Traces) {}))
 	}
