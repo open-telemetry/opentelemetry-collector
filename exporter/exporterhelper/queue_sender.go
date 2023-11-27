@@ -81,7 +81,6 @@ type queueSender struct {
 	traceAttribute   attribute.KeyValue
 	logger           *zap.Logger
 	meter            otelmetric.Meter
-	numConsumers     int
 	consumers        *internal.QueueConsumers[Request]
 	stopWG           sync.WaitGroup
 	requeuingEnabled bool
@@ -101,18 +100,19 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 	} else {
 		queue = internal.NewBoundedMemoryQueue[Request](config.QueueSize)
 	}
-	return &queueSender{
+	qs := &queueSender{
 		fullName:       set.ID.String(),
 		signal:         signal,
 		queue:          queue,
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		logger:         set.TelemetrySettings.Logger,
 		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
-		numConsumers:   config.NumConsumers,
 		stopWG:         sync.WaitGroup{},
 		// TODO: this can be further exposed as a config param rather than relying on a type of queue
 		requeuingEnabled: isPersistent,
 	}
+	qs.consumers = internal.NewQueueConsumers(queue, config.NumConsumers, qs.consume)
+	return qs
 }
 
 // consume is the function that is executed by the queue consumers to send the data to the next consumerSender.
@@ -149,7 +149,6 @@ func (qs *queueSender) consume(ctx context.Context, req Request) {
 
 // Start is invoked during service startup.
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
-	qs.consumers = internal.NewQueueConsumers(qs.queue, qs.numConsumers, qs.consume)
 	if err := qs.consumers.Start(ctx, host); err != nil {
 		return err
 	}
