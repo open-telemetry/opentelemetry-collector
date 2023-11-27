@@ -132,11 +132,7 @@ func (rs *retrySender) send(ctx context.Context, req Request) error {
 			return err
 		}
 
-		// Give the request a chance to extract signal data to retry if only some data
-		// failed to process.
-		if errReq, ok := req.(RequestErrorHandler); ok {
-			req = errReq.OnError(err)
-		}
+		req = extractPartialRequest(req, err)
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {

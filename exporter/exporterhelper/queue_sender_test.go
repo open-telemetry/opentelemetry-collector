@@ -16,13 +16,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -240,8 +238,7 @@ func TestQueuedRetry_RequeuingEnabled(t *testing.T) {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
 
-	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
-	mockR := newMockRequest(1, traceErr)
+	mockR := newMockRequest(4, errors.New("transient error"))
 	ocs.run(func() {
 		ocs.waitGroup.Add(1) // necessary because we'll call send() again after requeueing
 		// This is asynchronous so it should just enqueue, no errors expected.
@@ -251,8 +248,9 @@ func TestQueuedRetry_RequeuingEnabled(t *testing.T) {
 
 	// In the newMockConcurrentExporter we count requests and items even for failed requests
 	mockR.checkNumRequests(t, 2)
+	// ensure that only 1 item was sent which correspond to items count in the error returned by mockRequest.OnError()
 	ocs.checkSendItemsCount(t, 1)
-	ocs.checkDroppedItemsCount(t, 1) // not actually dropped, but ocs counts each failed send here
+	ocs.checkDroppedItemsCount(t, 4) // not actually dropped, but ocs counts each failed send here
 }
 
 // disabling retry sender should disable requeuing.
