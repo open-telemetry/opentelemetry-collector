@@ -1,0 +1,30 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: breaking
+
+# The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
+component: exporterhelper
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Make the re-enqueue behavior configurable.
+
+# One or more tracking issues or pull requests related to the change
+issues: [8987]
+
+subtext: |
+  Instead of relying on the enabled `retry_on_failure` option, we now have a new option
+  `sending_queue::requeue_on_failure` to control the requeuing independently of the retry sender. This can be useful
+  for users who don't want the blocking exponential retry and just want to put the failed request back in the queue.
+  This option can also be enabled with the memory queue now, which means that the data will never be dropped after
+  getting to the queue as long as the collector is up and running.
+  
+  IMPORTANT: Make sure to set `sending_queue::requeue_on_failure` to `true` if you use persistent queue with 
+  `retry_on_failure` enabled to preserve the same behavior.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]

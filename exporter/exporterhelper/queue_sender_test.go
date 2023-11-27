@@ -226,13 +226,13 @@ func TestQueueSettings_Validate(t *testing.T) {
 // if requeueing is enabled, we eventually retry even if we failed at first
 func TestQueuedRetry_RequeuingEnabled(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
+	qCfg.RequeueOnFailure = true
 	qCfg.NumConsumers = 1
 	rCfg := NewDefaultRetrySettings()
 	rCfg.MaxElapsedTime = time.Nanosecond // we don't want to retry at all, but requeue instead
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
-	be.queueSender.(*queueSender).requeuingEnabled = true
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		assert.NoError(t, be.Shutdown(context.Background()))
@@ -253,16 +253,17 @@ func TestQueuedRetry_RequeuingEnabled(t *testing.T) {
 	ocs.checkDroppedItemsCount(t, 4) // not actually dropped, but ocs counts each failed send here
 }
 
-// disabling retry sender should disable requeuing.
 func TestQueuedRetry_RequeuingDisabled(t *testing.T) {
 	mockR := newMockRequest(2, errors.New("transient error"))
 
-	// use persistent storage as it expected to be used with requeuing unless the retry sender is disabled
+	// use persistent storage as it expected to be used with requeuing unless it's disabled
 	qCfg := NewDefaultQueueSettings()
+	qCfg.RequeueOnFailure = false
+
 	storageID := component.NewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := NewDefaultRetrySettings()
-	rCfg.Enabled = false
+	rCfg.MaxElapsedTime = time.Nanosecond // we don't want to retry
 
 	be, err := newBaseExporter(defaultSettings, "", false, mockRequestMarshaler, mockRequestUnmarshaler(mockR), newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -291,6 +292,7 @@ func TestQueuedRetry_RequeuingEnabledQueueFull(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 1
+	qCfg.RequeueOnFailure = true
 	rCfg := NewDefaultRetrySettings()
 	rCfg.MaxElapsedTime = time.Nanosecond // we don't want to retry at all, but requeue instead
 
@@ -300,7 +302,6 @@ func TestQueuedRetry_RequeuingEnabledQueueFull(t *testing.T) {
 	be, err := newBaseExporter(set, "", false, nil, nil, newNoopObsrepSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
-	be.queueSender.(*queueSender).requeuingEnabled = true
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		assert.NoError(t, be.Shutdown(context.Background()))
@@ -397,6 +398,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
+	qCfg.RequeueOnFailure = true
 	storageID := component.NewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence to ensure data is re-queued on shutdown
 

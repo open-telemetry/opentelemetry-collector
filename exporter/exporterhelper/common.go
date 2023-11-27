@@ -176,15 +176,6 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 	}
 	be.connectSenders()
 
-	// If retry sender is disabled then disable requeuing in the queue sender.
-	// TODO: Make re-enqueuing configurable on queue sender instead of relying on retry sender.
-	if qs, ok := be.queueSender.(*queueSender); ok {
-		// if it's not retrySender, then it is disabled.
-		if _, ok = be.retrySender.(*retrySender); !ok {
-			qs.requeuingEnabled = false
-		}
-	}
-
 	return be, nil
 }
 

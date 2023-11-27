@@ -41,6 +41,14 @@ type QueueSettings struct {
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue
 	StorageID *component.ID `mapstructure:"storage"`
+	// RequeueOnFailure indicates whether requests are requeued or dropped on non-permanent failures.
+	// Do not confuse this option with the retry_on_failure which consumes
+	// requests from the queue and apply blocking exponential backoff retry mechanism.
+	// This option is applied after all the retries configured with retry_on_failure are exhausted.
+	// If true, a request failed with a non-permanent error will be put back in the queue and
+	// retried after the current queue is drained.
+	// If false (default), all failed requests will be dropped.
+	RequeueOnFailure bool `mapstructure:"requeue_on_failure"`
 }
 
 // NewDefaultQueueSettings returns the default settings for QueueSettings.
@@ -89,22 +97,20 @@ type queueSender struct {
 func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal component.DataType,
 	marshaler RequestMarshaler, unmarshaler RequestUnmarshaler) *queueSender {
 
-	isPersistent := config.StorageID != nil
 	var queue internal.Queue[Request]
-	if isPersistent {
+	if config.StorageID != nil {
 		queue = internal.NewPersistentQueue[Request](
 			config.QueueSize, signal, *config.StorageID, marshaler, unmarshaler, set)
 	} else {
 		queue = internal.NewBoundedMemoryQueue[Request](config.QueueSize)
 	}
 	qs := &queueSender{
-		fullName:       set.ID.String(),
-		queue:          queue,
-		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
-		logger:         set.TelemetrySettings.Logger,
-		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
-		// TODO: this can be further exposed as a config param rather than relying on a type of queue
-		requeuingEnabled: isPersistent,
+		fullName:         set.ID.String(),
+		queue:            queue,
+		traceAttribute:   attribute.String(obsmetrics.ExporterKey, set.ID.String()),
+		logger:           set.TelemetrySettings.Logger,
+		meter:            set.TelemetrySettings.MeterProvider.Meter(scopeName),
+		requeuingEnabled: config.RequeueOnFailure,
 	}
 	qs.consumers = internal.NewQueueConsumers(queue, config.NumConsumers, qs.consume)
 	return qs
