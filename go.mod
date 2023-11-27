@@ -10,15 +10,15 @@ require (
 	github.com/shirou/gopsutil/v3 v3.23.10
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector/component v0.89.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.89.0
-	go.opentelemetry.io/collector/connector v0.89.0
-	go.opentelemetry.io/collector/consumer v0.89.0
-	go.opentelemetry.io/collector/exporter v0.89.0
+	go.opentelemetry.io/collector/component v0.90.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.90.0
+	go.opentelemetry.io/collector/connector v0.90.0
+	go.opentelemetry.io/collector/consumer v0.90.0
+	go.opentelemetry.io/collector/exporter v0.90.0
 	go.opentelemetry.io/collector/featuregate v1.0.0
 	go.opentelemetry.io/collector/pdata v1.0.0
-	go.opentelemetry.io/collector/processor v0.89.0
-	go.opentelemetry.io/collector/receiver v0.89.0
+	go.opentelemetry.io/collector/processor v0.90.0
+	go.opentelemetry.io/collector/receiver v0.90.0
 	go.opentelemetry.io/contrib/config v0.1.1
 	go.opentelemetry.io/otel v1.21.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.44.0
@@ -59,8 +59,8 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.opentelemetry.io/collector/confmap v0.89.0 // indirect
-	go.opentelemetry.io/collector/extension v0.89.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.90.0 // indirect
+	go.opentelemetry.io/collector/extension v0.90.0 // indirect
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
