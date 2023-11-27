@@ -133,7 +133,7 @@ func (qs *queueSender) consume(ctx context.Context, req Request) {
 		return
 	}
 
-	if qs.queue.Offer(ctx, req) == nil {
+	if qs.queue.Offer(ctx, extractPartialRequest(req, err)) == nil {
 		qs.logger.Error(
 			"Exporting failed. Putting back to the end of the queue.",
 			zap.Error(err),
