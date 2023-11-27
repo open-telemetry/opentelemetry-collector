@@ -90,8 +90,8 @@ require (
 	go.opentelemetry.io/collector/confmap v0.89.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.89.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.89.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.89.0 // indirect
 	go.opentelemetry.io/collector/service v0.89.0 // indirect
 	go.opentelemetry.io/contrib/config v0.1.1 // indirect
