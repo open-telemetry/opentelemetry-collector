@@ -54,7 +54,7 @@ type HTTPClientSettings struct {
 	Headers map[string]configopaque.String `mapstructure:"headers"`
 
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
-	// Deprecated: [0.89.0] Replaced by confighttp.WithRoundTripper
+	// Deprecated: [0.91.0] Replaced by confighttp.WithRoundTripper
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error) `mapstructure:"-"`
 
 	// Auth configuration for outgoing HTTP calls.
