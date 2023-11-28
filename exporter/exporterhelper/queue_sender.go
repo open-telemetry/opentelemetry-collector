@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"go.opencensus.io/metric/metricdata"
@@ -81,7 +80,6 @@ type queueSender struct {
 	logger           *zap.Logger
 	meter            otelmetric.Meter
 	consumers        *internal.QueueConsumers[Request]
-	stopWG           sync.WaitGroup
 	requeuingEnabled bool
 
 	metricCapacity otelmetric.Int64ObservableGauge
@@ -105,7 +103,6 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		logger:         set.TelemetrySettings.Logger,
 		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
-		stopWG:         sync.WaitGroup{},
 		// TODO: this can be further exposed as a config param rather than relying on a type of queue
 		requeuingEnabled: isPersistent,
 	}
