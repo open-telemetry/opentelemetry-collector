@@ -45,6 +45,8 @@ type PipelineWatcher interface {
 // wishes to be notified of the Collector's effective configuration.
 type ConfigWatcher interface {
 	// NotifyConfig notifies the extension of the Collector's current effective configuration.
+	// The extension owns the `confmap.Conf`. Callers should ensure that it's safe to
+	// store the pointer `conf` and use it later concurrently
 	NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 }
 
