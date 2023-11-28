@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -166,9 +165,6 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 }
 
 func TestQueuedRetry_QueueMetricsReportedUsingOTel(t *testing.T) {
-	resetFlag := setFeatureGateForTest(t, obsreportconfig.UseOtelForInternalMetricsfeatureGate, true)
-	defer resetFlag()
-
 	tt, err := obsreporttest.SetupTelemetry(defaultID)
 	require.NoError(t, err)
 

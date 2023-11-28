@@ -27,15 +27,15 @@ func TestExportEnqueueFailure(t *testing.T) {
 	require.NoError(t, err)
 
 	logRecords := int64(7)
-	obsrep.recordEnqueueFailureWithOC(context.Background(), component.DataTypeLogs, logRecords)
+	obsrep.recordEnqueueFailure(context.Background(), component.DataTypeLogs, logRecords)
 	require.NoError(t, tt.CheckExporterEnqueueFailedLogs(logRecords))
 
 	spans := int64(12)
-	obsrep.recordEnqueueFailureWithOC(context.Background(), component.DataTypeTraces, spans)
+	obsrep.recordEnqueueFailure(context.Background(), component.DataTypeTraces, spans)
 	require.NoError(t, tt.CheckExporterEnqueueFailedTraces(spans))
 
 	metricPoints := int64(21)
-	obsrep.recordEnqueueFailureWithOC(context.Background(), component.DataTypeMetrics, metricPoints)
+	obsrep.recordEnqueueFailure(context.Background(), component.DataTypeMetrics, metricPoints)
 	require.NoError(t, tt.CheckExporterEnqueueFailedMetrics(metricPoints))
 }
 

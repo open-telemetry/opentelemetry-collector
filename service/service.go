@@ -62,9 +62,6 @@ type Settings struct {
 
 	// LoggingOptions provides a way to change behavior of zap logging.
 	LoggingOptions []zap.Option
-
-	// For testing purpose only.
-	useOtel *bool
 }
 
 // Service represents the implementation of a component.Host.
@@ -78,10 +75,6 @@ type Service struct {
 }
 
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
-	useOtel := obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled()
-	if set.useOtel != nil {
-		useOtel = *set.useOtel
-	}
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
 	srv := &Service{
@@ -95,7 +88,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
-		telemetryInitializer: newColTelemetry(useOtel, disableHighCard, extendedConfig),
+		telemetryInitializer: newColTelemetry(disableHighCard, extendedConfig),
 		collectorConf:        set.CollectorConf,
 	}
 	var err error
@@ -235,7 +228,7 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 
 	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
 		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
-		if err = proctelemetry.RegisterProcessMetrics(srv.telemetryInitializer.ocRegistry, srv.telemetryInitializer.mp, obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled(), getBallastSize(srv.host)); err != nil {
+		if err = proctelemetry.RegisterProcessMetrics(srv.telemetryInitializer.mp, getBallastSize(srv.host)); err != nil {
 			return fmt.Errorf("failed to register process metrics: %w", err)
 		}
 	}

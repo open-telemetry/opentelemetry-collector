@@ -11,7 +11,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	io_prometheus_client "github.com/prometheus/client_model/go"
@@ -45,7 +44,6 @@ func TestBatchProcessorMetrics(t *testing.T) {
 type testTelemetry struct {
 	meter         view.Meter
 	promHandler   http.Handler
-	useOtel       bool
 	meterProvider *sdkmetric.MeterProvider
 }
 
@@ -63,52 +61,35 @@ type expectedMetrics struct {
 	timeoutTrigger float64
 }
 
-func telemetryTest(t *testing.T, testFunc func(t *testing.T, tel testTelemetry, useOtel bool)) {
-	t.Run("WithOC", func(t *testing.T) {
-		testFunc(t, setupTelemetry(t, false), false)
-	})
-
+func telemetryTest(t *testing.T, testFunc func(t *testing.T, tel testTelemetry)) {
 	t.Run("WithOTel", func(t *testing.T) {
 		testFunc(t, setupTelemetry(t, true), true)
 	})
 }
 
-func setupTelemetry(t *testing.T, useOtel bool) testTelemetry {
+func setupTelemetry(t *testing.T) testTelemetry {
 	// Unregister the views first since they are registered by the init, this way we reset them.
 	views := metricViews()
 	view.Unregister(views...)
 	require.NoError(t, view.Register(views...))
 
 	telemetry := testTelemetry{
-		meter:   view.NewMeter(),
-		useOtel: useOtel,
+		meter: view.NewMeter(),
 	}
 
-	if useOtel {
-		promReg := prometheus.NewRegistry()
-		exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutScopeInfo(), otelprom.WithoutCounterSuffixes())
-		require.NoError(t, err)
+	promReg := prometheus.NewRegistry()
+	exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutScopeInfo(), otelprom.WithoutCounterSuffixes())
+	require.NoError(t, err)
 
-		telemetry.meterProvider = sdkmetric.NewMeterProvider(
-			sdkmetric.WithResource(resource.Empty()),
-			sdkmetric.WithReader(exporter),
-			sdkmetric.WithView(batchViews()...),
-		)
+	telemetry.meterProvider = sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(resource.Empty()),
+		sdkmetric.WithReader(exporter),
+		sdkmetric.WithView(batchViews()...),
+	)
 
-		telemetry.promHandler = promhttp.HandlerFor(promReg, promhttp.HandlerOpts{})
+	telemetry.promHandler = promhttp.HandlerFor(promReg, promhttp.HandlerOpts{})
 
-		t.Cleanup(func() { assert.NoError(t, telemetry.meterProvider.Shutdown(context.Background())) })
-	} else {
-		promReg := prometheus.NewRegistry()
-
-		ocExporter, err := ocprom.NewExporter(ocprom.Options{Registry: promReg})
-		require.NoError(t, err)
-
-		telemetry.promHandler = ocExporter
-
-		view.RegisterExporter(ocExporter)
-		t.Cleanup(func() { view.UnregisterExporter(ocExporter) })
-	}
+	t.Cleanup(func() { assert.NoError(t, telemetry.meterProvider.Shutdown(context.Background())) })
 
 	return telemetry
 }

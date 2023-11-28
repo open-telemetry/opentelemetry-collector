@@ -262,7 +262,7 @@ func TestServiceTelemetryWithOpenTelemetryMetrics(t *testing.T) {
 	}
 }
 
-func testCollectorStartHelper(t *testing.T, useOtel bool, tc ownMetricsTestCase) {
+func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase) {
 	var once sync.Once
 	loggingHookCalled := false
 	hook := func(entry zapcore.Entry) error {
@@ -281,7 +281,6 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, tc ownMetricsTestCase)
 		map[component.ID]component.Config{component.NewID("zpages"): &zpagesextension.Config{TCPAddr: confignet.TCPAddr{Endpoint: zpagesAddr}}},
 		map[component.Type]extension.Factory{"zpages": zpagesextension.NewFactory()})
 	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
-	set.useOtel = &useOtel
 
 	cfg := newNopConfig()
 	cfg.Extensions = []component.ID{component.NewID("zpages")}
@@ -303,9 +302,6 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, tc ownMetricsTestCase)
 		assert.True(t, loggingHookCalled)
 
 		assertResourceLabels(t, srv.telemetrySettings.Resource, tc.expectedLabels)
-		if !useOtel {
-			assertMetrics(t, metricsAddr, tc.expectedLabels)
-		}
 		assertZPages(t, zpagesAddr)
 		require.NoError(t, srv.Shutdown(context.Background()))
 	}

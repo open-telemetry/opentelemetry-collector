@@ -9,7 +9,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -17,8 +16,6 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/metric"
-	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/stats/view"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric/noop"
@@ -104,7 +101,7 @@ func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_cli
 func TestOtelProcessTelemetry(t *testing.T) {
 	tel := setupTelemetry(t)
 
-	require.NoError(t, RegisterProcessMetrics(nil, tel.MeterProvider, true, 0))
+	require.NoError(t, RegisterProcessMetrics(tel.MeterProvider, 0))
 
 	mp, err := fetchPrometheusMetrics(tel.promHandler)
 	require.NoError(t, err)
@@ -129,57 +126,12 @@ func TestOtelProcessTelemetry(t *testing.T) {
 	}
 }
 
-func TestOCProcessTelemetry(t *testing.T) {
-	ocRegistry := metric.NewRegistry()
-
-	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0))
-
-	// Check that the metrics are actually filled.
-	<-time.After(200 * time.Millisecond)
-
-	metrics := ocRegistry.Read()
-
-	for _, metricName := range expectedMetrics {
-		m := findMetric(metrics, metricName)
-		require.NotNil(t, m)
-		require.Len(t, m.TimeSeries, 1)
-		ts := m.TimeSeries[0]
-		assert.Len(t, ts.LabelValues, 0)
-		require.Len(t, ts.Points, 1)
-
-		var value float64
-		if metricName == "process/uptime" || metricName == "process/cpu_seconds" {
-			value = ts.Points[0].Value.(float64)
-		} else {
-			value = float64(ts.Points[0].Value.(int64))
-		}
-
-		if metricName == "process/uptime" || metricName == "process/cpu_seconds" {
-			// This likely will still be zero when running the test.
-			assert.GreaterOrEqual(t, value, float64(0), metricName)
-			continue
-		}
-
-		assert.Greater(t, value, float64(0), metricName)
-	}
-}
-
 func TestProcessTelemetryFailToRegister(t *testing.T) {
 	for _, metricName := range expectedMetrics {
 		t.Run(metricName, func(t *testing.T) {
-			ocRegistry := metric.NewRegistry()
 			_, err := ocRegistry.AddFloat64Gauge(metricName)
 			require.NoError(t, err)
-			assert.Error(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0))
+			assert.Error(t, RegisterProcessMetrics(noop.NewMeterProvider(), 0))
 		})
 	}
-}
-
-func findMetric(metrics []*metricdata.Metric, name string) *metricdata.Metric {
-	for _, m := range metrics {
-		if m.Descriptor.Name == name {
-			return m
-		}
-	}
-	return nil
 }

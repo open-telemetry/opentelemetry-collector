@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
 const (
@@ -144,7 +143,6 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	}
 	settings.TelemetrySettings.TracerProvider = tp
 	settings.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
-	settings.views = obsreportconfig.AllViews(configtelemetry.LevelNormal)
 	err := view.Register(settings.views...)
 	if err != nil {
 		return settings, err
