@@ -76,7 +76,6 @@ func (qCfg *QueueSettings) Validate() error {
 type queueSender struct {
 	baseRequestSender
 	fullName         string
-	signal           component.DataType
 	queue            internal.Queue[Request]
 	traceAttribute   attribute.KeyValue
 	logger           *zap.Logger
@@ -102,7 +101,6 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 	}
 	qs := &queueSender{
 		fullName:       set.ID.String(),
-		signal:         signal,
 		queue:          queue,
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		logger:         set.TelemetrySettings.Logger,
