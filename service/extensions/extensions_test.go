@@ -381,6 +381,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			name: "successful startup/shutdown",
 			expectedStatuses: []*component.StatusEvent{
 				component.NewStatusEvent(component.StatusStarting),
+				component.NewStatusEvent(component.StatusOK),
 				component.NewStatusEvent(component.StatusStopping),
 				component.NewStatusEvent(component.StatusStopped),
 			},
@@ -400,6 +401,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			name: "shutdown error",
 			expectedStatuses: []*component.StatusEvent{
 				component.NewStatusEvent(component.StatusStarting),
+				component.NewStatusEvent(component.StatusOK),
 				component.NewStatusEvent(component.StatusStopping),
 				component.NewPermanentErrorEvent(assert.AnError),
 			},
@@ -430,11 +432,11 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			assert.NoError(t, err)
 
 			var actualStatuses []*component.StatusEvent
-			init, statusFunc := status.NewServiceStatusFunc(func(id *component.InstanceID, ev *component.StatusEvent) {
+			rep := status.NewReporter(func(id *component.InstanceID, ev *component.StatusEvent) {
 				actualStatuses = append(actualStatuses, ev)
 			})
-			extensions.telemetry.ReportComponentStatus = statusFunc
-			init()
+			extensions.telemetry.Status = rep
+			rep.Ready()
 
 			assert.Equal(t, tc.startErr, extensions.Start(context.Background(), componenttest.NewNopHost()))
 			if tc.startErr == nil {
