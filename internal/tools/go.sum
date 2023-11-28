@@ -201,7 +201,6 @@ github.com/go-kit/log v0.1.0/go.mod h1:zbhenjAZHb184qTLMA9ZjW7ThYL0H2mk7Q6pNt4vb
 github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9GBnD5lWE=
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
 github.com/go-logfmt/logfmt v0.5.0/go.mod h1:wCYkCAKZfumFQihp8CzCvQ3paCTfi41vtzG1KdI/P7A=
-github.com/go-logfmt/logfmt v0.5.1/go.mod h1:WYhtIu8zTZfxdn5+rREduYbwxfcBr/Vr6KEVveWlfTs=
 github.com/go-logr/logr v1.2.4 h1:g01GSCwiDw2xSZfjJ2/T9M+S6pFdcNtFYsp+Y43HYDQ=
 github.com/go-playground/locales v0.13.0 h1:HyWk6mgj5qFqCT5fjGBuRArbVDfE4hi8+e8ceBS/t7Q=
 github.com/go-playground/universal-translator v0.17.0 h1:icxd5fm+REJzpZx7ZfpaD876Lmtgy7VtROAbHHXk8no=
@@ -273,8 +272,6 @@ github.com/golangci/go-misc v0.0.0-20220329215616-d24fe342adfe h1:6RGUuS7EGotKx6
 github.com/golangci/go-misc v0.0.0-20220329215616-d24fe342adfe/go.mod h1:gjqyPShc/m8pEMpk0a3SeagVb0kaqvhscv+i9jI5ZhQ=
 github.com/golangci/gofmt v0.0.0-20231018234816-f50ced29576e h1:ULcKCDV1LOZPFxGZaA6TlQbiM3J2GCPnkx/bGF6sX/g=
 github.com/golangci/gofmt v0.0.0-20231018234816-f50ced29576e/go.mod h1:Pm5KhLPA8gSnQwrQ6ukebRcapGb/BG9iUkdaiCcGHJM=
-github.com/golangci/golangci-lint v1.55.1 h1:DL2j9Eeapg1N3WEkKnQFX5L40SYtjZZJjGVdyEgNrDc=
-github.com/golangci/golangci-lint v1.55.1/go.mod h1:z00biPRqjo5MISKV1+RWgONf2KvrPDmfqxHpHKB6bI4=
 github.com/golangci/golangci-lint v1.55.2 h1:yllEIsSJ7MtlDBwDJ9IMBkyEUz2fYE0b5B8IUgO1oP8=
 github.com/golangci/golangci-lint v1.55.2/go.mod h1:H60CZ0fuqoTwlTvnbyjhpZPWp7KmsjwV2yupIMiMXbM=
 github.com/golangci/lint-1 v0.0.0-20191013205115-297bf364a8e0 h1:MfyDlzVjl1hoaPzPD4Gpb/QgoRfSBR0jdhwGyAWwMSA=
@@ -439,8 +436,6 @@ github.com/mbilski/exhaustivestruct v1.2.0 h1:wCBmUnSYufAHO6J4AVWY6ff+oxWxsVFrwg
 github.com/mbilski/exhaustivestruct v1.2.0/go.mod h1:OeTBVxQWoEmB2J2JCHmXWPJ0aksxSUOUy+nvtVEfzXc=
 github.com/mgechev/revive v1.3.4 h1:k/tO3XTaWY4DEHal9tWBkkUMJYO/dLDVyMmAQxmIMDc=
 github.com/mgechev/revive v1.3.4/go.mod h1:W+pZCMu9qj8Uhfs1iJMQsEFLRozUfvwFwqVvRbSNLVw=
-github.com/mikefarah/yq/v4 v4.40.2 h1:KA+s3fc1sB8GhOJOAzoyJlNJSD6u7+nbXJmcwCSCviU=
-github.com/mikefarah/yq/v4 v4.40.2/go.mod h1:TSqdLNAFlwmIGQBQYIzeOX+wDWkCTWfRGWDrxQwGCaQ=
 github.com/mikefarah/yq/v4 v4.40.3 h1:pSJua3IGua3O+HFXp5LkMheqEOHMRQAkkCcgVhqi4VY=
 github.com/mikefarah/yq/v4 v4.40.3/go.mod h1:TSqdLNAFlwmIGQBQYIzeOX+wDWkCTWfRGWDrxQwGCaQ=
 github.com/mitchellh/go-homedir v1.1.0 h1:lukF9ziXFxDFPkA1vsr5zpc1XuPDn/wFntq5mG+4E0Y=
