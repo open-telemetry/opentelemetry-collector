@@ -48,7 +48,7 @@ type TelemetrySettings struct {
 	ReportComponentStatus StatusFunc
 }
 
-// Deprecated: [0.90.0] Use TelemetrySettings directly
+// Deprecated: [0.91.0] Use TelemetrySettings directly
 type TelemetrySettingsBase[T any] struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
