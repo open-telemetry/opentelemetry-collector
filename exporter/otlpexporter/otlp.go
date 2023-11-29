@@ -78,7 +78,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.GRPCClientSettings.WaitForReady),
 	}
-	_ = e.settings.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
+
 	return
 }
 

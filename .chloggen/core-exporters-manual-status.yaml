@@ -7,7 +7,7 @@ change_type: 'enhancement'
 component: core exporters
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: This PR adds status reporting to the core exporters (otlp, otlphttp, and debug)
+note: This PR adds status reporting to the core exporters (otlp and otlphttp)
 
 # One or more tracking issues or pull requests related to the change
 issues: [7682]

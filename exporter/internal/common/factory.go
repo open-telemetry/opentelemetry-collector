@@ -34,7 +34,6 @@ func CreateTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 	s := newLoggingExporter(exporterLogger, c.Verbosity)
 	return exporterhelper.NewTracesExporter(ctx, set, config,
 		s.pushTraces,
-		exporterhelper.WithStart(newStartFunc(&set.TelemetrySettings)),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
@@ -46,7 +45,6 @@ func CreateMetricsExporter(ctx context.Context, set exporter.CreateSettings, con
 	s := newLoggingExporter(exporterLogger, c.Verbosity)
 	return exporterhelper.NewMetricsExporter(ctx, set, config,
 		s.pushMetrics,
-		exporterhelper.WithStart(newStartFunc(&set.TelemetrySettings)),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
@@ -58,7 +56,6 @@ func CreateLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 	s := newLoggingExporter(exporterLogger, c.Verbosity)
 	return exporterhelper.NewLogsExporter(ctx, set, config,
 		s.pushLogs,
-		exporterhelper.WithStart(newStartFunc(&set.TelemetrySettings)),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
@@ -84,11 +81,4 @@ func (c *Common) createLogger(logger *zap.Logger) *zap.Logger {
 	)
 
 	return zap.New(core)
-}
-
-func newStartFunc(telemetry *component.TelemetrySettings) component.StartFunc {
-	return func(context.Context, component.Host) error {
-		_ = telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
-		return nil
-	}
 }

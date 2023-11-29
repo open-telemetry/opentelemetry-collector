@@ -82,7 +82,6 @@ func (e *baseExporter) start(_ context.Context, host component.Host) error {
 		return err
 	}
 	e.client = client
-	_ = e.settings.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
 	return nil
 }
 
