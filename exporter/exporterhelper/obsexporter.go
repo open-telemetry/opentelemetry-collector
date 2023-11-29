@@ -6,7 +6,6 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
@@ -28,7 +27,6 @@ const (
 type ObsReport struct {
 	level          configtelemetry.Level
 	spanNamePrefix string
-	mutators       []tag.Mutator
 	tracer         trace.Tracer
 	logger         *zap.Logger
 
@@ -59,7 +57,6 @@ func newExporter(cfg ObsReportSettings) (*ObsReport, error) {
 	exp := &ObsReport{
 		level:          cfg.ExporterCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
-		mutators:       []tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation))},
 		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
 		logger:         cfg.ExporterCreateSettings.Logger,
 

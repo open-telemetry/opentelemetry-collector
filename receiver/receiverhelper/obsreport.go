@@ -6,7 +6,6 @@ package receiverhelper // import "go.opentelemetry.io/collector/receiver/receive
 import (
 	"context"
 
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
@@ -30,7 +29,6 @@ type ObsReport struct {
 	spanNamePrefix string
 	transport      string
 	longLivedCtx   bool
-	mutators       []tag.Mutator
 	tracer         trace.Tracer
 	meter          metric.Meter
 	logger         *zap.Logger
@@ -69,13 +67,9 @@ func newReceiver(cfg ObsReportSettings) (*ObsReport, error) {
 		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
 		transport:      cfg.Transport,
 		longLivedCtx:   cfg.LongLivedCtx,
-		mutators: []tag.Mutator{
-			tag.Upsert(obsmetrics.TagKeyReceiver, cfg.ReceiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
-			tag.Upsert(obsmetrics.TagKeyTransport, cfg.Transport, tag.WithTTL(tag.TTLNoPropagation)),
-		},
-		tracer: cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.ReceiverID.String()),
-		meter:  cfg.ReceiverCreateSettings.MeterProvider.Meter(receiverScope),
-		logger: cfg.ReceiverCreateSettings.Logger,
+		tracer:         cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.ReceiverID.String()),
+		meter:          cfg.ReceiverCreateSettings.MeterProvider.Meter(receiverScope),
+		logger:         cfg.ReceiverCreateSettings.Logger,
 
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
@@ -195,7 +189,7 @@ func (rec *ObsReport) EndMetricsOp(
 // startOp creates the span used to trace the operation. Returning
 // the updated context with the created span.
 func (rec *ObsReport) startOp(receiverCtx context.Context, operationSuffix string) context.Context {
-	ctx, _ := tag.New(receiverCtx, rec.mutators...)
+	ctx := receiverCtx
 	var span trace.Span
 	spanName := rec.spanNamePrefix + operationSuffix
 	if !rec.longLivedCtx {

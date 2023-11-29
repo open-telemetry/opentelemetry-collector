@@ -4,7 +4,6 @@
 package service
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,17 +12,13 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/contrib/config"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
-	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -267,11 +262,6 @@ func TestTelemetryInit(t *testing.T) {
 				require.NoError(t, tel.shutdown())
 			}()
 
-			v := createTestMetrics(t, tel.mp)
-			defer func() {
-				view.Unregister(v)
-			}()
-
 			metrics := getMetricsFromPrometheus(t, tel.servers[0].Handler)
 			require.Equal(t, len(tc.expectedMetrics), len(metrics))
 
@@ -291,39 +281,6 @@ func TestTelemetryInit(t *testing.T) {
 		})
 
 	}
-}
-
-func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
-	// Creates a OTel Go counter
-	counter, err := mp.Meter("collector_test").Int64Counter(otelPrefix+counterName, metric.WithUnit("ms"))
-	require.NoError(t, err)
-	counter.Add(context.Background(), 13)
-
-	grpcExampleCounter, err := mp.Meter(proctelemetry.GRPCInstrumentation).Int64Counter(grpcPrefix + counterName)
-	require.NoError(t, err)
-	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributes(proctelemetry.GRPCUnacceptableKeyValues...))
-
-	httpExampleCounter, err := mp.Meter(proctelemetry.HTTPInstrumentation).Int64Counter(httpPrefix + counterName)
-	require.NoError(t, err)
-	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributes(proctelemetry.HTTPUnacceptableKeyValues...))
-
-	// Creates a OpenCensus measure
-	ocCounter := stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless)
-	v := &view.View{
-		Name:        ocPrefix + counterName,
-		Description: ocCounter.Description(),
-		Measure:     ocCounter,
-		Aggregation: view.Sum(),
-	}
-	err = view.Register(v)
-	require.NoError(t, err)
-
-	stats.Record(context.Background(), stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless).M(13))
-
-	// Forces a flush for the view data.
-	_, _ = view.RetrieveData(ocPrefix + counterName)
-
-	return v
 }
 
 func getMetricsFromPrometheus(t *testing.T, handler http.Handler) map[string]*io_prometheus_client.MetricFamily {

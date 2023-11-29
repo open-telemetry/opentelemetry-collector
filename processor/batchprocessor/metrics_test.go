@@ -17,7 +17,6 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats/view"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -35,14 +34,12 @@ func TestBatchProcessorMetrics(t *testing.T) {
 		"batch_send_size",
 		"batch_send_size_bytes",
 	}
-	views := metricViews()
 	for i, viewName := range viewNames {
 		assert.Equal(t, "processor/batch/"+viewName, views[i].Name)
 	}
 }
 
 type testTelemetry struct {
-	meter         view.Meter
 	promHandler   http.Handler
 	meterProvider *sdkmetric.MeterProvider
 }
@@ -69,13 +66,7 @@ func telemetryTest(t *testing.T, testFunc func(t *testing.T, tel testTelemetry))
 
 func setupTelemetry(t *testing.T) testTelemetry {
 	// Unregister the views first since they are registered by the init, this way we reset them.
-	views := metricViews()
-	view.Unregister(views...)
-	require.NoError(t, view.Register(views...))
-
-	telemetry := testTelemetry{
-		meter: view.NewMeter(),
-	}
+	telemetry := testTelemetry{}
 
 	promReg := prometheus.NewRegistry()
 	exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutScopeInfo(), otelprom.WithoutCounterSuffixes())
@@ -103,11 +94,6 @@ func (tt *testTelemetry) NewProcessorCreateSettings() processor.CreateSettings {
 }
 
 func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
-	for _, v := range metricViews() {
-		// Forces a flush for the opencensus view data.
-		_, _ = view.RetrieveData(v.Name)
-	}
-
 	req, err := http.NewRequest(http.MethodGet, "/metrics", nil)
 	require.NoError(t, err)
 

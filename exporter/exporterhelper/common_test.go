@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
@@ -28,10 +27,6 @@ var (
 		set.ID = defaultID
 		return set
 	}()
-	exporterTag, _      = tag.NewKey("exporter")
-	defaultExporterTags = []tag.Tag{
-		{Key: exporterTag, Value: "test"},
-	}
 )
 
 func newNoopObsrepSender(_ *ObsReport) requestSender {

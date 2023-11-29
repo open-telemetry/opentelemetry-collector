@@ -12,8 +12,6 @@ import (
 	"strings"
 	"unicode"
 
-	ocmetric "go.opencensus.io/metric"
-	"go.opencensus.io/metric/metricproducer"
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
@@ -48,10 +46,9 @@ var (
 )
 
 type telemetryInitializer struct {
-	ocRegistry *ocmetric.Registry
-	mp         metric.MeterProvider
-	tp         trace.TracerProvider
-	servers    []*http.Server
+	mp      metric.MeterProvider
+	tp      trace.TracerProvider
+	servers []*http.Server
 
 	disableHighCardinality bool
 	extendedConfig         bool
@@ -106,9 +103,6 @@ func (tel *telemetryInitializer) initTraces(res *resource.Resource, cfg telemetr
 }
 
 func (tel *telemetryInitializer) initMetrics(res *resource.Resource, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
-	// Initialize the ocRegistry, still used by the process metrics.
-	tel.ocRegistry = ocmetric.NewRegistry()
-
 	if len(cfg.Metrics.Address) != 0 {
 		if tel.extendedConfig {
 			logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
@@ -136,7 +130,6 @@ func (tel *telemetryInitializer) initMetrics(res *resource.Resource, logger *zap
 		})
 	}
 
-	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 	opts := []sdkmetric.Option{}
 	for _, reader := range cfg.Metrics.Readers {
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/8045
@@ -164,8 +157,6 @@ func (tel *telemetryInitializer) initMetrics(res *resource.Resource, logger *zap
 }
 
 func (tel *telemetryInitializer) shutdown() error {
-	metricproducer.GlobalManager().DeleteProducer(tel.ocRegistry)
-
 	var errs error
 	for _, server := range tel.servers {
 		if server != nil {

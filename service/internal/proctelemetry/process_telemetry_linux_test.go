@@ -12,12 +12,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/metric"
 	"go.opentelemetry.io/otel/metric/noop"
 )
 
 func TestOCProcessTelemetryWithHostProc(t *testing.T) {
-	ocRegistry := metric.NewRegistry()
 	// Make the sure the environment variable value is not used.
 	t.Setenv("HOST_PROC", "foo/bar")
 

@@ -7,7 +7,6 @@ import (
 	"context"
 	"strings"
 
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
@@ -39,8 +38,7 @@ func BuildCustomMetricName(configType, metric string) string {
 
 // ObsReport is a helper to add observability to a processor.
 type ObsReport struct {
-	level    configtelemetry.Level
-	mutators []tag.Mutator
+	level configtelemetry.Level
 
 	logger *zap.Logger
 
@@ -70,9 +68,8 @@ func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 
 func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 	report := &ObsReport{
-		level:    cfg.ProcessorCreateSettings.MetricsLevel,
-		mutators: []tag.Mutator{tag.Upsert(obsmetrics.TagKeyProcessor, cfg.ProcessorID.String(), tag.WithTTL(tag.TTLNoPropagation))},
-		logger:   cfg.ProcessorCreateSettings.Logger,
+		level:  cfg.ProcessorCreateSettings.MetricsLevel,
+		logger: cfg.ProcessorCreateSettings.Logger,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ProcessorKey, cfg.ProcessorID.String()),
 		},
