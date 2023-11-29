@@ -634,7 +634,7 @@ func TestComponentStatus(t *testing.T) {
 		{
 			name:            "413",
 			responseStatus:  http.StatusRequestEntityTooLarge,
-			componentStatus: component.StatusRecoverableError,
+			componentStatus: component.StatusPermanentError,
 		},
 		{
 			name:            "414",

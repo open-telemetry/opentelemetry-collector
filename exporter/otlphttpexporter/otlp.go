@@ -206,6 +206,8 @@ func isComponentPermanentError(code int) bool {
 		return true
 	case http.StatusMethodNotAllowed:
 		return true
+	case http.StatusRequestEntityTooLarge:
+		return true
 	case http.StatusRequestURITooLong:
 		return true
 	case http.StatusRequestHeaderFieldsTooLarge:
