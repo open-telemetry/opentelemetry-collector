@@ -53,23 +53,3 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../configtelemet
 replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
-
-replace go.opentelemetry.io/collector/exporter => ../../exporter
-
-replace go.opentelemetry.io/collector/connector => ../../connector
-
-replace go.opentelemetry.io/collector/semconv => ../../semconv
-
-replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
-
-replace go.opentelemetry.io/collector/receiver => ../../receiver
-
-replace go.opentelemetry.io/collector/consumer => ../../consumer
-
-replace go.opentelemetry.io/collector => ../..
-
-replace go.opentelemetry.io/collector/service => ../../service
-
-replace go.opentelemetry.io/collector/config/confignet => ../confignet
-
-replace go.opentelemetry.io/collector/processor => ../../processor

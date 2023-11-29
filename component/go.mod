@@ -11,7 +11,6 @@ require (
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.92.0
 	go.opentelemetry.io/collector/confmap v0.92.0
-	go.opentelemetry.io/collector/consumer v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v1.0.1
 	go.opentelemetry.io/otel v1.22.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.0
@@ -36,7 +35,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
-	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.1 // indirect
@@ -69,23 +67,3 @@ retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 )
-
-replace go.opentelemetry.io/collector => ../
-
-replace go.opentelemetry.io/collector/processor => ../processor
-
-replace go.opentelemetry.io/collector/extension => ../extension
-
-replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
-
-replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
-
-replace go.opentelemetry.io/collector/connector => ../connector
-
-replace go.opentelemetry.io/collector/service => ../service
-
-replace go.opentelemetry.io/collector/semconv => ../semconv
-
-replace go.opentelemetry.io/collector/receiver => ../receiver
-
-replace go.opentelemetry.io/collector/exporter => ../exporter
