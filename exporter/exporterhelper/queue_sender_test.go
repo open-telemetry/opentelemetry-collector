@@ -431,6 +431,11 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	}, time.Second, 1*time.Millisecond)
 }
 
+func TestQueueSenderNoStartShutdown(t *testing.T) {
+	qs := newQueueSender(NewDefaultQueueSettings(), exportertest.NewNopCreateSettings(), "", nil, nil)
+	assert.NoError(t, qs.Shutdown(context.Background()))
+}
+
 type mockHost struct {
 	component.Host
 	ext map[component.ID]component.Component

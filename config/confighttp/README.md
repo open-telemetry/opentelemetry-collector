@@ -69,6 +69,7 @@ will not be enabled.
   header, allowing clients to cache the response to CORS preflight requests. If
   not set, browsers use a default of 5 seconds.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
+- `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `0` (no restriction)
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
 

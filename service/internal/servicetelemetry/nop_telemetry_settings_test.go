@@ -18,7 +18,7 @@ import (
 
 func TestNewNopSettings(t *testing.T) {
 	set := NewNopTelemetrySettings()
-
+	set.Status.Ready()
 	require.NotNil(t, set)
 	require.IsType(t, TelemetrySettings{}, set)
 	require.Equal(t, zap.NewNop(), set.Logger)
@@ -26,5 +26,11 @@ func TestNewNopSettings(t *testing.T) {
 	require.Equal(t, noopmetric.NewMeterProvider(), set.MeterProvider)
 	require.Equal(t, configtelemetry.LevelNone, set.MetricsLevel)
 	require.Equal(t, pcommon.NewResource(), set.Resource)
-	require.NoError(t, set.ReportComponentStatus(&component.InstanceID{}, component.NewStatusEvent(component.StatusStarting)))
+	require.NoError(t,
+		set.Status.ReportComponentStatus(
+			&component.InstanceID{},
+			component.NewStatusEvent(component.StatusStarting),
+		),
+	)
+	require.NoError(t, set.Status.ReportComponentOKIfStarting(&component.InstanceID{}))
 }
