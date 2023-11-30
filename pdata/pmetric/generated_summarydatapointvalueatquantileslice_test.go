@@ -139,67 +139,20 @@ func TestSummaryDataPointValueAtQuantileSlice_Sort(t *testing.T) {
 	}
 }
 
-func TestSummaryDataPointValueAtQuantileSlice_ForEach(t *testing.T) {
-	// Test ForEach on empty slice
+func TestSummaryDataPointValueAtQuantileSlice_Range(t *testing.T) {
+	// Test _Range on empty slice
 	emptySlice := NewSummaryDataPointValueAtQuantileSlice()
-	emptySlice.ForEach(func(el SummaryDataPointValueAtQuantile) {
+	emptySlice.Range(func(i int, el SummaryDataPointValueAtQuantile) {
 		t.Fail()
 	})
 
-	// Test ForEach
-	slice := generateTestSummaryDataPointValueAtQuantileSlice()
-	count := 0
-	slice.ForEach(func(el SummaryDataPointValueAtQuantile) {
-		count++
-	})
-	assert.Equal(t, 7, count)
-}
-
-func TestSummaryDataPointValueAtQuantileSlice_ForEachIndex(t *testing.T) {
-	// Test _ForEachIndex on empty slice
-	emptySlice := NewSummaryDataPointValueAtQuantileSlice()
-	emptySlice.ForEachIndex(func(i int, el SummaryDataPointValueAtQuantile) {
-		t.Fail()
-	})
-
-	// Test _ForEachIndex
+	// Test _Range
 	slice := generateTestSummaryDataPointValueAtQuantileSlice()
 	total := 0
-	slice.ForEachIndex(func(i int, el SummaryDataPointValueAtQuantile) {
+	slice.Range(func(i int, el SummaryDataPointValueAtQuantile) {
 		total += i
 	})
 	assert.Equal(t, 0+1+2+3+4+5+6, total)
-}
-
-func TestSummaryDataPointValueAtQuantileSlice_ForEachWhile(t *testing.T) {
-	// Test ForEach on empty slice
-	emptySlice := NewSummaryDataPointValueAtQuantileSlice()
-	emptySlice.ForEachWhile(func(el SummaryDataPointValueAtQuantile) bool {
-		t.Fail()
-		return false
-	})
-
-	// Test ForEachWhile stops short
-	slice := generateTestSummaryDataPointValueAtQuantileSlice()
-	last := 0
-	proceed := slice.ForEachWhile(func(el SummaryDataPointValueAtQuantile) bool {
-		last++
-		if last == 4 {
-			return false
-		}
-		return true
-	})
-	assert.False(t, proceed)
-	assert.Equal(t, 4, last)
-
-	// Test ForEachWhile completes
-	last = 0
-	proceed = slice.ForEachWhile(func(el SummaryDataPointValueAtQuantile) bool {
-		last++
-		return true
-	})
-	assert.True(t, proceed)
-	assert.Equal(t, 7, last)
 }
 
 func generateTestSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {

@@ -17,15 +17,15 @@ type textTracesMarshaler struct{}
 // MarshalTraces ptrace.Traces to OTLP text.
 func (textTracesMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 	buf := dataBuffer{}
-	td.ResourceSpans().ForEachIndex(func(i int, rs ptrace.ResourceSpans) {
+	td.ResourceSpans().Range(func(i int, rs ptrace.ResourceSpans) {
 		buf.logEntry("ResourceSpans #%d", i)
 		buf.logEntry("Resource SchemaURL: %s", rs.SchemaUrl())
 		buf.logAttributes("Resource attributes", rs.Resource().Attributes())
-		rs.ScopeSpans().ForEachIndex(func(j int, ils ptrace.ScopeSpans) {
+		rs.ScopeSpans().Range(func(j int, ils ptrace.ScopeSpans) {
 			buf.logEntry("ScopeSpans #%d", j)
 			buf.logEntry("ScopeSpans SchemaURL: %s", ils.SchemaUrl())
 			buf.logInstrumentationScope(ils.Scope())
-			ils.Spans().ForEachIndex(func(k int, span ptrace.Span) {
+			ils.Spans().Range(func(k int, span ptrace.Span) {
 				buf.logEntry("Span #%d", k)
 				buf.logAttr("Trace ID", span.TraceID())
 				buf.logAttr("Parent ID", span.ParentSpanID())

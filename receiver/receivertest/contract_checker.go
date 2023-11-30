@@ -339,25 +339,25 @@ func (m *mockConsumer) ConsumeTraces(_ context.Context, data ptrace.Traces) erro
 // idSetFromTraces computes an idSet from given ptrace.Traces. The idSet will contain ids of all spans.
 func idSetFromTraces(data ptrace.Traces) (idSet, error) {
 	ds := map[UniqueIDAttrVal]bool{}
-	var err error
-	data.ResourceSpans().ForEachWhile(func(rs ptrace.ResourceSpans) bool {
-		return rs.ScopeSpans().ForEachWhile(func(ss ptrace.ScopeSpans) bool {
-			return ss.Spans().ForEachWhile(func(elem ptrace.Span) bool {
+	rss := data.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		ils := rss.At(i).ScopeSpans()
+		for j := 0; j < ils.Len(); j++ {
+			ss := ils.At(j).Spans()
+			for k := 0; k < ss.Len(); k++ {
+				elem := ss.At(k)
 				key, exists := elem.Attributes().Get(UniqueIDAttrName)
 				if !exists {
-					err = fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
-					return false
+					return ds, fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
 				}
 				if key.Type() != pcommon.ValueTypeStr {
-					err = fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
-					return false
+					return ds, fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
 				}
 				ds[UniqueIDAttrVal(key.Str())] = true
-				return true
-			})
-		})
-	})
-	return ds, err
+			}
+		}
+	}
+	return ds, nil
 }
 
 func (m *mockConsumer) ConsumeLogs(_ context.Context, data plog.Logs) error {
@@ -369,25 +369,25 @@ func (m *mockConsumer) ConsumeLogs(_ context.Context, data plog.Logs) error {
 // idSetFromLogs computes an idSet from given plog.Logs. The idSet will contain ids of all log records.
 func idSetFromLogs(data plog.Logs) (idSet, error) {
 	ds := map[UniqueIDAttrVal]bool{}
-	var err error
-	data.ResourceLogs().ForEachWhile(func(rs plog.ResourceLogs) bool {
-		return rs.ScopeLogs().ForEachWhile(func(ss plog.ScopeLogs) bool {
-			return ss.LogRecords().ForEachWhile(func(elem plog.LogRecord) bool {
+	rss := data.ResourceLogs()
+	for i := 0; i < rss.Len(); i++ {
+		ils := rss.At(i).ScopeLogs()
+		for j := 0; j < ils.Len(); j++ {
+			ss := ils.At(j).LogRecords()
+			for k := 0; k < ss.Len(); k++ {
+				elem := ss.At(k)
 				key, exists := elem.Attributes().Get(UniqueIDAttrName)
 				if !exists {
-					err = fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
-					return false
+					return ds, fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
 				}
 				if key.Type() != pcommon.ValueTypeStr {
-					err = fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
-					return false
+					return ds, fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
 				}
 				ds[UniqueIDAttrVal(key.Str())] = true
-				return true
-			})
-		})
-	})
-	return ds, err
+			}
+		}
+	}
+	return ds, nil
 }
 
 // TODO: Implement mockConsumer.ConsumeMetrics()

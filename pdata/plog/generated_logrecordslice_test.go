@@ -139,67 +139,20 @@ func TestLogRecordSlice_Sort(t *testing.T) {
 	}
 }
 
-func TestLogRecordSlice_ForEach(t *testing.T) {
-	// Test ForEach on empty slice
+func TestLogRecordSlice_Range(t *testing.T) {
+	// Test _Range on empty slice
 	emptySlice := NewLogRecordSlice()
-	emptySlice.ForEach(func(el LogRecord) {
+	emptySlice.Range(func(i int, el LogRecord) {
 		t.Fail()
 	})
 
-	// Test ForEach
-	slice := generateTestLogRecordSlice()
-	count := 0
-	slice.ForEach(func(el LogRecord) {
-		count++
-	})
-	assert.Equal(t, 7, count)
-}
-
-func TestLogRecordSlice_ForEachIndex(t *testing.T) {
-	// Test _ForEachIndex on empty slice
-	emptySlice := NewLogRecordSlice()
-	emptySlice.ForEachIndex(func(i int, el LogRecord) {
-		t.Fail()
-	})
-
-	// Test _ForEachIndex
+	// Test _Range
 	slice := generateTestLogRecordSlice()
 	total := 0
-	slice.ForEachIndex(func(i int, el LogRecord) {
+	slice.Range(func(i int, el LogRecord) {
 		total += i
 	})
 	assert.Equal(t, 0+1+2+3+4+5+6, total)
-}
-
-func TestLogRecordSlice_ForEachWhile(t *testing.T) {
-	// Test ForEach on empty slice
-	emptySlice := NewLogRecordSlice()
-	emptySlice.ForEachWhile(func(el LogRecord) bool {
-		t.Fail()
-		return false
-	})
-
-	// Test ForEachWhile stops short
-	slice := generateTestLogRecordSlice()
-	last := 0
-	proceed := slice.ForEachWhile(func(el LogRecord) bool {
-		last++
-		if last == 4 {
-			return false
-		}
-		return true
-	})
-	assert.False(t, proceed)
-	assert.Equal(t, 4, last)
-
-	// Test ForEachWhile completes
-	last = 0
-	proceed = slice.ForEachWhile(func(el LogRecord) bool {
-		last++
-		return true
-	})
-	assert.True(t, proceed)
-	assert.Equal(t, 7, last)
 }
 
 func generateTestLogRecordSlice() LogRecordSlice {

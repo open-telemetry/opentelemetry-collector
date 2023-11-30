@@ -553,9 +553,9 @@ func getTestSpanName(requestNum, index int) string {
 func spansReceivedByName(tds []ptrace.Traces) map[string]ptrace.Span {
 	spansReceivedByName := map[string]ptrace.Span{}
 	for _, td := range tds {
-		td.ResourceSpans().ForEach(func(rs ptrace.ResourceSpans) {
-			rs.ScopeSpans().ForEach(func(ss ptrace.ScopeSpans) {
-				ss.Spans().ForEach(func(span ptrace.Span) {
+		td.ResourceSpans().Range(func(_ int, rs ptrace.ResourceSpans) {
+			rs.ScopeSpans().Range(func(_ int, ss ptrace.ScopeSpans) {
+				ss.Spans().Range(func(_ int, span ptrace.Span) {
 					spansReceivedByName[span.Name()] = span
 				})
 			})
@@ -567,9 +567,9 @@ func spansReceivedByName(tds []ptrace.Traces) map[string]ptrace.Span {
 func metricsReceivedByName(mds []pmetric.Metrics) map[string]pmetric.Metric {
 	metricsReceivedByName := map[string]pmetric.Metric{}
 	for _, md := range mds {
-		md.ResourceMetrics().ForEach(func(rm pmetric.ResourceMetrics) {
-			rm.ScopeMetrics().ForEach(func(rm pmetric.ScopeMetrics) {
-				rm.Metrics().ForEach(func(metric pmetric.Metric) {
+		md.ResourceMetrics().Range(func(_ int, rm pmetric.ResourceMetrics) {
+			rm.ScopeMetrics().Range(func(_ int, rm pmetric.ScopeMetrics) {
+				rm.Metrics().Range(func(_ int, metric pmetric.Metric) {
 					metricsReceivedByName[metric.Name()] = metric
 				})
 			})
@@ -843,9 +843,9 @@ func getTestLogSeverityText(requestNum, index int) string {
 func logsReceivedBySeverityText(lds []plog.Logs) map[string]plog.LogRecord {
 	logsReceivedBySeverityText := map[string]plog.LogRecord{}
 	for _, ld := range lds {
-		ld.ResourceLogs().ForEach(func(rl plog.ResourceLogs) {
-			rl.ScopeLogs().ForEach(func(sl plog.ScopeLogs) {
-				sl.LogRecords().ForEach(func(log plog.LogRecord) {
+		ld.ResourceLogs().Range(func(_ int, rl plog.ResourceLogs) {
+			rl.ScopeLogs().Range(func(_ int, sl plog.ScopeLogs) {
+				sl.LogRecords().Range(func(_ int, log plog.LogRecord) {
 					logsReceivedBySeverityText[log.SeverityText()] = log
 				})
 			})

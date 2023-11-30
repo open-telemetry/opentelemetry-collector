@@ -89,7 +89,7 @@ func (b *dataBuffer) logMetricDataPoints(m pmetric.Metric) {
 }
 
 func (b *dataBuffer) logNumberDataPoints(ps pmetric.NumberDataPointSlice) {
-	ps.ForEachIndex(func(i int, p pmetric.NumberDataPoint) {
+	ps.Range(func(i int, p pmetric.NumberDataPoint) {
 		b.logEntry("NumberDataPoints #%d", i)
 		b.logDataPointAttributes(p.Attributes())
 
@@ -107,7 +107,7 @@ func (b *dataBuffer) logNumberDataPoints(ps pmetric.NumberDataPointSlice) {
 }
 
 func (b *dataBuffer) logHistogramDataPoints(ps pmetric.HistogramDataPointSlice) {
-	ps.ForEachIndex(func(i int, p pmetric.HistogramDataPoint) {
+	ps.Range(func(i int, p pmetric.HistogramDataPoint) {
 		b.logEntry("HistogramDataPoints #%d", i)
 		b.logDataPointAttributes(p.Attributes())
 
@@ -140,7 +140,7 @@ func (b *dataBuffer) logHistogramDataPoints(ps pmetric.HistogramDataPointSlice) 
 }
 
 func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHistogramDataPointSlice) {
-	ps.ForEachIndex(func(i int, p pmetric.ExponentialHistogramDataPoint) {
+	ps.Range(func(i int, p pmetric.ExponentialHistogramDataPoint) {
 		b.logEntry("ExponentialHistogramDataPoints #%d", i)
 		b.logDataPointAttributes(p.Attributes())
 
@@ -198,7 +198,7 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 }
 
 func (b *dataBuffer) logDoubleSummaryDataPoints(ps pmetric.SummaryDataPointSlice) {
-	ps.ForEachIndex(func(i int, p pmetric.SummaryDataPoint) {
+	ps.Range(func(i int, p pmetric.SummaryDataPoint) {
 		b.logEntry("SummaryDataPoints #%d", i)
 		b.logDataPointAttributes(p.Attributes())
 
@@ -207,7 +207,7 @@ func (b *dataBuffer) logDoubleSummaryDataPoints(ps pmetric.SummaryDataPointSlice
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %f", p.Sum())
 
-		p.QuantileValues().ForEachIndex(func(i int, quantile pmetric.SummaryDataPointValueAtQuantile) {
+		p.QuantileValues().Range(func(i int, quantile pmetric.SummaryDataPointValueAtQuantile) {
 			b.logEntry("QuantileValue #%d: Quantile %f, Value %f", i, quantile.Quantile(), quantile.Value())
 		})
 	})
@@ -223,7 +223,7 @@ func (b *dataBuffer) logEvents(description string, se ptrace.SpanEventSlice) {
 	}
 
 	b.logEntry("%s:", description)
-	se.ForEachIndex(func(i int, el ptrace.SpanEvent) {
+	se.Range(func(i int, el ptrace.SpanEvent) {
 		e := se.At(i)
 		b.logEntry("SpanEvent #%d", i)
 		b.logEntry("     -> Name: %s", e.Name())
@@ -240,7 +240,7 @@ func (b *dataBuffer) logLinks(description string, sl ptrace.SpanLinkSlice) {
 
 	b.logEntry("%s:", description)
 
-	sl.ForEachIndex(func(i int, l ptrace.SpanLink) {
+	sl.Range(func(i int, l ptrace.SpanLink) {
 		b.logEntry("SpanLink #%d", i)
 		b.logEntry("     -> Trace ID: %s", l.TraceID())
 		b.logEntry("     -> ID: %s", l.SpanID())
@@ -257,7 +257,7 @@ func (b *dataBuffer) logExemplars(description string, se pmetric.ExemplarSlice) 
 
 	b.logEntry("%s:", description)
 
-	se.ForEachIndex(func(i int, e pmetric.Exemplar) {
+	se.Range(func(i int, e pmetric.Exemplar) {
 		b.logEntry("Exemplar #%d", i)
 		b.logEntry("     -> Trace ID: %s", e.TraceID())
 		b.logEntry("     -> Span ID: %s", e.SpanID())

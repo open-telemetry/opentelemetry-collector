@@ -151,28 +151,10 @@ func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
-// ForEach iterates over ScopeLogsSlice and executes f against each element.
-func (es ScopeLogsSlice) ForEach(f func(ScopeLogs)) {
-	for i := 0; i < es.Len(); i++ {
-		f(es.At(i))
-	}
-}
-
-// ForEachIndex iterates over ScopeLogsSlice and executes f against each element.
+// Range iterates over ScopeLogsSlice and executes f against each element.
 // The function also passes the iteration index.
-func (es ScopeLogsSlice) ForEachIndex(f func(int, ScopeLogs)) {
+func (es ScopeLogsSlice) Range(f func(int, ScopeLogs)) {
 	for i := 0; i < es.Len(); i++ {
 		f(i, es.At(i))
 	}
-}
-
-// ForEachWhile iterates over ScopeLogsSlice and executes f against each element.
-// The function also passes the iteration index.
-func (es ScopeLogsSlice) ForEachWhile(f func(ScopeLogs) bool) bool {
-	for i := 0; i < es.Len(); i++ {
-		if !f(es.At(i)) {
-			return false
-		}
-	}
-	return true
 }

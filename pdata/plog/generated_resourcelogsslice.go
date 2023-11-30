@@ -151,28 +151,10 @@ func (es ResourceLogsSlice) Sort(less func(a, b ResourceLogs) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
-// ForEach iterates over ResourceLogsSlice and executes f against each element.
-func (es ResourceLogsSlice) ForEach(f func(ResourceLogs)) {
-	for i := 0; i < es.Len(); i++ {
-		f(es.At(i))
-	}
-}
-
-// ForEachIndex iterates over ResourceLogsSlice and executes f against each element.
+// Range iterates over ResourceLogsSlice and executes f against each element.
 // The function also passes the iteration index.
-func (es ResourceLogsSlice) ForEachIndex(f func(int, ResourceLogs)) {
+func (es ResourceLogsSlice) Range(f func(int, ResourceLogs)) {
 	for i := 0; i < es.Len(); i++ {
 		f(i, es.At(i))
 	}
-}
-
-// ForEachWhile iterates over ResourceLogsSlice and executes f against each element.
-// The function also passes the iteration index.
-func (es ResourceLogsSlice) ForEachWhile(f func(ResourceLogs) bool) bool {
-	for i := 0; i < es.Len(); i++ {
-		if !f(es.At(i)) {
-			return false
-		}
-	}
-	return true
 }

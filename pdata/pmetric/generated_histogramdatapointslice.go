@@ -151,28 +151,10 @@ func (es HistogramDataPointSlice) Sort(less func(a, b HistogramDataPoint) bool) 
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
-// ForEach iterates over HistogramDataPointSlice and executes f against each element.
-func (es HistogramDataPointSlice) ForEach(f func(HistogramDataPoint)) {
-	for i := 0; i < es.Len(); i++ {
-		f(es.At(i))
-	}
-}
-
-// ForEachIndex iterates over HistogramDataPointSlice and executes f against each element.
+// Range iterates over HistogramDataPointSlice and executes f against each element.
 // The function also passes the iteration index.
-func (es HistogramDataPointSlice) ForEachIndex(f func(int, HistogramDataPoint)) {
+func (es HistogramDataPointSlice) Range(f func(int, HistogramDataPoint)) {
 	for i := 0; i < es.Len(); i++ {
 		f(i, es.At(i))
 	}
-}
-
-// ForEachWhile iterates over HistogramDataPointSlice and executes f against each element.
-// The function also passes the iteration index.
-func (es HistogramDataPointSlice) ForEachWhile(f func(HistogramDataPoint) bool) bool {
-	for i := 0; i < es.Len(); i++ {
-		if !f(es.At(i)) {
-			return false
-		}
-	}
-	return true
 }

@@ -30,7 +30,7 @@ func TestSplitMetrics(t *testing.T) {
 	md := testdata.GenerateMetrics(20)
 	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := metricDPC(metrics.At(0))
-	metrics.ForEachIndex(func(i int, metric pmetric.Metric) {
+	metrics.Range(func(i int, metric pmetric.Metric) {
 		metric.SetName(getTestMetricName(0, i))
 		assert.Equal(t, dataPointCount, metricDPC(metric))
 	})
@@ -76,7 +76,7 @@ func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
 	md := testdata.GenerateMetrics(20)
 	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := metricDPC(metrics.At(0))
-	metrics.ForEachIndex(func(i int, metric pmetric.Metric) {
+	metrics.Range(func(i int, metric pmetric.Metric) {
 		metric.SetName(getTestMetricName(0, i))
 		assert.Equal(t, dataPointCount, metricDPC(metric))
 	})
@@ -84,7 +84,7 @@ func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
 	testdata.GenerateMetrics(20).
 		ResourceMetrics().At(0).CopyTo(md.ResourceMetrics().AppendEmpty())
 	metrics = md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics()
-	metrics.ForEachIndex(func(i int, metric pmetric.Metric) {
+	metrics.Range(func(i int, metric pmetric.Metric) {
 		metric.SetName(getTestMetricName(1, i))
 	})
 
@@ -101,7 +101,7 @@ func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *tes
 	td := testdata.GenerateMetrics(20)
 	metrics := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := metricDPC(metrics.At(0))
-	metrics.ForEachIndex(func(i int, metric pmetric.Metric) {
+	metrics.Range(func(i int, metric pmetric.Metric) {
 		metric.SetName(getTestMetricName(0, i))
 		assert.Equal(t, dataPointCount, metricDPC(metric))
 	})
@@ -109,7 +109,7 @@ func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *tes
 	testdata.GenerateMetrics(20).
 		ResourceMetrics().At(0).CopyTo(td.ResourceMetrics().AppendEmpty())
 	metrics = td.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics()
-	metrics.ForEachIndex(func(i int, metric pmetric.Metric) {
+	metrics.Range(func(i int, metric pmetric.Metric) {
 		metric.SetName(getTestMetricName(1, i))
 	})
 
@@ -129,7 +129,7 @@ func TestSplitMetricsUneven(t *testing.T) {
 	md := testdata.GenerateMetrics(10)
 	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := 2
-	metrics.ForEachIndex(func(i int, metric pmetric.Metric) {
+	metrics.Range(func(i int, metric pmetric.Metric) {
 		metric.SetName(getTestMetricName(0, i))
 		assert.Equal(t, dataPointCount, metricDPC(metric))
 	})
@@ -156,7 +156,7 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 	md := testdata.GenerateMetricsAllTypes()
 	dataPointCount := 2
 	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-	metrics.ForEachIndex(func(i int, metric pmetric.Metric) {
+	metrics.Range(func(i int, metric pmetric.Metric) {
 		metric.SetName(getTestMetricName(0, i))
 		assert.Equal(t, dataPointCount, metricDPC(metric))
 	})
@@ -255,7 +255,7 @@ func TestSplitMetricsBatchSizeSmallerThanDataPointCount(t *testing.T) {
 	md := testdata.GenerateMetrics(2)
 	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := 2
-	metrics.ForEachIndex(func(i int, metric pmetric.Metric) {
+	metrics.Range(func(i int, metric pmetric.Metric) {
 		metric.SetName(getTestMetricName(0, i))
 		assert.Equal(t, dataPointCount, metricDPC(metric))
 	})
@@ -290,7 +290,7 @@ func TestSplitMetricsMultipleILM(t *testing.T) {
 	md := testdata.GenerateMetrics(20)
 	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := metricDPC(metrics.At(0))
-	metrics.ForEachIndex(func(i int, metric pmetric.Metric) {
+	metrics.Range(func(i int, metric pmetric.Metric) {
 		metric.SetName(getTestMetricName(0, i))
 		assert.Equal(t, dataPointCount, metricDPC(metric))
 	})
@@ -302,7 +302,7 @@ func TestSplitMetricsMultipleILM(t *testing.T) {
 	md.ResourceMetrics().At(0).ScopeMetrics().At(0).
 		CopyTo(md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty())
 	metrics = md.ResourceMetrics().At(0).ScopeMetrics().At(2).Metrics()
-	metrics.ForEachIndex(func(i int, metric pmetric.Metric) {
+	metrics.Range(func(i int, metric pmetric.Metric) {
 		metric.SetName(getTestMetricName(2, i))
 	})
 

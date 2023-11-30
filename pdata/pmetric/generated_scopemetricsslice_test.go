@@ -139,67 +139,20 @@ func TestScopeMetricsSlice_Sort(t *testing.T) {
 	}
 }
 
-func TestScopeMetricsSlice_ForEach(t *testing.T) {
-	// Test ForEach on empty slice
+func TestScopeMetricsSlice_Range(t *testing.T) {
+	// Test _Range on empty slice
 	emptySlice := NewScopeMetricsSlice()
-	emptySlice.ForEach(func(el ScopeMetrics) {
+	emptySlice.Range(func(i int, el ScopeMetrics) {
 		t.Fail()
 	})
 
-	// Test ForEach
-	slice := generateTestScopeMetricsSlice()
-	count := 0
-	slice.ForEach(func(el ScopeMetrics) {
-		count++
-	})
-	assert.Equal(t, 7, count)
-}
-
-func TestScopeMetricsSlice_ForEachIndex(t *testing.T) {
-	// Test _ForEachIndex on empty slice
-	emptySlice := NewScopeMetricsSlice()
-	emptySlice.ForEachIndex(func(i int, el ScopeMetrics) {
-		t.Fail()
-	})
-
-	// Test _ForEachIndex
+	// Test _Range
 	slice := generateTestScopeMetricsSlice()
 	total := 0
-	slice.ForEachIndex(func(i int, el ScopeMetrics) {
+	slice.Range(func(i int, el ScopeMetrics) {
 		total += i
 	})
 	assert.Equal(t, 0+1+2+3+4+5+6, total)
-}
-
-func TestScopeMetricsSlice_ForEachWhile(t *testing.T) {
-	// Test ForEach on empty slice
-	emptySlice := NewScopeMetricsSlice()
-	emptySlice.ForEachWhile(func(el ScopeMetrics) bool {
-		t.Fail()
-		return false
-	})
-
-	// Test ForEachWhile stops short
-	slice := generateTestScopeMetricsSlice()
-	last := 0
-	proceed := slice.ForEachWhile(func(el ScopeMetrics) bool {
-		last++
-		if last == 4 {
-			return false
-		}
-		return true
-	})
-	assert.False(t, proceed)
-	assert.Equal(t, 4, last)
-
-	// Test ForEachWhile completes
-	last = 0
-	proceed = slice.ForEachWhile(func(el ScopeMetrics) bool {
-		last++
-		return true
-	})
-	assert.True(t, proceed)
-	assert.Equal(t, 7, last)
 }
 
 func generateTestScopeMetricsSlice() ScopeMetricsSlice {

@@ -135,28 +135,10 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	}
 }
 
-// ForEach iterates over ExemplarSlice and executes f against each element.
-func (es ExemplarSlice) ForEach(f func(Exemplar)) {
-	for i := 0; i < es.Len(); i++ {
-		f(es.At(i))
-	}
-}
-
-// ForEachIndex iterates over ExemplarSlice and executes f against each element.
+// Range iterates over ExemplarSlice and executes f against each element.
 // The function also passes the iteration index.
-func (es ExemplarSlice) ForEachIndex(f func(int, Exemplar)) {
+func (es ExemplarSlice) Range(f func(int, Exemplar)) {
 	for i := 0; i < es.Len(); i++ {
 		f(i, es.At(i))
 	}
-}
-
-// ForEachWhile iterates over ExemplarSlice and executes f against each element.
-// The function also passes the iteration index.
-func (es ExemplarSlice) ForEachWhile(f func(Exemplar) bool) bool {
-	for i := 0; i < es.Len(); i++ {
-		if !f(es.At(i)) {
-			return false
-		}
-	}
-	return true
 }

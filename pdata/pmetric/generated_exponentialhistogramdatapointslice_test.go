@@ -139,67 +139,20 @@ func TestExponentialHistogramDataPointSlice_Sort(t *testing.T) {
 	}
 }
 
-func TestExponentialHistogramDataPointSlice_ForEach(t *testing.T) {
-	// Test ForEach on empty slice
+func TestExponentialHistogramDataPointSlice_Range(t *testing.T) {
+	// Test _Range on empty slice
 	emptySlice := NewExponentialHistogramDataPointSlice()
-	emptySlice.ForEach(func(el ExponentialHistogramDataPoint) {
+	emptySlice.Range(func(i int, el ExponentialHistogramDataPoint) {
 		t.Fail()
 	})
 
-	// Test ForEach
-	slice := generateTestExponentialHistogramDataPointSlice()
-	count := 0
-	slice.ForEach(func(el ExponentialHistogramDataPoint) {
-		count++
-	})
-	assert.Equal(t, 7, count)
-}
-
-func TestExponentialHistogramDataPointSlice_ForEachIndex(t *testing.T) {
-	// Test _ForEachIndex on empty slice
-	emptySlice := NewExponentialHistogramDataPointSlice()
-	emptySlice.ForEachIndex(func(i int, el ExponentialHistogramDataPoint) {
-		t.Fail()
-	})
-
-	// Test _ForEachIndex
+	// Test _Range
 	slice := generateTestExponentialHistogramDataPointSlice()
 	total := 0
-	slice.ForEachIndex(func(i int, el ExponentialHistogramDataPoint) {
+	slice.Range(func(i int, el ExponentialHistogramDataPoint) {
 		total += i
 	})
 	assert.Equal(t, 0+1+2+3+4+5+6, total)
-}
-
-func TestExponentialHistogramDataPointSlice_ForEachWhile(t *testing.T) {
-	// Test ForEach on empty slice
-	emptySlice := NewExponentialHistogramDataPointSlice()
-	emptySlice.ForEachWhile(func(el ExponentialHistogramDataPoint) bool {
-		t.Fail()
-		return false
-	})
-
-	// Test ForEachWhile stops short
-	slice := generateTestExponentialHistogramDataPointSlice()
-	last := 0
-	proceed := slice.ForEachWhile(func(el ExponentialHistogramDataPoint) bool {
-		last++
-		if last == 4 {
-			return false
-		}
-		return true
-	})
-	assert.False(t, proceed)
-	assert.Equal(t, 4, last)
-
-	// Test ForEachWhile completes
-	last = 0
-	proceed = slice.ForEachWhile(func(el ExponentialHistogramDataPoint) bool {
-		last++
-		return true
-	})
-	assert.True(t, proceed)
-	assert.Equal(t, 7, last)
 }
 
 func generateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {

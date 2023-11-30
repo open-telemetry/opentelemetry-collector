@@ -139,67 +139,20 @@ func TestResourceLogsSlice_Sort(t *testing.T) {
 	}
 }
 
-func TestResourceLogsSlice_ForEach(t *testing.T) {
-	// Test ForEach on empty slice
+func TestResourceLogsSlice_Range(t *testing.T) {
+	// Test _Range on empty slice
 	emptySlice := NewResourceLogsSlice()
-	emptySlice.ForEach(func(el ResourceLogs) {
+	emptySlice.Range(func(i int, el ResourceLogs) {
 		t.Fail()
 	})
 
-	// Test ForEach
-	slice := generateTestResourceLogsSlice()
-	count := 0
-	slice.ForEach(func(el ResourceLogs) {
-		count++
-	})
-	assert.Equal(t, 7, count)
-}
-
-func TestResourceLogsSlice_ForEachIndex(t *testing.T) {
-	// Test _ForEachIndex on empty slice
-	emptySlice := NewResourceLogsSlice()
-	emptySlice.ForEachIndex(func(i int, el ResourceLogs) {
-		t.Fail()
-	})
-
-	// Test _ForEachIndex
+	// Test _Range
 	slice := generateTestResourceLogsSlice()
 	total := 0
-	slice.ForEachIndex(func(i int, el ResourceLogs) {
+	slice.Range(func(i int, el ResourceLogs) {
 		total += i
 	})
 	assert.Equal(t, 0+1+2+3+4+5+6, total)
-}
-
-func TestResourceLogsSlice_ForEachWhile(t *testing.T) {
-	// Test ForEach on empty slice
-	emptySlice := NewResourceLogsSlice()
-	emptySlice.ForEachWhile(func(el ResourceLogs) bool {
-		t.Fail()
-		return false
-	})
-
-	// Test ForEachWhile stops short
-	slice := generateTestResourceLogsSlice()
-	last := 0
-	proceed := slice.ForEachWhile(func(el ResourceLogs) bool {
-		last++
-		if last == 4 {
-			return false
-		}
-		return true
-	})
-	assert.False(t, proceed)
-	assert.Equal(t, 4, last)
-
-	// Test ForEachWhile completes
-	last = 0
-	proceed = slice.ForEachWhile(func(el ResourceLogs) bool {
-		last++
-		return true
-	})
-	assert.True(t, proceed)
-	assert.Equal(t, 7, last)
 }
 
 func generateTestResourceLogsSlice() ResourceLogsSlice {

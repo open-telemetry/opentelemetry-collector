@@ -151,28 +151,10 @@ func (es LogRecordSlice) Sort(less func(a, b LogRecord) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
-// ForEach iterates over LogRecordSlice and executes f against each element.
-func (es LogRecordSlice) ForEach(f func(LogRecord)) {
-	for i := 0; i < es.Len(); i++ {
-		f(es.At(i))
-	}
-}
-
-// ForEachIndex iterates over LogRecordSlice and executes f against each element.
+// Range iterates over LogRecordSlice and executes f against each element.
 // The function also passes the iteration index.
-func (es LogRecordSlice) ForEachIndex(f func(int, LogRecord)) {
+func (es LogRecordSlice) Range(f func(int, LogRecord)) {
 	for i := 0; i < es.Len(); i++ {
 		f(i, es.At(i))
 	}
-}
-
-// ForEachWhile iterates over LogRecordSlice and executes f against each element.
-// The function also passes the iteration index.
-func (es LogRecordSlice) ForEachWhile(f func(LogRecord) bool) bool {
-	for i := 0; i < es.Len(); i++ {
-		if !f(es.At(i)) {
-			return false
-		}
-	}
-	return true
 }

@@ -151,28 +151,10 @@ func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
-// ForEach iterates over SpanEventSlice and executes f against each element.
-func (es SpanEventSlice) ForEach(f func(SpanEvent)) {
-	for i := 0; i < es.Len(); i++ {
-		f(es.At(i))
-	}
-}
-
-// ForEachIndex iterates over SpanEventSlice and executes f against each element.
+// Range iterates over SpanEventSlice and executes f against each element.
 // The function also passes the iteration index.
-func (es SpanEventSlice) ForEachIndex(f func(int, SpanEvent)) {
+func (es SpanEventSlice) Range(f func(int, SpanEvent)) {
 	for i := 0; i < es.Len(); i++ {
 		f(i, es.At(i))
 	}
-}
-
-// ForEachWhile iterates over SpanEventSlice and executes f against each element.
-// The function also passes the iteration index.
-func (es SpanEventSlice) ForEachWhile(f func(SpanEvent) bool) bool {
-	for i := 0; i < es.Len(); i++ {
-		if !f(es.At(i)) {
-			return false
-		}
-	}
-	return true
 }

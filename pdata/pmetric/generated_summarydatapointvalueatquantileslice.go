@@ -151,28 +151,10 @@ func (es SummaryDataPointValueAtQuantileSlice) Sort(less func(a, b SummaryDataPo
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
-// ForEach iterates over SummaryDataPointValueAtQuantileSlice and executes f against each element.
-func (es SummaryDataPointValueAtQuantileSlice) ForEach(f func(SummaryDataPointValueAtQuantile)) {
-	for i := 0; i < es.Len(); i++ {
-		f(es.At(i))
-	}
-}
-
-// ForEachIndex iterates over SummaryDataPointValueAtQuantileSlice and executes f against each element.
+// Range iterates over SummaryDataPointValueAtQuantileSlice and executes f against each element.
 // The function also passes the iteration index.
-func (es SummaryDataPointValueAtQuantileSlice) ForEachIndex(f func(int, SummaryDataPointValueAtQuantile)) {
+func (es SummaryDataPointValueAtQuantileSlice) Range(f func(int, SummaryDataPointValueAtQuantile)) {
 	for i := 0; i < es.Len(); i++ {
 		f(i, es.At(i))
 	}
-}
-
-// ForEachWhile iterates over SummaryDataPointValueAtQuantileSlice and executes f against each element.
-// The function also passes the iteration index.
-func (es SummaryDataPointValueAtQuantileSlice) ForEachWhile(f func(SummaryDataPointValueAtQuantile) bool) bool {
-	for i := 0; i < es.Len(); i++ {
-		if !f(es.At(i)) {
-			return false
-		}
-	}
-	return true
 }

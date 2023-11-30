@@ -151,28 +151,10 @@ func (es MetricSlice) Sort(less func(a, b Metric) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
-// ForEach iterates over MetricSlice and executes f against each element.
-func (es MetricSlice) ForEach(f func(Metric)) {
-	for i := 0; i < es.Len(); i++ {
-		f(es.At(i))
-	}
-}
-
-// ForEachIndex iterates over MetricSlice and executes f against each element.
+// Range iterates over MetricSlice and executes f against each element.
 // The function also passes the iteration index.
-func (es MetricSlice) ForEachIndex(f func(int, Metric)) {
+func (es MetricSlice) Range(f func(int, Metric)) {
 	for i := 0; i < es.Len(); i++ {
 		f(i, es.At(i))
 	}
-}
-
-// ForEachWhile iterates over MetricSlice and executes f against each element.
-// The function also passes the iteration index.
-func (es MetricSlice) ForEachWhile(f func(Metric) bool) bool {
-	for i := 0; i < es.Len(); i++ {
-		if !f(es.At(i)) {
-			return false
-		}
-	}
-	return true
 }

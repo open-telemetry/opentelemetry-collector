@@ -151,28 +151,10 @@ func (es NumberDataPointSlice) Sort(less func(a, b NumberDataPoint) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
-// ForEach iterates over NumberDataPointSlice and executes f against each element.
-func (es NumberDataPointSlice) ForEach(f func(NumberDataPoint)) {
-	for i := 0; i < es.Len(); i++ {
-		f(es.At(i))
-	}
-}
-
-// ForEachIndex iterates over NumberDataPointSlice and executes f against each element.
+// Range iterates over NumberDataPointSlice and executes f against each element.
 // The function also passes the iteration index.
-func (es NumberDataPointSlice) ForEachIndex(f func(int, NumberDataPoint)) {
+func (es NumberDataPointSlice) Range(f func(int, NumberDataPoint)) {
 	for i := 0; i < es.Len(); i++ {
 		f(i, es.At(i))
 	}
-}
-
-// ForEachWhile iterates over NumberDataPointSlice and executes f against each element.
-// The function also passes the iteration index.
-func (es NumberDataPointSlice) ForEachWhile(f func(NumberDataPoint) bool) bool {
-	for i := 0; i < es.Len(); i++ {
-		if !f(es.At(i)) {
-			return false
-		}
-	}
-	return true
 }

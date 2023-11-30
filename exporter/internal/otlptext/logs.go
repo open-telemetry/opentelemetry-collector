@@ -17,15 +17,15 @@ type textLogsMarshaler struct{}
 // MarshalLogs plog.Logs to OTLP text.
 func (textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	buf := dataBuffer{}
-	ld.ResourceLogs().ForEachIndex(func(i int, rl plog.ResourceLogs) {
+	ld.ResourceLogs().Range(func(i int, rl plog.ResourceLogs) {
 		buf.logEntry("ResourceLog #%d", i)
 		buf.logEntry("Resource SchemaURL: %s", rl.SchemaUrl())
 		buf.logAttributes("Resource attributes", rl.Resource().Attributes())
-		rl.ScopeLogs().ForEachIndex(func(j int, ils plog.ScopeLogs) {
+		rl.ScopeLogs().Range(func(j int, ils plog.ScopeLogs) {
 			buf.logEntry("ScopeLogs #%d", j)
 			buf.logEntry("ScopeLogs SchemaURL: %s", ils.SchemaUrl())
 			buf.logInstrumentationScope(ils.Scope())
-			ils.LogRecords().ForEachIndex(func(k int, lr plog.LogRecord) {
+			ils.LogRecords().Range(func(k int, lr plog.LogRecord) {
 				buf.logEntry("LogRecord #%d", k)
 				buf.logEntry("ObservedTimestamp: %s", lr.ObservedTimestamp())
 				buf.logEntry("Timestamp: %s", lr.Timestamp())

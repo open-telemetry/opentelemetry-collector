@@ -122,67 +122,20 @@ func TestExemplarSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
-func TestExemplarSlice_ForEach(t *testing.T) {
-	// Test ForEach on empty slice
+func TestExemplarSlice_Range(t *testing.T) {
+	// Test _Range on empty slice
 	emptySlice := NewExemplarSlice()
-	emptySlice.ForEach(func(el Exemplar) {
+	emptySlice.Range(func(i int, el Exemplar) {
 		t.Fail()
 	})
 
-	// Test ForEach
-	slice := generateTestExemplarSlice()
-	count := 0
-	slice.ForEach(func(el Exemplar) {
-		count++
-	})
-	assert.Equal(t, 7, count)
-}
-
-func TestExemplarSlice_ForEachIndex(t *testing.T) {
-	// Test _ForEachIndex on empty slice
-	emptySlice := NewExemplarSlice()
-	emptySlice.ForEachIndex(func(i int, el Exemplar) {
-		t.Fail()
-	})
-
-	// Test _ForEachIndex
+	// Test _Range
 	slice := generateTestExemplarSlice()
 	total := 0
-	slice.ForEachIndex(func(i int, el Exemplar) {
+	slice.Range(func(i int, el Exemplar) {
 		total += i
 	})
 	assert.Equal(t, 0+1+2+3+4+5+6, total)
-}
-
-func TestExemplarSlice_ForEachWhile(t *testing.T) {
-	// Test ForEach on empty slice
-	emptySlice := NewExemplarSlice()
-	emptySlice.ForEachWhile(func(el Exemplar) bool {
-		t.Fail()
-		return false
-	})
-
-	// Test ForEachWhile stops short
-	slice := generateTestExemplarSlice()
-	last := 0
-	proceed := slice.ForEachWhile(func(el Exemplar) bool {
-		last++
-		if last == 4 {
-			return false
-		}
-		return true
-	})
-	assert.False(t, proceed)
-	assert.Equal(t, 4, last)
-
-	// Test ForEachWhile completes
-	last = 0
-	proceed = slice.ForEachWhile(func(el Exemplar) bool {
-		last++
-		return true
-	})
-	assert.True(t, proceed)
-	assert.Equal(t, 7, last)
 }
 
 func generateTestExemplarSlice() ExemplarSlice {

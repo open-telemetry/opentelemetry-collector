@@ -29,7 +29,7 @@ func TestSplitTraces_noop(t *testing.T) {
 func TestSplitTraces(t *testing.T) {
 	td := testdata.GenerateTraces(20)
 	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-	spans.ForEachIndex(func(i int, span ptrace.Span) {
+	spans.Range(func(i int, span ptrace.Span) {
 		spans.At(i).SetName(getTestSpanName(0, i))
 	})
 	cp := ptrace.NewTraces()
@@ -72,14 +72,14 @@ func TestSplitTraces(t *testing.T) {
 func TestSplitTracesMultipleResourceSpans(t *testing.T) {
 	td := testdata.GenerateTraces(20)
 	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-	spans.ForEachIndex(func(i int, span ptrace.Span) {
+	spans.Range(func(i int, span ptrace.Span) {
 		spans.At(i).SetName(getTestSpanName(0, i))
 	})
 	// add second index to resource spans
 	testdata.GenerateTraces(20).
 		ResourceSpans().At(0).CopyTo(td.ResourceSpans().AppendEmpty())
 	spans = td.ResourceSpans().At(1).ScopeSpans().At(0).Spans()
-	spans.ForEachIndex(func(i int, span ptrace.Span) {
+	spans.Range(func(i int, span ptrace.Span) {
 		spans.At(i).SetName(getTestSpanName(1, i))
 	})
 
@@ -94,14 +94,14 @@ func TestSplitTracesMultipleResourceSpans(t *testing.T) {
 func TestSplitTracesMultipleResourceSpans_SplitSizeGreaterThanSpanSize(t *testing.T) {
 	td := testdata.GenerateTraces(20)
 	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-	spans.ForEachIndex(func(i int, span ptrace.Span) {
+	spans.Range(func(i int, span ptrace.Span) {
 		spans.At(i).SetName(getTestSpanName(0, i))
 	})
 	// add second index to resource spans
 	testdata.GenerateTraces(20).
 		ResourceSpans().At(0).CopyTo(td.ResourceSpans().AppendEmpty())
 	spans = td.ResourceSpans().At(1).ScopeSpans().At(0).Spans()
-	spans.ForEachIndex(func(i int, span ptrace.Span) {
+	spans.Range(func(i int, span ptrace.Span) {
 		spans.At(i).SetName(getTestSpanName(1, i))
 	})
 
@@ -119,14 +119,14 @@ func TestSplitTracesMultipleResourceSpans_SplitSizeGreaterThanSpanSize(t *testin
 func TestSplitTracesMultipleILS(t *testing.T) {
 	td := testdata.GenerateTraces(20)
 	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-	spans.ForEachIndex(func(i int, span ptrace.Span) {
+	spans.Range(func(i int, span ptrace.Span) {
 		spans.At(i).SetName(getTestSpanName(0, i))
 	})
 	// add second index to ILS
 	td.ResourceSpans().At(0).ScopeSpans().At(0).
 		CopyTo(td.ResourceSpans().At(0).ScopeSpans().AppendEmpty())
 	spans = td.ResourceSpans().At(0).ScopeSpans().At(1).Spans()
-	spans.ForEachIndex(func(i int, span ptrace.Span) {
+	spans.Range(func(i int, span ptrace.Span) {
 		spans.At(i).SetName(getTestSpanName(1, i))
 	})
 
@@ -134,7 +134,7 @@ func TestSplitTracesMultipleILS(t *testing.T) {
 	td.ResourceSpans().At(0).ScopeSpans().At(0).
 		CopyTo(td.ResourceSpans().At(0).ScopeSpans().AppendEmpty())
 	spans = td.ResourceSpans().At(0).ScopeSpans().At(2).Spans()
-	spans.ForEachIndex(func(i int, span ptrace.Span) {
+	spans.Range(func(i int, span ptrace.Span) {
 		spans.At(i).SetName(getTestSpanName(2, i))
 	})
 
