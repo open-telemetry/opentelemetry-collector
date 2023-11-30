@@ -7,7 +7,7 @@ A storage extension persists state beyond the collector process. Other component
 The `storage.Extension` interface extends `component.Extension` by adding the following method:
 
 ```go
-GetClient(context.Context, component.Kind, component.ID, string) (Client, error)
+NewClient(context.Context, component.Kind, component.ID, string) (Client, error)
 ```
 
 The `storage.Client` interface contains the following methods:
@@ -17,22 +17,22 @@ Get(context.Context, string) ([]byte, error)
 Set(context.Context, string, []byte) error
 Delete(context.Context, string) error
 Close(context.Context) error
-Batch(context.Context, ...Operation) error // see below
+Batch(context.Context, ...*Operation) error // see below
 ```
 
 It is possible to execute several operations in a single transaction via `Batch`. The method takes a collection of
 `Operation` arguments (each of which contains `Key`, `Value` and `Type` properties):
 
 ```go
-Batch(context.Context, ...Operation) error
+Batch(context.Context, ...*Operation) error
 ```
 
 Operations can be created using:
 
 ```go
-SetOperation(string, []byte) Operation
-GetOperation(string) Operation
-DeleteOperation(string) Operation
+SetOperation(string, []byte) *Operation
+GetOperation(string) *Operation
+DeleteOperation(string) *Operation
 ```
 
 Get operation results are stored in-place into the given Operation and can be retrieved using its `Value` property.
