@@ -130,9 +130,9 @@ func httpContentDecompressor(h http.Handler, eh func(w http.ResponseWriter, r *h
 					return nil, err
 				}
 
-				sr := &SnappyReadCloser{
-					r: bytes.NewReader(reqBuf),
-					c: body,
+				sr := &readCloser{
+					reader: bytes.NewReader(reqBuf),
+					closer: body,
 				}
 
 				return sr, nil
@@ -181,15 +181,15 @@ func defaultErrorHandler(w http.ResponseWriter, _ *http.Request, errMsg string, 
 	http.Error(w, errMsg, statusCode)
 }
 
-type SnappyReadCloser struct {
-	r io.Reader
-	c io.Closer
+type readCloser struct {
+	reader io.Reader
+	closer io.Closer
 }
 
-func (src *SnappyReadCloser) Read(p []byte) (n int, err error) {
-	return src.r.Read(p)
+func (src *readCloser) Read(p []byte) (n int, err error) {
+	return src.reader.Read(p)
 }
 
-func (src *SnappyReadCloser) Close() error {
-	return src.c.Close()
+func (src *readCloser) Close() error {
+	return src.closer.Close()
 }
