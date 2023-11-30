@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
@@ -74,11 +75,11 @@ func (qCfg *QueueSettings) Validate() error {
 type queueSender struct {
 	baseRequestSender
 	fullName         string
-	signal           component.DataType
-	queue            internal.Queue
+	queue            internal.Queue[Request]
 	traceAttribute   attribute.KeyValue
 	logger           *zap.Logger
 	meter            otelmetric.Meter
+	consumers        *internal.QueueConsumers[Request]
 	requeuingEnabled bool
 
 	metricCapacity otelmetric.Int64ObservableGauge
@@ -89,16 +90,15 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 	marshaler RequestMarshaler, unmarshaler RequestUnmarshaler) *queueSender {
 
 	isPersistent := config.StorageID != nil
-	var queue internal.Queue
+	var queue internal.Queue[Request]
 	if isPersistent {
-		queue = internal.NewPersistentQueue(config.QueueSize, config.NumConsumers, *config.StorageID,
-			queueRequestMarshaler(marshaler), queueRequestUnmarshaler(unmarshaler), set)
+		queue = internal.NewPersistentQueue[Request](
+			config.QueueSize, signal, *config.StorageID, marshaler, unmarshaler, set)
 	} else {
-		queue = internal.NewBoundedMemoryQueue(config.QueueSize, config.NumConsumers)
+		queue = internal.NewBoundedMemoryQueue[Request](config.QueueSize)
 	}
-	return &queueSender{
+	qs := &queueSender{
 		fullName:       set.ID.String(),
-		signal:         signal,
 		queue:          queue,
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		logger:         set.TelemetrySettings.Logger,
@@ -106,44 +106,45 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 		// TODO: this can be further exposed as a config param rather than relying on a type of queue
 		requeuingEnabled: isPersistent,
 	}
+	qs.consumers = internal.NewQueueConsumers(queue, config.NumConsumers, qs.consume)
+	return qs
 }
 
-func (qs *queueSender) onTemporaryFailure(ctx context.Context, req Request, err error, logger *zap.Logger) error {
+// consume is the function that is executed by the queue consumers to send the data to the next consumerSender.
+func (qs *queueSender) consume(ctx context.Context, req Request) {
+	err := qs.nextSender.send(ctx, req)
+
+	// Nothing to do if the error is nil or permanent. Permanent errors are already logged by retrySender.
+	if err == nil || consumererror.IsPermanent(err) {
+		return
+	}
+
 	if !qs.requeuingEnabled {
-		logger.Error(
+		qs.logger.Error(
 			"Exporting failed. No more retries left. Dropping data.",
 			zap.Error(err),
 			zap.Int("dropped_items", req.ItemsCount()),
 		)
-		return err
+		return
 	}
 
-	if qs.queue.Offer(ctx, req) == nil {
-		logger.Error(
+	if qs.queue.Offer(ctx, extractPartialRequest(req, err)) == nil {
+		qs.logger.Error(
 			"Exporting failed. Putting back to the end of the queue.",
 			zap.Error(err),
 		)
 	} else {
-		logger.Error(
+		qs.logger.Error(
 			"Exporting failed. Queue did not accept requeuing request. Dropping data.",
 			zap.Error(err),
 			zap.Int("dropped_items", req.ItemsCount()),
 		)
 	}
-	return err
 }
 
 // Start is invoked during service startup.
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
-	err := qs.queue.Start(ctx, host, internal.QueueSettings{
-		DataType: qs.signal,
-		Callback: func(qr internal.QueueRequest) {
-			_ = qs.nextSender.send(qr.Context, qr.Request.(Request))
-			// TODO: Update OnProcessingFinished to accept error and remove the retry->queue sender callback.
-			qr.OnProcessingFinished()
-		},
-	})
-	if err != nil {
+	if err := qs.consumers.Start(ctx, host); err != nil {
 		return err
 	}
 
@@ -207,12 +208,12 @@ func (qs *queueSender) Shutdown(ctx context.Context) error {
 		return int64(0)
 	}, metricdata.NewLabelValue(qs.fullName))
 
-	// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
+	// Stop the queue and consumers, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
-	return qs.queue.Shutdown(ctx)
+	return qs.consumers.Shutdown(ctx)
 }
 
-// send implements the requestSender interface
+// send implements the requestSender interface. It puts the request in the queue.
 func (qs *queueSender) send(ctx context.Context, req Request) error {
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.
@@ -246,16 +247,4 @@ func (noCancellationContext) Done() <-chan struct{} {
 
 func (noCancellationContext) Err() error {
 	return nil
-}
-
-func queueRequestMarshaler(marshaler RequestMarshaler) internal.QueueRequestMarshaler {
-	return func(req any) ([]byte, error) {
-		return marshaler(req.(Request))
-	}
-}
-
-func queueRequestUnmarshaler(unmarshaler RequestUnmarshaler) internal.QueueRequestUnmarshaler {
-	return func(data []byte) (any, error) {
-		return unmarshaler(data)
-	}
 }

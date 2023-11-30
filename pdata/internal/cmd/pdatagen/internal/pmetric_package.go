@@ -321,6 +321,12 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 		sumField,
 		minField,
 		maxField,
+		&primitiveField{
+			fieldName:  "ZeroThreshold",
+			returnType: "float64",
+			defaultVal: "float64(0.0)",
+			testVal:    "float64(0.5)",
+		},
 	},
 }
 

@@ -9,13 +9,11 @@ jobs:
   setup-environment:
     timeout-minutes: 30
     runs-on: ubuntu-latest
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'dependencies') }}
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'renovatebot') }}
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: "renovate-bot/open-telemetry-_-opentelemetry-collector"
           ref: ${{ github.head_ref }}
-          token: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
       - uses: actions/setup-go@v4
         with:
           go-version: ~1.20.11
@@ -41,5 +39,6 @@ jobs:
           git config user.email 107717825+opentelemetrybot@users.noreply.github.com
           echo "git diff --exit-code || (git add . && git commit -m \"go mod tidy\" && git push)"
           git diff --exit-code || (git add . && git commit -m "go mod tidy" && git push)
-        env:
-          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+      - uses: actions-ecosystem/action-remove-labels@v1
+        with:
+          labels: renovatebot

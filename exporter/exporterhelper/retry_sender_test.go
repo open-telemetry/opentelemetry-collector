@@ -21,12 +21,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func mockRequestUnmarshaler(mr *mockRequest) RequestUnmarshaler {
+func mockRequestUnmarshaler(mr Request) RequestUnmarshaler {
 	return func(bytes []byte) (Request, error) {
 		return mr, nil
 	}
@@ -404,14 +403,4 @@ func tagsMatchLabelKeys(tags []tag.Tag, keys []metricdata.LabelKey, labels []met
 		}
 	}
 	return true
-}
-
-type producerConsumerQueueWithCounter struct {
-	internal.Queue
-	produceCounter *atomic.Uint32
-}
-
-func (pcq *producerConsumerQueueWithCounter) Offer(ctx context.Context, item any) error {
-	pcq.produceCounter.Add(1)
-	return pcq.Queue.Offer(ctx, item)
 }

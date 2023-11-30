@@ -6,22 +6,21 @@ package exporterhelper
 import (
 	"context"
 	"errors"
-	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -239,44 +238,95 @@ func TestQueuedRetry_RequeuingEnabled(t *testing.T) {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
 
-	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
-	mockR := newMockRequest(1, traceErr)
+	mockR := newMockRequest(4, errors.New("transient error"))
 	ocs.run(func() {
+		ocs.waitGroup.Add(1) // necessary because we'll call send() again after requeueing
 		// This is asynchronous so it should just enqueue, no errors expected.
 		require.NoError(t, be.send(context.Background(), mockR))
-		ocs.waitGroup.Add(1) // necessary because we'll call send() again after requeueing
 	})
 	ocs.awaitAsyncProcessing()
 
 	// In the newMockConcurrentExporter we count requests and items even for failed requests
 	mockR.checkNumRequests(t, 2)
+	// ensure that only 1 item was sent which correspond to items count in the error returned by mockRequest.OnError()
 	ocs.checkSendItemsCount(t, 1)
-	ocs.checkDroppedItemsCount(t, 1) // not actually dropped, but ocs counts each failed send here
+	ocs.checkDroppedItemsCount(t, 4) // not actually dropped, but ocs counts each failed send here
+}
+
+// disabling retry sender should disable requeuing.
+func TestQueuedRetry_RequeuingDisabled(t *testing.T) {
+	mockR := newMockRequest(2, errors.New("transient error"))
+
+	// use persistent storage as it expected to be used with requeuing unless the retry sender is disabled
+	qCfg := NewDefaultQueueSettings()
+	storageID := component.NewIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID // enable persistence
+	rCfg := NewDefaultRetrySettings()
+	rCfg.Enabled = false
+
+	be, err := newBaseExporter(defaultSettings, "", false, mockRequestMarshaler, mockRequestUnmarshaler(mockR), newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
+	require.NoError(t, err)
+	ocs := be.obsrepSender.(*observabilityConsumerSender)
+
+	var extensions = map[component.ID]component.Component{
+		storageID: internal.NewMockStorageExtension(nil),
+	}
+	host := &mockHost{ext: extensions}
+	require.NoError(t, be.Start(context.Background(), host))
+
+	ocs.run(func() {
+		// This is asynchronous so it should just enqueue, no errors expected.
+		require.NoError(t, be.send(context.Background(), mockR))
+	})
+	ocs.awaitAsyncProcessing()
+
+	// one failed request, no retries, two items dropped.
+	mockR.checkNumRequests(t, 1)
+	ocs.checkSendItemsCount(t, 0)
+	ocs.checkDroppedItemsCount(t, 2)
 }
 
 // if requeueing is enabled, but the queue is full, we get an error
 func TestQueuedRetry_RequeuingEnabledQueueFull(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
-	qCfg.NumConsumers = 0
-	qCfg.QueueSize = 0
+	qCfg.NumConsumers = 1
+	qCfg.QueueSize = 1
 	rCfg := NewDefaultRetrySettings()
 	rCfg.MaxElapsedTime = time.Nanosecond // we don't want to retry at all, but requeue instead
-	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
+
+	set := exportertest.NewNopCreateSettings()
+	logger, observedLogs := observer.New(zap.ErrorLevel)
+	set.Logger = zap.New(logger)
+	be, err := newBaseExporter(set, "", false, nil, nil, newNoopObsrepSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
+
 	be.queueSender.(*queueSender).requeuingEnabled = true
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
 
-	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
-	mockR := newMockRequest(1, traceErr)
-
-	ocs := be.obsrepSender.(*observabilityConsumerSender)
-	ocs.run(func() {
-		require.Error(t, be.retrySender.send(context.Background(), mockR), "sending_queue is full")
+	// send a request that will fail after waitReq1 is unblocked
+	waitReq1 := make(chan struct{})
+	req1 := newMockExportRequest(func(ctx context.Context) error {
+		waitReq1 <- struct{}{}
+		return errors.New("some error")
 	})
-	mockR.checkNumRequests(t, 1)
+	require.NoError(t, be.queueSender.send(context.Background(), req1))
+
+	// send another request to fill the queue
+	req2 := newMockRequest(1, nil)
+	require.NoError(t, be.queueSender.send(context.Background(), req2))
+
+	<-waitReq1
+
+	// req1 cannot be put back to the queue and should be dropped, check the log message
+	assert.Eventually(t, func() bool {
+		return observedLogs.FilterMessageSnippet("Queue did not accept requeuing request. Dropping data.").Len() == 1
+	}, time.Second, 1*time.Millisecond)
+
+	// req2 should be sent out after that
+	req2.checkNumRequests(t, 1)
 }
 
 func TestQueueRetryWithDisabledQueue(t *testing.T) {
@@ -345,40 +395,45 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 }
 
 func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
-
-	produceCounter := &atomic.Uint32{}
-
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
+	storageID := component.NewIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID // enable persistence to ensure data is re-queued on shutdown
+
 	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 
-	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newNoopObsrepSender, WithRetry(rCfg), WithQueue(qCfg))
+	mockReq := newErrorRequest()
+	be, err := newBaseExporter(defaultSettings, "", false, mockRequestMarshaler, mockRequestUnmarshaler(mockReq),
+		newNoopObsrepSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
-	require.NoError(t, be.Start(context.Background(), &mockHost{}))
-
-	// wraps original queue so we can count operations
-	be.queueSender.(*queueSender).queue = &producerConsumerQueueWithCounter{
-		Queue:          be.queueSender.(*queueSender).queue,
-		produceCounter: produceCounter,
+	var extensions = map[component.ID]component.Component{
+		storageID: internal.NewMockStorageExtension(nil),
 	}
-	be.queueSender.(*queueSender).requeuingEnabled = true
+	host := &mockHost{ext: extensions}
+
+	require.NoError(t, be.Start(context.Background(), host))
 
 	// Invoke queuedRetrySender so the producer will put the item for consumer to poll
-	require.NoError(t, be.send(context.Background(), newErrorRequest()))
+	require.NoError(t, be.send(context.Background(), mockReq))
 
-	// first wait for the item to be produced to the queue initially
+	// first wait for the item to be consumed from the queue
 	assert.Eventually(t, func() bool {
-		return produceCounter.Load() == uint32(1)
+		return be.queueSender.(*queueSender).queue.Size() == 0
 	}, time.Second, 1*time.Millisecond)
 
 	// shuts down and ensure the item is produced in the queue again
 	require.NoError(t, be.Shutdown(context.Background()))
 	assert.Eventually(t, func() bool {
-		return produceCounter.Load() == uint32(2)
+		return be.queueSender.(*queueSender).queue.Size() == 1
 	}, time.Second, 1*time.Millisecond)
+}
+
+func TestQueueSenderNoStartShutdown(t *testing.T) {
+	qs := newQueueSender(NewDefaultQueueSettings(), exportertest.NewNopCreateSettings(), "", nil, nil)
+	assert.NoError(t, qs.Shutdown(context.Background()))
 }
 
 type mockHost struct {
@@ -388,4 +443,20 @@ type mockHost struct {
 
 func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nh.ext
+}
+
+type mockExportRequest struct {
+	exportFunc func(context.Context) error
+}
+
+func newMockExportRequest(exportFunc func(context.Context) error) *mockExportRequest {
+	return &mockExportRequest{exportFunc: exportFunc}
+}
+
+func (m *mockExportRequest) ItemsCount() int {
+	return 1
+}
+
+func (m *mockExportRequest) Export(ctx context.Context) error {
+	return m.exportFunc(ctx)
 }

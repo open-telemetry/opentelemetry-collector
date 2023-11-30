@@ -108,13 +108,10 @@ func NewTracesExporter(
 	}, err
 }
 
-// TracesConverter provides an interface for converting ptrace.Traces into a request.
+// RequestFromTracesFunc converts ptrace.Traces into a user-defined Request.
 // This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type TracesConverter interface {
-	// RequestFromTraces converts ptrace.Traces into a Request.
-	RequestFromTraces(context.Context, ptrace.Traces) (Request, error)
-}
+type RequestFromTracesFunc func(context.Context, ptrace.Traces) (Request, error)
 
 // NewTracesRequestExporter creates a new traces exporter based on a custom TracesConverter and RequestSender.
 // This API is at the early stage of development and may change without backward compatibility
@@ -122,7 +119,7 @@ type TracesConverter interface {
 func NewTracesRequestExporter(
 	_ context.Context,
 	set exporter.CreateSettings,
-	converter TracesConverter,
+	converter RequestFromTracesFunc,
 	options ...Option,
 ) (exporter.Traces, error) {
 	if set.Logger == nil {
@@ -139,7 +136,7 @@ func NewTracesRequestExporter(
 	}
 
 	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
-		req, cErr := converter.RequestFromTraces(ctx, td)
+		req, cErr := converter(ctx, td)
 		if cErr != nil {
 			set.Logger.Error("Failed to convert traces. Dropping data.",
 				zap.Int("dropped_spans", td.SpanCount()),

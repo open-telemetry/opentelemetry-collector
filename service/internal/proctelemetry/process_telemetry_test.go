@@ -52,7 +52,6 @@ var expectedMetrics = []string{
 }
 
 var otelExpectedMetrics = []string{
-	// OTel Go adds `_total` suffix
 	"process_uptime",
 	"process_runtime_heap_alloc_bytes",
 	"process_runtime_total_alloc_bytes",
@@ -73,7 +72,7 @@ func setupTelemetry(t *testing.T) testTelemetry {
 	require.NoError(t, err)
 
 	promReg := prometheus.NewRegistry()
-	exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits())
+	exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutCounterSuffixes())
 	require.NoError(t, err)
 
 	settings.meterProvider = sdkmetric.NewMeterProvider(
@@ -112,10 +111,6 @@ func TestOtelProcessTelemetry(t *testing.T) {
 
 	for _, metricName := range tel.expectedMetrics {
 		metric, ok := mp[metricName]
-		if !ok {
-			withSuffix := metricName + "_total"
-			metric, ok = mp[withSuffix]
-		}
 		require.True(t, ok)
 		require.True(t, len(metric.Metric) == 1)
 		var metricValue float64
