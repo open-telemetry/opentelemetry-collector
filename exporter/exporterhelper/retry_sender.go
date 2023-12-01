@@ -117,7 +117,6 @@ func (rs *retrySender) send(ctx context.Context, req Request) error {
 			trace.WithAttributes(rs.traceAttribute, attribute.Int64("retry_num", retryNum)))
 
 		err := rs.nextSender.send(ctx, req)
-		rs.logger.Info("Exporting finished.", zap.Error(err))
 		if err == nil {
 			return nil
 		}
