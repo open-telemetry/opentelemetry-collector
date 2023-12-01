@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"go.opencensus.io/metric/metricdata"
@@ -76,13 +75,11 @@ func (qCfg *QueueSettings) Validate() error {
 type queueSender struct {
 	baseRequestSender
 	fullName         string
-	signal           component.DataType
 	queue            internal.Queue[Request]
 	traceAttribute   attribute.KeyValue
 	logger           *zap.Logger
 	meter            otelmetric.Meter
 	consumers        *internal.QueueConsumers[Request]
-	stopWG           sync.WaitGroup
 	requeuingEnabled bool
 
 	metricCapacity otelmetric.Int64ObservableGauge
@@ -102,12 +99,10 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 	}
 	qs := &queueSender{
 		fullName:       set.ID.String(),
-		signal:         signal,
 		queue:          queue,
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		logger:         set.TelemetrySettings.Logger,
 		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
-		stopWG:         sync.WaitGroup{},
 		// TODO: this can be further exposed as a config param rather than relying on a type of queue
 		requeuingEnabled: isPersistent,
 	}
