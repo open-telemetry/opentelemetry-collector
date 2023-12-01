@@ -33,8 +33,6 @@ MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
 PORTO        := $(TOOLS_BIN_DIR)/porto
 YQ           := $(TOOLS_BIN_DIR)/yq
 
-GH := $(shell which gh)
-
 .PHONY: install-tools
 install-tools: $(TOOLS_BIN_NAMES) $(YQ)
 
