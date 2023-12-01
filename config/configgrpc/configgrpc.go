@@ -259,8 +259,7 @@ func (gcs *GRPCClientSettings) toDialOptions(host component.Host, settings compo
 	}
 
 	// Enable OpenTelemetry observability plugin.
-	opts = append(opts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor(otelOpts...)))
-	opts = append(opts, grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor(otelOpts...)))
+	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
 
 	return opts, nil
 }
@@ -367,14 +366,11 @@ func (gss *GRPCServerSettings) toServerOption(host component.Host, settings comp
 	}
 
 	// Enable OpenTelemetry observability plugin.
-	// TODO: Pass construct settings to have access to Tracer.
-	uInterceptors = append(uInterceptors, otelgrpc.UnaryServerInterceptor(otelOpts...))
-	sInterceptors = append(sInterceptors, otelgrpc.StreamServerInterceptor(otelOpts...))
 
 	uInterceptors = append(uInterceptors, enhanceWithClientInformation(gss.IncludeMetadata))
 	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(gss.IncludeMetadata))
 
-	opts = append(opts, grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
+	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
 
 	return opts, nil
 }

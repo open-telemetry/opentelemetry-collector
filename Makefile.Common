@@ -1,3 +1,4 @@
+SHELL = /bin/bash
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
 ALL_PKGS := $(sort $(shell go list ./...))
 # COVER_PKGS is the list of packages to include in the coverage

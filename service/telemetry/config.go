@@ -10,8 +10,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
 // Config defines the configurable settings for service telemetry.
@@ -147,73 +145,5 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("collector telemetry metric address or reader should exist when metric level is not none")
 	}
 
-	return nil
-}
-
-func (sp *SpanProcessor) Unmarshal(conf *confmap.Conf) error {
-	if !obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled() {
-		// only unmarshal if feature gate is enabled
-		return nil
-	}
-
-	if conf == nil {
-		return nil
-	}
-
-	if err := conf.Unmarshal(sp); err != nil {
-		return fmt.Errorf("invalid span processor configuration: %w", err)
-	}
-
-	if sp.Batch != nil {
-		return sp.Batch.Exporter.Validate()
-	}
-	return fmt.Errorf("unsupported span processor type %s", conf.AllKeys())
-}
-
-// Validate checks for valid exporters to be configured for the SpanExporter
-func (se *SpanExporter) Validate() error {
-	if se.Console == nil && se.Otlp == nil {
-		return fmt.Errorf("invalid exporter configuration")
-	}
-	return nil
-}
-
-func (mr *MetricReader) Unmarshal(conf *confmap.Conf) error {
-	if !obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled() {
-		// only unmarshal if feature gate is enabled
-		return nil
-	}
-
-	if conf == nil {
-		return nil
-	}
-
-	if err := conf.Unmarshal(mr); err != nil {
-		return fmt.Errorf("invalid metric reader configuration: %w", err)
-	}
-
-	if mr.Pull != nil {
-		return mr.Pull.Validate()
-	}
-	if mr.Periodic != nil {
-		return mr.Periodic.Validate()
-	}
-
-	return fmt.Errorf("unsupported metric reader type %s", conf.AllKeys())
-}
-
-// Validate checks for valid exporters to be configured for the PullMetricReader
-func (pmr *PullMetricReader) Validate() error {
-	if pmr.Exporter.Prometheus == nil {
-		return fmt.Errorf("invalid exporter configuration")
-	}
-	return nil
-}
-
-// Validate checks for valid exporters to be configured for the PeriodicMetricReader
-func (pmr *PeriodicMetricReader) Validate() error {
-	if pmr.Exporter.Otlp == nil && pmr.Exporter.Console == nil {
-		return fmt.Errorf("invalid exporter configuration")
-	}
 	return nil
 }

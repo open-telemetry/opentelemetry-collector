@@ -21,5 +21,3 @@ Extensible and customizable without touching the core code. Can create custom ag
 
 ## Unified Codebase
 One codebase for daemon (Agent) and standalone service (Collector).
-
-For more details on how we plan to achieve this vision please see the [Roadmap](roadmap.md).

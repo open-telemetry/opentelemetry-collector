@@ -35,11 +35,7 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/monitoring.md">Monitoring</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="docs/performance.md">Performance</a>
-    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/security-best-practices.md">Security</a>
-    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="docs/roadmap.md">Roadmap</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://pkg.go.dev/go.opentelemetry.io/collector">Package</a>
   </strong>
@@ -144,7 +140,7 @@ Here is a list of community roles with current and previous members:
 
 - Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 
-   - [Alex Boten](https://github.com/codeboten), Lightstep
+   - [Alex Boten](https://github.com/codeboten), ServiceNow
    - [Bogdan Drutu](https://github.com/BogdanDrutu), Snowflake
    - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
    - [Pablo Baeyens](https://github.com/mx-psi), DataDog

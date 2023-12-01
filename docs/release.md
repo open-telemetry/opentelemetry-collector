@@ -141,6 +141,12 @@ The following documents the procedure to release a bugfix
 7. Once the branch has been merged, it will be auto-deleted. Restore the release branch via GitHub.
 8. Once the patch is release, disable the **Merge pull request** setting.
 
+## 1.0 release
+
+Stable modules adhere to our [versioning document guarantees](../VERSIONING.md), so we need to be careful before releasing. Before adding a module to the stable module set and making a first 1.x release, please [open a new stabilization issue](https://github.com/open-telemetry/opentelemetry-collector/issues/new/choose) and follow the instructions in the issue template.
+
+Once a module is ready to be released under the `1.x` version scheme, file a PR to move the module to the `stable` module set and remove it from the `beta` module set. Note that we do not make `v1.x.y-rc.z` style releases for new stable modules; we instead treat the last two beta minor releases as release candidates and the module moves directly from the `0.x` to the `1.x` release series.
+
 ## Release schedule
 
 | Date       | Version | Release manager |

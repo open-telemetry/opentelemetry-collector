@@ -17,6 +17,7 @@ import (
 	ocmetric "go.opencensus.io/metric"
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/stats/view"
+	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
@@ -26,6 +27,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -64,7 +66,7 @@ type telemetryInitializer struct {
 func newColTelemetry(useOtel bool, disableHighCardinality bool, extendedConfig bool) *telemetryInitializer {
 	return &telemetryInitializer{
 		mp:                     noopmetric.NewMeterProvider(),
-		tp:                     trace.NewNoopTracerProvider(),
+		tp:                     nooptrace.NewTracerProvider(),
 		useOtel:                useOtel,
 		disableHighCardinality: disableHighCardinality,
 		extendedConfig:         extendedConfig,
@@ -130,12 +132,12 @@ func (tel *telemetryInitializer) initMetrics(res *resource.Resource, logger *zap
 			return err
 		}
 		if cfg.Metrics.Readers == nil {
-			cfg.Metrics.Readers = []telemetry.MetricReader{}
+			cfg.Metrics.Readers = []config.MetricReader{}
 		}
-		cfg.Metrics.Readers = append(cfg.Metrics.Readers, telemetry.MetricReader{
-			Pull: &telemetry.PullMetricReader{
-				Exporter: telemetry.MetricExporter{
-					Prometheus: &telemetry.Prometheus{
+		cfg.Metrics.Readers = append(cfg.Metrics.Readers, config.MetricReader{
+			Pull: &config.PullMetricReader{
+				Exporter: config.MetricExporter{
+					Prometheus: &config.Prometheus{
 						Host: &host,
 						Port: &portInt,
 					},

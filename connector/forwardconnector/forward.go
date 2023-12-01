@@ -26,9 +26,11 @@ func NewFactory() connector.Factory {
 	)
 }
 
+type Config struct{}
+
 // createDefaultConfig creates the default configuration.
 func createDefaultConfig() component.Config {
-	return &struct{}{}
+	return &Config{}
 }
 
 // createTracesToTraces creates a trace receiver based on provided config.

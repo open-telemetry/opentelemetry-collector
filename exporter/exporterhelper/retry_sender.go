@@ -4,6 +4,7 @@
 package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -13,9 +14,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
@@ -73,49 +73,30 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 	}
 }
 
-type onRequestHandlingFinishedFunc func(*zap.Logger, internal.Request, error) error
-
 type retrySender struct {
 	baseRequestSender
-	traceAttribute     attribute.KeyValue
-	cfg                RetrySettings
-	stopCh             chan struct{}
-	logger             *zap.Logger
-	onTemporaryFailure onRequestHandlingFinishedFunc
+	traceAttribute attribute.KeyValue
+	cfg            RetrySettings
+	stopCh         chan struct{}
+	logger         *zap.Logger
 }
 
-func newRetrySender(id component.ID, rCfg RetrySettings, logger *zap.Logger, onTemporaryFailure onRequestHandlingFinishedFunc) *retrySender {
-	if onTemporaryFailure == nil {
-		onTemporaryFailure = func(logger *zap.Logger, req internal.Request, err error) error {
-			return err
-		}
-	}
+func newRetrySender(config RetrySettings, set exporter.CreateSettings) *retrySender {
 	return &retrySender{
-		traceAttribute:     attribute.String(obsmetrics.ExporterKey, id.String()),
-		cfg:                rCfg,
-		stopCh:             make(chan struct{}),
-		logger:             logger,
-		onTemporaryFailure: onTemporaryFailure,
+		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
+		cfg:            config,
+		stopCh:         make(chan struct{}),
+		logger:         set.Logger,
 	}
 }
 
-func (rs *retrySender) shutdown() {
+func (rs *retrySender) Shutdown(context.Context) error {
 	close(rs.stopCh)
+	return nil
 }
 
 // send implements the requestSender interface
-func (rs *retrySender) send(req internal.Request) error {
-	if !rs.cfg.Enabled {
-		err := rs.nextSender.send(req)
-		if err != nil {
-			rs.logger.Error(
-				"Exporting failed. Try enabling retry_on_failure config option to retry on retryable errors",
-				zap.Error(err),
-			)
-		}
-		return err
-	}
-
+func (rs *retrySender) send(ctx context.Context, req Request) error {
 	// Do not use NewExponentialBackOff since it calls Reset and the code here must
 	// call Reset after changing the InitialInterval (this saves an unnecessary call to Now).
 	expBackoff := backoff.ExponentialBackOff{
@@ -128,14 +109,14 @@ func (rs *retrySender) send(req internal.Request) error {
 		Clock:               backoff.SystemClock,
 	}
 	expBackoff.Reset()
-	span := trace.SpanFromContext(req.Context())
+	span := trace.SpanFromContext(ctx)
 	retryNum := int64(0)
 	for {
 		span.AddEvent(
 			"Sending request.",
 			trace.WithAttributes(rs.traceAttribute, attribute.Int64("retry_num", retryNum)))
 
-		err := rs.nextSender.send(req)
+		err := rs.nextSender.send(ctx, req)
 		if err == nil {
 			return nil
 		}
@@ -145,20 +126,16 @@ func (rs *retrySender) send(req internal.Request) error {
 			rs.logger.Error(
 				"Exporting failed. The error is not retryable. Dropping data.",
 				zap.Error(err),
-				zap.Int("dropped_items", req.Count()),
+				zap.Int("dropped_items", req.ItemsCount()),
 			)
 			return err
 		}
 
-		// Give the request a chance to extract signal data to retry if only some data
-		// failed to process.
-		req = req.OnError(err)
+		req = extractPartialRequest(req, err)
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
-			// throw away the batch
-			err = fmt.Errorf("max elapsed time expired %w", err)
-			return rs.onTemporaryFailure(rs.logger, req, err)
+			return fmt.Errorf("max elapsed time expired %w", err)
 		}
 
 		throttleErr := throttleRetry{}
@@ -183,10 +160,10 @@ func (rs *retrySender) send(req internal.Request) error {
 
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
-		case <-req.Context().Done():
-			return fmt.Errorf("Request is cancelled or timed out %w", err)
+		case <-ctx.Done():
+			return fmt.Errorf("request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
-			return rs.onTemporaryFailure(rs.logger, req, fmt.Errorf("interrupted due to shutdown %w", err))
+			return fmt.Errorf("interrupted due to shutdown %w", err)
 		case <-time.After(backoffDelay):
 		}
 	}
