@@ -11,6 +11,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -25,6 +27,12 @@ func TestExportEnqueueFailure(t *testing.T) {
 		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
+
+	originalValue := obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelForInternalMetricsfeatureGate.ID(), false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelForInternalMetricsfeatureGate.ID(), originalValue))
+	}()
 
 	logRecords := int64(7)
 	obsrep.recordEnqueueFailureWithOC(context.Background(), component.DataTypeLogs, logRecords)
