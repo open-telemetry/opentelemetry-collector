@@ -7,6 +7,12 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.90.1
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Remove noisy log (#9017)
+
 ## v1.0.0/v0.90.0
 
 ### 🛑 Breaking changes 🛑

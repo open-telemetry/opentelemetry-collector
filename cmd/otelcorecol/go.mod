@@ -8,26 +8,26 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.90.0
 	go.opentelemetry.io/collector/connector v0.90.0
-	go.opentelemetry.io/collector/connector/forwardconnector v0.90.0
+	go.opentelemetry.io/collector/connector/forwardconnector v0.90.1
 	go.opentelemetry.io/collector/exporter v0.90.0
-	go.opentelemetry.io/collector/exporter/debugexporter v0.90.0
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.90.0
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.90.0
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.90.0
+	go.opentelemetry.io/collector/exporter/debugexporter v0.90.1
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.90.1
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.90.1
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.90.1
 	go.opentelemetry.io/collector/extension v0.90.0
-	go.opentelemetry.io/collector/extension/ballastextension v0.90.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.90.0
-	go.opentelemetry.io/collector/otelcol v0.90.0
+	go.opentelemetry.io/collector/extension/ballastextension v0.90.1
+	go.opentelemetry.io/collector/extension/zpagesextension v0.90.1
+	go.opentelemetry.io/collector/otelcol v0.90.1
 	go.opentelemetry.io/collector/processor v0.90.0
-	go.opentelemetry.io/collector/processor/batchprocessor v0.90.0
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.90.0
+	go.opentelemetry.io/collector/processor/batchprocessor v0.90.1
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.90.1
 	go.opentelemetry.io/collector/receiver v0.90.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.90.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.90.1
 	golang.org/x/sys v0.14.0
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.2.4-0.20230617002413-005d2dfb6b68 // indirect
+	cloud.google.com/go/compute v1.23.1 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
@@ -117,9 +117,10 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
+	golang.org/x/oauth2 v0.13.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	gonum.org/v1/gonum v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231120223509-83a465c0220f // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
