@@ -156,10 +156,10 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2023-11-13 | v0.89.0 | @jpkrohling     |
-| 2023-11-27 | v0.90.0 | @djaglowski     |
 | 2023-12-11 | v0.91.0 | @dmitryax       |
 | 2024-01-08 | v0.92.0 | @codeboten      |
 | 2024-01-22 | v0.93.0 | @bogdandrutu    |
 | 2024-02-05 | v0.94.0 | @Aneurysm9      |
-| 2023-02-19 | v0.95.0 | @mx-psi         |
+| 2024-02-19 | v0.95.0 | @mx-psi         |
+| 2024-03-04 | v0.96.0 | @jpkrohling     |
+| 2024-03-18 | v0.97.0 | @djaglowski     |
