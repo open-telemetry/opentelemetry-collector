@@ -8,21 +8,21 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.90.0
 	go.opentelemetry.io/collector/connector v0.90.0
-	go.opentelemetry.io/collector/connector/forwardconnector v0.90.0
+	go.opentelemetry.io/collector/connector/forwardconnector v0.90.1
 	go.opentelemetry.io/collector/exporter v0.90.0
-	go.opentelemetry.io/collector/exporter/debugexporter v0.90.0
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.90.0
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.90.0
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.90.0
+	go.opentelemetry.io/collector/exporter/debugexporter v0.90.1
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.90.1
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.90.1
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.90.1
 	go.opentelemetry.io/collector/extension v0.90.0
-	go.opentelemetry.io/collector/extension/ballastextension v0.90.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.90.0
-	go.opentelemetry.io/collector/otelcol v0.90.0
+	go.opentelemetry.io/collector/extension/ballastextension v0.90.1
+	go.opentelemetry.io/collector/extension/zpagesextension v0.90.1
+	go.opentelemetry.io/collector/otelcol v0.90.1
 	go.opentelemetry.io/collector/processor v0.90.0
-	go.opentelemetry.io/collector/processor/batchprocessor v0.90.0
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.90.0
+	go.opentelemetry.io/collector/processor/batchprocessor v0.90.1
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.90.1
 	go.opentelemetry.io/collector/receiver v0.90.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.90.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.90.1
 	golang.org/x/sys v0.15.0
 )
 
@@ -106,7 +106,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.21.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.21.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.21.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.44.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.44.1-0.20231201153405-6027c1ae76f2 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.44.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.21.0 // indirect
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
