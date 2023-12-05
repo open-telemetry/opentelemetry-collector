@@ -59,8 +59,8 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.opentelemetry.io/collector/confmap v0.90.0 // indirect
-	go.opentelemetry.io/collector/extension v0.90.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.90.1 // indirect
+	go.opentelemetry.io/collector/extension v0.90.1 // indirect
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
