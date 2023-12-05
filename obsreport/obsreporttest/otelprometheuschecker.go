@@ -150,11 +150,7 @@ func (pc *prometheusChecker) getMetric(expectedName string, expectedType io_prom
 
 	metricFamily, ok := parsed[expectedName]
 	if !ok {
-		// OTel Go adds `_total` suffix for all monotonic sum.
-		metricFamily, ok = parsed[expectedName+"_total"]
-		if !ok {
-			return nil, fmt.Errorf("metric '%s' not found", expectedName)
-		}
+		return nil, fmt.Errorf("metric '%s' not found", expectedName)
 	}
 
 	if metricFamily.Type.String() != expectedType.String() {
