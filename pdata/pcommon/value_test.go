@@ -556,6 +556,29 @@ func TestNewValueFromRawInvalid(t *testing.T) {
 	assert.EqualError(t, actual.FromRaw(ValueTypeDouble), "<Invalid value type pcommon.ValueType>")
 }
 
+func TestInvalidValue(t *testing.T) {
+	v := Value{}
+	assert.Equal(t, false, v.Bool())
+	assert.Equal(t, int64(0), v.Int())
+	assert.Equal(t, float64(0), v.Double())
+	assert.Equal(t, "", v.Str())
+	assert.Equal(t, ByteSlice{}, v.Bytes())
+	assert.Equal(t, Map{}, v.Map())
+	assert.Equal(t, Slice{}, v.Slice())
+	assert.Panics(t, func() { v.AsString() })
+	assert.Panics(t, func() { v.AsRaw() })
+	assert.Panics(t, func() { _ = v.FromRaw(1) })
+	assert.Panics(t, func() { v.Type() })
+	assert.Panics(t, func() { v.SetStr("") })
+	assert.Panics(t, func() { v.SetInt(0) })
+	assert.Panics(t, func() { v.SetDouble(0) })
+	assert.Panics(t, func() { v.SetBool(false) })
+	assert.Panics(t, func() { v.SetEmptyBytes() })
+	assert.Panics(t, func() { v.SetEmptyMap() })
+	assert.Panics(t, func() { v.SetEmptySlice() })
+	assert.Panics(t, func() { v.CopyTo(NewValueEmpty()) })
+}
+
 func generateTestValueMap() Value {
 	ret := NewValueMap()
 	attrMap := ret.Map()
