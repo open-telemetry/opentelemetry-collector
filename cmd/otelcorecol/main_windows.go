@@ -7,7 +7,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"syscall"
 
 	"golang.org/x/sys/windows"
@@ -17,14 +16,6 @@ import (
 )
 
 func run(params otelcol.CollectorSettings) error {
-	// There shouldn't be any reason to use NO_WINDOWS_SERVICE anymore, but,
-	// keeping it as a forcing mechanism or if someone is concerned about
-	// the cost of attempting to run as a service before falling back to
-	// interactive mode.
-	if value, present := os.LookupEnv("NO_WINDOWS_SERVICE"); present && value != "0" {
-		return runInteractive(params)
-	}
-
 	// No need to supply service name when startup is invoked through
 	// the Service Control Manager directly.
 	if err := svc.Run("", otelcol.NewSvcHandler(params)); err != nil {

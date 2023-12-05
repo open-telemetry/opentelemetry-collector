@@ -15,7 +15,7 @@ issues: [7350]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: This fix should make setting the `NO_WINDOWS_SERVICE` environment variable unnecessary.
+subtext: Removed the `NO_WINDOWS_SERVICE` environment variable given it is not needed anymore.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
