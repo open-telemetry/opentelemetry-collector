@@ -4,18 +4,18 @@ go 1.20
 
 require (
 	github.com/golang/snappy v0.0.4
-	github.com/klauspost/compress v1.17.3
+	github.com/klauspost/compress v1.17.4
 	github.com/rs/cors v1.10.1
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.90.0
-	go.opentelemetry.io/collector/component v0.90.0
-	go.opentelemetry.io/collector/config/configauth v0.90.0
-	go.opentelemetry.io/collector/config/configcompression v0.90.0
-	go.opentelemetry.io/collector/config/configopaque v0.90.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.90.0
-	go.opentelemetry.io/collector/config/configtls v0.90.0
-	go.opentelemetry.io/collector/config/internal v0.90.0
-	go.opentelemetry.io/collector/extension/auth v0.90.0
+	go.opentelemetry.io/collector v0.90.1
+	go.opentelemetry.io/collector/component v0.90.1
+	go.opentelemetry.io/collector/config/configauth v0.90.1
+	go.opentelemetry.io/collector/config/configcompression v0.90.1
+	go.opentelemetry.io/collector/config/configopaque v0.90.1
+	go.opentelemetry.io/collector/config/configtelemetry v0.90.1
+	go.opentelemetry.io/collector/config/configtls v0.90.1
+	go.opentelemetry.io/collector/config/internal v0.90.1
+	go.opentelemetry.io/collector/extension/auth v0.90.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1
 	go.opentelemetry.io/otel v1.21.0
 	go.uber.org/zap v1.26.0
