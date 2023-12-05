@@ -6,12 +6,21 @@ package consumererror
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
+
+type testErrorType struct {
+	s string
+}
+
+func (t testErrorType) Error() string {
+	return ""
+}
 
 func TestTraces(t *testing.T) {
 	td := testdata.GenerateTraces(1)
@@ -35,6 +44,17 @@ func TestTraces_Unwrap(t *testing.T) {
 	// Unwrapping traceErr for err and assigning to target.
 	require.True(t, errors.As(traceErr, &target))
 	require.Equal(t, err, target)
+}
+
+func TestTraces_Delay(t *testing.T) {
+	delay := 4 * time.Second
+	td := testdata.GenerateTraces(1)
+	// Wrapping err with error Traces.
+	err := NewTraces(errors.New("some error"), td, WithRetryDelay(delay))
+	var traceErr Traces
+	// Unwrapping traceErr for err and assigning to target.
+	require.True(t, errors.As(err, &traceErr))
+	require.Equal(t, traceErr.Delay(), delay)
 }
 
 func TestLogs(t *testing.T) {
@@ -61,6 +81,17 @@ func TestLogs_Unwrap(t *testing.T) {
 	require.Equal(t, err, target)
 }
 
+func TestLogs_Delay(t *testing.T) {
+	delay := 4 * time.Second
+	td := testdata.GenerateLogs(1)
+	// Wrapping err with error Logs.
+	err := NewLogs(errors.New("some error"), td, WithRetryDelay(delay))
+	var logErr Logs
+	// Unwrapping LogErr for err and assigning to target.
+	require.True(t, errors.As(err, &logErr))
+	require.Equal(t, logErr.Delay(), delay)
+}
+
 func TestMetrics(t *testing.T) {
 	td := testdata.GenerateMetrics(1)
 	err := errors.New("some error")
@@ -83,4 +114,15 @@ func TestMetrics_Unwrap(t *testing.T) {
 	// Unwrapping metricErr for err and assigning to target.
 	require.True(t, errors.As(metricErr, &target))
 	require.Equal(t, err, target)
+}
+
+func TestMetrics_Delay(t *testing.T) {
+	delay := 4 * time.Second
+	td := testdata.GenerateMetrics(1)
+	// Wrapping err with error Metrics.
+	err := NewMetrics(errors.New("some error"), td, WithRetryDelay(delay))
+	var metricErr Metrics
+	// Unwrapping MetricErr for err and assigning to target.
+	require.True(t, errors.As(err, &metricErr))
+	require.Equal(t, metricErr.Delay(), delay)
 }
