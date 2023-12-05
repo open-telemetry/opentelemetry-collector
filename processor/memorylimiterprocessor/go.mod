@@ -4,13 +4,13 @@ go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.90.0
-	go.opentelemetry.io/collector/component v0.90.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.90.0
-	go.opentelemetry.io/collector/confmap v0.90.0
-	go.opentelemetry.io/collector/consumer v0.90.0
+	go.opentelemetry.io/collector v0.90.1
+	go.opentelemetry.io/collector/component v0.90.1
+	go.opentelemetry.io/collector/config/configtelemetry v0.90.1
+	go.opentelemetry.io/collector/confmap v0.90.1
+	go.opentelemetry.io/collector/consumer v0.90.1
 	go.opentelemetry.io/collector/pdata v1.0.0
-	go.opentelemetry.io/collector/processor v0.90.0
+	go.opentelemetry.io/collector/processor v0.90.1
 	go.uber.org/zap v1.26.0
 )
 
@@ -32,7 +32,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/shirou/gopsutil/v3 v3.23.10 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.11 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
