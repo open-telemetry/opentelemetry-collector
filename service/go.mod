@@ -8,24 +8,24 @@ require (
 	github.com/prometheus/client_golang v1.17.0
 	github.com/prometheus/client_model v0.5.0
 	github.com/prometheus/common v0.45.0
-	github.com/shirou/gopsutil/v3 v3.23.10
+	github.com/shirou/gopsutil/v3 v3.23.11
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.90.0
-	go.opentelemetry.io/collector/component v0.90.0
-	go.opentelemetry.io/collector/config/confignet v0.90.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.90.0
-	go.opentelemetry.io/collector/confmap v0.90.0
-	go.opentelemetry.io/collector/connector v0.90.0
-	go.opentelemetry.io/collector/consumer v0.90.0
-	go.opentelemetry.io/collector/exporter v0.90.0
-	go.opentelemetry.io/collector/extension v0.90.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.90.0
+	go.opentelemetry.io/collector v0.90.1
+	go.opentelemetry.io/collector/component v0.90.1
+	go.opentelemetry.io/collector/config/confignet v0.90.1
+	go.opentelemetry.io/collector/config/configtelemetry v0.90.1
+	go.opentelemetry.io/collector/confmap v0.90.1
+	go.opentelemetry.io/collector/connector v0.90.1
+	go.opentelemetry.io/collector/consumer v0.90.1
+	go.opentelemetry.io/collector/exporter v0.90.1
+	go.opentelemetry.io/collector/extension v0.90.1
+	go.opentelemetry.io/collector/extension/zpagesextension v0.90.1
 	go.opentelemetry.io/collector/featuregate v1.0.0
 	go.opentelemetry.io/collector/pdata v1.0.0
-	go.opentelemetry.io/collector/processor v0.90.0
-	go.opentelemetry.io/collector/receiver v0.90.0
-	go.opentelemetry.io/collector/semconv v0.90.0
+	go.opentelemetry.io/collector/processor v0.90.1
+	go.opentelemetry.io/collector/receiver v0.90.1
+	go.opentelemetry.io/collector/semconv v0.90.1
 	go.opentelemetry.io/contrib/config v0.1.1
 	go.opentelemetry.io/contrib/propagators/b3 v1.21.1
 	go.opentelemetry.io/otel v1.21.0
