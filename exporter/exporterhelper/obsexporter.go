@@ -5,7 +5,6 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
-	"time"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -155,7 +154,7 @@ func (or *ObsReport) StartTracesOp(ctx context.Context) context.Context {
 // EndTracesOp completes the export operation that was started with StartTracesOp.
 func (or *ObsReport) EndTracesOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	or.recordMetrics(withoutCancel(ctx), component.DataTypeTraces, numSent, numFailedToSend)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeTraces, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSpansKey, obsmetrics.FailedToSendSpansKey)
 }
 
@@ -170,7 +169,7 @@ func (or *ObsReport) StartMetricsOp(ctx context.Context) context.Context {
 // StartMetricsOp.
 func (or *ObsReport) EndMetricsOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	or.recordMetrics(withoutCancel(ctx), component.DataTypeMetrics, numSent, numFailedToSend)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeMetrics, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentMetricPointsKey, obsmetrics.FailedToSendMetricPointsKey)
 }
 
@@ -184,7 +183,7 @@ func (or *ObsReport) StartLogsOp(ctx context.Context) context.Context {
 // EndLogsOp completes the export operation that was started with StartLogsOp.
 func (or *ObsReport) EndLogsOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
-	or.recordMetrics(withoutCancel(ctx), component.DataTypeLogs, numSent, numFailedToSend)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeLogs, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
 }
 
@@ -313,35 +312,4 @@ func (or *ObsReport) recordEnqueueFailureWithOtel(ctx context.Context, dataType 
 	}
 
 	enqueueFailedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))
-}
-
-func withoutCancel(parent context.Context) context.Context {
-	if parent == nil {
-		panic("cannot create context from nil parent")
-	}
-	return withoutCancelCtx{parent}
-}
-
-type withoutCancelCtx struct {
-	c context.Context
-}
-
-func (withoutCancelCtx) Deadline() (deadline time.Time, ok bool) {
-	return
-}
-
-func (withoutCancelCtx) Done() <-chan struct{} {
-	return nil
-}
-
-func (withoutCancelCtx) Err() error {
-	return nil
-}
-
-func (w withoutCancelCtx) Value(key any) any {
-	return w.c.Value(key)
-}
-
-func (w withoutCancelCtx) String() string {
-	return "withoutCancel"
 }
