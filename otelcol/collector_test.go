@@ -182,10 +182,23 @@ func TestComponentStatusWatcher(t *testing.T) {
 	// Start the newly created collector.
 	wg := startCollector(context.Background(), t, col)
 
-	// An unhealthy processor asynchronously reports a recoverable error.
-	expectedStatuses := []component.Status{
+	// An unhealthy processor asynchronously reports a recoverable error. Depending on the Go
+	// Scheduler the statuses reported at startup will be one of the two valid sequnces below.
+	startupStatuses1 := []component.Status{
+		component.StatusStarting,
+		component.StatusOK,
+		component.StatusRecoverableError,
+	}
+	startupStatuses2 := []component.Status{
 		component.StatusStarting,
 		component.StatusRecoverableError,
+	}
+	// the modulus of the actual statuses will match the modulus of the startup statuses
+	startupStatuses := func(actualStatuses []component.Status) []component.Status {
+		if len(actualStatuses)%2 == 1 {
+			return startupStatuses1
+		}
+		return startupStatuses2
 	}
 
 	// The "unhealthy" processors will now begin to asynchronously report StatusRecoverableError.
@@ -197,8 +210,8 @@ func TestComponentStatusWatcher(t *testing.T) {
 		for k, v := range changedComponents {
 			// All processors must report a status change with the same ID
 			assert.EqualValues(t, component.NewID(unhealthyProcessorFactory.Type()), k.ID)
-			// And all must have the expected statuses
-			assert.Equal(t, expectedStatuses, v)
+			// And all must have a valid startup sequence
+			assert.Equal(t, startupStatuses(v), v)
 		}
 		// We have 3 processors with exactly the same ID in otelcol-statuswatcher.yaml
 		// We must have exactly 3 items in our map. This ensures that the "source" argument
@@ -212,8 +225,9 @@ func TestComponentStatusWatcher(t *testing.T) {
 	wg.Wait()
 
 	// Check for additional statuses after Shutdown.
-	expectedStatuses = append(expectedStatuses, component.StatusStopping, component.StatusStopped)
 	for _, v := range changedComponents {
+		expectedStatuses := append([]component.Status{}, startupStatuses(v)...)
+		expectedStatuses = append(expectedStatuses, component.StatusStopping, component.StatusStopped)
 		assert.Equal(t, expectedStatuses, v)
 	}
 
