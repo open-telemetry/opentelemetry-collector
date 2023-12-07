@@ -1,0 +1,12 @@
+
+change_type: enhancement
+
+component: cmd/builder
+
+note: "running builder version on binaries installed with `go install` will output the version specified at the suffix."
+
+issues: [8770]
+
+subtext:
+
+change_logs: [user]
