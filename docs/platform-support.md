@@ -60,7 +60,7 @@ Tier 3 platforms are currently:
 |---------------|-------------------------------------------------------------------------------------------------------------|
 | darwin/amd64  |                                                                                                             |
 | darwin/arm64  | [@MovieStoreGuy](https://github.com/MovieStoreGuy)                                                          |
-| linux/arm64   |                                                                                                             |
+| linux/arm64   | [@atoulme](https://github.com/atoulme)                                                                      |
 | linux/386     |                                                                                                             |
 | linux/arm     | [@Wal8800](https://github.com/Wal8800), [@atoulme](https://github.com/atoulme)                              |
 | linux/ppc64le |                                                                                                             |

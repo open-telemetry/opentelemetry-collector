@@ -160,7 +160,7 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 
 	promRegOtel := prometheus.NewRegistry()
 
-	exp, err := otelprom.New(otelprom.WithRegisterer(promRegOtel), otelprom.WithoutUnits(), otelprom.WithoutScopeInfo())
+	exp, err := otelprom.New(otelprom.WithRegisterer(promRegOtel), otelprom.WithoutUnits(), otelprom.WithoutScopeInfo(), otelprom.WithoutCounterSuffixes())
 	if err != nil {
 		return settings, err
 	}

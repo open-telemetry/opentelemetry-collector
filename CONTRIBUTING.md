@@ -102,8 +102,8 @@ Comment on the issue that you want to work on so we can assign it to you and
 clarify anything related to it.
 
 If you would like to work on something that is not listed as an issue
-(e.g. a new feature or enhancement) please first read our [vision](docs/vision.md) and
-[roadmap](docs/roadmap.md) to make sure your proposal aligns with the goals of the
+(e.g. a new feature or enhancement) please first read our [vision](docs/vision.md) 
+to make sure your proposal aligns with the goals of the
 Collector, then create an issue and describe your proposal. It is best to do this
 in advance so that maintainers can decide if the proposal is a good fit for
 this repository. This will help avoid situations when you spend significant time

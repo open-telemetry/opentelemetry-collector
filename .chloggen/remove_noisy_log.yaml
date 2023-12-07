@@ -7,10 +7,10 @@ change_type: bug_fix
 component: exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: fix bug with queue size and capacity metrics
+note: Remove noisy log
 
 # One or more tracking issues or pull requests related to the change
-issues: [8682]
+issues: [9017]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

@@ -6,8 +6,6 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"time"
-
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 )
 
 // TimeoutSettings for timeout. The timeout applies to individual attempts to send data to the backend.
@@ -29,13 +27,12 @@ type timeoutSender struct {
 	cfg TimeoutSettings
 }
 
-func (ts *timeoutSender) send(req internal.Request) error {
+func (ts *timeoutSender) send(ctx context.Context, req Request) error {
 	// Intentionally don't overwrite the context inside the request, because in case of retries deadline will not be
 	// updated because this deadline most likely is before the next one.
-	ctx := req.Context()
 	if ts.cfg.Timeout > 0 {
 		var cancelFunc func()
-		ctx, cancelFunc = context.WithTimeout(req.Context(), ts.cfg.Timeout)
+		ctx, cancelFunc = context.WithTimeout(ctx, ts.cfg.Timeout)
 		defer cancelFunc()
 	}
 	return req.Export(ctx)
