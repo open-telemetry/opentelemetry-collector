@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service"
 	{{- range .Connectors}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}
@@ -66,11 +67,18 @@ func components() (otelcol.Factories, error) {
 		return otelcol.Factories{}, err
 	}
 
-	factories.Connectors, err = connector.MakeFactoryMap(
+	connectorFactories := []connector.Factory{
 		{{- range .Connectors}}
 		{{.Name}}.NewFactory(),
 		{{- end}}
-	)
+	}
+	if service.PipelineLessMode.IsEnabled() {
+		for _, pf := range factories.Processors {
+			connectorFactories = append(connectorFactories, connector.NewFactoryFromProcessor(pf))
+		}
+		factories.Processors = nil
+	}
+	factories.Connectors, err = connector.MakeFactoryMap(connectorFactories...)
 	if err != nil {
 		return otelcol.Factories{}, err
 	}

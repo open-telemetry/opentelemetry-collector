@@ -100,6 +100,13 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	if service.PipelineLessMode.IsEnabled() {
+		if len(cfg.Service.Pipelines) > 0 {
+			return fmt.Errorf("service::pipelines config is not allowed when pipelineless mode is enabled")
+		}
+		cfg.Service.ConvertToPipelines()
+	}
+
 	if err := cfg.Service.Validate(); err != nil {
 		return err
 	}

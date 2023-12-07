@@ -19,6 +19,7 @@ import (
 	memorylimiterprocessor "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service"
 )
 
 func components() (otelcol.Factories, error) {
@@ -58,9 +59,16 @@ func components() (otelcol.Factories, error) {
 		return otelcol.Factories{}, err
 	}
 
-	factories.Connectors, err = connector.MakeFactoryMap(
+	connectorFactories := []connector.Factory{
 		forwardconnector.NewFactory(),
-	)
+	}
+	if service.PipelineLessMode.IsEnabled() {
+		for _, pf := range factories.Processors {
+			connectorFactories = append(connectorFactories, connector.NewFactoryFromProcessor(pf))
+		}
+		factories.Processors = nil
+	}
+	factories.Connectors, err = connector.MakeFactoryMap(connectorFactories...)
 	if err != nil {
 		return otelcol.Factories{}, err
 	}

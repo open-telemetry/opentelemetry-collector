@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 )
 
 // A Traces connector acts as an exporter from a traces pipeline and a receiver
@@ -639,4 +640,57 @@ func logStabilityLevel(logger *zap.Logger, sl component.StabilityLevel) {
 
 func errDataTypes(id component.ID, from, to component.DataType) error {
 	return fmt.Errorf("connector %q cannot connect from %s to %s: %w", id, from, to, component.ErrDataTypeIsNotSupported)
+}
+
+func NewFactoryFromProcessor(pf processor.Factory) Factory {
+	opts := []FactoryOption{}
+	if pf.TracesProcessorStability() != component.StabilityLevelUndefined {
+		opts = append(opts, WithTracesToTraces(
+			func(
+				ctx context.Context,
+				set CreateSettings,
+				cfg component.Config,
+				next consumer.Traces,
+			) (Traces, error) {
+				return pf.CreateTracesProcessor(ctx,
+					processor.CreateSettings{
+						ID:                set.ID,
+						TelemetrySettings: set.TelemetrySettings,
+						BuildInfo:         set.BuildInfo,
+					}, cfg, next)
+			}, pf.TracesProcessorStability()))
+	}
+	if pf.MetricsProcessorStability() != component.StabilityLevelUndefined {
+		opts = append(opts, WithMetricsToMetrics(
+			func(
+				ctx context.Context,
+				set CreateSettings,
+				cfg component.Config,
+				next consumer.Metrics,
+			) (Metrics, error) {
+				return pf.CreateMetricsProcessor(ctx,
+					processor.CreateSettings{
+						ID:                set.ID,
+						TelemetrySettings: set.TelemetrySettings,
+						BuildInfo:         set.BuildInfo,
+					}, cfg, next)
+			}, pf.MetricsProcessorStability()))
+	}
+	if pf.LogsProcessorStability() != component.StabilityLevelUndefined {
+		opts = append(opts, WithLogsToLogs(
+			func(
+				ctx context.Context,
+				set CreateSettings,
+				cfg component.Config,
+				next consumer.Logs,
+			) (Logs, error) {
+				return pf.CreateLogsProcessor(ctx,
+					processor.CreateSettings{
+						ID:                set.ID,
+						TelemetrySettings: set.TelemetrySettings,
+						BuildInfo:         set.BuildInfo,
+					}, cfg, next)
+			}, pf.LogsProcessorStability()))
+	}
+	return NewFactory(pf.Type(), pf.CreateDefaultConfig, opts...)
 }

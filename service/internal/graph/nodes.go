@@ -253,10 +253,6 @@ func (n *connectorNode) buildComponent(
 				return err
 			}
 			n.Component = conn
-
-			// The connector may mutate data itself
-			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
-
 			// When connecting pipelines of the same data type, the connector must
 			// inherit the capabilities of pipelines in which it is acting as a receiver.
 			// Since the incoming and outgoing data types are the same, we must also consider
@@ -299,10 +295,6 @@ func (n *connectorNode) buildComponent(
 				return err
 			}
 			n.Component = conn
-
-			// The connector may mutate data itself
-			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
-
 			// When connecting pipelines of the same data type, the connector must
 			// inherit the capabilities of pipelines in which it is acting as a receiver.
 			// Since the incoming and outgoing data types are the same, we must also consider
@@ -344,10 +336,6 @@ func (n *connectorNode) buildComponent(
 				return err
 			}
 			n.Component = conn
-
-			// The connector may mutate data itself
-			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
-
 			// When connecting pipelines of the same data type, the connector must
 			// inherit the capabilities of pipelines in which it is acting as a receiver.
 			// Since the incoming and outgoing data types are the same, we must also consider
