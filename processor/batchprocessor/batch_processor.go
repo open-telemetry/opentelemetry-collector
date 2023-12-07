@@ -56,8 +56,9 @@ type batchProcessor struct {
 	// metadataLimit is the limiting size of the batchers map.
 	metadataLimit int
 
-	shutdownC  chan struct{}
-	goroutines sync.WaitGroup
+	shutdownCtx context.Context
+	shutdownC   chan struct{}
+	goroutines  sync.WaitGroup
 
 	telemetry *batchProcessorTelemetry
 
@@ -171,9 +172,9 @@ func (bp *batchProcessor) Start(context.Context, component.Host) error {
 }
 
 // Shutdown is invoked during service shutdown.
-func (bp *batchProcessor) Shutdown(context.Context) error {
+func (bp *batchProcessor) Shutdown(ctx context.Context) error {
+	bp.shutdownCtx = ctx
 	close(bp.shutdownC)
-
 	// Wait until all goroutines are done.
 	bp.goroutines.Wait()
 	return nil
@@ -195,6 +196,8 @@ func (b *shard) start() {
 		DONE:
 			for {
 				select {
+				case <-b.processor.shutdownCtx.Done():
+					return
 				case item := <-b.newItem:
 					b.processItem(item)
 				default:
@@ -203,8 +206,6 @@ func (b *shard) start() {
 			}
 			// This is the close of the channel
 			if b.batch.itemCount() > 0 {
-				// TODO: Set a timeout on sendTraces or
-				// make it cancellable using the context that Shutdown gets as a parameter
 				b.sendItems(triggerTimeout)
 			}
 			return

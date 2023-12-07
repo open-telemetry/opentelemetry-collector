@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -1104,4 +1105,49 @@ func TestBatchSplitOnly(t *testing.T) {
 	for _, ld := range receivedMds {
 		require.Equal(t, maxBatch, ld.LogRecordCount())
 	}
+}
+
+func Test_Batch_Shutdown_Cancel(t *testing.T) {
+	const logsPerRequest = 10
+
+	cfg := Config{
+		Timeout:          100 * time.Second,
+		SendBatchSize:    20,
+		SendBatchMaxSize: 100,
+	}
+
+	require.NoError(t, cfg.Validate())
+
+	creationSet := processortest.NewNopCreateSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	sink := new(consumertest.LogsSink)
+	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, false)
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	running := true
+	t.Cleanup(func() {
+		running = false
+	})
+
+	counter := &atomic.Int64{}
+	makeSureAtLeastOne := make(chan struct{})
+	go func() {
+		for running {
+			counter.Add(1)
+			ld := testdata.GenerateLogs(logsPerRequest)
+			assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+			makeSureAtLeastOne <- struct{}{}
+		}
+	}()
+	<-makeSureAtLeastOne
+
+	ctx, cancel := context.WithCancel(context.Background())
+	err = batcher.Shutdown(ctx)
+	require.NoError(t, err)
+
+	cancel()
+	receivedMds := sink.AllLogs()
+
+	assert.Less(t, len(receivedMds), int(counter.Load()))
 }
