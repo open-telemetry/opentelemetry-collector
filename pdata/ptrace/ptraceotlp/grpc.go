@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
@@ -40,7 +41,11 @@ type grpcClient struct {
 // Export implements the Client interface.
 func (c *grpcClient) Export(ctx context.Context, request ExportRequest, opts ...grpc.CallOption) (ExportResponse, error) {
 	rsp, err := c.rawClient.Export(ctx, request.orig, opts...)
-	return ExportResponse{orig: rsp}, err
+	if err != nil {
+		return ExportResponse{}, err
+	}
+	state := internal.StateMutable
+	return ExportResponse{orig: rsp, state: &state}, err
 }
 
 func (c *grpcClient) unexported() {}
@@ -80,6 +85,7 @@ type rawTracesServer struct {
 
 func (s rawTracesServer) Export(ctx context.Context, request *otlpcollectortrace.ExportTraceServiceRequest) (*otlpcollectortrace.ExportTraceServiceResponse, error) {
 	otlp.MigrateTraces(request.ResourceSpans)
-	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request})
+	state := internal.StateMutable
+	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request, state: &state})
 	return rsp.orig, err
 }

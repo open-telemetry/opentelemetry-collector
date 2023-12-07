@@ -27,6 +27,8 @@ README](../configtls/README.md).
 - [`max_idle_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
 - [`max_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
 - [`idle_conn_timeout`](https://golang.org/pkg/net/http/#Transport)
+- [`auth`](../configauth/README.md)
+- [`disable_keep_alives`](https://golang.org/pkg/net/http/#Transport)
 
 Example:
 
@@ -34,6 +36,8 @@ Example:
 exporter:
   otlp:
     endpoint: otelcol2:55690
+    auth:
+      authenticator: some-authenticator-extension
     tls:
       ca_file: ca.pem
       cert_file: cert.pem
@@ -65,7 +69,9 @@ will not be enabled.
   header, allowing clients to cache the response to CORS preflight requests. If
   not set, browsers use a default of 5 seconds.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
+- `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `0` (no restriction)
 - [`tls`](../configtls/README.md)
+- [`auth`](../configauth/README.md)
 
 You can enable [`attribute processor`][attribute-processor] to append any http header to span's attribute using custom key. You also need to enable the "include_metadata"
 
@@ -77,6 +83,8 @@ receivers:
     protocols:
       http:
         include_metadata: true
+        auth:
+          authenticator: some-authenticator-extension
         cors:
           allowed_origins:
             - https://foo.bar.com

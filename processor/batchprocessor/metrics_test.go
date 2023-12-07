@@ -21,12 +21,11 @@ import (
 	"go.opencensus.io/stats/view"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -87,7 +86,7 @@ func setupTelemetry(t *testing.T, useOtel bool) testTelemetry {
 
 	if useOtel {
 		promReg := prometheus.NewRegistry()
-		exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutScopeInfo())
+		exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutScopeInfo(), otelprom.WithoutCounterSuffixes())
 		require.NoError(t, err)
 
 		telemetry.meterProvider = sdkmetric.NewMeterProvider(
@@ -196,18 +195,13 @@ func (tt *testTelemetry) assertBoundaries(t *testing.T, expected []float64, hist
 
 	for i := range expected {
 		if math.Abs(expected[i]-got[i]) > 0.00001 {
-			assert.Failf(t, "unexpected boundary", "boundary for metric '%s' did no match, expected '%f' got '%f'", metric, expected[i], got[i])
+			assert.Failf(t, "unexpected boundary", "boundary for metric '%s' did not match, expected '%f' got '%f'", metric, expected[i], got[i])
 		}
 	}
 
 }
 
 func (tt *testTelemetry) getMetric(t *testing.T, name string, mtype io_prometheus_client.MetricType, got map[string]*io_prometheus_client.MetricFamily) *io_prometheus_client.Metric {
-	if tt.useOtel && mtype == io_prometheus_client.MetricType_COUNTER {
-		// OTel Go suffixes counters with `_total`
-		name += "_total"
-	}
-
 	metricFamily, ok := got[name]
 	require.True(t, ok, "expected metric '%s' not found", name)
 	require.Equal(t, mtype, metricFamily.GetType())
@@ -233,21 +227,21 @@ func getSingleMetric(metric *io_prometheus_client.MetricFamily) (*io_prometheus_
 
 func assertFloat(t *testing.T, expected, got float64, metric string) {
 	if math.Abs(expected-got) > 0.00001 {
-		assert.Failf(t, "unexpected metric value", "value for metric '%s' did no match, expected '%f' got '%f'", metric, expected, got)
+		assert.Failf(t, "unexpected metric value", "value for metric '%s' did not match, expected '%f' got '%f'", metric, expected, got)
 	}
 }
 
 func batchViews() []sdkmetric.View {
 	return []sdkmetric.View{
 		sdkmetric.NewView(
-			sdkmetric.Instrument{Name: obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size")},
-			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
+			sdkmetric.Instrument{Name: processorhelper.BuildCustomMetricName("batch", "batch_send_size")},
+			sdkmetric.Stream{Aggregation: sdkmetric.AggregationExplicitBucketHistogram{
 				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
 			}},
 		),
 		sdkmetric.NewView(
-			sdkmetric.Instrument{Name: obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size_bytes")},
-			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
+			sdkmetric.Instrument{Name: processorhelper.BuildCustomMetricName("batch", "batch_send_size_bytes")},
+			sdkmetric.Stream{Aggregation: sdkmetric.AggregationExplicitBucketHistogram{
 				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
 					100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
 					1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},

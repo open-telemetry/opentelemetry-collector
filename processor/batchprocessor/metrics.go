@@ -11,11 +11,12 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
@@ -47,7 +48,7 @@ func metricViews() []*view.View {
 	processorTagKeys := []tag.Key{processorTagKey}
 
 	countBatchSizeTriggerSendView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(typeStr, statBatchSizeTriggerSend.Name()),
+		Name:        processorhelper.BuildCustomMetricName(typeStr, statBatchSizeTriggerSend.Name()),
 		Measure:     statBatchSizeTriggerSend,
 		Description: statBatchSizeTriggerSend.Description(),
 		TagKeys:     processorTagKeys,
@@ -55,7 +56,7 @@ func metricViews() []*view.View {
 	}
 
 	countTimeoutTriggerSendView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(typeStr, statTimeoutTriggerSend.Name()),
+		Name:        processorhelper.BuildCustomMetricName(typeStr, statTimeoutTriggerSend.Name()),
 		Measure:     statTimeoutTriggerSend,
 		Description: statTimeoutTriggerSend.Description(),
 		TagKeys:     processorTagKeys,
@@ -63,7 +64,7 @@ func metricViews() []*view.View {
 	}
 
 	distributionBatchSendSizeView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(typeStr, statBatchSendSize.Name()),
+		Name:        processorhelper.BuildCustomMetricName(typeStr, statBatchSendSize.Name()),
 		Measure:     statBatchSendSize,
 		Description: statBatchSendSize.Description(),
 		TagKeys:     processorTagKeys,
@@ -71,7 +72,7 @@ func metricViews() []*view.View {
 	}
 
 	distributionBatchSendSizeBytesView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(typeStr, statBatchSendSizeBytes.Name()),
+		Name:        processorhelper.BuildCustomMetricName(typeStr, statBatchSendSizeBytes.Name()),
 		Measure:     statBatchSendSizeBytes,
 		Description: statBatchSendSizeBytes.Description(),
 		TagKeys:     processorTagKeys,
@@ -117,8 +118,7 @@ func newBatchProcessorTelemetry(set processor.CreateSettings, currentMetadataCar
 		detailed:      set.MetricsLevel == configtelemetry.LevelDetailed,
 	}
 
-	err = bpt.createOtelMetrics(set.MeterProvider, currentMetadataCardinality)
-	if err != nil {
+	if err = bpt.createOtelMetrics(set.MeterProvider, currentMetadataCardinality); err != nil {
 		return nil, err
 	}
 
@@ -130,47 +130,39 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider, c
 		return nil
 	}
 
-	var err error
+	var errors, err error
 	meter := mp.Meter(scopeName)
 
 	bpt.batchSizeTriggerSend, err = meter.Int64Counter(
-		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_size_trigger_send"),
+		processorhelper.BuildCustomMetricName(typeStr, "batch_size_trigger_send"),
 		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
 		metric.WithUnit("1"),
 	)
-	if err != nil {
-		return err
-	}
+	errors = multierr.Append(errors, err)
 
 	bpt.timeoutTriggerSend, err = meter.Int64Counter(
-		obsreport.BuildProcessorCustomMetricName(typeStr, "timeout_trigger_send"),
+		processorhelper.BuildCustomMetricName(typeStr, "timeout_trigger_send"),
 		metric.WithDescription("Number of times the batch was sent due to a timeout trigger"),
 		metric.WithUnit("1"),
 	)
-	if err != nil {
-		return err
-	}
+	errors = multierr.Append(errors, err)
 
 	bpt.batchSendSize, err = meter.Int64Histogram(
-		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_send_size"),
+		processorhelper.BuildCustomMetricName(typeStr, "batch_send_size"),
 		metric.WithDescription("Number of units in the batch"),
 		metric.WithUnit("1"),
 	)
-	if err != nil {
-		return err
-	}
+	errors = multierr.Append(errors, err)
 
 	bpt.batchSendSizeBytes, err = meter.Int64Histogram(
-		obsreport.BuildProcessorCustomMetricName(typeStr, "batch_send_size_bytes"),
+		processorhelper.BuildCustomMetricName(typeStr, "batch_send_size_bytes"),
 		metric.WithDescription("Number of bytes in batch that was sent"),
 		metric.WithUnit("By"),
 	)
-	if err != nil {
-		return err
-	}
+	errors = multierr.Append(errors, err)
 
 	bpt.batchMetadataCardinality, err = meter.Int64ObservableUpDownCounter(
-		obsreport.BuildProcessorCustomMetricName(typeStr, "metadata_cardinality"),
+		processorhelper.BuildCustomMetricName(typeStr, "metadata_cardinality"),
 		metric.WithDescription("Number of distinct metadata value combinations being processed"),
 		metric.WithUnit("1"),
 		metric.WithInt64Callback(func(_ context.Context, obs metric.Int64Observer) error {
@@ -178,11 +170,9 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider, c
 			return nil
 		}),
 	)
-	if err != nil {
-		return err
-	}
+	errors = multierr.Append(errors, err)
 
-	return nil
+	return errors
 }
 
 func (bpt *batchProcessorTelemetry) record(trigger trigger, sent, bytes int64) {

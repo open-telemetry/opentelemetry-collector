@@ -16,11 +16,13 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
 // prometheusChecker is used to assert exported metrics from a prometheus handler.
 type prometheusChecker struct {
-	promHandler http.Handler
+	ocHandler   http.Handler
+	otelHandler http.Handler
 }
 
 func (pc *prometheusChecker) checkScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
@@ -30,82 +32,91 @@ func (pc *prometheusChecker) checkScraperMetrics(receiver component.ID, scraper 
 		pc.checkCounter("scraper_errored_metric_points", erroredMetricPoints, scraperAttrs))
 }
 
-func (pc *prometheusChecker) checkReceiverTraces(receiver component.ID, protocol string, acceptedSpans, droppedSpans int64) error {
+func (pc *prometheusChecker) checkReceiverTraces(receiver component.ID, protocol string, accepted, dropped int64) error {
+	return pc.checkReceiver(receiver, "spans", protocol, accepted, dropped)
+}
+
+func (pc *prometheusChecker) checkReceiverLogs(receiver component.ID, protocol string, accepted, dropped int64) error {
+	return pc.checkReceiver(receiver, "log_records", protocol, accepted, dropped)
+}
+
+func (pc *prometheusChecker) checkReceiverMetrics(receiver component.ID, protocol string, accepted, dropped int64) error {
+	return pc.checkReceiver(receiver, "metric_points", protocol, accepted, dropped)
+}
+
+func (pc *prometheusChecker) checkReceiver(receiver component.ID, datatype, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(
-		pc.checkCounter("receiver_accepted_spans", acceptedSpans, receiverAttrs),
-		pc.checkCounter("receiver_refused_spans", droppedSpans, receiverAttrs))
+		pc.checkCounter(fmt.Sprintf("receiver_accepted_%s", datatype), acceptedMetricPoints, receiverAttrs),
+		pc.checkCounter(fmt.Sprintf("receiver_refused_%s", datatype), droppedMetricPoints, receiverAttrs))
 }
 
-func (pc *prometheusChecker) checkReceiverLogs(receiver component.ID, protocol string, acceptedLogRecords, droppedLogRecords int64) error {
-	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
-	return multierr.Combine(
-		pc.checkCounter("receiver_accepted_log_records", acceptedLogRecords, receiverAttrs),
-		pc.checkCounter("receiver_refused_log_records", droppedLogRecords, receiverAttrs))
+func (pc *prometheusChecker) checkProcessorTraces(processor component.ID, accepted, refused, dropped int64) error {
+	return pc.checkProcessor(processor, "spans", accepted, refused, dropped)
 }
 
-func (pc *prometheusChecker) checkReceiverMetrics(receiver component.ID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
-	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
-	return multierr.Combine(
-		pc.checkCounter("receiver_accepted_metric_points", acceptedMetricPoints, receiverAttrs),
-		pc.checkCounter("receiver_refused_metric_points", droppedMetricPoints, receiverAttrs))
+func (pc *prometheusChecker) checkProcessorMetrics(processor component.ID, accepted, refused, dropped int64) error {
+	return pc.checkProcessor(processor, "metric_points", accepted, refused, dropped)
 }
 
-func (pc *prometheusChecker) checkProcessorTraces(processor component.ID, acceptedSpans, refusedSpans, droppedSpans int64) error {
+func (pc *prometheusChecker) checkProcessorLogs(processor component.ID, accepted, refused, dropped int64) error {
+	return pc.checkProcessor(processor, "log_records", accepted, refused, dropped)
+}
+
+func (pc *prometheusChecker) checkProcessor(processor component.ID, datatype string, accepted, refused, dropped int64) error {
 	processorAttrs := attributesForProcessorMetrics(processor)
 	return multierr.Combine(
-		pc.checkCounter("processor_accepted_spans", acceptedSpans, processorAttrs),
-		pc.checkCounter("processor_refused_spans", refusedSpans, processorAttrs),
-		pc.checkCounter("processor_dropped_spans", droppedSpans, processorAttrs))
+		pc.checkCounter(fmt.Sprintf("processor_accepted_%s", datatype), accepted, processorAttrs),
+		pc.checkCounter(fmt.Sprintf("processor_refused_%s", datatype), refused, processorAttrs),
+		pc.checkCounter(fmt.Sprintf("processor_dropped_%s", datatype), dropped, processorAttrs))
 }
 
-func (pc *prometheusChecker) checkProcessorMetrics(processor component.ID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
-	processorAttrs := attributesForProcessorMetrics(processor)
-	return multierr.Combine(
-		pc.checkCounter("processor_accepted_metric_points", acceptedMetricPoints, processorAttrs),
-		pc.checkCounter("processor_refused_metric_points", refusedMetricPoints, processorAttrs),
-		pc.checkCounter("processor_dropped_metric_points", droppedMetricPoints, processorAttrs))
+func (pc *prometheusChecker) checkExporterTraces(exporter component.ID, sent, sendFailed int64) error {
+	return pc.checkExporter(exporter, "spans", sent, sendFailed)
 }
 
-func (pc *prometheusChecker) checkProcessorLogs(processor component.ID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
-	processorAttrs := attributesForProcessorMetrics(processor)
-	return multierr.Combine(
-		pc.checkCounter("processor_accepted_log_records", acceptedLogRecords, processorAttrs),
-		pc.checkCounter("processor_refused_log_records", refusedLogRecords, processorAttrs),
-		pc.checkCounter("processor_dropped_log_records", droppedLogRecords, processorAttrs))
+func (pc *prometheusChecker) checkExporterLogs(exporter component.ID, sent, sendFailed int64) error {
+	return pc.checkExporter(exporter, "log_records", sent, sendFailed)
 }
 
-func (pc *prometheusChecker) checkExporterTraces(exporter component.ID, sentSpans, sendFailedSpans int64) error {
+func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sent, sendFailed int64) error {
+	return pc.checkExporter(exporter, "metric_points", sent, sendFailed)
+}
+
+func (pc *prometheusChecker) checkExporter(exporter component.ID, datatype string, sent, sendFailed int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
-	if sendFailedSpans > 0 {
-		return multierr.Combine(
-			pc.checkCounter("exporter_sent_spans", sentSpans, exporterAttrs),
-			pc.checkCounter("exporter_send_failed_spans", sendFailedSpans, exporterAttrs))
+	errs := pc.checkCounter(fmt.Sprintf("exporter_sent_%s", datatype), sent, exporterAttrs)
+	if sendFailed > 0 {
+		errs = multierr.Append(errs,
+			pc.checkCounter(fmt.Sprintf("exporter_send_failed_%s", datatype), sendFailed, exporterAttrs))
 	}
-	return multierr.Combine(
-		pc.checkCounter("exporter_sent_spans", sentSpans, exporterAttrs))
+	return errs
 }
 
-func (pc *prometheusChecker) checkExporterLogs(exporter component.ID, sentLogRecords, sendFailedLogRecords int64) error {
-	exporterAttrs := attributesForExporterMetrics(exporter)
-	if sendFailedLogRecords > 0 {
-		return multierr.Combine(
-			pc.checkCounter("exporter_sent_log_records", sentLogRecords, exporterAttrs),
-			pc.checkCounter("exporter_send_failed_log_records", sendFailedLogRecords, exporterAttrs))
+func (pc *prometheusChecker) checkExporterEnqueueFailed(exporter component.ID, datatype string, enqueueFailed int64) error {
+	if enqueueFailed == 0 {
+		return nil
 	}
-	return multierr.Combine(
-		pc.checkCounter("exporter_sent_log_records", sentLogRecords, exporterAttrs))
+	exporterAttrs := attributesForExporterMetrics(exporter)
+	return pc.checkCounter(fmt.Sprintf("exporter_enqueue_failed_%s", datatype), enqueueFailed, exporterAttrs)
 }
 
-func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sentMetricPoints, sendFailedMetricPoints int64) error {
+func (pc *prometheusChecker) checkExporterMetricGauge(exporter component.ID, metric string, val int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
-	if sendFailedMetricPoints > 0 {
-		return multierr.Combine(
-			pc.checkCounter("exporter_sent_metric_points", sentMetricPoints, exporterAttrs),
-			pc.checkCounter("exporter_send_failed_metric_points", sendFailedMetricPoints, exporterAttrs))
+	// Forces a flush for the opencensus view data.
+	_, _ = view.RetrieveData(metric)
+
+	ts, err := pc.getMetric(metric, io_prometheus_client.MetricType_GAUGE, exporterAttrs)
+	if err != nil {
+		return err
 	}
-	return multierr.Combine(
-		pc.checkCounter("exporter_sent_metric_points", sentMetricPoints, exporterAttrs))
+
+	expected := float64(val)
+	if math.Abs(ts.GetGauge().GetValue()-expected) > 0.0001 {
+		return fmt.Errorf("values for metric '%s' did not match, expected '%f' got '%f'", metric, expected, ts.GetGauge().GetValue())
+	}
+
+	return nil
 }
 
 func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, attrs []attribute.KeyValue) error {
@@ -119,7 +130,7 @@ func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, at
 
 	expected := float64(value)
 	if math.Abs(expected-ts.GetCounter().GetValue()) > 0.0001 {
-		return fmt.Errorf("values for metric '%s' did no match, expected '%f' got '%f'", expectedMetric, expected, ts.GetCounter().GetValue())
+		return fmt.Errorf("values for metric '%s' did not match, expected '%f' got '%f'", expectedMetric, expected, ts.GetCounter().GetValue())
 	}
 
 	return nil
@@ -128,18 +139,18 @@ func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, at
 // getMetric returns the metric time series that matches the given name, type and set of attributes
 // it fetches data from the prometheus endpoint and parse them, ideally OTel Go should provide a MeterRecorder of some kind.
 func (pc *prometheusChecker) getMetric(expectedName string, expectedType io_prometheus_client.MetricType, expectedAttrs []attribute.KeyValue) (*io_prometheus_client.Metric, error) {
-	parsed, err := fetchPrometheusMetrics(pc.promHandler)
+	handler := pc.ocHandler
+	if obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled() {
+		handler = pc.otelHandler
+	}
+	parsed, err := fetchPrometheusMetrics(handler)
 	if err != nil {
 		return nil, err
 	}
 
 	metricFamily, ok := parsed[expectedName]
 	if !ok {
-		// OTel Go adds `_total` suffix for all monotonic sum.
-		metricFamily, ok = parsed[expectedName+"_total"]
-		if !ok {
-			return nil, fmt.Errorf("metric '%s' not found", expectedName)
-		}
+		return nil, fmt.Errorf("metric '%s' not found", expectedName)
 	}
 
 	if metricFamily.Type.String() != expectedType.String() {

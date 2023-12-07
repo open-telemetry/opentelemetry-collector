@@ -14,8 +14,7 @@ import (
 )
 
 var (
-	errNonPositiveInterval    = errors.New("requires positive value")
-	errTimeoutExceedsInterval = errors.New("timeout value exceeds collection interval")
+	errNonPositiveInterval = errors.New("requires positive value")
 )
 
 // ScraperControllerSettings defines common settings for a scraper controller
@@ -29,8 +28,7 @@ type ScraperControllerSettings struct {
 	// InitialDelay sets the initial start delay for the scraper,
 	// any non positive value is assumed to be immediately.
 	InitialDelay time.Duration `mapstructure:"initial_delay"`
-	// Timeout is used to set scraper's context deadline, it must be within
-	// the range of (0, CollectionInterval]
+	// Timeout is an optional value used to set scraper's context deadline.
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
@@ -40,7 +38,7 @@ func NewDefaultScraperControllerSettings(component.Type) ScraperControllerSettin
 	return ScraperControllerSettings{
 		CollectionInterval: time.Minute,
 		InitialDelay:       time.Second,
-		Timeout:            time.Minute,
+		Timeout:            0,
 	}
 }
 
@@ -48,11 +46,8 @@ func (set *ScraperControllerSettings) Validate() (errs error) {
 	if set.CollectionInterval <= 0 {
 		errs = multierr.Append(errs, fmt.Errorf(`"collection_interval": %w`, errNonPositiveInterval))
 	}
-	if set.Timeout <= 0 {
+	if set.Timeout < 0 {
 		errs = multierr.Append(errs, fmt.Errorf(`"timeout": %w`, errNonPositiveInterval))
-	}
-	if set.Timeout > set.CollectionInterval {
-		errs = multierr.Append(errs, errTimeoutExceedsInterval)
 	}
 	return errs
 }

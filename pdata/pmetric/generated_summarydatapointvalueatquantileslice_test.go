@@ -12,13 +12,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
 	es := NewSummaryDataPointValueAtQuantileSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+	state := internal.StateMutable
+	es = newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewSummaryDataPointValueAtQuantile()
@@ -30,6 +32,19 @@ func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
+}
+
+func TestSummaryDataPointValueAtQuantileSliceReadOnly(t *testing.T) {
+	sharedState := internal.StateReadOnly
+	es := newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &sharedState)
+	assert.Equal(t, 0, es.Len())
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.EnsureCapacity(2) })
+	es2 := NewSummaryDataPointValueAtQuantileSlice()
+	es.CopyTo(es2)
+	assert.Panics(t, func() { es2.CopyTo(es) })
+	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
+	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
 }
 
 func TestSummaryDataPointValueAtQuantileSlice_CopyTo(t *testing.T) {
@@ -134,6 +149,6 @@ func fillTestSummaryDataPointValueAtQuantileSlice(es SummaryDataPointValueAtQuan
 	*es.orig = make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, 7)
 	for i := 0; i < 7; i++ {
 		(*es.orig)[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-		fillTestSummaryDataPointValueAtQuantile(newSummaryDataPointValueAtQuantile((*es.orig)[i]))
+		fillTestSummaryDataPointValueAtQuantile(newSummaryDataPointValueAtQuantile((*es.orig)[i], es.state))
 	}
 }

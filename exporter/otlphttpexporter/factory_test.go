@@ -54,13 +54,13 @@ func TestCreateTracesExporter(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		config           Config
+		config           *Config
 		mustFailOnCreate bool
 		mustFailOnStart  bool
 	}{
 		{
 			name: "NoEndpoint",
-			config: Config{
+			config: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "",
 				},
@@ -69,7 +69,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "UseSecure",
-			config: Config{
+			config: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -80,7 +80,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "Headers",
-			config: Config{
+			config: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					Headers: map[string]configopaque.String{
@@ -92,7 +92,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "CaCert",
-			config: Config{
+			config: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -105,7 +105,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "CertPemFileError",
-			config: Config{
+			config: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -120,7 +120,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "NoneCompression",
-			config: Config{
+			config: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint:    endpoint,
 					Compression: "none",
@@ -129,7 +129,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "GzipCompression",
-			config: Config{
+			config: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint:    endpoint,
 					Compression: configcompression.Gzip,
@@ -138,7 +138,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "SnappyCompression",
-			config: Config{
+			config: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint:    endpoint,
 					Compression: configcompression.Snappy,
@@ -147,7 +147,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "ZstdCompression",
-			config: Config{
+			config: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint:    endpoint,
 					Compression: configcompression.Zstd,
@@ -160,7 +160,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			set := exportertest.NewNopCreateSettings()
-			consumer, err := factory.CreateTracesExporter(context.Background(), set, &tt.config)
+			consumer, err := factory.CreateTracesExporter(context.Background(), set, tt.config)
 
 			if tt.mustFailOnCreate {
 				assert.Error(t, err)
@@ -192,4 +192,21 @@ func TestCreateLogsExporter(t *testing.T) {
 	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
+}
+
+func TestComposeSignalURL(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	// Has slash at end
+	cfg.HTTPClientSettings.Endpoint = "http://localhost:4318/"
+	url, err := composeSignalURL(cfg, "", "traces")
+	require.NoError(t, err)
+	assert.Equal(t, "http://localhost:4318/v1/traces", url)
+
+	// No slash at end
+	cfg.HTTPClientSettings.Endpoint = "http://localhost:4318"
+	url, err = composeSignalURL(cfg, "", "traces")
+	require.NoError(t, err)
+	assert.Equal(t, "http://localhost:4318/v1/traces", url)
 }

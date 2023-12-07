@@ -22,6 +22,9 @@ func TestHistogramDataPoint_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewHistogramDataPoint(), ms)
 	assert.Equal(t, generateTestHistogramDataPoint(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState)) })
+	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState).MoveTo(dest) })
 }
 
 func TestHistogramDataPoint_CopyTo(t *testing.T) {
@@ -32,6 +35,8 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 	orig = generateTestHistogramDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState)) })
 }
 
 func TestHistogramDataPoint_Attributes(t *testing.T) {
@@ -62,16 +67,8 @@ func TestHistogramDataPoint_Count(t *testing.T) {
 	assert.Equal(t, uint64(0), ms.Count())
 	ms.SetCount(uint64(17))
 	assert.Equal(t, uint64(17), ms.Count())
-}
-
-func TestHistogramDataPoint_Sum(t *testing.T) {
-	ms := NewHistogramDataPoint()
-	assert.Equal(t, float64(0.0), ms.Sum())
-	ms.SetSum(float64(17.13))
-	assert.True(t, ms.HasSum())
-	assert.Equal(t, float64(17.13), ms.Sum())
-	ms.RemoveSum()
-	assert.False(t, ms.HasSum())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState).SetCount(uint64(17)) })
 }
 
 func TestHistogramDataPoint_BucketCounts(t *testing.T) {
@@ -103,6 +100,16 @@ func TestHistogramDataPoint_Flags(t *testing.T) {
 	assert.Equal(t, testValFlags, ms.Flags())
 }
 
+func TestHistogramDataPoint_Sum(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.Equal(t, float64(0.0), ms.Sum())
+	ms.SetSum(float64(17.13))
+	assert.True(t, ms.HasSum())
+	assert.Equal(t, float64(17.13), ms.Sum())
+	ms.RemoveSum()
+	assert.False(t, ms.HasSum())
+}
+
 func TestHistogramDataPoint_Min(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, float64(0.0), ms.Min())
@@ -130,15 +137,15 @@ func generateTestHistogramDataPoint() HistogramDataPoint {
 }
 
 func fillTestHistogramDataPoint(tv HistogramDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
+	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Count = uint64(17)
-	tv.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(17.13)}
 	tv.orig.BucketCounts = []uint64{1, 2, 3}
 	tv.orig.ExplicitBounds = []float64{1, 2, 3}
-	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars))
+	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars, tv.state))
 	tv.orig.Flags = 1
+	tv.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(17.13)}
 	tv.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(9.23)}
 	tv.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(182.55)}
 }

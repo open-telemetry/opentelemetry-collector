@@ -2,7 +2,209 @@
 
 # Changelog
 
+Starting with version v0.83.0, this changelog includes only user-facing changes.
+If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./CHANGELOG-API.md).
+
 <!-- next version -->
+
+## v0.90.1
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Remove noisy log (#9017)
+
+## v1.0.0/v0.90.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: To remain backwards compatible w/ the metrics generated today, otel generated metrics will be generated without the `_total` suffix (#7454)
+- `service`: use WithNamespace instead of WrapRegistererWithPrefix (#8988)
+  Using this functionality in the otel prom exporter fixes a bug where the
+  target_info was prefixed as otelcol_target_info previously.
+  
+
+### 💡 Enhancements 💡
+
+- `exporter/debug`: Change default `verbosity` from `normal` to `basic` (#8844)
+  This change has currently no effect, as `basic` and `normal` verbosity share the same behavior. This might change in the future though, with the `normal` verbosity being more verbose than it currently is (see https://github.com/open-telemetry/opentelemetry-collector/issues/7806). This is why we are changing the default to `basic`, which is expected to stay at the current level of verbosity (one line per batch).
+- `exporterhelper`: Fix shutdown logic in persistent queue to not require consumers to be closed first (#8899)
+- `confighttp`: Support proxy configuration field in all exporters that support confighttp (#5761)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix invalid write index updates in the persistent queue (#8115)
+
+## v1.0.0-rcv0018/v0.89.0
+
+### 💡 Enhancements 💡
+
+- `builder`: remove replace statement in builder template (#8763)
+- `service/extensions`: Allow extensions to declare dependencies on other extensions and guarantee start/stop/notification order accordingly. (#8732)
+- `exporterhelper`: Log export errors when retry is not used by the component. (#8791)
+- `cmd/builder`: Add --verbose flag to log `go` subcommands output that are ran as part of a build (#8715)
+- `exporterhelper`: Remove internal goroutine loop for persistent queue (#8868)
+- `exporterhelper`: Simplify usage of storage client, avoid unnecessary allocations (#8830)
+- `exporterhelper`: Simplify logic in boundedMemoryQueue, use channels len/cap (#8829)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: fix bug with queue size and capacity metrics (#8682)
+- `obsreporttest`: split handler for otel vs oc test path in TestTelemetry (#8758)
+- `builder`: Fix featuregate late initialization (#4967)
+- `service`: Fix connector logger zap kind key (#8878)
+
+## v1.0.0-rcv0017/v0.88.0
+
+### 💡 Enhancements 💡
+
+- `fanoutconsumer`: Enable runtime assertions to catch incorrect pdata mutations in the components claiming as non-mutating pdata. (#6794)
+  This change enables the runtime assertions to catch unintentional pdata mutations in components that are claimed
+  as non-mutating pdata. Without these assertions, runtime errors may still occur, but thrown by unrelated components, 
+  making it very difficult to troubleshoot.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: make enqueue failures available for otel metrics (#8673)
+- `exporterhelper`: Fix nil pointer dereference when stopping persistent queue after a start encountered an error (#8718)
+- `cmd/builder`: Fix ocb ignoring `otelcol_version` when set to v0.86.0 or later (#8692)
+
+## v1.0.0-rcv0016/v0.87.0
+
+### 💡 Enhancements 💡
+
+- `service/telemetry exporter/exporterhelper`: Enable sampling logging by default and apply it to all components. (#8134)
+  The sampled logger configuration can be disabled easily by setting the `service::telemetry::logs::sampling::enabled` to `false`.
+- `core`: Adds the ability for components to report status and for extensions to subscribe to status events by implementing an optional StatusWatcher interface. (#7682)
+
+### 🧰 Bug fixes 🧰
+
+- `telemetry`: remove workaround to ignore errors when an instrument includes a `/` (#8346)
+
+## v1.0.0-rcv0015/v0.86.0
+
+### 🚩 Deprecations 🚩
+
+- `loggingexporter`: Mark the logging exporter as deprecated, in favour of debug exporter (#7769)
+
+### 🚀 New components 🚀
+
+- `debugexporter`: Add debug exporter, which replaces the logging exporter (#7769)
+
+### 💡 Enhancements 💡
+
+- `featuregate`: List valid feature gates when failing to load invalid gate (#8505)
+- `supported platforms`: Add `linux/s390x` architecture to cross build tests in CI (#8213)
+
+### 🧰 Bug fixes 🧰
+
+- `builder`: fix setting `dist.*` keys from env (#8239)
+- `configtls`: fix incorrect use of fsnotify (#8438)
+
+## v0.85.0
+
+### 💡 Enhancements 💡
+
+- `components command`: The "components" command now lists the component's stability levels. (#8289)
+  Note that the format of this output is NOT stable and can change between versions.
+- `confighttp`: Add option to disable HTTP keep-alives (#8260)
+
+### 🧰 Bug fixes 🧰
+
+- `confmap`: fix bugs of unmarshalling slice values (#4001)
+- `exporterhelper`: Stop logging error messages suggesting user to enable `retry_on_failure` or `sending_queue` when they are not available. (#8369)
+
+## v0.84.0
+
+### 💡 Enhancements 💡
+
+- `loggingexporter`: Adds exemplars logging to the logging exporter when `detailed` verbosity level is set. (#7912)
+- `configgrpc`: Allow any registered gRPC load balancer name to be used. (#8262)
+- `service`: add OTLP export for internal traces (#8106)
+- `configgrpc`: Add support for :authority pseudo-header in grpc client (#8228)
+
+### 🧰 Bug fixes 🧰
+
+- `otlphttpexporter`: Fix the handling of the HTTP response to ignore responses not encoded as protobuf (#8263)
+
+## v0.83.0
+
+### 💡 Enhancements 💡
+
+- `extension`: Add optional `ConfigWatcher` interface (#6596)
+  Extensions implementing this interface will be notified of the Collector's effective config.
+- `otelcol`: Add optional `ConfmapProvider` interface for Config Providers (#6596)
+  This allows providing the Collector's configuration as a marshaled confmap.Conf object
+  from a ConfigProvider
+  
+- `service`: Add `CollectorConf` field to `service.Settings` (#6596)
+  This field is intended to be used by the Collector to pass its effective configuration to the service.
+  
+
+## v1.0.0-rcv0014/v0.82.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: Enable configuration of collector telemetry through prometheus reader (#7641)
+  These options are still experimental. To enable them, users must enable both
+  `telemetry.useOtelForInternalMetrics` and `telemetry.useOtelWithSDKConfigurationForInternalTelemetry`
+  feature gates. This change updates `metric_readers` to `readers` to align with the configuration
+  working group.
+  
+- `service`: Remove experimental `metric_readers.args` and `metric_reader.type` config options. (#7641)
+  These options were experimental and did not have any effect on the configuration of
+  the collector's telemetry. The change aligns the configuration with the latest iteration
+  of the configuration json schema, which may still change in the future.
+
+### 💡 Enhancements 💡
+
+- `service`: Add support for exporting internal metrics to the console (#7641)
+  Internal collector metrics can now be exported to the console
+  using the otel-go stdout exporter.
+  
+- `service`: Add support for `interval` and `timeout` configuration in periodic reader (#7641)
+- `service`: Add support for span processor configuration for internal traces (#8106)
+  These options are still experimental. To enable them, users must enable both
+  `telemetry.useOtelForInternalMetrics` and `telemetry.useOtelWithSDKConfigurationForInternalTelemetry`
+  feature gates.
+  
+- `service`: Add support for OTLP export for internal metrics (#7641)
+  Internal collector metrics can now be exported via OTLP
+  using the otel-go otlpgrpc and otlphttp exporters.
+  
+- `scraperhelper`: Adding optional timeout field to scrapers (#7951)
+- `otlpreceiver`: Add http url paths per signal config options to otlpreceiver (#7511)
+- `otlphttpexporter`: Add support for trailing slash in endpoint URL (#8084)
+  URLs like `http://localhost:4318/` will now be treated as if they were `http://localhost:4318`
+
+### 🧰 Bug fixes 🧰
+
+- `connector`: Fix connector validation (#7892)
+  Validation of connectors was too aggressive such that a connector that was used in any combination of unsupported roles would fail.
+  Instead, validation should pass as long as each use of the connector has a supported corresponding use.
+  
+
+## v0.81.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: Remove 'service.connectors' featuregate (#7952)
+
+### 💡 Enhancements 💡
+
+- `HTTPServerSettings`: Add zstd support to HTTPServerSettings (#7927)
+  This adds ability to decompress zstd-compressed HTTP requests to| all receivers that use HTTPServerSettings.
+- `cmd/builder`: Add "--skip-generate" option to make builder skip source generation (#7541)
+- `confighttp`: Add support for additional content decoders via `WithDecoder` server option (#7977)
+- `connectortest`: Add helpers to aid the construction of `connector.TracesRouter`, `connector.MetricsRouter`, and `connector.LogsRouter` instances to `connectortest`. (#7672)
+- `confighttp`: Add `response_headers` configuration option on HTTPServerSettings. It allows for additional headers to be attached to each HTTP response sent to the client (#7328)
+- `otlpreceiver, otlphttpexporter, otlpexporter, configgrpc`: Upgrade github.com/mostynb/go-grpc-compression and switch to nonclobbering imports (#7920)
+  consumers of this library should not have their grpc codecs overridden
+- `otlphttpexporter`: Treat partial success responses as errors (#6686)
+
+### 🧰 Bug fixes 🧰
+
+- `HTTPServerSettings`: Ensure requests with unsupported Content-Encoding return HTTP 400 Bad Request (#7927)
 
 ## v1.0.0-rcv0013/v0.80.0
 

@@ -1,5 +1,8 @@
+SHELL = /bin/bash
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
 ALL_PKGS := $(sort $(shell go list ./...))
+# COVER_PKGS is the list of packages to include in the coverage
+COVER_PKGS := $(shell go list ./... | tr "\n" ",")
 
 GOTEST_OPT?= -race -timeout 120s
 GOCMD?= go
@@ -12,25 +15,23 @@ TOOLS_BIN_DIR   := $(PWD)/.tools
 TOOLS_MOD_REGEX := "\s+_\s+\".*\""
 TOOLS_PKG_NAMES := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"" | grep -vE '/v[0-9]+$$')
 TOOLS_BIN_NAMES := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(shell echo $(TOOLS_PKG_NAMES))))
+CHLOGGEN_CONFIG := .chloggen/config.yaml
 
-ADDLICENSE  := $(TOOLS_BIN_DIR)/addlicense
-APIDIFF     := $(TOOLS_BIN_DIR)/apidiff
-CHECKDOC    := $(TOOLS_BIN_DIR)/checkdoc
-CHLOG       := $(TOOLS_BIN_DIR)/chloggen
-CROSSLINK   := $(TOOLS_BIN_DIR)/crosslink
-ENVSUBST    := $(TOOLS_BIN_DIR)/envsubst
-GO_ACC      := $(TOOLS_BIN_DIR)/go-acc
-GOCOVMERGE  := $(TOOLS_BIN_DIR)/gocovmerge
-GOIMPORTS   := $(TOOLS_BIN_DIR)/goimports
-GOVULNCHECK := $(TOOLS_BIN_DIR)/govulncheck
-LINT        := $(TOOLS_BIN_DIR)/golangci-lint
-IMPI        := $(TOOLS_BIN_DIR)/impi
-MISSPELL    := $(TOOLS_BIN_DIR)/misspell
-MULTIMOD    := $(TOOLS_BIN_DIR)/multimod
-PORTO       := $(TOOLS_BIN_DIR)/porto
-YQ          := $(TOOLS_BIN_DIR)/yq
-
-GH := $(shell which gh)
+ADDLICENSE   := $(TOOLS_BIN_DIR)/addlicense
+APIDIFF      := $(TOOLS_BIN_DIR)/apidiff
+CHECKFILE    := $(TOOLS_BIN_DIR)/checkfile
+CHLOGGEN     := $(TOOLS_BIN_DIR)/chloggen
+CROSSLINK    := $(TOOLS_BIN_DIR)/crosslink
+ENVSUBST     := $(TOOLS_BIN_DIR)/envsubst
+GOIMPORTS    := $(TOOLS_BIN_DIR)/goimports
+GOJSONSCHEMA := $(TOOLS_BIN_DIR)/gojsonschema
+GOVULNCHECK  := $(TOOLS_BIN_DIR)/govulncheck
+LINT         := $(TOOLS_BIN_DIR)/golangci-lint
+IMPI         := $(TOOLS_BIN_DIR)/impi
+MISSPELL     := $(TOOLS_BIN_DIR)/misspell
+MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
+PORTO        := $(TOOLS_BIN_DIR)/porto
+YQ           := $(TOOLS_BIN_DIR)/yq
 
 .PHONY: install-tools
 install-tools: $(TOOLS_BIN_NAMES) $(YQ)
@@ -50,11 +51,12 @@ test:
 
 .PHONY: test-with-cover
 test-with-cover: $(GO_ACC)
-	$(GO_ACC) --output=coverage.out ./...
+	mkdir -p $(PWD)/coverage/unit
+	$(GOTEST) $(GOTEST_OPT) -cover ./... -covermode=atomic -coverpkg $(COVER_PKGS) -args -test.gocoverdir="$(PWD)/coverage/unit"
 
 .PHONY: benchmark
 benchmark:
-	$(GOTEST) -bench=. -run=notests ./...
+	$(GOTEST) -bench=. -run=notests ./... | tee benchmark.txt
 
 .PHONY: fmt
 fmt: $(GOIMPORTS)
@@ -64,7 +66,7 @@ fmt: $(GOIMPORTS)
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.19
+	$(GOCMD) mod tidy -compat=1.20
 
 .PHONY: lint
 lint: $(LINT)

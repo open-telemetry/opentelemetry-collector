@@ -6,11 +6,11 @@ on:
     # the minor version number and set the patch number to 0.
     inputs:
       candidate-stable:
-        description: Release candidate version (stable, like 1.0.0-rc4). Don't include `v`.
+        description: Release candidate version (stable, like 1.0.0-rcv0014). Don't include a leading `v`.
 
       current-stable:
         required: true
-        description: Current version (stable, like 1.0.0-rc3). Don't include `v`.
+        description: Current version (stable, like 1.0.0-rcv0014). Don't include a leading `v`.
 
       candidate-beta:
         description: Release candidate version (beta, like 0.70.0). Don't include `v`.
@@ -23,7 +23,7 @@ jobs:
   prepare-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       # Make sure that there are no open issues with release:blocker label in Core. The release has to be delayed until they are resolved.
@@ -53,7 +53,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.10
+          go-version: ~1.20.12
       # Prepare Core for release.
       #   - Update CHANGELOG.md file, this is done via chloggen
       #   - Run make prepare-release PREVIOUS_VERSION=1.0.0 RELEASE_CANDIDATE=1.1.0 MODSET=stable

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,6 +22,9 @@ func TestSummaryDataPoint_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSummaryDataPoint(), ms)
 	assert.Equal(t, generateTestSummaryDataPoint(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState)) })
+	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState).MoveTo(dest) })
 }
 
 func TestSummaryDataPoint_CopyTo(t *testing.T) {
@@ -31,6 +35,8 @@ func TestSummaryDataPoint_CopyTo(t *testing.T) {
 	orig = generateTestSummaryDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState)) })
 }
 
 func TestSummaryDataPoint_Attributes(t *testing.T) {
@@ -61,6 +67,8 @@ func TestSummaryDataPoint_Count(t *testing.T) {
 	assert.Equal(t, uint64(0), ms.Count())
 	ms.SetCount(uint64(17))
 	assert.Equal(t, uint64(17), ms.Count())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState).SetCount(uint64(17)) })
 }
 
 func TestSummaryDataPoint_Sum(t *testing.T) {
@@ -68,6 +76,8 @@ func TestSummaryDataPoint_Sum(t *testing.T) {
 	assert.Equal(t, float64(0.0), ms.Sum())
 	ms.SetSum(float64(17.13))
 	assert.Equal(t, float64(17.13), ms.Sum())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState).SetSum(float64(17.13)) })
 }
 
 func TestSummaryDataPoint_QuantileValues(t *testing.T) {
@@ -92,11 +102,11 @@ func generateTestSummaryDataPoint() SummaryDataPoint {
 }
 
 func fillTestSummaryDataPoint(tv SummaryDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
+	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Count = uint64(17)
 	tv.orig.Sum = float64(17.13)
-	fillTestSummaryDataPointValueAtQuantileSlice(newSummaryDataPointValueAtQuantileSlice(&tv.orig.QuantileValues))
+	fillTestSummaryDataPointValueAtQuantileSlice(newSummaryDataPointValueAtQuantileSlice(&tv.orig.QuantileValues, tv.state))
 	tv.orig.Flags = 1
 }

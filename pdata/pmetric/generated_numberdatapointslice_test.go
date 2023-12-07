@@ -12,13 +12,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
 func TestNumberDataPointSlice(t *testing.T) {
 	es := NewNumberDataPointSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newNumberDataPointSlice(&[]*otlpmetrics.NumberDataPoint{})
+	state := internal.StateMutable
+	es = newNumberDataPointSlice(&[]*otlpmetrics.NumberDataPoint{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewNumberDataPoint()
@@ -30,6 +32,19 @@ func TestNumberDataPointSlice(t *testing.T) {
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
+}
+
+func TestNumberDataPointSliceReadOnly(t *testing.T) {
+	sharedState := internal.StateReadOnly
+	es := newNumberDataPointSlice(&[]*otlpmetrics.NumberDataPoint{}, &sharedState)
+	assert.Equal(t, 0, es.Len())
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.EnsureCapacity(2) })
+	es2 := NewNumberDataPointSlice()
+	es.CopyTo(es2)
+	assert.Panics(t, func() { es2.CopyTo(es) })
+	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
+	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
 }
 
 func TestNumberDataPointSlice_CopyTo(t *testing.T) {
@@ -134,6 +149,6 @@ func fillTestNumberDataPointSlice(es NumberDataPointSlice) {
 	*es.orig = make([]*otlpmetrics.NumberDataPoint, 7)
 	for i := 0; i < 7; i++ {
 		(*es.orig)[i] = &otlpmetrics.NumberDataPoint{}
-		fillTestNumberDataPoint(newNumberDataPoint((*es.orig)[i]))
+		fillTestNumberDataPoint(newNumberDataPoint((*es.orig)[i], es.state))
 	}
 }

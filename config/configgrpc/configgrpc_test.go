@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 
@@ -35,6 +36,21 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
+// testBalancerBuilder facilitates testing validateBalancerName().
+type testBalancerBuilder struct{}
+
+func (testBalancerBuilder) Build(_ balancer.ClientConn, _ balancer.BuildOptions) balancer.Balancer {
+	return nil
+}
+
+func (testBalancerBuilder) Name() string {
+	return "configgrpc_balancer_test"
+}
+
+func init() {
+	balancer.Register(testBalancerBuilder{})
+}
+
 func TestDefaultGrpcClientSettings(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
@@ -47,7 +63,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 	}
 	opts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, err)
-	assert.Len(t, opts, 3)
+	assert.Len(t, opts, 2)
 }
 
 func TestAllGrpcClientSettings(t *testing.T) {
@@ -80,6 +96,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
+				Authority:       "pseudo-authority",
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
@@ -108,6 +125,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
+				Authority:       "pseudo-authority",
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
@@ -135,7 +153,8 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				ReadBufferSize:  1024,
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
-				BalancerName:    "round_robin",
+				BalancerName:    "configgrpc_balancer_test",
+				Authority:       "pseudo-authority",
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
@@ -162,7 +181,7 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 	}
 	opts, err := gss.toServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
-	assert.Len(t, opts, 2)
+	assert.Len(t, opts, 3)
 }
 
 func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
@@ -195,7 +214,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 	}
 	opts, err := gss.toServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
-	assert.Len(t, opts, 9)
+	assert.Len(t, opts, 10)
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {
@@ -354,7 +373,7 @@ func TestUseSecure(t *testing.T) {
 	}
 	dialOpts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, err)
-	assert.Len(t, dialOpts, 3)
+	assert.Len(t, dialOpts, 2)
 }
 
 func TestGRPCServerWarning(t *testing.T) {

@@ -6,8 +6,10 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"crypto/tls"
 	"errors"
+	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/rs/cors"
@@ -30,6 +32,9 @@ const headerContentEncoding = "Content-Encoding"
 type HTTPClientSettings struct {
 	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
 	Endpoint string `mapstructure:"endpoint"`
+
+	// ProxyURL setting for the collector
+	ProxyURL string `mapstructure:"proxy_url"`
 
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
@@ -73,6 +78,14 @@ type HTTPClientSettings struct {
 	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
 	// There's an already set value, and we want to override it only if an explicit value provided
 	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
+
+	// DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server
+	// for a single HTTP request.
+	//
+	// WARNING: enabling this option can result in significant overhead establishing a new HTTP(S)
+	// connection for every request. Before enabling this option please consider whether changes
+	// to idle connection settings can achieve your goal.
+	DisableKeepAlives bool `mapstructure:"disable_keep_alives"`
 }
 
 // NewDefaultHTTPClientSettings returns HTTPClientSettings type object with
@@ -123,6 +136,17 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 		transport.IdleConnTimeout = *hcs.IdleConnTimeout
 	}
 
+	// Setting the Proxy URL
+	if hcs.ProxyURL != "" {
+		proxyURL, parseErr := url.ParseRequestURI(hcs.ProxyURL)
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		transport.Proxy = http.ProxyURL(proxyURL)
+	}
+
+	transport.DisableKeepAlives = hcs.DisableKeepAlives
+
 	clientTransport := (http.RoundTripper)(transport)
 
 	// The Auth RoundTripper should always be the innermost to ensure that
@@ -161,7 +185,7 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 		}
 	}
 
-	// wrapping http transport with otelhttp transport to enable otel instrumenetation
+	// wrapping http transport with otelhttp transport to enable otel instrumentation
 	if settings.TracerProvider != nil && settings.MeterProvider != nil {
 		clientTransport = otelhttp.NewTransport(
 			clientTransport,
@@ -247,7 +271,8 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 // toServerOptions has options that change the behavior of the HTTP server
 // returned by HTTPServerSettings.ToServer().
 type toServerOptions struct {
-	errorHandler
+	errHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
+	decoders   map[string]func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // ToServerOption is an option to change the behavior of the HTTP server
@@ -256,9 +281,20 @@ type ToServerOption func(opts *toServerOptions)
 
 // WithErrorHandler overrides the HTTP error handler that gets invoked
 // when there is a failure inside httpContentDecompressor.
-func WithErrorHandler(e errorHandler) ToServerOption {
+func WithErrorHandler(e func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)) ToServerOption {
 	return func(opts *toServerOptions) {
-		opts.errorHandler = e
+		opts.errHandler = e
+	}
+}
+
+// WithDecoder provides support for additional decoders to be configured
+// by the caller.
+func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)) ToServerOption {
+	return func(opts *toServerOptions) {
+		if opts.decoders == nil {
+			opts.decoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
+		}
+		opts.decoders[key] = dec
 	}
 }
 
@@ -271,10 +307,7 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		o(serverOpts)
 	}
 
-	handler = httpContentDecompressor(
-		handler,
-		withErrorHandlerForDecompressor(serverOpts.errorHandler),
-	)
+	handler = httpContentDecompressor(handler, serverOpts.errHandler, serverOpts.decoders)
 
 	if hss.MaxRequestBodySize > 0 {
 		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)

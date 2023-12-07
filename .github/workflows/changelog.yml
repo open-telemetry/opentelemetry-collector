@@ -19,15 +19,17 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
 
+    env:
+      PR_HEAD: ${{ github.event.pull_request.head.sha }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.10
+          go-version: ~1.20.12
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -37,22 +39,22 @@ jobs:
             ~/go/pkg/mod
           key: changelog-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
 
-      - name: Ensure no changes to the CHANGELOG
+      - name: Ensure no changes to the CHANGELOG.md or CHANGELOG-API.md
         run: |
-          if [[ $(git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} ./CHANGELOG.md) ]]
+          if [[ $(git diff --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD ./CHANGELOG*.md) ]]
           then
-            echo "The CHANGELOG should not be directly modified."
+          echo "CHANGELOG.md and CHANGELOG-API.md should not be directly modified."
             echo "Please add a .yaml file to the ./.chloggen/ directory."
             echo "See CONTRIBUTING.md for more details."
             echo "Alternately, add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if this job should be skipped."
             false
           else
-            echo "The CHANGELOG was not modified."
+          echo "CHANGELOG.md and CHANGELOG-API.md were not modified."
           fi
 
       - name: Ensure ./.chloggen/*.yaml addition(s)
         run: |
-          if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} ./.chloggen | grep -c \\.yaml) ]]
+          if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD ./.chloggen | grep -c \\.yaml) ]]
           then
             echo "No changelog entry was added to the ./.chloggen/ directory."
             echo "Please add a .yaml file to the ./.chloggen/ directory."

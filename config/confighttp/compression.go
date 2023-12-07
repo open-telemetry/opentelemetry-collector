@@ -9,8 +9,11 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/klauspost/compress/zstd"
 
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -62,72 +65,95 @@ func (r *compressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	return r.rt.RoundTrip(cReq)
 }
 
-type errorHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
-
 type decompressor struct {
-	errorHandler
-}
-
-type decompressorOption func(d *decompressor)
-
-func withErrorHandlerForDecompressor(e errorHandler) decompressorOption {
-	return func(d *decompressor) {
-		d.errorHandler = e
-	}
+	errHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
+	base       http.Handler
+	decoders   map[string]func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // httpContentDecompressor offloads the task of handling compressed HTTP requests
 // by identifying the compression format in the "Content-Encoding" header and re-writing
 // request body so that the handlers further in the chain can work on decompressed data.
 // It supports gzip and deflate/zlib compression.
-func httpContentDecompressor(h http.Handler, opts ...decompressorOption) http.Handler {
-	d := &decompressor{}
-	for _, o := range opts {
-		o(d)
+func httpContentDecompressor(h http.Handler, eh func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int), decoders map[string]func(body io.ReadCloser) (io.ReadCloser, error)) http.Handler {
+	errHandler := defaultErrorHandler
+	if eh != nil {
+		errHandler = eh
 	}
-	if d.errorHandler == nil {
-		d.errorHandler = defaultErrorHandler
+
+	d := &decompressor{
+		errHandler: errHandler,
+		base:       h,
+		decoders: map[string]func(body io.ReadCloser) (io.ReadCloser, error){
+			"": func(body io.ReadCloser) (io.ReadCloser, error) {
+				// Not a compressed payload. Nothing to do.
+				return nil, nil
+			},
+			"gzip": func(body io.ReadCloser) (io.ReadCloser, error) {
+				gr, err := gzip.NewReader(body)
+				if err != nil {
+					return nil, err
+				}
+				return gr, nil
+			},
+			"zstd": func(body io.ReadCloser) (io.ReadCloser, error) {
+				zr, err := zstd.NewReader(
+					body,
+					// Concurrency 1 disables async decoding. We don't need async decoding, it is pointless
+					// for our use-case (a server accepting decoding http requests).
+					// Disabling async improves performance (I benchmarked it previously when working
+					// on https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/23257).
+					zstd.WithDecoderConcurrency(1),
+				)
+				if err != nil {
+					return nil, err
+				}
+				return zr.IOReadCloser(), nil
+			},
+			"zlib": func(body io.ReadCloser) (io.ReadCloser, error) {
+				zr, err := zlib.NewReader(body)
+				if err != nil {
+					return nil, err
+				}
+				return zr, nil
+			},
+		},
 	}
-	return d.wrap(h)
+	d.decoders["deflate"] = d.decoders["zlib"]
+
+	for key, dec := range decoders {
+		d.decoders[key] = dec
+	}
+
+	return d
 }
 
-func (d *decompressor) wrap(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		newBody, err := newBodyReader(r)
-		if err != nil {
-			d.errorHandler(w, r, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if newBody != nil {
-			defer newBody.Close()
-			// "Content-Encoding" header is removed to avoid decompressing twice
-			// in case the next handler(s) have implemented a similar mechanism.
-			r.Header.Del("Content-Encoding")
-			// "Content-Length" is set to -1 as the size of the decompressed body is unknown.
-			r.Header.Del("Content-Length")
-			r.ContentLength = -1
-			r.Body = newBody
-		}
-		h.ServeHTTP(w, r)
-	})
+func (d *decompressor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	newBody, err := d.newBodyReader(r)
+	if err != nil {
+		d.errHandler(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if newBody != nil {
+		defer newBody.Close()
+		// "Content-Encoding" header is removed to avoid decompressing twice
+		// in case the next handler(s) have implemented a similar mechanism.
+		r.Header.Del("Content-Encoding")
+		// "Content-Length" is set to -1 as the size of the decompressed body is unknown.
+		r.Header.Del("Content-Length")
+		r.ContentLength = -1
+		r.Body = newBody
+	}
+	d.base.ServeHTTP(w, r)
 }
 
-func newBodyReader(r *http.Request) (io.ReadCloser, error) {
-	switch r.Header.Get("Content-Encoding") {
-	case "gzip":
-		gr, err := gzip.NewReader(r.Body)
-		if err != nil {
-			return nil, err
-		}
-		return gr, nil
-	case "deflate", "zlib":
-		zr, err := zlib.NewReader(r.Body)
-		if err != nil {
-			return nil, err
-		}
-		return zr, nil
+func (d *decompressor) newBodyReader(r *http.Request) (io.ReadCloser, error) {
+	encoding := r.Header.Get(headerContentEncoding)
+	decoder, ok := d.decoders[encoding]
+	if !ok {
+		return nil, fmt.Errorf("unsupported %s: %s", headerContentEncoding, encoding)
 	}
-	return nil, nil
+	return decoder(r.Body)
 }
 
 // defaultErrorHandler writes the error message in plain text.

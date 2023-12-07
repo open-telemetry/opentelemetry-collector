@@ -6,6 +6,7 @@ package service
 import (
 	"bufio"
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"sync"
@@ -21,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
@@ -54,7 +56,7 @@ type ownMetricsTestCase struct {
 	expectedLabels      map[string]labelValue
 }
 
-var testResourceAttrValue = "resource_attr_test_value"
+var testResourceAttrValue = "resource_attr_test_value" // #nosec G101: Potential hardcoded credentials
 var testInstanceID = "test_instance_id"
 var testServiceVersion = "2022-05-20"
 var testServiceName = "test name"
@@ -356,6 +358,84 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	assert.NoError(t, srvTwo.Shutdown(context.Background()))
 }
 
+func TestExtensionNotificationFailure(t *testing.T) {
+	set := newNopSettings()
+	cfg := newNopConfig()
+
+	var extName component.Type = "configWatcher"
+	configWatcherExtensionFactory := newConfigWatcherExtensionFactory(extName)
+	set.Extensions = extension.NewBuilder(
+		map[component.ID]component.Config{component.NewID(extName): configWatcherExtensionFactory.CreateDefaultConfig()},
+		map[component.Type]extension.Factory{extName: configWatcherExtensionFactory})
+	cfg.Extensions = []component.ID{component.NewID(extName)}
+
+	// Create a service
+	srv, err := New(context.Background(), set, cfg)
+	require.NoError(t, err)
+
+	// Start the service
+	require.Error(t, srv.Start(context.Background()))
+
+	// Shut down the service
+	require.NoError(t, srv.Shutdown(context.Background()))
+}
+
+func TestNilCollectorEffectiveConfig(t *testing.T) {
+	set := newNopSettings()
+	set.CollectorConf = nil
+	cfg := newNopConfig()
+
+	var extName component.Type = "configWatcher"
+	configWatcherExtensionFactory := newConfigWatcherExtensionFactory(extName)
+	set.Extensions = extension.NewBuilder(
+		map[component.ID]component.Config{component.NewID(extName): configWatcherExtensionFactory.CreateDefaultConfig()},
+		map[component.Type]extension.Factory{extName: configWatcherExtensionFactory})
+	cfg.Extensions = []component.ID{component.NewID(extName)}
+
+	// Create a service
+	srv, err := New(context.Background(), set, cfg)
+	require.NoError(t, err)
+
+	// Start the service
+	require.NoError(t, srv.Start(context.Background()))
+
+	// Shut down the service
+	require.NoError(t, srv.Shutdown(context.Background()))
+}
+
+func TestServiceTelemetryLogger(t *testing.T) {
+	srv, err := New(context.Background(), newNopSettings(), newNopConfig())
+	require.NoError(t, err)
+
+	assert.NoError(t, srv.Start(context.Background()))
+	t.Cleanup(func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
+	assert.NotNil(t, srv.telemetrySettings.Logger)
+}
+
+func TestServiceFatalError(t *testing.T) {
+	set := newNopSettings()
+	set.AsyncErrorChannel = make(chan error)
+
+	srv, err := New(context.Background(), set, newNopConfig())
+	require.NoError(t, err)
+
+	assert.NoError(t, srv.Start(context.Background()))
+	t.Cleanup(func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
+
+	go func() {
+		ev := component.NewFatalErrorEvent(assert.AnError)
+		srv.host.notifyComponentStatusChange(&component.InstanceID{}, ev)
+	}()
+
+	err = <-srv.host.asyncErrorChannel
+
+	require.ErrorIs(t, err, assert.AnError)
+}
+
 func assertResourceLabels(t *testing.T, res pcommon.Resource, expectedLabels map[string]labelValue) {
 	for key, labelValue := range expectedLabels {
 		lookupKey, ok := prometheusToOtelConv[key]
@@ -446,12 +526,13 @@ func assertZPages(t *testing.T, zpagesAddr string) {
 
 func newNopSettings() Settings {
 	return Settings{
-		BuildInfo:  component.NewDefaultBuildInfo(),
-		Receivers:  receivertest.NewNopBuilder(),
-		Processors: processortest.NewNopBuilder(),
-		Exporters:  exportertest.NewNopBuilder(),
-		Connectors: connectortest.NewNopBuilder(),
-		Extensions: extensiontest.NewNopBuilder(),
+		BuildInfo:     component.NewDefaultBuildInfo(),
+		CollectorConf: confmap.New(),
+		Receivers:     receivertest.NewNopBuilder(),
+		Processors:    processortest.NewNopBuilder(),
+		Exporters:     exportertest.NewNopBuilder(),
+		Connectors:    connectortest.NewNopBuilder(),
+		Extensions:    extensiontest.NewNopBuilder(),
 	}
 }
 
@@ -485,6 +566,8 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 				Development: false,
 				Encoding:    "console",
 				Sampling: &telemetry.LogsSamplingConfig{
+					Enabled:    true,
+					Tick:       10 * time.Second,
 					Initial:    100,
 					Thereafter: 100,
 				},
@@ -500,4 +583,31 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 			},
 		},
 	}
+}
+
+type configWatcherExtension struct{}
+
+func (comp *configWatcherExtension) Start(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+func (comp *configWatcherExtension) Shutdown(_ context.Context) error {
+	return nil
+}
+
+func (comp *configWatcherExtension) NotifyConfig(_ context.Context, _ *confmap.Conf) error {
+	return errors.New("Failed to resolve config")
+}
+
+func newConfigWatcherExtensionFactory(name component.Type) extension.Factory {
+	return extension.NewFactory(
+		name,
+		func() component.Config {
+			return &struct{}{}
+		},
+		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
+			return &configWatcherExtension{}, nil
+		},
+		component.StabilityLevelDevelopment,
+	)
 }

@@ -5,6 +5,7 @@ package scraperhelper
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -19,29 +20,21 @@ func TestScrapeControllerSettings(t *testing.T) {
 	}{
 		{
 			name:   "default configuration",
-			set:    NewDefaultScraperControllerSettings("scraper"),
+			set:    NewDefaultScraperControllerSettings(""),
 			errVal: "",
 		},
 		{
 			name:   "zero value configuration",
 			set:    ScraperControllerSettings{},
-			errVal: `"collection_interval": requires positive value; "timeout": requires positive value`,
+			errVal: `"collection_interval": requires positive value`,
 		},
 		{
 			name: "invalid timeout",
 			set: ScraperControllerSettings{
-				CollectionInterval: 10,
-				Timeout:            -1,
+				CollectionInterval: time.Minute,
+				Timeout:            -1 * time.Minute,
 			},
 			errVal: `"timeout": requires positive value`,
-		},
-		{
-			name: "timeout exceeds scrape duration",
-			set: ScraperControllerSettings{
-				CollectionInterval: 2,
-				Timeout:            3,
-			},
-			errVal: `timeout value exceeds collection interval`,
 		},
 	} {
 		tc := tc

@@ -3,13 +3,13 @@
 
 module-sets:
   stable:
-    version: v1.0.0-rcv0013
+    version: v1.0.0
     modules:
       - go.opentelemetry.io/collector/config/confignet
       - go.opentelemetry.io/collector/featuregate
       - go.opentelemetry.io/collector/pdata
   beta:
-    version: v0.80.0
+    version: v0.90.1
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/cmd/builder
@@ -27,6 +27,7 @@ module-sets:
       - go.opentelemetry.io/collector/connector/forwardconnector
       - go.opentelemetry.io/collector/consumer
       - go.opentelemetry.io/collector/exporter
+      - go.opentelemetry.io/collector/exporter/debugexporter
       - go.opentelemetry.io/collector/exporter/loggingexporter
       - go.opentelemetry.io/collector/exporter/otlpexporter
       - go.opentelemetry.io/collector/exporter/otlphttpexporter
@@ -34,12 +35,14 @@ module-sets:
       - go.opentelemetry.io/collector/extension/auth
       - go.opentelemetry.io/collector/extension/ballastextension
       - go.opentelemetry.io/collector/extension/zpagesextension
+      - go.opentelemetry.io/collector/otelcol
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/processor/batchprocessor
       - go.opentelemetry.io/collector/processor/memorylimiterprocessor
       - go.opentelemetry.io/collector/receiver
       - go.opentelemetry.io/collector/receiver/otlpreceiver
       - go.opentelemetry.io/collector/semconv
+      - go.opentelemetry.io/collector/service
 
 excluded-modules:
   - go.opentelemetry.io/collector/cmd/otelcorecol

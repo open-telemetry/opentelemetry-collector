@@ -73,6 +73,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:     &idleConnTimeout,
 				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:         "",
+				DisableKeepAlives:   true,
 			},
 			shouldError: false,
 		},
@@ -91,6 +92,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:     &idleConnTimeout,
 				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:         "none",
+				DisableKeepAlives:   true,
 			},
 			shouldError: false,
 		},
@@ -109,6 +111,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:     &idleConnTimeout,
 				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:         "gzip",
+				DisableKeepAlives:   true,
 			},
 			shouldError: false,
 		},
@@ -145,6 +148,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
 				assert.EqualValues(t, 45, transport.MaxConnsPerHost)
 				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
+				assert.EqualValues(t, true, transport.DisableKeepAlives)
 			case *compressRoundTripper:
 				assert.EqualValues(t, "gzip", transport.compressionType)
 			}
@@ -192,6 +196,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			assert.EqualValues(t, 0, transport.MaxIdleConnsPerHost)
 			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
 			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
+			assert.EqualValues(t, false, transport.DisableKeepAlives)
 
 		})
 	}
@@ -201,6 +206,61 @@ func TestDefaultHTTPClientSettings(t *testing.T) {
 	httpClientSettings := NewDefaultHTTPClientSettings()
 	assert.EqualValues(t, 100, *httpClientSettings.MaxIdleConns)
 	assert.EqualValues(t, 90*time.Second, *httpClientSettings.IdleConnTimeout)
+}
+
+func TestProxyURL(t *testing.T) {
+	testCases := []struct {
+		desc        string
+		proxyURL    string
+		expectedURL *url.URL
+		err         bool
+	}{
+		{
+			desc:        "default config",
+			expectedURL: nil,
+		},
+		{
+			desc:        "proxy is set",
+			proxyURL:    "http://proxy.example.com:8080",
+			expectedURL: &url.URL{Scheme: "http", Host: "proxy.example.com:8080"},
+		},
+		{
+			desc:     "proxy is invalid",
+			proxyURL: "://example.com",
+			err:      true,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			s := NewDefaultHTTPClientSettings()
+			s.ProxyURL = tC.proxyURL
+
+			tt := componenttest.NewNopTelemetrySettings()
+			tt.TracerProvider = nil
+			client, err := s.ToClient(componenttest.NewNopHost(), tt)
+
+			if tC.err {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			if err == nil {
+				transport := client.Transport.(*http.Transport)
+				require.NotNil(t, transport.Proxy)
+
+				url, err := transport.Proxy(&http.Request{URL: &url.URL{Scheme: "http", Host: "example.com"}})
+				require.NoError(t, err)
+
+				if tC.expectedURL == nil {
+					assert.Nil(t, url)
+				} else {
+					require.NotNil(t, url)
+					assert.Equal(t, tC.expectedURL, url)
+				}
+			}
+		})
+	}
 }
 
 func TestHTTPClientSettingsError(t *testing.T) {
@@ -661,7 +721,7 @@ func TestHttpCors(t *testing.T) {
 	tests := []struct {
 		name string
 
-		CORSSettings
+		*CORSSettings
 
 		allowedWorks     bool
 		disallowedWorks  bool
@@ -674,8 +734,15 @@ func TestHttpCors(t *testing.T) {
 			extraHeaderWorks: false,
 		},
 		{
+			name:             "emptyCORS",
+			CORSSettings:     &CORSSettings{},
+			allowedWorks:     false,
+			disallowedWorks:  false,
+			extraHeaderWorks: false,
+		},
+		{
 			name: "OriginCORS",
-			CORSSettings: CORSSettings{
+			CORSSettings: &CORSSettings{
 				AllowedOrigins: []string{"allowed-*.com"},
 			},
 			allowedWorks:     true,
@@ -684,7 +751,7 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name: "CacheableCORS",
-			CORSSettings: CORSSettings{
+			CORSSettings: &CORSSettings{
 				AllowedOrigins: []string{"allowed-*.com"},
 				MaxAge:         360,
 			},
@@ -694,7 +761,7 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name: "HeaderCORS",
-			CORSSettings: CORSSettings{
+			CORSSettings: &CORSSettings{
 				AllowedOrigins: []string{"allowed-*.com"},
 				AllowedHeaders: []string{"ExtraHeader"},
 			},
@@ -708,7 +775,7 @@ func TestHttpCors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			hss := &HTTPServerSettings{
 				Endpoint: "localhost:0",
-				CORS:     &tt.CORSSettings,
+				CORS:     tt.CORSSettings,
 			}
 
 			ln, err := hss.ToListener()
@@ -733,17 +800,18 @@ func TestHttpCors(t *testing.T) {
 			url := fmt.Sprintf("http://%s", ln.Addr().String())
 
 			expectedStatus := http.StatusNoContent
-			if len(tt.AllowedOrigins) == 0 {
+			if tt.CORSSettings == nil || len(tt.AllowedOrigins) == 0 {
 				expectedStatus = http.StatusOK
 			}
+
 			// Verify allowed domain gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", tt.MaxAge, false, expectedStatus, tt.allowedWorks)
+			verifyCorsResp(t, url, "allowed-origin.com", tt.CORSSettings, false, expectedStatus, tt.allowedWorks)
 
 			// Verify allowed domain and extra headers gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", tt.MaxAge, true, expectedStatus, tt.extraHeaderWorks)
+			verifyCorsResp(t, url, "allowed-origin.com", tt.CORSSettings, true, expectedStatus, tt.extraHeaderWorks)
 
 			// Verify disallowed domain gets responses that disallow CORS.
-			verifyCorsResp(t, url, "disallowed-origin.com", tt.MaxAge, false, expectedStatus, tt.disallowedWorks)
+			verifyCorsResp(t, url, "disallowed-origin.com", tt.CORSSettings, false, expectedStatus, tt.disallowedWorks)
 
 			require.NoError(t, s.Close())
 		})
@@ -859,7 +927,7 @@ func TestHttpServerHeaders(t *testing.T) {
 	}
 }
 
-func verifyCorsResp(t *testing.T, url string, origin string, maxAge int, extraHeader bool, wantStatus int, wantAllowed bool) {
+func verifyCorsResp(t *testing.T, url string, origin string, set *CORSSettings, extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest(http.MethodOptions, url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
@@ -888,8 +956,8 @@ func verifyCorsResp(t *testing.T, url string, origin string, maxAge int, extraHe
 	if wantAllowed {
 		wantAllowOrigin = origin
 		wantAllowMethods = "POST"
-		if maxAge != 0 {
-			wantMaxAge = fmt.Sprintf("%d", maxAge)
+		if set != nil && set.MaxAge != 0 {
+			wantMaxAge = fmt.Sprintf("%d", set.MaxAge)
 		}
 	}
 	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
@@ -955,7 +1023,7 @@ func TestHttpClientHeaders(t *testing.T) {
 				for k, v := range tt.headers {
 					assert.Equal(t, r.Header.Get(k), string(v))
 				}
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 			}))
 			defer server.Close()
 			serverURL, _ := url.Parse(server.URL)
@@ -1114,6 +1182,66 @@ func TestFailedServerAuth(t *testing.T) {
 	// verify
 	assert.Equal(t, response.Result().StatusCode, http.StatusUnauthorized)
 	assert.Equal(t, response.Result().Status, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)))
+}
+
+func TestServerWithErrorHandler(t *testing.T) {
+	// prepare
+	hss := HTTPServerSettings{
+		Endpoint: "localhost:0",
+	}
+	eh := func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int) {
+		assert.Equal(t, statusCode, http.StatusBadRequest)
+		// custom error handler changes returned status code
+		http.Error(w, "invalid request", http.StatusInternalServerError)
+
+	}
+
+	srv, err := hss.ToServer(
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+		WithErrorHandler(eh),
+	)
+	require.NoError(t, err)
+	// test
+	response := &httptest.ResponseRecorder{}
+
+	req, err := http.NewRequest(http.MethodGet, srv.Addr, nil)
+	require.NoError(t, err, "Error creating request: %v", err)
+	req.Header.Set("Content-Encoding", "something-invalid")
+
+	srv.Handler.ServeHTTP(response, req)
+	// verify
+	assert.Equal(t, response.Result().StatusCode, http.StatusInternalServerError)
+}
+
+func TestServerWithDecoder(t *testing.T) {
+	// prepare
+	hss := HTTPServerSettings{
+		Endpoint: "localhost:0",
+	}
+	decoder := func(body io.ReadCloser) (io.ReadCloser, error) {
+		return body, nil
+	}
+
+	srv, err := hss.ToServer(
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+		WithDecoder("something-else", decoder),
+	)
+	require.NoError(t, err)
+	// test
+	response := &httptest.ResponseRecorder{}
+
+	req, err := http.NewRequest(http.MethodGet, srv.Addr, nil)
+	require.NoError(t, err, "Error creating request: %v", err)
+	req.Header.Set("Content-Encoding", "something-else")
+
+	srv.Handler.ServeHTTP(response, req)
+	// verify
+	assert.Equal(t, response.Result().StatusCode, http.StatusOK)
+
 }
 
 type mockHost struct {

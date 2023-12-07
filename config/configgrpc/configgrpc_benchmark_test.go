@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mostynb/go-grpc-compression/snappy"
-	"github.com/mostynb/go-grpc-compression/zstd"
+	"github.com/mostynb/go-grpc-compression/nonclobbering/snappy"
+	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/encoding/gzip"

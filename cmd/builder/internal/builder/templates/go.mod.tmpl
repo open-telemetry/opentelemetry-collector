@@ -2,7 +2,7 @@
 
 module {{.Distribution.Module}}
 
-go 1.19
+go 1.20
 
 require (
 	{{- range .Connectors}}
@@ -20,7 +20,12 @@ require (
 	{{- range .Processors}}
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}
-	go.opentelemetry.io/collector v{{.Distribution.OtelColVersion}}
+	go.opentelemetry.io/collector{{if .Distribution.RequireOtelColModule}}/otelcol{{end}} v{{.Distribution.OtelColVersion}}
+)
+
+require (
+	github.com/knadh/koanf/maps v0.1.1 // indirect
+	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 )
 
 {{- range .Connectors}}
@@ -44,6 +49,3 @@ replace {{.}}
 {{- range .Excludes}}
 exclude {{.}}
 {{- end}}
-
-// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
-replace cloud.google.com/go => cloud.google.com/go v0.110.2

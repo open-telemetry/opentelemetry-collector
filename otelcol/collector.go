@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
@@ -54,7 +55,7 @@ func (s State) String() string {
 // CollectorSettings holds configuration for creating a new Collector.
 type CollectorSettings struct {
 	// Factories service factories.
-	Factories Factories
+	Factories func() (Factories, error)
 
 	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
@@ -143,7 +144,22 @@ func (col *Collector) Shutdown() {
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(StateStarting)
 
-	cfg, err := col.set.ConfigProvider.Get(ctx, col.set.Factories)
+	var conf *confmap.Conf
+
+	if cp, ok := col.set.ConfigProvider.(ConfmapProvider); ok {
+		var err error
+		conf, err = cp.GetConfmap(ctx)
+
+		if err != nil {
+			return fmt.Errorf("failed to resolve config: %w", err)
+		}
+	}
+
+	factories, err := col.set.Factories()
+	if err != nil {
+		return fmt.Errorf("failed to initialize factories: %w", err)
+	}
+	cfg, err := col.set.ConfigProvider.Get(ctx, factories)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
@@ -154,11 +170,12 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 
 	col.service, err = service.New(ctx, service.Settings{
 		BuildInfo:         col.set.BuildInfo,
-		Receivers:         receiver.NewBuilder(cfg.Receivers, col.set.Factories.Receivers),
-		Processors:        processor.NewBuilder(cfg.Processors, col.set.Factories.Processors),
-		Exporters:         exporter.NewBuilder(cfg.Exporters, col.set.Factories.Exporters),
-		Connectors:        connector.NewBuilder(cfg.Connectors, col.set.Factories.Connectors),
-		Extensions:        extension.NewBuilder(cfg.Extensions, col.set.Factories.Extensions),
+		CollectorConf:     conf,
+		Receivers:         receiver.NewBuilder(cfg.Receivers, factories.Receivers),
+		Processors:        processor.NewBuilder(cfg.Processors, factories.Processors),
+		Exporters:         exporter.NewBuilder(cfg.Exporters, factories.Exporters),
+		Connectors:        connector.NewBuilder(cfg.Connectors, factories.Connectors),
+		Extensions:        extension.NewBuilder(cfg.Extensions, factories.Extensions),
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
 	}, cfg.Service)
@@ -174,6 +191,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return multierr.Combine(err, col.service.Shutdown(ctx))
 	}
 	col.setCollectorState(StateRunning)
+
 	return nil
 }
 
@@ -193,7 +211,11 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 }
 
 func (col *Collector) DryRun(ctx context.Context) error {
-	cfg, err := col.set.ConfigProvider.Get(ctx, col.set.Factories)
+	factories, err := col.set.Factories()
+	if err != nil {
+		return fmt.Errorf("failed to initialize factories: %w", err)
+	}
+	cfg, err := col.set.ConfigProvider.Get(ctx, factories)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}

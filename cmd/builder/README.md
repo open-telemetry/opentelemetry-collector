@@ -13,14 +13,14 @@ dist:
   description: Local OpenTelemetry Collector binary
   output_path: /tmp/dist
 exporters:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.69.0
-  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.69.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.86.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.86.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.69.1
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.86.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.69.1
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.86.0
 EOF
 $ builder --config=otelcol-builder.yaml
 $ cat > /tmp/otelcol.yaml <<EOF
@@ -34,7 +34,7 @@ processors:
   batch:
 
 exporters:
-  logging:
+  debug:
 
 service:
   pipelines:
@@ -44,15 +44,28 @@ service:
       processors:
       - batch
       exporters:
-      - logging
+      - debug
 EOF
 $ /tmp/dist/otelcol-custom --config=/tmp/otelcol.yaml
 ```
 
 ## Installation
 
-Download the binary for your respective platform under the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector/releases/latest) page.
-If install an official release build, the binary is named `ocb`, but if you installed by using `go install`, it will be called `builder`.
+There are two supported ways to install the builder: via the official releases (recommended) and through `go install`.
+
+### Official releases 
+
+This is the recommended installation method. Download the binary for your respective platform under the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector/releases?q=builder) page.
+
+### `go install`
+
+You need to have a `go` compiler in your PATH. Run the following command to install the latest version:
+
+```
+go install go.opentelemetry.io/collector/cmd/builder@latest
+```
+
+If installing through this method the binary will be called `builder`. Binaries installed through this method [will incorrectly show `dev` as their version](https://github.com/open-telemetry/opentelemetry-collector/issues/8691).
 
 ## Running
 
@@ -112,3 +125,24 @@ replaces:
   # a list of "replaces" directives that will be part of the resulting go.mod
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.40.0
 ```
+
+## Steps
+
+The builder has 3 steps:
+
+* Generate: generates the golang source code
+* Get modules: generates the go.mod file based on the imported modules in the generated golang source code
+* Compilation: builds the OpenTelemetry Collector executable
+
+Each step can be skipped independently: `--skip-generate`, `--skip-get-modules` and `--skip-compilation`.
+
+For instance, a code generation step could execute
+
+```console
+ocb --skip-compilation --config=config.yaml
+```
+then commit the code in a git repo. A CI can sync the code and execute
+```console
+ocb --skip-generate --skip-get-modules --config=config.yaml
+```
+to only execute the compilation step.

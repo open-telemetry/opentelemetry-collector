@@ -37,6 +37,18 @@ func TestLoadConfig(t *testing.T) {
 			},
 			success: false,
 		},
+		{
+			name: "valid metric telemetry with metric readers",
+			cfg: &Config{
+				Metrics: MetricsConfig{
+					Level: configtelemetry.LevelBasic,
+					Readers: []MetricReader{
+						{Pull: &PullMetricReader{}},
+					},
+				},
+			},
+			success: true,
+		},
 	}
 
 	for _, tt := range tests {

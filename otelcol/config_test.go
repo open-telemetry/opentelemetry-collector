@@ -177,7 +177,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
 				return cfg
 			},
-			expected: errors.New(`connectors::nop/2: there's already a receiver named "nop/2"`),
+			expected: errors.New(`connectors::nop/2: ambiguous ID: Found both "nop/2" receiver and "nop/2" connector. Change one of the components' IDs to eliminate ambiguity (e.g. rename "nop/2" connector to "nop/2/connector")`),
 		},
 		{
 			name: "ambiguous-connector-name-as-exporter",
@@ -190,7 +190,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
 				return cfg
 			},
-			expected: errors.New(`connectors::nop/2: there's already an exporter named "nop/2"`),
+			expected: errors.New(`connectors::nop/2: ambiguous ID: Found both "nop/2" exporter and "nop/2" connector. Change one of the components' IDs to eliminate ambiguity (e.g. rename "nop/2" connector to "nop/2/connector")`),
 		},
 		{
 			name: "invalid-connector-reference-as-receiver",
@@ -211,26 +211,6 @@ func TestConfigValidate(t *testing.T) {
 				return cfg
 			},
 			expected: errors.New(`service::pipelines::traces: references exporter "nop/conn2" which is not configured`),
-		},
-		{
-			name: "missing-connector-as-receiver",
-			cfgFn: func() *Config {
-				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines[component.NewID("traces")]
-				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "conn"))
-				return cfg
-			},
-			expected: errors.New(`connectors::nop/conn: must be used as both receiver and exporter but is not used as receiver`),
-		},
-		{
-			name: "missing-connector-as-exporter",
-			cfgFn: func() *Config {
-				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines[component.NewID("traces")]
-				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "conn"))
-				return cfg
-			},
-			expected: errors.New(`connectors::nop/conn: must be used as both receiver and exporter but is not used as exporter`),
 		},
 		{
 			name: "invalid-service-config",

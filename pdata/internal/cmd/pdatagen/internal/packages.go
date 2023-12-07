@@ -119,6 +119,9 @@ func (p *Package) GenerateInternalFiles() error {
 		// Add imports
 		sb.WriteString("import (" + newLine)
 		for _, imp := range p.imports {
+			if imp == `"go.opentelemetry.io/collector/pdata/internal"` {
+				continue
+			}
 			if imp != "" {
 				sb.WriteString("\t" + imp + newLine)
 			} else {

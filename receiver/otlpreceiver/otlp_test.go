@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
@@ -154,6 +155,11 @@ func TestJsonHttp(t *testing.T) {
 			contentType: "application/json",
 		},
 		{
+			name:        "JSONZstdCompressed",
+			encoding:    "zstd",
+			contentType: "application/json",
+		},
+		{
 			name:        "NotGRPCError",
 			encoding:    "",
 			contentType: "application/json",
@@ -167,10 +173,13 @@ func TestJsonHttp(t *testing.T) {
 		},
 	}
 	addr := testutil.GetAvailableLocalAddress(t)
+	tracesURLPath := "/v1/traceingest"
+	metricsURLPath := "/v1/metricingest"
+	logsURLPath := "/v1/logingest"
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
-	ocr := newHTTPReceiver(t, addr, sink, nil)
+	ocr := newHTTPReceiver(t, addr, tracesURLPath, metricsURLPath, logsURLPath, sink, nil)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
@@ -181,7 +190,7 @@ func TestJsonHttp(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			url := fmt.Sprintf("http://%s/v1/traces", addr)
+			url := fmt.Sprintf("http://%s%s", addr, tracesURLPath)
 			sink.Reset()
 			testHTTPJSONRequest(t, url, sink, test.encoding, test.contentType, test.err)
 		})
@@ -191,7 +200,16 @@ func TestJsonHttp(t *testing.T) {
 func TestHandleInvalidRequests(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	cfg := &Config{
-		Protocols: Protocols{HTTP: &confighttp.HTTPServerSettings{Endpoint: endpoint}},
+		Protocols: Protocols{
+			HTTP: &HTTPConfig{
+				HTTPServerSettings: &confighttp.HTTPServerSettings{
+					Endpoint: endpoint,
+				},
+				TracesURLPath:  defaultTracesURLPath,
+				MetricsURLPath: defaultMetricsURLPath,
+				LogsURLPath:    defaultLogsURLPath,
+			},
+		},
 	}
 
 	// Traces
@@ -374,8 +392,13 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *errOrSinkConsumer, enco
 	case "gzip":
 		buf, err = compressGzip(traceJSON)
 		require.NoError(t, err, "Error while gzip compressing trace: %v", err)
-	default:
+	case "zstd":
+		buf, err = compressZstd(traceJSON)
+		require.NoError(t, err, "Error while zstd compressing trace: %v", err)
+	case "":
 		buf = bytes.NewBuffer(traceJSON)
+	default:
+		t.Fatalf("Unsupported compression type %v", encoding)
 	}
 	sink.SetConsumeError(expectedErr)
 	req, err := http.NewRequest(http.MethodPost, url, buf)
@@ -428,6 +451,10 @@ func TestProtoHttp(t *testing.T) {
 			encoding: "gzip",
 		},
 		{
+			name:     "ProtoZstdCompressed",
+			encoding: "zstd",
+		},
+		{
 			name:     "NotGRPCError",
 			encoding: "",
 			err:      errors.New("my error"),
@@ -442,7 +469,7 @@ func TestProtoHttp(t *testing.T) {
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	tSink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
-	ocr := newHTTPReceiver(t, addr, tSink, consumertest.NewNop())
+	ocr := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, defaultLogsURLPath, tSink, consumertest.NewNop())
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
@@ -458,7 +485,7 @@ func TestProtoHttp(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			url := fmt.Sprintf("http://%s/v1/traces", addr)
+			url := fmt.Sprintf("http://%s%s", addr, defaultTracesURLPath)
 			tSink.Reset()
 			testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, td)
 		})
@@ -477,8 +504,13 @@ func createHTTPProtobufRequest(
 	case "gzip":
 		buf, err = compressGzip(traceBytes)
 		require.NoError(t, err, "Error while gzip compressing trace: %v", err)
-	default:
+	case "zstd":
+		buf, err = compressZstd(traceBytes)
+		require.NoError(t, err, "Error while zstd compressing trace: %v", err)
+	case "":
 		buf = bytes.NewBuffer(traceBytes)
+	default:
+		t.Fatalf("Unsupported compression type %v", encoding)
 	}
 	req, err := http.NewRequest(http.MethodPost, url, buf)
 	require.NoError(t, err, "Error creating trace POST request: %v", err)
@@ -567,18 +599,30 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			},
 			status: 400,
 		},
+		{
+			name:     "ProtoZstdUncompressed",
+			content:  "application/x-protobuf",
+			encoding: "zstd",
+			reqBodyFunc: func() (*bytes.Buffer, error) {
+				return bytes.NewBuffer([]byte(`{"key": "value"}`)), nil
+			},
+			resBodyFunc: func() ([]byte, error) {
+				return proto.Marshal(status.New(codes.InvalidArgument, "invalid input: magic number mismatch").Proto())
+			},
+			status: 400,
+		},
 	}
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	tSink := new(consumertest.TracesSink)
 	mSink := new(consumertest.MetricsSink)
-	ocr := newHTTPReceiver(t, addr, tSink, mSink)
+	ocr := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, defaultLogsURLPath, tSink, mSink)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
-	url := fmt.Sprintf("http://%s/v1/traces", addr)
+	url := fmt.Sprintf("http://%s%s", addr, defaultTracesURLPath)
 
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
@@ -632,7 +676,7 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 		assert.NoError(t, ln.Close())
 	})
 
-	r := newHTTPReceiver(t, addr, consumertest.NewNop(), consumertest.NewNop())
+	r := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, defaultLogsURLPath, consumertest.NewNop(), consumertest.NewNop())
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -743,7 +787,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
-	ocr := newHTTPReceiver(t, addr, sink, nil)
+	ocr := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, defaultLogsURLPath, sink, nil)
 	require.NotNil(t, ocr)
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
@@ -758,7 +802,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 		pbMarshaler := ptrace.ProtoMarshaler{}
 		pbBytes, err := pbMarshaler.MarshalTraces(td)
 		require.NoError(t, err)
-		req, err := http.NewRequest(http.MethodPost, "http://"+addr+"/v1/traces", bytes.NewReader(pbBytes))
+		req, err := http.NewRequest(http.MethodPost, "http://"+addr+defaultTracesURLPath, bytes.NewReader(pbBytes))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", pbContentType)
 		resp, err := http.DefaultClient.Do(req)
@@ -856,13 +900,18 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
-			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint: testutil.GetAvailableLocalAddress(t),
-				TLSSetting: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
-						CertFile: "willfail",
+			HTTP: &HTTPConfig{
+				HTTPServerSettings: &confighttp.HTTPServerSettings{
+					Endpoint: testutil.GetAvailableLocalAddress(t),
+					TLSSetting: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "willfail",
+						},
 					},
 				},
+				TracesURLPath:  defaultTracesURLPath,
+				MetricsURLPath: defaultMetricsURLPath,
+				LogsURLPath:    defaultLogsURLPath,
 			},
 		},
 	}
@@ -884,9 +933,14 @@ func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expe
 	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
 	cfg := &Config{
 		Protocols: Protocols{
-			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint:           endpoint,
-				MaxRequestBodySize: int64(size),
+			HTTP: &HTTPConfig{
+				HTTPServerSettings: &confighttp.HTTPServerSettings{
+					Endpoint:           endpoint,
+					MaxRequestBodySize: int64(size),
+				},
+				TracesURLPath:  defaultTracesURLPath,
+				MetricsURLPath: defaultMetricsURLPath,
+				LogsURLPath:    defaultLogsURLPath,
 			},
 		},
 	}
@@ -930,10 +984,13 @@ func newGRPCReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consu
 	return newReceiver(t, factory, cfg, otlpReceiverID, tc, mc)
 }
 
-func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consumer.Metrics) component.Component {
+func newHTTPReceiver(t *testing.T, endpoint string, tracesURLPath string, metricsURLPath string, logsURLPath string, tc consumer.Traces, mc consumer.Metrics) component.Component {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTP.Endpoint = endpoint
+	cfg.HTTP.TracesURLPath = tracesURLPath
+	cfg.HTTP.MetricsURLPath = metricsURLPath
+	cfg.HTTP.LogsURLPath = logsURLPath
 	cfg.GRPC = nil
 	return newReceiver(t, factory, cfg, otlpReceiverID, tc, mc)
 }
@@ -962,6 +1019,24 @@ func compressGzip(body []byte) (*bytes.Buffer, error) {
 	defer gw.Close()
 
 	_, err := gw.Write(body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &buf, nil
+}
+
+func compressZstd(body []byte) (*bytes.Buffer, error) {
+	var buf bytes.Buffer
+
+	zw, err := zstd.NewWriter(&buf)
+	if err != nil {
+		return nil, err
+	}
+
+	defer zw.Close()
+
+	_, err = zw.Write(body)
 	if err != nil {
 		return nil, err
 	}

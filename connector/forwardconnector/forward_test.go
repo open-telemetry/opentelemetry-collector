@@ -19,7 +19,7 @@ import (
 func TestForward(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig()
-	assert.Equal(t, &struct{}{}, cfg)
+	assert.Equal(t, &Config{}, cfg)
 
 	ctx := context.Background()
 	set := connectortest.NewNopCreateSettings()
