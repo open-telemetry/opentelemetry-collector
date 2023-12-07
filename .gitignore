@@ -1,5 +1,6 @@
 bin/
 dist/
+local/
 .tools/
 
 # GoLand IDEA
