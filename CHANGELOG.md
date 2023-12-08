@@ -7,6 +7,33 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.90.1
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Remove noisy log (#9017)
+
+## v1.0.0/v0.90.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: To remain backwards compatible w/ the metrics generated today, otel generated metrics will be generated without the `_total` suffix (#7454)
+- `service`: use WithNamespace instead of WrapRegistererWithPrefix (#8988)
+  Using this functionality in the otel prom exporter fixes a bug where the
+  target_info was prefixed as otelcol_target_info previously.
+  
+
+### 💡 Enhancements 💡
+
+- `exporter/debug`: Change default `verbosity` from `normal` to `basic` (#8844)
+  This change has currently no effect, as `basic` and `normal` verbosity share the same behavior. This might change in the future though, with the `normal` verbosity being more verbose than it currently is (see https://github.com/open-telemetry/opentelemetry-collector/issues/7806). This is why we are changing the default to `basic`, which is expected to stay at the current level of verbosity (one line per batch).
+- `exporterhelper`: Fix shutdown logic in persistent queue to not require consumers to be closed first (#8899)
+- `confighttp`: Support proxy configuration field in all exporters that support confighttp (#5761)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix invalid write index updates in the persistent queue (#8115)
+
 ## v1.0.0-rcv0018/v0.89.0
 
 ### 💡 Enhancements 💡

@@ -6,9 +6,11 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/rs/cors"
@@ -31,6 +33,9 @@ const headerContentEncoding = "Content-Encoding"
 type HTTPClientSettings struct {
 	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
 	Endpoint string `mapstructure:"endpoint"`
+
+	// ProxyURL setting for the collector
+	ProxyURL string `mapstructure:"proxy_url"`
 
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
@@ -82,6 +87,16 @@ type HTTPClientSettings struct {
 	// connection for every request. Before enabling this option please consider whether changes
 	// to idle connection settings can achieve your goal.
 	DisableKeepAlives bool `mapstructure:"disable_keep_alives"`
+
+	// This is needed in case you run into
+	// https://github.com/golang/go/issues/59690
+	// https://github.com/golang/go/issues/36026
+	// HTTP2ReadIdleTimeout if the connection has been idle for the configured value send a ping frame for health check
+	// 0s means no health check will be performed.
+	HTTP2ReadIdleTimeout time.Duration `mapstructure:"http2_read_idle_timeout"`
+	// HTTP2PingTimeout if there's no response to the ping within the configured value, the connection will be closed.
+	// If not set or set to 0, it defaults to 15s.
+	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout"`
 }
 
 // NewDefaultHTTPClientSettings returns HTTPClientSettings type object with
@@ -132,7 +147,25 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 		transport.IdleConnTimeout = *hcs.IdleConnTimeout
 	}
 
+	// Setting the Proxy URL
+	if hcs.ProxyURL != "" {
+		proxyURL, parseErr := url.ParseRequestURI(hcs.ProxyURL)
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		transport.Proxy = http.ProxyURL(proxyURL)
+	}
+
 	transport.DisableKeepAlives = hcs.DisableKeepAlives
+
+	if hcs.HTTP2ReadIdleTimeout > 0 {
+		transport2, transportErr := http2.ConfigureTransports(transport)
+		if transportErr != nil {
+			return nil, fmt.Errorf("failed to configure http2 transport: %w", transportErr)
+		}
+		transport2.ReadIdleTimeout = hcs.HTTP2ReadIdleTimeout
+		transport2.PingTimeout = hcs.HTTP2PingTimeout
+	}
 
 	clientTransport := (http.RoundTripper)(transport)
 

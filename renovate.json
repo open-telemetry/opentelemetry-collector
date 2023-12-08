@@ -25,6 +25,15 @@
         "groupName": "github-actions deps"
       },
       {
+        "groupName": "all patch dependencies",
+        "matchPackagePatterns": [
+          "*"
+        ],
+        "matchUpdateTypes": [
+          "patch"
+        ]
+      },
+      {
         "matchManagers": ["gomod"],
         "matchUpdateTypes": ["minor", "major"]
       }

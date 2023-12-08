@@ -41,3 +41,12 @@ type RequestMarshaler func(req Request) ([]byte, error)
 // This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type RequestUnmarshaler func(data []byte) (Request, error)
+
+// extractPartialRequest returns a new Request that may contain the items left to be sent
+// if only some items failed to process and can be retried. Otherwise, it returns the original Request.
+func extractPartialRequest(req Request, err error) Request {
+	if errReq, ok := req.(RequestErrorHandler); ok {
+		return errReq.OnError(err)
+	}
+	return req
+}

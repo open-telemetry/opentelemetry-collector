@@ -1,3 +1,4 @@
+SHELL = /bin/bash
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
 ALL_PKGS := $(sort $(shell go list ./...))
 # COVER_PKGS is the list of packages to include in the coverage
@@ -30,9 +31,8 @@ IMPI         := $(TOOLS_BIN_DIR)/impi
 MISSPELL     := $(TOOLS_BIN_DIR)/misspell
 MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
 PORTO        := $(TOOLS_BIN_DIR)/porto
+SEMCONVGEN   := $(TOOLS_BIN_DIR)/semconvgen
 YQ           := $(TOOLS_BIN_DIR)/yq
-
-GH := $(shell which gh)
 
 .PHONY: install-tools
 install-tools: $(TOOLS_BIN_NAMES) $(YQ)

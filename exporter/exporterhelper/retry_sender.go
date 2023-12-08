@@ -73,29 +73,20 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 	}
 }
 
-type onRequestHandlingFinishedFunc func(context.Context, Request, error, *zap.Logger) error
-
 type retrySender struct {
 	baseRequestSender
-	traceAttribute     attribute.KeyValue
-	cfg                RetrySettings
-	stopCh             chan struct{}
-	logger             *zap.Logger
-	onTemporaryFailure onRequestHandlingFinishedFunc
+	traceAttribute attribute.KeyValue
+	cfg            RetrySettings
+	stopCh         chan struct{}
+	logger         *zap.Logger
 }
 
-func newRetrySender(config RetrySettings, set exporter.CreateSettings, onTemporaryFailure onRequestHandlingFinishedFunc) *retrySender {
-	if onTemporaryFailure == nil {
-		onTemporaryFailure = func(_ context.Context, _ Request, err error, _ *zap.Logger) error {
-			return err
-		}
-	}
+func newRetrySender(config RetrySettings, set exporter.CreateSettings) *retrySender {
 	return &retrySender{
-		traceAttribute:     attribute.String(obsmetrics.ExporterKey, set.ID.String()),
-		cfg:                config,
-		stopCh:             make(chan struct{}),
-		logger:             set.Logger,
-		onTemporaryFailure: onTemporaryFailure,
+		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
+		cfg:            config,
+		stopCh:         make(chan struct{}),
+		logger:         set.Logger,
 	}
 }
 
@@ -140,17 +131,11 @@ func (rs *retrySender) send(ctx context.Context, req Request) error {
 			return err
 		}
 
-		// Give the request a chance to extract signal data to retry if only some data
-		// failed to process.
-		if errReq, ok := req.(RequestErrorHandler); ok {
-			req = errReq.OnError(err)
-		}
+		req = extractPartialRequest(req, err)
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
-			// throw away the batch
-			err = fmt.Errorf("max elapsed time expired %w", err)
-			return rs.onTemporaryFailure(ctx, req, err, rs.logger)
+			return fmt.Errorf("max elapsed time expired %w", err)
 		}
 
 		throttleErr := throttleRetry{}
@@ -178,7 +163,7 @@ func (rs *retrySender) send(ctx context.Context, req Request) error {
 		case <-ctx.Done():
 			return fmt.Errorf("request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
-			return rs.onTemporaryFailure(ctx, req, fmt.Errorf("interrupted due to shutdown %w", err), rs.logger)
+			return fmt.Errorf("interrupted due to shutdown %w", err)
 		case <-time.After(backoffDelay):
 		}
 	}

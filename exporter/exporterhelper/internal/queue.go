@@ -27,9 +27,10 @@ type Queue[T any] interface {
 	// without violating capacity restrictions. If success returns no error.
 	// It returns ErrQueueIsFull if no space is currently available.
 	Offer(ctx context.Context, item T) error
-	// Poll returns the head of this queue. The call blocks until there is an item available.
-	// It returns false if the queue is stopped.
-	Poll() (QueueRequest[T], bool)
+	// Consume applies the provided function on the head of queue.
+	// The call blocks until there is an item available or the queue is stopped.
+	// The function returns true when an item is consumed or false if the queue is stopped.
+	Consume(func(ctx context.Context, item T)) bool
 	// Size returns the current Size of the queue
 	Size() int
 	// Capacity returns the capacity of the queue.

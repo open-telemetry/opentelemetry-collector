@@ -53,6 +53,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 	maxIdleConnsPerHost := 40
 	maxConnsPerHost := 45
 	idleConnTimeout := 30 * time.Second
+	http2PingTimeout := 5 * time.Second
 	tests := []struct {
 		name        string
 		settings    HTTPClientSettings
@@ -65,15 +66,17 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
-				ReadBufferSize:      1024,
-				WriteBufferSize:     512,
-				MaxIdleConns:        &maxIdleConns,
-				MaxIdleConnsPerHost: &maxIdleConnsPerHost,
-				MaxConnsPerHost:     &maxConnsPerHost,
-				IdleConnTimeout:     &idleConnTimeout,
-				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
-				Compression:         "",
-				DisableKeepAlives:   true,
+				ReadBufferSize:       1024,
+				WriteBufferSize:      512,
+				MaxIdleConns:         &maxIdleConns,
+				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
+				MaxConnsPerHost:      &maxConnsPerHost,
+				IdleConnTimeout:      &idleConnTimeout,
+				CustomRoundTripper:   func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				Compression:          "",
+				DisableKeepAlives:    true,
+				HTTP2ReadIdleTimeout: idleConnTimeout,
+				HTTP2PingTimeout:     http2PingTimeout,
 			},
 			shouldError: false,
 		},
@@ -84,15 +87,17 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
-				ReadBufferSize:      1024,
-				WriteBufferSize:     512,
-				MaxIdleConns:        &maxIdleConns,
-				MaxIdleConnsPerHost: &maxIdleConnsPerHost,
-				MaxConnsPerHost:     &maxConnsPerHost,
-				IdleConnTimeout:     &idleConnTimeout,
-				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
-				Compression:         "none",
-				DisableKeepAlives:   true,
+				ReadBufferSize:       1024,
+				WriteBufferSize:      512,
+				MaxIdleConns:         &maxIdleConns,
+				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
+				MaxConnsPerHost:      &maxConnsPerHost,
+				IdleConnTimeout:      &idleConnTimeout,
+				CustomRoundTripper:   func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				Compression:          "none",
+				DisableKeepAlives:    true,
+				HTTP2ReadIdleTimeout: idleConnTimeout,
+				HTTP2PingTimeout:     http2PingTimeout,
 			},
 			shouldError: false,
 		},
@@ -103,15 +108,38 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
-				ReadBufferSize:      1024,
-				WriteBufferSize:     512,
-				MaxIdleConns:        &maxIdleConns,
-				MaxIdleConnsPerHost: &maxIdleConnsPerHost,
-				MaxConnsPerHost:     &maxConnsPerHost,
-				IdleConnTimeout:     &idleConnTimeout,
-				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
-				Compression:         "gzip",
-				DisableKeepAlives:   true,
+				ReadBufferSize:       1024,
+				WriteBufferSize:      512,
+				MaxIdleConns:         &maxIdleConns,
+				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
+				MaxConnsPerHost:      &maxConnsPerHost,
+				IdleConnTimeout:      &idleConnTimeout,
+				CustomRoundTripper:   func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				Compression:          "gzip",
+				DisableKeepAlives:    true,
+				HTTP2ReadIdleTimeout: idleConnTimeout,
+				HTTP2PingTimeout:     http2PingTimeout,
+			},
+			shouldError: false,
+		},
+		{
+			name: "all_valid_settings_http2_health_check",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:       1024,
+				WriteBufferSize:      512,
+				MaxIdleConns:         &maxIdleConns,
+				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
+				MaxConnsPerHost:      &maxConnsPerHost,
+				IdleConnTimeout:      &idleConnTimeout,
+				CustomRoundTripper:   func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				Compression:          "gzip",
+				DisableKeepAlives:    true,
+				HTTP2ReadIdleTimeout: idleConnTimeout,
+				HTTP2PingTimeout:     http2PingTimeout,
 			},
 			shouldError: false,
 		},
@@ -206,6 +234,61 @@ func TestDefaultHTTPClientSettings(t *testing.T) {
 	httpClientSettings := NewDefaultHTTPClientSettings()
 	assert.EqualValues(t, 100, *httpClientSettings.MaxIdleConns)
 	assert.EqualValues(t, 90*time.Second, *httpClientSettings.IdleConnTimeout)
+}
+
+func TestProxyURL(t *testing.T) {
+	testCases := []struct {
+		desc        string
+		proxyURL    string
+		expectedURL *url.URL
+		err         bool
+	}{
+		{
+			desc:        "default config",
+			expectedURL: nil,
+		},
+		{
+			desc:        "proxy is set",
+			proxyURL:    "http://proxy.example.com:8080",
+			expectedURL: &url.URL{Scheme: "http", Host: "proxy.example.com:8080"},
+		},
+		{
+			desc:     "proxy is invalid",
+			proxyURL: "://example.com",
+			err:      true,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			s := NewDefaultHTTPClientSettings()
+			s.ProxyURL = tC.proxyURL
+
+			tt := componenttest.NewNopTelemetrySettings()
+			tt.TracerProvider = nil
+			client, err := s.ToClient(componenttest.NewNopHost(), tt)
+
+			if tC.err {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			if err == nil {
+				transport := client.Transport.(*http.Transport)
+				require.NotNil(t, transport.Proxy)
+
+				url, err := transport.Proxy(&http.Request{URL: &url.URL{Scheme: "http", Host: "example.com"}})
+				require.NoError(t, err)
+
+				if tC.expectedURL == nil {
+					assert.Nil(t, url)
+				} else {
+					require.NotNil(t, url)
+					assert.Equal(t, tC.expectedURL, url)
+				}
+			}
+		})
+	}
 }
 
 func TestHTTPClientSettingsError(t *testing.T) {
