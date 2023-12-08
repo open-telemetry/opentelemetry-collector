@@ -30,7 +30,8 @@ type Queue[T any] interface {
 	// Consume applies the provided function on the head of queue.
 	// The call blocks until there is an item available or the queue is stopped.
 	// The function returns true when an item is consumed or false if the queue is stopped.
-	Consume(func(ctx context.Context, item T)) bool
+	// The provided callback function returns true if the item was consumed or false if the consumer is stopped.
+	Consume(func(ctx context.Context, item T) bool) bool
 	// Size returns the current Size of the queue
 	Size() int
 	// Capacity returns the capacity of the queue.
