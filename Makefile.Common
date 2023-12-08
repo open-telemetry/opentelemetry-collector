@@ -31,6 +31,7 @@ IMPI         := $(TOOLS_BIN_DIR)/impi
 MISSPELL     := $(TOOLS_BIN_DIR)/misspell
 MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
 PORTO        := $(TOOLS_BIN_DIR)/porto
+SEMCONVGEN   := $(TOOLS_BIN_DIR)/semconvgen
 YQ           := $(TOOLS_BIN_DIR)/yq
 
 .PHONY: install-tools
