@@ -24,6 +24,7 @@ import (
 	_ "go.opentelemetry.io/build-tools/crosslink"
 	_ "go.opentelemetry.io/build-tools/multimod"
 	_ "go.opentelemetry.io/build-tools/semconvgen"
+	_ "go.opentelemetry.io/collector/internal/tools/semconvkit"
 	_ "golang.org/x/exp/cmd/apidiff"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/vuln/cmd/govulncheck"
