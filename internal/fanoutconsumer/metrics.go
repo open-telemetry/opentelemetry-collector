@@ -42,7 +42,7 @@ type metricsConsumer struct {
 }
 
 func (msc *metricsConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	return consumer.Capabilities{MutatesData: len(msc.mutable) > 0}
 }
 
 // ConsumeMetrics exports the pmetric.Metrics to all consumers wrapped by the current one.
