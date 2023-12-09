@@ -44,7 +44,7 @@ type logsConsumer struct {
 }
 
 func (lsc *logsConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	return consumer.Capabilities{MutatesData: len(lsc.mutable) > 0}
 }
 
 // ConsumeLogs exports the plog.Logs to all consumers wrapped by the current one.
