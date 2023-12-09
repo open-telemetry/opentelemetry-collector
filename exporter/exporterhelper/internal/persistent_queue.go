@@ -168,24 +168,16 @@ func (pq *persistentQueue[T]) size() uint64 {
 	return pq.writeIndex - pq.readIndex
 }
 
-// Size returns the number of currently available items, which were not picked by consumers yet
-func (pq *persistentQueue[T]) Size() int {
-	pq.mu.Lock()
-	defer pq.mu.Unlock()
-	return int(pq.size())
-}
-
-// Capacity returns the number of currently available items, which were not picked by consumers yet
-func (pq *persistentQueue[T]) Capacity() int {
-	return int(pq.capacity)
-}
-
 func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
 	close(pq.stopChan)
 	// Hold the lock only for `refClient`.
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 	return pq.unrefClient(ctx)
+}
+
+func (pq *persistentQueue[T]) RequeuingAllowed() bool {
+	return true
 }
 
 // unrefClient unrefs the client, and closes if no more references. Callers MUST hold the mutex.
@@ -210,7 +202,7 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 // putInternal is the internal version that requires caller to hold the mutex lock.
 func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	if pq.size() >= pq.capacity {
-		pq.set.Logger.Warn("Maximum queue capacity reached")
+		// Should never happen, capacityLimiter should have prevented the overflow.
 		return ErrQueueIsFull
 	}
 

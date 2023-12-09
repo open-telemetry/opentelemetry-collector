@@ -147,7 +147,7 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	mockR.checkNumRequests(t, 1)
 	ocs.checkSendItemsCount(t, 2)
 	ocs.checkDroppedItemsCount(t, 7)
-	require.Zero(t, be.queueSender.(*queueSender).queue.Size())
+	require.Zero(t, be.queueSender.(*queueSender).queueController.Size())
 }
 
 type wrappedError struct {
@@ -186,7 +186,7 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 	mockR.checkNumRequests(t, 2)
 	ocs.checkSendItemsCount(t, 2)
 	ocs.checkDroppedItemsCount(t, 0)
-	require.Zero(t, be.queueSender.(*queueSender).queue.Size())
+	require.Zero(t, be.queueSender.(*queueSender).queueController.Size())
 }
 
 func TestQueuedRetry_RetryOnError(t *testing.T) {
@@ -214,7 +214,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 	mockR.checkNumRequests(t, 2)
 	ocs.checkSendItemsCount(t, 2)
 	ocs.checkDroppedItemsCount(t, 0)
-	require.Zero(t, be.queueSender.(*queueSender).queue.Size())
+	require.Zero(t, be.queueSender.(*queueSender).queueController.Size())
 }
 
 func TestQueueRetryWithNoQueue(t *testing.T) {

@@ -30,30 +30,30 @@ func TestBoundedQueue(t *testing.T) {
 
 	consumerState := newConsumerState(t)
 
-	consumers := NewQueueConsumers(q, 1, func(_ context.Context, item string) {
+	qc := NewQueueController[string](q, NewRequestsCapacityLimiter[string](1), 1, func(_ context.Context, item string) {
 		consumerState.record(item)
 		<-waitCh
 	})
-	assert.NoError(t, consumers.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, qc.Start(context.Background(), componenttest.NewNopHost()))
 
-	assert.NoError(t, q.Offer(context.Background(), "a"))
+	assert.NoError(t, qc.Offer(context.Background(), "a"))
 
 	// at this point "a" may or may not have been received by the consumer go-routine
 	// so let's make sure it has been
 	consumerState.waitToConsumeOnce()
 
 	// at this point the item must have been read off the queue, but the consumer is blocked
-	assert.Equal(t, 0, q.Size())
+	assert.Equal(t, 0, qc.Size())
 	consumerState.assertConsumed(map[string]bool{
 		"a": true,
 	})
 
 	// produce two more items. The first one should be accepted, but not consumed.
-	assert.NoError(t, q.Offer(context.Background(), "b"))
-	assert.Equal(t, 1, q.Size())
+	assert.NoError(t, qc.Offer(context.Background(), "b"))
+	assert.Equal(t, 1, qc.Size())
 	// the second should be rejected since the queue is full
-	assert.ErrorIs(t, q.Offer(context.Background(), "c"), ErrQueueIsFull)
-	assert.Equal(t, 1, q.Size())
+	assert.ErrorIs(t, qc.Offer(context.Background(), "c"), ErrQueueIsFull)
+	assert.Equal(t, 1, qc.Size())
 
 	close(waitCh) // unblock consumer
 
@@ -68,13 +68,13 @@ func TestBoundedQueue(t *testing.T) {
 		"b": true,
 	}
 	for _, item := range []string{"d", "e", "f"} {
-		assert.NoError(t, q.Offer(context.Background(), item))
+		assert.NoError(t, qc.Offer(context.Background(), item))
 		expected[item] = true
 		consumerState.assertConsumed(expected)
 	}
 
-	assert.NoError(t, consumers.Shutdown(context.Background()))
-	assert.ErrorIs(t, q.Offer(context.Background(), "x"), ErrQueueIsStopped)
+	assert.NoError(t, qc.Shutdown(context.Background()))
+	assert.ErrorIs(t, qc.Offer(context.Background(), "x"), ErrQueueIsStopped)
 }
 
 // In this test we run a queue with many items and a slow consumer.
@@ -89,34 +89,34 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	consumerState := newConsumerState(t)
 
 	waitChan := make(chan struct{})
-	consumers := NewQueueConsumers(q, 5, func(_ context.Context, item string) {
+	qc := NewQueueController[string](q, NewRequestsCapacityLimiter[string](1000), 1, func(_ context.Context, item string) {
 		<-waitChan
 		consumerState.record(item)
 	})
-	assert.NoError(t, consumers.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, qc.Start(context.Background(), componenttest.NewNopHost()))
 
-	assert.NoError(t, q.Offer(context.Background(), "a"))
-	assert.NoError(t, q.Offer(context.Background(), "b"))
-	assert.NoError(t, q.Offer(context.Background(), "c"))
-	assert.NoError(t, q.Offer(context.Background(), "d"))
-	assert.NoError(t, q.Offer(context.Background(), "e"))
-	assert.NoError(t, q.Offer(context.Background(), "f"))
-	assert.NoError(t, q.Offer(context.Background(), "g"))
-	assert.NoError(t, q.Offer(context.Background(), "h"))
-	assert.NoError(t, q.Offer(context.Background(), "i"))
-	assert.NoError(t, q.Offer(context.Background(), "j"))
+	assert.NoError(t, qc.Offer(context.Background(), "a"))
+	assert.NoError(t, qc.Offer(context.Background(), "b"))
+	assert.NoError(t, qc.Offer(context.Background(), "c"))
+	assert.NoError(t, qc.Offer(context.Background(), "d"))
+	assert.NoError(t, qc.Offer(context.Background(), "e"))
+	assert.NoError(t, qc.Offer(context.Background(), "f"))
+	assert.NoError(t, qc.Offer(context.Background(), "g"))
+	assert.NoError(t, qc.Offer(context.Background(), "h"))
+	assert.NoError(t, qc.Offer(context.Background(), "i"))
+	assert.NoError(t, qc.Offer(context.Background(), "j"))
 
 	// we block the workers and wait for the queue to start rejecting new items to release the lock.
 	// This ensures that we test that the queue has been called to shutdown while items are still in the queue.
 	go func() {
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
 			// ensure the request is rejected due to closed queue
-			assert.ErrorIs(t, q.Offer(context.Background(), "x"), ErrQueueIsStopped)
+			assert.ErrorIs(t, qc.Offer(context.Background(), "x"), ErrQueueIsStopped)
 		}, 1*time.Second, 10*time.Millisecond)
 		close(waitChan)
 	}()
 
-	assert.NoError(t, consumers.Shutdown(context.Background()))
+	assert.NoError(t, qc.Shutdown(context.Background()))
 
 	consumerState.assertConsumed(map[string]bool{
 		"a": true,
@@ -130,7 +130,7 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 		"i": true,
 		"j": true,
 	})
-	assert.Equal(t, 0, q.Size())
+	assert.Equal(t, 0, qc.Size())
 }
 
 func Benchmark_QueueUsage_10000_1_50000(b *testing.B) {
@@ -179,7 +179,7 @@ func queueUsage(b *testing.B, capacity int, numConsumers int, numberOfItems int)
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		q := NewBoundedMemoryQueue[string](capacity)
-		consumers := NewQueueConsumers(q, numConsumers, func(context.Context, string) {
+		consumers := NewQueueController[string](q, NewRequestsCapacityLimiter[string](capacity), numConsumers, func(context.Context, string) {
 			time.Sleep(1 * time.Millisecond)
 		})
 		require.NoError(b, consumers.Start(context.Background(), componenttest.NewNopHost()))
@@ -238,7 +238,7 @@ func (s *consumerState) assertConsumed(expected map[string]bool) {
 func TestZeroSizeWithConsumers(t *testing.T) {
 	q := NewBoundedMemoryQueue[string](0)
 
-	consumers := NewQueueConsumers(q, 1, func(context.Context, string) {})
+	consumers := NewQueueController[string](q, NewRequestsCapacityLimiter[string](1), 1, func(context.Context, string) {})
 	assert.NoError(t, consumers.Start(context.Background(), componenttest.NewNopHost()))
 
 	assert.NoError(t, q.Offer(context.Background(), "a")) // in process

@@ -40,6 +40,7 @@ func (q *boundedMemoryQueue[T]) Offer(ctx context.Context, req T) error {
 	case q.items <- queueRequest[T]{ctx: ctx, req: req}:
 		return nil
 	default:
+		// Should never happen, capacityLimiter should have prevented the overflow.
 		return ErrQueueIsFull
 	}
 }
@@ -63,13 +64,8 @@ func (q *boundedMemoryQueue[T]) Shutdown(context.Context) error {
 	return nil
 }
 
-// Size returns the current size of the queue
-func (q *boundedMemoryQueue[T]) Size() int {
-	return len(q.items)
-}
-
-func (q *boundedMemoryQueue[T]) Capacity() int {
-	return cap(q.items)
+func (q *boundedMemoryQueue[T]) RequeuingAllowed() bool {
+	return false
 }
 
 type queueRequest[T any] struct {
