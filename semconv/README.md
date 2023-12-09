@@ -16,8 +16,3 @@ Generating semantic convention constants from specification version v1.22.0 at /
 .tools/semconvgen -o semconv/v1.22.0 -t semconv/template.j2 -s v1.22.0 -i /tmp/semantic-conventions/model/. --only=event -p conventionType=event -f generated_event.go
 .tools/semconvgen -o semconv/v1.22.0 -t semconv/template.j2 -s v1.22.0 -i /tmp/semantic-conventions/model/. --only=span -p conventionType=trace -f generated_trace.go
 ```
-
-When generating the constants for a new version ot the specification it is important to note that only
-`generated_trace.go` and `generated_resource.go` are generated automatically. The `schema.go` and `nonstandard.go`
-files should be copied from a prior version's package and updated as appropriate. Most important will be to update
-the `SchemaURL` constant in `schema.go`.
