@@ -39,5 +39,20 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.CheckInterval <= 0 {
+		return errCheckIntervalOutOfRange
+	}
+	if cfg.MemoryLimitMiB == 0 && cfg.MemoryLimitPercentage == 0 {
+		return errLimitOutOfRange
+	}
+	if cfg.MemoryLimitPercentage > 100 || cfg.MemorySpikePercentage > 100 {
+		return errPercentageLimitOutOfRange
+	}
+	if cfg.MemoryLimitMiB > 0 && cfg.MemoryLimitMiB <= cfg.MemorySpikeLimitMiB {
+		return errMemSpikeLimitOutOfRange
+	}
+	if cfg.MemoryLimitPercentage > 0 && cfg.MemoryLimitPercentage <= cfg.MemorySpikePercentage {
+		return errMemSpikePercentageLimitOutOfRange
+	}
 	return nil
 }
