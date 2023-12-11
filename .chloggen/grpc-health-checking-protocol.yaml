@@ -7,7 +7,7 @@ change_type: enhancement
 component: configgrpc
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Enable gRPC Health Checking Protocol on Open Telemetry Collector OTLP Receiver"
+note: "Enable gRPC Health Checking Protocol for any component that uses `configgrpc`, such as the Open Telemetry Collector OTLP Receiver"
 
 # One or more tracking issues or pull requests related to the change
 issues: [8955]
