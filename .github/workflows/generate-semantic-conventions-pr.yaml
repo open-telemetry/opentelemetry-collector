@@ -94,7 +94,7 @@ jobs:
           pull_request_number=${url//*\//}
           
           # see the template for change log entry file at blob/main/.chloggen/TEMPLATE.yaml
-          cat > .chloggen/add-jmx-metrics-gatherer-$VERSION.yaml << EOF
+          cat > .chloggen/semconv-$VERSION.yaml << EOF
           change_type: enhancement
           component: semconv
           note: Add semantic conventions version $VERSION
