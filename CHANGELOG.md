@@ -7,6 +7,25 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.91.0
+
+### 💡 Enhancements 💡
+
+- `statusreporting`: Automates status reporting upon the completion of component.Start(). (#7682)
+- `service`: add resource attributes as labels to otel metrics to ensures backwards compatibility with OpenCensus metrics. (#9029)
+- `semconv`: Generated Semantic conventions 1.21. (#9056)
+- `config/confighttp`: Exposes http/2 transport settings to enable health check and workaround golang http/2 issue https://github.com/golang/go/issues/59690 (#9022)
+- `cmd/builder`: running builder version on binaries installed with `go install` will output the version specified at the suffix. (#8770)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: fix missed metric aggregations (#9048)
+  This ensures that context cancellation in the exporter doesn't interfere with metric aggregation. The OTel
+  SDK currently returns if there's an error in the context used in `Add`. This means that if there's a
+  cancelled context in an export, the metrics are now recorded.
+  
+- `service`: Fix bug where MutatesData would not correctly propagate through connectors. (#9053)
+
 ## v0.90.1
 
 ### 🧰 Bug fixes 🧰
