@@ -148,7 +148,7 @@ func TestLogsMultiplexingMixLastMutating(t *testing.T) {
 	p3 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
 
 	lfc := NewLogs([]consumer.Logs{p1, p2, p3})
-	assert.True(t, lfc.Capabilities().MutatesData)
+	assert.False(t, lfc.Capabilities().MutatesData)
 	ld := testdata.GenerateLogs(1)
 
 	for i := 0; i < 2; i++ {
@@ -186,7 +186,7 @@ func TestLogsMultiplexingMixLastNonMutating(t *testing.T) {
 	p3 := new(consumertest.LogsSink)
 
 	lfc := NewLogs([]consumer.Logs{p1, p2, p3})
-	assert.True(t, lfc.Capabilities().MutatesData)
+	assert.False(t, lfc.Capabilities().MutatesData)
 	ld := testdata.GenerateLogs(1)
 
 	for i := 0; i < 2; i++ {
