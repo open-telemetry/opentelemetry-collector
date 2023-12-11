@@ -12,7 +12,45 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNetAddr(t *testing.T) {
+func Test_SetOrder(t *testing.T) {
+	t.Run("TestNetAddrTimeout", testNetAddrTimeout)
+	t.Run("TestTcpAddrTimeout", testTcpAddrTimeout)
+	t.Run("TestNetAddr", testNetAddr)
+	t.Run("testTcpAddr", testTcpAddr)
+}
+
+func testNetAddrTimeout(t *testing.T) {
+	nac := &NetAddr{
+		Endpoint:      "localhost:0",
+		Transport:     "tcp",
+		DialerTimeout: time.Millisecond,
+	}
+	_, err := nac.Dial()
+	assert.Error(t, err)
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		assert.True(t, netErr.Timeout())
+	} else {
+		assert.Fail(t, "error should be a net.Error")
+	}
+}
+
+func testTcpAddrTimeout(t *testing.T) {
+	nac := &TCPAddr{
+		Endpoint:      "localhost:0",
+		DialerTimeout: time.Millisecond,
+	}
+	_, err := nac.Dial()
+	assert.Error(t, err)
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		assert.True(t, netErr.Timeout())
+	} else {
+		assert.Fail(t, "error should be a net.Error")
+	}
+}
+
+func testNetAddr(t *testing.T) {
 	nas := &NetAddr{
 		Endpoint:  "localhost:0",
 		Transport: "tcp",
@@ -47,23 +85,7 @@ func TestNetAddr(t *testing.T) {
 	assert.NoError(t, ln.Close())
 }
 
-func TestNetAddrTimeout(t *testing.T) {
-	nac := &NetAddr{
-		Endpoint:      "localhost:0",
-		Transport:     "tcp",
-		DialerTimeout: time.Millisecond,
-	}
-	_, err := nac.Dial()
-	assert.Error(t, err)
-	var netErr net.Error
-	if errors.As(err, &netErr) {
-		assert.True(t, netErr.Timeout())
-	} else {
-		assert.Fail(t, "error should be a net.Error")
-	}
-}
-
-func TestTcpAddr(t *testing.T) {
+func testTcpAddr(t *testing.T) {
 	nas := &TCPAddr{
 		Endpoint: "localhost:0",
 	}
@@ -94,19 +116,4 @@ func TestTcpAddr(t *testing.T) {
 	assert.NoError(t, conn.Close())
 	<-done
 	assert.NoError(t, ln.Close())
-}
-
-func TestTcpAddrTimeout(t *testing.T) {
-	nac := &TCPAddr{
-		Endpoint:      "localhost:0",
-		DialerTimeout: time.Millisecond,
-	}
-	_, err := nac.Dial()
-	assert.Error(t, err)
-	var netErr net.Error
-	if errors.As(err, &netErr) {
-		assert.True(t, netErr.Timeout())
-	} else {
-		assert.Fail(t, "error should be a net.Error")
-	}
 }
