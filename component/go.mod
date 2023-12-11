@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/config/configtelemetry v0.90.1
-	go.opentelemetry.io/collector/confmap v0.90.1
+	go.opentelemetry.io/collector/config/configtelemetry v0.91.0
+	go.opentelemetry.io/collector/confmap v0.91.0
 	go.opentelemetry.io/collector/pdata v1.1.0
 	go.opentelemetry.io/otel/metric v1.21.0
 	go.opentelemetry.io/otel/trace v1.21.0
