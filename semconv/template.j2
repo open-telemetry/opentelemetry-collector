@@ -36,6 +36,9 @@ Examples: {{ attr.examples | pprint | trim("[]")  }}
 Note: {{ attr.note | render_markdown(paragraph="{0}", code="{0}", link="{1}", emphasis="{0}", strong="{0}") }}
 {%- endif %}
 {%- endmacro -%}
+{%- macro sentence_case(text) -%}
+    {{ text[0]|upper}}{{text[1:] }}
+{%- endmacro -%}
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -45,7 +48,7 @@ package semconv
 
 {% for semconv in semconvs -%}
 {%- if semconvs[semconv].attributes | rejectattr("ref") | selectattr("is_local") | sort(attribute=fqn) | length > 0 -%}
-// {{ semconvs[semconv].brief }}
+// {{ sentence_case(semconvs[semconv].brief | replace("This document defines ", "")) | wordwrap(76, break_long_words=false, break_on_hyphens=false, wrapstring="\n// ") }}
 const (
 {% for attr in semconvs[semconv].attributes if attr.is_local and not attr.ref -%}
     // {{ godoc(attr) | wordwrap | indent(3) | replace("   ", "\t// ") | replace("// //", "//") }}
