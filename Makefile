@@ -383,7 +383,7 @@ push-tags: $(MULTIMOD)
 	done;
 
 .PHONY: check-changes
-check-changes: $(YQ)
+check-changes: $(MULTIMOD)
 	# NOTE: ! inverses the return code of multimod diff. This is
 	# because prepare-release expects a 0 if there are diffs and
 	# non-0 if there are no diffs, which is the inverse of most
