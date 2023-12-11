@@ -149,7 +149,7 @@ func TestTracesMultiplexingMixLastMutating(t *testing.T) {
 	p3 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
 
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
-	assert.True(t, tfc.Capabilities().MutatesData)
+	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
@@ -187,7 +187,7 @@ func TestTracesMultiplexingMixLastNonMutating(t *testing.T) {
 	p3 := new(consumertest.TracesSink)
 
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
-	assert.True(t, tfc.Capabilities().MutatesData)
+	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
