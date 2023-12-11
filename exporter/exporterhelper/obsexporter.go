@@ -222,6 +222,15 @@ func (or *ObsReport) recordWithOtel(ctx context.Context, dataType component.Data
 
 	sentMeasure.Add(ctx, sent, metric.WithAttributes(or.otelAttrs...))
 	failedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))
+	// This is here to ensure the current healthcheck extension continues
+	// to work even when using OpenTelemetry for collector metrics
+	if failed > 0 {
+		_ = stats.RecordWithTags(
+			ctx,
+			or.mutators,
+			obsmetrics.ExporterFailedToSendSpans.M(failed))
+	}
+
 }
 
 func (or *ObsReport) recordWithOC(ctx context.Context, dataType component.DataType, sent int64, failed int64) {

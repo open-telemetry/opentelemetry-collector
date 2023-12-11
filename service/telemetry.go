@@ -33,6 +33,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -169,6 +170,19 @@ func (tel *telemetryInitializer) initMetrics(res *resource.Resource, logger *zap
 	if err != nil {
 		return err
 	}
+
+	// This is here to ensure the current healthcheck extension continues
+	// to work even when using OpenTelemetry for collector metrics
+	healthcheckView := &view.View{
+		Name:        obsmetrics.ExporterPrefix + "send_failed_requests",
+		Description: "number of times exporters failed to send requests to the destination",
+		Measure:     obsmetrics.ExporterFailedToSendSpans,
+		Aggregation: view.Count(),
+	}
+	if err := view.Register(healthcheckView); err != nil {
+		return err
+	}
+
 	tel.mp = mp
 	return nil
 }
