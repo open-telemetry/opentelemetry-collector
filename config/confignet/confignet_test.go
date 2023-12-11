@@ -14,9 +14,9 @@ import (
 
 func Test_SetOrder(t *testing.T) {
 	t.Run("TestNetAddrTimeout", testNetAddrTimeout)
-	t.Run("TestTcpAddrTimeout", testTcpAddrTimeout)
+	t.Run("TestTcpAddrTimeout", testTCPAddrTimeout)
 	t.Run("TestNetAddr", testNetAddr)
-	t.Run("testTcpAddr", testTcpAddr)
+	t.Run("testTcpAddr", testTCPAddr)
 }
 
 func testNetAddrTimeout(t *testing.T) {
@@ -35,7 +35,7 @@ func testNetAddrTimeout(t *testing.T) {
 	}
 }
 
-func testTcpAddrTimeout(t *testing.T) {
+func testTCPAddrTimeout(t *testing.T) {
 	nac := &TCPAddr{
 		Endpoint:      "localhost:0",
 		DialerTimeout: time.Millisecond,
@@ -85,7 +85,7 @@ func testNetAddr(t *testing.T) {
 	assert.NoError(t, ln.Close())
 }
 
-func testTcpAddr(t *testing.T) {
+func testTCPAddr(t *testing.T) {
 	nas := &TCPAddr{
 		Endpoint: "localhost:0",
 	}
