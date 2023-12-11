@@ -4,11 +4,11 @@ go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.90.1
-	go.opentelemetry.io/collector/component v0.90.1
-	go.opentelemetry.io/collector/config/confignet v0.90.1
-	go.opentelemetry.io/collector/confmap v0.90.1
-	go.opentelemetry.io/collector/extension v0.90.1
+	go.opentelemetry.io/collector v0.91.0
+	go.opentelemetry.io/collector/component v0.91.0
+	go.opentelemetry.io/collector/config/confignet v0.91.0
+	go.opentelemetry.io/collector/confmap v0.91.0
+	go.opentelemetry.io/collector/extension v0.91.0
 	go.opentelemetry.io/contrib/zpages v0.46.1
 	go.opentelemetry.io/otel/sdk v1.21.0
 	go.opentelemetry.io/otel/trace v1.21.0
@@ -29,7 +29,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.90.1 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.91.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0 // indirect
 	go.opentelemetry.io/contrib/config v0.1.1 // indirect
