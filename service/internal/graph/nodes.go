@@ -255,6 +255,9 @@ func (n *connectorNode) buildComponent(
 			n.Component = conn
 			// When connecting pipelines of the same data type, the connector must
 			// inherit the capabilities of pipelines in which it is acting as a receiver.
+			// Since the incoming and outgoing data types are the same, we must also consider
+			// that the connector itself may MutatesData.
+			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
 			n.baseConsumer = capabilityconsumer.NewTraces(conn, capability)
 		case component.DataTypeMetrics:
 			conn, err := builder.CreateMetricsToTraces(ctx, set, next)
@@ -294,6 +297,9 @@ func (n *connectorNode) buildComponent(
 			n.Component = conn
 			// When connecting pipelines of the same data type, the connector must
 			// inherit the capabilities of pipelines in which it is acting as a receiver.
+			// Since the incoming and outgoing data types are the same, we must also consider
+			// that the connector itself may MutatesData.
+			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
 			n.baseConsumer = capabilityconsumer.NewMetrics(conn, capability)
 		case component.DataTypeLogs:
 			conn, err := builder.CreateLogsToMetrics(ctx, set, next)
@@ -332,6 +338,9 @@ func (n *connectorNode) buildComponent(
 			n.Component = conn
 			// When connecting pipelines of the same data type, the connector must
 			// inherit the capabilities of pipelines in which it is acting as a receiver.
+			// Since the incoming and outgoing data types are the same, we must also consider
+			// that the connector itself may MutatesData.
+			capability.MutatesData = capability.MutatesData || conn.Capabilities().MutatesData
 			n.baseConsumer = capabilityconsumer.NewLogs(conn, capability)
 		}
 	}
