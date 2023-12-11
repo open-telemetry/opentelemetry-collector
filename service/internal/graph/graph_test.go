@@ -573,17 +573,17 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			pipelineConfigs: pipelines.Config{
 				component.NewIDWithName("traces", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewIDWithName("exampleconnector", "inherit_mutate")},
 				},
 				component.NewIDWithName("metrics", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
-					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewIDWithName("exampleconnector", "inherit_mutate")},
 				},
 				component.NewIDWithName("logs", "in"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
 					Exporters:  []component.ID{component.NewIDWithName("exampleconnector", "inherit_mutate")},
 				},
 				component.NewIDWithName("traces", "out"): {
@@ -593,12 +593,12 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				},
 				component.NewIDWithName("metrics", "out"): {
 					Receivers:  []component.ID{component.NewIDWithName("exampleconnector", "inherit_mutate")},
-					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
 					Exporters:  []component.ID{component.NewID("exampleexporter")},
 				},
 				component.NewIDWithName("logs", "out"): {
 					Receivers:  []component.ID{component.NewIDWithName("exampleconnector", "inherit_mutate")},
-					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")},
+					Processors: []component.ID{component.NewIDWithName("exampleprocessor", "mutate")}, // mutate propagates upstream to connector
 					Exporters:  []component.ID{component.NewID("exampleexporter")},
 				},
 			},
