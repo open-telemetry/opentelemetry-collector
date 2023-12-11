@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/connector v0.90.1
 	go.opentelemetry.io/collector/exporter v0.90.1
 	go.opentelemetry.io/collector/extension v0.90.1
-	go.opentelemetry.io/collector/featuregate v1.0.0
+	go.opentelemetry.io/collector/featuregate v1.1.0
 	go.opentelemetry.io/collector/processor v0.90.1
 	go.opentelemetry.io/collector/receiver v0.90.1
 	go.opentelemetry.io/collector/service v0.90.1
@@ -67,7 +67,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.90.1 // indirect
 	go.opentelemetry.io/collector/consumer v0.90.1 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.1.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.90.1 // indirect
 	go.opentelemetry.io/contrib/config v0.1.1 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.21.1 // indirect

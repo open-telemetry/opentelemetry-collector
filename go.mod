@@ -15,8 +15,8 @@ require (
 	go.opentelemetry.io/collector/connector v0.90.1
 	go.opentelemetry.io/collector/consumer v0.90.1
 	go.opentelemetry.io/collector/exporter v0.90.1
-	go.opentelemetry.io/collector/featuregate v1.0.0
-	go.opentelemetry.io/collector/pdata v1.0.0
+	go.opentelemetry.io/collector/featuregate v1.1.0
+	go.opentelemetry.io/collector/pdata v1.1.0
 	go.opentelemetry.io/collector/processor v0.90.1
 	go.opentelemetry.io/collector/receiver v0.90.1
 	go.opentelemetry.io/contrib/config v0.1.1
