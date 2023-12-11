@@ -12,14 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_SetOrder(t *testing.T) {
-	t.Run("TestNetAddrTimeout", testNetAddrTimeout)
-	t.Run("TestTcpAddrTimeout", testTCPAddrTimeout)
-	t.Run("TestNetAddr", testNetAddr)
-	t.Run("testTcpAddr", testTCPAddr)
-}
-
-func testNetAddrTimeout(t *testing.T) {
+func TestNetAddrTimeout(t *testing.T) {
 	nac := &NetAddr{
 		Endpoint:      "localhost:0",
 		Transport:     "tcp",
@@ -35,7 +28,7 @@ func testNetAddrTimeout(t *testing.T) {
 	}
 }
 
-func testTCPAddrTimeout(t *testing.T) {
+func TestTCPAddrTimeout(t *testing.T) {
 	nac := &TCPAddr{
 		Endpoint:      "localhost:0",
 		DialerTimeout: -1 * time.Second,
@@ -50,7 +43,7 @@ func testTCPAddrTimeout(t *testing.T) {
 	}
 }
 
-func testNetAddr(t *testing.T) {
+func TestNetAddr(t *testing.T) {
 	nas := &NetAddr{
 		Endpoint:  "localhost:0",
 		Transport: "tcp",
@@ -85,7 +78,7 @@ func testNetAddr(t *testing.T) {
 	assert.NoError(t, ln.Close())
 }
 
-func testTCPAddr(t *testing.T) {
+func TestTCPAddr(t *testing.T) {
 	nas := &TCPAddr{
 		Endpoint: "localhost:0",
 	}
