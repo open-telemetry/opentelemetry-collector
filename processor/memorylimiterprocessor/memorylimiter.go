@@ -34,18 +34,16 @@ var (
 
 	// Construction errors
 
-	errCheckIntervalOutOfRange = errors.New(
-		"checkInterval must be greater than zero")
+	errCheckIntervalOutOfRange = errors.New("check_interval must be greater than zero")
 
-	errLimitOutOfRange = errors.New(
-		"memAllocLimit or memoryLimitPercentage must be greater than zero")
+	errLimitOutOfRange = errors.New("limit_mib or limit_percentage must be greater than zero")
 
-	errMemSpikeLimitOutOfRange = errors.New(
-		"memSpikeLimit must be smaller than memAllocLimit")
+	errMemSpikeLimitOutOfRange = errors.New("spike_limit_mib must be smaller than limit_mib")
+
+	errMemSpikePercentageLimitOutOfRange = errors.New("spike_limit_percentage must be smaller than limit_percentage")
 
 	errPercentageLimitOutOfRange = errors.New(
-		"memoryLimitPercentage and memorySpikePercentage must be greater than zero and less than or equal to hundred",
-	)
+		"limit_percentage and spike_limit_percentage must be greater than zero and less than or equal to hundred")
 
 	errShutdownNotStarted = errors.New("no existing monitoring routine is running")
 )
@@ -86,13 +84,6 @@ const minGCIntervalWhenSoftLimited = 10 * time.Second
 
 // newMemoryLimiter returns a new memorylimiter processor.
 func newMemoryLimiter(set processor.CreateSettings, cfg *Config) (*memoryLimiter, error) {
-	if cfg.CheckInterval <= 0 {
-		return nil, errCheckIntervalOutOfRange
-	}
-	if cfg.MemoryLimitMiB == 0 && cfg.MemoryLimitPercentage == 0 {
-		return nil, errLimitOutOfRange
-	}
-
 	logger := set.Logger
 	usageChecker, err := getMemUsageChecker(cfg, logger)
 	if err != nil {
@@ -129,7 +120,7 @@ func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, erro
 	memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
 	memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
 	if cfg.MemoryLimitMiB != 0 {
-		return newFixedMemUsageChecker(memAllocLimit, memSpikeLimit)
+		return newFixedMemUsageChecker(memAllocLimit, memSpikeLimit), nil
 	}
 	totalMemory, err := getMemoryFn()
 	if err != nil {
@@ -139,7 +130,8 @@ func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, erro
 		zap.Uint64("total_memory_mib", totalMemory/mibBytes),
 		zap.Uint32("limit_percentage", cfg.MemoryLimitPercentage),
 		zap.Uint32("spike_limit_percentage", cfg.MemorySpikePercentage))
-	return newPercentageMemUsageChecker(totalMemory, uint64(cfg.MemoryLimitPercentage), uint64(cfg.MemorySpikePercentage))
+	return newPercentageMemUsageChecker(totalMemory, uint64(cfg.MemoryLimitPercentage),
+		uint64(cfg.MemorySpikePercentage)), nil
 }
 
 func (ml *memoryLimiter) start(_ context.Context, host component.Host) error {
@@ -319,10 +311,7 @@ func (d memUsageChecker) aboveHardLimit(ms *runtime.MemStats) bool {
 	return ms.Alloc >= d.memAllocLimit
 }
 
-func newFixedMemUsageChecker(memAllocLimit, memSpikeLimit uint64) (*memUsageChecker, error) {
-	if memSpikeLimit >= memAllocLimit {
-		return nil, errMemSpikeLimitOutOfRange
-	}
+func newFixedMemUsageChecker(memAllocLimit, memSpikeLimit uint64) *memUsageChecker {
 	if memSpikeLimit == 0 {
 		// If spike limit is unspecified use 20% of mem limit.
 		memSpikeLimit = memAllocLimit / 5
@@ -330,12 +319,9 @@ func newFixedMemUsageChecker(memAllocLimit, memSpikeLimit uint64) (*memUsageChec
 	return &memUsageChecker{
 		memAllocLimit: memAllocLimit,
 		memSpikeLimit: memSpikeLimit,
-	}, nil
+	}
 }
 
-func newPercentageMemUsageChecker(totalMemory uint64, percentageLimit, percentageSpike uint64) (*memUsageChecker, error) {
-	if percentageLimit > 100 || percentageLimit <= 0 || percentageSpike > 100 || percentageSpike <= 0 {
-		return nil, errPercentageLimitOutOfRange
-	}
+func newPercentageMemUsageChecker(totalMemory uint64, percentageLimit, percentageSpike uint64) *memUsageChecker {
 	return newFixedMemUsageChecker(percentageLimit*totalMemory/100, percentageSpike*totalMemory/100)
 }

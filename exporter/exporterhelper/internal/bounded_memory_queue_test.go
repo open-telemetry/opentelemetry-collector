@@ -30,9 +30,10 @@ func TestBoundedQueue(t *testing.T) {
 
 	consumerState := newConsumerState(t)
 
-	consumers := NewQueueConsumers(q, 1, func(_ context.Context, item string) {
+	consumers := NewQueueConsumers(q, 1, func(_ context.Context, item string) bool {
 		consumerState.record(item)
 		<-waitCh
+		return true
 	})
 	assert.NoError(t, consumers.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -74,7 +75,6 @@ func TestBoundedQueue(t *testing.T) {
 	}
 
 	assert.NoError(t, consumers.Shutdown(context.Background()))
-	assert.ErrorIs(t, q.Offer(context.Background(), "x"), ErrQueueIsStopped)
 }
 
 // In this test we run a queue with many items and a slow consumer.
@@ -89,9 +89,10 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	consumerState := newConsumerState(t)
 
 	waitChan := make(chan struct{})
-	consumers := NewQueueConsumers(q, 5, func(_ context.Context, item string) {
+	consumers := NewQueueConsumers(q, 5, func(_ context.Context, item string) bool {
 		<-waitChan
 		consumerState.record(item)
+		return true
 	})
 	assert.NoError(t, consumers.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -106,17 +107,13 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	assert.NoError(t, q.Offer(context.Background(), "i"))
 	assert.NoError(t, q.Offer(context.Background(), "j"))
 
-	// we block the workers and wait for the queue to start rejecting new items to release the lock.
-	// This ensures that we test that the queue has been called to shutdown while items are still in the queue.
 	go func() {
-		require.EventuallyWithT(t, func(c *assert.CollectT) {
-			// ensure the request is rejected due to closed queue
-			assert.ErrorIs(t, q.Offer(context.Background(), "x"), ErrQueueIsStopped)
-		}, 1*time.Second, 10*time.Millisecond)
-		close(waitChan)
+		assert.NoError(t, consumers.Shutdown(context.Background()))
 	}()
 
-	assert.NoError(t, consumers.Shutdown(context.Background()))
+	// wait a bit to ensure shutdown is called and unblock the consumers.
+	time.Sleep(100 * time.Millisecond)
+	close(waitChan)
 
 	consumerState.assertConsumed(map[string]bool{
 		"a": true,
@@ -179,8 +176,9 @@ func queueUsage(b *testing.B, capacity int, numConsumers int, numberOfItems int)
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		q := NewBoundedMemoryQueue[string](capacity)
-		consumers := NewQueueConsumers(q, numConsumers, func(context.Context, string) {
+		consumers := NewQueueConsumers(q, numConsumers, func(context.Context, string) bool {
 			time.Sleep(1 * time.Millisecond)
+			return true
 		})
 		require.NoError(b, consumers.Start(context.Background(), componenttest.NewNopHost()))
 		for j := 0; j < numberOfItems; j++ {
@@ -238,7 +236,7 @@ func (s *consumerState) assertConsumed(expected map[string]bool) {
 func TestZeroSizeWithConsumers(t *testing.T) {
 	q := NewBoundedMemoryQueue[string](0)
 
-	consumers := NewQueueConsumers(q, 1, func(context.Context, string) {})
+	consumers := NewQueueConsumers(q, 1, func(context.Context, string) bool { return true })
 	assert.NoError(t, consumers.Start(context.Background(), componenttest.NewNopHost()))
 
 	assert.NoError(t, q.Offer(context.Background(), "a")) // in process
