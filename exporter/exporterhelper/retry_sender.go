@@ -16,6 +16,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
@@ -35,7 +36,7 @@ type RetrySettings struct {
 	// consecutive retries will always be `MaxInterval`.
 	MaxInterval time.Duration `mapstructure:"max_interval"`
 	// MaxElapsedTime is the maximum amount of time (including retries) spent trying to send a request/batch.
-	// Once this value is reached, the data is discarded.
+	// Once this value is reached, the data is discarded. If set to 0, the retries are never stopped.
 	MaxElapsedTime time.Duration `mapstructure:"max_elapsed_time"`
 }
 
@@ -185,7 +186,7 @@ func (rs *retrySender) send(ctx context.Context, req Request) error {
 		case <-ctx.Done():
 			return fmt.Errorf("request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
-			return fmt.Errorf("interrupted due to shutdown %w", err)
+			return internal.NewShutdownErr(err)
 		case <-time.After(backoffDelay):
 		}
 	}
