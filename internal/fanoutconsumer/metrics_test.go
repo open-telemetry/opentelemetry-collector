@@ -20,6 +20,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
+// Keep this into tests so we don't expose this as a transient dependency.
+var _ connector.MetricsRouter = (*metricsRouter)(nil)
+
 func TestMetricsNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewNop()
 	mfc := NewMetrics([]consumer.Metrics{nop})

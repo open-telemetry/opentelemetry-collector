@@ -20,6 +20,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
+// Keep this into tests so we don't expose this as a transient dependency.
+var _ connector.LogsRouter = (*logsRouter)(nil)
+
 func TestLogsNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewNop()
 	lfc := NewLogs([]consumer.Logs{nop})

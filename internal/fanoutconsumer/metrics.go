@@ -10,7 +10,6 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -82,8 +81,6 @@ func cloneMetrics(md pmetric.Metrics) pmetric.Metrics {
 	md.CopyTo(clonedMetrics)
 	return clonedMetrics
 }
-
-var _ connector.MetricsRouter = (*metricsRouter)(nil)
 
 type metricsRouter struct {
 	consumer.Metrics

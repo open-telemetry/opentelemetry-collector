@@ -20,6 +20,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+// Keep this into tests so we don't expose this as a transient dependency.
+var _ connector.TracesRouter = (*tracesRouter)(nil)
+
 func TestTracesNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewNop()
 	tfc := NewTraces([]consumer.Traces{nop})

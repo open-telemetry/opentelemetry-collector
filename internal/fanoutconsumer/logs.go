@@ -12,7 +12,6 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -84,8 +83,6 @@ func cloneLogs(ld plog.Logs) plog.Logs {
 	ld.CopyTo(clonedLogs)
 	return clonedLogs
 }
-
-var _ connector.LogsRouter = (*logsRouter)(nil)
 
 type logsRouter struct {
 	consumer.Logs
