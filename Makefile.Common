@@ -33,19 +33,15 @@ MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
 PORTO        := $(TOOLS_BIN_DIR)/porto
 SEMCONVGEN   := $(TOOLS_BIN_DIR)/semconvgen
 SEMCONVKIT   := $(TOOLS_BIN_DIR)/semconvkit
-YQ           := $(TOOLS_BIN_DIR)/yq
 
 .PHONY: install-tools
-install-tools: $(TOOLS_BIN_NAMES) $(YQ)
+install-tools: $(TOOLS_BIN_NAMES)
 
 $(TOOLS_BIN_DIR):
 	mkdir -p $@
 
 $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
-
-$(YQ): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) build -o $@ -trimpath github.com/mikefarah/yq/v4
 
 .PHONY: test
 test:
