@@ -8,6 +8,7 @@ require (
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.91.0
 	go.opentelemetry.io/collector/component v0.91.0
+	go.opentelemetry.io/collector/config/configretry v0.91.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.91.0
 	go.opentelemetry.io/collector/consumer v0.91.0
 	go.opentelemetry.io/collector/extension v0.91.0
@@ -83,5 +84,7 @@ replace go.opentelemetry.io/collector/processor => ../processor
 replace go.opentelemetry.io/collector/receiver => ../receiver
 
 retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
+
+replace go.opentelemetry.io/collector/config/configretry => ../config/configretry
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry

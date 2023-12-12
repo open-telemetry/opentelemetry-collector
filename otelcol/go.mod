@@ -126,3 +126,5 @@ replace go.opentelemetry.io/collector/receiver => ../receiver
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
+
+replace go.opentelemetry.io/collector/config/configretry => ../config/configretry

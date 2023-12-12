@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -17,11 +18,11 @@ import (
 )
 
 func testExporterConfig(endpoint string) component.Config {
-	retryConfig := exporterhelper.NewDefaultRetrySettings()
+	retryConfig := configretry.NewDefaultBackOffConfig()
 	retryConfig.InitialInterval = time.Millisecond // interval is short for the test purposes
 	return &Config{
-		QueueSettings: exporterhelper.QueueSettings{Enabled: false},
-		RetrySettings: retryConfig,
+		QueueConfig: exporterhelper.QueueSettings{Enabled: false},
+		RetryConfig: retryConfig,
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: endpoint,
 			TLSSetting: configtls.TLSClientSetting{

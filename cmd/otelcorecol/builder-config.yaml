@@ -31,6 +31,7 @@ replaces:
   - go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
   - go.opentelemetry.io/collector/config/confignet => ../../config/confignet
   - go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
+  - go.opentelemetry.io/collector/config/configretry => ../../config/configretry
   - go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
   - go.opentelemetry.io/collector/config/configtls => ../../config/configtls
   - go.opentelemetry.io/collector/config/internal => ../../config/internal

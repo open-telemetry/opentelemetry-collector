@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 )
@@ -80,9 +81,9 @@ func WithTimeout(timeoutSettings TimeoutSettings) Option {
 	}
 }
 
-// WithRetry overrides the default RetrySettings for an exporter.
-// The default RetrySettings is to disable retries.
-func WithRetry(config RetrySettings) Option {
+// WithRetry overrides the default configretry.BackOffConfig for an exporter.
+// The default configretry.BackOffConfig is to disable retries.
+func WithRetry(config configretry.BackOffConfig) Option {
 	return func(o *baseExporter) {
 		if !config.Enabled {
 			o.retrySender = &errorLoggingRequestSender{
