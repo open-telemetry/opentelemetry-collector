@@ -61,7 +61,7 @@ type MetricsRouter interface {
 
 // A Logs connector acts as an exporter from a logs pipeline and a receiver
 // to one or more traces, metrics, or logs pipelines.
-// Logs feeds a consumer.Logs, consumer.Metrics, or consumer.Logs with data.
+// Logs feeds a consumer.Traces, consumer.Metrics, or consumer.Logs with data.
 //
 // Examples:
 //   - Structured logs containing span information could be consumed and emitted as traces.
