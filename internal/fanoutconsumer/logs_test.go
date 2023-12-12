@@ -26,6 +26,12 @@ func TestLogsNotMultiplexing(t *testing.T) {
 	assert.Same(t, nop, lfc)
 }
 
+func TestLogsNotMultiplexingMutating(t *testing.T) {
+	p := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
+	lfc := NewLogs([]consumer.Logs{p})
+	assert.True(t, lfc.Capabilities().MutatesData)
+}
+
 func TestLogsMultiplexingNonMutating(t *testing.T) {
 	p1 := new(consumertest.LogsSink)
 	p2 := new(consumertest.LogsSink)
@@ -68,7 +74,7 @@ func TestLogsMultiplexingMutating(t *testing.T) {
 	p3 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
 
 	lfc := NewLogs([]consumer.Logs{p1, p2, p3})
-	assert.False(t, lfc.Capabilities().MutatesData)
+	assert.True(t, lfc.Capabilities().MutatesData)
 	ld := testdata.GenerateLogs(1)
 
 	for i := 0; i < 2; i++ {
@@ -105,7 +111,7 @@ func TestReadOnlyLogsMultiplexingMutating(t *testing.T) {
 	p3 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
 
 	lfc := NewLogs([]consumer.Logs{p1, p2, p3})
-	assert.False(t, lfc.Capabilities().MutatesData)
+	assert.True(t, lfc.Capabilities().MutatesData)
 	ldOrig := testdata.GenerateLogs(1)
 	ld := testdata.GenerateLogs(1)
 	ld.MarkReadOnly()

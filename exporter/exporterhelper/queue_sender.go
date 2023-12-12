@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"go.opencensus.io/metric/metricdata"
@@ -81,6 +82,7 @@ type queueSender struct {
 	meter            otelmetric.Meter
 	consumers        *internal.QueueConsumers[Request]
 	requeuingEnabled bool
+	stopped          *atomic.Bool
 
 	metricCapacity otelmetric.Int64ObservableGauge
 	metricSize     otelmetric.Int64ObservableGauge
@@ -105,18 +107,24 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
 		// TODO: this can be further exposed as a config param rather than relying on a type of queue
 		requeuingEnabled: isPersistent,
+		stopped:          &atomic.Bool{},
 	}
 	qs.consumers = internal.NewQueueConsumers(queue, config.NumConsumers, qs.consume)
 	return qs
 }
 
 // consume is the function that is executed by the queue consumers to send the data to the next consumerSender.
-func (qs *queueSender) consume(ctx context.Context, req Request) {
+func (qs *queueSender) consume(ctx context.Context, req Request) bool {
 	err := qs.nextSender.send(ctx, req)
 
 	// Nothing to do if the error is nil or permanent. Permanent errors are already logged by retrySender.
 	if err == nil || consumererror.IsPermanent(err) {
-		return
+		return true
+	}
+
+	// Do not requeue if the queue sender is stopped.
+	if qs.stopped.Load() {
+		return false
 	}
 
 	if !qs.requeuingEnabled {
@@ -125,7 +133,7 @@ func (qs *queueSender) consume(ctx context.Context, req Request) {
 			zap.Error(err),
 			zap.Int("dropped_items", req.ItemsCount()),
 		)
-		return
+		return true
 	}
 
 	if qs.queue.Offer(ctx, extractPartialRequest(req, err)) == nil {
@@ -140,6 +148,7 @@ func (qs *queueSender) consume(ctx context.Context, req Request) {
 			zap.Int("dropped_items", req.ItemsCount()),
 		)
 	}
+	return true
 }
 
 // Start is invoked during service startup.
@@ -203,6 +212,8 @@ func (qs *queueSender) recordWithOC() error {
 
 // Shutdown is invoked during service shutdown.
 func (qs *queueSender) Shutdown(ctx context.Context) error {
+	qs.stopped.Store(true)
+
 	// Cleanup queue metrics reporting
 	_ = globalInstruments.queueSize.UpsertEntry(func() int64 {
 		return int64(0)

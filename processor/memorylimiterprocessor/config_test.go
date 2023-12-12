@@ -36,3 +36,71 @@ func TestUnmarshalConfig(t *testing.T) {
 			MemorySpikeLimitMiB: 500,
 		}, cfg)
 }
+
+func TestConfigValidate(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *Config
+		err  error
+	}{
+		{
+			name: "valid",
+			cfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.MemoryLimitMiB = 5722
+				cfg.MemorySpikeLimitMiB = 1907
+				cfg.CheckInterval = 100 * time.Millisecond
+				return cfg
+			}(),
+			err: nil,
+		},
+		{
+			name: "zero check interval",
+			cfg: &Config{
+				CheckInterval: 0,
+			},
+			err: errCheckIntervalOutOfRange,
+		},
+		{
+			name: "unset memory limit",
+			cfg: &Config{
+				CheckInterval:         1 * time.Second,
+				MemoryLimitMiB:        0,
+				MemoryLimitPercentage: 0,
+			},
+			err: errLimitOutOfRange,
+		},
+		{
+			name: "invalid memory spike limit",
+			cfg: &Config{
+				CheckInterval:       1 * time.Second,
+				MemoryLimitMiB:      10,
+				MemorySpikeLimitMiB: 10,
+			},
+			err: errMemSpikeLimitOutOfRange,
+		},
+		{
+			name: "invalid memory percentage limit",
+			cfg: &Config{
+				CheckInterval:         1 * time.Second,
+				MemoryLimitPercentage: 101,
+			},
+			err: errPercentageLimitOutOfRange,
+		},
+		{
+			name: "invalid memory spike percentage limit",
+			cfg: &Config{
+				CheckInterval:         1 * time.Second,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 60,
+			},
+			err: errMemSpikePercentageLimitOutOfRange,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			assert.Equal(t, tt.err, err)
+		})
+	}
+}

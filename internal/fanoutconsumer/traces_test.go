@@ -26,6 +26,12 @@ func TestTracesNotMultiplexing(t *testing.T) {
 	assert.Same(t, nop, tfc)
 }
 
+func TestTracesNotMultiplexingMutating(t *testing.T) {
+	p := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
+	lfc := NewTraces([]consumer.Traces{p})
+	assert.True(t, lfc.Capabilities().MutatesData)
+}
+
 func TestTracesMultiplexingNonMutating(t *testing.T) {
 	p1 := new(consumertest.TracesSink)
 	p2 := new(consumertest.TracesSink)
@@ -68,7 +74,7 @@ func TestTracesMultiplexingMutating(t *testing.T) {
 	p3 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
 
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
-	assert.False(t, tfc.Capabilities().MutatesData)
+	assert.True(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
@@ -105,7 +111,7 @@ func TestReadOnlyTracesMultiplexingMutating(t *testing.T) {
 	p3 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
 
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
-	assert.False(t, tfc.Capabilities().MutatesData)
+	assert.True(t, tfc.Capabilities().MutatesData)
 
 	tdOrig := testdata.GenerateTraces(1)
 	td := testdata.GenerateTraces(1)

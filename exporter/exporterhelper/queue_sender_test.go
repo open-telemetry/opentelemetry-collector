@@ -144,6 +144,8 @@ func setFeatureGateForTest(t testing.TB, gate *featuregate.Gate, enabled bool) f
 }
 
 func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
+	resetFlag := setFeatureGateForTest(t, obsreportconfig.UseOtelForInternalMetricsfeatureGate, false)
+	defer resetFlag()
 	tt, err := obsreporttest.SetupTelemetry(defaultID)
 	require.NoError(t, err)
 
@@ -166,9 +168,6 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 }
 
 func TestQueuedRetry_QueueMetricsReportedUsingOTel(t *testing.T) {
-	resetFlag := setFeatureGateForTest(t, obsreportconfig.UseOtelForInternalMetricsfeatureGate, true)
-	defer resetFlag()
-
 	tt, err := obsreporttest.SetupTelemetry(defaultID)
 	require.NoError(t, err)
 
@@ -424,11 +423,18 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 		return be.queueSender.(*queueSender).queue.Size() == 0
 	}, time.Second, 1*time.Millisecond)
 
-	// shuts down and ensure the item is produced in the queue again
+	// shuts down the exporter, unsent data should be preserved as in-flight data in the persistent queue.
 	require.NoError(t, be.Shutdown(context.Background()))
-	assert.Eventually(t, func() bool {
-		return be.queueSender.(*queueSender).queue.Size() == 1
-	}, time.Second, 1*time.Millisecond)
+
+	// start the exporter again replacing the preserved mockRequest in the unmarshaler with a new one that doesn't fail.
+	replacedReq := newMockRequest(1, nil)
+	be, err = newBaseExporter(defaultSettings, "", false, mockRequestMarshaler, mockRequestUnmarshaler(replacedReq),
+		newNoopObsrepSender, WithRetry(rCfg), WithQueue(qCfg))
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), host))
+
+	// wait for the item to be consumed from the queue
+	replacedReq.checkNumRequests(t, 1)
 }
 
 func TestQueueSenderNoStartShutdown(t *testing.T) {

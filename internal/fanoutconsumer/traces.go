@@ -42,7 +42,8 @@ type tracesConsumer struct {
 }
 
 func (tsc *tracesConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	// If all consumers are mutating, then the original data will be passed to one of them.
+	return consumer.Capabilities{MutatesData: len(tsc.mutable) > 0 && len(tsc.readonly) == 0}
 }
 
 // ConsumeTraces exports the ptrace.Traces to all consumers wrapped by the current one.

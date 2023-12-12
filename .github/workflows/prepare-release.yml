@@ -51,9 +51,9 @@ jobs:
           REPO: open-telemetry/opentelemetry-collector-contrib
         run: ./.github/workflows/scripts/release-check-build-status.sh
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: ~1.20.12
       # Prepare Core for release.
       #   - Update CHANGELOG.md file, this is done via chloggen
       #   - Run make prepare-release PREVIOUS_VERSION=1.0.0 RELEASE_CANDIDATE=1.1.0 MODSET=stable

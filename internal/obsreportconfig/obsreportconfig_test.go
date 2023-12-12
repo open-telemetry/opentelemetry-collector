@@ -7,11 +7,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestConfigure(t *testing.T) {
+	originalValue := UseOtelForInternalMetricsfeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(UseOtelForInternalMetricsfeatureGate.ID(), false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(UseOtelForInternalMetricsfeatureGate.ID(), originalValue))
+	}()
 	tests := []struct {
 		name         string
 		level        configtelemetry.Level
