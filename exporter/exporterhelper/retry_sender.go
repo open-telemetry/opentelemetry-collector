@@ -39,6 +39,28 @@ type RetrySettings struct {
 	MaxElapsedTime time.Duration `mapstructure:"max_elapsed_time"`
 }
 
+func (cfg *RetrySettings) Validate() error {
+	if !cfg.Enabled {
+		return nil
+	}
+	if cfg.InitialInterval < 0 {
+		return errors.New("'initial_interval' must be non-negative")
+	}
+	if cfg.RandomizationFactor < 0 || cfg.RandomizationFactor > 1 {
+		return errors.New("'randomization_factor' must be within [0, 1]")
+	}
+	if cfg.Multiplier <= 0 {
+		return errors.New("'multiplier' must be positive")
+	}
+	if cfg.MaxInterval < 0 {
+		return errors.New("'max_interval' must be non-negative")
+	}
+	if cfg.MaxElapsedTime < 0 {
+		return errors.New("'max_elapsed' time must be non-negative")
+	}
+	return nil
+}
+
 // NewDefaultRetrySettings returns the default settings for RetrySettings.
 func NewDefaultRetrySettings() RetrySettings {
 	return RetrySettings{
