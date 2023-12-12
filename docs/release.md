@@ -27,8 +27,9 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 1. Update Contrib to use the latest in development version of Core. Run `make update-otel` in Contrib root directory and if it results in any changes submit a draft PR to Contrib. Ensure the CI passes before proceeding. This is to ensure that the latest core does not break contrib in any way. We’ll update it once more to the final release number later.
 
-2. Determine the version number that will be assigned to the release. During the beta phase, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.85.0` as the version to be released, following `v0.84.0`.
-   Check if stable modules have any changes since the last release by running `make check-changes PREVIOUS_VERSION=v1.0.0-rcv0014 MODSET=stable`. If there are no changes, there is no need to release new version for stable modules.
+2. Determine the version number that will be assigned to the release. Usually, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.85.0` as the version to be released, following `v0.84.0`.
+   Check if stable modules have any changes since the last release by running `make check-changes PREVIOUS_VERSION=v1.0.0 MODSET=stable`. If there are no changes, there is no need to release new version for stable modules.
+   If there are changes found but .chloggen directory doesn't have any corresponding entries, add missing changelog entries. If the changes are insignificant, consider not releasing a new version for stable modules.
 
 3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Core should be haulted**.
    - When prompted, enter the version numbers determined in Step 2, but do not include a leading `v`.
@@ -49,7 +50,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 7. A new `v0.85.0` release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md and CHANGELOG-API.md as the release's description.
 
 8. Update the draft PR to Contrib created in step 1 to use the newly released Core version and set it to Ready for Review.
-   - Run `make update-otel OTEL_VERSION=v0.85.0 OTEL_RC_VERSION=v1.0.0-rcv0014`
+   - Run `make update-otel OTEL_VERSION=v0.85.0 OTEL_STABLE_VERSION=v1.1.0`
    - Manually update `cmd/otelcontribcol/builder-config.yaml`
    - Manually update `cmd/oteltestbedcol/builder-config.yaml`
    - Run `make genotelcontribcol`
@@ -156,10 +157,10 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2023-12-11 | v0.91.0 | @dmitryax       |
 | 2024-01-08 | v0.92.0 | @codeboten      |
 | 2024-01-22 | v0.93.0 | @bogdandrutu    |
 | 2024-02-05 | v0.94.0 | @Aneurysm9      |
 | 2024-02-19 | v0.95.0 | @mx-psi         |
 | 2024-03-04 | v0.96.0 | @jpkrohling     |
 | 2024-03-18 | v0.97.0 | @djaglowski     |
+| 2024-04-01 | v0.98.0 | @dmitryax       |
