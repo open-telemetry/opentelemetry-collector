@@ -144,6 +144,8 @@ func setFeatureGateForTest(t testing.TB, gate *featuregate.Gate, enabled bool) f
 }
 
 func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
+	resetFlag := setFeatureGateForTest(t, obsreportconfig.UseOtelForInternalMetricsfeatureGate, false)
+	defer resetFlag()
 	tt, err := obsreporttest.SetupTelemetry(defaultID)
 	require.NoError(t, err)
 
@@ -166,9 +168,6 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 }
 
 func TestQueuedRetry_QueueMetricsReportedUsingOTel(t *testing.T) {
-	resetFlag := setFeatureGateForTest(t, obsreportconfig.UseOtelForInternalMetricsfeatureGate, true)
-	defer resetFlag()
-
 	tt, err := obsreporttest.SetupTelemetry(defaultID)
 	require.NoError(t, err)
 
