@@ -32,7 +32,7 @@ func mockRequestUnmarshaler(mr Request) RequestUnmarshaler {
 }
 
 func mockRequestMarshaler(_ Request) ([]byte, error) {
-	return nil, nil
+	return []byte("mockRequest"), nil
 }
 
 func TestQueuedRetry_DropOnPermanentError(t *testing.T) {

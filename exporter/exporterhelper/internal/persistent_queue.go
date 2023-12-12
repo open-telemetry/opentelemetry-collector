@@ -141,7 +141,7 @@ func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Contex
 // Consume applies the provided function on the head of queue.
 // The call blocks until there is an item available or the queue is stopped.
 // The function returns true when an item is consumed or false if the queue is stopped.
-func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T)) bool {
+func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) bool) bool {
 	var (
 		req                  T
 		onProcessingFinished func()
@@ -157,8 +157,9 @@ func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T)) bool
 		}
 
 		if consumed {
-			consumeFunc(context.Background(), req)
-			onProcessingFinished()
+			if ok := consumeFunc(context.Background(), req); ok {
+				onProcessingFinished()
+			}
 			return true
 		}
 	}
