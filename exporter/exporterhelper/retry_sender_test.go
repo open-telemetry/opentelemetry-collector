@@ -404,3 +404,66 @@ func tagsMatchLabelKeys(tags []tag.Tag, keys []metricdata.LabelKey, labels []met
 	}
 	return true
 }
+
+func TestNewDefaultRetrySettings(t *testing.T) {
+	cfg := NewDefaultRetrySettings()
+	assert.NoError(t, cfg.Validate())
+	assert.Equal(t,
+		RetrySettings{
+			Enabled:             true,
+			InitialInterval:     5 * time.Second,
+			RandomizationFactor: 0.5,
+			Multiplier:          1.5,
+			MaxInterval:         30 * time.Second,
+			MaxElapsedTime:      5 * time.Minute,
+		}, cfg)
+}
+
+func TestInvalidInitialInterval(t *testing.T) {
+	cfg := NewDefaultRetrySettings()
+	assert.NoError(t, cfg.Validate())
+	cfg.InitialInterval = -1
+	assert.Error(t, cfg.Validate())
+}
+
+func TestInvalidRandomizationFactor(t *testing.T) {
+	cfg := NewDefaultRetrySettings()
+	assert.NoError(t, cfg.Validate())
+	cfg.RandomizationFactor = -1
+	assert.Error(t, cfg.Validate())
+	cfg.RandomizationFactor = 2
+	assert.Error(t, cfg.Validate())
+}
+
+func TestInvalidMultiplier(t *testing.T) {
+	cfg := NewDefaultRetrySettings()
+	assert.NoError(t, cfg.Validate())
+	cfg.Multiplier = 0
+	assert.Error(t, cfg.Validate())
+}
+
+func TestInvalidMaxInterval(t *testing.T) {
+	cfg := NewDefaultRetrySettings()
+	assert.NoError(t, cfg.Validate())
+	cfg.MaxInterval = -1
+	assert.Error(t, cfg.Validate())
+}
+
+func TestInvalidMaxElapsedTime(t *testing.T) {
+	cfg := NewDefaultRetrySettings()
+	assert.NoError(t, cfg.Validate())
+	cfg.MaxElapsedTime = -1
+	assert.Error(t, cfg.Validate())
+}
+
+func TestDisabledWithInvalidValues(t *testing.T) {
+	cfg := RetrySettings{
+		Enabled:             false,
+		InitialInterval:     -1,
+		RandomizationFactor: -1,
+		Multiplier:          0,
+		MaxInterval:         -1,
+		MaxElapsedTime:      -1,
+	}
+	assert.NoError(t, cfg.Validate())
+}
