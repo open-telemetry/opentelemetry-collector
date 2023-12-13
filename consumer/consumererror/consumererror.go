@@ -36,55 +36,58 @@ type ErrorOption func(error *Error)
 // NewConsumerError wraps an error that happened while consuming telemetry
 // and adds metadata onto it to be passed back up the pipeline.
 func NewConsumerError(origErr error, options ...ErrorOption) error {
-	err := Error{error: origErr, rejected: noDataCount}
+	// Create an Error with `new` to force heap allocation.
+	err := new(Error)
+	err.error = origErr
+	err.rejected = noDataCount
 
-	cErr := Error{}
-	if errors.As(err, &cErr) {
+	cErr := new(Error)
+	if errors.As(origErr, cErr) {
 		err.copyMetadata(cErr)
 	}
 
 	for _, option := range options {
-		option(&err)
+		option(err)
 	}
 
 	return err
 }
 
-func (e Error) Error() string {
+func (e *Error) Error() string {
 	return e.error.Error()
 }
 
 // Unwrap returns the wrapped error for use by `errors.Is` and `errors.As`.
-func (e Error) Unwrap() error {
+func (e *Error) Unwrap() error {
 	return e.error
 }
 
-func (e Error) Rejected() int {
+func (e *Error) Rejected() int {
 	return e.rejected
 }
 
-func (e Error) Delay() time.Duration {
+func (e *Error) Delay() time.Duration {
 	return e.delay
 }
 
-func (e Error) RetryableTraces() (ptrace.Traces, bool) {
+func (e *Error) RetryableTraces() (ptrace.Traces, bool) {
 	return e.traces, e.hasTraces
 }
 
-func (e Error) RetryableMetrics() (pmetric.Metrics, bool) {
+func (e *Error) RetryableMetrics() (pmetric.Metrics, bool) {
 	return e.metrics, e.hasMetrics
 }
 
-func (e Error) RetryableLogs() (plog.Logs, bool) {
+func (e *Error) RetryableLogs() (plog.Logs, bool) {
 	return e.logs, e.hasLogs
 }
 
-func (e Error) ToHTTP() int {
+func (e *Error) ToHTTP() int {
 	// todo: translate gRPC to HTTP status
 	return e.httpStatus
 }
 
-func (e Error) ToGRPC() *status.Status {
+func (e *Error) ToGRPC() *status.Status {
 	// todo: translate HTTP to grPC status
 	return e.grpcStatus
 }
@@ -105,7 +108,7 @@ func IsPermanent(err error) bool {
 	return false
 }
 
-func (e *Error) copyMetadata(err Error) {
+func (e *Error) copyMetadata(err *Error) {
 	e.rejected = err.rejected
 	e.httpStatus = err.httpStatus
 	e.grpcStatus = err.grpcStatus
