@@ -13,7 +13,7 @@ var UseOtelForInternalMetricsfeatureGate = featuregate.GlobalRegistry().MustRegi
 	"telemetry.useOtelForInternalMetrics",
 	featuregate.StageStable,
 	featuregate.WithRegisterDescription("controls whether the collector uses OpenTelemetry for internal metrics"),
-	featuregate.WithRegisterToVersion("0.94.0"))
+	featuregate.WithRegisterToVersion("0.95.0"))
 
 // DisableHighCardinalityMetricsfeatureGate is the feature gate that controls whether the collector should enable
 // potentially high cardinality metrics. The gate will be removed when the collector allows for view configuration.

@@ -16,7 +16,6 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/stats/view"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -108,24 +107,4 @@ func TestProcessTelemetry(t *testing.T) {
 
 		assert.Greater(t, metricValue, float64(0), metricName)
 	}
-}
-
-func TestProcessTelemetryFailToRegister(t *testing.T) {
-	for _, metricName := range expectedMetrics {
-		t.Run(metricName, func(t *testing.T) {
-			tel := setupTelemetry(t)
-			_, err := tel.MeterProvider.Meter(scopeName).Int64ObservableGauge(metricName)
-			require.NoError(t, err)
-			assert.Error(t, RegisterProcessMetrics(tel.MeterProvider, 0))
-		})
-	}
-}
-
-func findMetric(metrics []*metricdata.Metric, name string) *metricdata.Metric {
-	for _, m := range metrics {
-		if m.Descriptor.Name == name {
-			return m
-		}
-	}
-	return nil
 }

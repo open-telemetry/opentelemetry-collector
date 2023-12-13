@@ -6,7 +6,6 @@ package exporterhelper
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -14,9 +13,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/metric/metricdata"
-	"go.opencensus.io/metric/metricproducer"
-	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -369,46 +365,65 @@ func (ocs *observabilityConsumerSender) checkDroppedItemsCount(t *testing.T, wan
 	assert.EqualValues(t, want, ocs.droppedItemsCount.Load())
 }
 
-// checkValueForGlobalManager checks that the given metrics with wantTags is reported by one of the
-// metric producers
-func checkValueForGlobalManager(t *testing.T, wantTags []tag.Tag, value int64, vName string) {
-	producers := metricproducer.GlobalManager().GetAll()
-	for _, producer := range producers {
-		if checkValueForProducer(t, producer, wantTags, value, vName) {
-			return
-		}
-	}
-	require.Fail(t, fmt.Sprintf("could not find metric %v with tags %s reported", vName, wantTags))
+func TestNewDefaultRetrySettings(t *testing.T) {
+	cfg := NewDefaultRetrySettings()
+	assert.NoError(t, cfg.Validate())
+	assert.Equal(t,
+		RetrySettings{
+			Enabled:             true,
+			InitialInterval:     5 * time.Second,
+			RandomizationFactor: 0.5,
+			Multiplier:          1.5,
+			MaxInterval:         30 * time.Second,
+			MaxElapsedTime:      5 * time.Minute,
+		}, cfg)
 }
 
-// checkValueForProducer checks that the given metrics with wantTags is reported by the metric producer
-func checkValueForProducer(t *testing.T, producer metricproducer.Producer, wantTags []tag.Tag, value int64, vName string) bool {
-	for _, metric := range producer.Read() {
-		if metric.Descriptor.Name == vName && len(metric.TimeSeries) > 0 {
-			for _, ts := range metric.TimeSeries {
-				if tagsMatchLabelKeys(wantTags, metric.Descriptor.LabelKeys, ts.LabelValues) {
-					require.Equal(t, value, ts.Points[len(ts.Points)-1].Value.(int64))
-					return true
-				}
-			}
-		}
-	}
-	return false
+func TestInvalidInitialInterval(t *testing.T) {
+	cfg := NewDefaultRetrySettings()
+	assert.NoError(t, cfg.Validate())
+	cfg.InitialInterval = -1
+	assert.Error(t, cfg.Validate())
 }
 
-// tagsMatchLabelKeys returns true if provided tags match keys and values
-func tagsMatchLabelKeys(tags []tag.Tag, keys []metricdata.LabelKey, labels []metricdata.LabelValue) bool {
-	if len(tags) != len(keys) {
-		return false
+func TestInvalidRandomizationFactor(t *testing.T) {
+	cfg := NewDefaultRetrySettings()
+	assert.NoError(t, cfg.Validate())
+	cfg.RandomizationFactor = -1
+	assert.Error(t, cfg.Validate())
+	cfg.RandomizationFactor = 2
+	assert.Error(t, cfg.Validate())
+}
+
+func TestInvalidMultiplier(t *testing.T) {
+	cfg := NewDefaultRetrySettings()
+	assert.NoError(t, cfg.Validate())
+	cfg.Multiplier = 0
+	assert.Error(t, cfg.Validate())
+}
+
+func TestInvalidMaxInterval(t *testing.T) {
+	cfg := NewDefaultRetrySettings()
+	assert.NoError(t, cfg.Validate())
+	cfg.MaxInterval = -1
+	assert.Error(t, cfg.Validate())
+}
+
+func TestInvalidMaxElapsedTime(t *testing.T) {
+	cfg := NewDefaultRetrySettings()
+	assert.NoError(t, cfg.Validate())
+	cfg.MaxElapsedTime = -1
+	assert.Error(t, cfg.Validate())
+}
+
+func TestDisabledWithInvalidValues(t *testing.T) {
+	cfg := RetrySettings{
+		Enabled:             false,
+		InitialInterval:     -1,
+		RandomizationFactor: -1,
+		Multiplier:          0,
+		MaxInterval:         -1,
+		MaxElapsedTime:      -1,
 	}
-	for i := 0; i < len(tags); i++ {
-		var labelVal string
-		if labels[i].Present {
-			labelVal = labels[i].Value
-		}
-		if tags[i].Key.Name() != keys[i].Key || tags[i].Value != labelVal {
-			return false
-		}
-	}
-	return true
+	assert.NoError(t, cfg.Validate())
 }
