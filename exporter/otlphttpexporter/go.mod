@@ -95,8 +95,6 @@ replace go.opentelemetry.io/collector/config/internal => ../../config/internal
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
-replace go.opentelemetry.io/collector/connector => ../../connector
-
 replace go.opentelemetry.io/collector/exporter => ../
 
 replace go.opentelemetry.io/collector/extension => ../../extension
