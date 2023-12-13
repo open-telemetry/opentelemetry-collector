@@ -233,17 +233,6 @@ func (s *consumerState) assertConsumed(expected map[string]bool) {
 	assert.Equal(s.t, expected, s.snapshot())
 }
 
-func TestZeroSizeWithConsumers(t *testing.T) {
-	q := NewBoundedMemoryQueue[string](0)
-
-	consumers := NewQueueConsumers(q, 1, func(context.Context, string) bool { return true })
-	assert.NoError(t, consumers.Start(context.Background(), componenttest.NewNopHost()))
-
-	assert.NoError(t, q.Offer(context.Background(), "a")) // in process
-
-	assert.NoError(t, consumers.Shutdown(context.Background()))
-}
-
 func TestZeroSizeNoConsumers(t *testing.T) {
 	q := NewBoundedMemoryQueue[string](0)
 

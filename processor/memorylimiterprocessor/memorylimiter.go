@@ -32,19 +32,6 @@ var (
 	// that data is being refused due to high memory usage.
 	errDataRefused = errors.New("data refused due to high memory usage")
 
-	// Construction errors
-
-	errCheckIntervalOutOfRange = errors.New("check_interval must be greater than zero")
-
-	errLimitOutOfRange = errors.New("limit_mib or limit_percentage must be greater than zero")
-
-	errMemSpikeLimitOutOfRange = errors.New("spike_limit_mib must be smaller than limit_mib")
-
-	errMemSpikePercentageLimitOutOfRange = errors.New("spike_limit_percentage must be smaller than limit_percentage")
-
-	errPercentageLimitOutOfRange = errors.New(
-		"limit_percentage and spike_limit_percentage must be greater than zero and less than or equal to hundred")
-
 	errShutdownNotStarted = errors.New("no existing monitoring routine is running")
 )
 
