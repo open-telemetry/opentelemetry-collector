@@ -246,23 +246,15 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 	assert.NoError(t, srv.Shutdown(context.Background()))
 }
 
-func TestServiceTelemetryWithOpenCensusMetrics(t *testing.T) {
+func TestServiceTelemetry(t *testing.T) {
 	for _, tc := range ownMetricsTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			testCollectorStartHelper(t, false, tc)
+			testCollectorStartHelper(t, tc)
 		})
 	}
 }
 
-func TestServiceTelemetryWithOpenTelemetryMetrics(t *testing.T) {
-	for _, tc := range ownMetricsTestCases() {
-		t.Run(tc.name, func(t *testing.T) {
-			testCollectorStartHelper(t, true, tc)
-		})
-	}
-}
-
-func testCollectorStartHelper(t *testing.T, useOtel bool, tc ownMetricsTestCase) {
+func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase) {
 	var once sync.Once
 	loggingHookCalled := false
 	hook := func(entry zapcore.Entry) error {
@@ -281,7 +273,6 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, tc ownMetricsTestCase)
 		map[component.ID]component.Config{component.NewID("zpages"): &zpagesextension.Config{TCPAddr: confignet.TCPAddr{Endpoint: zpagesAddr}}},
 		map[component.Type]extension.Factory{"zpages": zpagesextension.NewFactory()})
 	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
-	set.useOtel = &useOtel
 
 	cfg := newNopConfig()
 	cfg.Extensions = []component.ID{component.NewID("zpages")}
@@ -303,9 +294,7 @@ func testCollectorStartHelper(t *testing.T, useOtel bool, tc ownMetricsTestCase)
 		assert.True(t, loggingHookCalled)
 
 		assertResourceLabels(t, srv.telemetrySettings.Resource, tc.expectedLabels)
-		if !useOtel {
-			assertMetrics(t, metricsAddr, tc.expectedLabels)
-		}
+		assertMetrics(t, metricsAddr, tc.expectedLabels)
 		assertZPages(t, zpagesAddr)
 		require.NoError(t, srv.Shutdown(context.Background()))
 	}
@@ -470,13 +459,15 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 
 	prefix := "otelcol"
 	for metricName, metricFamily := range parsed {
-		// require is used here so test fails with a single message.
-		require.True(
-			t,
-			strings.HasPrefix(metricName, prefix),
-			"expected prefix %q but string starts with %q",
-			prefix,
-			metricName[:len(prefix)+1]+"...")
+		if metricName != "target_info" {
+			// require is used here so test fails with a single message.
+			require.True(
+				t,
+				strings.HasPrefix(metricName, prefix),
+				"expected prefix %q but string starts with %q",
+				prefix,
+				metricName[:len(prefix)+1]+"...")
+		}
 
 		for _, metric := range metricFamily.Metric {
 			labelMap := map[string]string{}
