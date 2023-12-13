@@ -283,7 +283,7 @@ configuration issue. This could be due to a firewall, DNS, or proxy
 issue. Note that the Collector does have
 [proxy support](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
 
-### Startup failing in Windows Docker containers
+### Startup failing in Windows Docker containers (v0.90.1 and earlier)
 
 The process may fail to start in a Windows Docker container with the following
 error: `The service process could not connect to the service controller`. In

@@ -227,13 +227,14 @@ genpdata:
 	$(MAKE) fmt
 
 # Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
-gensemconv:
+gensemconv: $(SEMCONVGEN) $(SEMCONVKIT)
 	@[ "${SPECPATH}" ] || ( echo ">> env var SPECPATH is not set"; exit 1 )
 	@[ "${SPECTAG}" ] || ( echo ">> env var SPECTAG is not set"; exit 1 )
 	@echo "Generating semantic convention constants from specification version ${SPECTAG} at ${SPECPATH}"
-	semconvgen -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/. --only=resource -p conventionType=resource -f generated_resource.go
-	semconvgen -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/. --only=event -p conventionType=event -f generated_event.go
-	semconvgen -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/. --only=span -p conventionType=trace -f generated_trace.go
+	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=resource -p conventionType=resource -f generated_resource.go
+	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=event -p conventionType=event -f generated_event.go
+	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=span -p conventionType=trace -f generated_trace.go
+	$(SEMCONVKIT) -output "semconv/$(SPECTAG)" -tag "$(SPECTAG)"
 
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
 # against the current version of this repo.
@@ -382,12 +383,8 @@ push-tags: $(MULTIMOD)
 	done;
 
 .PHONY: check-changes
-check-changes: $(YQ)
-	# NOTE: ! inverses the return code of multimod diff. This is
-	# because prepare-release expects a 0 if there are diffs and
-	# non-0 if there are no diffs, which is the inverse of most
-	# diff tools
-	! $(MULTIMOD) diff -p $(PREVIOUS_VERSION) -m $(MODSET)
+check-changes: $(MULTIMOD)
+	$(MULTIMOD) diff -p $(PREVIOUS_VERSION) -m $(MODSET)
 
 .PHONY: prepare-release
 prepare-release:
@@ -412,8 +409,6 @@ else
 endif
 	# ensure a clean branch
 	git diff -s --exit-code || (echo "local repository not clean"; exit 1)
-	# check if any modules have changed since the previous release
-	$(MAKE) check-changes
 	# update files with new version
 	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' versions.yaml
 	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' ./cmd/builder/internal/builder/config.go

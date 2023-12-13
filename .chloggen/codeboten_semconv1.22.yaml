@@ -4,13 +4,13 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: service
+component: semconv
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "add resource attributes as labels to otel metrics to ensures backwards compatibility with OpenCensus metrics."
+note: Generated Semantic conventions 1.22.0.
 
 # One or more tracking issues or pull requests related to the change
-issues: [9029]
+issues: [8686]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

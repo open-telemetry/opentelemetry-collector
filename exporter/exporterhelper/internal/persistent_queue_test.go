@@ -39,7 +39,7 @@ func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 // createAndStartTestPersistentQueue creates and starts a fake queue with the given capacity and number of consumers.
-func createAndStartTestPersistentQueue(t *testing.T, capacity, numConsumers int, consumeFunc func(_ context.Context, item ptrace.Traces)) Queue[ptrace.Traces] {
+func createAndStartTestPersistentQueue(t *testing.T, capacity, numConsumers int, consumeFunc func(_ context.Context, item ptrace.Traces) bool) Queue[ptrace.Traces] {
 	pq := NewPersistentQueue[ptrace.Traces](capacity, component.DataTypeTraces, component.ID{}, marshaler.MarshalTraces,
 		unmarshaler.UnmarshalTraces, exportertest.NewNopCreateSettings())
 	host := &mockHost{ext: map[component.ID]component.Component{
@@ -73,9 +73,10 @@ func createTestPersistentQueue(client storage.Client) *persistentQueue[ptrace.Tr
 func TestPersistentQueue_FullCapacity(t *testing.T) {
 	start := make(chan struct{})
 	done := make(chan struct{})
-	pq := createAndStartTestPersistentQueue(t, 5, 1, func(context.Context, ptrace.Traces) {
+	pq := createAndStartTestPersistentQueue(t, 5, 1, func(context.Context, ptrace.Traces) bool {
 		<-start
 		<-done
+		return true
 	})
 	assert.Equal(t, 0, pq.Size())
 
@@ -99,7 +100,7 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 }
 
 func TestPersistentQueue_Shutdown(t *testing.T) {
-	pq := createAndStartTestPersistentQueue(t, 1001, 100, func(context.Context, ptrace.Traces) {})
+	pq := createAndStartTestPersistentQueue(t, 1001, 100, func(context.Context, ptrace.Traces) bool { return true })
 	req := newTraces(1, 10)
 
 	for i := 0; i < 1000; i++ {
@@ -139,8 +140,9 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			req := newTraces(1, 10)
 
 			numMessagesConsumed := &atomic.Int32{}
-			pq := createAndStartTestPersistentQueue(t, 1000, c.numConsumers, func(context.Context, ptrace.Traces) {
+			pq := createAndStartTestPersistentQueue(t, 1000, c.numConsumers, func(context.Context, ptrace.Traces) bool {
 				numMessagesConsumed.Add(int32(1))
+				return true
 			})
 
 			for i := 0; i < c.numMessagesProduced; i++ {
@@ -522,7 +524,7 @@ func BenchmarkPersistentQueue_TraceSpans(b *testing.B) {
 			}
 
 			for i := 0; i < bb.N; i++ {
-				require.True(bb, ps.Consume(func(context.Context, ptrace.Traces) {}))
+				require.True(bb, ps.Consume(func(context.Context, ptrace.Traces) bool { return true }))
 			}
 			require.NoError(b, ext.Shutdown(context.Background()))
 		})
@@ -641,7 +643,7 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 	// Subsequent items succeed, as deleting the first item frees enough space for the state update
 	reqCount--
 	for i := reqCount; i > 0; i-- {
-		require.True(t, ps.Consume(func(context.Context, ptrace.Traces) {}))
+		require.True(t, ps.Consume(func(context.Context, ptrace.Traces) bool { return true }))
 	}
 
 	// We should be able to put a new item in

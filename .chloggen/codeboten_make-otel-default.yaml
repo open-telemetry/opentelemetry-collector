@@ -1,24 +1,25 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: bug_fix
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: exporterhelper
+component: service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: fix missed metric aggregations
+note: "Enable `telemetry.useOtelForInternalMetrics` by updating the flag to beta"
 
 # One or more tracking issues or pull requests related to the change
-issues: [9048]
+issues: [7454]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This ensures that context cancellation in the exporter doesn't interfere with metric aggregation. The OTel
-  SDK currently returns if there's an error in the context used in `Add`. This means that if there's a
-  cancelled context in an export, the metrics are now recorded.
+  The metrics generated should be consistent with the metrics generated
+  previously with OpenCensus. Users can disable the behaviour
+  by setting `--feature-gates -telemetry.useOtelForInternalMetrics` at
+  collector start.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
