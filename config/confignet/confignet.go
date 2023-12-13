@@ -8,6 +8,13 @@ import (
 	"time"
 )
 
+// Dialer contains options for connecting to an address.
+type Dialer struct {
+	// Timeout is the maximum amount of time a dial will wait for
+	// a connect to complete. The default is no timeout.
+	Timeout time.Duration `mapstructure:"timeout"`
+}
+
 // NetAddr represents a network endpoint address.
 type NetAddr struct {
 	// Endpoint configures the address for this network connection.
@@ -21,14 +28,13 @@ type NetAddr struct {
 	// "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
 	Transport string `mapstructure:"transport"`
 
-	// DialerTimeout is the maximum amount of time a dial will wait for
-	// a connect to complete. The default is no timeout.
-	DialerTimeout time.Duration `mapstructure:"dialer_timeout"`
+	// Dialer contains options for connecting to an address.
+	Dialer Dialer `mapstructure:"dialer"`
 }
 
 // Dial equivalent with net.Dial for this address.
 func (na *NetAddr) Dial() (net.Conn, error) {
-	return net.DialTimeout(na.Transport, na.Endpoint, na.DialerTimeout)
+	return net.DialTimeout(na.Transport, na.Endpoint, na.Dialer.Timeout)
 }
 
 // Listen equivalent with net.Listen for this address.
@@ -45,14 +51,13 @@ type TCPAddr struct {
 	// "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
 	Endpoint string `mapstructure:"endpoint"`
 
-	// DialerTimeout is the maximum amount of time a dial will wait for
-	// a connect to complete. The default is no timeout.
-	DialerTimeout time.Duration `mapstructure:"dialer_timeout"`
+	// Dialer contains options for connecting to an address.
+	Dialer Dialer `mapstructure:"dialer"`
 }
 
 // Dial equivalent with net.Dial for this address.
 func (na *TCPAddr) Dial() (net.Conn, error) {
-	return net.DialTimeout("tcp", na.Endpoint, na.DialerTimeout)
+	return net.DialTimeout("tcp", na.Endpoint, na.Dialer.Timeout)
 }
 
 // Listen equivalent with net.Listen for this address.

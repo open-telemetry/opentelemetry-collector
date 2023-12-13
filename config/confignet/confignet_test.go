@@ -14,9 +14,11 @@ import (
 
 func TestNetAddrTimeout(t *testing.T) {
 	nac := &NetAddr{
-		Endpoint:      "localhost:0",
-		Transport:     "tcp",
-		DialerTimeout: -1 * time.Second,
+		Endpoint:  "localhost:0",
+		Transport: "tcp",
+		Dialer: Dialer{
+			Timeout: -1 * time.Second,
+		},
 	}
 	_, err := nac.Dial()
 	assert.Error(t, err)
@@ -30,8 +32,10 @@ func TestNetAddrTimeout(t *testing.T) {
 
 func TestTCPAddrTimeout(t *testing.T) {
 	nac := &TCPAddr{
-		Endpoint:      "localhost:0",
-		DialerTimeout: -1 * time.Second,
+		Endpoint: "localhost:0",
+		Dialer: Dialer{
+			Timeout: -1 * time.Second,
+		},
 	}
 	_, err := nac.Dial()
 	assert.Error(t, err)
