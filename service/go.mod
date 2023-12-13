@@ -3,7 +3,6 @@ module go.opentelemetry.io/collector/service
 go 1.20
 
 require (
-	contrib.go.opencensus.io/exporter/prometheus v0.4.2
 	github.com/google/uuid v1.5.0
 	github.com/prometheus/client_golang v1.18.0
 	github.com/prometheus/client_model v0.5.0
@@ -48,6 +47,7 @@ require (
 )
 
 require (
+	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
