@@ -77,7 +77,7 @@ func TestConfigValidate(t *testing.T) {
 				MemoryLimitMiB:      10,
 				MemorySpikeLimitMiB: 10,
 			},
-			err: errMemSpikeLimitOutOfRange,
+			err: errSpikeLimitOutOfRange,
 		},
 		{
 			name: "invalid memory percentage limit",
@@ -85,7 +85,7 @@ func TestConfigValidate(t *testing.T) {
 				CheckInterval:         1 * time.Second,
 				MemoryLimitPercentage: 101,
 			},
-			err: errPercentageLimitOutOfRange,
+			err: errLimitPercentageOutOfRange,
 		},
 		{
 			name: "invalid memory spike percentage limit",
@@ -94,7 +94,7 @@ func TestConfigValidate(t *testing.T) {
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 60,
 			},
-			err: errMemSpikePercentageLimitOutOfRange,
+			err: errSpikeLimitPercentageOutOfRange,
 		},
 	}
 	for _, tt := range tests {
