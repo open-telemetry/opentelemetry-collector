@@ -15,21 +15,17 @@ import (
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/metric/noop"
 )
 
 func TestProcessTelemetryWithHostProc(t *testing.T) {
+	tel := setupTelemetry(t)
 	// Make the sure the environment variable value is not used.
 	t.Setenv("HOST_PROC", "foo/bar")
 
-	require.NoError(t, RegisterProcessMetrics(noop.NewMeterProvider(), 0, WithHostProc("/proc")))
+	require.NoError(t, RegisterProcessMetrics(tel.MeterProvider, 0, WithHostProc("/proc")))
 
 	// Check that the metrics are actually filled.
 	time.Sleep(200 * time.Millisecond)
-
-	tel := setupTelemetry(t)
-
-	require.NoError(t, RegisterProcessMetrics(tel.MeterProvider, 0))
 
 	mp, err := fetchPrometheusMetrics(tel.promHandler)
 	require.NoError(t, err)
