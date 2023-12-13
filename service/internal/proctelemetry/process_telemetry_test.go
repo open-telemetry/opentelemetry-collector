@@ -16,7 +16,6 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats/view"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -28,7 +27,6 @@ import (
 
 type testTelemetry struct {
 	component.TelemetrySettings
-	views         []*view.View
 	promHandler   http.Handler
 	meterProvider *sdkmetric.MeterProvider
 }
@@ -47,9 +45,6 @@ func setupTelemetry(t *testing.T) testTelemetry {
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
 	settings.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
-
-	err := view.Register(settings.views...)
-	require.NoError(t, err)
 
 	promReg := prometheus.NewRegistry()
 	exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutCounterSuffixes())
