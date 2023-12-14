@@ -161,8 +161,8 @@ type tracesExporterWithObservability struct {
 	obsrep *ObsReport
 }
 
-func newTracesExporterWithObservability(obsrep *ObsReport) requestSender {
-	return &tracesExporterWithObservability{obsrep: obsrep}
+func newTracesExporterWithObservability(obsrep *ObsReport, nextSender requestSender) requestSender {
+	return &tracesExporterWithObservability{baseRequestSender: baseRequestSender{nextSender: nextSender}, obsrep: obsrep}
 }
 
 func (tewo *tracesExporterWithObservability) send(ctx context.Context, req Request) error {

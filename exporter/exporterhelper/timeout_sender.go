@@ -31,6 +31,10 @@ func NewDefaultTimeoutSettings() TimeoutSettings {
 	}
 }
 
+func newTimeoutSender(timeoutConfig TimeoutSettings, nextSender requestSender) requestSender {
+	return &timeoutSender{baseRequestSender: baseRequestSender{nextSender: nextSender}, cfg: timeoutConfig}
+}
+
 // timeoutSender is a requestSender that adds a `timeout` to every request that passes this sender.
 type timeoutSender struct {
 	baseRequestSender
@@ -42,9 +46,7 @@ func (ts *timeoutSender) send(ctx context.Context, req Request) error {
 	if ts.cfg.Timeout == 0 {
 		return req.Export(ctx)
 	}
-	// Intentionally don't overwrite the context inside the request, because in case of retries deadline will not be
-	// updated because this deadline most likely is before the next one.
 	tCtx, cancelFunc := context.WithTimeout(ctx, ts.cfg.Timeout)
 	defer cancelFunc()
-	return req.Export(tCtx)
+	return ts.nextSender.send(tCtx, req)
 }

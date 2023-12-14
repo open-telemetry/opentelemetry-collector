@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -50,15 +51,17 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 }
 
 type retrySender struct {
-	baseRequestSender
+	component.StartFunc
+	nextSender     requestSender
 	traceAttribute attribute.KeyValue
 	cfg            configretry.BackOffConfig
 	stopCh         chan struct{}
 	logger         *zap.Logger
 }
 
-func newRetrySender(config configretry.BackOffConfig, set exporter.CreateSettings) *retrySender {
+func newRetrySender(config configretry.BackOffConfig, set exporter.CreateSettings, nextSender requestSender) *retrySender {
 	return &retrySender{
+		nextSender:     nextSender,
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		cfg:            config,
 		stopCh:         make(chan struct{}),

@@ -19,23 +19,12 @@ import (
 type requestSender interface {
 	component.Component
 	send(context.Context, Request) error
-	setNextSender(nextSender requestSender)
 }
 
 type baseRequestSender struct {
 	component.StartFunc
 	component.ShutdownFunc
 	nextSender requestSender
-}
-
-var _ requestSender = (*baseRequestSender)(nil)
-
-func (b *baseRequestSender) send(ctx context.Context, req Request) error {
-	return b.nextSender.send(ctx, req)
-}
-
-func (b *baseRequestSender) setNextSender(nextSender requestSender) {
-	b.nextSender = nextSender
 }
 
 type errorLoggingRequestSender struct {
@@ -45,54 +34,60 @@ type errorLoggingRequestSender struct {
 }
 
 func (l *errorLoggingRequestSender) send(ctx context.Context, req Request) error {
-	err := l.baseRequestSender.send(ctx, req)
+	err := l.nextSender.send(ctx, req)
 	if err != nil {
 		l.logger.Error(l.message, zap.Int("dropped_items", req.ItemsCount()), zap.Error(err))
 	}
 	return err
 }
 
-type obsrepSenderFactory func(obsrep *ObsReport) requestSender
+type obsrepSenderFactory func(obsrep *ObsReport, nextSender requestSender) requestSender
+
+type settings struct {
+	requestExporter bool
+
+	startFunc    component.StartFunc
+	shutdownFunc component.ShutdownFunc
+
+	timeoutConfig TimeoutSettings
+	queueConfig   QueueSettings
+	retryConfig   *configretry.BackOffConfig
+
+	consumerOptions []consumer.Option
+}
 
 // Option apply changes to baseExporter.
-type Option func(*baseExporter)
+type Option func(cfg *settings)
 
 // WithStart overrides the default Start function for an exporter.
 // The default start function does nothing and always returns nil.
 func WithStart(start component.StartFunc) Option {
-	return func(o *baseExporter) {
-		o.StartFunc = start
+	return func(o *settings) {
+		o.startFunc = start
 	}
 }
 
 // WithShutdown overrides the default Shutdown function for an exporter.
 // The default shutdown function does nothing and always returns nil.
 func WithShutdown(shutdown component.ShutdownFunc) Option {
-	return func(o *baseExporter) {
-		o.ShutdownFunc = shutdown
+	return func(o *settings) {
+		o.shutdownFunc = shutdown
 	}
 }
 
 // WithTimeout overrides the default TimeoutSettings for an exporter.
 // The default TimeoutSettings is 5 seconds.
-func WithTimeout(timeoutSettings TimeoutSettings) Option {
-	return func(o *baseExporter) {
-		o.timeoutSender.cfg = timeoutSettings
+func WithTimeout(config TimeoutSettings) Option {
+	return func(o *settings) {
+		o.timeoutConfig = config
 	}
 }
 
-// WithRetry overrides the default configretry.BackOffConfig for an exporter.
-// The default configretry.BackOffConfig is to disable retries.
+// WithRetry overrides the default RetrySettings for an exporter.
+// The default RetrySettings is to disable retries.
 func WithRetry(config configretry.BackOffConfig) Option {
-	return func(o *baseExporter) {
-		if !config.Enabled {
-			o.retrySender = &errorLoggingRequestSender{
-				logger:  o.set.Logger,
-				message: "Exporting failed. Try enabling retry_on_failure config option to retry on retryable errors",
-			}
-			return
-		}
-		o.retrySender = newRetrySender(config, o.set)
+	return func(o *settings) {
+		o.retryConfig = &config
 	}
 }
 
@@ -100,18 +95,11 @@ func WithRetry(config configretry.BackOffConfig) Option {
 // The default QueueSettings is to disable queueing.
 // This option cannot be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 func WithQueue(config QueueSettings) Option {
-	return func(o *baseExporter) {
+	return func(o *settings) {
 		if o.requestExporter {
 			panic("queueing is not available for the new request exporters yet")
 		}
-		if !config.Enabled {
-			o.queueSender = &errorLoggingRequestSender{
-				logger:  o.set.Logger,
-				message: "Exporting failed. Dropping data. Try enabling sending_queue to survive temporary failures.",
-			}
-			return
-		}
-		o.queueSender = newQueueSender(config, o.set, o.signal, o.marshaler, o.unmarshaler)
+		o.queueConfig = config
 	}
 }
 
@@ -119,95 +107,120 @@ func WithQueue(config QueueSettings) Option {
 // The default is non-mutable data.
 // TODO: Verify if we can change the default to be mutable as we do for processors.
 func WithCapabilities(capabilities consumer.Capabilities) Option {
-	return func(o *baseExporter) {
+	return func(o *settings) {
 		o.consumerOptions = append(o.consumerOptions, consumer.WithCapabilities(capabilities))
 	}
 }
 
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
-	component.StartFunc
-	component.ShutdownFunc
+	allSenders []requestSender
+	lastSender requestSender
 
-	requestExporter bool
-	marshaler       RequestMarshaler
-	unmarshaler     RequestUnmarshaler
-	signal          component.DataType
+	// TODO: Determine how to remove the need for keeping this references for testing and unconventional shutdown.
+	exporterSender *exporterSender
+	queueSender    *queueSender
+	retrySender    *retrySender
 
-	set    exporter.CreateSettings
-	obsrep *ObsReport
-
-	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
-	// The data is handled by each sender in the respective order starting from the queueSender.
-	// Most of the senders are optional, and initialized with a no-op path-through sender.
-	queueSender   requestSender
-	obsrepSender  requestSender
-	retrySender   requestSender
-	timeoutSender *timeoutSender // timeoutSender is always initialized.
-
+	obsrep          *ObsReport
 	consumerOptions []consumer.Option
 }
 
 // TODO: requestExporter, marshaler, and unmarshaler arguments can be removed when the old exporter helpers will be updated to call the new ones.
 func newBaseExporter(set exporter.CreateSettings, signal component.DataType, requestExporter bool, marshaler RequestMarshaler,
-	unmarshaler RequestUnmarshaler, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
+	unmarshaler RequestUnmarshaler, osf obsrepSenderFactory, opts ...Option) (*baseExporter, error) {
 
 	obsReport, err := NewObsReport(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set})
 	if err != nil {
 		return nil, err
 	}
 
-	be := &baseExporter{
+	sets := &settings{
 		requestExporter: requestExporter,
-		marshaler:       marshaler,
-		unmarshaler:     unmarshaler,
-		signal:          signal,
-
-		queueSender:   &baseRequestSender{},
-		obsrepSender:  osf(obsReport),
-		retrySender:   &baseRequestSender{},
-		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutSettings()},
-
-		set:    set,
-		obsrep: obsReport,
+		timeoutConfig:   NewDefaultTimeoutSettings(),
+	}
+	for _, op := range opts {
+		op(sets)
 	}
 
-	for _, op := range options {
-		op(be)
+	be := &baseExporter{
+		obsrep:          obsReport,
+		consumerOptions: sets.consumerOptions,
 	}
-	be.connectSenders()
+
+	// Create senders in reverse order:
+	// Start with the basic exporter wrapper.
+	be.exporterSender = &exporterSender{StartFunc: sets.startFunc, ShutdownFunc: sets.shutdownFunc}
+	be.addSender(be.exporterSender)
+	// Before that add the timeout sender.
+	be.addSender(newTimeoutSender(sets.timeoutConfig, be.lastSender))
+	// Before that add the retry sender if configured.
+	if sets.retryConfig != nil {
+		if !sets.retryConfig.Enabled {
+			// TODO: Simplify logic for error logging request. Consider to add it always if both retry_on_failure is not enabled, not only when configured but disabled.
+			be.addSender(&errorLoggingRequestSender{
+				baseRequestSender: baseRequestSender{nextSender: be.lastSender},
+				logger:            set.Logger,
+				message:           "Exporting failed. Try enabling retry_on_failure config option to retry on retryable errors",
+			})
+		} else {
+			be.retrySender = newRetrySender(*sets.retryConfig, set, be.lastSender)
+			be.addSender(be.retrySender)
+		}
+	}
+	// Before that add the observability sender.
+	be.addSender(osf(obsReport, be.lastSender))
+	// Before that add the queue sender if configured.
+	if sets.queueConfig.Enabled {
+		be.queueSender = newQueueSender(sets.queueConfig, set, signal, marshaler, unmarshaler, be.lastSender)
+		be.addSender(be.queueSender)
+	}
 
 	return be, nil
 }
 
-// send sends the request using the first sender in the chain.
-func (be *baseExporter) send(ctx context.Context, req Request) error {
-	return be.queueSender.send(ctx, req)
+func (be *baseExporter) addSender(sender requestSender) {
+	be.allSenders = append(be.allSenders, sender)
+	be.lastSender = sender
 }
 
-// connectSenders connects the senders in the predefined order.
-func (be *baseExporter) connectSenders() {
-	be.queueSender.setNextSender(be.obsrepSender)
-	be.obsrepSender.setNextSender(be.retrySender)
-	be.retrySender.setNextSender(be.timeoutSender)
-}
-
+// Start all senders in the reverse order starting from the main exporter.
 func (be *baseExporter) Start(ctx context.Context, host component.Host) error {
-	// First start the wrapped exporter.
-	if err := be.StartFunc.Start(ctx, host); err != nil {
-		return err
+	// First start the next sender.
+	for _, sender := range be.allSenders {
+		if err := sender.Start(ctx, host); err != nil {
+			return err
+		}
 	}
 
-	// If no error then start the queueSender.
-	return be.queueSender.Start(ctx, host)
+	return nil
+}
+
+// send the request to the exporter.
+func (be *baseExporter) send(ctx context.Context, req Request) error {
+	return be.lastSender.send(ctx, req)
 }
 
 func (be *baseExporter) Shutdown(ctx context.Context) error {
-	return multierr.Combine(
-		// First shutdown the retry sender, so the queue sender can flush the queue without retries.
-		be.retrySender.Shutdown(ctx),
-		// Then shutdown the queue sender.
-		be.queueSender.Shutdown(ctx),
-		// Last shutdown the wrapped exporter itself.
-		be.ShutdownFunc.Shutdown(ctx))
+	var err error
+	// First shutdown the retry sender, so it can push any pending requests to back the queue.
+	if be.retrySender != nil {
+		err = multierr.Append(err, be.retrySender.Shutdown(ctx))
+	}
+	// Then shutdown the queue sender.
+	if be.queueSender != nil {
+		err = multierr.Append(err, be.queueSender.Shutdown(ctx))
+	}
+	// Last shutdown the wrapped exporter itself.
+	return multierr.Append(err, be.exporterSender.Shutdown(ctx))
+}
+
+type exporterSender struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+// send the request to the exporter.
+func (be *exporterSender) send(ctx context.Context, req Request) error {
+	return req.Export(ctx)
 }

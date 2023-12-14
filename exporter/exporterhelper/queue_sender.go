@@ -73,7 +73,7 @@ func (qCfg *QueueSettings) Validate() error {
 }
 
 type queueSender struct {
-	baseRequestSender
+	nextSender     requestSender
 	fullName       string
 	queue          internal.Queue[Request]
 	traceAttribute attribute.KeyValue
@@ -86,7 +86,7 @@ type queueSender struct {
 }
 
 func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal component.DataType,
-	marshaler RequestMarshaler, unmarshaler RequestUnmarshaler) *queueSender {
+	marshaler RequestMarshaler, unmarshaler RequestUnmarshaler, nextSender requestSender) *queueSender {
 
 	isPersistent := config.StorageID != nil
 	var queue internal.Queue[Request]
@@ -97,6 +97,7 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 		queue = internal.NewBoundedMemoryQueue[Request](config.QueueSize)
 	}
 	qs := &queueSender{
+		nextSender:     nextSender,
 		fullName:       set.ID.String(),
 		queue:          queue,
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),

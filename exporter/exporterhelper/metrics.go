@@ -161,8 +161,8 @@ type metricsSenderWithObservability struct {
 	obsrep *ObsReport
 }
 
-func newMetricsSenderWithObservability(obsrep *ObsReport) requestSender {
-	return &metricsSenderWithObservability{obsrep: obsrep}
+func newMetricsSenderWithObservability(obsrep *ObsReport, nextSender requestSender) requestSender {
+	return &metricsSenderWithObservability{baseRequestSender: baseRequestSender{nextSender: nextSender}, obsrep: obsrep}
 }
 
 func (mewo *metricsSenderWithObservability) send(ctx context.Context, req Request) error {
