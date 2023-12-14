@@ -244,7 +244,7 @@ func (n *connectorNode) buildComponent(
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Traces)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
-		next := fanoutconsumer.NewTracesRouter(consumers)
+		next := connector.NewTracesRouter(consumers)
 
 		switch n.exprPipelineType {
 		case component.DataTypeTraces:
@@ -280,7 +280,7 @@ func (n *connectorNode) buildComponent(
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Metrics)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
-		next := fanoutconsumer.NewMetricsRouter(consumers)
+		next := connector.NewMetricsRouter(consumers)
 
 		switch n.exprPipelineType {
 		case component.DataTypeTraces:
@@ -315,7 +315,7 @@ func (n *connectorNode) buildComponent(
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Logs)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
-		next := fanoutconsumer.NewLogsRouter(consumers)
+		next := connector.NewLogsRouter(consumers)
 
 		switch n.exprPipelineType {
 		case component.DataTypeTraces:

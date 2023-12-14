@@ -11,7 +11,6 @@ require (
 	go.opentelemetry.io/collector/config/configgrpc v0.91.0
 	go.opentelemetry.io/collector/config/confighttp v0.91.0
 	go.opentelemetry.io/collector/config/confignet v0.91.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.91.0
 	go.opentelemetry.io/collector/config/configtls v0.91.0
 	go.opentelemetry.io/collector/confmap v0.91.0
 	go.opentelemetry.io/collector/consumer v0.91.0
@@ -62,6 +61,7 @@ require (
 	go.opentelemetry.io/collector/config/configauth v0.91.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v0.91.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v0.91.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.91.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.91.0 // indirect
 	go.opentelemetry.io/collector/extension v0.91.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.91.0 // indirect
@@ -106,8 +106,6 @@ replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
 replace go.opentelemetry.io/collector/config/internal => ../../config/internal
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
-
-replace go.opentelemetry.io/collector/connector => ../../connector
 
 replace go.opentelemetry.io/collector/exporter => ../../exporter
 
