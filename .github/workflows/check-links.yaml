@@ -2,11 +2,7 @@ name: check-links
 on:
   push:
     branches: [ main ]
-    paths-ignore:
-      - 'cmd/builder/**'
   pull_request:
-    paths-ignore:
-      - 'cmd/builder/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
