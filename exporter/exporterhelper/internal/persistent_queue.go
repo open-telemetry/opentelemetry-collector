@@ -142,23 +142,16 @@ func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Contex
 // The call blocks until there is an item available or the queue is stopped.
 // The function returns true when an item is consumed or false if the queue is stopped.
 func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error) bool {
-	var (
-		req                  T
-		onProcessingFinished func(error)
-		consumed             bool
-	)
-
 	for {
 		select {
 		case <-pq.stopChan:
 			return false
 		case <-pq.putChan:
-			req, onProcessingFinished, consumed = pq.getNextItem(context.Background())
-		}
-
-		if consumed {
-			onProcessingFinished(consumeFunc(context.Background(), req))
-			return true
+			req, onProcessingFinished, consumed := pq.getNextItem(context.Background())
+			if consumed {
+				onProcessingFinished(consumeFunc(context.Background(), req))
+				return true
+			}
 		}
 	}
 }
