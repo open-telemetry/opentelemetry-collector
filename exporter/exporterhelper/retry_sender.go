@@ -115,8 +115,7 @@ func (rs *retrySender) send(ctx context.Context, req Request) error {
 		}
 
 		throttleErr := throttleRetry{}
-		isThrottle := errors.As(err, &throttleErr)
-		if isThrottle {
+		if errors.As(err, &throttleErr) {
 			backoffDelay = max(backoffDelay, throttleErr.delay)
 		}
 
