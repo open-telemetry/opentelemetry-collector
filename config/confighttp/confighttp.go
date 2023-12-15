@@ -358,7 +358,6 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 	}
 
 	// Enable OpenTelemetry observability plugin.
-	// TODO: Consider to use component ID string as prefix for all the operations.
 	handler = otelhttp.NewHandler(
 		handler,
 		"",
