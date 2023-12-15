@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v0.91.0
 	go.opentelemetry.io/collector/config/confighttp v0.91.0
 	go.opentelemetry.io/collector/config/configopaque v0.91.0
+	go.opentelemetry.io/collector/config/configretry v0.91.0
 	go.opentelemetry.io/collector/config/configtls v0.91.0
 	go.opentelemetry.io/collector/confmap v0.91.0
 	go.opentelemetry.io/collector/consumer v0.91.0
@@ -95,8 +96,6 @@ replace go.opentelemetry.io/collector/config/internal => ../../config/internal
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
-replace go.opentelemetry.io/collector/connector => ../../connector
-
 replace go.opentelemetry.io/collector/exporter => ../
 
 replace go.opentelemetry.io/collector/extension => ../../extension
@@ -121,3 +120,5 @@ retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 )
+
+replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry

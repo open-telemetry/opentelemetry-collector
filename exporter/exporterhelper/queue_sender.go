@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync/atomic"
 	"time"
 
 	"go.opencensus.io/metric/metricdata"
@@ -75,14 +74,12 @@ func (qCfg *QueueSettings) Validate() error {
 
 type queueSender struct {
 	baseRequestSender
-	fullName         string
-	queue            internal.Queue[Request]
-	traceAttribute   attribute.KeyValue
-	logger           *zap.Logger
-	meter            otelmetric.Meter
-	consumers        *internal.QueueConsumers[Request]
-	requeuingEnabled bool
-	stopped          *atomic.Bool
+	fullName       string
+	queue          internal.Queue[Request]
+	traceAttribute attribute.KeyValue
+	logger         *zap.Logger
+	meter          otelmetric.Meter
+	consumers      *internal.QueueConsumers[Request]
 
 	metricCapacity otelmetric.Int64ObservableGauge
 	metricSize     otelmetric.Int64ObservableGauge
@@ -105,50 +102,22 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		logger:         set.TelemetrySettings.Logger,
 		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
-		// TODO: this can be further exposed as a config param rather than relying on a type of queue
-		requeuingEnabled: isPersistent,
-		stopped:          &atomic.Bool{},
 	}
 	qs.consumers = internal.NewQueueConsumers(queue, config.NumConsumers, qs.consume)
 	return qs
 }
 
 // consume is the function that is executed by the queue consumers to send the data to the next consumerSender.
-func (qs *queueSender) consume(ctx context.Context, req Request) bool {
+func (qs *queueSender) consume(ctx context.Context, req Request) error {
 	err := qs.nextSender.send(ctx, req)
-
-	// Nothing to do if the error is nil or permanent. Permanent errors are already logged by retrySender.
-	if err == nil || consumererror.IsPermanent(err) {
-		return true
-	}
-
-	// Do not requeue if the queue sender is stopped.
-	if qs.stopped.Load() {
-		return false
-	}
-
-	if !qs.requeuingEnabled {
+	if err != nil && !consumererror.IsPermanent(err) {
 		qs.logger.Error(
 			"Exporting failed. No more retries left. Dropping data.",
 			zap.Error(err),
 			zap.Int("dropped_items", req.ItemsCount()),
 		)
-		return true
 	}
-
-	if qs.queue.Offer(ctx, extractPartialRequest(req, err)) == nil {
-		qs.logger.Error(
-			"Exporting failed. Putting back to the end of the queue.",
-			zap.Error(err),
-		)
-	} else {
-		qs.logger.Error(
-			"Exporting failed. Queue did not accept requeuing request. Dropping data.",
-			zap.Error(err),
-			zap.Int("dropped_items", req.ItemsCount()),
-		)
-	}
-	return true
+	return err
 }
 
 // Start is invoked during service startup.
@@ -212,8 +181,6 @@ func (qs *queueSender) recordWithOC() error {
 
 // Shutdown is invoked during service shutdown.
 func (qs *queueSender) Shutdown(ctx context.Context) error {
-	qs.stopped.Store(true)
-
 	// Cleanup queue metrics reporting
 	_ = globalInstruments.queueSize.UpsertEntry(func() int64 {
 		return int64(0)

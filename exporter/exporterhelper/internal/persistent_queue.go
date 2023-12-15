@@ -141,10 +141,10 @@ func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Contex
 // Consume applies the provided function on the head of queue.
 // The call blocks until there is an item available or the queue is stopped.
 // The function returns true when an item is consumed or false if the queue is stopped.
-func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) bool) bool {
+func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error) bool {
 	var (
 		req                  T
-		onProcessingFinished func()
+		onProcessingFinished func(error)
 		consumed             bool
 	)
 
@@ -157,9 +157,7 @@ func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) bool)
 		}
 
 		if consumed {
-			if ok := consumeFunc(context.Background(), req); ok {
-				onProcessingFinished()
-			}
+			onProcessingFinished(consumeFunc(context.Background(), req))
 			return true
 		}
 	}
@@ -241,7 +239,7 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 
 // getNextItem pulls the next available item from the persistent storage along with a callback function that should be
 // called after the item is processed to clean up the storage. If no new item is available, returns false.
-func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(), bool) {
+func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), bool) {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 
@@ -282,7 +280,13 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(), bool)
 
 	// Increase the reference count, so the client is not closed while the request is being processed.
 	pq.refClient++
-	return request, func() {
+	return request, func(consumeErr error) {
+		if errors.As(consumeErr, &shutdownErr{}) {
+			// The queue is shutting down, don't mark the item as dispatched, so it's picked up again after restart.
+			// TODO: Handle partially delivered requests by updating their values in the storage.
+			return
+		}
+
 		// Delete the item from the persistent storage after it was processed.
 		pq.mu.Lock()
 		defer pq.mu.Unlock()

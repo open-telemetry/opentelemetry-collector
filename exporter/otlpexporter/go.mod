@@ -10,6 +10,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v0.91.0
 	go.opentelemetry.io/collector/config/configgrpc v0.91.0
 	go.opentelemetry.io/collector/config/configopaque v0.91.0
+	go.opentelemetry.io/collector/config/configretry v0.91.0
 	go.opentelemetry.io/collector/config/configtls v0.91.0
 	go.opentelemetry.io/collector/confmap v0.91.0
 	go.opentelemetry.io/collector/consumer v0.91.0
@@ -112,8 +113,6 @@ retract (
 	v0.69.0 // Release failed, use v0.69.1
 )
 
-replace go.opentelemetry.io/collector/connector => ../../connector
-
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
@@ -121,3 +120,5 @@ replace go.opentelemetry.io/collector/config/confighttp => ../../config/confight
 replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
+
+replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry

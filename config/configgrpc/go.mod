@@ -86,6 +86,8 @@ replace go.opentelemetry.io/collector/config/configopaque => ../configopaque
 
 replace go.opentelemetry.io/collector/config/configtls => ../configtls
 
+replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
+
 replace go.opentelemetry.io/collector/config/configtelemetry => ../configtelemetry
 
 replace go.opentelemetry.io/collector/config/internal => ../internal
@@ -101,8 +103,6 @@ replace go.opentelemetry.io/collector/processor => ../../processor
 replace go.opentelemetry.io/collector/exporter => ../../exporter
 
 replace go.opentelemetry.io/collector/receiver => ../../receiver
-
-replace go.opentelemetry.io/collector/connector => ../../connector
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 

@@ -87,6 +87,6 @@ retract (
 	v0.69.0 // Release failed, use v0.69.1
 )
 
-replace go.opentelemetry.io/collector/connector => ../../connector
-
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
+
+replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry

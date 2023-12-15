@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -37,7 +38,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
-			RetrySettings: exporterhelper.RetrySettings{
+			RetryConfig: configretry.BackOffConfig{
 				Enabled:             true,
 				InitialInterval:     10 * time.Second,
 				RandomizationFactor: 0.7,
@@ -45,7 +46,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueSettings: exporterhelper.QueueSettings{
+			QueueConfig: exporterhelper.QueueSettings{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
