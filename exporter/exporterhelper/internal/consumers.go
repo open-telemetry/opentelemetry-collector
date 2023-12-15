@@ -40,8 +40,7 @@ func (qc *QueueConsumers[T]) Start(ctx context.Context, host component.Host) err
 			startWG.Done()
 			defer qc.stopWG.Done()
 			for {
-				ok := qc.queue.Consume(qc.consumeFunc)
-				if !ok {
+				if !qc.queue.Consume(qc.consumeFunc) {
 					return
 				}
 			}
