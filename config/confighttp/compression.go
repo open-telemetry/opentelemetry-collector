@@ -124,16 +124,18 @@ func httpContentDecompressor(h http.Handler, eh func(w http.ResponseWriter, r *h
 				if err != nil {
 					return nil, err
 				}
+				
+				err = body.Close()
+				if err != nil {
+					return nil, err
+				}
 
 				reqBuf, err := snappy.Decode(nil, compressed)
 				if err != nil {
 					return nil, err
 				}
 
-				sr := &readCloser{
-					reader: bytes.NewReader(reqBuf),
-					closer: body,
-				}
+				sr := io.NopCloser(bytes.NewReader(reqBuf)) 
 
 				return sr, nil
 			},
@@ -179,17 +181,4 @@ func (d *decompressor) newBodyReader(r *http.Request) (io.ReadCloser, error) {
 // defaultErrorHandler writes the error message in plain text.
 func defaultErrorHandler(w http.ResponseWriter, _ *http.Request, errMsg string, statusCode int) {
 	http.Error(w, errMsg, statusCode)
-}
-
-type readCloser struct {
-	reader io.Reader
-	closer io.Closer
-}
-
-func (src *readCloser) Read(p []byte) (n int, err error) {
-	return src.reader.Read(p)
-}
-
-func (src *readCloser) Close() error {
-	return src.closer.Close()
 }
