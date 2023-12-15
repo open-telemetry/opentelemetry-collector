@@ -64,7 +64,6 @@ type memoryLimiter struct {
 	refCounterLock sync.Mutex
 	refCounter     int
 	waitGroup      sync.WaitGroup
-	closeOnce      sync.Once
 	closed         chan struct{}
 }
 
@@ -101,7 +100,6 @@ func newMemoryLimiter(set processor.CreateSettings, cfg *Config) (*memoryLimiter
 		logger:         logger,
 		mustRefuse:     &atomic.Bool{},
 		obsrep:         obsrep,
-		closed:         make(chan struct{}),
 	}
 
 	return ml, nil
@@ -133,6 +131,7 @@ func (ml *memoryLimiter) start(_ context.Context, host component.Host) error {
 			break
 		}
 	}
+	ml.closed = make(chan struct{})
 	ml.startMonitoring()
 	return nil
 }
@@ -145,9 +144,7 @@ func (ml *memoryLimiter) shutdown(context.Context) error {
 		return errShutdownNotStarted
 	} else if ml.refCounter == 1 {
 		ml.ticker.Stop()
-		ml.closeOnce.Do(func() {
-			close(ml.closed)
-		})
+		close(ml.closed)
 		ml.waitGroup.Wait()
 	}
 	ml.refCounter--
