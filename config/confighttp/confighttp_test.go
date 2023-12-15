@@ -706,9 +706,6 @@ func TestHttpReception(t *testing.T) {
 				_ = s.Serve(ln)
 			}()
 
-			// Wait for the servers to start
-			<-time.After(10 * time.Millisecond)
-
 			prefix := "https://"
 			expectedProto := "HTTP/2.0"
 			if tt.tlsClientCreds.Insecure {
@@ -817,14 +814,9 @@ func TestHttpCors(t *testing.T) {
 				}))
 			require.NoError(t, err)
 
-			waitStart := make(chan struct{})
 			go func() {
-				close(waitStart)
 				_ = s.Serve(ln)
 			}()
-
-			// Wait for the servers to start
-			<-waitStart
 
 			url := fmt.Sprintf("http://%s", ln.Addr().String())
 
@@ -938,14 +930,9 @@ func TestHttpServerHeaders(t *testing.T) {
 				}))
 			require.NoError(t, err)
 
-			startChan := make(chan struct{})
 			go func() {
-				close(startChan)
 				_ = s.Serve(ln)
 			}()
-
-			// Wait for the servers to start
-			<-startChan
 
 			url := fmt.Sprintf("http://%s", ln.Addr().String())
 
@@ -1347,9 +1334,6 @@ func BenchmarkHttpRequest(b *testing.B) {
 	defer func() {
 		_ = s.Close()
 	}()
-
-	// Wait for the servers to start
-	<-time.After(10 * time.Millisecond)
 
 	for _, bb := range tests {
 		hcs := &HTTPClientSettings{
