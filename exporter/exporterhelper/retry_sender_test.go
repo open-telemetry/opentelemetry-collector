@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -37,7 +38,7 @@ func mockRequestMarshaler(_ Request) ([]byte, error) {
 
 func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	mockR := newMockRequest(2, consumererror.NewPermanent(errors.New("bad data")))
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -60,7 +61,7 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 
 func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
 	be, err := newBaseExporter(defaultSettings, "", false, mockRequestMarshaler,
 		mockRequestUnmarshaler(newMockRequest(2, errors.New("transient error"))),
@@ -87,7 +88,7 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 func TestQueuedRetry_OnError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 0
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -114,7 +115,7 @@ func TestQueuedRetry_OnError(t *testing.T) {
 func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 100 * time.Millisecond
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
@@ -161,7 +162,7 @@ func (e wrappedError) Unwrap() error {
 func TestQueuedRetry_ThrottleError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 10 * time.Millisecond
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -193,7 +194,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 1
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 0
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -218,7 +219,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 }
 
 func TestQueueRetryWithNoQueue(t *testing.T) {
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.MaxElapsedTime = time.Nanosecond // fail fast
 	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg))
 	require.NoError(t, err)
@@ -236,7 +237,7 @@ func TestQueueRetryWithNoQueue(t *testing.T) {
 }
 
 func TestQueueRetryWithDisabledRetires(t *testing.T) {
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
 	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg))
 	require.IsType(t, &errorLoggingRequestSender{}, be.retrySender)
@@ -403,67 +404,4 @@ func tagsMatchLabelKeys(tags []tag.Tag, keys []metricdata.LabelKey, labels []met
 		}
 	}
 	return true
-}
-
-func TestNewDefaultRetrySettings(t *testing.T) {
-	cfg := NewDefaultRetrySettings()
-	assert.NoError(t, cfg.Validate())
-	assert.Equal(t,
-		RetrySettings{
-			Enabled:             true,
-			InitialInterval:     5 * time.Second,
-			RandomizationFactor: 0.5,
-			Multiplier:          1.5,
-			MaxInterval:         30 * time.Second,
-			MaxElapsedTime:      5 * time.Minute,
-		}, cfg)
-}
-
-func TestInvalidInitialInterval(t *testing.T) {
-	cfg := NewDefaultRetrySettings()
-	assert.NoError(t, cfg.Validate())
-	cfg.InitialInterval = -1
-	assert.Error(t, cfg.Validate())
-}
-
-func TestInvalidRandomizationFactor(t *testing.T) {
-	cfg := NewDefaultRetrySettings()
-	assert.NoError(t, cfg.Validate())
-	cfg.RandomizationFactor = -1
-	assert.Error(t, cfg.Validate())
-	cfg.RandomizationFactor = 2
-	assert.Error(t, cfg.Validate())
-}
-
-func TestInvalidMultiplier(t *testing.T) {
-	cfg := NewDefaultRetrySettings()
-	assert.NoError(t, cfg.Validate())
-	cfg.Multiplier = 0
-	assert.Error(t, cfg.Validate())
-}
-
-func TestInvalidMaxInterval(t *testing.T) {
-	cfg := NewDefaultRetrySettings()
-	assert.NoError(t, cfg.Validate())
-	cfg.MaxInterval = -1
-	assert.Error(t, cfg.Validate())
-}
-
-func TestInvalidMaxElapsedTime(t *testing.T) {
-	cfg := NewDefaultRetrySettings()
-	assert.NoError(t, cfg.Validate())
-	cfg.MaxElapsedTime = -1
-	assert.Error(t, cfg.Validate())
-}
-
-func TestDisabledWithInvalidValues(t *testing.T) {
-	cfg := RetrySettings{
-		Enabled:             false,
-		InitialInterval:     -1,
-		RandomizationFactor: -1,
-		Multiplier:          0,
-		MaxInterval:         -1,
-		MaxElapsedTime:      -1,
-	}
-	assert.NoError(t, cfg.Validate())
 }
