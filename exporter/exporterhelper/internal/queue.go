@@ -15,8 +15,6 @@ import (
 var (
 	// ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full.
 	ErrQueueIsFull = errors.New("sending queue is full")
-	// ErrQueueIsStopped is the error returned when an item is offered to the Queue and the queue is stopped.
-	ErrQueueIsStopped = errors.New("sending queue is stopped")
 )
 
 // Queue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
