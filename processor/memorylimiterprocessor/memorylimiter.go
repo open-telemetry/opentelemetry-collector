@@ -131,7 +131,6 @@ func (ml *memoryLimiter) start(_ context.Context, host component.Host) error {
 			break
 		}
 	}
-	ml.closed = make(chan struct{})
 	ml.startMonitoring()
 	return nil
 }
@@ -231,6 +230,7 @@ func (ml *memoryLimiter) startMonitoring() {
 
 	ml.refCounter++
 	if ml.refCounter == 1 {
+		ml.closed = make(chan struct{})
 		ml.waitGroup.Add(1)
 		go func() {
 			defer ml.waitGroup.Done()
