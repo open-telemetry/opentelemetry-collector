@@ -342,18 +342,17 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		handler = authInterceptor(handler, server)
 	}
 
-	if hss.CORS != nil {
-		if len(hss.CORS.AllowedOrigins) > 0 {
-			co := cors.Options{
-				AllowedOrigins:   hss.CORS.AllowedOrigins,
-				AllowCredentials: true,
-				AllowedHeaders:   hss.CORS.AllowedHeaders,
-				MaxAge:           hss.CORS.MaxAge,
-			}
-			handler = cors.New(co).Handler(handler)
-		} else if len(hss.CORS.AllowedHeaders) > 0 {
-			settings.Logger.Warn("The CORS configuration specifies allowed headers but no allowed origins, and is therefore ignored.")
+	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
+		co := cors.Options{
+			AllowedOrigins:   hss.CORS.AllowedOrigins,
+			AllowCredentials: true,
+			AllowedHeaders:   hss.CORS.AllowedHeaders,
+			MaxAge:           hss.CORS.MaxAge,
 		}
+		handler = cors.New(co).Handler(handler)
+	}
+	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) == 0 && len(hss.CORS.AllowedHeaders) > 0 {
+		settings.Logger.Warn("The CORS configuration specifies allowed headers but no allowed origins, and is therefore ignored.")
 	}
 
 	if hss.ResponseHeaders != nil {
