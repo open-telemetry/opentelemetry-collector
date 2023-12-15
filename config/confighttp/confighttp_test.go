@@ -817,13 +817,14 @@ func TestHttpCors(t *testing.T) {
 				}))
 			require.NoError(t, err)
 
+			waitStart := make(chan struct{})
 			go func() {
+				close(waitStart)
 				_ = s.Serve(ln)
 			}()
 
-			// TODO: make starting server deterministic
 			// Wait for the servers to start
-			<-time.After(10 * time.Millisecond)
+			<-waitStart
 
 			url := fmt.Sprintf("http://%s", ln.Addr().String())
 
@@ -937,13 +938,14 @@ func TestHttpServerHeaders(t *testing.T) {
 				}))
 			require.NoError(t, err)
 
+			startChan := make(chan struct{})
 			go func() {
+				close(startChan)
 				_ = s.Serve(ln)
 			}()
 
-			// TODO: make starting server deterministic
 			// Wait for the servers to start
-			<-time.After(10 * time.Millisecond)
+			<-startChan
 
 			url := fmt.Sprintf("http://%s", ln.Addr().String())
 
