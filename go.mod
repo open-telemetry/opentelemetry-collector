@@ -12,7 +12,6 @@ require (
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.91.0
-	go.opentelemetry.io/collector/connector v0.91.0
 	go.opentelemetry.io/collector/consumer v0.91.0
 	go.opentelemetry.io/collector/exporter v0.91.0
 	go.opentelemetry.io/collector/featuregate v1.0.0
@@ -59,6 +58,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
+	go.opentelemetry.io/collector/config/configretry v0.91.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.91.0 // indirect
 	go.opentelemetry.io/collector/extension v0.91.0 // indirect
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
@@ -81,8 +81,6 @@ replace go.opentelemetry.io/collector/confmap => ./confmap
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ./config/configtelemetry
 
-replace go.opentelemetry.io/collector/connector => ./connector
-
 replace go.opentelemetry.io/collector/consumer => ./consumer
 
 replace go.opentelemetry.io/collector/exporter => ./exporter
@@ -96,6 +94,8 @@ replace go.opentelemetry.io/collector/pdata => ./pdata
 replace go.opentelemetry.io/collector/processor => ./processor
 
 replace go.opentelemetry.io/collector/receiver => ./receiver
+
+replace go.opentelemetry.io/collector/config/configretry => ./config/configretry
 
 retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1

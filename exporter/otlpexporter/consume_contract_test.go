@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -17,11 +18,11 @@ import (
 )
 
 func testExporterConfig(endpoint string) component.Config {
-	retryConfig := exporterhelper.NewDefaultRetrySettings()
+	retryConfig := configretry.NewDefaultBackOffConfig()
 	retryConfig.InitialInterval = time.Millisecond // interval is short for the test purposes
 	return &Config{
-		QueueSettings: exporterhelper.QueueSettings{Enabled: false},
-		RetrySettings: retryConfig,
+		QueueConfig: exporterhelper.QueueSettings{Enabled: false},
+		RetryConfig: retryConfig,
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: endpoint,
 			TLSSetting: configtls.TLSClientSetting{
@@ -31,7 +32,7 @@ func testExporterConfig(endpoint string) component.Config {
 	}
 }
 
-func testRecieverConfig(endpoint string) component.Config {
+func testReceiverConfig(endpoint string) component.Config {
 	cfg := otlpreceiver.NewFactory().CreateDefaultConfig()
 	cfg.(*otlpreceiver.Config).HTTP = nil
 	cfg.(*otlpreceiver.Config).GRPC.NetAddr.Endpoint = endpoint
@@ -49,7 +50,7 @@ func TestConsumeContractOtlpLogs(t *testing.T) {
 		DataType:             component.DataTypeLogs,
 		ExporterConfig:       testExporterConfig(addr),
 		ReceiverFactory:      otlpreceiver.NewFactory(),
-		ReceiverConfig:       testRecieverConfig(addr),
+		ReceiverConfig:       testReceiverConfig(addr),
 	})
 }
 
@@ -62,7 +63,7 @@ func TestConsumeContractOtlpTraces(t *testing.T) {
 		ExporterFactory:      NewFactory(),
 		ExporterConfig:       testExporterConfig(addr),
 		ReceiverFactory:      otlpreceiver.NewFactory(),
-		ReceiverConfig:       testRecieverConfig(addr),
+		ReceiverConfig:       testReceiverConfig(addr),
 	})
 }
 
@@ -75,6 +76,6 @@ func TestConsumeContractOtlpMetrics(t *testing.T) {
 		DataType:             component.DataTypeMetrics,
 		ExporterConfig:       testExporterConfig(addr),
 		ReceiverFactory:      otlpreceiver.NewFactory(),
-		ReceiverConfig:       testRecieverConfig(addr),
+		ReceiverConfig:       testReceiverConfig(addr),
 	})
 }

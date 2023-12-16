@@ -40,12 +40,13 @@ func (q *boundedMemoryQueue[T]) Offer(ctx context.Context, req T) error {
 // Consume applies the provided function on the head of queue.
 // The call blocks until there is an item available or the queue is stopped.
 // The function returns true when an item is consumed or false if the queue is stopped and emptied.
-func (q *boundedMemoryQueue[T]) Consume(consumeFunc func(context.Context, T) bool) bool {
+func (q *boundedMemoryQueue[T]) Consume(consumeFunc func(context.Context, T) error) bool {
 	item, ok := <-q.items
 	if !ok {
 		return false
 	}
-	consumeFunc(item.ctx, item.req)
+	// the memory queue doesn't handle consume errors
+	_ = consumeFunc(item.ctx, item.req)
 	return true
 }
 

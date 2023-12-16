@@ -1,0 +1,13 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: 'deprecation'
+
+# The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
+component: 'connector'
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Deprecate [Metrics|Logs|Traces]Router in favour of [Metrics|Logs|Traces]RouterAndConsumer"
+
+# One or more tracking issues or pull requests related to the change
+issues: [9095]

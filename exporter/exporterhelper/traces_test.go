@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -157,7 +158,7 @@ func TestTracesExporter_WithPersistentQueue(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	storageID := component.NewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	ts := consumertest.TracesSink{}
 	set := exportertest.NewNopCreateSettings()
 	set.ID = component.NewIDWithName("test_traces", "with_persistent_queue")
@@ -236,7 +237,7 @@ func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2

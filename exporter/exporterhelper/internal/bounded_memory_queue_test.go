@@ -30,10 +30,10 @@ func TestBoundedQueue(t *testing.T) {
 
 	consumerState := newConsumerState(t)
 
-	consumers := NewQueueConsumers(q, 1, func(_ context.Context, item string) bool {
+	consumers := NewQueueConsumers(q, 1, func(_ context.Context, item string) error {
 		consumerState.record(item)
 		<-waitCh
-		return true
+		return nil
 	})
 	assert.NoError(t, consumers.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -89,10 +89,10 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 	consumerState := newConsumerState(t)
 
 	waitChan := make(chan struct{})
-	consumers := NewQueueConsumers(q, 5, func(_ context.Context, item string) bool {
+	consumers := NewQueueConsumers(q, 5, func(_ context.Context, item string) error {
 		<-waitChan
 		consumerState.record(item)
-		return true
+		return nil
 	})
 	assert.NoError(t, consumers.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -176,9 +176,9 @@ func queueUsage(b *testing.B, capacity int, numConsumers int, numberOfItems int)
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		q := NewBoundedMemoryQueue[string](capacity)
-		consumers := NewQueueConsumers(q, numConsumers, func(context.Context, string) bool {
+		consumers := NewQueueConsumers(q, numConsumers, func(context.Context, string) error {
 			time.Sleep(1 * time.Millisecond)
-			return true
+			return nil
 		})
 		require.NoError(b, consumers.Start(context.Background(), componenttest.NewNopHost()))
 		for j := 0; j < numberOfItems; j++ {

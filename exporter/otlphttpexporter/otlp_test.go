@@ -329,8 +329,8 @@ func startLogsExporter(t *testing.T, baseURL string, overrideURL string) exporte
 func createExporterConfig(baseURL string, defaultCfg component.Config) *Config {
 	cfg := defaultCfg.(*Config)
 	cfg.Endpoint = baseURL
-	cfg.QueueSettings.Enabled = false
-	cfg.RetrySettings.Enabled = false
+	cfg.QueueConfig.Enabled = false
+	cfg.RetryConfig.Enabled = false
 	return cfg
 }
 
@@ -514,7 +514,7 @@ func TestErrorResponses(t *testing.T) {
 
 			cfg := &Config{
 				TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
-				// Create without QueueSettings and RetrySettings so that ConsumeTraces
+				// Create without QueueSettings and RetryConfig so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
 			exp, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
