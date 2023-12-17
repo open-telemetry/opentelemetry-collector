@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -39,7 +40,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 10 * time.Second,
 			},
-			RetrySettings: exporterhelper.RetrySettings{
+			RetryConfig: configretry.BackOffConfig{
 				Enabled:             true,
 				InitialInterval:     10 * time.Second,
 				RandomizationFactor: 0.7,
@@ -47,7 +48,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueSettings: exporterhelper.QueueSettings{
+			QueueConfig: exporterhelper.QueueSettings{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,

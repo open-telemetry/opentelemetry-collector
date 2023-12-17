@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -32,12 +33,12 @@ func mockRequestUnmarshaler(mr Request) RequestUnmarshaler {
 }
 
 func mockRequestMarshaler(_ Request) ([]byte, error) {
-	return nil, nil
+	return []byte("mockRequest"), nil
 }
 
 func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	mockR := newMockRequest(2, consumererror.NewPermanent(errors.New("bad data")))
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -60,7 +61,7 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 
 func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
 	be, err := newBaseExporter(defaultSettings, "", false, mockRequestMarshaler,
 		mockRequestUnmarshaler(newMockRequest(2, errors.New("transient error"))),
@@ -87,7 +88,7 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 func TestQueuedRetry_OnError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 0
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -114,7 +115,7 @@ func TestQueuedRetry_OnError(t *testing.T) {
 func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 100 * time.Millisecond
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
@@ -161,7 +162,7 @@ func (e wrappedError) Unwrap() error {
 func TestQueuedRetry_ThrottleError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 10 * time.Millisecond
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -193,7 +194,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 1
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 0
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -218,7 +219,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 }
 
 func TestQueueRetryWithNoQueue(t *testing.T) {
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.MaxElapsedTime = time.Nanosecond // fail fast
 	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg))
 	require.NoError(t, err)
@@ -236,7 +237,7 @@ func TestQueueRetryWithNoQueue(t *testing.T) {
 }
 
 func TestQueueRetryWithDisabledRetires(t *testing.T) {
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
 	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg))
 	require.IsType(t, &errorLoggingRequestSender{}, be.retrySender)

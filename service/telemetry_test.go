@@ -127,26 +127,40 @@ func TestTelemetryInit(t *testing.T) {
 			useOtel: true,
 			expectedMetrics: map[string]metricValue{
 				metricPrefix + ocPrefix + counterName: {
-					value:  13,
-					labels: map[string]string{},
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
 				metricPrefix + otelPrefix + counterName: {
-					value:  13,
-					labels: map[string]string{},
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
 				metricPrefix + grpcPrefix + counterName: {
 					value: 11,
 					labels: map[string]string{
-						"net_sock_peer_addr": "",
-						"net_sock_peer_name": "",
-						"net_sock_peer_port": "",
+						"net_sock_peer_addr":  "",
+						"net_sock_peer_name":  "",
+						"net_sock_peer_port":  "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
 					},
 				},
 				metricPrefix + httpPrefix + counterName: {
 					value: 10,
 					labels: map[string]string{
-						"net_host_name": "",
-						"net_host_port": "",
+						"net_host_name":       "",
+						"net_host_port":       "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
 					},
 				},
 				"target_info": {
@@ -165,20 +179,36 @@ func TestTelemetryInit(t *testing.T) {
 			disableHighCard: true,
 			expectedMetrics: map[string]metricValue{
 				metricPrefix + ocPrefix + counterName: {
-					value:  13,
-					labels: map[string]string{},
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
 				metricPrefix + otelPrefix + counterName: {
-					value:  13,
-					labels: map[string]string{},
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
 				metricPrefix + grpcPrefix + counterName: {
-					value:  11,
-					labels: map[string]string{},
+					value: 11,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
 				metricPrefix + httpPrefix + counterName: {
-					value:  10,
-					labels: map[string]string{},
+					value: 10,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
 				"target_info": {
 					value: 0,
@@ -214,26 +244,40 @@ func TestTelemetryInit(t *testing.T) {
 			},
 			expectedMetrics: map[string]metricValue{
 				metricPrefix + ocPrefix + counterName: {
-					value:  13,
-					labels: map[string]string{},
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
 				metricPrefix + otelPrefix + counterName: {
-					value:  13,
-					labels: map[string]string{},
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
 				metricPrefix + grpcPrefix + counterName: {
 					value: 11,
 					labels: map[string]string{
-						"net_sock_peer_addr": "",
-						"net_sock_peer_name": "",
-						"net_sock_peer_port": "",
+						"net_sock_peer_addr":  "",
+						"net_sock_peer_name":  "",
+						"net_sock_peer_port":  "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
 					},
 				},
 				metricPrefix + httpPrefix + counterName: {
 					value: 10,
 					labels: map[string]string{
-						"net_host_name": "",
-						"net_host_port": "",
+						"net_host_name":       "",
+						"net_host_port":       "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
 					},
 				},
 				"target_info": {
