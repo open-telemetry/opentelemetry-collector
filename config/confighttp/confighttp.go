@@ -342,7 +342,6 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		handler = authInterceptor(handler, server)
 	}
 
-	// TODO: emit a warning when non-empty CorsHeaders and empty CorsOrigins.
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
 		co := cors.Options{
 			AllowedOrigins:   hss.CORS.AllowedOrigins,
@@ -351,6 +350,9 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 			MaxAge:           hss.CORS.MaxAge,
 		}
 		handler = cors.New(co).Handler(handler)
+	}
+	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) == 0 && len(hss.CORS.AllowedHeaders) > 0 {
+		settings.Logger.Warn("The CORS configuration specifies allowed headers but no allowed origins, and is therefore ignored.")
 	}
 
 	if hss.ResponseHeaders != nil {
