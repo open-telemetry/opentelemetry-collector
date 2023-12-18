@@ -9,12 +9,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -176,51 +173,6 @@ func queueUsage(tb testing.TB, capacity int, numConsumers int, numberOfItems int
 	assert.NoError(tb, consumers.Shutdown(context.Background()))
 
 	wg.Wait()
-}
-
-type consumerState struct {
-	sync.Mutex
-	t            *testing.T
-	consumed     map[string]bool
-	consumedOnce *atomic.Bool
-}
-
-func newConsumerState(t *testing.T) *consumerState {
-	return &consumerState{
-		t:            t,
-		consumed:     make(map[string]bool),
-		consumedOnce: &atomic.Bool{},
-	}
-}
-
-func (s *consumerState) record(val string) {
-	s.Lock()
-	defer s.Unlock()
-	s.consumed[val] = true
-	s.consumedOnce.Store(true)
-}
-
-func (s *consumerState) snapshot() map[string]bool {
-	s.Lock()
-	defer s.Unlock()
-	out := make(map[string]bool)
-	for k, v := range s.consumed {
-		out[k] = v
-	}
-	return out
-}
-
-func (s *consumerState) waitToConsumeOnce() {
-	require.Eventually(s.t, s.consumedOnce.Load, 2*time.Second, 10*time.Millisecond, "expected to consumer once")
-}
-
-func (s *consumerState) assertConsumed(expected map[string]bool) {
-	for i := 0; i < 1000; i++ {
-		if snapshot := s.snapshot(); !reflect.DeepEqual(snapshot, expected) {
-			time.Sleep(time.Millisecond)
-		}
-	}
-	assert.Equal(s.t, expected, s.snapshot())
 }
 
 func TestZeroSizeNoConsumers(t *testing.T) {
