@@ -32,15 +32,15 @@ var (
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
 type QueueSettings struct {
-	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
-	Enabled bool `mapstructure:"enabled"`
+	// StorageID if not empty, enables the persistent storage and uses the component specified
+	// as a storage extension for the persistent queue
+	StorageID *component.ID `mapstructure:"storage"`
 	// NumConsumers is the number of consumers from the queue.
 	NumConsumers int `mapstructure:"num_consumers"`
 	// QueueSize is the maximum number of batches allowed in queue at a given time.
 	QueueSize int `mapstructure:"queue_size"`
-	// StorageID if not empty, enables the persistent storage and uses the component specified
-	// as a storage extension for the persistent queue
-	StorageID *component.ID `mapstructure:"storage"`
+	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // NewDefaultQueueSettings returns the default settings for QueueSettings.
@@ -73,16 +73,15 @@ func (qCfg *QueueSettings) Validate() error {
 }
 
 type queueSender struct {
-	baseRequestSender
-	fullName       string
-	queue          internal.Queue[Request]
 	traceAttribute attribute.KeyValue
-	logger         *zap.Logger
+	baseRequestSender
+	queue          internal.Queue[Request]
 	meter          otelmetric.Meter
-	consumers      *internal.QueueConsumers[Request]
-
 	metricCapacity otelmetric.Int64ObservableGauge
 	metricSize     otelmetric.Int64ObservableGauge
+	logger         *zap.Logger
+	consumers      *internal.QueueConsumers[Request]
+	fullName       string
 }
 
 func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal component.DataType,

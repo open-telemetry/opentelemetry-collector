@@ -77,10 +77,10 @@ func createReceiver(cfg component.Config) *ExampleReceiver {
 
 // ExampleReceiver allows producing traces and metrics for testing purposes.
 type ExampleReceiver struct {
-	componentState
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
+	componentState
 }
 
 // This is the map of already created example receivers for particular configurations.

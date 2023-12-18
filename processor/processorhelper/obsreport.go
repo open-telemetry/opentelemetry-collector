@@ -41,23 +41,20 @@ func BuildCustomMetricName(configType, metric string) string {
 
 // ObsReport is a helper to add observability to a processor.
 type ObsReport struct {
-	level    configtelemetry.Level
-	mutators []tag.Mutator
-
-	logger *zap.Logger
-
-	useOtelForMetrics bool
-	otelAttrs         []attribute.KeyValue
-
-	acceptedSpansCounter        metric.Int64Counter
-	refusedSpansCounter         metric.Int64Counter
-	droppedSpansCounter         metric.Int64Counter
-	acceptedMetricPointsCounter metric.Int64Counter
 	refusedMetricPointsCounter  metric.Int64Counter
-	droppedMetricPointsCounter  metric.Int64Counter
-	acceptedLogRecordsCounter   metric.Int64Counter
-	refusedLogRecordsCounter    metric.Int64Counter
+	acceptedMetricPointsCounter metric.Int64Counter
 	droppedLogRecordsCounter    metric.Int64Counter
+	refusedLogRecordsCounter    metric.Int64Counter
+	acceptedLogRecordsCounter   metric.Int64Counter
+	acceptedSpansCounter        metric.Int64Counter
+	droppedSpansCounter         metric.Int64Counter
+	refusedSpansCounter         metric.Int64Counter
+	droppedMetricPointsCounter  metric.Int64Counter
+	logger                      *zap.Logger
+	mutators                    []tag.Mutator
+	otelAttrs                   []attribute.KeyValue
+	level                       configtelemetry.Level
+	useOtelForMetrics           bool
 }
 
 // ObsReportSettings are settings for creating an ObsReport.

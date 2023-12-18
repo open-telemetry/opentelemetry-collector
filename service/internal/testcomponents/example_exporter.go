@@ -46,10 +46,10 @@ func createLogsExporter(context.Context, exporter.CreateSettings, component.Conf
 
 // ExampleExporter stores consumed traces and metrics for testing purposes.
 type ExampleExporter struct {
-	componentState
 	Traces  []ptrace.Traces
 	Metrics []pmetric.Metrics
 	Logs    []plog.Logs
+	componentState
 }
 
 // ConsumeTraces receives ptrace.Traces for processing by the consumer.Traces.

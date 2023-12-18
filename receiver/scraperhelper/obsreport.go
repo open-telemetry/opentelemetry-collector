@@ -30,18 +30,16 @@ var (
 
 // ObsReport is a helper to add observability to a scraper.
 type ObsReport struct {
-	level      configtelemetry.Level
-	receiverID component.ID
-	scraper    component.ID
-	mutators   []tag.Mutator
-	tracer     trace.Tracer
-
-	logger *zap.Logger
-
-	useOtelForMetrics    bool
-	otelAttrs            []attribute.KeyValue
+	tracer               trace.Tracer
 	scrapedMetricsPoints metric.Int64Counter
 	erroredMetricsPoints metric.Int64Counter
+	logger               *zap.Logger
+	receiverID           component.ID
+	scraper              component.ID
+	mutators             []tag.Mutator
+	otelAttrs            []attribute.KeyValue
+	level                configtelemetry.Level
+	useOtelForMetrics    bool
 }
 
 // ObsReportSettings are settings for creating an ObsReport.

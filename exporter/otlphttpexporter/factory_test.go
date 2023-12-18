@@ -53,8 +53,8 @@ func TestCreateTracesExporter(t *testing.T) {
 	endpoint := "http://" + testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
-		name             string
 		config           *Config
+		name             string
 		mustFailOnCreate bool
 		mustFailOnStart  bool
 	}{

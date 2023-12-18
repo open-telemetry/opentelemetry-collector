@@ -13,13 +13,13 @@ import (
 )
 
 type clientCAsFileReloader struct {
-	clientCAsFile   string
-	certPool        *x509.CertPool
 	lastReloadError error
-	lock            sync.RWMutex
 	loader          clientCAsFileLoader
+	certPool        *x509.CertPool
 	watcher         *fsnotify.Watcher
 	shutdownCH      chan bool
+	clientCAsFile   string
+	lock            sync.RWMutex
 }
 
 type clientCAsFileLoader interface {

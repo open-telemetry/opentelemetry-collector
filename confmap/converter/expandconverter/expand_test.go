@@ -110,9 +110,9 @@ func TestNewExpandConverterHostPort(t *testing.T) {
 	t.Setenv("PORT", "4317")
 
 	var testCases = []struct {
-		name     string
 		input    map[string]any
 		expected map[string]any
+		name     string
 	}{
 		{
 			name: "brackets",

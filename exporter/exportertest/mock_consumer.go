@@ -60,11 +60,11 @@ type mockConsumer struct {
 	consumer.Logs
 	consumer.Metrics
 	reqCounter          *requestCounter
-	mux                 sync.Mutex
 	exportErrorFunction func() error
 	receivedTraces      []ptrace.Traces
 	receivedMetrics     []pmetric.Metrics
 	receivedLogs        []plog.Logs
+	mux                 sync.Mutex
 }
 
 func newMockConsumer(decisionFunc func() error) mockConsumer {

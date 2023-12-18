@@ -99,9 +99,9 @@ func TestResolverExpandMapAndSliceValues(t *testing.T) {
 
 func TestResolverExpandStringValues(t *testing.T) {
 	tests := []struct {
+		output any
 		name   string
 		input  string
-		output any
 	}{
 		// Embedded.
 		{
@@ -337,8 +337,8 @@ func newEnvProvider() Provider {
 
 func TestResolverExpandReturnError(t *testing.T) {
 	tests := []struct {
-		name  string
 		input any
+		name  string
 	}{
 		{
 			name:  "string_value",

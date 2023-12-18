@@ -72,9 +72,9 @@ func TestAllGrpcClientSettings(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	tests := []struct {
-		settings GRPCClientSettings
-		name     string
 		host     component.Host
+		name     string
+		settings GRPCClientSettings
 	}{
 		{
 			name: "test all with gzip compression",
@@ -242,9 +242,9 @@ func TestGRPCClientSettingsError(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	tests := []struct {
-		settings GRPCClientSettings
-		err      string
 		host     component.Host
+		err      string
+		settings GRPCClientSettings
 	}{
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
@@ -429,8 +429,8 @@ func TestGRPCServerWarning(t *testing.T) {
 
 func TestGRPCServerSettingsError(t *testing.T) {
 	tests := []struct {
-		settings GRPCServerSettings
 		err      string
+		settings GRPCServerSettings
 	}{
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
@@ -504,9 +504,9 @@ func TestHttpReception(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	tests := []struct {
-		name           string
 		tlsServerCreds *configtls.TLSServerSetting
 		tlsClientCreds *configtls.TLSClientSetting
+		name           string
 		hasError       bool
 	}{
 		{
@@ -691,10 +691,10 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
-		desc       string
-		input      context.Context
-		doMetadata bool
 		expected   client.Info
+		input      context.Context
+		desc       string
+		doMetadata bool
 	}{
 		{
 			desc:     "no peer information, empty client",
@@ -830,8 +830,8 @@ func (ms *mockedStream) Context() context.Context {
 
 func TestClientInfoInterceptors(t *testing.T) {
 	testCases := []struct {
-		desc   string
 		tester func(context.Context, ptraceotlp.GRPCClient)
+		desc   string
 	}{
 		{
 			// we only have unary services, we don't have any clients we could use

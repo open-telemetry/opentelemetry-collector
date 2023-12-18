@@ -12,9 +12,9 @@ import (
 
 type QueueConsumers[T any] struct {
 	queue        Queue[T]
-	numConsumers int
 	consumeFunc  func(context.Context, T) error
 	stopWG       sync.WaitGroup
+	numConsumers int
 }
 
 func NewQueueConsumers[T any](q Queue[T], numConsumers int, consumeFunc func(context.Context, T) error) *QueueConsumers[T] {

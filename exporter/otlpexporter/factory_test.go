@@ -50,8 +50,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
-		name             string
 		config           *Config
+		name             string
 		mustFailOnCreate bool
 		mustFailOnStart  bool
 	}{

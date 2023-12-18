@@ -190,12 +190,12 @@ func newTraces(numTraces int, numSpans int) ptrace.Traces {
 func TestToStorageClient(t *testing.T) {
 	getStorageClientError := errors.New("unable to create storage client")
 	testCases := []struct {
-		desc           string
 		storage        storage.Extension
-		numStorages    int
-		storageIndex   int
 		expectedError  error
 		getClientError error
+		desc           string
+		numStorages    int
+		storageIndex   int
 	}{
 		{
 			desc:          "obtain storage extension by name",
@@ -660,9 +660,9 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 	errDeletingItem := fmt.Errorf("error deleting item")
 	errUpdatingDispatched := fmt.Errorf("error updating dispatched items")
 	testCases := []struct {
-		storageErrors []error
 		expectedError error
 		description   string
+		storageErrors []error
 	}{
 		{
 			description:   "no errors",

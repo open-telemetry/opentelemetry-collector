@@ -28,23 +28,22 @@ const (
 
 // ObsReport is a helper to add observability to an exporter.
 type ObsReport struct {
-	level          configtelemetry.Level
-	spanNamePrefix string
-	mutators       []tag.Mutator
-	tracer         trace.Tracer
-	logger         *zap.Logger
-
-	useOtelForMetrics           bool
-	otelAttrs                   []attribute.KeyValue
-	sentSpans                   metric.Int64Counter
-	failedToSendSpans           metric.Int64Counter
-	failedToEnqueueSpans        metric.Int64Counter
-	sentMetricPoints            metric.Int64Counter
-	failedToSendMetricPoints    metric.Int64Counter
 	failedToEnqueueMetricPoints metric.Int64Counter
-	sentLogRecords              metric.Int64Counter
-	failedToSendLogRecords      metric.Int64Counter
+	sentMetricPoints            metric.Int64Counter
 	failedToEnqueueLogRecords   metric.Int64Counter
+	tracer                      trace.Tracer
+	failedToSendSpans           metric.Int64Counter
+	failedToSendLogRecords      metric.Int64Counter
+	sentLogRecords              metric.Int64Counter
+	failedToSendMetricPoints    metric.Int64Counter
+	sentSpans                   metric.Int64Counter
+	failedToEnqueueSpans        metric.Int64Counter
+	logger                      *zap.Logger
+	spanNamePrefix              string
+	otelAttrs                   []attribute.KeyValue
+	mutators                    []tag.Mutator
+	level                       configtelemetry.Level
+	useOtelForMetrics           bool
 }
 
 // ObsReportSettings are settings for creating an ObsReport.

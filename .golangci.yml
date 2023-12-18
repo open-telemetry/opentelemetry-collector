@@ -69,9 +69,6 @@ linters-settings:
           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
 
     enable-all: true
-    # TODO: Enable this and fix the alignment issues.
-    disable:
-      - fieldalignment
 
   revive:
     # minimal confidence for issues, default is 0.8

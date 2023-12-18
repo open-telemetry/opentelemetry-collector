@@ -51,9 +51,9 @@ const (
 // CGroupSubsys represents the data structure for entities in
 // `/proc/$PID/cgroup`. See also proc(5) for more information.
 type CGroupSubsys struct {
-	ID         int
-	Subsystems []string
 	Name       string
+	Subsystems []string
+	ID         int
 }
 
 // NewCGroupSubsysFromLine returns a new *CGroupSubsys by parsing a string in

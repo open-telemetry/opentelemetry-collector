@@ -12,9 +12,9 @@ import (
 
 func TestParseIP(t *testing.T) {
 	testCases := []struct {
+		expected *net.IPAddr
 		desc     string
 		input    string
-		expected *net.IPAddr
 	}{
 		{
 			desc:  "addr",

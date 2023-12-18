@@ -12,8 +12,8 @@ import (
 
 // Deprecated: [v0.92.0] use connector.NewTracesRouter.
 type TracesRouterOption struct {
-	id   component.ID
 	cons consumer.Traces
+	id   component.ID
 }
 
 // Deprecated: [v0.92.0] use connector.NewTracesRouter.
@@ -37,8 +37,8 @@ func NewTracesRouter(opts ...TracesRouterOption) connector.TracesRouter {
 
 // Deprecated: [v0.92.0] use connector.NewMetricsRouter.
 type MetricsRouterOption struct {
-	id   component.ID
 	cons consumer.Metrics
+	id   component.ID
 }
 
 // Deprecated: [v0.92.0] use connector.NewMetricsRouter.
@@ -62,8 +62,8 @@ func NewMetricsRouter(opts ...MetricsRouterOption) connector.MetricsRouter {
 
 // Deprecated: [v0.92.0] use connector.NewLogsRouter.
 type LogsRouterOption struct {
-	id   component.ID
 	cons consumer.Logs
+	id   component.ID
 }
 
 // Deprecated: [v0.92.0] use connector.NewLogsRouter.

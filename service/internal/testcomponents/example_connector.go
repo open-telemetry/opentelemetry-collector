@@ -123,10 +123,10 @@ func createExampleLogsToLogs(_ context.Context, set connector.CreateSettings, _ 
 }
 
 type ExampleConnector struct {
-	componentState
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
+	componentState
 	mutatesData bool
 }
 

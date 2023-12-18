@@ -54,25 +54,20 @@ func (s State) String() string {
 
 // CollectorSettings holds configuration for creating a new Collector.
 type CollectorSettings struct {
+	// ConfigProvider provides the service configuration.
+	// If the provider watches for configuration change, collector may reload the new configuration upon changes.
+	ConfigProvider ConfigProvider
 	// Factories service factories.
 	Factories func() (Factories, error)
-
 	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
-
+	// LoggingOptions provides a way to change behavior of zap logging.
+	LoggingOptions []zap.Option
 	// DisableGracefulShutdown disables the automatic graceful shutdown
 	// of the collector on SIGINT or SIGTERM.
 	// Users who want to handle signals themselves can disable this behavior
 	// and manually handle the signals to shutdown the collector.
 	DisableGracefulShutdown bool
-
-	// ConfigProvider provides the service configuration.
-	// If the provider watches for configuration change, collector may reload the new configuration upon changes.
-	ConfigProvider ConfigProvider
-
-	// LoggingOptions provides a way to change behavior of zap logging.
-	LoggingOptions []zap.Option
-
 	// SkipSettingGRPCLogger avoids setting the grpc logger
 	SkipSettingGRPCLogger bool
 }
@@ -90,17 +85,15 @@ type CollectorSettings struct {
 
 // Collector represents a server providing the OpenTelemetry Collector service.
 type Collector struct {
-	set CollectorSettings
-
 	service *service.Service
 	state   *atomic.Int32
-
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
 	// asyncErrorChannel is used to signal a fatal error from any component.
 	asyncErrorChannel chan error
+	set               CollectorSettings
 }
 
 // NewCollector creates and returns a new instance of Collector.

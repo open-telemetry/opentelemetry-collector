@@ -14,9 +14,9 @@ import (
 
 func TestReadScope(t *testing.T) {
 	tests := []struct {
+		want    *otlpcommon.InstrumentationScope
 		name    string
 		jsonStr string
-		want    *otlpcommon.InstrumentationScope
 	}{
 		{
 			name: "scope",

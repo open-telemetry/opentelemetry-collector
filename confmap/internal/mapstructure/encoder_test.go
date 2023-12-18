@@ -15,19 +15,19 @@ import (
 )
 
 type TestComplexStruct struct {
-	Skipped   TestEmptyStruct             `mapstructure:",squash"`
-	Nested    TestSimpleStruct            `mapstructure:",squash"`
-	Slice     []TestSimpleStruct          `mapstructure:"slice,omitempty"`
+	Nested    TestSimpleStruct `mapstructure:",squash"`
+	Interface encoding.TextMarshaler
 	Pointer   *TestSimpleStruct           `mapstructure:"ptr"`
 	Map       map[string]TestSimpleStruct `mapstructure:"map,omitempty"`
 	Remain    map[string]any              `mapstructure:",remain"`
-	Interface encoding.TextMarshaler
+	Skipped   TestEmptyStruct             `mapstructure:",squash"`
+	Slice     []TestSimpleStruct          `mapstructure:"slice,omitempty"`
 }
 
 type TestSimpleStruct struct {
+	err     error
 	Value   string `mapstructure:"value"`
 	skipped string
-	err     error
 }
 
 type TestEmptyStruct struct {
@@ -129,8 +129,8 @@ func TestEncode(t *testing.T) {
 
 func TestGetTagInfo(t *testing.T) {
 	testCases := map[string]struct {
-		field      reflect.StructField
 		wantName   string
+		field      reflect.StructField
 		wantOmit   bool
 		wantSquash bool
 	}{

@@ -74,19 +74,16 @@ func createExampleLogsRouter(_ context.Context, _ connector.CreateSettings, cfg 
 }
 
 type ExampleRouter struct {
-	componentState
-
-	tracesRight consumer.Traces
-	tracesLeft  consumer.Traces
-	tracesNum   int
-
+	tracesRight  consumer.Traces
+	tracesLeft   consumer.Traces
 	metricsRight consumer.Metrics
 	metricsLeft  consumer.Metrics
+	logsRight    consumer.Logs
+	logsLeft     consumer.Logs
+	tracesNum    int
 	metricsNum   int
-
-	logsRight consumer.Logs
-	logsLeft  consumer.Logs
-	logsNum   int
+	logsNum      int
+	componentState
 }
 
 func (r *ExampleRouter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {

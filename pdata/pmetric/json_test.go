@@ -261,8 +261,8 @@ func Test_jsonUnmarshaler_UnmarshalMetrics(t *testing.T) {
 		md func() Metrics
 	}
 	tests := []struct {
-		name string
 		args args
+		name string
 	}{
 		{
 			name: "sum",
@@ -341,12 +341,12 @@ func TestUnmarshalJsoniterScopeMetrics(t *testing.T) {
 
 func TestUnmarshalJsoniterMetric(t *testing.T) {
 	type args struct {
-		jsonStr string
 		want    *otlpmetrics.Metric
+		jsonStr string
 	}
 	tests := []struct {
-		name string
 		args args
+		name string
 	}{
 		{
 			name: "sum has unknown field",
@@ -489,9 +489,9 @@ func TestUnmarshalJsoniterQuantileValue(t *testing.T) {
 
 func TestExemplarVal(t *testing.T) {
 	tests := []struct {
+		want    *otlpmetrics.Exemplar
 		name    string
 		jsonStr string
-		want    *otlpmetrics.Exemplar
 	}{
 		{
 			name:    "int",

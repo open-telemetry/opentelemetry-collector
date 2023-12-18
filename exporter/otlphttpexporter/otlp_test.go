@@ -378,12 +378,12 @@ func TestErrorResponses(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		responseStatus int
 		responseBody   *status.Status
 		err            func(srv *httptest.Server) error
-		isPermErr      bool
 		headers        map[string]string
+		name           string
+		responseStatus int
+		isPermErr      bool
 	}{
 		{
 			name:           "400",
@@ -873,8 +873,8 @@ func TestPartialSuccessInvalidResponseBody(t *testing.T) {
 
 func TestPartialSuccessInvalidBody(t *testing.T) {
 	invalidBodyCases := []struct {
-		telemetryType string
 		handler       partialSuccessHandler
+		telemetryType string
 	}{
 		{
 			telemetryType: "traces",

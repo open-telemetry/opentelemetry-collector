@@ -22,10 +22,10 @@ const (
 
 type zpagesExtension struct {
 	config              *Config
-	telemetry           component.TelemetrySettings
 	zpagesSpanProcessor *zpages.SpanProcessor
-	server              http.Server
 	stopCh              chan struct{}
+	telemetry           component.TelemetrySettings
+	server              http.Server
 }
 
 // registerableTracerProvider is a tracer that supports

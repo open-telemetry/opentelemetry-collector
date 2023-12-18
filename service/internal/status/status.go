@@ -94,10 +94,10 @@ var errStatusNotReady = errors.New("report component status is not ready until s
 
 // Reporter handles component status reporting
 type Reporter struct {
-	mu             sync.Mutex
-	ready          bool
 	fsmMap         map[*component.InstanceID]*fsm
 	onStatusChange NotifyStatusFunc
+	mu             sync.Mutex
+	ready          bool
 }
 
 // NewReporter returns a reporter that will invoke the NotifyStatusFunc when a component's status

@@ -146,14 +146,14 @@ func (f CreateLogsFunc) CreateLogsReceiver(
 }
 
 type factory struct {
-	cfgType component.Type
 	component.CreateDefaultConfigFunc
 	CreateTracesFunc
-	tracesStabilityLevel component.StabilityLevel
 	CreateMetricsFunc
-	metricsStabilityLevel component.StabilityLevel
 	CreateLogsFunc
-	logsStabilityLevel component.StabilityLevel
+	cfgType               component.Type
+	tracesStabilityLevel  component.StabilityLevel
+	metricsStabilityLevel component.StabilityLevel
+	logsStabilityLevel    component.StabilityLevel
 }
 
 func (f *factory) Type() component.Type {

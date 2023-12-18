@@ -37,9 +37,9 @@ import (
 
 func TestNewCGroupSubsysFromLine(t *testing.T) {
 	testTable := []struct {
+		expectedSubsys *CGroupSubsys
 		name           string
 		line           string
-		expectedSubsys *CGroupSubsys
 	}{
 		{
 			name: "single-subsys",
@@ -85,9 +85,9 @@ func TestNewCGroupSubsysFromLineErr(t *testing.T) {
 	_, parseError := strconv.Atoi("not-a-number")
 
 	testTable := []struct {
+		expectedError error
 		name          string
 		line          string
-		expectedError error
 	}{
 		{
 			name:          "fewer-fields",

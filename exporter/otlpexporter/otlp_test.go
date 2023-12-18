@@ -39,12 +39,12 @@ import (
 )
 
 type mockReceiver struct {
+	exportError  error
 	srv          *grpc.Server
 	requestCount *atomic.Int32
 	totalItems   *atomic.Int32
-	mux          sync.Mutex
 	metadata     metadata.MD
-	exportError  error
+	mux          sync.Mutex
 }
 
 func (r *mockReceiver) getMetadata() metadata.MD {
@@ -61,9 +61,9 @@ func (r *mockReceiver) setExportError(err error) {
 
 type mockTracesReceiver struct {
 	ptraceotlp.UnimplementedGRPCServer
-	mockReceiver
-	exportResponse func() ptraceotlp.ExportResponse
 	lastRequest    ptrace.Traces
+	exportResponse func() ptraceotlp.ExportResponse
+	mockReceiver
 }
 
 func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
@@ -125,9 +125,9 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockTracesRe
 
 type mockLogsReceiver struct {
 	plogotlp.UnimplementedGRPCServer
-	mockReceiver
-	exportResponse func() plogotlp.ExportResponse
 	lastRequest    plog.Logs
+	exportResponse func() plogotlp.ExportResponse
+	mockReceiver
 }
 
 func (r *mockLogsReceiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
@@ -174,9 +174,9 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 
 type mockMetricsReceiver struct {
 	pmetricotlp.UnimplementedGRPCServer
-	mockReceiver
-	exportResponse func() pmetricotlp.ExportResponse
 	lastRequest    pmetric.Metrics
+	exportResponse func() pmetricotlp.ExportResponse
+	mockReceiver
 }
 
 func (r *mockMetricsReceiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
@@ -316,9 +316,9 @@ func TestSendTraces(t *testing.T) {
 func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 	tests := []struct {
 		name               string
-		useTLS             bool
 		scheme             string
 		gRPCClientSettings configgrpc.GRPCClientSettings
+		useTLS             bool
 	}{
 		{
 			name:               "Use https scheme",

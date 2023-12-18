@@ -12,8 +12,8 @@ import (
 )
 
 type fakeRequest struct {
-	items int
 	err   error
+	items int
 }
 
 func (r fakeRequest) Export(_ context.Context) error {

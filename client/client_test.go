@@ -15,8 +15,8 @@ import (
 
 func TestNewContext(t *testing.T) {
 	testCases := []struct {
-		desc string
 		cl   Info
+		desc string
 	}{
 		{
 			desc: "valid client",
@@ -41,9 +41,9 @@ func TestNewContext(t *testing.T) {
 
 func TestFromContext(t *testing.T) {
 	testCases := []struct {
-		desc     string
-		input    context.Context
 		expected Info
+		input    context.Context
+		desc     string
 	}{
 		{
 			desc: "context with client",

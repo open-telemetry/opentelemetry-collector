@@ -19,8 +19,8 @@ import (
 )
 
 var testKinds = []struct {
-	kind      string
 	factories map[component.Type]component.Factory
+	kind      string
 }{
 	{
 		kind: "receiver",

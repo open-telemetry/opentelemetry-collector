@@ -254,8 +254,8 @@ type baseField interface {
 }
 
 type sliceField struct {
-	fieldName   string
 	returnSlice baseSlice
+	fieldName   string
 }
 
 func (sf *sliceField) GenerateAccessors(ms *messageValueStruct) string {
@@ -310,8 +310,8 @@ func (sf *sliceField) templateFields(ms *messageValueStruct) map[string]any {
 var _ baseField = (*sliceField)(nil)
 
 type messageValueField struct {
-	fieldName     string
 	returnMessage *messageValueStruct
+	fieldName     string
 }
 
 func (mf *messageValueField) GenerateAccessors(ms *messageValueStruct) string {
@@ -425,9 +425,9 @@ type primitiveType struct {
 
 // Types that has defined a custom type (e.g. "type Timestamp uint64")
 type primitiveTypedField struct {
+	returnType      *primitiveType
 	fieldName       string
 	originFieldName string
-	returnType      *primitiveType
 }
 
 func (ptf *primitiveTypedField) GenerateAccessors(ms *messageValueStruct) string {
@@ -546,8 +546,8 @@ var _ baseField = (*primitiveSliceField)(nil)
 type oneOfField struct {
 	originFieldName            string
 	typeName                   string
-	testValueIdx               int
 	values                     []oneOfValue
+	testValueIdx               int
 	omitOriginFieldNameInNames bool
 }
 
@@ -687,9 +687,9 @@ func (opv *oneOfPrimitiveValue) templateFields(ms *messageValueStruct, of *oneOf
 var _ oneOfValue = (*oneOfPrimitiveValue)(nil)
 
 type oneOfMessageValue struct {
+	returnMessage          *messageValueStruct
 	fieldName              string
 	originFieldPackageName string
-	returnMessage          *messageValueStruct
 }
 
 func (omv *oneOfMessageValue) GenerateAccessors(ms *messageValueStruct, of *oneOfField) string {

@@ -47,9 +47,9 @@ func (ts *testClose) shutdown(context.Context) error {
 }
 
 type testScrapeMetrics struct {
+	err               error
 	ch                chan int
 	timesScrapeCalled int
-	err               error
 }
 
 func (ts *testScrapeMetrics) scrape(_ context.Context) (pmetric.Metrics, error) {
@@ -73,19 +73,17 @@ func newTestNoDelaySettings() *ScraperControllerSettings {
 }
 
 type metricsTestCase struct {
-	name string
-
-	scrapers                  int
-	scraperControllerSettings *ScraperControllerSettings
-	nilNextConsumer           bool
 	scrapeErr                 error
+	initializeErr             error
+	closeErr                  error
+	scraperControllerSettings *ScraperControllerSettings
+	name                      string
 	expectedNewErr            string
+	scrapers                  int
+	nilNextConsumer           bool
 	expectScraped             bool
-
-	initialize    bool
-	close         bool
-	initializeErr error
-	closeErr      error
+	initialize                bool
+	close                     bool
 }
 
 func TestScrapeController(t *testing.T) {

@@ -17,9 +17,9 @@ import (
 // stores all traces and allows querying them for testing.
 type TracesSink struct {
 	nonMutatingConsumer
-	mu        sync.Mutex
 	traces    []ptrace.Traces
 	spanCount int
+	mu        sync.Mutex
 }
 
 var _ consumer.Traces = (*TracesSink)(nil)
@@ -65,9 +65,9 @@ func (ste *TracesSink) Reset() {
 // stores all metrics and allows querying them for testing.
 type MetricsSink struct {
 	nonMutatingConsumer
-	mu             sync.Mutex
 	metrics        []pmetric.Metrics
 	dataPointCount int
+	mu             sync.Mutex
 }
 
 var _ consumer.Metrics = (*MetricsSink)(nil)
@@ -113,9 +113,9 @@ func (sme *MetricsSink) Reset() {
 // stores all logs and allows querying them for testing.
 type LogsSink struct {
 	nonMutatingConsumer
-	mu             sync.Mutex
 	logs           []plog.Logs
 	logRecordCount int
+	mu             sync.Mutex
 }
 
 var _ consumer.Logs = (*LogsSink)(nil)

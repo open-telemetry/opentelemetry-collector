@@ -48,10 +48,10 @@ func createLogsProcessor(_ context.Context, set processor.CreateSettings, _ comp
 }
 
 type ExampleProcessor struct {
-	componentState
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
+	componentState
 	mutatesData bool
 }
 

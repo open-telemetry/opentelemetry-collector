@@ -266,9 +266,9 @@ func TestRefuseDecision(t *testing.T) {
 	decison1000Limit40Spike20 := newPercentageMemUsageChecker(1000, 40, 20)
 
 	tests := []struct {
+		ms           *runtime.MemStats
 		name         string
 		usageChecker memUsageChecker
-		ms           *runtime.MemStats
 		shouldRefuse bool
 	}{
 		{
@@ -325,8 +325,8 @@ func TestBallastSize(t *testing.T) {
 }
 
 type host struct {
-	ballastSize uint64
 	component.Host
+	ballastSize uint64
 }
 
 func (h *host) GetExtensions() map[component.ID]component.Component {
@@ -336,9 +336,9 @@ func (h *host) GetExtensions() map[component.ID]component.Component {
 }
 
 type ballastExtension struct {
-	ballastSize uint64
 	component.StartFunc
 	component.ShutdownFunc
+	ballastSize uint64
 }
 
 func (be *ballastExtension) GetBallastSize() uint64 {

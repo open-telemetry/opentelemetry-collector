@@ -17,8 +17,8 @@ import (
 
 func TestTelemetryConfiguration(t *testing.T) {
 	tests := []struct {
-		name    string
 		cfg     *Config
+		name    string
 		success bool
 	}{
 		{
@@ -66,8 +66,8 @@ func TestTelemetryConfiguration(t *testing.T) {
 
 func TestSampledLogger(t *testing.T) {
 	tests := []struct {
-		name string
 		cfg  *Config
+		name string
 	}{
 		{
 			name: "Default sampling",

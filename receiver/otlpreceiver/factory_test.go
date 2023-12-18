@@ -61,8 +61,8 @@ func TestCreateTracesReceiver(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
 		cfg     *Config
+		name    string
 		wantErr bool
 	}{
 		{
@@ -142,8 +142,8 @@ func TestCreateMetricReceiver(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
 		cfg     *Config
+		name    string
 		wantErr bool
 	}{
 		{
@@ -222,11 +222,11 @@ func TestCreateLogReceiver(t *testing.T) {
 	}
 
 	tests := []struct {
-		name         string
+		sink         consumer.Logs
 		cfg          *Config
+		name         string
 		wantStartErr bool
 		wantErr      bool
-		sink         consumer.Logs
 	}{
 		{
 			name: "default",

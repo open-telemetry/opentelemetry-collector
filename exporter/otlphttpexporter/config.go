@@ -14,18 +14,15 @@ import (
 
 // Config defines configuration for OTLP/HTTP exporter.
 type Config struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"`     // squash ensures fields are correctly decoded in embedded struct.
-	QueueConfig                   exporterhelper.QueueSettings `mapstructure:"sending_queue"`
-	RetryConfig                   configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
-
 	// The URL to send traces to. If omitted the Endpoint + "/v1/traces" will be used.
 	TracesEndpoint string `mapstructure:"traces_endpoint"`
-
 	// The URL to send metrics to. If omitted the Endpoint + "/v1/metrics" will be used.
 	MetricsEndpoint string `mapstructure:"metrics_endpoint"`
-
 	// The URL to send logs to. If omitted the Endpoint + "/v1/logs" will be used.
-	LogsEndpoint string `mapstructure:"logs_endpoint"`
+	LogsEndpoint                  string                       `mapstructure:"logs_endpoint"`
+	QueueConfig                   exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	confighttp.HTTPClientSettings `mapstructure:",squash"`     // squash ensures fields are correctly decoded in embedded struct.
+	RetryConfig                   configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 }
 
 var _ component.Config = (*Config)(nil)

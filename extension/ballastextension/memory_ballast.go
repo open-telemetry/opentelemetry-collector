@@ -16,9 +16,9 @@ const megaBytes = 1024 * 1024
 type memoryBallast struct {
 	cfg              *Config
 	logger           *zap.Logger
+	getTotalMem      func() (uint64, error)
 	ballast          []byte
 	ballastSizeBytes uint64
-	getTotalMem      func() (uint64, error)
 }
 
 func (m *memoryBallast) Start(_ context.Context, _ component.Host) error {

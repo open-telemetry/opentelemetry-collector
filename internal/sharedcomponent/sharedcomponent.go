@@ -67,14 +67,12 @@ func (scs *SharedComponents[K, V]) GetOrAdd(key K, create func() (V, error), tel
 // SharedComponent ensures that the wrapped component is started and stopped only once.
 // When stopped it is removed from the SharedComponents map.
 type SharedComponent[V component.Component] struct {
-	component V
-
-	startOnce  sync.Once
-	stopOnce   sync.Once
-	removeFunc func()
-
+	component    V
+	removeFunc   func()
 	telemetry    *component.TelemetrySettings
 	seenSettings map[*component.TelemetrySettings]struct{}
+	startOnce    sync.Once
+	stopOnce     sync.Once
 }
 
 // Unwrap returns the original component.

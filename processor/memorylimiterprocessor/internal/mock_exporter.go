@@ -12,10 +12,10 @@ import (
 )
 
 type MockExporter struct {
+	Logs              []plog.Logs
 	destAvailable     int64
 	acceptedLogCount  int64
 	deliveredLogCount int64
-	Logs              []plog.Logs
 }
 
 var _ consumer.Logs = (*MockExporter)(nil)

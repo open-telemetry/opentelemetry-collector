@@ -44,9 +44,9 @@ func (s Status) String() string {
 
 // StatusEvent contains a status and timestamp, and can contain an error
 type StatusEvent struct {
-	status    Status
-	err       error
 	timestamp time.Time
+	err       error
+	status    Status
 }
 
 // Status returns the Status (enum) associated with the StatusEvent

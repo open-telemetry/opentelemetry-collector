@@ -28,16 +28,14 @@ import (
 
 // Settings holds configuration for building builtPipelines.
 type Settings struct {
-	Telemetry servicetelemetry.TelemetrySettings
-	BuildInfo component.BuildInfo
-
+	Telemetry        servicetelemetry.TelemetrySettings
 	ReceiverBuilder  *receiver.Builder
 	ProcessorBuilder *processor.Builder
 	ExporterBuilder  *exporter.Builder
 	ConnectorBuilder *connector.Builder
-
 	// PipelineConfigs is a map of component.ID to PipelineConfig.
 	PipelineConfigs pipelines.Config
+	BuildInfo       component.BuildInfo
 }
 
 type Graph struct {
@@ -354,19 +352,15 @@ func (g *Graph) nextConsumers(nodeID int64) []baseConsumer {
 type pipelineNodes struct {
 	// Use map to assist with deduplication of connector instances.
 	receivers map[int64]graph.Node
-
 	// The node to which receivers emit. Passes through to processors.
 	// Easily accessible as the first node in a pipeline.
 	*capabilitiesNode
-
-	// The order of processors is very important. Therefore use a slice for processors.
-	processors []*processorNode
-
 	// Emits to exporters.
 	*fanOutNode
-
 	// Use map to assist with deduplication of connector instances.
 	exporters map[int64]graph.Node
+	// The order of processors is very important. Therefore use a slice for processors.
+	processors []*processorNode
 }
 
 func (g *Graph) StartAll(ctx context.Context, host component.Host) error {

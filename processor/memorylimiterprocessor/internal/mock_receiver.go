@@ -14,9 +14,9 @@ import (
 )
 
 type MockReceiver struct {
-	ProduceCount      int
 	NextConsumer      consumer.Logs
 	lastConsumeResult error
+	ProduceCount      int
 	mux               sync.Mutex
 }
 

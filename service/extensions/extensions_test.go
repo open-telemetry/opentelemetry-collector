@@ -29,11 +29,11 @@ func TestBuildExtensions(t *testing.T) {
 	badExtensionCfg := badExtensionFactory.CreateDefaultConfig()
 
 	tests := []struct {
-		name              string
 		factories         map[component.Type]extension.Factory
 		extensionsConfigs map[component.ID]component.Config
-		config            Config
+		name              string
 		wantErrMsg        string
+		config            Config
 	}{
 		{
 			name: "extension_not_configured",
@@ -100,9 +100,9 @@ type testOrderExt struct {
 
 type testOrderCase struct {
 	testName   string
+	err        string
 	extensions []testOrderExt
 	order      []string
-	err        string
 }
 
 func TestOrdering(t *testing.T) {
@@ -220,12 +220,12 @@ func TestNotifyConfig(t *testing.T) {
 	nErrExtensionConfig := nErrExtensionFactory.CreateDefaultConfig()
 
 	tests := []struct {
-		name              string
+		want              error
 		factories         map[component.Type]extension.Factory
 		extensionsConfigs map[component.ID]component.Config
-		serviceExtensions []component.ID
+		name              string
 		wantErrMsg        string
-		want              error
+		serviceExtensions []component.ID
 	}{
 		{
 			name: "No notifiable extensions",
@@ -372,10 +372,10 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		name             string
-		expectedStatuses []*component.StatusEvent
 		startErr         error
 		shutdownErr      error
+		name             string
+		expectedStatuses []*component.StatusEvent
 	}{
 		{
 			name: "successful startup/shutdown",
@@ -503,10 +503,10 @@ type recordingExtensionConfig struct {
 }
 
 type recordingExtension struct {
-	config           recordingExtensionConfig
 	startCallback    func(set extension.CreateSettings, host component.Host) error
 	shutdownCallback func(set extension.CreateSettings) error
 	createSettings   extension.CreateSettings
+	config           recordingExtensionConfig
 }
 
 var _ extension.Dependent = (*recordingExtension)(nil)

@@ -13,11 +13,11 @@ import (
 
 func TestNewFlag(t *testing.T) {
 	for _, tt := range []struct {
+		expected       map[string]bool
 		name           string
 		input          string
-		expectedSetErr bool
-		expected       map[string]bool
 		expectedStr    string
+		expectedSetErr bool
 	}{
 		{
 			name:        "empty item",

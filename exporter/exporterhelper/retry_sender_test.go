@@ -274,10 +274,10 @@ func newErrorRequest() Request {
 }
 
 type mockRequest struct {
-	cnt          int
-	mu           sync.Mutex
 	consumeError error
 	requestCount *atomic.Int64
+	cnt          int
+	mu           sync.Mutex
 }
 
 func (m *mockRequest) Export(ctx context.Context) error {

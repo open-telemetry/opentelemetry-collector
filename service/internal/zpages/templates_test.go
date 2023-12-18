@@ -24,8 +24,8 @@ const want = `
 `
 
 type testFuncsInput struct {
-	Index   int
 	Element [2]string
+	Index   int
 }
 
 var tmpl = template.Must(template.New("countTest").Funcs(templateFunctions).Parse(tmplBody))

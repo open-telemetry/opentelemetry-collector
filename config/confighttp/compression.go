@@ -20,8 +20,8 @@ import (
 
 type compressRoundTripper struct {
 	rt              http.RoundTripper
-	compressionType configcompression.CompressionType
 	compressor      *compressor
+	compressionType configcompression.CompressionType
 }
 
 func newCompressRoundTripper(rt http.RoundTripper, compressionType configcompression.CompressionType) (*compressRoundTripper, error) {

@@ -13,38 +13,38 @@ import (
 
 func TestGRPCLogger(t *testing.T) {
 	tests := []struct {
-		name       string
 		cfg        zap.Config
+		name       string
 		infoLogged bool
 		warnLogged bool
 	}{
 		{
-			"collector_info_level_grpc_log_warn",
-			zap.Config{
+			name: "collector_info_level_grpc_log_warn",
+			cfg: zap.Config{
 				Level:    zap.NewAtomicLevelAt(zapcore.InfoLevel),
 				Encoding: "console",
 			},
-			false,
-			true,
+			infoLogged: false,
+			warnLogged: true,
 		},
 		{
-			"collector_debug_level_grpc_log_debug",
-			zap.Config{
+			name: "collector_debug_level_grpc_log_debug",
+			cfg: zap.Config{
 				Level:    zap.NewAtomicLevelAt(zapcore.DebugLevel),
 				Encoding: "console",
 			},
-			true,
-			true,
+			infoLogged: true,
+			warnLogged: true,
 		},
 		{
-			"collector_warn_level_grpc_log_warn",
-			zap.Config{
+			name: "collector_warn_level_grpc_log_warn",
+			cfg: zap.Config{
 				Development: false, // this must set the grpc loggerV2 to loggerV2
 				Level:       zap.NewAtomicLevelAt(zapcore.WarnLevel),
 				Encoding:    "console",
 			},
-			false,
-			true,
+			infoLogged: false,
+			warnLogged: true,
 		},
 	}
 	for _, test := range tests {

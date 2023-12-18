@@ -41,22 +41,19 @@ import (
 //	 index          index   x
 //	                        xxxx deleted
 type persistentQueue[T any] struct {
-	set         exporter.CreateSettings
-	storageID   component.ID
-	dataType    component.DataType
-	client      storage.Client
-	unmarshaler func(data []byte) (T, error)
-	marshaler   func(req T) ([]byte, error)
-
-	putChan  chan struct{}
-	capacity uint64
-
-	// mu guards everything declared below.
-	mu                       sync.Mutex
+	client                   storage.Client
+	putChan                  chan struct{}
+	unmarshaler              func(data []byte) (T, error)
+	marshaler                func(req T) ([]byte, error)
+	set                      exporter.CreateSettings
+	storageID                component.ID
+	dataType                 component.DataType
+	currentlyDispatchedItems []uint64
+	capacity                 uint64
 	readIndex                uint64
 	writeIndex               uint64
-	currentlyDispatchedItems []uint64
 	refClient                int64
+	mu                       sync.Mutex
 	stopped                  bool
 }
 

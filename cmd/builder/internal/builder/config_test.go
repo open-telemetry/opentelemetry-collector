@@ -81,8 +81,8 @@ func TestModuleFromCore(t *testing.T) {
 
 func TestInvalidModule(t *testing.T) {
 	type invalidModuleTest struct {
-		cfg Config
 		err error
+		cfg Config
 	}
 	// prepare
 	configurations := []invalidModuleTest{

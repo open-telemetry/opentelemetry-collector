@@ -51,8 +51,8 @@ func TestStatusEventsWithError(t *testing.T) {
 
 func TestAggregateStatus(t *testing.T) {
 	for _, tc := range []struct {
-		name           string
 		statusMap      map[*InstanceID]*StatusEvent
+		name           string
 		expectedStatus Status
 	}{
 		{
@@ -188,9 +188,9 @@ func TestAggregateStatusEvent(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		name           string
 		statusMap      map[*InstanceID]*StatusEvent
 		expectedStatus *StatusEvent
+		name           string
 	}{
 		{
 			name: "FatalError - existing event",

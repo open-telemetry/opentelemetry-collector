@@ -13,8 +13,8 @@ import (
 )
 
 type componentWithStability struct {
-	Name      component.Type
 	Stability map[string]string
+	Name      component.Type
 }
 
 type componentsOutput struct {

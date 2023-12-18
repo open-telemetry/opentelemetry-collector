@@ -31,8 +31,8 @@ var (
 )
 
 type testParams struct {
-	items int
 	err   error
+	items int
 }
 
 func TestScrapeMetricsDataOp(t *testing.T) {

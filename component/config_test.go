@@ -32,8 +32,8 @@ type configChildMapKey struct {
 }
 
 type configChildTypeDef struct {
-	Child    errType
 	ChildPtr *errType
+	Child    errType
 }
 
 type errConfig struct {
@@ -71,9 +71,9 @@ func newErrMapType() *errMapType {
 
 func TestValidateConfig(t *testing.T) {
 	var tests = []struct {
-		name     string
 		cfg      any
 		expected error
+		name     string
 	}{
 		{
 			name:     "struct",

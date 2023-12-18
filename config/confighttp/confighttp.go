@@ -31,63 +31,41 @@ const headerContentEncoding = "Content-Encoding"
 
 // HTTPClientSettings defines settings for creating an HTTP client.
 type HTTPClientSettings struct {
-	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
-	Endpoint string `mapstructure:"endpoint"`
-
-	// ProxyURL setting for the collector
-	ProxyURL string `mapstructure:"proxy_url"`
-
-	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
-
-	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
-	ReadBufferSize int `mapstructure:"read_buffer_size"`
-
-	// WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize.
-	WriteBufferSize int `mapstructure:"write_buffer_size"`
-
-	// Timeout parameter configures `http.Client.Timeout`.
-	Timeout time.Duration `mapstructure:"timeout"`
-
-	// Additional headers attached to each HTTP request sent by the client.
-	// Existing header values are overwritten if collision happens.
-	// Header values are opaque since they may be sensitive.
-	Headers map[string]configopaque.String `mapstructure:"headers"`
-
-	// Custom Round Tripper to allow for individual components to intercept HTTP requests
-	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
-
-	// Auth configuration for outgoing HTTP calls.
-	Auth *configauth.Authentication `mapstructure:"auth"`
-
-	// The compression key for supported compression types within collector.
-	Compression configcompression.CompressionType `mapstructure:"compression"`
-
-	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
-	// There's an already set value, and we want to override it only if an explicit value provided
-	MaxIdleConns *int `mapstructure:"max_idle_conns"`
-
-	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
-	// There's an already set value, and we want to override it only if an explicit value provided
-	MaxIdleConnsPerHost *int `mapstructure:"max_idle_conns_per_host"`
-
 	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
 	// active, and idle states.
 	// There's an already set value, and we want to override it only if an explicit value provided
 	MaxConnsPerHost *int `mapstructure:"max_conns_per_host"`
-
+	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
+	// There's an already set value, and we want to override it only if an explicit value provided
+	MaxIdleConnsPerHost *int `mapstructure:"max_idle_conns_per_host"`
+	// Auth configuration for outgoing HTTP calls.
+	Auth *configauth.Authentication `mapstructure:"auth"`
 	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
 	// There's an already set value, and we want to override it only if an explicit value provided
 	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
-
-	// DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server
-	// for a single HTTP request.
-	//
-	// WARNING: enabling this option can result in significant overhead establishing a new HTTP(S)
-	// connection for every request. Before enabling this option please consider whether changes
-	// to idle connection settings can achieve your goal.
-	DisableKeepAlives bool `mapstructure:"disable_keep_alives"`
-
+	// Additional headers attached to each HTTP request sent by the client.
+	// Existing header values are overwritten if collision happens.
+	// Header values are opaque since they may be sensitive.
+	Headers map[string]configopaque.String `mapstructure:"headers"`
+	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
+	// There's an already set value, and we want to override it only if an explicit value provided
+	MaxIdleConns *int `mapstructure:"max_idle_conns"`
+	// Custom Round Tripper to allow for individual components to intercept HTTP requests
+	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
+	// The compression key for supported compression types within collector.
+	Compression configcompression.CompressionType `mapstructure:"compression"`
+	// ProxyURL setting for the collector
+	ProxyURL string `mapstructure:"proxy_url"`
+	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
+	Endpoint string `mapstructure:"endpoint"`
+	// TLSSetting struct exposes TLS client configuration.
+	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
+	// Timeout parameter configures `http.Client.Timeout`.
+	Timeout time.Duration `mapstructure:"timeout"`
+	// WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize.
+	WriteBufferSize int `mapstructure:"write_buffer_size"`
+	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
+	ReadBufferSize int `mapstructure:"read_buffer_size"`
 	// This is needed in case you run into
 	// https://github.com/golang/go/issues/59690
 	// https://github.com/golang/go/issues/36026
@@ -97,6 +75,13 @@ type HTTPClientSettings struct {
 	// HTTP2PingTimeout if there's no response to the ping within the configured value, the connection will be closed.
 	// If not set or set to 0, it defaults to 15s.
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout"`
+	// DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server
+	// for a single HTTP request.
+	//
+	// WARNING: enabling this option can result in significant overhead establishing a new HTTP(S)
+	// connection for every request. Before enabling this option please consider whether changes
+	// to idle connection settings can achieve your goal.
+	DisableKeepAlives bool `mapstructure:"disable_keep_alives"`
 }
 
 // NewDefaultHTTPClientSettings returns HTTPClientSettings type object with
@@ -245,28 +230,13 @@ func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Respo
 
 // HTTPServerSettings defines settings for creating an HTTP server.
 type HTTPServerSettings struct {
-	// Endpoint configures the listening address for the server.
-	Endpoint string `mapstructure:"endpoint"`
-
-	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls"`
-
-	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
-	CORS *CORSSettings `mapstructure:"cors"`
-
-	// Auth for this receiver
-	Auth *configauth.Authentication `mapstructure:"auth"`
-
-	// MaxRequestBodySize sets the maximum request body size in bytes
-	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
-
-	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
-	// Experimental: *NOTE* this option is subject to change or removal in the future.
-	IncludeMetadata bool `mapstructure:"include_metadata"`
-
-	// Additional headers attached to each HTTP response sent to the client.
-	// Header values are opaque since they may be sensitive.
-	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
+	TLSSetting         *configtls.TLSServerSetting    `mapstructure:"tls"`
+	CORS               *CORSSettings                  `mapstructure:"cors"`
+	Auth               *configauth.Authentication     `mapstructure:"auth"`
+	ResponseHeaders    map[string]configopaque.String `mapstructure:"response_headers"`
+	Endpoint           string                         `mapstructure:"endpoint"`
+	MaxRequestBodySize int64                          `mapstructure:"max_request_body_size"`
+	IncludeMetadata    bool                           `mapstructure:"include_metadata"`
 }
 
 // ToListener creates a net.Listener.

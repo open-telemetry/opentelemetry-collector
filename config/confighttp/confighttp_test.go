@@ -238,9 +238,9 @@ func TestDefaultHTTPClientSettings(t *testing.T) {
 
 func TestProxyURL(t *testing.T) {
 	testCases := []struct {
+		expectedURL *url.URL
 		desc        string
 		proxyURL    string
-		expectedURL *url.URL
 		err         bool
 	}{
 		{
@@ -296,8 +296,8 @@ func TestHTTPClientSettingsError(t *testing.T) {
 		ext: map[component.ID]component.Component{},
 	}
 	tests := []struct {
-		settings HTTPClientSettings
 		err      string
+		settings HTTPClientSettings
 	}{
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
@@ -343,10 +343,10 @@ func TestHTTPClientSettingsError(t *testing.T) {
 
 func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	tests := []struct {
-		name      string
-		shouldErr bool
-		settings  HTTPClientSettings
 		host      component.Host
+		name      string
+		settings  HTTPClientSettings
+		shouldErr bool
 	}{
 		{
 			name: "no_auth_extension_enabled",
@@ -479,8 +479,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 
 func TestHTTPServerSettingsError(t *testing.T) {
 	tests := []struct {
-		settings HTTPServerSettings
 		err      string
+		settings HTTPServerSettings
 	}{
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
@@ -563,9 +563,9 @@ func TestHTTPServerWarning(t *testing.T) {
 
 func TestHttpReception(t *testing.T) {
 	tests := []struct {
-		name           string
 		tlsServerCreds *configtls.TLSServerSetting
 		tlsClientCreds *configtls.TLSClientSetting
+		name           string
 		hasError       bool
 		forceHTTP1     bool
 	}{
@@ -744,10 +744,8 @@ func TestHttpReception(t *testing.T) {
 
 func TestHttpCors(t *testing.T) {
 	tests := []struct {
-		name string
-
 		*CORSSettings
-
+		name             string
 		allowedWorks     bool
 		disallowedWorks  bool
 		extraHeaderWorks bool
@@ -892,8 +890,8 @@ func TestHttpCorsWithSettings(t *testing.T) {
 
 func TestHttpServerHeaders(t *testing.T) {
 	tests := []struct {
-		name    string
 		headers map[string]configopaque.String
+		name    string
 	}{
 		{
 			name:    "noHeaders",
@@ -1024,8 +1022,8 @@ func ExampleHTTPServerSettings() {
 
 func TestHttpClientHeaders(t *testing.T) {
 	tests := []struct {
-		name    string
 		headers map[string]configopaque.String
+		name    string
 	}{
 		{
 			name: "with_headers",
@@ -1063,10 +1061,10 @@ func TestHttpClientHeaders(t *testing.T) {
 
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
-		desc       string
-		input      *http.Request
-		doMetadata bool
 		expected   client.Info
+		input      *http.Request
+		desc       string
+		doMetadata bool
 	}{
 		{
 			desc:     "request without client IP or headers",

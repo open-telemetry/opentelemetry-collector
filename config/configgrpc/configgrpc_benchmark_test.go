@@ -83,9 +83,9 @@ func compress(compressor encoding.Compressor, in []byte) ([]byte, error) {
 }
 
 type testPayload struct {
-	name      string
 	message   any
 	marshaler marshaler
+	name      string
 }
 
 type marshaler interface {

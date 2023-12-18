@@ -17,8 +17,8 @@ import (
 
 func TestCommand(t *testing.T) {
 	tests := []struct {
-		name    string
 		want    *cobra.Command
+		name    string
 		wantErr bool
 	}{
 		{
@@ -242,8 +242,8 @@ func Test_initConfig(t *testing.T) {
 		flags *flag.FlagSet
 	}
 	tests := []struct {
-		name    string
 		args    args
+		name    string
 		wantErr bool
 	}{
 		{

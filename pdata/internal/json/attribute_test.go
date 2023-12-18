@@ -14,9 +14,9 @@ import (
 
 func TestReadArray(t *testing.T) {
 	tests := []struct {
+		want    *otlpcommon.ArrayValue
 		name    string
 		jsonStr string
-		want    *otlpcommon.ArrayValue
 	}{
 		{
 			name: "values",
@@ -46,9 +46,9 @@ func TestReadArray(t *testing.T) {
 
 func TestReadKvlistValue(t *testing.T) {
 	tests := []struct {
+		want    *otlpcommon.KeyValueList
 		name    string
 		jsonStr string
-		want    *otlpcommon.KeyValueList
 	}{
 		{
 			name: "values",

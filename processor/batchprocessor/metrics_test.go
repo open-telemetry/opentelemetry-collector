@@ -45,8 +45,8 @@ func TestBatchProcessorMetrics(t *testing.T) {
 type testTelemetry struct {
 	meter         view.Meter
 	promHandler   http.Handler
-	useOtel       bool
 	meterProvider *sdkmetric.MeterProvider
+	useOtel       bool
 }
 
 type expectedMetrics struct {

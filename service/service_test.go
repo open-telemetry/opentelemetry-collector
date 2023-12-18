@@ -51,9 +51,9 @@ type labelValue struct {
 }
 
 type ownMetricsTestCase struct {
-	name                string
 	userDefinedResource map[string]*string
 	expectedLabels      map[string]labelValue
+	name                string
 }
 
 var testResourceAttrValue = "resource_attr_test_value" // #nosec G101: Potential hardcoded credentials

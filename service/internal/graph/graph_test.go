@@ -37,9 +37,9 @@ import (
 var _ component.Component = &testNode{}
 
 type testNode struct {
-	id          component.ID
 	startErr    error
 	shutdownErr error
+	id          component.ID
 }
 
 // ID satisfies the graph.Node interface, allowing
@@ -70,9 +70,9 @@ func (n *testNode) Shutdown(ctx context.Context) error {
 
 type contextWithOrder struct {
 	context.Context
-	sync.Mutex
-	next  int
 	order map[component.ID]int
+	next  int
+	sync.Mutex
 }
 
 func (c *contextWithOrder) record(id component.ID) {
@@ -222,9 +222,9 @@ func TestGraphStartStopComponentError(t *testing.T) {
 
 func TestConnectorPipelinesGraph(t *testing.T) {
 	tests := []struct {
-		name                string
 		pipelineConfigs     pipelines.Config
-		expectedPerExporter int // requires symmetry in pipelines
+		name                string
+		expectedPerExporter int
 	}{
 		{
 			name: "pipelines_simple.yaml",
@@ -2239,11 +2239,11 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		name             string
 		edge             [2]*testNode
-		expectedStatuses map[*component.InstanceID][]*component.StatusEvent
 		startupErr       error
 		shutdownErr      error
+		expectedStatuses map[*component.InstanceID][]*component.StatusEvent
+		name             string
 	}{
 		{
 			name: "successful startup/shutdown",

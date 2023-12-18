@@ -25,30 +25,25 @@ const (
 
 // processMetrics is a struct that contains views related to process metrics (cpu, mem, etc)
 type processMetrics struct {
+	lastMsRead        time.Time
+	otelProcessUptime otelmetric.Float64ObservableCounter
+	otelRSSMemory     otelmetric.Int64ObservableGauge
+	context           context.Context
+	otelCPUSeconds    otelmetric.Float64ObservableCounter
+	otelSysMem        otelmetric.Int64ObservableGauge
+	otelTotalAllocMem otelmetric.Int64ObservableCounter
+	otelAllocMem      otelmetric.Int64ObservableGauge
+	processUptime     *metric.Float64DerivedCumulative
+	rssMemory         *metric.Int64DerivedGauge
+	cpuSeconds        *metric.Float64DerivedCumulative
+	sysMem            *metric.Int64DerivedGauge
+	totalAllocMem     *metric.Int64DerivedCumulative
+	allocMem          *metric.Int64DerivedGauge
+	proc              *process.Process
+	ms                *runtime.MemStats
 	startTimeUnixNano int64
 	ballastSizeBytes  uint64
-	proc              *process.Process
-	context           context.Context
-
-	processUptime *metric.Float64DerivedCumulative
-	allocMem      *metric.Int64DerivedGauge
-	totalAllocMem *metric.Int64DerivedCumulative
-	sysMem        *metric.Int64DerivedGauge
-	cpuSeconds    *metric.Float64DerivedCumulative
-	rssMemory     *metric.Int64DerivedGauge
-
-	// otel metrics
-	otelProcessUptime otelmetric.Float64ObservableCounter
-	otelAllocMem      otelmetric.Int64ObservableGauge
-	otelTotalAllocMem otelmetric.Int64ObservableCounter
-	otelSysMem        otelmetric.Int64ObservableGauge
-	otelCPUSeconds    otelmetric.Float64ObservableCounter
-	otelRSSMemory     otelmetric.Int64ObservableGauge
-
-	// mu protects everything bellow.
-	mu         sync.Mutex
-	lastMsRead time.Time
-	ms         *runtime.MemStats
+	mu                sync.Mutex
 }
 
 type RegisterOption interface {

@@ -39,13 +39,12 @@ const (
 
 type TestTelemetry struct {
 	component.TelemetrySettings
-	id           component.ID
-	SpanRecorder *tracetest.SpanRecorder
-	views        []*view.View
-
+	SpanRecorder      *tracetest.SpanRecorder
 	prometheusChecker *prometheusChecker
 	meterProvider     *sdkmetric.MeterProvider
 	ocExporter        *ocprom.Exporter
+	id                component.ID
+	views             []*view.View
 }
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.

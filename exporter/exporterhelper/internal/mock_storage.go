@@ -16,10 +16,10 @@ import (
 )
 
 type mockStorageExtension struct {
+	getClientError error
 	component.StartFunc
 	component.ShutdownFunc
-	st             sync.Map
-	getClientError error
+	st sync.Map
 }
 
 func (m *mockStorageExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, _ string) (storage.Client, error) {
@@ -97,8 +97,8 @@ func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
 // both the old and the new value stored until the transaction is committed
 // this is useful for testing the persistent queue queue behavior with a full disk
 type fakeBoundedStorageClient struct {
-	MaxSizeInBytes int
 	st             map[string][]byte
+	MaxSizeInBytes int
 	sizeInBytes    int
 	mux            sync.Mutex
 }

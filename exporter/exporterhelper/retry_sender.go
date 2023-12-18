@@ -50,11 +50,11 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 }
 
 type retrySender struct {
-	baseRequestSender
 	traceAttribute attribute.KeyValue
-	cfg            configretry.BackOffConfig
-	stopCh         chan struct{}
-	logger         *zap.Logger
+	baseRequestSender
+	stopCh chan struct{}
+	logger *zap.Logger
+	cfg    configretry.BackOffConfig
 }
 
 func newRetrySender(config configretry.BackOffConfig, set exporter.CreateSettings) *retrySender {

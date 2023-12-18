@@ -357,9 +357,9 @@ func TestValueAsString(t *testing.T) {
 
 func TestValueAsRaw(t *testing.T) {
 	tests := []struct {
-		name     string
 		input    Value
 		expected any
+		name     string
 	}{
 		{
 			name:     "string",
@@ -415,9 +415,9 @@ func TestValueAsRaw(t *testing.T) {
 
 func TestNewValueFromRaw(t *testing.T) {
 	tests := []struct {
-		name     string
 		input    any
 		expected Value
+		name     string
 	}{
 		{
 			name:     "nil",

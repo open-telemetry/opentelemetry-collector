@@ -90,10 +90,10 @@ type SummaryPipelinesTableData struct {
 type SummaryPipelinesTableRowData struct {
 	FullName    string
 	InputType   string
-	MutatesData bool
 	Receivers   []string
 	Processors  []string
 	Exporters   []string
+	MutatesData bool
 }
 
 // WriteHTMLPipelinesSummaryTable writes the summary table for one component type (receivers, processors, exporters).
@@ -158,12 +158,12 @@ type FeatureGateTableData struct {
 // FeatureGateTableRowData contains data for one row in feature gate table template.
 type FeatureGateTableRowData struct {
 	ID           string
-	Enabled      bool
 	Description  string
 	Stage        string
 	FromVersion  string
 	ToVersion    string
 	ReferenceURL string
+	Enabled      bool
 }
 
 // WriteHTMLFeaturesTable writes a table summarizing registered feature gates.

@@ -304,9 +304,9 @@ type baseSlice interface {
 
 // sliceOfPtrs generates code for a slice of pointer fields. The generated structs cannot be used from other packages.
 type sliceOfPtrs struct {
+	element     *messageValueStruct
 	structName  string
 	packageName string
-	element     *messageValueStruct
 }
 
 func (ss *sliceOfPtrs) getName() string {
@@ -356,9 +356,9 @@ var _ baseStruct = (*sliceOfPtrs)(nil)
 
 // sliceOfValues generates code for a slice of pointer fields. The generated structs cannot be used from other packages.
 type sliceOfValues struct {
+	element     *messageValueStruct
 	structName  string
 	packageName string
-	element     *messageValueStruct
 }
 
 func (ss *sliceOfValues) getName() string {

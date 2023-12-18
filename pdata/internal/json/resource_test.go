@@ -15,9 +15,9 @@ import (
 
 func TestReadResource(t *testing.T) {
 	tests := []struct {
+		want    *otlpresource.Resource
 		name    string
 		jsonStr string
-		want    *otlpresource.Resource
 	}{
 		{
 			name:    "resource",

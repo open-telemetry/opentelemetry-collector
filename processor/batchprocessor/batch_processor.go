@@ -38,31 +38,25 @@ var errTooManyBatchers = consumererror.NewPermanent(errors.New("too many batcher
 // - batch size reaches cfg.SendBatchSize
 // - cfg.Timeout is elapsed since the timestamp when the previous batch was sent out.
 type batchProcessor struct {
-	logger           *zap.Logger
-	timeout          time.Duration
-	sendBatchSize    int
-	sendBatchMaxSize int
-
+	//  batcher will be either *singletonBatcher or *multiBatcher
+	batcher batcher
+	logger  *zap.Logger
 	// batchFunc is a factory for new batch objects corresponding
 	// with the appropriate signal.
 	batchFunc func() batch
-
+	shutdownC chan struct{}
+	telemetry *batchProcessorTelemetry
 	// metadataKeys is the configured list of metadata keys.  When
 	// empty, the `singleton` batcher is used.  When non-empty,
 	// each distinct combination of metadata keys and values
 	// triggers a new batcher, counted in `goroutines`.
-	metadataKeys []string
-
+	metadataKeys     []string
+	goroutines       sync.WaitGroup
+	timeout          time.Duration
+	sendBatchSize    int
+	sendBatchMaxSize int
 	// metadataLimit is the limiting size of the batchers map.
 	metadataLimit int
-
-	shutdownC  chan struct{}
-	goroutines sync.WaitGroup
-
-	telemetry *batchProcessorTelemetry
-
-	//  batcher will be either *singletonBatcher or *multiBatcher
-	batcher batcher
 }
 
 type batcher interface {
@@ -367,8 +361,8 @@ func newBatchLogsProcessor(set processor.CreateSettings, next consumer.Logs, cfg
 type batchTraces struct {
 	nextConsumer consumer.Traces
 	traceData    ptrace.Traces
-	spanCount    int
 	sizer        ptrace.Sizer
+	spanCount    int
 }
 
 func newBatchTraces(nextConsumer consumer.Traces) *batchTraces {
@@ -414,8 +408,8 @@ func (bt *batchTraces) itemCount() int {
 type batchMetrics struct {
 	nextConsumer   consumer.Metrics
 	metricData     pmetric.Metrics
-	dataPointCount int
 	sizer          pmetric.Sizer
+	dataPointCount int
 }
 
 func newBatchMetrics(nextConsumer consumer.Metrics) *batchMetrics {
@@ -460,8 +454,8 @@ func (bm *batchMetrics) add(item any) {
 type batchLogs struct {
 	nextConsumer consumer.Logs
 	logData      plog.Logs
-	logCount     int
 	sizer        plog.Sizer
+	logCount     int
 }
 
 func newBatchLogs(nextConsumer consumer.Logs) *batchLogs {

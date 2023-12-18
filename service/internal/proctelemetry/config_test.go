@@ -23,10 +23,10 @@ func intPtr(i int) *int {
 
 func TestMetricReader(t *testing.T) {
 	testCases := []struct {
-		name   string
 		reader config.MetricReader
 		args   any
 		err    error
+		name   string
 	}{
 		{
 			name: "noreader",
@@ -347,10 +347,10 @@ func TestMetricReader(t *testing.T) {
 
 func TestSpanProcessor(t *testing.T) {
 	testCases := []struct {
-		name      string
 		processor config.SpanProcessor
 		args      any
 		err       error
+		name      string
 	}{
 		{
 			name: "no processor",

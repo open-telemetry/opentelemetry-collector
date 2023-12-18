@@ -58,9 +58,9 @@ func TestNewFactoryWithOptions(t *testing.T) {
 
 func TestMakeFactoryMap(t *testing.T) {
 	type testCase struct {
+		out  map[component.Type]Factory
 		name string
 		in   []Factory
-		out  map[component.Type]Factory
 	}
 
 	p1 := NewFactory("p1", nil)

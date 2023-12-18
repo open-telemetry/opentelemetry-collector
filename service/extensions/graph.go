@@ -17,8 +17,8 @@ import (
 )
 
 type node struct {
-	nodeID int64
 	extID  component.ID
+	nodeID int64
 }
 
 func (n node) ID() int64 {

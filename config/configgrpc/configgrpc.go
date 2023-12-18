@@ -49,46 +49,36 @@ type KeepaliveClientConfig struct {
 
 // GRPCClientSettings defines common settings for a gRPC client configuration.
 type GRPCClientSettings struct {
+	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
+	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
+	Keepalive *KeepaliveClientConfig `mapstructure:"keepalive"`
+	// The headers associated with gRPC requests.
+	Headers map[string]configopaque.String `mapstructure:"headers"`
+	// Auth configuration for outgoing RPCs.
+	Auth *configauth.Authentication `mapstructure:"auth"`
 	// The target to which the exporter is going to send traces or metrics,
 	// using the gRPC protocol. The valid syntax is described at
 	// https://github.com/grpc/grpc/blob/master/doc/naming.md.
 	Endpoint string `mapstructure:"endpoint"`
-
 	// The compression key for supported compression types within collector.
 	Compression configcompression.CompressionType `mapstructure:"compression"`
-
-	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
-
-	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
-	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
-	Keepalive *KeepaliveClientConfig `mapstructure:"keepalive"`
-
-	// ReadBufferSize for gRPC client. See grpc.WithReadBufferSize.
-	// (https://godoc.org/google.golang.org/grpc#WithReadBufferSize).
-	ReadBufferSize int `mapstructure:"read_buffer_size"`
-
-	// WriteBufferSize for gRPC gRPC. See grpc.WithWriteBufferSize.
-	// (https://godoc.org/google.golang.org/grpc#WithWriteBufferSize).
-	WriteBufferSize int `mapstructure:"write_buffer_size"`
-
-	// WaitForReady parameter configures client to wait for ready state before sending data.
-	// (https://github.com/grpc/grpc/blob/master/doc/wait-for-ready.md)
-	WaitForReady bool `mapstructure:"wait_for_ready"`
-
-	// The headers associated with gRPC requests.
-	Headers map[string]configopaque.String `mapstructure:"headers"`
-
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
-
 	// WithAuthority parameter configures client to rewrite ":authority" header
 	// (godoc.org/google.golang.org/grpc#WithAuthority)
 	Authority string `mapstructure:"authority"`
-
-	// Auth configuration for outgoing RPCs.
-	Auth *configauth.Authentication `mapstructure:"auth"`
+	// TLSSetting struct exposes TLS client configuration.
+	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
+	// ReadBufferSize for gRPC client. See grpc.WithReadBufferSize.
+	// (https://godoc.org/google.golang.org/grpc#WithReadBufferSize).
+	ReadBufferSize int `mapstructure:"read_buffer_size"`
+	// WriteBufferSize for gRPC gRPC. See grpc.WithWriteBufferSize.
+	// (https://godoc.org/google.golang.org/grpc#WithWriteBufferSize).
+	WriteBufferSize int `mapstructure:"write_buffer_size"`
+	// WaitForReady parameter configures client to wait for ready state before sending data.
+	// (https://github.com/grpc/grpc/blob/master/doc/wait-for-ready.md)
+	WaitForReady bool `mapstructure:"wait_for_ready"`
 }
 
 // KeepaliveServerConfig is the configuration for keepalive.
@@ -118,34 +108,26 @@ type KeepaliveEnforcementPolicy struct {
 
 // GRPCServerSettings defines common settings for a gRPC server configuration.
 type GRPCServerSettings struct {
-	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
-	NetAddr confignet.NetAddr `mapstructure:",squash"`
-
 	// Configures the protocol to use TLS.
 	// The default value is nil, which will cause the protocol to not use TLS.
 	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls"`
-
+	// Keepalive anchor for all the settings related to keepalive.
+	Keepalive *KeepaliveServerConfig `mapstructure:"keepalive"`
+	// Auth for this receiver
+	Auth *configauth.Authentication `mapstructure:"auth"`
+	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
+	NetAddr confignet.NetAddr `mapstructure:",squash"`
 	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
 	MaxRecvMsgSizeMiB uint64 `mapstructure:"max_recv_msg_size_mib"`
-
-	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
-	// It has effect only for streaming RPCs.
-	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams"`
-
 	// ReadBufferSize for gRPC server. See grpc.ReadBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#ReadBufferSize).
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
-
 	// WriteBufferSize for gRPC server. See grpc.WriteBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#WriteBufferSize).
 	WriteBufferSize int `mapstructure:"write_buffer_size"`
-
-	// Keepalive anchor for all the settings related to keepalive.
-	Keepalive *KeepaliveServerConfig `mapstructure:"keepalive"`
-
-	// Auth for this receiver
-	Auth *configauth.Authentication `mapstructure:"auth"`
-
+	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
+	// It has effect only for streaming RPCs.
+	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams"`
 	// Include propagates the incoming connection's metadata to downstream consumers.
 	// Experimental: *NOTE* this option is subject to change or removal in the future.
 	IncludeMetadata bool `mapstructure:"include_metadata"`

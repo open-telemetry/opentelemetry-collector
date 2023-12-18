@@ -28,37 +28,35 @@ const (
 
 // ObsReport is a helper to add observability to a receiver.
 type ObsReport struct {
-	level          configtelemetry.Level
-	spanNamePrefix string
-	transport      string
-	longLivedCtx   bool
-	mutators       []tag.Mutator
-	tracer         trace.Tracer
-	meter          metric.Meter
-	logger         *zap.Logger
-
-	useOtelForMetrics bool
-	otelAttrs         []attribute.KeyValue
-
-	acceptedSpansCounter        metric.Int64Counter
 	refusedSpansCounter         metric.Int64Counter
-	acceptedMetricPointsCounter metric.Int64Counter
-	refusedMetricPointsCounter  metric.Int64Counter
-	acceptedLogRecordsCounter   metric.Int64Counter
 	refusedLogRecordsCounter    metric.Int64Counter
+	acceptedLogRecordsCounter   metric.Int64Counter
+	tracer                      trace.Tracer
+	meter                       metric.Meter
+	refusedMetricPointsCounter  metric.Int64Counter
+	acceptedMetricPointsCounter metric.Int64Counter
+	acceptedSpansCounter        metric.Int64Counter
+	logger                      *zap.Logger
+	spanNamePrefix              string
+	transport                   string
+	mutators                    []tag.Mutator
+	otelAttrs                   []attribute.KeyValue
+	level                       configtelemetry.Level
+	useOtelForMetrics           bool
+	longLivedCtx                bool
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
 type ObsReportSettings struct {
-	ReceiverID component.ID
-	Transport  string
+	ReceiverCreateSettings receiver.CreateSettings
+	ReceiverID             component.ID
+	Transport              string
 	// LongLivedCtx when true indicates that the context passed in the call
 	// outlives the individual receive operation.
 	// Typically the long lived context is associated to a connection,
 	// eg.: a gRPC stream, for which many batches of data are received in individual
 	// operations without a corresponding new context per operation.
-	LongLivedCtx           bool
-	ReceiverCreateSettings receiver.CreateSettings
+	LongLivedCtx bool
 }
 
 // NewObsReport creates a new ObsReport.

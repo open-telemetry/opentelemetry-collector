@@ -30,20 +30,17 @@ import (
 
 // otlpReceiver is the type that exposes Trace and Metrics reception.
 type otlpReceiver struct {
-	cfg        *Config
-	serverGRPC *grpc.Server
-	httpMux    *http.ServeMux
-	serverHTTP *http.Server
-
+	cfg             *Config
+	serverGRPC      *grpc.Server
+	httpMux         *http.ServeMux
+	serverHTTP      *http.Server
 	tracesReceiver  *trace.Receiver
 	metricsReceiver *metrics.Receiver
 	logsReceiver    *logs.Receiver
+	obsrepGRPC      *receiverhelper.ObsReport
+	obsrepHTTP      *receiverhelper.ObsReport
+	settings        *receiver.CreateSettings
 	shutdownWG      sync.WaitGroup
-
-	obsrepGRPC *receiverhelper.ObsReport
-	obsrepHTTP *receiverhelper.ObsReport
-
-	settings *receiver.CreateSettings
 }
 
 // newOtlpReceiver just creates the OpenTelemetry receiver services. It is the caller's

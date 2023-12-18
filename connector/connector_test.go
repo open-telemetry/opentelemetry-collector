@@ -184,9 +184,9 @@ func TestNewFactoryWithAllTypes(t *testing.T) {
 
 func TestMakeFactoryMap(t *testing.T) {
 	type testCase struct {
+		out  map[component.Type]Factory
 		name string
 		in   []Factory
-		out  map[component.Type]Factory
 	}
 
 	p1 := NewFactory("p1", nil)
@@ -241,9 +241,9 @@ func TestBuilder(t *testing.T) {
 	require.NoError(t, err)
 
 	testCases := []struct {
-		name string
-		id   component.ID
 		err  func(component.DataType, component.DataType) string
+		id   component.ID
+		name string
 	}{
 		{
 			name: "unknown",

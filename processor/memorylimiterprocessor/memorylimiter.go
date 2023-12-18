@@ -39,30 +39,21 @@ var (
 var getMemoryFn = iruntime.TotalMemory
 
 type memoryLimiter struct {
-	usageChecker memUsageChecker
-
-	memCheckWait time.Duration
-	ballastSize  uint64
-
+	lastGCDone time.Time
 	// mustRefuse is used to indicate when data should be refused.
 	mustRefuse *atomic.Bool
-
-	ticker *time.Ticker
-
-	lastGCDone time.Time
-
+	ticker     *time.Ticker
 	// The function to read the mem values is set as a reference to help with
 	// testing different values.
-	readMemStatsFn func(m *runtime.MemStats)
-
-	// Fields used for logging.
+	readMemStatsFn         func(m *runtime.MemStats)
 	logger                 *zap.Logger
+	obsrep                 *processorhelper.ObsReport
+	usageChecker           memUsageChecker
+	memCheckWait           time.Duration
+	ballastSize            uint64
+	refCounter             int
+	refCounterLock         sync.Mutex
 	configMismatchedLogged bool
-
-	obsrep *processorhelper.ObsReport
-
-	refCounterLock sync.Mutex
-	refCounter     int
 }
 
 // Minimum interval between forced GC when in soft limited mode. We don't want to

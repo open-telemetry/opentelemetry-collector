@@ -96,17 +96,17 @@ func TestBuildResource(t *testing.T) {
 
 func TestTelemetryInit(t *testing.T) {
 	type metricValue struct {
-		value  float64
 		labels map[string]string
+		value  float64
 	}
 
 	for _, tc := range []struct {
+		expectedMetrics map[string]metricValue
+		cfg             *telemetry.Config
 		name            string
 		useOtel         bool
 		disableHighCard bool
-		expectedMetrics map[string]metricValue
 		extendedConfig  bool
-		cfg             *telemetry.Config
 	}{
 		{
 			name:    "UseOpenCensusForInternalMetrics",

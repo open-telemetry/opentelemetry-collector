@@ -16,11 +16,11 @@ import (
 )
 
 type loggingExporter struct {
-	verbosity        configtelemetry.Level
-	logger           *zap.Logger
 	logsMarshaler    plog.Marshaler
 	metricsMarshaler pmetric.Marshaler
 	tracesMarshaler  ptrace.Marshaler
+	logger           *zap.Logger
+	verbosity        configtelemetry.Level
 }
 
 func (s *loggingExporter) pushTraces(_ context.Context, td ptrace.Traces) error {

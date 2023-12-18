@@ -71,8 +71,8 @@ func TestRegisterGateLifecycle(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
 		id        string
-		stage     Stage
 		opts      []RegisterOption
+		stage     Stage
 		enabled   bool
 		shouldErr bool
 	}{

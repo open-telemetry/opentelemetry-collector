@@ -50,15 +50,15 @@ type Generator interface {
 }
 
 type CheckConsumeContractParams struct {
-	T *testing.T
 	// Factory that allows to create a receiver.
 	Factory receiver.Factory
-	// DataType to test for.
-	DataType component.DataType
 	// Config of the receiver to use.
 	Config component.Config
 	// Generator that can send data to the receiver.
 	Generator Generator
+	T         *testing.T
+	// DataType to test for.
+	DataType component.DataType
 	// GenerateCount specifies the number of times to call the generator.Generate()
 	// for each test scenario.
 	GenerateCount int
@@ -72,8 +72,8 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 	// The decision function defines the testing scenario (i.e. to test for
 	// success case or for error case or a mix of both). See for example randomErrorsConsumeDecision.
 	scenarios := []struct {
-		name         string
 		decisionFunc func(ids idSet) error
+		name         string
 	}{
 		{
 			name: "always_succeed",
@@ -320,10 +320,10 @@ func randomErrorsConsumeDecision(_ idSet) error {
 type mockConsumer struct {
 	t                    *testing.T
 	consumeDecisionFunc  consumeDecisionFunc
-	mux                  sync.Mutex
 	acceptedIds          idSet
 	droppedIds           idSet
 	nonPermanentFailures int
+	mux                  sync.Mutex
 }
 
 func (m *mockConsumer) Capabilities() consumer.Capabilities {

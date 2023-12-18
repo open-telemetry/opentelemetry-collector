@@ -53,10 +53,10 @@ type consumerNode interface {
 // A receiver instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
 type receiverNode struct {
-	nodeID
+	component.Component
 	componentID  component.ID
 	pipelineType component.DataType
-	component.Component
+	nodeID
 }
 
 func newReceiverNode(pipelineType component.DataType, recvID component.ID) *receiverNode {
@@ -109,10 +109,10 @@ var _ consumerNode = &processorNode{}
 // Every processor instance is unique to one pipeline.
 // Therefore, nodeID is derived from "pipeline ID" and "component ID".
 type processorNode struct {
-	nodeID
+	component.Component
 	componentID component.ID
 	pipelineID  component.ID
-	component.Component
+	nodeID
 }
 
 func newProcessorNode(pipelineID, procID component.ID) *processorNode {
@@ -157,10 +157,10 @@ var _ consumerNode = &exporterNode{}
 // An exporter instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
 type exporterNode struct {
-	nodeID
+	component.Component
 	componentID  component.ID
 	pipelineType component.DataType
-	component.Component
+	nodeID
 }
 
 func newExporterNode(pipelineType component.DataType, exprID component.ID) *exporterNode {
@@ -205,12 +205,12 @@ var _ consumerNode = &connectorNode{}
 // A connector instance connects one pipeline type to one other pipeline type.
 // Therefore, nodeID is derived from "exporter pipeline type", "receiver pipeline type", and "component ID".
 type connectorNode struct {
-	nodeID
+	component.Component
+	baseConsumer
 	componentID      component.ID
 	exprPipelineType component.DataType
 	rcvrPipelineType component.DataType
-	component.Component
-	baseConsumer
+	nodeID
 }
 
 func newConnectorNode(exprPipelineType, rcvrPipelineType component.DataType, connID component.ID) *connectorNode {
@@ -355,12 +355,12 @@ var _ consumerNode = &capabilitiesNode{}
 // 2. Present a consistent "first consumer" for each pipeline.
 // The nodeID is derived from "pipeline ID".
 type capabilitiesNode struct {
-	nodeID
-	pipelineID component.ID
 	baseConsumer
 	consumer.ConsumeTracesFunc
 	consumer.ConsumeMetricsFunc
 	consumer.ConsumeLogsFunc
+	pipelineID component.ID
+	nodeID
 }
 
 func newCapabilitiesNode(pipelineID component.ID) *capabilitiesNode {
@@ -379,9 +379,9 @@ var _ consumerNode = &fanOutNode{}
 // Each pipeline has one fan-out node before exporters.
 // Therefore, nodeID is derived from "pipeline ID".
 type fanOutNode struct {
-	nodeID
-	pipelineID component.ID
 	baseConsumer
+	pipelineID component.ID
+	nodeID
 }
 
 func newFanOutNode(pipelineID component.ID) *fanOutNode {

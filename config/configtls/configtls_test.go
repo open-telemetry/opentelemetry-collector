@@ -22,8 +22,8 @@ import (
 func TestOptionsToConfig(t *testing.T) {
 	tests := []struct {
 		name        string
-		options     TLSSetting
 		expectError string
+		options     TLSSetting
 	}{
 		{
 			name:    "should load system CA",
@@ -462,13 +462,13 @@ func TestEagerlyLoadCertificate(t *testing.T) {
 func TestCertificateReload(t *testing.T) {
 	tests := []struct {
 		name           string
-		reloadInterval time.Duration
-		wait           time.Duration
 		cert2          string
 		key2           string
 		dns1           string
 		dns2           string
 		errText        string
+		reloadInterval time.Duration
+		wait           time.Duration
 	}{
 		{
 			name:           "Should reload the certificate after reload-interval",
@@ -592,9 +592,9 @@ func TestMinMaxTLSVersions(t *testing.T) {
 		name          string
 		minVersion    string
 		maxVersion    string
+		errorTxt      string
 		outMinVersion uint16
 		outMaxVersion uint16
-		errorTxt      string
 	}{
 		{name: `TLS Config ["", ""] to give [TLS1.2, 0]`, minVersion: "", maxVersion: "", outMinVersion: tls.VersionTLS12, outMaxVersion: 0},
 		{name: `TLS Config ["", "1.3"] to give [TLS1.2, TLS1.3]`, minVersion: "", maxVersion: "1.3", outMinVersion: tls.VersionTLS12, outMaxVersion: tls.VersionTLS13},

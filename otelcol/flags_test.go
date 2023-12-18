@@ -15,9 +15,9 @@ import (
 func TestSetFlag(t *testing.T) {
 	tests := []struct {
 		name            string
+		expectedErr     string
 		args            []string
 		expectedConfigs []string
-		expectedErr     string
 	}{
 		{
 			name:            "simple set",

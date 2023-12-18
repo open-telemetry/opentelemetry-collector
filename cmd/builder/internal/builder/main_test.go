@@ -87,8 +87,8 @@ func TestGenerateAndCompile(t *testing.T) {
 	}
 
 	testCases := []struct {
-		testCase   string
 		cfgBuilder func(t *testing.T) Config
+		testCase   string
 	}{
 		{
 			testCase: "Default Configuration Compilation",

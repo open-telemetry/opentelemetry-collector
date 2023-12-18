@@ -90,18 +90,16 @@ func metricViews() []*view.View {
 }
 
 type batchProcessorTelemetry struct {
-	level    configtelemetry.Level
-	detailed bool
-	useOtel  bool
-
-	exportCtx context.Context
-
-	processorAttr            []attribute.KeyValue
+	exportCtx                context.Context
 	batchSizeTriggerSend     metric.Int64Counter
 	timeoutTriggerSend       metric.Int64Counter
 	batchSendSize            metric.Int64Histogram
 	batchSendSizeBytes       metric.Int64Histogram
 	batchMetadataCardinality metric.Int64ObservableUpDownCounter
+	processorAttr            []attribute.KeyValue
+	level                    configtelemetry.Level
+	detailed                 bool
+	useOtel                  bool
 }
 
 func newBatchProcessorTelemetry(set processor.CreateSettings, currentMetadataCardinality func() int, useOtel bool) (*batchProcessorTelemetry, error) {

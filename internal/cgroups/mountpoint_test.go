@@ -36,9 +36,9 @@ import (
 
 func TestNewMountPointFromLine(t *testing.T) {
 	testTable := []struct {
+		expected *MountPoint
 		name     string
 		line     string
-		expected *MountPoint
 	}{
 		{
 			name: "root",

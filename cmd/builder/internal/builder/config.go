@@ -24,20 +24,19 @@ var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
 // Config holds the builder's configuration
 type Config struct {
 	Logger          *zap.Logger
-	SkipGenerate    bool   `mapstructure:"-"`
-	SkipCompilation bool   `mapstructure:"-"`
-	SkipGetModules  bool   `mapstructure:"-"`
-	LDFlags         string `mapstructure:"-"`
-	Verbose         bool   `mapstructure:"-"`
-
-	Distribution Distribution `mapstructure:"dist"`
-	Exporters    []Module     `mapstructure:"exporters"`
-	Extensions   []Module     `mapstructure:"extensions"`
-	Receivers    []Module     `mapstructure:"receivers"`
-	Processors   []Module     `mapstructure:"processors"`
-	Connectors   []Module     `mapstructure:"connectors"`
-	Replaces     []string     `mapstructure:"replaces"`
-	Excludes     []string     `mapstructure:"excludes"`
+	LDFlags         string       `mapstructure:"-"`
+	Distribution    Distribution `mapstructure:"dist"`
+	Receivers       []Module     `mapstructure:"receivers"`
+	Exporters       []Module     `mapstructure:"exporters"`
+	Extensions      []Module     `mapstructure:"extensions"`
+	Processors      []Module     `mapstructure:"processors"`
+	Connectors      []Module     `mapstructure:"connectors"`
+	Replaces        []string     `mapstructure:"replaces"`
+	Excludes        []string     `mapstructure:"excludes"`
+	SkipGetModules  bool         `mapstructure:"-"`
+	Verbose         bool         `mapstructure:"-"`
+	SkipCompilation bool         `mapstructure:"-"`
+	SkipGenerate    bool         `mapstructure:"-"`
 }
 
 // Distribution holds the parameters for the final binary
@@ -47,10 +46,10 @@ type Distribution struct {
 	Go                   string `mapstructure:"go"`
 	Description          string `mapstructure:"description"`
 	OtelColVersion       string `mapstructure:"otelcol_version"`
-	RequireOtelColModule bool   `mapstructure:"-"` // required for backwards-compatibility with builds older than 0.86.0
 	OutputPath           string `mapstructure:"output_path"`
 	Version              string `mapstructure:"version"`
 	BuildTags            string `mapstructure:"build_tags"`
+	RequireOtelColModule bool   `mapstructure:"-"` // required for backwards-compatibility with builds older than 0.86.0
 	DebugCompilation     bool   `mapstructure:"debug_compilation"`
 }
 

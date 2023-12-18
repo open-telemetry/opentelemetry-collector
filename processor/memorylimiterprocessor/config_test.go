@@ -39,9 +39,9 @@ func TestUnmarshalConfig(t *testing.T) {
 
 func TestConfigValidate(t *testing.T) {
 	tests := []struct {
-		name string
-		cfg  *Config
 		err  error
+		cfg  *Config
+		name string
 	}{
 		{
 			name: "valid",

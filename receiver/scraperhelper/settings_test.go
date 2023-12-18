@@ -15,8 +15,8 @@ func TestScrapeControllerSettings(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		set    ScraperControllerSettings
 		errVal string
+		set    ScraperControllerSettings
 	}{
 		{
 			name:   "default configuration",

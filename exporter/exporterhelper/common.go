@@ -126,26 +126,22 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
-	component.StartFunc
-	component.ShutdownFunc
-
-	requestExporter bool
-	marshaler       RequestMarshaler
-	unmarshaler     RequestUnmarshaler
-	signal          component.DataType
-
-	set    exporter.CreateSettings
-	obsrep *ObsReport
-
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
 	// Most of the senders are optional, and initialized with a no-op path-through sender.
-	queueSender   requestSender
-	obsrepSender  requestSender
-	retrySender   requestSender
-	timeoutSender *timeoutSender // timeoutSender is always initialized.
-
+	queueSender  requestSender
+	retrySender  requestSender
+	obsrepSender requestSender
+	marshaler    RequestMarshaler
+	unmarshaler  RequestUnmarshaler
+	obsrep       *ObsReport
+	component.StartFunc
+	component.ShutdownFunc
+	timeoutSender   *timeoutSender // timeoutSender is always initialized.
+	set             exporter.CreateSettings
+	signal          component.DataType
 	consumerOptions []consumer.Option
+	requestExporter bool
 }
 
 // TODO: requestExporter, marshaler, and unmarshaler arguments can be removed when the old exporter helpers will be updated to call the new ones.

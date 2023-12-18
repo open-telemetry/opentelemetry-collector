@@ -17,9 +17,9 @@ import (
 
 func TestMemoryBallast(t *testing.T) {
 	tests := []struct {
-		name        string
 		config      *Config
 		getTotalMem func() (uint64, error)
+		name        string
 		expect      int
 	}{
 		{

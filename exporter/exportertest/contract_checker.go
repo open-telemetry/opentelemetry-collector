@@ -30,16 +30,16 @@ const uniqueIDAttrName = "test_id"
 type uniqueIDAttrVal string
 
 type CheckConsumeContractParams struct {
-	T                    *testing.T
-	NumberOfTestElements int
-	// DataType to test for.
-	DataType component.DataType
 	// ExporterFactory to create an exporter to be tested.
 	ExporterFactory exporter.Factory
 	ExporterConfig  component.Config
 	// ReceiverFactory to create a mock receiver.
 	ReceiverFactory receiver.Factory
 	ReceiverConfig  component.Config
+	T               *testing.T
+	// DataType to test for.
+	DataType             component.DataType
+	NumberOfTestElements int
 }
 
 func CheckConsumeContract(params CheckConsumeContractParams) {
@@ -47,9 +47,9 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 	// The decision function defines the testing scenario (i.e. to test for
 	// success case or for error case or a mix of both). See for example randomErrorsConsumeDecision.
 	scenarios := []struct {
-		name              string
 		decisionFunc      func() error
 		checkIfTestPassed func(*testing.T, int, requestCounter)
+		name              string
 	}{
 		{
 			name: "always_succeed",

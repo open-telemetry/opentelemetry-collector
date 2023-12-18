@@ -67,16 +67,16 @@ const _miFieldCountMin = _miFieldCountFirstHalf + _miFieldCountSecondHalf
 // MountPoint is the data structure for the mount points in
 // `/proc/$PID/mountinfo`. See also proc(5) for more information.
 type MountPoint struct {
-	MountID        int
-	ParentID       int
 	DeviceID       string
 	Root           string
 	MountPoint     string
-	Options        []string
-	OptionalFields []string
 	FSType         string
 	MountSource    string
+	Options        []string
+	OptionalFields []string
 	SuperOptions   []string
+	MountID        int
+	ParentID       int
 }
 
 // NewMountPointFromLine parses a line read from `/proc/$PID/mountinfo` and

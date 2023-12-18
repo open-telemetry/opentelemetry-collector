@@ -29,21 +29,15 @@ import (
 )
 
 type baseExporter struct {
-	// Input configuration.
-	config *Config
-
-	// gRPC clients and connection.
 	traceExporter  ptraceotlp.GRPCClient
 	metricExporter pmetricotlp.GRPCClient
 	logExporter    plogotlp.GRPCClient
+	config         *Config
 	clientConn     *grpc.ClientConn
 	metadata       metadata.MD
+	settings       component.TelemetrySettings
+	userAgent      string
 	callOptions    []grpc.CallOption
-
-	settings component.TelemetrySettings
-
-	// Default user-agent header.
-	userAgent string
 }
 
 // Crete new exporter and start it. The exporter will begin connecting but

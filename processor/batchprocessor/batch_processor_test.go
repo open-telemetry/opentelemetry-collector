@@ -874,9 +874,8 @@ func TestShutdown(t *testing.T) {
 
 type metadataTracesSink struct {
 	*consumertest.TracesSink
-
-	lock               sync.Mutex
 	spanCountByToken12 map[string]int
+	lock               sync.Mutex
 }
 
 func formatTwo(first, second []string) string {
