@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
@@ -75,12 +74,15 @@ func (tel *telemetryInitializer) init(res *resource.Resource, settings servicete
 	}
 
 	settings.Logger.Info("Setting up own telemetry...")
+	configuredSDK, err := config.NewSDK(
+		config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{}),
+	)
 
-	if tp, err := tel.initTraces(res, cfg); err == nil {
-		tel.tp = tp
-	} else {
+	if err != nil {
 		return err
 	}
+
+	tel.tp = configuredSDK.TracerProvider()
 
 	if tp, err := textMapPropagatorFromConfig(cfg.Traces.Propagators); err == nil {
 		otel.SetTextMapPropagator(tp)
@@ -89,18 +91,6 @@ func (tel *telemetryInitializer) init(res *resource.Resource, settings servicete
 	}
 
 	return tel.initMetrics(res, settings.Logger, cfg, asyncErrorChannel)
-}
-
-func (tel *telemetryInitializer) initTraces(res *resource.Resource, cfg telemetry.Config) (trace.TracerProvider, error) {
-	opts := []sdktrace.TracerProviderOption{}
-	for _, processor := range cfg.Traces.Processors {
-		sp, err := proctelemetry.InitSpanProcessor(context.Background(), processor)
-		if err != nil {
-			return nil, err
-		}
-		opts = append(opts, sdktrace.WithSpanProcessor(sp))
-	}
-	return proctelemetry.InitTracerProvider(res, opts)
 }
 
 func (tel *telemetryInitializer) initMetrics(res *resource.Resource, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
