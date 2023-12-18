@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/encoding/gzip"
@@ -181,7 +182,17 @@ func (gcs *GRPCClientSettings) ToClientConn(ctx context.Context, host component.
 		return nil, err
 	}
 	opts = append(opts, extraOpts...)
-	return grpc.DialContext(ctx, gcs.SanitizedEndpoint(), opts...)
+
+	// gRPC round_robin is only enabled when the DNS resolver is used.
+	// There are 2 options to use it.
+	// This function takes #2.
+	// 1. configure the global resolver by `resolver.SetDefaultScheme("dns")`
+	// 2. add "dns:[//authority/]" prefix in grpc.DialContext
+	var endpoint string = gcs.SanitizedEndpoint()
+	if gcs.BalancerName == roundrobin.Name {
+		endpoint = "dns:" + endpoint
+	}
+	return grpc.DialContext(ctx, endpoint, opts...)
 }
 
 func (gcs *GRPCClientSettings) toDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
@@ -245,7 +256,8 @@ func (gcs *GRPCClientSettings) toDialOptions(host component.Host, settings compo
 		if !valid {
 			return nil, fmt.Errorf("invalid balancer_name: %s", gcs.BalancerName)
 		}
-		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":"%s"}`, gcs.BalancerName)))
+
+		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}]}`, gcs.BalancerName)))
 	}
 
 	if gcs.Authority != "" {
