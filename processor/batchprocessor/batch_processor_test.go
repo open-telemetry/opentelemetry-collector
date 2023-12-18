@@ -1143,10 +1143,12 @@ func Test_Batch_Shutdown_Cancel(t *testing.T) {
 	<-makeSureAtLeastOne
 
 	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		cancel()
+	}()
 	err = batcher.Shutdown(ctx)
 	require.NoError(t, err)
 
-	cancel()
 	receivedMds := sink.AllLogs()
 
 	assert.Less(t, len(receivedMds), int(counter.Load()))
