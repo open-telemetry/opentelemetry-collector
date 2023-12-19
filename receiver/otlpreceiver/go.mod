@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.91.0
 	go.opentelemetry.io/collector/consumer v0.91.0
 	go.opentelemetry.io/collector/pdata v1.0.0
+	go.opentelemetry.io/collector/pkg/sharedcomponent v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/receiver v0.91.0
 	go.opentelemetry.io/collector/semconv v0.91.0
 	go.uber.org/zap v1.26.0
@@ -131,3 +132,5 @@ retract (
 )
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
+
+replace go.opentelemetry.io/collector/pkg/sharedcomponent => ../../pkg/sharedcomponent
