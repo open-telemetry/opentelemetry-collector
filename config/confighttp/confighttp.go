@@ -230,13 +230,22 @@ func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Respo
 
 // HTTPServerSettings defines settings for creating an HTTP server.
 type HTTPServerSettings struct {
-	TLSSetting         *configtls.TLSServerSetting    `mapstructure:"tls"`
-	CORS               *CORSSettings                  `mapstructure:"cors"`
-	Auth               *configauth.Authentication     `mapstructure:"auth"`
-	ResponseHeaders    map[string]configopaque.String `mapstructure:"response_headers"`
-	Endpoint           string                         `mapstructure:"endpoint"`
-	MaxRequestBodySize int64                          `mapstructure:"max_request_body_size"`
-	IncludeMetadata    bool                           `mapstructure:"include_metadata"`
+	// TLSSetting struct exposes TLS client configuration.
+	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls"`
+	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
+	CORS *CORSSettings `mapstructure:"cors"`
+	// Auth for this receiver
+	Auth *configauth.Authentication `mapstructure:"auth"`
+	// Additional headers attached to each HTTP response sent to the client.
+	// Header values are opaque since they may be sensitive.
+	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
+	// Endpoint configures the listening address for the server.
+	Endpoint string `mapstructure:"endpoint"`
+	// MaxRequestBodySize sets the maximum request body size in bytes
+	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
+	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
+	// Experimental: *NOTE* this option is subject to change or removal in the future.
+	IncludeMetadata bool `mapstructure:"include_metadata"`
 }
 
 // ToListener creates a net.Listener.
