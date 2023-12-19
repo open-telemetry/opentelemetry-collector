@@ -159,7 +159,7 @@ func (r *Reporter) componentFSM(id *component.InstanceID) *fsm {
 func NewComponentStatusFunc(
 	id *component.InstanceID,
 	srvStatus ServiceStatusFunc,
-) component.StatusFunc {
+) func(*component.StatusEvent) error {
 	return func(ev *component.StatusEvent) error {
 		return srvStatus(id, ev)
 	}

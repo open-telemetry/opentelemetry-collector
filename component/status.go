@@ -98,8 +98,8 @@ func NewFatalErrorEvent(err error) *StatusEvent {
 	return ev
 }
 
-// StatusFunc is the expected type of ReportComponentStatus for component.TelemetrySettings
-type StatusFunc func(*StatusEvent) error
+// Deprecated: [v0.92.0] use directly func(*StatusEvent) error.
+type StatusFunc = func(*StatusEvent) error
 
 // AggregateStatus will derive a status for the given input using the following rules in order:
 //  1. If all instances have the same status, there is nothing to aggregate, return it.
