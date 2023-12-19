@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
@@ -125,30 +126,44 @@ func TestTelemetryInit(t *testing.T) {
 			name:    "UseOpenTelemetryForInternalMetrics",
 			useOtel: true,
 			expectedMetrics: map[string]metricValue{
-				metricPrefix + ocPrefix + counterName + "_total": {
-					value:  13,
-					labels: map[string]string{},
+				metricPrefix + ocPrefix + counterName: {
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
-				metricPrefix + otelPrefix + counterName + "_total": {
-					value:  13,
-					labels: map[string]string{},
+				metricPrefix + otelPrefix + counterName: {
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
-				metricPrefix + grpcPrefix + counterName + "_total": {
+				metricPrefix + grpcPrefix + counterName: {
 					value: 11,
 					labels: map[string]string{
-						"net_sock_peer_addr": "",
-						"net_sock_peer_name": "",
-						"net_sock_peer_port": "",
+						"net_sock_peer_addr":  "",
+						"net_sock_peer_name":  "",
+						"net_sock_peer_port":  "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
 					},
 				},
-				metricPrefix + httpPrefix + counterName + "_total": {
+				metricPrefix + httpPrefix + counterName: {
 					value: 10,
 					labels: map[string]string{
-						"net_host_name": "",
-						"net_host_port": "",
+						"net_host_name":       "",
+						"net_host_port":       "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
 					},
 				},
-				metricPrefix + "target_info": {
+				"target_info": {
 					value: 0,
 					labels: map[string]string{
 						"service_name":        "otelcol",
@@ -163,23 +178,39 @@ func TestTelemetryInit(t *testing.T) {
 			useOtel:         true,
 			disableHighCard: true,
 			expectedMetrics: map[string]metricValue{
-				metricPrefix + ocPrefix + counterName + "_total": {
-					value:  13,
-					labels: map[string]string{},
+				metricPrefix + ocPrefix + counterName: {
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
-				metricPrefix + otelPrefix + counterName + "_total": {
-					value:  13,
-					labels: map[string]string{},
+				metricPrefix + otelPrefix + counterName: {
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
-				metricPrefix + grpcPrefix + counterName + "_total": {
-					value:  11,
-					labels: map[string]string{},
+				metricPrefix + grpcPrefix + counterName: {
+					value: 11,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
-				metricPrefix + httpPrefix + counterName + "_total": {
-					value:  10,
-					labels: map[string]string{},
+				metricPrefix + httpPrefix + counterName: {
+					value: 10,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
-				metricPrefix + "target_info": {
+				"target_info": {
 					value: 0,
 					labels: map[string]string{
 						"service_name":        "otelcol",
@@ -197,11 +228,11 @@ func TestTelemetryInit(t *testing.T) {
 					Level: configtelemetry.LevelDetailed,
 				},
 				Traces: telemetry.TracesConfig{
-					Processors: []telemetry.SpanProcessor{
+					Processors: []config.SpanProcessor{
 						{
-							Batch: &telemetry.BatchSpanProcessor{
-								Exporter: telemetry.SpanExporter{
-									Console: telemetry.Console{},
+							Batch: &config.BatchSpanProcessor{
+								Exporter: config.SpanExporter{
+									Console: config.Console{},
 								},
 							},
 						},
@@ -212,30 +243,44 @@ func TestTelemetryInit(t *testing.T) {
 				},
 			},
 			expectedMetrics: map[string]metricValue{
-				metricPrefix + ocPrefix + counterName + "_total": {
-					value:  13,
-					labels: map[string]string{},
+				metricPrefix + ocPrefix + counterName: {
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
-				metricPrefix + otelPrefix + counterName + "_total": {
-					value:  13,
-					labels: map[string]string{},
+				metricPrefix + otelPrefix + counterName: {
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
 				},
-				metricPrefix + grpcPrefix + counterName + "_total": {
+				metricPrefix + grpcPrefix + counterName: {
 					value: 11,
 					labels: map[string]string{
-						"net_sock_peer_addr": "",
-						"net_sock_peer_name": "",
-						"net_sock_peer_port": "",
+						"net_sock_peer_addr":  "",
+						"net_sock_peer_name":  "",
+						"net_sock_peer_port":  "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
 					},
 				},
-				metricPrefix + httpPrefix + counterName + "_total": {
+				metricPrefix + httpPrefix + counterName: {
 					value: 10,
 					labels: map[string]string{
-						"net_host_name": "",
-						"net_host_port": "",
+						"net_host_name":       "",
+						"net_host_port":       "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
 					},
 				},
-				metricPrefix + "target_info": {
+				"target_info": {
 					value: 0,
 					labels: map[string]string{
 						"service_name":        "otelcol",
@@ -250,10 +295,10 @@ func TestTelemetryInit(t *testing.T) {
 			tel := newColTelemetry(tc.useOtel, tc.disableHighCard, tc.extendedConfig)
 			buildInfo := component.NewDefaultBuildInfo()
 			if tc.extendedConfig {
-				tc.cfg.Metrics.Readers = []telemetry.MetricReader{
+				tc.cfg.Metrics.Readers = []config.MetricReader{
 					{
-						Pull: &telemetry.PullMetricReader{
-							Exporter: telemetry.MetricExporter{
+						Pull: &config.PullMetricReader{
+							Exporter: config.MetricExporter{
 								Prometheus: testutil.GetAvailableLocalAddressPrometheus(t),
 							},
 						},

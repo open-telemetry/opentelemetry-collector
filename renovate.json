@@ -1,8 +1,12 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "labels": [
+      "renovatebot",
       "dependencies"
     ],
+    "constraints": {
+      "go": "1.20"
+    },
     "extends": [
       "config:base"
     ],
@@ -19,6 +23,15 @@
       {
         "matchManagers": ["github-actions"],
         "groupName": "github-actions deps"
+      },
+      {
+        "groupName": "all patch dependencies",
+        "matchPackagePatterns": [
+          "*"
+        ],
+        "matchUpdateTypes": [
+          "patch"
+        ]
       },
       {
         "matchManagers": ["gomod"],

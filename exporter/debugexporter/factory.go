@@ -32,7 +32,7 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Verbosity:          configtelemetry.LevelNormal,
+		Verbosity:          configtelemetry.LevelBasic,
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 	}

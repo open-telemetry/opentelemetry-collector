@@ -17,7 +17,7 @@ import (
 // telemetrySettings for internal metrics.
 var UseOtelForInternalMetricsfeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.useOtelForInternalMetrics",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("controls whether the collector uses OpenTelemetry for internal metrics"))
 
 // DisableHighCardinalityMetricsfeatureGate is the feature gate that controls whether the collector should enable

@@ -27,8 +27,9 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 1. Update Contrib to use the latest in development version of Core. Run `make update-otel` in Contrib root directory and if it results in any changes submit a draft PR to Contrib. Ensure the CI passes before proceeding. This is to ensure that the latest core does not break contrib in any way. We’ll update it once more to the final release number later.
 
-2. Determine the version number that will be assigned to the release. During the beta phase, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.85.0` as the version to be released, following `v0.84.0`.
-   Check if stable modules have any changes since the last release by running `make check-changes PREVIOUS_VERSION=v1.0.0-rcv0014 MODSET=stable`. If there are no changes, there is no need to release new version for stable modules.
+2. Determine the version number that will be assigned to the release. Usually, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.85.0` as the version to be released, following `v0.84.0`.
+   Check if stable modules have any changes since the last release by running `make check-changes PREVIOUS_VERSION=v1.0.0 MODSET=stable`. If there are no changes, there is no need to release new version for stable modules.
+   If there are changes found but .chloggen directory doesn't have any corresponding entries, add missing changelog entries. If the changes are insignificant, consider not releasing a new version for stable modules.
 
 3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Core should be haulted**.
    - When prompted, enter the version numbers determined in Step 2, but do not include a leading `v`.
@@ -49,7 +50,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 7. A new `v0.85.0` release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md and CHANGELOG-API.md as the release's description.
 
 8. Update the draft PR to Contrib created in step 1 to use the newly released Core version and set it to Ready for Review.
-   - Run `make update-otel OTEL_VERSION=v0.85.0 OTEL_RC_VERSION=v1.0.0-rcv0014`
+   - Run `make update-otel OTEL_VERSION=v0.85.0 OTEL_STABLE_VERSION=v1.1.0`
    - Manually update `cmd/otelcontribcol/builder-config.yaml`
    - Manually update `cmd/oteltestbedcol/builder-config.yaml`
    - Run `make genotelcontribcol`
@@ -132,23 +133,34 @@ The OpenTelemetry Collector maintainers will ultimately have the responsibility 
 
 The following documents the procedure to release a bugfix
 
-1. Create a pull request against the `release/<release-series>` (e.g. `release/v0.45.x`) branch to apply the fix.
-2. Create a pull request to update version number against the `release/<release-series>` branch.
+1. Create a pull request against the `release/<release-series>` (e.g. `release/v0.90.x`) branch to apply the fix.
+2. Make sure you are on `release/<release-series>`. Prepare release commits with `prepare-release` make target, e.g. `make prepare-release PREVIOUS_VERSION=0.90.0 RELEASE_CANDIDATE=0.90.1 MODSET=beta`, and create a pull request against the `release/<release-series>` branch.
 3. Once those changes have been merged, create a pull request to the `main` branch from the `release/<release-series>` branch.
-4. Enable the **Merge pull request** setting in the repository's **Settings** tab.
-5. Tag all the modules with the new release version by running the `make add-tag` command (e.g. `make add-tag TAG=v0.85.0`). Push them to `open-telemetry/opentelemetry-collector` with `make push-tag TAG=v0.85.0`. Wait for the new tag build to pass successfully.
-6. **IMPORTANT**: The pull request to bring the changes from the release branch *MUST* be merged using the **Merge pull request** method, and *NOT* squashed using “**Squash and merge**”. This is important as it allows us to ensure the commit SHA from the release branch is also on the main branch. **Not following this step will cause much go dependency sadness.**
-7. Once the branch has been merged, it will be auto-deleted. Restore the release branch via GitHub.
-8. Once the patch is release, disable the **Merge pull request** setting.
+4. If you see merge conflicts when creating the pull request, do the following:
+    1. Create a new branch from `origin:main`.
+    2. Merge the `release/<release-series>` branch into the new branch.
+    3. Resolve the conflicts.
+    4. Create another pull request to the `main` branch from the new branch to replace the pull request from the `release/<release-series>` branch.
+5. Enable the **Merge pull request** setting in the repository's **Settings** tab.
+6. Make sure you are on `release/<release-series>`. Push the new release version tags for a target module set by running `make push-tags MODSET=<beta|stable>`. Wait for the new tag build to pass successfully.
+7. **IMPORTANT**: The pull request to bring the changes from the release branch *MUST* be merged using the **Merge pull request** method, and *NOT* squashed using “**Squash and merge**”. This is important as it allows us to ensure the commit SHA from the release branch is also on the main branch. **Not following this step will cause much go dependency sadness.**
+8. If the pull request was created from the `release/<release-series>` branch, it will be auto-deleted. Restore the release branch via GitHub.
+9. Once the patch is released, disable the **Merge pull request** setting.
+
+## 1.0 release
+
+Stable modules adhere to our [versioning document guarantees](../VERSIONING.md), so we need to be careful before releasing. Before adding a module to the stable module set and making a first 1.x release, please [open a new stabilization issue](https://github.com/open-telemetry/opentelemetry-collector/issues/new/choose) and follow the instructions in the issue template.
+
+Once a module is ready to be released under the `1.x` version scheme, file a PR to move the module to the `stable` module set and remove it from the `beta` module set. Note that we do not make `v1.x.y-rc.z` style releases for new stable modules; we instead treat the last two beta minor releases as release candidates and the module moves directly from the `0.x` to the `1.x` release series.
 
 ## Release schedule
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2023-11-13 | v0.89.0 | @jpkrohling     |
-| 2023-11-27 | v0.90.0 | @djaglowski     |
-| 2023-12-11 | v0.91.0 | @dmitryax       |
 | 2024-01-08 | v0.92.0 | @codeboten      |
 | 2024-01-22 | v0.93.0 | @bogdandrutu    |
 | 2024-02-05 | v0.94.0 | @Aneurysm9      |
-| 2023-02-19 | v0.95.0 | @mx-psi         |
+| 2024-02-19 | v0.95.0 | @mx-psi         |
+| 2024-03-04 | v0.96.0 | @jpkrohling     |
+| 2024-03-18 | v0.97.0 | @djaglowski     |
+| 2024-04-01 | v0.98.0 | @dmitryax       |

@@ -3,575 +3,116 @@
 package telemetry
 
 import (
-	"encoding/json"
-	"fmt"
+	"go.opentelemetry.io/contrib/config"
 )
 
-type Attributes struct {
-	// ServiceName corresponds to the JSON schema field "service.name".
-	ServiceName *string `mapstructure:"service.name,omitempty"`
-}
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".Attributes instead.
+type Attributes = config.Attributes
 
-type BatchLogRecordProcessor struct {
-	// ExportTimeout corresponds to the JSON schema field "export_timeout".
-	ExportTimeout *int `mapstructure:"export_timeout,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".BatchLogRecordProcessor instead.
+type BatchLogRecordProcessor = config.BatchLogRecordProcessor
 
-	// Exporter corresponds to the JSON schema field "exporter".
-	Exporter LogRecordExporter `mapstructure:"exporter"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".BatchSpanProcessor instead.
+type BatchSpanProcessor = config.BatchSpanProcessor
 
-	// MaxExportBatchSize corresponds to the JSON schema field
-	// "max_export_batch_size".
-	MaxExportBatchSize *int `mapstructure:"max_export_batch_size,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".Common instead.
+type CommonJson = config.Common
 
-	// MaxQueueSize corresponds to the JSON schema field "max_queue_size".
-	MaxQueueSize *int `mapstructure:"max_queue_size,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".Console instead.
+type Console = config.Console
 
-	// ScheduleDelay corresponds to the JSON schema field "schedule_delay".
-	ScheduleDelay *int `mapstructure:"schedule_delay,omitempty"`
-}
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".Headers instead.
+type Headers = config.Headers
 
-type BatchSpanProcessor struct {
-	// ExportTimeout corresponds to the JSON schema field "export_timeout".
-	ExportTimeout *int `mapstructure:"export_timeout,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".LogRecordExporter instead.
+type LogRecordExporter = config.LogRecordExporter
 
-	// Exporter corresponds to the JSON schema field "exporter".
-	Exporter SpanExporter `mapstructure:"exporter"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".LogRecordLimits instead.
+type LogRecordLimits = config.LogRecordLimits
 
-	// MaxExportBatchSize corresponds to the JSON schema field
-	// "max_export_batch_size".
-	MaxExportBatchSize *int `mapstructure:"max_export_batch_size,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".LogRecordProcessor instead.
+type LogRecordProcessor = config.LogRecordProcessor
 
-	// MaxQueueSize corresponds to the JSON schema field "max_queue_size".
-	MaxQueueSize *int `mapstructure:"max_queue_size,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".LoggerProvider instead.
+type LoggerProviderJson = config.LoggerProvider
 
-	// ScheduleDelay corresponds to the JSON schema field "schedule_delay".
-	ScheduleDelay *int `mapstructure:"schedule_delay,omitempty"`
-}
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".MeterProvider instead.
+type MeterProviderJson = config.MeterProvider
 
-type CommonJson map[string]interface{}
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".MetricExporter instead.
+type MetricExporter = config.MetricExporter
 
-type Console map[string]interface{}
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".MetricReader instead.
+type MetricReader = config.MetricReader
 
-type Headers map[string]string
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".OTLP instead.
+type Otlp = config.OTLP
 
-type LogRecordExporter struct {
-	// Otlp corresponds to the JSON schema field "otlp".
-	Otlp *Otlp `mapstructure:"otlp,omitempty"`
-}
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".OTLPMetric instead.
+type OtlpMetric = config.OTLPMetric
 
-type LogRecordLimits struct {
-	// AttributeCountLimit corresponds to the JSON schema field
-	// "attribute_count_limit".
-	AttributeCountLimit *int `mapstructure:"attribute_count_limit,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".PeriodicMetricReader instead.
+type PeriodicMetricReader = config.PeriodicMetricReader
 
-	// AttributeValueLengthLimit corresponds to the JSON schema field
-	// "attribute_value_length_limit".
-	AttributeValueLengthLimit *int `mapstructure:"attribute_value_length_limit,omitempty"`
-}
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".Prometheus instead.
+type Prometheus = config.Prometheus
 
-type LogRecordProcessor struct {
-	// Batch corresponds to the JSON schema field "batch".
-	Batch *BatchLogRecordProcessor `mapstructure:"batch,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".PullMetricReader instead.
+type PullMetricReader = config.PullMetricReader
 
-	// Simple corresponds to the JSON schema field "simple".
-	Simple *SimpleLogRecordProcessor `mapstructure:"simple,omitempty"`
-}
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".Resource instead.
+type ResourceJson = config.Resource
 
-type LoggerProviderJson struct {
-	// Limits corresponds to the JSON schema field "limits".
-	Limits *LogRecordLimits `mapstructure:"limits,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".Sampler instead.
+type Sampler = config.Sampler
 
-	// Processors corresponds to the JSON schema field "processors".
-	Processors []LogRecordProcessor `mapstructure:"processors,omitempty"`
-}
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SamplerAlwaysOff instead.
+type SamplerAlwaysOff = config.SamplerAlwaysOff
 
-type MeterProviderJson struct {
-	// Readers corresponds to the JSON schema field "readers".
-	Readers []MetricReader `mapstructure:"readers,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SamplerAlwaysOn instead.
+type SamplerAlwaysOn = config.SamplerAlwaysOn
 
-	// Views corresponds to the JSON schema field "views".
-	Views []View `mapstructure:"views,omitempty"`
-}
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".ViewStreamAggregationExplicitBucketHistogram instead.
+type ViewStreamAggregationExplicitBucketHistogram = config.ViewStreamAggregationExplicitBucketHistogram
 
-type MetricExporter struct {
-	// Console corresponds to the JSON schema field "console".
-	Console Console `mapstructure:"console,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".ViewStreamAggregationBase2ExponentialBucketHistogram instead.
+type ViewStreamAggregationExponentialBucketHistogram = config.ViewStreamAggregationBase2ExponentialBucketHistogram
 
-	// Otlp corresponds to the JSON schema field "otlp".
-	Otlp *OtlpMetric `mapstructure:"otlp,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".ViewStreamAggregation instead.
+type ViewStreamAggregation = config.ViewStreamAggregation
 
-	// Prometheus corresponds to the JSON schema field "prometheus".
-	Prometheus *Prometheus `mapstructure:"prometheus,omitempty"`
-}
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".ViewStream instead.
+type ViewStream = config.ViewStream
 
-type MetricReader struct {
-	// Periodic corresponds to the JSON schema field "periodic".
-	Periodic *PeriodicMetricReader `mapstructure:"periodic,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".View instead.
+type View = config.View
 
-	// Pull corresponds to the JSON schema field "pull".
-	Pull *PullMetricReader `mapstructure:"pull,omitempty"`
-}
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SpanExporter instead.
+type SpanExporter = config.SpanExporter
 
-type Otlp struct {
-	// Certificate corresponds to the JSON schema field "certificate".
-	Certificate *string `mapstructure:"certificate,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".ViewSelector instead.
+type ViewSelector = config.ViewSelector
 
-	// ClientCertificate corresponds to the JSON schema field "client_certificate".
-	ClientCertificate *string `mapstructure:"client_certificate,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SimpleLogRecordProcessor instead.
+type SimpleLogRecordProcessor = config.SimpleLogRecordProcessor
 
-	// ClientKey corresponds to the JSON schema field "client_key".
-	ClientKey *string `mapstructure:"client_key,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SamplerJaegerRemote instead.
+type SamplerJaegerRemote = config.SamplerJaegerRemote
 
-	// Compression corresponds to the JSON schema field "compression".
-	Compression *string `mapstructure:"compression,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SamplerParentBased instead.
+type SamplerParentBased = config.SamplerParentBased
 
-	// Endpoint corresponds to the JSON schema field "endpoint".
-	Endpoint string `mapstructure:"endpoint"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SamplerTraceIDRatioBased instead.
+type SamplerTraceIdRatioBased = config.SamplerTraceIDRatioBased
 
-	// Headers corresponds to the JSON schema field "headers".
-	Headers Headers `mapstructure:"headers,omitempty"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SimpleSpanProcessor instead.
+type SimpleSpanProcessor = config.SimpleSpanProcessor
 
-	// Protocol corresponds to the JSON schema field "protocol".
-	Protocol string `mapstructure:"protocol"`
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SpanLimits instead.
+type SpanLimits = config.SpanLimits
 
-	// Timeout corresponds to the JSON schema field "timeout".
-	Timeout *int `mapstructure:"timeout,omitempty"`
-}
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".SpanProcessor instead.
+type SpanProcessor = config.SpanProcessor
 
-type OtlpMetric struct {
-	// Certificate corresponds to the JSON schema field "certificate".
-	Certificate *string `mapstructure:"certificate,omitempty"`
-
-	// ClientCertificate corresponds to the JSON schema field "client_certificate".
-	ClientCertificate *string `mapstructure:"client_certificate,omitempty"`
-
-	// ClientKey corresponds to the JSON schema field "client_key".
-	ClientKey *string `mapstructure:"client_key,omitempty"`
-
-	// Compression corresponds to the JSON schema field "compression".
-	Compression *string `mapstructure:"compression,omitempty"`
-
-	// DefaultHistogramAggregation corresponds to the JSON schema field
-	// "default_histogram_aggregation".
-	DefaultHistogramAggregation *string `mapstructure:"default_histogram_aggregation,omitempty"`
-
-	// Endpoint corresponds to the JSON schema field "endpoint".
-	Endpoint string `mapstructure:"endpoint"`
-
-	// Headers corresponds to the JSON schema field "headers".
-	Headers Headers `mapstructure:"headers,omitempty"`
-
-	// Protocol corresponds to the JSON schema field "protocol".
-	Protocol string `mapstructure:"protocol"`
-
-	// TemporalityPreference corresponds to the JSON schema field
-	// "temporality_preference".
-	TemporalityPreference *string `mapstructure:"temporality_preference,omitempty"`
-
-	// Timeout corresponds to the JSON schema field "timeout".
-	Timeout *int `mapstructure:"timeout,omitempty"`
-}
-
-type PeriodicMetricReader struct {
-	// Exporter corresponds to the JSON schema field "exporter".
-	Exporter MetricExporter `mapstructure:"exporter"`
-
-	// Interval corresponds to the JSON schema field "interval".
-	Interval *int `mapstructure:"interval,omitempty"`
-
-	// Timeout corresponds to the JSON schema field "timeout".
-	Timeout *int `mapstructure:"timeout,omitempty"`
-}
-
-type Prometheus struct {
-	// Host corresponds to the JSON schema field "host".
-	Host *string `mapstructure:"host,omitempty"`
-
-	// Port corresponds to the JSON schema field "port".
-	Port *int `mapstructure:"port,omitempty"`
-}
-
-type PullMetricReader struct {
-	// Exporter corresponds to the JSON schema field "exporter".
-	Exporter MetricExporter `mapstructure:"exporter"`
-}
-
-type ResourceJson struct {
-	// Attributes corresponds to the JSON schema field "attributes".
-	Attributes *Attributes `mapstructure:"attributes,omitempty"`
-}
-
-type Sampler struct {
-	// AlwaysOff corresponds to the JSON schema field "always_off".
-	AlwaysOff SamplerAlwaysOff `mapstructure:"always_off,omitempty"`
-
-	// AlwaysOn corresponds to the JSON schema field "always_on".
-	AlwaysOn SamplerAlwaysOn `mapstructure:"always_on,omitempty"`
-
-	// JaegerRemote corresponds to the JSON schema field "jaeger_remote".
-	JaegerRemote *SamplerJaegerRemote `mapstructure:"jaeger_remote,omitempty"`
-
-	// ParentBased corresponds to the JSON schema field "parent_based".
-	ParentBased *SamplerParentBased `mapstructure:"parent_based,omitempty"`
-
-	// TraceIdRatioBased corresponds to the JSON schema field "trace_id_ratio_based".
-	TraceIdRatioBased *SamplerTraceIdRatioBased `mapstructure:"trace_id_ratio_based,omitempty"`
-}
-
-type SamplerAlwaysOff map[string]interface{}
-
-type SamplerAlwaysOn map[string]interface{}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *BatchSpanProcessor) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["exporter"]; !ok || v == nil {
-		return fmt.Errorf("field exporter in BatchSpanProcessor: required")
-	}
-	type Plain BatchSpanProcessor
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = BatchSpanProcessor(plain)
-	return nil
-}
-
-type ViewStreamAggregationExplicitBucketHistogram struct {
-	// Boundaries corresponds to the JSON schema field "boundaries".
-	Boundaries []float64 `mapstructure:"boundaries,omitempty"`
-
-	// RecordMinMax corresponds to the JSON schema field "record_min_max".
-	RecordMinMax *bool `mapstructure:"record_min_max,omitempty"`
-}
-
-type ViewStreamAggregationExponentialBucketHistogram struct {
-	// MaxScale corresponds to the JSON schema field "max_scale".
-	MaxScale *int `mapstructure:"max_scale,omitempty"`
-
-	// MaxSize corresponds to the JSON schema field "max_size".
-	MaxSize *int `mapstructure:"max_size,omitempty"`
-
-	// RecordMinMax corresponds to the JSON schema field "record_min_max".
-	RecordMinMax *bool `mapstructure:"record_min_max,omitempty"`
-}
-
-type ViewStreamAggregation struct {
-	// Default corresponds to the JSON schema field "default".
-	Default interface{} `mapstructure:"default,omitempty"`
-
-	// Drop corresponds to the JSON schema field "drop".
-	Drop interface{} `mapstructure:"drop,omitempty"`
-
-	// ExplicitBucketHistogram corresponds to the JSON schema field
-	// "explicit_bucket_histogram".
-	ExplicitBucketHistogram *ViewStreamAggregationExplicitBucketHistogram `mapstructure:"explicit_bucket_histogram,omitempty"`
-
-	// ExponentialBucketHistogram corresponds to the JSON schema field
-	// "exponential_bucket_histogram".
-	ExponentialBucketHistogram *ViewStreamAggregationExponentialBucketHistogram `mapstructure:"exponential_bucket_histogram,omitempty"`
-
-	// LastValue corresponds to the JSON schema field "last_value".
-	LastValue interface{} `mapstructure:"last_value,omitempty"`
-
-	// Sum corresponds to the JSON schema field "sum".
-	Sum interface{} `mapstructure:"sum,omitempty"`
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *ViewStreamAggregation) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	type Plain ViewStreamAggregation
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	if plain.Default != nil {
-		return fmt.Errorf("field %s: must be null", "default")
-	}
-	if plain.Drop != nil {
-		return fmt.Errorf("field %s: must be null", "drop")
-	}
-	if plain.LastValue != nil {
-		return fmt.Errorf("field %s: must be null", "last_value")
-	}
-	if plain.Sum != nil {
-		return fmt.Errorf("field %s: must be null", "sum")
-	}
-	*j = ViewStreamAggregation(plain)
-	return nil
-}
-
-type ViewStream struct {
-	// Aggregation corresponds to the JSON schema field "aggregation".
-	Aggregation *ViewStreamAggregation `mapstructure:"aggregation,omitempty"`
-
-	// AttributeKeys corresponds to the JSON schema field "attribute_keys".
-	AttributeKeys []string `mapstructure:"attribute_keys,omitempty"`
-
-	// Description corresponds to the JSON schema field "description".
-	Description *string `mapstructure:"description,omitempty"`
-
-	// Name corresponds to the JSON schema field "name".
-	Name *string `mapstructure:"name,omitempty"`
-}
-
-type View struct {
-	// Selector corresponds to the JSON schema field "selector".
-	Selector *ViewSelector `mapstructure:"selector,omitempty"`
-
-	// Stream corresponds to the JSON schema field "stream".
-	Stream *ViewStream `mapstructure:"stream,omitempty"`
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *PullMetricReader) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["exporter"]; !ok || v == nil {
-		return fmt.Errorf("field exporter in PullMetricReader: required")
-	}
-	type Plain PullMetricReader
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = PullMetricReader(plain)
-	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *Otlp) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["endpoint"]; !ok || v == nil {
-		return fmt.Errorf("field endpoint in Otlp: required")
-	}
-	if v, ok := raw["protocol"]; !ok || v == nil {
-		return fmt.Errorf("field protocol in Otlp: required")
-	}
-	type Plain Otlp
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = Otlp(plain)
-	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *PeriodicMetricReader) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["exporter"]; !ok || v == nil {
-		return fmt.Errorf("field exporter in PeriodicMetricReader: required")
-	}
-	type Plain PeriodicMetricReader
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = PeriodicMetricReader(plain)
-	return nil
-}
-
-type SpanExporter struct {
-	// Console corresponds to the JSON schema field "console".
-	Console Console `mapstructure:"console,omitempty"`
-
-	// Otlp corresponds to the JSON schema field "otlp".
-	Otlp *Otlp `mapstructure:"otlp,omitempty"`
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *OtlpMetric) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["endpoint"]; !ok || v == nil {
-		return fmt.Errorf("field endpoint in OtlpMetric: required")
-	}
-	if v, ok := raw["protocol"]; !ok || v == nil {
-		return fmt.Errorf("field protocol in OtlpMetric: required")
-	}
-	type Plain OtlpMetric
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = OtlpMetric(plain)
-	return nil
-}
-
-type ViewSelector struct {
-	// InstrumentName corresponds to the JSON schema field "instrument_name".
-	InstrumentName *string `mapstructure:"instrument_name,omitempty"`
-
-	// InstrumentType corresponds to the JSON schema field "instrument_type".
-	InstrumentType *string `mapstructure:"instrument_type,omitempty"`
-
-	// MeterName corresponds to the JSON schema field "meter_name".
-	MeterName *string `mapstructure:"meter_name,omitempty"`
-
-	// MeterSchemaUrl corresponds to the JSON schema field "meter_schema_url".
-	MeterSchemaUrl *string `mapstructure:"meter_schema_url,omitempty"`
-
-	// MeterVersion corresponds to the JSON schema field "meter_version".
-	MeterVersion *string `mapstructure:"meter_version,omitempty"`
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *BatchLogRecordProcessor) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["exporter"]; !ok || v == nil {
-		return fmt.Errorf("field exporter in BatchLogRecordProcessor: required")
-	}
-	type Plain BatchLogRecordProcessor
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = BatchLogRecordProcessor(plain)
-	return nil
-}
-
-type SimpleLogRecordProcessor struct {
-	// Exporter corresponds to the JSON schema field "exporter".
-	Exporter LogRecordExporter `mapstructure:"exporter"`
-}
-
-type SamplerJaegerRemote struct {
-	// Endpoint corresponds to the JSON schema field "endpoint".
-	Endpoint *string `mapstructure:"endpoint,omitempty"`
-
-	// InitialSampler corresponds to the JSON schema field "initial_sampler".
-	InitialSampler *Sampler `mapstructure:"initial_sampler,omitempty"`
-
-	// Interval corresponds to the JSON schema field "interval".
-	Interval *int `mapstructure:"interval,omitempty"`
-}
-
-type SamplerParentBased struct {
-	// LocalParentNotSampled corresponds to the JSON schema field
-	// "local_parent_not_sampled".
-	LocalParentNotSampled *Sampler `mapstructure:"local_parent_not_sampled,omitempty"`
-
-	// LocalParentSampled corresponds to the JSON schema field "local_parent_sampled".
-	LocalParentSampled *Sampler `mapstructure:"local_parent_sampled,omitempty"`
-
-	// RemoteParentNotSampled corresponds to the JSON schema field
-	// "remote_parent_not_sampled".
-	RemoteParentNotSampled *Sampler `mapstructure:"remote_parent_not_sampled,omitempty"`
-
-	// RemoteParentSampled corresponds to the JSON schema field
-	// "remote_parent_sampled".
-	RemoteParentSampled *Sampler `mapstructure:"remote_parent_sampled,omitempty"`
-
-	// Root corresponds to the JSON schema field "root".
-	Root *Sampler `mapstructure:"root,omitempty"`
-}
-
-type SamplerTraceIdRatioBased struct {
-	// Ratio corresponds to the JSON schema field "ratio".
-	Ratio *float64 `mapstructure:"ratio,omitempty"`
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *SimpleLogRecordProcessor) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["exporter"]; !ok || v == nil {
-		return fmt.Errorf("field exporter in SimpleLogRecordProcessor: required")
-	}
-	type Plain SimpleLogRecordProcessor
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = SimpleLogRecordProcessor(plain)
-	return nil
-}
-
-type SimpleSpanProcessor struct {
-	// Exporter corresponds to the JSON schema field "exporter".
-	Exporter SpanExporter `mapstructure:"exporter"`
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *SimpleSpanProcessor) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["exporter"]; !ok || v == nil {
-		return fmt.Errorf("field exporter in SimpleSpanProcessor: required")
-	}
-	type Plain SimpleSpanProcessor
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = SimpleSpanProcessor(plain)
-	return nil
-}
-
-type SpanLimits struct {
-	// AttributeCountLimit corresponds to the JSON schema field
-	// "attribute_count_limit".
-	AttributeCountLimit *int `mapstructure:"attribute_count_limit,omitempty"`
-
-	// AttributeValueLengthLimit corresponds to the JSON schema field
-	// "attribute_value_length_limit".
-	AttributeValueLengthLimit *int `mapstructure:"attribute_value_length_limit,omitempty"`
-
-	// EventAttributeCountLimit corresponds to the JSON schema field
-	// "event_attribute_count_limit".
-	EventAttributeCountLimit *int `mapstructure:"event_attribute_count_limit,omitempty"`
-
-	// EventCountLimit corresponds to the JSON schema field "event_count_limit".
-	EventCountLimit *int `mapstructure:"event_count_limit,omitempty"`
-
-	// LinkAttributeCountLimit corresponds to the JSON schema field
-	// "link_attribute_count_limit".
-	LinkAttributeCountLimit *int `mapstructure:"link_attribute_count_limit,omitempty"`
-
-	// LinkCountLimit corresponds to the JSON schema field "link_count_limit".
-	LinkCountLimit *int `mapstructure:"link_count_limit,omitempty"`
-}
-
-type SpanProcessor struct {
-	// Batch corresponds to the JSON schema field "batch".
-	Batch *BatchSpanProcessor `mapstructure:"batch,omitempty"`
-
-	// Simple corresponds to the JSON schema field "simple".
-	Simple *SimpleSpanProcessor `mapstructure:"simple,omitempty"`
-}
-
-type TracerProviderJson struct {
-	// Limits corresponds to the JSON schema field "limits".
-	Limits *SpanLimits `mapstructure:"limits,omitempty"`
-
-	// Processors corresponds to the JSON schema field "processors".
-	Processors []SpanProcessor `mapstructure:"processors,omitempty"`
-
-	// Sampler corresponds to the JSON schema field "sampler".
-	Sampler *Sampler `mapstructure:"sampler,omitempty"`
-}
+// Deprecated: [v0.90.0] Use "go.opentelemetry.io/contrib/config".TracerProvider instead.
+type TracerProviderJson = config.TracerProvider

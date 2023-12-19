@@ -60,12 +60,12 @@ Tier 3 platforms are currently:
 |---------------|-------------------------------------------------------------------------------------------------------------|
 | darwin/amd64  |                                                                                                             |
 | darwin/arm64  | [@MovieStoreGuy](https://github.com/MovieStoreGuy)                                                          |
-| linux/arm64   |                                                                                                             |
+| linux/arm64   | [@atoulme](https://github.com/atoulme)                                                                      |
 | linux/386     |                                                                                                             |
 | linux/arm     | [@Wal8800](https://github.com/Wal8800), [@atoulme](https://github.com/atoulme)                              |
 | linux/ppc64le |                                                                                                             |
 | linux/s390x   | [@bwalk-at-ibm](https://github.com/bwalk-at-ibm), [@rrschulze](https://github.com/rrschulze)                |
-| windows/386   |                                                                                                             |
+| windows/386   | [@pjanotti](https://github.com/pjanotti)                                                                    |
 
 The proposed additional platform aix/ppc64 ([#19195](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19195)) will be included into Tier 3 once it's added to the OpenTelemetry Collector as platform. 
 

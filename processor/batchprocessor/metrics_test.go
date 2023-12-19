@@ -86,7 +86,7 @@ func setupTelemetry(t *testing.T, useOtel bool) testTelemetry {
 
 	if useOtel {
 		promReg := prometheus.NewRegistry()
-		exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutScopeInfo())
+		exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutScopeInfo(), otelprom.WithoutCounterSuffixes())
 		require.NoError(t, err)
 
 		telemetry.meterProvider = sdkmetric.NewMeterProvider(
@@ -202,11 +202,6 @@ func (tt *testTelemetry) assertBoundaries(t *testing.T, expected []float64, hist
 }
 
 func (tt *testTelemetry) getMetric(t *testing.T, name string, mtype io_prometheus_client.MetricType, got map[string]*io_prometheus_client.MetricFamily) *io_prometheus_client.Metric {
-	if tt.useOtel && mtype == io_prometheus_client.MetricType_COUNTER {
-		// OTel Go suffixes counters with `_total`
-		name += "_total"
-	}
-
 	metricFamily, ok := got[name]
 	require.True(t, ok, "expected metric '%s' not found", name)
 	require.Equal(t, mtype, metricFamily.GetType())
