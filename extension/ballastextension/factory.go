@@ -21,7 +21,7 @@ var memHandler = iruntime.TotalMemory
 
 // NewFactory creates a factory for FluentBit extension.
 func NewFactory() extension.Factory {
-	return extension.NewFactory(typeStr, createDefaultConfig, createExtension, component.StabilityLevelBeta)
+	return extension.NewFactory(typeStr, createDefaultConfig, createExtension, component.StabilityLevelDeprecated)
 }
 
 func createDefaultConfig() component.Config {

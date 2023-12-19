@@ -35,11 +35,8 @@ data:
         check_interval: 5s
     extensions:
       zpages: {}
-      memory_ballast:
-        # Memory Ballast size should be max 1/3 to 1/2 of memory.
-        size_mib: 165
     service:
-      extensions: [zpages, memory_ballast]
+      extensions: [zpages]
       pipelines:
         traces:
           receivers: [otlp]
@@ -87,6 +84,8 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: status.podIP
+          - name: GOMEMLIMIT
+            value: 400MiB
         volumeMounts:
         - name: otel-agent-config-vol
           mountPath: /conf
@@ -124,16 +123,13 @@ data:
         check_interval: 5s
     extensions:
       zpages: {}
-      memory_ballast:
-        # Memory Ballast size should be max 1/3 to 1/2 of memory.
-        size_mib: 683
     exporters:
       otlp:
         endpoint: "http://someotlp.target.com:4317" # Replace with a real endpoint.
         tls:
           insecure: true
     service:
-      extensions: [zpages, memory_ballast]
+      extensions: [zpages]
       pipelines:
         traces/1:
           receivers: [otlp]
@@ -209,6 +205,8 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: status.podIP
+          - name: GOMEMLIMIT
+              value: 1600MiB
         volumeMounts:
         - name: otel-collector-config-vol
           mountPath: /conf
