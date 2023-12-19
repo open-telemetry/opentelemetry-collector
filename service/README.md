@@ -142,7 +142,6 @@ exporters:
    - debug
 extensions:
    - zpages
-   - memory_ballast
 ```
 
 ## How to validate configuration file and return all errors without running collector
