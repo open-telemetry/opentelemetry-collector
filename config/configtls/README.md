@@ -31,12 +31,18 @@ A certificate authority may also need to be defined:
   system root CA. Should only be used if `insecure` is set to false.
   - `ca_pem`: Alternative to `ca_file`. Provide the CA cert contents as a string instead of a filepath.
 
+You can also combine defining a certificate authority with the system certificate authorities.
+
+- `use_system_ca_certs` (default = false): whether to load the system certificate authorities
+  alongside the certificate authority.
+
 Additionally you can configure TLS to be enabled but skip verifying the server's
 certificate chain. This cannot be combined with `insecure` since `insecure`
 won't use TLS at all.
 
 - `insecure_skip_verify` (default = false): whether to skip verifying the
   certificate or not.
+
 
 Minimum and maximum TLS version can be set:
 

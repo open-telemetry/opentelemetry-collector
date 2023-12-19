@@ -34,6 +34,10 @@ func TestOptionsToConfig(t *testing.T) {
 			options: TLSSetting{CAFile: filepath.Join("testdata", "ca-1.crt")},
 		},
 		{
+			name:    "should load system CA and custom CA",
+			options: TLSSetting{UseSystemCACerts: true, CAFile: filepath.Join("testdata", "ca-1.crt")},
+		},
+		{
 			name:        "should fail with invalid CA file path",
 			options:     TLSSetting{CAFile: filepath.Join("testdata", "not/valid")},
 			expectError: "failed to load CA",
