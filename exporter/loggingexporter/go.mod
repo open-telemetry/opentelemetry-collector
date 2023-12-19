@@ -101,3 +101,5 @@ replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
+
+replace go.opentelemetry.io/collector/exporter/otlphttpexporter => ../otlphttpexporter

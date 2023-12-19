@@ -89,3 +89,5 @@ replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../receiver/otlpr
 replace go.opentelemetry.io/collector/config/configgrpc => ../config/configgrpc
 
 replace go.opentelemetry.io/collector/config/configauth => ../config/configauth
+
+replace go.opentelemetry.io/collector/exporter/otlphttpexporter => ../exporter/otlphttpexporter

@@ -95,3 +95,5 @@ replace go.opentelemetry.io/collector/config/confighttp => ../../config/confight
 replace go.opentelemetry.io/collector/exporter/otlpexporter => ../otlpexporter
 
 replace go.opentelemetry.io/collector/config/configgrpc => ../../config/configgrpc
+
+replace go.opentelemetry.io/collector/exporter/otlphttpexporter => ../otlphttpexporter

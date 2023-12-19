@@ -106,3 +106,5 @@ replace go.opentelemetry.io/collector/semconv => ../semconv
 replace go.opentelemetry.io/collector/extension/auth => ../extension/auth
 
 replace go.opentelemetry.io/collector/config/configauth => ../config/configauth
+
+replace go.opentelemetry.io/collector/exporter/otlphttpexporter => ../exporter/otlphttpexporter

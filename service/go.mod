@@ -145,3 +145,5 @@ replace go.opentelemetry.io/collector/config/configcompression => ../config/conf
 replace go.opentelemetry.io/collector/config/configauth => ../config/configauth
 
 replace go.opentelemetry.io/collector/config/configgrpc => ../config/configgrpc
+
+replace go.opentelemetry.io/collector/exporter/otlphttpexporter => ../exporter/otlphttpexporter
