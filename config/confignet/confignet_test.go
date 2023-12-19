@@ -4,11 +4,48 @@
 package confignet
 
 import (
+	"errors"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestNetAddrTimeout(t *testing.T) {
+	nac := &NetAddr{
+		Endpoint:  "localhost:0",
+		Transport: "tcp",
+		DialerConfig: DialerConfig{
+			Timeout: -1 * time.Second,
+		},
+	}
+	_, err := nac.Dial()
+	assert.Error(t, err)
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		assert.True(t, netErr.Timeout())
+	} else {
+		assert.Fail(t, "error should be a net.Error")
+	}
+}
+
+func TestTCPAddrTimeout(t *testing.T) {
+	nac := &TCPAddr{
+		Endpoint: "localhost:0",
+		DialerConfig: DialerConfig{
+			Timeout: -1 * time.Second,
+		},
+	}
+	_, err := nac.Dial()
+	assert.Error(t, err)
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		assert.True(t, netErr.Timeout())
+	} else {
+		assert.Fail(t, "error should be a net.Error")
+	}
+}
 
 func TestNetAddr(t *testing.T) {
 	nas := &NetAddr{
@@ -45,7 +82,7 @@ func TestNetAddr(t *testing.T) {
 	assert.NoError(t, ln.Close())
 }
 
-func TestTcpAddr(t *testing.T) {
+func TestTCPAddr(t *testing.T) {
 	nas := &TCPAddr{
 		Endpoint: "localhost:0",
 	}
