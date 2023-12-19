@@ -33,7 +33,7 @@ A certificate authority may also need to be defined:
 
 You can also combine defining a certificate authority with the system certificate authorities.
 
-- `use_system_ca_certs` (default = false): whether to load the system certificate authorities
+- `include_system_ca_certs_pool` (default = false): whether to load the system certificate authorities pool
   alongside the certificate authority.
 
 Additionally you can configure TLS to be enabled but skip verifying the server's
@@ -42,7 +42,6 @@ won't use TLS at all.
 
 - `insecure_skip_verify` (default = false): whether to skip verifying the
   certificate or not.
-
 
 Minimum and maximum TLS version can be set:
 

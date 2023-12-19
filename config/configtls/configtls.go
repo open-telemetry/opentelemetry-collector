@@ -27,9 +27,9 @@ const defaultMaxTLSVersion = 0
 // Note: Since there isn't anything specific to a server connection. Components
 // with server connections should use TLSSetting.
 type TLSSetting struct {
-	// If true, load system certificates in addition to the certificates
+	// If true, load system CA certificates pool in addition to the certificates
 	// configured in this struct.
-	UseSystemCACerts bool `mapstructure:"use_system_ca_certs"`
+	IncludeSystemCACertsPool bool `mapstructure:"include_system_ca_certs_pool"`
 	// Path to the CA cert. For a client this verifies the server certificate.
 	// For a server this verifies client certificates. If empty uses system root CA.
 	// (optional)
@@ -308,7 +308,7 @@ func (c TLSSetting) loadCert(caPath string) (*x509.CertPool, error) {
 	}
 
 	var certPool *x509.CertPool
-	if c.UseSystemCACerts {
+	if c.IncludeSystemCACertsPool {
 		if certPool, err = x509.SystemCertPool(); err != nil {
 			return nil, err
 		}

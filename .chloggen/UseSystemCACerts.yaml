@@ -7,7 +7,7 @@ change_type: enhancement
 component: configtls
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `use_system_ca_certs` to configtls, allowing to load system certs and additional custom certs.
+note: Add `include_system_ca_certs_pool` to configtls, allowing to load system certs and additional custom certs.
 
 # One or more tracking issues or pull requests related to the change
 issues: [7774]
