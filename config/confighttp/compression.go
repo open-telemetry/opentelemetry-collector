@@ -125,8 +125,7 @@ func httpContentDecompressor(h http.Handler, eh func(w http.ResponseWriter, r *h
 					return nil, err
 				}
 				
-				err = body.Close()
-				if err != nil {
+				if err = body.Close(); err != nil {
 					return nil, err
 				}
 
