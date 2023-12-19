@@ -23,7 +23,7 @@ func NewConfigs[F component.Factory](factories map[component.Type]F) *Configs[F]
 
 func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
 	rawCfgs := make(map[component.ID]map[string]any)
-	if err := conf.Unmarshal(&rawCfgs, confmap.WithErrorUnused()); err != nil {
+	if err := conf.Unmarshal(&rawCfgs); err != nil {
 		return err
 	}
 
@@ -42,7 +42,7 @@ func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := component.UnmarshalConfig(confmap.NewFromStringMap(value), cfg); err != nil {
+		if err := confmap.NewFromStringMap(value).Unmarshal(&cfg); err != nil {
 			return errorUnmarshalError(id, err)
 		}
 

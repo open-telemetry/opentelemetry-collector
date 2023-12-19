@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -20,7 +19,7 @@ import (
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(confmap.New(), cfg))
+	assert.NoError(t, confmap.New().Unmarshal(&cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
@@ -61,11 +60,11 @@ func TestUnmarshalConfig(t *testing.T) {
 		},
 		{
 			filename:    "invalid_verbosity_loglevel.yaml",
-			expectedErr: "'loglevel' and 'verbosity' are incompatible. Use only 'verbosity' instead",
+			expectedErr: "error decoding '': 'loglevel' and 'verbosity' are incompatible. Use only 'verbosity' instead",
 		},
 		{
 			filename:    "config_loglevel_typo.yaml",
-			expectedErr: "1 error(s) decoding:\n\n* '' has invalid keys: logLevel",
+			expectedErr: "error decoding '': 1 error(s) decoding:\n\n* '' has invalid keys: logLevel",
 		},
 	}
 
@@ -75,7 +74,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			require.NoError(t, err)
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
-			err = component.UnmarshalConfig(cm, cfg)
+			err = cm.Unmarshal(&cfg)
 			if tt.expectedErr != "" {
 				assert.EqualError(t, err, tt.expectedErr)
 			} else {
@@ -120,7 +119,7 @@ func Test_UnmarshalMarshalled(t *testing.T) {
 				LogLevel:  zapcore.DebugLevel,
 				Verbosity: configtelemetry.LevelNormal,
 			},
-			expectedErr: "'loglevel' and 'verbosity' are incompatible. Use only 'verbosity' instead",
+			expectedErr: "error decoding '': 'loglevel' and 'verbosity' are incompatible. Use only 'verbosity' instead",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -135,7 +134,7 @@ func Test_UnmarshalMarshalled(t *testing.T) {
 
 			outCfg := &Config{}
 
-			err = component.UnmarshalConfig(conf, outCfg)
+			err = conf.Unmarshal(&outCfg)
 
 			if tc.expectedErr == "" {
 				assert.NoError(t, err)

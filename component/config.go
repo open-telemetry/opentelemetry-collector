@@ -27,12 +27,9 @@ var configValidatorType = reflect.TypeOf((*ConfigValidator)(nil)).Elem()
 // UnmarshalConfig helper function to UnmarshalConfig a Config.
 // It checks if the config implements confmap.Unmarshaler and uses that if available,
 // otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+// Deprecated: Use `conf.Unmarshal(cfg)` instead.
 func UnmarshalConfig(conf *confmap.Conf, intoCfg Config) error {
-	if cu, ok := intoCfg.(confmap.Unmarshaler); ok {
-		return cu.Unmarshal(conf)
-	}
-
-	return conf.Unmarshal(intoCfg, confmap.WithErrorUnused())
+	return conf.Unmarshal(intoCfg)
 }
 
 // ConfigValidator defines an optional interface for configurations to implement to do validation.
