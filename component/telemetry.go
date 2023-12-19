@@ -45,7 +45,7 @@ type TelemetrySettings struct {
 	//   - Calling this method before component startup
 	//
 	// If the API is being used properly, these errors are safe to ignore.
-	ReportComponentStatus StatusFunc
+	ReportComponentStatus func(*StatusEvent) error
 }
 
 // Deprecated: [0.91.0] Use TelemetrySettings directly
