@@ -13,6 +13,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -382,6 +383,87 @@ func TestHandleInvalidRequests(t *testing.T) {
 
 	err = tr.Shutdown(context.Background())
 	require.NoError(t, err)
+}
+
+func TestBadHTTPJSONRequest(t *testing.T) {
+	endpoint := testutil.GetAvailableLocalAddress(t)
+	cfg := &Config{
+		Protocols: Protocols{
+			HTTP: &HTTPConfig{
+				HTTPServerSettings: &confighttp.HTTPServerSettings{
+					Endpoint: endpoint,
+				},
+				TracesURLPath:  defaultTracesURLPath,
+				MetricsURLPath: defaultMetricsURLPath,
+				LogsURLPath:    defaultLogsURLPath,
+			},
+		},
+	}
+
+	// Traces
+	tr, err := NewFactory().CreateTracesReceiver(
+		context.Background(),
+		receivertest.NewNopCreateSettings(),
+		cfg,
+		consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NotNil(t, tr)
+	require.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, tr.Shutdown(context.Background()))
+	})
+
+	traceJSON := `{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "curl-test-otel-pipeline"
+            }
+          }
+        ]
+      },
+      "instrumentationLibrarySpans": [
+        {
+          "spans": [
+            {
+              "traceId": "71699b6fe85982c7c8995ea3d9c95df2",
+              "spanId": "3c191d03fa8be065",
+              "name": "test-span",
+              "kind": 1,
+              "droppedAttributesCount": 0,
+              "events": [],
+              "droppedEventsCount": 0,
+              "status": {
+                "code": 1
+              }
+            }
+          ],
+          "instrumentationLibrary": {
+            "name": "local-curl-example"
+          }
+        }
+      ]
+    }
+  ]
+ }`
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s%s", endpoint, defaultTracesURLPath), strings.NewReader(traceJSON))
+	require.NoError(t, err, "Error creating trace POST request: %v", err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	require.NoError(t, err, "Error posting trace to http server: %v", err)
+
+	respBytes, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+	require.Equal(t, `{"partialSuccess":{"errorMessage":"no spans read in payload"}}`, string(respBytes))
+	require.Equal(t, 200, resp.StatusCode)
 }
 
 func testHTTPJSONRequest(t *testing.T, url string, sink *errOrSinkConsumer, encoding string, contentType string, expectedErr error) {

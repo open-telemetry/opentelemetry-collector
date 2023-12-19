@@ -11,7 +11,10 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
-const dataFormatProtobuf = "protobuf"
+const (
+	dataFormatProtobuf = "protobuf"
+	noSpans            = "no spans read in payload"
+)
 
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
 type Receiver struct {
@@ -34,7 +37,9 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	// We need to ensure that it propagates the receiver name as a tag
 	numSpans := td.SpanCount()
 	if numSpans == 0 {
-		return ptraceotlp.NewExportResponse(), nil
+		resp := ptraceotlp.NewExportResponse()
+		resp.PartialSuccess().SetErrorMessage(noSpans)
+		return resp, nil
 	}
 
 	ctx = r.obsreport.StartTracesOp(ctx)
