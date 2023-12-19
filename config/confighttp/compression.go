@@ -135,9 +135,7 @@ func httpContentDecompressor(h http.Handler, eh func(w http.ResponseWriter, r *h
 					return nil, err
 				}
 
-				sr := io.NopCloser(bytes.NewReader(reqBuf)) 
-
-				return sr, nil
+				return io.NopCloser(bytes.NewReader(reqBuf)), nil
 			},
 		},
 	}
