@@ -23,7 +23,7 @@ func NewConfigs[F component.Factory](factories map[component.Type]F) *Configs[F]
 
 func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
 	rawCfgs := make(map[component.ID]map[string]any)
-	if err := conf.Unmarshal(&rawCfgs, confmap.WithErrorUnused()); err != nil {
+	if err := conf.Unmarshal(&rawCfgs); err != nil {
 		return err
 	}
 
