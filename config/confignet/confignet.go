@@ -4,6 +4,7 @@
 package confignet // import "go.opentelemetry.io/collector/config/confignet"
 
 import (
+	"context"
 	"net"
 	"time"
 )
@@ -33,13 +34,27 @@ type NetAddr struct {
 }
 
 // Dial equivalent with net.Dial for this address.
+// Deprecated: [v0.92.0] use DialContext instead.
 func (na *NetAddr) Dial() (net.Conn, error) {
 	return net.DialTimeout(na.Transport, na.Endpoint, na.DialerConfig.Timeout)
 }
 
 // Listen equivalent with net.Listen for this address.
+// Deprecated: [v0.92.0] use ListenContext instead.
 func (na *NetAddr) Listen() (net.Listener, error) {
 	return net.Listen(na.Transport, na.Endpoint)
+}
+
+// DialContext equivalent with net.Dialer's DialContext for this address.
+func (na *NetAddr) DialContext(ctx context.Context) (net.Conn, error) {
+	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
+	return d.DialContext(ctx, na.Transport, na.Endpoint)
+}
+
+// ListenContext equivalent with net.ListenConfig's Listen for this address.
+func (na *NetAddr) ListenContext(ctx context.Context) (net.Listener, error) {
+	lc := net.ListenConfig{}
+	return lc.Listen(ctx, na.Transport, na.Endpoint)
 }
 
 // TCPAddr represents a TCP endpoint address.
@@ -56,11 +71,25 @@ type TCPAddr struct {
 }
 
 // Dial equivalent with net.Dial for this address.
+// Deprecated: [v0.92.0] use DialContext instead.
 func (na *TCPAddr) Dial() (net.Conn, error) {
 	return net.DialTimeout("tcp", na.Endpoint, na.DialerConfig.Timeout)
 }
 
 // Listen equivalent with net.Listen for this address.
+// Deprecated: [v0.92.0] use ListenContext instead.
 func (na *TCPAddr) Listen() (net.Listener, error) {
 	return net.Listen("tcp", na.Endpoint)
+}
+
+// DialContext equivalent with net.Dialer's DialContext for this address.
+func (na *TCPAddr) DialContext(ctx context.Context) (net.Conn, error) {
+	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
+	return d.DialContext(ctx, "tcp", na.Endpoint)
+}
+
+// ListenContext equivalent with net.ListenConfig's Listen for this address.
+func (na *TCPAddr) ListenContext(ctx context.Context) (net.Listener, error) {
+	lc := net.ListenConfig{}
+	return lc.Listen(ctx, "tcp", na.Endpoint)
 }
