@@ -24,36 +24,36 @@ type baseComponent struct {
 }
 
 func TestNewSharedComponents(t *testing.T) {
-	comps := NewSharedComponents[component.ID, *baseComponent]()
-	assert.Len(t, comps.comps, 0)
+	comps := Map[component.ID, *baseComponent]{}
+	assert.Len(t, comps, 0)
 }
 
 func TestNewSharedComponentsCreateError(t *testing.T) {
-	comps := NewSharedComponents[component.ID, *baseComponent]()
-	assert.Len(t, comps.comps, 0)
+	comps := Map[component.ID, *baseComponent]{}
+	assert.Len(t, comps, 0)
 	myErr := errors.New("my error")
-	_, err := comps.GetOrAdd(
+	_, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return nil, myErr },
 		newNopTelemetrySettings(),
 	)
 	assert.ErrorIs(t, err, myErr)
-	assert.Len(t, comps.comps, 0)
+	assert.Len(t, comps, 0)
 }
 
 func TestSharedComponentsGetOrAdd(t *testing.T) {
 	nop := &baseComponent{}
 
-	comps := NewSharedComponents[component.ID, *baseComponent]()
-	got, err := comps.GetOrAdd(
+	comps := Map[component.ID, *baseComponent]{}
+	got, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return nop, nil },
 		newNopTelemetrySettings(),
 	)
 	require.NoError(t, err)
-	assert.Len(t, comps.comps, 1)
+	assert.Len(t, comps, 1)
 	assert.Same(t, nop, got.Unwrap())
-	gotSecond, err := comps.GetOrAdd(
+	gotSecond, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { panic("should not be called") },
 		newNopTelemetrySettings(),
@@ -64,8 +64,8 @@ func TestSharedComponentsGetOrAdd(t *testing.T) {
 
 	// Shutdown nop will remove
 	assert.NoError(t, got.Shutdown(context.Background()))
-	assert.Len(t, comps.comps, 0)
-	gotThird, err := comps.GetOrAdd(
+	assert.Len(t, comps, 0)
+	gotThird, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return nop, nil },
 		newNopTelemetrySettings(),
@@ -88,8 +88,8 @@ func TestSharedComponent(t *testing.T) {
 			return wantErr
 		}}
 
-	comps := NewSharedComponents[component.ID, *baseComponent]()
-	got, err := comps.GetOrAdd(
+	comps := Map[component.ID, *baseComponent]{}
+	got, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return comp, nil },
 		newNopTelemetrySettings(),
@@ -100,9 +100,49 @@ func TestSharedComponent(t *testing.T) {
 	// Second time is not called anymore.
 	assert.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, 1, calledStart)
+	// first time, shutdown is not called.
+	assert.NoError(t, got.Shutdown(context.Background()))
+	assert.Equal(t, 0, calledStop)
+	// Second time is not called anymore.
 	assert.Equal(t, wantErr, got.Shutdown(context.Background()))
 	assert.Equal(t, 1, calledStop)
+}
+
+func TestSharedComponentLateShutdown(t *testing.T) {
+	calledStart := 0
+	calledStop := 0
+	comp := &baseComponent{
+		StartFunc: func(ctx context.Context, host component.Host) error {
+			calledStart++
+			return nil
+		},
+		ShutdownFunc: func(ctx context.Context) error {
+			calledStop++
+			return nil
+		}}
+
+	comps := Map[component.ID, *baseComponent]{}
+	got, err := comps.LoadOrStore(
+		id,
+		func() (*baseComponent, error) { return comp, nil },
+		newNopTelemetrySettings(),
+	)
+	require.NoError(t, err)
+	assert.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
+	assert.Equal(t, 1, calledStart)
 	// Second time is not called anymore.
+	assert.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
+	assert.Equal(t, 1, calledStart)
+	// there is still one use, so stop is not called.
+	assert.NoError(t, got.Shutdown(context.Background()))
+	assert.Equal(t, 0, calledStop)
+	// start one more time:
+	assert.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
+	assert.Equal(t, 1, calledStart)
+	// there is still one use, so stop is not called.
+	assert.NoError(t, got.Shutdown(context.Background()))
+	assert.Equal(t, 0, calledStop)
+	// finally close all active uses
 	assert.NoError(t, got.Shutdown(context.Background()))
 	assert.Equal(t, 1, calledStop)
 }
@@ -122,7 +162,7 @@ func TestSharedComponentsReportStatus(t *testing.T) {
 	}
 
 	comp := &baseComponent{}
-	comps := NewSharedComponents[component.ID, *baseComponent]()
+	comps := Map[component.ID, *baseComponent]{}
 	var telemetrySettings *component.TelemetrySettings
 
 	// make a shared component that represents three instances
@@ -130,23 +170,23 @@ func TestSharedComponentsReportStatus(t *testing.T) {
 		telemetrySettings = newNopTelemetrySettings()
 		telemetrySettings.ReportComponentStatus = newStatusFunc()
 		// The initial settings for the shared component need to match the ones passed to the first
-		// invocation of GetOrAdd so that underlying telemetry settings reference can be used to
+		// invocation of LoadOrStore so that underlying telemetry settings reference can be used to
 		// wrap ReportComponentStatus for subsequently added "instances".
 		if i == 0 {
 			comp.telemetry = telemetrySettings
 		}
-		got, err := comps.GetOrAdd(
+		got, err := comps.LoadOrStore(
 			id,
 			func() (*baseComponent, error) { return comp, nil },
 			telemetrySettings,
 		)
 		require.NoError(t, err)
-		assert.Len(t, comps.comps, 1)
+		assert.Len(t, comps, 1)
 		assert.Same(t, comp, got.Unwrap())
 	}
 
 	// make sure we don't try to represent a fourth instance if we reuse a telemetrySettings
-	_, _ = comps.GetOrAdd(
+	_, _ = comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return comp, nil },
 		telemetrySettings,
@@ -245,7 +285,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 					return tc.shutdownErr
 				}
 			}
-			comps := NewSharedComponents[component.ID, *baseComponent]()
+			comps := Map[component.ID, *baseComponent]{}
 			var comp *SharedComponent[*baseComponent]
 			var err error
 			for i := 0; i < 3; i++ {
@@ -254,7 +294,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 				if i == 0 {
 					base.telemetry = telemetrySettings
 				}
-				comp, err = comps.GetOrAdd(
+				comp, err = comps.LoadOrStore(
 					id,
 					func() (*baseComponent, error) { return base, nil },
 					telemetrySettings,

@@ -1,34 +1,26 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package sharedcomponent exposes util functionality for receivers and exporters
-// that need to share state between different signal types instances such as net.Listener or os.File.
+// Package sharedcomponent exposes functionality for components
+// to register against a shared key, such as a configuration object, in order to be reused across signal types.
+// This is particularly useful when the component relies on a shared resource such as os.File or http.Server.
 package sharedcomponent // import "go.opentelemetry.io/collector/internal/sharedcomponent"
 
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
 )
 
-// SharedComponents a map that keeps reference of all created instances for a given configuration,
-// and ensures that the shared state is started and stopped only once.
-type SharedComponents[K comparable, V component.Component] struct {
-	comps map[K]*SharedComponent[V]
-}
+// Map keeps reference of all created instances for a given shared key such as a component configuration.
+type Map[K comparable, V component.Component] map[K]*SharedComponent[V]
 
-// NewSharedComponents returns a new empty SharedComponents.
-func NewSharedComponents[K comparable, V component.Component]() *SharedComponents[K, V] {
-	return &SharedComponents[K, V]{
-		comps: make(map[K]*SharedComponent[V]),
-	}
-}
-
-// GetOrAdd returns the already created instance if exists, otherwise creates a new instance
+// LoadOrStore returns the already created instance if exists, otherwise creates a new instance
 // and adds it to the map of references.
-func (scs *SharedComponents[K, V]) GetOrAdd(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*SharedComponent[V], error) {
-	if c, ok := scs.comps[key]; ok {
+func (scs Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*SharedComponent[V], error) {
+	if c, ok := scs[key]; ok {
 		// If we haven't already seen this telemetry settings, this shared component represents
 		// another instance. Wrap ReportComponentStatus to report for all instances this shared
 		// component represents.
@@ -53,25 +45,27 @@ func (scs *SharedComponents[K, V]) GetOrAdd(key K, create func() (V, error), tel
 	newComp := &SharedComponent[V]{
 		component: comp,
 		removeFunc: func() {
-			delete(scs.comps, key)
+			delete(scs, key)
 		},
 		telemetry: telemetrySettings,
 		seenSettings: map[*component.TelemetrySettings]struct{}{
 			telemetrySettings: {},
 		},
+		activeCount: &atomic.Int32{},
 	}
-	scs.comps[key] = newComp
+	scs[key] = newComp
 	return newComp, nil
 }
 
 // SharedComponent ensures that the wrapped component is started and stopped only once.
-// When stopped it is removed from the SharedComponents map.
+// When stopped it is removed from the Map.
 type SharedComponent[V component.Component] struct {
 	component V
 
-	startOnce  sync.Once
-	stopOnce   sync.Once
-	removeFunc func()
+	activeCount *atomic.Int32 // a counter keeping track of the number of active uses of the component
+	startOnce   sync.Once
+	stopOnce    sync.Once
+	removeFunc  func()
 
 	telemetry    *component.TelemetrySettings
 	seenSettings map[*component.TelemetrySettings]struct{}
@@ -82,7 +76,8 @@ func (r *SharedComponent[V]) Unwrap() V {
 	return r.component
 }
 
-// Start implements component.Component.
+// Start starts the underlying component if it never started before. Each call to Start is counted as an active usage.
+// Shutdown will shut down the underlying component if called as many times as Start is called.
 func (r *SharedComponent[V]) Start(ctx context.Context, host component.Host) error {
 	var err error
 	r.startOnce.Do(func() {
@@ -95,17 +90,23 @@ func (r *SharedComponent[V]) Start(ctx context.Context, host component.Host) err
 			_ = r.telemetry.ReportComponentStatus(component.NewPermanentErrorEvent(err))
 		}
 	})
+	r.activeCount.Add(1)
 	return err
 }
 
-// Shutdown implements component.Component.
+// Shutdown shuts down the underlying component if all known usages, measured by the number of times
+// Start was called, are accounted for.
 func (r *SharedComponent[V]) Shutdown(ctx context.Context) error {
+	if r.activeCount.Add(-1) > 0 {
+		return nil
+	}
+
 	var err error
 	r.stopOnce.Do(func() {
 		// It's important that status for a sharedcomponent is reported through its
 		// telemetrysettings to keep status in sync and avoid race conditions. This logic duplicates
 		// and takes priority over the automated status reporting that happens in graph, making the
-		// the status reporting in graph a no-op.
+		// status reporting in graph a no-op.
 		_ = r.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopping))
 		err = r.component.Shutdown(ctx)
 		if err != nil {
