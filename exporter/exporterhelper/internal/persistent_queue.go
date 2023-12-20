@@ -49,14 +49,15 @@ type persistentQueue[T any] struct {
 	marshaler   func(req T) ([]byte, error)
 
 	putChan  chan struct{}
-	stopChan chan struct{}
 	capacity uint64
 
+	// mu guards everything declared below.
 	mu                       sync.Mutex
 	readIndex                uint64
 	writeIndex               uint64
 	currentlyDispatchedItems []uint64
 	refClient                int64
+	stopped                  bool
 }
 
 const (
@@ -86,7 +87,6 @@ func NewPersistentQueue[T any](capacity int, dataType component.DataType, storag
 		marshaler:   marshaler,
 		capacity:    uint64(capacity),
 		putChan:     make(chan struct{}, capacity),
-		stopChan:    make(chan struct{}),
 	}
 }
 
@@ -102,6 +102,7 @@ func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) er
 
 func (pq *persistentQueue[T]) initClient(ctx context.Context, client storage.Client) {
 	pq.client = client
+	// Start with a reference 1 which is the reference we use for the producer goroutines and initialization.
 	pq.refClient = 1
 	pq.initPersistentContiguousStorage(ctx)
 	// Make sure the leftover requests are handled
@@ -143,15 +144,17 @@ func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Contex
 // The function returns true when an item is consumed or false if the queue is stopped.
 func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error) bool {
 	for {
-		select {
-		case <-pq.stopChan:
+		// If we are stopped we still process all the other events in the channel before, but we
+		// return fast in the `getNextItem`, so we will free the channel fast and get to the stop.
+		_, ok := <-pq.putChan
+		if !ok {
 			return false
-		case <-pq.putChan:
-			req, onProcessingFinished, consumed := pq.getNextItem(context.Background())
-			if consumed {
-				onProcessingFinished(consumeFunc(context.Background(), req))
-				return true
-			}
+		}
+
+		req, onProcessingFinished, consumed := pq.getNextItem(context.Background())
+		if consumed {
+			onProcessingFinished(consumeFunc(context.Background(), req))
+			return true
 		}
 	}
 }
@@ -173,10 +176,11 @@ func (pq *persistentQueue[T]) Capacity() int {
 }
 
 func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
-	close(pq.stopChan)
-	// Hold the lock only for `refClient`.
+	close(pq.putChan)
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
+	// Mark this queue as stopped, so consumer don't start any more work.
+	pq.stopped = true
 	return pq.unrefClient(ctx)
 }
 
@@ -238,8 +242,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), 
 
 	var request T
 
-	// If called in the same time with Shutdown, make sure client is not closed.
-	if pq.refClient <= 0 {
+	if pq.stopped {
 		return request, nil, false
 	}
 
@@ -272,6 +275,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), 
 	}
 
 	// Increase the reference count, so the client is not closed while the request is being processed.
+	// The client cannot be closed because we hold the lock since last we checked `stopped`.
 	pq.refClient++
 	return request, func(consumeErr error) {
 		// Delete the item from the persistent storage after it was processed.
@@ -425,9 +429,8 @@ func itemIndexToBytes(value uint64) []byte {
 }
 
 func bytesToItemIndex(buf []byte) (uint64, error) {
-	val := uint64(0)
 	if buf == nil {
-		return val, errValueNotSet
+		return uint64(0), errValueNotSet
 	}
 	// The sizeof uint64 in binary is 8.
 	if len(buf) < 8 {

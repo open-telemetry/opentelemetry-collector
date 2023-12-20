@@ -1,8 +1,16 @@
+> [!WARNING]
+> The memory ballast extension is deprecated in favor of using the `GOMEMLIMIT` environment variable.
+> This environment variable is available on any Collector built with Go 1.19 or higher. Official binary releases are built with Go 1.19 since v0.61.0. See [issue 8343](https://github.com/open-telemetry/opentelemetry-collector/issues/8343) for the deprecation timeline.
+> 
+> To migrate to  `GOMEMLIMIT`, set its value to 80% of the hard memory limit of your Collector. 
+> For example, if the Collector hard memory limit is 1GiB, set `GOMEMLIMIT` to `800MiB`.
+> Check [the Go documentation](https://pkg.go.dev/runtime#hdr-Environment_Variables) for more information about `GOMEMLIMIT`'s syntax.
+
 # Memory Ballast
 
 | Status                   |                   |
 | ------------------------ | ----------------- |
-| Stability                | [beta]            |
+| Stability                | [deprecated]      |
 | Distributions            | [core], [contrib] |
 
 Memory Ballast extension enables applications to configure memory ballast for the process. For more details see:
@@ -47,6 +55,6 @@ extensions:
     size_in_percentage: 20
 ```
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector-contrib#beta
+[deprecated]: https://github.com/open-telemetry/opentelemetry-collector-contrib#deprecated
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
