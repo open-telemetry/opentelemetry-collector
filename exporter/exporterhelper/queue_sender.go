@@ -90,11 +90,11 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 
 	isPersistent := config.StorageID != nil
 	var queue internal.Queue[Request]
+	capLimiter := internal.NewRequestsCapacityLimiter[Request](config.QueueSize)
 	if isPersistent {
-		queue = internal.NewPersistentQueue[Request](
-			config.QueueSize, signal, *config.StorageID, marshaler, unmarshaler, set)
+		queue = internal.NewPersistentQueue[Request](capLimiter, signal, *config.StorageID, marshaler, unmarshaler, set)
 	} else {
-		queue = internal.NewBoundedMemoryQueue[Request](config.QueueSize)
+		queue = internal.NewBoundedMemoryQueue[Request](capLimiter)
 	}
 	qs := &queueSender{
 		fullName:       set.ID.String(),
