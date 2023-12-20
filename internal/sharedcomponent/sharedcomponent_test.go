@@ -286,7 +286,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 				}
 			}
 			comps := Map[component.ID, *baseComponent]{}
-			var comp *SharedComponent[*baseComponent]
+			var comp *Component[*baseComponent]
 			var err error
 			for i := 0; i < 3; i++ {
 				telemetrySettings := newNopTelemetrySettings()
