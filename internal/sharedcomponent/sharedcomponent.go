@@ -9,7 +9,6 @@ package sharedcomponent // import "go.opentelemetry.io/collector/internal/shared
 import (
 	"context"
 	"sync"
-	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -51,7 +50,6 @@ func (scs Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySetti
 		seenSettings: map[*component.TelemetrySettings]struct{}{
 			telemetrySettings: {},
 		},
-		activeCount: &atomic.Int32{},
 	}
 	scs[key] = newComp
 	return newComp, nil
@@ -62,10 +60,9 @@ func (scs Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySetti
 type Component[V component.Component] struct {
 	component V
 
-	activeCount *atomic.Int32 // a counter keeping track of the number of active uses of the component
-	startOnce   sync.Once
-	stopOnce    sync.Once
-	removeFunc  func()
+	startOnce  sync.Once
+	stopOnce   sync.Once
+	removeFunc func()
 
 	telemetry    *component.TelemetrySettings
 	seenSettings map[*component.TelemetrySettings]struct{}
@@ -76,8 +73,7 @@ func (r *Component[V]) Unwrap() V {
 	return r.component
 }
 
-// Start starts the underlying component if it never started before. Each call to Start is counted as an active usage.
-// Shutdown will shut down the underlying component if called as many times as Start is called.
+// Start starts the underlying component if it never started before.
 func (r *Component[V]) Start(ctx context.Context, host component.Host) error {
 	var err error
 	r.startOnce.Do(func() {
@@ -90,17 +86,11 @@ func (r *Component[V]) Start(ctx context.Context, host component.Host) error {
 			_ = r.telemetry.ReportComponentStatus(component.NewPermanentErrorEvent(err))
 		}
 	})
-	r.activeCount.Add(1)
 	return err
 }
 
-// Shutdown shuts down the underlying component if all known usages, measured by the number of times
-// Start was called, are accounted for.
+// Shutdown shuts down the underlying component.
 func (r *Component[V]) Shutdown(ctx context.Context) error {
-	if r.activeCount.Add(-1) > 0 {
-		return nil
-	}
-
 	var err error
 	r.stopOnce.Do(func() {
 		// It's important that status for a shared component is reported through its

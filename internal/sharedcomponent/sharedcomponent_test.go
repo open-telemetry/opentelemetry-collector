@@ -41,7 +41,7 @@ func TestNewSharedComponentsCreateError(t *testing.T) {
 	assert.Len(t, comps, 0)
 }
 
-func TestSharedComponentsGetOrAdd(t *testing.T) {
+func TestSharedComponentsLoadOrStore(t *testing.T) {
 	nop := &baseComponent{}
 
 	comps := Map[component.ID, *baseComponent]{}
@@ -100,53 +100,13 @@ func TestSharedComponent(t *testing.T) {
 	// Second time is not called anymore.
 	assert.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, 1, calledStart)
-	// first time, shutdown is not called.
-	assert.NoError(t, got.Shutdown(context.Background()))
-	assert.Equal(t, 0, calledStop)
-	// Second time is not called anymore.
+	// first time, shutdown is called.
 	assert.Equal(t, wantErr, got.Shutdown(context.Background()))
 	assert.Equal(t, 1, calledStop)
-}
-
-func TestSharedComponentLateShutdown(t *testing.T) {
-	calledStart := 0
-	calledStop := 0
-	comp := &baseComponent{
-		StartFunc: func(ctx context.Context, host component.Host) error {
-			calledStart++
-			return nil
-		},
-		ShutdownFunc: func(ctx context.Context) error {
-			calledStop++
-			return nil
-		}}
-
-	comps := Map[component.ID, *baseComponent]{}
-	got, err := comps.LoadOrStore(
-		id,
-		func() (*baseComponent, error) { return comp, nil },
-		newNopTelemetrySettings(),
-	)
-	require.NoError(t, err)
-	assert.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
-	assert.Equal(t, 1, calledStart)
 	// Second time is not called anymore.
-	assert.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
-	assert.Equal(t, 1, calledStart)
-	// there is still one use, so stop is not called.
-	assert.NoError(t, got.Shutdown(context.Background()))
-	assert.Equal(t, 0, calledStop)
-	// start one more time:
-	assert.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
-	assert.Equal(t, 1, calledStart)
-	// there is still one use, so stop is not called.
-	assert.NoError(t, got.Shutdown(context.Background()))
-	assert.Equal(t, 0, calledStop)
-	// finally close all active uses
 	assert.NoError(t, got.Shutdown(context.Background()))
 	assert.Equal(t, 1, calledStop)
 }
-
 func TestSharedComponentsReportStatus(t *testing.T) {
 	reportedStatuses := make(map[*component.InstanceID][]component.Status)
 	newStatusFunc := func() func(*component.StatusEvent) error {
