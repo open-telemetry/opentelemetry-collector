@@ -4,6 +4,7 @@
 package confignet
 
 import (
+	"context"
 	"errors"
 	"net"
 	"testing"
@@ -52,7 +53,7 @@ func TestNetAddr(t *testing.T) {
 		Endpoint:  "localhost:0",
 		Transport: "tcp",
 	}
-	ln, err := nas.Listen()
+	ln, err := nas.ListenContext(context.Background())
 	assert.NoError(t, err)
 	done := make(chan bool, 1)
 
@@ -73,7 +74,7 @@ func TestNetAddr(t *testing.T) {
 		Transport: "tcp",
 	}
 	var conn net.Conn
-	conn, err = nac.Dial()
+	conn, err = nac.DialContext(context.Background())
 	assert.NoError(t, err)
 	_, err = conn.Write([]byte("test"))
 	assert.NoError(t, err)
@@ -86,7 +87,7 @@ func TestTCPAddr(t *testing.T) {
 	nas := &TCPAddr{
 		Endpoint: "localhost:0",
 	}
-	ln, err := nas.Listen()
+	ln, err := nas.ListenContext(context.Background())
 	assert.NoError(t, err)
 	done := make(chan bool, 1)
 
@@ -106,7 +107,7 @@ func TestTCPAddr(t *testing.T) {
 		Endpoint: ln.Addr().String(),
 	}
 	var conn net.Conn
-	conn, err = nac.Dial()
+	conn, err = nac.DialContext(context.Background())
 	assert.NoError(t, err)
 	_, err = conn.Write([]byte("test"))
 	assert.NoError(t, err)
