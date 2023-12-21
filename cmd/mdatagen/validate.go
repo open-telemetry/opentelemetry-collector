@@ -7,8 +7,9 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/multierr"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func (md *metadata) Validate() error {

@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	md "go.opentelemetry.io/collector/cmd/mdatagen/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func Test_runContents(t *testing.T) {
@@ -83,12 +83,12 @@ foo
 
 			if tt.wantStatusGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_status.go"))
-				contents, err := os.ReadFile(filepath.Join(tmpdir, "README.md"))
+				contents, err := os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
 				require.NoError(t, err)
 				require.NotContains(t, string(contents), "foo")
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_status.go"))
-				contents, err := os.ReadFile(filepath.Join(tmpdir, "README.md"))
+				contents, err := os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
 				require.NoError(t, err)
 				require.Contains(t, string(contents), "foo")
 			}
@@ -288,7 +288,7 @@ Some info about a component
 			require.NoError(t, err)
 
 			require.FileExists(t, filepath.Join(tmpdir, "README.md"))
-			got, err := os.ReadFile(filepath.Join(tmpdir, "README.md"))
+			got, err := os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
 			require.NoError(t, err)
 			got = bytes.ReplaceAll(got, []byte("\r\n"), []byte("\n"))
 			expected, err := os.ReadFile(filepath.Join("testdata", tt.outputFile))
@@ -384,7 +384,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 			err := generateFile("templates/status.go.tmpl",
 				filepath.Join(tmpdir, "generated_status.go"), tt.md, "metadata")
 			require.NoError(t, err)
-			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_status.go"))
+			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_status.go")) // nolint: gosec
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, string(actual))
 		})

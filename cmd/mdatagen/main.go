@@ -236,7 +236,7 @@ func templatize(tmplFile string, md metadata) *template.Template {
 func inlineReplace(tmplFile string, outputFile string, md metadata, start string, end string) error {
 	var readmeContents []byte
 	var err error
-	if readmeContents, err = os.ReadFile(outputFile); err != nil {
+	if readmeContents, err = os.ReadFile(outputFile); err != nil { // nolint: gosec
 		return err
 	}
 
