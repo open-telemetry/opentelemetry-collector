@@ -54,6 +54,11 @@ type TLSSetting struct {
 	// If not set, refer to crypto/tls for defaults. (optional)
 	MaxVersion string `mapstructure:"max_version"`
 
+	// CipherSuites is a list of TLS cipher suites that the TLS transport can use.
+	// If left blank, a safe default list is used.
+	// See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.
+	CipherSuites []string `mapstructure:"cipher_suites"`
+
 	// ReloadInterval specifies the duration after which the certificate will be reloaded
 	// If not set, it will never be reloaded (optional)
 	ReloadInterval time.Duration `mapstructure:"reload_interval"`
@@ -175,6 +180,10 @@ func (c TLSSetting) loadTLSConfig() (*tls.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid TLS max_version: %w", err)
 	}
+	cipherSuites, err := convertCipherSuites(c.CipherSuites)
+	if err != nil {
+		return nil, err
+	}
 
 	return &tls.Config{
 		RootCAs:              certPool,
@@ -182,7 +191,26 @@ func (c TLSSetting) loadTLSConfig() (*tls.Config, error) {
 		GetClientCertificate: getClientCertificate,
 		MinVersion:           minTLS,
 		MaxVersion:           maxTLS,
+		CipherSuites:         cipherSuites,
 	}, nil
+}
+
+func convertCipherSuites(cipherSuites []string) ([]uint16, error) {
+	var result []uint16
+	for _, suite := range cipherSuites {
+		found := false
+		for _, supported := range tls.CipherSuites() {
+			if suite == supported.Name {
+				result = append(result, supported.ID)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("invalid TLS cipher suite: %q", suite)
+		}
+	}
+	return result, nil
 }
 
 func (c TLSSetting) loadCACertPool() (*x509.CertPool, error) {

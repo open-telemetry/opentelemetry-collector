@@ -6,6 +6,7 @@ package configtls
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -623,6 +624,49 @@ func TestMinMaxTLSVersions(t *testing.T) {
 				assert.Equal(t, config.MaxVersion, test.outMaxVersion)
 			} else {
 				assert.EqualError(t, err, test.errorTxt)
+			}
+		})
+	}
+}
+
+func TestCipherSuites(t *testing.T) {
+	tests := []struct {
+		name       string
+		tlsSetting TLSSetting
+		wantErr    error
+		result     []uint16
+	}{
+		{
+			name:       "no suites set",
+			tlsSetting: TLSSetting{},
+			wantErr:    nil,
+			result:     nil,
+		},
+		{
+			name: "one cipher suite set",
+			tlsSetting: TLSSetting{
+				CipherSuites: []string{"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA"},
+			},
+			wantErr: nil,
+			result:  []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA},
+		},
+		{
+			name: "invalid cipher suite set",
+			tlsSetting: TLSSetting{
+				CipherSuites: []string{"FOO"},
+			},
+			wantErr: errors.New(`invalid TLS cipher suite: "FOO"`),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			config, err := test.tlsSetting.loadTLSConfig()
+			if test.wantErr != nil {
+				assert.Equal(t, test.wantErr, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.result, config.CipherSuites)
 			}
 		})
 	}
