@@ -13,24 +13,20 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// Map keeps reference of all created instances for a given shared key such as a component configuration.
-type Map[K comparable, V component.Component] interface {
-	// LoadOrStore returns the already created instance if exists, otherwise creates a new instance
-	// and adds it to the map of references.
-	LoadOrStore(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*Component[V], error)
-}
-
-func NewMap[K comparable, V component.Component]() Map[K, V] {
-	return &mapImpl[K, V]{
+func NewMap[K comparable, V component.Component]() *Map[K, V] {
+	return &Map[K, V]{
 		components: map[K]*Component[V]{},
 	}
 }
 
-type mapImpl[K comparable, V component.Component] struct {
+// Map keeps reference of all created instances for a given shared key such as a component configuration.
+type Map[K comparable, V component.Component] struct {
 	components map[K]*Component[V]
 }
 
-func (m *mapImpl[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*Component[V], error) {
+// LoadOrStore returns the already created instance if exists, otherwise creates a new instance
+// and adds it to the map of references.
+func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*Component[V], error) {
 	if c, ok := m.components[key]; ok {
 		// If we haven't already seen this telemetry settings, this shared component represents
 		// another instance. Wrap ReportComponentStatus to report for all instances this shared

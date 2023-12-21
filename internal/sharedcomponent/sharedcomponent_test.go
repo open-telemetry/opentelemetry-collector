@@ -25,11 +25,11 @@ type baseComponent struct {
 
 func TestNewMap(t *testing.T) {
 	comps := NewMap[component.ID, *baseComponent]()
-	assert.Len(t, comps.(*mapImpl[component.ID, *baseComponent]).components, 0)
+	assert.Len(t, comps.components, 0)
 }
 
 func TestNewSharedComponentsCreateError(t *testing.T) {
-	comps := NewMap[component.ID, *baseComponent]().(*mapImpl[component.ID, *baseComponent])
+	comps := NewMap[component.ID, *baseComponent]()
 	assert.Len(t, comps.components, 0)
 	myErr := errors.New("my error")
 	_, err := comps.LoadOrStore(
@@ -51,7 +51,7 @@ func TestSharedComponentsLoadOrStore(t *testing.T) {
 		newNopTelemetrySettings(),
 	)
 	require.NoError(t, err)
-	assert.Len(t, comps.(*mapImpl[component.ID, *baseComponent]).components, 1)
+	assert.Len(t, comps.components, 1)
 	assert.Same(t, nop, got.Unwrap())
 	gotSecond, err := comps.LoadOrStore(
 		id,
@@ -64,7 +64,7 @@ func TestSharedComponentsLoadOrStore(t *testing.T) {
 
 	// Shutdown nop will remove
 	assert.NoError(t, got.Shutdown(context.Background()))
-	assert.Len(t, comps.(*mapImpl[component.ID, *baseComponent]).components, 0)
+	assert.Len(t, comps.components, 0)
 	gotThird, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return nop, nil },
@@ -141,7 +141,7 @@ func TestSharedComponentsReportStatus(t *testing.T) {
 			telemetrySettings,
 		)
 		require.NoError(t, err)
-		assert.Len(t, comps.(*mapImpl[component.ID, *baseComponent]).components, 1)
+		assert.Len(t, comps.components, 1)
 		assert.Same(t, comp, got.Unwrap())
 	}
 
