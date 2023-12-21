@@ -1,0 +1,112 @@
+# Required: The type of the component - Usually the name. The type and class combined uniquely identify the component (eg. receiver/otlp) or subcomponent (eg. receiver/hostmetricsreceiver/cpu)
+type:
+
+# Required for subcomponents: The type of the parent component.
+parent: string
+
+# Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
+status:
+  # Required: The class of the component (For example receiver)
+  class: <receiver|processor|exporter|connector|extension|cmd|pkg>
+  # Required: The stability of the component - See https://github.com/open-telemetry/opentelemetry-collector#stability-levels
+  stability:
+    development: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
+    alpha: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
+    beta: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
+    stable: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
+    deprecated: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
+    unmaintained: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
+  # Optional: The distributions that this component is bundled with (For example core or contrib). See statusdata.go for a list of common distros.
+  distributions: [string]
+  # Optional: A list of warnings that should be brought to the attention of users looking to use this component
+  warnings: [string]
+  # Optional: Metadata related to codeowners of the component
+  codeowners:
+    active: [string]
+    emeritus: [string]
+
+# Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
+# This attribute should be set for metrics compliant with OTel Semantic Conventions.
+sem_conv_version: 1.9.0
+
+# Optional: map of resource attribute definitions with the key being the attribute name.
+resource_attributes:
+  <attribute.name>:
+    # Required: whether the resource attribute is added the emitted metrics by default.
+    enabled: bool
+    # Required: description of the attribute.
+    description:
+    # Optional: array of attribute values if they are static values (currently, only string type is supported).
+    enum: [string]
+    # Required: attribute value type.
+    type: <string|int|double|bool|bytes|slice|map>
+    # Optional: warnings that will be shown to user under specified conditions.
+    warnings:
+      # A warning that will be displayed if the resource_attribute is enabled in user config.
+      # Should be used for deprecated default resource_attributes that will be removed soon.
+      if_enabled:
+      # A warning that will be displayed if `enabled` field is not set explicitly in user config.
+      # Should be used for resource_attributes that will be turned from default to optional or vice versa.
+      if_enabled_not_set:
+      # A warning that will be displayed if the resource_attribute is configured by user in any way.
+      # Should be used for deprecated optional resource_attributes that will be removed soon.
+      if_configured:
+
+
+# Optional: map of attribute definitions with the key being the attribute name and value
+# being described below.
+attributes:
+  <attribute.name>:
+    # Optional: this field can be used to override the actual attribute name defined by the key.
+    # It should be used if multiple metrics have different attributes with the same name.
+    name_override:
+    # Required: description of the attribute.
+    description:
+    # Optional: array of attribute values if they are static values (currently, only string type is supported).
+    enum: [string]
+    # Required: attribute value type.
+    type: <string|int|double|bool|bytes|slice|map>
+
+# Optional: map of metric names with the key being the metric name and value
+# being described below.
+metrics:
+  <metric.name>:
+    # Required: whether the metric is collected by default.
+    enabled: bool
+    # Required: metric description.
+    description:
+    # Optional: extended documentation of the metric.
+    extended_documentation:
+    # Optional: warnings that will be shown to user under specified conditions.
+    warnings:
+      # A warning that will be displayed if the metric is enabled in user config.
+      # Should be used for deprecated default metrics that will be removed soon.
+      if_enabled:
+      # A warning that will be displayed if `enabled` field is not set explicitly in user config.
+      # Should be used for metrics that will be turned from default to optional or vice versa.
+      if_enabled_not_set:
+      # A warning that will be displayed if the metrics is configured by user in any way.
+      # Should be used for deprecated optional metrics that will be removed soon.
+      if_configured:
+    # Required: metric unit as defined by https://ucum.org/ucum.html.
+    unit:
+    # Required: metric type with its settings.
+    <sum|gauge>:
+      # Required for sum and gauge metrics: type of number data point values.
+      value_type: <int|double>
+      # Required for sum metric: whether the metric is monotonic (no negative delta values).
+      monotonic: bool
+      # Required for sum metric: whether reported values incorporate previous measurements
+      # (cumulative) or not (delta).
+      aggregation_temporality: <delta|cumulative>
+       # Optional: Indicates the type the metric needs to be parsed from. If set, the generated
+       # functions will parse the value from string to value_type.
+      input_type: string
+    # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
+    attributes: [string]
+
+# Lifecycle tests generated for this component.
+tests:
+  config: # {} by default, specific testing configuration for lifecycle tests.
+  skip_lifecycle: false # false by default
+  expect_consumer_error: true # false by default
