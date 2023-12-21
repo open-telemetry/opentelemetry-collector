@@ -312,7 +312,8 @@ func (c TLSSetting) loadCert(caPath string) (*x509.CertPool, error) {
 		if certPool, err = x509.SystemCertPool(); err != nil {
 			return nil, err
 		}
-	} else {
+	}
+	if certPool == nil {
 		certPool = x509.NewCertPool()
 	}
 	if !certPool.AppendCertsFromPEM(caPEM) {
