@@ -5,6 +5,7 @@ package confmap
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -211,6 +212,58 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFunc(t *testing.T) {
 	assert.NoError(t, conf.Unmarshal(cfg))
 	assert.True(t, cfg.Boolean)
 	assert.Equal(t, map[TestID]string{"string": "this is a string"}, cfg.Map)
+}
+
+type UintConfig struct {
+	UintTest uint32 `mapstructure:"uint_test"`
+}
+
+func TestUintUnmarshalerSuccess(t *testing.T) {
+	testValue := 1000
+	stringMap := map[string]any{
+		"uint_test": testValue,
+	}
+
+	tests := []struct {
+		name      string
+		testValue int
+	}{
+		{
+			name:      "Test convert 0 to uint",
+			testValue: 0,
+		},
+		{
+			name:      "Test positive uint conversion",
+			testValue: 1000,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			conf := NewFromStringMap(stringMap)
+			cfg := &UintConfig{}
+			err := conf.Unmarshal(cfg)
+
+			assert.NoError(t, err)
+			assert.Equal(t, cfg.UintTest, uint32(testValue))
+		})
+	}
+
+}
+
+func TestUintUnmarshalerFailure(t *testing.T) {
+	testValue := -1000
+	stringMap := map[string]any{
+		"uint_test": testValue,
+	}
+	conf := NewFromStringMap(stringMap)
+	cfg := &UintConfig{}
+	err := conf.Unmarshal(cfg)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), fmt.Sprintf("* error decoding 'uint_test': cannot convert negative value %v to uint", testValue))
 }
 
 func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
