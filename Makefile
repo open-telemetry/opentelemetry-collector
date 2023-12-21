@@ -3,6 +3,7 @@ include ./Makefile.Common
 # This is the code that we want to run lint, etc.
 ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './internal/tools/*' \
+							-not -path '*/third_party/*' \
 							-not -path './pdata/internal/data/protogen/*' \
 							-not -path './service/internal/zpages/tmplgen/*' \
 							-type f | sort)
@@ -57,7 +58,7 @@ gotest-with-cover:
 
 .PHONY: goporto
 goporto: $(PORTO)
-	$(PORTO) -w --include-internal ./
+	$(PORTO) -w --include-internal --skip-dirs "^cmd/mdatagen/third_party$$" ./
 
 .PHONY: golint
 golint:
