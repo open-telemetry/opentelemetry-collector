@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
+module go.opentelemetry.io/collector/cmd/mdatagen
 
 go 1.20
 
