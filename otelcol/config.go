@@ -152,6 +152,18 @@ func (cfg *Config) Validate() error {
 			}
 			return fmt.Errorf("service::pipelines::%s: references exporter %q which is not configured", pipelineID, ref)
 		}
+
+		// Validate that pipelines contain valid components for the type
+		// of pipeline.
+		switch pipelineID.Type() {
+		case component.DataTypeTraces:
+			for _, ref := range pipeline.Receivers {
+				receiver := cfg.Receivers[ref]
+				// TODO: somehow get receiver to return component.ErrDataTypeIsNotSupported
+			}
+		case component.DataTypeMetrics:
+		case component.DataTypeLogs:
+		}
 	}
 	return nil
 }
