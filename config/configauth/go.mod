@@ -7,6 +7,7 @@ require (
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/extension v0.91.0
 	go.opentelemetry.io/collector/extension/auth v0.91.0
+	go.uber.org/goleak v1.3.0
 )
 
 require (

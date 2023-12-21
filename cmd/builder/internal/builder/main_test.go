@@ -5,6 +5,7 @@ package builder
 
 import (
 	"fmt"
+	"go.uber.org/goleak"
 	"io"
 	"os"
 	"path/filepath"
@@ -133,4 +134,8 @@ func TestGenerateAndCompile(t *testing.T) {
 	// Sleep for 1 second to make sure all processes using the files are completed
 	// (on Windows fail to delete temp dir otherwise).
 	time.Sleep(1 * time.Second)
+}
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
 }
