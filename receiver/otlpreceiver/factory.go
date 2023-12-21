@@ -141,4 +141,4 @@ func createLog(
 // create separate objects, they must use one otlpReceiver object per configuration.
 // When the receiver is shutdown it should be removed from this map so the same configuration
 // can be recreated successfully.
-var receivers = sharedcomponent.Map[*Config, *otlpReceiver]{}
+var receivers = sharedcomponent.NewMap[*Config, *otlpReceiver]()

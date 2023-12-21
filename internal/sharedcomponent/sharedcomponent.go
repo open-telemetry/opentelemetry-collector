@@ -14,12 +14,24 @@ import (
 )
 
 // Map keeps reference of all created instances for a given shared key such as a component configuration.
-type Map[K comparable, V component.Component] map[K]*Component[V]
+type Map[K comparable, V component.Component] interface {
+	// LoadOrStore returns the already created instance if exists, otherwise creates a new instance
+	// and adds it to the map of references.
+	LoadOrStore(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*Component[V], error)
+}
 
-// LoadOrStore returns the already created instance if exists, otherwise creates a new instance
-// and adds it to the map of references.
-func (m Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*Component[V], error) {
-	if c, ok := m[key]; ok {
+func NewMap[K comparable, V component.Component]() Map[K, V] {
+	return &mapImpl[K, V]{
+		components: map[K]*Component[V]{},
+	}
+}
+
+type mapImpl[K comparable, V component.Component] struct {
+	components map[K]*Component[V]
+}
+
+func (m *mapImpl[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*Component[V], error) {
+	if c, ok := m.components[key]; ok {
 		// If we haven't already seen this telemetry settings, this shared component represents
 		// another instance. Wrap ReportComponentStatus to report for all instances this shared
 		// component represents.
@@ -44,14 +56,14 @@ func (m Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySetting
 	newComp := &Component[V]{
 		component: comp,
 		removeFunc: func() {
-			delete(m, key)
+			delete(m.components, key)
 		},
 		telemetry: telemetrySettings,
 		seenSettings: map[*component.TelemetrySettings]struct{}{
 			telemetrySettings: {},
 		},
 	}
-	m[key] = newComp
+	m.components[key] = newComp
 	return newComp, nil
 }
 
