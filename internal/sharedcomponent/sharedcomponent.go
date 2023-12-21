@@ -22,11 +22,14 @@ func NewMap[K comparable, V component.Component]() *Map[K, V] {
 // Map keeps reference of all created instances for a given shared key such as a component configuration.
 type Map[K comparable, V component.Component] struct {
 	components map[K]*Component[V]
+	lock       sync.Mutex
 }
 
 // LoadOrStore returns the already created instance if exists, otherwise creates a new instance
 // and adds it to the map of references.
 func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*Component[V], error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	if c, ok := m.components[key]; ok {
 		// If we haven't already seen this telemetry settings, this shared component represents
 		// another instance. Wrap ReportComponentStatus to report for all instances this shared
@@ -52,6 +55,8 @@ func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettin
 	newComp := &Component[V]{
 		component: comp,
 		removeFunc: func() {
+			m.lock.Lock()
+			defer m.lock.Unlock()
 			delete(m.components, key)
 		},
 		telemetry: telemetrySettings,
