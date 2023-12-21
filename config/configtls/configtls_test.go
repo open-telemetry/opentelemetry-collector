@@ -6,6 +6,7 @@ package configtls
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -676,6 +677,68 @@ invalid TLS cipher suite: "BAR"`,
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, test.result, config.CipherSuites)
+			}
+		})
+	}
+}
+
+func TestSystemCertPool(t *testing.T) {
+	anError := errors.New("my error")
+	tests := []struct {
+		name         string
+		tlsSetting   TLSSetting
+		wantErr      error
+		systemCertFn func() (*x509.CertPool, error)
+	}{
+		{
+			name: "not using system cert pool",
+			tlsSetting: TLSSetting{
+				IncludeSystemCACertsPool: false,
+			},
+			wantErr:      nil,
+			systemCertFn: x509.SystemCertPool,
+		},
+		{
+			name: "using system cert pool",
+			tlsSetting: TLSSetting{
+				IncludeSystemCACertsPool: true,
+			},
+			wantErr:      nil,
+			systemCertFn: x509.SystemCertPool,
+		},
+		{
+			name: "error loading system cert pool",
+			tlsSetting: TLSSetting{
+				IncludeSystemCACertsPool: true,
+			},
+			wantErr: anError,
+			systemCertFn: func() (*x509.CertPool, error) {
+				return nil, anError
+			},
+		},
+		{
+			name: "nil system cert pool",
+			tlsSetting: TLSSetting{
+				IncludeSystemCACertsPool: true,
+			},
+			wantErr: nil,
+			systemCertFn: func() (*x509.CertPool, error) {
+				return nil, nil
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			oldSystemCertPool := systemCertPool
+			systemCertPool = test.systemCertFn
+			defer func() {
+				systemCertPool = oldSystemCertPool
+			}()
+			certPool, err := test.tlsSetting.loadCert(filepath.Join("testdata", "ca-1.crt"))
+			if test.wantErr != nil {
+				assert.Equal(t, test.wantErr, err)
+			} else {
+				assert.NotNil(t, certPool)
 			}
 		})
 	}

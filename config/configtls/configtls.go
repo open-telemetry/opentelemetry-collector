@@ -23,6 +23,8 @@ const defaultMinTLSVersion = tls.VersionTLS12
 // Uses the default MaxVersion from "crypto/tls" which is the maximum supported version
 const defaultMaxTLSVersion = 0
 
+var systemCertPool = x509.SystemCertPool
+
 // TLSSetting exposes the common client and server TLS configurations.
 // Note: Since there isn't anything specific to a server connection. Components
 // with server connections should use TLSSetting.
@@ -309,7 +311,7 @@ func (c TLSSetting) loadCert(caPath string) (*x509.CertPool, error) {
 
 	var certPool *x509.CertPool
 	if c.IncludeSystemCACertsPool {
-		if certPool, err = x509.SystemCertPool(); err != nil {
+		if certPool, err = systemCertPool(); err != nil {
 			return nil, err
 		}
 	}
