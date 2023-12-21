@@ -5,13 +5,14 @@ package builder
 
 import (
 	"fmt"
-	"go.uber.org/goleak"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
