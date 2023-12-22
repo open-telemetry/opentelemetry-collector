@@ -9,18 +9,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/zpagesextension/internal/metadata"
 )
 
 const (
-	// The value of extension "type" in configuration.
-	typeStr = "zpages"
-
 	defaultEndpoint = "localhost:55679"
 )
 
 // NewFactory creates a factory for Z-Pages extension.
 func NewFactory() extension.Factory {
-	return extension.NewFactory(typeStr, createDefaultConfig, createExtension, component.StabilityLevelBeta)
+	return extension.NewFactory(metadata.Type, createDefaultConfig, createExtension, metadata.ExtensionStability)
 }
 
 func createDefaultConfig() component.Config {
