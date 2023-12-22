@@ -347,7 +347,7 @@ func (be *ballastExtension) GetBallastSize() uint64 {
 
 func newObsReport(t *testing.T) *processorhelper.ObsReport {
 	set := processorhelper.ObsReportSettings{
-		ProcessorID:             component.NewID(typeStr),
+		ProcessorID:             component.NewID("memory_limiter"),
 		ProcessorCreateSettings: processortest.NewNopCreateSettings(),
 	}
 	set.ProcessorCreateSettings.MetricsLevel = configtelemetry.LevelNone

@@ -1,0 +1,7 @@
+type: memory_limiter
+
+status:
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [core, contrib]
