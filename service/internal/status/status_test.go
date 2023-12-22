@@ -269,7 +269,7 @@ func TestReporterReady(t *testing.T) {
 	id := &component.InstanceID{}
 
 	rep.ReportComponentStatus(id, component.NewStatusEvent(component.StatusStarting))
-	require.ErrorIs(t, err, errStatusNotReady)
+	require.ErrorIs(t, err, ErrStatusNotReady)
 	rep.Ready()
 
 	err = nil

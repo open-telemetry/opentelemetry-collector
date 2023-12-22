@@ -92,8 +92,8 @@ type InvalidTransitionFunc func(error)
 // ServiceStatusFunc is the expected type of ReportComponentStatus for servicetelemetry.Settings
 type ServiceStatusFunc func(*component.InstanceID, *component.StatusEvent)
 
-// errStatusNotReady is returned when trying to report status before service start
-var errStatusNotReady = errors.New("report component status is not ready until service start")
+// ErrStatusNotReady is returned when trying to report status before service start
+var ErrStatusNotReady = errors.New("report component status is not ready until service start")
 
 // Reporter handles component status reporting
 type Reporter struct {
@@ -129,7 +129,7 @@ func (r *Reporter) ReportComponentStatus(
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if !r.ready {
-		r.onInvalidTransition(errStatusNotReady)
+		r.onInvalidTransition(ErrStatusNotReady)
 	} else {
 		if err := r.componentFSM(id).transition(ev); err != nil {
 			r.onInvalidTransition(err)
@@ -142,7 +142,7 @@ func (r *Reporter) ReportComponentOKIfStarting(id *component.InstanceID) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if !r.ready {
-		r.onInvalidTransition(errStatusNotReady)
+		r.onInvalidTransition(ErrStatusNotReady)
 	}
 	fsm := r.componentFSM(id)
 	if fsm.current.Status() == component.StatusStarting {
