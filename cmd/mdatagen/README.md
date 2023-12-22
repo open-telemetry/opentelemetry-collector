@@ -40,8 +40,8 @@ package main
 
 Below are some more examples that can be used for reference:
 
-* The ElasticSearch receiver has an extensive [metadata.yaml](../../receiver/elasticsearchreceiver/metadata.yaml)
-* The host metrics receiver has internal subcomponents, each with their own `metadata.yaml` and `doc.go`. See [cpuscraper](../../receiver/hostmetricsreceiver/internal/scraper/cpuscraper) for example.
+* The ElasticSearch receiver has an extensive [metadata.yaml](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/elasticsearchreceiver/metadata.yaml)
+* The host metrics receiver has internal subcomponents, each with their own `metadata.yaml` and `doc.go`. See [cpuscraper](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver/internal/scraper/cpuscraper) for example.
 
 You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` tool in `GOBIN` and then run `mdatagen metadata.yaml` to generate documentation for a specific component or you can run `make generate` to generate documentation for all components.
 
