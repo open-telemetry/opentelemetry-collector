@@ -78,6 +78,7 @@ gotidy:
 
 .PHONY: gogenerate
 gogenerate:
+	cd cmd/mdatagen && $(GOCMD) install .
 	@$(MAKE) for-all-target TARGET="generate"
 
 .PHONY: addlicense
