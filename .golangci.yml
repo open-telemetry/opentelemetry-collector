@@ -70,8 +70,11 @@ linters-settings:
           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
 
     enable-all: true
-    # TODO: Enable this and fix the alignment issues.
     disable:
+      # We want to order fields according to readability and grouping them by use cases.
+      # This linter does not offer a discernible performance improvement as the structs
+      # defined in this repository are not in the execution hot path.
+      # See https://github.com/open-telemetry/opentelemetry-collector/issues/2789
       - fieldalignment
 
   revive:
