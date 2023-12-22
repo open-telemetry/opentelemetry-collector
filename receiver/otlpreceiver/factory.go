@@ -13,11 +13,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 )
 
 const (
-	typeStr = "otlp"
-
 	defaultGRPCEndpoint = "0.0.0.0:4317"
 	defaultHTTPEndpoint = "0.0.0.0:4318"
 
@@ -29,11 +28,12 @@ const (
 // NewFactory creates a new OTLP receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTraces, component.StabilityLevelStable),
-		receiver.WithMetrics(createMetrics, component.StabilityLevelStable),
-		receiver.WithLogs(createLog, component.StabilityLevelBeta))
+		receiver.WithTraces(createTraces, metadata.TracesStability),
+		receiver.WithMetrics(createMetrics, metadata.MetricsStability),
+		receiver.WithLogs(createLog, metadata.LogsStability),
+	)
 }
 
 // createDefaultConfig creates the default configuration for receiver.
