@@ -34,12 +34,9 @@ func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettin
 		if _, ok := c.seenSettings[telemetrySettings]; !ok {
 			c.seenSettings[telemetrySettings] = struct{}{}
 			prev := c.telemetry.ReportComponentStatus
-			c.telemetry.ReportComponentStatus = func(ev *component.StatusEvent) error {
-				err := telemetrySettings.ReportComponentStatus(ev)
-				if prevErr := prev(ev); prevErr != nil {
-					err = prevErr
-				}
-				return err
+			c.telemetry.ReportComponentStatus = func(ev *component.StatusEvent) {
+				telemetrySettings.ReportComponentStatus(ev)
+				prev(ev)
 			}
 		}
 		return c, nil
@@ -89,9 +86,9 @@ func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 		// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
 		// and takes priority over the automated status reporting that happens in graph, making the
 		// status reporting in graph a no-op.
-		_ = c.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStarting))
+		c.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStarting))
 		if err = c.component.Start(ctx, host); err != nil {
-			_ = c.telemetry.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+			c.telemetry.ReportComponentStatus(component.NewPermanentErrorEvent(err))
 		}
 	})
 	return err
@@ -105,12 +102,12 @@ func (c *Component[V]) Shutdown(ctx context.Context) error {
 		// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
 		// and takes priority over the automated status reporting that happens in graph, making the
 		// status reporting in graph a no-op.
-		_ = c.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopping))
+		c.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopping))
 		err = c.component.Shutdown(ctx)
 		if err != nil {
-			_ = c.telemetry.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+			c.telemetry.ReportComponentStatus(component.NewPermanentErrorEvent(err))
 		} else {
-			_ = c.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopped))
+			c.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopped))
 		}
 		c.removeFunc()
 	})

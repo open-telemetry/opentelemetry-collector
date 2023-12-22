@@ -434,6 +434,8 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			var actualStatuses []*component.StatusEvent
 			rep := status.NewReporter(func(id *component.InstanceID, ev *component.StatusEvent) {
 				actualStatuses = append(actualStatuses, ev)
+			}, func(err error) {
+				require.NoError(t, err)
 			})
 			extensions.telemetry.Status = rep
 			rep.Ready()

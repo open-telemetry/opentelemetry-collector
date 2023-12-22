@@ -64,7 +64,7 @@ type unhealthyProcessor struct {
 
 func (p unhealthyProcessor) Start(_ context.Context, _ component.Host) error {
 	go func() {
-		_ = p.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusRecoverableError))
+		p.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusRecoverableError))
 	}()
 	return nil
 }

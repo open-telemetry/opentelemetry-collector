@@ -86,26 +86,31 @@ func newFSM(onTransition onTransitionFunc) *fsm {
 // NotifyStatusFunc is the receiver of status events after successful state transitions
 type NotifyStatusFunc func(*component.InstanceID, *component.StatusEvent)
 
+// InvalidTransitionFunc is the receiver of invalid transition errors
+type InvalidTransitionFunc func(error)
+
 // ServiceStatusFunc is the expected type of ReportComponentStatus for servicetelemetry.Settings
-type ServiceStatusFunc func(*component.InstanceID, *component.StatusEvent) error
+type ServiceStatusFunc func(*component.InstanceID, *component.StatusEvent)
 
 // errStatusNotReady is returned when trying to report status before service start
 var errStatusNotReady = errors.New("report component status is not ready until service start")
 
 // Reporter handles component status reporting
 type Reporter struct {
-	mu             sync.Mutex
-	ready          bool
-	fsmMap         map[*component.InstanceID]*fsm
-	onStatusChange NotifyStatusFunc
+	mu                  sync.Mutex
+	ready               bool
+	fsmMap              map[*component.InstanceID]*fsm
+	onStatusChange      NotifyStatusFunc
+	onInvalidTransition InvalidTransitionFunc
 }
 
 // NewReporter returns a reporter that will invoke the NotifyStatusFunc when a component's status
 // has changed.
-func NewReporter(onStatusChange NotifyStatusFunc) *Reporter {
+func NewReporter(onStatusChange NotifyStatusFunc, onInvalidTransition InvalidTransitionFunc) *Reporter {
 	return &Reporter{
-		fsmMap:         make(map[*component.InstanceID]*fsm),
-		onStatusChange: onStatusChange,
+		fsmMap:              make(map[*component.InstanceID]*fsm),
+		onStatusChange:      onStatusChange,
+		onInvalidTransition: onInvalidTransition,
 	}
 }
 
@@ -120,27 +125,31 @@ func (r *Reporter) Ready() {
 func (r *Reporter) ReportComponentStatus(
 	id *component.InstanceID,
 	ev *component.StatusEvent,
-) error {
+) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if !r.ready {
-		return errStatusNotReady
+		r.onInvalidTransition(errStatusNotReady)
+	} else {
+		if err := r.componentFSM(id).transition(ev); err != nil {
+			r.onInvalidTransition(err)
+		}
 	}
-	return r.componentFSM(id).transition(ev)
 }
 
 // ReportComponentOkIfStarting reports StatusOK if the component's current status is Starting
-func (r *Reporter) ReportComponentOKIfStarting(id *component.InstanceID) error {
+func (r *Reporter) ReportComponentOKIfStarting(id *component.InstanceID) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if !r.ready {
-		return errStatusNotReady
+		r.onInvalidTransition(errStatusNotReady)
 	}
 	fsm := r.componentFSM(id)
 	if fsm.current.Status() == component.StatusStarting {
-		return fsm.transition(component.NewStatusEvent(component.StatusOK))
+		if err := fsm.transition(component.NewStatusEvent(component.StatusOK)); err != nil {
+			r.onInvalidTransition(err)
+		}
 	}
-	return nil
 }
 
 // Note: a lock must be acquired before calling this method.
@@ -159,8 +168,8 @@ func (r *Reporter) componentFSM(id *component.InstanceID) *fsm {
 func NewComponentStatusFunc(
 	id *component.InstanceID,
 	srvStatus ServiceStatusFunc,
-) func(*component.StatusEvent) error {
-	return func(ev *component.StatusEvent) error {
-		return srvStatus(id, ev)
+) func(*component.StatusEvent) {
+	return func(ev *component.StatusEvent) {
+		srvStatus(id, ev)
 	}
 }

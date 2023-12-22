@@ -37,18 +37,18 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 		extLogger.Info("Extension is starting...")
 		instanceID := bes.instanceIDs[extID]
 		ext := bes.extMap[extID]
-		_ = bes.telemetry.Status.ReportComponentStatus(
+		bes.telemetry.Status.ReportComponentStatus(
 			instanceID,
 			component.NewStatusEvent(component.StatusStarting),
 		)
 		if err := ext.Start(ctx, components.NewHostWrapper(host, extLogger)); err != nil {
-			_ = bes.telemetry.Status.ReportComponentStatus(
+			bes.telemetry.Status.ReportComponentStatus(
 				instanceID,
 				component.NewPermanentErrorEvent(err),
 			)
 			return err
 		}
-		_ = bes.telemetry.Status.ReportComponentOKIfStarting(instanceID)
+		bes.telemetry.Status.ReportComponentOKIfStarting(instanceID)
 		extLogger.Info("Extension started.")
 	}
 	return nil
@@ -62,19 +62,19 @@ func (bes *Extensions) Shutdown(ctx context.Context) error {
 		extID := bes.extensionIDs[i]
 		instanceID := bes.instanceIDs[extID]
 		ext := bes.extMap[extID]
-		_ = bes.telemetry.Status.ReportComponentStatus(
+		bes.telemetry.Status.ReportComponentStatus(
 			instanceID,
 			component.NewStatusEvent(component.StatusStopping),
 		)
 		if err := ext.Shutdown(ctx); err != nil {
-			_ = bes.telemetry.Status.ReportComponentStatus(
+			bes.telemetry.Status.ReportComponentStatus(
 				instanceID,
 				component.NewPermanentErrorEvent(err),
 			)
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		_ = bes.telemetry.Status.ReportComponentStatus(
+		bes.telemetry.Status.ReportComponentStatus(
 			instanceID,
 			component.NewStatusEvent(component.StatusStopped),
 		)

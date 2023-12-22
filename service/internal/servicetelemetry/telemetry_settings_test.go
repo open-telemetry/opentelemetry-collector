@@ -24,17 +24,17 @@ func TestSettings(t *testing.T) {
 		MeterProvider:  noopmetric.NewMeterProvider(),
 		MetricsLevel:   configtelemetry.LevelNone,
 		Resource:       pcommon.NewResource(),
-		Status:         status.NewReporter(func(*component.InstanceID, *component.StatusEvent) {}),
+		Status: status.NewReporter(
+			func(*component.InstanceID, *component.StatusEvent) {},
+			func(err error) { require.NoError(t, err) }),
 	}
 	set.Status.Ready()
-	require.NoError(t,
-		set.Status.ReportComponentStatus(
-			&component.InstanceID{},
-			component.NewStatusEvent(component.StatusStarting),
-		),
+	set.Status.ReportComponentStatus(
+		&component.InstanceID{},
+		component.NewStatusEvent(component.StatusStarting),
 	)
-	require.NoError(t, set.Status.ReportComponentOKIfStarting(&component.InstanceID{}))
+	set.Status.ReportComponentOKIfStarting(&component.InstanceID{})
 
 	compSet := set.ToComponentTelemetrySettings(&component.InstanceID{})
-	require.NoError(t, compSet.ReportComponentStatus(component.NewStatusEvent(component.StatusStarting)))
+	compSet.ReportComponentStatus(component.NewStatusEvent(component.StatusStarting))
 }

@@ -113,7 +113,9 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 		// Construct telemetry attributes from build info and config's resource attributes.
 		Resource: pcommonRes,
-		Status:   status.NewReporter(srv.host.notifyComponentStatusChange),
+		Status: status.NewReporter(srv.host.notifyComponentStatusChange, func(err error) {
+			srv.telemetry.Logger().Debug("Invalid transition", zap.Error(err))
+		}),
 	}
 
 	if err = srv.telemetryInitializer.init(res, srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
