@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/internal/common"
+	"go.opentelemetry.io/collector/exporter/loggingexporter/internal/metadata"
 )
 
 const (
@@ -26,9 +27,9 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, component.StabilityLevelDeprecated),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDeprecated),
-		exporter.WithLogs(createLogsExporter, component.StabilityLevelDeprecated),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 

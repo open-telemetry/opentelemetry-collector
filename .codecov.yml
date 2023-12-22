@@ -19,3 +19,4 @@ coverage:
 
 ignore:
   - "pdata/internal/data/protogen/**/*"
+  - "cmd/mdatagen/third_party/**/*"
