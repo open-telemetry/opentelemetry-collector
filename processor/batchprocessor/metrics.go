@@ -34,6 +34,7 @@ var (
 type trigger int
 
 const (
+	typeStr                = "batch"
 	triggerTimeout trigger = iota
 	triggerBatchSize
 )
