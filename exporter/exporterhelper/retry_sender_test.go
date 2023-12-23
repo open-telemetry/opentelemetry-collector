@@ -20,11 +20,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func mockRequestUnmarshaler(mr Request) RequestUnmarshaler {
+func mockRequestUnmarshaler(mr Request) exporterqueue.Unmarshaler[Request] {
 	return func(bytes []byte) (Request, error) {
 		return mr, nil
 	}
