@@ -89,7 +89,7 @@ type NotifyStatusFunc func(*component.InstanceID, *component.StatusEvent)
 // InvalidTransitionFunc is the receiver of invalid transition errors
 type InvalidTransitionFunc func(error)
 
-// ServiceStatusFunc is the expected type of ReportComponentStatus for servicetelemetry.Settings
+// ServiceStatusFunc is the expected type of ReportStatus for servicetelemetry.Settings
 type ServiceStatusFunc func(*component.InstanceID, *component.StatusEvent)
 
 // ErrStatusNotReady is returned when trying to report status before service start
@@ -122,7 +122,18 @@ func (r *Reporter) Ready() {
 }
 
 // ReportComponentStatus reports status for the given InstanceID
+// Deprecated: [v0.92.0] This function will be removed in a future release.
+// Use ReportStatus instead.
 func (r *Reporter) ReportComponentStatus(
+	id *component.InstanceID,
+	ev *component.StatusEvent,
+) error {
+	r.ReportStatus(id, ev)
+	return nil
+}
+
+// ReportStatus reports status for the given InstanceID
+func (r *Reporter) ReportStatus(
 	id *component.InstanceID,
 	ev *component.StatusEvent,
 ) {
@@ -138,7 +149,14 @@ func (r *Reporter) ReportComponentStatus(
 }
 
 // ReportComponentOkIfStarting reports StatusOK if the component's current status is Starting
-func (r *Reporter) ReportComponentOKIfStarting(id *component.InstanceID) {
+// Deprecated: [v0.92.0] This function will be removed in a future release.
+// Use ReportOKIfStarting instead.
+func (r *Reporter) ReportComponentOKIfStarting(id *component.InstanceID) error {
+	r.ReportOKIfStarting(id)
+	return nil
+}
+
+func (r *Reporter) ReportOKIfStarting(id *component.InstanceID) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if !r.ready {
@@ -162,7 +180,7 @@ func (r *Reporter) componentFSM(id *component.InstanceID) *fsm {
 	return fsm
 }
 
-// NewComponentStatusFunc returns a function to be used as ReportComponentStatus for
+// NewComponentStatusFunc returns a function to be used as ReportStatus for
 // component.TelemetrySettings, which differs from servicetelemetry.Settings in that
 // the component version is tied to specific component instance.
 func NewComponentStatusFunc(

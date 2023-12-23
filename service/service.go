@@ -117,9 +117,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		Status: status.NewReporter(srv.host.notifyComponentStatusChange, func(err error) {
 			if errors.Is(err, status.ErrStatusNotReady) {
 				srv.telemetry.Logger().Warn("Invalid transition", zap.Error(err))
-			} else {
-				srv.telemetry.Logger().Debug("Invalid transition", zap.Error(err))
 			}
+			// ignore other errors as they represent invalid state transitions and are considered benign.
 		}),
 	}
 

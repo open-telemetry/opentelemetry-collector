@@ -29,12 +29,12 @@ func TestSettings(t *testing.T) {
 			func(err error) { require.NoError(t, err) }),
 	}
 	set.Status.Ready()
-	set.Status.ReportComponentStatus(
+	set.Status.ReportStatus(
 		&component.InstanceID{},
 		component.NewStatusEvent(component.StatusStarting),
 	)
-	set.Status.ReportComponentOKIfStarting(&component.InstanceID{})
+	set.Status.ReportOKIfStarting(&component.InstanceID{})
 
 	compSet := set.ToComponentTelemetrySettings(&component.InstanceID{})
-	compSet.ReportComponentStatus(component.NewStatusEvent(component.StatusStarting))
+	compSet.ReportStatus(component.NewStatusEvent(component.StatusStarting))
 }

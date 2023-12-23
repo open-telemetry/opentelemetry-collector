@@ -212,8 +212,8 @@ func TestStatusFuncs(t *testing.T) {
 		func(err error) {
 			require.NoError(t, err)
 		})
-	comp1Func := NewComponentStatusFunc(id1, rep.ReportComponentStatus)
-	comp2Func := NewComponentStatusFunc(id2, rep.ReportComponentStatus)
+	comp1Func := NewComponentStatusFunc(id1, rep.ReportStatus)
+	comp2Func := NewComponentStatusFunc(id2, rep.ReportStatus)
 	rep.Ready()
 
 	for _, st := range statuses1 {
@@ -245,7 +245,7 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 	for _, id := range ids {
 		id := id
 		go func() {
-			compFn := NewComponentStatusFunc(id, rep.ReportComponentStatus)
+			compFn := NewComponentStatusFunc(id, rep.ReportStatus)
 			compFn(component.NewStatusEvent(component.StatusStarting))
 			for i := 0; i < 1000; i++ {
 				compFn(component.NewStatusEvent(component.StatusRecoverableError))
@@ -268,12 +268,12 @@ func TestReporterReady(t *testing.T) {
 		})
 	id := &component.InstanceID{}
 
-	rep.ReportComponentStatus(id, component.NewStatusEvent(component.StatusStarting))
+	rep.ReportStatus(id, component.NewStatusEvent(component.StatusStarting))
 	require.ErrorIs(t, err, ErrStatusNotReady)
 	rep.Ready()
 
 	err = nil
-	rep.ReportComponentStatus(id, component.NewStatusEvent(component.StatusStarting))
+	rep.ReportStatus(id, component.NewStatusEvent(component.StatusStarting))
 	require.NoError(t, err)
 }
 
@@ -342,10 +342,10 @@ func TestReportComponentOKIfStarting(t *testing.T) {
 
 			id := &component.InstanceID{}
 			for _, status := range tc.initialStatuses {
-				rep.ReportComponentStatus(id, component.NewStatusEvent(status))
+				rep.ReportStatus(id, component.NewStatusEvent(status))
 			}
 
-			rep.ReportComponentOKIfStarting(id)
+			rep.ReportOKIfStarting(id)
 
 			require.Equal(t, tc.expectedStatuses, receivedStatuses)
 		})

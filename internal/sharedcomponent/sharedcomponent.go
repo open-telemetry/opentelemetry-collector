@@ -29,13 +29,13 @@ type Map[K comparable, V component.Component] struct {
 func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*Component[V], error) {
 	if c, ok := m.components[key]; ok {
 		// If we haven't already seen this telemetry settings, this shared component represents
-		// another instance. Wrap ReportComponentStatus to report for all instances this shared
+		// another instance. Wrap ReportStatus to report for all instances this shared
 		// component represents.
 		if _, ok := c.seenSettings[telemetrySettings]; !ok {
 			c.seenSettings[telemetrySettings] = struct{}{}
-			prev := c.telemetry.ReportComponentStatus
-			c.telemetry.ReportComponentStatus = func(ev *component.StatusEvent) {
-				telemetrySettings.ReportComponentStatus(ev)
+			prev := c.telemetry.ReportStatus
+			c.telemetry.ReportStatus = func(ev *component.StatusEvent) {
+				telemetrySettings.ReportStatus(ev)
 				prev(ev)
 			}
 		}
@@ -86,9 +86,9 @@ func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 		// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
 		// and takes priority over the automated status reporting that happens in graph, making the
 		// status reporting in graph a no-op.
-		c.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStarting))
+		c.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStarting))
 		if err = c.component.Start(ctx, host); err != nil {
-			c.telemetry.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+			c.telemetry.ReportStatus(component.NewPermanentErrorEvent(err))
 		}
 	})
 	return err
@@ -102,12 +102,12 @@ func (c *Component[V]) Shutdown(ctx context.Context) error {
 		// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
 		// and takes priority over the automated status reporting that happens in graph, making the
 		// status reporting in graph a no-op.
-		c.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopping))
+		c.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopping))
 		err = c.component.Shutdown(ctx)
 		if err != nil {
-			c.telemetry.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+			c.telemetry.ReportStatus(component.NewPermanentErrorEvent(err))
 		} else {
-			c.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopped))
+			c.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopped))
 		}
 		c.removeFunc()
 	})

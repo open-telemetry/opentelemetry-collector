@@ -126,10 +126,10 @@ func TestSharedComponentsReportStatus(t *testing.T) {
 	// make a shared component that represents three instances
 	for i := 0; i < 3; i++ {
 		telemetrySettings = newNopTelemetrySettings()
-		telemetrySettings.ReportComponentStatus = newStatusFunc()
+		telemetrySettings.ReportStatus = newStatusFunc()
 		// The initial settings for the shared component need to match the ones passed to the first
 		// invocation of LoadOrStore so that underlying telemetry settings reference can be used to
-		// wrap ReportComponentStatus for subsequently added "instances".
+		// wrap ReportStatus for subsequently added "instances".
 		if i == 0 {
 			comp.telemetry = telemetrySettings
 		}
@@ -150,18 +150,18 @@ func TestSharedComponentsReportStatus(t *testing.T) {
 		telemetrySettings,
 	)
 
-	comp.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStarting))
+	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStarting))
 
-	comp.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
+	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusOK))
 
 	// simulate an error
-	comp.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusNone))
+	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusNone))
 
 	// stopping
-	comp.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopping))
+	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopping))
 
 	// stopped
-	comp.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopped))
+	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopped))
 
 	// The shared component represents 3 component instances. Reporting status for the shared
 	// component should report status for each of the instances it represents.
@@ -241,7 +241,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 			var err error
 			for i := 0; i < 3; i++ {
 				telemetrySettings := newNopTelemetrySettings()
-				telemetrySettings.ReportComponentStatus = newStatusFunc()
+				telemetrySettings.ReportStatus = newStatusFunc()
 				if i == 0 {
 					base.telemetry = telemetrySettings
 				}
@@ -257,7 +257,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 			require.Equal(t, tc.startErr, err)
 
 			if tc.startErr == nil {
-				comp.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
+				comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusOK))
 
 				err = comp.Shutdown(context.Background())
 				require.Equal(t, tc.shutdownErr, err)

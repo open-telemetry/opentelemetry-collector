@@ -38,5 +38,12 @@ type TelemetrySettings struct {
 	// ReportComponentStatus allows a component to report runtime changes in status. The service
 	// will automatically report status for a component during startup and shutdown. Components can
 	// use this method to report status after start and before shutdown.
-	ReportComponentStatus func(*StatusEvent)
+	// Deprecated: [v0.92.0] This function will be removed in a future release.
+	// Use ReportStatus instead.
+	ReportComponentStatus func(*StatusEvent) error
+
+	// ReportStatus allows a component to report runtime changes in status. The service
+	// will automatically report status for a component during startup and shutdown. Components can
+	// use this method to report status after start and before shutdown.
+	ReportStatus func(*StatusEvent)
 }

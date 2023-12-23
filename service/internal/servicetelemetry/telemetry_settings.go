@@ -43,12 +43,17 @@ type TelemetrySettings struct {
 // ToComponentTelemetrySettings returns a TelemetrySettings for a specific component derived from
 // this service level Settings object.
 func (s TelemetrySettings) ToComponentTelemetrySettings(id *component.InstanceID) component.TelemetrySettings {
+	status := status.NewComponentStatusFunc(id, s.Status.ReportStatus)
 	return component.TelemetrySettings{
-		Logger:                s.Logger,
-		TracerProvider:        s.TracerProvider,
-		MeterProvider:         s.MeterProvider,
-		MetricsLevel:          s.MetricsLevel,
-		Resource:              s.Resource,
-		ReportComponentStatus: status.NewComponentStatusFunc(id, s.Status.ReportComponentStatus),
+		Logger:         s.Logger,
+		TracerProvider: s.TracerProvider,
+		MeterProvider:  s.MeterProvider,
+		MetricsLevel:   s.MetricsLevel,
+		Resource:       s.Resource,
+		ReportComponentStatus: func(event *component.StatusEvent) error {
+			status(event)
+			return nil
+		},
+		ReportStatus: status,
 	}
 }
