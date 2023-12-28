@@ -16,25 +16,26 @@ import (
 // the producer are dropped.
 type boundedMemoryQueue[T any] struct {
 	component.StartFunc
+	*queueCapacityLimiter[T]
 	items chan queueRequest[T]
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
 // callback for dropped items (e.g. useful to emit metrics).
-func NewBoundedMemoryQueue[T any](capacity int) Queue[T] {
+func NewBoundedMemoryQueue[T any](sizer Sizer[T], capacity int) Queue[T] {
 	return &boundedMemoryQueue[T]{
-		items: make(chan queueRequest[T], capacity),
+		queueCapacityLimiter: newQueueCapacityLimiter[T](sizer, capacity),
+		items:                make(chan queueRequest[T], capacity),
 	}
 }
 
 // Offer is used by the producer to submit new item to the queue. Calling this method on a stopped queue will panic.
 func (q *boundedMemoryQueue[T]) Offer(ctx context.Context, req T) error {
-	select {
-	case q.items <- queueRequest[T]{ctx: ctx, req: req}:
-		return nil
-	default:
+	if !q.queueCapacityLimiter.claim(req) {
 		return ErrQueueIsFull
 	}
+	q.items <- queueRequest[T]{ctx: ctx, req: req}
+	return nil
 }
 
 // Consume applies the provided function on the head of queue.
@@ -45,6 +46,7 @@ func (q *boundedMemoryQueue[T]) Consume(consumeFunc func(context.Context, T) err
 	if !ok {
 		return false
 	}
+	q.queueCapacityLimiter.release(item.req)
 	// the memory queue doesn't handle consume errors
 	_ = consumeFunc(item.ctx, item.req)
 	return true
@@ -54,15 +56,6 @@ func (q *boundedMemoryQueue[T]) Consume(consumeFunc func(context.Context, T) err
 func (q *boundedMemoryQueue[T]) Shutdown(context.Context) error {
 	close(q.items)
 	return nil
-}
-
-// Size returns the current size of the queue
-func (q *boundedMemoryQueue[T]) Size() int {
-	return len(q.items)
-}
-
-func (q *boundedMemoryQueue[T]) Capacity() int {
-	return cap(q.items)
 }
 
 type queueRequest[T any] struct {
