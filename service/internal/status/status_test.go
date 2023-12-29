@@ -212,8 +212,8 @@ func TestStatusFuncs(t *testing.T) {
 		func(err error) {
 			require.NoError(t, err)
 		})
-	comp1Func := NewComponentStatusFunc(id1, rep.ReportStatus)
-	comp2Func := NewComponentStatusFunc(id2, rep.ReportStatus)
+	comp1Func := NewReportStatusFunc(id1, rep.ReportStatus)
+	comp2Func := NewReportStatusFunc(id2, rep.ReportStatus)
 	rep.Ready()
 
 	for _, st := range statuses1 {
@@ -245,7 +245,7 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 	for _, id := range ids {
 		id := id
 		go func() {
-			compFn := NewComponentStatusFunc(id, rep.ReportStatus)
+			compFn := NewReportStatusFunc(id, rep.ReportStatus)
 			compFn(component.NewStatusEvent(component.StatusStarting))
 			for i := 0; i < 1000; i++ {
 				compFn(component.NewStatusEvent(component.StatusRecoverableError))

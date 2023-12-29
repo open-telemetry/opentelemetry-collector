@@ -180,10 +180,10 @@ func (r *Reporter) componentFSM(id *component.InstanceID) *fsm {
 	return fsm
 }
 
-// NewComponentStatusFunc returns a function to be used as ReportStatus for
+// NewReportStatusFunc returns a function to be used as ReportStatus for
 // component.TelemetrySettings, which differs from servicetelemetry.Settings in that
 // the component version is tied to specific component instance.
-func NewComponentStatusFunc(
+func NewReportStatusFunc(
 	id *component.InstanceID,
 	srvStatus ServiceStatusFunc,
 ) func(*component.StatusEvent) {
