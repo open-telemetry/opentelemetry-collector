@@ -135,6 +135,9 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 		}
 		c.Version = version
 	}
+	if config.MaxMessageBytes > 0 {
+		c.Producer.MaxMessageBytes = config.MaxMessageBytes
+	}
 	if err := ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
