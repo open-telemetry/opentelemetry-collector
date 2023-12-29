@@ -29,6 +29,9 @@ Example:
 ```yaml
 extensions:
   zpages:
+
+service:
+  extensions: [zpages]
 ```
 
 The full list of settings exposed for this exporter are documented [here](./config.go)

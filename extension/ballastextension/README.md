@@ -53,6 +53,9 @@ Config that uses 64 Mib of memory for the ballast:
 extensions:
   memory_ballast:
     size_mib: 64
+
+service:
+  extensions: [memory_ballast]
 ```
 
 Config that uses 20% of the total memory for the ballast:
