@@ -35,6 +35,10 @@ type Config struct {
 	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
 
+	// The maximum permitted size of a message (defaults to 1000000). Should be
+	// set equal to or smaller than the broker's `message.max.bytes`.
+	MaxMessageBytes int `mapstructure:"max_message_bytes"`
+
 	// message key in order to partition
 	MessageKey string `mapstructure:"message_key"`
 
