@@ -92,10 +92,20 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 	var queue internal.Queue[Request]
 	queueSizer := &internal.RequestSizer[Request]{}
 	if isPersistent {
-		queue = internal.NewPersistentQueue[Request](queueSizer, config.QueueSize, signal, *config.StorageID, marshaler,
-			unmarshaler, set)
+		queue = internal.NewPersistentQueue[Request](internal.PersistentQueueSettings[Request]{
+			Sizer:            queueSizer,
+			Capacity:         config.QueueSize,
+			DataType:         signal,
+			StorageID:        *config.StorageID,
+			Marshaler:        marshaler,
+			Unmarshaler:      unmarshaler,
+			ExporterSettings: set,
+		})
 	} else {
-		queue = internal.NewBoundedMemoryQueue[Request](queueSizer, config.QueueSize)
+		queue = internal.NewBoundedMemoryQueue[Request](internal.MemoryQueueSettings[Request]{
+			Sizer:    queueSizer,
+			Capacity: config.QueueSize,
+		})
 	}
 	qs := &queueSender{
 		fullName:       set.ID.String(),
