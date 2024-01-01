@@ -13,6 +13,7 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/klauspost/compress/zstd"
+	"github.com/pierrec/lz4/v4"
 
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -29,6 +30,8 @@ var (
 	snappyPool                  = &compressor{pool: sync.Pool{New: func() any { return snappy.NewBufferedWriter(nil) }}}
 	_          writeCloserReset = (*zstd.Encoder)(nil)
 	zStdPool                    = &compressor{pool: sync.Pool{New: func() any { zw, _ := zstd.NewWriter(nil); return zw }}}
+	_          writeCloserReset = (*lz4.Writer)(nil)
+	lz4Pool                     = &compressor{pool: sync.Pool{New: func() any { return lz4.NewWriter(nil) }}}
 	_          writeCloserReset = (*zlib.Writer)(nil)
 	zLibPool                    = &compressor{pool: sync.Pool{New: func() any { return zlib.NewWriter(nil) }}}
 )
@@ -47,6 +50,8 @@ func newCompressor(compressionType configcompression.CompressionType) (*compress
 		return snappyPool, nil
 	case configcompression.Zstd:
 		return zStdPool, nil
+	case configcompression.Lz4:
+		return lz4Pool, nil
 	case configcompression.Zlib, configcompression.Deflate:
 		return zLibPool, nil
 	}

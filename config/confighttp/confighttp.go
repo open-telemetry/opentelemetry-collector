@@ -197,7 +197,7 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 	}
 
 	// Compress the body using specified compression methods if non-empty string is provided.
-	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
+	// Supporting gzip, zlib, deflate, snappy, zstd and lz4; none is treated as uncompressed.
 	if configcompression.IsCompressed(hcs.Compression) {
 		clientTransport, err = newCompressRoundTripper(clientTransport, hcs.Compression)
 		if err != nil {

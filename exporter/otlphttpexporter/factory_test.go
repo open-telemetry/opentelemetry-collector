@@ -154,6 +154,15 @@ func TestCreateTracesExporter(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Lz4Compression",
+			config: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint:    endpoint,
+					Compression: configcompression.Lz4,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

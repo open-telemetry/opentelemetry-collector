@@ -16,6 +16,7 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/klauspost/compress/zstd"
+	"github.com/pierrec/lz4/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -30,6 +31,7 @@ func TestHTTPClientCompression(t *testing.T) {
 	compressedDeflateBody := compressZlib(t, testBody)
 	compressedSnappyBody := compressSnappy(t, testBody)
 	compressedZstdBody := compressZstd(t, testBody)
+	compressedLz4Body := compressLz4(t, testBody)
 
 	tests := []struct {
 		name        string
@@ -77,6 +79,12 @@ func TestHTTPClientCompression(t *testing.T) {
 			name:        "ValidZstd",
 			encoding:    configcompression.Zstd,
 			reqBody:     compressedZstdBody.Bytes(),
+			shouldError: false,
+		},
+		{
+			name:        "ValidLz4",
+			encoding:    configcompression.Lz4,
+			reqBody:     compressedLz4Body.Bytes(),
 			shouldError: false,
 		},
 	}
@@ -368,5 +376,14 @@ func compressZstd(t testing.TB, body []byte) *bytes.Buffer {
 	_, err := zw.Write(body)
 	require.NoError(t, err)
 	require.NoError(t, zw.Close())
+	return &buf
+}
+
+func compressLz4(t testing.TB, body []byte) *bytes.Buffer {
+	var buf bytes.Buffer
+	lz := lz4.NewWriter(&buf)
+	_, err := lz.Write(body)
+	require.NoError(t, err)
+	require.NoError(t, lz.Close())
 	return &buf
 }

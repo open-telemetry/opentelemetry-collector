@@ -42,6 +42,11 @@ func TestUnmarshalText(t *testing.T) {
 			shouldError:     false,
 		},
 		{
+			name:            "ValidLz4",
+			compressionName: []byte("lz4"),
+			shouldError:     false,
+		},
+		{
 			name:            "ValidEmpty",
 			compressionName: []byte(""),
 			shouldError:     false,

@@ -13,6 +13,7 @@ const (
 	Deflate CompressionType = "deflate"
 	Snappy  CompressionType = "snappy"
 	Zstd    CompressionType = "zstd"
+	Lz4     CompressionType = "lz4"
 	none    CompressionType = "none"
 	empty   CompressionType = ""
 )
@@ -28,6 +29,7 @@ func (ct *CompressionType) UnmarshalText(in []byte) error {
 		Deflate,
 		Snappy,
 		Zstd,
+		Lz4,
 		none,
 		empty:
 		*ct = typ
