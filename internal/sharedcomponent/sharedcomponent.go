@@ -21,8 +21,8 @@ func NewMap[K comparable, V component.Component]() *Map[K, V] {
 
 // Map keeps reference of all created instances for a given shared key such as a component configuration.
 type Map[K comparable, V component.Component] struct {
-	components map[K]*Component[V]
 	lock       sync.Mutex
+	components map[K]*Component[V]
 }
 
 // LoadOrStore returns the already created instance if exists, otherwise creates a new instance
