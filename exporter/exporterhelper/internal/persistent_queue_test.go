@@ -55,8 +55,15 @@ func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 // createAndStartTestPersistentQueue creates and starts a fake queue with the given capacity and number of consumers.
 func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[tracesRequest], capacity int, numConsumers int,
 	consumeFunc func(_ context.Context, item tracesRequest) error) Queue[tracesRequest] {
-	pq := NewPersistentQueue[tracesRequest](sizer, capacity, component.DataTypeTraces, component.ID{},
-		marshalTracesRequest, unmarshalTracesRequest, exportertest.NewNopCreateSettings())
+	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
+		Sizer:            sizer,
+		Capacity:         capacity,
+		DataType:         component.DataTypeTraces,
+		StorageID:        component.ID{},
+		Marshaler:        marshalTracesRequest,
+		Unmarshaler:      unmarshalTracesRequest,
+		ExporterSettings: exportertest.NewNopCreateSettings(),
+	})
 	host := &mockHost{ext: map[component.ID]component.Component{
 		{}: NewMockStorageExtension(nil),
 	}}
@@ -69,8 +76,15 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[tracesRequest],
 }
 
 func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue[tracesRequest] {
-	pq := NewPersistentQueue[tracesRequest](&RequestSizer[tracesRequest]{}, 1000, component.DataTypeTraces,
-		component.ID{}, marshalTracesRequest, unmarshalTracesRequest, exportertest.NewNopCreateSettings()).(*persistentQueue[tracesRequest])
+	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
+		Sizer:            &RequestSizer[tracesRequest]{},
+		Capacity:         1000,
+		DataType:         component.DataTypeTraces,
+		StorageID:        component.ID{},
+		Marshaler:        marshalTracesRequest,
+		Unmarshaler:      unmarshalTracesRequest,
+		ExporterSettings: exportertest.NewNopCreateSettings(),
+	}).(*persistentQueue[tracesRequest])
 	pq.initClient(context.Background(), client)
 	return pq
 }
@@ -85,8 +99,15 @@ func createTestPersistentQueueWithItemsCapacity(t testing.TB, ext storage.Extens
 
 func createTestPersistentQueueWithCapacityLimiter(t testing.TB, ext storage.Extension, sizer Sizer[tracesRequest],
 	capacity int) *persistentQueue[tracesRequest] {
-	pq := NewPersistentQueue[tracesRequest](sizer, capacity, component.DataTypeTraces, component.ID{},
-		marshalTracesRequest, unmarshalTracesRequest, exportertest.NewNopCreateSettings()).(*persistentQueue[tracesRequest])
+	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
+		Sizer:            sizer,
+		Capacity:         capacity,
+		DataType:         component.DataTypeTraces,
+		StorageID:        component.ID{},
+		Marshaler:        marshalTracesRequest,
+		Unmarshaler:      unmarshalTracesRequest,
+		ExporterSettings: exportertest.NewNopCreateSettings(),
+	}).(*persistentQueue[tracesRequest])
 	require.NoError(t, pq.Start(context.Background(), &mockHost{ext: map[component.ID]component.Component{{}: ext}}))
 	return pq
 }
@@ -320,8 +341,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 }
 
 func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
-	pq := NewPersistentQueue[tracesRequest](&RequestSizer[tracesRequest]{}, 1, component.DataTypeTraces, component.ID{},
-		marshalTracesRequest, unmarshalTracesRequest, exportertest.NewNopCreateSettings())
+	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{})
 	// verify that stopping a un-start/started w/error queue does not panic
 	assert.NoError(t, pq.Shutdown(context.Background()))
 }

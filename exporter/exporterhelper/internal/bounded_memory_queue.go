@@ -20,12 +20,18 @@ type boundedMemoryQueue[T any] struct {
 	items chan queueRequest[T]
 }
 
+// MemoryQueueSettings defines internal parameters for boundedMemoryQueue creation.
+type MemoryQueueSettings[T any] struct {
+	Sizer    Sizer[T]
+	Capacity int
+}
+
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
 // callback for dropped items (e.g. useful to emit metrics).
-func NewBoundedMemoryQueue[T any](sizer Sizer[T], capacity int) Queue[T] {
+func NewBoundedMemoryQueue[T any](set MemoryQueueSettings[T]) Queue[T] {
 	return &boundedMemoryQueue[T]{
-		queueCapacityLimiter: newQueueCapacityLimiter[T](sizer, capacity),
-		items:                make(chan queueRequest[T], capacity),
+		queueCapacityLimiter: newQueueCapacityLimiter[T](set.Sizer, set.Capacity),
+		items:                make(chan queueRequest[T], set.Capacity),
 	}
 }
 
