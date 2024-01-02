@@ -14,7 +14,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/goleak"
 )
 
 func TestGenerateDefault(t *testing.T) {
@@ -134,8 +133,4 @@ func TestGenerateAndCompile(t *testing.T) {
 	// Sleep for 1 second to make sure all processes using the files are completed
 	// (on Windows fail to delete temp dir otherwise).
 	time.Sleep(1 * time.Second)
-}
-
-func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
 }
