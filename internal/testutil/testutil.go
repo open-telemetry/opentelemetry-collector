@@ -11,11 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"go.uber.org/goleak"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/contrib/config"
+	"go.uber.org/goleak"
 )
 
 type portpair struct {
