@@ -6,6 +6,7 @@ go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.4
+	go.opentelemetry.io/collector v0.91.0
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/connector v0.91.0
 	go.opentelemetry.io/collector/connector/forwardconnector v0.91.0
@@ -23,6 +24,7 @@ require (
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.91.0
 	go.opentelemetry.io/collector/receiver v0.91.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.91.0
+	go.uber.org/goleak v1.3.0
 	golang.org/x/sys v0.15.0
 )
 
@@ -77,7 +79,6 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.91.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.91.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v0.91.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.91.0 // indirect
