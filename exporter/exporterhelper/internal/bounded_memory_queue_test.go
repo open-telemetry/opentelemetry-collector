@@ -22,7 +22,7 @@ import (
 // We want to test the overflow behavior, so we block the consumer
 // by holding a startLock before submitting items to the queue.
 func TestBoundedQueue(t *testing.T) {
-	q := NewBoundedMemoryQueue[string](&RequestSizer[string]{}, 1)
+	q := NewBoundedMemoryQueue[string](MemoryQueueSettings[string]{Sizer: &RequestSizer[string]{}, Capacity: 1})
 
 	assert.NoError(t, q.Offer(context.Background(), "a"))
 
@@ -72,7 +72,7 @@ func TestBoundedQueue(t *testing.T) {
 // only after Stop will mean the consumers are still locked while
 // trying to perform the final consumptions.
 func TestShutdownWhileNotEmpty(t *testing.T) {
-	q := NewBoundedMemoryQueue[string](&RequestSizer[string]{}, 1000)
+	q := NewBoundedMemoryQueue[string](MemoryQueueSettings[string]{Sizer: &RequestSizer[string]{}, Capacity: 1000})
 
 	assert.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	for i := 0; i < 10; i++ {
@@ -153,7 +153,7 @@ func benchmarkQueueUsage(b *testing.B, sizer Sizer[fakeReq], capacity int, numCo
 func queueUsage(tb testing.TB, sizer Sizer[fakeReq], capacity int, numConsumers int, numberOfItems int) {
 	var wg sync.WaitGroup
 	wg.Add(numberOfItems)
-	q := NewBoundedMemoryQueue[fakeReq](sizer, capacity)
+	q := NewBoundedMemoryQueue[fakeReq](MemoryQueueSettings[fakeReq]{Sizer: sizer, Capacity: capacity})
 	consumers := NewQueueConsumers(q, numConsumers, func(context.Context, fakeReq) error {
 		wg.Done()
 		return nil
@@ -170,7 +170,7 @@ func queueUsage(tb testing.TB, sizer Sizer[fakeReq], capacity int, numConsumers 
 }
 
 func TestZeroSizeNoConsumers(t *testing.T) {
-	q := NewBoundedMemoryQueue[string](&RequestSizer[string]{}, 0)
+	q := NewBoundedMemoryQueue[string](MemoryQueueSettings[string]{Sizer: &RequestSizer[string]{}, Capacity: 0})
 
 	err := q.Start(context.Background(), componenttest.NewNopHost())
 	assert.NoError(t, err)
