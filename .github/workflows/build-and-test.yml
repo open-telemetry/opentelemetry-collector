@@ -111,7 +111,6 @@ jobs:
         run: |
           make gotidy
           git diff --exit-code || (echo 'go.mod/go.sum deps changes detected, please run "make gotidy" and commit the changes in this PR.' && exit 1)
-          - name: Gen genotelcontribcol
       - name: go:porto
         run: |
           make goporto
