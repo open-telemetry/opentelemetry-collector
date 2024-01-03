@@ -154,7 +154,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 	}
 }
 
-func TestHTTPClientSettingWithRoundTripper(t *testing.T) {
+func TestHTTPClientSettingWithClientRoundTripper(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
 			component.NewID("testauth"): &authtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
@@ -245,7 +245,7 @@ func TestHTTPClientSettingWithRoundTripper(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(host, componenttest.NewNopTelemetrySettings(), WithRoundTripper(test.customRoundTripper))
+			client, err := test.settings.ToClient(host, componenttest.NewNopTelemetrySettings(), WithClientRoundTripper(test.customRoundTripper))
 			if test.shouldError {
 				assert.Error(t, err)
 				return

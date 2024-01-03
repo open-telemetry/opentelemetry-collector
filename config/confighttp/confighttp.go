@@ -54,7 +54,7 @@ type HTTPClientSettings struct {
 	Headers map[string]configopaque.String `mapstructure:"headers"`
 
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
-	// Deprecated: [0.91.0] Replaced by confighttp.WithRoundTripper
+	// Deprecated: [0.92.0] Replaced by confighttp.WithClientRoundTripper
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error) `mapstructure:"-"`
 
 	// Auth configuration for outgoing HTTP calls.
@@ -122,8 +122,8 @@ func (fn toClientOptionFunc) apply(opts *toClientOptions) {
 	fn(opts)
 }
 
-// WithRoundTripper allow for individual components to intercept HTTP requests
-func WithRoundTripper(customRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)) ToClientOption {
+// WithClientRoundTripper allow for individual components to intercept HTTP requests
+func WithClientRoundTripper(customRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)) ToClientOption {
 	return toClientOptionFunc(func(opts *toClientOptions) {
 		opts.customRoundTripper = customRoundTripper
 	})
@@ -228,7 +228,7 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 	}
 
 	if hcs.CustomRoundTripper != nil {
-		settings.Logger.Warn("You are using a deprecated `CustomRoundTripper` field which will be removed soon; use `WithRoundTripper` instead")
+		settings.Logger.Warn("You are using a deprecated `CustomRoundTripper` field which will be removed soon; use `WithClientRoundTripper` instead")
 		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
 		if err != nil {
 			return nil, err
