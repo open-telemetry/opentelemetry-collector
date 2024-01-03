@@ -328,6 +328,7 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 
 	// wait for the item to be consumed from the queue
 	replacedReq.checkNumRequests(t, 1)
+	require.NoError(t, be.Shutdown(context.Background()))
 }
 
 func TestQueueSenderNoStartShutdown(t *testing.T) {
