@@ -641,6 +641,7 @@ func TestHttpReception(t *testing.T) {
 				assert.NoError(t, errResp)
 				assert.NotNil(t, resp)
 			}
+			assert.NoError(t, grpcClientConn.Close())
 			cancelFunc()
 			s.Stop()
 		})
@@ -685,6 +686,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	resp, errResp := c.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
 	assert.NoError(t, errResp)
 	assert.NotNil(t, resp)
+	assert.NoError(t, grpcClientConn.Close())
 	cancelFunc()
 	srv.Stop()
 }
@@ -848,6 +850,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			mock := &grpcTraceServer{}
 			var l net.Listener
+			var grpcClientConn *grpc.ClientConn
 
 			// prepare the server
 			{
@@ -886,7 +889,8 @@ func TestClientInfoInterceptors(t *testing.T) {
 					require.NoError(t, tt.Shutdown(context.Background()))
 				}()
 
-				grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
+				var errClient error
+				grpcClientConn, errClient = gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
 				require.NoError(t, errClient)
 
 				cl := ptraceotlp.NewGRPCClient(grpcClientConn)
@@ -902,6 +906,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 
 			// the client address is something like 127.0.0.1:41086
 			assert.Contains(t, cl.Addr.String(), "127.0.0.1")
+			assert.NoError(t, grpcClientConn.Close())
 		})
 	}
 }
