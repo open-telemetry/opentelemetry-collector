@@ -18,3 +18,7 @@ var _ encoding.TextMarshaler = String("")
 func (s String) MarshalText() ([]byte, error) {
 	return []byte(maskedString), nil
 }
+
+func (s String) String() string {
+	return maskedString
+}
