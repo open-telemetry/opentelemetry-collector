@@ -5,6 +5,7 @@ package ballastextension
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,6 +22,7 @@ func TestMemoryBallast(t *testing.T) {
 		config      *Config
 		getTotalMem func() (uint64, error)
 		expect      int
+		expectErr   bool
 	}{
 		{
 			name: "test_abs_ballast",
@@ -50,26 +52,34 @@ func TestMemoryBallast(t *testing.T) {
 			config: &Config{
 				SizeInPercentage: 20,
 			},
-			getTotalMem: mockTotalMem,
+			getTotalMem: func() (uint64, error) { return uint64(100 * megaBytes), nil },
 			expect:      20 * megaBytes,
+		},
+		{
+			name: "failing_get_total_mem",
+			config: &Config{
+				SizeInPercentage: 20,
+			},
+			getTotalMem: func() (uint64, error) { return 0, errors.New("failed") },
+			expectErr:   true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mbExt := newMemoryBallast(tt.config, zap.NewNop(), tt.getTotalMem)
-			require.NotNil(t, mbExt)
-			assert.Nil(t, mbExt.ballast)
+			mbExt, err := newMemoryBallast(tt.config, zap.NewNop(), tt.getTotalMem)
+			if tt.expectErr {
+				assert.Error(t, err)
+				return
+			}
 
-			assert.NoError(t, mbExt.Start(context.Background(), componenttest.NewNopHost()))
+			require.NotNil(t, mbExt)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expect, len(mbExt.ballast))
 
+			assert.NoError(t, mbExt.Start(context.Background(), componenttest.NewNopHost()))
 			assert.NoError(t, mbExt.Shutdown(context.Background()))
 			assert.Nil(t, mbExt.ballast)
 		})
 	}
-}
-
-func mockTotalMem() (uint64, error) {
-	return uint64(100 * megaBytes), nil
 }

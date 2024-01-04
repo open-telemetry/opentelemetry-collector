@@ -14,33 +14,9 @@ import (
 const megaBytes = 1024 * 1024
 
 type memoryBallast struct {
-	cfg              *Config
-	logger           *zap.Logger
+	component.StartFunc
 	ballast          []byte
 	ballastSizeBytes uint64
-	getTotalMem      func() (uint64, error)
-}
-
-func (m *memoryBallast) Start(_ context.Context, _ component.Host) error {
-	// absolute value supersedes percentage setting
-	if m.cfg.SizeMiB > 0 {
-		m.ballastSizeBytes = m.cfg.SizeMiB * megaBytes
-	} else {
-		totalMemory, err := m.getTotalMem()
-		if err != nil {
-			return err
-		}
-		ballastPercentage := m.cfg.SizeInPercentage
-		m.ballastSizeBytes = ballastPercentage * totalMemory / 100
-	}
-
-	if m.ballastSizeBytes > 0 {
-		m.ballast = make([]byte, m.ballastSizeBytes)
-	}
-
-	m.logger.Info("Setting memory ballast", zap.Uint32("MiBs", uint32(m.ballastSizeBytes/megaBytes)))
-
-	return nil
 }
 
 func (m *memoryBallast) Shutdown(_ context.Context) error {
@@ -48,12 +24,31 @@ func (m *memoryBallast) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func newMemoryBallast(cfg *Config, logger *zap.Logger, getTotalMem func() (uint64, error)) *memoryBallast {
-	return &memoryBallast{
-		cfg:         cfg,
-		logger:      logger,
-		getTotalMem: getTotalMem,
+func newMemoryBallast(cfg *Config, logger *zap.Logger, getTotalMem func() (uint64, error)) (*memoryBallast, error) {
+	ballastSizeBytes, err := calculateBallastSizeBytes(cfg, getTotalMem)
+	if err != nil {
+		return nil, err
 	}
+
+	logger.Info("Setting memory ballast", zap.Uint32("MiBs", uint32(ballastSizeBytes/megaBytes)))
+
+	return &memoryBallast{
+		ballastSizeBytes: ballastSizeBytes,
+		ballast:          make([]byte, ballastSizeBytes),
+	}, nil
+}
+
+// calculateBallastSizeBytes calculates the ballast size in bytes based on the configuration.
+// If an absolute value is set, it will be used. Otherwise, the percentage will be used.
+func calculateBallastSizeBytes(cfg *Config, getTotalMem func() (uint64, error)) (uint64, error) {
+	if cfg.SizeMiB > 0 {
+		return cfg.SizeMiB * megaBytes, nil
+	}
+	totalMemory, err := getTotalMem()
+	if err != nil {
+		return 0, err
+	}
+	return cfg.SizeInPercentage * totalMemory / 100, nil
 }
 
 // GetBallastSize returns the current ballast memory setting in bytes

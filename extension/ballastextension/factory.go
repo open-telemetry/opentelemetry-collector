@@ -27,5 +27,5 @@ func createDefaultConfig() component.Config {
 }
 
 func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
-	return newMemoryBallast(cfg.(*Config), set.TelemetrySettings.Logger, memHandler), nil
+	return newMemoryBallast(cfg.(*Config), set.TelemetrySettings.Logger, memHandler)
 }
