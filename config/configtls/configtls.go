@@ -108,7 +108,7 @@ type TLSServerSetting struct {
 	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload"`
 
 	// File reloader for the Client CA.
-	Reloader *clientCAsFileReloader
+	reloader *clientCAsFileReloader
 }
 
 // certReloader is a wrapper object for certificate reloading
@@ -337,18 +337,18 @@ func (c *TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 	}
 	if c.ClientCAFile != "" {
 		var err error
-		c.Reloader, err = newClientCAsReloader(c.ClientCAFile, c)
+		c.reloader, err = newClientCAsReloader(c.ClientCAFile, c)
 		if err != nil {
 			return nil, err
 		}
 		if c.ReloadClientCAFile {
-			err = c.Reloader.startWatching()
+			err = c.reloader.startWatching()
 			if err != nil {
 				return nil, err
 			}
-			tlsCfg.GetConfigForClient = func(t *tls.ClientHelloInfo) (*tls.Config, error) { return c.Reloader.getClientConfig(tlsCfg) }
+			tlsCfg.GetConfigForClient = func(t *tls.ClientHelloInfo) (*tls.Config, error) { return c.reloader.getClientConfig(tlsCfg) }
 		}
-		tlsCfg.ClientCAs = c.Reloader.certPool
+		tlsCfg.ClientCAs = c.reloader.certPool
 		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 	return tlsCfg, nil
@@ -360,7 +360,7 @@ func (c TLSServerSetting) loadClientCAFile() (*x509.CertPool, error) {
 
 func (c TLSServerSetting) Shutdown() error {
 	if c.ReloadClientCAFile {
-		return c.Reloader.shutdown()
+		return c.reloader.shutdown()
 	}
 	return nil
 }
