@@ -632,6 +632,7 @@ func TestHttpReception(t *testing.T) {
 			}
 			grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
 			assert.NoError(t, errClient)
+			defer func() { assert.NoError(t, grpcClientConn.Close()) }()
 			c := ptraceotlp.NewGRPCClient(grpcClientConn)
 			ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 			resp, errResp := c.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
@@ -641,7 +642,6 @@ func TestHttpReception(t *testing.T) {
 				assert.NoError(t, errResp)
 				assert.NotNil(t, resp)
 			}
-			assert.NoError(t, grpcClientConn.Close())
 			cancelFunc()
 			s.Stop()
 		})
@@ -681,12 +681,12 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	}
 	grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, errClient)
+	defer func() { assert.NoError(t, grpcClientConn.Close()) }()
 	c := ptraceotlp.NewGRPCClient(grpcClientConn)
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 	resp, errResp := c.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
 	assert.NoError(t, errResp)
 	assert.NotNil(t, resp)
-	assert.NoError(t, grpcClientConn.Close())
 	cancelFunc()
 	srv.Stop()
 }
@@ -850,7 +850,6 @@ func TestClientInfoInterceptors(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			mock := &grpcTraceServer{}
 			var l net.Listener
-			var grpcClientConn *grpc.ClientConn
 
 			// prepare the server
 			{
@@ -889,9 +888,9 @@ func TestClientInfoInterceptors(t *testing.T) {
 					require.NoError(t, tt.Shutdown(context.Background()))
 				}()
 
-				var errClient error
-				grpcClientConn, errClient = gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
+				grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
 				require.NoError(t, errClient)
+				defer func() { assert.NoError(t, grpcClientConn.Close()) }()
 
 				cl := ptraceotlp.NewGRPCClient(grpcClientConn)
 				ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
@@ -906,7 +905,6 @@ func TestClientInfoInterceptors(t *testing.T) {
 
 			// the client address is something like 127.0.0.1:41086
 			assert.Contains(t, cl.Addr.String(), "127.0.0.1")
-			assert.NoError(t, grpcClientConn.Close())
 		})
 	}
 }
