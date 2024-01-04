@@ -250,6 +250,7 @@ func TestIssue_4221(t *testing.T) {
 		spanID := span.SpanID()
 		assert.Equal(t, "e5513c32795c41b9", hex.EncodeToString(spanID[:]))
 	}))
+	defer func() { svr.Close() }()
 
 	exp := startTracesExporter(t, "", svr.URL)
 
