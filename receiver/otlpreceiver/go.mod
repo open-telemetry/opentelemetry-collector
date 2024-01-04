@@ -121,8 +121,6 @@ replace go.opentelemetry.io/collector/processor => ../../processor
 
 replace go.opentelemetry.io/collector/receiver => ../
 
-replace go.opentelemetry.io/collector/semconv => ../../semconv
-
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 retract (
