@@ -1034,7 +1034,7 @@ func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
 
 func TestBatchZeroConfig(t *testing.T) {
 	// This is a no-op configuration. No need for a timer, no
-	// minimum, no mxaimum, just a pass through.
+	// minimum, no maximum, just a pass through.
 	cfg := Config{}
 
 	require.NoError(t, cfg.Validate())
@@ -1047,6 +1047,7 @@ func TestBatchZeroConfig(t *testing.T) {
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, false)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, batcher.Shutdown(context.Background())) }()
 
 	expect := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
@@ -1087,6 +1088,7 @@ func TestBatchSplitOnly(t *testing.T) {
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, false)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, batcher.Shutdown(context.Background())) }()
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
