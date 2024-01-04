@@ -313,6 +313,7 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 	tlsCfg, err := tlsSetting.LoadTLSConfig()
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
+	defer func() { assert.NoError(t, tlsSetting.Shutdown()) }()
 
 	firstClient, err := tlsCfg.GetConfigForClient(nil)
 	assert.NoError(t, err)
@@ -344,6 +345,7 @@ func TestLoadTLSServerConfigFailingReload(t *testing.T) {
 	tlsCfg, err := tlsSetting.LoadTLSConfig()
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
+	defer func() { assert.NoError(t, tlsSetting.Shutdown()) }()
 
 	firstClient, err := tlsCfg.GetConfigForClient(nil)
 	assert.NoError(t, err)
@@ -405,6 +407,7 @@ func TestLoadTLSServerConfigFailing(t *testing.T) {
 	tlsCfg, err := tlsSetting.LoadTLSConfig()
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
+	defer func() { assert.NoError(t, tlsSetting.Shutdown()) }()
 
 	firstClient, err := tlsCfg.GetConfigForClient(nil)
 	assert.NoError(t, err)

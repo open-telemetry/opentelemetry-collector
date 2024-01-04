@@ -106,6 +106,9 @@ type TLSServerSetting struct {
 	// Reload the ClientCAs file when it is modified
 	// (optional, default false)
 	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload"`
+
+	// File reloader for the Client CA.
+	Reloader *clientCAsFileReloader
 }
 
 // certReloader is a wrapper object for certificate reloading
@@ -327,24 +330,25 @@ func (c TLSClientSetting) LoadTLSConfig() (*tls.Config, error) {
 }
 
 // LoadTLSConfig loads the TLS configuration.
-func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
+func (c *TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 	tlsCfg, err := c.loadTLSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load TLS config: %w", err)
 	}
 	if c.ClientCAFile != "" {
-		reloader, err := newClientCAsReloader(c.ClientCAFile, &c)
+		var err error
+		c.Reloader, err = newClientCAsReloader(c.ClientCAFile, c)
 		if err != nil {
 			return nil, err
 		}
 		if c.ReloadClientCAFile {
-			err = reloader.startWatching()
+			err = c.Reloader.startWatching()
 			if err != nil {
 				return nil, err
 			}
-			tlsCfg.GetConfigForClient = func(t *tls.ClientHelloInfo) (*tls.Config, error) { return reloader.getClientConfig(tlsCfg) }
+			tlsCfg.GetConfigForClient = func(t *tls.ClientHelloInfo) (*tls.Config, error) { return c.Reloader.getClientConfig(tlsCfg) }
 		}
-		tlsCfg.ClientCAs = reloader.certPool
+		tlsCfg.ClientCAs = c.Reloader.certPool
 		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 	return tlsCfg, nil
@@ -352,6 +356,13 @@ func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 
 func (c TLSServerSetting) loadClientCAFile() (*x509.CertPool, error) {
 	return c.loadCert(c.ClientCAFile)
+}
+
+func (c TLSServerSetting) Shutdown() error {
+	if c.ReloadClientCAFile {
+		return c.Reloader.shutdown()
+	}
+	return nil
 }
 
 func (c TLSSetting) hasCA() bool   { return c.hasCAFile() || c.hasCAPem() }
