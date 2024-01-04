@@ -297,6 +297,7 @@ func TestLoadTLSServerConfig(t *testing.T) {
 	tlsCfg, err := tlsSetting.LoadTLSConfig()
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
+	defer func() { assert.NoError(t, tlsSetting.Shutdown()) }()
 }
 
 func TestLoadTLSServerConfigReload(t *testing.T) {
