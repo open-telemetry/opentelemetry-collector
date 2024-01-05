@@ -23,6 +23,7 @@ require (
 	go.opentelemetry.io/collector/processor/batchprocessor v0.96.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.96.0
 	go.opentelemetry.io/collector/receiver v0.96.0
+	go.opentelemetry.io/collector/receiver/nopreceiver v0.96.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.96.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/sys v0.18.0
@@ -204,6 +205,8 @@ replace go.opentelemetry.io/collector/pdata => ../../pdata
 replace go.opentelemetry.io/collector/processor => ../../processor
 
 replace go.opentelemetry.io/collector/receiver => ../../receiver
+
+replace go.opentelemetry.io/collector/receiver/nopreceiver => ../../receiver/nopreceiver
 
 replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
 

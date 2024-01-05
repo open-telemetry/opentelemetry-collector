@@ -284,6 +284,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/processor/batchprocessor=$(CURDIR)/processor/batchprocessor  \
 		-replace go.opentelemetry.io/collector/processor/memorylimiterprocessor=$(CURDIR)/processor/memorylimiterprocessor  \
 		-replace go.opentelemetry.io/collector/receiver=$(CURDIR)/receiver  \
+		-replace go.opentelemetry.io/collector/receiver/nopreceiver=$(CURDIR)/receiver/nopreceiver  \
 		-replace go.opentelemetry.io/collector/receiver/otlpreceiver=$(CURDIR)/receiver/otlpreceiver  \
 		-replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv  \
 		-replace go.opentelemetry.io/collector/service=$(CURDIR)/service"
@@ -337,6 +338,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/processor/batchprocessor  \
 		-dropreplace go.opentelemetry.io/collector/processor/memorylimiterprocessor  \
 		-dropreplace go.opentelemetry.io/collector/receiver  \
+		-dropreplace go.opentelemetry.io/collector/receiver/nopreceiver  \
 		-dropreplace go.opentelemetry.io/collector/receiver/otlpreceiver  \
 		-dropreplace go.opentelemetry.io/collector/semconv  \
 		-dropreplace go.opentelemetry.io/collector/service"

@@ -80,6 +80,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		fmt.Sprintf("go.opentelemetry.io/collector/processor/batchprocessor => %s/processor/batchprocessor", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/processor/memorylimiterprocessor => %s/processor/memorylimiterprocessor", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/receiver => %s/receiver", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/receiver/nopreceiver => %s/receiver/nopreceiver", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/receiver/otlpreceiver => %s/receiver/otlpreceiver", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/otelcol => %s/otelcol", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/pdata => %s/pdata", workspaceDir),
