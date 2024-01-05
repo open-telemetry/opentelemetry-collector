@@ -29,7 +29,7 @@ func TestCreateProcessor(t *testing.T) {
 	tp, err := factory.CreateTracesProcessor(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
-	defer func() { assert.NoError(t, tp.Shutdown(context.Background())) }()
+	assert.NoError(t, tp.Shutdown(context.Background()))
 
 	mp, err := factory.CreateMetricsProcessor(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, mp)
