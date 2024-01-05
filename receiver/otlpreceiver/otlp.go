@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"sync"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
@@ -168,11 +169,15 @@ func (r *otlpReceiver) startHTTPServer(host component.Host) error {
 
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
-func (r *otlpReceiver) Start(_ context.Context, host component.Host) error {
+func (r *otlpReceiver) Start(ctx context.Context, host component.Host) error {
 	if err := r.startGRPCServer(host); err != nil {
 		return err
 	}
 	if err := r.startHTTPServer(host); err != nil {
+		// It's possible that a valid GRPC server configuration was specified,
+		// but an invalid HTTP configuration. If that's the case, the successfully
+		// started GRPC server must be shutdown to ensure no goroutines are leaked.
+		err = multierr.Append(err, r.Shutdown(ctx))
 		return err
 	}
 
