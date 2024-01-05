@@ -325,6 +325,7 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 		newNoopObsrepSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), host))
+	t.Cleanup(func() { require.NoError(t, be.Shutdown(context.Background())) })
 
 	// wait for the item to be consumed from the queue
 	replacedReq.checkNumRequests(t, 1)
