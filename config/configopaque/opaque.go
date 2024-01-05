@@ -5,10 +5,13 @@ package configopaque // import "go.opentelemetry.io/collector/config/configopaqu
 
 import (
 	"encoding"
+	"fmt"
 )
 
 // String alias that is marshaled in an opaque way.
 type String string
+
+var _ fmt.Stringer = String("")
 
 const maskedString = "[REDACTED]"
 
