@@ -56,7 +56,7 @@ type batchProcessor struct {
 	// metadataLimit is the limiting size of the batchers map.
 	metadataLimit int
 
-	shutdownChan       chan struct{}
+	shutdownC          chan struct{}
 	goroutines         sync.WaitGroup
 	forceShutdownChans []chan struct{}
 
@@ -126,7 +126,7 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 		sendBatchMaxSize: int(cfg.SendBatchMaxSize),
 		timeout:          cfg.Timeout,
 		batchFunc:        batchFunc,
-		shutdownChan:     make(chan struct{}, 1),
+		shutdownC:        make(chan struct{}, 1),
 		metadataKeys:     mks,
 		metadataLimit:    int(cfg.MetadataCardinalityLimit),
 	}
@@ -177,21 +177,28 @@ func (bp *batchProcessor) Start(context.Context, component.Host) error {
 // Shutdown is invoked during service shutdown.
 func (bp *batchProcessor) Shutdown(ctx context.Context) error {
 	doneChan := make(chan struct{}, 1)
+	startChan := make(chan struct{}, 1)
 	go func() {
+		startChan <- struct{}{}
+	}()
+	for {
 		select {
 		case <-ctx.Done():
 			for _, c := range bp.forceShutdownChans {
 				close(c)
 			}
+			return nil
+		case <-startChan:
+			go func() {
+				close(bp.shutdownC)
+				// Wait until all goroutines are done.
+				bp.goroutines.Wait()
+				close(doneChan)
+			}()
 		case <-doneChan:
+			return nil
 		}
-
-	}()
-	close(bp.shutdownChan)
-	// Wait until all goroutines are done.
-	bp.goroutines.Wait()
-	close(doneChan)
-	return nil
+	}
 }
 
 func (b *shard) start() {
@@ -206,7 +213,7 @@ func (b *shard) start() {
 	}
 	for {
 		select {
-		case <-b.processor.shutdownChan:
+		case <-b.processor.shutdownC:
 		DONE:
 			for {
 				select {

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -1125,31 +1124,14 @@ func Test_Batch_Shutdown_Cancel(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
-	running := true
-	t.Cleanup(func() {
-		running = false
-	})
-
-	counter := &atomic.Int64{}
-	makeSureAtLeastOne := make(chan struct{})
-	go func() {
-		for running {
-			counter.Add(1)
-			ld := testdata.GenerateLogs(logsPerRequest)
-			assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
-			makeSureAtLeastOne <- struct{}{}
-		}
-	}()
-	<-makeSureAtLeastOne
+	// we queue some data in the batcher
+	ld := testdata.GenerateLogs(logsPerRequest)
+	assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 
 	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		cancel()
-	}()
+	cancel()
+	// shutdown the batch processor while data is in transit.
 	err = batcher.Shutdown(ctx)
 	require.NoError(t, err)
-
-	receivedMds := sink.AllLogs()
-
-	assert.Less(t, len(receivedMds), int(counter.Load()))
+	require.Equal(t, 0, len(sink.AllLogs()))
 }
