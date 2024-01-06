@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -1106,7 +1107,7 @@ func TestBatchSplitOnly(t *testing.T) {
 	}
 }
 
-func Test_Batch_Shutdown_Cancel(t *testing.T) {
+func Test_Batch_Shutdown_Immediate_Cancel(t *testing.T) {
 	const logsPerRequest = 10
 
 	cfg := Config{
@@ -1134,4 +1135,52 @@ func Test_Batch_Shutdown_Cancel(t *testing.T) {
 	err = batcher.Shutdown(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(sink.AllLogs()))
+}
+
+func Test_Batch_Shutdown_InProgress_Cancel(t *testing.T) {
+	const logsPerRequest = 10
+
+	cfg := Config{
+		Timeout:          100 * time.Second,
+		SendBatchSize:    50,
+		SendBatchMaxSize: 100,
+	}
+
+	require.NoError(t, cfg.Validate())
+
+	creationSet := processortest.NewNopCreateSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	sink := new(consumertest.LogsSink)
+	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, false)
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	counter := &atomic.Int32{}
+	waitForLogIngest := make(chan struct{}, 1)
+
+	running := &atomic.Bool{}
+	running.Store(true)
+	t.Cleanup(func() {
+		running.Store(false)
+	})
+
+	// we queue constantly data, and cancel while we're queueing.
+	go func() {
+		for running.Load() {
+			ld := testdata.GenerateLogs(logsPerRequest)
+			assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+			counter.Add(1)
+			waitForLogIngest <- struct{}{}
+		}
+	}()
+	<-waitForLogIngest
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		cancel()
+	}()
+	// shutdown the batch processor while data is being queued.
+	err = batcher.Shutdown(ctx)
+	require.NoError(t, err)
+	// check that we send less than what was queued, showing that we stopped before the queue was empty.
+	require.Less(t, len(sink.AllLogs()), int(counter.Load())*logsPerRequest)
 }
