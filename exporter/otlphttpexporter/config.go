@@ -12,6 +12,13 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
+type EncodingType string
+
+const (
+	EncodingProto EncodingType = "otlp_proto"
+	EncodingJSON  EncodingType = "otlp_json"
+)
+
 // Config defines configuration for OTLP/HTTP exporter.
 type Config struct {
 	confighttp.HTTPClientSettings `mapstructure:",squash"`     // squash ensures fields are correctly decoded in embedded struct.
@@ -26,6 +33,9 @@ type Config struct {
 
 	// The URL to send logs to. If omitted the Endpoint + "/v1/logs" will be used.
 	LogsEndpoint string `mapstructure:"logs_endpoint"`
+
+	// The encoding to export telemetry (default: "otlp_proto")
+	Encoding EncodingType `mapstructure:"encoding"`
 }
 
 var _ component.Config = (*Config)(nil)

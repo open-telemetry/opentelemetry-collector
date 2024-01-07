@@ -36,6 +36,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, ocfg.RetryConfig.MaxInterval, 30*time.Second, "default retry MaxInterval")
 	assert.Equal(t, ocfg.QueueConfig.Enabled, true, "default sending queue is enabled")
 	assert.Equal(t, ocfg.Compression, configcompression.Gzip)
+	assert.Equal(t, ocfg.Encoding, EncodingProto)
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
@@ -152,6 +153,20 @@ func TestCreateTracesExporter(t *testing.T) {
 					Endpoint:    endpoint,
 					Compression: configcompression.Zstd,
 				},
+			},
+		},
+		{
+			name: "ProtoEncoding",
+			config: &Config{
+				Encoding:           EncodingProto,
+				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: endpoint},
+			},
+		},
+		{
+			name: "JSONEncoding",
+			config: &Config{
+				Encoding:           EncodingJSON,
+				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: endpoint},
 			},
 		},
 	}
