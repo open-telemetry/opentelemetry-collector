@@ -49,6 +49,9 @@ func (bs *BackOffConfig) Validate() error {
 	if bs.InitialInterval < 0 {
 		return errors.New("'initial_interval' must be non-negative")
 	}
+	if bs.RandomizationFactor < 0 || bs.RandomizationFactor > 1 {
+		return errors.New("'randomization_factor' must be within [0, 1]")
+	}
 	if bs.Multiplier < 0 {
 		return errors.New("'multiplier' must be non-negative")
 	}

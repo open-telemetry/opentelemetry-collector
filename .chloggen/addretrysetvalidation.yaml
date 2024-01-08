@@ -7,7 +7,7 @@ change_type: "enhancement"
 component: "exporterhelper"
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add RetrySettings validation function"
+note: Validate that time.Duration and multiplier values in configretry are non-negative.
 
 # One or more tracking issues or pull requests related to the change
 issues: [9089]
