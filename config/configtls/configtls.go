@@ -29,9 +29,6 @@ var systemCertPool = x509.SystemCertPool
 // Note: Since there isn't anything specific to a server connection. Components
 // with server connections should use TLSSetting.
 type TLSSetting struct {
-	// If true, load system CA certificates pool in addition to the certificates
-	// configured in this struct.
-	IncludeSystemCACertsPool bool `mapstructure:"include_system_ca_certs_pool"`
 	// Path to the CA cert. For a client this verifies the server certificate.
 	// For a server this verifies client certificates. If empty uses system root CA.
 	// (optional)
@@ -39,6 +36,10 @@ type TLSSetting struct {
 
 	// In memory PEM encoded cert. (optional)
 	CAPem configopaque.String `mapstructure:"ca_pem"`
+
+	// If true, load system CA certificates pool in addition to the certificates
+	// configured in this struct.
+	IncludeSystemCACertsPool bool `mapstructure:"include_system_ca_certs_pool"`
 
 	// Path to the TLS cert to use for TLS required connections. (optional)
 	CertFile string `mapstructure:"cert_file"`
