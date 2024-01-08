@@ -86,7 +86,7 @@ func setupTelemetry(t *testing.T, useOtel bool) testTelemetry {
 
 	if useOtel {
 		promReg := prometheus.NewRegistry()
-		exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutScopeInfo())
+		exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutScopeInfo(), otelprom.WithoutCounterSuffixes())
 		require.NoError(t, err)
 
 		telemetry.meterProvider = sdkmetric.NewMeterProvider(
@@ -195,18 +195,13 @@ func (tt *testTelemetry) assertBoundaries(t *testing.T, expected []float64, hist
 
 	for i := range expected {
 		if math.Abs(expected[i]-got[i]) > 0.00001 {
-			assert.Failf(t, "unexpected boundary", "boundary for metric '%s' did no match, expected '%f' got '%f'", metric, expected[i], got[i])
+			assert.Failf(t, "unexpected boundary", "boundary for metric '%s' did not match, expected '%f' got '%f'", metric, expected[i], got[i])
 		}
 	}
 
 }
 
 func (tt *testTelemetry) getMetric(t *testing.T, name string, mtype io_prometheus_client.MetricType, got map[string]*io_prometheus_client.MetricFamily) *io_prometheus_client.Metric {
-	if tt.useOtel && mtype == io_prometheus_client.MetricType_COUNTER {
-		// OTel Go suffixes counters with `_total`
-		name += "_total"
-	}
-
 	metricFamily, ok := got[name]
 	require.True(t, ok, "expected metric '%s' not found", name)
 	require.Equal(t, mtype, metricFamily.GetType())
@@ -232,7 +227,7 @@ func getSingleMetric(metric *io_prometheus_client.MetricFamily) (*io_prometheus_
 
 func assertFloat(t *testing.T, expected, got float64, metric string) {
 	if math.Abs(expected-got) > 0.00001 {
-		assert.Failf(t, "unexpected metric value", "value for metric '%s' did no match, expected '%f' got '%f'", metric, expected, got)
+		assert.Failf(t, "unexpected metric value", "value for metric '%s' did not match, expected '%f' got '%f'", metric, expected, got)
 	}
 }
 

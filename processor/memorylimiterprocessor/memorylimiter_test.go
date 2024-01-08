@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -28,71 +27,6 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
-
-func TestNew(t *testing.T) {
-	type args struct {
-		nextConsumer        consumer.Traces
-		checkInterval       time.Duration
-		memoryLimitMiB      uint32
-		memorySpikeLimitMiB uint32
-	}
-	sink := new(consumertest.TracesSink)
-	tests := []struct {
-		name    string
-		args    args
-		wantErr error
-	}{
-		{
-			name: "zero_checkInterval",
-			args: args{
-				nextConsumer: sink,
-			},
-			wantErr: errCheckIntervalOutOfRange,
-		},
-		{
-			name: "zero_memAllocLimit",
-			args: args{
-				nextConsumer:  sink,
-				checkInterval: 100 * time.Millisecond,
-			},
-			wantErr: errLimitOutOfRange,
-		},
-		{
-			name: "memSpikeLimit_gt_memAllocLimit",
-			args: args{
-				nextConsumer:        sink,
-				checkInterval:       100 * time.Millisecond,
-				memoryLimitMiB:      1,
-				memorySpikeLimitMiB: 2,
-			},
-			wantErr: errMemSpikeLimitOutOfRange,
-		},
-		{
-			name: "success",
-			args: args{
-				nextConsumer:   sink,
-				checkInterval:  100 * time.Millisecond,
-				memoryLimitMiB: 1024,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := createDefaultConfig().(*Config)
-			cfg.CheckInterval = tt.args.checkInterval
-			cfg.MemoryLimitMiB = tt.args.memoryLimitMiB
-			cfg.MemorySpikeLimitMiB = tt.args.memorySpikeLimitMiB
-			got, err := newMemoryLimiter(processortest.NewNopCreateSettings(), cfg)
-			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
-				return
-			}
-			assert.NoError(t, err)
-			assert.NoError(t, got.start(context.Background(), componenttest.NewNopHost()))
-			assert.NoError(t, got.shutdown(context.Background()))
-		})
-	}
-}
 
 // TestMetricsMemoryPressureResponse manipulates results from querying memory and
 // check expected side effects.
@@ -309,11 +243,6 @@ func TestGetDecision(t *testing.T) {
 			memSpikeLimit: 20 * mibBytes,
 		}, d)
 	})
-	t.Run("fixed_limit_error", func(t *testing.T) {
-		d, err := getMemUsageChecker(&Config{MemoryLimitMiB: 20, MemorySpikeLimitMiB: 100}, zap.NewNop())
-		require.Error(t, err)
-		assert.Nil(t, d)
-	})
 
 	t.Cleanup(func() {
 		getMemoryFn = iruntime.TotalMemory
@@ -329,26 +258,12 @@ func TestGetDecision(t *testing.T) {
 			memSpikeLimit: 10 * mibBytes,
 		}, d)
 	})
-	t.Run("percentage_limit_error", func(t *testing.T) {
-		d, err := getMemUsageChecker(&Config{MemoryLimitPercentage: 101, MemorySpikePercentage: 10}, zap.NewNop())
-		require.Error(t, err)
-		assert.Nil(t, d)
-		d, err = getMemUsageChecker(&Config{MemoryLimitPercentage: 99, MemorySpikePercentage: 101}, zap.NewNop())
-		require.Error(t, err)
-		assert.Nil(t, d)
-	})
 }
 
 func TestRefuseDecision(t *testing.T) {
-	decison1000Limit30Spike30, err := newPercentageMemUsageChecker(1000, 60, 30)
-	require.NoError(t, err)
-	decison1000Limit60Spike50, err := newPercentageMemUsageChecker(1000, 60, 50)
-	require.NoError(t, err)
-	decison1000Limit40Spike20, err := newPercentageMemUsageChecker(1000, 40, 20)
-	require.NoError(t, err)
-	decison1000Limit40Spike60, err := newPercentageMemUsageChecker(1000, 40, 60)
-	require.Error(t, err)
-	assert.Nil(t, decison1000Limit40Spike60)
+	decison1000Limit30Spike30 := newPercentageMemUsageChecker(1000, 60, 30)
+	decison1000Limit60Spike50 := newPercentageMemUsageChecker(1000, 60, 50)
+	decison1000Limit40Spike20 := newPercentageMemUsageChecker(1000, 40, 20)
 
 	tests := []struct {
 		name         string
@@ -432,7 +347,7 @@ func (be *ballastExtension) GetBallastSize() uint64 {
 
 func newObsReport(t *testing.T) *processorhelper.ObsReport {
 	set := processorhelper.ObsReportSettings{
-		ProcessorID:             component.NewID(typeStr),
+		ProcessorID:             component.NewID("memory_limiter"),
 		ProcessorCreateSettings: processortest.NewNopCreateSettings(),
 	}
 	set.ProcessorCreateSettings.MetricsLevel = configtelemetry.LevelNone

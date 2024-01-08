@@ -21,9 +21,18 @@ func (ms Logs) getOrig() *otlpcollectorlog.ExportLogsServiceRequest {
 	return internal.GetOrigLogs(internal.Logs(ms))
 }
 
+func (ms Logs) getState() *internal.State {
+	return internal.GetLogsState(internal.Logs(ms))
+}
+
 // NewLogs creates a new Logs struct.
 func NewLogs() Logs {
 	return newLogs(&otlpcollectorlog.ExportLogsServiceRequest{})
+}
+
+// IsReadOnly returns true if this Logs instance is read-only.
+func (ms Logs) IsReadOnly() bool {
+	return *ms.getState() == internal.StateReadOnly
 }
 
 // CopyTo copies the Logs instance overriding the destination.

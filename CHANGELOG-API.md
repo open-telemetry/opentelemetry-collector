@@ -7,6 +7,54 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.91.0
+
+## v1.0.0/v0.90.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Replace converter interface with function in the new experimental exporter helper. (#8122)
+- `featuregate`: Remove deprecate function `featuregate.NewFlag` (#8727)
+  Use `featuregate.Registry`'s `RegisterFlags` method instead.
+
+### 🚩 Deprecations 🚩
+
+- `telemetry`: deprecate jsonschema generated types (#15009)
+
+### 💡 Enhancements 💡
+
+- `pdata`: Add ZeroThreshold field to exponentialHistogramDataPoint in pmetric package. (#8802)
+
+## v1.0.0-rcv0018/v0.89.0
+
+### 🛑 Breaking changes 🛑
+
+- `otelcol`: CollectorSettings.Factories now expects: `func() (Factories, error)` (#8478)
+- `exporter/exporterhelper`: The experimental Request API is updated. (#7874)
+  - `Request` interface now includes ItemsCount() method.
+  - `RequestItemsCounter` is removed.
+  - The following interfaces are added:
+    - Added an optional interface for handling errors that occur during request processing `RequestErrorHandler`.
+    - Added a function to unmarshal bytes into a Request `RequestUnmarshaler`.
+    - Added a function to marshal a Request into bytes `RequestMarshaler`
+  
+
+### 🚩 Deprecations 🚩
+
+- `featuregate`: Deprecate `featuregate.NewFlag` in favor of `featuregate.Registry`'s `RegisterFlags` method (#8727)
+
+### 💡 Enhancements 💡
+
+- `featuregate`: Add validation for feature gates ID, URL and versions. (#8766)
+  Feature gates IDs are now explicitly restricted to ASCII alphanumerics and dots.
+  
+
+## v1.0.0-rcv0017/v0.88.0
+
+### 💡 Enhancements 💡
+
+- `pdata`: Add IsReadOnly() method to p[metrics|logs|traces].[Metrics|Logs|Spans] pdata structs allowing to check if the struct is read-only. (#6794)
+
 ## v1.0.0-rcv0016/v0.87.0
 
 ### 💡 Enhancements 💡

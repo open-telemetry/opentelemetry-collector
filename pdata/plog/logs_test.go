@@ -117,9 +117,11 @@ func TestLogsCopyTo(t *testing.T) {
 
 func TestReadOnlyLogsInvalidUsage(t *testing.T) {
 	logs := NewLogs()
+	assert.False(t, logs.IsReadOnly())
 	res := logs.ResourceLogs().AppendEmpty().Resource()
 	res.Attributes().PutStr("k1", "v1")
 	logs.MarkReadOnly()
+	assert.True(t, logs.IsReadOnly())
 	assert.Panics(t, func() { res.Attributes().PutStr("k2", "v2") })
 }
 

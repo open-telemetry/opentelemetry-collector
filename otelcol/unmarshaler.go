@@ -66,5 +66,5 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 		},
 	}
 
-	return cfg, v.Unmarshal(&cfg, confmap.WithErrorUnused())
+	return cfg, v.Unmarshal(&cfg)
 }

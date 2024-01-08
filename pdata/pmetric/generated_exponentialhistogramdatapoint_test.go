@@ -158,6 +158,17 @@ func TestExponentialHistogramDataPoint_Max(t *testing.T) {
 	assert.False(t, ms.HasMax())
 }
 
+func TestExponentialHistogramDataPoint_ZeroThreshold(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.Equal(t, float64(0.0), ms.ZeroThreshold())
+	ms.SetZeroThreshold(float64(0.5))
+	assert.Equal(t, float64(0.5), ms.ZeroThreshold())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() {
+		newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{}, &sharedState).SetZeroThreshold(float64(0.5))
+	})
+}
+
 func generateTestExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
 	tv := NewExponentialHistogramDataPoint()
 	fillTestExponentialHistogramDataPoint(tv)
@@ -178,4 +189,5 @@ func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	tv.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(17.13)}
 	tv.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(9.23)}
 	tv.orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(182.55)}
+	tv.orig.ZeroThreshold = float64(0.5)
 }

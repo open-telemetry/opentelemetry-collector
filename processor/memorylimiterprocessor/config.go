@@ -6,9 +6,19 @@
 package memorylimiterprocessor // import "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 
 import (
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+)
+
+var (
+	errCheckIntervalOutOfRange        = errors.New("'check_interval' must be greater than zero")
+	errLimitOutOfRange                = errors.New("'limit_mib' or 'limit_percentage' must be greater than zero")
+	errSpikeLimitOutOfRange           = errors.New("'spike_limit_mib' must be smaller than 'limit_mib'")
+	errSpikeLimitPercentageOutOfRange = errors.New("'spike_limit_percentage' must be smaller than 'limit_percentage'")
+	errLimitPercentageOutOfRange      = errors.New(
+		"'limit_percentage' and 'spike_limit_percentage' must be greater than zero and less than or equal to hundred")
 )
 
 // Config defines configuration for memory memoryLimiter processor.
@@ -39,5 +49,20 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.CheckInterval <= 0 {
+		return errCheckIntervalOutOfRange
+	}
+	if cfg.MemoryLimitMiB == 0 && cfg.MemoryLimitPercentage == 0 {
+		return errLimitOutOfRange
+	}
+	if cfg.MemoryLimitPercentage > 100 || cfg.MemorySpikePercentage > 100 {
+		return errLimitPercentageOutOfRange
+	}
+	if cfg.MemoryLimitMiB > 0 && cfg.MemoryLimitMiB <= cfg.MemorySpikeLimitMiB {
+		return errSpikeLimitOutOfRange
+	}
+	if cfg.MemoryLimitPercentage > 0 && cfg.MemoryLimitPercentage <= cfg.MemorySpikePercentage {
+		return errSpikeLimitPercentageOutOfRange
+	}
 	return nil
 }

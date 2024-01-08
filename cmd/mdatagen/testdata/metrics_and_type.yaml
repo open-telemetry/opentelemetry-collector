@@ -1,0 +1,19 @@
+type: metricreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+  distributions: [contrib]
+  warnings:
+    - Any additional information that should be brought to the consumer's attention
+
+metrics:
+  metric:
+    enabled: true
+    description: Description.
+    unit: s
+    gauge:
+      value_type: double

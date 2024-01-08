@@ -12,7 +12,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-type TelemetrySettingsBase[T any] struct {
+// TelemetrySettings provides components with APIs to report telemetry.
+//
+// Note: there is a service version of this struct, servicetelemetry.TelemetrySettings, that mirrors
+// this struct with the exception of ReportComponentStatus. When adding or removing anything from
+// this struct consider whether or not the same should be done for the service version.
+type TelemetrySettings struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
 	Logger *zap.Logger
@@ -40,9 +45,5 @@ type TelemetrySettingsBase[T any] struct {
 	//   - Calling this method before component startup
 	//
 	// If the API is being used properly, these errors are safe to ignore.
-	ReportComponentStatus T
+	ReportComponentStatus func(*StatusEvent) error
 }
-
-// TelemetrySettings and servicetelemetry.Settings differ in the method signature for
-// ReportComponentStatus
-type TelemetrySettings TelemetrySettingsBase[StatusFunc]

@@ -17,7 +17,7 @@ import (
 // telemetrySettings for internal metrics.
 var UseOtelForInternalMetricsfeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.useOtelForInternalMetrics",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("controls whether the collector uses OpenTelemetry for internal metrics"))
 
 // DisableHighCardinalityMetricsfeatureGate is the feature gate that controls whether the collector should enable
@@ -56,10 +56,13 @@ func AllViews(level configtelemetry.Level) []*view.View {
 	measures = []*stats.Int64Measure{
 		obsmetrics.ExporterSentSpans,
 		obsmetrics.ExporterFailedToSendSpans,
+		obsmetrics.ExporterFailedToEnqueueSpans,
 		obsmetrics.ExporterSentMetricPoints,
 		obsmetrics.ExporterFailedToSendMetricPoints,
+		obsmetrics.ExporterFailedToEnqueueMetricPoints,
 		obsmetrics.ExporterSentLogRecords,
 		obsmetrics.ExporterFailedToSendLogRecords,
+		obsmetrics.ExporterFailedToEnqueueLogRecords,
 	}
 	tagKeys = []tag.Key{obsmetrics.TagKeyExporter}
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)

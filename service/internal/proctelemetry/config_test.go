@@ -10,8 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/contrib/config"
 )
 
 func strPtr(s string) *string {
@@ -25,7 +24,7 @@ func intPtr(i int) *int {
 func TestMetricReader(t *testing.T) {
 	testCases := []struct {
 		name   string
-		reader telemetry.MetricReader
+		reader config.MetricReader
 		args   any
 		err    error
 	}{
@@ -35,10 +34,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "pull prometheus invalid exporter",
-			reader: telemetry.MetricReader{
-				Pull: &telemetry.PullMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Otlp: &telemetry.OtlpMetric{},
+			reader: config.MetricReader{
+				Pull: &config.PullMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{},
 					},
 				},
 			},
@@ -46,10 +45,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "pull/prometheus-invalid-config-no-host",
-			reader: telemetry.MetricReader{
-				Pull: &telemetry.PullMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Prometheus: &telemetry.Prometheus{},
+			reader: config.MetricReader{
+				Pull: &config.PullMetricReader{
+					Exporter: config.MetricExporter{
+						Prometheus: &config.Prometheus{},
 					},
 				},
 			},
@@ -57,10 +56,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "pull/prometheus-invalid-config-no-port",
-			reader: telemetry.MetricReader{
-				Pull: &telemetry.PullMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Prometheus: &telemetry.Prometheus{
+			reader: config.MetricReader{
+				Pull: &config.PullMetricReader{
+					Exporter: config.MetricExporter{
+						Prometheus: &config.Prometheus{
 							Host: strPtr("locahost"),
 						},
 					},
@@ -70,10 +69,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "pull/prometheus-invalid-config-no-port",
-			reader: telemetry.MetricReader{
-				Pull: &telemetry.PullMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Prometheus: &telemetry.Prometheus{
+			reader: config.MetricReader{
+				Pull: &config.PullMetricReader{
+					Exporter: config.MetricExporter{
+						Prometheus: &config.Prometheus{
 							Host: strPtr("locahost"),
 							Port: intPtr(8080),
 						},
@@ -83,10 +82,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "periodic/invalid-exporter",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Prometheus: &telemetry.Prometheus{
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						Prometheus: &config.Prometheus{
 							Host: strPtr("locahost"),
 							Port: intPtr(8080),
 						},
@@ -97,39 +96,39 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "periodic/no-exporter",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{},
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{},
 			},
 			err: errNoValidMetricExporter,
 		},
 		{
 			name: "periodic/console-exporter",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Console: telemetry.Console{},
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						Console: config.Console{},
 					},
 				},
 			},
 		},
 		{
 			name: "periodic/console-exporter-with-timeout-interval",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
 					Interval: intPtr(10),
 					Timeout:  intPtr(5),
-					Exporter: telemetry.MetricExporter{
-						Console: telemetry.Console{},
+					Exporter: config.MetricExporter{
+						Console: config.Console{},
 					},
 				},
 			},
 		},
 		{
 			name: "periodic/otlp-exporter-invalid-protocol",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Otlp: &telemetry.OtlpMetric{
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol: *strPtr("http/invalid"),
 						},
 					},
@@ -139,10 +138,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "periodic/otlp-grpc-exporter-no-endpoint",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Otlp: &telemetry.OtlpMetric{
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol:    "grpc/protobuf",
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
@@ -156,10 +155,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "periodic/otlp-grpc-exporter",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Otlp: &telemetry.OtlpMetric{
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol:    "grpc/protobuf",
 							Endpoint:    "http://localhost:4317",
 							Compression: strPtr("none"),
@@ -174,10 +173,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "periodic/otlp-grpc-exporter-no-scheme",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Otlp: &telemetry.OtlpMetric{
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol:    "grpc/protobuf",
 							Endpoint:    "localhost:4317",
 							Compression: strPtr("gzip"),
@@ -192,10 +191,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "periodic/otlp-grpc-invalid-endpoint",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Otlp: &telemetry.OtlpMetric{
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol:    "grpc/protobuf",
 							Endpoint:    " ",
 							Compression: strPtr("gzip"),
@@ -211,10 +210,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "periodic/otlp-grpc-invalid-compression",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Otlp: &telemetry.OtlpMetric{
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol:    "grpc/protobuf",
 							Endpoint:    "localhost:4317",
 							Compression: strPtr("invalid"),
@@ -230,10 +229,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "periodic/otlp-http-exporter",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Otlp: &telemetry.OtlpMetric{
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol:    "http/protobuf",
 							Endpoint:    "http://localhost:4318",
 							Compression: strPtr("gzip"),
@@ -248,10 +247,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "periodic/otlp-http-exporter-with-path",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Otlp: &telemetry.OtlpMetric{
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol:    "http/protobuf",
 							Endpoint:    "http://localhost:4318/path/123",
 							Compression: strPtr("none"),
@@ -266,10 +265,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "periodic/otlp-http-exporter-no-endpoint",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Otlp: &telemetry.OtlpMetric{
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol:    "http/protobuf",
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
@@ -283,10 +282,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "periodic/otlp-http-exporter-no-scheme",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Otlp: &telemetry.OtlpMetric{
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol:    "http/protobuf",
 							Endpoint:    "localhost:4318",
 							Compression: strPtr("gzip"),
@@ -301,10 +300,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "periodic/otlp-http-invalid-endpoint",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Otlp: &telemetry.OtlpMetric{
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol:    "http/protobuf",
 							Endpoint:    " ",
 							Compression: strPtr("gzip"),
@@ -320,10 +319,10 @@ func TestMetricReader(t *testing.T) {
 		},
 		{
 			name: "periodic/otlp-http-invalid-compression",
-			reader: telemetry.MetricReader{
-				Periodic: &telemetry.PeriodicMetricReader{
-					Exporter: telemetry.MetricExporter{
-						Otlp: &telemetry.OtlpMetric{
+			reader: config.MetricReader{
+				Periodic: &config.PeriodicMetricReader{
+					Exporter: config.MetricExporter{
+						OTLP: &config.OTLPMetric{
 							Protocol:    "http/protobuf",
 							Endpoint:    "localhost:4318",
 							Compression: strPtr("invalid"),
@@ -340,7 +339,15 @@ func TestMetricReader(t *testing.T) {
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := InitMetricReader(context.Background(), tt.reader, make(chan error))
+			reader, server, err := InitMetricReader(context.Background(), tt.reader, make(chan error))
+			defer func() {
+				if reader != nil {
+					assert.NoError(t, reader.Shutdown(context.Background()))
+				}
+				if server != nil {
+					assert.NoError(t, server.Shutdown(context.Background()))
+				}
+			}()
 			assert.Equal(t, tt.err, err)
 		})
 	}
@@ -349,7 +356,7 @@ func TestMetricReader(t *testing.T) {
 func TestSpanProcessor(t *testing.T) {
 	testCases := []struct {
 		name      string
-		processor telemetry.SpanProcessor
+		processor config.SpanProcessor
 		args      any
 		err       error
 	}{
@@ -359,20 +366,20 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch processor invalid exporter",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
-					Exporter: telemetry.SpanExporter{},
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
+					Exporter: config.SpanExporter{},
 				},
 			},
 			err: errNoValidSpanExporter,
 		},
 		{
 			name: "batch processor invalid batch size console exporter",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxExportBatchSize: intPtr(-1),
-					Exporter: telemetry.SpanExporter{
-						Console: telemetry.Console{},
+					Exporter: config.SpanExporter{
+						Console: config.Console{},
 					},
 				},
 			},
@@ -380,11 +387,11 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch processor invalid export timeout console exporter",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					ExportTimeout: intPtr(-2),
-					Exporter: telemetry.SpanExporter{
-						Console: telemetry.Console{},
+					Exporter: config.SpanExporter{
+						Console: config.Console{},
 					},
 				},
 			},
@@ -392,11 +399,11 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch processor invalid queue size console exporter",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxQueueSize: intPtr(-3),
-					Exporter: telemetry.SpanExporter{
-						Console: telemetry.Console{},
+					Exporter: config.SpanExporter{
+						Console: config.Console{},
 					},
 				},
 			},
@@ -404,11 +411,11 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch processor invalid schedule delay console exporter",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					ScheduleDelay: intPtr(-4),
-					Exporter: telemetry.SpanExporter{
-						Console: telemetry.Console{},
+					Exporter: config.SpanExporter{
+						Console: config.Console{},
 					},
 				},
 			},
@@ -416,28 +423,28 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch processor console exporter",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxExportBatchSize: intPtr(0),
 					ExportTimeout:      intPtr(0),
 					MaxQueueSize:       intPtr(0),
 					ScheduleDelay:      intPtr(0),
-					Exporter: telemetry.SpanExporter{
-						Console: telemetry.Console{},
+					Exporter: config.SpanExporter{
+						Console: config.Console{},
 					},
 				},
 			},
 		},
 		{
 			name: "batch/otlp-exporter-invalid-protocol",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxExportBatchSize: intPtr(0),
 					ExportTimeout:      intPtr(0),
 					MaxQueueSize:       intPtr(0),
 					ScheduleDelay:      intPtr(0),
-					Exporter: telemetry.SpanExporter{
-						Otlp: &telemetry.Otlp{
+					Exporter: config.SpanExporter{
+						OTLP: &config.OTLP{
 							Protocol: *strPtr("http/invalid"),
 						},
 					},
@@ -447,14 +454,14 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch/otlp-grpc-exporter-no-endpoint",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxExportBatchSize: intPtr(0),
 					ExportTimeout:      intPtr(0),
 					MaxQueueSize:       intPtr(0),
 					ScheduleDelay:      intPtr(0),
-					Exporter: telemetry.SpanExporter{
-						Otlp: &telemetry.Otlp{
+					Exporter: config.SpanExporter{
+						OTLP: &config.OTLP{
 							Protocol:    "grpc/protobuf",
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
@@ -468,14 +475,14 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch/otlp-grpc-exporter",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxExportBatchSize: intPtr(0),
 					ExportTimeout:      intPtr(0),
 					MaxQueueSize:       intPtr(0),
 					ScheduleDelay:      intPtr(0),
-					Exporter: telemetry.SpanExporter{
-						Otlp: &telemetry.Otlp{
+					Exporter: config.SpanExporter{
+						OTLP: &config.OTLP{
 							Protocol:    "grpc/protobuf",
 							Endpoint:    "http://localhost:4317",
 							Compression: strPtr("gzip"),
@@ -490,14 +497,14 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch/otlp-grpc-exporter-no-scheme",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxExportBatchSize: intPtr(0),
 					ExportTimeout:      intPtr(0),
 					MaxQueueSize:       intPtr(0),
 					ScheduleDelay:      intPtr(0),
-					Exporter: telemetry.SpanExporter{
-						Otlp: &telemetry.Otlp{
+					Exporter: config.SpanExporter{
+						OTLP: &config.OTLP{
 							Protocol:    "grpc/protobuf",
 							Endpoint:    "localhost:4317",
 							Compression: strPtr("gzip"),
@@ -512,14 +519,14 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch/otlp-grpc-invalid-endpoint",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxExportBatchSize: intPtr(0),
 					ExportTimeout:      intPtr(0),
 					MaxQueueSize:       intPtr(0),
 					ScheduleDelay:      intPtr(0),
-					Exporter: telemetry.SpanExporter{
-						Otlp: &telemetry.Otlp{
+					Exporter: config.SpanExporter{
+						OTLP: &config.OTLP{
 							Protocol:    "grpc/protobuf",
 							Endpoint:    " ",
 							Compression: strPtr("gzip"),
@@ -535,14 +542,14 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch/otlp-grpc-invalid-compression",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxExportBatchSize: intPtr(0),
 					ExportTimeout:      intPtr(0),
 					MaxQueueSize:       intPtr(0),
 					ScheduleDelay:      intPtr(0),
-					Exporter: telemetry.SpanExporter{
-						Otlp: &telemetry.Otlp{
+					Exporter: config.SpanExporter{
+						OTLP: &config.OTLP{
 							Protocol:    "grpc/protobuf",
 							Endpoint:    "localhost:4317",
 							Compression: strPtr("invalid"),
@@ -558,14 +565,14 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch/otlp-http-exporter",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxExportBatchSize: intPtr(0),
 					ExportTimeout:      intPtr(0),
 					MaxQueueSize:       intPtr(0),
 					ScheduleDelay:      intPtr(0),
-					Exporter: telemetry.SpanExporter{
-						Otlp: &telemetry.Otlp{
+					Exporter: config.SpanExporter{
+						OTLP: &config.OTLP{
 							Protocol:    "http/protobuf",
 							Endpoint:    "http://localhost:4318",
 							Compression: strPtr("gzip"),
@@ -580,14 +587,14 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch/otlp-http-exporter-with-path",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxExportBatchSize: intPtr(0),
 					ExportTimeout:      intPtr(0),
 					MaxQueueSize:       intPtr(0),
 					ScheduleDelay:      intPtr(0),
-					Exporter: telemetry.SpanExporter{
-						Otlp: &telemetry.Otlp{
+					Exporter: config.SpanExporter{
+						OTLP: &config.OTLP{
 							Protocol:    "http/protobuf",
 							Endpoint:    "http://localhost:4318/path/123",
 							Compression: strPtr("none"),
@@ -602,14 +609,14 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch/otlp-http-exporter-no-endpoint",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxExportBatchSize: intPtr(0),
 					ExportTimeout:      intPtr(0),
 					MaxQueueSize:       intPtr(0),
 					ScheduleDelay:      intPtr(0),
-					Exporter: telemetry.SpanExporter{
-						Otlp: &telemetry.Otlp{
+					Exporter: config.SpanExporter{
+						OTLP: &config.OTLP{
 							Protocol:    "http/protobuf",
 							Compression: strPtr("gzip"),
 							Timeout:     intPtr(1000),
@@ -623,14 +630,14 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch/otlp-http-exporter-no-scheme",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxExportBatchSize: intPtr(0),
 					ExportTimeout:      intPtr(0),
 					MaxQueueSize:       intPtr(0),
 					ScheduleDelay:      intPtr(0),
-					Exporter: telemetry.SpanExporter{
-						Otlp: &telemetry.Otlp{
+					Exporter: config.SpanExporter{
+						OTLP: &config.OTLP{
 							Protocol:    "http/protobuf",
 							Endpoint:    "localhost:4318",
 							Compression: strPtr("gzip"),
@@ -645,14 +652,14 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch/otlp-http-invalid-endpoint",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxExportBatchSize: intPtr(0),
 					ExportTimeout:      intPtr(0),
 					MaxQueueSize:       intPtr(0),
 					ScheduleDelay:      intPtr(0),
-					Exporter: telemetry.SpanExporter{
-						Otlp: &telemetry.Otlp{
+					Exporter: config.SpanExporter{
+						OTLP: &config.OTLP{
 							Protocol:    "http/protobuf",
 							Endpoint:    " ",
 							Compression: strPtr("gzip"),
@@ -668,14 +675,14 @@ func TestSpanProcessor(t *testing.T) {
 		},
 		{
 			name: "batch/otlp-http-invalid-compression",
-			processor: telemetry.SpanProcessor{
-				Batch: &telemetry.BatchSpanProcessor{
+			processor: config.SpanProcessor{
+				Batch: &config.BatchSpanProcessor{
 					MaxExportBatchSize: intPtr(0),
 					ExportTimeout:      intPtr(0),
 					MaxQueueSize:       intPtr(0),
 					ScheduleDelay:      intPtr(0),
-					Exporter: telemetry.SpanExporter{
-						Otlp: &telemetry.Otlp{
+					Exporter: config.SpanExporter{
+						OTLP: &config.OTLP{
 							Protocol:    "http/protobuf",
 							Endpoint:    "localhost:4318",
 							Compression: strPtr("invalid"),
@@ -692,7 +699,12 @@ func TestSpanProcessor(t *testing.T) {
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := InitSpanProcessor(context.Background(), tt.processor)
+			processor, err := InitSpanProcessor(context.Background(), tt.processor)
+			defer func() {
+				if processor != nil {
+					assert.NoError(t, processor.Shutdown(context.Background()))
+				}
+			}()
 			assert.Equal(t, tt.err, err)
 		})
 	}

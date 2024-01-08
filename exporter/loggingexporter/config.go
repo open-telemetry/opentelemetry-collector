@@ -65,7 +65,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		return fmt.Errorf("'loglevel' and 'verbosity' are incompatible. Use only 'verbosity' instead")
 	}
 
-	if err := conf.Unmarshal(cfg, confmap.WithErrorUnused()); err != nil {
+	if err := conf.Unmarshal(cfg); err != nil {
 		return err
 	}
 

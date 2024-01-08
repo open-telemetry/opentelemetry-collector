@@ -8,27 +8,26 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/forwardconnector/internal/metadata"
 	"go.opentelemetry.io/collector/consumer"
-)
-
-const (
-	typeStr = "forward"
 )
 
 // NewFactory returns a connector.Factory.
 func NewFactory() connector.Factory {
 	return connector.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		connector.WithTracesToTraces(createTracesToTraces, component.StabilityLevelBeta),
-		connector.WithMetricsToMetrics(createMetricsToMetrics, component.StabilityLevelBeta),
-		connector.WithLogsToLogs(createLogsToLogs, component.StabilityLevelBeta),
+		connector.WithTracesToTraces(createTracesToTraces, metadata.TracesToTracesStability),
+		connector.WithMetricsToMetrics(createMetricsToMetrics, metadata.MetricsToMetricsStability),
+		connector.WithLogsToLogs(createLogsToLogs, metadata.LogsToLogsStability),
 	)
 }
 
+type Config struct{}
+
 // createDefaultConfig creates the default configuration.
 func createDefaultConfig() component.Config {
-	return &struct{}{}
+	return &Config{}
 }
 
 // createTracesToTraces creates a trace receiver based on provided config.

@@ -20,7 +20,7 @@ require (
 	{{- range .Processors}}
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}
-	go.opentelemetry.io/collector v{{.Distribution.OtelColVersion}}
+	go.opentelemetry.io/collector{{if .Distribution.RequireOtelColModule}}/otelcol{{end}} v{{.Distribution.OtelColVersion}}
 )
 
 require (
@@ -49,6 +49,3 @@ replace {{.}}
 {{- range .Excludes}}
 exclude {{.}}
 {{- end}}
-
-// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
-replace cloud.google.com/go => cloud.google.com/go v0.110.2

@@ -7,11 +7,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestConfigure(t *testing.T) {
+	originalValue := UseOtelForInternalMetricsfeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(UseOtelForInternalMetricsfeatureGate.ID(), false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(UseOtelForInternalMetricsfeatureGate.ID(), originalValue))
+	}()
 	tests := []struct {
 		name         string
 		level        configtelemetry.Level
@@ -24,17 +31,17 @@ func TestConfigure(t *testing.T) {
 		{
 			name:         "basic",
 			level:        configtelemetry.LevelBasic,
-			wantViewsLen: 24,
+			wantViewsLen: 27,
 		},
 		{
 			name:         "normal",
 			level:        configtelemetry.LevelNormal,
-			wantViewsLen: 24,
+			wantViewsLen: 27,
 		},
 		{
 			name:         "detailed",
 			level:        configtelemetry.LevelDetailed,
-			wantViewsLen: 24,
+			wantViewsLen: 27,
 		},
 	}
 	for _, tt := range tests {

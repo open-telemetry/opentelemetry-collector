@@ -638,9 +638,11 @@ func TestMetricsCopyTo(t *testing.T) {
 
 func TestReadOnlyMetricsInvalidUsage(t *testing.T) {
 	metrics := NewMetrics()
+	assert.False(t, metrics.IsReadOnly())
 	res := metrics.ResourceMetrics().AppendEmpty().Resource()
 	res.Attributes().PutStr("k1", "v1")
 	metrics.MarkReadOnly()
+	assert.True(t, metrics.IsReadOnly())
 	assert.Panics(t, func() { res.Attributes().PutStr("k2", "v2") })
 }
 

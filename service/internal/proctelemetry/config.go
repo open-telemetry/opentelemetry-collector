@@ -16,6 +16,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -32,7 +33,6 @@ import (
 
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
-	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 const (
@@ -66,7 +66,7 @@ var (
 	errNoValidSpanExporter   = errors.New("no valid span exporter")
 )
 
-func InitMetricReader(ctx context.Context, reader telemetry.MetricReader, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
 	if reader.Pull != nil {
 		return initPullExporter(reader.Pull.Exporter, asyncErrorChannel)
 	}
@@ -84,7 +84,7 @@ func InitMetricReader(ctx context.Context, reader telemetry.MetricReader, asyncE
 	return nil, nil, fmt.Errorf("unsupported metric reader type %v", reader)
 }
 
-func InitSpanProcessor(ctx context.Context, processor telemetry.SpanProcessor) (sdktrace.SpanProcessor, error) {
+func InitSpanProcessor(ctx context.Context, processor config.SpanProcessor) (sdktrace.SpanProcessor, error) {
 	if processor.Batch != nil {
 		if processor.Batch.Exporter.Console != nil {
 			exp, err := stdouttrace.New(
@@ -95,16 +95,16 @@ func InitSpanProcessor(ctx context.Context, processor telemetry.SpanProcessor) (
 			}
 			return initBatchSpanProcessor(processor.Batch, exp)
 		}
-		if processor.Batch.Exporter.Otlp != nil {
+		if processor.Batch.Exporter.OTLP != nil {
 			var err error
 			var exp sdktrace.SpanExporter
-			switch processor.Batch.Exporter.Otlp.Protocol {
+			switch processor.Batch.Exporter.OTLP.Protocol {
 			case protocolProtobufHTTP:
-				exp, err = initOTLPHTTPSpanExporter(ctx, processor.Batch.Exporter.Otlp)
+				exp, err = initOTLPHTTPSpanExporter(ctx, processor.Batch.Exporter.OTLP)
 			case protocolProtobufGRPC:
-				exp, err = initOTLPgRPCSpanExporter(ctx, processor.Batch.Exporter.Otlp)
+				exp, err = initOTLPgRPCSpanExporter(ctx, processor.Batch.Exporter.OTLP)
 			default:
-				return nil, fmt.Errorf("unsupported protocol %q", processor.Batch.Exporter.Otlp.Protocol)
+				return nil, fmt.Errorf("unsupported protocol %q", processor.Batch.Exporter.OTLP.Protocol)
 			}
 			if err != nil {
 				return nil, err
@@ -195,7 +195,7 @@ func cardinalityFilter(kvs ...attribute.KeyValue) attribute.Filter {
 	}
 }
 
-func initPrometheusExporter(prometheusConfig *telemetry.Prometheus, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
 	promRegistry := prometheus.NewRegistry()
 	if prometheusConfig.Host == nil {
 		return nil, nil, fmt.Errorf("host must be specified")
@@ -203,14 +203,18 @@ func initPrometheusExporter(prometheusConfig *telemetry.Prometheus, asyncErrorCh
 	if prometheusConfig.Port == nil {
 		return nil, nil, fmt.Errorf("port must be specified")
 	}
-	wrappedRegisterer := prometheus.WrapRegistererWithPrefix("otelcol_", promRegistry)
 	exporter, err := otelprom.New(
-		otelprom.WithRegisterer(wrappedRegisterer),
+		otelprom.WithRegisterer(promRegistry),
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/8043
 		otelprom.WithoutUnits(),
 		// Disabled for the moment until this becomes stable, and we are ready to break backwards compatibility.
 		otelprom.WithoutScopeInfo(),
-		otelprom.WithProducer(opencensus.NewMetricProducer()))
+		otelprom.WithProducer(opencensus.NewMetricProducer()),
+		// This allows us to produce metrics that are backwards compatible w/ opencensus
+		otelprom.WithoutCounterSuffixes(),
+		otelprom.WithNamespace("otelcol"),
+		otelprom.WithResourceAsConstantLabels(attribute.NewDenyKeysFilter()),
+	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
@@ -218,14 +222,14 @@ func initPrometheusExporter(prometheusConfig *telemetry.Prometheus, asyncErrorCh
 	return exporter, InitPrometheusServer(promRegistry, fmt.Sprintf("%s:%d", *prometheusConfig.Host, *prometheusConfig.Port), asyncErrorChannel), nil
 }
 
-func initPullExporter(exporter telemetry.MetricExporter, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
+func initPullExporter(exporter config.MetricExporter, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
 	if exporter.Prometheus != nil {
 		return initPrometheusExporter(exporter.Prometheus, asyncErrorChannel)
 	}
 	return nil, nil, errNoValidMetricExporter
 }
 
-func initPeriodicExporter(ctx context.Context, exporter telemetry.MetricExporter, opts ...sdkmetric.PeriodicReaderOption) (sdkmetric.Reader, *http.Server, error) {
+func initPeriodicExporter(ctx context.Context, exporter config.MetricExporter, opts ...sdkmetric.PeriodicReaderOption) (sdkmetric.Reader, *http.Server, error) {
 	if exporter.Console != nil {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
@@ -238,16 +242,16 @@ func initPeriodicExporter(ctx context.Context, exporter telemetry.MetricExporter
 		}
 		return sdkmetric.NewPeriodicReader(exp, opts...), nil, nil
 	}
-	if exporter.Otlp != nil {
+	if exporter.OTLP != nil {
 		var err error
 		var exp sdkmetric.Exporter
-		switch exporter.Otlp.Protocol {
+		switch exporter.OTLP.Protocol {
 		case protocolProtobufHTTP:
-			exp, err = initOTLPHTTPExporter(ctx, exporter.Otlp)
+			exp, err = initOTLPHTTPExporter(ctx, exporter.OTLP)
 		case protocolProtobufGRPC:
-			exp, err = initOTLPgRPCExporter(ctx, exporter.Otlp)
+			exp, err = initOTLPgRPCExporter(ctx, exporter.OTLP)
 		default:
-			return nil, nil, fmt.Errorf("unsupported protocol %s", exporter.Otlp.Protocol)
+			return nil, nil, fmt.Errorf("unsupported protocol %s", exporter.OTLP.Protocol)
 		}
 		if err != nil {
 			return nil, nil, err
@@ -264,7 +268,7 @@ func normalizeEndpoint(endpoint string) string {
 	return endpoint
 }
 
-func initOTLPgRPCExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric) (sdkmetric.Exporter, error) {
+func initOTLPgRPCExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (sdkmetric.Exporter, error) {
 	opts := []otlpmetricgrpc.Option{}
 
 	if len(otlpConfig.Endpoint) > 0 {
@@ -298,7 +302,7 @@ func initOTLPgRPCExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric)
 	return otlpmetricgrpc.New(ctx, opts...)
 }
 
-func initOTLPHTTPExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric) (sdkmetric.Exporter, error) {
+func initOTLPHTTPExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (sdkmetric.Exporter, error) {
 	opts := []otlpmetrichttp.Option{}
 
 	if len(otlpConfig.Endpoint) > 0 {
@@ -335,7 +339,7 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *telemetry.OtlpMetric)
 	return otlpmetrichttp.New(ctx, opts...)
 }
 
-func initOTLPgRPCSpanExporter(ctx context.Context, otlpConfig *telemetry.Otlp) (sdktrace.SpanExporter, error) {
+func initOTLPgRPCSpanExporter(ctx context.Context, otlpConfig *config.OTLP) (sdktrace.SpanExporter, error) {
 	opts := []otlptracegrpc.Option{}
 
 	if len(otlpConfig.Endpoint) > 0 {
@@ -369,7 +373,7 @@ func initOTLPgRPCSpanExporter(ctx context.Context, otlpConfig *telemetry.Otlp) (
 	return otlptracegrpc.New(ctx, opts...)
 }
 
-func initOTLPHTTPSpanExporter(ctx context.Context, otlpConfig *telemetry.Otlp) (sdktrace.SpanExporter, error) {
+func initOTLPHTTPSpanExporter(ctx context.Context, otlpConfig *config.OTLP) (sdktrace.SpanExporter, error) {
 	opts := []otlptracehttp.Option{}
 
 	if len(otlpConfig.Endpoint) > 0 {
@@ -406,7 +410,7 @@ func initOTLPHTTPSpanExporter(ctx context.Context, otlpConfig *telemetry.Otlp) (
 	return otlptracehttp.New(ctx, opts...)
 }
 
-func initBatchSpanProcessor(bsp *telemetry.BatchSpanProcessor, exp sdktrace.SpanExporter) (sdktrace.SpanProcessor, error) {
+func initBatchSpanProcessor(bsp *config.BatchSpanProcessor, exp sdktrace.SpanExporter) (sdktrace.SpanProcessor, error) {
 	opts := []sdktrace.BatchSpanProcessorOption{}
 	if bsp.ExportTimeout != nil {
 		if *bsp.ExportTimeout < 0 {

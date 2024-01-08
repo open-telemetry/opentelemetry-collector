@@ -5,10 +5,7 @@ package otlphttpexporter
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
-	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -20,357 +17,23 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc/codes"
+	codes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 )
-
-func TestInvalidConfig(t *testing.T) {
-	config := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "",
-		},
-	}
-	f := NewFactory()
-	set := exportertest.NewNopCreateSettings()
-	_, err := f.CreateTracesExporter(context.Background(), set, config)
-	require.Error(t, err)
-	_, err = f.CreateMetricsExporter(context.Background(), set, config)
-	require.Error(t, err)
-	_, err = f.CreateLogsExporter(context.Background(), set, config)
-	require.Error(t, err)
-}
-
-func TestTraceNoBackend(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-	exp := startTracesExporter(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
-	td := testdata.GenerateTraces(1)
-	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
-}
-
-func TestTraceInvalidUrl(t *testing.T) {
-	exp := startTracesExporter(t, "http:/\\//this_is_an/*/invalid_url", "")
-	td := testdata.GenerateTraces(1)
-	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
-
-	exp = startTracesExporter(t, "", "http:/\\//this_is_an/*/invalid_url")
-	td = testdata.GenerateTraces(1)
-	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
-}
-
-func TestTraceError(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-
-	startTracesReceiver(t, addr, consumertest.NewErr(errors.New("my_error")))
-	exp := startTracesExporter(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
-
-	td := testdata.GenerateTraces(1)
-	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
-}
-
-func TestTraceRoundTrip(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-
-	tests := []struct {
-		name        string
-		baseURL     string
-		overrideURL string
-	}{
-		{
-			name:        "wrongbase",
-			baseURL:     "http://wronghostname",
-			overrideURL: fmt.Sprintf("http://%s/v1/traces", addr),
-		},
-		{
-			name:        "onlybase",
-			baseURL:     fmt.Sprintf("http://%s", addr),
-			overrideURL: "",
-		},
-		{
-			name:        "override",
-			baseURL:     "",
-			overrideURL: fmt.Sprintf("http://%s/v1/traces", addr),
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			sink := new(consumertest.TracesSink)
-			startTracesReceiver(t, addr, sink)
-			exp := startTracesExporter(t, test.baseURL, test.overrideURL)
-
-			td := testdata.GenerateTraces(1)
-			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
-			require.Eventually(t, func() bool {
-				return sink.SpanCount() > 0
-			}, 1*time.Second, 10*time.Millisecond)
-			allTraces := sink.AllTraces()
-			require.Len(t, allTraces, 1)
-			assert.EqualValues(t, td, allTraces[0])
-		})
-	}
-}
-
-func TestMetricsError(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-
-	startMetricsReceiver(t, addr, consumertest.NewErr(errors.New("my_error")))
-	exp := startMetricsExporter(t, "", fmt.Sprintf("http://%s/v1/metrics", addr))
-
-	md := testdata.GenerateMetrics(1)
-	assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
-}
-
-func TestMetricsRoundTrip(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-
-	tests := []struct {
-		name        string
-		baseURL     string
-		overrideURL string
-	}{
-		{
-			name:        "wrongbase",
-			baseURL:     "http://wronghostname",
-			overrideURL: fmt.Sprintf("http://%s/v1/metrics", addr),
-		},
-		{
-			name:        "onlybase",
-			baseURL:     fmt.Sprintf("http://%s", addr),
-			overrideURL: "",
-		},
-		{
-			name:        "override",
-			baseURL:     "",
-			overrideURL: fmt.Sprintf("http://%s/v1/metrics", addr),
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			sink := new(consumertest.MetricsSink)
-			startMetricsReceiver(t, addr, sink)
-			exp := startMetricsExporter(t, test.baseURL, test.overrideURL)
-
-			md := testdata.GenerateMetrics(1)
-			assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
-			require.Eventually(t, func() bool {
-				return sink.DataPointCount() > 0
-			}, 1*time.Second, 10*time.Millisecond)
-			allMetrics := sink.AllMetrics()
-			require.Len(t, allMetrics, 1)
-			assert.EqualValues(t, md, allMetrics[0])
-		})
-	}
-}
-
-func TestLogsError(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-
-	startLogsReceiver(t, addr, consumertest.NewErr(errors.New("my_error")))
-	exp := startLogsExporter(t, "", fmt.Sprintf("http://%s/v1/logs", addr))
-
-	md := testdata.GenerateLogs(1)
-	assert.Error(t, exp.ConsumeLogs(context.Background(), md))
-}
-
-func TestLogsRoundTrip(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-
-	tests := []struct {
-		name        string
-		baseURL     string
-		overrideURL string
-	}{
-		{
-			name:        "wrongbase",
-			baseURL:     "http://wronghostname",
-			overrideURL: fmt.Sprintf("http://%s/v1/logs", addr),
-		},
-		{
-			name:        "onlybase",
-			baseURL:     fmt.Sprintf("http://%s", addr),
-			overrideURL: "",
-		},
-		{
-			name:        "override",
-			baseURL:     "",
-			overrideURL: fmt.Sprintf("http://%s/v1/logs", addr),
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			sink := new(consumertest.LogsSink)
-			startLogsReceiver(t, addr, sink)
-			exp := startLogsExporter(t, test.baseURL, test.overrideURL)
-
-			md := testdata.GenerateLogs(1)
-			assert.NoError(t, exp.ConsumeLogs(context.Background(), md))
-			require.Eventually(t, func() bool {
-				return sink.LogRecordCount() > 0
-			}, 1*time.Second, 10*time.Millisecond)
-			allLogs := sink.AllLogs()
-			require.Len(t, allLogs, 1)
-			assert.EqualValues(t, md, allLogs[0])
-		})
-	}
-}
-
-func TestIssue_4221(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() { assert.NoError(t, r.Body.Close()) }()
-		compressedData, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		gzipReader, err := gzip.NewReader(bytes.NewReader(compressedData))
-		require.NoError(t, err)
-		data, err := io.ReadAll(gzipReader)
-		require.NoError(t, err)
-		base64Data := base64.StdEncoding.EncodeToString(data)
-		// Verify same base64 encoded string is received.
-		assert.Equal(t, "CscBCkkKIAoMc2VydmljZS5uYW1lEhAKDnVvcC5zdGFnZS1ldS0xCiUKGW91dHN5c3RlbXMubW9kdWxlLnZlcnNpb24SCAoGOTAzMzg2EnoKEQoMdW9wX2NhbmFyaWVzEgExEmUKEEMDhT8Ib0+Mhs8Zi2VR34QSCOVRPDJ5XEG5IgA5QE41aASRrxZBQE41aASRrxZKEAoKc3Bhbl9pbmRleBICGANKHwoNY29kZS5mdW5jdGlvbhIOCgxteUZ1bmN0aW9uMzZ6AA==", base64Data)
-		unbase64Data, err := base64.StdEncoding.DecodeString(base64Data)
-		require.NoError(t, err)
-		tr := ptraceotlp.NewExportRequest()
-		require.NoError(t, tr.UnmarshalProto(unbase64Data))
-		span := tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-		traceID := span.TraceID()
-		assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", hex.EncodeToString(traceID[:]))
-		spanID := span.SpanID()
-		assert.Equal(t, "e5513c32795c41b9", hex.EncodeToString(spanID[:]))
-	}))
-
-	exp := startTracesExporter(t, "", svr.URL)
-
-	md := ptrace.NewTraces()
-	rms := md.ResourceSpans().AppendEmpty()
-	rms.Resource().Attributes().PutStr("service.name", "uop.stage-eu-1")
-	rms.Resource().Attributes().PutStr("outsystems.module.version", "903386")
-	ils := rms.ScopeSpans().AppendEmpty()
-	ils.Scope().SetName("uop_canaries")
-	ils.Scope().SetVersion("1")
-	span := ils.Spans().AppendEmpty()
-
-	var traceIDBytes [16]byte
-	traceIDBytesSlice, err := hex.DecodeString("4303853f086f4f8c86cf198b6551df84")
-	require.NoError(t, err)
-	copy(traceIDBytes[:], traceIDBytesSlice)
-	span.SetTraceID(traceIDBytes)
-	traceID := span.TraceID()
-	assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", hex.EncodeToString(traceID[:]))
-
-	var spanIDBytes [8]byte
-	spanIDBytesSlice, err := hex.DecodeString("e5513c32795c41b9")
-	require.NoError(t, err)
-	copy(spanIDBytes[:], spanIDBytesSlice)
-	span.SetSpanID(spanIDBytes)
-	spanID := span.SpanID()
-	assert.Equal(t, "e5513c32795c41b9", hex.EncodeToString(spanID[:]))
-
-	span.SetEndTimestamp(1634684637873000000)
-	span.Attributes().PutInt("span_index", 3)
-	span.Attributes().PutStr("code.function", "myFunction36")
-	span.SetStartTimestamp(1634684637873000000)
-
-	assert.NoError(t, exp.ConsumeTraces(context.Background(), md))
-}
-
-func startTracesExporter(t *testing.T, baseURL string, overrideURL string) exporter.Traces {
-	factory := NewFactory()
-	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
-	cfg.TracesEndpoint = overrideURL
-	exp, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
-	require.NoError(t, err)
-	startAndCleanup(t, exp)
-	return exp
-}
-
-func startMetricsExporter(t *testing.T, baseURL string, overrideURL string) exporter.Metrics {
-	factory := NewFactory()
-	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
-	cfg.MetricsEndpoint = overrideURL
-	exp, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
-	require.NoError(t, err)
-	startAndCleanup(t, exp)
-	return exp
-}
-
-func startLogsExporter(t *testing.T, baseURL string, overrideURL string) exporter.Logs {
-	factory := NewFactory()
-	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
-	cfg.LogsEndpoint = overrideURL
-	exp, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
-	require.NoError(t, err)
-	startAndCleanup(t, exp)
-	return exp
-}
-
-func createExporterConfig(baseURL string, defaultCfg component.Config) *Config {
-	cfg := defaultCfg.(*Config)
-	cfg.Endpoint = baseURL
-	cfg.QueueSettings.Enabled = false
-	cfg.RetrySettings.Enabled = false
-	return cfg
-}
-
-func startTracesReceiver(t *testing.T, addr string, next consumer.Traces) {
-	factory := otlpreceiver.NewFactory()
-	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
-	recv, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)
-	require.NoError(t, err)
-	startAndCleanup(t, recv)
-}
-
-func startMetricsReceiver(t *testing.T, addr string, next consumer.Metrics) {
-	factory := otlpreceiver.NewFactory()
-	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
-	recv, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)
-	require.NoError(t, err)
-	startAndCleanup(t, recv)
-}
-
-func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
-	factory := otlpreceiver.NewFactory()
-	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
-	recv, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)
-	require.NoError(t, err)
-	startAndCleanup(t, recv)
-}
-
-func createReceiverConfig(addr string, defaultCfg component.Config) *otlpreceiver.Config {
-	cfg := defaultCfg.(*otlpreceiver.Config)
-	cfg.HTTP.Endpoint = addr
-	cfg.GRPC = nil
-	return cfg
-}
-
-func startAndCleanup(t *testing.T, cmp component.Component) {
-	require.NoError(t, cmp.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() {
-		require.NoError(t, cmp.Shutdown(context.Background()))
-	})
-}
 
 func TestErrorResponses(t *testing.T) {
 	errMsgPrefix := func(srv *httptest.Server) string {
@@ -514,7 +177,7 @@ func TestErrorResponses(t *testing.T) {
 
 			cfg := &Config{
 				TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
-				// Create without QueueSettings and RetrySettings so that ConsumeTraces
+				// Create without QueueSettings and RetryConfig so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
 			exp, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
@@ -679,72 +342,70 @@ func TestUserAgent(t *testing.T) {
 	})
 }
 
-func TestPartialSuccess_traces(t *testing.T) {
-	srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
-		response := ptraceotlp.NewExportResponse()
-		partial := response.PartialSuccess()
-		partial.SetErrorMessage("hello")
-		partial.SetRejectedSpans(1)
-		bytes, err := response.MarshalProto()
-		require.NoError(t, err)
-		writer.Header().Set("Content-Type", "application/x-protobuf")
-		_, err = writer.Write(bytes)
-		require.NoError(t, err)
-	})
-	defer srv.Close()
-
-	cfg := &Config{
-		TracesEndpoint:     fmt.Sprintf("%s/v1/traces", srv.URL),
-		HTTPClientSettings: confighttp.HTTPClientSettings{},
+func TestPartialSuccessInvalidBody(t *testing.T) {
+	invalidBodyCases := []struct {
+		telemetryType string
+		handler       partialSuccessHandler
+	}{
+		{
+			telemetryType: "traces",
+			handler:       tracesPartialSuccessHandler,
+		},
+		{
+			telemetryType: "metrics",
+			handler:       metricsPartialSuccessHandler,
+		},
+		{
+			telemetryType: "logs",
+			handler:       logsPartialSuccessHandler,
+		},
 	}
-	exp, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
-	require.NoError(t, err)
-
-	// start the exporter
-	err = exp.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
-	})
-
-	// generate data
-	traces := ptrace.NewTraces()
-	err = exp.ConsumeTraces(context.Background(), traces)
-	require.Error(t, err)
+	for _, tt := range invalidBodyCases {
+		t.Run("Invalid response body_"+tt.telemetryType, func(t *testing.T) {
+			err := tt.handler([]byte{1}, "application/x-protobuf")
+			assert.ErrorContains(t, err, "error parsing protobuf response:")
+		})
+	}
 }
 
-func TestPartialSuccess_metrics(t *testing.T) {
-	srv := createBackend("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
-		response := pmetricotlp.NewExportResponse()
-		partial := response.PartialSuccess()
-		partial.SetErrorMessage("hello")
-		partial.SetRejectedDataPoints(1)
-		bytes, err := response.MarshalProto()
-		require.NoError(t, err)
-		writer.Header().Set("Content-Type", "application/x-protobuf")
-		_, err = writer.Write(bytes)
-		require.NoError(t, err)
-	})
-	defer srv.Close()
-
-	cfg := &Config{
-		MetricsEndpoint:    fmt.Sprintf("%s/v1/metrics", srv.URL),
-		HTTPClientSettings: confighttp.HTTPClientSettings{},
+func TestPartialSuccessUnsupportedContentType(t *testing.T) {
+	unsupportedContentTypeCases := []struct {
+		contentType string
+	}{
+		{
+			contentType: "application/json",
+		},
+		{
+			contentType: "text/plain",
+		},
+		{
+			contentType: "application/octet-stream",
+		},
 	}
-	exp, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
-	require.NoError(t, err)
-
-	// start the exporter
-	err = exp.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
-	})
-
-	// generate data
-	metrics := pmetric.NewMetrics()
-	err = exp.ConsumeMetrics(context.Background(), metrics)
-	require.Error(t, err)
+	for _, telemetryType := range []string{"logs", "metrics", "traces"} {
+		for _, tt := range unsupportedContentTypeCases {
+			t.Run("Unsupported content type "+tt.contentType+" "+telemetryType, func(t *testing.T) {
+				var handler func(b []byte, contentType string) error
+				switch telemetryType {
+				case "logs":
+					handler = logsPartialSuccessHandler
+				case "metrics":
+					handler = metricsPartialSuccessHandler
+				case "traces":
+					handler = tracesPartialSuccessHandler
+				default:
+					panic(telemetryType)
+				}
+				exportResponse := ptraceotlp.NewExportResponse()
+				exportResponse.PartialSuccess().SetErrorMessage("foo")
+				exportResponse.PartialSuccess().SetRejectedSpans(42)
+				b, err := exportResponse.MarshalProto()
+				require.NoError(t, err)
+				err = handler(b, tt.contentType)
+				assert.NoError(t, err)
+			})
+		}
+	}
 }
 
 func TestPartialSuccess_logs(t *testing.T) {
@@ -871,70 +532,72 @@ func TestPartialSuccessInvalidResponseBody(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestPartialSuccessInvalidBody(t *testing.T) {
-	invalidBodyCases := []struct {
-		telemetryType string
-		handler       partialSuccessHandler
-	}{
-		{
-			telemetryType: "traces",
-			handler:       tracesPartialSuccessHandler,
-		},
-		{
-			telemetryType: "metrics",
-			handler:       metricsPartialSuccessHandler,
-		},
-		{
-			telemetryType: "logs",
-			handler:       logsPartialSuccessHandler,
-		},
+func TestPartialSuccess_traces(t *testing.T) {
+	srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+		response := ptraceotlp.NewExportResponse()
+		partial := response.PartialSuccess()
+		partial.SetErrorMessage("hello")
+		partial.SetRejectedSpans(1)
+		bytes, err := response.MarshalProto()
+		require.NoError(t, err)
+		writer.Header().Set("Content-Type", "application/x-protobuf")
+		_, err = writer.Write(bytes)
+		require.NoError(t, err)
+	})
+	defer srv.Close()
+
+	cfg := &Config{
+		TracesEndpoint:     fmt.Sprintf("%s/v1/traces", srv.URL),
+		HTTPClientSettings: confighttp.HTTPClientSettings{},
 	}
-	for _, tt := range invalidBodyCases {
-		t.Run("Invalid response body_"+tt.telemetryType, func(t *testing.T) {
-			err := tt.handler([]byte{1}, "application/x-protobuf")
-			assert.ErrorContains(t, err, "error parsing protobuf response:")
-		})
-	}
+	exp, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	require.NoError(t, err)
+
+	// start the exporter
+	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+	})
+
+	// generate data
+	traces := ptrace.NewTraces()
+	err = exp.ConsumeTraces(context.Background(), traces)
+	require.Error(t, err)
 }
 
-func TestPartialSuccessUnsupportedContentType(t *testing.T) {
-	unsupportedContentTypeCases := []struct {
-		contentType string
-	}{
-		{
-			contentType: "application/json",
-		},
-		{
-			contentType: "text/plain",
-		},
-		{
-			contentType: "application/octet-stream",
-		},
+func TestPartialSuccess_metrics(t *testing.T) {
+	srv := createBackend("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
+		response := pmetricotlp.NewExportResponse()
+		partial := response.PartialSuccess()
+		partial.SetErrorMessage("hello")
+		partial.SetRejectedDataPoints(1)
+		bytes, err := response.MarshalProto()
+		require.NoError(t, err)
+		writer.Header().Set("Content-Type", "application/x-protobuf")
+		_, err = writer.Write(bytes)
+		require.NoError(t, err)
+	})
+	defer srv.Close()
+
+	cfg := &Config{
+		MetricsEndpoint:    fmt.Sprintf("%s/v1/metrics", srv.URL),
+		HTTPClientSettings: confighttp.HTTPClientSettings{},
 	}
-	for _, telemetryType := range []string{"logs", "metrics", "traces"} {
-		for _, tt := range unsupportedContentTypeCases {
-			t.Run("Unsupported content type "+tt.contentType+" "+telemetryType, func(t *testing.T) {
-				var handler func(b []byte, contentType string) error
-				switch telemetryType {
-				case "logs":
-					handler = logsPartialSuccessHandler
-				case "metrics":
-					handler = metricsPartialSuccessHandler
-				case "traces":
-					handler = tracesPartialSuccessHandler
-				default:
-					panic(telemetryType)
-				}
-				exportResponse := ptraceotlp.NewExportResponse()
-				exportResponse.PartialSuccess().SetErrorMessage("foo")
-				exportResponse.PartialSuccess().SetRejectedSpans(42)
-				b, err := exportResponse.MarshalProto()
-				require.NoError(t, err)
-				err = handler(b, tt.contentType)
-				assert.NoError(t, err)
-			})
-		}
-	}
+	exp, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	require.NoError(t, err)
+
+	// start the exporter
+	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+	})
+
+	// generate data
+	metrics := pmetric.NewMetrics()
+	err = exp.ConsumeMetrics(context.Background(), metrics)
+	require.Error(t, err)
 }
 
 func createBackend(endpoint string, handler func(writer http.ResponseWriter, request *http.Request)) *httptest.Server {
