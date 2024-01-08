@@ -147,8 +147,9 @@ func InitPrometheusServer(registry *prometheus.Registry, address string, asyncEr
 		Addr:    address,
 		Handler: mux,
 	}
+
+	serverWG.Add(1)
 	go func() {
-		serverWG.Add(1)
 		defer serverWG.Done()
 		if serveErr := server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
 			asyncErrorChannel <- serveErr
