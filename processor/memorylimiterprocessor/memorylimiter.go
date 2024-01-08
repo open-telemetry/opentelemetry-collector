@@ -63,6 +63,8 @@ type memoryLimiter struct {
 
 	refCounterLock sync.Mutex
 	refCounter     int
+	waitGroup      sync.WaitGroup
+	closed         chan struct{}
 }
 
 // Minimum interval between forced GC when in soft limited mode. We don't want to
@@ -141,6 +143,8 @@ func (ml *memoryLimiter) shutdown(context.Context) error {
 		return errShutdownNotStarted
 	} else if ml.refCounter == 1 {
 		ml.ticker.Stop()
+		close(ml.closed)
+		ml.waitGroup.Wait()
 	}
 	ml.refCounter--
 	return nil
@@ -226,8 +230,17 @@ func (ml *memoryLimiter) startMonitoring() {
 
 	ml.refCounter++
 	if ml.refCounter == 1 {
+		ml.closed = make(chan struct{})
+		ml.waitGroup.Add(1)
 		go func() {
-			for range ml.ticker.C {
+			defer ml.waitGroup.Done()
+
+			for {
+				select {
+				case <-ml.ticker.C:
+				case <-ml.closed:
+					return
+				}
 				ml.checkMemLimits()
 			}
 		}()

@@ -1,0 +1,8 @@
+type: otlphttp
+
+status:
+  class: exporter
+  stability:
+    stable: [traces, metrics]
+    beta: [logs]
+  distributions: [core, contrib]

@@ -15,8 +15,6 @@ import (
 var (
 	// ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full.
 	ErrQueueIsFull = errors.New("sending queue is full")
-	// ErrQueueIsStopped is the error returned when an item is offered to the Queue and the queue is stopped.
-	ErrQueueIsStopped = errors.New("sending queue is stopped")
 )
 
 // Queue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
@@ -30,8 +28,7 @@ type Queue[T any] interface {
 	// Consume applies the provided function on the head of queue.
 	// The call blocks until there is an item available or the queue is stopped.
 	// The function returns true when an item is consumed or false if the queue is stopped.
-	// The provided callback function returns true if the item was consumed or false if the consumer is stopped.
-	Consume(func(ctx context.Context, item T) bool) bool
+	Consume(func(ctx context.Context, item T) error) bool
 	// Size returns the current Size of the queue
 	Size() int
 	// Capacity returns the capacity of the queue.

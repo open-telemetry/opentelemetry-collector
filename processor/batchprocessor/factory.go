@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package batchprocessor // import "go.opentelemetry.io/collector/processor/batchprocessor"
 
 import (
@@ -11,12 +13,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/batchprocessor/internal/metadata"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "batch"
-
 	defaultSendBatchSize = uint32(8192)
 	defaultTimeout       = 200 * time.Millisecond
 
@@ -29,11 +29,11 @@ const (
 // NewFactory returns a new factory for the Batch processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTraces, component.StabilityLevelStable),
-		processor.WithMetrics(createMetrics, component.StabilityLevelStable),
-		processor.WithLogs(createLogs, component.StabilityLevelStable))
+		processor.WithTraces(createTraces, metadata.TracesStability),
+		processor.WithMetrics(createMetrics, metadata.MetricsStability),
+		processor.WithLogs(createLogs, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {

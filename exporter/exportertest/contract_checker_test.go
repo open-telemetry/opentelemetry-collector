@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -16,8 +17,8 @@ import (
 )
 
 // retryConfig is a configuration to quickly retry failed exports.
-var retryConfig = func() exporterhelper.RetrySettings {
-	c := exporterhelper.NewDefaultRetrySettings()
+var retryConfig = func() configretry.BackOffConfig {
+	c := configretry.NewDefaultBackOffConfig()
 	c.InitialInterval = time.Millisecond
 	return c
 }()

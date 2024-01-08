@@ -51,15 +51,25 @@ type UnmarshalOption interface {
 }
 
 type unmarshalOption struct {
-	errorUnused bool
+	ignoreUnused bool
 }
 
 // WithErrorUnused sets an option to error when there are existing
 // keys in the original Conf that were unused in the decoding process
-// (extra keys).
+// (extra keys). This option is enabled by default and can be disabled with `WithIgnoreUnused`.
+// Deprecated: [v0.92.0] this is now enabled by default. Use `WithIgnoreUnused` to disable.
 func WithErrorUnused() UnmarshalOption {
 	return unmarshalOptionFunc(func(uo *unmarshalOption) {
-		uo.errorUnused = true
+		uo.ignoreUnused = false
+	})
+}
+
+// WithIgnoreUnused sets an option to ignore errors if existing
+// keys in the original Conf were unused in the decoding process
+// (extra keys).
+func WithIgnoreUnused() UnmarshalOption {
+	return unmarshalOptionFunc(func(uo *unmarshalOption) {
+		uo.ignoreUnused = true
 	})
 }
 
@@ -76,7 +86,7 @@ func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
 	for _, opt := range opts {
 		opt.apply(&set)
 	}
-	return decodeConfig(l, result, set.errorUnused)
+	return decodeConfig(l, result, !set.ignoreUnused)
 }
 
 type marshalOption struct{}

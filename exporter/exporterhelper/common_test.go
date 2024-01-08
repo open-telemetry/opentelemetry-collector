@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
@@ -73,12 +74,12 @@ func checkStatus(t *testing.T, sd sdktrace.ReadOnlySpan, err error) {
 
 func TestQueueRetryOptionsWithRequestExporter(t *testing.T) {
 	bs, err := newBaseExporter(exportertest.NewNopCreateSettings(), "", true, nil, nil, newNoopObsrepSender,
-		WithRetry(NewDefaultRetrySettings()))
+		WithRetry(configretry.NewDefaultBackOffConfig()))
 	require.Nil(t, err)
 	require.True(t, bs.requestExporter)
 	require.Panics(t, func() {
 		_, _ = newBaseExporter(exportertest.NewNopCreateSettings(), "", true, nil, nil, newNoopObsrepSender,
-			WithRetry(NewDefaultRetrySettings()), WithQueue(NewDefaultQueueSettings()))
+			WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueSettings()))
 	})
 }
 
@@ -86,7 +87,7 @@ func TestBaseExporterLogging(t *testing.T) {
 	set := exportertest.NewNopCreateSettings()
 	logger, observed := observer.New(zap.DebugLevel)
 	set.Logger = zap.New(logger)
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
 	bs, err := newBaseExporter(set, "", true, nil, nil, newNoopObsrepSender, WithRetry(rCfg))
 	require.Nil(t, err)
