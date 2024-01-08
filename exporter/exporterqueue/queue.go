@@ -95,7 +95,7 @@ func sizerFromConfig[T itemsCounter](Config) queue.Sizer[T] {
 	return &queue.RequestSizer[T]{}
 }
 
-func capacityFromConfig(cfg Config) int {
+func capacityFromConfig(cfg Config) int64 {
 	// TODO: Handle other ways to measure the queue size once they are added.
-	return cfg.QueueSize
+	return int64(cfg.QueueSize)
 }
