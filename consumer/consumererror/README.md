@@ -19,88 +19,55 @@ necessary for the Collector to act as a proxy for a backend, i.e. relay a status
 code returned from a backend in a response to a system upstream from the
 Collector.
 
-## Creating an error
+## Creating Errors
 
-To create a new error, call the `consumererror.NewError` function with the error
-you want to wrap and any options that add additional metadata. Errors are either
-considered permanent or retryable, depending on whether the
-`WithRetryable[Signal]` option is passed. A permanent error indicates that the
-error will always occur for a given set of telemetry items and should be
-dropped. The permanence of an error can be checked with
-`consumererror.IsPermanent`.
+Errors can be created through one of the three constructors provided:
 
-To help communicate information about the error to the caller, options with
-additional metadata may be included. While some of the options are semantically
-mutually-exclusive and shouldn't be combined, any set of options can be used
-together and the package will determine which option takes precedence.
+- `consumererror.New[Signal]` for retryable errors.
+- `consumererror.NewPartial` for errors where only some of the items failed.
+- `consumererror.NewHTTPStatus` for errors resulting from an HTTP call with an error status code.
+- `consumererror.NewGRPCStatus` for errors resulting from a gRPC call with an error status code.
 
-### WithRejectedCount(rejected int)
+Any error that is not retryable is considered to be a permanent error and will not be retried.
 
-Include a count of the items that were permanently rejected (spans,
-datapoints, log records, etc.). The caller should have a full count of rejected
-items, so this option is only needed to indicate a partial success.
-
-When using this option in an exporter or other component dealing with mapping
-non-pdata formats, the rejected count should be based on the count of pdata
-items that failed.
-
-### WithRetryable\[Signal\](pdata, ...RetryOption)
-
-Indicate that a temporary condition is the cause of an error and that the
-request should be retried with the default delay. Use of this option means that
-an error is not considered permanent.
-
-#### WithRetryDelay(delay time.Duration)
-
-Indicate that the payload should be retried after a certain amount of time.
-
-### WithHTTPStatus(int)
-
-Annotate the error with an HTTP status code obtained from a response during
-exporting.
-
-### WithGRPCStatus(*status.Status)
-
-Annotate the error with a gRPC status code obtained from a response during
-exporting.
-
-## Reading from an error
-
-The `consumererror.Error` type supports the following methods. Each method has a
-method signature like `(data, bool)` with the second value indicating whether
-the option was passed during the error's creation.
-
-- `Count`: Get the count of rejected items.
-- `Retryable[Signal]`: Gets the information necessary to retry the request for a
-  given signal.
-- `ToHTTP`: Returns an integer representing the HTTP status code. If both
-  `WithHTTPStatus` and `WithGRPCStatus` were passed, the HTTP status is used
-  first and gRPC status second.
-- `ToGRPC`: Returns a `*status.Status` object representing the status returned
-  from the gRPC server. If both `WithHTTPStatus` and `WithGRPCStatus` were
-  passed, the gRPC status is used first and HTTP status second.
+Errors can be joined by passing them to a call to `consumererror.New`.
 
 ## Other considerations
 
+To keep error analysis simple when looking at an error upstream in a pipeline,
+the component closest to the source of an error or set of errors should make a
+decision about the nature of the error. The following are a few places where
+special considerations may need to be made.
+
+### Fanouts
+
+Pipeline components that perform fanouts should determine for themselves the
+precedence of errors they receive when multiple downstream components report an
+error.
+
+### Signal conversion
+
+When converting between signals in a pipeline, it is expected that the component
+performing the conversion should perform the translation necessary in the error
+for any signal item counts.
+
 ### Asynchronous processing
 
-Note that the use of any components that do asynchronous processing, for example
-the batch processor, will cut off the upward flow of information at the
-asynchronous component. This means that something like a network status code
-cannot be propagated from an exporter to a receiver if the batch processor is
-used in the pipeline.
+Note that the use of any components that do asynchronous processing will cut off
+the upward flow of information at the asynchronous component.
 
 ## Examples
 
 Creating an error:
 
 ```golang
-consumererror.NewError(
-    consumererror.WithRetryableTraces(
+consumererror.New(
+    consumererror.NewTraces(
+        error,
         traces,
         consumererror.WithRetryDelay(2 * time.Duration)
     ),
-    consumererror.WithHTTPStatus(http.StatusTooManyRequests)
+    consumererror.NewHTTPStatus(error, http.StatusTooManyRequests)
 )
 ```
 
@@ -108,17 +75,12 @@ Using an error:
 
 ```golang
 err := nextConsumer(ctx, traces)
+status := consumererror.StatusError{}
+retry := consumererror.Traces{}
 
-if cErr, ok := consumererror.As(err); ok {
-    code, ok := cErr.ToHTTP()
-    if ok {
-        statusCode = code
-    }
-    
-    retry, ok := cErr.RetryableTraces()
-
-    if ok {
-        doRetry(retry)
-    }
+if errors.As(err, &status) {
+  if status.HTTPStatus >= 500 && errors.As(err, &retry) {
+    doRetry(retry.Data())
+  }
 }
 ```
