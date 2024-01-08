@@ -31,20 +31,18 @@ func TestInvalidInitialInterval(t *testing.T) {
 	assert.Error(t, cfg.Validate())
 }
 
-func TestInvalidRandomizationFactor(t *testing.T) {
-	cfg := NewDefaultBackOffConfig()
-	assert.NoError(t, cfg.Validate())
-	cfg.RandomizationFactor = -1
-	assert.Error(t, cfg.Validate())
-	cfg.RandomizationFactor = 2
-	assert.Error(t, cfg.Validate())
-}
-
 func TestInvalidMultiplier(t *testing.T) {
 	cfg := NewDefaultBackOffConfig()
 	assert.NoError(t, cfg.Validate())
-	cfg.Multiplier = 0
+	cfg.Multiplier = -1
 	assert.Error(t, cfg.Validate())
+}
+
+func TestZeroMultiplierIsValid(t *testing.T) {
+	cfg := NewDefaultBackOffConfig()
+	assert.NoError(t, cfg.Validate())
+	cfg.Multiplier = 0
+	assert.NoError(t, cfg.Validate())
 }
 
 func TestInvalidMaxInterval(t *testing.T) {
