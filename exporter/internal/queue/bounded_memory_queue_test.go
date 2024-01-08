@@ -156,3 +156,11 @@ func TestZeroSizeNoConsumers(t *testing.T) {
 
 	assert.NoError(t, q.Shutdown(context.Background()))
 }
+
+type fakeReq struct {
+	itemsCount int
+}
+
+func (r fakeReq) ItemsCount() int {
+	return r.itemsCount
+}
