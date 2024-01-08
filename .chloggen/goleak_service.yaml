@@ -7,7 +7,7 @@ change_type: bug_fix
 component: service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix memory leaks
+note: Fix memory leaks during service package shutdown
 
 # One or more tracking issues or pull requests related to the change
 issues: [9165]
