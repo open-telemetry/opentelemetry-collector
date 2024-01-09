@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/stretchr/testify v1.8.4
+	go.uber.org/goleak v1.3.0
 )
 
 require (

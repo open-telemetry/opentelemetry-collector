@@ -351,6 +351,7 @@ func TestSingleScrapePerInterval(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, receiver.Shutdown(context.Background())) }()
 
 	tickerCh <- time.Now()
 
