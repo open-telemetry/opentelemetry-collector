@@ -4,22 +4,49 @@
 package builder // import "go.opentelemetry.io/collector/cmd/builder/internal/builder"
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
+	"go.opentelemetry.io/collector/cmd/builder/internal/builder/modfile"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapio"
+	"golang.org/x/mod/semver"
 )
 
 var (
 	// ErrGoNotFound is returned when a Go binary hasn't been found
 	ErrGoNotFound = errors.New("go binary not found")
 )
+
+func runGoCommandStdout(cfg Config, args ...string) ([]byte, error) {
+	if cfg.Verbose {
+		cfg.Logger.Info("Running go subcommand.", zap.Any("arguments", args))
+	}
+	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path and the caller is assumed to have carried out necessary input validation
+	cmd := exec.Command(cfg.Distribution.Go, args...)
+	cmd.Dir = cfg.Distribution.OutputPath
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("go subcommand failed with args '%v': %w.", args, err)
+	}
+	if stderr.Len() != 0 {
+		cfg.Logger.Info("go subcommand failed", zap.Strings("args", args), zap.String("stderr", stderr.String()))
+	}
+
+	return stdout.Bytes(), nil
+}
 
 func runGoCommand(cfg Config, args ...string) error {
 	cfg.Logger.Info("Running go subcommand.", zap.Any("arguments", args))
@@ -75,14 +102,19 @@ func Generate(cfg Config) error {
 		return fmt.Errorf("failed to create output path: %w", err)
 	}
 
-	for _, tmpl := range []*template.Template{
+	allTemplates := []*template.Template{
 		mainTemplate,
 		mainOthersTemplate,
 		mainWindowsTemplate,
 		componentsTemplate,
 		componentsTestTemplate,
-		goModTemplate,
-	} {
+	}
+
+	if !cfg.SkipNewGoModule {
+		allTemplates = append(allTemplates, goModTemplate)
+	}
+
+	for _, tmpl := range allTemplates {
 		if err := processAndWrite(cfg, tmpl, tmpl.Name(), cfg); err != nil {
 			return fmt.Errorf("failed to generate source file %q: %w", tmpl.Name(), err)
 		}
@@ -135,6 +167,10 @@ func GetModules(cfg Config) error {
 		return fmt.Errorf("failed to go get: %w", err)
 	}
 
+	if err := cfg.updateModules(); err != nil {
+		return err
+	}
+
 	if err := runGoCommand(cfg, "mod", "tidy", "-compat=1.20"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
@@ -154,6 +190,84 @@ func GetModules(cfg Config) error {
 		return nil
 	}
 	return fmt.Errorf("failed to download go modules: %s", failReason)
+}
+
+func (c *Config) updateModules() error {
+	if !c.SkipNewGoModule {
+		return nil
+	}
+
+	// Build the main service dependency
+	corespec := "go.opentelemetry.io/collector"
+	if c.Distribution.RequireOtelColModule {
+		corespec += "/otelcol"
+	}
+	corespec += " v"
+	corespec += c.Distribution.OtelColVersion
+
+	if err := c.updateGoModule(corespec); err != nil {
+		return err
+	}
+
+	for _, comp := range append(c.Exporters,
+		append(c.Receivers,
+			append(c.Processors,
+				append(c.Extensions,
+					c.Connectors...)...)...)...) {
+		if err := c.updateGoModule(comp.GoMod); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *Config) updateGoModule(modspec string) error {
+	// Re-parse the go.mod file on each iteration, since it can change
+	// each time.
+	var mf modfile.GoMod
+
+	stdout, err := runGoCommandStdout(*c, "mod", "edit", "-json")
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(stdout, &mf); err != nil {
+		return err
+	}
+	mvm := map[string]string{}
+	for _, req := range mf.Require {
+		mvm[req.Path] = req.Version
+	}
+
+	mod, ver, found := strings.Cut(modspec, " ")
+	if !found {
+		return fmt.Errorf("go.mod syntax is 'modulename version', no separator found: %q", modspec)
+	}
+	if mod == mf.Module.Path {
+		// this component is part of the same module, nothing to update.
+		return nil
+	}
+
+	// check for exact match
+	hasVer, ok := mvm[mod]
+	if ok && hasVer == ver {
+		c.Logger.Info("Component version match", zap.String("module", mod), zap.String("version", ver))
+		return nil
+	}
+
+	scomp := semver.Compare(hasVer, ver)
+	if scomp > 0 {
+		// version in enclosing module is newer, do not change
+		c.Logger.Info("Not upgrading component, enclosing module is newer.", zap.String("module", mod), zap.String("existing", hasVer), zap.String("config_version", ver))
+		return nil
+	}
+
+	// upgrading or changing version
+	updatespec := mod + "@" + ver
+
+	if err := runGoCommand(*c, "get", updatespec); err != nil {
+		return err
+	}
+	return nil
 }
 
 func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplParams any) error {
