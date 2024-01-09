@@ -145,3 +145,23 @@ then commit the code in a git repo. A CI can sync the code and execute
 ocb --skip-generate --skip-get-modules --config=config.yaml
 ```
 to only execute the compilation step.
+
+### Avoiding the use of a new go.mod file
+
+There is an additional option that controls one aspect of the build
+process, which specifically allows skipping the use of a new `go.mod`
+file.  When the `--skip-new-go-module` command-line flag is supplied,
+the build process issues a `go get` command for each component,
+relying on the Go toolchain to update the enclosing Go module
+appropriately.
+
+This command will avoid downgrading a dependency in the enclosing
+module, according to
+[`semver.Compare()`](https://pkg.go.dev/golang.org/x/mod/semver#Compare),
+and will instead issue a log indicating that the component was not
+upgraded.
+
+This mode cannot be used in conjunction with several features that
+control the generated `go.mod` file, including `replaces`, `excludes`,
+and the component `path` override.  For each of these features, users
+are expected to modify the enclosing `go.mod` directly.
