@@ -29,6 +29,8 @@ README](../configtls/README.md).
 - [`idle_conn_timeout`](https://golang.org/pkg/net/http/#Transport)
 - [`auth`](../configauth/README.md)
 - [`disable_keep_alives`](https://golang.org/pkg/net/http/#Transport)
+- [`http2_read_idle_timeout`](https://pkg.go.dev/golang.org/x/net/http2#Transport)
+- [`http2_ping_timeout`](https://pkg.go.dev/golang.org/x/net/http2#Transport)
 
 Example:
 

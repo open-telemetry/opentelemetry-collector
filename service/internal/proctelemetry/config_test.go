@@ -339,7 +339,15 @@ func TestMetricReader(t *testing.T) {
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := InitMetricReader(context.Background(), tt.reader, make(chan error))
+			reader, server, err := InitMetricReader(context.Background(), tt.reader, make(chan error))
+			defer func() {
+				if reader != nil {
+					assert.NoError(t, reader.Shutdown(context.Background()))
+				}
+				if server != nil {
+					assert.NoError(t, server.Shutdown(context.Background()))
+				}
+			}()
 			assert.Equal(t, tt.err, err)
 		})
 	}
@@ -691,7 +699,12 @@ func TestSpanProcessor(t *testing.T) {
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := InitSpanProcessor(context.Background(), tt.processor)
+			processor, err := InitSpanProcessor(context.Background(), tt.processor)
+			defer func() {
+				if processor != nil {
+					assert.NoError(t, processor.Shutdown(context.Background()))
+				}
+			}()
 			assert.Equal(t, tt.err, err)
 		})
 	}

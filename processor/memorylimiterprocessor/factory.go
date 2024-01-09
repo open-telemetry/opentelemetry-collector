@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package memorylimiterprocessor // import "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 
 import (
@@ -10,12 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-)
-
-const (
-	// The value of "type" Attribute Key in configuration.
-	typeStr = "memory_limiter"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: false}
@@ -33,11 +31,11 @@ func NewFactory() processor.Factory {
 		memoryLimiters: map[component.Config]*memoryLimiter{},
 	}
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(f.createTracesProcessor, component.StabilityLevelBeta),
-		processor.WithMetrics(f.createMetricsProcessor, component.StabilityLevelBeta),
-		processor.WithLogs(f.createLogsProcessor, component.StabilityLevelBeta))
+		processor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
+		processor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
+		processor.WithLogs(f.createLogsProcessor, metadata.LogsStability))
 }
 
 // CreateDefaultConfig creates the default configuration for processor. Notice

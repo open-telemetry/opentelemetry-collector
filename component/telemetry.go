@@ -45,37 +45,5 @@ type TelemetrySettings struct {
 	//   - Calling this method before component startup
 	//
 	// If the API is being used properly, these errors are safe to ignore.
-	ReportComponentStatus StatusFunc
-}
-
-// Deprecated: [0.91.0] Use TelemetrySettings directly
-type TelemetrySettingsBase[T any] struct {
-	// Logger that the factory can use during creation and can pass to the created
-	// component to be used later as well.
-	Logger *zap.Logger
-
-	// TracerProvider that the factory can pass to other instrumented third-party libraries.
-	TracerProvider trace.TracerProvider
-
-	// MeterProvider that the factory can pass to other instrumented third-party libraries.
-	MeterProvider metric.MeterProvider
-
-	// MetricsLevel controls the level of detail for metrics emitted by the collector.
-	// Experimental: *NOTE* this field is experimental and may be changed or removed.
-	MetricsLevel configtelemetry.Level
-
-	// Resource contains the resource attributes for the collector's telemetry.
-	Resource pcommon.Resource
-
-	// ReportComponentStatus allows a component to report runtime changes in status. The service
-	// will automatically report status for a component during startup and shutdown. Components can
-	// use this method to report status after start and before shutdown. ReportComponentStatus
-	// will only return errors if the API used incorrectly. The two scenarios where an error will
-	// be returned are:
-	//
-	//   - An illegal state transition
-	//   - Calling this method before component startup
-	//
-	// If the API is being used properly, these errors are safe to ignore.
-	ReportComponentStatus T
+	ReportComponentStatus func(*StatusEvent) error
 }

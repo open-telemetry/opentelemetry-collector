@@ -154,7 +154,7 @@ func (or *ObsReport) StartTracesOp(ctx context.Context) context.Context {
 // EndTracesOp completes the export operation that was started with StartTracesOp.
 func (or *ObsReport) EndTracesOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	or.recordMetrics(ctx, component.DataTypeTraces, numSent, numFailedToSend)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeTraces, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSpansKey, obsmetrics.FailedToSendSpansKey)
 }
 
@@ -169,7 +169,7 @@ func (or *ObsReport) StartMetricsOp(ctx context.Context) context.Context {
 // StartMetricsOp.
 func (or *ObsReport) EndMetricsOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	or.recordMetrics(ctx, component.DataTypeMetrics, numSent, numFailedToSend)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeMetrics, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentMetricPointsKey, obsmetrics.FailedToSendMetricPointsKey)
 }
 
@@ -183,7 +183,7 @@ func (or *ObsReport) StartLogsOp(ctx context.Context) context.Context {
 // EndLogsOp completes the export operation that was started with StartLogsOp.
 func (or *ObsReport) EndLogsOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
-	or.recordMetrics(ctx, component.DataTypeLogs, numSent, numFailedToSend)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeLogs, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
 }
 

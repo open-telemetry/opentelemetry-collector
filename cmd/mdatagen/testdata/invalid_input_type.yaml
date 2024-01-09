@@ -1,0 +1,20 @@
+type: metricreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+
+metrics:
+  system.cpu.time:
+    enabled: true
+    description: Total CPU seconds broken down by different states.
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+      input_type: double
+    attributes:

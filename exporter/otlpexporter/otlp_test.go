@@ -234,7 +234,7 @@ func TestSendTraces(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueConfig.Enabled = false
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: ln.Addr().String(),
 		TLSSetting: configtls.TLSClientSetting{
@@ -399,7 +399,7 @@ func TestSendMetrics(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeMetrics
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueConfig.Enabled = false
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: ln.Addr().String(),
 		TLSSetting: configtls.TLSClientSetting{
@@ -497,7 +497,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueConfig.Enabled = false
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: ln.Addr().String(),
 		TLSSetting: configtls.TLSClientSetting{
@@ -608,7 +608,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.RetrySettings.InitialInterval = 0
+	cfg.RetryConfig.InitialInterval = 0
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: ln.Addr().String(),
 		TLSSetting: configtls.TLSClientSetting{
@@ -689,7 +689,7 @@ func TestSendLogData(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeLogs
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueConfig.Enabled = false
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: ln.Addr().String(),
 		TLSSetting: configtls.TLSClientSetting{

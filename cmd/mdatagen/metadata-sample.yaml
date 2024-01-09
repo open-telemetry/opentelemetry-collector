@@ -1,0 +1,136 @@
+# Sample metric metadata file with all available configurations.
+
+type: file
+
+sem_conv_version: 1.9.0
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+  distributions: [contrib]
+  warnings:
+    - Any additional information that should be brought to the consumer's attention
+
+resource_attributes:
+  string.resource.attr:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: true
+
+  string.enum.resource.attr:
+    description: Resource attribute with a known set of string values.
+    type: string
+    enum: [one, two]
+    enabled: true
+
+  optional.resource.attr:
+    description: Explicitly disabled ResourceAttribute.
+    type: string
+    enabled: false
+
+  slice.resource.attr:
+    description: Resource attribute with a slice value.
+    type: slice
+    enabled: true
+
+  map.resource.attr:
+    description: Resource attribute with a map value.
+    type: map 
+    enabled: true
+
+  string.resource.attr_disable_warning:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: true 
+    warnings:
+      if_enabled_not_set: This resource_attribute will be disabled by default soon.
+
+  string.resource.attr_remove_warning:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: false 
+    warnings:
+      if_configured: This resource_attribute is deprecated and will be removed soon.
+
+  string.resource.attr_to_be_removed:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: true 
+    warnings:
+      if_enabled: This resource_attribute is deprecated and will be removed soon.
+
+attributes:
+  string_attr:
+    description: Attribute with any string value.
+    type: string
+
+  overridden_int_attr:
+    name_override: state
+    description: Integer attribute with overridden name.
+    type: int
+
+  enum_attr:
+    description: Attribute with a known set of string values.
+    type: string
+    enum: [red, green, blue]
+
+  boolean_attr:
+    description: Attribute with a boolean value.
+    type: bool
+
+  slice_attr:
+    description: Attribute with a slice value.
+    type: slice
+
+  map_attr:
+    description: Attribute with a map value.
+    type: map
+
+metrics:
+  default.metric:
+    enabled: true
+    description: Monotonic cumulative sum int metric enabled by default.
+    extended_documentation: The metric will be become optional soon.
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
+    warnings:
+      if_enabled_not_set: This metric will be disabled by default soon.
+
+  optional.metric:
+    enabled: false
+    description: "[DEPRECATED] Gauge double metric disabled by default."
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [string_attr, boolean_attr]
+    warnings:
+      if_configured: This metric is deprecated and will be removed soon.
+
+  optional.metric.empty_unit:
+    enabled: false
+    description: "[DEPRECATED] Gauge double metric disabled by default."
+    unit: ""
+    gauge:
+      value_type: double
+    attributes: [string_attr, boolean_attr]
+    warnings:
+      if_configured: This metric is deprecated and will be removed soon.
+
+  default.metric.to_be_removed:
+    enabled: true
+    description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
+    extended_documentation: The metric will be will be removed soon.
+    unit: s
+    sum:
+      value_type: double
+      monotonic: false
+      aggregation_temporality: delta
+    warnings:
+      if_enabled: This metric is deprecated and will be removed soon.

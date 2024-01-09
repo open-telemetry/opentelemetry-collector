@@ -1,0 +1,33 @@
+# Sample metric metadata file with all available configurations.
+
+type: file
+
+sem_conv_version: 1.9.0
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+  distributions: [contrib]
+  warnings:
+    - Any additional information that should be brought to the consumer's attention
+
+attributes:
+  string_attr:
+    type: string
+
+metrics:
+  default.metric:
+    enabled: true
+    description: Monotonic cumulative sum int metric enabled by default.
+    extended_documentation: The metric will be become optional soon.
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [string_attr]
+    warnings:
+      if_enabled_not_set: This metric will be disabled by default soon.

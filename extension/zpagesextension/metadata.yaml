@@ -1,0 +1,7 @@
+type: zpages
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [core, contrib]

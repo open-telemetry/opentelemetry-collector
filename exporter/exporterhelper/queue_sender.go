@@ -74,13 +74,12 @@ func (qCfg *QueueSettings) Validate() error {
 
 type queueSender struct {
 	baseRequestSender
-	fullName         string
-	queue            internal.Queue[Request]
-	traceAttribute   attribute.KeyValue
-	logger           *zap.Logger
-	meter            otelmetric.Meter
-	consumers        *internal.QueueConsumers[Request]
-	requeuingEnabled bool
+	fullName       string
+	queue          internal.Queue[Request]
+	traceAttribute attribute.KeyValue
+	logger         *zap.Logger
+	meter          otelmetric.Meter
+	consumers      *internal.QueueConsumers[Request]
 
 	metricCapacity otelmetric.Int64ObservableGauge
 	metricSize     otelmetric.Int64ObservableGauge
@@ -91,11 +90,22 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 
 	isPersistent := config.StorageID != nil
 	var queue internal.Queue[Request]
+	queueSizer := &internal.RequestSizer[Request]{}
 	if isPersistent {
-		queue = internal.NewPersistentQueue[Request](
-			config.QueueSize, signal, *config.StorageID, marshaler, unmarshaler, set)
+		queue = internal.NewPersistentQueue[Request](internal.PersistentQueueSettings[Request]{
+			Sizer:            queueSizer,
+			Capacity:         config.QueueSize,
+			DataType:         signal,
+			StorageID:        *config.StorageID,
+			Marshaler:        marshaler,
+			Unmarshaler:      unmarshaler,
+			ExporterSettings: set,
+		})
 	} else {
-		queue = internal.NewBoundedMemoryQueue[Request](config.QueueSize)
+		queue = internal.NewBoundedMemoryQueue[Request](internal.MemoryQueueSettings[Request]{
+			Sizer:    queueSizer,
+			Capacity: config.QueueSize,
+		})
 	}
 	qs := &queueSender{
 		fullName:       set.ID.String(),
@@ -103,43 +113,22 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		logger:         set.TelemetrySettings.Logger,
 		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
-		// TODO: this can be further exposed as a config param rather than relying on a type of queue
-		requeuingEnabled: isPersistent,
 	}
 	qs.consumers = internal.NewQueueConsumers(queue, config.NumConsumers, qs.consume)
 	return qs
 }
 
 // consume is the function that is executed by the queue consumers to send the data to the next consumerSender.
-func (qs *queueSender) consume(ctx context.Context, req Request) {
+func (qs *queueSender) consume(ctx context.Context, req Request) error {
 	err := qs.nextSender.send(ctx, req)
-
-	// Nothing to do if the error is nil or permanent. Permanent errors are already logged by retrySender.
-	if err == nil || consumererror.IsPermanent(err) {
-		return
-	}
-
-	if !qs.requeuingEnabled {
+	if err != nil && !consumererror.IsPermanent(err) {
 		qs.logger.Error(
 			"Exporting failed. No more retries left. Dropping data.",
 			zap.Error(err),
 			zap.Int("dropped_items", req.ItemsCount()),
 		)
-		return
 	}
-
-	if qs.queue.Offer(ctx, extractPartialRequest(req, err)) == nil {
-		qs.logger.Error(
-			"Exporting failed. Putting back to the end of the queue.",
-			zap.Error(err),
-		)
-	} else {
-		qs.logger.Error(
-			"Exporting failed. Queue did not accept requeuing request. Dropping data.",
-			zap.Error(err),
-			zap.Int("dropped_items", req.ItemsCount()),
-		)
-	}
+	return err
 }
 
 // Start is invoked during service startup.
