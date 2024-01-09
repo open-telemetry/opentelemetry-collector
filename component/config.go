@@ -32,7 +32,7 @@ func UnmarshalConfig(conf *confmap.Conf, intoCfg Config) error {
 		return cu.Unmarshal(conf)
 	}
 
-	return conf.Unmarshal(intoCfg)
+	return conf.Unmarshal(intoCfg, confmap.WithErrorUnused())
 }
 
 // ConfigValidator defines an optional interface for configurations to implement to do validation.

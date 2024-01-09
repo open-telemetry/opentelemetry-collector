@@ -149,8 +149,7 @@ func TestUnmarshalWithErrorUnused(t *testing.T) {
 		"string":  "this is a string",
 	}
 	conf := NewFromStringMap(stringMap)
-	assert.Error(t, conf.Unmarshal(&TestIDConfig{}))
-	assert.NoError(t, conf.Unmarshal(&TestIDConfig{}, WithIgnoreUnused()))
+	assert.Error(t, conf.Unmarshal(&TestIDConfig{}, WithErrorUnused()))
 }
 
 type TestConfig struct {

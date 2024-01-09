@@ -60,7 +60,7 @@ func (cfg *Config) Validate() error {
 // Unmarshal a confmap.Conf into the config struct.
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	// first load the config normally
-	err := conf.Unmarshal(cfg)
+	err := conf.Unmarshal(cfg, confmap.WithErrorUnused())
 	if err != nil {
 		return err
 	}
