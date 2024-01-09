@@ -34,10 +34,10 @@ func TestCreateProcessor(t *testing.T) {
 	mp, err := factory.CreateMetricsProcessor(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, mp)
 	assert.NoError(t, err, "cannot create metric processor")
-	defer func() { assert.NoError(t, mp.Shutdown(context.Background())) }()
+	assert.NoError(t, mp.Shutdown(context.Background()))
 
 	lp, err := factory.CreateLogsProcessor(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, lp)
 	assert.NoError(t, err, "cannot create logs processor")
-	defer func() { assert.NoError(t, lp.Shutdown(context.Background())) }()
+	assert.NoError(t, lp.Shutdown(context.Background()))
 }
