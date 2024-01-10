@@ -133,6 +133,36 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	return srv, nil
 }
 
+func Validate(ctx context.Context, set Settings, cfg Config) error {
+	tel, err := telemetry.New(ctx, telemetry.Settings{ZapOptions: set.LoggingOptions}, cfg.Telemetry)
+	if err != nil {
+		return fmt.Errorf("failed to get logger: %w", err)
+	}
+
+	telSettings := servicetelemetry.TelemetrySettings{
+		Logger:         tel.Logger(),
+		TracerProvider: tel.TracerProvider(),
+		MeterProvider:  noop.NewMeterProvider(),
+	}
+
+	pSet := graph.Settings{
+		Telemetry:        telSettings,
+		BuildInfo:        set.BuildInfo,
+		ReceiverBuilder:  set.Receivers,
+		ProcessorBuilder: set.Processors,
+		ExporterBuilder:  set.Exporters,
+		ConnectorBuilder: set.Connectors,
+		PipelineConfigs:  cfg.Pipelines,
+	}
+
+	_, err = graph.Build(ctx, pSet)
+	if err != nil {
+		return fmt.Errorf("failed to build pipelines: %w", err)
+	}
+
+	return nil
+}
+
 // Start starts the extensions and pipelines. If Start fails Shutdown should be called to ensure a clean state.
 // Start does the following steps in order:
 // 1. Start all extensions.
