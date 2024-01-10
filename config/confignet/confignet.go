@@ -33,18 +33,6 @@ type NetAddr struct {
 	DialerConfig DialerConfig `mapstructure:"dialer"`
 }
 
-// Dial equivalent with net.Dial for this address.
-// Deprecated: [v0.92.0] use DialContext instead.
-func (na *NetAddr) Dial() (net.Conn, error) {
-	return net.DialTimeout(na.Transport, na.Endpoint, na.DialerConfig.Timeout)
-}
-
-// Listen equivalent with net.Listen for this address.
-// Deprecated: [v0.92.0] use ListenContext instead.
-func (na *NetAddr) Listen() (net.Listener, error) {
-	return net.Listen(na.Transport, na.Endpoint)
-}
-
 // DialContext equivalent with net.Dialer's DialContext for this address.
 func (na *NetAddr) DialContext(ctx context.Context) (net.Conn, error) {
 	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
@@ -68,18 +56,6 @@ type TCPAddr struct {
 
 	// DialerConfig contains options for connecting to an address.
 	DialerConfig DialerConfig `mapstructure:"dialer"`
-}
-
-// Dial equivalent with net.Dial for this address.
-// Deprecated: [v0.92.0] use DialContext instead.
-func (na *TCPAddr) Dial() (net.Conn, error) {
-	return net.DialTimeout("tcp", na.Endpoint, na.DialerConfig.Timeout)
-}
-
-// Listen equivalent with net.Listen for this address.
-// Deprecated: [v0.92.0] use ListenContext instead.
-func (na *TCPAddr) Listen() (net.Listener, error) {
-	return net.Listen("tcp", na.Endpoint)
 }
 
 // DialContext equivalent with net.Dialer's DialContext for this address.
