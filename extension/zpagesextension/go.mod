@@ -70,17 +70,11 @@ replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
-replace go.opentelemetry.io/collector/exporter => ../../exporter
-
 replace go.opentelemetry.io/collector/extension => ../
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
-
-replace go.opentelemetry.io/collector/processor => ../../processor
-
-replace go.opentelemetry.io/collector/receiver => ../../receiver
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
@@ -90,5 +84,3 @@ retract (
 )
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
-
-replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry

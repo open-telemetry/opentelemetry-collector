@@ -70,24 +70,6 @@ retract (
 	v0.69.0 // Release failed, use v0.69.1
 )
 
-replace go.opentelemetry.io/collector/semconv => ../semconv
-
-replace go.opentelemetry.io/collector/processor => ../processor
-
-replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
-
-replace go.opentelemetry.io/collector/connector => ../connector
-
-replace go.opentelemetry.io/collector/service => ../service
-
-replace go.opentelemetry.io/collector/exporter => ../exporter
-
 replace go.opentelemetry.io/collector => ../
-
-replace go.opentelemetry.io/collector/receiver => ../receiver
-
-replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
-
-replace go.opentelemetry.io/collector/extension => ../extension
 
 replace go.opentelemetry.io/collector/consumer => ../consumer
