@@ -244,7 +244,7 @@ gensemconv: $(SEMCONVGEN) $(SEMCONVKIT)
 .PHONY: check-contrib
 check-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		-replace go.opentelemetry.io/collector=$(CURDIR) \
 		-replace go.opentelemetry.io/collector/component=$(CURDIR)/component  \
 		-replace go.opentelemetry.io/collector/config/configauth=$(CURDIR)/config/configauth  \
