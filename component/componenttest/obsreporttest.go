@@ -37,7 +37,7 @@ const (
 )
 
 type TestTelemetry struct {
-	// Deprecated: [0.87.0] use TelemetrySettingsFunc() instead.
+	// Deprecated: [0.93.0] use TelemetrySettingsFunc() instead.
 	component.TelemetrySettings
 	id           component.ID
 	SpanRecorder *tracetest.SpanRecorder
@@ -121,7 +121,7 @@ func (tts *TestTelemetry) CheckReceiverMetrics(protocol string, acceptedMetricPo
 // CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func (tts *TestTelemetry) CheckScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
-	return tts.otelPrometheusChecker.checkScraperMetrics(receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
+	return tts.prometheusChecker.checkScraperMetrics(receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
 }
 
 // Shutdown unregisters any views and shuts down the SpanRecorder
