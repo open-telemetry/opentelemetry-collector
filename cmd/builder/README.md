@@ -165,3 +165,24 @@ This mode cannot be used in conjunction with several features that
 control the generated `go.mod` file, including `replaces`, `excludes`,
 and the component `path` override.  For each of these features, users
 are expected to modify the enclosing `go.mod` directly.
+
+### Strict versioning checks
+
+There is an option that controls version strictness applied by the
+builder.  When the `--strict-versioning` command-line flag is used,
+the following additional checks apply to the finished `go.mod` file
+after getting all the components and tidying the result. 
+
+1. The `dist::otelcol_version` field in the build configuration must
+   match the core library version calculated by the Go toolchain,
+   considering all components.  A mismatch could happen, for example,
+   when one of the components depends on a newer release of the core
+   collector library.
+2. For each component in the build configuration, the version included
+   in the `gomod` module specifier must match the one calculated by
+   the Go toolchain, considering all components.  A mismatch could
+   happen, for example, when the enclosing Go module uses a newer
+   release of the core collector library.
+
+When `--skip-new-go-module` is used, these checks apply to the
+enclosing Go module; otherwise, they apply to the generated module.

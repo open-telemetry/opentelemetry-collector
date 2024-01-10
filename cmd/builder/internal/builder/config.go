@@ -23,13 +23,14 @@ var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
 
 // Config holds the builder's configuration
 type Config struct {
-	Logger          *zap.Logger
-	SkipGenerate    bool   `mapstructure:"-"`
-	SkipCompilation bool   `mapstructure:"-"`
-	SkipGetModules  bool   `mapstructure:"-"`
-	SkipNewGoModule bool   `mapstructure:"-"`
-	LDFlags         string `mapstructure:"-"`
-	Verbose         bool   `mapstructure:"-"`
+	Logger           *zap.Logger
+	SkipGenerate     bool   `mapstructure:"-"`
+	SkipCompilation  bool   `mapstructure:"-"`
+	SkipGetModules   bool   `mapstructure:"-"`
+	SkipNewGoModule  bool   `mapstructure:"-"`
+	StrictVersioning bool   `mapstructure:"-"`
+	LDFlags          string `mapstructure:"-"`
+	Verbose          bool   `mapstructure:"-"`
 
 	Distribution Distribution `mapstructure:"dist"`
 	Exporters    []Module     `mapstructure:"exporters"`
@@ -182,8 +183,13 @@ func (c *Config) validateModules(mods []Module) error {
 func parseModules(mods []Module) ([]Module, error) {
 	var parsedModules []Module
 	for _, mod := range mods {
+		module, _, found := strings.Cut(mod.GoMod, " ")
+		if !found {
+			return mods, fmt.Errorf("go.mod module specifier syntax is <module><space><version>: %q", mod.GoMod)
+		}
+
 		if mod.Import == "" {
-			mod.Import = strings.Split(mod.GoMod, " ")[0]
+			mod.Import = module
 		}
 
 		if mod.Name == "" {
