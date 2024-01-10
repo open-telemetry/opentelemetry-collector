@@ -21,12 +21,6 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
-// Deprecated: [0.92.0] use configretry.BackOffConfig
-type RetrySettings = configretry.BackOffConfig
-
-// Deprecated: [0.92.0] use configretry.NewDefaultBackOffConfig
-var NewDefaultRetrySettings = configretry.NewDefaultBackOffConfig
-
 // TODO: Clean this by forcing all exporters to return an internal error type that always include the information about retries.
 type throttleRetry struct {
 	err   error
