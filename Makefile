@@ -244,41 +244,42 @@ gensemconv: $(SEMCONVGEN) $(SEMCONVKIT)
 .PHONY: check-contrib
 check-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(CURDIR)"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/component=$(CURDIR)/component"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/config/configauth=$(CURDIR)/config/configauth"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/config/configcompression=$(CURDIR)/config/configcompression"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/config/configgrpc=$(CURDIR)/config/configgrpc"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/config/confighttp=$(CURDIR)/config/confighttp"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/config/confignet=$(CURDIR)/config/confignet"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/config/configopaque=$(CURDIR)/config/configopaque"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/config/configretry=$(CURDIR)/config/configretry"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/config/configtelemetry=$(CURDIR)/config/configtelemetry"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/config/configtls=$(CURDIR)/config/configtls"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/config/internal=$(CURDIR)/config/internal"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/confmap=$(CURDIR)/confmap"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/connector=$(CURDIR)/connector"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/connector/forwardconnector=$(CURDIR)/connector/forwardconnector"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/consumer=$(CURDIR)/consumer"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/exporter=$(CURDIR)/exporter"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/exporter/debugexporter=$(CURDIR)/exporter/debugexporter"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/exporter/loggingexporter=$(CURDIR)/exporter/loggingexporter"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/exporter/otlpexporter=$(CURDIR)/exporter/otlpexporter"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/exporter/otlphttpexporter=$(CURDIR)/exporter/otlphttpexporter"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/extension=$(CURDIR)/extension"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/extension/auth=$(CURDIR)/extension/auth"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/extension/ballastextension=$(CURDIR)/extension/ballastextension"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/extension/zpagesextension=$(CURDIR)/extension/zpagesextension"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/featuregate=$(CURDIR)/featuregate"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/otelcol=$(CURDIR)/otelcol"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/pdata=$(CURDIR)/pdata"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/processor=$(CURDIR)/processor"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/processor/batchprocessor=$(CURDIR)/processor/batchprocessor"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/processor/memorylimiterprocessor=$(CURDIR)/processor/memorylimiterprocessor"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/receiver=$(CURDIR)/receiver"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/receiver/otlpreceiver=$(CURDIR)/receiver/otlpreceiver"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/service=$(CURDIR)/service"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit
+		-replace go.opentelemetry.io/collector=$(CURDIR) \
+		-replace go.opentelemetry.io/collector/component=$(CURDIR)/component  \
+		-replace go.opentelemetry.io/collector/config/configauth=$(CURDIR)/config/configauth  \
+		-replace go.opentelemetry.io/collector/config/configcompression=$(CURDIR)/config/configcompression  \
+		-replace go.opentelemetry.io/collector/config/configgrpc=$(CURDIR)/config/configgrpc  \
+		-replace go.opentelemetry.io/collector/config/confighttp=$(CURDIR)/config/confighttp  \
+		-replace go.opentelemetry.io/collector/config/confignet=$(CURDIR)/config/confignet  \
+		-replace go.opentelemetry.io/collector/config/configopaque=$(CURDIR)/config/configopaque  \
+		-replace go.opentelemetry.io/collector/config/configretry=$(CURDIR)/config/configretry  \
+		-replace go.opentelemetry.io/collector/config/configtelemetry=$(CURDIR)/config/configtelemetry  \
+		-replace go.opentelemetry.io/collector/config/configtls=$(CURDIR)/config/configtls  \
+		-replace go.opentelemetry.io/collector/config/internal=$(CURDIR)/config/internal  \
+		-replace go.opentelemetry.io/collector/confmap=$(CURDIR)/confmap  \
+		-replace go.opentelemetry.io/collector/connector=$(CURDIR)/connector  \
+		-replace go.opentelemetry.io/collector/connector/forwardconnector=$(CURDIR)/connector/forwardconnector  \
+		-replace go.opentelemetry.io/collector/consumer=$(CURDIR)/consumer  \
+		-replace go.opentelemetry.io/collector/exporter=$(CURDIR)/exporter  \
+		-replace go.opentelemetry.io/collector/exporter/debugexporter=$(CURDIR)/exporter/debugexporter  \
+		-replace go.opentelemetry.io/collector/exporter/loggingexporter=$(CURDIR)/exporter/loggingexporter  \
+		-replace go.opentelemetry.io/collector/exporter/otlpexporter=$(CURDIR)/exporter/otlpexporter  \
+		-replace go.opentelemetry.io/collector/exporter/otlphttpexporter=$(CURDIR)/exporter/otlphttpexporter  \
+		-replace go.opentelemetry.io/collector/extension=$(CURDIR)/extension  \
+		-replace go.opentelemetry.io/collector/extension/auth=$(CURDIR)/extension/auth  \
+		-replace go.opentelemetry.io/collector/extension/ballastextension=$(CURDIR)/extension/ballastextension  \
+		-replace go.opentelemetry.io/collector/extension/zpagesextension=$(CURDIR)/extension/zpagesextension  \
+		-replace go.opentelemetry.io/collector/featuregate=$(CURDIR)/featuregate  \
+		-replace go.opentelemetry.io/collector/otelcol=$(CURDIR)/otelcol  \
+		-replace go.opentelemetry.io/collector/pdata=$(CURDIR)/pdata  \
+		-replace go.opentelemetry.io/collector/processor=$(CURDIR)/processor  \
+		-replace go.opentelemetry.io/collector/processor/batchprocessor=$(CURDIR)/processor/batchprocessor  \
+		-replace go.opentelemetry.io/collector/processor/memorylimiterprocessor=$(CURDIR)/processor/memorylimiterprocessor  \
+		-replace go.opentelemetry.io/collector/receiver=$(CURDIR)/receiver  \
+		-replace go.opentelemetry.io/collector/receiver/otlpreceiver=$(CURDIR)/receiver/otlpreceiver  \
+		-replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv  \
+		-replace go.opentelemetry.io/collector/service=$(CURDIR)/service"
 	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
 	@$(MAKE) -C $(CONTRIB_PATH) test
 	@if [ -z "$(SKIP_RESTORE_CONTRIB)" ]; then \
@@ -289,40 +290,41 @@ check-contrib:
 .PHONY: restore-contrib
 restore-contrib:
 	@echo Restoring contrib at $(CONTRIB_PATH) to its original state
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/component"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/config/configcompression"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/config/configgrpc"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/config/confighttp"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/config/confignet"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/config/configopaque"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/config/configretry"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/config/configtelemetry"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/config/configtls"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/config/internal"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/confmap"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/connector"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/connector/forwardconnector"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/consumer"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/exporter"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/exporter/debugexporter"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/exporter/loggingexporter"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/exporter/otlpexporter"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/exporter/otlphttpexporter"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/extension"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/extension/auth"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/extension/ballastextension"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/extension/zpagestextension"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/featuregate"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/otelcol"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/pdata"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/processor"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/processor/batchprocessor"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/processor/memorylimiterprocessor"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/receiver"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/receiver/otlpreceiver"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/semconv"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/service"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
+		-dropreplace go.opentelemetry.io/collector \
+		-dropreplace go.opentelemetry.io/collector/component
+		-dropreplace go.opentelemetry.io/collector/config/configcompression  \
+		-dropreplace go.opentelemetry.io/collector/config/configgrpc  \
+		-dropreplace go.opentelemetry.io/collector/config/confighttp  \
+		-dropreplace go.opentelemetry.io/collector/config/confignet  \
+		-dropreplace go.opentelemetry.io/collector/config/configopaque  \
+		-dropreplace go.opentelemetry.io/collector/config/configretry  \
+		-dropreplace go.opentelemetry.io/collector/config/configtelemetry  \
+		-dropreplace go.opentelemetry.io/collector/config/configtls  \
+		-dropreplace go.opentelemetry.io/collector/config/internal  \
+		-dropreplace go.opentelemetry.io/collector/confmap  \
+		-dropreplace go.opentelemetry.io/collector/connector  \
+		-dropreplace go.opentelemetry.io/collector/connector/forwardconnector  \
+		-dropreplace go.opentelemetry.io/collector/consumer  \
+		-dropreplace go.opentelemetry.io/collector/exporter  \
+		-dropreplace go.opentelemetry.io/collector/exporter/debugexporter  \
+		-dropreplace go.opentelemetry.io/collector/exporter/loggingexporter  \
+		-dropreplace go.opentelemetry.io/collector/exporter/otlpexporter  \
+		-dropreplace go.opentelemetry.io/collector/exporter/otlphttpexporter  \
+		-dropreplace go.opentelemetry.io/collector/extension  \
+		-dropreplace go.opentelemetry.io/collector/extension/auth  \
+		-dropreplace go.opentelemetry.io/collector/extension/ballastextension  \
+		-dropreplace go.opentelemetry.io/collector/extension/zpagestextension  \
+		-dropreplace go.opentelemetry.io/collector/featuregate  \
+		-dropreplace go.opentelemetry.io/collector/otelcol  \
+		-dropreplace go.opentelemetry.io/collector/pdata  \
+		-dropreplace go.opentelemetry.io/collector/processor  \
+		-dropreplace go.opentelemetry.io/collector/processor/batchprocessor  \
+		-dropreplace go.opentelemetry.io/collector/processor/memorylimiterprocessor  \
+		-dropreplace go.opentelemetry.io/collector/receiver  \
+		-dropreplace go.opentelemetry.io/collector/receiver/otlpreceiver  \
+		-dropreplace go.opentelemetry.io/collector/semconv  \
+		-dropreplace go.opentelemetry.io/collector/service"
 	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
 
 # List of directories where certificates are stored for unit tests.
