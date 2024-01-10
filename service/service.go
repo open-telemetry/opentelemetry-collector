@@ -5,6 +5,7 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 
@@ -113,7 +114,12 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 		// Construct telemetry attributes from build info and config's resource attributes.
 		Resource: pcommonRes,
-		Status:   status.NewReporter(srv.host.notifyComponentStatusChange),
+		Status: status.NewReporter(srv.host.notifyComponentStatusChange, func(err error) {
+			if errors.Is(err, status.ErrStatusNotReady) {
+				srv.telemetry.Logger().Warn("Invalid transition", zap.Error(err))
+			}
+			// ignore other errors as they represent invalid state transitions and are considered benign.
+		}),
 	}
 
 	if err = srv.telemetryInitializer.init(res, srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
