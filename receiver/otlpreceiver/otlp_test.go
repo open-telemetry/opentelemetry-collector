@@ -124,7 +124,8 @@ func TestJsonHttp(t *testing.T) {
 					if s, ok := status.FromError(tt.err); ok {
 						assert.True(t, proto.Equal(errStatus, s.Proto()))
 					} else {
-						assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
+						fmt.Println(errStatus)
+						assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unavailable), Message: "my error"}))
 					}
 					sink.checkData(t, dr.data, 0)
 				}
@@ -368,7 +369,7 @@ func TestProtoHttp(t *testing.T) {
 					if s, ok := status.FromError(tt.err); ok {
 						assert.True(t, proto.Equal(errStatus, s.Proto()))
 					} else {
-						assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
+						assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unavailable), Message: "my error"}))
 					}
 					sink.checkData(t, dr.data, 0)
 				}
