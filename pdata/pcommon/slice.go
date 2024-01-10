@@ -42,7 +42,6 @@ func NewSlice() Slice {
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewSlice()".
-// Calling this function on zero-initialized Slice will cause a panic.
 func (es Slice) Len() int {
 	return len(*es.getOrig())
 }
@@ -55,13 +54,11 @@ func (es Slice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-// Calling this function on zero-initialized Slice will cause a panic.
 func (es Slice) At(ix int) Value {
 	return newValue(&(*es.getOrig())[ix], es.getState())
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-// Calling this function on zero-initialized Slice will cause a panic.
 func (es Slice) CopyTo(dest Slice) {
 	dest.getState().AssertMutable()
 	srcLen := es.Len()
@@ -89,7 +86,6 @@ func (es Slice) CopyTo(dest Slice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-// Calling this function on zero-initialized Slice will cause a panic.
 func (es Slice) EnsureCapacity(newCap int) {
 	es.getState().AssertMutable()
 	oldCap := cap(*es.getOrig())
@@ -104,7 +100,6 @@ func (es Slice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty Value.
 // It returns the newly added Value.
-// Calling this function on zero-initialized Slice will cause a panic.
 func (es Slice) AppendEmpty() Value {
 	es.getState().AssertMutable()
 	*es.getOrig() = append(*es.getOrig(), otlpcommon.AnyValue{})
@@ -113,7 +108,6 @@ func (es Slice) AppendEmpty() Value {
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-// Calling this function on zero-initialized Slice will cause a panic.
 func (es Slice) MoveAndAppendTo(dest Slice) {
 	es.getState().AssertMutable()
 	dest.getState().AssertMutable()
@@ -128,7 +122,6 @@ func (es Slice) MoveAndAppendTo(dest Slice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-// Calling this function on zero-initialized Slice will cause a panic.
 func (es Slice) RemoveIf(f func(Value) bool) {
 	es.getState().AssertMutable()
 	newLen := 0
@@ -148,7 +141,6 @@ func (es Slice) RemoveIf(f func(Value) bool) {
 }
 
 // AsRaw return []any copy of the Slice.
-// Calling this function on zero-initialized Slice will cause a panic.
 func (es Slice) AsRaw() []any {
 	rawSlice := make([]any, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -158,7 +150,6 @@ func (es Slice) AsRaw() []any {
 }
 
 // FromRaw copies []any into the Slice.
-// Calling this function on zero-initialized Slice will cause a panic.
 func (es Slice) FromRaw(rawSlice []any) error {
 	es.getState().AssertMutable()
 	if len(rawSlice) == 0 {
