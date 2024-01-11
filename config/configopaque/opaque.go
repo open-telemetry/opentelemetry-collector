@@ -23,5 +23,5 @@ func (s String) MarshalText() ([]byte, error) {
 }
 
 func (s String) String() string {
-	return maskedString
+	panic("testing if this is called somewhere else")
 }

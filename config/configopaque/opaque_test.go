@@ -24,7 +24,7 @@ func TestStringFmt(t *testing.T) {
 	examples := []String{"opaque", "s", "veryveryveryveryveryveryveryveryveryverylong"}
 	for _, example := range examples {
 		// nolint S1025
-		assert.Equal(t, "[REDACTED]", fmt.Sprintf("%s", example))
+		assert.Panics(t, func() { fmt.Sprintf("%s", example) })
 		// converting to a string allows to output as an unredacted string still:
 		// nolint S1025
 		assert.Equal(t, string(example), fmt.Sprintf("%s", string(example)))
