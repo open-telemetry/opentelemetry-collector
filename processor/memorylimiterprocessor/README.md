@@ -41,9 +41,9 @@ the same data. The receivers may also apply backpressure to their own data sourc
 in order to slow the inflow of data into the Collector, and to allow memory usage
 to go below the set limits.
 
->Warning: Data will be permanently lost if the component preceding the memory limiter
-> in the telemetry pipeline does not correctly retry sending data after the
-> ConsumeLogs/Trace/Metrics function returns.
+> Warning: Data will be permanently lost if the component preceding the memory limiter
+> in the telemetry pipeline does not correctly retry sending data after it has
+> been refused by the memory limiter.
 > We consider such components to be incorrectly implemented.
 
 When the memory usage is above the hard limit the processor will additionally
