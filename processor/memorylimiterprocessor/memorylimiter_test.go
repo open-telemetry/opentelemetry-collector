@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -116,54 +115,89 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name           string
-		mlCfg          *Config
-		getMemFn       func() (uint64, error)
-		readMemStatsFn func(m *runtime.MemStats)
-		expectError    bool
+		name        string
+		mlCfg       *Config
+		ballastSize uint64
+		memAlloc    uint64
+		expectError bool
 	}{
 		{
-			name: "fixed_limit",
-			mlCfg: &Config{
-				CheckInterval:       1 * time.Nanosecond,
-				MemoryLimitMiB:      1024,
-				MemorySpikeLimitMiB: 512,
-			},
-			expectError: false,
-		},
-		{
-			name: "percent_limit",
+			name: "Below memAllocLimit",
 			mlCfg: &Config{
 				CheckInterval:         1 * time.Nanosecond,
 				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 30,
+				MemorySpikePercentage: 1,
 			},
+			ballastSize: 0,
+			memAlloc:    800,
 			expectError: false,
 		},
 		{
-			name: "fixed_limit",
+			name: "Above memAllocLimit",
 			mlCfg: &Config{
 				CheckInterval:         1 * time.Nanosecond,
 				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 30,
+				MemorySpikePercentage: 1,
 			},
-			getMemFn:       totalMemory,
-			readMemStatsFn: readMemStats,
-			expectError:    true,
+			ballastSize: 0,
+			memAlloc:    1800,
+			expectError: true,
+		},
+		{
+			name: "Below memAllocLimit accounting for ballast",
+			mlCfg: &Config{
+				CheckInterval:         1 * time.Nanosecond,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 1,
+			},
+			ballastSize: 1000,
+			memAlloc:    800,
+			expectError: false,
+		},
+		{
+			name: "Above memAllocLimit even accounting for ballast",
+			mlCfg: &Config{
+				CheckInterval:         1 * time.Nanosecond,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 1,
+			},
+			ballastSize: 1000,
+			memAlloc:    1800,
+			expectError: true,
+		},
+		{
+			name: "Below memSpikeLimit",
+			mlCfg: &Config{
+				CheckInterval:         1 * time.Nanosecond,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 10,
+			},
+			ballastSize: 0,
+			memAlloc:    800,
+			expectError: false,
+		},
+		{
+			name: "Above memSpikeLimit",
+			mlCfg: &Config{
+				CheckInterval:         1 * time.Nanosecond,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 11,
+			},
+			ballastSize: 0,
+			memAlloc:    800,
+			expectError: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.getMemFn != nil {
-				memorylimiter.GetMemoryFn = tt.getMemFn
-			}
-			if tt.readMemStatsFn != nil {
-				memorylimiter.ReadMemStatsFn = tt.readMemStatsFn
+			memorylimiter.GetMemoryFn = totalMemory
+			memorylimiter.ReadMemStatsFn = func(ms *runtime.MemStats) {
+				ms.Alloc = tt.memAlloc + tt.ballastSize
 			}
 
 			ml, err := newMemoryLimiterProcessor(processortest.NewNopCreateSettings(), tt.mlCfg)
 			require.NoError(t, err)
-			tp, err := processorhelper.NewMetricsProcessor(
+			mp, err := processorhelper.NewMetricsProcessor(
 				context.Background(),
 				processortest.NewNopCreateSettings(),
 				tt.mlCfg,
@@ -174,15 +208,15 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				processorhelper.WithShutdown(ml.shutdown))
 			require.NoError(t, err)
 
-			assert.NoError(t, tp.Start(ctx, &host{ballastSize: 113}))
-			time.Sleep(50 * time.Millisecond)
-			err = tp.ConsumeMetrics(ctx, md)
+			assert.NoError(t, mp.Start(ctx, &host{ballastSize: tt.ballastSize}))
+			time.Sleep(10 * time.Millisecond)
+			err = mp.ConsumeMetrics(ctx, md)
 			if tt.expectError {
-				assert.True(t, err != nil)
+				assert.Equal(t, memorylimiter.ErrDataRefused, err)
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.NoError(t, tp.Shutdown(ctx))
+			assert.NoError(t, mp.Shutdown(ctx))
 		})
 	}
 	t.Cleanup(func() {
@@ -198,49 +232,84 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name           string
-		mlCfg          *Config
-		getMemFn       func() (uint64, error)
-		readMemStatsFn func(m *runtime.MemStats)
-		expectError    bool
+		name        string
+		mlCfg       *Config
+		ballastSize uint64
+		memAlloc    uint64
+		expectError bool
 	}{
 		{
-			name: "fixed_limit",
-			mlCfg: &Config{
-				CheckInterval:       1 * time.Nanosecond,
-				MemoryLimitMiB:      1024,
-				MemorySpikeLimitMiB: 512,
-			},
-			expectError: false,
-		},
-		{
-			name: "percent_limit",
+			name: "Below memAllocLimit",
 			mlCfg: &Config{
 				CheckInterval:         1 * time.Nanosecond,
 				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 30,
+				MemorySpikePercentage: 1,
 			},
+			ballastSize: 0,
+			memAlloc:    800,
 			expectError: false,
 		},
 		{
-			name: "fixed_limit",
+			name: "Above memAllocLimit",
 			mlCfg: &Config{
 				CheckInterval:         1 * time.Nanosecond,
 				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 30,
+				MemorySpikePercentage: 1,
 			},
-			getMemFn:       totalMemory,
-			readMemStatsFn: readMemStats,
-			expectError:    true,
+			ballastSize: 0,
+			memAlloc:    1800,
+			expectError: true,
+		},
+		{
+			name: "Below memAllocLimit accounting for ballast",
+			mlCfg: &Config{
+				CheckInterval:         1 * time.Nanosecond,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 1,
+			},
+			ballastSize: 1000,
+			memAlloc:    800,
+			expectError: false,
+		},
+		{
+			name: "Above memAllocLimit even accounting for ballast",
+			mlCfg: &Config{
+				CheckInterval:         1 * time.Nanosecond,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 1,
+			},
+			ballastSize: 1000,
+			memAlloc:    1800,
+			expectError: true,
+		},
+		{
+			name: "Below memSpikeLimit",
+			mlCfg: &Config{
+				CheckInterval:         1 * time.Nanosecond,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 10,
+			},
+			ballastSize: 0,
+			memAlloc:    800,
+			expectError: false,
+		},
+		{
+			name: "Above memSpikeLimit",
+			mlCfg: &Config{
+				CheckInterval:         1 * time.Nanosecond,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 11,
+			},
+			ballastSize: 0,
+			memAlloc:    800,
+			expectError: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.getMemFn != nil {
-				memorylimiter.GetMemoryFn = tt.getMemFn
-			}
-			if tt.readMemStatsFn != nil {
-				memorylimiter.ReadMemStatsFn = tt.readMemStatsFn
+			memorylimiter.GetMemoryFn = totalMemory
+			memorylimiter.ReadMemStatsFn = func(ms *runtime.MemStats) {
+				ms.Alloc = tt.memAlloc + tt.ballastSize
 			}
 
 			ml, err := newMemoryLimiterProcessor(processortest.NewNopCreateSettings(), tt.mlCfg)
@@ -256,11 +325,11 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				processorhelper.WithShutdown(ml.shutdown))
 			require.NoError(t, err)
 
-			assert.NoError(t, tp.Start(ctx, &host{ballastSize: 113}))
-			time.Sleep(50 * time.Millisecond)
+			assert.NoError(t, tp.Start(ctx, &host{ballastSize: tt.ballastSize}))
+			time.Sleep(10 * time.Millisecond)
 			err = tp.ConsumeTraces(ctx, td)
 			if tt.expectError {
-				assert.True(t, err != nil)
+				assert.Equal(t, memorylimiter.ErrDataRefused, err)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -280,49 +349,84 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name           string
-		mlCfg          *Config
-		getMemFn       func() (uint64, error)
-		readMemStatsFn func(m *runtime.MemStats)
-		expectError    bool
+		name        string
+		mlCfg       *Config
+		ballastSize uint64
+		memAlloc    uint64
+		expectError bool
 	}{
 		{
-			name: "fixed_limit",
-			mlCfg: &Config{
-				CheckInterval:       1 * time.Nanosecond,
-				MemoryLimitMiB:      1024,
-				MemorySpikeLimitMiB: 512,
-			},
-			expectError: false,
-		},
-		{
-			name: "percent_limit",
+			name: "Below memAllocLimit",
 			mlCfg: &Config{
 				CheckInterval:         1 * time.Nanosecond,
 				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 30,
+				MemorySpikePercentage: 1,
 			},
+			ballastSize: 0,
+			memAlloc:    800,
 			expectError: false,
 		},
 		{
-			name: "fixed_limit",
+			name: "Above memAllocLimit",
 			mlCfg: &Config{
 				CheckInterval:         1 * time.Nanosecond,
 				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 30,
+				MemorySpikePercentage: 1,
 			},
-			getMemFn:       totalMemory,
-			readMemStatsFn: readMemStats,
-			expectError:    true,
+			ballastSize: 0,
+			memAlloc:    1800,
+			expectError: true,
+		},
+		{
+			name: "Below memAllocLimit accounting for ballast",
+			mlCfg: &Config{
+				CheckInterval:         1 * time.Nanosecond,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 1,
+			},
+			ballastSize: 1000,
+			memAlloc:    800,
+			expectError: false,
+		},
+		{
+			name: "Above memAllocLimit even accounting for ballast",
+			mlCfg: &Config{
+				CheckInterval:         1 * time.Nanosecond,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 1,
+			},
+			ballastSize: 1000,
+			memAlloc:    1800,
+			expectError: true,
+		},
+		{
+			name: "Below memSpikeLimit",
+			mlCfg: &Config{
+				CheckInterval:         1 * time.Nanosecond,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 10,
+			},
+			ballastSize: 0,
+			memAlloc:    800,
+			expectError: false,
+		},
+		{
+			name: "Above memSpikeLimit",
+			mlCfg: &Config{
+				CheckInterval:         1 * time.Nanosecond,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 11,
+			},
+			ballastSize: 0,
+			memAlloc:    800,
+			expectError: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.getMemFn != nil {
-				memorylimiter.GetMemoryFn = tt.getMemFn
-			}
-			if tt.readMemStatsFn != nil {
-				memorylimiter.ReadMemStatsFn = tt.readMemStatsFn
+			memorylimiter.GetMemoryFn = totalMemory
+			memorylimiter.ReadMemStatsFn = func(ms *runtime.MemStats) {
+				ms.Alloc = tt.memAlloc + tt.ballastSize
 			}
 
 			ml, err := newMemoryLimiterProcessor(processortest.NewNopCreateSettings(), tt.mlCfg)
@@ -338,11 +442,11 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				processorhelper.WithShutdown(ml.shutdown))
 			require.NoError(t, err)
 
-			assert.NoError(t, tp.Start(ctx, &host{ballastSize: 113}))
-			time.Sleep(50 * time.Millisecond)
+			assert.NoError(t, tp.Start(ctx, &host{ballastSize: tt.ballastSize}))
+			time.Sleep(10 * time.Millisecond)
 			err = tp.ConsumeLogs(ctx, ld)
 			if tt.expectError {
-				assert.True(t, err != nil)
+				assert.Equal(t, memorylimiter.ErrDataRefused, err)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -377,9 +481,5 @@ func (be *ballastExtension) GetBallastSize() uint64 {
 }
 
 func totalMemory() (uint64, error) {
-	return uint64(4096), nil
-}
-
-func readMemStats(m *runtime.MemStats) {
-	m.Alloc = 2000
+	return uint64(2048), nil
 }
