@@ -109,15 +109,13 @@ func TestSharedComponent(t *testing.T) {
 }
 func TestSharedComponentsReportStatus(t *testing.T) {
 	reportedStatuses := make(map[*component.InstanceID][]component.Status)
-	newStatusFunc := func() func(*component.StatusEvent) error {
+	newStatusFunc := func() func(*component.StatusEvent) {
 		instanceID := &component.InstanceID{}
-		return func(ev *component.StatusEvent) error {
-			// Use an event with component.StatusNone to simulate an error.
+		return func(ev *component.StatusEvent) {
 			if ev.Status() == component.StatusNone {
-				return assert.AnError
+				return
 			}
 			reportedStatuses[instanceID] = append(reportedStatuses[instanceID], ev.Status())
-			return nil
 		}
 	}
 
@@ -128,10 +126,10 @@ func TestSharedComponentsReportStatus(t *testing.T) {
 	// make a shared component that represents three instances
 	for i := 0; i < 3; i++ {
 		telemetrySettings = newNopTelemetrySettings()
-		telemetrySettings.ReportComponentStatus = newStatusFunc()
+		telemetrySettings.ReportStatus = newStatusFunc()
 		// The initial settings for the shared component need to match the ones passed to the first
 		// invocation of LoadOrStore so that underlying telemetry settings reference can be used to
-		// wrap ReportComponentStatus for subsequently added "instances".
+		// wrap ReportStatus for subsequently added "instances".
 		if i == 0 {
 			comp.telemetry = telemetrySettings
 		}
@@ -152,24 +150,18 @@ func TestSharedComponentsReportStatus(t *testing.T) {
 		telemetrySettings,
 	)
 
-	err := comp.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStarting))
-	require.NoError(t, err)
+	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStarting))
 
-	// ok
-	err = comp.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
-	require.NoError(t, err)
+	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusOK))
 
 	// simulate an error
-	err = comp.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusNone))
-	require.ErrorIs(t, err, assert.AnError)
+	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusNone))
 
 	// stopping
-	err = comp.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopping))
-	require.NoError(t, err)
+	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopping))
 
 	// stopped
-	err = comp.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopped))
-	require.NoError(t, err)
+	comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopped))
 
 	// The shared component represents 3 component instances. Reporting status for the shared
 	// component should report status for each of the instances it represents.
@@ -227,11 +219,10 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			reportedStatuses := make(map[*component.InstanceID][]component.Status)
-			newStatusFunc := func() func(*component.StatusEvent) error {
+			newStatusFunc := func() func(*component.StatusEvent) {
 				instanceID := &component.InstanceID{}
-				return func(ev *component.StatusEvent) error {
+				return func(ev *component.StatusEvent) {
 					reportedStatuses[instanceID] = append(reportedStatuses[instanceID], ev.Status())
-					return nil
 				}
 			}
 			base := &baseComponent{}
@@ -250,7 +241,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 			var err error
 			for i := 0; i < 3; i++ {
 				telemetrySettings := newNopTelemetrySettings()
-				telemetrySettings.ReportComponentStatus = newStatusFunc()
+				telemetrySettings.ReportStatus = newStatusFunc()
 				if i == 0 {
 					base.telemetry = telemetrySettings
 				}
@@ -266,8 +257,7 @@ func TestReportStatusOnStartShutdown(t *testing.T) {
 			require.Equal(t, tc.startErr, err)
 
 			if tc.startErr == nil {
-				err = comp.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
-				require.NoError(t, err)
+				comp.telemetry.ReportStatus(component.NewStatusEvent(component.StatusOK))
 
 				err = comp.Shutdown(context.Background())
 				require.Equal(t, tc.shutdownErr, err)
