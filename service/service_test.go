@@ -13,6 +13,9 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -428,6 +431,64 @@ func TestServiceFatalError(t *testing.T) {
 	err = <-srv.host.asyncErrorChannel
 
 	require.ErrorIs(t, err, assert.AnError)
+}
+
+func TestServiceValidate(t *testing.T) {
+	tests := map[string]struct {
+		createSettings func() Settings
+		config         Config
+
+		expectedErr string
+	}{
+		"same_types": {
+			createSettings: func() Settings { return newNopSettings() },
+			config:         newNopConfig(),
+			expectedErr:    "",
+		},
+		"different_types": {
+			createSettings: func() Settings {
+				const typeStr = "nop"
+
+				createMetricsReceiver := func(_ context.Context, _ receiver.CreateSettings, _ component.Config, _ consumer.Metrics) (receiver.Metrics, error) {
+					return struct {
+						component.StartFunc
+						component.ShutdownFunc
+					}{}, nil
+				}
+
+				createDefaultConfig := func() component.Config {
+					return &struct{}{}
+				}
+
+				metricsOnlyReceiverFactory := receiver.NewFactory(
+					typeStr,
+					createDefaultConfig,
+					receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelStable),
+				)
+
+				settings := newNopSettings()
+				settings.Receivers = receiver.NewBuilder(
+					map[component.ID]component.Config{component.NewID(typeStr): metricsOnlyReceiverFactory.CreateDefaultConfig()},
+					map[component.Type]receiver.Factory{typeStr: metricsOnlyReceiverFactory},
+				)
+
+				return settings
+			},
+			config:      newNopConfig(),
+			expectedErr: `failed to create "nop" receiver for data type "traces": telemetry type is not supported`,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := Validate(context.Background(), test.createSettings(), test.config)
+			if test.expectedErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, test.expectedErr)
+			}
+		})
+	}
 }
 
 func assertResourceLabels(t *testing.T, res pcommon.Resource, expectedLabels map[string]labelValue) {
