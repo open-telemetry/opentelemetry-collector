@@ -84,16 +84,35 @@ func TestQueueRetryOptionsWithRequestExporter(t *testing.T) {
 }
 
 func TestBaseExporterLogging(t *testing.T) {
-	set := exportertest.NewNopCreateSettings()
-	logger, observed := observer.New(zap.DebugLevel)
-	set.Logger = zap.New(logger)
-	rCfg := configretry.NewDefaultBackOffConfig()
-	rCfg.Enabled = false
-	bs, err := newBaseExporter(set, "", true, nil, nil, newNoopObsrepSender, WithRetry(rCfg))
-	require.Nil(t, err)
-	require.True(t, bs.requestExporter)
-	sendErr := bs.send(context.Background(), newErrorRequest())
-	require.Error(t, sendErr)
+	tests := []struct {
+		name            string
+		exporterOptions func() []Option
+	}{
+		{
+			"no options",
+			func() []Option { return nil },
+		},
+		{
+			"with retry",
+			func() []Option {
+				rCfg := configretry.NewDefaultBackOffConfig()
+				rCfg.Enabled = false
+				return []Option{WithRetry(rCfg)}
+			},
+		},
+	}
+	for _, test := range tests {
+		set := exportertest.NewNopCreateSettings()
+		logger, observed := observer.New(zap.DebugLevel)
+		set.Logger = zap.New(logger)
 
-	require.Len(t, observed.FilterLevelExact(zap.ErrorLevel).All(), 1)
+		bs, err := newBaseExporter(set, "", true, nil, nil, newNoopObsrepSender, test.exporterOptions()...)
+		require.Nil(t, err)
+		require.True(t, bs.requestExporter)
+		sendErr := bs.send(context.Background(), newErrorRequest())
+		require.Error(t, sendErr)
+
+		require.Len(t, observed.FilterLevelExact(zap.ErrorLevel).All(), 1)
+	}
+
 }
