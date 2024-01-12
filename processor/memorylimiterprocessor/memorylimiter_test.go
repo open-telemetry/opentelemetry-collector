@@ -210,7 +210,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.NoError(t, mp.Start(ctx, &host{ballastSize: tt.ballastSize}))
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			err = mp.ConsumeMetrics(ctx, md)
 			if tt.expectError {
 				assert.Equal(t, memorylimiter.ErrDataRefused, err)
@@ -327,7 +327,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.NoError(t, tp.Start(ctx, &host{ballastSize: tt.ballastSize}))
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			err = tp.ConsumeTraces(ctx, td)
 			if tt.expectError {
 				assert.Equal(t, memorylimiter.ErrDataRefused, err)
@@ -444,7 +444,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.NoError(t, tp.Start(ctx, &host{ballastSize: tt.ballastSize}))
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			err = tp.ConsumeLogs(ctx, ld)
 			if tt.expectError {
 				assert.Equal(t, memorylimiter.ErrDataRefused, err)
