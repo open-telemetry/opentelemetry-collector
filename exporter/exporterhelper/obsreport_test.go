@@ -10,21 +10,21 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 func TestExportEnqueueFailure(t *testing.T) {
 	exporterID := component.NewID("fakeExporter")
-	tt, err := obsreporttest.SetupTelemetry(exporterID)
+	tt, err := componenttest.SetupTelemetry(exporterID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	obsrep, err := NewObsReport(ObsReportSettings{
 		ExporterID:             exporterID,
-		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 

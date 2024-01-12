@@ -107,8 +107,6 @@ replace go.opentelemetry.io/collector/config/internal => ../../config/internal
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
-replace go.opentelemetry.io/collector/exporter => ../../exporter
-
 replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
@@ -116,8 +114,6 @@ replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
-
-replace go.opentelemetry.io/collector/processor => ../../processor
 
 replace go.opentelemetry.io/collector/receiver => ../
 
@@ -127,5 +123,3 @@ retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 )
-
-replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry

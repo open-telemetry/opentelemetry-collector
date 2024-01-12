@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package obsreporttest // import "go.opentelemetry.io/collector/obsreport/obsreporttest"
+package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
 
 import (
 	"context"
@@ -18,7 +18,6 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
@@ -38,7 +37,7 @@ const (
 )
 
 type TestTelemetry struct {
-	component.TelemetrySettings
+	ts           component.TelemetrySettings
 	id           component.ID
 	SpanRecorder *tracetest.SpanRecorder
 	views        []*view.View
@@ -118,6 +117,12 @@ func (tts *TestTelemetry) CheckReceiverMetrics(protocol string, acceptedMetricPo
 	return tts.prometheusChecker.checkReceiverMetrics(tts.id, protocol, acceptedMetricPoints, droppedMetricPoints)
 }
 
+// CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func (tts *TestTelemetry) CheckScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
+	return tts.prometheusChecker.checkScraperMetrics(receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
+}
+
 // Shutdown unregisters any views and shuts down the SpanRecorder
 func (tts *TestTelemetry) Shutdown(ctx context.Context) error {
 	view.Unregister(tts.views...)
@@ -130,6 +135,11 @@ func (tts *TestTelemetry) Shutdown(ctx context.Context) error {
 	return errs
 }
 
+// TelemetrySettings returns the TestTelemetry's TelemetrySettings
+func (tts *TestTelemetry) TelemetrySettings() component.TelemetrySettings {
+	return tts.ts
+}
+
 // SetupTelemetry does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
 // The caller must pass the ID of the component that intends to test, so the CreateSettings and Check methods will use.
 // The caller should defer a call to Shutdown the returned TestTelemetry.
@@ -138,12 +148,12 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 
 	settings := TestTelemetry{
-		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-		id:                id,
-		SpanRecorder:      sr,
+		ts:           NewNopTelemetrySettings(),
+		id:           id,
+		SpanRecorder: sr,
 	}
-	settings.TelemetrySettings.TracerProvider = tp
-	settings.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
+	settings.ts.TracerProvider = tp
+	settings.ts.MetricsLevel = configtelemetry.LevelNormal
 	settings.views = obsreportconfig.AllViews(configtelemetry.LevelNormal)
 	err := view.Register(settings.views...)
 	if err != nil {
@@ -169,7 +179,7 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 		sdkmetric.WithResource(resource.Empty()),
 		sdkmetric.WithReader(exp),
 	)
-	settings.TelemetrySettings.MeterProvider = settings.meterProvider
+	settings.ts.MeterProvider = settings.meterProvider
 
 	settings.prometheusChecker = &prometheusChecker{
 		ocHandler:   settings.ocExporter,
@@ -177,10 +187,4 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	}
 
 	return settings, nil
-}
-
-// CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
-// When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckScraperMetrics(tts TestTelemetry, receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
-	return tts.prometheusChecker.checkScraperMetrics(receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
 }

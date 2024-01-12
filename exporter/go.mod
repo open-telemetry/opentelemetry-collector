@@ -80,8 +80,6 @@ replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
-replace go.opentelemetry.io/collector/processor => ../processor
-
 replace go.opentelemetry.io/collector/receiver => ../receiver
 
 retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module

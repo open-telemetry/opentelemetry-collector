@@ -38,7 +38,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -521,13 +520,13 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	td := testdata.GenerateTraces(1)
 
-	tt, err := obsreporttest.SetupTelemetry(otlpReceiverID)
+	tt, err := componenttest.SetupTelemetry(otlpReceiverID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
-	recv := newGRPCReceiver(t, tt.TelemetrySettings, addr, sink)
+	recv := newGRPCReceiver(t, tt.TelemetrySettings(), addr, sink)
 	require.NotNil(t, recv)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
@@ -588,13 +587,13 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	td := testdata.GenerateTraces(1)
 
-	tt, err := obsreporttest.SetupTelemetry(otlpReceiverID)
+	tt, err := componenttest.SetupTelemetry(otlpReceiverID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
-	recv := newHTTPReceiver(t, tt.TelemetrySettings, addr, sink)
+	recv := newHTTPReceiver(t, tt.TelemetrySettings(), addr, sink)
 	require.NotNil(t, recv)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
