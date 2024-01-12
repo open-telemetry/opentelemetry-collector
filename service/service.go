@@ -160,9 +160,8 @@ func validate(ctx context.Context, set Settings, cfg Config, telSettings service
 		PipelineConfigs:  cfg.Pipelines,
 	}
 
-	_, err = graph.Build(ctx, pSet)
-	if err != nil {
-		return fmt.Errorf("failed to build pipelines: %w", err)
+	if _, err := graph.Build(ctx, pSet); err != nil {
+		return fmt.Errorf("failed to build pipelines for validation: %w", err)
 	}
 
 	return nil
