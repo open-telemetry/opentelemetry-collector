@@ -46,21 +46,14 @@ func TestStringYAML(t *testing.T) {
 
 func TestStringFmt(t *testing.T) {
 	examples := []String{"opaque", "s", "veryveryveryveryveryveryveryveryveryverylong"}
-	verbTests := []struct {
-		verb string
-		want string
-	}{
-		{verb: "%s", want: maskedString},
-		{verb: "%q", want: fmt.Sprintf("%q", maskedString)},
-		{verb: "%v", want: maskedString},
-		{verb: "%#v", want: maskedString},
-		{verb: "%+v", want: maskedString},
-		{verb: "%x", want: fmt.Sprintf("%x", maskedString)},
-	}
+	verbs := []string{"%s", "%q", "%v", "%#v", "%+v", "%x"}
 	for _, example := range examples {
-		for _, tt := range verbTests {
-			t.Run(fmt.Sprintf("%s/%s", string(example), tt.verb), func(t *testing.T) {
-				assert.Equal(t, tt.want, fmt.Sprintf(tt.verb, example))
+		for _, verb := range verbs {
+			t.Run(fmt.Sprintf("%s/%s", string(example), verb), func(t *testing.T) {
+				assert.Equal(t,
+					fmt.Sprintf(verb, maskedString),
+					fmt.Sprintf(verb, example),
+				)
 			})
 		}
 		// converting to a string allows to output as an unredacted string still:

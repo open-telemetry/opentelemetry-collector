@@ -33,5 +33,5 @@ var _ fmt.GoStringer = String("")
 // GoString formats the string as `[REDACTED]`.
 // This is used for the %#v verb.
 func (s String) GoString() string {
-	return maskedString
+	return fmt.Sprintf("%#v", maskedString)
 }
