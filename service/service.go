@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel/metric/noop"
 	"runtime"
 
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
@@ -145,6 +146,10 @@ func Validate(ctx context.Context, set Settings, cfg Config) error {
 		MeterProvider:  noop.NewMeterProvider(),
 	}
 
+	return validate(ctx, set, cfg, telSettings)
+}
+
+func validate(ctx context.Context, set Settings, cfg Config, telSettings servicetelemetry.TelemetrySettings) error {
 	pSet := graph.Settings{
 		Telemetry:        telSettings,
 		BuildInfo:        set.BuildInfo,
