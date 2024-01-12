@@ -56,7 +56,7 @@ exporters:
     compression: none
 ```
 
-By default `otlp_json` encoding is used, to change the content encoding of the message configure it as follows:
+By default `otlp_proto` encoding is used, to change the content encoding of the message configure it as follows:
 
 ```yaml
 exporters:
