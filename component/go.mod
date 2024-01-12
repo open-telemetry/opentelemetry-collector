@@ -67,7 +67,3 @@ retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 )
-
-replace go.opentelemetry.io/collector => ../
-
-replace go.opentelemetry.io/collector/consumer => ../consumer
