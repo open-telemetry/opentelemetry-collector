@@ -166,7 +166,7 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 		queueSender:  &baseRequestSender{},
 		obsrepSender: osf(obsReport),
 		// this is required so that exporters that don't use WithRetry() still get error logs on export failure
-		retrySender:   &errorLoggingRequestSender{logger: set.Logger},
+		retrySender:   &errorLoggingRequestSender{logger: set.Logger, message: "Exporting failed"},
 		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutSettings()},
 
 		set:    set,
