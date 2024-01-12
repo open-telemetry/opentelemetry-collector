@@ -39,7 +39,7 @@ type testParams struct {
 
 func TestReceiveTraceDataOp(t *testing.T) {
 	testTelemetry(t, receiverID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		params := []testParams{
@@ -50,7 +50,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 			rec, err := newReceiver(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Transport:              transport,
-				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 			}, useOtel)
 			require.NoError(t, err)
 			ctx := rec.StartTracesOp(parentCtx)
@@ -86,7 +86,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 
 func TestReceiveLogsOp(t *testing.T) {
 	testTelemetry(t, receiverID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		params := []testParams{
@@ -97,7 +97,7 @@ func TestReceiveLogsOp(t *testing.T) {
 			rec, err := newReceiver(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Transport:              transport,
-				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 			}, useOtel)
 			require.NoError(t, err)
 
@@ -134,7 +134,7 @@ func TestReceiveLogsOp(t *testing.T) {
 
 func TestReceiveMetricsOp(t *testing.T) {
 	testTelemetry(t, receiverID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		params := []testParams{
@@ -145,7 +145,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 			rec, err := newReceiver(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Transport:              transport,
-				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 			}, useOtel)
 			require.NoError(t, err)
 
@@ -186,7 +186,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	longLivedCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	longLivedCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	params := []testParams{
@@ -200,7 +200,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 			ReceiverID:             receiverID,
 			Transport:              transport,
 			LongLivedCtx:           true,
-			ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+			ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, rerr)
 		ctx := rec.StartTracesOp(longLivedCtx)
@@ -243,7 +243,7 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 	rec, err := NewObsReport(ObsReportSettings{
 		ReceiverID:             receiverID,
 		Transport:              transport,
-		ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+		ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := rec.StartTracesOp(context.Background())
@@ -264,7 +264,7 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 	rec, err := NewObsReport(ObsReportSettings{
 		ReceiverID:             receiverID,
 		Transport:              transport,
-		ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+		ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := rec.StartMetricsOp(context.Background())
@@ -285,7 +285,7 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	rec, err := NewObsReport(ObsReportSettings{
 		ReceiverID:             receiverID,
 		Transport:              transport,
-		ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+		ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := rec.StartLogsOp(context.Background())

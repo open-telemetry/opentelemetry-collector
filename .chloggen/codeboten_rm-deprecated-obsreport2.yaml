@@ -20,7 +20,7 @@ subtext: |
   - obsreporttest.TestTelemetry -> componenttest.TestTelemetry
   - obsreporttest.SetupTelemetry -> componenttest.SetupTelemetry
   - obsreporttest.CheckScraperMetrics -> TestTelemetry.CheckScraperMetrics
-  - TestTelemetry.TelemetrySettings -> TestTelemetry.TelemetrySettingsFunc
+  - obserporttest.TestTelemetry.TelemetrySettings -> componenttest.TestTelemetry.TelemetrySettings()
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

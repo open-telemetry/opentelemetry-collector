@@ -157,7 +157,7 @@ func TestScrapeController(t *testing.T) {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, nextConsumer, options...)
+			mr, err := NewScraperControllerReceiver(cfg, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, nextConsumer, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return

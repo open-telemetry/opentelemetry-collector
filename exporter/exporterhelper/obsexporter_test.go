@@ -29,12 +29,12 @@ var (
 
 func TestExportTraceDataOp(t *testing.T) {
 	testTelemetry(t, exporterID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
-			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		}, useOtel)
 		require.NoError(t, err)
 
@@ -77,12 +77,12 @@ func TestExportTraceDataOp(t *testing.T) {
 
 func TestExportMetricsOp(t *testing.T) {
 	testTelemetry(t, exporterID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
-			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		}, useOtel)
 		require.NoError(t, err)
 
@@ -126,12 +126,12 @@ func TestExportMetricsOp(t *testing.T) {
 
 func TestExportLogsOp(t *testing.T) {
 	testTelemetry(t, exporterID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
-			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		}, useOtel)
 		require.NoError(t, err)
 
@@ -180,7 +180,7 @@ func TestCheckExporterTracesViews(t *testing.T) {
 
 	obsrep, err := NewObsReport(ObsReportSettings{
 		ExporterID:             exporterID,
-		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := obsrep.StartTracesOp(context.Background())
@@ -200,7 +200,7 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 
 	obsrep, err := NewObsReport(ObsReportSettings{
 		ExporterID:             exporterID,
-		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := obsrep.StartMetricsOp(context.Background())
@@ -220,7 +220,7 @@ func TestCheckExporterLogsViews(t *testing.T) {
 
 	obsrep, err := NewObsReport(ObsReportSettings{
 		ExporterID:             exporterID,
-		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := obsrep.StartLogsOp(context.Background())

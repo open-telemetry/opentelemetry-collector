@@ -37,8 +37,7 @@ const (
 )
 
 type TestTelemetry struct {
-	// Deprecated: [0.93.0] use TelemetrySettingsFunc() instead.
-	component.TelemetrySettings
+	ts           component.TelemetrySettings
 	id           component.ID
 	SpanRecorder *tracetest.SpanRecorder
 	views        []*view.View
@@ -136,9 +135,9 @@ func (tts *TestTelemetry) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-// TelemetrySettingsFunc returns the TestTelemetry's TelemetrySettings
-func (tts *TestTelemetry) TelemetrySettingsFunc() component.TelemetrySettings {
-	return tts.TelemetrySettings
+// TelemetrySettings returns the TestTelemetry's TelemetrySettings
+func (tts *TestTelemetry) TelemetrySettings() component.TelemetrySettings {
+	return tts.ts
 }
 
 // SetupTelemetry does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
@@ -149,12 +148,12 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 
 	settings := TestTelemetry{
-		TelemetrySettings: NewNopTelemetrySettings(),
-		id:                id,
-		SpanRecorder:      sr,
+		ts:           NewNopTelemetrySettings(),
+		id:           id,
+		SpanRecorder: sr,
 	}
-	settings.TelemetrySettings.TracerProvider = tp
-	settings.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
+	settings.ts.TracerProvider = tp
+	settings.ts.MetricsLevel = configtelemetry.LevelNormal
 	settings.views = obsreportconfig.AllViews(configtelemetry.LevelNormal)
 	err := view.Register(settings.views...)
 	if err != nil {
@@ -180,7 +179,7 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 		sdkmetric.WithResource(resource.Empty()),
 		sdkmetric.WithReader(exp),
 	)
-	settings.TelemetrySettings.MeterProvider = settings.meterProvider
+	settings.ts.MeterProvider = settings.meterProvider
 
 	settings.prometheusChecker = &prometheusChecker{
 		ocHandler:   settings.ocExporter,

@@ -37,7 +37,7 @@ type testParams struct {
 
 func TestScrapeMetricsDataOp(t *testing.T) {
 	testTelemetry(t, receiverID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TelemetrySettingsFunc().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		params := []testParams{
@@ -49,7 +49,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 			scrp, err := newScraper(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Scraper:                scraperID,
-				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 			}, useOtel)
 			require.NoError(t, err)
 			ctx := scrp.StartMetricsOp(parentCtx)
@@ -100,7 +100,7 @@ func TestCheckScraperMetricsViews(t *testing.T) {
 	s, err := NewObsReport(ObsReportSettings{
 		ReceiverID:             receiverID,
 		Scraper:                scraperID,
-		ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
+		ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := s.StartMetricsOp(context.Background())
