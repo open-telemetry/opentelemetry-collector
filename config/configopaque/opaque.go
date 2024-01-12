@@ -35,3 +35,10 @@ var _ fmt.GoStringer = String("")
 func (s String) GoString() string {
 	return fmt.Sprintf("%#v", maskedString)
 }
+
+var _ encoding.BinaryMarshaler = String("")
+
+// MarshalBinary marshals the string `[REDACTED]` as []byte.
+func (s String) MarshalBinary() (text []byte, err error) {
+	return []byte(maskedString), nil
+}
