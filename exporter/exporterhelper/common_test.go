@@ -86,11 +86,11 @@ func TestQueueRetryOptionsWithRequestExporter(t *testing.T) {
 func TestBaseExporterLogging(t *testing.T) {
 	tests := []struct {
 		name            string
-		exporterOptions func() []Option
+		exporterOptions []Option
 	}{
 		{
 			"no options",
-			func() []Option { return nil },
+			nil,
 		},
 		{
 			"with retry",
@@ -98,7 +98,7 @@ func TestBaseExporterLogging(t *testing.T) {
 				rCfg := configretry.NewDefaultBackOffConfig()
 				rCfg.Enabled = false
 				return []Option{WithRetry(rCfg)}
-			},
+			}(),
 		},
 	}
 	for _, test := range tests {
@@ -106,7 +106,7 @@ func TestBaseExporterLogging(t *testing.T) {
 		logger, observed := observer.New(zap.DebugLevel)
 		set.Logger = zap.New(logger)
 
-		bs, err := newBaseExporter(set, "", true, nil, nil, newNoopObsrepSender, test.exporterOptions()...)
+		bs, err := newBaseExporter(set, "", true, nil, nil, newNoopObsrepSender, test.exporterOptions...)
 		require.Nil(t, err)
 		require.True(t, bs.requestExporter)
 		sendErr := bs.send(context.Background(), newErrorRequest())
