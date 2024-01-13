@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -81,17 +83,23 @@ func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 	require.Zero(t, be.queueSender.(*queueSender).queue.Size())
 }
 
-func TestQueuedRetry_DropOnFull(t *testing.T) {
+func TestQueuedRetry_RejectOnFull(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.QueueSize = 0
 	qCfg.NumConsumers = 0
-	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newNoopObsrepSender, WithQueue(qCfg))
+	set := exportertest.NewNopCreateSettings()
+	logger, observed := observer.New(zap.ErrorLevel)
+	set.Logger = zap.New(logger)
+	be, err := newBaseExporter(set, "", false, nil, nil, newNoopObsrepSender, WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
 	require.Error(t, be.send(context.Background(), newMockRequest(2, nil)))
+	assert.Len(t, observed.All(), 1)
+	assert.Equal(t, "Exporting failed. Rejecting data.", observed.All()[0].Message)
+	assert.Equal(t, "sending queue is full", observed.All()[0].ContextMap()["error"])
 }
 
 func TestQueuedRetryHappyPath(t *testing.T) {
@@ -223,8 +231,11 @@ func TestQueueSettings_Validate(t *testing.T) {
 func TestQueueRetryWithDisabledQueue(t *testing.T) {
 	qs := NewDefaultQueueSettings()
 	qs.Enabled = false
-	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, false, nil, nil, newObservabilityConsumerSender, WithQueue(qs))
-	require.IsType(t, &errorLoggingRequestSender{}, be.queueSender)
+	set := exportertest.NewNopCreateSettings()
+	logger, observed := observer.New(zap.ErrorLevel)
+	set.Logger = zap.New(logger)
+	be, err := newBaseExporter(set, component.DataTypeLogs, false, nil, nil, newObservabilityConsumerSender,
+		WithQueue(qs))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
@@ -232,11 +243,28 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 	ocs.run(func() {
 		require.Error(t, be.send(context.Background(), mockR))
 	})
+	assert.Len(t, observed.All(), 1)
+	assert.Equal(t, "Exporting failed. Rejecting data. Try enabling sending_queue to survive temporary failures.", observed.All()[0].Message)
 	ocs.awaitAsyncProcessing()
 	mockR.checkNumRequests(t, 1)
 	ocs.checkSendItemsCount(t, 0)
 	ocs.checkDroppedItemsCount(t, 2)
 	require.NoError(t, be.Shutdown(context.Background()))
+}
+
+func TestQueueFailedRequestDropped(t *testing.T) {
+	set := exportertest.NewNopCreateSettings()
+	logger, observed := observer.New(zap.ErrorLevel)
+	set.Logger = zap.New(logger)
+	be, err := newBaseExporter(set, component.DataTypeLogs, false, nil, nil, newNoopObsrepSender, WithQueue(NewDefaultQueueSettings()))
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	mockR := newMockRequest(2, errors.New("some error"))
+	require.NoError(t, be.send(context.Background(), mockR))
+	require.NoError(t, be.Shutdown(context.Background()))
+	mockR.checkNumRequests(t, 1)
+	assert.Len(t, observed.All(), 1)
+	assert.Equal(t, "Exporting failed. Dropping data.", observed.All()[0].Message)
 }
 
 func TestQueuedRetryPersistenceEnabled(t *testing.T) {
@@ -331,7 +359,7 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 }
 
 func TestQueueSenderNoStartShutdown(t *testing.T) {
-	qs := newQueueSender(NewDefaultQueueSettings(), exportertest.NewNopCreateSettings(), "", nil, nil)
+	qs := newQueueSender(NewDefaultQueueSettings(), exportertest.NewNopCreateSettings(), "", nil, nil, nil)
 	assert.NoError(t, qs.Shutdown(context.Background()))
 }
 
