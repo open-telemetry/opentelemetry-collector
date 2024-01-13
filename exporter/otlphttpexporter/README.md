@@ -37,7 +37,7 @@ The following settings can be optionally configured:
 - `timeout` (default = 30s): HTTP request time limit. For details see https://golang.org/pkg/net/http/#Client
 - `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
-- `encoding` (default = otlp_proto): The encoding to use for the messages (valid options: `otlp_proto`, `otlp_json`)
+- `encoding` (default = proto): The encoding to use for the messages (valid options: `proto`, `json`)
 
 Example:
 
@@ -56,13 +56,13 @@ exporters:
     compression: none
 ```
 
-By default `otlp_proto` encoding is used, to change the content encoding of the message configure it as follows:
+By default `proto` encoding is used, to change the content encoding of the message configure it as follows:
 
 ```yaml
 exporters:
   otlphttp:
     ...
-    encoding: otlp_json
+    encoding: json
 ```
 
 The full list of settings exposed for this exporter are documented [here](./config.go)

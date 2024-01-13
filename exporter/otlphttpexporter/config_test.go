@@ -51,7 +51,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				NumConsumers: 2,
 				QueueSize:    10,
 			},
-      Encoding: "otlp_proto",
+			Encoding: EncodingProto,
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Headers: map[string]configopaque.String{
 					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",

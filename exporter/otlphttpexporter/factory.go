@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		RetryConfig: configretry.NewDefaultBackOffConfig(),
 		QueueConfig: exporterhelper.NewDefaultQueueSettings(),
-		Encoding:    "otlp_proto",
+		Encoding:    EncodingProto,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "",
 			Timeout:  30 * time.Second,

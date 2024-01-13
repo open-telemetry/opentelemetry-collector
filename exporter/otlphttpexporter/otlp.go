@@ -94,6 +94,8 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	switch e.config.Encoding {
 	case EncodingJSON:
 		request, err = tr.MarshalJSON()
+	case EncodingProto:
+		request, err = tr.MarshalProto()
 	default:
 		request, err = tr.MarshalProto()
 	}
@@ -113,6 +115,8 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 	switch e.config.Encoding {
 	case EncodingJSON:
 		request, err = tr.MarshalJSON()
+	case EncodingProto:
+		request, err = tr.MarshalProto()
 	default:
 		request, err = tr.MarshalProto()
 	}
@@ -131,6 +135,8 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	switch e.config.Encoding {
 	case EncodingJSON:
 		request, err = tr.MarshalJSON()
+	case EncodingProto:
+		request, err = tr.MarshalProto()
 	default:
 		request, err = tr.MarshalProto()
 	}
@@ -152,9 +158,10 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	switch e.config.Encoding {
 	case EncodingJSON:
 		req.Header.Set("Content-Type", jsonContentType)
+	case EncodingProto:
+		req.Header.Set("Content-Type", protobufContentType)
 	default:
 		req.Header.Set("Content-Type", protobufContentType)
-
 	}
 
 	req.Header.Set("User-Agent", e.userAgent)
