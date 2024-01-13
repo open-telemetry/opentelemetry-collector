@@ -93,19 +93,14 @@ func (rs *retrySender) send(ctx context.Context, req Request) error {
 
 		// Immediately drop data on permanent errors.
 		if consumererror.IsPermanent(err) {
-			rs.logger.Error(
-				"Exporting failed. The error is not retryable. Dropping data.",
-				zap.Error(err),
-				zap.Int("dropped_items", req.ItemsCount()),
-			)
-			return err
+			return fmt.Errorf("not retryable error: %w", err)
 		}
 
 		req = extractPartialRequest(req, err)
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
-			return fmt.Errorf("max elapsed time expired %w", err)
+			return fmt.Errorf("no more retries left: %w", err)
 		}
 
 		throttleErr := throttleRetry{}
