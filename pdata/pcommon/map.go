@@ -11,6 +11,9 @@ import (
 )
 
 // Map stores a map of string keys to elements of Value type.
+//
+// Must use NewMap function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type Map internal.Map
 
 // NewMap creates a Map with 0 elements.

@@ -27,13 +27,11 @@ func (ms TraceState) getState() *internal.State {
 }
 
 // AsRaw returns the string representation of the tracestate in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header
-// Calling this function on zero-initialized TraceState will cause a panic.
 func (ms TraceState) AsRaw() string {
 	return *ms.getOrig()
 }
 
 // FromRaw copies the string representation in w3c-trace-context format of the tracestate into this TraceState.
-// Calling this function on zero-initialized TraceState will cause a panic.
 func (ms TraceState) FromRaw(v string) {
 	ms.getState().AssertMutable()
 	*ms.getOrig() = v
@@ -41,7 +39,6 @@ func (ms TraceState) FromRaw(v string) {
 
 // MoveTo moves the TraceState instance overriding the destination
 // and resetting the current instance to its zero value.
-// Calling this function on zero-initialized TraceState will cause a panic.
 func (ms TraceState) MoveTo(dest TraceState) {
 	ms.getState().AssertMutable()
 	dest.getState().AssertMutable()
@@ -50,7 +47,6 @@ func (ms TraceState) MoveTo(dest TraceState) {
 }
 
 // CopyTo copies the TraceState instance overriding the destination.
-// Calling this function on zero-initialized TraceState will cause a panic.
 func (ms TraceState) CopyTo(dest TraceState) {
 	dest.getState().AssertMutable()
 	*dest.getOrig() = *ms.getOrig()
