@@ -7,7 +7,7 @@ change_type: breaking
 component: configopaque
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: configopaque.String implements `fmt.Stringer`, outputting [REDACTED] when used as `fmt.Sprintf("%s", opaquestring)`
+note: configopaque.String implements `fmt.Stringer` and `fmt.GoStringer`, outputting [REDACTED] when formatted with the %s, %q or %#v verbs`
 
 # One or more tracking issues or pull requests related to the change
 issues: [9213]
