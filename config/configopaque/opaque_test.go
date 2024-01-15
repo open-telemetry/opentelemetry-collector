@@ -56,8 +56,27 @@ func TestStringFmt(t *testing.T) {
 				)
 			})
 		}
-		// converting to a string allows to output as an unredacted string still:
-		// nolint S1025
-		assert.Equal(t, string(example), fmt.Sprintf("%s", string(example)))
+
+		for _, verb := range verbs {
+			t.Run(fmt.Sprintf("string(%s)/%s", string(example), verb), func(t *testing.T) {
+				// converting to a string allows to output as an unredacted string still:
+				var expected string
+				switch verb {
+				case "%s", "%v", "%+v":
+					expected = string(example)
+				case "%q", "%#v":
+					expected = "\"" + string(example) + "\""
+				case "%x":
+					expected = fmt.Sprintf("%x", []byte(example))
+				default:
+					t.Errorf("unexpected verb %q", verb)
+				}
+
+				assert.Equal(t,
+					expected,
+					fmt.Sprintf(verb, string(example)),
+				)
+			})
+		}
 	}
 }
