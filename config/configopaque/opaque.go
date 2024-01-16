@@ -8,10 +8,9 @@ import (
 	"fmt"
 )
 
-// String alias that is marshaled in an opaque way.
+// String alias that is marshaled and printed in an opaque way.
+// To recover the original value, cast it to a string.
 type String string
-
-var _ fmt.Stringer = String("")
 
 const maskedString = "[REDACTED]"
 
@@ -22,6 +21,18 @@ func (s String) MarshalText() ([]byte, error) {
 	return []byte(maskedString), nil
 }
 
+var _ fmt.Stringer = String("")
+
+// String formats the string as `[REDACTED]`.
+// This is used for the %s and %q verbs.
 func (s String) String() string {
 	return maskedString
+}
+
+var _ fmt.GoStringer = String("")
+
+// GoString formats the string as `[REDACTED]`.
+// This is used for the %#v verb.
+func (s String) GoString() string {
+	return fmt.Sprintf("%#v", maskedString)
 }
