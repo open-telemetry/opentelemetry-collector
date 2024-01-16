@@ -44,7 +44,7 @@ require (
 	github.com/knadh/koanf/v2 v2.0.1 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
+	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -86,8 +86,6 @@ replace go.opentelemetry.io/collector/config/configopaque => ../configopaque
 
 replace go.opentelemetry.io/collector/config/configtls => ../configtls
 
-replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
-
 replace go.opentelemetry.io/collector/config/configtelemetry => ../configtelemetry
 
 replace go.opentelemetry.io/collector/config/internal => ../internal
@@ -97,12 +95,6 @@ replace go.opentelemetry.io/collector/extension => ../../extension
 replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
-
-replace go.opentelemetry.io/collector/processor => ../../processor
-
-replace go.opentelemetry.io/collector/exporter => ../../exporter
-
-replace go.opentelemetry.io/collector/receiver => ../../receiver
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 

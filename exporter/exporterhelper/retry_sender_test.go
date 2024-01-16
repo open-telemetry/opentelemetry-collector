@@ -17,6 +17,8 @@ import (
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/tag"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -239,8 +241,10 @@ func TestQueueRetryWithNoQueue(t *testing.T) {
 func TestQueueRetryWithDisabledRetires(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
-	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg))
-	require.IsType(t, &errorLoggingRequestSender{}, be.retrySender)
+	set := exportertest.NewNopCreateSettings()
+	logger, observed := observer.New(zap.ErrorLevel)
+	set.Logger = zap.New(logger)
+	be, err := newBaseExporter(set, component.DataTypeLogs, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
@@ -248,6 +252,9 @@ func TestQueueRetryWithDisabledRetires(t *testing.T) {
 	ocs.run(func() {
 		require.Error(t, be.send(context.Background(), mockR))
 	})
+	assert.Len(t, observed.All(), 1)
+	assert.Equal(t, "Exporting failed. Rejecting data. "+
+		"Try enabling retry_on_failure config option to retry on retryable errors.", observed.All()[0].Message)
 	ocs.awaitAsyncProcessing()
 	mockR.checkNumRequests(t, 1)
 	ocs.checkSendItemsCount(t, 0)

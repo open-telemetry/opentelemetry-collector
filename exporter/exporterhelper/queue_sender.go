@@ -17,7 +17,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
@@ -86,7 +85,7 @@ type queueSender struct {
 }
 
 func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal component.DataType,
-	marshaler RequestMarshaler, unmarshaler RequestUnmarshaler) *queueSender {
+	marshaler RequestMarshaler, unmarshaler RequestUnmarshaler, consumeErrHandler func(error, Request)) *queueSender {
 
 	isPersistent := config.StorageID != nil
 	var queue internal.Queue[Request]
@@ -114,21 +113,15 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 		logger:         set.TelemetrySettings.Logger,
 		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
 	}
-	qs.consumers = internal.NewQueueConsumers(queue, config.NumConsumers, qs.consume)
-	return qs
-}
-
-// consume is the function that is executed by the queue consumers to send the data to the next consumerSender.
-func (qs *queueSender) consume(ctx context.Context, req Request) error {
-	err := qs.nextSender.send(ctx, req)
-	if err != nil && !consumererror.IsPermanent(err) {
-		qs.logger.Error(
-			"Exporting failed. No more retries left. Dropping data.",
-			zap.Error(err),
-			zap.Int("dropped_items", req.ItemsCount()),
-		)
+	consumeFunc := func(ctx context.Context, req Request) error {
+		err := qs.nextSender.send(ctx, req)
+		if err != nil {
+			consumeErrHandler(err, req)
+		}
+		return err
 	}
-	return err
+	qs.consumers = internal.NewQueueConsumers(queue, config.NumConsumers, consumeFunc)
+	return qs
 }
 
 // Start is invoked during service startup.
@@ -210,11 +203,7 @@ func (qs *queueSender) send(ctx context.Context, req Request) error {
 
 	span := trace.SpanFromContext(c)
 	if err := qs.queue.Offer(c, req); err != nil {
-		qs.logger.Error(
-			"Dropping data because sending_queue is full. Try increasing queue_size.",
-			zap.Int("dropped_items", req.ItemsCount()),
-		)
-		span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qs.traceAttribute))
+		span.AddEvent("Failed to enqueue item.", trace.WithAttributes(qs.traceAttribute))
 		return err
 	}
 
