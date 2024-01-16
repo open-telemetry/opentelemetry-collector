@@ -9,6 +9,7 @@ import (
 )
 
 // String alias that is marshaled and printed in an opaque way.
+// To recover the original value, cast it to a string.
 type String string
 
 const maskedString = "[REDACTED]"
