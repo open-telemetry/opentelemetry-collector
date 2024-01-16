@@ -35,12 +35,12 @@ func TestMemoryPressureResponse(t *testing.T) {
 
 	// Below memAllocLimit.
 	currentMemAlloc = 800
-	ml.checkMemLimits()
+	ml.CheckMemLimits()
 	assert.False(t, ml.MustRefuse())
 
 	// Above memAllocLimit.
 	currentMemAlloc = 1800
-	ml.checkMemLimits()
+	ml.CheckMemLimits()
 	assert.True(t, ml.MustRefuse())
 
 	// Check ballast effect
@@ -48,12 +48,12 @@ func TestMemoryPressureResponse(t *testing.T) {
 
 	// Below memAllocLimit accounting for ballast.
 	currentMemAlloc = 800 + ml.ballastSize
-	ml.checkMemLimits()
+	ml.CheckMemLimits()
 	assert.False(t, ml.MustRefuse())
 
 	// Above memAllocLimit even accounting for ballast.
 	currentMemAlloc = 1800 + ml.ballastSize
-	ml.checkMemLimits()
+	ml.CheckMemLimits()
 	assert.True(t, ml.MustRefuse())
 
 	// Restore ballast to default.
@@ -64,12 +64,12 @@ func TestMemoryPressureResponse(t *testing.T) {
 
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
-	ml.checkMemLimits()
+	ml.CheckMemLimits()
 	assert.False(t, ml.MustRefuse())
 
 	// Above memSpikeLimit.
 	currentMemAlloc = 550
-	ml.checkMemLimits()
+	ml.CheckMemLimits()
 	assert.True(t, ml.MustRefuse())
 }
 

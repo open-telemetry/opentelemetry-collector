@@ -108,7 +108,7 @@ func (ml *MemoryLimiter) startMonitoring() {
 				case <-ml.closed:
 					return
 				}
-				ml.checkMemLimits()
+				ml.CheckMemLimits()
 			}
 		}()
 	}
@@ -193,7 +193,8 @@ func (ml *MemoryLimiter) doGCandReadMemStats() *runtime.MemStats {
 	return ms
 }
 
-func (ml *MemoryLimiter) checkMemLimits() {
+// CheckMemLimits inspects current memory usage against threshold and toggle mustRefuse when threshold is exceeded
+func (ml *MemoryLimiter) CheckMemLimits() {
 	ms := ml.readMemStats()
 
 	ml.logger.Debug("Currently used memory.", memstatToZapField(ms))
