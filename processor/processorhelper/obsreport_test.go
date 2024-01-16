@@ -12,8 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -22,14 +20,14 @@ var (
 )
 
 func TestProcessorTraceData(t *testing.T) {
-	testTelemetry(t, processorID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
+	testTelemetry(t, processorID, func(t *testing.T, tt componenttest.TestTelemetry) {
 		const acceptedSpans = 27
 		const refusedSpans = 19
 		const droppedSpans = 13
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
 			ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		}, useOtel)
+		})
 		require.NoError(t, err)
 		obsrep.TracesAccepted(context.Background(), acceptedSpans)
 		obsrep.TracesRefused(context.Background(), refusedSpans)
@@ -40,7 +38,7 @@ func TestProcessorTraceData(t *testing.T) {
 }
 
 func TestProcessorMetricsData(t *testing.T) {
-	testTelemetry(t, processorID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
+	testTelemetry(t, processorID, func(t *testing.T, tt componenttest.TestTelemetry) {
 		const acceptedPoints = 29
 		const refusedPoints = 11
 		const droppedPoints = 17
@@ -48,7 +46,7 @@ func TestProcessorMetricsData(t *testing.T) {
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
 			ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		}, useOtel)
+		})
 		require.NoError(t, err)
 		obsrep.MetricsAccepted(context.Background(), acceptedPoints)
 		obsrep.MetricsRefused(context.Background(), refusedPoints)
@@ -81,7 +79,7 @@ func TestBuildProcessorCustomMetricName(t *testing.T) {
 }
 
 func TestProcessorLogRecords(t *testing.T) {
-	testTelemetry(t, processorID, func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool) {
+	testTelemetry(t, processorID, func(t *testing.T, tt componenttest.TestTelemetry) {
 		const acceptedRecords = 29
 		const refusedRecords = 11
 		const droppedRecords = 17
@@ -89,7 +87,7 @@ func TestProcessorLogRecords(t *testing.T) {
 		obsrep, err := newObsReport(ObsReportSettings{
 			ProcessorID:             processorID,
 			ProcessorCreateSettings: processor.CreateSettings{ID: processorID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		}, useOtel)
+		})
 		require.NoError(t, err)
 		obsrep.LogsAccepted(context.Background(), acceptedRecords)
 		obsrep.LogsRefused(context.Background(), refusedRecords)
@@ -174,25 +172,12 @@ func TestCheckProcessorLogViews(t *testing.T) {
 	assert.Error(t, tt.CheckProcessorLogs(0, 0, 9))
 }
 
-func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry, useOtel bool)) {
-	t.Run("WithOC", func(t *testing.T) {
-		originalValue := obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled()
-		require.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelForInternalMetricsfeatureGate.ID(), false))
-		defer func() {
-			require.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelForInternalMetricsfeatureGate.ID(), originalValue))
-		}()
-		tt, err := componenttest.SetupTelemetry(id)
-		require.NoError(t, err)
-		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-		testFunc(t, tt, false)
-	})
-
+func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry)) {
 	t.Run("WithOTel", func(t *testing.T) {
 		tt, err := componenttest.SetupTelemetry(id)
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-		testFunc(t, tt, true)
+		testFunc(t, tt)
 	})
 }

@@ -26,9 +26,6 @@ func newStubPromChecker() (prometheusChecker, error) {
 	promResponse := strings.ReplaceAll(string(promBytes), "\r\n", "\n")
 
 	return prometheusChecker{
-		ocHandler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			_, _ = w.Write([]byte(promResponse))
-		}),
 		otelHandler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			_, _ = w.Write([]byte(promResponse))
 		}),

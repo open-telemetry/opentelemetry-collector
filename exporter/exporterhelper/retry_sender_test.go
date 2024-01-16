@@ -6,7 +6,6 @@ package exporterhelper
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -14,9 +13,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/metric/metricdata"
-	"go.opencensus.io/metric/metricproducer"
-	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -367,48 +363,4 @@ func (ocs *observabilityConsumerSender) checkSendItemsCount(t *testing.T, want i
 
 func (ocs *observabilityConsumerSender) checkDroppedItemsCount(t *testing.T, want int) {
 	assert.EqualValues(t, want, ocs.droppedItemsCount.Load())
-}
-
-// checkValueForGlobalManager checks that the given metrics with wantTags is reported by one of the
-// metric producers
-func checkValueForGlobalManager(t *testing.T, wantTags []tag.Tag, value int64, vName string) {
-	producers := metricproducer.GlobalManager().GetAll()
-	for _, producer := range producers {
-		if checkValueForProducer(t, producer, wantTags, value, vName) {
-			return
-		}
-	}
-	require.Fail(t, fmt.Sprintf("could not find metric %v with tags %s reported", vName, wantTags))
-}
-
-// checkValueForProducer checks that the given metrics with wantTags is reported by the metric producer
-func checkValueForProducer(t *testing.T, producer metricproducer.Producer, wantTags []tag.Tag, value int64, vName string) bool {
-	for _, metric := range producer.Read() {
-		if metric.Descriptor.Name == vName && len(metric.TimeSeries) > 0 {
-			for _, ts := range metric.TimeSeries {
-				if tagsMatchLabelKeys(wantTags, metric.Descriptor.LabelKeys, ts.LabelValues) {
-					require.Equal(t, value, ts.Points[len(ts.Points)-1].Value.(int64))
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
-// tagsMatchLabelKeys returns true if provided tags match keys and values
-func tagsMatchLabelKeys(tags []tag.Tag, keys []metricdata.LabelKey, labels []metricdata.LabelValue) bool {
-	if len(tags) != len(keys) {
-		return false
-	}
-	for i := 0; i < len(tags); i++ {
-		var labelVal string
-		if labels[i].Present {
-			labelVal = labels[i].Value
-		}
-		if tags[i].Key.Name() != keys[i].Key || tags[i].Value != labelVal {
-			return false
-		}
-	}
-	return true
 }

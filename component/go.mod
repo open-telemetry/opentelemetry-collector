@@ -9,7 +9,6 @@ require (
 	github.com/prometheus/common v0.46.0
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.92.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.92.0
 	go.opentelemetry.io/collector/confmap v0.92.0
 	go.opentelemetry.io/collector/pdata v1.0.1
@@ -68,7 +67,3 @@ retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 )
-
-replace go.opentelemetry.io/collector => ../
-
-replace go.opentelemetry.io/collector/consumer => ../consumer

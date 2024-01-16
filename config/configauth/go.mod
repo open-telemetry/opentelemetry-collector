@@ -53,7 +53,3 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../configtelemet
 replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
-
-replace go.opentelemetry.io/collector => ../..
-
-replace go.opentelemetry.io/collector/consumer => ../../consumer

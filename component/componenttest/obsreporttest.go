@@ -19,7 +19,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
 const (
@@ -154,7 +153,6 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	}
 	settings.ts.TracerProvider = tp
 	settings.ts.MetricsLevel = configtelemetry.LevelNormal
-	settings.views = obsreportconfig.AllViews(configtelemetry.LevelNormal)
 	err := view.Register(settings.views...)
 	if err != nil {
 		return settings, err
@@ -182,7 +180,6 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	settings.ts.MeterProvider = settings.meterProvider
 
 	settings.prometheusChecker = &prometheusChecker{
-		ocHandler:   settings.ocExporter,
 		otelHandler: promhttp.HandlerFor(promRegOtel, promhttp.HandlerOpts{}),
 	}
 
