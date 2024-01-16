@@ -162,6 +162,7 @@ func TestBallastSize(t *testing.T) {
 
 	got.startMonitoring()
 	require.NoError(t, got.Start(context.Background(), &host{ballastSize: 113}))
+	assert.Equal(t, uint64(113), got.ballastSize)
 	require.NoError(t, got.Shutdown(context.Background()))
 }
 

@@ -21,55 +21,63 @@ func TestMemoryPressureResponse(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name           string
-		mlCfg          *Config
-		getMemFn       func() (uint64, error)
-		readMemStatsFn func(m *runtime.MemStats)
-		expectError    bool
+		name        string
+		mlCfg       *Config
+		memAlloc    uint64
+		expectError bool
 	}{
 		{
-			name: "fixed_limit",
+			name: "Below memAllocLimit",
 			mlCfg: &Config{
-				CheckInterval:       1 * time.Nanosecond,
-				MemoryLimitMiB:      1024,
-				MemorySpikeLimitMiB: 512,
+				CheckInterval:         time.Second,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 1,
 			},
+			memAlloc:    800,
 			expectError: false,
 		},
 		{
-			name: "percent_limit",
+			name: "Above memAllocLimit",
 			mlCfg: &Config{
-				CheckInterval:         1 * time.Nanosecond,
+				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 30,
+				MemorySpikePercentage: 1,
 			},
+			memAlloc:    1800,
+			expectError: true,
+		},
+		{
+			name: "Below memSpikeLimit",
+			mlCfg: &Config{
+				CheckInterval:         time.Second,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 10,
+			},
+			memAlloc:    800,
 			expectError: false,
 		},
 		{
-			name: "fixed_limit",
+			name: "Above memSpikeLimit",
 			mlCfg: &Config{
-				CheckInterval:         1 * time.Nanosecond,
+				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 30,
+				MemorySpikePercentage: 11,
 			},
-			getMemFn:       totalMemory,
-			readMemStatsFn: readMemStats,
-			expectError:    true,
+			memAlloc:    800,
+			expectError: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.getMemFn != nil {
-				memorylimiter.GetMemoryFn = tt.getMemFn
-			}
-			if tt.readMemStatsFn != nil {
-				memorylimiter.ReadMemStatsFn = tt.readMemStatsFn
+			memorylimiter.GetMemoryFn = totalMemory
+			memorylimiter.ReadMemStatsFn = func(ms *runtime.MemStats) {
+				ms.Alloc = tt.memAlloc
 			}
 			ml, err := newMemoryLimiter(tt.mlCfg, zap.NewNop())
-
 			assert.NoError(t, err)
+
 			assert.NoError(t, ml.Start(ctx, &mockHost{}))
-			time.Sleep(50 * time.Millisecond)
+			ml.memLimiter.CheckMemLimits()
 			mustRefuse := ml.MustRefuse()
 			if tt.expectError {
 				assert.True(t, mustRefuse)
@@ -94,9 +102,5 @@ func (h *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 func totalMemory() (uint64, error) {
-	return uint64(4096), nil
-}
-
-func readMemStats(m *runtime.MemStats) {
-	m.Alloc = 2000
+	return uint64(2048), nil
 }
