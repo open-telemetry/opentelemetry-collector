@@ -212,10 +212,7 @@ func convertCipherSuites(cipherSuites []string) ([]uint16, error) {
 			errs = append(errs, fmt.Errorf("invalid TLS cipher suite: %q", suite))
 		}
 	}
-	if len(errs) != 0 {
-		return nil, errors.Join(errs...)
-	}
-	return result, nil
+	return result, errors.Join(errs...)
 }
 
 func (c TLSSetting) loadCACertPool() (*x509.CertPool, error) {
