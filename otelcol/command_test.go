@@ -29,7 +29,7 @@ func TestNewCommandNoConfigURI(t *testing.T) {
 
 // This test emulates usage of Collector in Jaeger all-in-one, which
 // allows running the binary with no explicit configuration.
-func TestNewCommandImplicitConfig(t *testing.T) {
+func TestNewCommandProgrammaticallyPassedConfig(t *testing.T) {
 	cmd := NewCommand(CollectorSettings{Factories: nopFactories})
 	otelRunE := cmd.RunE
 	cmd.RunE = func(c *cobra.Command, args []string) error {
