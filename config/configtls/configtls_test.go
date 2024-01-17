@@ -6,7 +6,6 @@ package configtls
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -633,13 +632,12 @@ func TestCipherSuites(t *testing.T) {
 	tests := []struct {
 		name       string
 		tlsSetting TLSSetting
-		wantErr    error
+		wantErr    string
 		result     []uint16
 	}{
 		{
 			name:       "no suites set",
 			tlsSetting: TLSSetting{},
-			wantErr:    nil,
 			result:     nil,
 		},
 		{
@@ -647,23 +645,30 @@ func TestCipherSuites(t *testing.T) {
 			tlsSetting: TLSSetting{
 				CipherSuites: []string{"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA"},
 			},
-			wantErr: nil,
-			result:  []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA},
+			result: []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA},
 		},
 		{
 			name: "invalid cipher suite set",
 			tlsSetting: TLSSetting{
 				CipherSuites: []string{"FOO"},
 			},
-			wantErr: errors.New(`invalid TLS cipher suite: "FOO"`),
+			wantErr: `invalid TLS cipher suite: "FOO"`,
+		},
+		{
+			name: "multiple invalid cipher suites set",
+			tlsSetting: TLSSetting{
+				CipherSuites: []string{"FOO", "BAR"},
+			},
+			wantErr: `invalid TLS cipher suite: "FOO"
+invalid TLS cipher suite: "BAR"`,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			config, err := test.tlsSetting.loadTLSConfig()
-			if test.wantErr != nil {
-				assert.Equal(t, test.wantErr, err)
+			if test.wantErr != "" {
+				assert.EqualError(t, err, test.wantErr)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, test.result, config.CipherSuites)

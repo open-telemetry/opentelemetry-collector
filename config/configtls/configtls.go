@@ -6,6 +6,7 @@ package configtls // import "go.opentelemetry.io/collector/config/configtls"
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -197,6 +198,7 @@ func (c TLSSetting) loadTLSConfig() (*tls.Config, error) {
 
 func convertCipherSuites(cipherSuites []string) ([]uint16, error) {
 	var result []uint16
+	var errs []error
 	for _, suite := range cipherSuites {
 		found := false
 		for _, supported := range tls.CipherSuites() {
@@ -207,8 +209,11 @@ func convertCipherSuites(cipherSuites []string) ([]uint16, error) {
 			}
 		}
 		if !found {
-			return nil, fmt.Errorf("invalid TLS cipher suite: %q", suite)
+			errs = append(errs, fmt.Errorf("invalid TLS cipher suite: %q", suite))
 		}
+	}
+	if len(errs) != 0 {
+		return nil, errors.Join(errs...)
 	}
 	return result, nil
 }
