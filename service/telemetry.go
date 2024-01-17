@@ -75,7 +75,11 @@ func (tel *telemetryInitializer) init(res *resource.Resource, settings servicete
 
 	settings.Logger.Info("Setting up own telemetry...")
 	configuredSDK, err := config.NewSDK(
-		config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{}),
+		config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{
+			TracerProvider: &config.TracerProvider{
+				Processors: cfg.Traces.Processors,
+			},
+		}),
 	)
 
 	if err != nil {
