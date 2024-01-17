@@ -40,7 +40,7 @@ service:
 receivers:
   invalid_component_name:
 `
-		configFlag.Value.Set("yaml:" + cfg)
+		require.NoError(t, configFlag.Value.Set("yaml:"+cfg))
 		return otelRunE(cmd, args)
 	}
 	// verify that cmd.Execute was run with the implicitly provided config.
