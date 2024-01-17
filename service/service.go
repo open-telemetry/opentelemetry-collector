@@ -123,7 +123,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			// ignore other errors as they represent invalid state transitions and are considered benign.
 		}),
 	}
-
+	
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensionsAndPipeline(ctx, set, cfg); err != nil {
 		// If pipeline initialization fails then shut down telemetry
@@ -146,10 +146,6 @@ func Validate(ctx context.Context, set Settings, cfg Config) error {
 		MeterProvider:  noop.NewMeterProvider(),
 	}
 
-	return validate(ctx, set, cfg, telSettings)
-}
-
-func validate(ctx context.Context, set Settings, cfg Config, telSettings servicetelemetry.TelemetrySettings) error {
 	pSet := graph.Settings{
 		Telemetry:        telSettings,
 		BuildInfo:        set.BuildInfo,
