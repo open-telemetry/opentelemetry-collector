@@ -7,8 +7,6 @@ import (
 	"context"
 	"strings"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
@@ -16,7 +14,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -41,13 +38,11 @@ func BuildCustomMetricName(configType, metric string) string {
 
 // ObsReport is a helper to add observability to a processor.
 type ObsReport struct {
-	level    configtelemetry.Level
-	mutators []tag.Mutator
+	level configtelemetry.Level
 
 	logger *zap.Logger
 
-	useOtelForMetrics bool
-	otelAttrs         []attribute.KeyValue
+	otelAttrs []attribute.KeyValue
 
 	acceptedSpansCounter        metric.Int64Counter
 	refusedSpansCounter         metric.Int64Counter
@@ -68,15 +63,13 @@ type ObsReportSettings struct {
 
 // NewObsReport creates a new Processor.
 func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
-	return newObsReport(cfg, obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
+	return newObsReport(cfg)
 }
 
-func newObsReport(cfg ObsReportSettings, useOtel bool) (*ObsReport, error) {
+func newObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 	report := &ObsReport{
-		level:             cfg.ProcessorCreateSettings.MetricsLevel,
-		mutators:          []tag.Mutator{tag.Upsert(obsmetrics.TagKeyProcessor, cfg.ProcessorID.String(), tag.WithTTL(tag.TTLNoPropagation))},
-		logger:            cfg.ProcessorCreateSettings.Logger,
-		useOtelForMetrics: useOtel,
+		level:  cfg.ProcessorCreateSettings.MetricsLevel,
+		logger: cfg.ProcessorCreateSettings.Logger,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ProcessorKey, cfg.ProcessorID.String()),
 		},
@@ -90,9 +83,6 @@ func newObsReport(cfg ObsReportSettings, useOtel bool) (*ObsReport, error) {
 }
 
 func (or *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
-	if !or.useOtelForMetrics {
-		return nil
-	}
 	meter := cfg.ProcessorCreateSettings.MeterProvider.Meter(processorScope)
 	var errors, err error
 
@@ -162,7 +152,7 @@ func (or *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
 	return errors
 }
 
-func (or *ObsReport) recordWithOtel(ctx context.Context, dataType component.DataType, accepted, refused, dropped int64) {
+func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType, accepted, refused, dropped int64) {
 	var acceptedCount, refusedCount, droppedCount metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
@@ -182,42 +172,6 @@ func (or *ObsReport) recordWithOtel(ctx context.Context, dataType component.Data
 	acceptedCount.Add(ctx, accepted, metric.WithAttributes(or.otelAttrs...))
 	refusedCount.Add(ctx, refused, metric.WithAttributes(or.otelAttrs...))
 	droppedCount.Add(ctx, dropped, metric.WithAttributes(or.otelAttrs...))
-}
-
-func (or *ObsReport) recordWithOC(ctx context.Context, dataType component.DataType, accepted, refused, dropped int64) {
-	var acceptedMeasure, refusedMeasure, droppedMeasure *stats.Int64Measure
-
-	switch dataType {
-	case component.DataTypeTraces:
-		acceptedMeasure = obsmetrics.ProcessorAcceptedSpans
-		refusedMeasure = obsmetrics.ProcessorRefusedSpans
-		droppedMeasure = obsmetrics.ProcessorDroppedSpans
-	case component.DataTypeMetrics:
-		acceptedMeasure = obsmetrics.ProcessorAcceptedMetricPoints
-		refusedMeasure = obsmetrics.ProcessorRefusedMetricPoints
-		droppedMeasure = obsmetrics.ProcessorDroppedMetricPoints
-	case component.DataTypeLogs:
-		acceptedMeasure = obsmetrics.ProcessorAcceptedLogRecords
-		refusedMeasure = obsmetrics.ProcessorRefusedLogRecords
-		droppedMeasure = obsmetrics.ProcessorDroppedLogRecords
-	}
-
-	// ignore the error for now; should not happen
-	_ = stats.RecordWithTags(
-		ctx,
-		or.mutators,
-		acceptedMeasure.M(accepted),
-		refusedMeasure.M(refused),
-		droppedMeasure.M(dropped),
-	)
-}
-
-func (or *ObsReport) recordData(ctx context.Context, dataType component.DataType, accepted, refused, dropped int64) {
-	if or.useOtelForMetrics {
-		or.recordWithOtel(ctx, dataType, accepted, refused, dropped)
-	} else {
-		or.recordWithOC(ctx, dataType, accepted, refused, dropped)
-	}
 }
 
 // TracesAccepted reports that the trace data was accepted.

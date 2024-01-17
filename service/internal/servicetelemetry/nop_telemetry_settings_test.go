@@ -26,11 +26,10 @@ func TestNewNopSettings(t *testing.T) {
 	require.Equal(t, noopmetric.NewMeterProvider(), set.MeterProvider)
 	require.Equal(t, configtelemetry.LevelNone, set.MetricsLevel)
 	require.Equal(t, pcommon.NewResource(), set.Resource)
-	require.NoError(t,
-		set.Status.ReportComponentStatus(
-			&component.InstanceID{},
-			component.NewStatusEvent(component.StatusStarting),
-		),
+	set.Status.ReportStatus(
+		&component.InstanceID{},
+		component.NewStatusEvent(component.StatusStarting),
 	)
-	require.NoError(t, set.Status.ReportComponentOKIfStarting(&component.InstanceID{}))
+	set.Status.ReportOKIfStarting(&component.InstanceID{})
+
 }

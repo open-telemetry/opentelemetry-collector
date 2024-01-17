@@ -194,7 +194,7 @@ func (a attribute) TestValue() string {
 	case pcommon.ValueTypeSlice:
 		return fmt.Sprintf(`[]any{"%s-item1", "%s-item2"}`, a.FullName, a.FullName)
 	case pcommon.ValueTypeBytes:
-		return fmt.Sprintf(`bytes("%s-val")`, a.FullName)
+		return fmt.Sprintf(`[]byte("%s-val")`, a.FullName)
 	}
 	return ""
 }
