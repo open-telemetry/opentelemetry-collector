@@ -1,0 +1,18 @@
+version: 0.2
+language: en
+
+dictionaryDefinitions:
+  - name: project-words
+    path: '.project-words.txt'
+    addWords: true
+
+dictionaries:
+  - project-words
+
+ignorePaths:
+  - '.git'
+  - 'node_modules'
+  - '*.svg'
+  - '*.png'
+  - '.project-words.txt'
+
