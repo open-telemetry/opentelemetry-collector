@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/util"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
@@ -48,7 +48,7 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	// NonPermanent errors will be converted to codes.Unavailable (equivalent to HTTP 503)
 	// Permanent errors will be converted to codes.InvalidArgument (equivalent to HTTP 400)
 	if err != nil {
-		s := util.GetStatusFromError(err)
+		s := errors.GetStatusFromError(err)
 		return pmetricotlp.NewExportResponse(), s.Err()
 	}
 

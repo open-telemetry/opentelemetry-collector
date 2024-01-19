@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package util // import "go.opentelemetry.io/collector/receiver/otlpreceiver/internal/util"
+package errors // import "go.opentelemetry.io/collector/receiver/otlpreceiver/internal/util"
 
 import (
 	"fmt"
