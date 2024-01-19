@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/propagation"
@@ -63,6 +64,18 @@ func newColTelemetry(disableHighCardinality bool, extendedConfig bool) *telemetr
 	}
 }
 
+func ptr[T any](v T) *T {
+	return &v
+}
+
+func toMap(attrs []attribute.KeyValue) map[string]string {
+	var attrsMap map[string]string
+	for _, kv := range attrs {
+		attrsMap[string(kv.Key)] = kv.Value.AsString()
+	}
+	return attrsMap
+}
+
 func (tel *telemetryInitializer) init(res *resource.Resource, settings servicetelemetry.TelemetrySettings, cfg telemetry.Config, asyncErrorChannel chan error) error {
 	if cfg.Metrics.Level == configtelemetry.LevelNone || (cfg.Metrics.Address == "" && len(cfg.Metrics.Readers) == 0) {
 		settings.Logger.Info(
@@ -79,6 +92,15 @@ func (tel *telemetryInitializer) init(res *resource.Resource, settings servicete
 			TracerProvider: &config.TracerProvider{
 				Processors: cfg.Traces.Processors,
 			},
+			Resource: &config.Resource{
+				SchemaUrl: ptr(res.SchemaURL()),
+				Attributes: &config.Attributes{
+					// TODO: this conversion from a resource to a map can
+					// be removed once the flow between service initialization
+					// and this function is fixed
+					AdditionalProperties: toMap(res.Attributes()),
+				},
+			}
 		}),
 	)
 
