@@ -21,25 +21,25 @@ func NewMap[K comparable, V component.Component]() *Map[K, V] {
 
 // Map keeps reference of all created instances for a given shared key such as a component configuration.
 type Map[K comparable, V component.Component] struct {
+	lock       sync.Mutex
 	components map[K]*Component[V]
 }
 
 // LoadOrStore returns the already created instance if exists, otherwise creates a new instance
 // and adds it to the map of references.
 func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*Component[V], error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	if c, ok := m.components[key]; ok {
 		// If we haven't already seen this telemetry settings, this shared component represents
-		// another instance. Wrap ReportComponentStatus to report for all instances this shared
+		// another instance. Wrap ReportStatus to report for all instances this shared
 		// component represents.
 		if _, ok := c.seenSettings[telemetrySettings]; !ok {
 			c.seenSettings[telemetrySettings] = struct{}{}
-			prev := c.telemetry.ReportComponentStatus
-			c.telemetry.ReportComponentStatus = func(ev *component.StatusEvent) error {
-				err := telemetrySettings.ReportComponentStatus(ev)
-				if prevErr := prev(ev); prevErr != nil {
-					err = prevErr
-				}
-				return err
+			prev := c.telemetry.ReportStatus
+			c.telemetry.ReportStatus = func(ev *component.StatusEvent) {
+				telemetrySettings.ReportStatus(ev)
+				prev(ev)
 			}
 		}
 		return c, nil
@@ -52,6 +52,8 @@ func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettin
 	newComp := &Component[V]{
 		component: comp,
 		removeFunc: func() {
+			m.lock.Lock()
+			defer m.lock.Unlock()
 			delete(m.components, key)
 		},
 		telemetry: telemetrySettings,
@@ -89,9 +91,9 @@ func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 		// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
 		// and takes priority over the automated status reporting that happens in graph, making the
 		// status reporting in graph a no-op.
-		_ = c.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStarting))
+		c.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStarting))
 		if err = c.component.Start(ctx, host); err != nil {
-			_ = c.telemetry.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+			c.telemetry.ReportStatus(component.NewPermanentErrorEvent(err))
 		}
 	})
 	return err
@@ -105,12 +107,12 @@ func (c *Component[V]) Shutdown(ctx context.Context) error {
 		// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
 		// and takes priority over the automated status reporting that happens in graph, making the
 		// status reporting in graph a no-op.
-		_ = c.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopping))
+		c.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopping))
 		err = c.component.Shutdown(ctx)
 		if err != nil {
-			_ = c.telemetry.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+			c.telemetry.ReportStatus(component.NewPermanentErrorEvent(err))
 		} else {
-			_ = c.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopped))
+			c.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopped))
 		}
 		c.removeFunc()
 	})

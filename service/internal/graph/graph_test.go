@@ -2337,6 +2337,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			actualStatuses := make(map[*component.InstanceID][]*component.StatusEvent)
 			rep := status.NewReporter(func(id *component.InstanceID, ev *component.StatusEvent) {
 				actualStatuses[id] = append(actualStatuses[id], ev)
+			}, func(err error) {
 			})
 
 			pg.telemetry.Status = rep

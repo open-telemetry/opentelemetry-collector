@@ -43,8 +43,15 @@ func TestInvalidRandomizationFactor(t *testing.T) {
 func TestInvalidMultiplier(t *testing.T) {
 	cfg := NewDefaultBackOffConfig()
 	assert.NoError(t, cfg.Validate())
-	cfg.Multiplier = 0
+	cfg.Multiplier = -1
 	assert.Error(t, cfg.Validate())
+}
+
+func TestZeroMultiplierIsValid(t *testing.T) {
+	cfg := NewDefaultBackOffConfig()
+	assert.NoError(t, cfg.Validate())
+	cfg.Multiplier = 0
+	assert.NoError(t, cfg.Validate())
 }
 
 func TestInvalidMaxInterval(t *testing.T) {

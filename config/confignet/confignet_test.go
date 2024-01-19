@@ -21,7 +21,7 @@ func TestNetAddrTimeout(t *testing.T) {
 			Timeout: -1 * time.Second,
 		},
 	}
-	_, err := nac.Dial()
+	_, err := nac.Dial(context.Background())
 	assert.Error(t, err)
 	var netErr net.Error
 	if errors.As(err, &netErr) {
@@ -38,7 +38,7 @@ func TestTCPAddrTimeout(t *testing.T) {
 			Timeout: -1 * time.Second,
 		},
 	}
-	_, err := nac.Dial()
+	_, err := nac.Dial(context.Background())
 	assert.Error(t, err)
 	var netErr net.Error
 	if errors.As(err, &netErr) {
@@ -53,7 +53,7 @@ func TestNetAddr(t *testing.T) {
 		Endpoint:  "localhost:0",
 		Transport: "tcp",
 	}
-	ln, err := nas.ListenContext(context.Background())
+	ln, err := nas.Listen(context.Background())
 	assert.NoError(t, err)
 	done := make(chan bool, 1)
 
@@ -74,7 +74,7 @@ func TestNetAddr(t *testing.T) {
 		Transport: "tcp",
 	}
 	var conn net.Conn
-	conn, err = nac.DialContext(context.Background())
+	conn, err = nac.Dial(context.Background())
 	assert.NoError(t, err)
 	_, err = conn.Write([]byte("test"))
 	assert.NoError(t, err)
@@ -87,7 +87,7 @@ func TestTCPAddr(t *testing.T) {
 	nas := &TCPAddr{
 		Endpoint: "localhost:0",
 	}
-	ln, err := nas.ListenContext(context.Background())
+	ln, err := nas.Listen(context.Background())
 	assert.NoError(t, err)
 	done := make(chan bool, 1)
 
@@ -107,7 +107,7 @@ func TestTCPAddr(t *testing.T) {
 		Endpoint: ln.Addr().String(),
 	}
 	var conn net.Conn
-	conn, err = nac.DialContext(context.Background())
+	conn, err = nac.Dial(context.Background())
 	assert.NoError(t, err)
 	_, err = conn.Write([]byte("test"))
 	assert.NoError(t, err)

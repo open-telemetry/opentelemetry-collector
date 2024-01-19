@@ -7,19 +7,15 @@ change_type: enhancement
 component: service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Enable `telemetry.useOtelForInternalMetrics` by updating the flag to beta"
+note: mark `telemetry.useOtelForInternalMetrics` as stable
 
 # One or more tracking issues or pull requests related to the change
-issues: [7454]
+issues: [816]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  The metrics generated should be consistent with the metrics generated
-  previously with OpenCensus. Users can disable the behaviour
-  by setting `--feature-gates -telemetry.useOtelForInternalMetrics` at
-  collector start.
+subtext:
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

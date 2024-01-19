@@ -270,7 +270,7 @@ func validateBalancerName(balancerName string) bool {
 
 // ToListener returns the net.Listener constructed from the settings.
 func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
-	return gss.NetAddr.Listen()
+	return gss.NetAddr.Listen(context.Background())
 }
 
 func (gss *GRPCServerSettings) ToServer(host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {

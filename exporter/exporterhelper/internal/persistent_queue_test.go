@@ -590,6 +590,7 @@ func BenchmarkPersistentQueue_TraceSpans(b *testing.B) {
 
 			req := newTracesRequest(c.numTraces, c.numSpansPerTrace)
 
+			bb.ReportAllocs()
 			bb.ResetTimer()
 
 			for i := 0; i < bb.N; i++ {
