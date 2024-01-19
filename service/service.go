@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -100,10 +99,15 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	res := buildResource(set.BuildInfo, cfg.Telemetry)
 	pcommonRes := pdataFromSdk(res)
 
+	logger := srv.telemetry.Logger()
+	if err = srv.telemetryInitializer.init(res, logger, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
+		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
+	}
+
 	srv.telemetrySettings = servicetelemetry.TelemetrySettings{
-		Logger:         srv.telemetry.Logger(),
+		Logger:         logger,
 		TracerProvider: srv.telemetry.TracerProvider(),
-		MeterProvider:  noop.NewMeterProvider(),
+		MeterProvider:  srv.telemetryInitializer.mp,
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 		// Construct telemetry attributes from build info and config's resource attributes.
 		Resource: pcommonRes,
@@ -114,12 +118,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			// ignore other errors as they represent invalid state transitions and are considered benign.
 		}),
 	}
-
-	if err = srv.telemetryInitializer.init(res, srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
-		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
-	}
-	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
-	srv.telemetrySettings.TracerProvider = srv.telemetryInitializer.tp
 
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensionsAndPipeline(ctx, set, cfg); err != nil {

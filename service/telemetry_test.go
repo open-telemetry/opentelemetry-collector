@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -300,12 +299,7 @@ func TestTelemetryInit(t *testing.T) {
 				}
 			}
 			otelRes := buildResource(buildInfo, *tc.cfg)
-			res := pdataFromSdk(otelRes)
-			settings := servicetelemetry.TelemetrySettings{
-				Logger:   zap.NewNop(),
-				Resource: res,
-			}
-			err := tel.init(otelRes, settings, *tc.cfg, make(chan error))
+			err := tel.init(otelRes, zap.NewNop(), *tc.cfg, make(chan error))
 			require.NoError(t, err)
 			defer func() {
 				require.NoError(t, tel.shutdown())

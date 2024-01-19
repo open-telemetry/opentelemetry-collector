@@ -5,17 +5,30 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"context"
+	"errors"
 
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/contrib/config"
+	"go.opentelemetry.io/contrib/propagators/b3"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
+const (
+	// supported trace propagators
+	traceContextPropagator = "tracecontext"
+	b3Propagator           = "b3"
+)
+
+var (
+	errUnsupportedPropagator = errors.New("unsupported trace propagator")
+)
+
 type Telemetry struct {
 	logger         *zap.Logger
-	tracerProvider *sdktrace.TracerProvider
+	tracerProvider trace.TracerProvider
 }
 
 func (t *Telemetry) TracerProvider() trace.TracerProvider {
@@ -26,11 +39,10 @@ func (t *Telemetry) Logger() *zap.Logger {
 	return t.logger
 }
 
-func (t *Telemetry) Shutdown(ctx context.Context) error {
+func (t *Telemetry) Shutdown(_ context.Context) error {
 	// TODO: Sync logger.
-	return multierr.Combine(
-		t.tracerProvider.Shutdown(ctx),
-	)
+	// TODO: shutdown tracerProvider
+	return nil
 }
 
 // Settings holds configuration for building Telemetry.
@@ -44,14 +56,53 @@ func New(_ context.Context, set Settings, cfg Config) (*Telemetry, error) {
 	if err != nil {
 		return nil, err
 	}
-	tp := sdktrace.NewTracerProvider(
-		// needed for supporting the zpages extension
-		sdktrace.WithSampler(alwaysRecord()),
-	)
+	tp, err := newTracerProvider(cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &Telemetry{
 		logger:         logger,
 		tracerProvider: tp,
 	}, nil
+}
+
+func textMapPropagatorFromConfig(props []string) (propagation.TextMapPropagator, error) {
+	var textMapPropagators []propagation.TextMapPropagator
+	for _, prop := range props {
+		switch prop {
+		case traceContextPropagator:
+			textMapPropagators = append(textMapPropagators, propagation.TraceContext{})
+		case b3Propagator:
+			textMapPropagators = append(textMapPropagators, b3.New())
+		default:
+			return nil, errUnsupportedPropagator
+		}
+	}
+	return propagation.NewCompositeTextMapPropagator(textMapPropagators...), nil
+}
+
+func newTracerProvider(cfg Config) (trace.TracerProvider, error) {
+	// TODO: Re-add sdktrace.WithSampler(alwaysRecord()),
+	configuredSDK, err := config.NewSDK(
+		config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{
+			TracerProvider: &config.TracerProvider{
+				Processors: cfg.Traces.Processors,
+			},
+		}),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	tp := configuredSDK.TracerProvider()
+
+	if tp, err := textMapPropagatorFromConfig(cfg.Traces.Propagators); err == nil {
+		otel.SetTextMapPropagator(tp)
+	} else {
+		return nil, err
+	}
+
+	return tp, nil
 }
 
 func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
