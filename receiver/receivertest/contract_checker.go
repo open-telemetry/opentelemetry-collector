@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 )
@@ -116,8 +117,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	case component.DataTypeTraces:
 		receiver, err = params.Factory.CreateTracesReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
 	case component.DataTypeMetrics:
-		// TODO: add metrics support to mockConsumer so that this case can be also implemented.
-		require.FailNow(params.T, "DataTypeMetrics is not implemented")
+		receiver, err = params.Factory.CreateMetricsReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
 	default:
 		require.FailNow(params.T, "must specify a valid DataType to test for")
 	}
@@ -346,14 +346,9 @@ func idSetFromTraces(data ptrace.Traces) (idSet, error) {
 			ss := ils.At(j).Spans()
 			for k := 0; k < ss.Len(); k++ {
 				elem := ss.At(k)
-				key, exists := elem.Attributes().Get(UniqueIDAttrName)
-				if !exists {
-					return ds, fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
+				if err := idSetFromAttributes(ds, elem.Attributes()); err != nil {
+					return ds, err
 				}
-				if key.Type() != pcommon.ValueTypeStr {
-					return ds, fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
-				}
-				ds[UniqueIDAttrVal(key.Str())] = true
 			}
 		}
 	}
@@ -376,21 +371,84 @@ func idSetFromLogs(data plog.Logs) (idSet, error) {
 			ss := ils.At(j).LogRecords()
 			for k := 0; k < ss.Len(); k++ {
 				elem := ss.At(k)
-				key, exists := elem.Attributes().Get(UniqueIDAttrName)
-				if !exists {
-					return ds, fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
+				if err := idSetFromAttributes(ds, elem.Attributes()); err != nil {
+					return ds, err
 				}
-				if key.Type() != pcommon.ValueTypeStr {
-					return ds, fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
-				}
-				ds[UniqueIDAttrVal(key.Str())] = true
 			}
 		}
 	}
 	return ds, nil
 }
 
-// TODO: Implement mockConsumer.ConsumeMetrics()
+func (m *mockConsumer) ConsumeMetrics(_ context.Context, data pmetric.Metrics) error {
+	ids, err := idSetFromMetrics(data)
+	require.NoError(m.t, err)
+	return m.consume(ids)
+}
+
+// idSetFromMetrics computes an idSet from given pmetric.Metrics. The idSet will contain ids of all metric records.
+func idSetFromMetrics(data pmetric.Metrics) (idSet, error) {
+	ds := map[UniqueIDAttrVal]bool{}
+	rss := data.ResourceMetrics()
+	for i := 0; i < rss.Len(); i++ {
+		ils := rss.At(i).ScopeMetrics()
+		for j := 0; j < ils.Len(); j++ {
+			ss := ils.At(j).Metrics()
+			for k := 0; k < ss.Len(); k++ {
+				elem := ss.At(k)
+				switch elem.Type() {
+				case pmetric.MetricTypeGauge:
+					for i := 0; i < elem.Gauge().DataPoints().Len(); i++ {
+						if err := idSetFromAttributes(ds, elem.Gauge().DataPoints().At(i).Attributes()); err != nil {
+							return ds, err
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					for i := 0; i < elem.Histogram().DataPoints().Len(); i++ {
+						if err := idSetFromAttributes(ds, elem.Histogram().DataPoints().At(i).Attributes()); err != nil {
+							return ds, err
+						}
+					}
+				case pmetric.MetricTypeSum:
+					for i := 0; i < elem.Histogram().DataPoints().Len(); i++ {
+						if err := idSetFromAttributes(ds, elem.Sum().DataPoints().At(i).Attributes()); err != nil {
+							return ds, err
+						}
+					}
+				case pmetric.MetricTypeEmpty:
+				case pmetric.MetricTypeSummary:
+					for i := 0; i < elem.Summary().DataPoints().Len(); i++ {
+						if err := idSetFromAttributes(ds, elem.Summary().DataPoints().At(i).Attributes()); err != nil {
+							return ds, err
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					for i := 0; i < elem.ExponentialHistogram().DataPoints().Len(); i++ {
+						if err := idSetFromAttributes(ds, elem.ExponentialHistogram().DataPoints().At(i).Attributes()); err != nil {
+							return ds, err
+						}
+					}
+				default:
+					return nil, fmt.Errorf("unsupported metric type: %v", elem.Type())
+				}
+
+			}
+		}
+	}
+	return ds, nil
+}
+
+func idSetFromAttributes(ds map[UniqueIDAttrVal]bool, attributes pcommon.Map) error {
+	key, exists := attributes.Get(UniqueIDAttrName)
+	if !exists {
+		return fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
+	}
+	if key.Type() != pcommon.ValueTypeStr {
+		return fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
+	}
+	ds[UniqueIDAttrVal(key.Str())] = true
+	return nil
+}
 
 // consume the elements with the specified ids, regardless of the element data type.
 func (m *mockConsumer) consume(ids idSet) error {
