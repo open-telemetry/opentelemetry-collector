@@ -59,16 +59,6 @@ func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error 
 
 	registerZPages(zPagesMux, "/debug", host, zpe.createSettings)
 
-	hostZPages, ok := host.(interface {
-		RegisterZPages(mux *http.ServeMux, pathPrefix string)
-	})
-	if ok {
-		hostZPages.RegisterZPages(zPagesMux, "/debug")
-		logger.Info("Registered Host's zPages")
-	} else {
-		logger.Warn("Host's zPages not available")
-	}
-
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
 	ln, err := zpe.config.TCPAddr.Listen(context.Background())

@@ -23,6 +23,10 @@ const (
 	zExtensionPath = "extensionz"
 	zFeaturePath   = "featurez"
 	zExtensionName = "zextensionname"
+	// URL Params
+	zPipelineName  = "pipelinenamez"
+	zComponentName = "componentnamez"
+	zComponentKind = "componentkindz"
 )
 
 var (
@@ -48,6 +52,7 @@ func registerZPages(mux *http.ServeMux, pathPrefix string, host component.Host, 
 	mux.HandleFunc(path.Join(pathPrefix, zServicePath), handler.zPagesRequest)
 	mux.HandleFunc(path.Join(pathPrefix, zExtensionPath), handler.handleServiceExtensions)
 	mux.HandleFunc(path.Join(pathPrefix, zFeaturePath), handler.handleFeaturezRequest)
+	mux.HandleFunc(path.Join(pathPrefix, zPipelinePath), handler.handlePipelinezRequest)
 }
 
 type zpagesHandler struct {
@@ -133,4 +138,44 @@ func getBuildInfoProperties(buildInfo component.BuildInfo) [][2]string {
 		{"Description", buildInfo.Description},
 		{"Version", buildInfo.Version},
 	}
+}
+
+func (zh *zpagesHandler) handlePipelinezRequest(w http.ResponseWriter, r *http.Request) {
+	qValues := r.URL.Query()
+	pipelineName := qValues.Get(zPipelineName)
+	componentName := qValues.Get(zComponentName)
+	componentKind := qValues.Get(zComponentKind)
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "builtPipelines"})
+
+	sumData := zpages.SummaryPipelinesTableData{}
+	g := zh.host.GetGraph()
+	sumData.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(g.Pipelines))
+	for _, p := range g.Pipelines {
+		sumData.Rows = append(sumData.Rows, zpages.SummaryPipelinesTableRowData{
+			FullName:    p.FullName,
+			InputType:   p.InputType,
+			MutatesData: p.MutatesData,
+			Receivers:   p.Receivers,
+			Processors:  p.Processors,
+			Exporters:   p.Exporters,
+		})
+	}
+	sort.Slice(sumData.Rows, func(i, j int) bool {
+		return sumData.Rows[i].FullName < sumData.Rows[j].FullName
+	})
+	zpages.WriteHTMLPipelinesSummaryTable(w, sumData)
+
+	if pipelineName != "" && componentName != "" && componentKind != "" {
+		fullName := componentName
+		if componentKind == "processor" {
+			fullName = pipelineName + "/" + componentName
+		}
+		zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
+			Name: componentKind + ": " + fullName,
+		})
+		// TODO: Add config + status info.
+	}
+	zpages.WriteHTMLPageFooter(w)
 }

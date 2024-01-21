@@ -33,6 +33,10 @@ var (
 	footerBytes    []byte
 	footerTemplate = parseTemplate("footer", footerBytes)
 
+	//go:embed templates/pipelines_table.html
+	pipelinesTableBytes    []byte
+	pipelinesTableTemplate = parseTemplate("pipelines_table", pipelinesTableBytes)
+
 	//go:embed templates/properties_table.html
 	propertiesTableBytes    []byte
 	propertiesTableTemplate = parseTemplate("properties_table", propertiesTableBytes)
@@ -73,6 +77,29 @@ type SummaryExtensionsTableRowData struct {
 // Id does not write the header or footer.
 func WriteHTMLExtensionsSummaryTable(w io.Writer, spd SummaryExtensionsTableData) {
 	if err := extensionsTableTemplate.Execute(w, spd); err != nil {
+		log.Printf("zpages: executing template: %v", err)
+	}
+}
+
+// SummaryPipelinesTableData contains data for pipelines summary table template.
+type SummaryPipelinesTableData struct {
+	Rows []SummaryPipelinesTableRowData
+}
+
+// SummaryPipelinesTableRowData contains data for one row in pipelines summary table template.
+type SummaryPipelinesTableRowData struct {
+	FullName    string
+	InputType   string
+	MutatesData bool
+	Receivers   []string
+	Processors  []string
+	Exporters   []string
+}
+
+// WriteHTMLPipelinesSummaryTable writes the summary table for one component type (receivers, processors, exporters).
+// Id does not write the header or footer.
+func WriteHTMLPipelinesSummaryTable(w io.Writer, spd SummaryPipelinesTableData) {
+	if err := pipelinesTableTemplate.Execute(w, spd); err != nil {
 		log.Printf("zpages: executing template: %v", err)
 	}
 }

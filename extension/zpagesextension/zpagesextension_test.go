@@ -14,23 +14,12 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
-
-type zpagesHost struct {
-	component.Host
-}
-
-func newZPagesHost() *zpagesHost {
-	return &zpagesHost{Host: componenttest.NewNopHost()}
-}
-
-func (*zpagesHost) RegisterZPages(_ *http.ServeMux, _ string) {}
 
 var _ registerableTracerProvider = (*registerableProvider)(nil)
 var _ registerableTracerProvider = sdktrace.NewTracerProvider()
@@ -60,7 +49,7 @@ func TestZPagesExtensionUsage(t *testing.T) {
 	zpagesExt := newServer(cfg, newZpagesCreateSettings())
 	require.NotNil(t, zpagesExt)
 
-	require.NoError(t, zpagesExt.Start(context.Background(), newZPagesHost()))
+	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, zpagesExt.Shutdown(context.Background())) })
 
 	// Give a chance for the server goroutine to run.
