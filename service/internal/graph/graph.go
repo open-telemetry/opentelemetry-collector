@@ -472,6 +472,51 @@ func (g *Graph) GetExporters() map[component.DataType]map[component.ID]component
 	return exportersMap
 }
 
+func (g *Graph) GetGraph() component.Graph {
+	result := component.Graph{}
+	for c, p := range g.pipelines {
+		recvIDs := make([]string, 0, len(p.receivers))
+		for _, c := range p.receivers {
+			switch n := c.(type) {
+			case *receiverNode:
+				recvIDs = append(recvIDs, n.componentID.String())
+			case *connectorNode:
+				recvIDs = append(recvIDs, n.componentID.String()+" (connector)")
+			}
+		}
+		procIDs := make([]string, 0, len(p.processors))
+		for _, c := range p.processors {
+			procIDs = append(procIDs, c.componentID.String())
+		}
+		exprIDs := make([]string, 0, len(p.exporters))
+		for _, c := range p.exporters {
+			switch n := c.(type) {
+			case *exporterNode:
+				exprIDs = append(exprIDs, n.componentID.String())
+			case *connectorNode:
+				exprIDs = append(exprIDs, n.componentID.String()+" (connector)")
+			}
+		}
+
+		result.Pipelines = append(result.Pipelines, struct {
+			FullName    string
+			InputType   string
+			MutatesData bool
+			Receivers   []string
+			Processors  []string
+			Exporters   []string
+		}{
+			FullName:    c.String(),
+			InputType:   string(c.Type()),
+			MutatesData: p.capabilitiesNode.getConsumer().Capabilities().MutatesData,
+			Receivers:   recvIDs,
+			Processors:  procIDs,
+			Exporters:   exprIDs,
+		})
+	}
+	return result
+}
+
 func cycleErr(err error, cycles [][]graph.Node) error {
 	var topoErr topo.Unorderable
 	if !errors.As(err, &topoErr) || len(cycles) == 0 || len(cycles[0]) == 0 {

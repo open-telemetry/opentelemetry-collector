@@ -57,4 +57,7 @@ type Host interface {
 	// https://github.com/open-telemetry/opentelemetry-collector/pull/7390#issuecomment-1483710184
 	// for additional information.
 	GetExporters() map[DataType]map[ID]Component
+
+	// GetGraph returns the structure of all the pipelines registered under the current host.
+	GetGraph() Graph
 }

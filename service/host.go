@@ -73,3 +73,7 @@ func (host *serviceHost) notifyComponentStatusChange(source *component.InstanceI
 		host.asyncErrorChannel <- event.Err()
 	}
 }
+
+func (host *serviceHost) GetGraph() component.Graph {
+	return host.pipelines.GetGraph()
+}
