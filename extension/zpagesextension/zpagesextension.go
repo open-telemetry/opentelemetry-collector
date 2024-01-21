@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 )
 
 const (
@@ -22,10 +23,10 @@ const (
 
 type zpagesExtension struct {
 	config              *Config
-	telemetry           component.TelemetrySettings
 	zpagesSpanProcessor *zpages.SpanProcessor
 	server              http.Server
 	stopCh              chan struct{}
+	createSettings      extension.CreateSettings
 }
 
 // registerableTracerProvider is a tracer that supports
@@ -45,24 +46,27 @@ type registerableTracerProvider interface {
 
 func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error {
 	zPagesMux := http.NewServeMux()
+	logger := zpe.createSettings.TelemetrySettings.Logger
 
-	sdktracer, ok := zpe.telemetry.TracerProvider.(registerableTracerProvider)
+	sdktracer, ok := zpe.createSettings.TelemetrySettings.TracerProvider.(registerableTracerProvider)
 	if ok {
 		sdktracer.RegisterSpanProcessor(zpe.zpagesSpanProcessor)
 		zPagesMux.Handle(path.Join("/debug", tracezPath), zpages.NewTracezHandler(zpe.zpagesSpanProcessor))
-		zpe.telemetry.Logger.Info("Registered zPages span processor on tracer provider")
+		logger.Info("Registered zPages span processor on tracer provider")
 	} else {
-		zpe.telemetry.Logger.Warn("zPages span processor registration is not available")
+		logger.Warn("zPages span processor registration is not available")
 	}
+
+	registerZPages(zPagesMux, "/debug", host, zpe.createSettings)
 
 	hostZPages, ok := host.(interface {
 		RegisterZPages(mux *http.ServeMux, pathPrefix string)
 	})
 	if ok {
 		hostZPages.RegisterZPages(zPagesMux, "/debug")
-		zpe.telemetry.Logger.Info("Registered Host's zPages")
+		logger.Info("Registered Host's zPages")
 	} else {
-		zpe.telemetry.Logger.Warn("Host's zPages not available")
+		logger.Warn("Host's zPages not available")
 	}
 
 	// Start the listener here so we can have earlier failure if port is
@@ -72,7 +76,7 @@ func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error 
 		return err
 	}
 
-	zpe.telemetry.Logger.Info("Starting zPages extension", zap.Any("config", zpe.config))
+	logger.Info("Starting zPages extension", zap.Any("config", zpe.config))
 	zpe.server = http.Server{Handler: zPagesMux}
 	zpe.stopCh = make(chan struct{})
 	go func() {
@@ -87,26 +91,27 @@ func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error 
 }
 
 func (zpe *zpagesExtension) Shutdown(context.Context) error {
+	logger := zpe.createSettings.TelemetrySettings.Logger
 	err := zpe.server.Close()
 	if zpe.stopCh != nil {
 		<-zpe.stopCh
 	}
 
-	sdktracer, ok := zpe.telemetry.TracerProvider.(registerableTracerProvider)
+	sdktracer, ok := zpe.createSettings.TelemetrySettings.TracerProvider.(registerableTracerProvider)
 	if ok {
 		sdktracer.UnregisterSpanProcessor(zpe.zpagesSpanProcessor)
-		zpe.telemetry.Logger.Info("Unregistered zPages span processor on tracer provider")
+		logger.Info("Unregistered zPages span processor on tracer provider")
 	} else {
-		zpe.telemetry.Logger.Warn("zPages span processor registration is not available")
+		logger.Warn("zPages span processor registration is not available")
 	}
 
 	return err
 }
 
-func newServer(config *Config, telemetry component.TelemetrySettings) *zpagesExtension {
+func newServer(config *Config, createSettings extension.CreateSettings) *zpagesExtension {
 	return &zpagesExtension{
 		config:              config,
-		telemetry:           telemetry,
+		createSettings:      createSettings,
 		zpagesSpanProcessor: zpages.NewSpanProcessor(),
 	}
 }

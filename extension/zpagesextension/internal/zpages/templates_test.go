@@ -48,16 +48,23 @@ func TestNoCrash(t *testing.T) {
 		WriteHTMLComponentHeader(buf, ComponentHeaderData{Name: "Bar", ComponentEndpoint: "pagez", Link: true})
 	})
 	assert.NotPanics(t, func() {
-		WriteHTMLPipelinesSummaryTable(buf, SummaryPipelinesTableData{
-			Rows: []SummaryPipelinesTableRowData{{
-				FullName:    "test",
-				InputType:   "metrics",
-				MutatesData: false,
-				Receivers:   []string{"oc"},
-				Processors:  []string{"nop"},
-				Exporters:   []string{"oc"},
+		WriteHTMLExtensionsSummaryTable(buf, SummaryExtensionsTableData{
+			Rows: []SummaryExtensionsTableRowData{{
+				FullName: "test",
 			}},
 		})
+	})
+	assert.NotPanics(t, func() {
+		WriteHTMLPropertiesTable(buf, PropertiesTableData{Name: "Bar", Properties: [][2]string{{"key", "value"}}})
+	})
+	assert.NotPanics(t, func() {
+		WriteHTMLFeaturesTable(buf, FeatureGateTableData{Rows: []FeatureGateTableRowData{
+			{
+				ID:          "test",
+				Enabled:     false,
+				Description: "test gate",
+			},
+		}})
 	})
 	assert.NotPanics(t, func() { WriteHTMLPageFooter(buf) })
 	assert.NotPanics(t, func() { WriteHTMLPageFooter(buf) })
