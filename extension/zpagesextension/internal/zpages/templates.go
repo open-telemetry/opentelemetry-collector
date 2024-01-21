@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package zpages // import "go.opentelemetry.io/collector/service/internal/zpages"
+package zpages // import "go.opentelemetry.io/collector/extension/zpagesextension/internal/zpages"
 
 import (
 	_ "embed"
@@ -21,6 +21,10 @@ var (
 	componentHeaderBytes    []byte
 	componentHeaderTemplate = parseTemplate("component_header", componentHeaderBytes)
 
+	//go:embed templates/extensions_table.html
+	extensionsTableBytes    []byte
+	extensionsTableTemplate = parseTemplate("extensions_table", extensionsTableBytes)
+
 	//go:embed templates/page_header.html
 	headerBytes    []byte
 	headerTemplate = parseTemplate("header", headerBytes)
@@ -29,9 +33,13 @@ var (
 	footerBytes    []byte
 	footerTemplate = parseTemplate("footer", footerBytes)
 
-	//go:embed templates/pipelines_table.html
-	pipelinesTableBytes    []byte
-	pipelinesTableTemplate = parseTemplate("pipelines_table", pipelinesTableBytes)
+	//go:embed templates/properties_table.html
+	propertiesTableBytes    []byte
+	propertiesTableTemplate = parseTemplate("properties_table", propertiesTableBytes)
+
+	//go:embed templates/features_table.html
+	featuresTableBytes    []byte
+	featuresTableTemplate = parseTemplate("features_table", featuresTableBytes)
 )
 
 func parseTemplate(name string, bytes []byte) *template.Template {
@@ -61,25 +69,10 @@ type SummaryExtensionsTableRowData struct {
 	Enabled  bool
 }
 
-// SummaryPipelinesTableData contains data for pipelines summary table template.
-type SummaryPipelinesTableData struct {
-	Rows []SummaryPipelinesTableRowData
-}
-
-// SummaryPipelinesTableRowData contains data for one row in pipelines summary table template.
-type SummaryPipelinesTableRowData struct {
-	FullName    string
-	InputType   string
-	MutatesData bool
-	Receivers   []string
-	Processors  []string
-	Exporters   []string
-}
-
-// WriteHTMLPipelinesSummaryTable writes the summary table for one component type (receivers, processors, exporters).
+// WriteHTMLExtensionsSummaryTable writes the summary table for one component type (receivers, processors, exporters).
 // Id does not write the header or footer.
-func WriteHTMLPipelinesSummaryTable(w io.Writer, spd SummaryPipelinesTableData) {
-	if err := pipelinesTableTemplate.Execute(w, spd); err != nil {
+func WriteHTMLExtensionsSummaryTable(w io.Writer, spd SummaryExtensionsTableData) {
+	if err := extensionsTableTemplate.Execute(w, spd); err != nil {
 		log.Printf("zpages: executing template: %v", err)
 	}
 }
@@ -94,6 +87,19 @@ type ComponentHeaderData struct {
 // WriteHTMLComponentHeader writes the header for components.
 func WriteHTMLComponentHeader(w io.Writer, chd ComponentHeaderData) {
 	if err := componentHeaderTemplate.Execute(w, chd); err != nil {
+		log.Printf("zpages: executing template: %v", err)
+	}
+}
+
+// PropertiesTableData contains data for properties table template.
+type PropertiesTableData struct {
+	Name       string
+	Properties [][2]string
+}
+
+// WriteHTMLPropertiesTable writes the HTML for properties table.
+func WriteHTMLPropertiesTable(w io.Writer, chd PropertiesTableData) {
+	if err := propertiesTableTemplate.Execute(w, chd); err != nil {
 		log.Printf("zpages: executing template: %v", err)
 	}
 }
@@ -115,4 +121,27 @@ func getKey(row [2]string) string {
 
 func getValue(row [2]string) string {
 	return row[1]
+}
+
+// FeatureGateTableData contains data for feature gate table template.
+type FeatureGateTableData struct {
+	Rows []FeatureGateTableRowData
+}
+
+// FeatureGateTableRowData contains data for one row in feature gate table template.
+type FeatureGateTableRowData struct {
+	ID           string
+	Enabled      bool
+	Description  string
+	Stage        string
+	FromVersion  string
+	ToVersion    string
+	ReferenceURL string
+}
+
+// WriteHTMLFeaturesTable writes a table summarizing registered feature gates.
+func WriteHTMLFeaturesTable(w io.Writer, ftd FeatureGateTableData) {
+	if err := featuresTableTemplate.Execute(w, ftd); err != nil {
+		log.Printf("zpages: executing template: %v", err)
+	}
 }

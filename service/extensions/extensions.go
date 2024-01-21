@@ -6,8 +6,6 @@ package extensions // import "go.opentelemetry.io/collector/service/extensions"
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"sort"
 
 	"go.uber.org/multierr"
 
@@ -16,10 +14,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
-	"go.opentelemetry.io/collector/service/internal/zpages"
 )
-
-const zExtensionName = "zextensionname"
 
 // Extensions is a map of extensions created from extension configs.
 type Extensions struct {
@@ -133,32 +128,6 @@ func (bes *Extensions) GetExtensions() map[component.ID]component.Component {
 		result[extID] = v
 	}
 	return result
-}
-
-func (bes *Extensions) HandleZPages(w http.ResponseWriter, r *http.Request) {
-	extensionName := r.URL.Query().Get(zExtensionName)
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Extensions"})
-	data := zpages.SummaryExtensionsTableData{}
-
-	data.Rows = make([]zpages.SummaryExtensionsTableRowData, 0, len(bes.extMap))
-	for _, id := range bes.extensionIDs {
-		row := zpages.SummaryExtensionsTableRowData{FullName: id.String()}
-		data.Rows = append(data.Rows, row)
-	}
-
-	sort.Slice(data.Rows, func(i, j int) bool {
-		return data.Rows[i].FullName < data.Rows[j].FullName
-	})
-	zpages.WriteHTMLExtensionsSummaryTable(w, data)
-	if extensionName != "" {
-		zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
-			Name: extensionName,
-		})
-		// TODO: Add config + status info.
-	}
-	zpages.WriteHTMLPageFooter(w)
 }
 
 // Settings holds configuration for building Extensions.
