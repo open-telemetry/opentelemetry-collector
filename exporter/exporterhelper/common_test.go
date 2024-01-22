@@ -9,12 +9,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
@@ -26,10 +28,6 @@ var (
 		set.ID = defaultID
 		return set
 	}()
-	exporterTag, _      = tag.NewKey("exporter")
-	defaultExporterTags = []tag.Tag{
-		{Key: exporterTag, Value: "test"},
-	}
 )
 
 func newNoopObsrepSender(_ *ObsReport) requestSender {
@@ -71,11 +69,26 @@ func checkStatus(t *testing.T, sd sdktrace.ReadOnlySpan, err error) {
 
 func TestQueueRetryOptionsWithRequestExporter(t *testing.T) {
 	bs, err := newBaseExporter(exportertest.NewNopCreateSettings(), "", true, nil, nil, newNoopObsrepSender,
-		WithRetry(NewDefaultRetrySettings()))
+		WithRetry(configretry.NewDefaultBackOffConfig()))
 	require.Nil(t, err)
 	require.True(t, bs.requestExporter)
 	require.Panics(t, func() {
 		_, _ = newBaseExporter(exportertest.NewNopCreateSettings(), "", true, nil, nil, newNoopObsrepSender,
-			WithRetry(NewDefaultRetrySettings()), WithQueue(NewDefaultQueueSettings()))
+			WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueSettings()))
 	})
+}
+
+func TestBaseExporterLogging(t *testing.T) {
+	set := exportertest.NewNopCreateSettings()
+	logger, observed := observer.New(zap.DebugLevel)
+	set.Logger = zap.New(logger)
+	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg.Enabled = false
+	bs, err := newBaseExporter(set, "", true, nil, nil, newNoopObsrepSender, WithRetry(rCfg))
+	require.Nil(t, err)
+	require.True(t, bs.requestExporter)
+	sendErr := bs.send(context.Background(), newErrorRequest())
+	require.Error(t, sendErr)
+
+	require.Len(t, observed.FilterLevelExact(zap.ErrorLevel).All(), 1)
 }

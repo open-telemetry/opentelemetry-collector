@@ -5,6 +5,7 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 
@@ -62,9 +63,6 @@ type Settings struct {
 
 	// LoggingOptions provides a way to change behavior of zap logging.
 	LoggingOptions []zap.Option
-
-	// For testing purpose only.
-	useOtel *bool
 }
 
 // Service represents the implementation of a component.Host.
@@ -75,14 +73,9 @@ type Service struct {
 	host                 *serviceHost
 	telemetryInitializer *telemetryInitializer
 	collectorConf        *confmap.Conf
-	statusInit           status.InitFunc
 }
 
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
-	useOtel := obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled()
-	if set.useOtel != nil {
-		useOtel = *set.useOtel
-	}
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
 	srv := &Service{
@@ -96,7 +89,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
-		telemetryInitializer: newColTelemetry(useOtel, disableHighCard, extendedConfig),
+		telemetryInitializer: newColTelemetry(disableHighCard, extendedConfig),
 		collectorConf:        set.CollectorConf,
 	}
 	var err error
@@ -112,9 +105,14 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		TracerProvider: srv.telemetry.TracerProvider(),
 		MeterProvider:  noop.NewMeterProvider(),
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
-
 		// Construct telemetry attributes from build info and config's resource attributes.
 		Resource: pcommonRes,
+		Status: status.NewReporter(srv.host.notifyComponentStatusChange, func(err error) {
+			if errors.Is(err, status.ErrStatusNotReady) {
+				srv.telemetry.Logger().Warn("Invalid transition", zap.Error(err))
+			}
+			// ignore other errors as they represent invalid state transitions and are considered benign.
+		}),
 	}
 
 	if err = srv.telemetryInitializer.init(res, srv.telemetrySettings, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
@@ -122,8 +120,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	}
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
 	srv.telemetrySettings.TracerProvider = srv.telemetryInitializer.tp
-	srv.statusInit, srv.telemetrySettings.ReportComponentStatus =
-		status.NewServiceStatusFunc(srv.host.notifyComponentStatusChange)
 
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensionsAndPipeline(ctx, set, cfg); err != nil {
@@ -139,6 +135,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 }
 
 // Start starts the extensions and pipelines. If Start fails Shutdown should be called to ensure a clean state.
+// Start does the following steps in order:
+// 1. Start all extensions.
+// 2. Notify extensions about Collector configuration
+// 3. Start all pipelines.
+// 4. Notify extensions that the pipeline is ready.
 func (srv *Service) Start(ctx context.Context) error {
 	srv.telemetrySettings.Logger.Info("Starting "+srv.buildInfo.Command+"...",
 		zap.String("Version", srv.buildInfo.Version),
@@ -146,7 +147,7 @@ func (srv *Service) Start(ctx context.Context) error {
 	)
 
 	// enable status reporting
-	srv.statusInit()
+	srv.telemetrySettings.Status.Ready()
 
 	if err := srv.host.serviceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
@@ -170,6 +171,11 @@ func (srv *Service) Start(ctx context.Context) error {
 	return nil
 }
 
+// Shutdown the service. Shutdown will do the following steps in order:
+// 1. Notify extensions that the pipeline is shutting down.
+// 2. Shutdown all pipelines.
+// 3. Shutdown all extensions.
+// 4. Shutdown telemetry.
 func (srv *Service) Shutdown(ctx context.Context) error {
 	// Accumulate errors and proceed with shutting down remaining components.
 	var errs error
@@ -228,7 +234,7 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 
 	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
 		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
-		if err = proctelemetry.RegisterProcessMetrics(srv.telemetryInitializer.ocRegistry, srv.telemetryInitializer.mp, obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled(), getBallastSize(srv.host)); err != nil {
+		if err = proctelemetry.RegisterProcessMetrics(srv.telemetryInitializer.mp, getBallastSize(srv.host)); err != nil {
 			return fmt.Errorf("failed to register process metrics: %w", err)
 		}
 	}

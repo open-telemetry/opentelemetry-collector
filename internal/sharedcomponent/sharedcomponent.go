@@ -1,8 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package sharedcomponent exposes util functionality for receivers and exporters
-// that need to share state between different signal types instances such as net.Listener or os.File.
+// Package sharedcomponent exposes functionality for components
+// to register against a shared key, such as a configuration object, in order to be reused across signal types.
+// This is particularly useful when the component relies on a shared resource such as os.File or http.Server.
 package sharedcomponent // import "go.opentelemetry.io/collector/internal/sharedcomponent"
 
 import (
@@ -12,34 +13,33 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// SharedComponents a map that keeps reference of all created instances for a given configuration,
-// and ensures that the shared state is started and stopped only once.
-type SharedComponents[K comparable, V component.Component] struct {
-	comps map[K]*SharedComponent[V]
-}
-
-// NewSharedComponents returns a new empty SharedComponents.
-func NewSharedComponents[K comparable, V component.Component]() *SharedComponents[K, V] {
-	return &SharedComponents[K, V]{
-		comps: make(map[K]*SharedComponent[V]),
+func NewMap[K comparable, V component.Component]() *Map[K, V] {
+	return &Map[K, V]{
+		components: map[K]*Component[V]{},
 	}
 }
 
-// GetOrAdd returns the already created instance if exists, otherwise creates a new instance
+// Map keeps reference of all created instances for a given shared key such as a component configuration.
+type Map[K comparable, V component.Component] struct {
+	lock       sync.Mutex
+	components map[K]*Component[V]
+}
+
+// LoadOrStore returns the already created instance if exists, otherwise creates a new instance
 // and adds it to the map of references.
-func (scs *SharedComponents[K, V]) GetOrAdd(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*SharedComponent[V], error) {
-	if c, ok := scs.comps[key]; ok {
+func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error), telemetrySettings *component.TelemetrySettings) (*Component[V], error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	if c, ok := m.components[key]; ok {
 		// If we haven't already seen this telemetry settings, this shared component represents
-		// another instance. Wrap ReportComponentStatus to report for all instances this shared
+		// another instance. Wrap ReportStatus to report for all instances this shared
 		// component represents.
 		if _, ok := c.seenSettings[telemetrySettings]; !ok {
 			c.seenSettings[telemetrySettings] = struct{}{}
-			prev := c.telemetry.ReportComponentStatus
-			c.telemetry.ReportComponentStatus = func(ev *component.StatusEvent) error {
-				if err := telemetrySettings.ReportComponentStatus(ev); err != nil {
-					return err
-				}
-				return prev(ev)
+			prev := c.telemetry.ReportStatus
+			c.telemetry.ReportStatus = func(ev *component.StatusEvent) {
+				telemetrySettings.ReportStatus(ev)
+				prev(ev)
 			}
 		}
 		return c, nil
@@ -49,23 +49,25 @@ func (scs *SharedComponents[K, V]) GetOrAdd(key K, create func() (V, error), tel
 		return nil, err
 	}
 
-	newComp := &SharedComponent[V]{
+	newComp := &Component[V]{
 		component: comp,
 		removeFunc: func() {
-			delete(scs.comps, key)
+			m.lock.Lock()
+			defer m.lock.Unlock()
+			delete(m.components, key)
 		},
 		telemetry: telemetrySettings,
 		seenSettings: map[*component.TelemetrySettings]struct{}{
 			telemetrySettings: {},
 		},
 	}
-	scs.comps[key] = newComp
+	m.components[key] = newComp
 	return newComp, nil
 }
 
-// SharedComponent ensures that the wrapped component is started and stopped only once.
-// When stopped it is removed from the SharedComponents map.
-type SharedComponent[V component.Component] struct {
+// Component ensures that the wrapped component is started and stopped only once.
+// When stopped it is removed from the Map.
+type Component[V component.Component] struct {
 	component V
 
 	startOnce  sync.Once
@@ -77,42 +79,42 @@ type SharedComponent[V component.Component] struct {
 }
 
 // Unwrap returns the original component.
-func (r *SharedComponent[V]) Unwrap() V {
-	return r.component
+func (c *Component[V]) Unwrap() V {
+	return c.component
 }
 
-// Start implements component.Component.
-func (r *SharedComponent[V]) Start(ctx context.Context, host component.Host) error {
+// Start starts the underlying component if it never started before.
+func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 	var err error
-	r.startOnce.Do(func() {
-		// It's important that status for a sharedcomponent is reported through its
-		// telemetrysettings to keep status in sync and avoid race conditions. This logic duplicates
+	c.startOnce.Do(func() {
+		// It's important that status for a shared component is reported through its
+		// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
 		// and takes priority over the automated status reporting that happens in graph, making the
 		// status reporting in graph a no-op.
-		_ = r.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStarting))
-		if err = r.component.Start(ctx, host); err != nil {
-			_ = r.telemetry.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+		c.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStarting))
+		if err = c.component.Start(ctx, host); err != nil {
+			c.telemetry.ReportStatus(component.NewPermanentErrorEvent(err))
 		}
 	})
 	return err
 }
 
-// Shutdown implements component.Component.
-func (r *SharedComponent[V]) Shutdown(ctx context.Context) error {
+// Shutdown shuts down the underlying component.
+func (c *Component[V]) Shutdown(ctx context.Context) error {
 	var err error
-	r.stopOnce.Do(func() {
-		// It's important that status for a sharedcomponent is reported through its
-		// telemetrysettings to keep status in sync and avoid race conditions. This logic duplicates
+	c.stopOnce.Do(func() {
+		// It's important that status for a shared component is reported through its
+		// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
 		// and takes priority over the automated status reporting that happens in graph, making the
-		// the status reporting in graph a no-op.
-		_ = r.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopping))
-		err = r.component.Shutdown(ctx)
+		// status reporting in graph a no-op.
+		c.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopping))
+		err = c.component.Shutdown(ctx)
 		if err != nil {
-			_ = r.telemetry.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+			c.telemetry.ReportStatus(component.NewPermanentErrorEvent(err))
 		} else {
-			_ = r.telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusStopped))
+			c.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopped))
 		}
-		r.removeFunc()
+		c.removeFunc()
 	})
 	return err
 }

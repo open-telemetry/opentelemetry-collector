@@ -6,12 +6,13 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"go.opencensus.io/metric/metricdata"
 	"go.opentelemetry.io/otel/attribute"
+	otelmetric "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -22,7 +23,9 @@ import (
 
 const defaultQueueSize = 1000
 
-var errSendingQueueIsFull = errors.New("sending_queue is full")
+var (
+	scopeName = "go.opentelemetry.io/collector/exporterhelper"
+)
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
 type QueueSettings struct {
@@ -68,125 +71,113 @@ func (qCfg *QueueSettings) Validate() error {
 
 type queueSender struct {
 	baseRequestSender
-	fullName         string
-	signal           component.DataType
-	queue            internal.ProducerConsumerQueue
-	traceAttribute   attribute.KeyValue
-	logger           *zap.Logger
-	requeuingEnabled bool
+	fullName       string
+	queue          internal.Queue[Request]
+	traceAttribute attribute.KeyValue
+	logger         *zap.Logger
+	meter          otelmetric.Meter
+	consumers      *internal.QueueConsumers[Request]
+
+	metricCapacity otelmetric.Int64ObservableGauge
+	metricSize     otelmetric.Int64ObservableGauge
 }
 
-func newQueueSender(id component.ID, signal component.DataType, queue internal.ProducerConsumerQueue, logger *zap.Logger) *queueSender {
-	return &queueSender{
-		fullName:       id.String(),
-		signal:         signal,
-		queue:          queue,
-		traceAttribute: attribute.String(obsmetrics.ExporterKey, id.String()),
-		logger:         logger,
-		// TODO: this can be further exposed as a config param rather than relying on a type of queue
-		requeuingEnabled: queue != nil && queue.IsPersistent(),
-	}
-}
+func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal component.DataType,
+	marshaler RequestMarshaler, unmarshaler RequestUnmarshaler, consumeErrHandler func(error, Request)) *queueSender {
 
-func (qs *queueSender) onTemporaryFailure(logger *zap.Logger, req internal.Request, err error) error {
-	if !qs.requeuingEnabled || qs.queue == nil {
-		logger.Error(
-			"Exporting failed. No more retries left. Dropping data.",
-			zap.Error(err),
-			zap.Int("dropped_items", req.Count()),
-		)
-		return err
-	}
-
-	if qs.queue.Produce(req) {
-		logger.Error(
-			"Exporting failed. Putting back to the end of the queue.",
-			zap.Error(err),
-		)
+	isPersistent := config.StorageID != nil
+	var queue internal.Queue[Request]
+	queueSizer := &internal.RequestSizer[Request]{}
+	if isPersistent {
+		queue = internal.NewPersistentQueue[Request](internal.PersistentQueueSettings[Request]{
+			Sizer:            queueSizer,
+			Capacity:         config.QueueSize,
+			DataType:         signal,
+			StorageID:        *config.StorageID,
+			Marshaler:        marshaler,
+			Unmarshaler:      unmarshaler,
+			ExporterSettings: set,
+		})
 	} else {
-		logger.Error(
-			"Exporting failed. Queue did not accept requeuing request. Dropping data.",
-			zap.Error(err),
-			zap.Int("dropped_items", req.Count()),
-		)
+		queue = internal.NewBoundedMemoryQueue[Request](internal.MemoryQueueSettings[Request]{
+			Sizer:    queueSizer,
+			Capacity: config.QueueSize,
+		})
 	}
-	return err
-}
-
-// start is invoked during service startup.
-func (qs *queueSender) start(ctx context.Context, host component.Host, set exporter.CreateSettings) error {
-	if qs.queue == nil {
-		return nil
+	qs := &queueSender{
+		fullName:       set.ID.String(),
+		queue:          queue,
+		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
+		logger:         set.TelemetrySettings.Logger,
+		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
 	}
-
-	err := qs.queue.Start(ctx, host, internal.QueueSettings{
-		CreateSettings: set,
-		DataType:       qs.signal,
-		Callback: func(item internal.Request) {
-			_ = qs.nextSender.send(item)
-			item.OnProcessingFinished()
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	// Start reporting queue length metric
-	err = globalInstruments.queueSize.UpsertEntry(func() int64 {
-		return int64(qs.queue.Size())
-	}, metricdata.NewLabelValue(qs.fullName))
-	if err != nil {
-		return fmt.Errorf("failed to create retry queue size metric: %w", err)
-	}
-	err = globalInstruments.queueCapacity.UpsertEntry(func() int64 {
-		return int64(qs.queue.Capacity())
-	}, metricdata.NewLabelValue(qs.fullName))
-	if err != nil {
-		return fmt.Errorf("failed to create retry queue capacity metric: %w", err)
-	}
-
-	return nil
-}
-
-// shutdown is invoked during service shutdown.
-func (qs *queueSender) shutdown() {
-	if qs.queue != nil {
-		// Cleanup queue metrics reporting
-		_ = globalInstruments.queueSize.UpsertEntry(func() int64 {
-			return int64(0)
-		}, metricdata.NewLabelValue(qs.fullName))
-
-		// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
-		// try once every request.
-		qs.queue.Stop()
-	}
-}
-
-// send implements the requestSender interface
-func (qs *queueSender) send(req internal.Request) error {
-	if qs.queue == nil {
-		err := qs.nextSender.send(req)
+	consumeFunc := func(ctx context.Context, req Request) error {
+		err := qs.nextSender.send(ctx, req)
 		if err != nil {
-			qs.logger.Error(
-				"Exporting failed. Dropping data. Try enabling sending_queue to survive temporary failures.",
-				zap.Int("dropped_items", req.Count()),
-			)
+			consumeErrHandler(err, req)
 		}
 		return err
 	}
+	qs.consumers = internal.NewQueueConsumers(queue, config.NumConsumers, consumeFunc)
+	return qs
+}
 
+// Start is invoked during service startup.
+func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
+	if err := qs.consumers.Start(ctx, host); err != nil {
+		return err
+	}
+
+	var err, errs error
+
+	attrs := otelmetric.WithAttributeSet(attribute.NewSet(attribute.String(obsmetrics.ExporterKey, qs.fullName)))
+
+	qs.metricSize, err = qs.meter.Int64ObservableGauge(
+		obsmetrics.ExporterKey+"/queue_size",
+		otelmetric.WithDescription("Current size of the retry queue (in batches)"),
+		otelmetric.WithUnit("1"),
+		otelmetric.WithInt64Callback(func(_ context.Context, o otelmetric.Int64Observer) error {
+			o.Observe(int64(qs.queue.Size()), attrs)
+			return nil
+		}),
+	)
+	errs = multierr.Append(errs, err)
+
+	qs.metricCapacity, err = qs.meter.Int64ObservableGauge(
+		obsmetrics.ExporterKey+"/queue_capacity",
+		otelmetric.WithDescription("Fixed capacity of the retry queue (in batches)"),
+		otelmetric.WithUnit("1"),
+		otelmetric.WithInt64Callback(func(_ context.Context, o otelmetric.Int64Observer) error {
+			o.Observe(int64(qs.queue.Capacity()), attrs)
+			return nil
+		}))
+
+	errs = multierr.Append(errs, err)
+	return errs
+}
+
+// Shutdown is invoked during service shutdown.
+func (qs *queueSender) Shutdown(ctx context.Context) error {
+	// Cleanup queue metrics reporting
+	_ = globalInstruments.queueSize.UpsertEntry(func() int64 {
+		return int64(0)
+	}, metricdata.NewLabelValue(qs.fullName))
+
+	// Stop the queue and consumers, this will drain the queue and will call the retry (which is stopped) that will only
+	// try once every request.
+	return qs.consumers.Shutdown(ctx)
+}
+
+// send implements the requestSender interface. It puts the request in the queue.
+func (qs *queueSender) send(ctx context.Context, req Request) error {
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.
-	req.SetContext(noCancellationContext{Context: req.Context()})
+	c := noCancellationContext{Context: ctx}
 
-	span := trace.SpanFromContext(req.Context())
-	if !qs.queue.Produce(req) {
-		qs.logger.Error(
-			"Dropping data because sending_queue is full. Try increasing queue_size.",
-			zap.Int("dropped_items", req.Count()),
-		)
-		span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qs.traceAttribute))
-		return errSendingQueueIsFull
+	span := trace.SpanFromContext(c)
+	if err := qs.queue.Offer(c, req); err != nil {
+		span.AddEvent("Failed to enqueue item.", trace.WithAttributes(qs.traceAttribute))
+		return err
 	}
 
 	span.AddEvent("Enqueued item.", trace.WithAttributes(qs.traceAttribute))

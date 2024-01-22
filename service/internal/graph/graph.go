@@ -288,7 +288,10 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 		case *connectorNode:
 			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
 		case *capabilitiesNode:
-			capability := consumer.Capabilities{MutatesData: false}
+			capability := consumer.Capabilities{
+				// The fanOutNode represents the aggregate capabilities of the exporters in the pipeline.
+				MutatesData: g.pipelines[n.pipelineID].fanOutNode.getConsumer().Capabilities().MutatesData,
+			}
 			for _, proc := range g.pipelines[n.pipelineID].processors {
 				capability.MutatesData = capability.MutatesData || proc.getConsumer().Capabilities().MutatesData
 			}
@@ -319,7 +322,6 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 			case component.DataTypeMetrics:
 				consumers := make([]consumer.Metrics, 0, len(nexts))
 				for _, next := range nexts {
-
 					consumers = append(consumers, next.(consumer.Metrics))
 				}
 				n.baseConsumer = fanoutconsumer.NewMetrics(consumers)
@@ -386,12 +388,20 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
 		}
 
 		instanceID := g.instanceIDs[node.ID()]
-		_ = g.telemetry.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStarting))
+		g.telemetry.Status.ReportStatus(
+			instanceID,
+			component.NewStatusEvent(component.StatusStarting),
+		)
 
 		if compErr := comp.Start(ctx, host); compErr != nil {
-			_ = g.telemetry.ReportComponentStatus(instanceID, component.NewPermanentErrorEvent(compErr))
+			g.telemetry.Status.ReportStatus(
+				instanceID,
+				component.NewPermanentErrorEvent(compErr),
+			)
 			return compErr
 		}
+
+		g.telemetry.Status.ReportOKIfStarting(instanceID)
 	}
 	return nil
 }
@@ -417,15 +427,24 @@ func (g *Graph) ShutdownAll(ctx context.Context) error {
 		}
 
 		instanceID := g.instanceIDs[node.ID()]
-		_ = g.telemetry.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStopping))
+		g.telemetry.Status.ReportStatus(
+			instanceID,
+			component.NewStatusEvent(component.StatusStopping),
+		)
 
 		if compErr := comp.Shutdown(ctx); compErr != nil {
 			errs = multierr.Append(errs, compErr)
-			_ = g.telemetry.ReportComponentStatus(instanceID, component.NewPermanentErrorEvent(compErr))
+			g.telemetry.Status.ReportStatus(
+				instanceID,
+				component.NewPermanentErrorEvent(compErr),
+			)
 			continue
 		}
 
-		_ = g.telemetry.ReportComponentStatus(instanceID, component.NewStatusEvent(component.StatusStopped))
+		g.telemetry.Status.ReportStatus(
+			instanceID,
+			component.NewStatusEvent(component.StatusStopped),
+		)
 	}
 	return errs
 }

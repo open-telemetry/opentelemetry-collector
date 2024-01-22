@@ -208,17 +208,20 @@ func TestStatusFuncs(t *testing.T) {
 		id2: statuses2,
 	}
 
-	init, serviceStatusFn := NewServiceStatusFunc(statusFunc)
-	comp1Func := NewComponentStatusFunc(id1, serviceStatusFn)
-	comp2Func := NewComponentStatusFunc(id2, serviceStatusFn)
-	init()
+	rep := NewReporter(statusFunc,
+		func(err error) {
+			require.NoError(t, err)
+		})
+	comp1Func := NewReportStatusFunc(id1, rep.ReportStatus)
+	comp2Func := NewReportStatusFunc(id2, rep.ReportStatus)
+	rep.Ready()
 
 	for _, st := range statuses1 {
-		require.NoError(t, comp1Func(component.NewStatusEvent(st)))
+		comp1Func(component.NewStatusEvent(st))
 	}
 
 	for _, st := range statuses2 {
-		require.NoError(t, comp2Func(component.NewStatusEvent(st)))
+		comp2Func(component.NewStatusEvent(st))
 	}
 
 	require.Equal(t, expectedStatuses, actualStatuses)
@@ -230,8 +233,11 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 	statusFunc := func(id *component.InstanceID, ev *component.StatusEvent) {
 		count++
 	}
-	init, serviceStatusFn := NewServiceStatusFunc(statusFunc)
-	init()
+	rep := NewReporter(statusFunc,
+		func(err error) {
+			require.NoError(t, err)
+		})
+	rep.Ready()
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(ids))
@@ -239,11 +245,11 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 	for _, id := range ids {
 		id := id
 		go func() {
-			compFn := NewComponentStatusFunc(id, serviceStatusFn)
-			_ = compFn(component.NewStatusEvent(component.StatusStarting))
+			compFn := NewReportStatusFunc(id, rep.ReportStatus)
+			compFn(component.NewStatusEvent(component.StatusStarting))
 			for i := 0; i < 1000; i++ {
-				_ = compFn(component.NewStatusEvent(component.StatusRecoverableError))
-				_ = compFn(component.NewStatusEvent(component.StatusOK))
+				compFn(component.NewStatusEvent(component.StatusRecoverableError))
+				compFn(component.NewStatusEvent(component.StatusOK))
 			}
 			wg.Done()
 		}()
@@ -253,16 +259,95 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 	require.Equal(t, 8004, count)
 }
 
-func TestStatusFuncReady(t *testing.T) {
+func TestReporterReady(t *testing.T) {
 	statusFunc := func(*component.InstanceID, *component.StatusEvent) {}
-	init, serviceStatusFn := NewServiceStatusFunc(statusFunc)
+	var err error
+	rep := NewReporter(statusFunc,
+		func(e error) {
+			err = e
+		})
 	id := &component.InstanceID{}
 
-	err := serviceStatusFn(id, component.NewStatusEvent(component.StatusStarting))
-	require.ErrorIs(t, err, errStatusNotReady)
+	rep.ReportStatus(id, component.NewStatusEvent(component.StatusStarting))
+	require.ErrorIs(t, err, ErrStatusNotReady)
+	rep.Ready()
 
-	init()
-
-	err = serviceStatusFn(id, component.NewStatusEvent(component.StatusStarting))
+	err = nil
+	rep.ReportStatus(id, component.NewStatusEvent(component.StatusStarting))
 	require.NoError(t, err)
+}
+
+func TestReportComponentOKIfStarting(t *testing.T) {
+	for _, tc := range []struct {
+		name             string
+		initialStatuses  []component.Status
+		expectedStatuses []component.Status
+	}{
+		{
+			name: "matching condition: StatusStarting",
+			initialStatuses: []component.Status{
+				component.StatusStarting,
+			},
+			expectedStatuses: []component.Status{
+				component.StatusStarting,
+				component.StatusOK,
+			},
+		},
+		{
+			name: "non-matching condition StatusOK",
+			initialStatuses: []component.Status{
+				component.StatusStarting,
+				component.StatusOK,
+			},
+			expectedStatuses: []component.Status{
+				component.StatusStarting,
+				component.StatusOK,
+			},
+		},
+		{
+			name: "non-matching condition RecoverableError",
+			initialStatuses: []component.Status{
+				component.StatusStarting,
+				component.StatusRecoverableError,
+			},
+			expectedStatuses: []component.Status{
+				component.StatusStarting,
+				component.StatusRecoverableError,
+			},
+		},
+		{
+			name: "non-matching condition PermanentError",
+			initialStatuses: []component.Status{
+				component.StatusStarting,
+				component.StatusPermanentError,
+			},
+			expectedStatuses: []component.Status{
+				component.StatusStarting,
+				component.StatusPermanentError,
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var receivedStatuses []component.Status
+
+			rep := NewReporter(
+				func(_ *component.InstanceID, ev *component.StatusEvent) {
+					receivedStatuses = append(receivedStatuses, ev.Status())
+				},
+				func(err error) {
+					require.NoError(t, err)
+				},
+			)
+			rep.Ready()
+
+			id := &component.InstanceID{}
+			for _, status := range tc.initialStatuses {
+				rep.ReportStatus(id, component.NewStatusEvent(status))
+			}
+
+			rep.ReportOKIfStarting(id)
+
+			require.Equal(t, tc.expectedStatuses, receivedStatuses)
+		})
+	}
 }

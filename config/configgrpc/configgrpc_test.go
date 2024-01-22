@@ -32,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
@@ -52,7 +51,7 @@ func init() {
 }
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -61,13 +60,13 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	opts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
+	opts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings())
 	assert.NoError(t, err)
-	assert.Len(t, opts, 3)
+	assert.Len(t, opts, 2)
 }
 
 func TestAllGrpcClientSettings(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -166,9 +165,9 @@ func TestAllGrpcClientSettings(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			opts, err := test.settings.toDialOptions(test.host, tt.TelemetrySettings)
+			opts, err := test.settings.toDialOptions(test.host, tt.TelemetrySettings())
 			assert.NoError(t, err)
-			assert.Len(t, opts, 10)
+			assert.Len(t, opts, 9)
 		})
 	}
 }
@@ -181,7 +180,7 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 	}
 	opts, err := gss.toServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
-	assert.Len(t, opts, 2)
+	assert.Len(t, opts, 3)
 }
 
 func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
@@ -214,7 +213,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 	}
 	opts, err := gss.toServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
-	assert.Len(t, opts, 9)
+	assert.Len(t, opts, 10)
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {
@@ -237,7 +236,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -352,7 +351,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToClientConn(context.Background(), test.host, tt.TelemetrySettings)
+			_, err := test.settings.ToClientConn(context.Background(), test.host, tt.TelemetrySettings())
 			assert.Error(t, err)
 			assert.Regexp(t, test.err, err)
 		})
@@ -360,7 +359,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 }
 
 func TestUseSecure(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -371,9 +370,9 @@ func TestUseSecure(t *testing.T) {
 		TLSSetting:  configtls.TLSClientSetting{},
 		Keepalive:   nil,
 	}
-	dialOpts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
+	dialOpts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings())
 	assert.NoError(t, err)
-	assert.Len(t, dialOpts, 3)
+	assert.Len(t, dialOpts, 2)
 }
 
 func TestGRPCServerWarning(t *testing.T) {
@@ -499,7 +498,7 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 }
 
 func TestHttpReception(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -630,7 +629,7 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   ln.Addr().String(),
 				TLSSetting: *test.tlsClientCreds,
 			}
-			grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
+			grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
 			assert.NoError(t, errClient)
 			c := ptraceotlp.NewGRPCClient(grpcClientConn)
 			ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
@@ -651,7 +650,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on windows")
 	}
-	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -678,7 +677,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
+	grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
 	assert.NoError(t, errClient)
 	c := ptraceotlp.NewGRPCClient(grpcClientConn)
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
@@ -880,13 +879,13 @@ func TestClientInfoInterceptors(t *testing.T) {
 					},
 				}
 
-				tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
+				tt, err := componenttest.SetupTelemetry(component.NewID("component"))
 				require.NoError(t, err)
 				defer func() {
 					require.NoError(t, tt.Shutdown(context.Background()))
 				}()
 
-				grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
+				grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
 				require.NoError(t, errClient)
 
 				cl := ptraceotlp.NewGRPCClient(grpcClientConn)

@@ -14,31 +14,28 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-)
-
-const (
-	// The value of "type" key in configuration.
-	typeStr = "otlphttp"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, component.StabilityLevelStable),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelStable),
-		exporter.WithLogs(createLogsExporter, component.StabilityLevelBeta),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		RetryConfig: configretry.NewDefaultBackOffConfig(),
+		QueueConfig: exporterhelper.NewDefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "",
 			Timeout:  30 * time.Second,
@@ -91,8 +88,8 @@ func createTracesExporter(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
-		exporterhelper.WithQueue(oCfg.QueueSettings))
+		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
 func createMetricsExporter(
@@ -117,8 +114,8 @@ func createMetricsExporter(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
-		exporterhelper.WithQueue(oCfg.QueueSettings))
+		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
 func createLogsExporter(
@@ -143,6 +140,6 @@ func createLogsExporter(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
-		exporterhelper.WithQueue(oCfg.QueueSettings))
+		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithQueue(oCfg.QueueConfig))
 }

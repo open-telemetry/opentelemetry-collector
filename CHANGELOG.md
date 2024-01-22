@@ -7,6 +7,123 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.0.1/v0.92.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporters/sending_queue`: Do not re-enqueue failed batches, rely on the retry_on_failure strategy instead. (#8382)
+  The current re-enqueuing behavior is not obvious and cannot be configured. It takes place only for persistent queue
+  and only if `retry_on_failure::enabled=true` even if `retry_on_failure` is a setting for a different backoff retry
+  strategy. This change removes the re-enqueuing behavior. Consider increasing `retry_on_failure::max_elapsed_time` 
+  to reduce chances of data loss or set it to 0 to keep retrying until requests succeed.
+  
+- `confmap`: Make the option `WithErrorUnused` enabled by default when unmarshaling configuration (#7102)
+  The option `WithErrorUnused` is now enabled by default, and a new option `WithIgnoreUnused` is introduced to ignore
+  errors about unused fields.
+  
+- `status`: Deprecate `ReportComponentStatus` in favor of `ReportStatus`. This new function does not return an error. (#9148)
+
+### 🚩 Deprecations 🚩
+
+- `connectortest`: Deprecate connectortest.New[Metrics|Logs|Traces]Router in favour of connector.New[Metrics|Logs|Traces]Router (#9095)
+- `exporterhelper`: Deprecate exporterhelper.RetrySettings in favor of configretry.BackOffConfig (#9091)
+- `extension/ballast`: Deprecate `memory_ballast` extension. (#8343)
+  Use `GOMEMLIMIT` environment variable instead.
+  
+- `connector`: Deprecate [Metrics|Logs|Traces]Router in favour of [Metrics|Logs|Traces]RouterAndConsumer (#9095)
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add RetrySettings validation function (#9089)
+  Validate that time.Duration, multiplier values in configretry are non-negative, and randomization_factor is between 0 and 1
+  
+- `service`: Enable `telemetry.useOtelForInternalMetrics` by updating the flag to beta (#7454)
+  The metrics generated should be consistent with the metrics generated
+  previously with OpenCensus. Users can disable the behaviour
+  by setting `--feature-gates -telemetry.useOtelForInternalMetrics` at
+  collector start.
+  
+- `mdatagen`: move component from contrib to core (#9172)
+- `semconv`: Generated Semantic conventions 1.22.0. (#8686)
+- `confignet`: Add `dialer_timeout` config option. (#9066)
+- `processor/memory_limiter`: Update config validation errors (#9059)
+  - Fix names of the config fields that are validated in the error messages
+  - Move the validation from start to the initialization phrase 
+  
+- `exporterhelper`: Add config Validate for TimeoutSettings (#9104)
+
+### 🧰 Bug fixes 🧰
+
+- `memorylimiterprocessor`: Fixed leaking goroutines from memorylimiterprocessor (#9099)
+- `cmd/otelcorecol`: Fix the code detecting if the collector is running as a service on Windows. (#7350)
+  Removed the `NO_WINDOWS_SERVICE` environment variable given it is not needed anymore.
+- `otlpexporter`: remove dependency of otlphttpreceiver on otlpexporter (#6454)
+
+## v0.91.0
+
+### 💡 Enhancements 💡
+
+- `statusreporting`: Automates status reporting upon the completion of component.Start(). (#7682)
+- `service`: add resource attributes as labels to otel metrics to ensures backwards compatibility with OpenCensus metrics. (#9029)
+- `semconv`: Generated Semantic conventions 1.21. (#9056)
+- `config/confighttp`: Exposes http/2 transport settings to enable health check and workaround golang http/2 issue https://github.com/golang/go/issues/59690 (#9022)
+- `cmd/builder`: running builder version on binaries installed with `go install` will output the version specified at the suffix. (#8770)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: fix missed metric aggregations (#9048)
+  This ensures that context cancellation in the exporter doesn't interfere with metric aggregation. The OTel
+  SDK currently returns if there's an error in the context used in `Add`. This means that if there's a
+  cancelled context in an export, the metrics are now recorded.
+  
+- `service`: Fix bug where MutatesData would not correctly propagate through connectors. (#9053)
+
+## v0.90.1
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Remove noisy log (#9017)
+
+## v1.0.0/v0.90.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: To remain backwards compatible w/ the metrics generated today, otel generated metrics will be generated without the `_total` suffix (#7454)
+- `service`: use WithNamespace instead of WrapRegistererWithPrefix (#8988)
+  Using this functionality in the otel prom exporter fixes a bug where the
+  target_info was prefixed as otelcol_target_info previously.
+  
+
+### 💡 Enhancements 💡
+
+- `exporter/debug`: Change default `verbosity` from `normal` to `basic` (#8844)
+  This change has currently no effect, as `basic` and `normal` verbosity share the same behavior. This might change in the future though, with the `normal` verbosity being more verbose than it currently is (see https://github.com/open-telemetry/opentelemetry-collector/issues/7806). This is why we are changing the default to `basic`, which is expected to stay at the current level of verbosity (one line per batch).
+- `exporterhelper`: Fix shutdown logic in persistent queue to not require consumers to be closed first (#8899)
+- `confighttp`: Support proxy configuration field in all exporters that support confighttp (#5761)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix invalid write index updates in the persistent queue (#8115)
+
+## v1.0.0-rcv0018/v0.89.0
+
+### 💡 Enhancements 💡
+
+- `builder`: remove replace statement in builder template (#8763)
+- `service/extensions`: Allow extensions to declare dependencies on other extensions and guarantee start/stop/notification order accordingly. (#8732)
+- `exporterhelper`: Log export errors when retry is not used by the component. (#8791)
+- `cmd/builder`: Add --verbose flag to log `go` subcommands output that are ran as part of a build (#8715)
+- `exporterhelper`: Remove internal goroutine loop for persistent queue (#8868)
+- `exporterhelper`: Simplify usage of storage client, avoid unnecessary allocations (#8830)
+- `exporterhelper`: Simplify logic in boundedMemoryQueue, use channels len/cap (#8829)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: fix bug with queue size and capacity metrics (#8682)
+- `obsreporttest`: split handler for otel vs oc test path in TestTelemetry (#8758)
+- `builder`: Fix featuregate late initialization (#4967)
+- `service`: Fix connector logger zap kind key (#8878)
+
 ## v1.0.0-rcv0017/v0.88.0
 
 ### 💡 Enhancements 💡

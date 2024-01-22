@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package otelcol
 
@@ -12,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"golang.org/x/sys/windows/svc"
 
 	"go.opentelemetry.io/collector/component"
@@ -23,10 +21,7 @@ func TestNewSvcHandler(t *testing.T) {
 	defer func() { os.Args = oldArgs }()
 	os.Args = []string{"otelcol", "--config", filepath.Join("testdata", "otelcol-nop.yaml")}
 
-	factories, err := nopFactories()
-	require.NoError(t, err)
-
-	s := NewSvcHandler(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: factories})
+	s := NewSvcHandler(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: nopFactories})
 
 	colDone := make(chan struct{})
 	requests := make(chan svc.ChangeRequest)

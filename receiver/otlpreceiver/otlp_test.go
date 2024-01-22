@@ -13,6 +13,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -32,100 +33,22 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
-	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 )
 
 const otlpReceiverName = "receiver_test"
 
-var otlpReceiverID = component.NewIDWithName(typeStr, otlpReceiverName)
-
-var traceJSON = []byte(`
-	{
-	  "resource_spans": [
-		{
-		  "resource": {
-			"attributes": [
-			  {
-				"key": "host.name",
-				"value": { "stringValue": "testHost" }
-			  }
-			]
-		  },
-		  "scope_spans": [
-			{
-			  "spans": [
-				{
-				  "trace_id": "5B8EFFF798038103D269B633813FC60C",
-				  "span_id": "EEE19B7EC3C1B174",
-				  "parent_span_id": "EEE19B7EC3C1B173",
-				  "name": "testSpan",
-				  "start_time_unix_nano": 1544712660300000000,
-				  "end_time_unix_nano": 1544712660600000000,
-				  "kind": 2,
-				  "attributes": [
-					{
-					  "key": "attr1",
-					  "value": { "intValue": 55 }
-					}
-				  ]
-				},
-				{
-				  "trace_id": "5B8EFFF798038103D269B633813FC60C",
-				  "span_id": "EEE19B7EC3C1B173",
-				  "name": "testSpan",
-				  "start_time_unix_nano": 1544712660000000000,
-				  "end_time_unix_nano": 1544712661000000000,
-				  "kind": "SPAN_KIND_CLIENT",
-				  "attributes": [
-					{
-					  "key": "attr1",
-					  "value": { "intValue": 55 }
-					}
-				  ]
-				}
-			  ]
-			}
-		  ]
-		}
-	  ]
-	}`)
-
-var traceOtlp = func() ptrace.Traces {
-	td := ptrace.NewTraces()
-	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(semconv.AttributeHostName, "testHost")
-	spans := rs.ScopeSpans().AppendEmpty().Spans()
-	span1 := spans.AppendEmpty()
-	span1.SetTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC})
-	span1.SetSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x74})
-	span1.SetParentSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73})
-	span1.SetName("testSpan")
-	span1.SetStartTimestamp(1544712660300000000)
-	span1.SetEndTimestamp(1544712660600000000)
-	span1.SetKind(ptrace.SpanKindServer)
-	span1.Attributes().PutInt("attr1", 55)
-	span2 := spans.AppendEmpty()
-	span2.SetTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC})
-	span2.SetSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73})
-	span2.SetName("testSpan")
-	span2.SetStartTimestamp(1544712660000000000)
-	span2.SetEndTimestamp(1544712661000000000)
-	span2.SetKind(ptrace.SpanKindClient)
-	span2.Attributes().PutInt("attr1", 55)
-	return td
-}()
+var otlpReceiverID = component.NewIDWithName("otlp", otlpReceiverName)
 
 func TestJsonHttp(t *testing.T) {
 	tests := []struct {
@@ -169,78 +92,57 @@ func TestJsonHttp(t *testing.T) {
 			name:        "GRPCError",
 			encoding:    "",
 			contentType: "application/json",
-			err:         status.New(codes.Internal, "").Err(),
+			err:         status.New(codes.Unavailable, "").Err(),
 		},
 	}
 	addr := testutil.GetAvailableLocalAddress(t)
-	tracesURLPath := "/v1/traceingest"
-	metricsURLPath := "/v1/metricingest"
-	logsURLPath := "/v1/logingest"
-
-	// Set the buffer count to 1 to make it flush the test span immediately.
-	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
-	ocr := newHTTPReceiver(t, addr, tracesURLPath, metricsURLPath, logsURLPath, sink, nil)
-
-	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
-	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
+	sink := newErrOrSinkConsumer()
+	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, sink)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
 	// TODO(nilebox): make starting server deterministic
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			url := fmt.Sprintf("http://%s%s", addr, tracesURLPath)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			sink.Reset()
-			testHTTPJSONRequest(t, url, sink, test.encoding, test.contentType, test.err)
+			sink.SetConsumeError(tt.err)
+
+			for _, dr := range generateDataRequests(t) {
+				url := "http://" + addr + dr.path
+				respBytes := doHTTPRequest(t, url, tt.encoding, tt.contentType, dr.jsonBytes, tt.err != nil)
+				if tt.err == nil {
+					tr := ptraceotlp.NewExportResponse()
+					assert.NoError(t, tr.UnmarshalJSON(respBytes), "Unable to unmarshal response to Response")
+					sink.checkData(t, dr.data, 1)
+				} else {
+					errStatus := &spb.Status{}
+					assert.NoError(t, json.Unmarshal(respBytes, errStatus))
+					if s, ok := status.FromError(tt.err); ok {
+						assert.True(t, proto.Equal(errStatus, s.Proto()))
+					} else {
+						fmt.Println(errStatus)
+						assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unavailable), Message: "my error"}))
+					}
+					sink.checkData(t, dr.data, 0)
+				}
+			}
 		})
 	}
 }
 
 func TestHandleInvalidRequests(t *testing.T) {
-	endpoint := testutil.GetAvailableLocalAddress(t)
-	cfg := &Config{
-		Protocols: Protocols{
-			HTTP: &HTTPConfig{
-				HTTPServerSettings: &confighttp.HTTPServerSettings{
-					Endpoint: endpoint,
-				},
-				TracesURLPath:  defaultTracesURLPath,
-				MetricsURLPath: defaultMetricsURLPath,
-				LogsURLPath:    defaultLogsURLPath,
-			},
-		},
-	}
+	addr := testutil.GetAvailableLocalAddress(t)
+	sink := newErrOrSinkConsumer()
+	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, sink)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
-	// Traces
-	tr, err := NewFactory().CreateTracesReceiver(
-		context.Background(),
-		receivertest.NewNopCreateSettings(),
-		cfg,
-		consumertest.NewNop())
-	require.NoError(t, err)
-	assert.NotNil(t, tr)
-	require.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
-
-	// Metrics
-	mr, err := NewFactory().CreateMetricsReceiver(
-		context.Background(),
-		receivertest.NewNopCreateSettings(),
-		cfg,
-		consumertest.NewNop())
-	require.NoError(t, err)
-	assert.NotNil(t, tr)
-	require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
-
-	// Logs
-	lr, err := NewFactory().CreateLogsReceiver(
-		context.Background(),
-		receivertest.NewNopCreateSettings(),
-		cfg,
-		consumertest.NewNop())
-	require.NoError(t, err)
-	assert.NotNil(t, tr)
-	require.NoError(t, lr.Start(context.Background(), componenttest.NewNopHost()))
+	// TODO(nilebox): make starting server deterministic
+	// Wait for the servers to start
+	<-time.After(10 * time.Millisecond)
 
 	tests := []struct {
 		name        string
@@ -252,8 +154,8 @@ func TestHandleInvalidRequests(t *testing.T) {
 		expectedResponseBody string
 	}{
 		{
-			name:        "POST /v1/traces, no content type",
-			uri:         "/v1/traces",
+			name:        "no content type",
+			uri:         defaultTracesURLPath,
 			method:      http.MethodPost,
 			contentType: "",
 
@@ -261,8 +163,8 @@ func TestHandleInvalidRequests(t *testing.T) {
 			expectedResponseBody: "415 unsupported media type, supported: [application/json, application/x-protobuf]",
 		},
 		{
-			name:        "POST /v1/traces, invalid content type",
-			uri:         "/v1/traces",
+			name:        "invalid content type",
+			uri:         defaultTracesURLPath,
 			method:      http.MethodPost,
 			contentType: "invalid",
 
@@ -270,8 +172,15 @@ func TestHandleInvalidRequests(t *testing.T) {
 			expectedResponseBody: "415 unsupported media type, supported: [application/json, application/x-protobuf]",
 		},
 		{
-			name:        "PATCH /v1/traces",
-			uri:         "/v1/traces",
+			name:        "invalid request",
+			uri:         defaultTracesURLPath,
+			method:      http.MethodPost,
+			contentType: "application/json",
+
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			uri:         defaultTracesURLPath,
 			method:      http.MethodPatch,
 			contentType: "application/json",
 
@@ -279,8 +188,7 @@ func TestHandleInvalidRequests(t *testing.T) {
 			expectedResponseBody: "405 method not allowed, supported: [POST]",
 		},
 		{
-			name:        "GET /v1/traces",
-			uri:         "/v1/traces",
+			uri:         defaultTracesURLPath,
 			method:      http.MethodGet,
 			contentType: "application/json",
 
@@ -288,8 +196,8 @@ func TestHandleInvalidRequests(t *testing.T) {
 			expectedResponseBody: "405 method not allowed, supported: [POST]",
 		},
 		{
-			name:        "POST /v1/metrics, no content type",
-			uri:         "/v1/metrics",
+			name:        "no content type",
+			uri:         defaultMetricsURLPath,
 			method:      http.MethodPost,
 			contentType: "",
 
@@ -297,8 +205,8 @@ func TestHandleInvalidRequests(t *testing.T) {
 			expectedResponseBody: "415 unsupported media type, supported: [application/json, application/x-protobuf]",
 		},
 		{
-			name:        "POST /v1/metrics, no content type",
-			uri:         "/v1/metrics",
+			name:        "invalid content type",
+			uri:         defaultMetricsURLPath,
 			method:      http.MethodPost,
 			contentType: "invalid",
 
@@ -306,8 +214,15 @@ func TestHandleInvalidRequests(t *testing.T) {
 			expectedResponseBody: "415 unsupported media type, supported: [application/json, application/x-protobuf]",
 		},
 		{
-			name:        "PATCH /v1/metrics",
-			uri:         "/v1/metrics",
+			name:        "invalid request",
+			uri:         defaultMetricsURLPath,
+			method:      http.MethodPost,
+			contentType: "application/json",
+
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			uri:         defaultMetricsURLPath,
 			method:      http.MethodPatch,
 			contentType: "application/json",
 
@@ -315,8 +230,7 @@ func TestHandleInvalidRequests(t *testing.T) {
 			expectedResponseBody: "405 method not allowed, supported: [POST]",
 		},
 		{
-			name:        "GET /v1/metrics",
-			uri:         "/v1/metrics",
+			uri:         defaultMetricsURLPath,
 			method:      http.MethodGet,
 			contentType: "application/json",
 
@@ -324,8 +238,8 @@ func TestHandleInvalidRequests(t *testing.T) {
 			expectedResponseBody: "405 method not allowed, supported: [POST]",
 		},
 		{
-			name:        "POST /v1/logs, no content type",
-			uri:         "/v1/logs",
+			name:        "no content type",
+			uri:         defaultLogsURLPath,
 			method:      http.MethodPost,
 			contentType: "",
 
@@ -333,8 +247,8 @@ func TestHandleInvalidRequests(t *testing.T) {
 			expectedResponseBody: "415 unsupported media type, supported: [application/json, application/x-protobuf]",
 		},
 		{
-			name:        "POST /v1/logs, no content type",
-			uri:         "/v1/logs",
+			name:        "invalid content type",
+			uri:         defaultLogsURLPath,
 			method:      http.MethodPost,
 			contentType: "invalid",
 
@@ -342,8 +256,15 @@ func TestHandleInvalidRequests(t *testing.T) {
 			expectedResponseBody: "415 unsupported media type, supported: [application/json, application/x-protobuf]",
 		},
 		{
-			name:        "PATCH /v1/logs",
-			uri:         "/v1/logs",
+			name:        "invalid request",
+			uri:         defaultLogsURLPath,
+			method:      http.MethodPost,
+			contentType: "application/json",
+
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			uri:         defaultLogsURLPath,
 			method:      http.MethodPatch,
 			contentType: "application/json",
 
@@ -351,8 +272,7 @@ func TestHandleInvalidRequests(t *testing.T) {
 			expectedResponseBody: "405 method not allowed, supported: [POST]",
 		},
 		{
-			name:        "GET /v1/logs",
-			uri:         "/v1/logs",
+			uri:         defaultLogsURLPath,
 			method:      http.MethodGet,
 			contentType: "application/json",
 
@@ -361,79 +281,31 @@ func TestHandleInvalidRequests(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			url := fmt.Sprintf("http://%s%s", endpoint, test.uri)
-			req, err2 := http.NewRequest(test.method, url, bytes.NewReader([]byte(`{}`)))
-			require.NoError(t, err2)
-			req.Header.Set("Content-Type", test.contentType)
+	for _, tt := range tests {
+		t.Run(tt.method+" "+tt.uri+" "+tt.name, func(t *testing.T) {
+			url := "http://" + addr + tt.uri
+			req, err := http.NewRequest(tt.method, url, bytes.NewReader([]byte(`1234`)))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", tt.contentType)
 
-			client := &http.Client{}
-			resp, err2 := client.Do(req)
-			require.NoError(t, err2)
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
 
-			body, err2 := io.ReadAll(resp.Body)
-			require.NoError(t, err2)
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
 
-			require.Equal(t, resp.Header.Get("Content-Type"), "text/plain")
-			require.Equal(t, resp.StatusCode, test.expectedStatus)
-			require.EqualValues(t, body, test.expectedResponseBody)
+			if tt.name == "invalid request" {
+				assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
+				assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+				return
+			}
+			assert.Equal(t, "text/plain", resp.Header.Get("Content-Type"))
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+			assert.Equal(t, tt.expectedResponseBody, string(body))
 		})
 	}
 
-	err = tr.Shutdown(context.Background())
-	require.NoError(t, err)
-}
-
-func testHTTPJSONRequest(t *testing.T, url string, sink *errOrSinkConsumer, encoding string, contentType string, expectedErr error) {
-	var buf *bytes.Buffer
-	var err error
-	switch encoding {
-	case "gzip":
-		buf, err = compressGzip(traceJSON)
-		require.NoError(t, err, "Error while gzip compressing trace: %v", err)
-	case "zstd":
-		buf, err = compressZstd(traceJSON)
-		require.NoError(t, err, "Error while zstd compressing trace: %v", err)
-	case "":
-		buf = bytes.NewBuffer(traceJSON)
-	default:
-		t.Fatalf("Unsupported compression type %v", encoding)
-	}
-	sink.SetConsumeError(expectedErr)
-	req, err := http.NewRequest(http.MethodPost, url, buf)
-	require.NoError(t, err, "Error creating trace POST request: %v", err)
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Content-Encoding", encoding)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	require.NoError(t, err, "Error posting trace to http server: %v", err)
-
-	respBytes, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-	require.NoError(t, resp.Body.Close())
-
-	allTraces := sink.AllTraces()
-	if expectedErr == nil {
-		assert.Equal(t, 200, resp.StatusCode)
-		tr := ptraceotlp.NewExportResponse()
-		assert.NoError(t, tr.UnmarshalJSON(respBytes), "Unable to unmarshal response to Response")
-
-		require.Len(t, allTraces, 1)
-		assert.EqualValues(t, allTraces[0], traceOtlp)
-	} else {
-		errStatus := &spb.Status{}
-		assert.NoError(t, json.Unmarshal(respBytes, errStatus))
-		if s, ok := status.FromError(expectedErr); ok {
-			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-			assert.True(t, proto.Equal(errStatus, s.Proto()))
-		} else {
-			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
-		}
-		require.Len(t, allTraces, 0)
-	}
+	require.NoError(t, recv.Shutdown(context.Background()))
 }
 
 func TestProtoHttp(t *testing.T) {
@@ -462,107 +334,46 @@ func TestProtoHttp(t *testing.T) {
 		{
 			name:     "GRPCError",
 			encoding: "",
-			err:      status.New(codes.Internal, "").Err(),
+			err:      status.New(codes.Unavailable, "").Err(),
 		},
 	}
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	tSink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
-	ocr := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, defaultLogsURLPath, tSink, consumertest.NewNop())
+	sink := newErrOrSinkConsumer()
+	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, sink)
 
-	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
-	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
 	// TODO(nilebox): make starting server deterministic
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
-	td := testdata.GenerateTraces(1)
-	marshaler := &ptrace.ProtoMarshaler{}
-	traceBytes, err := marshaler.MarshalTraces(td)
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sink.Reset()
+			sink.SetConsumeError(tt.err)
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			url := fmt.Sprintf("http://%s%s", addr, defaultTracesURLPath)
-			tSink.Reset()
-			testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, td)
+			for _, dr := range generateDataRequests(t) {
+				url := "http://" + addr + dr.path
+				respBytes := doHTTPRequest(t, url, tt.encoding, "application/x-protobuf", dr.protoBytes, tt.err != nil)
+				if tt.err == nil {
+					tr := ptraceotlp.NewExportResponse()
+					assert.NoError(t, tr.UnmarshalProto(respBytes))
+					sink.checkData(t, dr.data, 1)
+				} else {
+					errStatus := &spb.Status{}
+					assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
+					if s, ok := status.FromError(tt.err); ok {
+						assert.True(t, proto.Equal(errStatus, s.Proto()))
+					} else {
+						assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unavailable), Message: "my error"}))
+					}
+					sink.checkData(t, dr.data, 0)
+				}
+			}
 		})
-	}
-}
-
-func createHTTPProtobufRequest(
-	t *testing.T,
-	url string,
-	encoding string,
-	traceBytes []byte,
-) *http.Request {
-	var buf *bytes.Buffer
-	var err error
-	switch encoding {
-	case "gzip":
-		buf, err = compressGzip(traceBytes)
-		require.NoError(t, err, "Error while gzip compressing trace: %v", err)
-	case "zstd":
-		buf, err = compressZstd(traceBytes)
-		require.NoError(t, err, "Error while zstd compressing trace: %v", err)
-	case "":
-		buf = bytes.NewBuffer(traceBytes)
-	default:
-		t.Fatalf("Unsupported compression type %v", encoding)
-	}
-	req, err := http.NewRequest(http.MethodPost, url, buf)
-	require.NoError(t, err, "Error creating trace POST request: %v", err)
-	req.Header.Set("Content-Type", "application/x-protobuf")
-	req.Header.Set("Content-Encoding", encoding)
-	return req
-}
-
-func testHTTPProtobufRequest(
-	t *testing.T,
-	url string,
-	tSink *errOrSinkConsumer,
-	encoding string,
-	traceBytes []byte,
-	expectedErr error,
-	wantData ptrace.Traces,
-) {
-	tSink.SetConsumeError(expectedErr)
-
-	req := createHTTPProtobufRequest(t, url, encoding, traceBytes)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
-
-	respBytes, err := io.ReadAll(resp.Body)
-	require.NoError(t, err, "Error reading response from trace grpc-gateway")
-	require.NoError(t, resp.Body.Close(), "Error closing response body")
-
-	assert.Equal(t, "application/x-protobuf", resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
-
-	allTraces := tSink.AllTraces()
-
-	if expectedErr == nil {
-		require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
-
-		tr := ptraceotlp.NewExportResponse()
-		assert.NoError(t, tr.UnmarshalProto(respBytes), "Unable to unmarshal response to Response")
-
-		require.Len(t, allTraces, 1)
-		assert.EqualValues(t, allTraces[0], wantData)
-	} else {
-		errStatus := &spb.Status{}
-		assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
-		if s, ok := status.FromError(expectedErr); ok {
-			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-			assert.True(t, proto.Equal(errStatus, s.Proto()))
-		} else {
-			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
-		}
-		require.Len(t, allTraces, 0)
 	}
 }
 
@@ -615,12 +426,10 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	tSink := new(consumertest.TracesSink)
-	mSink := new(consumertest.MetricsSink)
-	ocr := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, defaultLogsURLPath, tSink, mSink)
+	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, consumertest.NewNop())
 
-	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
-	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
 	url := fmt.Sprintf("http://%s%s", addr, defaultTracesURLPath)
 
@@ -637,8 +446,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			req.Header.Set("Content-Type", test.content)
 			req.Header.Set("Content-Encoding", test.encoding)
 
-			client := &http.Client{}
-			resp, err := client.Do(req)
+			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
 			respBytes, err := io.ReadAll(resp.Body)
@@ -662,7 +470,7 @@ func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 		assert.NoError(t, ln.Close())
 	})
 
-	r := newGRPCReceiver(t, addr, consumertest.NewNop(), consumertest.NewNop())
+	r := newGRPCReceiver(t, componenttest.NewNopTelemetrySettings(), addr, consumertest.NewNop())
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -676,7 +484,7 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 		assert.NoError(t, ln.Close())
 	})
 
-	r := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, defaultLogsURLPath, consumertest.NewNop(), consumertest.NewNop())
+	r := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, consumertest.NewNop())
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -691,11 +499,12 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	type ingestionStateTest struct {
 		okToIngest   bool
+		permanent    bool
 		expectedCode codes.Code
 	}
 
 	expectedReceivedBatches := 2
-	expectedIngestionBlockedRPCs := 1
+	expectedIngestionBlockedRPCs := 2
 	ingestionStates := []ingestionStateTest{
 		{
 			okToIngest:   true,
@@ -703,7 +512,12 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 		},
 		{
 			okToIngest:   false,
-			expectedCode: codes.Unknown,
+			expectedCode: codes.Unavailable,
+		},
+		{
+			okToIngest:   false,
+			expectedCode: codes.InvalidArgument,
+			permanent:    true,
 		},
 		{
 			okToIngest:   true,
@@ -714,16 +528,16 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	td := testdata.GenerateTraces(1)
 
-	tt, err := obsreporttest.SetupTelemetry(otlpReceiverID)
+	tt, err := componenttest.SetupTelemetry(otlpReceiverID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
-	ocr := newGRPCReceiver(t, addr, sink, nil)
-	require.NotNil(t, ocr)
-	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
+	recv := newGRPCReceiver(t, tt.TelemetrySettings(), addr, sink)
+	require.NotNil(t, recv)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
 	cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err)
@@ -735,7 +549,11 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 		if ingestionState.okToIngest {
 			sink.SetConsumeError(nil)
 		} else {
-			sink.SetConsumeError(errors.New("consumer error"))
+			if ingestionState.permanent {
+				sink.SetConsumeError(consumererror.NewPermanent(errors.New("consumer error")))
+			} else {
+				sink.SetConsumeError(errors.New("consumer error"))
+			}
 		}
 
 		_, err = ptraceotlp.NewGRPCClient(cc).Export(context.Background(), ptraceotlp.NewExportRequestFromTraces(td))
@@ -770,7 +588,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 		},
 		{
 			okToIngest:   false,
-			expectedCode: codes.Unknown,
+			expectedCode: codes.Unavailable,
 		},
 		{
 			okToIngest:   true,
@@ -781,16 +599,16 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	td := testdata.GenerateTraces(1)
 
-	tt, err := obsreporttest.SetupTelemetry(otlpReceiverID)
+	tt, err := componenttest.SetupTelemetry(otlpReceiverID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
-	ocr := newHTTPReceiver(t, addr, defaultTracesURLPath, defaultMetricsURLPath, defaultLogsURLPath, sink, nil)
-	require.NotNil(t, ocr)
-	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
+	recv := newHTTPReceiver(t, tt.TelemetrySettings(), addr, sink)
+	require.NotNil(t, recv)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
 	for _, ingestionState := range ingestionStates {
 		if ingestionState.okToIngest {
@@ -859,16 +677,13 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 func TestGRPCMaxRecvSize(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	sink := new(consumertest.TracesSink)
+	sink := newErrOrSinkConsumer()
 
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg := createDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.HTTP = nil
-	ocr := newReceiver(t, factory, cfg, otlpReceiverID, sink, nil)
-
-	require.NotNil(t, ocr)
-	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
+	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 
 	cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err)
@@ -876,14 +691,12 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	td := testdata.GenerateTraces(50000)
 	require.Error(t, exportTraces(cc, td))
 	assert.NoError(t, cc.Close())
-	require.NoError(t, ocr.Shutdown(context.Background()))
+	require.NoError(t, recv.Shutdown(context.Background()))
 
 	cfg.GRPC.MaxRecvMsgSizeMiB = 100
-	ocr = newReceiver(t, factory, cfg, otlpReceiverID, sink, nil)
-
-	require.NotNil(t, ocr)
-	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
+	recv = newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
 	cc, err = grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err)
@@ -928,14 +741,14 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 		`failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither`)
 }
 
-func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expectedStatusCode int) {
-	endpoint := testutil.GetAvailableLocalAddress(t)
-	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
+func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, payload []byte, size int, expectedStatusCode int) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	url := "http://" + addr + path
 	cfg := &Config{
 		Protocols: Protocols{
 			HTTP: &HTTPConfig{
 				HTTPServerSettings: &confighttp.HTTPServerSettings{
-					Endpoint:           endpoint,
+					Endpoint:           addr,
 					MaxRequestBodySize: int64(size),
 				},
 				TracesURLPath:  defaultTracesURLPath,
@@ -945,103 +758,193 @@ func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expe
 		},
 	}
 
-	r, err := NewFactory().CreateTracesReceiver(
-		context.Background(),
-		receivertest.NewNopCreateSettings(),
-		cfg,
-		consumertest.NewNop())
-	require.NoError(t, err)
-	assert.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, consumertest.NewNop())
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	req := createHTTPRequest(t, url, "", contentType, payload)
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	_, err = io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Equal(t, expectedStatusCode, resp.StatusCode)
 
-	err = r.Shutdown(context.Background())
-	require.NoError(t, err)
+	require.NoError(t, recv.Shutdown(context.Background()))
 }
 
-func TestHTTPMaxRequestBodySize_OK(t *testing.T) {
-	testHTTPMaxRequestBodySizeJSON(t, traceJSON, len(traceJSON), 200)
+func TestHTTPMaxRequestBodySize(t *testing.T) {
+	dataReqs := generateDataRequests(t)
+
+	for _, dr := range dataReqs {
+		testHTTPMaxRequestBodySize(t, dr.path, "application/json", dr.jsonBytes, len(dr.jsonBytes), 200)
+		testHTTPMaxRequestBodySize(t, dr.path, "application/json", dr.jsonBytes, len(dr.jsonBytes)-1, 400)
+
+		testHTTPMaxRequestBodySize(t, dr.path, "application/x-protobuf", dr.protoBytes, len(dr.protoBytes), 200)
+		testHTTPMaxRequestBodySize(t, dr.path, "application/x-protobuf", dr.protoBytes, len(dr.protoBytes)-1, 400)
+	}
 }
 
-func TestHTTPMaxRequestBodySize_TooLarge(t *testing.T) {
-	testHTTPMaxRequestBodySizeJSON(t, traceJSON, len(traceJSON)-1, 400)
-}
-
-func newGRPCReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consumer.Metrics) component.Component {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
+func newGRPCReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
+	cfg := createDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpoint
 	cfg.HTTP = nil
-	return newReceiver(t, factory, cfg, otlpReceiverID, tc, mc)
+	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
 
-func newHTTPReceiver(t *testing.T, endpoint string, tracesURLPath string, metricsURLPath string, logsURLPath string, tc consumer.Traces, mc consumer.Metrics) component.Component {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
+func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
+	cfg := createDefaultConfig().(*Config)
 	cfg.HTTP.Endpoint = endpoint
-	cfg.HTTP.TracesURLPath = tracesURLPath
-	cfg.HTTP.MetricsURLPath = metricsURLPath
-	cfg.HTTP.LogsURLPath = logsURLPath
 	cfg.GRPC = nil
-	return newReceiver(t, factory, cfg, otlpReceiverID, tc, mc)
+	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
 
-func newReceiver(t *testing.T, factory receiver.Factory, cfg *Config, id component.ID, tc consumer.Traces, mc consumer.Metrics) component.Component {
+func newReceiver(t *testing.T, settings component.TelemetrySettings, cfg *Config, id component.ID, c consumertest.Consumer) component.Component {
 	set := receivertest.NewNopCreateSettings()
-	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
+	set.TelemetrySettings = settings
 	set.ID = id
-	var r component.Component
-	var err error
-	if tc != nil {
-		r, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
-		require.NoError(t, err)
-	}
-	if mc != nil {
-		r, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc)
-		require.NoError(t, err)
-	}
+	r, err := newOtlpReceiver(cfg, &set)
+	require.NoError(t, err)
+	require.NoError(t, r.registerTraceConsumer(c))
+	require.NoError(t, r.registerMetricsConsumer(c))
+	require.NoError(t, r.registerLogsConsumer(c))
 	return r
 }
 
-func compressGzip(body []byte) (*bytes.Buffer, error) {
+type dataRequest struct {
+	data       any
+	path       string
+	jsonBytes  []byte
+	protoBytes []byte
+}
+
+func generateDataRequests(t *testing.T) []dataRequest {
+	return []dataRequest{generateTracesRequest(t), generateMetricsRequests(t), generateLogsRequest(t)}
+}
+
+func generateTracesRequest(t *testing.T) dataRequest {
+	protoMarshaler := &ptrace.ProtoMarshaler{}
+	jsonMarshaler := &ptrace.JSONMarshaler{}
+
+	td := testdata.GenerateTraces(2)
+	traceProto, err := protoMarshaler.MarshalTraces(td)
+	require.NoError(t, err)
+
+	traceJSON, err := jsonMarshaler.MarshalTraces(td)
+	require.NoError(t, err)
+
+	return dataRequest{data: td, path: defaultTracesURLPath, jsonBytes: traceJSON, protoBytes: traceProto}
+}
+
+func generateMetricsRequests(t *testing.T) dataRequest {
+	protoMarshaler := &pmetric.ProtoMarshaler{}
+	jsonMarshaler := &pmetric.JSONMarshaler{}
+
+	md := testdata.GenerateMetrics(2)
+	metricProto, err := protoMarshaler.MarshalMetrics(md)
+	require.NoError(t, err)
+
+	metricJSON, err := jsonMarshaler.MarshalMetrics(md)
+	require.NoError(t, err)
+
+	return dataRequest{data: md, path: defaultMetricsURLPath, jsonBytes: metricJSON, protoBytes: metricProto}
+}
+
+func generateLogsRequest(t *testing.T) dataRequest {
+	protoMarshaler := &plog.ProtoMarshaler{}
+	jsonMarshaler := &plog.JSONMarshaler{}
+
+	ld := testdata.GenerateLogs(2)
+	logProto, err := protoMarshaler.MarshalLogs(ld)
+	require.NoError(t, err)
+
+	logJSON, err := jsonMarshaler.MarshalLogs(ld)
+	require.NoError(t, err)
+
+	return dataRequest{data: ld, path: defaultLogsURLPath, jsonBytes: logJSON, protoBytes: logProto}
+}
+
+func doHTTPRequest(
+	t *testing.T,
+	url string,
+	encoding string,
+	contentType string,
+	data []byte,
+	expectErr bool,
+) []byte {
+	req := createHTTPRequest(t, url, encoding, contentType, data)
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	respBytes, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	require.NoError(t, resp.Body.Close())
+	// For cases like "application/json; charset=utf-8", the response will be only "application/json"
+	require.True(t, strings.HasPrefix(strings.ToLower(contentType), resp.Header.Get("Content-Type")))
+
+	if !expectErr {
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+	} else {
+		require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+	}
+
+	return respBytes
+}
+
+func createHTTPRequest(
+	t *testing.T,
+	url string,
+	encoding string,
+	contentType string,
+	data []byte,
+) *http.Request {
+	var buf *bytes.Buffer
+	switch encoding {
+	case "gzip":
+		buf = compressGzip(t, data)
+	case "zstd":
+		buf = compressZstd(t, data)
+	case "":
+		buf = bytes.NewBuffer(data)
+	default:
+		t.Fatalf("Unsupported compression type %v", encoding)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, buf)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Content-Encoding", encoding)
+
+	return req
+}
+
+func compressGzip(t *testing.T, body []byte) *bytes.Buffer {
 	var buf bytes.Buffer
 
 	gw := gzip.NewWriter(&buf)
-	defer gw.Close()
+	defer func() {
+		require.NoError(t, gw.Close())
+	}()
 
 	_, err := gw.Write(body)
-	if err != nil {
-		return nil, err
-	}
+	require.NoError(t, err)
 
-	return &buf, nil
+	return &buf
 }
 
-func compressZstd(body []byte) (*bytes.Buffer, error) {
+func compressZstd(t *testing.T, body []byte) *bytes.Buffer {
 	var buf bytes.Buffer
 
 	zw, err := zstd.NewWriter(&buf)
-	if err != nil {
-		return nil, err
-	}
+	require.NoError(t, err)
 
-	defer zw.Close()
+	defer func() {
+		require.NoError(t, zw.Close())
+	}()
 
 	_, err = zw.Write(body)
-	if err != nil {
-		return nil, err
-	}
+	require.NoError(t, err)
 
-	return &buf, nil
+	return &buf
 }
 
 type senderFunc func(td ptrace.Traces)
@@ -1070,7 +973,9 @@ func TestShutdown(t *testing.T) {
 
 	conn, err := grpc.Dial(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err)
-	defer conn.Close()
+	t.Cleanup(func() {
+		require.NoError(t, conn.Close())
+	})
 
 	doneSignalGrpc := make(chan bool)
 	doneSignalHTTP := make(chan bool)
@@ -1084,12 +989,10 @@ func TestShutdown(t *testing.T) {
 		marshaler := &ptrace.ProtoMarshaler{}
 		traceBytes, err2 := marshaler.MarshalTraces(td)
 		require.NoError(t, err2)
-		url := fmt.Sprintf("http://%s/v1/traces", endpointHTTP)
-		req := createHTTPProtobufRequest(t, url, "", traceBytes)
-		client := &http.Client{}
-		resp, err2 := client.Do(req)
-		if err2 == nil {
-			resp.Body.Close()
+		url := "http://" + endpointHTTP + defaultTracesURLPath
+		req := createHTTPRequest(t, url, "", "application/x-protobuf", traceBytes)
+		if resp, errResp := http.DefaultClient.Do(req); errResp == nil {
+			require.NoError(t, resp.Body.Close())
 		}
 	}
 
@@ -1106,8 +1009,7 @@ func TestShutdown(t *testing.T) {
 	// Now shutdown the receiver, while continuing sending traces to it.
 	ctx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelFn()
-	err = r.Shutdown(ctx)
-	assert.NoError(t, err)
+	assert.NoError(t, r.Shutdown(ctx))
 
 	// Remember how many spans the sink received. This number should not change after this
 	// point because after Shutdown() returns the component is not allowed to produce
@@ -1125,7 +1027,7 @@ func TestShutdown(t *testing.T) {
 
 	// The last, additional trace should not be received by sink, so the number of spans in
 	// the sink should not change.
-	assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
+	assert.Equal(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
 }
 
 func generateTraces(senderFn senderFunc, doneSignal chan bool) {
@@ -1157,10 +1059,20 @@ func exportTraces(cc *grpc.ClientConn, td ptrace.Traces) error {
 }
 
 type errOrSinkConsumer struct {
+	consumertest.Consumer
 	*consumertest.TracesSink
 	*consumertest.MetricsSink
+	*consumertest.LogsSink
 	mu           sync.Mutex
 	consumeError error // to be returned by ConsumeTraces, if set
+}
+
+func newErrOrSinkConsumer() *errOrSinkConsumer {
+	return &errOrSinkConsumer{
+		TracesSink:  new(consumertest.TracesSink),
+		MetricsSink: new(consumertest.MetricsSink),
+		LogsSink:    new(consumertest.LogsSink),
+	}
 }
 
 // SetConsumeError sets an error that will be returned by the Consume function.
@@ -1198,16 +1110,49 @@ func (esc *errOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Met
 	return esc.MetricsSink.ConsumeMetrics(ctx, md)
 }
 
+// ConsumeMetrics stores metrics to this sink.
+func (esc *errOrSinkConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	esc.mu.Lock()
+	defer esc.mu.Unlock()
+
+	if esc.consumeError != nil {
+		return esc.consumeError
+	}
+
+	return esc.LogsSink.ConsumeLogs(ctx, ld)
+}
+
 // Reset deletes any stored in the sinks, resets error to nil.
 func (esc *errOrSinkConsumer) Reset() {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()
 
 	esc.consumeError = nil
-	if esc.TracesSink != nil {
-		esc.TracesSink.Reset()
-	}
-	if esc.MetricsSink != nil {
-		esc.MetricsSink.Reset()
+	esc.TracesSink.Reset()
+	esc.MetricsSink.Reset()
+	esc.LogsSink.Reset()
+}
+
+// Reset deletes any stored in the sinks, resets error to nil.
+func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, len int) {
+	switch data.(type) {
+	case ptrace.Traces:
+		allTraces := esc.TracesSink.AllTraces()
+		require.Len(t, allTraces, len)
+		if len > 0 {
+			require.Equal(t, allTraces[0], data)
+		}
+	case pmetric.Metrics:
+		allMetrics := esc.MetricsSink.AllMetrics()
+		require.Len(t, allMetrics, len)
+		if len > 0 {
+			require.Equal(t, allMetrics[0], data)
+		}
+	case plog.Logs:
+		allLogs := esc.LogsSink.AllLogs()
+		require.Len(t, allLogs, len)
+		if len > 0 {
+			require.Equal(t, allLogs[0], data)
+		}
 	}
 }

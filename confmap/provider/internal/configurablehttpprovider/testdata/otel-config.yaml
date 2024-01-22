@@ -1,6 +1,4 @@
 extensions:
-  memory_ballast:
-    size_mib: 512
   zpages:
     endpoint: 0.0.0.0:55679
 
@@ -13,7 +11,7 @@ receivers:
 processors:
   batch:
   memory_limiter:
-    # 75% of maximum memory up to 4G
+    # 75% of maximum memory up to 2G
     limit_mib: 1536
     # 25% of limit up to 2G
     spike_limit_mib: 512
@@ -34,4 +32,4 @@ service:
       processors: [memory_limiter, batch]
       exporters: [debug]
 
-  extensions: [memory_ballast, zpages]
+  extensions: [zpages]

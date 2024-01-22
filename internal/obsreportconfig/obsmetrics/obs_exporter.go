@@ -3,11 +3,6 @@
 
 package obsmetrics // import "go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 
-import (
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
-)
-
 const (
 	// ExporterKey used to identify exporters in metrics and traces.
 	ExporterKey = "exporter"
@@ -35,52 +30,8 @@ const (
 )
 
 var (
-	TagKeyExporter, _ = tag.NewKey(ExporterKey)
-
 	ExporterPrefix                 = ExporterKey + NameSep
 	ExportTraceDataOperationSuffix = NameSep + "traces"
 	ExportMetricsOperationSuffix   = NameSep + "metrics"
 	ExportLogsOperationSuffix      = NameSep + "logs"
-
-	// Exporter metrics. Any count of data items below is in the final format
-	// that they were sent, reasoning: reconciliation is easier if measurements
-	// on backend and exporter are expected to be the same. Translation issues
-	// that result in a different number of elements should be reported in a
-	// separate way.
-	ExporterSentSpans = stats.Int64(
-		ExporterPrefix+SentSpansKey,
-		"Number of spans successfully sent to destination.",
-		stats.UnitDimensionless)
-	ExporterFailedToSendSpans = stats.Int64(
-		ExporterPrefix+FailedToSendSpansKey,
-		"Number of spans in failed attempts to send to destination.",
-		stats.UnitDimensionless)
-	ExporterFailedToEnqueueSpans = stats.Int64(
-		ExporterPrefix+FailedToEnqueueSpansKey,
-		"Number of spans failed to be added to the sending queue.",
-		stats.UnitDimensionless)
-	ExporterSentMetricPoints = stats.Int64(
-		ExporterPrefix+SentMetricPointsKey,
-		"Number of metric points successfully sent to destination.",
-		stats.UnitDimensionless)
-	ExporterFailedToSendMetricPoints = stats.Int64(
-		ExporterPrefix+FailedToSendMetricPointsKey,
-		"Number of metric points in failed attempts to send to destination.",
-		stats.UnitDimensionless)
-	ExporterFailedToEnqueueMetricPoints = stats.Int64(
-		ExporterPrefix+FailedToEnqueueMetricPointsKey,
-		"Number of metric points failed to be added to the sending queue.",
-		stats.UnitDimensionless)
-	ExporterSentLogRecords = stats.Int64(
-		ExporterPrefix+SentLogRecordsKey,
-		"Number of log record successfully sent to destination.",
-		stats.UnitDimensionless)
-	ExporterFailedToSendLogRecords = stats.Int64(
-		ExporterPrefix+FailedToSendLogRecordsKey,
-		"Number of log records in failed attempts to send to destination.",
-		stats.UnitDimensionless)
-	ExporterFailedToEnqueueLogRecords = stats.Int64(
-		ExporterPrefix+FailedToEnqueueLogRecordsKey,
-		"Number of log records failed to be added to the sending queue.",
-		stats.UnitDimensionless)
 )
