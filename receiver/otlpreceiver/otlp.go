@@ -41,8 +41,6 @@ type otlpReceiver struct {
 	obsrepHTTP *receiverhelper.ObsReport
 
 	settings *receiver.CreateSettings
-
-	onceLogLocalHost sync.Once
 }
 
 // newOtlpReceiver just creates the OpenTelemetry receiver services. It is the caller's
