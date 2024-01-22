@@ -95,7 +95,6 @@ for general practices for OpenTelemetry project.
 Select a good issue from the links below (ordered by difficulty/complexity):
 
 * [Good First Issue](https://github.com/open-telemetry/opentelemetry-collector/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-* [Up for Grabs](https://github.com/open-telemetry/opentelemetry-collector/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3Aup-for-grabs+)
 * [Help Wanted](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
 Comment on the issue that you want to work on so we can assign it to you and
@@ -148,7 +147,7 @@ section of general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.18 and up)
+2. [go](https://golang.org/) (version 1.20 and up)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 
@@ -205,7 +204,7 @@ before merging (but see above paragraph about writing good commit messages in th
 
 ## General Notes
 
-This project uses Go 1.18.* and [Github Actions.](https://github.com/features/actions)
+This project uses Go 1.20.* and [Github Actions.](https://github.com/features/actions)
 
 It is recommended to run `make gofmt all` before submitting your PR
 
@@ -214,8 +213,7 @@ The dependencies are managed with `go mod` if you work with the sources under yo
 
 ## Coding Guidelines
 
-Although OpenTelemetry project as a whole is still in Alpha stage we consider
-OpenTelemetry Collector to be close to production quality and the quality bar
+We consider the OpenTelemetry Collector to be close to production quality and the quality bar
 for contributions is set accordingly. Contributions must have readable code written
 with maintainability in mind (if in doubt check [Effective Go](https://golang.org/doc/effective_go.html)
 for coding advice). The code must adhere to the following robustness principles that
@@ -364,8 +362,7 @@ The following limitations are recommended:
 ### Observability
 
 Out of the box, your users should be able to observe the state of your component.
-The collector exposes an OpenMetrics endpoint at `http://localhost:8888/metrics`
-where your data will land.
+See [observability.md](docs/observability.md) for more details.
 
 When using the regular helpers, you should have some metrics added around key
 events automatically. For instance, exporters should have `otelcol_exporter_sent_spans`

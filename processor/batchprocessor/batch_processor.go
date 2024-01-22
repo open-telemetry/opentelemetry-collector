@@ -110,7 +110,7 @@ var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
 
 // newBatchProcessor returns a new batch processor component.
-func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func() batch, useOtel bool) (*batchProcessor, error) {
+func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func() batch) (*batchProcessor, error) {
 	// use lower-case, to be consistent with http/2 headers.
 	mks := make([]string, len(cfg.MetadataKeys))
 	for i, k := range cfg.MetadataKeys {
@@ -136,7 +136,7 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 		}
 	}
 
-	bpt, err := newBatchProcessorTelemetry(set, bp.batcher.currentMetadataCardinality, useOtel)
+	bpt, err := newBatchProcessorTelemetry(set, bp.batcher.currentMetadataCardinality)
 	if err != nil {
 		return nil, fmt.Errorf("error creating batch processor telemetry: %w", err)
 	}
@@ -350,18 +350,18 @@ func (bp *batchProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 // newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
-func newBatchTracesProcessor(set processor.CreateSettings, next consumer.Traces, cfg *Config, useOtel bool) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, func() batch { return newBatchTraces(next) }, useOtel)
+func newBatchTracesProcessor(set processor.CreateSettings, next consumer.Traces, cfg *Config) (*batchProcessor, error) {
+	return newBatchProcessor(set, cfg, func() batch { return newBatchTraces(next) })
 }
 
 // newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
-func newBatchMetricsProcessor(set processor.CreateSettings, next consumer.Metrics, cfg *Config, useOtel bool) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, func() batch { return newBatchMetrics(next) }, useOtel)
+func newBatchMetricsProcessor(set processor.CreateSettings, next consumer.Metrics, cfg *Config) (*batchProcessor, error) {
+	return newBatchProcessor(set, cfg, func() batch { return newBatchMetrics(next) })
 }
 
 // newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
-func newBatchLogsProcessor(set processor.CreateSettings, next consumer.Logs, cfg *Config, useOtel bool) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, func() batch { return newBatchLogs(next) }, useOtel)
+func newBatchLogsProcessor(set processor.CreateSettings, next consumer.Logs, cfg *Config) (*batchProcessor, error) {
+	return newBatchProcessor(set, cfg, func() batch { return newBatchLogs(next) })
 }
 
 type batchTraces struct {

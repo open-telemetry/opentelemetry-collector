@@ -470,3 +470,9 @@ chlog-update: $(CHLOGGEN)
 .PHONY: builder-integration-test
 builder-integration-test: $(ENVSUBST)
 	cd ./cmd/builder && ./test/test.sh
+
+.PHONY: mdatagen-test
+mdatagen-test:
+	cd cmd/mdatagen && $(GOCMD) install .
+	cd cmd/mdatagen && $(GOCMD) generate ./...
+	cd cmd/mdatagen && $(GOCMD) test ./...

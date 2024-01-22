@@ -80,3 +80,12 @@ func TestStringFmt(t *testing.T) {
 		}
 	}
 }
+
+func TestStringMarshalBinary(t *testing.T) {
+	examples := []String{"opaque", "s", "veryveryveryveryveryveryveryveryveryverylong"}
+	for _, example := range examples {
+		opaque, err := example.MarshalBinary()
+		require.NoError(t, err)
+		assert.Equal(t, []byte("[REDACTED]"), opaque)
+	}
+}

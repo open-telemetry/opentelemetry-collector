@@ -2,24 +2,16 @@
 
 A receiver is how data gets into the OpenTelemetry Collector. Generally, a
 receiver accepts data in a specified format, translates it into the internal
-format and passes it to [processors](../processor/README.md) and
-[exporters](../exporter/README.md) defined in the applicable
-pipelines.
+format and passes it to [processors](../processor/README.md) and [exporters](../exporter/README.md) defined 
+in the applicable pipelines.
 
-Available trace receivers (sorted alphabetically):
-
-- [OTLP Receiver](otlpreceiver/README.md)
-
-Available metric receivers (sorted alphabetically):
-
-- [OTLP Receiver](otlpreceiver/README.md)
-
-Available log receivers (sorted alphabetically):
+This repository hosts the following receiver available in traces, metrics
+and logs pipelines:
 
 - [OTLP Receiver](otlpreceiver/README.md)
 
 The [contrib repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
- has more receivers that can be added to custom builds of the collector.
+has more receivers available in its builds.
 
 ## Configuring Receivers
 

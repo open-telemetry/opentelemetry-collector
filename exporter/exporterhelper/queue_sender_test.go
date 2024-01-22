@@ -20,8 +20,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
@@ -139,41 +137,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 	ocs.checkSendItemsCount(t, 2*wantRequests)
 	ocs.checkDroppedItemsCount(t, 0)
 }
-
-// Force the state of feature gate for a test
-func setFeatureGateForTest(t testing.TB, gate *featuregate.Gate, enabled bool) func() {
-	originalValue := gate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
-	return func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), originalValue))
-	}
-}
-
 func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
-	resetFlag := setFeatureGateForTest(t, obsreportconfig.UseOtelForInternalMetricsfeatureGate, false)
-	defer resetFlag()
-	tt, err := componenttest.SetupTelemetry(defaultID)
-	require.NoError(t, err)
-
-	qCfg := NewDefaultQueueSettings()
-	qCfg.NumConsumers = 0 // to make every request go straight to the queue
-	rCfg := configretry.NewDefaultBackOffConfig()
-	set := exporter.CreateSettings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
-	be, err := newBaseExporter(set, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
-	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-
-	checkValueForGlobalManager(t, defaultExporterTags, int64(defaultQueueSize), "exporter/queue_capacity")
-	for i := 0; i < 7; i++ {
-		require.NoError(t, be.send(context.Background(), newErrorRequest()))
-	}
-	checkValueForGlobalManager(t, defaultExporterTags, int64(7), "exporter/queue_size")
-
-	assert.NoError(t, be.Shutdown(context.Background()))
-	checkValueForGlobalManager(t, defaultExporterTags, int64(0), "exporter/queue_size")
-}
-
-func TestQueuedRetry_QueueMetricsReportedUsingOTel(t *testing.T) {
 	tt, err := componenttest.SetupTelemetry(defaultID)
 	require.NoError(t, err)
 

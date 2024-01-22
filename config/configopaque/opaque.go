@@ -9,6 +9,7 @@ import (
 )
 
 // String alias that is marshaled and printed in an opaque way.
+// To recover the original value, cast it to a string.
 type String string
 
 const maskedString = "[REDACTED]"
@@ -34,4 +35,11 @@ var _ fmt.GoStringer = String("")
 // This is used for the %#v verb.
 func (s String) GoString() string {
 	return fmt.Sprintf("%#v", maskedString)
+}
+
+var _ encoding.BinaryMarshaler = String("")
+
+// MarshalBinary marshals the string `[REDACTED]` as []byte.
+func (s String) MarshalBinary() (text []byte, err error) {
+	return []byte(maskedString), nil
 }
