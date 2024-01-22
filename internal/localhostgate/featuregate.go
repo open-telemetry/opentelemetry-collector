@@ -20,44 +20,32 @@ const useLocalHostAsDefaultHostID = "component.UseLocalHostAsDefaultHost"
 
 // UseLocalHostAsDefaultHostfeatureGate is the feature gate that controls whether
 // server-like receivers and extensions such as the OTLP receiver use localhost as the default host for their endpoints.
-var UseLocalHostAsDefaultHostfeatureGate *featuregate.Gate
+var UseLocalHostAsDefaultHostfeatureGate = mustRegisterOrLoad(
+	featuregate.GlobalRegistry(),
+	useLocalHostAsDefaultHostID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("controls whether server-like receivers and extensions such as the OTLP receiver use localhost as the default host for their endpoints"),
+)
 
-// registerOrLoad tries to register the feature gate and loads it if it already exists.
-func registerOrLoad(reg *featuregate.Registry, id string, stage featuregate.Stage, opts ...featuregate.RegisterOption) (*featuregate.Gate, error) {
+// mustRegisterOrLoad tries to register the feature gate and loads it if it already exists.
+// It panics on any other error.
+func mustRegisterOrLoad(reg *featuregate.Registry, id string, stage featuregate.Stage, opts ...featuregate.RegisterOption) *featuregate.Gate {
 	gate, err := reg.Register(id, stage, opts...)
 
-	if err != nil {
-		switch {
-		case errors.Is(err, featuregate.ErrAlreadyRegistered):
-			// Gate is already registered; find it.
-			// Only a handful of feature gates are registered, so it's fine to iterate over all of them.
-			reg.VisitAll(func(g *featuregate.Gate) {
-				if g.ID() == id {
-					gate = g
-					return
-				}
-			})
-		default:
-			// Propagate the error otherwise.
-			return nil, err
-		}
-	}
-
-	return gate, nil
-}
-
-func init() {
-	var err error
-	UseLocalHostAsDefaultHostfeatureGate, err = registerOrLoad(
-		featuregate.GlobalRegistry(),
-		useLocalHostAsDefaultHostID,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("controls whether server-like receivers and extensions such as the OTLP receiver use localhost as the default host for their endpoints"),
-	)
-
-	if err != nil {
+	if errors.Is(err, featuregate.ErrAlreadyRegistered) {
+		// Gate is already registered; find it.
+		// Only a handful of feature gates are registered, so it's fine to iterate over all of them.
+		reg.VisitAll(func(g *featuregate.Gate) {
+			if g.ID() == id {
+				gate = g
+				return
+			}
+		})
+	} else if err != nil {
 		panic(err)
 	}
+
+	return gate
 }
 
 // EndpointForPort gets the endpoint for a given port using localhost or 0.0.0.0 depending on the feature gate.
