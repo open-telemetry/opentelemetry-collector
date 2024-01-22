@@ -16,13 +16,13 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-const useLocalHostAsDefaultHostID = "component.UseLocalHostAsDefaultHost"
+const UseLocalHostAsDefaultHostID = "component.UseLocalHostAsDefaultHost"
 
-// UseLocalHostAsDefaultHostfeatureGate is the feature gate that controls whether
+// useLocalHostAsDefaultHostfeatureGate is the feature gate that controls whether
 // server-like receivers and extensions such as the OTLP receiver use localhost as the default host for their endpoints.
-var UseLocalHostAsDefaultHostfeatureGate = mustRegisterOrLoad(
+var useLocalHostAsDefaultHostfeatureGate = mustRegisterOrLoad(
 	featuregate.GlobalRegistry(),
-	useLocalHostAsDefaultHostID,
+	UseLocalHostAsDefaultHostID,
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("controls whether server-like receivers and extensions such as the OTLP receiver use localhost as the default host for their endpoints"),
 )
@@ -51,7 +51,7 @@ func mustRegisterOrLoad(reg *featuregate.Registry, id string, stage featuregate.
 // EndpointForPort gets the endpoint for a given port using localhost or 0.0.0.0 depending on the feature gate.
 func EndpointForPort(port int) string {
 	host := "localhost"
-	if !UseLocalHostAsDefaultHostfeatureGate.IsEnabled() {
+	if !useLocalHostAsDefaultHostfeatureGate.IsEnabled() {
 		host = "0.0.0.0"
 	}
 	return fmt.Sprintf("%s:%d", host, port)
@@ -59,10 +59,10 @@ func EndpointForPort(port int) string {
 
 // LogAboutUseLocalHostAsDefault logs about the upcoming change from 0.0.0.0 to localhost on server-like components.
 func LogAboutUseLocalHostAsDefault(logger *zap.Logger) {
-	if !UseLocalHostAsDefaultHostfeatureGate.IsEnabled() {
-		logger.Info(
-			"The default endpoint(s) for this component will change in a future version to use localhost instead of 0.0.0.0. Use the feature gate to preview the new default.",
-			zap.String("feature gate ID", useLocalHostAsDefaultHostID),
+	if !useLocalHostAsDefaultHostfeatureGate.IsEnabled() {
+		logger.Warn(
+			"The default endpoints for all servers in components will change to use localhost instead of 0.0.0.0 in a future version. Use the feature gate to preview the new default.",
+			zap.String("feature gate ID", UseLocalHostAsDefaultHostID),
 		)
 	}
 }

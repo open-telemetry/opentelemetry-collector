@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/internal/localhostgate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -168,6 +169,7 @@ func (srv *Service) Start(ctx context.Context) error {
 	}
 
 	srv.telemetrySettings.Logger.Info("Everything is ready. Begin running and processing data.")
+	localhostgate.LogAboutUseLocalHostAsDefault(srv.telemetrySettings.Logger)
 	return nil
 }
 

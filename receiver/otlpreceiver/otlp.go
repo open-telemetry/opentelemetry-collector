@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/localhostgate"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -172,11 +171,6 @@ func (r *otlpReceiver) startHTTPServer(host component.Host) error {
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
 func (r *otlpReceiver) Start(_ context.Context, host component.Host) error {
-	r.onceLogLocalHost.Do(func() {
-		if r.cfg.logLocalHostWarning {
-			localhostgate.LogAboutUseLocalHostAsDefault(r.settings.Logger)
-		}
-	})
 	if err := r.startGRPCServer(host); err != nil {
 		return err
 	}
