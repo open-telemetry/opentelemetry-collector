@@ -20,7 +20,7 @@ Available log exporters (sorted alphabetically):
 
 Available local exporters (sorted alphabetically):
 
-- [Logging](loggingexporter/README.md)
+- [Debug](debugexporter/README.md)
 
 The [contrib
 repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
