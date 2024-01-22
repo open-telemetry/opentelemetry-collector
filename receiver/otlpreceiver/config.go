@@ -67,8 +67,8 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 
 	if !conf.IsSet(protoGRPC) {
 		cfg.GRPC = nil
-
 	}
+
 	if !conf.IsSet(protoHTTP) {
 		cfg.HTTP = nil
 	} else {
