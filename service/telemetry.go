@@ -28,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -64,9 +63,9 @@ func newColTelemetry(disableHighCardinality bool, extendedConfig bool) *telemetr
 	}
 }
 
-func (tel *telemetryInitializer) init(res *resource.Resource, settings servicetelemetry.TelemetrySettings, cfg telemetry.Config, asyncErrorChannel chan error) error {
+func (tel *telemetryInitializer) init(res *resource.Resource, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
 	if cfg.Metrics.Level == configtelemetry.LevelNone || (cfg.Metrics.Address == "" && len(cfg.Metrics.Readers) == 0) {
-		settings.Logger.Info(
+		logger.Info(
 			"Skipping telemetry setup.",
 			zap.String(zapKeyTelemetryAddress, cfg.Metrics.Address),
 			zap.String(zapKeyTelemetryLevel, cfg.Metrics.Level.String()),
@@ -74,7 +73,7 @@ func (tel *telemetryInitializer) init(res *resource.Resource, settings servicete
 		return nil
 	}
 
-	settings.Logger.Info("Setting up own telemetry...")
+	logger.Info("Setting up own telemetry...")
 
 	if tp, err := tel.initTraces(res, cfg); err == nil {
 		tel.tp = tp
@@ -88,7 +87,7 @@ func (tel *telemetryInitializer) init(res *resource.Resource, settings servicete
 		return err
 	}
 
-	return tel.initMetrics(res, settings.Logger, cfg, asyncErrorChannel)
+	return tel.initMetrics(res, logger, cfg, asyncErrorChannel)
 }
 
 func (tel *telemetryInitializer) initTraces(res *resource.Resource, cfg telemetry.Config) (trace.TracerProvider, error) {
