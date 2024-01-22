@@ -49,8 +49,7 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	// NonPermanent errors will be converted to codes.Unavailable (equivalent to HTTP 503)
 	// Permanent errors will be converted to codes.InvalidArgument (equivalent to HTTP 400)
 	if err != nil {
-		s := errors.GetStatusFromError(err)
-		return ptraceotlp.NewExportResponse(), s.Err()
+		return ptraceotlp.NewExportResponse(), errors.GetStatusFromError(err).Err()
 	}
 
 	return ptraceotlp.NewExportResponse(), nil
