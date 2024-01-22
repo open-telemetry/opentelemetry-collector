@@ -8,8 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/internal/localhostgate"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/internal/localhostgate"
 )
 
 func shouldWarn(endpoint string) bool {

@@ -19,3 +19,5 @@ require (
 )
 
 replace go.opentelemetry.io/collector => ../../
+
+replace go.opentelemetry.io/collector/featuregate => ../../featuregate
