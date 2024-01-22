@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
+	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -42,7 +42,7 @@ func TestBuildResource(t *testing.T) {
 
 	// Check default config
 	cfg := telemetry.Config{}
-	otelRes := buildResource(buildInfo, cfg)
+	otelRes := resource.New(buildInfo, cfg.Resource)
 	res := pdataFromSdk(otelRes)
 
 	assert.Equal(t, res.Attributes().Len(), 3)
@@ -64,7 +64,7 @@ func TestBuildResource(t *testing.T) {
 			semconv.AttributeServiceInstanceID: nil,
 		},
 	}
-	otelRes = buildResource(buildInfo, cfg)
+	otelRes = resource.New(buildInfo, cfg.Resource)
 	res = pdataFromSdk(otelRes)
 
 	// Attributes should not exist since we nil-ified all.
@@ -79,7 +79,7 @@ func TestBuildResource(t *testing.T) {
 			semconv.AttributeServiceInstanceID: strPtr("c"),
 		},
 	}
-	otelRes = buildResource(buildInfo, cfg)
+	otelRes = resource.New(buildInfo, cfg.Resource)
 	res = pdataFromSdk(otelRes)
 
 	assert.Equal(t, res.Attributes().Len(), 3)
@@ -299,13 +299,8 @@ func TestTelemetryInit(t *testing.T) {
 					},
 				}
 			}
-			otelRes := buildResource(buildInfo, *tc.cfg)
-			res := pdataFromSdk(otelRes)
-			settings := servicetelemetry.TelemetrySettings{
-				Logger:   zap.NewNop(),
-				Resource: res,
-			}
-			err := tel.init(otelRes, settings, *tc.cfg, make(chan error))
+			otelRes := resource.New(buildInfo, tc.cfg.Resource)
+			err := tel.init(otelRes, zap.NewNop(), *tc.cfg, make(chan error))
 			require.NoError(t, err)
 			defer func() {
 				require.NoError(t, tel.shutdown())
