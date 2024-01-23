@@ -101,10 +101,6 @@ func TestJsonHttp(t *testing.T) {
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
-	// TODO(nilebox): make starting server deterministic
-	// Wait for the servers to start
-	<-time.After(10 * time.Millisecond)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink.Reset()
@@ -139,10 +135,6 @@ func TestHandleInvalidRequests(t *testing.T) {
 	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
-
-	// TODO(nilebox): make starting server deterministic
-	// Wait for the servers to start
-	<-time.After(10 * time.Millisecond)
 
 	tests := []struct {
 		name        string
@@ -346,10 +338,6 @@ func TestProtoHttp(t *testing.T) {
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
-	// TODO(nilebox): make starting server deterministic
-	// Wait for the servers to start
-	<-time.After(10 * time.Millisecond)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink.Reset()
@@ -432,9 +420,6 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
 	url := fmt.Sprintf("http://%s%s", addr, defaultTracesURLPath)
-
-	// Wait for the servers to start
-	<-time.After(10 * time.Millisecond)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

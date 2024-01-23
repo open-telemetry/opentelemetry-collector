@@ -75,9 +75,3 @@ example
 They also allow you to quickly examine error samples
 
 Example URL: http://localhost:55679/debug/tracez
-
-### RpcZ
-The Rpcz route is available to help examine statistics of remote procedure calls (RPCs) 
-that are properly instrumented. For example when using gRPC
-
-Example URL: http://localhost:55679/debug/rpcz

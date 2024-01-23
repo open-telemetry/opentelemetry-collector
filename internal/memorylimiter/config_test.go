@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package memorylimiterprocessor
+package memorylimiter
 
 import (
 	"path/filepath"
@@ -12,22 +12,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
-
-func TestUnmarshalDefaultConfig(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(confmap.New(), cfg))
-	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
-}
 
 func TestUnmarshalConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+	cfg := &Config{}
 	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
@@ -45,13 +36,11 @@ func TestConfigValidate(t *testing.T) {
 	}{
 		{
 			name: "valid",
-			cfg: func() *Config {
-				cfg := createDefaultConfig().(*Config)
-				cfg.MemoryLimitMiB = 5722
-				cfg.MemorySpikeLimitMiB = 1907
-				cfg.CheckInterval = 100 * time.Millisecond
-				return cfg
-			}(),
+			cfg: &Config{
+				MemoryLimitMiB:      5722,
+				MemorySpikeLimitMiB: 1907,
+				CheckInterval:       100 * time.Millisecond,
+			},
 			err: nil,
 		},
 		{
