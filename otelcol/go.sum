@@ -300,7 +300,7 @@ go.opentelemetry.io/contrib/config v0.2.0 h1:VRYXnoE2ug3QOtaKka4eV9OgHXMJ0q6ggFt
 go.opentelemetry.io/contrib/config v0.2.0/go.mod h1:iBfwdwpZBKsVXMOAWHyGS8//dcVNJORYnFm6VNqsOG8=
 go.opentelemetry.io/contrib/propagators/b3 v1.21.1 h1:WPYiUgmw3+b7b3sQ1bFBFAf0q+Di9dvNc3AtYfnT4RQ=
 go.opentelemetry.io/contrib/propagators/b3 v1.21.1/go.mod h1:EmzokPoSqsYMBVK4nRnhsfm5mbn8J1eDuz/U1UaQaWg=
-go.opentelemetry.io/contrib/zpages v0.46.1 h1:U8Hh84dc+vJTVgRnL+QKWtWD2iqTSKibrQ85EeQqsNg=
+go.opentelemetry.io/contrib/zpages v0.47.0 h1:ekpdNa2wqOvAfwZIGDIIV02zmR+z08aWPt21KrPJnaU=
 go.opentelemetry.io/otel v1.22.0 h1:xS7Ku+7yTFvDfDraDIJVpw7XPyuHlB9MCiqqX5mcJ6Y=
 go.opentelemetry.io/otel v1.22.0/go.mod h1:eoV4iAi3Ea8LkAEI9+GFT44O6T/D0GWAVFyZVCC6pMI=
 go.opentelemetry.io/otel/bridge/opencensus v0.45.0 h1:kEOlv9Exuv3J8GCf1nLMHfrTPGnZOuIkN8YlRM14TtQ=
