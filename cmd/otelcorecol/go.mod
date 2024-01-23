@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.92.0
 	go.opentelemetry.io/collector/extension v0.92.0
 	go.opentelemetry.io/collector/extension/ballastextension v0.92.0
+	go.opentelemetry.io/collector/extension/memorylimiterextension v0.92.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.92.0
 	go.opentelemetry.io/collector/otelcol v0.92.0
 	go.opentelemetry.io/collector/processor v0.92.0
@@ -177,6 +178,8 @@ replace go.opentelemetry.io/collector/extension => ../../extension
 replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
 
 replace go.opentelemetry.io/collector/extension/ballastextension => ../../extension/ballastextension
+
+replace go.opentelemetry.io/collector/extension/memorylimiterextension => ../../extension/memorylimiterextension
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
 
