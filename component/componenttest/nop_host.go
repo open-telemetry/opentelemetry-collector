@@ -28,7 +28,3 @@ func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
 func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return nil
 }
-
-func (nh *nopHost) GetGraph() component.Graph {
-	return component.Graph{}
-}

@@ -150,18 +150,30 @@ func (zh *zpagesHandler) handlePipelinezRequest(w http.ResponseWriter, r *http.R
 	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "builtPipelines"})
 
 	sumData := zpages.SummaryPipelinesTableData{}
-	g := zh.host.GetGraph()
-	sumData.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(g.Pipelines))
-	for _, p := range g.Pipelines {
-		sumData.Rows = append(sumData.Rows, zpages.SummaryPipelinesTableRowData{
-			FullName:    p.FullName,
-			InputType:   p.InputType,
-			MutatesData: p.MutatesData,
-			Receivers:   p.Receivers,
-			Processors:  p.Processors,
-			Exporters:   p.Exporters,
-		})
+	if ghost, ok := zh.host.(interface {
+		GetGraph() []struct {
+			FullName    string
+			InputType   string
+			MutatesData bool
+			Receivers   []string
+			Processors  []string
+			Exporters   []string
+		}
+	}); ok {
+		g := ghost.GetGraph()
+		sumData.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(g))
+		for _, p := range g {
+			sumData.Rows = append(sumData.Rows, zpages.SummaryPipelinesTableRowData{
+				FullName:    p.FullName,
+				InputType:   p.InputType,
+				MutatesData: p.MutatesData,
+				Receivers:   p.Receivers,
+				Processors:  p.Processors,
+				Exporters:   p.Exporters,
+			})
+		}
 	}
+
 	sort.Slice(sumData.Rows, func(i, j int) bool {
 		return sumData.Rows[i].FullName < sumData.Rows[j].FullName
 	})

@@ -74,6 +74,13 @@ func (host *serviceHost) notifyComponentStatusChange(source *component.InstanceI
 	}
 }
 
-func (host *serviceHost) GetGraph() component.Graph {
+func (host *serviceHost) GetGraph() []struct {
+	FullName    string
+	InputType   string
+	MutatesData bool
+	Receivers   []string
+	Processors  []string
+	Exporters   []string
+} {
 	return host.pipelines.GetGraph()
 }

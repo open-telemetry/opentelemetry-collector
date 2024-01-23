@@ -472,8 +472,22 @@ func (g *Graph) GetExporters() map[component.DataType]map[component.ID]component
 	return exportersMap
 }
 
-func (g *Graph) GetGraph() component.Graph {
-	result := component.Graph{}
+func (g *Graph) GetGraph() []struct {
+	FullName    string
+	InputType   string
+	MutatesData bool
+	Receivers   []string
+	Processors  []string
+	Exporters   []string
+} {
+	var result []struct {
+		FullName    string
+		InputType   string
+		MutatesData bool
+		Receivers   []string
+		Processors  []string
+		Exporters   []string
+	}
 	for c, p := range g.pipelines {
 		recvIDs := make([]string, 0, len(p.receivers))
 		for _, c := range p.receivers {
@@ -498,7 +512,7 @@ func (g *Graph) GetGraph() component.Graph {
 			}
 		}
 
-		result.Pipelines = append(result.Pipelines, struct {
+		result = append(result, struct {
 			FullName    string
 			InputType   string
 			MutatesData bool

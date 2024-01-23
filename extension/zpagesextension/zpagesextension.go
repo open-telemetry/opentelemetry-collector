@@ -73,7 +73,7 @@ func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error 
 		defer close(zpe.stopCh)
 
 		if errHTTP := zpe.server.Serve(ln); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			zpe.telemetry.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			zpe.createSettings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
