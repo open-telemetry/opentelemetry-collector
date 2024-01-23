@@ -118,7 +118,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	e.logger.Debug("Preparing to make HTTP request", zap.String("url", url))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
-		_ = e.settings.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+		e.settings.ReportStatus(component.NewPermanentErrorEvent(err))
 		return consumererror.NewPermanent(err)
 	}
 	req.Header.Set("Content-Type", protobufContentType)
@@ -171,7 +171,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	}
 
 	if isComponentPermanentError(resp.StatusCode) {
-		_ = e.settings.ReportComponentStatus(component.NewPermanentErrorEvent(formattedErr))
+		e.settings.ReportStatus(component.NewPermanentErrorEvent(formattedErr))
 	}
 
 	return consumererror.NewPermanent(formattedErr)

@@ -393,9 +393,8 @@ func TestMetricsExporter_WithStatusReporting(t *testing.T) {
 			createSettings := exportertest.NewNopCreateSettings()
 
 			var lastEvent *component.StatusEvent
-			createSettings.TelemetrySettings.ReportComponentStatus = func(ev *component.StatusEvent) error {
+			createSettings.TelemetrySettings.ReportStatus = func(ev *component.StatusEvent) {
 				lastEvent = ev
-				return nil
 			}
 
 			var opts []Option
@@ -454,9 +453,8 @@ func TestMetricsRequestExporter_WithStatusReporting(t *testing.T) {
 			createSettings := exportertest.NewNopCreateSettings()
 
 			var lastEvent *component.StatusEvent
-			createSettings.TelemetrySettings.ReportComponentStatus = func(ev *component.StatusEvent) error {
+			createSettings.TelemetrySettings.ReportStatus = func(ev *component.StatusEvent) {
 				lastEvent = ev
-				return nil
 			}
 
 			var opts []Option

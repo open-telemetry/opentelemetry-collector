@@ -10,7 +10,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/statushelper"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -183,10 +182,6 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 		op(be)
 	}
 	be.connectSenders()
-
-	if be.reportStatus {
-		be.StartFunc = statushelper.WrapStart(be.StartFunc, set.TelemetrySettings)
-	}
 
 	return be, nil
 }

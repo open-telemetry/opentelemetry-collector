@@ -151,7 +151,7 @@ func (e *baseExporter) processError(err error) error {
 	// Now, this is this a real error.
 
 	if isComponentPermanentError(st) {
-		_ = e.settings.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+		e.settings.ReportStatus(component.NewPermanentErrorEvent(err))
 	}
 
 	retryInfo := getRetryInfo(st)

@@ -693,7 +693,7 @@ func TestComponentStatus(t *testing.T) {
 
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.QueueSettings.Enabled = false
+			cfg.QueueConfig.Enabled = false
 			cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 				Endpoint: ln.Addr().String(),
 				TLSSetting: configtls.TLSClientSetting{
@@ -702,12 +702,11 @@ func TestComponentStatus(t *testing.T) {
 			}
 			var lastStatus component.Status
 			set := exportertest.NewNopCreateSettings()
-			set.TelemetrySettings.ReportComponentStatus = func(ev *component.StatusEvent) error {
+			set.TelemetrySettings.ReportStatus = func(ev *component.StatusEvent) {
 				// simulate the finite-state machine used in real world status reporting
 				if lastStatus != component.StatusPermanentError {
 					lastStatus = ev.Status()
 				}
-				return nil
 			}
 			exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 			require.NoError(t, err)

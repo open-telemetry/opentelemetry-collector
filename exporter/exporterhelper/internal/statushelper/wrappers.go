@@ -22,10 +22,10 @@ import (
 func WrapConsumeTraces(consumeFunc consumer.ConsumeTracesFunc, telemetry component.TelemetrySettings) consumer.ConsumeTracesFunc {
 	return func(ctx context.Context, td ptrace.Traces) error {
 		if err := consumeFunc.ConsumeTraces(ctx, td); err != nil {
-			_ = telemetry.ReportComponentStatus(component.NewRecoverableErrorEvent(err))
+			telemetry.ReportStatus(component.NewRecoverableErrorEvent(err))
 			return err
 		}
-		_ = telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
+		telemetry.ReportStatus(component.NewStatusEvent(component.StatusOK))
 		return nil
 	}
 }
@@ -39,10 +39,10 @@ func WrapConsumeTraces(consumeFunc consumer.ConsumeTracesFunc, telemetry compone
 func WrapConsumeMetrics(consumeFunc consumer.ConsumeMetricsFunc, telemetry component.TelemetrySettings) consumer.ConsumeMetricsFunc {
 	return func(ctx context.Context, md pmetric.Metrics) error {
 		if err := consumeFunc.ConsumeMetrics(ctx, md); err != nil {
-			_ = telemetry.ReportComponentStatus(component.NewRecoverableErrorEvent(err))
+			telemetry.ReportStatus(component.NewRecoverableErrorEvent(err))
 			return err
 		}
-		_ = telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
+		telemetry.ReportStatus(component.NewStatusEvent(component.StatusOK))
 		return nil
 	}
 }
@@ -56,10 +56,10 @@ func WrapConsumeMetrics(consumeFunc consumer.ConsumeMetricsFunc, telemetry compo
 func WrapConsumeLogs(consumeFunc consumer.ConsumeLogsFunc, telemetry component.TelemetrySettings) consumer.ConsumeLogsFunc {
 	return func(ctx context.Context, ld plog.Logs) error {
 		if err := consumeFunc.ConsumeLogs(ctx, ld); err != nil {
-			_ = telemetry.ReportComponentStatus(component.NewRecoverableErrorEvent(err))
+			telemetry.ReportStatus(component.NewRecoverableErrorEvent(err))
 			return err
 		}
-		_ = telemetry.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
+		telemetry.ReportStatus(component.NewStatusEvent(component.StatusOK))
 		return nil
 	}
 }
