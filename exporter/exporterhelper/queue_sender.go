@@ -6,7 +6,6 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"go.opencensus.io/metric/metricdata"
@@ -17,10 +16,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
@@ -86,7 +83,7 @@ type queueSender struct {
 }
 
 func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal component.DataType,
-	marshaler RequestMarshaler, unmarshaler RequestUnmarshaler) *queueSender {
+	marshaler RequestMarshaler, unmarshaler RequestUnmarshaler, consumeErrHandler func(error, Request)) *queueSender {
 
 	isPersistent := config.StorageID != nil
 	var queue internal.Queue[Request]
@@ -114,21 +111,15 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 		logger:         set.TelemetrySettings.Logger,
 		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
 	}
-	qs.consumers = internal.NewQueueConsumers(queue, config.NumConsumers, qs.consume)
-	return qs
-}
-
-// consume is the function that is executed by the queue consumers to send the data to the next consumerSender.
-func (qs *queueSender) consume(ctx context.Context, req Request) error {
-	err := qs.nextSender.send(ctx, req)
-	if err != nil && !consumererror.IsPermanent(err) {
-		qs.logger.Error(
-			"Exporting failed. No more retries left. Dropping data.",
-			zap.Error(err),
-			zap.Int("dropped_items", req.ItemsCount()),
-		)
+	consumeFunc := func(ctx context.Context, req Request) error {
+		err := qs.nextSender.send(ctx, req)
+		if err != nil {
+			consumeErrHandler(err, req)
+		}
+		return err
 	}
-	return err
+	qs.consumers = internal.NewQueueConsumers(queue, config.NumConsumers, consumeFunc)
+	return qs
 }
 
 // Start is invoked during service startup.
@@ -137,13 +128,6 @@ func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	if obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled() {
-		return qs.recordWithOtel()
-	}
-	return qs.recordWithOC()
-}
-
-func (qs *queueSender) recordWithOtel() error {
 	var err, errs error
 
 	attrs := otelmetric.WithAttributeSet(attribute.NewSet(attribute.String(obsmetrics.ExporterKey, qs.fullName)))
@@ -172,24 +156,6 @@ func (qs *queueSender) recordWithOtel() error {
 	return errs
 }
 
-func (qs *queueSender) recordWithOC() error {
-	// Start reporting queue length metric
-	err := globalInstruments.queueSize.UpsertEntry(func() int64 {
-		return int64(qs.queue.Size())
-	}, metricdata.NewLabelValue(qs.fullName))
-	if err != nil {
-		return fmt.Errorf("failed to create retry queue size metric: %w", err)
-	}
-	err = globalInstruments.queueCapacity.UpsertEntry(func() int64 {
-		return int64(qs.queue.Capacity())
-	}, metricdata.NewLabelValue(qs.fullName))
-	if err != nil {
-		return fmt.Errorf("failed to create retry queue capacity metric: %w", err)
-	}
-
-	return nil
-}
-
 // Shutdown is invoked during service shutdown.
 func (qs *queueSender) Shutdown(ctx context.Context) error {
 	// Cleanup queue metrics reporting
@@ -210,11 +176,7 @@ func (qs *queueSender) send(ctx context.Context, req Request) error {
 
 	span := trace.SpanFromContext(c)
 	if err := qs.queue.Offer(c, req); err != nil {
-		qs.logger.Error(
-			"Dropping data because sending_queue is full. Try increasing queue_size.",
-			zap.Int("dropped_items", req.ItemsCount()),
-		)
-		span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qs.traceAttribute))
+		span.AddEvent("Failed to enqueue item.", trace.WithAttributes(qs.traceAttribute))
 		return err
 	}
 

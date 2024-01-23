@@ -1,25 +1,23 @@
-# Use this changelog template to create an entry for release notes.
-
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: breaking
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: exporters/sending_queue
+component: exporters
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Do not re-enqueue failed batches, rely on the retry_on_failure strategy instead.
+note: Cleanup log messages for export failures
 
 # One or more tracking issues or pull requests related to the change
-issues: [8382]
+issues: [9219]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The current re-enqueuing behavior is not obvious and cannot be configured. It takes place only for persistent queue
-  and only if `retry_on_failure::enabled=true` even if `retry_on_failure` is a setting for a different backoff retry
-  strategy. This change removes the re-enqueuing behavior. Consider increasing `retry_on_failure::max_elapsed_time` 
-  to reduce chances of data loss or set it to 0 to keep retrying until requests succeed.
+  1. Ensure an error message is logged every time and only once when data is dropped/rejected due to export failure.
+  2. Update the wording. Specifically, don't use "dropped" term when an error is reported back to the pipeline.
+     Keep the "dropped" wording for failures happened after the enabled queue.
+  3. Properly report any error reported by a queue. For example, a persistent storage error must be reported as a storage error, not as "queue overflow".
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

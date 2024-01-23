@@ -7,6 +7,18 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.0.1/v0.92.0
+
+### 🛑 Breaking changes 🛑
+
+- `otlpexporter`: Change Config members names to use Config suffix. (#9091)
+- `component`: Remove deprecated unused TelemetrySettingsBase (#9145)
+
+### 🚩 Deprecations 🚩
+
+- `confignet`: Deprecates the `Dial` and `Listen` functions in favor of `DialContext` and `ListenContext`. (#9163)
+- `component`: Deprecate unnecessary type StatusFunc (#9146)
+
 ## v0.91.0
 
 ## v1.0.0/v0.90.0

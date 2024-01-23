@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package otlptext // import "go.opentelemetry.io/collector/exporter/internal/otlptext"
 
