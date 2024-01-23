@@ -163,7 +163,7 @@ func (e *baseExporter) processError(err error) error {
 	// Now, this is this a real error.
 
 	if isComponentPermanentError(st) {
-		_ = e.settings.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+		e.settings.ReportStatus(component.NewPermanentErrorEvent(err))
 	}
 
 	retryInfo := getRetryInfo(st)
@@ -187,10 +187,10 @@ func (e *baseExporter) processError(err error) error {
 
 func (e *baseExporter) reportStatusFromError(err error) {
 	if err != nil {
-		_ = e.settings.ReportComponentStatus(component.NewRecoverableErrorEvent(err))
+		e.settings.ReportStatus(component.NewRecoverableErrorEvent(err))
 		return
 	}
-	_ = e.settings.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
+	e.settings.ReportStatus(component.NewStatusEvent(component.StatusOK))
 }
 
 func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) bool {

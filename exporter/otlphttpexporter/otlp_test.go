@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -673,12 +674,11 @@ func TestComponentStatus(t *testing.T) {
 
 			var lastStatus component.Status
 			set := exportertest.NewNopCreateSettings()
-			set.TelemetrySettings.ReportComponentStatus = func(ev *component.StatusEvent) error {
+			set.TelemetrySettings.ReportStatus = func(ev *component.StatusEvent) {
 				// simulate the finite-state machine used in real world status reporting
 				if lastStatus != component.StatusPermanentError {
 					lastStatus = ev.Status()
 				}
-				return nil
 			}
 
 			exp, err := createTracesExporter(context.Background(), set, cfg)

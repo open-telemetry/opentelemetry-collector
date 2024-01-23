@@ -121,7 +121,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	e.logger.Debug("Preparing to make HTTP request", zap.String("url", url))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
-		_ = e.settings.ReportComponentStatus(component.NewPermanentErrorEvent(err))
+		e.settings.ReportStatus(component.NewPermanentErrorEvent(err))
 		err = consumererror.NewPermanent(err)
 		return
 	}
@@ -177,7 +177,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	}
 
 	if isComponentPermanentError(resp.StatusCode) {
-		_ = e.settings.ReportComponentStatus(component.NewPermanentErrorEvent(formattedErr))
+		e.settings.ReportStatus(component.NewPermanentErrorEvent(formattedErr))
 	}
 
 	err = consumererror.NewPermanent(formattedErr)
@@ -186,10 +186,10 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 
 func (e *baseExporter) reportStatusFromError(err error) {
 	if err != nil {
-		_ = e.settings.ReportComponentStatus(component.NewRecoverableErrorEvent(err))
+		e.settings.ReportStatus(component.NewRecoverableErrorEvent(err))
 		return
 	}
-	_ = e.settings.ReportComponentStatus(component.NewStatusEvent(component.StatusOK))
+	e.settings.ReportStatus(component.NewStatusEvent(component.StatusOK))
 }
 
 // Determine if the status code is retryable according to the specification.
