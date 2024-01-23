@@ -4,11 +4,11 @@ go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.92.0
-	go.opentelemetry.io/collector/component v0.92.0
-	go.opentelemetry.io/collector/config/confignet v0.92.0
-	go.opentelemetry.io/collector/confmap v0.92.0
-	go.opentelemetry.io/collector/extension v0.92.0
+	go.opentelemetry.io/collector v0.93.0
+	go.opentelemetry.io/collector/component v0.93.0
+	go.opentelemetry.io/collector/config/confignet v0.93.0
+	go.opentelemetry.io/collector/confmap v0.93.0
+	go.opentelemetry.io/collector/extension v0.93.0
 	go.opentelemetry.io/contrib/zpages v0.47.0
 	go.opentelemetry.io/otel/metric v1.22.0
 	go.opentelemetry.io/otel/sdk v1.22.0
@@ -45,7 +45,7 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.92.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.93.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.1 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.1 // indirect
 	go.opentelemetry.io/contrib/config v0.2.0 // indirect
