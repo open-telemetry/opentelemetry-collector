@@ -195,7 +195,6 @@ github.com/go-kit/log v0.1.0/go.mod h1:zbhenjAZHb184qTLMA9ZjW7ThYL0H2mk7Q6pNt4vb
 github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9GBnD5lWE=
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
 github.com/go-logfmt/logfmt v0.5.0/go.mod h1:wCYkCAKZfumFQihp8CzCvQ3paCTfi41vtzG1KdI/P7A=
-github.com/go-logfmt/logfmt v0.5.1/go.mod h1:WYhtIu8zTZfxdn5+rREduYbwxfcBr/Vr6KEVveWlfTs=
 github.com/go-logr/logr v1.2.4 h1:g01GSCwiDw2xSZfjJ2/T9M+S6pFdcNtFYsp+Y43HYDQ=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
 github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 h1:tfuBGBXKqDEevZMzYi5KSi8KkcZtzBcTgAUUtapy0OI=
@@ -630,8 +629,6 @@ go.opentelemetry.io/build-tools/checkfile v0.12.0 h1:1g3iBxjPuack0pEvqkTiEcyh0uJ
 go.opentelemetry.io/build-tools/checkfile v0.12.0/go.mod h1:0Ql58QUUwr2jaQJSjFKkAFkT/Eent7eEOKiQ1+R+zvA=
 go.opentelemetry.io/build-tools/chloggen v0.12.0 h1:BFj/1bNIGxOs1GykGjhV4gycz1nqVWI/xVDUaVfNibw=
 go.opentelemetry.io/build-tools/chloggen v0.12.0/go.mod h1:zuYbAo3TkrHo3C7lCrM5dHWSS50BDr0UfRYtyBFv2dQ=
-go.opentelemetry.io/build-tools/crosslink v0.12.1-0.20240117214312-6a6b657017ef h1:988MtqlOowLmrJ5wtpQjcf2iYqU+EYNThybgRIb9O2M=
-go.opentelemetry.io/build-tools/crosslink v0.12.1-0.20240117214312-6a6b657017ef/go.mod h1:pHYd1joKyVZPA5sf6gOrbzfbY8VFDiXFp0fVi68whAU=
 go.opentelemetry.io/build-tools/crosslink v0.12.1-0.20240121161735-d70c842b1bf5 h1:3XxFDNe5QBv6qPqUJK/ihejuTpJfCPSFyoJuP8DHKew=
 go.opentelemetry.io/build-tools/crosslink v0.12.1-0.20240121161735-d70c842b1bf5/go.mod h1:pHYd1joKyVZPA5sf6gOrbzfbY8VFDiXFp0fVi68whAU=
 go.opentelemetry.io/build-tools/multimod v0.12.0 h1:DKi+A+4EaKrOZDTNDDZz3ijiAduEQDo8j1rzWUaGUHo=
