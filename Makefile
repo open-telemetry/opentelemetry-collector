@@ -448,7 +448,7 @@ checklinks:
 .PHONY: crosslink
 crosslink: $(CROSSLINK)
 	@echo "Executing crosslink"
-	$(CROSSLINK) --root=$(shell pwd) --prune --skip cmd/mdatagen/go.mod
+	$(CROSSLINK) --root=$(shell pwd) --prune
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
