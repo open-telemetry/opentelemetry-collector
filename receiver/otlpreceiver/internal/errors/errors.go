@@ -13,6 +13,8 @@ import (
 func GetStatusFromError(err error) *status.Status {
 	s, ok := status.FromError(err)
 	if !ok {
+		// Default to a retryable error
+		// https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures
 		code := codes.Unavailable
 		if consumererror.IsPermanent(err) {
 			code = codes.InvalidArgument
