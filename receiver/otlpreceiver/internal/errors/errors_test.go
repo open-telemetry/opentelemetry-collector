@@ -39,7 +39,7 @@ func Test_GetStatusFromError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := GetStatusFromError(tt.input)
-			assert.Equal(t, tt.expected, result)
+			assert.Equal(t, tt.expected.Err(), result)
 		})
 	}
 }

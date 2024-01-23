@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
-func GetStatusFromError(err error) *status.Status {
+func GetStatusFromError(err error) error {
 	s, ok := status.FromError(err)
 	if !ok {
 		// Default to a retryable error
@@ -21,5 +21,5 @@ func GetStatusFromError(err error) *status.Status {
 		}
 		s = status.New(code, err.Error())
 	}
-	return s
+	return s.Err()
 }

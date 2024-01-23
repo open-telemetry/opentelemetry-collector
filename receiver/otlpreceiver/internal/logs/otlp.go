@@ -48,7 +48,7 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 	// NonPermanent errors will be converted to codes.Unavailable (equivalent to HTTP 503)
 	// Permanent errors will be converted to codes.InvalidArgument (equivalent to HTTP 400)
 	if err != nil {
-		return plogotlp.NewExportResponse(), errors.GetStatusFromError(err).Err()
+		return plogotlp.NewExportResponse(), errors.GetStatusFromError(err)
 	}
 
 	return plogotlp.NewExportResponse(), nil
