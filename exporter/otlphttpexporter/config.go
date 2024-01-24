@@ -4,7 +4,9 @@
 package otlphttpexporter // import "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 
 import (
+	"encoding"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -19,6 +21,37 @@ const (
 	EncodingProto EncodingType = "proto"
 	EncodingJSON  EncodingType = "json"
 )
+
+var (
+	_ encoding.TextMarshaler   = (*EncodingType)(nil)
+	_ encoding.TextUnmarshaler = (*EncodingType)(nil)
+)
+
+// MarshalText marshals EncodingType to text.
+func (e EncodingType) MarshalText() (text []byte, err error) {
+	return []byte(e), nil
+}
+
+// UnmarshalText unmarshalls text to a Level.
+func (e *EncodingType) UnmarshalText(text []byte) error {
+	if e == nil {
+		return errors.New("cannot unmarshal to a nil *EncodingType")
+	}
+
+	str := string(text)
+	switch str {
+	case string(EncodingProto):
+		*e = EncodingProto
+	case string(EncodingJSON):
+		*e = EncodingJSON
+
+	// TODO: remove this case when https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30703 is fixed
+	case "":
+		*e = EncodingProto
+	}
+
+	return fmt.Errorf("invalid encoding type: %s", str)
+}
 
 // Config defines configuration for OTLP/HTTP exporter.
 type Config struct {
