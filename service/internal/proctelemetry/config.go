@@ -71,7 +71,9 @@ func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErro
 		return initPullExporter(reader.Pull.Exporter, asyncErrorChannel)
 	}
 	if reader.Periodic != nil {
-		opts := []sdkmetric.PeriodicReaderOption{}
+		opts := []sdkmetric.PeriodicReaderOption{
+			sdkmetric.WithProducer(opencensus.NewMetricProducer()),
+		}
 		if reader.Periodic.Interval != nil {
 			opts = append(opts, sdkmetric.WithInterval(time.Duration(*reader.Periodic.Interval)*time.Millisecond))
 		}
