@@ -177,8 +177,7 @@ func (r *otlpReceiver) Start(ctx context.Context, host component.Host) error {
 		// It's possible that a valid GRPC server configuration was specified,
 		// but an invalid HTTP configuration. If that's the case, the successfully
 		// started GRPC server must be shutdown to ensure no goroutines are leaked.
-		err = multierr.Append(err, r.Shutdown(ctx))
-		return err
+		return multierr.Append(err, r.Shutdown(ctx))
 	}
 
 	return nil
