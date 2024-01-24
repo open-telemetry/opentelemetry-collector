@@ -5,9 +5,52 @@ package confignet // import "go.opentelemetry.io/collector/config/confignet"
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"time"
 )
+
+// TransportType represents a type of network transport protocol
+type TransportType string
+
+const (
+	TCP        TransportType = "tcp"
+	TCP4       TransportType = "tcp4"
+	TCP6       TransportType = "tcp6"
+	UDP        TransportType = "udp"
+	UDP4       TransportType = "udp4"
+	UDP6       TransportType = "udp6"
+	IP         TransportType = "ip"
+	IP4        TransportType = "ip4"
+	IP6        TransportType = "ip6"
+	UNIX       TransportType = "unix"
+	UNIXGRAM   TransportType = "unixgram"
+	UNIXPACKET TransportType = "unixpacket"
+)
+
+// UnmarshalText unmarshalls text to a TransportType.
+// Valid values are "tcp", "tcp4", "tcp6", "udp", "udp4",
+// "udp6", "ip", "ip4", "ip6", "unix", "unixgram" and "unixpacket"
+func (tt *TransportType) UnmarshalText(in []byte) error {
+	switch typ := TransportType(in); typ {
+	case TCP,
+		TCP4,
+		TCP6,
+		UDP,
+		UDP4,
+		UDP6,
+		IP,
+		IP4,
+		IP6,
+		UNIX,
+		UNIXGRAM,
+		UNIXPACKET:
+		*tt = typ
+		return nil
+	default:
+		return fmt.Errorf("unsupported transport type %q", typ)
+	}
+}
 
 // DialerConfig contains options for connecting to an address.
 type DialerConfig struct {
@@ -27,7 +70,7 @@ type NetAddr struct {
 
 	// Transport to use. Known protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only),
 	// "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
-	Transport string `mapstructure:"transport"`
+	Transport TransportType `mapstructure:"transport"`
 
 	// DialerConfig contains options for connecting to an address.
 	DialerConfig DialerConfig `mapstructure:"dialer"`
@@ -36,13 +79,13 @@ type NetAddr struct {
 // Dial equivalent with net.Dialer's DialContext for this address.
 func (na *NetAddr) Dial(ctx context.Context) (net.Conn, error) {
 	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
-	return d.DialContext(ctx, na.Transport, na.Endpoint)
+	return d.DialContext(ctx, string(na.Transport), na.Endpoint)
 }
 
 // Listen equivalent with net.ListenConfig's Listen for this address.
 func (na *NetAddr) Listen(ctx context.Context) (net.Listener, error) {
 	lc := net.ListenConfig{}
-	return lc.Listen(ctx, na.Transport, na.Endpoint)
+	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
 }
 
 // TCPAddr represents a TCP endpoint address.
@@ -61,11 +104,11 @@ type TCPAddr struct {
 // Dial equivalent with net.Dialer's DialContext for this address.
 func (na *TCPAddr) Dial(ctx context.Context) (net.Conn, error) {
 	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
-	return d.DialContext(ctx, "tcp", na.Endpoint)
+	return d.DialContext(ctx, string(TCP), na.Endpoint)
 }
 
 // Listen equivalent with net.ListenConfig's Listen for this address.
 func (na *TCPAddr) Listen(ctx context.Context) (net.Listener, error) {
 	lc := net.ListenConfig{}
-	return lc.Listen(ctx, "tcp", na.Endpoint)
+	return lc.Listen(ctx, string(TCP), na.Endpoint)
 }

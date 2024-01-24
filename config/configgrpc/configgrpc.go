@@ -290,7 +290,7 @@ func (gss *GRPCServerSettings) ToServer(host component.Host, settings component.
 
 func (gss *GRPCServerSettings) toServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
 	switch gss.NetAddr.Transport {
-	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6":
+	case confignet.TCP, confignet.TCP4, confignet.TCP6, confignet.UDP, confignet.UDP4, confignet.UDP6:
 		internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint)
 	}
 

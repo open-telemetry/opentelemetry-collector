@@ -46,7 +46,7 @@ func createDefaultConfig() component.Config {
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  localhostgate.EndpointForPort(grpcPort),
-					Transport: "tcp",
+					Transport: confignet.TCP,
 				},
 				// We almost write 0 bytes, so no need to tune WriteBufferSize.
 				ReadBufferSize: 512 * 1024,
