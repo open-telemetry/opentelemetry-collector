@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="utf-8">
+    <title>builtPipelines</title>
+    <link rel="shortcut icon" href="https://opentelemetry.io/favicons/favicon.ico"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+</head>
+<body>
+<h2>builtPipelines</h2><table style="border-spacing: 0">
+    <tr>
+        <td colspan=1 style="text-align: left"><b>FullName</b></td>
+        <td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
+        <td colspan=1 style="text-align: center"><b>InputType</b></td>
+        <td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
+        <td colspan=1 style="text-align: center"><b>MutatesData</b></td>
+        <td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
+        <td colspan=1 style="text-align: center"><b>Receivers</b></td>
+        <td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
+        <td colspan=1 style="text-align: center"><b>Processors</b></td>
+        <td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
+        <td colspan=1 style="text-align: center"><b>Exporters</b></td>
+    </tr>
+    
+            <tr style="background: #eee">
+        <td>foo</td><td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
+        <td>metrics</td><td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
+        <td>false</td><td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
+        <td style="text-align: center">
+            
+                <a href="?zpipelinename=foo&zcomponentname=otlp&zcomponentkind=receiver">otlp</a>
+                <br>
+            
+                <a href="?zpipelinename=foo&zcomponentname=file&zcomponentkind=receiver">file</a>
+                <br>
+            
+        </td><td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
+        <td style="text-align: center">
+            &rarr;
+            
+                <a href="?zpipelinename=foo&zcomponentname=batch&zcomponentkind=processor">batch</a>
+                &rarr;
+            
+        </td><td>&nbsp;&nbsp;|&nbsp;&nbsp;</td>
+        <td style="text-align: center">
+            
+                <a href="?zpipelinename=foo&zcomponentname=otlp&zcomponentkind=exporter">otlp</a>
+                <br>
+            
+                <a href="?zpipelinename=foo&zcomponentname=otlphttp&zcomponentkind=exporter">otlphttp</a>
+                <br>
+            
+        </td>
+        </tr>
+    
+</table><h6>processor: foo/batch</h6></body>
+</html>

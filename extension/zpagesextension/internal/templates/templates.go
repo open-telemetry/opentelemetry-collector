@@ -7,7 +7,6 @@ import (
 	_ "embed"
 	"html/template"
 	"io"
-	"log"
 )
 
 var (
@@ -56,10 +55,8 @@ type HeaderData struct {
 }
 
 // WriteHTMLPageHeader writes the header.
-func WriteHTMLPageHeader(w io.Writer, hd HeaderData) {
-	if err := headerTemplate.Execute(w, hd); err != nil {
-		log.Printf("zpages: executing template: %v", err)
-	}
+func WriteHTMLPageHeader(w io.Writer, hd HeaderData) error {
+	return headerTemplate.Execute(w, hd)
 }
 
 // SummaryExtensionsTableData contains data for extensions summary table template.
@@ -75,10 +72,8 @@ type SummaryExtensionsTableRowData struct {
 
 // WriteHTMLExtensionsSummaryTable writes the summary table for one component type (receivers, processors, exporters).
 // Id does not write the header or footer.
-func WriteHTMLExtensionsSummaryTable(w io.Writer, spd SummaryExtensionsTableData) {
-	if err := extensionsTableTemplate.Execute(w, spd); err != nil {
-		log.Printf("zpages: executing template: %v", err)
-	}
+func WriteHTMLExtensionsSummaryTable(w io.Writer, spd SummaryExtensionsTableData) error {
+	return extensionsTableTemplate.Execute(w, spd)
 }
 
 // SummaryPipelinesTableData contains data for pipelines summary table template.
@@ -98,10 +93,8 @@ type SummaryPipelinesTableRowData struct {
 
 // WriteHTMLPipelinesSummaryTable writes the summary table for one component type (receivers, processors, exporters).
 // Id does not write the header or footer.
-func WriteHTMLPipelinesSummaryTable(w io.Writer, spd SummaryPipelinesTableData) {
-	if err := pipelinesTableTemplate.Execute(w, spd); err != nil {
-		log.Printf("zpages: executing template: %v", err)
-	}
+func WriteHTMLPipelinesSummaryTable(w io.Writer, spd SummaryPipelinesTableData) error {
+	return pipelinesTableTemplate.Execute(w, spd)
 }
 
 // ComponentHeaderData contains data for component header template.
@@ -112,10 +105,8 @@ type ComponentHeaderData struct {
 }
 
 // WriteHTMLComponentHeader writes the header for components.
-func WriteHTMLComponentHeader(w io.Writer, chd ComponentHeaderData) {
-	if err := componentHeaderTemplate.Execute(w, chd); err != nil {
-		log.Printf("zpages: executing template: %v", err)
-	}
+func WriteHTMLComponentHeader(w io.Writer, chd ComponentHeaderData) error {
+	return componentHeaderTemplate.Execute(w, chd)
 }
 
 // PropertiesTableData contains data for properties table template.
@@ -125,17 +116,13 @@ type PropertiesTableData struct {
 }
 
 // WriteHTMLPropertiesTable writes the HTML for properties table.
-func WriteHTMLPropertiesTable(w io.Writer, chd PropertiesTableData) {
-	if err := propertiesTableTemplate.Execute(w, chd); err != nil {
-		log.Printf("zpages: executing template: %v", err)
-	}
+func WriteHTMLPropertiesTable(w io.Writer, chd PropertiesTableData) error {
+	return propertiesTableTemplate.Execute(w, chd)
 }
 
 // WriteHTMLPageFooter writes the footer.
-func WriteHTMLPageFooter(w io.Writer) {
-	if err := footerTemplate.Execute(w, nil); err != nil {
-		log.Printf("zpages: executing template: %v", err)
-	}
+func WriteHTMLPageFooter(w io.Writer) error {
+	return footerTemplate.Execute(w, nil)
 }
 
 func even(x int) bool {
@@ -167,8 +154,6 @@ type FeatureGateTableRowData struct {
 }
 
 // WriteHTMLFeaturesTable writes a table summarizing registered feature gates.
-func WriteHTMLFeaturesTable(w io.Writer, ftd FeatureGateTableData) {
-	if err := featuresTableTemplate.Execute(w, ftd); err != nil {
-		log.Printf("zpages: executing template: %v", err)
-	}
+func WriteHTMLFeaturesTable(w io.Writer, ftd FeatureGateTableData) error {
+	return featuresTableTemplate.Execute(w, ftd)
 }

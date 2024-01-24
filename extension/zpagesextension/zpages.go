@@ -4,11 +4,14 @@
 package zpagesextension // import "go.opentelemetry.io/collector/extension/zpagesextension"
 
 import (
+	"errors"
 	"net/http"
 	"path"
 	"runtime"
 	"sort"
 	"time"
+
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -64,7 +67,11 @@ func (zh *zpagesHandler) handleServiceExtensions(w http.ResponseWriter, r *http.
 	extensionName := r.URL.Query().Get(zExtensionName)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	templates.WriteHTMLPageHeader(w, templates.HeaderData{Title: "Extensions"})
+	var renderErrors []error
+	if err := templates.WriteHTMLPageHeader(w, templates.HeaderData{Title: "Extensions"}); err != nil {
+		renderErrors = append(renderErrors, err)
+	}
+
 	data := templates.SummaryExtensionsTableData{}
 
 	data.Rows = make([]templates.SummaryExtensionsTableRowData, 0, len(zh.host.GetExtensions()))
@@ -76,44 +83,74 @@ func (zh *zpagesHandler) handleServiceExtensions(w http.ResponseWriter, r *http.
 	sort.Slice(data.Rows, func(i, j int) bool {
 		return data.Rows[i].FullName < data.Rows[j].FullName
 	})
-	templates.WriteHTMLExtensionsSummaryTable(w, data)
-	if extensionName != "" {
-		templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
-			Name: extensionName,
-		})
-		// TODO: Add config + status info.
+	if err := templates.WriteHTMLExtensionsSummaryTable(w, data); err != nil {
+		renderErrors = append(renderErrors, err)
 	}
-	templates.WriteHTMLPageFooter(w)
+	if extensionName != "" {
+		// TODO: Add config + status info.
+		if err := templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
+			Name: extensionName,
+		}); err != nil {
+			renderErrors = append(renderErrors, err)
+		}
+	}
+	if err := templates.WriteHTMLPageFooter(w); err != nil {
+		renderErrors = append(renderErrors, err)
+	}
+	if errs := errors.Join(renderErrors...); errs != nil {
+		zh.createSettings.Logger.Error("Error writing templates", zap.Error(errs))
+	}
 }
 
 func (zh *zpagesHandler) zPagesRequest(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	templates.WriteHTMLPageHeader(w, templates.HeaderData{Title: "Service " + zh.createSettings.BuildInfo.Command})
-	templates.WriteHTMLPropertiesTable(w, templates.PropertiesTableData{Name: "Build Info", Properties: getBuildInfoProperties(zh.createSettings.BuildInfo)})
-	templates.WriteHTMLPropertiesTable(w, templates.PropertiesTableData{Name: "Runtime Info", Properties: runtimeInfoVar})
-	templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
+	var renderErrors []error
+	if err := templates.WriteHTMLPageHeader(w, templates.HeaderData{Title: "Service " + zh.createSettings.BuildInfo.Command}); err != nil {
+		renderErrors = append(renderErrors, err)
+	}
+	if err := templates.WriteHTMLPropertiesTable(w, templates.PropertiesTableData{Name: "Build Info", Properties: getBuildInfoProperties(zh.createSettings.BuildInfo)}); err != nil {
+		renderErrors = append(renderErrors, err)
+	}
+	if err := templates.WriteHTMLPropertiesTable(w, templates.PropertiesTableData{Name: "Runtime Info", Properties: runtimeInfoVar}); err != nil {
+		renderErrors = append(renderErrors, err)
+	}
+	if err := templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
 		Name:              "Pipelines",
 		ComponentEndpoint: zPipelinePath,
 		Link:              true,
-	})
-	templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
+	}); err != nil {
+		renderErrors = append(renderErrors, err)
+	}
+	if err := templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
 		Name:              "Extensions",
 		ComponentEndpoint: zExtensionPath,
 		Link:              true,
-	})
-	templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
+	}); err != nil {
+		renderErrors = append(renderErrors, err)
+	}
+	if err := templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
 		Name:              "Features",
 		ComponentEndpoint: zFeaturePath,
 		Link:              true,
-	})
-	templates.WriteHTMLPageFooter(w)
+	}); err != nil {
+		renderErrors = append(renderErrors, err)
+	}
+	if err := templates.WriteHTMLPageFooter(w); err != nil {
+		renderErrors = append(renderErrors, err)
+	}
+	if errs := errors.Join(renderErrors...); errs != nil {
+		zh.createSettings.Logger.Error("Error writing templates", zap.Error(errs))
+	}
 }
 
 func (zh *zpagesHandler) handleFeaturezRequest(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	templates.WriteHTMLPageHeader(w, templates.HeaderData{Title: "Feature Gates"})
-	templates.WriteHTMLFeaturesTable(w, getFeaturesTableData())
-	templates.WriteHTMLPageFooter(w)
+	err := errors.Join(templates.WriteHTMLPageHeader(w, templates.HeaderData{Title: "Feature Gates"}),
+		templates.WriteHTMLFeaturesTable(w, getFeaturesTableData()),
+		templates.WriteHTMLPageFooter(w))
+	if err != nil {
+		zh.createSettings.Logger.Error("Error writing templates", zap.Error(err))
+	}
 }
 
 func getFeaturesTableData() templates.FeatureGateTableData {
@@ -147,7 +184,10 @@ func (zh *zpagesHandler) handlePipelinezRequest(w http.ResponseWriter, r *http.R
 	componentKind := qValues.Get(zComponentKind)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	templates.WriteHTMLPageHeader(w, templates.HeaderData{Title: "builtPipelines"})
+	var renderErrors []error
+	if err := templates.WriteHTMLPageHeader(w, templates.HeaderData{Title: "builtPipelines"}); err != nil {
+		renderErrors = append(renderErrors, err)
+	}
 
 	sumData := templates.SummaryPipelinesTableData{}
 	if ghost, ok := zh.host.(interface {
@@ -177,17 +217,26 @@ func (zh *zpagesHandler) handlePipelinezRequest(w http.ResponseWriter, r *http.R
 	sort.Slice(sumData.Rows, func(i, j int) bool {
 		return sumData.Rows[i].FullName < sumData.Rows[j].FullName
 	})
-	templates.WriteHTMLPipelinesSummaryTable(w, sumData)
+	if err := templates.WriteHTMLPipelinesSummaryTable(w, sumData); err != nil {
+		renderErrors = append(renderErrors, err)
+	}
 
 	if pipelineName != "" && componentName != "" && componentKind != "" {
 		fullName := componentName
 		if componentKind == "processor" {
 			fullName = pipelineName + "/" + componentName
 		}
-		templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
-			Name: componentKind + ": " + fullName,
-		})
 		// TODO: Add config + status info.
+		if err := templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
+			Name: componentKind + ": " + fullName,
+		}); err != nil {
+			renderErrors = append(renderErrors, err)
+		}
 	}
-	templates.WriteHTMLPageFooter(w)
+	if err := templates.WriteHTMLPageFooter(w); err != nil {
+		renderErrors = append(renderErrors, err)
+	}
+	if errs := errors.Join(renderErrors...); errs != nil {
+		zh.createSettings.Logger.Error("Error writing templates", zap.Error(errs))
+	}
 }
