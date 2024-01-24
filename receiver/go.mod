@@ -30,7 +30,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
@@ -48,7 +47,6 @@ require (
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.93.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.22.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
