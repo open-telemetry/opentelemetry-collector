@@ -14,7 +14,7 @@ jobs:
       already-added: ${{ steps.check-versions.outputs.already-added }}
       already-opened: ${{ steps.check-versions.outputs.already-opened }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - id: check-versions
         name: Check versions
@@ -47,6 +47,8 @@ jobs:
           echo "already-opened=$already_opened" >> $GITHUB_OUTPUT
 
   update-semantic-conventions:
+    permissions:
+      contents: write  # for Git to git push
     runs-on: ubuntu-latest
     if: |
       needs.check-versions.outputs.already-added != 'true' &&
@@ -54,9 +56,9 @@ jobs:
     needs:
       - check-versions
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Checkout semantic-convention
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           repository: open-telemetry/semantic-convention
           path: tmp-semantic-conventions
