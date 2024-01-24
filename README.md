@@ -26,6 +26,15 @@
 </p>
 
 <p align="center">
+  <a href="https://securityscorecards.dev/viewer/?uri=github.com/open-telemetry/opentelemetry-collector">
+    <img alt="OpenSSF Best Practices" src="https://api.securityscorecards.dev/projects/github.com/open-telemetry/opentelemetry-collector/badge">
+  </a>
+  <a href="https://clomonitor.io/projects/cncf/open-telemetry">
+    <img alt="CLOMonitor" src="https://img.shields.io/endpoint?url=https://clomonitor.io/api/projects/cncf/open-telemetry/badge">
+  </a>
+</p>
+
+<p align="center">
   <strong>
     <a href="docs/vision.md">Vision</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;

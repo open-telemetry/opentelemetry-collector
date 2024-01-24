@@ -1,0 +1,47 @@
+header:
+  schema-version: '1.0.0'
+  expiration-date: '2025-01-24T01:00:00.000Z'
+  last-updated: '2024-01-24'
+  last-reviewed: '2024-01-24'
+  project-url: https://github.com/open-telemetry/opentelemetry-collector
+  changelog: https://github.com/open-telemetry/opentelemetry-collector/blob/main/CHANGELOG.md
+  license: https://github.com/open-telemetry/opentelemetry-collector/blob/main/LICENSE
+project-lifecycle:
+  status: active
+  bug-fixes-only: false
+  core-maintainers:
+    - github:open-telemetry/collector-maintainers
+  roadmap: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/ga-roadmap.md
+  release-process: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/release.md
+contribution-policy:
+  accepts-pull-requests: true
+  accepts-automated-pull-requests: true
+dependencies:
+  third-party-packages: true
+  dependencies-lists:
+    - https://github.com/open-telemetry/opentelemetry-collector/blob/main/go.mod
+distribution-points:
+  - https://github.com/open-telemetry/opentelemetry-collector-releases/releases
+documentation:
+  - https://opentelemetry.io/docs
+security-contacts:
+  - type: url
+    value: https://github.com/open-telemetry/opentelemetry-collector/security/advisories
+security-testing:
+- tool-type: sca
+  tool-name: Dependabot
+  tool-version: latest
+  integration:
+    ad-hoc: false
+    ci: true
+    before-release: true
+- tool-type: sast
+  tool-name: CodeQL
+  tool-version: '3.23.1'
+  integration:
+    ad-hoc: false
+    ci: true
+    before-release: true
+vulnerability-reporting:
+  accepts-vulnerability-reports: true
+  security-policy: https://github.com/open-telemetry/opentelemetry-collector/security/policy
