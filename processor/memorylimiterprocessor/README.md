@@ -79,7 +79,7 @@ A good starting point for `spike_limit_mib` is 20% of the hard limit. Bigger
 
 ## Configuration
 
-Please refer to [config.go](./config.go) for the config spec.
+Please refer to [memorylimiter.go](../../internal/memorylimiter/memorylimiter.go) for the config spec.
 
 The following configuration options **must be changed**:
 - `check_interval` (default = 0s): Time between measurements of memory
@@ -124,6 +124,6 @@ processors:
     spike_limit_percentage: 30
 ```
 
-Refer to [config.yaml](./testdata/config.yaml) for detailed
+Refer to [config.yaml](../../internal/memorylimiter/testdata/config.yaml) for detailed
 examples on using the processor.
 

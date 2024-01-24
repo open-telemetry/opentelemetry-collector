@@ -6,12 +6,9 @@ package metrics // import "go.opentelemetry.io/collector/receiver/otlpreceiver/i
 import (
 	"context"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
@@ -51,15 +48,7 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	// NonPermanent errors will be converted to codes.Unavailable (equivalent to HTTP 503)
 	// Permanent errors will be converted to codes.InvalidArgument (equivalent to HTTP 400)
 	if err != nil {
-		s, ok := status.FromError(err)
-		if !ok {
-			code := codes.Unavailable
-			if consumererror.IsPermanent(err) {
-				code = codes.InvalidArgument
-			}
-			s = status.New(code, err.Error())
-		}
-		return pmetricotlp.NewExportResponse(), s.Err()
+		return pmetricotlp.NewExportResponse(), errors.GetStatusFromError(err)
 	}
 
 	return pmetricotlp.NewExportResponse(), nil
