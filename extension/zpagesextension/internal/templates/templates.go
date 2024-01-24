@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package zpages // import "go.opentelemetry.io/collector/extension/zpagesextension/internal/zpages"
+package templates // import "go.opentelemetry.io/collector/extension/zpagesextension/internal/templates"
 
 import (
 	_ "embed"

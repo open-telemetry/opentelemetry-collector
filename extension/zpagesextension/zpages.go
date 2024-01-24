@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/zpagesextension/internal/zpages"
+	"go.opentelemetry.io/collector/extension/zpagesextension/internal/templates"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -64,62 +64,62 @@ func (zh *zpagesHandler) handleServiceExtensions(w http.ResponseWriter, r *http.
 	extensionName := r.URL.Query().Get(zExtensionName)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Extensions"})
-	data := zpages.SummaryExtensionsTableData{}
+	templates.WriteHTMLPageHeader(w, templates.HeaderData{Title: "Extensions"})
+	data := templates.SummaryExtensionsTableData{}
 
-	data.Rows = make([]zpages.SummaryExtensionsTableRowData, 0, len(zh.host.GetExtensions()))
+	data.Rows = make([]templates.SummaryExtensionsTableRowData, 0, len(zh.host.GetExtensions()))
 	for id := range zh.host.GetExtensions() {
-		row := zpages.SummaryExtensionsTableRowData{FullName: id.String()}
+		row := templates.SummaryExtensionsTableRowData{FullName: id.String()}
 		data.Rows = append(data.Rows, row)
 	}
 
 	sort.Slice(data.Rows, func(i, j int) bool {
 		return data.Rows[i].FullName < data.Rows[j].FullName
 	})
-	zpages.WriteHTMLExtensionsSummaryTable(w, data)
+	templates.WriteHTMLExtensionsSummaryTable(w, data)
 	if extensionName != "" {
-		zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
+		templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
 			Name: extensionName,
 		})
 		// TODO: Add config + status info.
 	}
-	zpages.WriteHTMLPageFooter(w)
+	templates.WriteHTMLPageFooter(w)
 }
 
 func (zh *zpagesHandler) zPagesRequest(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Service " + zh.createSettings.BuildInfo.Command})
-	zpages.WriteHTMLPropertiesTable(w, zpages.PropertiesTableData{Name: "Build Info", Properties: getBuildInfoProperties(zh.createSettings.BuildInfo)})
-	zpages.WriteHTMLPropertiesTable(w, zpages.PropertiesTableData{Name: "Runtime Info", Properties: runtimeInfoVar})
-	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
+	templates.WriteHTMLPageHeader(w, templates.HeaderData{Title: "Service " + zh.createSettings.BuildInfo.Command})
+	templates.WriteHTMLPropertiesTable(w, templates.PropertiesTableData{Name: "Build Info", Properties: getBuildInfoProperties(zh.createSettings.BuildInfo)})
+	templates.WriteHTMLPropertiesTable(w, templates.PropertiesTableData{Name: "Runtime Info", Properties: runtimeInfoVar})
+	templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
 		Name:              "Pipelines",
 		ComponentEndpoint: zPipelinePath,
 		Link:              true,
 	})
-	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
+	templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
 		Name:              "Extensions",
 		ComponentEndpoint: zExtensionPath,
 		Link:              true,
 	})
-	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
+	templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
 		Name:              "Features",
 		ComponentEndpoint: zFeaturePath,
 		Link:              true,
 	})
-	zpages.WriteHTMLPageFooter(w)
+	templates.WriteHTMLPageFooter(w)
 }
 
 func (zh *zpagesHandler) handleFeaturezRequest(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Feature Gates"})
-	zpages.WriteHTMLFeaturesTable(w, getFeaturesTableData())
-	zpages.WriteHTMLPageFooter(w)
+	templates.WriteHTMLPageHeader(w, templates.HeaderData{Title: "Feature Gates"})
+	templates.WriteHTMLFeaturesTable(w, getFeaturesTableData())
+	templates.WriteHTMLPageFooter(w)
 }
 
-func getFeaturesTableData() zpages.FeatureGateTableData {
-	data := zpages.FeatureGateTableData{}
+func getFeaturesTableData() templates.FeatureGateTableData {
+	data := templates.FeatureGateTableData{}
 	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
-		data.Rows = append(data.Rows, zpages.FeatureGateTableRowData{
+		data.Rows = append(data.Rows, templates.FeatureGateTableRowData{
 			ID:           gate.ID(),
 			Enabled:      gate.IsEnabled(),
 			Description:  gate.Description(),
@@ -147,9 +147,9 @@ func (zh *zpagesHandler) handlePipelinezRequest(w http.ResponseWriter, r *http.R
 	componentKind := qValues.Get(zComponentKind)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "builtPipelines"})
+	templates.WriteHTMLPageHeader(w, templates.HeaderData{Title: "builtPipelines"})
 
-	sumData := zpages.SummaryPipelinesTableData{}
+	sumData := templates.SummaryPipelinesTableData{}
 	if ghost, ok := zh.host.(interface {
 		GetGraph() []struct {
 			FullName    string
@@ -161,9 +161,9 @@ func (zh *zpagesHandler) handlePipelinezRequest(w http.ResponseWriter, r *http.R
 		}
 	}); ok {
 		g := ghost.GetGraph()
-		sumData.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(g))
+		sumData.Rows = make([]templates.SummaryPipelinesTableRowData, 0, len(g))
 		for _, p := range g {
-			sumData.Rows = append(sumData.Rows, zpages.SummaryPipelinesTableRowData{
+			sumData.Rows = append(sumData.Rows, templates.SummaryPipelinesTableRowData{
 				FullName:    p.FullName,
 				InputType:   p.InputType,
 				MutatesData: p.MutatesData,
@@ -177,17 +177,17 @@ func (zh *zpagesHandler) handlePipelinezRequest(w http.ResponseWriter, r *http.R
 	sort.Slice(sumData.Rows, func(i, j int) bool {
 		return sumData.Rows[i].FullName < sumData.Rows[j].FullName
 	})
-	zpages.WriteHTMLPipelinesSummaryTable(w, sumData)
+	templates.WriteHTMLPipelinesSummaryTable(w, sumData)
 
 	if pipelineName != "" && componentName != "" && componentKind != "" {
 		fullName := componentName
 		if componentKind == "processor" {
 			fullName = pipelineName + "/" + componentName
 		}
-		zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
+		templates.WriteHTMLComponentHeader(w, templates.ComponentHeaderData{
 			Name: componentKind + ": " + fullName,
 		})
 		// TODO: Add config + status info.
 	}
-	zpages.WriteHTMLPageFooter(w)
+	templates.WriteHTMLPageFooter(w)
 }
