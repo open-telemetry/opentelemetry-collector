@@ -301,21 +301,20 @@ func handlePartialSuccessResponse(resp *http.Response, partialSuccessHandler par
 type partialSuccessHandler func(bytes []byte, contentType string) error
 
 func tracesPartialSuccessHandler(responseBytes []byte, contentType string) error {
-	if contentType != protobufContentType && contentType != jsonContentType {
-		return nil
-	}
 	exportResponse := ptraceotlp.NewExportResponse()
-
-	if contentType == protobufContentType {
+	switch contentType {
+	case protobufContentType:
 		err := exportResponse.UnmarshalProto(responseBytes)
 		if err != nil {
 			return fmt.Errorf("error parsing protobuf response: %w", err)
 		}
-	} else if contentType == jsonContentType {
+	case jsonContentType:
 		err := exportResponse.UnmarshalJSON(responseBytes)
 		if err != nil {
 			return fmt.Errorf("error parsing json response: %w", err)
 		}
+	default:
+		return nil
 	}
 
 	partialSuccess := exportResponse.PartialSuccess()
@@ -326,21 +325,20 @@ func tracesPartialSuccessHandler(responseBytes []byte, contentType string) error
 }
 
 func metricsPartialSuccessHandler(responseBytes []byte, contentType string) error {
-	if contentType != protobufContentType && contentType != jsonContentType {
-		return nil
-	}
 	exportResponse := pmetricotlp.NewExportResponse()
-
-	if contentType == protobufContentType {
+	switch contentType {
+	case protobufContentType:
 		err := exportResponse.UnmarshalProto(responseBytes)
 		if err != nil {
 			return fmt.Errorf("error parsing protobuf response: %w", err)
 		}
-	} else if contentType == jsonContentType {
+	case jsonContentType:
 		err := exportResponse.UnmarshalJSON(responseBytes)
 		if err != nil {
 			return fmt.Errorf("error parsing json response: %w", err)
 		}
+	default:
+		return nil
 	}
 
 	partialSuccess := exportResponse.PartialSuccess()
@@ -351,21 +349,20 @@ func metricsPartialSuccessHandler(responseBytes []byte, contentType string) erro
 }
 
 func logsPartialSuccessHandler(responseBytes []byte, contentType string) error {
-	if contentType != protobufContentType && contentType != jsonContentType {
-		return nil
-	}
 	exportResponse := plogotlp.NewExportResponse()
-
-	if contentType == protobufContentType {
+	switch contentType {
+	case protobufContentType:
 		err := exportResponse.UnmarshalProto(responseBytes)
 		if err != nil {
 			return fmt.Errorf("error parsing protobuf response: %w", err)
 		}
-	} else if contentType == jsonContentType {
+	case jsonContentType:
 		err := exportResponse.UnmarshalJSON(responseBytes)
 		if err != nil {
 			return fmt.Errorf("error parsing json response: %w", err)
 		}
+	default:
+		return nil
 	}
 
 	partialSuccess := exportResponse.PartialSuccess()
