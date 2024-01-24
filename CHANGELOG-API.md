@@ -7,6 +7,30 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.93.0
+
+### 🛑 Breaking changes 🛑
+
+- `bug_fix`: Implement `encoding.BinaryMarshaler` interface to prevent `configopaque` -> `[]byte` -> `string` conversions from leaking the value (#9279)
+- `configopaque`: configopaque.String implements `fmt.Stringer` and `fmt.GoStringer`, outputting [REDACTED] when formatted with the %s, %q or %#v verbs` (#9213)
+  This may break applications that rely on the previous behavior of opaque strings with `fmt.Sprintf` to e.g. build URLs or headers.
+  Explicitly cast the opaque string to a string before using it in `fmt.Sprintf` to restore the previous behavior.
+  
+- `all`: Remove obsolete "// +build" directives (#9304)
+- `connectortest`: Remove deprecated connectortest router helpers. (#9278)
+
+### 🚩 Deprecations 🚩
+
+- `obsreporttest`: deprecate test funcs/structs (#8492)
+  The following methods/structs have been moved from obsreporttest to componenttest:
+  - obsreporttest.TestTelemetry -> componenttest.TestTelemetry
+  - obsreporttest.SetupTelemetry -> componenttest.SetupTelemetry
+  - obsreporttest.CheckScraperMetrics -> TestTelemetry.CheckScraperMetrics
+  - obserporttest.TestTelemetry.TelemetrySettings -> componenttest.TestTelemetry.TelemetrySettings()
+  
+- `confignet`: Deprecates `DialContext` and `ListenContext` functions. Use `Dial` and `Listen` instead. (#9258)
+  Unlike the previous `Dial` and `Listen` functions, the new `Dial` and `Listen` functions take a `context.Context` like `DialContext` and `ListenContext`.
+
 ## v1.0.1/v0.92.0
 
 ### 🛑 Breaking changes 🛑

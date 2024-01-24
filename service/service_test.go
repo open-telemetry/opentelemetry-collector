@@ -493,8 +493,6 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 func assertZPages(t *testing.T, zpagesAddr string) {
 	paths := []string{
 		"/debug/tracez",
-		// TODO: enable this when otel-metrics is used and this page is available.
-		// "/debug/rpcz",
 		"/debug/pipelinez",
 		"/debug/servicez",
 		"/debug/extensionz",

@@ -41,7 +41,7 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 			instanceID,
 			component.NewStatusEvent(component.StatusStarting),
 		)
-		if err := ext.Start(ctx, components.NewHostWrapper(host, extLogger)); err != nil {
+		if err := ext.Start(ctx, host); err != nil {
 			bes.telemetry.Status.ReportStatus(
 				instanceID,
 				component.NewPermanentErrorEvent(err),
