@@ -23,9 +23,9 @@ const (
 	IP         TransportType = "ip"
 	IP4        TransportType = "ip4"
 	IP6        TransportType = "ip6"
-	UNIX       TransportType = "unix"
-	UNIXGRAM   TransportType = "unixgram"
-	UNIXPACKET TransportType = "unixpacket"
+	Unix       TransportType = "unix"
+	Unixgram   TransportType = "unixgram"
+	UnixPacket TransportType = "unixpacket"
 )
 
 // UnmarshalText unmarshalls text to a TransportType.
@@ -42,9 +42,9 @@ func (tt *TransportType) UnmarshalText(in []byte) error {
 		IP,
 		IP4,
 		IP6,
-		UNIX,
-		UNIXGRAM,
-		UNIXPACKET:
+		Unix,
+		Unixgram,
+		UnixPacket:
 		*tt = typ
 		return nil
 	default:
