@@ -104,7 +104,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	}
 	srv.telemetrySettings = servicetelemetry.TelemetrySettings{
 		Logger:         logger,
-		TracerProvider: srv.telemetryInitializer.tp,
+		TracerProvider: srv.telemetry.TracerProvider(),
 		MeterProvider:  srv.telemetryInitializer.mp,
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 		// Construct telemetry attributes from build info and config's resource attributes.
