@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/otlp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix bug where the otlp reciever did not properly respond with a retryable error code when possible for http
+note: Fix bug where the otlp receiver did not properly respond with a retryable error code when possible for http
 
 # One or more tracking issues or pull requests related to the change
 issues: [9357]
