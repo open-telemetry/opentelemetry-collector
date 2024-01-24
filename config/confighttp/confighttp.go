@@ -274,6 +274,9 @@ type ServerConfig struct {
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
+
+	// MemoryLimiter is memory limiter this receiver will use to restrict incoming requests
+	MemoryLimiter *component.ID `mapstructure:"memory_limiter"`
 }
 
 // ToListener creates a net.Listener.
@@ -332,6 +335,15 @@ func (hss *ServerConfig) ToServer(host component.Host, settings component.Teleme
 	serverOpts := &toServerOptions{}
 	for _, o := range opts {
 		o(serverOpts)
+	}
+
+	if hss.MemoryLimiter != nil {
+		ml, err := getMemoryLimiterExtension(hss.MemoryLimiter, host.GetExtensions())
+		if err != nil {
+			return nil, err
+		}
+
+		handler = memoryLimiterInterceptor(handler, ml)
 	}
 
 	handler = httpContentDecompressor(handler, serverOpts.errHandler, serverOpts.decoders)
@@ -441,4 +453,27 @@ func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Ha
 		r.Body = http.MaxBytesReader(w, r.Body, maxRecvSize)
 		next.ServeHTTP(w, r)
 	})
+}
+
+func memoryLimiterInterceptor(next http.Handler, ml memoryLimiterExtension) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if ml.MustRefuse() {
+			http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+type memoryLimiterExtension = interface{ MustRefuse() bool }
+
+func getMemoryLimiterExtension(extID *component.ID, extensions map[component.ID]component.Component) (memoryLimiterExtension, error) {
+	if ext, found := extensions[*extID]; found {
+		if server, ok := ext.(memoryLimiterExtension); ok {
+			return server, nil
+		}
+		return nil, fmt.Errorf("requested MemoryLimiter, %s, is not a memoryLimiterExtension", extID)
+	}
+
+	return nil, fmt.Errorf("failed to resolve memoryLimiterExtension %q: %s", extID, "memory limiter extension not found")
 }

@@ -78,6 +78,8 @@ will not be enabled.
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
 
+`memory_limiter`: [Memory limiter extension](../../extension/memorylimiterextension/README.md) that will reject incoming requests once the memory utilization grows above configured limits.
+
 You can enable [`attribute processor`][attribute-processor] to append any http header to span's attribute using custom key. You also need to enable the "include_metadata"
 
 Example:

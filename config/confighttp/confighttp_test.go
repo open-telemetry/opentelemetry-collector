@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 type customRoundTripper struct {
@@ -1302,9 +1303,82 @@ func TestServerWithDecoder(t *testing.T) {
 
 }
 
+func TestMemoryLimiterInterceptor(t *testing.T) {
+	mlID := component.NewID("memoryLimiter")
+	ml := &mockMemoryLimiterExtension{}
+	host := &mockHost{
+		ext: map[component.ID]component.Component{
+			mlID: ml,
+		},
+	}
+
+	hss := ServerConfig{
+		Endpoint:      "localhost:0",
+		MemoryLimiter: &mlID,
+	}
+
+	handlerCalled := false
+	handler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		handlerCalled = true
+	})
+
+	srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), handler)
+	require.NoError(t, err)
+
+	// test 429 status
+	ml.mustRefuse = true
+	response := &httptest.ResponseRecorder{}
+	srv.Handler.ServeHTTP(response, httptest.NewRequest("GET", "/", nil))
+	assert.False(t, handlerCalled)
+	assert.Equal(t, http.StatusTooManyRequests, response.Result().StatusCode)
+
+	// test 200 status
+	ml.mustRefuse = false
+	response = &httptest.ResponseRecorder{}
+	srv.Handler.ServeHTTP(response, httptest.NewRequest("GET", "/", nil))
+	assert.True(t, handlerCalled)
+	assert.Equal(t, http.StatusOK, response.Result().StatusCode)
+}
+
+func TestGetMemoryLimiterExtension(t *testing.T) {
+	mle := &mockMemoryLimiterExtension{}
+	nopExt, err := extensiontest.NewNopFactory().CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), CORSConfig{})
+	assert.NoError(t, err)
+
+	extList := map[component.ID]component.Component{
+		component.NewID("memoryLimiter"):     mle,
+		component.NewID("memoryLimiterFake"): nopExt,
+	}
+
+	// valid extension
+	comID := component.NewID("memoryLimiter")
+	_, err = getMemoryLimiterExtension(&comID, extList)
+	assert.NoError(t, err)
+
+	// invalid extension
+	comID = component.NewID("memoryLimiterFake")
+	_, err = getMemoryLimiterExtension(&comID, extList)
+	assert.EqualError(t, err, "requested MemoryLimiter, memoryLimiterFake, is not a memoryLimiterExtension")
+
+	// not found
+	comID = component.NewID("notfound")
+	_, err = getMemoryLimiterExtension(&comID, extList)
+	assert.EqualError(t, err, "failed to resolve memoryLimiterExtension \"notfound\": memory limiter extension not found")
+}
+
 type mockHost struct {
 	component.Host
 	ext map[component.ID]component.Component
+}
+
+type mockMemoryLimiterExtension struct {
+	mustRefuse bool
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+func (mml *mockMemoryLimiterExtension) MustRefuse() bool {
+	return mml.mustRefuse
 }
 
 func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
