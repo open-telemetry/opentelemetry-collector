@@ -493,7 +493,7 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 		},
 		Keepalive: nil,
 	}
-	_, err := settings.ToListener()
+	_, err := settings.ToListenerContext(context.Background())
 	assert.Error(t, err)
 }
 
@@ -615,7 +615,7 @@ func TestHttpReception(t *testing.T) {
 				},
 				TLSSetting: test.tlsServerCreds,
 			}
-			ln, err := gss.ToListener()
+			ln, err := gss.ToListenerContext(context.Background())
 			assert.NoError(t, err)
 			s, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
@@ -661,7 +661,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 			Transport: "unix",
 		},
 	}
-	ln, err := gss.ToListener()
+	ln, err := gss.ToListenerContext(context.Background())
 	assert.NoError(t, err)
 	srv, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
@@ -862,7 +862,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 
 				defer srv.Stop()
 
-				l, err = gss.ToListener()
+				l, err = gss.ToListenerContext(context.Background())
 				require.NoError(t, err)
 
 				go func() {
