@@ -28,7 +28,13 @@ var (
 )
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
+// Deprecated: [v0.94.0] Use QueueConfig instead
 type QueueSettings struct {
+	QueueConfig `mapstructure:",squash"`
+}
+
+// QueueConfig defines configuration for queueing batches before sending to the consumerSender.
+type QueueConfig struct {
 	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
 	Enabled bool `mapstructure:"enabled"`
 	// NumConsumers is the number of consumers from the queue.
@@ -40,9 +46,17 @@ type QueueSettings struct {
 	StorageID *component.ID `mapstructure:"storage"`
 }
 
-// NewDefaultQueueSettings returns the default settings for QueueSettings.
+// NewDefaultQueueSettings returns the default settings for QueueConfig.
+// Deprecated: [v0.94.0] Use NewDefaultQueueConfig instead
 func NewDefaultQueueSettings() QueueSettings {
 	return QueueSettings{
+		NewDefaultQueueConfig(),
+	}
+}
+
+// NewDefaultQueueConfig returns the default settings for QueueConfig.
+func NewDefaultQueueConfig() QueueConfig {
+	return QueueConfig{
 		Enabled:      true,
 		NumConsumers: 10,
 		// By default, batches are 8192 spans, for a total of up to 8 million spans in the queue
@@ -52,8 +66,8 @@ func NewDefaultQueueSettings() QueueSettings {
 	}
 }
 
-// Validate checks if the QueueSettings configuration is valid
-func (qCfg *QueueSettings) Validate() error {
+// Validate checks if the QueueConfig configuration is valid
+func (qCfg *QueueConfig) Validate() error {
 	if !qCfg.Enabled {
 		return nil
 	}
@@ -82,7 +96,7 @@ type queueSender struct {
 	metricSize     otelmetric.Int64ObservableGauge
 }
 
-func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal component.DataType,
+func newQueueSender(config QueueConfig, set exporter.CreateSettings, signal component.DataType,
 	marshaler RequestMarshaler, unmarshaler RequestUnmarshaler, consumeErrHandler func(error, Request)) *queueSender {
 
 	isPersistent := config.StorageID != nil

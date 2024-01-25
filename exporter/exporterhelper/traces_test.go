@@ -154,7 +154,7 @@ func TestTracesRequestExporter_Default_ExportError(t *testing.T) {
 }
 
 func TestTracesExporter_WithPersistentQueue(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	storageID := component.NewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
 	rCfg := configretry.NewDefaultBackOffConfig()
@@ -237,7 +237,7 @@ func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	rCfg := configretry.NewDefaultBackOffConfig()
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")

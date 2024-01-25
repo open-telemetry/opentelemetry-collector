@@ -35,7 +35,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		RetryConfig: configretry.NewDefaultBackOffConfig(),
-		QueueConfig: exporterhelper.NewDefaultQueueSettings(),
+		QueueConfig: exporterhelper.NewDefaultQueueConfig(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "",
 			Timeout:  30 * time.Second,

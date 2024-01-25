@@ -7,7 +7,7 @@ fields:
   doc: |
     Timeout is the timeout for every attempt to send data to the backend.
 - name: sending_queue
-  type: exporterhelper.QueueSettings
+  type: exporterhelper.QueueConfig
   kind: struct
   fields:
   - name: enabled

@@ -23,7 +23,7 @@ import (
 )
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
@@ -55,7 +55,7 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 }
 
 func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
@@ -82,7 +82,7 @@ func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 }
 
 func TestQueuedRetry_RejectOnFull(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.QueueSize = 0
 	qCfg.NumConsumers = 0
 	set := exportertest.NewNopCreateSettings()
@@ -105,7 +105,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	rCfg := configretry.NewDefaultBackOffConfig()
 	set := exporter.CreateSettings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
 	be, err := newBaseExporter(set, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
@@ -141,7 +141,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 	tt, err := componenttest.SetupTelemetry(defaultID)
 	require.NoError(t, err)
 
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 0 // to make every request go straight to the queue
 	rCfg := configretry.NewDefaultBackOffConfig()
 	set := exporter.CreateSettings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
@@ -176,13 +176,13 @@ func TestNoCancellationContext(t *testing.T) {
 }
 
 func TestQueueSettings_Validate(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	assert.NoError(t, qCfg.Validate())
 
 	qCfg.QueueSize = 0
 	assert.EqualError(t, qCfg.Validate(), "queue size must be positive")
 
-	qCfg = NewDefaultQueueSettings()
+	qCfg = NewDefaultQueueConfig()
 	qCfg.NumConsumers = 0
 
 	assert.EqualError(t, qCfg.Validate(), "number of queue consumers must be positive")
@@ -193,7 +193,7 @@ func TestQueueSettings_Validate(t *testing.T) {
 }
 
 func TestQueueRetryWithDisabledQueue(t *testing.T) {
-	qs := NewDefaultQueueSettings()
+	qs := NewDefaultQueueConfig()
 	qs.Enabled = false
 	set := exportertest.NewNopCreateSettings()
 	logger, observed := observer.New(zap.ErrorLevel)
@@ -220,7 +220,7 @@ func TestQueueFailedRequestDropped(t *testing.T) {
 	set := exportertest.NewNopCreateSettings()
 	logger, observed := observer.New(zap.ErrorLevel)
 	set.Logger = zap.New(logger)
-	be, err := newBaseExporter(set, component.DataTypeLogs, false, nil, nil, newNoopObsrepSender, WithQueue(NewDefaultQueueSettings()))
+	be, err := newBaseExporter(set, component.DataTypeLogs, false, nil, nil, newNoopObsrepSender, WithQueue(NewDefaultQueueConfig()))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	mockR := newMockRequest(2, errors.New("some error"))
@@ -236,7 +236,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	storageID := component.NewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := configretry.NewDefaultBackOffConfig()
@@ -260,7 +260,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	storageID := component.NewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := configretry.NewDefaultBackOffConfig()
@@ -278,7 +278,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 }
 
 func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 1
 	storageID := component.NewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence to ensure data is re-queued on shutdown
@@ -323,7 +323,7 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 }
 
 func TestQueueSenderNoStartShutdown(t *testing.T) {
-	qs := newQueueSender(NewDefaultQueueSettings(), exportertest.NewNopCreateSettings(), "", nil, nil, nil)
+	qs := newQueueSender(NewDefaultQueueConfig(), exportertest.NewNopCreateSettings(), "", nil, nil, nil)
 	assert.NoError(t, qs.Shutdown(context.Background()))
 }
 

@@ -79,10 +79,10 @@ func WithRetry(config configretry.BackOffConfig) Option {
 	}
 }
 
-// WithQueue overrides the default QueueSettings for an exporter.
-// The default QueueSettings is to disable queueing.
+// WithQueue overrides the default QueueConfig for an exporter.
+// The default QueueConfig is to disable queueing.
 // This option cannot be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-func WithQueue(config QueueSettings) Option {
+func WithQueue(config QueueConfig) Option {
 	return func(o *baseExporter) {
 		if o.requestExporter {
 			panic("queueing is not available for the new request exporters yet")

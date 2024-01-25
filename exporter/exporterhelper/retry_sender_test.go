@@ -35,7 +35,7 @@ func mockRequestMarshaler(_ Request) ([]byte, error) {
 }
 
 func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	rCfg := configretry.NewDefaultBackOffConfig()
 	mockR := newMockRequest(2, consumererror.NewPermanent(errors.New("bad data")))
 	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
@@ -58,7 +58,7 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 }
 
 func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
 	be, err := newBaseExporter(defaultSettings, "", false, mockRequestMarshaler,
@@ -84,7 +84,7 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 }
 
 func TestQueuedRetry_OnError(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 0
@@ -111,7 +111,7 @@ func TestQueuedRetry_OnError(t *testing.T) {
 }
 
 func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = time.Millisecond
@@ -158,7 +158,7 @@ func (e wrappedError) Unwrap() error {
 }
 
 func TestQueuedRetry_ThrottleError(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 10 * time.Millisecond
@@ -189,7 +189,7 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 }
 
 func TestQueuedRetry_RetryOnError(t *testing.T) {
-	qCfg := NewDefaultQueueSettings()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 1
 	rCfg := configretry.NewDefaultBackOffConfig()
