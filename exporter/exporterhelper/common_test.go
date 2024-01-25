@@ -74,7 +74,7 @@ func TestQueueRetryOptionsWithRequestExporter(t *testing.T) {
 	require.True(t, bs.requestExporter)
 	require.Panics(t, func() {
 		_, _ = newBaseExporter(exportertest.NewNopCreateSettings(), "", true, nil, nil, newNoopObsrepSender,
-			WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueConfig()))
+			WithRetry(configretry.NewDefaultBackOffConfig()), WithQueueConfig(NewDefaultQueueConfig()))
 	})
 }
 
