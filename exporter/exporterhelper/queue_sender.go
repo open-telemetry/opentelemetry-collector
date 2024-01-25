@@ -29,9 +29,7 @@ var (
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
 // Deprecated: [v0.94.0] Use QueueConfig instead
-type QueueSettings struct {
-	QueueConfig `mapstructure:",squash"`
-}
+type QueueSettings QueueConfig
 
 // QueueConfig defines configuration for queueing batches before sending to the consumerSender.
 type QueueConfig struct {
@@ -50,7 +48,12 @@ type QueueConfig struct {
 // Deprecated: [v0.94.0] Use NewDefaultQueueConfig instead
 func NewDefaultQueueSettings() QueueSettings {
 	return QueueSettings{
-		NewDefaultQueueConfig(),
+		Enabled:      true,
+		NumConsumers: 10,
+		// By default, batches are 8192 spans, for a total of up to 8 million spans in the queue
+		// This can be estimated at 1-4 GB worth of maximum memory usage
+		// This default is probably still too high, and may be adjusted further down in a future release
+		QueueSize: defaultQueueSize,
 	}
 }
 
