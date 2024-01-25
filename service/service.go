@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/internal/localhostgate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -65,17 +64,14 @@ type Settings struct {
 
 // Service represents the implementation of a component.Host.
 type Service struct {
-	buildInfo            component.BuildInfo
-	telemetry            *telemetry.Telemetry
-	telemetrySettings    servicetelemetry.TelemetrySettings
-	host                 *serviceHost
-	telemetryInitializer *telemetryInitializer
-	collectorConf        *confmap.Conf
+	buildInfo         component.BuildInfo
+	telemetry         *telemetry.Telemetry
+	telemetrySettings servicetelemetry.TelemetrySettings
+	host              *serviceHost
+	collectorConf     *confmap.Conf
 }
 
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
-	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
-	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
@@ -87,25 +83,25 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
-		telemetryInitializer: newColTelemetry(disableHighCard, extendedConfig),
-		collectorConf:        set.CollectorConf,
+		collectorConf: set.CollectorConf,
 	}
 	var err error
-	srv.telemetry, err = telemetry.New(ctx, telemetry.Settings{ZapOptions: set.LoggingOptions}, cfg.Telemetry)
+	srv.telemetry, err = telemetry.New(ctx, telemetry.Settings{
+		BuildInfo:         set.BuildInfo,
+		AsyncErrorChannel: set.AsyncErrorChannel,
+		ZapOptions:        set.LoggingOptions,
+	}, cfg.Telemetry)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
 	res := resource.New(set.BuildInfo, cfg.Telemetry.Resource)
 	pcommonRes := pdataFromSdk(res)
 
-	logger := srv.telemetry.Logger()
-	if err = srv.telemetryInitializer.init(res, logger, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
-		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
-	}
 	srv.telemetrySettings = servicetelemetry.TelemetrySettings{
-		Logger:         logger,
+		Logger:         srv.telemetry.Logger(),
 		TracerProvider: srv.telemetry.TracerProvider(),
-		MeterProvider:  srv.telemetryInitializer.mp,
+		MeterProvider:  srv.telemetry.MeterProvider(),
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 		// Construct telemetry attributes from build info and config's resource attributes.
 		Resource: pcommonRes,
@@ -120,10 +116,9 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensionsAndPipeline(ctx, set, cfg); err != nil {
 		// If pipeline initialization fails then shut down the telemetry server
-		if shutdownErr := srv.telemetryInitializer.shutdown(); shutdownErr != nil {
-			err = multierr.Append(err, fmt.Errorf("failed to shutdown collector telemetry: %w", shutdownErr))
+		if serr := srv.telemetry.Shutdown(ctx); serr != nil {
+			err = multierr.Append(err, fmt.Errorf("failed to shutdown telemetry: %w", serr))
 		}
-
 		return nil, err
 	}
 
@@ -197,10 +192,6 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 	if err := srv.telemetry.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown telemetry: %w", err))
 	}
-
-	if err := srv.telemetryInitializer.shutdown(); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
-	}
 	return errs
 }
 
@@ -231,7 +222,7 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 
 	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
 		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
-		if err = proctelemetry.RegisterProcessMetrics(srv.telemetryInitializer.mp, getBallastSize(srv.host)); err != nil {
+		if err = proctelemetry.RegisterProcessMetrics(srv.telemetry.MeterProvider(), getBallastSize(srv.host)); err != nil {
 			return fmt.Errorf("failed to register process metrics: %w", err)
 		}
 	}

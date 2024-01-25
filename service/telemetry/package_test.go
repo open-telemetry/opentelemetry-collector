@@ -5,10 +5,10 @@ package telemetry
 
 import (
 	"testing"
-
-	"go.uber.org/goleak"
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	// TODO: Remove this once the following PR is merged:
+	// https://github.com/open-telemetry/opentelemetry-collector/pull/9241
+	//goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"))
 }
