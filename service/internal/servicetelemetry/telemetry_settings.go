@@ -50,10 +50,6 @@ func (s TelemetrySettings) ToComponentTelemetrySettings(id *component.InstanceID
 		MeterProvider:  s.MeterProvider,
 		MetricsLevel:   s.MetricsLevel,
 		Resource:       s.Resource,
-		ReportComponentStatus: func(event *component.StatusEvent) error {
-			statusFunc(event)
-			return nil
-		},
-		ReportStatus: statusFunc,
+		ReportStatus:   statusFunc,
 	}
 }
