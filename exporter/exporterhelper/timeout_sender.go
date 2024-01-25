@@ -18,9 +18,7 @@ type TimeoutConfig struct {
 
 // TimeoutSettings for timeout. The timeout applies to individual attempts to send data to the backend.
 // Deprecated: [v0.94.0] Use TimeoutConfig instead.
-type TimeoutSettings struct {
-	TimeoutConfig `mapstructure:",squash"`
-}
+type TimeoutSettings TimeoutConfig
 
 func (ts *TimeoutConfig) Validate() error {
 	// Negative timeouts are not acceptable, since all sends will fail.
@@ -41,7 +39,7 @@ func NewDefaultTimeoutConfig() TimeoutConfig {
 // Deprecated: [v0.94.0] Use NewDefaultTimeoutConfig instead.
 func NewDefaultTimeoutSettings() TimeoutSettings {
 	return TimeoutSettings{
-		NewDefaultTimeoutConfig(),
+		Timeout: 5 * time.Second,
 	}
 }
 
