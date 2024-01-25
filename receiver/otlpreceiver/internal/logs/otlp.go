@@ -6,12 +6,9 @@ package logs // import "go.opentelemetry.io/collector/receiver/otlpreceiver/inte
 import (
 	"context"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
@@ -51,15 +48,7 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 	// NonPermanent errors will be converted to codes.Unavailable (equivalent to HTTP 503)
 	// Permanent errors will be converted to codes.InvalidArgument (equivalent to HTTP 400)
 	if err != nil {
-		s, ok := status.FromError(err)
-		if !ok {
-			code := codes.Unavailable
-			if consumererror.IsPermanent(err) {
-				code = codes.InvalidArgument
-			}
-			s = status.New(code, err.Error())
-		}
-		return plogotlp.NewExportResponse(), s.Err()
+		return plogotlp.NewExportResponse(), errors.GetStatusFromError(err)
 	}
 
 	return plogotlp.NewExportResponse(), nil

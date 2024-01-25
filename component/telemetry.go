@@ -35,13 +35,6 @@ type TelemetrySettings struct {
 	// Resource contains the resource attributes for the collector's telemetry.
 	Resource pcommon.Resource
 
-	// ReportComponentStatus allows a component to report runtime changes in status. The service
-	// will automatically report status for a component during startup and shutdown. Components can
-	// use this method to report status after start and before shutdown.
-	// Deprecated: [v0.92.0] This function will be removed in a future release.
-	// Use ReportStatus instead.
-	ReportComponentStatus func(*StatusEvent) error
-
 	// ReportStatus allows a component to report runtime changes in status. The service
 	// will automatically report status for a component during startup and shutdown. Components can
 	// use this method to report status after start and before shutdown.
