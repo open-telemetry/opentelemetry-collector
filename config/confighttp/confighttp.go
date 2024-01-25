@@ -252,7 +252,7 @@ type HTTPServerSettings struct {
 	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls"`
 
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
-	CORS *CORSSettings `mapstructure:"cors"`
+	CORS *CORSConfig `mapstructure:"cors"`
 
 	// Auth for this receiver
 	Auth *configauth.Authentication `mapstructure:"auth"`
@@ -397,7 +397,12 @@ func responseHeadersHandler(handler http.Handler, headers map[string]configopaqu
 
 // CORSSettings configures a receiver for HTTP cross-origin resource sharing (CORS).
 // See the underlying https://github.com/rs/cors package for details.
-type CORSSettings struct {
+// Deprecated: [v0.94.0] Use CORSConfig instead
+type CORSSettings CORSConfig
+
+// CORSConfig configures a receiver for HTTP cross-origin resource sharing (CORS).
+// See the underlying https://github.com/rs/cors package for details.
+type CORSConfig struct {
 	// AllowedOrigins sets the allowed values of the Origin header for
 	// HTTP/JSON requests to an OTLP receiver. An origin may contain a
 	// wildcard (*) to replace 0 or more characters (e.g.,

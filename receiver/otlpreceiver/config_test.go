@@ -124,7 +124,7 @@ func TestUnmarshalConfig(t *testing.T) {
 								KeyFile:  "test.key",
 							},
 						},
-						CORS: &confighttp.CORSSettings{
+						CORS: &confighttp.CORSConfig{
 							AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
 							MaxAge:         7200,
 						},
