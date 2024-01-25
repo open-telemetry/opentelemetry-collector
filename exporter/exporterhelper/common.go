@@ -59,9 +59,9 @@ func WithShutdown(shutdown component.ShutdownFunc) Option {
 	}
 }
 
-// WithTimeout overrides the default TimeoutSettings for an exporter.
-// The default TimeoutSettings is 5 seconds.
-func WithTimeout(timeoutSettings TimeoutSettings) Option {
+// WithTimeout overrides the default TimeoutConfig for an exporter.
+// The default TimeoutConfig is 5 seconds.
+func WithTimeout(timeoutSettings TimeoutConfig) Option {
 	return func(o *baseExporter) {
 		o.timeoutSender.cfg = timeoutSettings
 	}
@@ -153,7 +153,7 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 		queueSender:   &baseRequestSender{},
 		obsrepSender:  osf(obsReport),
 		retrySender:   &baseRequestSender{},
-		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutSettings()},
+		timeoutSender: &timeoutSender{cfg: NewDefaultTimeoutConfig()},
 
 		set:    set,
 		obsrep: obsReport,
