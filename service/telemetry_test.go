@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
+	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -42,7 +42,7 @@ func TestBuildResource(t *testing.T) {
 
 	// Check default config
 	cfg := telemetry.Config{}
-	otelRes := buildResource(buildInfo, cfg)
+	otelRes := resource.New(buildInfo, cfg.Resource)
 	res := pdataFromSdk(otelRes)
 
 	assert.Equal(t, res.Attributes().Len(), 3)
@@ -64,7 +64,7 @@ func TestBuildResource(t *testing.T) {
 			semconv.AttributeServiceInstanceID: nil,
 		},
 	}
-	otelRes = buildResource(buildInfo, cfg)
+	otelRes = resource.New(buildInfo, cfg.Resource)
 	res = pdataFromSdk(otelRes)
 
 	// Attributes should not exist since we nil-ified all.
@@ -79,7 +79,7 @@ func TestBuildResource(t *testing.T) {
 			semconv.AttributeServiceInstanceID: strPtr("c"),
 		},
 	}
-	otelRes = buildResource(buildInfo, cfg)
+	otelRes = resource.New(buildInfo, cfg.Resource)
 	res = pdataFromSdk(otelRes)
 
 	assert.Equal(t, res.Attributes().Len(), 3)
@@ -102,29 +102,13 @@ func TestTelemetryInit(t *testing.T) {
 
 	for _, tc := range []struct {
 		name            string
-		useOtel         bool
 		disableHighCard bool
 		expectedMetrics map[string]metricValue
 		extendedConfig  bool
 		cfg             *telemetry.Config
 	}{
 		{
-			name:    "UseOpenCensusForInternalMetrics",
-			useOtel: false,
-			expectedMetrics: map[string]metricValue{
-				metricPrefix + ocPrefix + counterName: {
-					value: 13,
-					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
-					},
-				},
-			},
-		},
-		{
-			name:    "UseOpenTelemetryForInternalMetrics",
-			useOtel: true,
+			name: "UseOpenTelemetryForInternalMetrics",
 			expectedMetrics: map[string]metricValue{
 				metricPrefix + ocPrefix + counterName: {
 					value: 13,
@@ -175,7 +159,6 @@ func TestTelemetryInit(t *testing.T) {
 		},
 		{
 			name:            "DisableHighCardinalityWithOtel",
-			useOtel:         true,
 			disableHighCard: true,
 			expectedMetrics: map[string]metricValue{
 				metricPrefix + ocPrefix + counterName: {
@@ -292,7 +275,7 @@ func TestTelemetryInit(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			tel := newColTelemetry(tc.useOtel, tc.disableHighCard, tc.extendedConfig)
+			tel := newColTelemetry(tc.disableHighCard, tc.extendedConfig)
 			buildInfo := component.NewDefaultBuildInfo()
 			if tc.extendedConfig {
 				tc.cfg.Metrics.Readers = []config.MetricReader{
@@ -316,13 +299,8 @@ func TestTelemetryInit(t *testing.T) {
 					},
 				}
 			}
-			otelRes := buildResource(buildInfo, *tc.cfg)
-			res := pdataFromSdk(otelRes)
-			settings := servicetelemetry.TelemetrySettings{
-				Logger:   zap.NewNop(),
-				Resource: res,
-			}
-			err := tel.init(otelRes, settings, *tc.cfg, make(chan error))
+			otelRes := resource.New(buildInfo, tc.cfg.Resource)
+			err := tel.init(otelRes, zap.NewNop(), *tc.cfg, make(chan error))
 			require.NoError(t, err)
 			defer func() {
 				require.NoError(t, tel.shutdown())

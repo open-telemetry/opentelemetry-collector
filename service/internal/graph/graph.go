@@ -388,20 +388,20 @@ func (g *Graph) StartAll(ctx context.Context, host component.Host) error {
 		}
 
 		instanceID := g.instanceIDs[node.ID()]
-		_ = g.telemetry.Status.ReportComponentStatus(
+		g.telemetry.Status.ReportStatus(
 			instanceID,
 			component.NewStatusEvent(component.StatusStarting),
 		)
 
 		if compErr := comp.Start(ctx, host); compErr != nil {
-			_ = g.telemetry.Status.ReportComponentStatus(
+			g.telemetry.Status.ReportStatus(
 				instanceID,
 				component.NewPermanentErrorEvent(compErr),
 			)
 			return compErr
 		}
 
-		_ = g.telemetry.Status.ReportComponentOKIfStarting(instanceID)
+		g.telemetry.Status.ReportOKIfStarting(instanceID)
 	}
 	return nil
 }
@@ -427,21 +427,21 @@ func (g *Graph) ShutdownAll(ctx context.Context) error {
 		}
 
 		instanceID := g.instanceIDs[node.ID()]
-		_ = g.telemetry.Status.ReportComponentStatus(
+		g.telemetry.Status.ReportStatus(
 			instanceID,
 			component.NewStatusEvent(component.StatusStopping),
 		)
 
 		if compErr := comp.Shutdown(ctx); compErr != nil {
 			errs = multierr.Append(errs, compErr)
-			_ = g.telemetry.Status.ReportComponentStatus(
+			g.telemetry.Status.ReportStatus(
 				instanceID,
 				component.NewPermanentErrorEvent(compErr),
 			)
 			continue
 		}
 
-		_ = g.telemetry.Status.ReportComponentStatus(
+		g.telemetry.Status.ReportStatus(
 			instanceID,
 			component.NewStatusEvent(component.StatusStopped),
 		)

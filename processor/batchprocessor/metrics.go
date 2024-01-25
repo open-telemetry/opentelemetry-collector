@@ -34,6 +34,7 @@ var (
 type trigger int
 
 const (
+	typeStr                = "batch"
 	triggerTimeout trigger = iota
 	triggerBatchSize
 )
@@ -92,7 +93,6 @@ func metricViews() []*view.View {
 type batchProcessorTelemetry struct {
 	level    configtelemetry.Level
 	detailed bool
-	useOtel  bool
 
 	exportCtx context.Context
 
@@ -104,14 +104,13 @@ type batchProcessorTelemetry struct {
 	batchMetadataCardinality metric.Int64ObservableUpDownCounter
 }
 
-func newBatchProcessorTelemetry(set processor.CreateSettings, currentMetadataCardinality func() int, useOtel bool) (*batchProcessorTelemetry, error) {
+func newBatchProcessorTelemetry(set processor.CreateSettings, currentMetadataCardinality func() int) (*batchProcessorTelemetry, error) {
 	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, set.ID.String()))
 	if err != nil {
 		return nil, err
 	}
 
 	bpt := &batchProcessorTelemetry{
-		useOtel:       useOtel,
 		processorAttr: []attribute.KeyValue{attribute.String(obsmetrics.ProcessorKey, set.ID.String())},
 		exportCtx:     exportCtx,
 		level:         set.MetricsLevel,
@@ -126,10 +125,6 @@ func newBatchProcessorTelemetry(set processor.CreateSettings, currentMetadataCar
 }
 
 func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider, currentMetadataCardinality func() int) error {
-	if !bpt.useOtel {
-		return nil
-	}
-
 	var errors, err error
 	meter := mp.Meter(scopeName)
 
@@ -176,29 +171,6 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider, c
 }
 
 func (bpt *batchProcessorTelemetry) record(trigger trigger, sent, bytes int64) {
-	if bpt.useOtel {
-		bpt.recordWithOtel(trigger, sent, bytes)
-	} else {
-		bpt.recordWithOC(trigger, sent, bytes)
-	}
-}
-
-func (bpt *batchProcessorTelemetry) recordWithOC(trigger trigger, sent, bytes int64) {
-	var triggerMeasure *stats.Int64Measure
-	switch trigger {
-	case triggerBatchSize:
-		triggerMeasure = statBatchSizeTriggerSend
-	case triggerTimeout:
-		triggerMeasure = statTimeoutTriggerSend
-	}
-
-	stats.Record(bpt.exportCtx, triggerMeasure.M(1), statBatchSendSize.M(sent))
-	if bpt.detailed {
-		stats.Record(bpt.exportCtx, statBatchSendSizeBytes.M(bytes))
-	}
-}
-
-func (bpt *batchProcessorTelemetry) recordWithOtel(trigger trigger, sent, bytes int64) {
 	switch trigger {
 	case triggerBatchSize:
 		bpt.batchSizeTriggerSend.Add(bpt.exportCtx, 1, metric.WithAttributes(bpt.processorAttr...))

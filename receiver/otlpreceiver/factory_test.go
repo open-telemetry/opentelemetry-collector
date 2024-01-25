@@ -27,7 +27,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateReceiver(t *testing.T) {
+func TestCreateSameReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
@@ -41,6 +41,13 @@ func TestCreateReceiver(t *testing.T) {
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, mReceiver)
 	assert.NoError(t, err)
+
+	lReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	assert.NotNil(t, lReceiver)
+	assert.NoError(t, err)
+
+	assert.Same(t, tReceiver, mReceiver)
+	assert.Same(t, tReceiver, lReceiver)
 }
 
 func TestCreateTracesReceiver(t *testing.T) {
@@ -61,9 +68,11 @@ func TestCreateTracesReceiver(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		cfg     *Config
-		wantErr bool
+		name         string
+		cfg          *Config
+		wantStartErr bool
+		wantErr      bool
+		sink         consumer.Traces
 	}{
 		{
 			name: "default",
@@ -73,6 +82,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 					HTTP: defaultHTTPSettings,
 				},
 			},
+			sink: consumertest.NewNop(),
 		},
 		{
 			name: "invalid_grpc_port",
@@ -87,7 +97,8 @@ func TestCreateTracesReceiver(t *testing.T) {
 					HTTP: defaultHTTPSettings,
 				},
 			},
-			wantErr: true,
+			wantStartErr: true,
+			sink:         consumertest.NewNop(),
 		},
 		{
 			name: "invalid_http_port",
@@ -102,18 +113,43 @@ func TestCreateTracesReceiver(t *testing.T) {
 					},
 				},
 			},
+			wantStartErr: true,
+			sink:         consumertest.NewNop(),
+		},
+		{
+			name: "no_next_consumer",
+			cfg: &Config{
+				Protocols: Protocols{
+					GRPC: defaultGRPCSettings,
+					HTTP: &HTTPConfig{
+						HTTPServerSettings: &confighttp.HTTPServerSettings{
+							Endpoint: "127.0.0.1:1122",
+						},
+					},
+				},
+			},
 			wantErr: true,
+			sink:    nil,
+		},
+		{
+			name: "no_http_or_grcp_config",
+			cfg: &Config{
+				Protocols: Protocols{},
+			},
+			sink: consumertest.NewNop(),
 		},
 	}
 	ctx := context.Background()
 	creationSet := receivertest.NewNopCreateSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(consumertest.TracesSink)
-			tr, err := factory.CreateTracesReceiver(ctx, creationSet, tt.cfg, sink)
-			assert.NoError(t, err)
-			require.NotNil(t, tr)
+			tr, err := factory.CreateTracesReceiver(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			if tt.wantStartErr {
 				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, tr.Shutdown(context.Background()))
 			} else {
@@ -142,9 +178,11 @@ func TestCreateMetricReceiver(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		cfg     *Config
-		wantErr bool
+		name         string
+		cfg          *Config
+		wantStartErr bool
+		wantErr      bool
+		sink         consumer.Metrics
 	}{
 		{
 			name: "default",
@@ -154,6 +192,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 					HTTP: defaultHTTPSettings,
 				},
 			},
+			sink: consumertest.NewNop(),
 		},
 		{
 			name: "invalid_grpc_address",
@@ -168,7 +207,8 @@ func TestCreateMetricReceiver(t *testing.T) {
 					HTTP: defaultHTTPSettings,
 				},
 			},
-			wantErr: true,
+			wantStartErr: true,
+			sink:         consumertest.NewNop(),
 		},
 		{
 			name: "invalid_http_address",
@@ -183,18 +223,43 @@ func TestCreateMetricReceiver(t *testing.T) {
 					},
 				},
 			},
+			wantStartErr: true,
+			sink:         consumertest.NewNop(),
+		},
+		{
+			name: "no_next_consumer",
+			cfg: &Config{
+				Protocols: Protocols{
+					GRPC: defaultGRPCSettings,
+					HTTP: &HTTPConfig{
+						HTTPServerSettings: &confighttp.HTTPServerSettings{
+							Endpoint: "127.0.0.1:1122",
+						},
+					},
+				},
+			},
 			wantErr: true,
+			sink:    nil,
+		},
+		{
+			name: "no_http_or_grcp_config",
+			cfg: &Config{
+				Protocols: Protocols{},
+			},
+			sink: consumertest.NewNop(),
 		},
 	}
 	ctx := context.Background()
 	creationSet := receivertest.NewNopCreateSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(consumertest.MetricsSink)
-			mr, err := factory.CreateMetricsReceiver(ctx, creationSet, tt.cfg, sink)
-			assert.NoError(t, err)
-			require.NotNil(t, mr)
+			mr, err := factory.CreateMetricsReceiver(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			if tt.wantStartErr {
 				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
 			} else {
 				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
@@ -236,7 +301,7 @@ func TestCreateLogReceiver(t *testing.T) {
 					HTTP: defaultHTTPSettings,
 				},
 			},
-			sink: new(consumertest.LogsSink),
+			sink: consumertest.NewNop(),
 		},
 		{
 			name: "invalid_grpc_address",
@@ -252,7 +317,7 @@ func TestCreateLogReceiver(t *testing.T) {
 				},
 			},
 			wantStartErr: true,
-			sink:         new(consumertest.LogsSink),
+			sink:         consumertest.NewNop(),
 		},
 		{
 			name: "invalid_http_address",
@@ -268,7 +333,7 @@ func TestCreateLogReceiver(t *testing.T) {
 				},
 			},
 			wantStartErr: true,
-			sink:         new(consumertest.LogsSink),
+			sink:         consumertest.NewNop(),
 		},
 		{
 			name: "no_next_consumer",
@@ -290,8 +355,7 @@ func TestCreateLogReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{},
 			},
-			wantErr: false,
-			sink:    new(consumertest.LogsSink),
+			sink: consumertest.NewNop(),
 		},
 	}
 	ctx := context.Background()
@@ -304,8 +368,6 @@ func TestCreateLogReceiver(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			require.NotNil(t, mr)
-
 			if tt.wantStartErr {
 				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, mr.Shutdown(context.Background()))

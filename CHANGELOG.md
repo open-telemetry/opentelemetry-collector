@@ -7,6 +7,93 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.93.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: remove deprecated exporterhelper.RetrySettings and exporterhelper.NewDefaultRetrySettings (#9256)
+- `configopaque`: configopaque.String implements `fmt.Stringer` and `fmt.GoStringer`, outputting [REDACTED] when formatted with the %s, %q or %#v verbs` (#9213)
+  This may break applications that rely on the previous behavior of opaque strings with `fmt.Sprintf` to e.g. build URLs or headers.
+  Explicitly cast the opaque string to a string before using it in `fmt.Sprintf` to restore the previous behavior.
+  
+
+### 🚀 New components 🚀
+
+- `extension/memory_limiter`: Introduce a `memory_limiter` extension which receivers can use to reject incoming requests when collector doesn't have enough memory (#8632)
+  The extension has the same configuration interface and behavior as the existing `memory_limiter` processor, which potentially can be deprecated and removed in the future
+
+### 💡 Enhancements 💡
+
+- `configtls`: add `cipher_suites` to configtls. (#8105)
+  Users can specify a list of cipher suites to pick from. If left blank, a safe default list is used.
+  
+- `service`: mark `telemetry.useOtelForInternalMetrics` as stable (#816)
+- `exporters`: Cleanup log messages for export failures (#9219)
+  1. Ensure an error message is logged every time and only once when data is dropped/rejected due to export failure.
+  2. Update the wording. Specifically, don't use "dropped" term when an error is reported back to the pipeline.
+     Keep the "dropped" wording for failures happened after the enabled queue.
+  3. Properly report any error reported by a queue. For example, a persistent storage error must be reported as a storage error, not as "queue overflow".
+  
+
+### 🧰 Bug fixes 🧰
+
+- `configgrpc`: Update dependency to address a potential crash in the grpc instrumentation (#9296)
+- `otlpreceiver`: Ensure OTLP receiver handles consume errors correctly (#4335)
+  Make sure OTLP receiver returns correct status code and follows the receiver contract (gRPC)
+- `zpagesextension`: Remove mention of rpcz page from zpages extension (#9328)
+
+## v1.0.1/v0.92.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporters/sending_queue`: Do not re-enqueue failed batches, rely on the retry_on_failure strategy instead. (#8382)
+  The current re-enqueuing behavior is not obvious and cannot be configured. It takes place only for persistent queue
+  and only if `retry_on_failure::enabled=true` even if `retry_on_failure` is a setting for a different backoff retry
+  strategy. This change removes the re-enqueuing behavior. Consider increasing `retry_on_failure::max_elapsed_time` 
+  to reduce chances of data loss or set it to 0 to keep retrying until requests succeed.
+  
+- `confmap`: Make the option `WithErrorUnused` enabled by default when unmarshaling configuration (#7102)
+  The option `WithErrorUnused` is now enabled by default, and a new option `WithIgnoreUnused` is introduced to ignore
+  errors about unused fields.
+  
+- `status`: Deprecate `ReportComponentStatus` in favor of `ReportStatus`. This new function does not return an error. (#9148)
+
+### 🚩 Deprecations 🚩
+
+- `connectortest`: Deprecate connectortest.New[Metrics|Logs|Traces]Router in favour of connector.New[Metrics|Logs|Traces]Router (#9095)
+- `exporterhelper`: Deprecate exporterhelper.RetrySettings in favor of configretry.BackOffConfig (#9091)
+- `extension/ballast`: Deprecate `memory_ballast` extension. (#8343)
+  Use `GOMEMLIMIT` environment variable instead.
+  
+- `connector`: Deprecate [Metrics|Logs|Traces]Router in favour of [Metrics|Logs|Traces]RouterAndConsumer (#9095)
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add RetrySettings validation function (#9089)
+  Validate that time.Duration, multiplier values in configretry are non-negative, and randomization_factor is between 0 and 1
+  
+- `service`: Enable `telemetry.useOtelForInternalMetrics` by updating the flag to beta (#7454)
+  The metrics generated should be consistent with the metrics generated
+  previously with OpenCensus. Users can disable the behaviour
+  by setting `--feature-gates -telemetry.useOtelForInternalMetrics` at
+  collector start.
+  
+- `mdatagen`: move component from contrib to core (#9172)
+- `semconv`: Generated Semantic conventions 1.22.0. (#8686)
+- `confignet`: Add `dialer_timeout` config option. (#9066)
+- `processor/memory_limiter`: Update config validation errors (#9059)
+  - Fix names of the config fields that are validated in the error messages
+  - Move the validation from start to the initialization phrase 
+  
+- `exporterhelper`: Add config Validate for TimeoutSettings (#9104)
+
+### 🧰 Bug fixes 🧰
+
+- `memorylimiterprocessor`: Fixed leaking goroutines from memorylimiterprocessor (#9099)
+- `cmd/otelcorecol`: Fix the code detecting if the collector is running as a service on Windows. (#7350)
+  Removed the `NO_WINDOWS_SERVICE` environment variable given it is not needed anymore.
+- `otlpexporter`: remove dependency of otlphttpreceiver on otlpexporter (#6454)
+
 ## v0.91.0
 
 ### 💡 Enhancements 💡

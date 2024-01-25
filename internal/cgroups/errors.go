@@ -24,7 +24,6 @@
 // THE SOFTWARE.
 
 //go:build linux
-// +build linux
 
 package cgroups // import "go.opentelemetry.io/collector/internal/cgroups"
 

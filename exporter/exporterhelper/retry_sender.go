@@ -14,64 +14,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
-
-// RetrySettings defines configuration for retrying batches in case of export failure.
-// The current supported strategy is exponential backoff.
-type RetrySettings struct {
-	// Enabled indicates whether to not retry sending batches in case of export failure.
-	Enabled bool `mapstructure:"enabled"`
-	// InitialInterval the time to wait after the first failure before retrying.
-	InitialInterval time.Duration `mapstructure:"initial_interval"`
-	// RandomizationFactor is a random factor used to calculate next backoffs
-	// Randomized interval = RetryInterval * (1 ± RandomizationFactor)
-	RandomizationFactor float64 `mapstructure:"randomization_factor"`
-	// Multiplier is the value multiplied by the backoff interval bounds
-	Multiplier float64 `mapstructure:"multiplier"`
-	// MaxInterval is the upper bound on backoff interval. Once this value is reached the delay between
-	// consecutive retries will always be `MaxInterval`.
-	MaxInterval time.Duration `mapstructure:"max_interval"`
-	// MaxElapsedTime is the maximum amount of time (including retries) spent trying to send a request/batch.
-	// Once this value is reached, the data is discarded.
-	MaxElapsedTime time.Duration `mapstructure:"max_elapsed_time"`
-}
-
-func (cfg *RetrySettings) Validate() error {
-	if !cfg.Enabled {
-		return nil
-	}
-	if cfg.InitialInterval < 0 {
-		return errors.New("'initial_interval' must be non-negative")
-	}
-	if cfg.RandomizationFactor < 0 || cfg.RandomizationFactor > 1 {
-		return errors.New("'randomization_factor' must be within [0, 1]")
-	}
-	if cfg.Multiplier <= 0 {
-		return errors.New("'multiplier' must be positive")
-	}
-	if cfg.MaxInterval < 0 {
-		return errors.New("'max_interval' must be non-negative")
-	}
-	if cfg.MaxElapsedTime < 0 {
-		return errors.New("'max_elapsed' time must be non-negative")
-	}
-	return nil
-}
-
-// NewDefaultRetrySettings returns the default settings for RetrySettings.
-func NewDefaultRetrySettings() RetrySettings {
-	return RetrySettings{
-		Enabled:             true,
-		InitialInterval:     5 * time.Second,
-		RandomizationFactor: backoff.DefaultRandomizationFactor,
-		Multiplier:          backoff.DefaultMultiplier,
-		MaxInterval:         30 * time.Second,
-		MaxElapsedTime:      5 * time.Minute,
-	}
-}
 
 // TODO: Clean this by forcing all exporters to return an internal error type that always include the information about retries.
 type throttleRetry struct {
@@ -98,12 +46,12 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 type retrySender struct {
 	baseRequestSender
 	traceAttribute attribute.KeyValue
-	cfg            RetrySettings
+	cfg            configretry.BackOffConfig
 	stopCh         chan struct{}
 	logger         *zap.Logger
 }
 
-func newRetrySender(config RetrySettings, set exporter.CreateSettings) *retrySender {
+func newRetrySender(config configretry.BackOffConfig, set exporter.CreateSettings) *retrySender {
 	return &retrySender{
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		cfg:            config,
@@ -145,24 +93,18 @@ func (rs *retrySender) send(ctx context.Context, req Request) error {
 
 		// Immediately drop data on permanent errors.
 		if consumererror.IsPermanent(err) {
-			rs.logger.Error(
-				"Exporting failed. The error is not retryable. Dropping data.",
-				zap.Error(err),
-				zap.Int("dropped_items", req.ItemsCount()),
-			)
-			return err
+			return fmt.Errorf("not retryable error: %w", err)
 		}
 
 		req = extractPartialRequest(req, err)
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
-			return fmt.Errorf("max elapsed time expired %w", err)
+			return fmt.Errorf("no more retries left: %w", err)
 		}
 
 		throttleErr := throttleRetry{}
-		isThrottle := errors.As(err, &throttleErr)
-		if isThrottle {
+		if errors.As(err, &throttleErr) {
 			backoffDelay = max(backoffDelay, throttleErr.delay)
 		}
 
@@ -185,7 +127,7 @@ func (rs *retrySender) send(ctx context.Context, req Request) error {
 		case <-ctx.Done():
 			return fmt.Errorf("request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
-			return fmt.Errorf("interrupted due to shutdown %w", err)
+			return internal.NewShutdownErr(err)
 		case <-time.After(backoffDelay):
 		}
 	}

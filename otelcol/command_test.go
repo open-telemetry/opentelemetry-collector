@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -24,6 +25,26 @@ func TestNewCommandVersion(t *testing.T) {
 func TestNewCommandNoConfigURI(t *testing.T) {
 	cmd := NewCommand(CollectorSettings{Factories: nopFactories})
 	require.Error(t, cmd.Execute())
+}
+
+// This test emulates usage of Collector in Jaeger all-in-one, which
+// allows running the binary with no explicit configuration.
+func TestNewCommandProgrammaticallyPassedConfig(t *testing.T) {
+	cmd := NewCommand(CollectorSettings{Factories: nopFactories})
+	otelRunE := cmd.RunE
+	cmd.RunE = func(c *cobra.Command, args []string) error {
+		configFlag := c.Flag("config")
+		cfg := `
+service:
+  extensions: [invalid_component_name]
+receivers:
+  invalid_component_name:
+`
+		require.NoError(t, configFlag.Value.Set("yaml:"+cfg))
+		return otelRunE(cmd, args)
+	}
+	// verify that cmd.Execute was run with the implicitly provided config.
+	require.ErrorContains(t, cmd.Execute(), "invalid_component_name")
 }
 
 func TestNewCommandInvalidComponent(t *testing.T) {

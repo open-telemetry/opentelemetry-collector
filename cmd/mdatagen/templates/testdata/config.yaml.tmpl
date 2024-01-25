@@ -1,0 +1,31 @@
+default:
+all_set:
+  {{- if .Metrics }}
+  metrics:
+    {{- range $name, $_ := .Metrics }}
+    {{ $name }}:
+      enabled: true
+    {{- end }}
+  {{- end }}
+  {{- if .ResourceAttributes }}
+  resource_attributes:
+    {{- range $name, $_ := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: true
+    {{- end }}
+  {{- end }}
+none_set:
+  {{- if .Metrics }}
+  metrics:
+    {{- range $name, $_ := .Metrics }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+  {{- if .ResourceAttributes }}
+  resource_attributes:
+    {{- range $name, $_ := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}

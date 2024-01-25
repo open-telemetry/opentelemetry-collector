@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// Metrics is the new metrics consumer interface that receives pmetric.Metrics, processes it
+// Metrics is an interface that receives pmetric.Metrics, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type Metrics interface {
 	baseConsumer

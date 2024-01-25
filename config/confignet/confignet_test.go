@@ -4,18 +4,56 @@
 package confignet
 
 import (
+	"context"
+	"errors"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestNetAddrTimeout(t *testing.T) {
+	nac := &NetAddr{
+		Endpoint:  "localhost:0",
+		Transport: "tcp",
+		DialerConfig: DialerConfig{
+			Timeout: -1 * time.Second,
+		},
+	}
+	_, err := nac.Dial(context.Background())
+	assert.Error(t, err)
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		assert.True(t, netErr.Timeout())
+	} else {
+		assert.Fail(t, "error should be a net.Error")
+	}
+}
+
+func TestTCPAddrTimeout(t *testing.T) {
+	nac := &TCPAddr{
+		Endpoint: "localhost:0",
+		DialerConfig: DialerConfig{
+			Timeout: -1 * time.Second,
+		},
+	}
+	_, err := nac.Dial(context.Background())
+	assert.Error(t, err)
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		assert.True(t, netErr.Timeout())
+	} else {
+		assert.Fail(t, "error should be a net.Error")
+	}
+}
 
 func TestNetAddr(t *testing.T) {
 	nas := &NetAddr{
 		Endpoint:  "localhost:0",
 		Transport: "tcp",
 	}
-	ln, err := nas.Listen()
+	ln, err := nas.Listen(context.Background())
 	assert.NoError(t, err)
 	done := make(chan bool, 1)
 
@@ -36,7 +74,7 @@ func TestNetAddr(t *testing.T) {
 		Transport: "tcp",
 	}
 	var conn net.Conn
-	conn, err = nac.Dial()
+	conn, err = nac.Dial(context.Background())
 	assert.NoError(t, err)
 	_, err = conn.Write([]byte("test"))
 	assert.NoError(t, err)
@@ -45,11 +83,11 @@ func TestNetAddr(t *testing.T) {
 	assert.NoError(t, ln.Close())
 }
 
-func TestTcpAddr(t *testing.T) {
+func TestTCPAddr(t *testing.T) {
 	nas := &TCPAddr{
 		Endpoint: "localhost:0",
 	}
-	ln, err := nas.Listen()
+	ln, err := nas.Listen(context.Background())
 	assert.NoError(t, err)
 	done := make(chan bool, 1)
 
@@ -69,7 +107,7 @@ func TestTcpAddr(t *testing.T) {
 		Endpoint: ln.Addr().String(),
 	}
 	var conn net.Conn
-	conn, err = nac.Dial()
+	conn, err = nac.Dial(context.Background())
 	assert.NoError(t, err)
 	_, err = conn.Write([]byte("test"))
 	assert.NoError(t, err)

@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 )
@@ -35,20 +36,6 @@ func (b *baseRequestSender) send(ctx context.Context, req Request) error {
 
 func (b *baseRequestSender) setNextSender(nextSender requestSender) {
 	b.nextSender = nextSender
-}
-
-type errorLoggingRequestSender struct {
-	baseRequestSender
-	logger  *zap.Logger
-	message string
-}
-
-func (l *errorLoggingRequestSender) send(ctx context.Context, req Request) error {
-	err := l.baseRequestSender.send(ctx, req)
-	if err != nil {
-		l.logger.Error(l.message, zap.Int("dropped_items", req.ItemsCount()), zap.Error(err))
-	}
-	return err
 }
 
 type obsrepSenderFactory func(obsrep *ObsReport) requestSender
@@ -80,15 +67,12 @@ func WithTimeout(timeoutSettings TimeoutSettings) Option {
 	}
 }
 
-// WithRetry overrides the default RetrySettings for an exporter.
-// The default RetrySettings is to disable retries.
-func WithRetry(config RetrySettings) Option {
+// WithRetry overrides the default configretry.BackOffConfig for an exporter.
+// The default configretry.BackOffConfig is to disable retries.
+func WithRetry(config configretry.BackOffConfig) Option {
 	return func(o *baseExporter) {
 		if !config.Enabled {
-			o.retrySender = &errorLoggingRequestSender{
-				logger:  o.set.Logger,
-				message: "Exporting failed. Try enabling retry_on_failure config option to retry on retryable errors",
-			}
+			o.exportFailureMessage += " Try enabling retry_on_failure config option to retry on retryable errors."
 			return
 		}
 		o.retrySender = newRetrySender(config, o.set)
@@ -104,13 +88,14 @@ func WithQueue(config QueueSettings) Option {
 			panic("queueing is not available for the new request exporters yet")
 		}
 		if !config.Enabled {
-			o.queueSender = &errorLoggingRequestSender{
-				logger:  o.set.Logger,
-				message: "Exporting failed. Dropping data. Try enabling sending_queue to survive temporary failures.",
-			}
+			o.exportFailureMessage += " Try enabling sending_queue to survive temporary failures."
 			return
 		}
-		o.queueSender = newQueueSender(config, o.set, o.signal, o.marshaler, o.unmarshaler)
+		consumeErrHandler := func(err error, req Request) {
+			o.set.Logger.Error("Exporting failed. Dropping data."+o.exportFailureMessage,
+				zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
+		}
+		o.queueSender = newQueueSender(config, o.set, o.signal, o.marshaler, o.unmarshaler, consumeErrHandler)
 	}
 }
 
@@ -135,6 +120,9 @@ type baseExporter struct {
 
 	set    exporter.CreateSettings
 	obsrep *ObsReport
+
+	// Message for the user to be added with an export failure message.
+	exportFailureMessage string
 
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
@@ -176,21 +164,17 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, req
 	}
 	be.connectSenders()
 
-	// If retry sender is disabled then disable requeuing in the queue sender.
-	// TODO: Make re-enqueuing configurable on queue sender instead of relying on retry sender.
-	if qs, ok := be.queueSender.(*queueSender); ok {
-		// if it's not retrySender, then it is disabled.
-		if _, ok = be.retrySender.(*retrySender); !ok {
-			qs.requeuingEnabled = false
-		}
-	}
-
 	return be, nil
 }
 
 // send sends the request using the first sender in the chain.
 func (be *baseExporter) send(ctx context.Context, req Request) error {
-	return be.queueSender.send(ctx, req)
+	err := be.queueSender.send(ctx, req)
+	if err != nil {
+		be.set.Logger.Error("Exporting failed. Rejecting data."+be.exportFailureMessage,
+			zap.Error(err), zap.Int("rejected_items", req.ItemsCount()))
+	}
+	return err
 }
 
 // connectSenders connects the senders in the predefined order.
@@ -212,7 +196,7 @@ func (be *baseExporter) Start(ctx context.Context, host component.Host) error {
 
 func (be *baseExporter) Shutdown(ctx context.Context) error {
 	return multierr.Combine(
-		// First shutdown the retry sender, so it can push any pending requests to back the queue.
+		// First shutdown the retry sender, so the queue sender can flush the queue without retries.
 		be.retrySender.Shutdown(ctx),
 		// Then shutdown the queue sender.
 		be.queueSender.Shutdown(ctx),

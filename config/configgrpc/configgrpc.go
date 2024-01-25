@@ -268,9 +268,15 @@ func validateBalancerName(balancerName string) bool {
 	return balancer.Get(balancerName) != nil
 }
 
+// ToListenerContext returns the net.Listener constructed from the settings.
+func (gss *GRPCServerSettings) ToListenerContext(ctx context.Context) (net.Listener, error) {
+	return gss.NetAddr.Listen(ctx)
+}
+
 // ToListener returns the net.Listener constructed from the settings.
+// Deprecated: [v0.94.0] use ToListenerContext instead.
 func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
-	return gss.NetAddr.Listen()
+	return gss.ToListenerContext(context.Background())
 }
 
 func (gss *GRPCServerSettings) ToServer(host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {

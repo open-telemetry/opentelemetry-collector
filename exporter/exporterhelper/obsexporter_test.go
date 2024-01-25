@@ -14,11 +14,9 @@ import (
 	"go.opentelemetry.io/otel/codes"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 var (
@@ -28,14 +26,14 @@ var (
 )
 
 func TestExportTraceDataOp(t *testing.T) {
-	testTelemetry(t, exporterID, func(t *testing.T, tt obsreporttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	testTelemetry(t, exporterID, func(t *testing.T, tt componenttest.TestTelemetry) {
+		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
-			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
-		}, useOtel)
+			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		})
 		require.NoError(t, err)
 
 		params := []testParams{
@@ -76,14 +74,14 @@ func TestExportTraceDataOp(t *testing.T) {
 }
 
 func TestExportMetricsOp(t *testing.T) {
-	testTelemetry(t, exporterID, func(t *testing.T, tt obsreporttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	testTelemetry(t, exporterID, func(t *testing.T, tt componenttest.TestTelemetry) {
+		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
-			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
-		}, useOtel)
+			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		})
 		require.NoError(t, err)
 
 		params := []testParams{
@@ -125,14 +123,14 @@ func TestExportMetricsOp(t *testing.T) {
 }
 
 func TestExportLogsOp(t *testing.T) {
-	testTelemetry(t, exporterID, func(t *testing.T, tt obsreporttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	testTelemetry(t, exporterID, func(t *testing.T, tt componenttest.TestTelemetry) {
+		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		obsrep, err := newExporter(ObsReportSettings{
 			ExporterID:             exporterID,
-			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
-		}, useOtel)
+			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		})
 		require.NoError(t, err)
 
 		params := []testParams{
@@ -173,30 +171,77 @@ func TestExportLogsOp(t *testing.T) {
 	})
 }
 
+func TestCheckExporterTracesViews(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(exporterID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	obsrep, err := NewObsReport(ObsReportSettings{
+		ExporterID:             exporterID,
+		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+	ctx := obsrep.StartTracesOp(context.Background())
+	require.NotNil(t, ctx)
+	obsrep.EndTracesOp(ctx, 7, nil)
+
+	assert.NoError(t, tt.CheckExporterTraces(7, 0))
+	assert.Error(t, tt.CheckExporterTraces(7, 7))
+	assert.Error(t, tt.CheckExporterTraces(0, 0))
+	assert.Error(t, tt.CheckExporterTraces(0, 7))
+}
+
+func TestCheckExporterMetricsViews(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(exporterID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	obsrep, err := NewObsReport(ObsReportSettings{
+		ExporterID:             exporterID,
+		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+	ctx := obsrep.StartMetricsOp(context.Background())
+	require.NotNil(t, ctx)
+	obsrep.EndMetricsOp(ctx, 7, nil)
+
+	assert.NoError(t, tt.CheckExporterMetrics(7, 0))
+	assert.Error(t, tt.CheckExporterMetrics(7, 7))
+	assert.Error(t, tt.CheckExporterMetrics(0, 0))
+	assert.Error(t, tt.CheckExporterMetrics(0, 7))
+}
+
+func TestCheckExporterLogsViews(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(exporterID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	obsrep, err := NewObsReport(ObsReportSettings{
+		ExporterID:             exporterID,
+		ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+	ctx := obsrep.StartLogsOp(context.Background())
+	require.NotNil(t, ctx)
+	obsrep.EndLogsOp(ctx, 7, nil)
+
+	assert.NoError(t, tt.CheckExporterLogs(7, 0))
+	assert.Error(t, tt.CheckExporterLogs(7, 7))
+	assert.Error(t, tt.CheckExporterLogs(0, 0))
+	assert.Error(t, tt.CheckExporterLogs(0, 7))
+}
+
 type testParams struct {
 	items int
 	err   error
 }
 
-func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt obsreporttest.TestTelemetry, useOtel bool)) {
-	t.Run("WithOC", func(t *testing.T) {
-		originalValue := obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled()
-		require.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelForInternalMetricsfeatureGate.ID(), false))
-		defer func() {
-			require.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelForInternalMetricsfeatureGate.ID(), originalValue))
-		}()
-		tt, err := obsreporttest.SetupTelemetry(id)
-		require.NoError(t, err)
-		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-		testFunc(t, tt, false)
-	})
-
+func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry)) {
 	t.Run("WithOTel", func(t *testing.T) {
-		tt, err := obsreporttest.SetupTelemetry(id)
+		tt, err := componenttest.SetupTelemetry(id)
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-		testFunc(t, tt, true)
+		testFunc(t, tt)
 	})
 }
