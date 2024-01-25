@@ -398,7 +398,7 @@ func responseHeadersHandler(handler http.Handler, headers map[string]configopaqu
 // CORSSettings configures a receiver for HTTP cross-origin resource sharing (CORS).
 // See the underlying https://github.com/rs/cors package for details.
 // Deprecated: [v0.94.0] Use CORSConfig instead
-type CORSSettings CORSConfig
+type CORSSettings = CORSConfig
 
 // CORSConfig configures a receiver for HTTP cross-origin resource sharing (CORS).
 // See the underlying https://github.com/rs/cors package for details.
