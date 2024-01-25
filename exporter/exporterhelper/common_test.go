@@ -51,7 +51,7 @@ func TestBaseExporterWithOptions(t *testing.T) {
 		defaultSettings, "", false, nil, nil, newNoopObsrepSender,
 		WithStart(func(ctx context.Context, host component.Host) error { return want }),
 		WithShutdown(func(ctx context.Context) error { return want }),
-		WithTimeout(NewDefaultTimeoutConfig()),
+		WithTimeoutConfig(NewDefaultTimeoutConfig()),
 	)
 	require.NoError(t, err)
 	require.Equal(t, want, be.Start(context.Background(), componenttest.NewNopHost()))

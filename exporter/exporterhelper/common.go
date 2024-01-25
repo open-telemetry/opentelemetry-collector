@@ -61,9 +61,18 @@ func WithShutdown(shutdown component.ShutdownFunc) Option {
 
 // WithTimeout overrides the default TimeoutConfig for an exporter.
 // The default TimeoutConfig is 5 seconds.
-func WithTimeout(timeoutSettings TimeoutConfig) Option {
+func WithTimeoutConfig(timeoutConfig TimeoutConfig) Option {
 	return func(o *baseExporter) {
-		o.timeoutSender.cfg = timeoutSettings
+		o.timeoutSender.cfg = timeoutConfig
+	}
+}
+
+// WithTimeout overrides the default TimeoutConfig for an exporter.
+// The default TimeoutConfig is 5 seconds.
+// Deprecated: [v0.94.0] Use WithTimeoutConfig instead
+func WithTimeout(timeoutSettings TimeoutSettings) Option {
+	return func(o *baseExporter) {
+		o.timeoutSender.cfg = TimeoutConfig(timeoutSettings)
 	}
 }
 
