@@ -4,7 +4,9 @@
 package component // import "go.opentelemetry.io/collector/component"
 
 import (
+	"fmt"
 	"reflect"
+	"regexp"
 
 	"go.uber.org/multierr"
 
@@ -109,6 +111,46 @@ func callValidateIfPossible(v reflect.Value) error {
 
 // Type is the component type as it is used in the config.
 type Type string
+
+var _ fmt.Stringer = (Type)("")
+
+// String returns the string representation of the type.
+func (t Type) String() string {
+	return string(t)
+}
+
+// typeRegexp is used to validate the type of a component.
+// A type must start with an ASCII alphabetic character and
+// can only contain ASCII alphanumeric characters and '_'.
+var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]*$`)
+
+// newType creates a type. It returns an error if the type is invalid.
+// A type must
+// - have at least one character,
+// - start with an ASCII alphabetic character and
+// - can only contain ASCII alphanumeric characters, '-' and '_'.
+func newType(ty string) (Type, error) {
+	if len(ty) == 0 {
+		return Type(""), fmt.Errorf("id must not be empty")
+	}
+	if !typeRegexp.MatchString(ty) {
+		return Type(""), fmt.Errorf("invalid character(s) in type")
+	}
+	return Type(ty), nil
+}
+
+// MustType creates a type. It panics if the type is invalid.
+// A type must
+// - have at least one character,
+// - start with an ASCII alphabetic character and
+// - can only contain ASCII alphanumeric characters, '-' and '_'.
+func MustType(strType string) Type {
+	ty, err := newType(strType)
+	if err != nil {
+		panic(err)
+	}
+	return ty
+}
 
 // DataType is a special Type that represents the data types supported by the collector. We currently support
 // collecting metrics, traces and logs, this can expand in the future.

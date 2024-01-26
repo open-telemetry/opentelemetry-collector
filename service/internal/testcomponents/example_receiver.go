@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-const receiverType = component.Type("examplereceiver")
+var receiverType = component.MustType("examplereceiver")
 
 // ExampleReceiverFactory is factory for ExampleReceiver.
 var ExampleReceiverFactory = receiver.NewFactory(

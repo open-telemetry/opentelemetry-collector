@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 )
 
-const procType = "exampleprocessor"
+var procType = component.MustType("exampleprocessor")
 
 // ExampleProcessorFactory is factory for ExampleProcessor.
 var ExampleProcessorFactory = processor.NewFactory(

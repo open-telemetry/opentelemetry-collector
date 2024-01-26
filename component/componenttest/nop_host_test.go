@@ -21,5 +21,5 @@ func TestNewNopHost(t *testing.T) {
 	nh.ReportFatalError(errors.New("TestError"))
 	assert.Nil(t, nh.GetExporters()) // nolint: staticcheck
 	assert.Nil(t, nh.GetExtensions())
-	assert.Nil(t, nh.GetFactory(component.KindReceiver, "test"))
+	assert.Nil(t, nh.GetFactory(component.KindReceiver, component.MustType("test")))
 }

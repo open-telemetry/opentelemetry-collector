@@ -134,7 +134,7 @@ func TestScrapeController(t *testing.T) {
 	for _, test := range testCases {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			receiverID := component.NewID("receiver")
+			receiverID := component.NewID(component.MustType("receiver"))
 			tt, err := componenttest.SetupTelemetry(receiverID)
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -326,7 +326,7 @@ func assertScraperViews(t *testing.T, tt componenttest.TestTelemetry, expectedEr
 		}
 	}
 
-	require.NoError(t, tt.CheckScraperMetrics(component.NewID("receiver"), component.NewID("scraper"), expectedScraped, expectedErrored))
+	require.NoError(t, tt.CheckScraperMetrics(component.NewID(component.MustType("receiver")), component.NewID(component.MustType("scraper")), expectedScraped, expectedErrored))
 }
 
 func TestSingleScrapePerInterval(t *testing.T) {
@@ -337,7 +337,7 @@ func TestSingleScrapePerInterval(t *testing.T) {
 
 	tickerCh := make(chan time.Time)
 
-	scp, err := NewScraper("", tsm.scrape)
+	scp, err := NewScraper("scaper", tsm.scrape)
 	assert.NoError(t, err)
 
 	receiver, err := NewScraperControllerReceiver(
@@ -379,7 +379,7 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 		ch: make(chan int, 1),
 	}
 
-	scp, err := NewScraper("", tsm.scrape)
+	scp, err := NewScraper("scraper", tsm.scrape)
 	require.NoError(t, err, "Must not error when creating scraper")
 
 	r, err := NewScraperControllerReceiver(

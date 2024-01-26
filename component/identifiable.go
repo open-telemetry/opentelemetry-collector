@@ -51,25 +51,32 @@ func (id ID) MarshalText() (text []byte, err error) {
 func (id *ID) UnmarshalText(text []byte) error {
 	idStr := string(text)
 	items := strings.SplitN(idStr, typeAndNameSeparator, 2)
+	var typeStr, nameStr string
 	if len(items) >= 1 {
-		id.typeVal = Type(strings.TrimSpace(items[0]))
+		typeStr = strings.TrimSpace(items[0])
 	}
 
-	if len(items) == 1 && id.typeVal == "" {
+	if len(items) == 1 && typeStr == "" {
 		return errors.New("id must not be empty")
 	}
 
-	if id.typeVal == "" {
+	if typeStr == "" {
 		return fmt.Errorf("in %q id: the part before %s should not be empty", idStr, typeAndNameSeparator)
 	}
 
 	if len(items) > 1 {
 		// "name" part is present.
-		id.nameVal = strings.TrimSpace(items[1])
-		if id.nameVal == "" {
+		nameStr = strings.TrimSpace(items[1])
+		if nameStr == "" {
 			return fmt.Errorf("in %q id: the part after %s should not be empty", idStr, typeAndNameSeparator)
 		}
 	}
+
+	var err error
+	if id.typeVal, err = newType(typeStr); err != nil {
+		return fmt.Errorf("in %q id: %w", idStr, err)
+	}
+	id.nameVal = nameStr
 
 	return nil
 }
@@ -77,8 +84,8 @@ func (id *ID) UnmarshalText(text []byte) error {
 // String returns the ID string representation as "type[/name]" format.
 func (id ID) String() string {
 	if id.nameVal == "" {
-		return string(id.typeVal)
+		return id.typeVal.String()
 	}
 
-	return string(id.typeVal) + typeAndNameSeparator + id.nameVal
+	return id.typeVal.String() + typeAndNameSeparator + id.nameVal
 }

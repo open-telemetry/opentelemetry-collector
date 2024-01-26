@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-const connType = "exampleconnector"
+var connType = component.MustType("exampleconnector")
 
 // ExampleConnectorFactory is factory for ExampleConnector.
 var ExampleConnectorFactory = connector.NewFactory(
@@ -36,7 +36,7 @@ var ExampleConnectorFactory = connector.NewFactory(
 )
 
 var MockForwardConnectorFactory = connector.NewFactory(
-	"mockforward",
+	component.MustType("mockforward"),
 	createExampleConnectorDefaultConfig,
 	connector.WithTracesToTraces(createExampleTracesToTraces, component.StabilityLevelDevelopment),
 	connector.WithMetricsToMetrics(createExampleMetricsToMetrics, component.StabilityLevelDevelopment),

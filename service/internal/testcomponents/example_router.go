@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-const routerType = "examplerouter"
+var routerType = component.MustType("examplerouter")
 
 // ExampleRouterFactory is factory for ExampleRouter.
 var ExampleRouterFactory = connector.NewFactory(
