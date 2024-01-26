@@ -746,7 +746,7 @@ func TestHttpCors(t *testing.T) {
 	tests := []struct {
 		name string
 
-		*CORSSettings
+		*CORSConfig
 
 		allowedWorks     bool
 		disallowedWorks  bool
@@ -760,14 +760,14 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name:             "emptyCORS",
-			CORSSettings:     &CORSSettings{},
+			CORSConfig:       &CORSConfig{},
 			allowedWorks:     false,
 			disallowedWorks:  false,
 			extraHeaderWorks: false,
 		},
 		{
 			name: "OriginCORS",
-			CORSSettings: &CORSSettings{
+			CORSConfig: &CORSConfig{
 				AllowedOrigins: []string{"allowed-*.com"},
 			},
 			allowedWorks:     true,
@@ -776,7 +776,7 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name: "CacheableCORS",
-			CORSSettings: &CORSSettings{
+			CORSConfig: &CORSConfig{
 				AllowedOrigins: []string{"allowed-*.com"},
 				MaxAge:         360,
 			},
@@ -786,7 +786,7 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name: "HeaderCORS",
-			CORSSettings: &CORSSettings{
+			CORSConfig: &CORSConfig{
 				AllowedOrigins: []string{"allowed-*.com"},
 				AllowedHeaders: []string{"ExtraHeader"},
 			},
@@ -800,7 +800,7 @@ func TestHttpCors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			hss := &HTTPServerSettings{
 				Endpoint: "localhost:0",
-				CORS:     tt.CORSSettings,
+				CORS:     tt.CORSConfig,
 			}
 
 			ln, err := hss.ToListener()
@@ -821,18 +821,18 @@ func TestHttpCors(t *testing.T) {
 			url := fmt.Sprintf("http://%s", ln.Addr().String())
 
 			expectedStatus := http.StatusNoContent
-			if tt.CORSSettings == nil || len(tt.AllowedOrigins) == 0 {
+			if tt.CORSConfig == nil || len(tt.AllowedOrigins) == 0 {
 				expectedStatus = http.StatusOK
 			}
 
 			// Verify allowed domain gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", tt.CORSSettings, false, expectedStatus, tt.allowedWorks)
+			verifyCorsResp(t, url, "allowed-origin.com", tt.CORSConfig, false, expectedStatus, tt.allowedWorks)
 
 			// Verify allowed domain and extra headers gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", tt.CORSSettings, true, expectedStatus, tt.extraHeaderWorks)
+			verifyCorsResp(t, url, "allowed-origin.com", tt.CORSConfig, true, expectedStatus, tt.extraHeaderWorks)
 
 			// Verify disallowed domain gets responses that disallow CORS.
-			verifyCorsResp(t, url, "disallowed-origin.com", tt.CORSSettings, false, expectedStatus, tt.disallowedWorks)
+			verifyCorsResp(t, url, "disallowed-origin.com", tt.CORSConfig, false, expectedStatus, tt.disallowedWorks)
 
 			require.NoError(t, s.Close())
 		})
@@ -842,7 +842,7 @@ func TestHttpCors(t *testing.T) {
 func TestHttpCorsInvalidSettings(t *testing.T) {
 	hss := &HTTPServerSettings{
 		Endpoint: "localhost:0",
-		CORS:     &CORSSettings{AllowedHeaders: []string{"some-header"}},
+		CORS:     &CORSConfig{AllowedHeaders: []string{"some-header"}},
 	}
 
 	// This effectively does not enable CORS but should also not cause an error
@@ -858,7 +858,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 func TestHttpCorsWithSettings(t *testing.T) {
 	hss := &HTTPServerSettings{
 		Endpoint: "localhost:0",
-		CORS: &CORSSettings{
+		CORS: &CORSConfig{
 			AllowedOrigins: []string{"*"},
 		},
 		Auth: &configauth.Authentication{
@@ -944,7 +944,7 @@ func TestHttpServerHeaders(t *testing.T) {
 	}
 }
 
-func verifyCorsResp(t *testing.T, url string, origin string, set *CORSSettings, extraHeader bool, wantStatus int, wantAllowed bool) {
+func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest(http.MethodOptions, url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
