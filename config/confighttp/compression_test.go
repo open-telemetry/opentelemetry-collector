@@ -95,7 +95,7 @@ func TestHTTPClientCompression(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, srv.URL, reqBody)
 			require.NoError(t, err, "failed to create request to test handler")
 
-			clientSettings := HTTPClientSettings{
+			clientSettings := HTTPClientConfig{
 				Endpoint:    srv.URL,
 				Compression: tt.encoding,
 			}
