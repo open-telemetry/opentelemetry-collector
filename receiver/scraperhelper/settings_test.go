@@ -17,22 +17,22 @@ func TestScrapeControllerSettings(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		set    ScraperControllerSettings
+		set    ScraperControllerConfig
 		errVal string
 	}{
 		{
 			name:   "default configuration",
-			set:    NewDefaultScraperControllerSettings(component.MustNewType("test")),
+			set:    NewDefaultScraperControllerConfig(component.MustNewType("test")),
 			errVal: "",
 		},
 		{
 			name:   "zero value configuration",
-			set:    ScraperControllerSettings{},
+			set:    ScraperControllerConfig{},
 			errVal: `"collection_interval": requires positive value`,
 		},
 		{
 			name: "invalid timeout",
-			set: ScraperControllerSettings{
+			set: ScraperControllerConfig{
 				CollectionInterval: time.Minute,
 				Timeout:            -1 * time.Minute,
 			},

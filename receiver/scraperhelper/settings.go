@@ -20,7 +20,13 @@ var (
 // ScraperControllerSettings defines common settings for a scraper controller
 // configuration. Scraper controller receivers can embed this struct, instead
 // of receiver.Settings, and extend it with more fields if needed.
-type ScraperControllerSettings struct {
+// Deprecated: [v0.94.0] Use ScraperControllerConfig instead
+type ScraperControllerSettings = ScraperControllerConfig
+
+// ScraperControllerConfig defines common settings for a scraper controller
+// configuration. Scraper controller receivers can embed this struct, instead
+// of receiver.Settings, and extend it with more fields if needed.
+type ScraperControllerConfig struct {
 	// CollectionInterval sets the how frequently the scraper
 	// should be called and used as the context timeout
 	// to ensure that scrapers don't exceed the interval.
@@ -34,15 +40,26 @@ type ScraperControllerSettings struct {
 
 // NewDefaultScraperControllerSettings returns default scraper controller
 // settings with a collection interval of one minute.
-func NewDefaultScraperControllerSettings(component.Type) ScraperControllerSettings {
-	return ScraperControllerSettings{
+// Deprecated: [v0.94.0] Use NewDefaultScraperControllerSettings instead
+func NewDefaultScraperControllerSettings(component.Type) ScraperControllerConfig {
+	return ScraperControllerConfig{
 		CollectionInterval: time.Minute,
 		InitialDelay:       time.Second,
 		Timeout:            0,
 	}
 }
 
-func (set *ScraperControllerSettings) Validate() (errs error) {
+// NewDefaultScraperControllerConfig returns default scraper controller
+// settings with a collection interval of one minute.
+func NewDefaultScraperControllerConfig(component.Type) ScraperControllerConfig {
+	return ScraperControllerConfig{
+		CollectionInterval: time.Minute,
+		InitialDelay:       time.Second,
+		Timeout:            0,
+	}
+}
+
+func (set *ScraperControllerConfig) Validate() (errs error) {
 	if set.CollectionInterval <= 0 {
 		errs = multierr.Append(errs, fmt.Errorf(`"collection_interval": %w`, errNonPositiveInterval))
 	}
