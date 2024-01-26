@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/statushelper"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -93,14 +94,20 @@ func NewTracesExporter(
 		return nil, err
 	}
 
-	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
+	consumeFunc := func(ctx context.Context, td ptrace.Traces) error {
 		req := newTracesRequest(td, pusher)
 		serr := be.send(ctx, req)
 		if errors.Is(serr, internal.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeTraces, int64(req.ItemsCount()))
 		}
 		return serr
-	}, be.consumerOptions...)
+	}
+
+	if be.reportStatus {
+		consumeFunc = statushelper.WrapConsumeTraces(consumeFunc, set.TelemetrySettings)
+	}
+
+	tc, err := consumer.NewTraces(consumeFunc, be.consumerOptions...)
 
 	return &traceExporter{
 		baseExporter: be,
@@ -135,7 +142,7 @@ func NewTracesRequestExporter(
 		return nil, err
 	}
 
-	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
+	consumeFunc := func(ctx context.Context, td ptrace.Traces) error {
 		req, cErr := converter(ctx, td)
 		if cErr != nil {
 			set.Logger.Error("Failed to convert traces. Dropping data.",
@@ -148,7 +155,13 @@ func NewTracesRequestExporter(
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeTraces, int64(req.ItemsCount()))
 		}
 		return sErr
-	}, be.consumerOptions...)
+	}
+
+	if be.reportStatus {
+		consumeFunc = statushelper.WrapConsumeTraces(consumeFunc, set.TelemetrySettings)
+	}
+
+	tc, err := consumer.NewTraces(consumeFunc, be.consumerOptions...)
 
 	return &traceExporter{
 		baseExporter: be,

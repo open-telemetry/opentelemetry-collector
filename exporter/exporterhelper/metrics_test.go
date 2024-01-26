@@ -365,6 +365,125 @@ func TestMetricsRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.Equal(t, want, me.Shutdown(context.Background()))
 }
 
+func TestMetricsExporter_WithStatusReporting(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		reportStatus  bool
+		expectedEvent *component.StatusEvent
+		consumeErr    error
+	}{
+		{
+			name:          "Report status enabled / no error",
+			reportStatus:  true,
+			expectedEvent: component.NewStatusEvent(component.StatusOK),
+		},
+		{
+			name:          "Report status enabled / with error",
+			reportStatus:  true,
+			expectedEvent: component.NewRecoverableErrorEvent(assert.AnError),
+			consumeErr:    assert.AnError,
+		},
+		{
+			name:         "Report status disabled / no error",
+			reportStatus: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			md := pmetric.NewMetrics()
+			createSettings := exportertest.NewNopCreateSettings()
+
+			var lastEvent *component.StatusEvent
+			createSettings.TelemetrySettings.ReportStatus = func(ev *component.StatusEvent) {
+				lastEvent = ev
+			}
+
+			var opts []Option
+			if tc.reportStatus {
+				opts = append(opts, WithStatusReporting())
+			}
+
+			me, err := NewMetricsExporter(
+				context.Background(),
+				createSettings,
+				fakeRequestConverter{},
+				newPushMetricsData(tc.consumeErr),
+				opts...,
+			)
+			assert.NotNil(t, me)
+			assert.NoError(t, err)
+
+			assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
+			assert.Nil(t, lastEvent)
+			assert.Equal(t, tc.consumeErr, me.ConsumeMetrics(context.Background(), md))
+			assert.Equal(t, tc.expectedEvent == nil, lastEvent == nil)
+
+			if tc.expectedEvent != nil {
+				assert.Equal(t, tc.expectedEvent.Status(), lastEvent.Status())
+				assert.Equal(t, tc.expectedEvent.Err(), lastEvent.Err())
+			}
+		})
+	}
+}
+
+func TestMetricsRequestExporter_WithStatusReporting(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		reportStatus  bool
+		expectedEvent *component.StatusEvent
+		consumeErr    error
+	}{
+		{
+			name:          "Report status enabled / no error",
+			reportStatus:  true,
+			expectedEvent: component.NewStatusEvent(component.StatusOK),
+		},
+		{
+			name:          "Report status enabled / with error",
+			reportStatus:  true,
+			expectedEvent: component.NewRecoverableErrorEvent(assert.AnError),
+			consumeErr:    assert.AnError,
+		},
+		{
+			name:         "Report status disabled / no error",
+			reportStatus: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			md := pmetric.NewMetrics()
+			createSettings := exportertest.NewNopCreateSettings()
+
+			var lastEvent *component.StatusEvent
+			createSettings.TelemetrySettings.ReportStatus = func(ev *component.StatusEvent) {
+				lastEvent = ev
+			}
+
+			var opts []Option
+			if tc.reportStatus {
+				opts = append(opts, WithStatusReporting())
+			}
+
+			me, err := NewMetricsRequestExporter(
+				context.Background(),
+				createSettings,
+				(&fakeRequestConverter{requestError: tc.consumeErr}).requestFromMetricsFunc,
+				opts...,
+			)
+			assert.NotNil(t, me)
+			assert.NoError(t, err)
+
+			assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
+			assert.Nil(t, lastEvent)
+			assert.Equal(t, tc.consumeErr, me.ConsumeMetrics(context.Background(), md))
+			assert.Equal(t, tc.expectedEvent == nil, lastEvent == nil)
+
+			if tc.expectedEvent != nil {
+				assert.Equal(t, tc.expectedEvent.Status(), lastEvent.Status())
+				assert.Equal(t, tc.expectedEvent.Err(), lastEvent.Err())
+			}
+		})
+	}
+}
+
 func newPushMetricsData(retError error) consumer.ConsumeMetricsFunc {
 	return func(ctx context.Context, td pmetric.Metrics) error {
 		return retError

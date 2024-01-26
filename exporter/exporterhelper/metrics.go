@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/statushelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -93,14 +94,20 @@ func NewMetricsExporter(
 		return nil, err
 	}
 
-	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
+	consumeFunc := func(ctx context.Context, md pmetric.Metrics) error {
 		req := newMetricsRequest(md, pusher)
 		serr := be.send(ctx, req)
 		if errors.Is(serr, internal.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
 		}
 		return serr
-	}, be.consumerOptions...)
+	}
+
+	if be.reportStatus {
+		consumeFunc = statushelper.WrapConsumeMetrics(consumeFunc, set.TelemetrySettings)
+	}
+
+	mc, err := consumer.NewMetrics(consumeFunc, be.consumerOptions...)
 
 	return &metricsExporter{
 		baseExporter: be,
@@ -135,7 +142,7 @@ func NewMetricsRequestExporter(
 		return nil, err
 	}
 
-	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
+	consumeFunc := func(ctx context.Context, md pmetric.Metrics) error {
 		req, cErr := converter(ctx, md)
 		if cErr != nil {
 			set.Logger.Error("Failed to convert metrics. Dropping data.",
@@ -148,7 +155,13 @@ func NewMetricsRequestExporter(
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
 		}
 		return sErr
-	}, be.consumerOptions...)
+	}
+
+	if be.reportStatus {
+		consumeFunc = statushelper.WrapConsumeMetrics(consumeFunc, set.TelemetrySettings)
+	}
+
+	mc, err := consumer.NewMetrics(consumeFunc, be.consumerOptions...)
 
 	return &metricsExporter{
 		baseExporter: be,

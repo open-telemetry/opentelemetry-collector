@@ -366,6 +366,125 @@ func TestTracesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.Equal(t, te.Shutdown(context.Background()), want)
 }
 
+func TestTracesExporter_WithStatusReporting(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		reportStatus  bool
+		expectedEvent *component.StatusEvent
+		consumeErr    error
+	}{
+		{
+			name:          "Report status enabled / no error",
+			reportStatus:  true,
+			expectedEvent: component.NewStatusEvent(component.StatusOK),
+		},
+		{
+			name:          "Report status enabled / with error",
+			reportStatus:  true,
+			expectedEvent: component.NewRecoverableErrorEvent(assert.AnError),
+			consumeErr:    assert.AnError,
+		},
+		{
+			name:         "Report status disabled / no error",
+			reportStatus: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			td := ptrace.NewTraces()
+			createSettings := exportertest.NewNopCreateSettings()
+
+			var lastEvent *component.StatusEvent
+			createSettings.TelemetrySettings.ReportStatus = func(ev *component.StatusEvent) {
+				lastEvent = ev
+			}
+
+			var opts []Option
+			if tc.reportStatus {
+				opts = append(opts, WithStatusReporting())
+			}
+
+			te, err := NewTracesExporter(
+				context.Background(),
+				createSettings,
+				fakeRequestConverter{},
+				newTraceDataPusher(tc.consumeErr),
+				opts...,
+			)
+			assert.NotNil(t, te)
+			assert.NoError(t, err)
+
+			assert.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
+			assert.Nil(t, lastEvent)
+			assert.Equal(t, tc.consumeErr, te.ConsumeTraces(context.Background(), td))
+			assert.Equal(t, tc.expectedEvent == nil, lastEvent == nil)
+
+			if tc.expectedEvent != nil {
+				assert.Equal(t, tc.expectedEvent.Status(), lastEvent.Status())
+				assert.Equal(t, tc.expectedEvent.Err(), lastEvent.Err())
+			}
+		})
+	}
+}
+
+func TestTracesRequestExporter_WithStatusReporting(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		reportStatus  bool
+		expectedEvent *component.StatusEvent
+		consumeErr    error
+	}{
+		{
+			name:          "Report status enabled / no error",
+			reportStatus:  true,
+			expectedEvent: component.NewStatusEvent(component.StatusOK),
+		},
+		{
+			name:          "Report status enabled / with error",
+			reportStatus:  true,
+			expectedEvent: component.NewRecoverableErrorEvent(assert.AnError),
+			consumeErr:    assert.AnError,
+		},
+		{
+			name:         "Report status enabled / no error",
+			reportStatus: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			td := ptrace.NewTraces()
+			createSettings := exportertest.NewNopCreateSettings()
+
+			var lastEvent *component.StatusEvent
+			createSettings.TelemetrySettings.ReportStatus = func(ev *component.StatusEvent) {
+				lastEvent = ev
+			}
+
+			var opts []Option
+			if tc.reportStatus {
+				opts = append(opts, WithStatusReporting())
+			}
+
+			te, err := NewTracesRequestExporter(
+				context.Background(),
+				createSettings,
+				(&fakeRequestConverter{requestError: tc.consumeErr}).requestFromTracesFunc,
+				opts...,
+			)
+			assert.NotNil(t, te)
+			assert.NoError(t, err)
+
+			assert.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
+			assert.Nil(t, lastEvent)
+			assert.Equal(t, tc.consumeErr, te.ConsumeTraces(context.Background(), td))
+			assert.Equal(t, tc.expectedEvent == nil, lastEvent == nil)
+
+			if tc.expectedEvent != nil {
+				assert.Equal(t, tc.expectedEvent.Status(), lastEvent.Status())
+				assert.Equal(t, tc.expectedEvent.Err(), lastEvent.Err())
+			}
+		})
+	}
+}
+
 func newTraceDataPusher(retError error) consumer.ConsumeTracesFunc {
 	return func(ctx context.Context, td ptrace.Traces) error {
 		return retError

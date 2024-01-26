@@ -60,7 +60,9 @@ func createTracesExporter(
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
-		exporterhelper.WithShutdown(oce.shutdown))
+		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithStatusReporting(),
+	)
 }
 
 func createMetricsExporter(
@@ -81,6 +83,7 @@ func createMetricsExporter(
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithStatusReporting(),
 	)
 }
 
@@ -102,5 +105,6 @@ func createLogsExporter(
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithStatusReporting(),
 	)
 }
