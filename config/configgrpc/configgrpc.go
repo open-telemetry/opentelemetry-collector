@@ -48,7 +48,11 @@ type KeepaliveClientConfig struct {
 }
 
 // GRPCClientSettings defines common settings for a gRPC client configuration.
-type GRPCClientSettings struct {
+// Deprecated: [v0.94.0] Use GRPCClientConfig instead
+type GRPCClientSettings = GRPCClientConfig
+
+// GRPCClientConfig defines common settings for a gRPC client configuration.
+type GRPCClientConfig struct {
 	// The target to which the exporter is going to send traces or metrics,
 	// using the gRPC protocol. The valid syntax is described at
 	// https://github.com/grpc/grpc/blob/master/doc/naming.md.
@@ -151,8 +155,8 @@ type GRPCServerSettings struct {
 	IncludeMetadata bool `mapstructure:"include_metadata"`
 }
 
-// SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.GRPCClientSettings.Endpoint.
-func (gcs *GRPCClientSettings) SanitizedEndpoint() string {
+// SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.GRPCClientConfig.Endpoint.
+func (gcs *GRPCClientConfig) SanitizedEndpoint() string {
 	switch {
 	case gcs.isSchemeHTTP():
 		return strings.TrimPrefix(gcs.Endpoint, "http://")
@@ -163,11 +167,11 @@ func (gcs *GRPCClientSettings) SanitizedEndpoint() string {
 	}
 }
 
-func (gcs *GRPCClientSettings) isSchemeHTTP() bool {
+func (gcs *GRPCClientConfig) isSchemeHTTP() bool {
 	return strings.HasPrefix(gcs.Endpoint, "http://")
 }
 
-func (gcs *GRPCClientSettings) isSchemeHTTPS() bool {
+func (gcs *GRPCClientConfig) isSchemeHTTPS() bool {
 	return strings.HasPrefix(gcs.Endpoint, "https://")
 }
 
@@ -175,7 +179,7 @@ func (gcs *GRPCClientSettings) isSchemeHTTPS() bool {
 // a non-blocking dial (the function won't wait for connections to be
 // established, and connecting happens in the background). To make it a blocking
 // dial, use grpc.WithBlock() dial option.
-func (gcs *GRPCClientSettings) ToClientConn(ctx context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.DialOption) (*grpc.ClientConn, error) {
+func (gcs *GRPCClientConfig) ToClientConn(ctx context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	opts, err := gcs.toDialOptions(host, settings)
 	if err != nil {
 		return nil, err
@@ -184,7 +188,7 @@ func (gcs *GRPCClientSettings) ToClientConn(ctx context.Context, host component.
 	return grpc.DialContext(ctx, gcs.SanitizedEndpoint(), opts...)
 }
 
-func (gcs *GRPCClientSettings) toDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
+func (gcs *GRPCClientConfig) toDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if configcompression.IsCompressed(gcs.Compression) {
 		cp, err := getGRPCCompressionName(gcs.Compression)

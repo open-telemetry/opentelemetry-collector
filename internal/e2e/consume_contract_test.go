@@ -24,7 +24,7 @@ func testExporterConfig(endpoint string) component.Config {
 	return &otlpexporter.Config{
 		QueueConfig: exporterhelper.QueueSettings{Enabled: false},
 		RetryConfig: retryConfig,
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		GRPCClientConfig: configgrpc.GRPCClientConfig{
 			Endpoint: endpoint,
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure: true,

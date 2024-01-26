@@ -33,7 +33,7 @@ func createDefaultConfig() component.Config {
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		RetryConfig:     configretry.NewDefaultBackOffConfig(),
 		QueueConfig:     exporterhelper.NewDefaultQueueSettings(),
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		GRPCClientConfig: configgrpc.GRPCClientConfig{
 			Headers: map[string]configopaque.String{},
 			// Default to gzip compression
 			Compression: configcompression.Gzip,
