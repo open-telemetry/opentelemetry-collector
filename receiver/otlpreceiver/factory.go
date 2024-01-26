@@ -11,12 +11,15 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/localhostgate"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 )
 
 const (
+	grpcPort            = 4317
+	httpPort            = 4318
 	defaultGRPCEndpoint = "0.0.0.0:4317"
 	defaultHTTPEndpoint = "0.0.0.0:4318"
 
@@ -42,15 +45,15 @@ func createDefaultConfig() component.Config {
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
-					Endpoint:  defaultGRPCEndpoint,
+					Endpoint:  localhostgate.EndpointForPort(grpcPort),
 					Transport: "tcp",
 				},
 				// We almost write 0 bytes, so no need to tune WriteBufferSize.
 				ReadBufferSize: 512 * 1024,
 			},
 			HTTP: &HTTPConfig{
-				HTTPServerSettings: &confighttp.HTTPServerSettings{
-					Endpoint: defaultHTTPEndpoint,
+				HTTPServerConfig: &confighttp.HTTPServerConfig{
+					Endpoint: localhostgate.EndpointForPort(httpPort),
 				},
 				TracesURLPath:  defaultTracesURLPath,
 				MetricsURLPath: defaultMetricsURLPath,

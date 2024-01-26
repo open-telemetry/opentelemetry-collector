@@ -699,7 +699,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
 			HTTP: &HTTPConfig{
-				HTTPServerSettings: &confighttp.HTTPServerSettings{
+				HTTPServerConfig: &confighttp.HTTPServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 					TLSSetting: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -732,7 +732,7 @@ func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, p
 	cfg := &Config{
 		Protocols: Protocols{
 			HTTP: &HTTPConfig{
-				HTTPServerSettings: &confighttp.HTTPServerSettings{
+				HTTPServerConfig: &confighttp.HTTPServerConfig{
 					Endpoint:           addr,
 					MaxRequestBodySize: int64(size),
 				},

@@ -116,7 +116,7 @@ func TestUnmarshalConfig(t *testing.T) {
 					},
 				},
 				HTTP: &HTTPConfig{
-					HTTPServerSettings: &confighttp.HTTPServerSettings{
+					HTTPServerConfig: &confighttp.HTTPServerConfig{
 						Endpoint: "0.0.0.0:4318",
 						TLSSetting: &configtls.TLSServerSetting{
 							TLSSetting: configtls.TLSSetting{
@@ -124,7 +124,7 @@ func TestUnmarshalConfig(t *testing.T) {
 								KeyFile:  "test.key",
 							},
 						},
-						CORS: &confighttp.CORSSettings{
+						CORS: &confighttp.CORSConfig{
 							AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
 							MaxAge:         7200,
 						},
@@ -155,7 +155,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 					ReadBufferSize: 512 * 1024,
 				},
 				HTTP: &HTTPConfig{
-					HTTPServerSettings: &confighttp.HTTPServerSettings{
+					HTTPServerConfig: &confighttp.HTTPServerConfig{
 						Endpoint: "/tmp/http_otlp.sock",
 					},
 					TracesURLPath:  defaultTracesURLPath,
