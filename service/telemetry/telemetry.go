@@ -34,12 +34,16 @@ func (t *Telemetry) Shutdown(ctx context.Context) error {
 }
 
 // Settings holds configuration for building Telemetry.
-type Settings struct {
+// Deprecated [v0.94.0]: Use CreateSettings instead.
+type Settings = CreateSettings
+
+// CreateSettings holds configuration for building Telemetry.
+type CreateSettings struct {
 	ZapOptions []zap.Option
 }
 
 // New creates a new Telemetry from Config.
-func New(_ context.Context, set Settings, cfg Config) (*Telemetry, error) {
+func New(_ context.Context, set CreateSettings, cfg Config) (*Telemetry, error) {
 	logger, err := newLogger(cfg.Logs, set.ZapOptions)
 	if err != nil {
 		return nil, err
