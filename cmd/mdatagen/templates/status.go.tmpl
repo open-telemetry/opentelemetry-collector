@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustType("{{ .Type }}")
+)
+
 const (
-	Type = "{{ .Type }}"
 	{{- range $stability, $signals := .Status.Stability }}
 	{{- range $signal := $signals }}
 	{{ toCamelCase $signal }}Stability = component.StabilityLevel{{ casesTitle $stability }}

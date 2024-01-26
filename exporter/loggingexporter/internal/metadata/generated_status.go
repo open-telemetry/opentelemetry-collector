@@ -9,8 +9,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type = component.MustType("logging")
+)
+
 const (
-	Type             = "logging"
 	TracesStability  = component.StabilityLevelDeprecated
 	MetricsStability = component.StabilityLevelDeprecated
 	LogsStability    = component.StabilityLevelDeprecated

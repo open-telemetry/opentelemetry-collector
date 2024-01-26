@@ -9,8 +9,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type = component.MustType("zpages")
+)
+
 const (
-	Type               = "zpages"
 	ExtensionStability = component.StabilityLevelBeta
 )
 

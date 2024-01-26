@@ -9,8 +9,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type = component.MustType("forward")
+)
+
 const (
-	Type                      = "forward"
 	TracesToTracesStability   = component.StabilityLevelBeta
 	MetricsToMetricsStability = component.StabilityLevelBeta
 	LogsToLogsStability       = component.StabilityLevelBeta
