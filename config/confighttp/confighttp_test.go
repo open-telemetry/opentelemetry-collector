@@ -479,12 +479,12 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 
 func TestHTTPServerSettingsError(t *testing.T) {
 	tests := []struct {
-		settings HTTPServerSettings
+		settings HTTPServerConfig
 		err      string
 	}{
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
-			settings: HTTPServerSettings{
+			settings: HTTPServerConfig{
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
@@ -495,7 +495,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		},
 		{
 			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
-			settings: HTTPServerSettings{
+			settings: HTTPServerConfig{
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
@@ -506,7 +506,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		},
 		{
 			err: "failed to load client CA CertPool: failed to load CA /doesnt/exist:",
-			settings: HTTPServerSettings{
+			settings: HTTPServerConfig{
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.TLSServerSetting{
 					ClientCAFile: "/doesnt/exist",
@@ -525,17 +525,17 @@ func TestHTTPServerSettingsError(t *testing.T) {
 func TestHTTPServerWarning(t *testing.T) {
 	tests := []struct {
 		name     string
-		settings HTTPServerSettings
+		settings HTTPServerConfig
 		len      int
 	}{
 		{
-			settings: HTTPServerSettings{
+			settings: HTTPServerConfig{
 				Endpoint: "0.0.0.0:0",
 			},
 			len: 1,
 		},
 		{
-			settings: HTTPServerSettings{
+			settings: HTTPServerConfig{
 				Endpoint: "127.0.0.1:0",
 			},
 			len: 0,
@@ -686,7 +686,7 @@ func TestHttpReception(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hss := &HTTPServerSettings{
+			hss := &HTTPServerConfig{
 				Endpoint:   "localhost:0",
 				TLSSetting: tt.tlsServerCreds,
 			}
@@ -798,7 +798,7 @@ func TestHttpCors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hss := &HTTPServerSettings{
+			hss := &HTTPServerConfig{
 				Endpoint: "localhost:0",
 				CORS:     tt.CORSConfig,
 			}
@@ -840,7 +840,7 @@ func TestHttpCors(t *testing.T) {
 }
 
 func TestHttpCorsInvalidSettings(t *testing.T) {
-	hss := &HTTPServerSettings{
+	hss := &HTTPServerConfig{
 		Endpoint: "localhost:0",
 		CORS:     &CORSConfig{AllowedHeaders: []string{"some-header"}},
 	}
@@ -856,7 +856,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 }
 
 func TestHttpCorsWithSettings(t *testing.T) {
-	hss := &HTTPServerSettings{
+	hss := &HTTPServerConfig{
 		Endpoint: "localhost:0",
 		CORS: &CORSConfig{
 			AllowedOrigins: []string{"*"},
@@ -914,7 +914,7 @@ func TestHttpServerHeaders(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hss := &HTTPServerSettings{
+			hss := &HTTPServerConfig{
 				Endpoint:        "localhost:0",
 				ResponseHeaders: tt.headers,
 			}
@@ -1002,7 +1002,7 @@ func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaqu
 }
 
 func ExampleHTTPServerSettings() {
-	settings := HTTPServerSettings{
+	settings := HTTPServerConfig{
 		Endpoint: "localhost:443",
 	}
 	s, err := settings.ToServer(
@@ -1125,7 +1125,7 @@ func TestContextWithClient(t *testing.T) {
 func TestServerAuth(t *testing.T) {
 	// prepare
 	authCalled := false
-	hss := HTTPServerSettings{
+	hss := HTTPServerConfig{
 		Endpoint: "localhost:0",
 		Auth: &configauth.Authentication{
 			AuthenticatorID: component.NewID("mock"),
@@ -1160,7 +1160,7 @@ func TestServerAuth(t *testing.T) {
 }
 
 func TestInvalidServerAuth(t *testing.T) {
-	hss := HTTPServerSettings{
+	hss := HTTPServerConfig{
 		Auth: &configauth.Authentication{
 			AuthenticatorID: component.NewID("non-existing"),
 		},
@@ -1173,7 +1173,7 @@ func TestInvalidServerAuth(t *testing.T) {
 
 func TestFailedServerAuth(t *testing.T) {
 	// prepare
-	hss := HTTPServerSettings{
+	hss := HTTPServerConfig{
 		Endpoint: "localhost:0",
 		Auth: &configauth.Authentication{
 			AuthenticatorID: component.NewID("mock"),
@@ -1203,7 +1203,7 @@ func TestFailedServerAuth(t *testing.T) {
 
 func TestServerWithErrorHandler(t *testing.T) {
 	// prepare
-	hss := HTTPServerSettings{
+	hss := HTTPServerConfig{
 		Endpoint: "localhost:0",
 	}
 	eh := func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int) {
@@ -1234,7 +1234,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 
 func TestServerWithDecoder(t *testing.T) {
 	// prepare
-	hss := HTTPServerSettings{
+	hss := HTTPServerConfig{
 		Endpoint: "localhost:0",
 	}
 	decoder := func(body io.ReadCloser) (io.ReadCloser, error) {
@@ -1312,7 +1312,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 		ServerName: "localhost",
 	}
 
-	hss := &HTTPServerSettings{
+	hss := &HTTPServerConfig{
 		Endpoint:   "localhost:0",
 		TLSSetting: tlsServerCreds,
 	}
