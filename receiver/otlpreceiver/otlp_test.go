@@ -633,7 +633,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
-			GRPC: &configgrpc.GRPCServerSettings{
+			GRPC: &configgrpc.GRPCServerConfig{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: "tcp",

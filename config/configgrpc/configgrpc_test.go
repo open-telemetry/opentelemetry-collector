@@ -173,7 +173,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 }
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
-	gss := &GRPCServerSettings{
+	gss := &GRPCServerConfig{
 		NetAddr: confignet.NetAddr{
 			Endpoint: "0.0.0.0:1234",
 		},
@@ -184,7 +184,7 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 }
 
 func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
-	gss := &GRPCServerSettings{
+	gss := &GRPCServerConfig{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:1234",
 			Transport: "tcp",
@@ -217,7 +217,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {
-	gss := &GRPCServerSettings{
+	gss := &GRPCServerConfig{
 		NetAddr: confignet.NetAddr{
 			Endpoint: "0.0.0.0:1234",
 		},
@@ -378,11 +378,11 @@ func TestUseSecure(t *testing.T) {
 func TestGRPCServerWarning(t *testing.T) {
 	tests := []struct {
 		name     string
-		settings GRPCServerSettings
+		settings GRPCServerConfig
 		len      int
 	}{
 		{
-			settings: GRPCServerSettings{
+			settings: GRPCServerConfig{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "0.0.0.0:1234",
 					Transport: "tcp",
@@ -391,7 +391,7 @@ func TestGRPCServerWarning(t *testing.T) {
 			len: 1,
 		},
 		{
-			settings: GRPCServerSettings{
+			settings: GRPCServerConfig{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "127.0.0.1:1234",
 					Transport: "tcp",
@@ -400,7 +400,7 @@ func TestGRPCServerWarning(t *testing.T) {
 			len: 0,
 		},
 		{
-			settings: GRPCServerSettings{
+			settings: GRPCServerConfig{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "0.0.0.0:1234",
 					Transport: "unix",
@@ -428,12 +428,12 @@ func TestGRPCServerWarning(t *testing.T) {
 
 func TestGRPCServerSettingsError(t *testing.T) {
 	tests := []struct {
-		settings GRPCServerSettings
+		settings GRPCServerConfig
 		err      string
 	}{
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
-			settings: GRPCServerSettings{
+			settings: GRPCServerConfig{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "127.0.0.1:1234",
 					Transport: "tcp",
@@ -447,7 +447,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 		},
 		{
 			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
-			settings: GRPCServerSettings{
+			settings: GRPCServerConfig{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "127.0.0.1:1234",
 					Transport: "tcp",
@@ -461,7 +461,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 		},
 		{
 			err: "^failed to load client CA CertPool: failed to load CA /doesnt/exist:",
-			settings: GRPCServerSettings{
+			settings: GRPCServerConfig{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "127.0.0.1:1234",
 					Transport: "tcp",
@@ -481,7 +481,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 }
 
 func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
-	settings := GRPCServerSettings{
+	settings := GRPCServerConfig{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "127.0.0.1:1234567",
 			Transport: "tcp",
@@ -608,7 +608,7 @@ func TestHttpReception(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			gss := &GRPCServerSettings{
+			gss := &GRPCServerConfig{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "localhost:0",
 					Transport: "tcp",
@@ -655,7 +655,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	socketName := tempSocketName(t)
-	gss := &GRPCServerSettings{
+	gss := &GRPCServerConfig{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  socketName,
 			Transport: "unix",
@@ -850,7 +850,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 
 			// prepare the server
 			{
-				gss := &GRPCServerSettings{
+				gss := &GRPCServerConfig{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:0",
 						Transport: "tcp",

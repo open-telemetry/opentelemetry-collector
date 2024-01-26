@@ -43,7 +43,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Protocols: Protocols{
-			GRPC: &configgrpc.GRPCServerSettings{
+			GRPC: &configgrpc.GRPCServerConfig{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  localhostgate.EndpointForPort(grpcPort),
 					Transport: "tcp",
