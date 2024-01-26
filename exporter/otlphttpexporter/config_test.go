@@ -51,7 +51,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				NumConsumers: 2,
 				QueueSize:    10,
 			},
-			Encoding: EncodingType(""),
+			Encoding: EncodingProto,
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Headers: map[string]configopaque.String{
 					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
@@ -73,4 +73,12 @@ func TestUnmarshalConfig(t *testing.T) {
 				Compression:     "gzip",
 			},
 		}, cfg)
+}
+
+func TestUnmarshalConfigInvalidEncoding(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "bad_invalid_encoding.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.Error(t, component.UnmarshalConfig(cm, cfg))
 }

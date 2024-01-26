@@ -176,6 +176,7 @@ func TestErrorResponses(t *testing.T) {
 			defer srv.Close()
 
 			cfg := &Config{
+				Encoding:       EncodingProto,
 				TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
 				// Create without QueueSettings and RetryConfig so that ConsumeTraces
 				// returns the errors that we want to check immediately.
@@ -250,6 +251,7 @@ func TestUserAgent(t *testing.T) {
 				defer srv.Close()
 
 				cfg := &Config{
+					Encoding:       EncodingProto,
 					TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,
@@ -283,6 +285,7 @@ func TestUserAgent(t *testing.T) {
 				defer srv.Close()
 
 				cfg := &Config{
+					Encoding:        EncodingProto,
 					MetricsEndpoint: fmt.Sprintf("%s/v1/metrics", srv.URL),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,
@@ -316,6 +319,7 @@ func TestUserAgent(t *testing.T) {
 				defer srv.Close()
 
 				cfg := &Config{
+					Encoding:     EncodingProto,
 					LogsEndpoint: fmt.Sprintf("%s/v1/logs", srv.URL),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,
@@ -420,6 +424,7 @@ func TestPartialSuccess_logs(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &Config{
+		Encoding:           EncodingProto,
 		LogsEndpoint:       fmt.Sprintf("%s/v1/logs", srv.URL),
 		HTTPClientSettings: confighttp.HTTPClientSettings{},
 	}
@@ -544,6 +549,7 @@ func TestPartialSuccess_traces(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &Config{
+		Encoding:           EncodingProto,
 		TracesEndpoint:     fmt.Sprintf("%s/v1/traces", srv.URL),
 		HTTPClientSettings: confighttp.HTTPClientSettings{},
 	}
@@ -578,6 +584,7 @@ func TestPartialSuccess_metrics(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &Config{
+		Encoding:           EncodingProto,
 		MetricsEndpoint:    fmt.Sprintf("%s/v1/metrics", srv.URL),
 		HTTPClientSettings: confighttp.HTTPClientSettings{},
 	}
@@ -608,11 +615,7 @@ func TestEncoding(t *testing.T) {
 		expectedEncoding EncodingType
 	}{
 		{
-			name:             "default_encoding",
-			expectedEncoding: "application/x-protobuf",
-		},
-		{
-			name:             "explicit_proto_encoding",
+			name:             "proto_encoding",
 			encoding:         EncodingProto,
 			expectedEncoding: "application/x-protobuf",
 		},

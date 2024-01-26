@@ -97,7 +97,7 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	case EncodingProto:
 		request, err = tr.MarshalProto()
 	default:
-		request, err = tr.MarshalProto()
+		err = fmt.Errorf("invalid encoding: %s", e.config.Encoding)
 	}
 
 	if err != nil {
@@ -118,7 +118,7 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 	case EncodingProto:
 		request, err = tr.MarshalProto()
 	default:
-		request, err = tr.MarshalProto()
+		err = fmt.Errorf("invalid encoding: %s", e.config.Encoding)
 	}
 
 	if err != nil {
@@ -138,7 +138,7 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	case EncodingProto:
 		request, err = tr.MarshalProto()
 	default:
-		request, err = tr.MarshalProto()
+		err = fmt.Errorf("invalid encoding: %s", e.config.Encoding)
 	}
 
 	if err != nil {
@@ -161,7 +161,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	case EncodingProto:
 		req.Header.Set("Content-Type", protobufContentType)
 	default:
-		req.Header.Set("Content-Type", protobufContentType)
+		return fmt.Errorf("invalid encoding: %s", e.config.Encoding)
 	}
 
 	req.Header.Set("User-Agent", e.userAgent)

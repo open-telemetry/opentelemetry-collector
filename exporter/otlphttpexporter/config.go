@@ -22,15 +22,7 @@ const (
 	EncodingJSON  EncodingType = "json"
 )
 
-var (
-	_ encoding.TextMarshaler   = (*EncodingType)(nil)
-	_ encoding.TextUnmarshaler = (*EncodingType)(nil)
-)
-
-// MarshalText marshals EncodingType to text.
-func (e EncodingType) MarshalText() (text []byte, err error) {
-	return []byte(e), nil
-}
+var _ encoding.TextUnmarshaler = (*EncodingType)(nil)
 
 // UnmarshalText unmarshalls text to a Level.
 func (e *EncodingType) UnmarshalText(text []byte) error {
@@ -44,13 +36,11 @@ func (e *EncodingType) UnmarshalText(text []byte) error {
 		*e = EncodingProto
 	case string(EncodingJSON):
 		*e = EncodingJSON
-
-	// TODO: remove this case when https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30703 is fixed
-	case "":
-		*e = EncodingProto
+	default:
+		return fmt.Errorf("invalid encoding type: %s", str)
 	}
 
-	return fmt.Errorf("invalid encoding type: %s", str)
+	return nil
 }
 
 // Config defines configuration for OTLP/HTTP exporter.
