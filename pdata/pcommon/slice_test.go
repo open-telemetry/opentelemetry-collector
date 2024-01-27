@@ -148,5 +148,5 @@ func TestInvalidSlice(t *testing.T) {
 	assert.Panics(t, func() { es.MoveAndAppendTo(Slice{}) })
 	assert.Panics(t, func() { es.RemoveIf(func(Value) bool { return false }) })
 	assert.Panics(t, func() { es.AsRaw() })
-	assert.Panics(t, func() { es.FromRaw([]any{3}) })
+	assert.Panics(t, func() { _ = es.FromRaw([]any{3}) })
 }

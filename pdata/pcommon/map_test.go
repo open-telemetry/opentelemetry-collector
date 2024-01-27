@@ -544,5 +544,5 @@ func TestInvalidMap(t *testing.T) {
 	assert.Panics(t, func() { v.Range(testFunc) })
 	assert.Panics(t, func() { v.CopyTo(NewMap()) })
 	assert.Panics(t, func() { v.AsRaw() })
-	assert.Panics(t, func() { v.FromRaw(map[string]any{"foo": "bar"}) })
+	assert.Panics(t, func() { _ = v.FromRaw(map[string]any{"foo": "bar"}) })
 }
