@@ -82,3 +82,49 @@ func TestUnmarshalConfigInvalidEncoding(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Error(t, component.UnmarshalConfig(cm, cfg))
 }
+
+func TestUnmarshalEncoding(t *testing.T) {
+	tests := []struct {
+		name          string
+		encodingBytes []byte
+		expected      EncodingType
+		shouldError   bool
+	}{
+		{
+			name:          "UnmarshalEncodingProto",
+			encodingBytes: []byte("proto"),
+			expected:      EncodingProto,
+			shouldError:   false,
+		},
+		{
+			name:          "UnmarshalEncodingJson",
+			encodingBytes: []byte("json"),
+			expected:      EncodingJSON,
+			shouldError:   false,
+		},
+		{
+			name:          "UnmarshalEmptyEncoding",
+			encodingBytes: []byte(""),
+			shouldError:   true,
+		},
+		{
+			name:          "UnmarshalInvalidEncoding",
+			encodingBytes: []byte("invalid"),
+			shouldError:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var encoding EncodingType
+			err := encoding.UnmarshalText(tt.encodingBytes)
+
+			if tt.shouldError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, encoding)
+			}
+		})
+	}
+}
