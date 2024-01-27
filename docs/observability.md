@@ -88,13 +88,10 @@ configuration of the OpenTelemetry SDK used to produce the Collector's internal 
 currently behind two feature gates:
 
 ```bash
-  --feature-gates=telemetry.useOtelForInternalMetrics
   --feature-gates=telemetry.useOtelWithSDKConfigurationForInternalTelemetry
 ```
 
-The `useOtelForInternalMetrics` feature gate changes the internal telemetry to use OpenTelemetry rather
-than OpenCensus. This will become the default at some point [in the future][issue7454]. The second gate,
-`useOtelWithSDKConfigurationForInternalTelemetry` enables the Collector to parse configuration
+The gate `useOtelWithSDKConfigurationForInternalTelemetry` enables the Collector to parse configuration
 that aligns with the [OpenTelemetry Configuration] schema. The support for this schema is still
 experimental, but it does allow telemetry to be exported via OTLP.
 

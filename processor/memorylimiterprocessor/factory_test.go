@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -41,7 +42,7 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 	// test if we can shutdown a monitoring routine that has not started
-	assert.ErrorIs(t, tp.Shutdown(context.Background()), errShutdownNotStarted)
+	assert.ErrorIs(t, tp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
 	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
 
 	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
@@ -58,11 +59,11 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NoError(t, tp.Shutdown(context.Background()))
 	assert.NoError(t, mp.Shutdown(context.Background()))
 	// verify that no monitoring routine is running
-	assert.Error(t, tp.Shutdown(context.Background()))
+	assert.ErrorIs(t, tp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
 
 	// start and shutdown a new monitoring routine
 	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, lp.Shutdown(context.Background()))
 	// calling it again should throw an error
-	assert.ErrorIs(t, lp.Shutdown(context.Background()), errShutdownNotStarted)
+	assert.ErrorIs(t, lp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
 }

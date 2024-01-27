@@ -11,7 +11,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor/internal/metadata"
 )
@@ -50,7 +49,7 @@ func createTraces(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
-	return newBatchTracesProcessor(set, nextConsumer, cfg.(*Config), obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
+	return newBatchTracesProcessor(set, nextConsumer, cfg.(*Config))
 }
 
 func createMetrics(
@@ -59,7 +58,7 @@ func createMetrics(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-	return newBatchMetricsProcessor(set, nextConsumer, cfg.(*Config), obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
+	return newBatchMetricsProcessor(set, nextConsumer, cfg.(*Config))
 }
 
 func createLogs(
@@ -68,5 +67,5 @@ func createLogs(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
-	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config), obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled())
+	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config))
 }

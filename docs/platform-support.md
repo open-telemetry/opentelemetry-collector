@@ -58,10 +58,10 @@ Tier 3 platforms are _guaranteed to build_. Precompiled binaries are made availa
 Tier 3 platforms are currently:
 | Platform      | Owner(s)                                                                                                    |
 |---------------|-------------------------------------------------------------------------------------------------------------|
-| darwin/amd64  |                                                                                                             |
+| darwin/amd64  | [@h0cheung](https://github.com/h0cheung)                                                                    |
 | darwin/arm64  | [@MovieStoreGuy](https://github.com/MovieStoreGuy)                                                          |
 | linux/arm64   | [@atoulme](https://github.com/atoulme)                                                                      |
-| linux/386     |                                                                                                             |
+| linux/386     | [@astencel-sumo](https://github.com/astencel-sumo)                                                          |
 | linux/arm     | [@Wal8800](https://github.com/Wal8800), [@atoulme](https://github.com/atoulme)                              |
 | linux/ppc64le |                                                                                                             |
 | linux/s390x   | [@bwalk-at-ibm](https://github.com/bwalk-at-ibm), [@rrschulze](https://github.com/rrschulze)                |

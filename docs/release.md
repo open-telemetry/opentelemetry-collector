@@ -31,9 +31,9 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
    Check if stable modules have any changes since the last release by running `make check-changes PREVIOUS_VERSION=v1.0.0 MODSET=stable`. If there are no changes, there is no need to release new version for stable modules.
    If there are changes found but .chloggen directory doesn't have any corresponding entries, add missing changelog entries. If the changes are insignificant, consider not releasing a new version for stable modules.
 
-3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Core should be haulted**.
+3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Core should be halted**.
    - When prompted, enter the version numbers determined in Step 2, but do not include a leading `v`.
-   - If not intending to release stable modeles, do not specify a version for `Release candidate version stable`.
+   - If not intending to release stable modules, do not specify a version for `Release candidate version stable`.
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
@@ -59,7 +59,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 ## Releasing opentelemetry-collector-contrib
 
-1. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/prepare-release.yml). When prompted, enter the version numbers determined in Step 1, but do not include a leading `v`. This action will a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Contrib should be haulted**.
+1. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/prepare-release.yml). When prompted, enter the version numbers determined in Step 1, but do not include a leading `v`. This action will create a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Contrib should be halted**.
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
@@ -157,10 +157,10 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2024-01-08 | v0.92.0 | @codeboten      |
 | 2024-01-22 | v0.93.0 | @bogdandrutu    |
 | 2024-02-05 | v0.94.0 | @Aneurysm9      |
-| 2024-02-19 | v0.95.0 | @mx-psi         |
-| 2024-03-04 | v0.96.0 | @jpkrohling     |
+| 2024-02-19 | v0.95.0 | @jpkrohling     |
+| 2024-03-04 | v0.96.0 | @mx-psi         |
 | 2024-03-18 | v0.97.0 | @djaglowski     |
 | 2024-04-01 | v0.98.0 | @dmitryax       |
+| 2024-04-15 | v0.99.0 | @codeboten      |

@@ -113,6 +113,7 @@ Here is a list of community roles with current and previous members:
 
   - [Andrzej Stencel](https://github.com/astencel-sumo), Sumo Logic
   - [Antoine Toulme](https://github.com/atoulme), Splunk
+  - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
   - [Yang Song](https://github.com/songy23), Datadog
   - Actively seeking contributors to triage issues
 
