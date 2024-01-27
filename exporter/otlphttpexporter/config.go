@@ -24,7 +24,7 @@ const (
 
 var _ encoding.TextUnmarshaler = (*EncodingType)(nil)
 
-// UnmarshalText unmarshalls text to a Level.
+// UnmarshalText unmarshalls text to an EncodingType.
 func (e *EncodingType) UnmarshalText(text []byte) error {
 	if e == nil {
 		return errors.New("cannot unmarshal to a nil *EncodingType")
