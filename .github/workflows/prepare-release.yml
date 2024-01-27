@@ -19,6 +19,32 @@ on:
         required: true
         description: Current version (beta, like 0.69.1). Don't include `v`.
 jobs:
+  #validate-version format
+  validate-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate version format
+        run: |
+          if [[ ! "${{ inputs.candidate-stable }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+-rcv[0-9]+$ ]]; then
+            echo "Invalid candidate-stable version format. It should be like 1.0.0-rcv0014."
+            exit 1
+          fi
+
+          if [[ ! "${{ inputs.current-stable }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+-rcv[0-9]+$ ]]; then
+            echo "Invalid current-stable version format. It should be like 1.0.0-rcv0014."
+            exit 1
+          fi
+
+          if [[ ! "${{ inputs.candidate-beta }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid candidate-beta version format. It should be like 0.70.0."
+            exit 1
+          fi
+
+          if [[ ! "${{ inputs.current-beta }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid current-beta version format. It should be like 0.69.1."
+            exit 1
+          fi
+        shell: bash
   # Releasing opentelemetry-collector
   prepare-release:
     runs-on: ubuntu-latest
