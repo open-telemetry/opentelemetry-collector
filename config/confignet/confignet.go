@@ -14,18 +14,18 @@ import (
 type TransportType string
 
 const (
-	TCP        TransportType = "tcp"
-	TCP4       TransportType = "tcp4"
-	TCP6       TransportType = "tcp6"
-	UDP        TransportType = "udp"
-	UDP4       TransportType = "udp4"
-	UDP6       TransportType = "udp6"
-	IP         TransportType = "ip"
-	IP4        TransportType = "ip4"
-	IP6        TransportType = "ip6"
-	Unix       TransportType = "unix"
-	Unixgram   TransportType = "unixgram"
-	UnixPacket TransportType = "unixpacket"
+	TransportTypeTCP        TransportType = "tcp"
+	TransportTypeTCP4       TransportType = "tcp4"
+	TransportTypeTCP6       TransportType = "tcp6"
+	TransportTypeUDP        TransportType = "udp"
+	TransportTypeUDP4       TransportType = "udp4"
+	TransportTypeUDP6       TransportType = "udp6"
+	TransportTypeIP         TransportType = "ip"
+	TransportTypeIP4        TransportType = "ip4"
+	TransportTypeIP6        TransportType = "ip6"
+	TransportTypeUnix       TransportType = "unix"
+	TransportTypeUnixgram   TransportType = "unixgram"
+	TransportTypeUnixPacket TransportType = "unixpacket"
 )
 
 // UnmarshalText unmarshalls text to a TransportType.
@@ -33,18 +33,18 @@ const (
 // "udp6", "ip", "ip4", "ip6", "unix", "unixgram" and "unixpacket"
 func (tt *TransportType) UnmarshalText(in []byte) error {
 	switch typ := TransportType(in); typ {
-	case TCP,
-		TCP4,
-		TCP6,
-		UDP,
-		UDP4,
-		UDP6,
-		IP,
-		IP4,
-		IP6,
-		Unix,
-		Unixgram,
-		UnixPacket:
+	case TransportTypeTCP,
+		TransportTypeTCP4,
+		TransportTypeTCP6,
+		TransportTypeUDP,
+		TransportTypeUDP4,
+		TransportTypeUDP6,
+		TransportTypeIP,
+		TransportTypeIP4,
+		TransportTypeIP6,
+		TransportTypeUnix,
+		TransportTypeUnixgram,
+		TransportTypeUnixPacket:
 		*tt = typ
 		return nil
 	default:
@@ -62,8 +62,8 @@ type DialerConfig struct {
 // NetAddr represents a network endpoint address.
 type NetAddr struct {
 	// Endpoint configures the address for this network connection.
-	// For TCP and UDP networks, the address has the form "host:port". The host must be a literal IP address,
-	// or a host name that can be resolved to IP addresses. The port must be a literal port number or a service name.
+	// For TransportTypeTCP and TransportTypeUDP networks, the address has the form "host:port". The host must be a literal TransportTypeIP address,
+	// or a host name that can be resolved to TransportTypeIP addresses. The port must be a literal port number or a service name.
 	// If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or
 	// "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
 	Endpoint string `mapstructure:"endpoint"`
@@ -91,8 +91,8 @@ func (na *NetAddr) Listen(ctx context.Context) (net.Listener, error) {
 // TCPAddr represents a TCP endpoint address.
 type TCPAddr struct {
 	// Endpoint configures the address for this network connection.
-	// The address has the form "host:port". The host must be a literal IP address, or a host name that can be
-	// resolved to IP addresses. The port must be a literal port number or a service name.
+	// The address has the form "host:port". The host must be a literal TransportTypeIP address, or a host name that can be
+	// resolved to TransportTypeIP addresses. The port must be a literal port number or a service name.
 	// If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or
 	// "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
 	Endpoint string `mapstructure:"endpoint"`
@@ -104,11 +104,11 @@ type TCPAddr struct {
 // Dial equivalent with net.Dialer's DialContext for this address.
 func (na *TCPAddr) Dial(ctx context.Context) (net.Conn, error) {
 	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
-	return d.DialContext(ctx, string(TCP), na.Endpoint)
+	return d.DialContext(ctx, string(TransportTypeTCP), na.Endpoint)
 }
 
 // Listen equivalent with net.ListenConfig's Listen for this address.
 func (na *TCPAddr) Listen(ctx context.Context) (net.Listener, error) {
 	lc := net.ListenConfig{}
-	return lc.Listen(ctx, string(TCP), na.Endpoint)
+	return lc.Listen(ctx, string(TransportTypeTCP), na.Endpoint)
 }
