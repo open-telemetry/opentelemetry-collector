@@ -7,7 +7,7 @@ change_type: breaking
 component: component
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Validate component.ID at creation and unmarshaling time.
+note: Validate component.Type at creation and unmarshaling time.
 
 # One or more tracking issues or pull requests related to the change
 issues: [9208]
