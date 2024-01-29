@@ -17,7 +17,7 @@ func GetStatusFromError(err error) error {
 		// https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures
 		code := codes.Unavailable
 		if consumererror.IsPermanent(err) {
-			code = codes.InvalidArgument
+			code = codes.Internal
 		}
 		s = status.New(code, err.Error())
 	}
