@@ -251,7 +251,7 @@ func TestUserAgent(t *testing.T) {
 
 				cfg := &Config{
 					TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					HTTPClientConfig: confighttp.HTTPClientConfig{
 						Headers: test.headers,
 					},
 				}
@@ -284,7 +284,7 @@ func TestUserAgent(t *testing.T) {
 
 				cfg := &Config{
 					MetricsEndpoint: fmt.Sprintf("%s/v1/metrics", srv.URL),
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					HTTPClientConfig: confighttp.HTTPClientConfig{
 						Headers: test.headers,
 					},
 				}
@@ -317,7 +317,7 @@ func TestUserAgent(t *testing.T) {
 
 				cfg := &Config{
 					LogsEndpoint: fmt.Sprintf("%s/v1/logs", srv.URL),
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					HTTPClientConfig: confighttp.HTTPClientConfig{
 						Headers: test.headers,
 					},
 				}
@@ -423,8 +423,8 @@ func TestPartialSuccess_logs(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &Config{
-		LogsEndpoint:       fmt.Sprintf("%s/v1/logs", srv.URL),
-		HTTPClientSettings: confighttp.HTTPClientSettings{},
+		LogsEndpoint:     fmt.Sprintf("%s/v1/logs", srv.URL),
+		HTTPClientConfig: confighttp.HTTPClientConfig{},
 	}
 	exp, err := createLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
@@ -547,8 +547,8 @@ func TestPartialSuccess_traces(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &Config{
-		TracesEndpoint:     fmt.Sprintf("%s/v1/traces", srv.URL),
-		HTTPClientSettings: confighttp.HTTPClientSettings{},
+		TracesEndpoint:   fmt.Sprintf("%s/v1/traces", srv.URL),
+		HTTPClientConfig: confighttp.HTTPClientConfig{},
 	}
 	exp, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
@@ -581,8 +581,8 @@ func TestPartialSuccess_metrics(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &Config{
-		MetricsEndpoint:    fmt.Sprintf("%s/v1/metrics", srv.URL),
-		HTTPClientSettings: confighttp.HTTPClientSettings{},
+		MetricsEndpoint:  fmt.Sprintf("%s/v1/metrics", srv.URL),
+		HTTPClientConfig: confighttp.HTTPClientConfig{},
 	}
 	exp, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
