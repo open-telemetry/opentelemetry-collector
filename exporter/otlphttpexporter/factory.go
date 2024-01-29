@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		RetryConfig: configretry.NewDefaultBackOffConfig(),
 		QueueConfig: exporterhelper.NewDefaultQueueSettings(),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		HTTPClientConfig: confighttp.HTTPClientConfig{
 			Endpoint: "",
 			Timeout:  30 * time.Second,
 			Headers:  map[string]configopaque.String{},
