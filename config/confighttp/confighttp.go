@@ -239,7 +239,7 @@ func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Respo
 	// Set Host header if provided
 	hostHeader, found := interceptor.headers["Host"]
 	if found && hostHeader != "" {
-		// `Host` field should be set to override default value which is Endpoint
+		// `Host` field should be set to override default `Host` header value which is Endpoint
 		req.Host = string(hostHeader)
 	}
 	for k, v := range interceptor.headers {
