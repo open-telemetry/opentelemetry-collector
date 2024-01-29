@@ -8,28 +8,28 @@ import "fmt"
 type CompressionType string
 
 const (
-	Gzip    CompressionType = "gzip"
-	Zlib    CompressionType = "zlib"
-	Deflate CompressionType = "deflate"
-	Snappy  CompressionType = "snappy"
-	Zstd    CompressionType = "zstd"
-	none    CompressionType = "none"
-	empty   CompressionType = ""
+	CompressionTypeGzip    CompressionType = "gzip"
+	CompressionTypeZlib    CompressionType = "zlib"
+	CompressionTypeDeflate CompressionType = "deflate"
+	CompressionTypeSnappy  CompressionType = "snappy"
+	CompressionTypeZstd    CompressionType = "zstd"
+	compressionTypeNone    CompressionType = "none"
+	compressionTypeEmpty   CompressionType = ""
 )
 
 func IsCompressed(compressionType CompressionType) bool {
-	return compressionType != empty && compressionType != none
+	return compressionType != compressionTypeEmpty && compressionType != compressionTypeNone
 }
 
 func (ct *CompressionType) UnmarshalText(in []byte) error {
 	switch typ := CompressionType(in); typ {
-	case Gzip,
-		Zlib,
-		Deflate,
-		Snappy,
-		Zstd,
-		none,
-		empty:
+	case CompressionTypeGzip,
+		CompressionTypeZlib,
+		CompressionTypeDeflate,
+		CompressionTypeSnappy,
+		CompressionTypeZstd,
+		compressionTypeNone,
+		compressionTypeEmpty:
 		*ct = typ
 		return nil
 	default:

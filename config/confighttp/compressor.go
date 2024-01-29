@@ -41,13 +41,13 @@ type compressor struct {
 // The validity of input is already checked when NewCompressRoundTripper was called in confighttp,
 func newCompressor(compressionType configcompression.CompressionType) (*compressor, error) {
 	switch compressionType {
-	case configcompression.Gzip:
+	case configcompression.CompressionTypeGzip:
 		return gZipPool, nil
-	case configcompression.Snappy:
+	case configcompression.CompressionTypeSnappy:
 		return snappyPool, nil
-	case configcompression.Zstd:
+	case configcompression.CompressionTypeZstd:
 		return zStdPool, nil
-	case configcompression.Zlib, configcompression.Deflate:
+	case configcompression.CompressionTypeZlib, configcompression.CompressionTypeDeflate:
 		return zLibPool, nil
 	}
 	return nil, errors.New("unsupported compression type, ")

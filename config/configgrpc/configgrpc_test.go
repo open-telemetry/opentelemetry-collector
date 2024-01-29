@@ -82,7 +82,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
-				Compression: configcompression.Gzip,
+				Compression: configcompression.CompressionTypeGzip,
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
@@ -111,7 +111,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
-				Compression: configcompression.Snappy,
+				Compression: configcompression.CompressionTypeSnappy,
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
@@ -140,7 +140,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
-				Compression: configcompression.Zstd,
+				Compression: configcompression.CompressionTypeZstd,
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},

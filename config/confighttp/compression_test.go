@@ -51,31 +51,31 @@ func TestHTTPClientCompression(t *testing.T) {
 		},
 		{
 			name:        "ValidGzip",
-			encoding:    configcompression.Gzip,
+			encoding:    configcompression.CompressionTypeGzip,
 			reqBody:     compressedGzipBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidZlib",
-			encoding:    configcompression.Zlib,
+			encoding:    configcompression.CompressionTypeZlib,
 			reqBody:     compressedZlibBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidDeflate",
-			encoding:    configcompression.Deflate,
+			encoding:    configcompression.CompressionTypeDeflate,
 			reqBody:     compressedDeflateBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidSnappy",
-			encoding:    configcompression.Snappy,
+			encoding:    configcompression.CompressionTypeSnappy,
 			reqBody:     compressedSnappyBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidZstd",
-			encoding:    configcompression.Zstd,
+			encoding:    configcompression.CompressionTypeZstd,
 			reqBody:     compressedZstdBody.Bytes(),
 			shouldError: false,
 		},
@@ -274,7 +274,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	require.NoError(t, err, "failed to create request to test handler")
 
 	client := http.Client{}
-	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.CompressionTypeGzip)
 	require.NoError(t, err)
 	res, err := client.Do(req)
 	require.NoError(t, err)
@@ -305,7 +305,7 @@ func TestHTTPContentCompressionCopyError(t *testing.T) {
 	require.NoError(t, err)
 
 	client := http.Client{}
-	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.CompressionTypeGzip)
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	require.Error(t, err)
@@ -329,7 +329,7 @@ func TestHTTPContentCompressionRequestBodyCloseError(t *testing.T) {
 	require.NoError(t, err)
 
 	client := http.Client{}
-	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.CompressionTypeGzip)
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	require.Error(t, err)

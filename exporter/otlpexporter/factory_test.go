@@ -33,7 +33,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, ocfg.RetryConfig, configretry.NewDefaultBackOffConfig())
 	assert.Equal(t, ocfg.QueueConfig, exporterhelper.NewDefaultQueueSettings())
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutSettings())
-	assert.Equal(t, ocfg.Compression, configcompression.Gzip)
+	assert.Equal(t, ocfg.Compression, configcompression.CompressionTypeGzip)
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
@@ -102,7 +102,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: &Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
-					Compression: configcompression.Gzip,
+					Compression: configcompression.CompressionTypeGzip,
 				},
 			},
 		},
@@ -111,7 +111,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: &Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
-					Compression: configcompression.Snappy,
+					Compression: configcompression.CompressionTypeSnappy,
 				},
 			},
 		},
@@ -120,7 +120,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: &Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
-					Compression: configcompression.Zstd,
+					Compression: configcompression.CompressionTypeZstd,
 				},
 			},
 		},

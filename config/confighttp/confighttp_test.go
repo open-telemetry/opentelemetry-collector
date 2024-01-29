@@ -417,7 +417,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			settings: HTTPClientSettings{
 				Endpoint:    "localhost:1234",
 				Auth:        &configauth.Authentication{AuthenticatorID: component.NewID("mock")},
-				Compression: configcompression.Gzip,
+				Compression: configcompression.CompressionTypeGzip,
 			},
 			shouldErr: false,
 			host: &mockHost{
