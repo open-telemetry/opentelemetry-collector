@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Headers: map[string]configopaque.String{},
 			// Default to gzip compression
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},
