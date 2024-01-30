@@ -25,28 +25,21 @@ jobs:
     steps:
       - name: Validate version format
         run: |
-          if [[ ! "${{ inputs.candidate-stable }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+-rcv[0-9]+$ ]]; then
-            echo "Invalid candidate-stable version format. It should be like 1.0.0-rcv0014."
-            exit 1
-          fi
+          validate_version() {
+              if [[ ! "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rcv[0-9]+)?$ ]]; then
+                  echo "Invalid $2 version format. It should be like 1.0.0 or 1.0.0-rcv0014."
+                  exit 1
+              fi
+          }
 
-          if [[ ! "${{ inputs.current-stable }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+-rcv[0-9]+$ ]]; then
-            echo "Invalid current-stable version format. It should be like 1.0.0-rcv0014."
-            exit 1
-          fi
-
-          if [[ ! "${{ inputs.candidate-beta }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid candidate-beta version format. It should be like 0.70.0."
-            exit 1
-          fi
-
-          if [[ ! "${{ inputs.current-beta }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid current-beta version format. It should be like 0.69.1."
-            exit 1
-          fi
+          validate_version "${{ inputs.candidate-stable }}" "candidate-stable"
+          validate_version "${{ inputs.current-stable }}" "current-stable"
+          validate_version "${{ inputs.candidate-beta }}" "candidate-beta"
+          validate_version "${{ inputs.current-beta }}" "current-beta"
         shell: bash
   # Releasing opentelemetry-collector
   prepare-release:
+    needs: validate-version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
