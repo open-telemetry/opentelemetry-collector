@@ -4,6 +4,7 @@
 package configopaque // import "go.opentelemetry.io/collector/config/configopaque"
 
 import (
+	"encoding"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -12,6 +13,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
+
+var _ encoding.TextMarshaler = String("")
+
+var _ fmt.Stringer = String("")
+
+var _ fmt.GoStringer = String("")
+
+var _ encoding.BinaryMarshaler = String("")
 
 func TestStringMarshalText(t *testing.T) {
 	examples := []String{"opaque", "s", "veryveryveryveryveryveryveryveryveryverylong"}
