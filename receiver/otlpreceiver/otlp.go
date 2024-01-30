@@ -149,9 +149,9 @@ func (r *otlpReceiver) startHTTPServer(host component.Host) error {
 		return err
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.HTTPServerSettings.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.HTTPServerConfig.Endpoint))
 	var hln net.Listener
-	if hln, err = r.cfg.HTTP.HTTPServerSettings.ToListener(); err != nil {
+	if hln, err = r.cfg.HTTP.HTTPServerConfig.ToListener(); err != nil {
 		return err
 	}
 

@@ -52,7 +52,7 @@ func createDefaultConfig() component.Config {
 				ReadBufferSize: 512 * 1024,
 			},
 			HTTP: &HTTPConfig{
-				HTTPServerSettings: &confighttp.HTTPServerSettings{
+				HTTPServerConfig: &confighttp.HTTPServerConfig{
 					Endpoint: localhostgate.EndpointForPort(httpPort),
 				},
 				TracesURLPath:  defaultTracesURLPath,
