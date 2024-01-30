@@ -15,31 +15,37 @@ func TestUnmarshalText(t *testing.T) {
 		name            string
 		compressionName []byte
 		shouldError     bool
+		isCompressed    bool
 	}{
 		{
 			name:            "ValidGzip",
 			compressionName: []byte("gzip"),
 			shouldError:     false,
+			isCompressed:    true,
 		},
 		{
 			name:            "ValidZlib",
 			compressionName: []byte("zlib"),
 			shouldError:     false,
+			isCompressed:    true,
 		},
 		{
 			name:            "ValidDeflate",
 			compressionName: []byte("deflate"),
 			shouldError:     false,
+			isCompressed:    true,
 		},
 		{
 			name:            "ValidSnappy",
 			compressionName: []byte("snappy"),
 			shouldError:     false,
+			isCompressed:    true,
 		},
 		{
 			name:            "ValidZstd",
 			compressionName: []byte("zstd"),
 			shouldError:     false,
+			isCompressed:    true,
 		},
 		{
 			name:            "ValidEmpty",
@@ -66,7 +72,9 @@ func TestUnmarshalText(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, temp, CompressionType(tt.compressionName))
+			ct := CompressionType(tt.compressionName)
+			assert.Equal(t, temp, ct)
+			assert.Equal(t, tt.isCompressed, ct.IsCompressed())
 		})
 	}
 }
