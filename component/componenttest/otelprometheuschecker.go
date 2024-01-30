@@ -11,7 +11,6 @@ import (
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/multierr"
 
@@ -101,8 +100,6 @@ func (pc *prometheusChecker) checkExporterEnqueueFailed(exporter component.ID, d
 
 func (pc *prometheusChecker) checkExporterMetricGauge(exporter component.ID, metric string, val int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
-	// Forces a flush for the opencensus view data.
-	_, _ = view.RetrieveData(metric)
 
 	ts, err := pc.getMetric(metric, io_prometheus_client.MetricType_GAUGE, exporterAttrs)
 	if err != nil {
@@ -118,8 +115,6 @@ func (pc *prometheusChecker) checkExporterMetricGauge(exporter component.ID, met
 }
 
 func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, attrs []attribute.KeyValue) error {
-	// Forces a flush for the opencensus view data.
-	_, _ = view.RetrieveData(expectedMetric)
 
 	ts, err := pc.getMetric(expectedMetric, io_prometheus_client.MetricType_COUNTER, attrs)
 	if err != nil {
