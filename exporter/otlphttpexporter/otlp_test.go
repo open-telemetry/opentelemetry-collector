@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -598,6 +599,107 @@ func TestPartialSuccess_metrics(t *testing.T) {
 	metrics := pmetric.NewMetrics()
 	err = exp.ConsumeMetrics(context.Background(), metrics)
 	require.Error(t, err)
+}
+
+func TestComponentStatus(t *testing.T) {
+	tests := []struct {
+		name            string
+		responseStatus  int
+		componentStatus component.Status
+	}{
+		{
+			name:            "200",
+			responseStatus:  http.StatusOK,
+			componentStatus: component.StatusOK,
+		},
+		{
+			name:            "401",
+			responseStatus:  http.StatusUnauthorized,
+			componentStatus: component.StatusPermanentError,
+		},
+		{
+			name:            "403",
+			responseStatus:  http.StatusForbidden,
+			componentStatus: component.StatusPermanentError,
+		},
+		{
+			name:            "404",
+			responseStatus:  http.StatusNotFound,
+			componentStatus: component.StatusPermanentError,
+		},
+		{
+			name:            "405",
+			responseStatus:  http.StatusMethodNotAllowed,
+			componentStatus: component.StatusPermanentError,
+		},
+		{
+			name:            "413",
+			responseStatus:  http.StatusRequestEntityTooLarge,
+			componentStatus: component.StatusPermanentError,
+		},
+		{
+			name:            "414",
+			responseStatus:  http.StatusRequestURITooLong,
+			componentStatus: component.StatusPermanentError,
+		},
+		{
+			name:            "419",
+			responseStatus:  http.StatusTooManyRequests,
+			componentStatus: component.StatusRecoverableError,
+		},
+		{
+			name:            "431",
+			responseStatus:  http.StatusRequestHeaderFieldsTooLarge,
+			componentStatus: component.StatusPermanentError,
+		},
+		{
+			name:            "503",
+			responseStatus:  http.StatusServiceUnavailable,
+			componentStatus: component.StatusRecoverableError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+				writer.WriteHeader(tc.responseStatus)
+			})
+			defer srv.Close()
+
+			cfg := &Config{
+				TracesEndpoint: fmt.Sprintf("%s/v1/traces", srv.URL),
+				// Create without QueueSettings and RetrySettings so that ConsumeTraces
+				// returns the errors that we want to check immediately.
+			}
+
+			var lastStatus component.Status
+			set := exportertest.NewNopCreateSettings()
+			set.TelemetrySettings.ReportStatus = func(ev *component.StatusEvent) {
+				// simulate the finite-state machine used in real world status reporting
+				if lastStatus != component.StatusPermanentError {
+					lastStatus = ev.Status()
+				}
+			}
+
+			exp, err := createTracesExporter(context.Background(), set, cfg)
+			require.NoError(t, err)
+
+			// start the exporter
+			err = exp.Start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				require.NoError(t, exp.Shutdown(context.Background()))
+			})
+
+			// generate traces
+			traces := ptrace.NewTraces()
+			err = exp.ConsumeTraces(context.Background(), traces)
+			if tc.componentStatus != component.StatusOK {
+				assert.Error(t, err)
+			}
+			assert.Equal(t, tc.componentStatus, lastStatus)
+		})
+	}
 }
 
 func createBackend(endpoint string, handler func(writer http.ResponseWriter, request *http.Request)) *httptest.Server {
