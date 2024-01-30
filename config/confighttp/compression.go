@@ -119,22 +119,16 @@ func httpContentDecompressor(h http.Handler, eh func(w http.ResponseWriter, r *h
 				return zr, nil
 			},
 			"snappy": func(body io.ReadCloser) (io.ReadCloser, error) {
-
-				compressed, err := io.ReadAll(body)
+				sr := snappy.NewReader(body)
+				sb := new(bytes.Buffer)
+				_, err := io.Copy(sb, sr)
 				if err != nil {
 					return nil, err
 				}
-
 				if err = body.Close(); err != nil {
 					return nil, err
 				}
-
-				reqBuf, err := snappy.Decode(nil, compressed)
-				if err != nil {
-					return nil, err
-				}
-
-				return io.NopCloser(bytes.NewReader(reqBuf)), nil
+				return io.NopCloser(sb), nil
 			},
 		},
 	}

@@ -225,6 +225,13 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respBody: "invalid input: magic number mismatch",
 		},
 		{
+			name:     "InvalidSnappy",
+			encoding: "snappy",
+			reqBody:  bytes.NewBuffer(testBody),
+			respCode: http.StatusBadRequest,
+			respBody: "snappy: corrupt input\n",
+		},
+		{
 			name:     "UnsupportedCompression",
 			encoding: "nosuchcompression",
 			reqBody:  bytes.NewBuffer(testBody),
