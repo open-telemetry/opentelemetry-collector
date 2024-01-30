@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	processorID = component.NewID(component.MustType("fakeProcessor"))
+	processorID = component.NewID(component.MustNewType("fakeProcessor"))
 )
 
 func TestProcessorTraceData(t *testing.T) {

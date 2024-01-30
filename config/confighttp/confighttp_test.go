@@ -43,10 +43,10 @@ func (c *customRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error) 
 }
 
 var (
-	testAuthID    = component.NewID(component.MustType("testauth"))
-	mockID        = component.NewID(component.MustType("mock"))
-	dummyID       = component.NewID(component.MustType("dummy"))
-	nonExistingID = component.NewID(component.MustType("nonexisting"))
+	testAuthID    = component.NewID(component.MustNewType("testauth"))
+	mockID        = component.NewID(component.MustNewType("mock"))
+	dummyID       = component.NewID(component.MustNewType("dummy"))
+	nonExistingID = component.NewID(component.MustNewType("nonexisting"))
 )
 
 func TestAllHTTPClientSettings(t *testing.T) {

@@ -14,7 +14,7 @@ import (
 )
 
 // The value of "type" key in configuration.
-var componentType = component.MustType("debug")
+var componentType = component.MustNewType("debug")
 
 const (
 	defaultSamplingInitial    = 2

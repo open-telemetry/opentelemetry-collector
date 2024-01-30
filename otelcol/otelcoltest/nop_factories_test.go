@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-var nopType = component.MustType("nop")
+var nopType = component.MustNewType("nop")
 
 func TestNopFactories(t *testing.T) {
 	nopFactories, err := NopFactories()

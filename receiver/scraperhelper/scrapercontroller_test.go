@@ -134,7 +134,7 @@ func TestScrapeController(t *testing.T) {
 	for _, test := range testCases {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			receiverID := component.NewID(component.MustType("receiver"))
+			receiverID := component.NewID(component.MustNewType("receiver"))
 			tt, err := componenttest.SetupTelemetry(receiverID)
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -326,7 +326,7 @@ func assertScraperViews(t *testing.T, tt componenttest.TestTelemetry, expectedEr
 		}
 	}
 
-	require.NoError(t, tt.CheckScraperMetrics(component.NewID(component.MustType("receiver")), component.NewID(component.MustType("scraper")), expectedScraped, expectedErrored))
+	require.NoError(t, tt.CheckScraperMetrics(component.NewID(component.MustNewType("receiver")), component.NewID(component.MustNewType("scraper")), expectedScraped, expectedErrored))
 }
 
 func TestSingleScrapePerInterval(t *testing.T) {

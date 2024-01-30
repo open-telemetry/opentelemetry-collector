@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var testType = component.MustType("exampleexporter")
+var testType = component.MustNewType("exampleexporter")
 
 const stability = component.StabilityLevelDevelopment
 

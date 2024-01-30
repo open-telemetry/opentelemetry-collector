@@ -83,7 +83,7 @@ func (g *exampleGenerator) Generate() []UniqueIDAttrVal {
 
 func newExampleFactory() receiver.Factory {
 	return receiver.NewFactory(
-		component.MustType("example_receiver"),
+		component.MustNewType("example_receiver"),
 		func() component.Config {
 			return &exampleReceiverConfig{}
 		},

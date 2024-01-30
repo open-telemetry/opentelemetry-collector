@@ -22,7 +22,7 @@ func TestScrapeControllerSettings(t *testing.T) {
 	}{
 		{
 			name:   "default configuration",
-			set:    NewDefaultScraperControllerSettings(component.MustType("test")),
+			set:    NewDefaultScraperControllerSettings(component.MustNewType("test")),
 			errVal: "",
 		},
 		{

@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	defaultType     = component.MustType("test")
+	defaultType     = component.MustNewType("test")
 	defaultID       = component.NewID(defaultType)
 	defaultSettings = func() exporter.CreateSettings {
 		set := exportertest.NewNopCreateSettings()

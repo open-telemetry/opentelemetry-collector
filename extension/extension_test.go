@@ -21,7 +21,7 @@ type nopExtension struct {
 }
 
 func TestNewFactory(t *testing.T) {
-	var testType = component.MustType("test")
+	var testType = component.MustNewType("test")
 	defaultCfg := struct{}{}
 	nopExtensionInstance := new(nopExtension)
 
@@ -48,8 +48,8 @@ func TestMakeFactoryMap(t *testing.T) {
 		out  map[component.Type]Factory
 	}
 
-	p1 := NewFactory(component.MustType("p1"), nil, nil, component.StabilityLevelAlpha)
-	p2 := NewFactory(component.MustType("p2"), nil, nil, component.StabilityLevelAlpha)
+	p1 := NewFactory(component.MustNewType("p1"), nil, nil, component.StabilityLevelAlpha)
+	p2 := NewFactory(component.MustNewType("p2"), nil, nil, component.StabilityLevelAlpha)
 	testCases := []testCase{
 		{
 			name: "different names",
@@ -61,7 +61,7 @@ func TestMakeFactoryMap(t *testing.T) {
 		},
 		{
 			name: "same name",
-			in:   []Factory{p1, p2, NewFactory(component.MustType("p1"), nil, nil, component.StabilityLevelAlpha)},
+			in:   []Factory{p1, p2, NewFactory(component.MustNewType("p1"), nil, nil, component.StabilityLevelAlpha)},
 		},
 	}
 	for i := range testCases {
@@ -79,10 +79,10 @@ func TestMakeFactoryMap(t *testing.T) {
 }
 
 func TestBuilder(t *testing.T) {
-	var testType = component.MustType("test")
+	var testType = component.MustNewType("test")
 	defaultCfg := struct{}{}
 	testID := component.NewID(testType)
-	unknownID := component.NewID(component.MustType("unknown"))
+	unknownID := component.NewID(component.MustNewType("unknown"))
 
 	factories, err := MakeFactoryMap([]Factory{
 		NewFactory(
@@ -117,14 +117,14 @@ func TestBuilder(t *testing.T) {
 }
 
 func TestBuilderFactory(t *testing.T) {
-	factories, err := MakeFactoryMap([]Factory{NewFactory(component.MustType("foo"), nil, nil, component.StabilityLevelDevelopment)}...)
+	factories, err := MakeFactoryMap([]Factory{NewFactory(component.MustNewType("foo"), nil, nil, component.StabilityLevelDevelopment)}...)
 	require.NoError(t, err)
 
-	cfgs := map[component.ID]component.Config{component.NewID(component.MustType("foo")): struct{}{}}
+	cfgs := map[component.ID]component.Config{component.NewID(component.MustNewType("foo")): struct{}{}}
 	b := NewBuilder(cfgs, factories)
 
-	assert.NotNil(t, b.Factory(component.NewID(component.MustType("foo")).Type()))
-	assert.Nil(t, b.Factory(component.NewID(component.MustType("bar")).Type()))
+	assert.NotNil(t, b.Factory(component.NewID(component.MustNewType("foo")).Type()))
+	assert.Nil(t, b.Factory(component.NewID(component.MustNewType("bar")).Type()))
 }
 
 func createSettings(id component.ID) CreateSettings {

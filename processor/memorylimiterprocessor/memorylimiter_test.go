@@ -467,7 +467,7 @@ type host struct {
 
 func (h *host) GetExtensions() map[component.ID]component.Component {
 	ret := make(map[component.ID]component.Component)
-	ret[component.NewID(component.MustType("ballast"))] = &ballastExtension{ballastSize: h.ballastSize}
+	ret[component.NewID(component.MustNewType("ballast"))] = &ballastExtension{ballastSize: h.ballastSize}
 	return ret
 }
 

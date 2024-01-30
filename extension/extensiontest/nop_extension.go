@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 )
 
-var nopType = component.MustType("nop")
+var nopType = component.MustNewType("nop")
 
 // NewNopCreateSettings returns a new nop settings for extension.Factory Create* functions.
 func NewNopCreateSettings() extension.CreateSettings {

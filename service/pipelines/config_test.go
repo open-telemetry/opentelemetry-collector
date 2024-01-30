@@ -28,7 +28,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "duplicate-processor-reference",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				pipe := cfg[component.NewID(component.MustType("traces"))]
+				pipe := cfg[component.NewID(component.MustNewType("traces"))]
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
@@ -38,7 +38,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "missing-pipeline-receivers",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[component.NewID(component.MustType("traces"))].Receivers = nil
+				cfg[component.NewID(component.MustNewType("traces"))].Receivers = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`pipeline "traces": %w`, errMissingServicePipelineReceivers),
@@ -47,7 +47,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "missing-pipeline-exporters",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[component.NewID(component.MustType("traces"))].Exporters = nil
+				cfg[component.NewID(component.MustNewType("traces"))].Exporters = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`pipeline "traces": %w`, errMissingServicePipelineExporters),
@@ -63,10 +63,10 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-service-pipeline-type",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[component.NewID(component.MustType("wrongtype"))] = &PipelineConfig{
-					Receivers:  []component.ID{component.NewID(component.MustType("nop"))},
-					Processors: []component.ID{component.NewID(component.MustType("nop"))},
-					Exporters:  []component.ID{component.NewID(component.MustType("nop"))},
+				cfg[component.NewID(component.MustNewType("wrongtype"))] = &PipelineConfig{
+					Receivers:  []component.ID{component.NewID(component.MustNewType("nop"))},
+					Processors: []component.ID{component.NewID(component.MustNewType("nop"))},
+					Exporters:  []component.ID{component.NewID(component.MustNewType("nop"))},
 				}
 				return cfg
 			},
@@ -84,10 +84,10 @@ func TestConfigValidate(t *testing.T) {
 
 func generateConfig() Config {
 	return map[component.ID]*PipelineConfig{
-		component.NewID(component.MustType("traces")): {
-			Receivers:  []component.ID{component.NewID(component.MustType("nop"))},
-			Processors: []component.ID{component.NewID(component.MustType("nop"))},
-			Exporters:  []component.ID{component.NewID(component.MustType("nop"))},
+		component.NewID(component.MustNewType("traces")): {
+			Receivers:  []component.ID{component.NewID(component.MustNewType("nop"))},
+			Processors: []component.ID{component.NewID(component.MustNewType("nop"))},
+			Exporters:  []component.ID{component.NewID(component.MustNewType("nop"))},
 		},
 	}
 }

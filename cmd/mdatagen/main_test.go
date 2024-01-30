@@ -329,7 +329,7 @@ import (
 )
 
 var (
-	Type = component.MustType("foo")
+	Type = component.MustNewType("foo")
 )
 
 const (
@@ -366,7 +366,7 @@ import (
 )
 
 var (
-	Type = component.MustType("foo")
+	Type = component.MustNewType("foo")
 )
 
 const (

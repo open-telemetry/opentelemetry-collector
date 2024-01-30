@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	Type = component.MustType("otlp")
+	Type = component.MustNewType("otlp")
 )
 
 const (

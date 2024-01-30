@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	Type = component.MustType("forward")
+	Type = component.MustNewType("forward")
 )
 
 const (

@@ -18,8 +18,8 @@ import (
 )
 
 var (
-	testType = component.MustType("test")
-	testID   = component.NewIDWithName(component.MustType("type"), "name")
+	testType = component.MustNewType("test")
+	testID   = component.NewIDWithName(component.MustNewType("type"), "name")
 )
 
 func TestNewFactoryNoOptions(t *testing.T) {
@@ -184,8 +184,8 @@ func TestMakeFactoryMap(t *testing.T) {
 		out  map[component.Type]Factory
 	}
 
-	p1 := NewFactory(component.MustType("p1"), nil)
-	p2 := NewFactory(component.MustType("p2"), nil)
+	p1 := NewFactory(component.MustNewType("p1"), nil)
+	p2 := NewFactory(component.MustNewType("p2"), nil)
 	testCases := []testCase{
 		{
 			name: "different names",
@@ -197,7 +197,7 @@ func TestMakeFactoryMap(t *testing.T) {
 		},
 		{
 			name: "same name",
-			in:   []Factory{p1, p2, NewFactory(component.MustType("p1"), nil)},
+			in:   []Factory{p1, p2, NewFactory(component.MustNewType("p1"), nil)},
 		},
 	}
 
@@ -218,9 +218,9 @@ func TestMakeFactoryMap(t *testing.T) {
 func TestBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := MakeFactoryMap([]Factory{
-		NewFactory(component.MustType("err"), nil),
+		NewFactory(component.MustNewType("err"), nil),
 		NewFactory(
-			component.MustType("all"),
+			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
 			WithTracesToTraces(createTracesToTraces, component.StabilityLevelDevelopment),
 			WithTracesToMetrics(createTracesToMetrics, component.StabilityLevelDevelopment),
@@ -242,28 +242,28 @@ func TestBuilder(t *testing.T) {
 	}{
 		{
 			name: "unknown",
-			id:   component.NewID(component.MustType("unknown")),
+			id:   component.NewID(component.MustNewType("unknown")),
 			err: func(_, _ component.DataType) string {
 				return "connector factory not available for: \"unknown\""
 			},
 		},
 		{
 			name: "err",
-			id:   component.NewID(component.MustType("err")),
+			id:   component.NewID(component.MustNewType("err")),
 			err: func(expType, rcvType component.DataType) string {
 				return fmt.Sprintf("connector \"err\" cannot connect from %s to %s: telemetry type is not supported", expType, rcvType)
 			},
 		},
 		{
 			name: "all",
-			id:   component.NewID(component.MustType("all")),
+			id:   component.NewID(component.MustNewType("all")),
 			err: func(_, _ component.DataType) string {
 				return ""
 			},
 		},
 		{
 			name: "all/named",
-			id:   component.NewIDWithName(component.MustType("all"), "named"),
+			id:   component.NewIDWithName(component.MustNewType("all"), "named"),
 			err: func(_, _ component.DataType) string {
 				return ""
 			},
@@ -361,7 +361,7 @@ func TestBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := MakeFactoryMap([]Factory{
 		NewFactory(
-			component.MustType("all"),
+			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
 			WithTracesToTraces(createTracesToTraces, component.StabilityLevelDevelopment),
 			WithTracesToMetrics(createTracesToMetrics, component.StabilityLevelDevelopment),
@@ -378,7 +378,7 @@ func TestBuilderMissingConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	bErr := NewBuilder(map[component.ID]component.Config{}, factories)
-	missingID := component.NewIDWithName(component.MustType("all"), "missing")
+	missingID := component.NewIDWithName(component.MustNewType("all"), "missing")
 
 	t2t, err := bErr.CreateTracesToTraces(context.Background(), createSettings(missingID), nil)
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
@@ -418,17 +418,17 @@ func TestBuilderMissingConfig(t *testing.T) {
 }
 
 func TestBuilderGetters(t *testing.T) {
-	factories, err := MakeFactoryMap([]Factory{NewFactory(component.MustType("foo"), nil)}...)
+	factories, err := MakeFactoryMap([]Factory{NewFactory(component.MustNewType("foo"), nil)}...)
 	require.NoError(t, err)
 
-	cfgs := map[component.ID]component.Config{component.NewID(component.MustType("foo")): struct{}{}}
+	cfgs := map[component.ID]component.Config{component.NewID(component.MustNewType("foo")): struct{}{}}
 	b := NewBuilder(cfgs, factories)
 
-	assert.True(t, b.IsConfigured(component.NewID(component.MustType("foo"))))
-	assert.False(t, b.IsConfigured(component.NewID(component.MustType("bar"))))
+	assert.True(t, b.IsConfigured(component.NewID(component.MustNewType("foo"))))
+	assert.False(t, b.IsConfigured(component.NewID(component.MustNewType("bar"))))
 
-	assert.NotNil(t, b.Factory(component.NewID(component.MustType("foo")).Type()))
-	assert.Nil(t, b.Factory(component.NewID(component.MustType("bar")).Type()))
+	assert.NotNil(t, b.Factory(component.NewID(component.MustNewType("foo")).Type()))
+	assert.Nil(t, b.Factory(component.NewID(component.MustNewType("bar")).Type()))
 }
 
 var nopInstance = &nopConnector{

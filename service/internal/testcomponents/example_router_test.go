@@ -31,8 +31,8 @@ func TestExampleRouter(t *testing.T) {
 }
 
 func TestTracesRouter(t *testing.T) {
-	leftID := component.NewIDWithName(component.MustType("sink"), "left")
-	rightID := component.NewIDWithName(component.MustType("sink"), "right")
+	leftID := component.NewIDWithName(component.MustNewType("sink"), "left")
+	rightID := component.NewIDWithName(component.MustNewType("sink"), "right")
 
 	sinkLeft := new(consumertest.TracesSink)
 	sinkRight := new(consumertest.TracesSink)
@@ -70,8 +70,8 @@ func TestTracesRouter(t *testing.T) {
 }
 
 func TestMetricsRouter(t *testing.T) {
-	leftID := component.NewIDWithName(component.MustType("sink"), "left")
-	rightID := component.NewIDWithName(component.MustType("sink"), "right")
+	leftID := component.NewIDWithName(component.MustNewType("sink"), "left")
+	rightID := component.NewIDWithName(component.MustNewType("sink"), "right")
 
 	sinkLeft := new(consumertest.MetricsSink)
 	sinkRight := new(consumertest.MetricsSink)
@@ -109,8 +109,8 @@ func TestMetricsRouter(t *testing.T) {
 }
 
 func TestLogsRouter(t *testing.T) {
-	leftID := component.NewIDWithName(component.MustType("sink"), "left")
-	rightID := component.NewIDWithName(component.MustType("sink"), "right")
+	leftID := component.NewIDWithName(component.MustNewType("sink"), "left")
+	rightID := component.NewIDWithName(component.MustNewType("sink"), "right")
 
 	sinkLeft := new(consumertest.LogsSink)
 	sinkRight := new(consumertest.LogsSink)

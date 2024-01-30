@@ -36,10 +36,10 @@ func TestPromChecker(t *testing.T) {
 	pc, err := newStubPromChecker()
 	require.NoError(t, err)
 
-	scraper := component.NewID(component.MustType("fakeScraper"))
-	receiver := component.NewID(component.MustType("fakeReceiver"))
-	processor := component.NewID(component.MustType("fakeProcessor"))
-	exporter := component.NewID(component.MustType("fakeExporter"))
+	scraper := component.NewID(component.MustNewType("fakeScraper"))
+	receiver := component.NewID(component.MustNewType("fakeReceiver"))
+	processor := component.NewID(component.MustNewType("fakeProcessor"))
+	exporter := component.NewID(component.MustNewType("fakeExporter"))
 	transport := "fakeTransport"
 
 	assert.NoError(t,

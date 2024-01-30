@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
-var nopType = component.MustType("nop")
+var nopType = component.MustNewType("nop")
 
 func TestNewNopFactory(t *testing.T) {
 	factory := NewNopFactory()

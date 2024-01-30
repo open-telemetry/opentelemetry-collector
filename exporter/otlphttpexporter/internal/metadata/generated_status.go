@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	Type = component.MustType("otlphttp")
+	Type = component.MustNewType("otlphttp")
 )
 
 const (

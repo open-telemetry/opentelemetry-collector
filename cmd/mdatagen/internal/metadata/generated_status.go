@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	Type = component.MustType("file")
+	Type = component.MustNewType("file")
 )
 
 const (

@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 )
 
-var nopType = component.MustType("nop")
+var nopType = component.MustNewType("nop")
 
 // NewNopCreateSettings returns a new nop settings for Create*Exporter functions.
 func NewNopCreateSettings() exporter.CreateSettings {

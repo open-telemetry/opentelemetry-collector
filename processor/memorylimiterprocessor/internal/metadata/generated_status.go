@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	Type = component.MustType("memory_limiter")
+	Type = component.MustNewType("memory_limiter")
 )
 
 const (

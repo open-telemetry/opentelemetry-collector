@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	Type = component.MustType("logging")
+	Type = component.MustNewType("logging")
 )
 
 const (

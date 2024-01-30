@@ -16,7 +16,7 @@ import (
 )
 
 func TestNewFactory(t *testing.T) {
-	var testType = component.MustType("test")
+	var testType = component.MustNewType("test")
 	defaultCfg := struct{}{}
 	factory := NewFactory(
 		testType,
@@ -32,7 +32,7 @@ func TestNewFactory(t *testing.T) {
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {
-	var testType = component.MustType("test")
+	var testType = component.MustNewType("test")
 	defaultCfg := struct{}{}
 	factory := NewFactory(
 		testType,
@@ -63,8 +63,8 @@ func TestMakeFactoryMap(t *testing.T) {
 		out  map[component.Type]Factory
 	}
 
-	p1 := NewFactory(component.MustType("p1"), nil)
-	p2 := NewFactory(component.MustType("p2"), nil)
+	p1 := NewFactory(component.MustNewType("p1"), nil)
+	p2 := NewFactory(component.MustNewType("p2"), nil)
 	testCases := []testCase{
 		{
 			name: "different names",
@@ -76,7 +76,7 @@ func TestMakeFactoryMap(t *testing.T) {
 		},
 		{
 			name: "same name",
-			in:   []Factory{p1, p2, NewFactory(component.MustType("p1"), nil)},
+			in:   []Factory{p1, p2, NewFactory(component.MustNewType("p1"), nil)},
 		},
 	}
 
@@ -97,9 +97,9 @@ func TestMakeFactoryMap(t *testing.T) {
 func TestBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := MakeFactoryMap([]Factory{
-		NewFactory(component.MustType("err"), nil),
+		NewFactory(component.MustNewType("err"), nil),
 		NewFactory(
-			component.MustType("all"),
+			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
 			WithTraces(createTraces, component.StabilityLevelDevelopment),
 			WithMetrics(createMetrics, component.StabilityLevelAlpha),
@@ -115,21 +115,21 @@ func TestBuilder(t *testing.T) {
 	}{
 		{
 			name: "unknown",
-			id:   component.NewID(component.MustType("unknown")),
+			id:   component.NewID(component.MustNewType("unknown")),
 			err:  "exporter factory not available for: \"unknown\"",
 		},
 		{
 			name: "err",
-			id:   component.NewID(component.MustType("err")),
+			id:   component.NewID(component.MustNewType("err")),
 			err:  "telemetry type is not supported",
 		},
 		{
 			name: "all",
-			id:   component.NewID(component.MustType("all")),
+			id:   component.NewID(component.MustNewType("all")),
 		},
 		{
 			name: "all/named",
-			id:   component.NewIDWithName(component.MustType("all"), "named"),
+			id:   component.NewIDWithName(component.MustNewType("all"), "named"),
 		},
 	}
 
@@ -172,7 +172,7 @@ func TestBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := MakeFactoryMap([]Factory{
 		NewFactory(
-			component.MustType("all"),
+			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
 			WithTraces(createTraces, component.StabilityLevelDevelopment),
 			WithMetrics(createMetrics, component.StabilityLevelAlpha),
@@ -183,7 +183,7 @@ func TestBuilderMissingConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	bErr := NewBuilder(map[component.ID]component.Config{}, factories)
-	missingID := component.NewIDWithName(component.MustType("all"), "missing")
+	missingID := component.NewIDWithName(component.MustNewType("all"), "missing")
 
 	te, err := bErr.CreateTraces(context.Background(), createSettings(missingID))
 	assert.EqualError(t, err, "exporter \"all/missing\" is not configured")
@@ -199,14 +199,14 @@ func TestBuilderMissingConfig(t *testing.T) {
 }
 
 func TestBuilderFactory(t *testing.T) {
-	factories, err := MakeFactoryMap([]Factory{NewFactory(component.MustType("foo"), nil)}...)
+	factories, err := MakeFactoryMap([]Factory{NewFactory(component.MustNewType("foo"), nil)}...)
 	require.NoError(t, err)
 
-	cfgs := map[component.ID]component.Config{component.NewID(component.MustType("foo")): struct{}{}}
+	cfgs := map[component.ID]component.Config{component.NewID(component.MustNewType("foo")): struct{}{}}
 	b := NewBuilder(cfgs, factories)
 
-	assert.NotNil(t, b.Factory(component.NewID(component.MustType("foo")).Type()))
-	assert.Nil(t, b.Factory(component.NewID(component.MustType("bar")).Type()))
+	assert.NotNil(t, b.Factory(component.NewID(component.MustNewType("foo")).Type()))
+	assert.Nil(t, b.Factory(component.NewID(component.MustNewType("bar")).Type()))
 }
 
 var nopInstance = &nopExporter{

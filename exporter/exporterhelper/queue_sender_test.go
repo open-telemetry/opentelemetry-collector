@@ -237,7 +237,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	qCfg := NewDefaultQueueSettings()
-	storageID := component.NewIDWithName(component.MustType("file_storage"), "storage")
+	storageID := component.NewIDWithName(component.MustNewType("file_storage"), "storage")
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := configretry.NewDefaultBackOffConfig()
 	set := exporter.CreateSettings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
@@ -261,7 +261,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	qCfg := NewDefaultQueueSettings()
-	storageID := component.NewIDWithName(component.MustType("file_storage"), "storage")
+	storageID := component.NewIDWithName(component.MustNewType("file_storage"), "storage")
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := configretry.NewDefaultBackOffConfig()
 	set := exporter.CreateSettings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
@@ -280,7 +280,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	storageID := component.NewIDWithName(component.MustType("file_storage"), "storage")
+	storageID := component.NewIDWithName(component.MustNewType("file_storage"), "storage")
 	qCfg.StorageID = &storageID // enable persistence to ensure data is re-queued on shutdown
 
 	rCfg := configretry.NewDefaultBackOffConfig()

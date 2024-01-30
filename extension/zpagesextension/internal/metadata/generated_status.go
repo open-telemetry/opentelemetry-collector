@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	Type = component.MustType("zpages")
+	Type = component.MustNewType("zpages")
 )
 
 const (

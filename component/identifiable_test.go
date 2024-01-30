@@ -10,14 +10,14 @@ import (
 )
 
 func TestMarshalText(t *testing.T) {
-	id := NewIDWithName(MustType("test"), "name")
+	id := NewIDWithName(MustNewType("test"), "name")
 	got, err := id.MarshalText()
 	assert.NoError(t, err)
 	assert.Equal(t, id.String(), string(got))
 }
 
 func TestUnmarshalText(t *testing.T) {
-	validType := MustType("valid_type")
+	validType := MustNewType("valid_type")
 	var testCases = []struct {
 		idStr       string
 		expectedErr bool

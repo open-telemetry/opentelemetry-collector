@@ -16,7 +16,7 @@ import (
 )
 
 // The value of "type" key in configuration.
-var componentType = component.MustType("logging")
+var componentType = component.MustNewType("logging")
 
 const (
 	defaultSamplingInitial    = 2

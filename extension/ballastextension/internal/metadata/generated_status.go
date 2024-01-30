@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	Type = component.MustType("memory_ballast")
+	Type = component.MustNewType("memory_ballast")
 )
 
 const (

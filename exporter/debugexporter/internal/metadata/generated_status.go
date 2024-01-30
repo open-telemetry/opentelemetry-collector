@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	Type = component.MustType("debug")
+	Type = component.MustNewType("debug")
 )
 
 const (

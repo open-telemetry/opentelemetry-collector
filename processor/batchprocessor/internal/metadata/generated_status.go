@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	Type = component.MustType("batch")
+	Type = component.MustNewType("batch")
 )
 
 const (

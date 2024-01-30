@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-var nopType = component.MustType("nop")
+var nopType = component.MustNewType("nop")
 
 var testKinds = []struct {
 	kind      string

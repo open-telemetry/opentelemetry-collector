@@ -48,7 +48,7 @@ func fuzzMetrics(numIDs, numCons, numMetrics int) func(*testing.T) {
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
-			allIDs = append(allIDs, component.NewIDWithName(component.MustType("sink"), strconv.Itoa(numCons)))
+			allIDs = append(allIDs, component.NewIDWithName(component.MustNewType("sink"), strconv.Itoa(numCons)))
 			// Random chance for each consumer to be mutating
 			if (numCons+numMetrics+i)%4 == 0 {
 				allCons = append(allCons, &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)})
@@ -108,8 +108,8 @@ func TestMetricsRouterConsumers(t *testing.T) {
 	ctx := context.Background()
 	md := testdata.GenerateMetrics(1)
 
-	fooID := component.NewID(component.MustType("foo"))
-	barID := component.NewID(component.MustType("bar"))
+	fooID := component.NewID(component.MustNewType("foo"))
+	barID := component.NewID(component.MustNewType("bar"))
 
 	foo := new(consumertest.MetricsSink)
 	bar := new(consumertest.MetricsSink)
@@ -150,7 +150,7 @@ func TestMetricsRouterConsumers(t *testing.T) {
 	assert.Nil(t, none)
 	assert.Error(t, err)
 
-	fake, err := r.Consumer(component.NewID(component.MustType("fake")))
+	fake, err := r.Consumer(component.NewID(component.MustNewType("fake")))
 	assert.Nil(t, fake)
 	assert.Error(t, err)
 }

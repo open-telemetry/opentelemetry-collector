@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 )
 
-var nopType = component.MustType("nop")
+var nopType = component.MustNewType("nop")
 
 // NewNopCreateSettings returns a new nop settings for Create* functions.
 func NewNopCreateSettings() processor.CreateSettings {

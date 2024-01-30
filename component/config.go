@@ -139,12 +139,12 @@ func newType(ty string) (Type, error) {
 	return Type(ty), nil
 }
 
-// MustType creates a type. It panics if the type is invalid.
+// MustNewType creates a type. It panics if the type is invalid.
 // A type must
 // - have at least one character,
 // - start with an ASCII alphabetic character and
 // - can only contain ASCII alphanumeric characters and '_'.
-func MustType(strType string) Type {
+func MustNewType(strType string) Type {
 	ty, err := newType(strType)
 	if err != nil {
 		panic(err)

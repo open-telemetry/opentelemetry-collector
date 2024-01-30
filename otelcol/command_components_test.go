@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-var nopType = component.MustType("nop")
+var nopType = component.MustNewType("nop")
 
 func TestNewBuildSubCommand(t *testing.T) {
 	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))

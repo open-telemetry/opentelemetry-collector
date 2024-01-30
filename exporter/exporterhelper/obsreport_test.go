@@ -15,7 +15,7 @@ import (
 )
 
 func TestExportEnqueueFailure(t *testing.T) {
-	exporterID := component.NewID(component.MustType("fakeExporter"))
+	exporterID := component.NewID(component.MustNewType("fakeExporter"))
 	tt, err := componenttest.SetupTelemetry(exporterID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })

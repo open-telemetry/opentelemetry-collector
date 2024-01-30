@@ -24,7 +24,7 @@ func NewStatusWatcherExtensionFactory(
 	onStatusChanged func(source *component.InstanceID, event *component.StatusEvent),
 ) extension.Factory {
 	return extension.NewFactory(
-		component.MustType("statuswatcher"),
+		component.MustNewType("statuswatcher"),
 		func() component.Config {
 			return &struct{}{}
 		},

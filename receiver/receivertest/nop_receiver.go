@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-var componentType = component.MustType("nop")
+var componentType = component.MustNewType("nop")
 
 // NewNopCreateSettings returns a new nop settings for Create* functions.
 func NewNopCreateSettings() receiver.CreateSettings {
