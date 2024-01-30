@@ -7,6 +7,7 @@ module-sets:
     modules:
       - go.opentelemetry.io/collector/featuregate
       - go.opentelemetry.io/collector/pdata
+      - go.opentelemetry.io/collector/config/configopaque
   beta:
     version: v0.93.0
     modules:
@@ -20,7 +21,6 @@ module-sets:
       - go.opentelemetry.io/collector/config/configgrpc
       - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/confignet
-      - go.opentelemetry.io/collector/config/configopaque
       - go.opentelemetry.io/collector/config/configretry
       - go.opentelemetry.io/collector/config/configtelemetry
       - go.opentelemetry.io/collector/config/configtls
