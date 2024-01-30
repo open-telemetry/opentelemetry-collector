@@ -45,18 +45,6 @@ func (na *NetAddr) Listen(ctx context.Context) (net.Listener, error) {
 	return lc.Listen(ctx, na.Transport, na.Endpoint)
 }
 
-// DialContext equivalent with net.Dialer's DialContext for this address.
-// Deprecated: [v0.93.0] use Dial instead.
-func (na *NetAddr) DialContext(ctx context.Context) (net.Conn, error) {
-	return na.Dial(ctx)
-}
-
-// ListenContext equivalent with net.ListenConfig's Listen for this address.
-// Deprecated: [v0.93.0] use Listen instead.
-func (na *NetAddr) ListenContext(ctx context.Context) (net.Listener, error) {
-	return na.Listen(ctx)
-}
-
 // TCPAddr represents a TCP endpoint address.
 type TCPAddr struct {
 	// Endpoint configures the address for this network connection.
@@ -80,16 +68,4 @@ func (na *TCPAddr) Dial(ctx context.Context) (net.Conn, error) {
 func (na *TCPAddr) Listen(ctx context.Context) (net.Listener, error) {
 	lc := net.ListenConfig{}
 	return lc.Listen(ctx, "tcp", na.Endpoint)
-}
-
-// DialContext equivalent with net.Dialer's DialContext for this address.
-// Deprecated: [v0.93.0] use Dial instead.
-func (na *TCPAddr) DialContext(ctx context.Context) (net.Conn, error) {
-	return na.Dial(ctx)
-}
-
-// ListenContext equivalent with net.ListenConfig's Listen for this address.
-// Deprecated: [v0.93.0] use Listen instead.
-func (na *TCPAddr) ListenContext(ctx context.Context) (net.Listener, error) {
-	return na.Listen(ctx)
 }
