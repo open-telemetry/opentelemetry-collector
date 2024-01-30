@@ -26,10 +26,10 @@ jobs:
       - name: Validate version format
         run: |
           validate_version() {
-              if [[ ! "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rcv[0-9]+)?$ ]]; then
-                  echo "Invalid $2 version format. It should be like 1.0.0 or 1.0.0-rcv0014."
-                  exit 1
-              fi
+             if [[ ! "$1" =~ ^[1-9][0-9]*\.[1-9][0-9]*\.[1-9][0-9]*(-rcv[0-9]+)?$ ]]; then
+                 echo "Invalid $2 version format. It should be like 1.0.0 or 1.0.0-rcv0014."
+                 exit 1
+             fi
           }
 
           validate_version "${{ inputs.candidate-stable }}" "candidate-stable"
