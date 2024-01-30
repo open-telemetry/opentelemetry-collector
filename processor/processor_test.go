@@ -116,21 +116,21 @@ func TestBuilder(t *testing.T) {
 	}{
 		{
 			name: "unknown",
-			id:   component.NewID(component.MustNewType("unknown")),
+			id:   component.MustNewID("unknown"),
 			err:  "processor factory not available for: \"unknown\"",
 		},
 		{
 			name: "err",
-			id:   component.NewID(component.MustNewType("err")),
+			id:   component.MustNewID("err"),
 			err:  "telemetry type is not supported",
 		},
 		{
 			name: "all",
-			id:   component.NewID(component.MustNewType("all")),
+			id:   component.MustNewID("all"),
 		},
 		{
 			name: "all/named",
-			id:   component.NewIDWithName(component.MustNewType("all"), "named"),
+			id:   component.MustNewIDWithName("all", "named"),
 		},
 	}
 
@@ -184,7 +184,7 @@ func TestBuilderMissingConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	bErr := NewBuilder(map[component.ID]component.Config{}, factories)
-	missingID := component.NewIDWithName(component.MustNewType("all"), "missing")
+	missingID := component.MustNewIDWithName("all", "missing")
 
 	te, err := bErr.CreateTraces(context.Background(), createSettings(missingID), nil)
 	assert.EqualError(t, err, "processor \"all/missing\" is not configured")
@@ -203,11 +203,11 @@ func TestBuilderFactory(t *testing.T) {
 	factories, err := MakeFactoryMap([]Factory{NewFactory(component.MustNewType("foo"), nil)}...)
 	require.NoError(t, err)
 
-	cfgs := map[component.ID]component.Config{component.NewID(component.MustNewType("foo")): struct{}{}}
+	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
 	b := NewBuilder(cfgs, factories)
 
-	assert.NotNil(t, b.Factory(component.NewID(component.MustNewType("foo")).Type()))
-	assert.Nil(t, b.Factory(component.NewID(component.MustNewType("bar")).Type()))
+	assert.NotNil(t, b.Factory(component.MustNewID("foo").Type()))
+	assert.Nil(t, b.Factory(component.MustNewID("bar").Type()))
 }
 
 var nopInstance = &nopProcessor{

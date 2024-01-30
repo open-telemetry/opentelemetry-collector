@@ -21,8 +21,8 @@ import (
 )
 
 var (
-	receiverID = component.NewID(component.MustNewType("fakeReceiver"))
-	scraperID  = component.NewID(component.MustNewType("fakeScraper"))
+	receiverID = component.MustNewID("fakeReceiver")
+	scraperID  = component.MustNewID("fakeScraper")
 
 	errFake        = errors.New("errFake")
 	partialErrFake = scrapererror.NewPartialScrapeError(errFake, 1)

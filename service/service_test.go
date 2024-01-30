@@ -240,7 +240,7 @@ func TestServiceGetExporters(t *testing.T) {
 // and another service with a valid config can be started right after.
 func TestServiceTelemetryCleanupOnError(t *testing.T) {
 	invalidCfg := newNopConfig()
-	invalidCfg.Pipelines[component.NewID(component.MustNewType("traces"))].Processors[0] = component.NewID(component.MustNewType("invalid"))
+	invalidCfg.Pipelines[component.MustNewID("traces")].Processors[0] = component.MustNewID("invalid")
 	// Create a service with an invalid config and expect an error
 	_, err := New(context.Background(), newNopSettings(), invalidCfg)
 	require.Error(t, err)
@@ -275,12 +275,12 @@ func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase) {
 	set := newNopSettings()
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
 	set.Extensions = extension.NewBuilder(
-		map[component.ID]component.Config{component.NewID(component.MustNewType("zpages")): &zpagesextension.Config{TCPAddr: confignet.TCPAddr{Endpoint: zpagesAddr}}},
+		map[component.ID]component.Config{component.MustNewID("zpages"): &zpagesextension.Config{TCPAddr: confignet.TCPAddr{Endpoint: zpagesAddr}}},
 		map[component.Type]extension.Factory{component.MustNewType("zpages"): zpagesextension.NewFactory()})
 	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
 
 	cfg := newNopConfig()
-	cfg.Extensions = []component.ID{component.NewID(component.MustNewType("zpages"))}
+	cfg.Extensions = []component.ID{component.MustNewID("zpages")}
 	cfg.Telemetry.Metrics.Address = metricsAddr
 	cfg.Telemetry.Resource = make(map[string]*string)
 	// Include resource attributes under the service::telemetry::resource key.
@@ -532,17 +532,17 @@ func newNopSettings() Settings {
 
 func newNopConfig() Config {
 	return newNopConfigPipelineConfigs(pipelines.Config{
-		component.NewID(component.MustNewType("traces")): {
+		component.MustNewID("traces"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		component.NewID(component.MustNewType("metrics")): {
+		component.MustNewID("metrics"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		component.NewID(component.MustNewType("logs")): {
+		component.MustNewID("logs"): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},

@@ -19,7 +19,7 @@ import (
 
 var (
 	testType = component.MustNewType("test")
-	testID   = component.NewIDWithName(component.MustNewType("type"), "name")
+	testID   = component.MustNewIDWithName("type", "name")
 )
 
 func TestNewFactoryNoOptions(t *testing.T) {
@@ -242,28 +242,28 @@ func TestBuilder(t *testing.T) {
 	}{
 		{
 			name: "unknown",
-			id:   component.NewID(component.MustNewType("unknown")),
+			id:   component.MustNewID("unknown"),
 			err: func(_, _ component.DataType) string {
 				return "connector factory not available for: \"unknown\""
 			},
 		},
 		{
 			name: "err",
-			id:   component.NewID(component.MustNewType("err")),
+			id:   component.MustNewID("err"),
 			err: func(expType, rcvType component.DataType) string {
 				return fmt.Sprintf("connector \"err\" cannot connect from %s to %s: telemetry type is not supported", expType, rcvType)
 			},
 		},
 		{
 			name: "all",
-			id:   component.NewID(component.MustNewType("all")),
+			id:   component.MustNewID("all"),
 			err: func(_, _ component.DataType) string {
 				return ""
 			},
 		},
 		{
 			name: "all/named",
-			id:   component.NewIDWithName(component.MustNewType("all"), "named"),
+			id:   component.MustNewIDWithName("all", "named"),
 			err: func(_, _ component.DataType) string {
 				return ""
 			},
@@ -378,7 +378,7 @@ func TestBuilderMissingConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	bErr := NewBuilder(map[component.ID]component.Config{}, factories)
-	missingID := component.NewIDWithName(component.MustNewType("all"), "missing")
+	missingID := component.MustNewIDWithName("all", "missing")
 
 	t2t, err := bErr.CreateTracesToTraces(context.Background(), createSettings(missingID), nil)
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
@@ -421,14 +421,14 @@ func TestBuilderGetters(t *testing.T) {
 	factories, err := MakeFactoryMap([]Factory{NewFactory(component.MustNewType("foo"), nil)}...)
 	require.NoError(t, err)
 
-	cfgs := map[component.ID]component.Config{component.NewID(component.MustNewType("foo")): struct{}{}}
+	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
 	b := NewBuilder(cfgs, factories)
 
-	assert.True(t, b.IsConfigured(component.NewID(component.MustNewType("foo"))))
-	assert.False(t, b.IsConfigured(component.NewID(component.MustNewType("bar"))))
+	assert.True(t, b.IsConfigured(component.MustNewID("foo")))
+	assert.False(t, b.IsConfigured(component.MustNewID("bar")))
 
-	assert.NotNil(t, b.Factory(component.NewID(component.MustNewType("foo")).Type()))
-	assert.Nil(t, b.Factory(component.NewID(component.MustNewType("bar")).Type()))
+	assert.NotNil(t, b.Factory(component.MustNewID("foo").Type()))
+	assert.Nil(t, b.Factory(component.MustNewID("bar").Type()))
 }
 
 var nopInstance = &nopConnector{

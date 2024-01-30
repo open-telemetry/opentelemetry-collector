@@ -51,10 +51,10 @@ func init() {
 }
 
 var (
-	componentID   = component.NewID(component.MustNewType("component"))
-	testAuthID    = component.NewID(component.MustNewType("testauth"))
-	mockID        = component.NewID(component.MustNewType("mock"))
-	doesntExistID = component.NewID(component.MustNewType("doesntexist"))
+	componentID   = component.MustNewID("component")
+	testAuthID    = component.MustNewID("testauth")
+	mockID        = component.MustNewID("mock")
+	doesntExistID = component.MustNewID("doesntexist")
 )
 
 func TestDefaultGrpcClientSettings(t *testing.T) {

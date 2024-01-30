@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-var id = component.NewID(component.MustNewType("test"))
+var id = component.MustNewID("test")
 
 type baseComponent struct {
 	component.StartFunc

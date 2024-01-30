@@ -82,7 +82,7 @@ func TestBuilder(t *testing.T) {
 	var testType = component.MustNewType("test")
 	defaultCfg := struct{}{}
 	testID := component.NewID(testType)
-	unknownID := component.NewID(component.MustNewType("unknown"))
+	unknownID := component.MustNewID("unknown")
 
 	factories, err := MakeFactoryMap([]Factory{
 		NewFactory(
@@ -120,11 +120,11 @@ func TestBuilderFactory(t *testing.T) {
 	factories, err := MakeFactoryMap([]Factory{NewFactory(component.MustNewType("foo"), nil, nil, component.StabilityLevelDevelopment)}...)
 	require.NoError(t, err)
 
-	cfgs := map[component.ID]component.Config{component.NewID(component.MustNewType("foo")): struct{}{}}
+	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
 	b := NewBuilder(cfgs, factories)
 
-	assert.NotNil(t, b.Factory(component.NewID(component.MustNewType("foo")).Type()))
-	assert.Nil(t, b.Factory(component.NewID(component.MustNewType("bar")).Type()))
+	assert.NotNil(t, b.Factory(component.MustNewID("foo").Type()))
+	assert.Nil(t, b.Factory(component.MustNewID("bar").Type()))
 }
 
 func createSettings(id component.ID) CreateSettings {
