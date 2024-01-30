@@ -186,7 +186,7 @@ func (gcs *GRPCClientSettings) ToClientConn(ctx context.Context, host component.
 
 func (gcs *GRPCClientSettings) toDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
-	if configcompression.IsCompressed(gcs.Compression) {
+	if gcs.Compression.IsCompressed() {
 		cp, err := getGRPCCompressionName(gcs.Compression)
 		if err != nil {
 			return nil, err

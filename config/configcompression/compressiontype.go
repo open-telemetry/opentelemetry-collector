@@ -17,8 +17,10 @@ const (
 	empty   CompressionType = ""
 )
 
-func IsCompressed(compressionType CompressionType) bool {
-	return compressionType != empty && compressionType != none
+// IsCompressed returns false if CompressionType is nil, none, or empty.
+// Otherwise, returns true.
+func (ct *CompressionType) IsCompressed() bool {
+	return ct != nil && *ct != empty && *ct != none
 }
 
 func (ct *CompressionType) UnmarshalText(in []byte) error {

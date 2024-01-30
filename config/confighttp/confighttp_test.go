@@ -454,7 +454,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			transport := client.Transport
 
 			// Compression should wrap Auth, unwrap it
-			if configcompression.IsCompressed(test.settings.Compression) {
+			if test.settings.Compression.IsCompressed() {
 				ct, ok := transport.(*compressRoundTripper)
 				assert.True(t, ok)
 				assert.Equal(t, test.settings.Compression, ct.compressionType)
