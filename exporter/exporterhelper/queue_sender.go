@@ -8,7 +8,6 @@ import (
 	"errors"
 	"time"
 
-	"go.opencensus.io/metric/metricdata"
 	"go.opentelemetry.io/otel/attribute"
 	otelmetric "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -158,11 +157,6 @@ func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 
 // Shutdown is invoked during service shutdown.
 func (qs *queueSender) Shutdown(ctx context.Context) error {
-	// Cleanup queue metrics reporting
-	_ = globalInstruments.queueSize.UpsertEntry(func() int64 {
-		return int64(0)
-	}, metricdata.NewLabelValue(qs.fullName))
-
 	// Stop the queue and consumers, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
 	return qs.consumers.Shutdown(ctx)
