@@ -257,9 +257,9 @@ To keep naming patterns consistent across the project, enumeration patterns are 
 
 - Enumerations should be defined using a type definition, such as `type Level int32`.
 - Enumerations should use either `int` or `string` as the underlying type
-- Enumeration name should be:
-  - Prefixed with a clarifying name *unless* the package name describes the entity of the enumeration.
-  - Suffixed with `Type`
+- Enumeration name should succinctly describe the enumeration's purpose
+  - If the package name represents the entity described by the enumeration then the package name should be factored into the name of the enumeration.  For example, `component.Type` instead of `component.ComponentType`.
+  - The name should convey a sense of limited categorization. For example, `pcommon.ValueType` is better than `pcommon.Value` and `component.Kind` is better than `component.KindType`, since `Kind` already conveys categorization.
 - Constant values of an enumeration should be prefixed with the enumeration type name in the name:
   - `pcommon.ValueTypeStr` for `pcommon.ValueType`
   - `pmetric.MetricTypeGauge` for `pmetric.MetricType`
