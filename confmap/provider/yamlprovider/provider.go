@@ -40,7 +40,7 @@ func NewWithSettings(_ confmap.ProviderSettings) confmap.Provider {
 // `yaml:processors::batch/foo::timeout: 3s`
 // Deprecated: Use NewWithSettings instead.
 func New() confmap.Provider {
-	return &provider{}
+	return NewWithSettings(confmap.ProviderSettings{})
 }
 
 func (s *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
