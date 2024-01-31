@@ -54,6 +54,10 @@ func (aneh *assertNoErrorHost) ReportFatalError(err error) {
 }
 
 
+func TestCheckConfigStruct(t *testing.T) {
+	componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig())
+}
+
 {{ if isExporter }}
 func Test_ComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
