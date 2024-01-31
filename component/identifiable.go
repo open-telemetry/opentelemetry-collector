@@ -26,7 +26,7 @@ func NewID(typeVal Type) ID {
 	return ID{typeVal: typeVal}
 }
 
-// NewID builds a Type and returns a new ID with the given Type and empty name.
+// MustNewID builds a Type and returns a new ID with the given Type and empty name.
 // See MustNewType to check the valid values of typeVal.
 func MustNewID(typeVal string) ID {
 	return ID{typeVal: MustNewType(typeVal)}
