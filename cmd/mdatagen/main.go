@@ -190,6 +190,9 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				"isExtension": func() bool {
 					return md.Status.Class == "extension"
 				},
+				"isConnector": func() bool {
+					return md.Status.Class == "connector"
+				},
 				"skipLifecycle": func() bool {
 					return md.Tests.SkipLifecycle
 				},
@@ -217,6 +220,97 @@ func templatize(tmplFile string, md metadata) *template.Template {
 					for _, signals := range md.Status.Stability {
 						for _, s := range signals {
 							if s == "traces" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsLogsToLogs": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "logs_to_logs" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsLogsToMetrics": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "logs_to_metrics" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsLogsToTraces": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "logs_to_traces" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsMetricsToLogs": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "metrics_to_logs" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsMetricsToMetrics": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "metrics_to_metrics" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsMetricsToTraces": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "metrics_to_traces" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+
+				"supportsTracesToLogs": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "traces_to_logs" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsTracesToMetrics": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "traces_to_metrics" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsTracesToTraces": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "traces_to_traces" {
 								return true
 							}
 						}
