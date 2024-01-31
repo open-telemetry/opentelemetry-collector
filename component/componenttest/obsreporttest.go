@@ -6,10 +6,8 @@ package componenttest // import "go.opentelemetry.io/collector/component/compone
 import (
 	"context"
 
-	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.opencensus.io/stats/view"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -39,11 +37,9 @@ type TestTelemetry struct {
 	ts           component.TelemetrySettings
 	id           component.ID
 	SpanRecorder *tracetest.SpanRecorder
-	views        []*view.View
 
 	prometheusChecker *prometheusChecker
 	meterProvider     *sdkmetric.MeterProvider
-	ocExporter        *ocprom.Exporter
 }
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
@@ -124,8 +120,6 @@ func (tts *TestTelemetry) CheckScraperMetrics(receiver component.ID, scraper com
 
 // Shutdown unregisters any views and shuts down the SpanRecorder
 func (tts *TestTelemetry) Shutdown(ctx context.Context) error {
-	view.Unregister(tts.views...)
-	view.UnregisterExporter(tts.ocExporter)
 	var errs error
 	errs = multierr.Append(errs, tts.SpanRecorder.Shutdown(ctx))
 	if tts.meterProvider != nil {
@@ -153,18 +147,6 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	}
 	settings.ts.TracerProvider = tp
 	settings.ts.MetricsLevel = configtelemetry.LevelNormal
-	err := view.Register(settings.views...)
-	if err != nil {
-		return settings, err
-	}
-
-	promReg := prometheus.NewRegistry()
-
-	settings.ocExporter, err = ocprom.NewExporter(ocprom.Options{Registry: promReg})
-	if err != nil {
-		return settings, err
-	}
-	view.RegisterExporter(settings.ocExporter)
 
 	promRegOtel := prometheus.NewRegistry()
 

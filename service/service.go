@@ -91,7 +91,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		collectorConf:        set.CollectorConf,
 	}
 	var err error
-	srv.telemetry, err = telemetry.New(ctx, telemetry.Settings{ZapOptions: set.LoggingOptions}, cfg.Telemetry)
+	srv.telemetry, err = telemetry.New(ctx, telemetry.Settings{BuildInfo: set.BuildInfo, ZapOptions: set.LoggingOptions}, cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
@@ -104,7 +104,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	}
 	srv.telemetrySettings = servicetelemetry.TelemetrySettings{
 		Logger:         logger,
-		TracerProvider: srv.telemetryInitializer.tp,
+		TracerProvider: srv.telemetry.TracerProvider(),
 		MeterProvider:  srv.telemetryInitializer.mp,
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 		// Construct telemetry attributes from build info and config's resource attributes.
