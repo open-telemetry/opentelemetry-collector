@@ -251,6 +251,20 @@ To keep naming patterns consistent across the project, naming patterns are enfor
   - `func CreateTracesExport(...) {...}`
   - `func CreateTracesToTracesFunc(...) {...}`
 
+### Enumerations
+
+To keep naming patterns consistent across the project, enumeration patterns are enforced to make intent clear:
+
+- Enumerations should be defined using a type alias
+- Enumerations should use either `int` or `string` as the underlying type
+- Enumeration name should be:
+  - Prefixed with a clarifying name *unless* the package name describes the entity of the enumeration.
+  - Suffixed with `Type`
+- Constant values of an enumeration should include the enumeration type name in the name:
+  - `pcommon.ValueTypeStr`
+  - `pmetric.MetricTypeGauge`
+
+
 ### Recommended Libraries / Defaults
 
 In order to simplify developing within the project, library recommendations have been set
