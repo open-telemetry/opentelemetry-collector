@@ -126,7 +126,6 @@ github.com/yusufpapurcu/wmi v1.2.3 h1:E1ctvB7uKFMOJw3fdOW32DwGE9I7t++CRUEMKvFoFi
 github.com/yusufpapurcu/wmi v1.2.3/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 go.opencensus.io v0.24.0 h1:y73uSU6J157QMP2kn2r30vwW1A2W2WFwSCGnAVxeaD0=
 go.opencensus.io v0.24.0/go.mod h1:vNK8G9p7aAivkbmorf4v+7Hgx+Zs0yY+0fOtgBfjQKo=
-go.opentelemetry.io/collector/config/configopaque v0.93.0 h1:mvJFVhToyL6k0BZMhZTbSAxwYXGHoqibp6JVYY5SZu8=
 go.opentelemetry.io/contrib/config v0.2.0 h1:VRYXnoE2ug3QOtaKka4eV9OgHXMJ0q6ggFtx6s+Jvy0=
 go.opentelemetry.io/contrib/config v0.2.0/go.mod h1:iBfwdwpZBKsVXMOAWHyGS8//dcVNJORYnFm6VNqsOG8=
 go.opentelemetry.io/contrib/propagators/b3 v1.22.0 h1:Okbgv0pWHMQq+mF7H2o1mucJ5PvxKFq2c8cyqoXfeaQ=
