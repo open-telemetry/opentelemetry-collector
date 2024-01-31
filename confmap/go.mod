@@ -8,7 +8,6 @@ require (
 	github.com/knadh/koanf/v2 v2.0.1
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/config/configopaque v0.93.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -26,5 +25,3 @@ retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 )
-
-replace go.opentelemetry.io/collector/config/configopaque => ../config/configopaque

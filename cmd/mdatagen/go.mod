@@ -76,5 +76,3 @@ retract (
 	v0.76.1
 	v0.65.0
 )
-
-replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
