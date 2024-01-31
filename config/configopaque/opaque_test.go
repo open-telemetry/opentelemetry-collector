@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 )
 
 var _ encoding.TextMarshaler = String("")
@@ -45,12 +44,6 @@ func TestStringJSON(t *testing.T) {
 	bytes, err := json.Marshal(example)
 	require.NoError(t, err)
 	assert.Equal(t, `{"opaque":"[REDACTED]","plain":"plain"}`, string(bytes))
-}
-
-func TestStringYAML(t *testing.T) {
-	bytes, err := yaml.Marshal(example)
-	require.NoError(t, err)
-	assert.Equal(t, "opaque: '[REDACTED]'\nplain: plain\n", string(bytes))
 }
 
 func TestStringFmt(t *testing.T) {

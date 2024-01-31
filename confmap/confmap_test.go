@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 func TestToStringMapFlatten(t *testing.T) {
@@ -295,6 +297,19 @@ func TestMarshaler(t *testing.T) {
 	varBool := false
 	nmCfg.TestConfig.Boolean = &varBool
 	assert.Error(t, conf.Marshal(nmCfg))
+}
+
+type OpaqueConfig struct {
+	Opaque configopaque.String `mapstructure:"opaque"`
+}
+
+func TestMarshalConfigOpaque(t *testing.T) {
+	conf := New()
+	cfg := &OpaqueConfig{
+		Opaque: "opaque",
+	}
+	assert.NoError(t, conf.Marshal(cfg))
+	assert.Equal(t, "[REDACTED]", conf.Get("opaque"))
 }
 
 // newConfFromFile creates a new Conf by reading the given file.
