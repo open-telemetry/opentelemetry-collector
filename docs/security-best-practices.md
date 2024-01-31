@@ -150,6 +150,18 @@ For more information, see [CWE-1327](https://cwe.mitre.org/data/definitions/1327
 
 To change the default endpoint to be `localhost`-bound in all components, enable the `component.UseLocalHostAsDefaultHost` feature gate. This feature gate will be enabled by default in the Collector in a future release.
 
+
+If `localhost` resolves to a different IP due to DNS then explicitly use these IPs instead:
+```
+IPv4: 127.0.0.1
+IPv6: ::1
+```
+IPv6 Reminder:
+In IPv6 setups, ensure your system supports both IPv4 and IPv6 loopback addresses to avoid issues.
+
+Best Practice:
+For clarity and safety, consider explicitly mentioning the IP (`127.0.0.1`) instead of relying solely on `localhost`, especially in sensitive setups. Keep things consistent across different networks.
+
 ## Processors
 
 Processors sit between receivers and exporters. They are responsible for
@@ -219,22 +231,3 @@ collection mechanisms that cannot natively be run by the Collector (e.g.
 FluentBit). Subprocesses expose a completely separate attack vector that would
 depend on the subprocess itself. In general, care should be taken before
 running any subprocesses alongside the Collector.
-
-### Localhost usage 
-
-When setting up security or specifying network locations, people often use `localhost` Be cautious! In some setups, `localhost` might undergo DNS resolution and end up with an unexpected IP, risking security.
-
-Risk Alert:
-If `localhost` resolves to a different IP due to DNS, your data might accidentally leak outside.
-
-How to Stay Safe:
-Always use these IPs instead:
-```
-IPv4: 127.0.0.1
-IPv6: ::1
-```
-IPv6 Reminder:
-If you're using IPv6, make sure your system supports both IPv4 and IPv6 loopback addresses to avoid issues.
-
-Top Tip:
-For clarity and safety, directly mention the IP (`127.0.0.1`) instead of relying only on `localhost`, especially in sensitive setups. Keep things consistent across different networks.
