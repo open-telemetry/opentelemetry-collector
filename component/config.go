@@ -124,17 +124,17 @@ func (t Type) String() string {
 // can only contain ASCII alphanumeric characters and '_'.
 var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]*$`)
 
-// newType creates a type. It returns an error if the type is invalid.
+// NewType creates a type. It returns an error if the type is invalid.
 // A type must
 // - have at least one character,
 // - start with an ASCII alphabetic character and
 // - can only contain ASCII alphanumeric characters and '_'.
-func newType(ty string) (Type, error) {
+func NewType(ty string) (Type, error) {
 	if len(ty) == 0 {
 		return Type(""), fmt.Errorf("id must not be empty")
 	}
 	if !typeRegexp.MatchString(ty) {
-		return Type(""), fmt.Errorf("invalid character(s) in type")
+		return Type(""), fmt.Errorf("invalid character(s) in type %q", ty)
 	}
 	return Type(ty), nil
 }
@@ -145,7 +145,7 @@ func newType(ty string) (Type, error) {
 // - start with an ASCII alphabetic character and
 // - can only contain ASCII alphanumeric characters and '_'.
 func MustNewType(strType string) Type {
-	ty, err := newType(strType)
+	ty, err := NewType(strType)
 	if err != nil {
 		panic(err)
 	}

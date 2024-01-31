@@ -85,7 +85,7 @@ func (id *ID) UnmarshalText(text []byte) error {
 	}
 
 	var err error
-	if id.typeVal, err = newType(typeStr); err != nil {
+	if id.typeVal, err = NewType(typeStr); err != nil {
 		return fmt.Errorf("in %q id: %w", idStr, err)
 	}
 	id.nameVal = nameStr

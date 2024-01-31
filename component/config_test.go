@@ -404,7 +404,7 @@ func TestNewType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ty, err := newType(tt.name)
+			ty, err := NewType(tt.name)
 			if tt.shouldErr {
 				assert.Error(t, err)
 			} else {
