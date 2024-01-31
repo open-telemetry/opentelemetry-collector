@@ -17,6 +17,7 @@ var nopType = component.MustNewType("nop")
 // NewNopCreateSettings returns a new nop settings for Create*Exporter functions.
 func NewNopCreateSettings() exporter.CreateSettings {
 	return exporter.CreateSettings{
+		ID:                component.NewID(nopType),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}

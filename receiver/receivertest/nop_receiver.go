@@ -17,6 +17,7 @@ var componentType = component.MustNewType("nop")
 // NewNopCreateSettings returns a new nop settings for Create* functions.
 func NewNopCreateSettings() receiver.CreateSettings {
 	return receiver.CreateSettings{
+		ID:                component.NewID(componentType),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
