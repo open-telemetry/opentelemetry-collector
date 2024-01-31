@@ -122,6 +122,7 @@ func (t Type) String() string {
 // typeRegexp is used to validate the type of a component.
 // A type must start with an ASCII alphabetic character and
 // can only contain ASCII alphanumeric characters and '_'.
+// This must be kept in sync with the regex in cmd/mdatagen/validate.go.
 var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]*$`)
 
 // NewType creates a type. It returns an error if the type is invalid.
