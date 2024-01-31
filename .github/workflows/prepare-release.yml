@@ -20,30 +20,30 @@ on:
         description: Current version (beta, like 0.69.1). Don't include `v`.
 jobs:
   #validate-version format
-  validate-version:
+  validate-versions:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Validate version format
-        run: |
-          validate_version() {
-            local regex_pattern_stable='^[1-9][0-9]*\.[1-9][0-9]*\.[1-9][0-9]*$'
-            local regex_pattern_beta='^[0-9]+\.[1-9][0-9]*\.[1-9][0-9]*$'
+    - name: Validate version format
+      run: |
+        validate_version() {
+          local regex_pattern_beta='^[0-9]+\.[1-9][0-9]*\.[1-9][0-9]*$'
+          local regex_pattern_stable='^[1-9][0-9]*\.[0-9]+\.[0-9]+(-rcv[0-9]+)?$'
 
-            if [[ "$1" =~ $regex_pattern_stable && ! "$1" =~ -rcv[0-9]+$ ]]; then
-                echo "Valid $2 version: $1"
-            elif [[ "$1" =~ $regex_pattern_beta && ! "$1" =~ -rcv[0-9]+$ ]]; then
-                echo "Valid $2 version: $1"
-            else
-                echo "Invalid $2 version format. For stable, it should be like 1.0.0, and for beta, it can be 0.1.0 or higher. No RC candidates allowed."
-                exit 1
+          if [[ ! "$1" =~ $regex_pattern_beta ]]; then
+            if [[ ! "$1" =~ $regex_pattern_stable ]]; then
+              echo "Invalid $2 version format. For beta, it can be 0.1.0 or higher. For stable, Major version must be greater than 1, and it can have an optional RC version."
+              exit 1
             fi
-          }
+          fi
+          echo "Valid $2 version: $1"
+        }
 
-          validate_version "${{ inputs.candidate-stable }}" "candidate-stable"
-          validate_version "${{ inputs.current-stable }}" "current-stable"
-          validate_version "${{ inputs.candidate-beta }}" "candidate-beta"
-          validate_version "${{ inputs.current-beta }}" "current-beta"
-        shell: bash
+        validate_version "${{ inputs.candidate-beta }}" "candidate-beta"
+        validate_version "${{ inputs.current-beta }}" "current-beta"
+        validate_version "${{ inputs.candidate-stable }}" "candidate-stable"
+        validate_version "${{ inputs.current-stable }}" "current-stable"
+      shell: bash
   # Releasing opentelemetry-collector
   prepare-release:
     needs: 
