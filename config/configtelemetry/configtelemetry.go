@@ -4,7 +4,6 @@
 package configtelemetry // import "go.opentelemetry.io/collector/config/configtelemetry"
 
 import (
-	"encoding"
 	"errors"
 	"fmt"
 	"strings"
@@ -29,9 +28,6 @@ const (
 // Level is the level of internal telemetry (metrics, logs, traces about the component itself)
 // that every component should generate.
 type Level int32
-
-var _ encoding.TextMarshaler = (*Level)(nil)
-var _ encoding.TextUnmarshaler = (*Level)(nil)
 
 func (l Level) String() string {
 	switch l {
