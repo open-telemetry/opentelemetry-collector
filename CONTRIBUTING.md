@@ -255,14 +255,14 @@ To keep naming patterns consistent across the project, naming patterns are enfor
 
 To keep naming patterns consistent across the project, enumeration patterns are enforced to make intent clear:
 
-- Enumerations should be defined using a type alias
+- Enumerations should be defined using a type definition, such as `type Level int32`.
 - Enumerations should use either `int` or `string` as the underlying type
 - Enumeration name should be:
   - Prefixed with a clarifying name *unless* the package name describes the entity of the enumeration.
   - Suffixed with `Type`
-- Constant values of an enumeration should include the enumeration type name in the name:
-  - `pcommon.ValueTypeStr`
-  - `pmetric.MetricTypeGauge`
+- Constant values of an enumeration should be prefixed with the enumeration type name in the name:
+  - `pcommon.ValueTypeStr` for `pcommon.ValueType`
+  - `pmetric.MetricTypeGauge` for `pmetric.MetricType`
 
 
 ### Recommended Libraries / Defaults
