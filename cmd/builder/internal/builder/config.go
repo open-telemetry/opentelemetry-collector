@@ -37,6 +37,7 @@ type Config struct {
 	Receivers    []Module     `mapstructure:"receivers"`
 	Processors   []Module     `mapstructure:"processors"`
 	Connectors   []Module     `mapstructure:"connectors"`
+	Providers    *[]Module    `mapstructure:"providers"`
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
 }
@@ -87,12 +88,18 @@ func NewDefaultConfig() Config {
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
+	var providersError, convertersError error
+	if c.Providers != nil {
+		providersError = validateModules(*c.Providers)
+	}
 	return multierr.Combine(
 		validateModules(c.Extensions),
 		validateModules(c.Receivers),
 		validateModules(c.Exporters),
 		validateModules(c.Processors),
 		validateModules(c.Connectors),
+		providersError,
+		convertersError,
 	)
 }
 
@@ -154,6 +161,36 @@ func (c *Config) ParseModules() error {
 	c.Connectors, err = parseModules(c.Connectors)
 	if err != nil {
 		return err
+	}
+
+	if c.Providers != nil {
+		providers, err := parseModules(*c.Providers)
+		if err != nil {
+			return err
+		}
+		c.Providers = &providers
+	} else {
+		providers, err := parseModules([]Module{
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider v" + c.Distribution.OtelColVersion,
+			},
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/fileprovider v" + c.Distribution.OtelColVersion,
+			},
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpprovider v" + c.Distribution.OtelColVersion,
+			},
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpsprovider v" + c.Distribution.OtelColVersion,
+			},
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/yamlprovider v" + c.Distribution.OtelColVersion,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		c.Providers = &providers
 	}
 
 	return nil

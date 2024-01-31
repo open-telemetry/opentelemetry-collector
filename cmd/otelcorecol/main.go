@@ -7,6 +7,13 @@ import (
 	"log"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
+	envprovider "go.opentelemetry.io/collector/confmap/provider/envprovider"
+	fileprovider "go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	httpprovider "go.opentelemetry.io/collector/confmap/provider/httpprovider"
+	httpsprovider "go.opentelemetry.io/collector/confmap/provider/httpsprovider"
+	yamlprovider "go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/otelcol"
 )
 
@@ -16,8 +23,27 @@ func main() {
 		Description: "Local OpenTelemetry Collector binary, testing only.",
 		Version:     "0.98.0-dev",
 	}
+	providers := []confmap.Provider{
+		envprovider.NewWithSettings(confmap.ProviderSettings{}),
+		fileprovider.NewWithSettings(confmap.ProviderSettings{}),
+		httpprovider.NewWithSettings(confmap.ProviderSettings{}),
+		httpsprovider.NewWithSettings(confmap.ProviderSettings{}),
+		yamlprovider.NewWithSettings(confmap.ProviderSettings{}),
+	}
+	set := otelcol.CollectorSettings{
+		BuildInfo: info,
+		Factories: components,
+		ConfigProviderSettings: otelcol.ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				Providers: makeMapProvidersMap(providers...),
+				Converters: []confmap.Converter{
+					expandconverter.New(confmap.ConverterSettings{}),
+				},
+			},
+		},
+	}
 
-	if err := run(otelcol.CollectorSettings{BuildInfo: info, Factories: components}); err != nil {
+	if err := run(set); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -29,4 +55,12 @@ func runInteractive(params otelcol.CollectorSettings) error {
 	}
 
 	return nil
+}
+
+func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
+	ret := make(map[string]confmap.Provider, len(providers))
+	for _, provider := range providers {
+		ret[provider.Scheme()] = provider
+	}
+	return ret
 }
