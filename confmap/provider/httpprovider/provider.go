@@ -22,7 +22,7 @@ func NewWithSettings(set confmap.ProviderSettings) confmap.Provider {
 // This Provider supports "http" scheme.
 //
 // One example for HTTP URI is: http://localhost:3333/getConfig
-// Deprecated: Use NewWithSettings instead.
+// Deprecated: [v0.94.0] Use NewWithSettings instead.
 func New() confmap.Provider {
 	return NewWithSettings(confmap.ProviderSettings{})
 }

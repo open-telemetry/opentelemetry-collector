@@ -24,7 +24,7 @@ func NewWithSettings(set confmap.ProviderSettings) confmap.Provider {
 //
 // To add extra CA certificates you need to install certificates in the system pool. This procedure is operating system
 // dependent. E.g.: on Linux please refer to the `update-ca-trust` command.
-// Deprecated: Use NewWithSettings instead.
+// Deprecated: [v0.94.0] Use NewWithSettings instead.
 func New() confmap.Provider {
 	return NewWithSettings(confmap.ProviderSettings{})
 }

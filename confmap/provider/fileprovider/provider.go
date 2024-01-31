@@ -52,7 +52,7 @@ func NewWithSettings(_ confmap.ProviderSettings) confmap.Provider {
 // `file:/path/to/file` - absolute path (unix, windows)
 // `file:c:/path/to/file` - absolute path including drive-letter (windows)
 // `file:c:\path\to\file` - absolute path including drive-letter (windows)
-// Deprecated: Use NewWithSettings instead.
+// Deprecated: [v0.94.0] Use NewWithSettings instead.
 func New() confmap.Provider {
 	return NewWithSettings(confmap.ProviderSettings{})
 }

@@ -29,7 +29,7 @@ func NewWithSettings(_ confmap.ProviderSettings) confmap.Provider {
 //
 // This Provider supports "env" scheme, and can be called with a selector:
 // `env:NAME_OF_ENVIRONMENT_VARIABLE`
-// Deprecated: Use NewWithSettings instead.
+// Deprecated: [v0.94.0] Use NewWithSettings instead.
 func New() confmap.Provider {
 	return NewWithSettings(confmap.ProviderSettings{})
 }
