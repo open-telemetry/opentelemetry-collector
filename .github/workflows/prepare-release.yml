@@ -26,10 +26,17 @@ jobs:
       - name: Validate version format
         run: |
           validate_version() {
-             if [[ ! "$1" =~ ^[1-9][0-9]*\.[1-9][0-9]*\.[1-9][0-9]*(-rcv[0-9]+)?$ ]]; then
-                 echo "Invalid $2 version format. It should be like 1.0.0 or 1.0.0-rcv0014."
-                 exit 1
-             fi
+            local regex_pattern_stable='^[1-9][0-9]*\.[1-9][0-9]*\.[1-9][0-9]*$'
+            local regex_pattern_beta='^[0-9]+\.[1-9][0-9]*\.[1-9][0-9]*$'
+
+            if [[ "$1" =~ $regex_pattern_stable && ! "$1" =~ -rcv[0-9]+$ ]]; then
+                echo "Valid $2 version: $1"
+            elif [[ "$1" =~ $regex_pattern_beta && ! "$1" =~ -rcv[0-9]+$ ]]; then
+                echo "Valid $2 version: $1"
+            else
+                echo "Invalid $2 version format. For stable, it should be like 1.0.0, and for beta, it can be 0.1.0 or higher. No RC candidates allowed."
+                exit 1
+            fi
           }
 
           validate_version "${{ inputs.candidate-stable }}" "candidate-stable"
