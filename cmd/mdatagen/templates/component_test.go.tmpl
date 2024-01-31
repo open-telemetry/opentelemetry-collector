@@ -53,6 +53,13 @@ func (aneh *assertNoErrorHost) ReportFatalError(err error) {
 	assert.NoError(aneh, err)
 }
 
+func TestREADMEmdPresent(t *testing.T) {
+	require.FileExists(t, "README.md")
+}
+
+func TestMetadataYamlPresent(t *testing.T) {
+	require.FileExists(t, "metadata.yaml")
+}
 
 {{ if isExporter }}
 func Test_ComponentLifecycle(t *testing.T) {
