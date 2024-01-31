@@ -25,7 +25,7 @@ type provider struct{}
 // Examples:
 // `yaml:processors::batch::timeout: 2s`
 // `yaml:processors::batch/foo::timeout: 3s`
-func NewWithSettings(set confmap.ProviderSettings) confmap.Provider {
+func NewWithSettings(_ confmap.ProviderSettings) confmap.Provider {
 	return &provider{}
 }
 
