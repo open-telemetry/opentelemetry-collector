@@ -225,3 +225,16 @@ func TestRequireOtelColModule(t *testing.T) {
 		})
 	}
 }
+
+func TestAddsDefaultProviders(t *testing.T) {
+	cfg := NewDefaultConfig()
+	cfg.Providers = nil
+	assert.NoError(t, cfg.ParseModules())
+	assert.Len(t, *cfg.Providers, 5)
+}
+
+func TestSkipsNilFieldValidation(t *testing.T) {
+	cfg := NewDefaultConfig()
+	cfg.Providers = nil
+	assert.NoError(t, cfg.Validate())
+}
