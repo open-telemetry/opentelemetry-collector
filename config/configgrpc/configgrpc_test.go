@@ -384,8 +384,8 @@ func TestGRPCServerWarning(t *testing.T) {
 		{
 			settings: GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
-					Endpoint:  "0.0.0.0:1234",
-					Transport: "tcp",
+					Endpoint:      "0.0.0.0:1234",
+					TransportType: confignet.TransportTypeTCP,
 				},
 			},
 			len: 1,

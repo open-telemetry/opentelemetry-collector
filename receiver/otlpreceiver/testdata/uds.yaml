@@ -1,7 +1,7 @@
 # The following entry demonstrates how to specify a Unix Domain Socket for the server.
 protocols:
   grpc:
-    transport: unix
+    transport_type: unix
     endpoint: /tmp/grpc_otlp.sock
   http:
     # transport: unix

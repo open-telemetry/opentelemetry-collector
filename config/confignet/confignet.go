@@ -75,7 +75,7 @@ type NetAddr struct {
 
 	// TransportType to use. Allowed protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only),
 	// "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
-	TransportType TransportType `mapstructure:"transport"`
+	TransportType TransportType `mapstructure:"transport_type"`
 
 	// DialerConfig contains options for connecting to an address.
 	DialerConfig DialerConfig `mapstructure:"dialer"`
