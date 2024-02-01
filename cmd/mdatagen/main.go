@@ -286,7 +286,6 @@ func templatize(tmplFile string, md metadata) *template.Template {
 					}
 					return false
 				},
-
 				"supportsTracesToLogs": func() bool {
 					for _, signals := range md.Status.Stability {
 						for _, s := range signals {
