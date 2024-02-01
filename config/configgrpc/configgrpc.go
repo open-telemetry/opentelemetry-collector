@@ -117,7 +117,11 @@ type KeepaliveEnforcementPolicy struct {
 }
 
 // GRPCServerSettings defines common settings for a gRPC server configuration.
-type GRPCServerSettings struct {
+// Deprecated: [v0.94.0] Use ServerConfig instead
+type GRPCServerSettings = ServerConfig
+
+// ServerConfig defines common settings for a gRPC server configuration.
+type ServerConfig struct {
 	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
 	NetAddr confignet.NetAddr `mapstructure:",squash"`
 
@@ -269,17 +273,17 @@ func validateBalancerName(balancerName string) bool {
 }
 
 // ToListenerContext returns the net.Listener constructed from the settings.
-func (gss *GRPCServerSettings) ToListenerContext(ctx context.Context) (net.Listener, error) {
+func (gss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
 	return gss.NetAddr.Listen(ctx)
 }
 
 // ToListener returns the net.Listener constructed from the settings.
 // Deprecated: [v0.94.0] use ToListenerContext instead.
-func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
+func (gss *ServerConfig) ToListener() (net.Listener, error) {
 	return gss.ToListenerContext(context.Background())
 }
 
-func (gss *GRPCServerSettings) ToServer(host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
+func (gss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
 	opts, err := gss.toServerOption(host, settings)
 	if err != nil {
 		return nil, err
@@ -288,7 +292,7 @@ func (gss *GRPCServerSettings) ToServer(host component.Host, settings component.
 	return grpc.NewServer(opts...), nil
 }
 
-func (gss *GRPCServerSettings) toServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
+func (gss *ServerConfig) toServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
 	switch gss.NetAddr.Transport {
 	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6":
 		internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint)
