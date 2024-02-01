@@ -436,7 +436,7 @@ func TestPassConfmapToServiceFailure(t *testing.T) {
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:       []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
 			Providers:  makeMapProvidersMap(newFailureProvider()),
-			Converters: []confmap.Converter{expandconverter.New()},
+			Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
 		},
 	})
 	require.NoError(t, err)

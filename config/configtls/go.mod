@@ -17,3 +17,5 @@ require (
 )
 
 replace go.opentelemetry.io/collector/config/configopaque => ../configopaque
+
+replace go.opentelemetry.io/collector/confmap => ../../confmap
