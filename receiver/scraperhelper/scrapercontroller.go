@@ -65,7 +65,7 @@ type controller struct {
 
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
 func NewScraperControllerReceiver(
-	cfg *ScraperControllerConfig,
+	cfg *ControllerConfig,
 	set receiver.CreateSettings,
 	nextConsumer consumer.Metrics,
 	options ...ScraperControllerOption,

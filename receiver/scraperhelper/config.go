@@ -20,13 +20,13 @@ var (
 // ScraperControllerSettings defines common settings for a scraper controller
 // configuration. Scraper controller receivers can embed this struct, instead
 // of receiver.Settings, and extend it with more fields if needed.
-// Deprecated: [v0.94.0] Use ScraperControllerConfig instead
-type ScraperControllerSettings = ScraperControllerConfig
+// Deprecated: [v0.94.0] Use ControllerConfig instead
+type ScraperControllerSettings = ControllerConfig
 
-// ScraperControllerConfig defines common settings for a scraper controller
+// ControllerConfig defines common settings for a scraper controller
 // configuration. Scraper controller receivers can embed this struct, instead
 // of receiver.Settings, and extend it with more fields if needed.
-type ScraperControllerConfig struct {
+type ControllerConfig struct {
 	// CollectionInterval sets the how frequently the scraper
 	// should be called and used as the context timeout
 	// to ensure that scrapers don't exceed the interval.
@@ -41,25 +41,25 @@ type ScraperControllerConfig struct {
 // NewDefaultScraperControllerSettings returns default scraper controller
 // settings with a collection interval of one minute.
 // Deprecated: [v0.94.0] Use NewDefaultScraperControllerSettings instead
-func NewDefaultScraperControllerSettings(component.Type) ScraperControllerConfig {
-	return ScraperControllerConfig{
+func NewDefaultScraperControllerSettings(component.Type) ControllerConfig {
+	return ControllerConfig{
 		CollectionInterval: time.Minute,
 		InitialDelay:       time.Second,
 		Timeout:            0,
 	}
 }
 
-// NewDefaultScraperControllerConfig returns default scraper controller
+// NewDefaultControllerConfig returns default scraper controller
 // settings with a collection interval of one minute.
-func NewDefaultScraperControllerConfig(component.Type) ScraperControllerConfig {
-	return ScraperControllerConfig{
+func NewDefaultControllerConfig(component.Type) ControllerConfig {
+	return ControllerConfig{
 		CollectionInterval: time.Minute,
 		InitialDelay:       time.Second,
 		Timeout:            0,
 	}
 }
 
-func (set *ScraperControllerConfig) Validate() (errs error) {
+func (set *ControllerConfig) Validate() (errs error) {
 	if set.CollectionInterval <= 0 {
 		errs = multierr.Append(errs, fmt.Errorf(`"collection_interval": %w`, errNonPositiveInterval))
 	}

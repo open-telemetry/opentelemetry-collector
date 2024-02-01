@@ -7,7 +7,7 @@ change_type: deprecation
 component: scraperhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate ScraperControllerSettings, use ScraperControllerConfig instead
+note: Deprecate ScraperControllerSettings, use ControllerConfig instead
 
 # One or more tracking issues or pull requests related to the change
 issues: [6767]

@@ -64,8 +64,8 @@ func (ts *testScrapeMetrics) scrape(context.Context) (pmetric.Metrics, error) {
 	return md, nil
 }
 
-func newTestNoDelaySettings() *ScraperControllerConfig {
-	return &ScraperControllerConfig{
+func newTestNoDelaySettings() *ControllerConfig {
+	return &ControllerConfig{
 		CollectionInterval: time.Second,
 		InitialDelay:       0,
 	}
@@ -75,7 +75,7 @@ type metricsTestCase struct {
 	name string
 
 	scrapers                  int
-	scraperControllerSettings *ScraperControllerConfig
+	scraperControllerSettings *ControllerConfig
 	nilNextConsumer           bool
 	scrapeErr                 error
 	expectedNewErr            string
@@ -106,7 +106,7 @@ func TestScrapeController(t *testing.T) {
 		{
 			name:                      "AddMetricsScrapersWithCollectionInterval_InvalidCollectionIntervalError",
 			scrapers:                  2,
-			scraperControllerSettings: &ScraperControllerConfig{CollectionInterval: -time.Millisecond},
+			scraperControllerSettings: &ControllerConfig{CollectionInterval: -time.Millisecond},
 			expectedNewErr:            "collection_interval must be a positive duration",
 		},
 		{
@@ -383,7 +383,7 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating scraper")
 
 	r, err := NewScraperControllerReceiver(
-		&ScraperControllerConfig{
+		&ControllerConfig{
 			CollectionInterval: time.Hour,
 			InitialDelay:       0,
 		},
@@ -409,7 +409,7 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 
 	var (
 		elapsed = make(chan time.Time, 1)
-		cfg     = ScraperControllerConfig{
+		cfg     = ControllerConfig{
 			CollectionInterval: time.Second,
 			InitialDelay:       300 * time.Millisecond,
 		}
