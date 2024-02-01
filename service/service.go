@@ -7,8 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/otel/metric/noop"
 	"runtime"
+
+	"go.opentelemetry.io/otel/metric/noop"
 
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
@@ -123,7 +124,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			// ignore other errors as they represent invalid state transitions and are considered benign.
 		}),
 	}
-	
+
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensionsAndPipeline(ctx, set, cfg); err != nil {
 		// If pipeline initialization fails then shut down telemetry
