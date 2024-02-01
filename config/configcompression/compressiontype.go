@@ -17,7 +17,9 @@ const (
 	empty   CompressionType = ""
 )
 
-// IsCompressed Deprecated [0.94.0] use member function CompressionType.IsCompressed instead
+// IsCompressed returns false if CompressionType is nil, none, or empty. Otherwise it returns true.
+//
+// Deprecated: [0.94.0] use member function CompressionType.IsCompressed instead
 func IsCompressed(compressionType CompressionType) bool {
 	return compressionType.IsCompressed()
 }
