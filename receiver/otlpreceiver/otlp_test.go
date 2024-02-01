@@ -89,7 +89,7 @@ func TestJsonHttp(t *testing.T) {
 			encoding:           "",
 			contentType:        "application/json",
 			err:                consumererror.NewPermanent(errors.New("my error")),
-			expectedStatus:     &spb.Status{Code: int32(codes.InvalidArgument), Message: "Permanent error: my error"},
+			expectedStatus:     &spb.Status{Code: int32(codes.Internal), Message: "Permanent error: my error"},
 			expectedStatusCode: http.StatusInternalServerError,
 		},
 		{
@@ -346,7 +346,7 @@ func TestProtoHttp(t *testing.T) {
 			name:               "Permanent NotGRPCError",
 			encoding:           "",
 			err:                consumererror.NewPermanent(errors.New("my error")),
-			expectedStatus:     &spb.Status{Code: int32(codes.InvalidArgument), Message: "Permanent error: my error"},
+			expectedStatus:     &spb.Status{Code: int32(codes.Internal), Message: "Permanent error: my error"},
 			expectedStatusCode: http.StatusInternalServerError,
 		},
 		{
@@ -618,7 +618,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 		{
 			okToIngest:         false,
 			err:                consumererror.NewPermanent(errors.New("consumer error")),
-			expectedCode:       codes.InvalidArgument,
+			expectedCode:       codes.Internal,
 			expectedStatusCode: http.StatusInternalServerError,
 		},
 		{
