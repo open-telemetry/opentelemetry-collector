@@ -501,7 +501,7 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 		},
 		{
 			okToIngest:   false,
-			expectedCode: codes.InvalidArgument,
+			expectedCode: codes.Internal,
 			permanent:    true,
 		},
 		{
