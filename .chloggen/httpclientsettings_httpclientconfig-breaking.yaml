@@ -7,7 +7,7 @@ change_type: breaking
 component: otlphttpexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: otlphttpexporter.Config embeds the struct confighttp.HTTPClientConfig instead of confighttp.HTTPClientSettings
+note: otlphttpexporter.Config embeds the struct confighttp.ClientConfig instead of confighttp.HTTPClientSettings
 
 # One or more tracking issues or pull requests related to the change
 issues: [6767]
