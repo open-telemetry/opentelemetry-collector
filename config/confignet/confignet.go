@@ -70,7 +70,12 @@ type NetAddr struct {
 
 	// Transport to use. Known protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only),
 	// "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
-	Transport TransportType `mapstructure:"transport"`
+	// Deprecated: [0.94.0] Use TransportType instead
+	Transport string `mapstructure:"transport"`
+
+	// TransportType to use. Allowed protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only),
+	// "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
+	TransportType TransportType `mapstructure:"transport"`
 
 	// DialerConfig contains options for connecting to an address.
 	DialerConfig DialerConfig `mapstructure:"dialer"`
@@ -79,13 +84,25 @@ type NetAddr struct {
 // Dial equivalent with net.Dialer's DialContext for this address.
 func (na *NetAddr) Dial(ctx context.Context) (net.Conn, error) {
 	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
-	return d.DialContext(ctx, string(na.Transport), na.Endpoint)
+
+	tt := string(na.TransportType)
+	if na.Transport != "" {
+		tt = na.Transport
+	}
+
+	return d.DialContext(ctx, tt, na.Endpoint)
 }
 
 // Listen equivalent with net.ListenConfig's Listen for this address.
 func (na *NetAddr) Listen(ctx context.Context) (net.Listener, error) {
 	lc := net.ListenConfig{}
-	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
+
+	tt := string(na.TransportType)
+	if na.Transport != "" {
+		tt = na.Transport
+	}
+
+	return lc.Listen(ctx, tt, na.Endpoint)
 }
 
 // TCPAddr represents a TCP endpoint address.
