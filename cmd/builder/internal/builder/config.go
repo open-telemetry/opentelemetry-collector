@@ -23,12 +23,14 @@ var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
 
 // Config holds the builder's configuration
 type Config struct {
-	Logger          *zap.Logger
-	SkipGenerate    bool   `mapstructure:"-"`
-	SkipCompilation bool   `mapstructure:"-"`
-	SkipGetModules  bool   `mapstructure:"-"`
-	LDFlags         string `mapstructure:"-"`
-	Verbose         bool   `mapstructure:"-"`
+	Logger           *zap.Logger
+	SkipGenerate     bool   `mapstructure:"-"`
+	SkipCompilation  bool   `mapstructure:"-"`
+	SkipGetModules   bool   `mapstructure:"-"`
+	SkipNewGoModule  bool   `mapstructure:"-"`
+	StrictVersioning bool   `mapstructure:"-"`
+	LDFlags          string `mapstructure:"-"`
+	Verbose          bool   `mapstructure:"-"`
 
 	Distribution Distribution `mapstructure:"dist"`
 	Exporters    []Module     `mapstructure:"exporters"`
@@ -87,11 +89,12 @@ func NewDefaultConfig() Config {
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
 	return multierr.Combine(
-		validateModules(c.Extensions),
-		validateModules(c.Receivers),
-		validateModules(c.Exporters),
-		validateModules(c.Processors),
-		validateModules(c.Connectors),
+		c.validateModules(c.Extensions),
+		c.validateModules(c.Receivers),
+		c.validateModules(c.Exporters),
+		c.validateModules(c.Processors),
+		c.validateModules(c.Connectors),
+		c.validateFlags(),
 	)
 }
 
@@ -158,11 +161,21 @@ func (c *Config) ParseModules() error {
 	return nil
 }
 
-func validateModules(mods []Module) error {
+func (c *Config) validateFlags() error {
+	if c.SkipNewGoModule && (len(c.Replaces) != 0 || len(c.Excludes) != 0) {
+		return fmt.Errorf("cannot combine excludes or replaces with --skip-new-go-module; please modify the enclosing go.mod file directly, in this case")
+	}
+	return nil
+}
+
+func (c *Config) validateModules(mods []Module) error {
 	for _, mod := range mods {
 		if mod.GoMod == "" {
 			return fmt.Errorf("module %q: %w", mod.GoMod, ErrInvalidGoMod)
 		}
+		if mod.Path != "" && c.SkipNewGoModule {
+                        return fmt.Errorf("cannot modify gomod path combined with --skip-new-go-module; please modify the enclosing go.mod file directly, in this case")
+                }
 	}
 	return nil
 }
@@ -170,8 +183,12 @@ func validateModules(mods []Module) error {
 func parseModules(mods []Module) ([]Module, error) {
 	var parsedModules []Module
 	for _, mod := range mods {
+		module, _, found := strings.Cut(mod.GoMod, " ")
+		if !found {
+			return mods, fmt.Errorf("go.mod module specifier syntax is <module><space><version>: %q", mod.GoMod)
+		}
 		if mod.Import == "" {
-			mod.Import = strings.Split(mod.GoMod, " ")[0]
+			mod.Import = module
 		}
 
 		if mod.Name == "" {
