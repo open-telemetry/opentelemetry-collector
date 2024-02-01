@@ -5,9 +5,11 @@ package configcompression // import "go.opentelemetry.io/collector/config/config
 
 import "fmt"
 
-// CompressionType Deprecated [0.94.0]: use Type instead.
+// CompressionType represents a compression method
+// Deprecated [0.94.0]: use Type instead.
 type CompressionType = Type
 
+// Type represents a compression method
 type Type string
 
 const (
