@@ -501,7 +501,7 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 		},
 		{
 			okToIngest:   false,
-			expectedCode: codes.InvalidArgument,
+			expectedCode: codes.Internal,
 			permanent:    true,
 		},
 		{
@@ -633,7 +633,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
-			GRPC: &configgrpc.GRPCServerSettings{
+			GRPC: &configgrpc.ServerConfig{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: "tcp",

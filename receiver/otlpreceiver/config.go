@@ -36,8 +36,8 @@ type HTTPConfig struct {
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
-	GRPC *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
-	HTTP *HTTPConfig                    `mapstructure:"http"`
+	GRPC *configgrpc.ServerConfig `mapstructure:"grpc"`
+	HTTP *HTTPConfig              `mapstructure:"http"`
 }
 
 // Config defines configuration for OTLP receiver.

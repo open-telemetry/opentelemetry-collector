@@ -24,6 +24,7 @@ status:
   codeowners:
     active: [string]
     emeritus: [string]
+  unsupported_platforms: [<linux|windows>]
 
 # Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
 # This attribute should be set for metrics compliant with OTel Semantic Conventions.
