@@ -366,7 +366,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("foo")
+	Type    = component.MustNewType("foo")
+	nameSep = "/"
 )
 
 const (
@@ -379,6 +380,10 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("")
+}
+
+func CustomMetricName(name string) string {
+	return "receiver" + nameSep + "foo" + nameSep + name
 }
 `,
 		},
@@ -403,7 +408,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("foo")
+	Type    = component.MustNewType("foo")
+	nameSep = "/"
 )
 
 const (
@@ -416,6 +422,10 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("")
+}
+
+func CustomMetricName(name string) string {
+	return "receiver" + nameSep + "foo" + nameSep + name
 }
 `,
 		},

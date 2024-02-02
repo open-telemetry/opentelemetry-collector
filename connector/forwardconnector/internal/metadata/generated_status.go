@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("forward")
+	Type    = component.MustNewType("forward")
+	nameSep = "/"
 )
 
 const (
@@ -25,4 +26,8 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("otelcol/forward")
+}
+
+func CustomMetricName(name string) string {
+	return "connector" + nameSep + "forward" + nameSep + name
 }

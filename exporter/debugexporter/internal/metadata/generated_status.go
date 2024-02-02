@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("debug")
+	Type    = component.MustNewType("debug")
+	nameSep = "/"
 )
 
 const (
@@ -25,4 +26,8 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("otelcol/debug")
+}
+
+func CustomMetricName(name string) string {
+	return "exporter" + nameSep + "debug" + nameSep + name
 }

@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("batch")
+	Type    = component.MustNewType("batch")
+	nameSep = "/"
 )
 
 const (
@@ -25,4 +26,8 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("otelcol/batch")
+}
+
+func CustomMetricName(name string) string {
+	return "processor" + nameSep + "batch" + nameSep + name
 }

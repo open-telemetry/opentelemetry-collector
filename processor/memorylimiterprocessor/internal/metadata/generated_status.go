@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("memory_limiter")
+	Type    = component.MustNewType("memory_limiter")
+	nameSep = "/"
 )
 
 const (
@@ -25,4 +26,8 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("otelcol/memorylimiter")
+}
+
+func CustomMetricName(name string) string {
+	return "processor" + nameSep + "memory_limiter" + nameSep + name
 }

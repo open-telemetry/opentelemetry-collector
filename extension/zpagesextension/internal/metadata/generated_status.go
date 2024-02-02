@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("zpages")
+	Type    = component.MustNewType("zpages")
+	nameSep = "/"
 )
 
 const (
@@ -23,4 +24,8 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("otelcol/zpages")
+}
+
+func CustomMetricName(name string) string {
+	return "extension" + nameSep + "zpages" + nameSep + name
 }
