@@ -63,12 +63,12 @@ func TestAllHTTPClientSettings(t *testing.T) {
 	http2PingTimeout := 5 * time.Second
 	tests := []struct {
 		name        string
-		settings    HTTPClientConfig
+		settings    ClientConfig
 		shouldError bool
 	}{
 		{
 			name: "all_valid_settings",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "localhost:1234",
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
@@ -89,7 +89,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		},
 		{
 			name: "all_valid_settings_with_none_compression",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "localhost:1234",
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
@@ -110,7 +110,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		},
 		{
 			name: "all_valid_settings_with_gzip_compression",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "localhost:1234",
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
@@ -131,7 +131,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		},
 		{
 			name: "all_valid_settings_http2_health_check",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "localhost:1234",
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
@@ -152,7 +152,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		},
 		{
 			name: "error_round_tripper_returned",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "localhost:1234",
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
@@ -200,12 +200,12 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		settings    HTTPClientConfig
+		settings    ClientConfig
 		shouldError bool
 	}{
 		{
 			name: "valid_partial_settings",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "localhost:1234",
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
@@ -238,7 +238,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 }
 
 func TestDefaultHTTPClientSettings(t *testing.T) {
-	httpClientSettings := NewDefaultHTTPClientConfig()
+	httpClientSettings := NewDefaultClientConfig()
 	assert.EqualValues(t, 100, *httpClientSettings.MaxIdleConns)
 	assert.EqualValues(t, 90*time.Second, *httpClientSettings.IdleConnTimeout)
 }
@@ -267,7 +267,7 @@ func TestProxyURL(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			s := NewDefaultHTTPClientConfig()
+			s := NewDefaultClientConfig()
 			s.ProxyURL = tC.proxyURL
 
 			tt := componenttest.NewNopTelemetrySettings()
@@ -303,12 +303,12 @@ func TestHTTPClientSettingsError(t *testing.T) {
 		ext: map[component.ID]component.Component{},
 	}
 	tests := []struct {
-		settings HTTPClientConfig
+		settings ClientConfig
 		err      string
 	}{
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "",
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
@@ -321,7 +321,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 		},
 		{
 			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "",
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
@@ -334,7 +334,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 		},
 		{
 			err: "failed to resolve authenticator \"dummy\": authenticator not found",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "https://localhost:1234/v1/traces",
 				Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
 			},
@@ -352,12 +352,12 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	tests := []struct {
 		name      string
 		shouldErr bool
-		settings  HTTPClientConfig
+		settings  ClientConfig
 		host      component.Host
 	}{
 		{
 			name: "no_auth_extension_enabled",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "localhost:1234",
 				Auth:     nil,
 			},
@@ -372,7 +372,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 		},
 		{
 			name: "with_auth_configuration_and_no_extension",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
 			},
@@ -385,7 +385,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 		},
 		{
 			name: "with_auth_configuration_and_no_extension_map",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
 			},
@@ -394,7 +394,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 		},
 		{
 			name: "with_auth_configuration_has_extension",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{AuthenticatorID: mockID},
 			},
@@ -407,7 +407,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 		},
 		{
 			name: "with_auth_configuration_has_extension_and_headers",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{AuthenticatorID: mockID},
 				Headers:  map[string]configopaque.String{"foo": "bar"},
@@ -421,7 +421,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 		},
 		{
 			name: "with_auth_configuration_has_extension_and_compression",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint:    "localhost:1234",
 				Auth:        &configauth.Authentication{AuthenticatorID: mockID},
 				Compression: configcompression.Gzip,
@@ -435,7 +435,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 		},
 		{
 			name: "with_auth_configuration_has_err_extension",
-			settings: HTTPClientConfig{
+			settings: ClientConfig{
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{AuthenticatorID: mockID},
 			},
@@ -486,12 +486,12 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 
 func TestHTTPServerSettingsError(t *testing.T) {
 	tests := []struct {
-		settings HTTPServerConfig
+		settings ServerConfig
 		err      string
 	}{
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
-			settings: HTTPServerConfig{
+			settings: ServerConfig{
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
@@ -502,7 +502,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		},
 		{
 			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
-			settings: HTTPServerConfig{
+			settings: ServerConfig{
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
@@ -513,7 +513,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		},
 		{
 			err: "failed to load client CA CertPool: failed to load CA /doesnt/exist:",
-			settings: HTTPServerConfig{
+			settings: ServerConfig{
 				Endpoint: "localhost:0",
 				TLSSetting: &configtls.TLSServerSetting{
 					ClientCAFile: "/doesnt/exist",
@@ -532,17 +532,17 @@ func TestHTTPServerSettingsError(t *testing.T) {
 func TestHTTPServerWarning(t *testing.T) {
 	tests := []struct {
 		name     string
-		settings HTTPServerConfig
+		settings ServerConfig
 		len      int
 	}{
 		{
-			settings: HTTPServerConfig{
+			settings: ServerConfig{
 				Endpoint: "0.0.0.0:0",
 			},
 			len: 1,
 		},
 		{
-			settings: HTTPServerConfig{
+			settings: ServerConfig{
 				Endpoint: "127.0.0.1:0",
 			},
 			len: 0,
@@ -693,7 +693,7 @@ func TestHttpReception(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hss := &HTTPServerConfig{
+			hss := &ServerConfig{
 				Endpoint:   "localhost:0",
 				TLSSetting: tt.tlsServerCreds,
 			}
@@ -720,7 +720,7 @@ func TestHttpReception(t *testing.T) {
 				expectedProto = "HTTP/1.1"
 			}
 
-			hcs := &HTTPClientConfig{
+			hcs := &ClientConfig{
 				Endpoint:   prefix + ln.Addr().String(),
 				TLSSetting: *tt.tlsClientCreds,
 			}
@@ -805,7 +805,7 @@ func TestHttpCors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hss := &HTTPServerConfig{
+			hss := &ServerConfig{
 				Endpoint: "localhost:0",
 				CORS:     tt.CORSConfig,
 			}
@@ -847,7 +847,7 @@ func TestHttpCors(t *testing.T) {
 }
 
 func TestHttpCorsInvalidSettings(t *testing.T) {
-	hss := &HTTPServerConfig{
+	hss := &ServerConfig{
 		Endpoint: "localhost:0",
 		CORS:     &CORSConfig{AllowedHeaders: []string{"some-header"}},
 	}
@@ -863,7 +863,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 }
 
 func TestHttpCorsWithSettings(t *testing.T) {
-	hss := &HTTPServerConfig{
+	hss := &ServerConfig{
 		Endpoint: "localhost:0",
 		CORS: &CORSConfig{
 			AllowedOrigins: []string{"*"},
@@ -921,7 +921,7 @@ func TestHttpServerHeaders(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hss := &HTTPServerConfig{
+			hss := &ServerConfig{
 				Endpoint:        "localhost:0",
 				ResponseHeaders: tt.headers,
 			}
@@ -1009,7 +1009,7 @@ func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaqu
 }
 
 func ExampleHTTPServerSettings() {
-	settings := HTTPServerConfig{
+	settings := ServerConfig{
 		Endpoint: "localhost:443",
 	}
 	s, err := settings.ToServer(
@@ -1051,7 +1051,7 @@ func TestHttpClientHeaders(t *testing.T) {
 			}))
 			defer server.Close()
 			serverURL, _ := url.Parse(server.URL)
-			setting := HTTPClientConfig{
+			setting := ClientConfig{
 				Endpoint:        serverURL.String(),
 				TLSSetting:      configtls.TLSClientSetting{},
 				ReadBufferSize:  0,
@@ -1132,7 +1132,7 @@ func TestContextWithClient(t *testing.T) {
 func TestServerAuth(t *testing.T) {
 	// prepare
 	authCalled := false
-	hss := HTTPServerConfig{
+	hss := ServerConfig{
 		Endpoint: "localhost:0",
 		Auth: &configauth.Authentication{
 			AuthenticatorID: mockID,
@@ -1167,7 +1167,7 @@ func TestServerAuth(t *testing.T) {
 }
 
 func TestInvalidServerAuth(t *testing.T) {
-	hss := HTTPServerConfig{
+	hss := ServerConfig{
 		Auth: &configauth.Authentication{
 			AuthenticatorID: nonExistingID,
 		},
@@ -1180,7 +1180,7 @@ func TestInvalidServerAuth(t *testing.T) {
 
 func TestFailedServerAuth(t *testing.T) {
 	// prepare
-	hss := HTTPServerConfig{
+	hss := ServerConfig{
 		Endpoint: "localhost:0",
 		Auth: &configauth.Authentication{
 			AuthenticatorID: mockID,
@@ -1210,7 +1210,7 @@ func TestFailedServerAuth(t *testing.T) {
 
 func TestServerWithErrorHandler(t *testing.T) {
 	// prepare
-	hss := HTTPServerConfig{
+	hss := ServerConfig{
 		Endpoint: "localhost:0",
 	}
 	eh := func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int) {
@@ -1241,7 +1241,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 
 func TestServerWithDecoder(t *testing.T) {
 	// prepare
-	hss := HTTPServerConfig{
+	hss := ServerConfig{
 		Endpoint: "localhost:0",
 	}
 	decoder := func(body io.ReadCloser) (io.ReadCloser, error) {
@@ -1319,7 +1319,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 		ServerName: "localhost",
 	}
 
-	hss := &HTTPServerConfig{
+	hss := &ServerConfig{
 		Endpoint:   "localhost:0",
 		TLSSetting: tlsServerCreds,
 	}
@@ -1343,7 +1343,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 	}()
 
 	for _, bb := range tests {
-		hcs := &HTTPClientConfig{
+		hcs := &ClientConfig{
 			Endpoint:   "https://" + ln.Addr().String(),
 			TLSSetting: *tlsClientCreds,
 		}
