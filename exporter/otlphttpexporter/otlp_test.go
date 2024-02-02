@@ -456,7 +456,7 @@ func TestPartialSuccess_logs(t *testing.T) {
 	err = exp.ConsumeLogs(context.Background(), logs)
 	require.NoError(t, err)
 	require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
-	require.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "partial success")
+	require.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }
 
 func TestPartialResponse_missingHeaderButHasBody(t *testing.T) {
@@ -568,7 +568,7 @@ func TestPartialSuccess_longContentLengthHeader(t *testing.T) {
 	err = handlePartialSuccessResponse(resp, exp.tracesPartialSuccessHandler)
 	assert.NoError(t, err)
 	assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
-	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "partial success")
+	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }
 
 func TestPartialSuccessInvalidResponseBody(t *testing.T) {
@@ -624,7 +624,7 @@ func TestPartialSuccess_traces(t *testing.T) {
 	err = exp.ConsumeTraces(context.Background(), traces)
 	require.NoError(t, err)
 	require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
-	require.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "partial success")
+	require.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }
 
 func TestPartialSuccess_metrics(t *testing.T) {
@@ -663,7 +663,7 @@ func TestPartialSuccess_metrics(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), metrics)
 	require.NoError(t, err)
 	require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
-	require.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "partial success")
+	require.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }
 
 func createBackend(endpoint string, handler func(writer http.ResponseWriter, request *http.Request)) *httptest.Server {
