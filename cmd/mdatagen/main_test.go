@@ -365,8 +365,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("foo")
+)
+
 const (
-	Type             = "foo"
 	MetricsStability = component.StabilityLevelBeta
 )
 
@@ -399,8 +402,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("foo")
+)
+
 const (
-	Type             = "foo"
 	MetricsStability = component.StabilityLevelAlpha
 )
 

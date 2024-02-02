@@ -50,8 +50,15 @@ func init() {
 	balancer.Register(testBalancerBuilder{})
 }
 
+var (
+	componentID   = component.MustNewID("component")
+	testAuthID    = component.MustNewID("testauth")
+	mockID        = component.MustNewID("mock")
+	doesntExistID = component.MustNewID("doesntexist")
+)
+
 func TestDefaultGrpcClientSettings(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(componentID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -66,7 +73,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 }
 
 func TestAllGrpcClientSettings(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(componentID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -96,11 +103,11 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
 				Authority:       "pseudo-authority",
-				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
+				Auth:            &configauth.Authentication{AuthenticatorID: testAuthID},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					component.NewID("testauth"): &authtest.MockClient{},
+					testAuthID: &authtest.MockClient{},
 				},
 			},
 		},
@@ -125,11 +132,11 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
 				Authority:       "pseudo-authority",
-				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
+				Auth:            &configauth.Authentication{AuthenticatorID: testAuthID},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					component.NewID("testauth"): &authtest.MockClient{},
+					testAuthID: &authtest.MockClient{},
 				},
 			},
 		},
@@ -154,11 +161,11 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WaitForReady:    true,
 				BalancerName:    "configgrpc_balancer_test",
 				Authority:       "pseudo-authority",
-				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
+				Auth:            &configauth.Authentication{AuthenticatorID: testAuthID},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					component.NewID("testauth"): &authtest.MockClient{},
+					testAuthID: &authtest.MockClient{},
 				},
 			},
 		},
@@ -223,11 +230,11 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 		},
 	}
 	gss.Auth = &configauth.Authentication{
-		AuthenticatorID: component.NewID("mock"),
+		AuthenticatorID: mockID,
 	}
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			component.NewID("mock"): auth.NewServer(),
+			mockID: auth.NewServer(),
 		},
 	}
 	srv, err := gss.ToServer(host, componenttest.NewNopTelemetrySettings())
@@ -236,7 +243,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(componentID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -303,7 +310,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "failed to resolve authenticator \"doesntexist\": authenticator not found",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("doesntexist")},
+				Auth:     &configauth.Authentication{AuthenticatorID: doesntExistID},
 			},
 			host: &mockHost{ext: map[component.ID]component.Component{}},
 		},
@@ -311,7 +318,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "no extensions configuration available",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("doesntexist")},
+				Auth:     &configauth.Authentication{AuthenticatorID: doesntExistID},
 			},
 			host: &mockHost{},
 		},
@@ -359,7 +366,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 }
 
 func TestUseSecure(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(componentID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -498,7 +505,7 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 }
 
 func TestHttpReception(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(componentID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -650,7 +657,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on windows")
 	}
-	tt, err := componenttest.SetupTelemetry(component.NewID("component"))
+	tt, err := componenttest.SetupTelemetry(componentID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -879,7 +886,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 					},
 				}
 
-				tt, err := componenttest.SetupTelemetry(component.NewID("component"))
+				tt, err := componenttest.SetupTelemetry(componentID)
 				require.NoError(t, err)
 				defer func() {
 					require.NoError(t, tt.Shutdown(context.Background()))

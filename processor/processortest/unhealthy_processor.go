@@ -24,7 +24,7 @@ func NewUnhealthyProcessorCreateSettings() processor.CreateSettings {
 // NewUnhealthyProcessorFactory returns a component.ProcessorFactory that constructs nop processors.
 func NewUnhealthyProcessorFactory() processor.Factory {
 	return processor.NewFactory(
-		"unhealthy",
+		component.MustNewType("unhealthy"),
 		func() component.Config {
 			return &struct{}{}
 		},
