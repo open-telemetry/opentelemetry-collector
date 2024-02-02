@@ -22,6 +22,7 @@ func Test_runContents(t *testing.T) {
 		wantMetricsGenerated bool
 		wantConfigGenerated  bool
 		wantStatusGenerated  bool
+		wantTestsGenerated   bool
 		wantErr              bool
 	}{
 		{
@@ -43,10 +44,37 @@ func Test_runContents(t *testing.T) {
 			yml:                 "status_only.yaml",
 			wantStatusGenerated: true,
 		},
+		{
+			yml:                 "with_tests_receiver.yaml",
+			wantTestsGenerated:  true,
+			wantStatusGenerated: true,
+		},
+		{
+			yml:                 "with_tests_exporter.yaml",
+			wantTestsGenerated:  true,
+			wantStatusGenerated: true,
+		},
+		{
+			yml:                 "with_tests_processor.yaml",
+			wantTestsGenerated:  true,
+			wantStatusGenerated: true,
+		},
+		{
+			yml:                 "with_tests_extension.yaml",
+			wantTestsGenerated:  true,
+			wantStatusGenerated: true,
+		},
+		{
+			yml:                 "with_tests_connector.yaml",
+			wantTestsGenerated:  true,
+			wantStatusGenerated: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.yml, func(t *testing.T) {
-			tmpdir := t.TempDir()
+			tmpdir := filepath.Join(t.TempDir(), "shortname")
+			err := os.MkdirAll(tmpdir, 0750)
+			require.NoError(t, err)
 			ymlContent, err := os.ReadFile(filepath.Join("testdata", tt.yml))
 			require.NoError(t, err)
 			metadataFile := filepath.Join(tmpdir, "metadata.yaml")
@@ -91,6 +119,15 @@ foo
 				contents, err := os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
 				require.NoError(t, err)
 				require.Contains(t, string(contents), "foo")
+			}
+
+			if tt.wantTestsGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
+				contents, err := os.ReadFile(filepath.Join(tmpdir, "generated_component_test.go")) // nolint: gosec
+				require.NoError(t, err)
+				require.Contains(t, string(contents), "func Test")
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
 			}
 		})
 	}
