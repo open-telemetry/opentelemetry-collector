@@ -16,7 +16,7 @@ import (
 func TestNetAddrTimeout(t *testing.T) {
 	nac := &NetAddr{
 		Endpoint:      "localhost:0",
-		TransportType: confignet.TransportTypeTCP,
+		TransportType: TransportTypeTCP,
 		DialerConfig: DialerConfig{
 			Timeout: -1 * time.Second,
 		},
@@ -51,7 +51,7 @@ func TestTCPAddrTimeout(t *testing.T) {
 func TestNetAddr(t *testing.T) {
 	nas := &NetAddr{
 		Endpoint:      "localhost:0",
-		TransportType: confignet.TransportTypeTCP,
+		TransportType: TransportTypeTCP,
 	}
 	ln, err := nas.Listen(context.Background())
 	assert.NoError(t, err)
