@@ -112,8 +112,6 @@ func callValidateIfPossible(v reflect.Value) error {
 // Type is the component type as it is used in the config.
 type Type string
 
-var _ fmt.Stringer = (Type)("")
-
 // String returns the string representation of the type.
 func (t Type) String() string {
 	return string(t)

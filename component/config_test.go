@@ -5,12 +5,15 @@ package component
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var _ fmt.Stringer = (Type)("")
 
 type configChildStruct struct {
 	Child    errConfig
