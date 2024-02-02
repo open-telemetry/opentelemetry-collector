@@ -48,7 +48,7 @@ import (
 
 const otlpReceiverName = "receiver_test"
 
-var otlpReceiverID = component.NewIDWithName("otlp", otlpReceiverName)
+var otlpReceiverID = component.MustNewIDWithName("otlp", otlpReceiverName)
 
 func TestJsonHttp(t *testing.T) {
 	tests := []struct {

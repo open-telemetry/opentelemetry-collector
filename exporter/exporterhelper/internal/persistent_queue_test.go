@@ -293,14 +293,14 @@ func TestToStorageClient(t *testing.T) {
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			storageID := component.NewIDWithName("file_storage", strconv.Itoa(tC.storageIndex))
+			storageID := component.MustNewIDWithName("file_storage", strconv.Itoa(tC.storageIndex))
 
 			var extensions = map[component.ID]component.Component{}
 			for i := 0; i < tC.numStorages; i++ {
-				extensions[component.NewIDWithName("file_storage", strconv.Itoa(i))] = NewMockStorageExtension(tC.getClientError)
+				extensions[component.MustNewIDWithName("file_storage", strconv.Itoa(i))] = NewMockStorageExtension(tC.getClientError)
 			}
 			host := &mockHost{ext: extensions}
-			ownerID := component.NewID("foo_exporter")
+			ownerID := component.MustNewID("foo_exporter")
 
 			// execute
 			client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.DataTypeTraces)
@@ -318,7 +318,7 @@ func TestToStorageClient(t *testing.T) {
 }
 
 func TestInvalidStorageExtensionType(t *testing.T) {
-	storageID := component.NewIDWithName("extension", "extension")
+	storageID := component.MustNewIDWithName("extension", "extension")
 
 	// make a test extension
 	factory := extensiontest.NewNopFactory()
@@ -330,7 +330,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 		storageID: extension,
 	}
 	host := &mockHost{ext: extensions}
-	ownerID := component.NewID("foo_exporter")
+	ownerID := component.MustNewID("foo_exporter")
 
 	// execute
 	client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.DataTypeTraces)

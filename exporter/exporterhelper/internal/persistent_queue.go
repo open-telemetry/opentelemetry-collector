@@ -511,7 +511,7 @@ func toStorageClient(ctx context.Context, storageID component.ID, host component
 		return nil, errWrongExtensionType
 	}
 
-	return storageExt.GetClient(ctx, component.KindExporter, ownerID, string(signal))
+	return storageExt.GetClient(ctx, component.KindExporter, ownerID, signal.String())
 }
 
 func getItemKey(index uint64) string {
