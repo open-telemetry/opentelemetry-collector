@@ -270,11 +270,9 @@ func (e *baseExporter) tracesPartialSuccessHandler(protoBytes []byte, contentTyp
 	}
 	partialSuccess := exportResponse.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
-		// TODO: These should be counted as "rejected", similar to dropped items.
-		// https://github.com/open-telemetry/opentelemetry-collector/issues/9243
-		e.logger.Warn("partial success",
+		e.logger.Warn("Partial success response",
 			zap.String("message", exportResponse.PartialSuccess().ErrorMessage()),
-			zap.Int64("num_rejected", exportResponse.PartialSuccess().RejectedSpans()),
+			zap.Int64("dropped_spans", exportResponse.PartialSuccess().RejectedSpans()),
 		)
 	}
 	return nil
@@ -291,11 +289,9 @@ func (e *baseExporter) metricsPartialSuccessHandler(protoBytes []byte, contentTy
 	}
 	partialSuccess := exportResponse.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
-		// TODO: These should be counted as "rejected", similar to dropped items.
-		// https://github.com/open-telemetry/opentelemetry-collector/issues/9243
-		e.logger.Warn("partial success",
+		e.logger.Warn("Partial success response",
 			zap.String("message", exportResponse.PartialSuccess().ErrorMessage()),
-			zap.Int64("num_rejected", exportResponse.PartialSuccess().RejectedDataPoints()),
+			zap.Int64("dropped_data_points", exportResponse.PartialSuccess().RejectedDataPoints()),
 		)
 	}
 	return nil
@@ -312,11 +308,9 @@ func (e *baseExporter) logsPartialSuccessHandler(protoBytes []byte, contentType 
 	}
 	partialSuccess := exportResponse.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
-		// TODO: These should be counted as "rejected", similar to dropped items.
-		// https://github.com/open-telemetry/opentelemetry-collector/issues/9243
-		e.logger.Warn("partial success",
+		e.logger.Warn("Partial success response",
 			zap.String("message", exportResponse.PartialSuccess().ErrorMessage()),
-			zap.Int64("num_rejected", exportResponse.PartialSuccess().RejectedLogRecords()),
+			zap.Int64("dropped_log_records", exportResponse.PartialSuccess().RejectedLogRecords()),
 		)
 	}
 	return nil

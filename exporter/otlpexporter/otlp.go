@@ -98,9 +98,6 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
-		// TODO: These should be counted as "rejected", similar to dropped items.
-		// https://github.com/open-telemetry/opentelemetry-collector/issues/9243
-		// Note the logging key is chosen for consistency with ../exporterhelper.
 		e.settings.Logger.Warn("Partial success response",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_spans", resp.PartialSuccess().RejectedSpans()),
@@ -117,9 +114,6 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
-		// TODO: These should be counted as "rejected", similar to dropped items.
-		// https://github.com/open-telemetry/opentelemetry-collector/issues/9243
-		// Note the logging key is chosen for consistency with ../exporterhelper.
 		e.settings.Logger.Warn("Partial success response",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_data_points", resp.PartialSuccess().RejectedDataPoints()),
@@ -136,9 +130,6 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
-		// TODO: These should be counted as "rejected", similar to dropped items.
-		// https://github.com/open-telemetry/opentelemetry-collector/issues/9243
-		// Note the logging key is chosen for consistency with ../exporterhelper.
 		e.settings.Logger.Warn("Partial success response",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_log_records", resp.PartialSuccess().RejectedLogRecords()),
