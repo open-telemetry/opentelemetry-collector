@@ -12,21 +12,57 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  contrib_tests:
+  contrib-tests-matrix:
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'Skip Contrib Tests') }}
-
+    strategy:
+      matrix:
+        group:
+          - receiver-0
+          - receiver-1
+          - receiver-2
+          - receiver-3
+          - processor
+          - exporter-0
+          - exporter-1
+          - extension
+          - connector
+          - internal
+          - pkg
+          - cmd-0
+          - cmd-1
+          - other
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version: ~1.20.12
           cache: false
       - name: Run Contrib Tests
         run: |
           contrib_path=/tmp/opentelemetry-collector-contrib
-          git clone https://github.com/open-telemetry/opentelemetry-collector-contrib.git $contrib_path
-          make CONTRIB_PATH=$contrib_path SKIP_RESTORE_CONTRIB=true check-contrib
+          git clone --depth=1 https://github.com/open-telemetry/opentelemetry-collector-contrib.git $contrib_path
+          make CONTRIB_PATH=$contrib_path SKIP_RESTORE_CONTRIB=true GROUP=${{ matrix.group }} check-contrib  
+
+  contrib_tests:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'Skip Contrib Tests') }}
+    needs: [ contrib-tests-matrix ]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.contrib-tests-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.contrib-tests-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi

@@ -38,17 +38,17 @@ func TestBuildExtensions(t *testing.T) {
 		{
 			name: "extension_not_configured",
 			config: Config{
-				component.NewID("myextension"),
+				component.MustNewID("myextension"),
 			},
 			wantErrMsg: "failed to create extension \"myextension\": extension \"myextension\" is not configured",
 		},
 		{
 			name: "missing_extension_factory",
 			extensionsConfigs: map[component.ID]component.Config{
-				component.NewID("unknown"): nopExtensionConfig,
+				component.MustNewID("unknown"): nopExtensionConfig,
 			},
 			config: Config{
-				component.NewID("unknown"),
+				component.MustNewID("unknown"),
 			},
 			wantErrMsg: "failed to create extension \"unknown\": extension factory not available for: \"unknown\"",
 		},
@@ -212,11 +212,11 @@ func TestNotifyConfig(t *testing.T) {
 	notificationError := errors.New("Error processing config")
 	nopExtensionFactory := extensiontest.NewNopFactory()
 	nopExtensionConfig := nopExtensionFactory.CreateDefaultConfig()
-	n1ExtensionFactory := newConfigWatcherExtensionFactory("notifiable1", func() error { return nil })
+	n1ExtensionFactory := newConfigWatcherExtensionFactory(component.MustNewType("notifiable1"), func() error { return nil })
 	n1ExtensionConfig := n1ExtensionFactory.CreateDefaultConfig()
-	n2ExtensionFactory := newConfigWatcherExtensionFactory("notifiable2", func() error { return nil })
+	n2ExtensionFactory := newConfigWatcherExtensionFactory(component.MustNewType("notifiable2"), func() error { return nil })
 	n2ExtensionConfig := n1ExtensionFactory.CreateDefaultConfig()
-	nErrExtensionFactory := newConfigWatcherExtensionFactory("notifiableErr", func() error { return notificationError })
+	nErrExtensionFactory := newConfigWatcherExtensionFactory(component.MustNewType("notifiableErr"), func() error { return notificationError })
 	nErrExtensionConfig := nErrExtensionFactory.CreateDefaultConfig()
 
 	tests := []struct {
@@ -230,52 +230,52 @@ func TestNotifyConfig(t *testing.T) {
 		{
 			name: "No notifiable extensions",
 			factories: map[component.Type]extension.Factory{
-				"nop": nopExtensionFactory,
+				component.MustNewType("nop"): nopExtensionFactory,
 			},
 			extensionsConfigs: map[component.ID]component.Config{
-				component.NewID("nop"): nopExtensionConfig,
+				component.MustNewID("nop"): nopExtensionConfig,
 			},
 			serviceExtensions: []component.ID{
-				component.NewID("nop"),
+				component.MustNewID("nop"),
 			},
 		},
 		{
 			name: "One notifiable extension",
 			factories: map[component.Type]extension.Factory{
-				"notifiable1": n1ExtensionFactory,
+				component.MustNewType("notifiable1"): n1ExtensionFactory,
 			},
 			extensionsConfigs: map[component.ID]component.Config{
-				component.NewID("notifiable1"): n1ExtensionConfig,
+				component.MustNewID("notifiable1"): n1ExtensionConfig,
 			},
 			serviceExtensions: []component.ID{
-				component.NewID("notifiable1"),
+				component.MustNewID("notifiable1"),
 			},
 		},
 		{
 			name: "Multiple notifiable extensions",
 			factories: map[component.Type]extension.Factory{
-				"notifiable1": n1ExtensionFactory,
-				"notifiable2": n2ExtensionFactory,
+				component.MustNewType("notifiable1"): n1ExtensionFactory,
+				component.MustNewType("notifiable2"): n2ExtensionFactory,
 			},
 			extensionsConfigs: map[component.ID]component.Config{
-				component.NewID("notifiable1"): n1ExtensionConfig,
-				component.NewID("notifiable2"): n2ExtensionConfig,
+				component.MustNewID("notifiable1"): n1ExtensionConfig,
+				component.MustNewID("notifiable2"): n2ExtensionConfig,
 			},
 			serviceExtensions: []component.ID{
-				component.NewID("notifiable1"),
-				component.NewID("notifiable2"),
+				component.MustNewID("notifiable1"),
+				component.MustNewID("notifiable2"),
 			},
 		},
 		{
 			name: "Errors in extension notification",
 			factories: map[component.Type]extension.Factory{
-				"notifiableErr": nErrExtensionFactory,
+				component.MustNewType("notifiableErr"): nErrExtensionFactory,
 			},
 			extensionsConfigs: map[component.ID]component.Config{
-				component.NewID("notifiableErr"): nErrExtensionConfig,
+				component.MustNewID("notifiableErr"): nErrExtensionConfig,
 			},
 			serviceExtensions: []component.ID{
-				component.NewID("notifiableErr"),
+				component.MustNewID("notifiableErr"),
 			},
 			want: notificationError,
 		},
@@ -335,7 +335,7 @@ func newConfigWatcherExtensionFactory(name component.Type, fn func() error) exte
 
 func newBadExtensionFactory() extension.Factory {
 	return extension.NewFactory(
-		"bf",
+		component.MustNewType("bf"),
 		func() component.Config {
 			return &struct{}{}
 		},
@@ -348,7 +348,7 @@ func newBadExtensionFactory() extension.Factory {
 
 func newCreateErrorExtensionFactory() extension.Factory {
 	return extension.NewFactory(
-		"err",
+		component.MustNewType("err"),
 		func() component.Config {
 			return &struct{}{}
 		},
@@ -410,14 +410,15 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			compID := component.NewID("statustest")
-			factory := newStatusTestExtensionFactory("statustest", tc.startErr, tc.shutdownErr)
+			statusType := component.MustNewType("statustest")
+			compID := component.NewID(statusType)
+			factory := newStatusTestExtensionFactory(statusType, tc.startErr, tc.shutdownErr)
 			config := factory.CreateDefaultConfig()
 			extensionsConfigs := map[component.ID]component.Config{
 				compID: config,
 			}
 			factories := map[component.Type]extension.Factory{
-				"statustest": factory,
+				statusType: factory,
 			}
 			extensions, err := New(
 				context.Background(),
@@ -434,6 +435,8 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			var actualStatuses []*component.StatusEvent
 			rep := status.NewReporter(func(id *component.InstanceID, ev *component.StatusEvent) {
 				actualStatuses = append(actualStatuses, ev)
+			}, func(err error) {
+				require.NoError(t, err)
 			})
 			extensions.telemetry.Status = rep
 			rep.Ready()
@@ -482,7 +485,7 @@ func newStatusTestExtensionFactory(name component.Type, startErr, shutdownErr er
 
 func newRecordingExtensionFactory(startCallback func(set extension.CreateSettings, host component.Host) error, shutdownCallback func(set extension.CreateSettings) error) extension.Factory {
 	return extension.NewFactory(
-		"recording",
+		component.MustNewType("recording"),
 		func() component.Config {
 			return &recordingExtensionConfig{}
 		},
@@ -517,7 +520,7 @@ func (ext *recordingExtension) Dependencies() []component.ID {
 	}
 	deps := make([]component.ID, len(ext.config.dependencies))
 	for i, dep := range ext.config.dependencies {
-		deps[i] = component.NewIDWithName("recording", dep)
+		deps[i] = component.MustNewIDWithName("recording", dep)
 	}
 	return deps
 }

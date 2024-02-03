@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -135,8 +134,8 @@ func TestScrapeController(t *testing.T) {
 	for _, test := range testCases {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			receiverID := component.NewID("receiver")
-			tt, err := obsreporttest.SetupTelemetry(receiverID)
+			receiverID := component.MustNewID("receiver")
+			tt, err := componenttest.SetupTelemetry(receiverID)
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -158,7 +157,7 @@ func TestScrapeController(t *testing.T) {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, nextConsumer, options...)
+			mr, err := NewScraperControllerReceiver(cfg, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, nextConsumer, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return
@@ -286,7 +285,7 @@ func assertReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	assert.True(t, receiverSpan)
 }
 
-func assertReceiverViews(t *testing.T, tt obsreporttest.TestTelemetry, sink *consumertest.MetricsSink) {
+func assertReceiverViews(t *testing.T, tt componenttest.TestTelemetry, sink *consumertest.MetricsSink) {
 	dataPointCount := 0
 	for _, md := range sink.AllMetrics() {
 		dataPointCount += md.DataPointCount()
@@ -314,7 +313,7 @@ func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnl
 	assert.True(t, scraperSpan)
 }
 
-func assertScraperViews(t *testing.T, tt obsreporttest.TestTelemetry, expectedErr error, sink *consumertest.MetricsSink) {
+func assertScraperViews(t *testing.T, tt componenttest.TestTelemetry, expectedErr error, sink *consumertest.MetricsSink) {
 	expectedScraped := int64(sink.DataPointCount())
 	expectedErrored := int64(0)
 	if expectedErr != nil {
@@ -327,7 +326,7 @@ func assertScraperViews(t *testing.T, tt obsreporttest.TestTelemetry, expectedEr
 		}
 	}
 
-	require.NoError(t, obsreporttest.CheckScraperMetrics(tt, component.NewID("receiver"), component.NewID("scraper"), expectedScraped, expectedErrored))
+	require.NoError(t, tt.CheckScraperMetrics(component.MustNewID("receiver"), component.MustNewID("scraper"), expectedScraped, expectedErrored))
 }
 
 func TestSingleScrapePerInterval(t *testing.T) {
@@ -338,7 +337,7 @@ func TestSingleScrapePerInterval(t *testing.T) {
 
 	tickerCh := make(chan time.Time)
 
-	scp, err := NewScraper("", tsm.scrape)
+	scp, err := NewScraper("scaper", tsm.scrape)
 	assert.NoError(t, err)
 
 	receiver, err := NewScraperControllerReceiver(
@@ -351,6 +350,7 @@ func TestSingleScrapePerInterval(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, receiver.Shutdown(context.Background())) }()
 
 	tickerCh <- time.Now()
 
@@ -379,7 +379,7 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 		ch: make(chan int, 1),
 	}
 
-	scp, err := NewScraper("", tsm.scrape)
+	scp, err := NewScraper("scraper", tsm.scrape)
 	require.NoError(t, err, "Must not error when creating scraper")
 
 	r, err := NewScraperControllerReceiver(

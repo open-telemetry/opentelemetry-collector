@@ -61,7 +61,7 @@ type receiverNode struct {
 
 func newReceiverNode(pipelineType component.DataType, recvID component.ID) *receiverNode {
 	return &receiverNode{
-		nodeID:       newNodeID(receiverSeed, string(pipelineType), recvID.String()),
+		nodeID:       newNodeID(receiverSeed, pipelineType.String(), recvID.String()),
 		componentID:  recvID,
 		pipelineType: pipelineType,
 	}
@@ -165,7 +165,7 @@ type exporterNode struct {
 
 func newExporterNode(pipelineType component.DataType, exprID component.ID) *exporterNode {
 	return &exporterNode{
-		nodeID:       newNodeID(exporterSeed, string(pipelineType), exprID.String()),
+		nodeID:       newNodeID(exporterSeed, pipelineType.String(), exprID.String()),
 		componentID:  exprID,
 		pipelineType: pipelineType,
 	}
@@ -215,7 +215,7 @@ type connectorNode struct {
 
 func newConnectorNode(exprPipelineType, rcvrPipelineType component.DataType, connID component.ID) *connectorNode {
 	return &connectorNode{
-		nodeID:           newNodeID(connectorSeed, connID.String(), string(exprPipelineType), string(rcvrPipelineType)),
+		nodeID:           newNodeID(connectorSeed, connID.String(), exprPipelineType.String(), rcvrPipelineType.String()),
 		componentID:      connID,
 		exprPipelineType: exprPipelineType,
 		rcvrPipelineType: rcvrPipelineType,
@@ -244,7 +244,7 @@ func (n *connectorNode) buildComponent(
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Traces)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
-		next := fanoutconsumer.NewTracesRouter(consumers)
+		next := connector.NewTracesRouter(consumers)
 
 		switch n.exprPipelineType {
 		case component.DataTypeTraces:
@@ -280,7 +280,7 @@ func (n *connectorNode) buildComponent(
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Metrics)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
-		next := fanoutconsumer.NewMetricsRouter(consumers)
+		next := connector.NewMetricsRouter(consumers)
 
 		switch n.exprPipelineType {
 		case component.DataTypeTraces:
@@ -315,7 +315,7 @@ func (n *connectorNode) buildComponent(
 			consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Logs)
 			capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 		}
-		next := fanoutconsumer.NewLogsRouter(consumers)
+		next := connector.NewLogsRouter(consumers)
 
 		switch n.exprPipelineType {
 		case component.DataTypeTraces:

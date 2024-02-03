@@ -1,0 +1,55 @@
+default:
+all_set:
+  metrics:
+    default.metric:
+      enabled: true
+    default.metric.to_be_removed:
+      enabled: true
+    optional.metric:
+      enabled: true
+    optional.metric.empty_unit:
+      enabled: true
+  resource_attributes:
+    map.resource.attr:
+      enabled: true
+    optional.resource.attr:
+      enabled: true
+    slice.resource.attr:
+      enabled: true
+    string.enum.resource.attr:
+      enabled: true
+    string.resource.attr:
+      enabled: true
+    string.resource.attr_disable_warning:
+      enabled: true
+    string.resource.attr_remove_warning:
+      enabled: true
+    string.resource.attr_to_be_removed:
+      enabled: true
+none_set:
+  metrics:
+    default.metric:
+      enabled: false
+    default.metric.to_be_removed:
+      enabled: false
+    optional.metric:
+      enabled: false
+    optional.metric.empty_unit:
+      enabled: false
+  resource_attributes:
+    map.resource.attr:
+      enabled: false
+    optional.resource.attr:
+      enabled: false
+    slice.resource.attr:
+      enabled: false
+    string.enum.resource.attr:
+      enabled: false
+    string.resource.attr:
+      enabled: false
+    string.resource.attr_disable_warning:
+      enabled: false
+    string.resource.attr_remove_warning:
+      enabled: false
+    string.resource.attr_to_be_removed:
+      enabled: false

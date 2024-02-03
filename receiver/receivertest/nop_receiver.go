@@ -12,11 +12,12 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-const typeStr = "nop"
+var componentType = component.MustNewType("nop")
 
 // NewNopCreateSettings returns a new nop settings for Create* functions.
 func NewNopCreateSettings() receiver.CreateSettings {
 	return receiver.CreateSettings{
+		ID:                component.NewID(componentType),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -25,7 +26,7 @@ func NewNopCreateSettings() receiver.CreateSettings {
 // NewNopFactory returns a receiver.Factory that constructs nop receivers.
 func NewNopFactory() receiver.Factory {
 	return receiver.NewFactory(
-		"nop",
+		componentType,
 		func() component.Config { return &nopConfig{} },
 		receiver.WithTraces(createTraces, component.StabilityLevelStable),
 		receiver.WithMetrics(createMetrics, component.StabilityLevelStable),
@@ -58,6 +59,6 @@ type nopReceiver struct {
 func NewNopBuilder() *receiver.Builder {
 	nopFactory := NewNopFactory()
 	return receiver.NewBuilder(
-		map[component.ID]component.Config{component.NewID(typeStr): nopFactory.CreateDefaultConfig()},
-		map[component.Type]receiver.Factory{typeStr: nopFactory})
+		map[component.ID]component.Config{component.NewID(componentType): nopFactory.CreateDefaultConfig()},
+		map[component.Type]receiver.Factory{componentType: nopFactory})
 }

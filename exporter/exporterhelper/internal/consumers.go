@@ -13,11 +13,11 @@ import (
 type QueueConsumers[T any] struct {
 	queue        Queue[T]
 	numConsumers int
-	consumeFunc  func(context.Context, T) bool
+	consumeFunc  func(context.Context, T) error
 	stopWG       sync.WaitGroup
 }
 
-func NewQueueConsumers[T any](q Queue[T], numConsumers int, consumeFunc func(context.Context, T) bool) *QueueConsumers[T] {
+func NewQueueConsumers[T any](q Queue[T], numConsumers int, consumeFunc func(context.Context, T) error) *QueueConsumers[T] {
 	return &QueueConsumers[T]{
 		queue:        q,
 		numConsumers: numConsumers,
@@ -40,8 +40,7 @@ func (qc *QueueConsumers[T]) Start(ctx context.Context, host component.Host) err
 			startWG.Done()
 			defer qc.stopWG.Done()
 			for {
-				ok := qc.queue.Consume(qc.consumeFunc)
-				if !ok {
+				if !qc.queue.Consume(qc.consumeFunc) {
 					return
 				}
 			}

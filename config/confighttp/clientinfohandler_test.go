@@ -5,10 +5,13 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
 	"net"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+var _ http.Handler = (*clientInfoHandler)(nil)
 
 func TestParseIP(t *testing.T) {
 	testCases := []struct {

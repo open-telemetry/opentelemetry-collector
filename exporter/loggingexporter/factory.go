@@ -12,11 +12,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/internal/common"
+	"go.opentelemetry.io/collector/exporter/loggingexporter/internal/metadata"
 )
 
+// The value of "type" key in configuration.
+var componentType = component.MustNewType("logging")
+
 const (
-	// The value of "type" key in configuration.
-	typeStr                   = "logging"
 	defaultSamplingInitial    = 2
 	defaultSamplingThereafter = 500
 )
@@ -24,11 +26,11 @@ const (
 // NewFactory creates a factory for Logging exporter
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		componentType,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, component.StabilityLevelDeprecated),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDeprecated),
-		exporter.WithLogs(createLogsExporter, component.StabilityLevelDeprecated),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 

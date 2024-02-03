@@ -10,7 +10,9 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"sync/atomic"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -41,22 +43,26 @@ import (
 //	 index          index   x
 //	                        xxxx deleted
 type persistentQueue[T any] struct {
-	set         exporter.CreateSettings
-	storageID   component.ID
-	dataType    component.DataType
-	client      storage.Client
-	unmarshaler func(data []byte) (T, error)
-	marshaler   func(req T) ([]byte, error)
+	*queueCapacityLimiter[T]
 
-	putChan  chan struct{}
-	stopChan chan struct{}
-	capacity uint64
+	set    PersistentQueueSettings[T]
+	logger *zap.Logger
+	client storage.Client
 
+	// isRequestSized indicates whether the queue is sized by the number of requests.
+	isRequestSized bool
+
+	putChan chan struct{}
+
+	// mu guards everything declared below.
 	mu                       sync.Mutex
 	readIndex                uint64
 	writeIndex               uint64
+	initIndexSize            uint64
+	initQueueSize            *atomic.Uint64
 	currentlyDispatchedItems []uint64
 	refClient                int64
+	stopped                  bool
 }
 
 const (
@@ -67,6 +73,7 @@ const (
 	readIndexKey                = "ri"
 	writeIndexKey               = "wi"
 	currentlyDispatchedItemsKey = "di"
+	queueSizeKey                = "si"
 )
 
 var (
@@ -76,23 +83,32 @@ var (
 	errWrongExtensionType = errors.New("requested extension is not a storage extension")
 )
 
+type PersistentQueueSettings[T any] struct {
+	Sizer            Sizer[T]
+	Capacity         int
+	DataType         component.DataType
+	StorageID        component.ID
+	Marshaler        func(req T) ([]byte, error)
+	Unmarshaler      func([]byte) (T, error)
+	ExporterSettings exporter.CreateSettings
+}
+
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func NewPersistentQueue[T any](capacity int, dataType component.DataType, storageID component.ID, marshaler func(req T) ([]byte, error), unmarshaler func([]byte) (T, error), set exporter.CreateSettings) Queue[T] {
+func NewPersistentQueue[T any](set PersistentQueueSettings[T]) Queue[T] {
+	_, isRequestSized := set.Sizer.(*RequestSizer[T])
 	return &persistentQueue[T]{
-		set:         set,
-		storageID:   storageID,
-		dataType:    dataType,
-		unmarshaler: unmarshaler,
-		marshaler:   marshaler,
-		capacity:    uint64(capacity),
-		putChan:     make(chan struct{}, capacity),
-		stopChan:    make(chan struct{}),
+		queueCapacityLimiter: newQueueCapacityLimiter[T](set.Sizer, set.Capacity),
+		set:                  set,
+		logger:               set.ExporterSettings.Logger,
+		initQueueSize:        &atomic.Uint64{},
+		isRequestSized:       isRequestSized,
+		putChan:              make(chan struct{}, set.Capacity),
 	}
 }
 
 // Start starts the persistentQueue with the given number of consumers.
 func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) error {
-	storageClient, err := toStorageClient(ctx, pq.storageID, host, pq.set.ID, pq.dataType)
+	storageClient, err := toStorageClient(ctx, pq.set.StorageID, host, pq.set.ExporterSettings.ID, pq.set.DataType)
 	if err != nil {
 		return err
 	}
@@ -102,16 +118,11 @@ func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) er
 
 func (pq *persistentQueue[T]) initClient(ctx context.Context, client storage.Client) {
 	pq.client = client
+	// Start with a reference 1 which is the reference we use for the producer goroutines and initialization.
 	pq.refClient = 1
 	pq.initPersistentContiguousStorage(ctx)
 	// Make sure the leftover requests are handled
 	pq.retrieveAndEnqueueNotDispatchedReqs(ctx)
-
-	// Ensure the communication channel has the same size as the queue
-	// We might already have items here from requeueing non-dispatched requests
-	for len(pq.putChan) < int(pq.size()) {
-		pq.putChan <- struct{}{}
-	}
 }
 
 func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Context) {
@@ -129,64 +140,100 @@ func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Contex
 
 	if err != nil {
 		if errors.Is(err, errValueNotSet) {
-			pq.set.Logger.Info("Initializing new persistent queue")
+			pq.logger.Info("Initializing new persistent queue")
 		} else {
-			pq.set.Logger.Error("Failed getting read/write index, starting with new ones", zap.Error(err))
+			pq.logger.Error("Failed getting read/write index, starting with new ones", zap.Error(err))
 		}
 		pq.readIndex = 0
 		pq.writeIndex = 0
+	}
+	pq.initIndexSize = pq.writeIndex - pq.readIndex
+
+	// Ensure the communication channel has the same size as the queue
+	for i := 0; i < int(pq.initIndexSize); i++ {
+		pq.putChan <- struct{}{}
+	}
+
+	// Read snapshot of the queue size from storage. It's not a problem if the value cannot be fetched,
+	// or it's not accurate. The queue size will be corrected once the recovered queue is drained.
+	if pq.initIndexSize > 0 {
+		// If the queue is sized by the number of requests, no need to read the queue size from storage.
+		if pq.isRequestSized {
+			pq.initQueueSize.Store(pq.initIndexSize)
+			return
+		}
+
+		res, err := pq.client.Get(ctx, queueSizeKey)
+		if err == nil {
+			var restoredQueueSize uint64
+			restoredQueueSize, err = bytesToItemIndex(res)
+			pq.initQueueSize.Store(restoredQueueSize)
+		}
+		if err != nil {
+			if errors.Is(err, errValueNotSet) {
+				pq.logger.Warn("Cannot read the queue size snapshot from storage. "+
+					"The reported queue size will be inaccurate until the initial queue is drained. "+
+					"It's expected when the items sized queue enabled for the first time", zap.Error(err))
+			} else {
+				pq.logger.Error("Failed to read the queue size snapshot from storage. "+
+					"The reported queue size will be inaccurate until the initial queue is drained.", zap.Error(err))
+			}
+		}
 	}
 }
 
 // Consume applies the provided function on the head of queue.
 // The call blocks until there is an item available or the queue is stopped.
 // The function returns true when an item is consumed or false if the queue is stopped.
-func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) bool) bool {
-	var (
-		req                  T
-		onProcessingFinished func()
-		consumed             bool
-	)
-
+func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error) bool {
 	for {
-		select {
-		case <-pq.stopChan:
+		// If we are stopped we still process all the other events in the channel before, but we
+		// return fast in the `getNextItem`, so we will free the channel fast and get to the stop.
+		_, ok := <-pq.putChan
+		if !ok {
 			return false
-		case <-pq.putChan:
-			req, onProcessingFinished, consumed = pq.getNextItem(context.Background())
 		}
 
+		req, onProcessingFinished, consumed := pq.getNextItem(context.Background())
 		if consumed {
-			if ok := consumeFunc(context.Background(), req); ok {
-				onProcessingFinished()
-			}
+			onProcessingFinished(consumeFunc(context.Background(), req))
 			return true
 		}
 	}
 }
 
-func (pq *persistentQueue[T]) size() uint64 {
-	return pq.writeIndex - pq.readIndex
-}
-
-// Size returns the number of currently available items, which were not picked by consumers yet
+// Size returns the current size of the queue.
 func (pq *persistentQueue[T]) Size() int {
-	pq.mu.Lock()
-	defer pq.mu.Unlock()
-	return int(pq.size())
-}
-
-// Capacity returns the number of currently available items, which were not picked by consumers yet
-func (pq *persistentQueue[T]) Capacity() int {
-	return int(pq.capacity)
+	return int(pq.initQueueSize.Load()) + pq.queueCapacityLimiter.Size()
 }
 
 func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
-	close(pq.stopChan)
-	// Hold the lock only for `refClient`.
+	close(pq.putChan)
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
-	return pq.unrefClient(ctx)
+	// Mark this queue as stopped, so consumer don't start any more work.
+	pq.stopped = true
+	return multierr.Combine(
+		pq.backupQueueSize(ctx),
+		pq.unrefClient(ctx),
+	)
+}
+
+// backupQueueSize writes the current queue size to storage. The value is used to recover the queue size
+// in case if the collector is killed.
+func (pq *persistentQueue[T]) backupQueueSize(ctx context.Context) error {
+	// Client can be nil if the queue is not initialized yet.
+	if pq.client == nil {
+		return nil
+	}
+
+	// No need to write the queue size if the queue is sized by the number of requests.
+	// That information is already stored as difference between read and write indexes.
+	if pq.isRequestSized {
+		return nil
+	}
+
+	return pq.client.Set(ctx, queueSizeKey, itemIndexToBytes(uint64(pq.Size())))
 }
 
 // unrefClient unrefs the client, and closes if no more references. Callers MUST hold the mutex.
@@ -210,16 +257,17 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 
 // putInternal is the internal version that requires caller to hold the mutex lock.
 func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
-	if pq.size() >= pq.capacity {
-		pq.set.Logger.Warn("Maximum queue capacity reached")
+	if !pq.queueCapacityLimiter.claim(req) {
+		pq.logger.Warn("Maximum queue capacity reached")
 		return ErrQueueIsFull
 	}
 
 	itemKey := getItemKey(pq.writeIndex)
 	newIndex := pq.writeIndex + 1
 
-	reqBuf, err := pq.marshaler(req)
+	reqBuf, err := pq.set.Marshaler(req)
 	if err != nil {
+		pq.queueCapacityLimiter.release(req)
 		return err
 	}
 
@@ -229,6 +277,7 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 		storage.SetOperation(itemKey, reqBuf),
 	}
 	if storageErr := pq.client.Batch(ctx, ops...); storageErr != nil {
+		pq.queueCapacityLimiter.release(req)
 		return storageErr
 	}
 
@@ -236,29 +285,36 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	// Inform the loop that there's some data to process
 	pq.putChan <- struct{}{}
 
+	// Back up the queue size to storage every 10 writes. The stored value is used to recover the queue size
+	// in case if the collector is killed. The recovered queue size is allowed to be inaccurate.
+	if (pq.writeIndex % 10) == 5 {
+		if err := pq.backupQueueSize(ctx); err != nil {
+			pq.logger.Error("Error writing queue size to storage", zap.Error(err))
+		}
+	}
+
 	return nil
 }
 
 // getNextItem pulls the next available item from the persistent storage along with a callback function that should be
 // called after the item is processed to clean up the storage. If no new item is available, returns false.
-func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(), bool) {
+func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), bool) {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 
 	var request T
 
-	// If called in the same time with Shutdown, make sure client is not closed.
-	if pq.refClient <= 0 {
+	if pq.stopped {
 		return request, nil, false
 	}
 
 	if pq.readIndex == pq.writeIndex {
 		return request, nil, false
 	}
+
 	index := pq.readIndex
 	// Increase here, so even if errors happen below, it always iterates
 	pq.readIndex++
-
 	pq.currentlyDispatchedItems = append(pq.currentlyDispatchedItems, index)
 	getOp := storage.GetOperation(getItemKey(index))
 	err := pq.client.Batch(ctx,
@@ -267,32 +323,76 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(), bool)
 		getOp)
 
 	if err == nil {
-		request, err = pq.unmarshaler(getOp.Value)
+		request, err = pq.set.Unmarshaler(getOp.Value)
 	}
 
 	if err != nil {
-		pq.set.Logger.Debug("Failed to dispatch item", zap.Error(err))
+		pq.logger.Debug("Failed to dispatch item", zap.Error(err))
 		// We need to make sure that currently dispatched items list is cleaned
 		if err = pq.itemDispatchingFinish(ctx, index); err != nil {
-			pq.set.Logger.Error("Error deleting item from queue", zap.Error(err))
+			pq.logger.Error("Error deleting item from queue", zap.Error(err))
 		}
 
 		return request, nil, false
 	}
 
+	pq.releaseCapacity(request)
+
+	// Back up the queue size to storage on every 10 reads. The stored value is used to recover the queue size
+	// in case if the collector is killed. The recovered queue size is allowed to be inaccurate.
+	if (pq.writeIndex % 10) == 0 {
+		if qsErr := pq.backupQueueSize(ctx); qsErr != nil {
+			pq.logger.Error("Error writing queue size to storage", zap.Error(err))
+		}
+	}
+
 	// Increase the reference count, so the client is not closed while the request is being processed.
+	// The client cannot be closed because we hold the lock since last we checked `stopped`.
 	pq.refClient++
-	return request, func() {
+	return request, func(consumeErr error) {
 		// Delete the item from the persistent storage after it was processed.
 		pq.mu.Lock()
-		defer pq.mu.Unlock()
+		// Always unref client even if the consumer is shutdown because we always ref it for every valid request.
+		defer func() {
+			if err = pq.unrefClient(ctx); err != nil {
+				pq.logger.Error("Error closing the storage client", zap.Error(err))
+			}
+			pq.mu.Unlock()
+		}()
+
+		if errors.As(consumeErr, &shutdownErr{}) {
+			// The queue is shutting down, don't mark the item as dispatched, so it's picked up again after restart.
+			// TODO: Handle partially delivered requests by updating their values in the storage.
+			return
+		}
+
 		if err = pq.itemDispatchingFinish(ctx, index); err != nil {
-			pq.set.Logger.Error("Error deleting item from queue", zap.Error(err))
+			pq.logger.Error("Error deleting item from queue", zap.Error(err))
 		}
-		if err = pq.unrefClient(ctx); err != nil {
-			pq.set.Logger.Error("Error closing the storage client", zap.Error(err))
-		}
+
 	}, true
+}
+
+// releaseCapacity releases the capacity of the queue. The caller must hold the mutex.
+func (pq *persistentQueue[T]) releaseCapacity(req T) {
+	// If the recovered queue size is not emptied yet, decrease it first.
+	if pq.initIndexSize > 0 {
+		pq.initIndexSize--
+		if pq.initIndexSize == 0 {
+			pq.initQueueSize.Store(0)
+			return
+		}
+		reqSize := pq.queueCapacityLimiter.sizeOf(req)
+		if pq.initQueueSize.Load() < reqSize {
+			pq.initQueueSize.Store(0)
+			return
+		}
+		pq.initQueueSize.Add(^(reqSize - 1))
+		return
+	}
+
+	// Otherwise, decrease the current queue size.
+	pq.queueCapacityLimiter.release(req)
 }
 
 // retrieveAndEnqueueNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
@@ -302,22 +402,22 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
-	pq.set.Logger.Debug("Checking if there are items left for dispatch by consumers")
+	pq.logger.Debug("Checking if there are items left for dispatch by consumers")
 	itemKeysBuf, err := pq.client.Get(ctx, currentlyDispatchedItemsKey)
 	if err == nil {
 		dispatchedItems, err = bytesToItemIndexArray(itemKeysBuf)
 	}
 	if err != nil {
-		pq.set.Logger.Error("Could not fetch items left for dispatch by consumers", zap.Error(err))
+		pq.logger.Error("Could not fetch items left for dispatch by consumers", zap.Error(err))
 		return
 	}
 
 	if len(dispatchedItems) == 0 {
-		pq.set.Logger.Debug("No items left for dispatch by consumers")
+		pq.logger.Debug("No items left for dispatch by consumers")
 		return
 	}
 
-	pq.set.Logger.Info("Fetching items left for dispatch by consumers", zap.Int(zapNumberOfItems,
+	pq.logger.Info("Fetching items left for dispatch by consumers", zap.Int(zapNumberOfItems,
 		len(dispatchedItems)))
 	retrieveBatch := make([]storage.Operation, len(dispatchedItems))
 	cleanupBatch := make([]storage.Operation, len(dispatchedItems))
@@ -330,24 +430,24 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 	cleanupErr := pq.client.Batch(ctx, cleanupBatch...)
 
 	if cleanupErr != nil {
-		pq.set.Logger.Debug("Failed cleaning items left by consumers", zap.Error(cleanupErr))
+		pq.logger.Debug("Failed cleaning items left by consumers", zap.Error(cleanupErr))
 	}
 
 	if retrieveErr != nil {
-		pq.set.Logger.Warn("Failed retrieving items left by consumers", zap.Error(retrieveErr))
+		pq.logger.Warn("Failed retrieving items left by consumers", zap.Error(retrieveErr))
 		return
 	}
 
 	errCount := 0
 	for _, op := range retrieveBatch {
 		if op.Value == nil {
-			pq.set.Logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
+			pq.logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
 			continue
 		}
-		req, err := pq.unmarshaler(op.Value)
+		req, err := pq.set.Unmarshaler(op.Value)
 		// If error happened or item is nil, it will be efficiently ignored
 		if err != nil {
-			pq.set.Logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
+			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
 			continue
 		}
 		if pq.putInternal(ctx, req) != nil {
@@ -356,10 +456,10 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 	}
 
 	if errCount > 0 {
-		pq.set.Logger.Error("Errors occurred while moving items for dispatching back to queue",
+		pq.logger.Error("Errors occurred while moving items for dispatching back to queue",
 			zap.Int(zapNumberOfItems, len(retrieveBatch)), zap.Int(zapErrorCount, errCount))
 	} else {
-		pq.set.Logger.Info("Moved items for dispatching back to queue",
+		pq.logger.Info("Moved items for dispatching back to queue",
 			zap.Int(zapNumberOfItems, len(retrieveBatch)))
 	}
 }
@@ -379,7 +479,7 @@ func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index u
 	deleteOp := storage.DeleteOperation(getItemKey(index))
 	if err := pq.client.Batch(ctx, setOp, deleteOp); err != nil {
 		// got an error, try to gracefully handle it
-		pq.set.Logger.Warn("Failed updating currently dispatched items, trying to delete the item first",
+		pq.logger.Warn("Failed updating currently dispatched items, trying to delete the item first",
 			zap.Error(err))
 	} else {
 		// Everything ok, exit
@@ -411,7 +511,7 @@ func toStorageClient(ctx context.Context, storageID component.ID, host component
 		return nil, errWrongExtensionType
 	}
 
-	return storageExt.GetClient(ctx, component.KindExporter, ownerID, string(signal))
+	return storageExt.GetClient(ctx, component.KindExporter, ownerID, signal.String())
 }
 
 func getItemKey(index uint64) string {
@@ -423,9 +523,8 @@ func itemIndexToBytes(value uint64) []byte {
 }
 
 func bytesToItemIndex(buf []byte) (uint64, error) {
-	val := uint64(0)
 	if buf == nil {
-		return val, errValueNotSet
+		return uint64(0), errValueNotSet
 	}
 	// The sizeof uint64 in binary is 8.
 	if len(buf) < 8 {

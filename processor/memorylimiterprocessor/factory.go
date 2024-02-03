@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package memorylimiterprocessor // import "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 
 import (
@@ -10,12 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-)
-
-const (
-	// The value of "type" Attribute Key in configuration.
-	typeStr = "memory_limiter"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: false}
@@ -23,21 +21,21 @@ var processorCapabilities = consumer.Capabilities{MutatesData: false}
 type factory struct {
 	// memoryLimiters stores memoryLimiter instances with unique configs that multiple processors can reuse.
 	// This avoids running multiple memory checks (ie: GC) for every processor using the same processor config.
-	memoryLimiters map[component.Config]*memoryLimiter
+	memoryLimiters map[component.Config]*memoryLimiterProcessor
 	lock           sync.Mutex
 }
 
 // NewFactory returns a new factory for the Memory Limiter processor.
 func NewFactory() processor.Factory {
 	f := &factory{
-		memoryLimiters: map[component.Config]*memoryLimiter{},
+		memoryLimiters: map[component.Config]*memoryLimiterProcessor{},
 	}
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(f.createTracesProcessor, component.StabilityLevelBeta),
-		processor.WithMetrics(f.createMetricsProcessor, component.StabilityLevelBeta),
-		processor.WithLogs(f.createLogsProcessor, component.StabilityLevelBeta))
+		processor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
+		processor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
+		processor.WithLogs(f.createLogsProcessor, metadata.LogsStability))
 }
 
 // CreateDefaultConfig creates the default configuration for processor. Notice
@@ -99,7 +97,7 @@ func (f *factory) createLogsProcessor(
 
 // getMemoryLimiter checks if we have a cached memoryLimiter with a specific config,
 // otherwise initialize and add one to the store.
-func (f *factory) getMemoryLimiter(set processor.CreateSettings, cfg component.Config) (*memoryLimiter, error) {
+func (f *factory) getMemoryLimiter(set processor.CreateSettings, cfg component.Config) (*memoryLimiterProcessor, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
@@ -107,7 +105,7 @@ func (f *factory) getMemoryLimiter(set processor.CreateSettings, cfg component.C
 		return memLimiter, nil
 	}
 
-	memLimiter, err := newMemoryLimiter(set, cfg.(*Config))
+	memLimiter, err := newMemoryLimiterProcessor(set, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}

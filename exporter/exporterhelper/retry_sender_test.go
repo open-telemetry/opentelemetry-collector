@@ -6,7 +6,6 @@ package exporterhelper
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -14,12 +13,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/metric/metricdata"
-	"go.opencensus.io/metric/metricproducer"
-	"go.opencensus.io/tag"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -37,9 +36,9 @@ func mockRequestMarshaler(_ Request) ([]byte, error) {
 
 func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	mockR := newMockRequest(2, consumererror.NewPermanent(errors.New("bad data")))
-	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
+	be, err := newBaseExporter(defaultSettings, defaultType, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -60,9 +59,9 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 
 func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
-	be, err := newBaseExporter(defaultSettings, "", false, mockRequestMarshaler,
+	be, err := newBaseExporter(defaultSettings, defaultType, false, mockRequestMarshaler,
 		mockRequestUnmarshaler(newMockRequest(2, errors.New("transient error"))),
 		newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
@@ -87,9 +86,9 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 func TestQueuedRetry_OnError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 0
-	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
+	be, err := newBaseExporter(defaultSettings, defaultType, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
@@ -114,10 +113,10 @@ func TestQueuedRetry_OnError(t *testing.T) {
 func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 100 * time.Millisecond
-	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
+	be, err := newBaseExporter(defaultSettings, defaultType, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -161,9 +160,9 @@ func (e wrappedError) Unwrap() error {
 func TestQueuedRetry_ThrottleError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 10 * time.Millisecond
-	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
+	be, err := newBaseExporter(defaultSettings, defaultType, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -193,9 +192,9 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 1
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 0
-	be, err := newBaseExporter(defaultSettings, "", false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
+	be, err := newBaseExporter(defaultSettings, defaultType, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -218,7 +217,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 }
 
 func TestQueueRetryWithNoQueue(t *testing.T) {
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.MaxElapsedTime = time.Nanosecond // fail fast
 	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg))
 	require.NoError(t, err)
@@ -236,10 +235,12 @@ func TestQueueRetryWithNoQueue(t *testing.T) {
 }
 
 func TestQueueRetryWithDisabledRetires(t *testing.T) {
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
-	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg))
-	require.IsType(t, &errorLoggingRequestSender{}, be.retrySender)
+	set := exportertest.NewNopCreateSettings()
+	logger, observed := observer.New(zap.ErrorLevel)
+	set.Logger = zap.New(logger)
+	be, err := newBaseExporter(set, component.DataTypeLogs, false, nil, nil, newObservabilityConsumerSender, WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
@@ -247,6 +248,9 @@ func TestQueueRetryWithDisabledRetires(t *testing.T) {
 	ocs.run(func() {
 		require.Error(t, be.send(context.Background(), mockR))
 	})
+	assert.Len(t, observed.All(), 1)
+	assert.Equal(t, "Exporting failed. Rejecting data. "+
+		"Try enabling retry_on_failure config option to retry on retryable errors.", observed.All()[0].Message)
 	ocs.awaitAsyncProcessing()
 	mockR.checkNumRequests(t, 1)
 	ocs.checkSendItemsCount(t, 0)
@@ -359,111 +363,4 @@ func (ocs *observabilityConsumerSender) checkSendItemsCount(t *testing.T, want i
 
 func (ocs *observabilityConsumerSender) checkDroppedItemsCount(t *testing.T, want int) {
 	assert.EqualValues(t, want, ocs.droppedItemsCount.Load())
-}
-
-// checkValueForGlobalManager checks that the given metrics with wantTags is reported by one of the
-// metric producers
-func checkValueForGlobalManager(t *testing.T, wantTags []tag.Tag, value int64, vName string) {
-	producers := metricproducer.GlobalManager().GetAll()
-	for _, producer := range producers {
-		if checkValueForProducer(t, producer, wantTags, value, vName) {
-			return
-		}
-	}
-	require.Fail(t, fmt.Sprintf("could not find metric %v with tags %s reported", vName, wantTags))
-}
-
-// checkValueForProducer checks that the given metrics with wantTags is reported by the metric producer
-func checkValueForProducer(t *testing.T, producer metricproducer.Producer, wantTags []tag.Tag, value int64, vName string) bool {
-	for _, metric := range producer.Read() {
-		if metric.Descriptor.Name == vName && len(metric.TimeSeries) > 0 {
-			for _, ts := range metric.TimeSeries {
-				if tagsMatchLabelKeys(wantTags, metric.Descriptor.LabelKeys, ts.LabelValues) {
-					require.Equal(t, value, ts.Points[len(ts.Points)-1].Value.(int64))
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
-// tagsMatchLabelKeys returns true if provided tags match keys and values
-func tagsMatchLabelKeys(tags []tag.Tag, keys []metricdata.LabelKey, labels []metricdata.LabelValue) bool {
-	if len(tags) != len(keys) {
-		return false
-	}
-	for i := 0; i < len(tags); i++ {
-		var labelVal string
-		if labels[i].Present {
-			labelVal = labels[i].Value
-		}
-		if tags[i].Key.Name() != keys[i].Key || tags[i].Value != labelVal {
-			return false
-		}
-	}
-	return true
-}
-
-func TestNewDefaultRetrySettings(t *testing.T) {
-	cfg := NewDefaultRetrySettings()
-	assert.NoError(t, cfg.Validate())
-	assert.Equal(t,
-		RetrySettings{
-			Enabled:             true,
-			InitialInterval:     5 * time.Second,
-			RandomizationFactor: 0.5,
-			Multiplier:          1.5,
-			MaxInterval:         30 * time.Second,
-			MaxElapsedTime:      5 * time.Minute,
-		}, cfg)
-}
-
-func TestInvalidInitialInterval(t *testing.T) {
-	cfg := NewDefaultRetrySettings()
-	assert.NoError(t, cfg.Validate())
-	cfg.InitialInterval = -1
-	assert.Error(t, cfg.Validate())
-}
-
-func TestInvalidRandomizationFactor(t *testing.T) {
-	cfg := NewDefaultRetrySettings()
-	assert.NoError(t, cfg.Validate())
-	cfg.RandomizationFactor = -1
-	assert.Error(t, cfg.Validate())
-	cfg.RandomizationFactor = 2
-	assert.Error(t, cfg.Validate())
-}
-
-func TestInvalidMultiplier(t *testing.T) {
-	cfg := NewDefaultRetrySettings()
-	assert.NoError(t, cfg.Validate())
-	cfg.Multiplier = 0
-	assert.Error(t, cfg.Validate())
-}
-
-func TestInvalidMaxInterval(t *testing.T) {
-	cfg := NewDefaultRetrySettings()
-	assert.NoError(t, cfg.Validate())
-	cfg.MaxInterval = -1
-	assert.Error(t, cfg.Validate())
-}
-
-func TestInvalidMaxElapsedTime(t *testing.T) {
-	cfg := NewDefaultRetrySettings()
-	assert.NoError(t, cfg.Validate())
-	cfg.MaxElapsedTime = -1
-	assert.Error(t, cfg.Validate())
-}
-
-func TestDisabledWithInvalidValues(t *testing.T) {
-	cfg := RetrySettings{
-		Enabled:             false,
-		InitialInterval:     -1,
-		RandomizationFactor: -1,
-		Multiplier:          0,
-		MaxInterval:         -1,
-		MaxElapsedTime:      -1,
-	}
-	assert.NoError(t, cfg.Validate())
 }
