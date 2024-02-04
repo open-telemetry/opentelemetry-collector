@@ -519,3 +519,30 @@ func generateTestBytesMap(t *testing.T) Map {
 	assert.NoError(t, m.FromRaw(map[string]any{"k": []byte{1, 2, 3, 4, 5}}))
 	return m
 }
+
+func TestInvalidMap(t *testing.T) {
+	v := Map{}
+
+	testFunc := func(s string, v Value) bool {
+		return true
+	}
+
+	assert.Panics(t, func() { v.Clear() })
+	assert.Panics(t, func() { v.EnsureCapacity(1) })
+	assert.Panics(t, func() { v.Get("foo") })
+	assert.Panics(t, func() { v.Remove("foo") })
+	assert.Panics(t, func() { v.RemoveIf(testFunc) })
+	assert.Panics(t, func() { v.PutEmpty("foo") })
+	assert.Panics(t, func() { v.PutStr("foo", "bar") })
+	assert.Panics(t, func() { v.PutInt("foo", 1) })
+	assert.Panics(t, func() { v.PutDouble("foo", 1.1) })
+	assert.Panics(t, func() { v.PutBool("foo", true) })
+	assert.Panics(t, func() { v.PutEmptyBytes("foo") })
+	assert.Panics(t, func() { v.PutEmptyMap("foo") })
+	assert.Panics(t, func() { v.PutEmptySlice("foo") })
+	assert.Panics(t, func() { v.Len() })
+	assert.Panics(t, func() { v.Range(testFunc) })
+	assert.Panics(t, func() { v.CopyTo(NewMap()) })
+	assert.Panics(t, func() { v.AsRaw() })
+	assert.Panics(t, func() { _ = v.FromRaw(map[string]any{"foo": "bar"}) })
+}

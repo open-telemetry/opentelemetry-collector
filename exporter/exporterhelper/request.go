@@ -33,13 +33,11 @@ type RequestErrorHandler interface {
 }
 
 // RequestMarshaler is a function that can marshal a Request into bytes.
-// This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+// Deprecated: [v0.94.0] Use exporterqueue.Marshaler[Request] instead.
 type RequestMarshaler func(req Request) ([]byte, error)
 
 // RequestUnmarshaler is a function that can unmarshal bytes into a Request.
-// This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+// Deprecated: [v0.94.0] Use exporterqueue.Unmarshaler[Request] instead.
 type RequestUnmarshaler func(data []byte) (Request, error)
 
 // extractPartialRequest returns a new Request that may contain the items left to be sent

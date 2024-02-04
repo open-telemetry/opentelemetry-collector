@@ -14,14 +14,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-const (
-	typeStr   = "exampleexporter"
-	stability = component.StabilityLevelDevelopment
-)
+var testType = component.MustNewType("exampleexporter")
+
+const stability = component.StabilityLevelDevelopment
 
 // ExampleExporterFactory is factory for ExampleExporter.
 var ExampleExporterFactory = exporter.NewFactory(
-	typeStr,
+	testType,
 	createExporterDefaultConfig,
 	exporter.WithTraces(createTracesExporter, stability),
 	exporter.WithMetrics(createMetricsExporter, stability),
