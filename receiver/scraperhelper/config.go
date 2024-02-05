@@ -27,7 +27,7 @@ type ScraperControllerSettings = ControllerConfig
 // configuration. Scraper controller receivers can embed this struct, instead
 // of receiver.Settings, and extend it with more fields if needed.
 type ControllerConfig struct {
-	// CollectionInterval sets the how frequently the scraper
+	// CollectionInterval sets how frequently the scraper
 	// should be called and used as the context timeout
 	// to ensure that scrapers don't exceed the interval.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
@@ -51,7 +51,7 @@ func NewDefaultScraperControllerSettings(component.Type) ControllerConfig {
 
 // NewDefaultControllerConfig returns default scraper controller
 // settings with a collection interval of one minute.
-func NewDefaultControllerConfig(component.Type) ControllerConfig {
+func NewDefaultControllerConfig() ControllerConfig {
 	return ControllerConfig{
 		CollectionInterval: time.Minute,
 		InitialDelay:       time.Second,
