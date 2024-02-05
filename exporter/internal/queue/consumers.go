@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
 
 import (
 	"context"
@@ -10,15 +10,15 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-type QueueConsumers[T any] struct {
+type Consumers[T any] struct {
 	queue        Queue[T]
 	numConsumers int
 	consumeFunc  func(context.Context, T) error
 	stopWG       sync.WaitGroup
 }
 
-func NewQueueConsumers[T any](q Queue[T], numConsumers int, consumeFunc func(context.Context, T) error) *QueueConsumers[T] {
-	return &QueueConsumers[T]{
+func NewQueueConsumers[T any](q Queue[T], numConsumers int, consumeFunc func(context.Context, T) error) *Consumers[T] {
+	return &Consumers[T]{
 		queue:        q,
 		numConsumers: numConsumers,
 		consumeFunc:  consumeFunc,
@@ -27,7 +27,7 @@ func NewQueueConsumers[T any](q Queue[T], numConsumers int, consumeFunc func(con
 }
 
 // Start ensures that queue and all consumers are started.
-func (qc *QueueConsumers[T]) Start(ctx context.Context, host component.Host) error {
+func (qc *Consumers[T]) Start(ctx context.Context, host component.Host) error {
 	if err := qc.queue.Start(ctx, host); err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func (qc *QueueConsumers[T]) Start(ctx context.Context, host component.Host) err
 }
 
 // Shutdown ensures that queue and all consumers are stopped.
-func (qc *QueueConsumers[T]) Shutdown(ctx context.Context) error {
+func (qc *Consumers[T]) Shutdown(ctx context.Context) error {
 	if err := qc.queue.Shutdown(ctx); err != nil {
 		return err
 	}

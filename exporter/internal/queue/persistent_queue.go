@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
 
 import (
 	"context"
@@ -511,7 +511,7 @@ func toStorageClient(ctx context.Context, storageID component.ID, host component
 		return nil, errWrongExtensionType
 	}
 
-	return storageExt.GetClient(ctx, component.KindExporter, ownerID, string(signal))
+	return storageExt.GetClient(ctx, component.KindExporter, ownerID, signal.String())
 }
 
 func getItemKey(index uint64) string {
