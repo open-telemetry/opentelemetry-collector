@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
+var mockID = component.MustNewID("mock")
+
 func TestGetServer(t *testing.T) {
 	testCases := []struct {
 		desc          string
@@ -34,10 +36,10 @@ func TestGetServer(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			// prepare
 			cfg := &Authentication{
-				AuthenticatorID: component.NewID("mock"),
+				AuthenticatorID: mockID,
 			}
 			ext := map[component.ID]component.Component{
-				component.NewID("mock"): tC.authenticator,
+				mockID: tC.authenticator,
 			}
 
 			authenticator, err := cfg.GetServerAuthenticator(ext)
@@ -56,7 +58,7 @@ func TestGetServer(t *testing.T) {
 
 func TestGetServerFails(t *testing.T) {
 	cfg := &Authentication{
-		AuthenticatorID: component.NewID("does-not-exist"),
+		AuthenticatorID: component.MustNewID("does_not_exist"),
 	}
 
 	authenticator, err := cfg.GetServerAuthenticator(map[component.ID]component.Component{})
@@ -85,10 +87,10 @@ func TestGetClient(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			// prepare
 			cfg := &Authentication{
-				AuthenticatorID: component.NewID("mock"),
+				AuthenticatorID: mockID,
 			}
 			ext := map[component.ID]component.Component{
-				component.NewID("mock"): tC.authenticator,
+				mockID: tC.authenticator,
 			}
 
 			authenticator, err := cfg.GetClientAuthenticator(ext)
@@ -107,7 +109,7 @@ func TestGetClient(t *testing.T) {
 
 func TestGetClientFails(t *testing.T) {
 	cfg := &Authentication{
-		AuthenticatorID: component.NewID("does-not-exist"),
+		AuthenticatorID: component.MustNewID("does_not_exist"),
 	}
 	authenticator, err := cfg.GetClientAuthenticator(map[component.ID]component.Component{})
 	assert.ErrorIs(t, err, errAuthenticatorNotFound)

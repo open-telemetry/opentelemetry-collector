@@ -23,7 +23,7 @@ func TestStatusWatcherExtension(t *testing.T) {
 		},
 	)
 	require.NotNil(t, factory)
-	assert.Equal(t, component.Type("statuswatcher"), factory.Type())
+	assert.Equal(t, component.MustNewType("statuswatcher"), factory.Type())
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &struct{}{}, cfg)
 

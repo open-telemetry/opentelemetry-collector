@@ -7,7 +7,7 @@ change_type: deprecation
 component: confighttp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate HTTPClientSettings, use HTTPClientConfig instead
+note: Deprecate HTTPClientSettings, use ClientConfig instead
 
 # One or more tracking issues or pull requests related to the change
 issues: [6767]
