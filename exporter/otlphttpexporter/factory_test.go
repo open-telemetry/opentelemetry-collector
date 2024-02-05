@@ -158,15 +158,15 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "ProtoEncoding",
 			config: &Config{
-				Encoding:         EncodingProto,
-				HTTPClientConfig: confighttp.HTTPClientConfig{Endpoint: endpoint},
+				Encoding:     EncodingProto,
+				ClientConfig: confighttp.ClientConfig{Endpoint: endpoint},
 			},
 		},
 		{
 			name: "JSONEncoding",
 			config: &Config{
-				Encoding:         EncodingJSON,
-				HTTPClientConfig: confighttp.HTTPClientConfig{Endpoint: endpoint},
+				Encoding:     EncodingJSON,
+				ClientConfig: confighttp.ClientConfig{Endpoint: endpoint},
 			},
 		},
 	}
