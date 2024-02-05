@@ -65,7 +65,7 @@ type ClientConfig struct {
 	Auth *configauth.Authentication `mapstructure:"auth"`
 
 	// The compression key for supported compression types within collector.
-	Compression configcompression.CompressionType `mapstructure:"compression"`
+	Compression configcompression.Type `mapstructure:"compression"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	// There's an already set value, and we want to override it only if an explicit value provided

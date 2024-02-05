@@ -59,7 +59,7 @@ type ClientConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// The compression key for supported compression types within collector.
-	Compression configcompression.CompressionType `mapstructure:"compression"`
+	Compression configcompression.Type `mapstructure:"compression"`
 
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
@@ -390,13 +390,13 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 }
 
 // getGRPCCompressionName returns compression name registered in grpc.
-func getGRPCCompressionName(compressionType configcompression.CompressionType) (string, error) {
+func getGRPCCompressionName(compressionType configcompression.Type) (string, error) {
 	switch compressionType {
-	case configcompression.Gzip:
+	case configcompression.TypeGzip:
 		return gzip.Name, nil
-	case configcompression.Snappy:
+	case configcompression.TypeSnappy:
 		return snappy.Name, nil
-	case configcompression.Zstd:
+	case configcompression.TypeZstd:
 		return zstd.Name, nil
 	default:
 		return "", fmt.Errorf("unsupported compression type %q", compressionType)
