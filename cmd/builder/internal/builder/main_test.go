@@ -41,7 +41,7 @@ func TestSkipGenerate(t *testing.T) {
 	err := Generate(cfg)
 	require.NoError(t, err)
 	outputFile, err := os.Open(cfg.Distribution.OutputPath)
-	defer func () {
+	defer func() {
 		require.NoError(t, outputFile.Close())
 	}()
 	require.NoError(t, err)
