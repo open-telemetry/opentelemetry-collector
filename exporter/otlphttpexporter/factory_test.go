@@ -28,8 +28,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.HTTPClientConfig.Endpoint, "")
-	assert.Equal(t, ocfg.HTTPClientConfig.Timeout, 30*time.Second, "default timeout is 30 second")
+	assert.Equal(t, ocfg.ClientConfig.Endpoint, "")
+	assert.Equal(t, ocfg.ClientConfig.Timeout, 30*time.Second, "default timeout is 30 second")
 	assert.Equal(t, ocfg.RetryConfig.Enabled, true, "default retry is enabled")
 	assert.Equal(t, ocfg.RetryConfig.MaxElapsedTime, 300*time.Second, "default retry MaxElapsedTime")
 	assert.Equal(t, ocfg.RetryConfig.InitialInterval, 5*time.Second, "default retry InitialInterval")
@@ -41,7 +41,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
+	cfg.ClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
@@ -61,7 +61,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "NoEndpoint",
 			config: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "",
 				},
 			},
@@ -70,7 +70,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "UseSecure",
 			config: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						Insecure: false,
@@ -81,7 +81,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "Headers",
 			config: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
 					Headers: map[string]configopaque.String{
 						"hdr1": "val1",
@@ -93,7 +93,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "CaCert",
 			config: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -106,7 +106,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "CertPemFileError",
 			config: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -121,7 +121,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "NoneCompression",
 			config: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint:    endpoint,
 					Compression: "none",
 				},
@@ -130,7 +130,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "GzipCompression",
 			config: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint:    endpoint,
 					Compression: configcompression.Gzip,
 				},
@@ -139,7 +139,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "SnappyCompression",
 			config: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint:    endpoint,
 					Compression: configcompression.Snappy,
 				},
@@ -148,7 +148,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "ZstdCompression",
 			config: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint:    endpoint,
 					Compression: configcompression.Zstd,
 				},
@@ -186,7 +186,7 @@ func TestCreateTracesExporter(t *testing.T) {
 func TestCreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
+	cfg.ClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
@@ -199,13 +199,13 @@ func TestComposeSignalURL(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	// Has slash at end
-	cfg.HTTPClientConfig.Endpoint = "http://localhost:4318/"
+	cfg.ClientConfig.Endpoint = "http://localhost:4318/"
 	url, err := composeSignalURL(cfg, "", "traces")
 	require.NoError(t, err)
 	assert.Equal(t, "http://localhost:4318/v1/traces", url)
 
 	// No slash at end
-	cfg.HTTPClientConfig.Endpoint = "http://localhost:4318"
+	cfg.ClientConfig.Endpoint = "http://localhost:4318"
 	url, err = composeSignalURL(cfg, "", "traces")
 	require.NoError(t, err)
 	assert.Equal(t, "http://localhost:4318/v1/traces", url)

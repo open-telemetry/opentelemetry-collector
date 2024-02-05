@@ -136,3 +136,17 @@ func TestSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
+
+func TestInvalidSlice(t *testing.T) {
+	es := Slice{}
+
+	assert.Panics(t, func() { es.Len() })
+	assert.Panics(t, func() { es.At(0) })
+	assert.Panics(t, func() { es.CopyTo(Slice{}) })
+	assert.Panics(t, func() { es.EnsureCapacity(1) })
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.MoveAndAppendTo(Slice{}) })
+	assert.Panics(t, func() { es.RemoveIf(func(Value) bool { return false }) })
+	assert.Panics(t, func() { es.AsRaw() })
+	assert.Panics(t, func() { _ = es.FromRaw([]any{3}) })
+}

@@ -30,11 +30,11 @@ import (
 const headerContentEncoding = "Content-Encoding"
 
 // HTTPClientSettings defines settings for creating an HTTP client.
-// Deprecated: [v0.94.0] Use HTTPClientConfig instead
-type HTTPClientSettings = HTTPClientConfig
+// Deprecated: [v0.94.0] Use ClientConfig instead
+type HTTPClientSettings = ClientConfig
 
-// HTTPClientConfig defines settings for creating an HTTP client.
-type HTTPClientConfig struct {
+// ClientConfig defines settings for creating an HTTP client.
+type ClientConfig struct {
 	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
 	Endpoint string `mapstructure:"endpoint"`
 
@@ -107,28 +107,28 @@ type HTTPClientConfig struct {
 // the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
 // Other config options are not added as they are initialized with 'zero value' by GoLang as default.
 // We encourage to use this function to create an object of HTTPClientSettings.
-// Deprecated: [v0.94.0] Use NewDefaultHTTPClientConfig instead
-func NewDefaultHTTPClientSettings() HTTPClientConfig {
-	return NewDefaultHTTPClientConfig()
+// Deprecated: [v0.94.0] Use NewDefaultClientConfig instead
+func NewDefaultHTTPClientSettings() ClientConfig {
+	return NewDefaultClientConfig()
 }
 
-// NewDefaultHTTPClientConfig returns HTTPClientConfig type object with
+// NewDefaultClientConfig returns ClientConfig type object with
 // the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
 // Other config options are not added as they are initialized with 'zero value' by GoLang as default.
-// We encourage to use this function to create an object of HTTPClientConfig.
-func NewDefaultHTTPClientConfig() HTTPClientConfig {
+// We encourage to use this function to create an object of ClientConfig.
+func NewDefaultClientConfig() ClientConfig {
 	// The default values are taken from the values of 'DefaultTransport' of 'http' package.
 	maxIdleConns := 100
 	idleConnTimeout := 90 * time.Second
 
-	return HTTPClientConfig{
+	return ClientConfig{
 		MaxIdleConns:    &maxIdleConns,
 		IdleConnTimeout: &idleConnTimeout,
 	}
 }
 
 // ToClient creates an HTTP client.
-func (hcs *HTTPClientConfig) ToClient(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+func (hcs *ClientConfig) ToClient(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
@@ -211,7 +211,7 @@ func (hcs *HTTPClientConfig) ToClient(host component.Host, settings component.Te
 
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
-	if configcompression.IsCompressed(hcs.Compression) {
+	if hcs.Compression.IsCompressed() {
 		clientTransport, err = newCompressRoundTripper(clientTransport, hcs.Compression)
 		if err != nil {
 			return nil, err
@@ -264,11 +264,11 @@ func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Respo
 }
 
 // HTTPServerSettings defines settings for creating an HTTP server.
-// Deprecated: [v0.94.0] Use HTTPServerConfig instead
-type HTTPServerSettings = HTTPServerConfig
+// Deprecated: [v0.94.0] Use ServerConfig instead
+type HTTPServerSettings = ServerConfig
 
-// HTTPServerConfig defines settings for creating an HTTP server.
-type HTTPServerConfig struct {
+// ServerConfig defines settings for creating an HTTP server.
+type ServerConfig struct {
 	// Endpoint configures the listening address for the server.
 	Endpoint string `mapstructure:"endpoint"`
 
@@ -294,7 +294,7 @@ type HTTPServerConfig struct {
 }
 
 // ToListener creates a net.Listener.
-func (hss *HTTPServerConfig) ToListener() (net.Listener, error) {
+func (hss *ServerConfig) ToListener() (net.Listener, error) {
 	listener, err := net.Listen("tcp", hss.Endpoint)
 	if err != nil {
 		return nil, err
@@ -313,14 +313,14 @@ func (hss *HTTPServerConfig) ToListener() (net.Listener, error) {
 }
 
 // toServerOptions has options that change the behavior of the HTTP server
-// returned by HTTPServerConfig.ToServer().
+// returned by ServerConfig.ToServer().
 type toServerOptions struct {
 	errHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
 	decoders   map[string]func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // ToServerOption is an option to change the behavior of the HTTP server
-// returned by HTTPServerConfig.ToServer().
+// returned by ServerConfig.ToServer().
 type ToServerOption func(opts *toServerOptions)
 
 // WithErrorHandler overrides the HTTP error handler that gets invoked
@@ -343,7 +343,7 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // ToServer creates an http.Server from settings object.
-func (hss *HTTPServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+func (hss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
 
 	serverOpts := &toServerOptions{}

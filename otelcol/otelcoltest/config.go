@@ -20,9 +20,14 @@ func LoadConfig(fileName string, factories otelcol.Factories) (*otelcol.Config, 
 	// Read yaml config from file
 	provider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
-			URIs:       []string{fileName},
-			Providers:  makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New(), httpprovider.New()),
-			Converters: []confmap.Converter{expandconverter.New()},
+			URIs: []string{fileName},
+			Providers: makeMapProvidersMap(
+				fileprovider.NewWithSettings(confmap.ProviderSettings{}),
+				envprovider.NewWithSettings(confmap.ProviderSettings{}),
+				yamlprovider.NewWithSettings(confmap.ProviderSettings{}),
+				httpprovider.NewWithSettings(confmap.ProviderSettings{}),
+			),
+			Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
 		},
 	})
 	if err != nil {

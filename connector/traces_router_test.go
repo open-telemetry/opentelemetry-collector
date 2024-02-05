@@ -48,7 +48,7 @@ func fuzzTraces(numIDs, numCons, numTraces int) func(*testing.T) {
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
-			allIDs = append(allIDs, component.NewIDWithName("sink", strconv.Itoa(numCons)))
+			allIDs = append(allIDs, component.MustNewIDWithName("sink", strconv.Itoa(numCons)))
 			// Random chance for each consumer to be mutating
 			if (numCons+numTraces+i)%4 == 0 {
 				allCons = append(allCons, &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)})
@@ -108,8 +108,8 @@ func TestTracesRouterConsumer(t *testing.T) {
 	ctx := context.Background()
 	td := testdata.GenerateTraces(1)
 
-	fooID := component.NewID("foo")
-	barID := component.NewID("bar")
+	fooID := component.MustNewID("foo")
+	barID := component.MustNewID("bar")
 
 	foo := new(consumertest.TracesSink)
 	bar := new(consumertest.TracesSink)
@@ -150,7 +150,7 @@ func TestTracesRouterConsumer(t *testing.T) {
 	assert.Nil(t, none)
 	assert.Error(t, err)
 
-	fake, err := r.Consumer(component.NewID("fake"))
+	fake, err := r.Consumer(component.MustNewID("fake"))
 	assert.Nil(t, fake)
 	assert.Error(t, err)
 }

@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	receiverID = component.NewID("fakeReceiver")
+	receiverID = component.MustNewID("fakeReceiver")
 
 	errFake = errors.New("errFake")
 )
