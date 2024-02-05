@@ -152,7 +152,10 @@ func InitPrometheusServer(registry *prometheus.Registry, address string, asyncEr
 	go func() {
 		defer serverWG.Done()
 		if serveErr := server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
-			asyncErrorChannel <- serveErr
+			select {
+			case asyncErrorChannel <- serveErr:
+			case <-time.After(1 * time.Second):
+			}
 		}
 	}()
 	return server
