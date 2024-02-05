@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
@@ -205,18 +206,21 @@ func initPrometheusExporter(prometheusConfig *config.Prometheus, asyncErrorChann
 	if prometheusConfig.Port == nil {
 		return nil, nil, fmt.Errorf("port must be specified")
 	}
-	exporter, err := otelprom.New(
+
+	opts := []otelprom.Option{
 		otelprom.WithRegisterer(promRegistry),
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/8043
 		otelprom.WithoutUnits(),
-		// Disabled for the moment until this becomes stable, and we are ready to break backwards compatibility.
-		otelprom.WithoutScopeInfo(),
 		otelprom.WithProducer(opencensus.NewMetricProducer()),
-		// This allows us to produce metrics that are backwards compatible w/ opencensus
 		otelprom.WithoutCounterSuffixes(),
-		otelprom.WithNamespace("otelcol"),
 		otelprom.WithResourceAsConstantLabels(attribute.NewDenyKeysFilter()),
-	)
+	}
+
+	if !obsreportconfig.UseOtelFormat.IsEnabled() {
+		opts = append(opts, otelprom.WithNamespace("otelcol"), otelprom.WithoutScopeInfo())
+	}
+
+	exporter, err := otelprom.New(opts...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}

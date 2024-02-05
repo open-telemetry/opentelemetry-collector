@@ -21,6 +21,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
@@ -105,6 +107,7 @@ func TestTelemetryInit(t *testing.T) {
 		disableHighCard bool
 		expectedMetrics map[string]metricValue
 		extendedConfig  bool
+		otelFormat      bool
 		cfg             *telemetry.Config
 	}{
 		{
@@ -273,6 +276,72 @@ func TestTelemetryInit(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:       "UseOtelFormat",
+			otelFormat: true,
+			expectedMetrics: map[string]metricValue{
+				ocPrefix + counterName: {
+					value: 13,
+					labels: map[string]string{
+						"otel_scope_name":     "go.opentelemetry.io/otel/bridge/opencensus",
+						"otel_scope_version":  "0.45.0",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				otelPrefix + counterName: {
+					value: 13,
+					labels: map[string]string{
+						"otel_scope_name":     "collector_test",
+						"otel_scope_version":  "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				grpcPrefix + counterName: {
+					value: 11,
+					labels: map[string]string{
+						"otel_scope_name":     "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc",
+						"otel_scope_version":  "",
+						"net_sock_peer_addr":  "",
+						"net_sock_peer_name":  "",
+						"net_sock_peer_port":  "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				httpPrefix + counterName: {
+					value: 10,
+					labels: map[string]string{
+						"otel_scope_name":     "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+						"otel_scope_version":  "",
+						"net_host_name":       "",
+						"net_host_port":       "",
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				"otel_scope_info": {
+					value: 0,
+					labels: map[string]string{
+						"otel_scope_name":    "collector_test",
+						"otel_scope_version": "",
+					},
+				},
+				"target_info": {
+					value: 0,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			tel := newColTelemetry(tc.disableHighCard, tc.extendedConfig)
@@ -299,6 +368,13 @@ func TestTelemetryInit(t *testing.T) {
 					},
 				}
 			}
+			if tc.otelFormat {
+				originalValue := obsreportconfig.UseOtelFormat.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelFormat.ID(), tc.otelFormat))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelFormat.ID(), originalValue))
+				}()
+			}
 			otelRes := resource.New(buildInfo, tc.cfg.Resource)
 			err := tel.init(otelRes, zap.NewNop(), *tc.cfg, make(chan error))
 			require.NoError(t, err)
@@ -317,7 +393,11 @@ func TestTelemetryInit(t *testing.T) {
 			for metricName, metricValue := range tc.expectedMetrics {
 				mf, present := metrics[metricName]
 				require.True(t, present, "expected metric %q was not present", metricName)
-				require.Len(t, mf.Metric, 1, "only one measure should exist for metric %q", metricName)
+				if metricName == "otel_scope_info" {
+					require.Len(t, mf.Metric, 4, "expected multiple measures for otel_scope_info")
+				} else {
+					require.Len(t, mf.Metric, 1, "only one measure should exist for metric %q", metricName)
+				}
 
 				labels := make(map[string]string)
 				for _, pair := range mf.Metric[0].Label {

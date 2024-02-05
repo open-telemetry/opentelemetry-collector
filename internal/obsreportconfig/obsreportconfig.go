@@ -30,3 +30,11 @@ var UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate = featuregate.Glo
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("controls whether the collector supports extended OpenTelemetry"+
 		"configuration for internal telemetry"))
+
+// UseOtelFormat is the feature gate that controls whether the collector
+// emits metrics using the OpenTelemetry specified format
+var UseOtelFormat = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.useOtelFormat",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("controls whether the collector emits metrics using the"+
+		"OpenTelemetry specified format."))
