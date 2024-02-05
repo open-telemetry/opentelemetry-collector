@@ -97,8 +97,7 @@ func TestConfigValidate(t *testing.T) {
 func TestUnmarshalInvalidConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "negative_unsigned_limits_config.yaml"))
 	require.NoError(t, err)
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+	cfg := &Config{}
 	err = component.UnmarshalConfig(cm, cfg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "error decoding 'limit_mib': cannot convert negative value -2000 to uint")
