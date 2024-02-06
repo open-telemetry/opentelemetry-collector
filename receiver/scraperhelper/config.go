@@ -40,7 +40,7 @@ type ControllerConfig struct {
 
 // NewDefaultScraperControllerSettings returns default scraper controller
 // settings with a collection interval of one minute.
-// Deprecated: [v0.94.0] Use NewDefaultScraperControllerSettings instead
+// Deprecated: [v0.94.0] Use NewDefaultControllerConfig instead
 func NewDefaultScraperControllerSettings(component.Type) ControllerConfig {
 	return ControllerConfig{
 		CollectionInterval: time.Minute,
