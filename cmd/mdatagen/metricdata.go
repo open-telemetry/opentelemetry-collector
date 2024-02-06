@@ -125,7 +125,7 @@ func (d *gauge) Unmarshal(parser *confmap.Conf) error {
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err
 	}
-	return parser.Unmarshal(d, confmap.WithErrorUnused())
+	return parser.Unmarshal(d)
 }
 
 func (d gauge) Type() string {
@@ -155,7 +155,7 @@ func (d *sum) Unmarshal(parser *confmap.Conf) error {
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err
 	}
-	return parser.Unmarshal(d, confmap.WithErrorUnused())
+	return parser.Unmarshal(d)
 }
 
 // TODO: Currently, this func will not be called because of https://github.com/open-telemetry/opentelemetry-collector/issues/6671. Uncomment function and
@@ -166,7 +166,7 @@ func (d *sum) Unmarshal(parser *confmap.Conf) error {
 // 	if !parser.IsSet("monotonic") {
 // 		return errors.New("missing required field: `monotonic`")
 // 	}
-// 	return parser.Unmarshal(m, confmap.WithErrorUnused())
+// 	return parser.Unmarshal(m)
 // }
 
 func (d sum) Type() string {
