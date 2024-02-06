@@ -155,11 +155,10 @@ func (l *Conf) ToStringMap() map[string]any {
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
 func decodeConfig(m *Conf, result any, errorUnused bool) error {
 	dc := &mapstructure.DecoderConfig{
-		ErrorUnused:      errorUnused,
-		Result:           result,
-		TagName:          "mapstructure",
-		WeaklyTypedInput: true,
-		MatchName:        caseSensitiveMatchName,
+		ErrorUnused: errorUnused,
+		Result:      result,
+		TagName:     "mapstructure",
+		MatchName:   caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			expandNilStructPointersHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),
