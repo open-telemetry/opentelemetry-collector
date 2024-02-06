@@ -23,7 +23,7 @@ metrics:
   metric:
     enabled: true
     description: Metric.
-    unit: 1
+    unit: '1'
     gauge:
       value_type: double
     attributes: [used_attr]

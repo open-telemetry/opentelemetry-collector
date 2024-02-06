@@ -18,7 +18,7 @@ auth:
   authenticator: nop
 headers:
   "can you have a . here?": "F0000000-0000-0000-0000-000000000000"
-  header1: 234
+  header1: "234"
   another: "somevalue"
 keepalive:
   time: 20s
