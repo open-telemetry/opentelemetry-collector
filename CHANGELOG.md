@@ -7,6 +7,29 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.1.0/v0.94.0
+
+### 🛑 Breaking changes 🛑
+
+- `receiver/otlp`: Update gRPC code from `codes.InvalidArgument` to `codes.Internal` when a permanent error doesn't contain a gRPC status (#9415)
+
+### 🚩 Deprecations 🚩
+
+- `configgrpc`: Deprecate GRPCClientSettings, use ClientConfig instead (#6767)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Add a generated test that checks the config struct using `componenttest.CheckConfigStruct` (#9438)
+- `component`: Add `component.UseLocalHostAsDefaultHost` feature gate that changes default endpoints from 0.0.0.0 to localhost (#8510)
+  The only component in this repository affected by this is the OTLP receiver.
+  
+- `mdatagen`: Remove use of ReportFatalError in generated tests (#9439)
+
+### 🧰 Bug fixes 🧰
+
+- `service`: fix opencensus bridge configuration in periodic readers (#9361)
+- `otlpreceiver`: Fix goroutine leak when GRPC server is started but HTTP server is unsuccessful (#9165)
+
 ## v0.93.0
 
 ### 🛑 Breaking changes 🛑
