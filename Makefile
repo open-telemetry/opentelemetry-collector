@@ -281,7 +281,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/receiver/otlpreceiver=$(CURDIR)/receiver/otlpreceiver  \
 		-replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv  \
 		-replace go.opentelemetry.io/collector/service=$(CURDIR)/service"
-	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
+	@$(MAKE) -C $(CONTRIB_PATH) gotidy
 	@$(MAKE) -C $(CONTRIB_PATH) gotest
 	@if [ -z "$(SKIP_RESTORE_CONTRIB)" ]; then \
 		$(MAKE) restore-contrib; \
@@ -315,6 +315,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/extension  \
 		-dropreplace go.opentelemetry.io/collector/extension/auth  \
 		-dropreplace go.opentelemetry.io/collector/extension/ballastextension  \
+		-dropreplace go.opentelemetry.io/collector/extension/memorylimiterextension  \
 		-dropreplace go.opentelemetry.io/collector/extension/zpagestextension  \
 		-dropreplace go.opentelemetry.io/collector/featuregate  \
 		-dropreplace go.opentelemetry.io/collector/otelcol  \
