@@ -104,7 +104,7 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 		return consumererror.NewPermanent(err)
 	}
 
-	return e.export(ctx, e.tracesURL, request, tracesPartialSuccessHandler)
+	return e.export(ctx, e.tracesURL, request, e.tracesPartialSuccessHandler)
 }
 
 func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
@@ -124,7 +124,7 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	return e.export(ctx, e.metricsURL, request, metricsPartialSuccessHandler)
+	return e.export(ctx, e.metricsURL, request, e.metricsPartialSuccessHandler)
 }
 
 func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
@@ -145,7 +145,7 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 		return consumererror.NewPermanent(err)
 	}
 
-	return e.export(ctx, e.logsURL, request, logsPartialSuccessHandler)
+	return e.export(ctx, e.logsURL, request, e.logsPartialSuccessHandler)
 }
 
 func (e *baseExporter) export(ctx context.Context, url string, request []byte, partialSuccessHandler partialSuccessHandler) error {
@@ -300,16 +300,16 @@ func handlePartialSuccessResponse(resp *http.Response, partialSuccessHandler par
 
 type partialSuccessHandler func(bytes []byte, contentType string) error
 
-func tracesPartialSuccessHandler(responseBytes []byte, contentType string) error {
+func (e *baseExporter) tracesPartialSuccessHandler(protoBytes []byte, contentType string) error {
 	exportResponse := ptraceotlp.NewExportResponse()
 	switch contentType {
 	case protobufContentType:
-		err := exportResponse.UnmarshalProto(responseBytes)
+		err := exportResponse.UnmarshalProto(protoBytes)
 		if err != nil {
 			return fmt.Errorf("error parsing protobuf response: %w", err)
 		}
 	case jsonContentType:
-		err := exportResponse.UnmarshalJSON(responseBytes)
+		err := exportResponse.UnmarshalJSON(protoBytes)
 		if err != nil {
 			return fmt.Errorf("error parsing json response: %w", err)
 		}
@@ -319,21 +319,24 @@ func tracesPartialSuccessHandler(responseBytes []byte, contentType string) error
 
 	partialSuccess := exportResponse.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
-		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: %s (%d rejected)", partialSuccess.ErrorMessage(), partialSuccess.RejectedSpans()))
+		e.logger.Warn("Partial success response",
+			zap.String("message", exportResponse.PartialSuccess().ErrorMessage()),
+			zap.Int64("dropped_spans", exportResponse.PartialSuccess().RejectedSpans()),
+		)
 	}
 	return nil
 }
 
-func metricsPartialSuccessHandler(responseBytes []byte, contentType string) error {
+func (e *baseExporter) metricsPartialSuccessHandler(protoBytes []byte, contentType string) error {
 	exportResponse := pmetricotlp.NewExportResponse()
 	switch contentType {
 	case protobufContentType:
-		err := exportResponse.UnmarshalProto(responseBytes)
+		err := exportResponse.UnmarshalProto(protoBytes)
 		if err != nil {
 			return fmt.Errorf("error parsing protobuf response: %w", err)
 		}
 	case jsonContentType:
-		err := exportResponse.UnmarshalJSON(responseBytes)
+		err := exportResponse.UnmarshalJSON(protoBytes)
 		if err != nil {
 			return fmt.Errorf("error parsing json response: %w", err)
 		}
@@ -343,21 +346,24 @@ func metricsPartialSuccessHandler(responseBytes []byte, contentType string) erro
 
 	partialSuccess := exportResponse.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
-		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: %s (%d rejected)", partialSuccess.ErrorMessage(), partialSuccess.RejectedDataPoints()))
+		e.logger.Warn("Partial success response",
+			zap.String("message", exportResponse.PartialSuccess().ErrorMessage()),
+			zap.Int64("dropped_data_points", exportResponse.PartialSuccess().RejectedDataPoints()),
+		)
 	}
 	return nil
 }
 
-func logsPartialSuccessHandler(responseBytes []byte, contentType string) error {
+func (e *baseExporter) logsPartialSuccessHandler(protoBytes []byte, contentType string) error {
 	exportResponse := plogotlp.NewExportResponse()
 	switch contentType {
 	case protobufContentType:
-		err := exportResponse.UnmarshalProto(responseBytes)
+		err := exportResponse.UnmarshalProto(protoBytes)
 		if err != nil {
 			return fmt.Errorf("error parsing protobuf response: %w", err)
 		}
 	case jsonContentType:
-		err := exportResponse.UnmarshalJSON(responseBytes)
+		err := exportResponse.UnmarshalJSON(protoBytes)
 		if err != nil {
 			return fmt.Errorf("error parsing json response: %w", err)
 		}
@@ -367,7 +373,10 @@ func logsPartialSuccessHandler(responseBytes []byte, contentType string) error {
 
 	partialSuccess := exportResponse.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
-		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: %s (%d rejected)", partialSuccess.ErrorMessage(), partialSuccess.RejectedLogRecords()))
+		e.logger.Warn("Partial success response",
+			zap.String("message", exportResponse.PartialSuccess().ErrorMessage()),
+			zap.Int64("dropped_log_records", exportResponse.PartialSuccess().RejectedLogRecords()),
+		)
 	}
 	return nil
 }
