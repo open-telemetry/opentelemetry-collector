@@ -363,10 +363,6 @@ func (c TLSServerSetting) loadClientCAFile() (*x509.CertPool, error) {
 	return c.loadCert(c.ClientCAFile)
 }
 
-func (c TLSServerSetting) Shutdown() error {
-	return nil
-}
-
 func (c TLSSetting) hasCA() bool   { return c.hasCAFile() || c.hasCAPem() }
 func (c TLSSetting) hasCert() bool { return c.hasCertFile() || c.hasCertPem() }
 func (c TLSSetting) hasKey() bool  { return c.hasKeyFile() || c.hasKeyPem() }
