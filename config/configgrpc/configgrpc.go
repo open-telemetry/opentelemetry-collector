@@ -160,6 +160,7 @@ type ServerConfig struct {
 }
 
 // SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
+// Deprecated: [v0.95.0] Trim the prefix from configgrpc.ClientConfig.Endpoint directly.
 func (gcs *ClientConfig) SanitizedEndpoint() string {
 	switch {
 	case gcs.isSchemeHTTP():
@@ -277,12 +278,13 @@ func validateBalancerName(balancerName string) bool {
 }
 
 // ToListenerContext returns the net.Listener constructed from the settings.
+// Deprecated: [v0.95.0] Call Listen directly on the NetAddr field.
 func (gss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
 	return gss.NetAddr.Listen(ctx)
 }
 
 // ToListener returns the net.Listener constructed from the settings.
-// Deprecated: [v0.94.0] use ToListenerContext instead.
+// Deprecated: [v0.94.0] Call Listen directly on the NetAddr field.
 func (gss *ServerConfig) ToListener() (net.Listener, error) {
 	return gss.ToListenerContext(context.Background())
 }
