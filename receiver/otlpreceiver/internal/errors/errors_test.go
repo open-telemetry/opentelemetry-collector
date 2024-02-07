@@ -28,7 +28,7 @@ func Test_GetStatusFromError(t *testing.T) {
 		{
 			name:     "Permanent Error",
 			input:    consumererror.NewPermanent(fmt.Errorf("test")),
-			expected: status.New(codes.InvalidArgument, "Permanent error: test"),
+			expected: status.New(codes.Internal, "Permanent error: test"),
 		},
 		{
 			name:     "Non-Permanent Error",

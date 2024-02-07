@@ -5,31 +5,65 @@ package configcompression // import "go.opentelemetry.io/collector/config/config
 
 import "fmt"
 
-type CompressionType string
+// CompressionType represents a compression method
+// Deprecated [0.94.0]: use Type instead.
+type CompressionType = Type
+
+// Type represents a compression method
+type Type string
 
 const (
-	Gzip    CompressionType = "gzip"
-	Zlib    CompressionType = "zlib"
+	TypeGzip    Type = "gzip"
+	TypeZlib    Type = "zlib"
+	TypeDeflate Type = "deflate"
+	TypeSnappy  Type = "snappy"
+	TypeZstd    Type = "zstd"
+	typeNone    Type = "none"
+	typeEmpty   Type = ""
+
+	// Gzip
+	// Deprecated [0.94.0]: use TypeGzip instead.
+	Gzip CompressionType = "gzip"
+
+	// Zlib
+	// Deprecated [0.94.0]: use TypeZlib instead.
+	Zlib CompressionType = "zlib"
+
+	// Deflate
+	// Deprecated [0.94.0]: use TypeDeflate instead.
 	Deflate CompressionType = "deflate"
-	Snappy  CompressionType = "snappy"
-	Zstd    CompressionType = "zstd"
-	none    CompressionType = "none"
-	empty   CompressionType = ""
+
+	// Snappy
+	// Deprecated [0.94.0]: use TypeSnappy instead.
+	Snappy CompressionType = "snappy"
+
+	// Zstd
+	// Deprecated [0.94.0]: use TypeZstd instead.
+	Zstd CompressionType = "zstd"
 )
 
+// IsCompressed returns false if CompressionType is nil, none, or empty. Otherwise it returns true.
+//
+// Deprecated: [0.94.0] use member function CompressionType.IsCompressed instead
 func IsCompressed(compressionType CompressionType) bool {
-	return compressionType != empty && compressionType != none
+	return compressionType.IsCompressed()
 }
 
-func (ct *CompressionType) UnmarshalText(in []byte) error {
-	switch typ := CompressionType(in); typ {
-	case Gzip,
-		Zlib,
-		Deflate,
-		Snappy,
-		Zstd,
-		none,
-		empty:
+// IsCompressed returns false if CompressionType is nil, none, or empty.
+// Otherwise, returns true.
+func (ct *Type) IsCompressed() bool {
+	return *ct != typeEmpty && *ct != typeNone
+}
+
+func (ct *Type) UnmarshalText(in []byte) error {
+	switch typ := Type(in); typ {
+	case TypeGzip,
+		TypeZlib,
+		TypeDeflate,
+		TypeSnappy,
+		TypeZstd,
+		typeNone,
+		typeEmpty:
 		*ct = typ
 		return nil
 	default:

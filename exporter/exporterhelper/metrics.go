@@ -13,7 +13,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -32,7 +33,7 @@ func newMetricsRequest(md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) R
 	}
 }
 
-func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) RequestUnmarshaler {
+func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) exporterqueue.Unmarshaler[Request] {
 	return func(bytes []byte) (Request, error) {
 		metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
 		if err != nil {
@@ -96,7 +97,7 @@ func NewMetricsExporter(
 	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		req := newMetricsRequest(md, pusher)
 		serr := be.send(ctx, req)
-		if errors.Is(serr, internal.ErrQueueIsFull) {
+		if errors.Is(serr, queue.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
 		}
 		return serr
@@ -144,7 +145,7 @@ func NewMetricsRequestExporter(
 			return consumererror.NewPermanent(cErr)
 		}
 		sErr := be.send(ctx, req)
-		if errors.Is(sErr, internal.ErrQueueIsFull) {
+		if errors.Is(sErr, queue.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
 		}
 		return sErr

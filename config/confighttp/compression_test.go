@@ -33,7 +33,7 @@ func TestHTTPClientCompression(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		encoding    configcompression.CompressionType
+		encoding    configcompression.Type
 		reqBody     []byte
 		shouldError bool
 	}{
@@ -51,31 +51,31 @@ func TestHTTPClientCompression(t *testing.T) {
 		},
 		{
 			name:        "ValidGzip",
-			encoding:    configcompression.Gzip,
+			encoding:    configcompression.TypeGzip,
 			reqBody:     compressedGzipBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidZlib",
-			encoding:    configcompression.Zlib,
+			encoding:    configcompression.TypeZlib,
 			reqBody:     compressedZlibBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidDeflate",
-			encoding:    configcompression.Deflate,
+			encoding:    configcompression.TypeDeflate,
 			reqBody:     compressedDeflateBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidSnappy",
-			encoding:    configcompression.Snappy,
+			encoding:    configcompression.TypeSnappy,
 			reqBody:     compressedSnappyBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidZstd",
-			encoding:    configcompression.Zstd,
+			encoding:    configcompression.TypeZstd,
 			reqBody:     compressedZstdBody.Bytes(),
 			shouldError: false,
 		},
@@ -95,7 +95,7 @@ func TestHTTPClientCompression(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, srv.URL, reqBody)
 			require.NoError(t, err, "failed to create request to test handler")
 
-			clientSettings := HTTPClientConfig{
+			clientSettings := ClientConfig{
 				Endpoint:    srv.URL,
 				Compression: tt.encoding,
 			}
@@ -287,7 +287,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	require.NoError(t, err, "failed to create request to test handler")
 
 	client := http.Client{}
-	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip)
 	require.NoError(t, err)
 	res, err := client.Do(req)
 	require.NoError(t, err)
@@ -318,7 +318,7 @@ func TestHTTPContentCompressionCopyError(t *testing.T) {
 	require.NoError(t, err)
 
 	client := http.Client{}
-	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip)
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	require.Error(t, err)
@@ -342,7 +342,7 @@ func TestHTTPContentCompressionRequestBodyCloseError(t *testing.T) {
 	require.NoError(t, err)
 
 	client := http.Client{}
-	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip)
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	require.Error(t, err)

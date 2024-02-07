@@ -16,7 +16,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
@@ -71,41 +72,21 @@ func (qCfg *QueueSettings) Validate() error {
 type queueSender struct {
 	baseRequestSender
 	fullName       string
-	queue          internal.Queue[Request]
+	queue          exporterqueue.Queue[Request]
 	traceAttribute attribute.KeyValue
 	logger         *zap.Logger
 	meter          otelmetric.Meter
-	consumers      *internal.QueueConsumers[Request]
+	consumers      *queue.Consumers[Request]
 
 	metricCapacity otelmetric.Int64ObservableGauge
 	metricSize     otelmetric.Int64ObservableGauge
 }
 
-func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal component.DataType,
-	marshaler RequestMarshaler, unmarshaler RequestUnmarshaler, consumeErrHandler func(error, Request)) *queueSender {
-
-	isPersistent := config.StorageID != nil
-	var queue internal.Queue[Request]
-	queueSizer := &internal.RequestSizer[Request]{}
-	if isPersistent {
-		queue = internal.NewPersistentQueue[Request](internal.PersistentQueueSettings[Request]{
-			Sizer:            queueSizer,
-			Capacity:         config.QueueSize,
-			DataType:         signal,
-			StorageID:        *config.StorageID,
-			Marshaler:        marshaler,
-			Unmarshaler:      unmarshaler,
-			ExporterSettings: set,
-		})
-	} else {
-		queue = internal.NewBoundedMemoryQueue[Request](internal.MemoryQueueSettings[Request]{
-			Sizer:    queueSizer,
-			Capacity: config.QueueSize,
-		})
-	}
+func newQueueSender(q exporterqueue.Queue[Request], set exporter.CreateSettings, numConsumers int,
+	exportFailureMessage string) *queueSender {
 	qs := &queueSender{
 		fullName:       set.ID.String(),
-		queue:          queue,
+		queue:          q,
 		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		logger:         set.TelemetrySettings.Logger,
 		meter:          set.TelemetrySettings.MeterProvider.Meter(scopeName),
@@ -113,11 +94,12 @@ func newQueueSender(config QueueSettings, set exporter.CreateSettings, signal co
 	consumeFunc := func(ctx context.Context, req Request) error {
 		err := qs.nextSender.send(ctx, req)
 		if err != nil {
-			consumeErrHandler(err, req)
+			set.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
+				zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
 		}
 		return err
 	}
-	qs.consumers = internal.NewQueueConsumers(queue, config.NumConsumers, consumeFunc)
+	qs.consumers = queue.NewQueueConsumers[Request](q, numConsumers, consumeFunc)
 	return qs
 }
 

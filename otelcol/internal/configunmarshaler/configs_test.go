@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
+var nopType = component.MustNewType("nop")
+
 var testKinds = []struct {
 	kind      string
 	factories map[component.Type]component.Factory
@@ -25,31 +27,31 @@ var testKinds = []struct {
 	{
 		kind: "receiver",
 		factories: map[component.Type]component.Factory{
-			"nop": receivertest.NewNopFactory(),
+			nopType: receivertest.NewNopFactory(),
 		},
 	},
 	{
 		kind: "processor",
 		factories: map[component.Type]component.Factory{
-			"nop": processortest.NewNopFactory(),
+			nopType: processortest.NewNopFactory(),
 		},
 	},
 	{
 		kind: "exporter",
 		factories: map[component.Type]component.Factory{
-			"nop": exportertest.NewNopFactory(),
+			nopType: exportertest.NewNopFactory(),
 		},
 	},
 	{
 		kind: "connector",
 		factories: map[component.Type]component.Factory{
-			"nop": connectortest.NewNopFactory(),
+			nopType: connectortest.NewNopFactory(),
 		},
 	},
 	{
 		kind: "extension",
 		factories: map[component.Type]component.Factory{
-			"nop": extensiontest.NewNopFactory(),
+			nopType: extensiontest.NewNopFactory(),
 		},
 	},
 }
@@ -65,8 +67,8 @@ func TestUnmarshal(t *testing.T) {
 			require.NoError(t, cfgs.Unmarshal(conf))
 
 			assert.Equal(t, map[component.ID]component.Config{
-				component.NewID("nop"):                       tk.factories["nop"].CreateDefaultConfig(),
-				component.NewIDWithName("nop", "my"+tk.kind): tk.factories["nop"].CreateDefaultConfig(),
+				component.NewID(nopType):                       tk.factories[nopType].CreateDefaultConfig(),
+				component.NewIDWithName(nopType, "my"+tk.kind): tk.factories[nopType].CreateDefaultConfig(),
 			}, cfgs.Configs())
 		})
 	}
