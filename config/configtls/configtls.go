@@ -106,9 +106,6 @@ type TLSServerSetting struct {
 	// Reload the ClientCAs file when it is modified
 	// (optional, default false)
 	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload"`
-
-	// File reloader for the Client CA.
-	reloader *clientCAsFileReloader
 }
 
 // certReloader is a wrapper object for certificate reloading
@@ -329,29 +326,37 @@ func (c TLSClientSetting) LoadTLSConfig() (*tls.Config, error) {
 	return tlsCfg, nil
 }
 
-// LoadTLSConfig loads the TLS configuration.
-func (c *TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
+// LoadTLSConfig loads the TLS configuration. The returned function is a callback that should
+// be used to signal shutdown.
+func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, func() error, error) {
 	tlsCfg, err := c.loadTLSConfig()
+	nopShutdown := func() error { return nil }
+	var reloader *clientCAsFileReloader
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to load TLS config: %w", err)
+		return nil, nopShutdown, fmt.Errorf("failed to load TLS config: %w", err)
 	}
 	if c.ClientCAFile != "" {
-		var err error
-		c.reloader, err = newClientCAsReloader(c.ClientCAFile, c)
+		reloader, err = newClientCAsReloader(c.ClientCAFile, &c)
 		if err != nil {
-			return nil, err
+			return nil, nopShutdown, err
 		}
 		if c.ReloadClientCAFile {
-			err = c.reloader.startWatching()
+			err = reloader.startWatching()
 			if err != nil {
-				return nil, err
+				return nil, nopShutdown, err
 			}
-			tlsCfg.GetConfigForClient = func(t *tls.ClientHelloInfo) (*tls.Config, error) { return c.reloader.getClientConfig(tlsCfg) }
+			tlsCfg.GetConfigForClient = func(t *tls.ClientHelloInfo) (*tls.Config, error) { return reloader.getClientConfig(tlsCfg) }
 		}
-		tlsCfg.ClientCAs = c.reloader.certPool
+		tlsCfg.ClientCAs = reloader.certPool
 		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
 	}
-	return tlsCfg, nil
+
+	if reloader != nil {
+		return tlsCfg, reloader.shutdown, nil
+	}
+
+	return tlsCfg, nopShutdown, nil
 }
 
 func (c TLSServerSetting) loadClientCAFile() (*x509.CertPool, error) {
@@ -359,9 +364,6 @@ func (c TLSServerSetting) loadClientCAFile() (*x509.CertPool, error) {
 }
 
 func (c TLSServerSetting) Shutdown() error {
-	if c.ReloadClientCAFile {
-		return c.reloader.shutdown()
-	}
 	return nil
 }
 

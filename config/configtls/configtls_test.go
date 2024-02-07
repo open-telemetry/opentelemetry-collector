@@ -282,22 +282,25 @@ func TestLoadTLSServerConfigError(t *testing.T) {
 			KeyFile:  "doesnt/exist",
 		},
 	}
-	_, err := tlsSetting.LoadTLSConfig()
+	_, _, err := tlsSetting.LoadTLSConfig()
 	assert.Error(t, err)
 
 	tlsSetting = TLSServerSetting{
 		ClientCAFile: "doesnt/exist",
 	}
-	_, err = tlsSetting.LoadTLSConfig()
+	_, _, err = tlsSetting.LoadTLSConfig()
 	assert.Error(t, err)
 }
 
 func TestLoadTLSServerConfig(t *testing.T) {
 	tlsSetting := TLSServerSetting{}
-	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	tlsCfg, shutdown, err := tlsSetting.LoadTLSConfig()
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
-	defer func() { assert.NoError(t, tlsSetting.Shutdown()) }()
+	defer func() {
+		shutdown()
+		assert.NoError(t, tlsSetting.Shutdown())
+	}()
 }
 
 func TestLoadTLSServerConfigReload(t *testing.T) {
@@ -311,10 +314,13 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	tlsCfg, shutdown, err := tlsSetting.LoadTLSConfig()
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
-	defer func() { assert.NoError(t, tlsSetting.Shutdown()) }()
+	defer func() {
+		shutdown()
+		assert.NoError(t, tlsSetting.Shutdown())
+	}()
 
 	firstClient, err := tlsCfg.GetConfigForClient(nil)
 	assert.NoError(t, err)
@@ -332,6 +338,30 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 	assert.NotEqual(t, firstClient.ClientCAs, secondClient.ClientCAs)
 }
 
+func TestLoadTLSServerMultipleConfigs(t *testing.T) {
+	tmpCaPath := createTempClientCaFile(t)
+
+	overwriteClientCA(t, tmpCaPath, "ca-1.crt")
+
+	tlsSetting := TLSServerSetting{
+		ClientCAFile:       tmpCaPath,
+		ReloadClientCAFile: true,
+	}
+
+	var allShutdowns []func() error
+
+	for i := 0; i < 10; i++ {
+		tlsCfg, shutdown, err := tlsSetting.LoadTLSConfig()
+		assert.NoError(t, err)
+		assert.NotNil(t, tlsCfg)
+		allShutdowns = append(allShutdowns, shutdown)
+	}
+
+	for _, shutdown := range allShutdowns {
+		assert.NoError(t, shutdown())
+	}
+}
+
 func TestLoadTLSServerConfigFailingReload(t *testing.T) {
 
 	tmpCaPath := createTempClientCaFile(t)
@@ -343,10 +373,13 @@ func TestLoadTLSServerConfigFailingReload(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	tlsCfg, shutdown, err := tlsSetting.LoadTLSConfig()
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
-	defer func() { assert.NoError(t, tlsSetting.Shutdown()) }()
+	defer func() {
+		shutdown()
+		assert.NoError(t, tlsSetting.Shutdown())
+	}()
 
 	firstClient, err := tlsCfg.GetConfigForClient(nil)
 	assert.NoError(t, err)
@@ -375,7 +408,7 @@ func TestLoadTLSServerConfigFailingInitialLoad(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	tlsCfg, _, err := tlsSetting.LoadTLSConfig()
 	assert.Error(t, err)
 	assert.Nil(t, tlsCfg)
 }
@@ -389,7 +422,7 @@ func TestLoadTLSServerConfigWrongPath(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	tlsCfg, _, err := tlsSetting.LoadTLSConfig()
 	assert.Error(t, err)
 	assert.Nil(t, tlsCfg)
 }
@@ -405,10 +438,13 @@ func TestLoadTLSServerConfigFailing(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	tlsCfg, shutdown, err := tlsSetting.LoadTLSConfig()
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
-	defer func() { assert.NoError(t, tlsSetting.Shutdown()) }()
+	defer func() {
+		shutdown()
+		assert.NoError(t, tlsSetting.Shutdown())
+	}()
 
 	firstClient, err := tlsCfg.GetConfigForClient(nil)
 	assert.NoError(t, err)
