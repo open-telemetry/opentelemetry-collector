@@ -346,17 +346,11 @@ func TestLoadTLSServerMultipleConfigs(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	var allShutdowns []func() error
-
 	for i := 0; i < 10; i++ {
 		tlsCfg, shutdown, err := tlsSetting.LoadTLSConfig()
 		assert.NoError(t, err)
 		assert.NotNil(t, tlsCfg)
-		allShutdowns = append(allShutdowns, shutdown)
-	}
-
-	for _, shutdown := range allShutdowns {
-		assert.NoError(t, shutdown())
+		defer func() { assert.NoError(t, shutdown()) }()
 	}
 }
 
