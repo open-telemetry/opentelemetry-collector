@@ -27,18 +27,36 @@ type Resolver struct {
 	watcher chan error
 }
 
+type ConverterFactory = func(ConverterSettings) Converter
+
+type ProviderFactory = func(ProviderSettings) Provider
+
 // ResolverSettings are the settings to configure the behavior of the Resolver.
 type ResolverSettings struct {
 	// URIs locations from where the Conf is retrieved, and merged in the given order.
 	// It is required to have at least one location.
 	URIs []string
 
+	// ProviderFactories is a list of Provider creation functions.
+	// It is required to have at least one ProviderFactory
+	// if a Provider is not given.
+	ProviderFactories []ProviderFactory
+
 	// Providers is a map of pairs <scheme, Provider>.
 	// It is required to have at least one Provider.
+	// Deprecated: [v0.96.0] Use ProviderFactories instead
 	Providers map[string]Provider
 
-	// MapConverters is a slice of Converter.
+	ProviderSettings ProviderSettings
+
+	// ConverterFactories is a slice of Converter creation functions.
+	ConverterFactories []ConverterFactory
+
+	// Converters is a slice of Converters.
+	// Deprecated: [v0.96.0] Use ConverterFactories instead
 	Converters []Converter
+
+	ConverterSettings ConverterSettings
 }
 
 // NewResolver returns a new Resolver that resolves configuration from multiple URIs.
@@ -65,8 +83,36 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		return nil, errors.New("invalid map resolver config: no URIs")
 	}
 
-	if len(set.Providers) == 0 {
+	if len(set.ProviderFactories) == 0 && len(set.Providers) == 0 {
 		return nil, errors.New("invalid map resolver config: no Providers")
+	}
+
+	var providers map[string]Provider
+	var converters []Converter
+
+	if len(set.Providers) != 0 {
+		if len(set.ProviderFactories) != 0 {
+			return nil, errors.New("only one of ResolverSettings.Providers and ResolverSettings.ProviderFactories can be used")
+		}
+		providers = set.Providers
+	} else {
+		providers = make(map[string]Provider, len(set.ProviderFactories))
+		for _, newProvider := range set.ProviderFactories {
+			provider := newProvider(set.ProviderSettings)
+			providers[provider.Scheme()] = provider
+		}
+	}
+
+	if len(set.Converters) != 0 {
+		if len(set.ConverterFactories) != 0 {
+			return nil, errors.New("only one of ResolverSettings.Converters and ResolverSettings.ConverterFactories can be used")
+		}
+		converters = set.Converters
+	} else {
+		converters = make([]Converter, len(set.ConverterFactories))
+		for i, newConverter := range set.ConverterFactories {
+			converters[i] = newConverter(set.ConverterSettings)
+		}
 	}
 
 	// Safe copy, ensures the slices and maps cannot be changed from the caller.
@@ -83,22 +129,16 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		if err != nil {
 			return nil, err
 		}
-		if _, ok := set.Providers[lURI.scheme]; !ok {
+		if _, ok := providers[lURI.scheme]; !ok {
 			return nil, fmt.Errorf("unsupported scheme on URI %q", uri)
 		}
 		uris[i] = lURI
 	}
-	providersCopy := make(map[string]Provider, len(set.Providers))
-	for k, v := range set.Providers {
-		providersCopy[k] = v
-	}
-	convertersCopy := make([]Converter, len(set.Converters))
-	copy(convertersCopy, set.Converters)
 
 	return &Resolver{
 		uris:       uris,
-		providers:  providersCopy,
-		converters: convertersCopy,
+		providers:  providers,
+		converters: converters,
 		watcher:    make(chan error, 1),
 	}, nil
 }

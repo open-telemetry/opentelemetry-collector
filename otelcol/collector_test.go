@@ -439,8 +439,8 @@ func TestPassConfmapToServiceFailure(t *testing.T) {
 		Factories: nopFactories,
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs:      []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-				Providers: makeMapProvidersMap(newFailureProvider()),
+				URIs:              []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
+				ProviderFactories: []confmap.ProviderFactory{newFailureProvider},
 			},
 		},
 	}
@@ -463,7 +463,7 @@ func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.Wai
 
 type failureProvider struct{}
 
-func newFailureProvider() confmap.Provider {
+func newFailureProvider(_ confmap.ProviderSettings) confmap.Provider {
 	return &failureProvider{}
 }
 

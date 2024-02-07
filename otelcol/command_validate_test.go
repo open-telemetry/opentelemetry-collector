@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/featuregate"
@@ -27,9 +26,9 @@ func TestValidateSubCommandInvalidComponents(t *testing.T) {
 	cfgProvider, err := NewConfigProvider(
 		ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs:       []string{filepath.Join("testdata", "otelcol-invalid-components.yaml")},
-				Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmaptest.NewNopProviderSettings())},
-				Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
+				URIs:               []string{filepath.Join("testdata", "otelcol-invalid-components.yaml")},
+				ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewWithSettings},
+				ConverterFactories: []confmap.ConverterFactory{expandconverter.New},
 			},
 		})
 	require.NoError(t, err)
