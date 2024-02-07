@@ -139,7 +139,7 @@ go.opentelemetry.io/contrib/config v0.3.0 h1:nJxYSB7/8fckSya4EAFyFGxIytMvNlQInXS
 go.opentelemetry.io/contrib/config v0.3.0/go.mod h1:tQW0mY8be9/LGikwZNYno97PleUhF/lMal9xJ1TC2vo=
 go.opentelemetry.io/contrib/propagators/b3 v1.22.0 h1:Okbgv0pWHMQq+mF7H2o1mucJ5PvxKFq2c8cyqoXfeaQ=
 go.opentelemetry.io/contrib/propagators/b3 v1.22.0/go.mod h1:N3z0ycFRhsVZ+tG/uavMxHvOvFE95QM6gwW1zSqT9dQ=
-go.opentelemetry.io/contrib/zpages v0.47.0 h1:ekpdNa2wqOvAfwZIGDIIV02zmR+z08aWPt21KrPJnaU=
+go.opentelemetry.io/contrib/zpages v0.48.0 h1:7vnqarYRu2VYvUUwrLWXRk5HqPuCbtuZdgR4eaVeP3Y=
 go.opentelemetry.io/otel v1.23.0 h1:Df0pqjqExIywbMCMTxkAwzjLZtRf+bBKLbUcpxO2C9E=
 go.opentelemetry.io/otel v1.23.0/go.mod h1:YCycw9ZeKhcJFrb34iVSkyT0iczq/zYDtZYFufObyB0=
 go.opentelemetry.io/otel/bridge/opencensus v0.45.0 h1:kEOlv9Exuv3J8GCf1nLMHfrTPGnZOuIkN8YlRM14TtQ=
