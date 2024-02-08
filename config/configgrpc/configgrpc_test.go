@@ -1102,3 +1102,37 @@ type mockHost struct {
 func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nh.ext
 }
+
+func TestSanitizedEndpoint(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		endpoint  string
+		sanitized string
+	}{
+		{
+			"no changes",
+			"example.com:443",
+			"example.com:443",
+		},
+		{
+			"empty string",
+			"",
+			"",
+		},
+		{
+			"http",
+			"http://example.com:443",
+			"example.com:443",
+		},
+		{
+			"https",
+			"https://example.com:443",
+			"example.com:443",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			c := ClientConfig{Endpoint: test.endpoint}
+			assert.Equal(t, test.sanitized, c.SanitizedEndpoint())
+		})
+	}
+}
