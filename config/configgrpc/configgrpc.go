@@ -5,7 +5,6 @@ package configgrpc // import "go.opentelemetry.io/collector/config/configgrpc"
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -19,7 +18,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
@@ -165,10 +163,6 @@ func (gcs *ClientConfig) SanitizedEndpoint() string {
 	return strings.TrimPrefix(strings.TrimPrefix(gcs.Endpoint, "https://"), "http://")
 }
 
-func (gcs *ClientConfig) isSchemeHTTPS() bool {
-	return strings.HasPrefix(gcs.Endpoint, "https://")
-}
-
 // ToClientConn creates a client connection to the given target. By default, it's
 // a non-blocking dial (the function won't wait for connections to be
 // established, and connecting happens in the background). To make it a blocking
@@ -197,12 +191,7 @@ func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.T
 	if err != nil {
 		return nil, err
 	}
-	cred := insecure.NewCredentials()
-	if tlsCfg != nil {
-		cred = credentials.NewTLS(tlsCfg)
-	} else if gcs.isSchemeHTTPS() {
-		cred = credentials.NewTLS(&tls.Config{})
-	}
+	cred := credentials.NewTLS(tlsCfg)
 	opts = append(opts, grpc.WithTransportCredentials(cred))
 
 	if gcs.ReadBufferSize > 0 {
