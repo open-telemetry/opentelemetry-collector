@@ -16,30 +16,31 @@ import (
 
 func NewMap[K comparable, V component.Component]() *Map[K, V] {
 	return &Map[K, V]{
-		components: map[K]*Component[V]{},
+		components: map[K]*componentEntry[V]{},
 	}
 }
 
 // Map keeps reference of all created instances for a given shared key such as a component configuration.
 type Map[K comparable, V component.Component] struct {
 	lock       sync.Mutex
-	components map[K]*Component[V]
+	components map[K]*componentEntry[V]
 }
 
-// LoadOrStore returns the already created instance if exists, otherwise creates a new instance
-// and adds it to the map of references.
-func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error)) (*Component[V], error) {
+// LoadOrStore looks up the already created instance if exists, otherwise creates a new instance
+// and adds it to the map of references. It returns the wrapped shared component, the instance of
+// the component and a possible error on creation.
+func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error)) (component.Component, V, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if c, ok := m.components[key]; ok {
-		return c, nil
+		return c, c.component, nil
 	}
 	comp, err := create()
 	if err != nil {
-		return nil, err
+		return comp, comp, err
 	}
 
-	newComp := &Component[V]{
+	newComp := &componentEntry[V]{
 		component: comp,
 		removeFunc: func() {
 			m.lock.Lock()
@@ -48,12 +49,10 @@ func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error)) (*Component[V],
 		},
 	}
 	m.components[key] = newComp
-	return newComp, nil
+	return newComp, comp, nil
 }
 
-// Component ensures that the wrapped component is started and stopped only once.
-// When stopped it is removed from the Map.
-type Component[V component.Component] struct {
+type componentEntry[V component.Component] struct {
 	component V
 
 	startCounter atomic.Int32
@@ -63,13 +62,8 @@ type Component[V component.Component] struct {
 	removeFunc   func()
 }
 
-// Unwrap returns the original component.
-func (c *Component[V]) Unwrap() V {
-	return c.component
-}
-
 // Start starts the underlying component if it never started before.
-func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
+func (c *componentEntry[V]) Start(ctx context.Context, host component.Host) error {
 	c.startCounter.Add(1)
 	c.startOnce.Do(func() {
 		c.startErr = c.component.Start(ctx, host)
@@ -78,7 +72,7 @@ func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 }
 
 // Shutdown shuts down the underlying component.
-func (c *Component[V]) Shutdown(ctx context.Context) error {
+func (c *componentEntry[V]) Shutdown(ctx context.Context) error {
 	if c.startCounter.Add(-1) <= 0 {
 		var err error
 		c.stopOnce.Do(func() {

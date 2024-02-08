@@ -31,7 +31,7 @@ func TestNewSharedComponentsCreateError(t *testing.T) {
 	comps := NewMap[component.ID, *baseComponent]()
 	assert.Len(t, comps.components, 0)
 	myErr := errors.New("my error")
-	_, err := comps.LoadOrStore(
+	_, _, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return nil, myErr },
 	)
@@ -43,27 +43,28 @@ func TestSharedComponentsLoadOrStore(t *testing.T) {
 	nop := &baseComponent{}
 
 	comps := NewMap[component.ID, *baseComponent]()
-	got, err := comps.LoadOrStore(
+	got, comp, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return nop, nil },
 	)
 	require.NoError(t, err)
 	assert.Len(t, comps.components, 1)
-	assert.Same(t, nop, got.Unwrap())
-	gotSecond, err := comps.LoadOrStore(
+	assert.Same(t, nop, comp)
+	gotSecond, comp2, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { panic("should not be called") },
 	)
 
 	require.NoError(t, err)
 	assert.Same(t, got, gotSecond)
+	assert.Same(t, comp, comp2)
 
 	assert.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Shutdown nop will remove
 	assert.NoError(t, got.Shutdown(context.Background()))
 	assert.Len(t, comps.components, 0)
-	gotThird, err := comps.LoadOrStore(
+	gotThird, _, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return nop, nil },
 	)
@@ -86,7 +87,7 @@ func TestSharedComponent(t *testing.T) {
 		}}
 
 	comps := NewMap[component.ID, *baseComponent]()
-	got, err := comps.LoadOrStore(
+	got, _, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return comp, nil },
 	)
