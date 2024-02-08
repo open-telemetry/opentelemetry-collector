@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
@@ -185,7 +186,10 @@ func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.T
 	if err != nil {
 		return nil, err
 	}
-	cred := credentials.NewTLS(tlsCfg)
+	cred := insecure.NewCredentials()
+	if tlsCfg != nil {
+		cred = credentials.NewTLS(tlsCfg)
+	}
 	opts = append(opts, grpc.WithTransportCredentials(cred))
 
 	if gcs.ReadBufferSize > 0 {
