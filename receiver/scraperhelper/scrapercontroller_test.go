@@ -17,7 +17,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -76,7 +75,6 @@ type metricsTestCase struct {
 
 	scrapers                  int
 	scraperControllerSettings *ControllerConfig
-	nilNextConsumer           bool
 	scrapeErr                 error
 	expectedNewErr            string
 	expectScraped             bool
@@ -96,12 +94,6 @@ func TestScrapeController(t *testing.T) {
 			name:          "AddMetricsScrapersWithCollectionInterval",
 			scrapers:      2,
 			expectScraped: true,
-		},
-		{
-			name:            "AddMetricsScrapers_NilNextConsumerError",
-			scrapers:        2,
-			nilNextConsumer: true,
-			expectedNewErr:  "nil next Consumer",
 		},
 		{
 			name:                      "AddMetricsScrapersWithCollectionInterval_InvalidCollectionIntervalError",
@@ -147,17 +139,13 @@ func TestScrapeController(t *testing.T) {
 			tickerCh := make(chan time.Time)
 			options = append(options, WithTickerChannel(tickerCh))
 
-			var nextConsumer consumer.Metrics
 			sink := new(consumertest.MetricsSink)
-			if !test.nilNextConsumer {
-				nextConsumer = sink
-			}
 			cfg := newTestNoDelaySettings()
 			if test.scraperControllerSettings != nil {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, nextConsumer, options...)
+			mr, err := NewScraperControllerReceiver(cfg, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, sink, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return

@@ -39,10 +39,6 @@ func NewTracesProcessor(
 		return nil, errors.New("nil tracesFunc")
 	}
 
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
 	traceConsumer, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
