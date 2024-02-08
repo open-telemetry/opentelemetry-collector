@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/cmd/mdatagen
 
-go 1.20
+go 1.21
 
 require (
 	github.com/google/go-cmp v0.6.0
