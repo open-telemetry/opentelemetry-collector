@@ -47,8 +47,6 @@ type baseExporter struct {
 	userAgent string
 }
 
-// Crete new exporter and start it. The exporter will begin connecting but
-// this function may return before the connection is established.
 func newExporter(cfg component.Config, set exporter.CreateSettings) (*baseExporter, error) {
 	oCfg := cfg.(*Config)
 
