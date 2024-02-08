@@ -143,7 +143,7 @@ func TestExpandNilStructPointersHookFuncDefaultNotNilConfigNil(t *testing.T) {
 	assert.Equal(t, &Struct{}, cfg.MapStruct["struct"])
 }
 
-func TestUnmarshalWithErrorUnused(t *testing.T) {
+func TestUnmarshalWithIgnoreUnused(t *testing.T) {
 	stringMap := map[string]any{
 		"boolean": true,
 		"string":  "this is a string",
