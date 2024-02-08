@@ -13,6 +13,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/multierr"
+
 	"go.opentelemetry.io/collector/config/configopaque"
 )
 
@@ -106,6 +108,9 @@ type TLSServerSetting struct {
 	// Reload the ClientCAs file when it is modified
 	// (optional, default false)
 	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload"`
+
+	// Shutdown functions used to shutdown the file reloader for the Client CA.
+	reloaderShutdownFuncs []func() error
 }
 
 // certReloader is a wrapper object for certificate reloading
@@ -326,41 +331,44 @@ func (c TLSClientSetting) LoadTLSConfig() (*tls.Config, error) {
 	return tlsCfg, nil
 }
 
-// LoadTLSConfig loads the TLS configuration. The returned function is a callback that should
-// be used to signal shutdown.
-func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, func() error, error) {
+// LoadTLSConfig loads the TLS configuration.
+func (c *TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 	tlsCfg, err := c.loadTLSConfig()
-	nopShutdown := func() error { return nil }
-	var reloader *clientCAsFileReloader
-
 	if err != nil {
-		return nil, nopShutdown, fmt.Errorf("failed to load TLS config: %w", err)
+		return nil, fmt.Errorf("failed to load TLS config: %w", err)
 	}
 	if c.ClientCAFile != "" {
-		reloader, err = newClientCAsReloader(c.ClientCAFile, &c)
+		reloader, err := newClientCAsReloader(c.ClientCAFile, c)
 		if err != nil {
-			return nil, nopShutdown, err
+			return nil, err
 		}
 		if c.ReloadClientCAFile {
 			err = reloader.startWatching()
 			if err != nil {
-				return nil, nopShutdown, err
+				return nil, err
 			}
 			tlsCfg.GetConfigForClient = func(t *tls.ClientHelloInfo) (*tls.Config, error) { return reloader.getClientConfig(tlsCfg) }
+			c.reloaderShutdownFuncs = append(c.reloaderShutdownFuncs, reloader.shutdown)
 		}
 		tlsCfg.ClientCAs = reloader.certPool
 		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 
-	if reloader != nil {
-		return tlsCfg, reloader.shutdown, nil
-	}
-
-	return tlsCfg, nopShutdown, nil
+	return tlsCfg, nil
 }
 
 func (c TLSServerSetting) loadClientCAFile() (*x509.CertPool, error) {
 	return c.loadCert(c.ClientCAFile)
+}
+
+func (c TLSServerSetting) Shutdown() error {
+	var err error
+	if c.ReloadClientCAFile {
+		for _, shutdown := range c.reloaderShutdownFuncs {
+			err = multierr.Append(err, shutdown())
+		}
+	}
+	return err
 }
 
 func (c TLSSetting) hasCA() bool   { return c.hasCAFile() || c.hasCAPem() }
