@@ -13,7 +13,7 @@ ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
                                 -type f | sort)
 
 # ALL_MODULES includes ./* dirs (excludes . dir)
-ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
+ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | grep -E '^./' )
 
 CMD?=
 
@@ -269,6 +269,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/extension=$(CURDIR)/extension  \
 		-replace go.opentelemetry.io/collector/extension/auth=$(CURDIR)/extension/auth  \
 		-replace go.opentelemetry.io/collector/extension/ballastextension=$(CURDIR)/extension/ballastextension  \
+		-replace go.opentelemetry.io/collector/extension/memorylimiterextension=$(CURDIR)/extension/memorylimiterextension  \
 		-replace go.opentelemetry.io/collector/extension/zpagesextension=$(CURDIR)/extension/zpagesextension  \
 		-replace go.opentelemetry.io/collector/featuregate=$(CURDIR)/featuregate  \
 		-replace go.opentelemetry.io/collector/otelcol=$(CURDIR)/otelcol  \
@@ -280,7 +281,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/receiver/otlpreceiver=$(CURDIR)/receiver/otlpreceiver  \
 		-replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv  \
 		-replace go.opentelemetry.io/collector/service=$(CURDIR)/service"
-	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
+	@$(MAKE) -C $(CONTRIB_PATH) gotidy
 	@$(MAKE) -C $(CONTRIB_PATH) gotest
 	@if [ -z "$(SKIP_RESTORE_CONTRIB)" ]; then \
 		$(MAKE) restore-contrib; \
@@ -314,6 +315,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/extension  \
 		-dropreplace go.opentelemetry.io/collector/extension/auth  \
 		-dropreplace go.opentelemetry.io/collector/extension/ballastextension  \
+		-dropreplace go.opentelemetry.io/collector/extension/memorylimiterextension  \
 		-dropreplace go.opentelemetry.io/collector/extension/zpagestextension  \
 		-dropreplace go.opentelemetry.io/collector/featuregate  \
 		-dropreplace go.opentelemetry.io/collector/otelcol  \

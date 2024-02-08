@@ -43,7 +43,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Protocols: Protocols{
-			GRPC: &configgrpc.GRPCServerSettings{
+			GRPC: &configgrpc.ServerConfig{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  localhostgate.EndpointForPort(grpcPort),
 					Transport: "tcp",
@@ -52,7 +52,7 @@ func createDefaultConfig() component.Config {
 				ReadBufferSize: 512 * 1024,
 			},
 			HTTP: &HTTPConfig{
-				HTTPServerSettings: &confighttp.HTTPServerSettings{
+				ServerConfig: &confighttp.ServerConfig{
 					Endpoint: localhostgate.EndpointForPort(httpPort),
 				},
 				TracesURLPath:  defaultTracesURLPath,

@@ -67,7 +67,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 
 	logClient := makeLogsServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("my error"))))
 	resp, err := logClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = Permanent error: my error")
+	assert.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: my error")
 	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, plogotlp.ExportResponse{}, resp)
 }
@@ -92,7 +92,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
 	})
 
 	set := receivertest.NewNopCreateSettings()
-	set.ID = component.NewIDWithName("otlp", "log")
+	set.ID = component.MustNewIDWithName("otlp", "log")
 	obsreport, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "grpc",

@@ -110,7 +110,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 		defer r.shutdownWG.Done()
 
 		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && !errors.Is(errGrpc, grpc.ErrServerStopped) {
-			host.ReportFatalError(errGrpc)
+			r.settings.ReportStatus(component.NewFatalErrorEvent(errGrpc))
 		}
 	}()
 	return nil
@@ -149,9 +149,9 @@ func (r *otlpReceiver) startHTTPServer(host component.Host) error {
 		return err
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.HTTPServerSettings.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.ServerConfig.Endpoint))
 	var hln net.Listener
-	if hln, err = r.cfg.HTTP.HTTPServerSettings.ToListener(); err != nil {
+	if hln, err = r.cfg.HTTP.ServerConfig.ToListener(); err != nil {
 		return err
 	}
 
@@ -160,7 +160,7 @@ func (r *otlpReceiver) startHTTPServer(host component.Host) error {
 		defer r.shutdownWG.Done()
 
 		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			host.ReportFatalError(errHTTP)
+			r.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 	return nil
@@ -168,12 +168,15 @@ func (r *otlpReceiver) startHTTPServer(host component.Host) error {
 
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
-func (r *otlpReceiver) Start(_ context.Context, host component.Host) error {
+func (r *otlpReceiver) Start(ctx context.Context, host component.Host) error {
 	if err := r.startGRPCServer(host); err != nil {
 		return err
 	}
 	if err := r.startHTTPServer(host); err != nil {
-		return err
+		// It's possible that a valid GRPC server configuration was specified,
+		// but an invalid HTTP configuration. If that's the case, the successfully
+		// started GRPC server must be shutdown to ensure no goroutines are leaked.
+		return errors.Join(err, r.Shutdown(ctx))
 	}
 
 	return nil

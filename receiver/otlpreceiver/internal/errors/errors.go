@@ -17,7 +17,8 @@ func GetStatusFromError(err error) error {
 		// https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures
 		code := codes.Unavailable
 		if consumererror.IsPermanent(err) {
-			code = codes.InvalidArgument
+			// If an error is permanent but doesn't have an attached gRPC status, assume it is server-side.
+			code = codes.Internal
 		}
 		s = status.New(code, err.Error())
 	}

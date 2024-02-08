@@ -13,11 +13,12 @@ import (
 	"go.opentelemetry.io/collector/processor"
 )
 
-const typeStr = "nop"
+var nopType = component.MustNewType("nop")
 
 // NewNopCreateSettings returns a new nop settings for Create* functions.
 func NewNopCreateSettings() processor.CreateSettings {
 	return processor.CreateSettings{
+		ID:                component.NewID(nopType),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -26,7 +27,7 @@ func NewNopCreateSettings() processor.CreateSettings {
 // NewNopFactory returns a component.ProcessorFactory that constructs nop processors.
 func NewNopFactory() processor.Factory {
 	return processor.NewFactory(
-		"nop",
+		nopType,
 		func() component.Config { return &nopConfig{} },
 		processor.WithTraces(createTracesProcessor, component.StabilityLevelStable),
 		processor.WithMetrics(createMetricsProcessor, component.StabilityLevelStable),
@@ -63,6 +64,6 @@ type nopProcessor struct {
 func NewNopBuilder() *processor.Builder {
 	nopFactory := NewNopFactory()
 	return processor.NewBuilder(
-		map[component.ID]component.Config{component.NewID(typeStr): nopFactory.CreateDefaultConfig()},
-		map[component.Type]processor.Factory{typeStr: nopFactory})
+		map[component.ID]component.Config{component.NewID(nopType): nopFactory.CreateDefaultConfig()},
+		map[component.Type]processor.Factory{nopType: nopFactory})
 }

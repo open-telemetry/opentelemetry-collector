@@ -86,7 +86,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
-				GRPC: &configgrpc.GRPCServerSettings{
+				GRPC: &configgrpc.ServerConfig{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "0.0.0.0:4317",
 						Transport: "tcp",
@@ -116,7 +116,7 @@ func TestUnmarshalConfig(t *testing.T) {
 					},
 				},
 				HTTP: &HTTPConfig{
-					HTTPServerSettings: &confighttp.HTTPServerSettings{
+					ServerConfig: &confighttp.ServerConfig{
 						Endpoint: "0.0.0.0:4318",
 						TLSSetting: &configtls.TLSServerSetting{
 							TLSSetting: configtls.TLSSetting{
@@ -124,7 +124,7 @@ func TestUnmarshalConfig(t *testing.T) {
 								KeyFile:  "test.key",
 							},
 						},
-						CORS: &confighttp.CORSSettings{
+						CORS: &confighttp.CORSConfig{
 							AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
 							MaxAge:         7200,
 						},
@@ -147,7 +147,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
-				GRPC: &configgrpc.GRPCServerSettings{
+				GRPC: &configgrpc.ServerConfig{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "/tmp/grpc_otlp.sock",
 						Transport: "unix",
@@ -155,7 +155,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 					ReadBufferSize: 512 * 1024,
 				},
 				HTTP: &HTTPConfig{
-					HTTPServerSettings: &confighttp.HTTPServerSettings{
+					ServerConfig: &confighttp.ServerConfig{
 						Endpoint: "/tmp/http_otlp.sock",
 					},
 					TracesURLPath:  defaultTracesURLPath,

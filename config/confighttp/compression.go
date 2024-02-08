@@ -20,11 +20,11 @@ import (
 
 type compressRoundTripper struct {
 	rt              http.RoundTripper
-	compressionType configcompression.CompressionType
+	compressionType configcompression.Type
 	compressor      *compressor
 }
 
-func newCompressRoundTripper(rt http.RoundTripper, compressionType configcompression.CompressionType) (*compressRoundTripper, error) {
+func newCompressRoundTripper(rt http.RoundTripper, compressionType configcompression.Type) (*compressRoundTripper, error) {
 	encoder, err := newCompressor(compressionType)
 	if err != nil {
 		return nil, err

@@ -9,8 +9,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type = component.MustNewType("otlphttp")
+)
+
 const (
-	Type             = "otlphttp"
 	LogsStability    = component.StabilityLevelBeta
 	TracesStability  = component.StabilityLevelStable
 	MetricsStability = component.StabilityLevelStable

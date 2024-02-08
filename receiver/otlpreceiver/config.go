@@ -22,7 +22,7 @@ const (
 )
 
 type HTTPConfig struct {
-	*confighttp.HTTPServerSettings `mapstructure:",squash"`
+	*confighttp.ServerConfig `mapstructure:",squash"`
 
 	// The URL path to receive traces on. If omitted "/v1/traces" will be used.
 	TracesURLPath string `mapstructure:"traces_url_path,omitempty"`
@@ -36,8 +36,8 @@ type HTTPConfig struct {
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
-	GRPC *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
-	HTTP *HTTPConfig                    `mapstructure:"http"`
+	GRPC *configgrpc.ServerConfig `mapstructure:"grpc"`
+	HTTP *HTTPConfig              `mapstructure:"http"`
 }
 
 // Config defines configuration for OTLP receiver.

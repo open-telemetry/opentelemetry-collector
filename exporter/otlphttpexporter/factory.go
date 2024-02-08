@@ -36,12 +36,13 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		RetryConfig: configretry.NewDefaultBackOffConfig(),
 		QueueConfig: exporterhelper.NewDefaultQueueSettings(),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		Encoding:    EncodingProto,
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
 			Timeout:  30 * time.Second,
 			Headers:  map[string]configopaque.String{},
 			// Default to gzip compression
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},

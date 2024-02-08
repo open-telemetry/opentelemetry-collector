@@ -5,31 +5,34 @@ package configcompression // import "go.opentelemetry.io/collector/config/config
 
 import "fmt"
 
-type CompressionType string
+// Type represents a compression method
+type Type string
 
 const (
-	Gzip    CompressionType = "gzip"
-	Zlib    CompressionType = "zlib"
-	Deflate CompressionType = "deflate"
-	Snappy  CompressionType = "snappy"
-	Zstd    CompressionType = "zstd"
-	none    CompressionType = "none"
-	empty   CompressionType = ""
+	TypeGzip    Type = "gzip"
+	TypeZlib    Type = "zlib"
+	TypeDeflate Type = "deflate"
+	TypeSnappy  Type = "snappy"
+	TypeZstd    Type = "zstd"
+	typeNone    Type = "none"
+	typeEmpty   Type = ""
 )
 
-func IsCompressed(compressionType CompressionType) bool {
-	return compressionType != empty && compressionType != none
+// IsCompressed returns false if CompressionType is nil, none, or empty.
+// Otherwise, returns true.
+func (ct *Type) IsCompressed() bool {
+	return *ct != typeEmpty && *ct != typeNone
 }
 
-func (ct *CompressionType) UnmarshalText(in []byte) error {
-	switch typ := CompressionType(in); typ {
-	case Gzip,
-		Zlib,
-		Deflate,
-		Snappy,
-		Zstd,
-		none,
-		empty:
+func (ct *Type) UnmarshalText(in []byte) error {
+	switch typ := Type(in); typ {
+	case TypeGzip,
+		TypeZlib,
+		TypeDeflate,
+		TypeSnappy,
+		TypeZstd,
+		typeNone,
+		typeEmpty:
 		*ct = typ
 		return nil
 	default:
