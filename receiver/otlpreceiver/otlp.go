@@ -99,7 +99,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 		plogotlp.RegisterGRPCServer(r.serverGRPC, logs.New(r.nextLogs, r.obsrepGRPC))
 	}
 
-	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.GRPC.NetAddr.Endpoint))
+	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.GRPC.AddrConfig.Endpoint))
 	var gln net.Listener
 	if gln, err = r.cfg.GRPC.ToListenerContext(context.Background()); err != nil {
 		return err

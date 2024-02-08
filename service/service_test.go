@@ -275,7 +275,7 @@ func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase) {
 	set := newNopSettings()
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
 	set.Extensions = extension.NewBuilder(
-		map[component.ID]component.Config{component.MustNewID("zpages"): &zpagesextension.Config{TCPAddr: confignet.TCPAddr{Endpoint: zpagesAddr}}},
+		map[component.ID]component.Config{component.MustNewID("zpages"): &zpagesextension.Config{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: zpagesAddr}}},
 		map[component.Type]extension.Factory{component.MustNewType("zpages"): zpagesextension.NewFactory()})
 	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
 

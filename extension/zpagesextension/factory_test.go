@@ -19,7 +19,7 @@ import (
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddrConfig: confignet.TCPAddrConfig{
 			Endpoint: "localhost:55679",
 		},
 	},
@@ -33,7 +33,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 func TestFactory_CreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.TCPAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.TCPAddrConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)

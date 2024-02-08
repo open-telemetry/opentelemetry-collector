@@ -634,7 +634,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
-				NetAddr: confignet.NetAddr{
+				AddrConfig: confignet.AddrConfig{
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: "tcp",
 				},
@@ -665,7 +665,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	sink := newErrOrSinkConsumer()
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = addr
+	cfg.GRPC.AddrConfig.Endpoint = addr
 	cfg.HTTP = nil
 	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
@@ -770,7 +770,7 @@ func TestHTTPMaxRequestBodySize(t *testing.T) {
 
 func newGRPCReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = endpoint
+	cfg.GRPC.AddrConfig.Endpoint = endpoint
 	cfg.HTTP = nil
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
@@ -943,7 +943,7 @@ func TestShutdown(t *testing.T) {
 	// Create OTLP receiver with gRPC and HTTP protocols.
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
+	cfg.GRPC.AddrConfig.Endpoint = endpointGrpc
 	cfg.HTTP.Endpoint = endpointHTTP
 	set := receivertest.NewNopCreateSettings()
 	set.ID = otlpReceiverID
