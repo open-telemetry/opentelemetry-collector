@@ -1,13 +1,13 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: breaking
+change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
 component: config/configtls
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add shutdown call back to TLSServerSetting to fix memory leaks
+note: Add shutdown method to TLSServerSetting to fix memory leaks
 
 # One or more tracking issues or pull requests related to the change
 issues: [9165]
@@ -15,11 +15,7 @@ issues: [9165]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  The TLSServerSetting.LoadTLSConfig method signature has been modified to now return an extra
-  value, a function callback. This function callback must be used to ensure memory isn't leaked
-  on shutdown. Callers to TLSServerSetting.LoadTLSConfig should store every returned callback
-  and call them as soon as the relevant TLS config is no longer needed.
+subtext:
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
