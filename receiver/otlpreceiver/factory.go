@@ -76,7 +76,6 @@ func createTraces(
 		func() (*otlpReceiver, error) {
 			return newOtlpReceiver(oCfg, &set)
 		},
-		&set.TelemetrySettings,
 	)
 	if err != nil {
 		return nil, err
@@ -101,7 +100,6 @@ func createMetrics(
 		func() (*otlpReceiver, error) {
 			return newOtlpReceiver(oCfg, &set)
 		},
-		&set.TelemetrySettings,
 	)
 	if err != nil {
 		return nil, err
@@ -126,7 +124,6 @@ func createLog(
 		func() (*otlpReceiver, error) {
 			return newOtlpReceiver(oCfg, &set)
 		},
-		&set.TelemetrySettings,
 	)
 	if err != nil {
 		return nil, err
