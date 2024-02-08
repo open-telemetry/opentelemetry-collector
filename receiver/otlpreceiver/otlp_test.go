@@ -712,6 +712,7 @@ func TestGRPCValidTLSCredentials(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, r)
 			assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, r.Shutdown(context.Background()))
 		})
 	}
 }
