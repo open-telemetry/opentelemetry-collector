@@ -1,16 +1,16 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: deprecation
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: configgrpc
+component: configretry
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate GRPCClientSettings, use ClientConfig instead
+note: Validate `max_elapsed_time`, ensure it is larger than `max_interval` and `initial_interval` respectively.
 
 # One or more tracking issues or pull requests related to the change
-issues: [6767]
+issues: [9489]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

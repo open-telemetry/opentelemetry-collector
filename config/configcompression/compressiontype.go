@@ -5,10 +5,6 @@ package configcompression // import "go.opentelemetry.io/collector/config/config
 
 import "fmt"
 
-// CompressionType represents a compression method
-// Deprecated [0.94.0]: use Type instead.
-type CompressionType = Type
-
 // Type represents a compression method
 type Type string
 
@@ -20,34 +16,7 @@ const (
 	TypeZstd    Type = "zstd"
 	typeNone    Type = "none"
 	typeEmpty   Type = ""
-
-	// Gzip
-	// Deprecated [0.94.0]: use TypeGzip instead.
-	Gzip CompressionType = "gzip"
-
-	// Zlib
-	// Deprecated [0.94.0]: use TypeZlib instead.
-	Zlib CompressionType = "zlib"
-
-	// Deflate
-	// Deprecated [0.94.0]: use TypeDeflate instead.
-	Deflate CompressionType = "deflate"
-
-	// Snappy
-	// Deprecated [0.94.0]: use TypeSnappy instead.
-	Snappy CompressionType = "snappy"
-
-	// Zstd
-	// Deprecated [0.94.0]: use TypeZstd instead.
-	Zstd CompressionType = "zstd"
 )
-
-// IsCompressed returns false if CompressionType is nil, none, or empty. Otherwise it returns true.
-//
-// Deprecated: [0.94.0] use member function CompressionType.IsCompressed instead
-func IsCompressed(compressionType CompressionType) bool {
-	return compressionType.IsCompressed()
-}
 
 // IsCompressed returns false if CompressionType is nil, none, or empty.
 // Otherwise, returns true.

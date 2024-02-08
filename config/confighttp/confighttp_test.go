@@ -1068,6 +1068,41 @@ func TestHttpClientHeaders(t *testing.T) {
 	}
 }
 
+func TestHttpClientHostHeader(t *testing.T) {
+	hostHeader := "th"
+	tt := struct {
+		name    string
+		headers map[string]configopaque.String
+	}{
+		name: "with_host_header",
+		headers: map[string]configopaque.String{
+			"Host": configopaque.String(hostHeader),
+		},
+	}
+
+	t.Run(tt.name, func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, hostHeader, r.Host)
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+		serverURL, _ := url.Parse(server.URL)
+		setting := HTTPClientSettings{
+			Endpoint:        serverURL.String(),
+			TLSSetting:      configtls.TLSClientSetting{},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
+			Timeout:         0,
+			Headers:         tt.headers,
+		}
+		client, _ := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+		req, err := http.NewRequest(http.MethodGet, setting.Endpoint, nil)
+		assert.NoError(t, err)
+		_, err = client.Do(req)
+		assert.NoError(t, err)
+	})
+}
+
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
 		desc       string
