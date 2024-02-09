@@ -159,9 +159,19 @@ type ServerConfig struct {
 }
 
 // SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
-// Deprecated: [v0.95.0] Trim the prefix from configgrpc.ClientConfig.Endpoint directly.
 func (gcs *ClientConfig) SanitizedEndpoint() string {
-	return strings.TrimPrefix(strings.TrimPrefix(gcs.Endpoint, "https://"), "http://")
+	switch {
+	case gcs.isSchemeHTTP():
+		return strings.TrimPrefix(gcs.Endpoint, "http://")
+	case gcs.isSchemeHTTPS():
+		return strings.TrimPrefix(gcs.Endpoint, "https://")
+	default:
+		return gcs.Endpoint
+	}
+}
+
+func (gcs *ClientConfig) isSchemeHTTP() bool {
+	return strings.HasPrefix(gcs.Endpoint, "http://")
 }
 
 // ToClientConn creates a client connection to the given target. By default, it's
@@ -174,8 +184,7 @@ func (gcs *ClientConfig) ToClientConn(ctx context.Context, host component.Host, 
 		return nil, err
 	}
 	opts = append(opts, extraOpts...)
-	endpointWithoutHTTPSCheme := strings.TrimPrefix(strings.TrimPrefix(gcs.Endpoint, "https://"), "http://")
-	return grpc.DialContext(ctx, endpointWithoutHTTPSCheme, opts...)
+	return grpc.DialContext(ctx, gcs.SanitizedEndpoint(), opts...)
 }
 
 // SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.GRPCClientSettings.Endpoint.
