@@ -174,6 +174,10 @@ func (gcs *ClientConfig) isSchemeHTTP() bool {
 	return strings.HasPrefix(gcs.Endpoint, "http://")
 }
 
+func (gcs *ClientConfig) isSchemeHTTPS() bool {
+	return strings.HasPrefix(gcs.Endpoint, "https://")
+}
+
 // ToClientConn creates a client connection to the given target. By default, it's
 // a non-blocking dial (the function won't wait for connections to be
 // established, and connecting happens in the background). To make it a blocking
@@ -185,12 +189,6 @@ func (gcs *ClientConfig) ToClientConn(ctx context.Context, host component.Host, 
 	}
 	opts = append(opts, extraOpts...)
 	return grpc.DialContext(ctx, gcs.SanitizedEndpoint(), opts...)
-}
-
-// SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.GRPCClientSettings.Endpoint.
-// Deprecated: [v0.95.0] This function is unused and will be removed in a future release.
-func (gcs *ClientConfig) SanitizedEndpoint() string {
-	return strings.TrimPrefix(strings.TrimPrefix(gcs.Endpoint, "https://"), "http://")
 }
 
 func (gcs *ClientConfig) toTransportCredentials(settings component.TelemetrySettings) (credentials.TransportCredentials, error) {
