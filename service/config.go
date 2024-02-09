@@ -6,7 +6,7 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/internal/extensions"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
