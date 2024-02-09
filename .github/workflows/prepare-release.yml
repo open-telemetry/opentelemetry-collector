@@ -27,12 +27,12 @@ jobs:
     - name: Validate version format
       run: |
         validate_version() {
-          local regex_pattern_beta='^[0-9]+\.[1-9][0-9]*\.[1-9][0-9]*$'
-          local regex_pattern_stable='^[1-9][0-9]*\.[0-9]+\.[0-9]+(-rcv[0-9]+)?$'
+          local regex_pattern_beta='^[0-9]+\.[0-9]+\.[0-9]+$'
+          local regex_pattern_stable='^[1-9][0-9]*\.[0-9]+\.[0-9]+$'
 
           if [[ ! "$1" =~ $regex_pattern_beta ]]; then
             if [[ ! "$1" =~ $regex_pattern_stable ]]; then
-              echo "Invalid $2 version format. For beta, it can be 0.1.0 or higher. For stable, Major version must be greater than 1, and it can have an optional RC version."
+              echo "Invalid $2 version format. For beta, it can be 0.1.0 or higher. For stable, Major version must be greater than 1."
               exit 1
             fi
           fi
