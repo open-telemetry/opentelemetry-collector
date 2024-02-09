@@ -157,10 +157,10 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2024-01-22 | v0.93.0 | @bogdandrutu    |
-| 2024-02-05 | v0.94.0 | @Aneurysm9      |
 | 2024-02-19 | v0.95.0 | @jpkrohling     |
 | 2024-03-04 | v0.96.0 | @mx-psi         |
 | 2024-03-18 | v0.97.0 | @djaglowski     |
 | 2024-04-01 | v0.98.0 | @dmitryax       |
 | 2024-04-15 | v0.99.0 | @codeboten      |
+| 2024-04-29 | v0.100.0 | @bogdandrutu    |
+| 2024-05-13 | v0.101.0 | @Aneurysm9      |
