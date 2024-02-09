@@ -39,13 +39,13 @@ type nopConfig struct{}
 
 var nopInstance = &nopExtension{}
 
-// nopExtension stores consumed traces and metrics for testing purposes.
+// nopExtension acts as an extension for testing purposes.
 type nopExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
 }
 
-// NewNopBuilder returns a extension.Builder that constructs nop receivers.
+// NewNopBuilder returns a extension.Builder that constructs nop extension.
 func NewNopBuilder() *extension.Builder {
 	nopFactory := NewNopFactory()
 	return extension.NewBuilder(
