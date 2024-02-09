@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 func TestScrapeControllerSettings(t *testing.T) {
@@ -20,7 +22,7 @@ func TestScrapeControllerSettings(t *testing.T) {
 	}{
 		{
 			name:   "default configuration",
-			set:    NewDefaultScraperControllerSettings(""),
+			set:    NewDefaultScraperControllerSettings(component.MustNewType("test")),
 			errVal: "",
 		},
 		{

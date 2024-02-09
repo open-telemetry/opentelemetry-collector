@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
 
 type shutdownErr struct {
 	err error

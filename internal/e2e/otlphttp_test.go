@@ -38,7 +38,7 @@ import (
 
 func TestInvalidConfig(t *testing.T) {
 	config := &otlphttpexporter.Config{
-		HTTPClientConfig: confighttp.HTTPClientConfig{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
 		},
 	}

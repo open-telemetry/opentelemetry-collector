@@ -162,5 +162,6 @@ func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplPa
 		return err
 	}
 
+	defer out.Close()
 	return tmpl.Execute(out, tmplParams)
 }

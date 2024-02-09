@@ -66,6 +66,12 @@ func TestInvalidMaxElapsedTime(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 	cfg.MaxElapsedTime = -1
 	assert.Error(t, cfg.Validate())
+	cfg.MaxElapsedTime = 60
+	assert.Error(t, cfg.Validate())
+	cfg.InitialInterval = 0
+	assert.Error(t, cfg.Validate())
+	cfg.MaxInterval = 0
+	assert.NoError(t, cfg.Validate())
 }
 
 func TestDisabledWithInvalidValues(t *testing.T) {

@@ -13,9 +13,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/internal/common"
 )
 
+// The value of "type" key in configuration.
+var componentType = component.MustNewType("debug")
+
 const (
-	// The value of "type" key in configuration.
-	typeStr                   = "debug"
 	defaultSamplingInitial    = 2
 	defaultSamplingThereafter = 500
 )
@@ -23,7 +24,7 @@ const (
 // NewFactory creates a factory for Debug exporter
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		componentType,
 		createDefaultConfig,
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),

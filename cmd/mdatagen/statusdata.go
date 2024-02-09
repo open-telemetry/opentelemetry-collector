@@ -31,11 +31,12 @@ type Codeowners struct {
 }
 
 type Status struct {
-	Stability     map[string][]string `mapstructure:"stability"`
-	Distributions []string            `mapstructure:"distributions"`
-	Class         string              `mapstructure:"class"`
-	Warnings      []string            `mapstructure:"warnings"`
-	Codeowners    *Codeowners         `mapstructure:"codeowners"`
+	Stability            map[string][]string `mapstructure:"stability"`
+	Distributions        []string            `mapstructure:"distributions"`
+	Class                string              `mapstructure:"class"`
+	Warnings             []string            `mapstructure:"warnings"`
+	Codeowners           *Codeowners         `mapstructure:"codeowners"`
+	UnsupportedPlatforms []string            `mapstructure:"unsupported_platforms"`
 }
 
 func (s *Status) SortedDistributions() []string {

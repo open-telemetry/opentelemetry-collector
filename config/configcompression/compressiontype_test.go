@@ -65,14 +65,14 @@ func TestUnmarshalText(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			temp := none
+			temp := typeNone
 			err := temp.UnmarshalText(tt.compressionName)
 			if tt.shouldError {
 				assert.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
-			ct := CompressionType(tt.compressionName)
+			ct := Type(tt.compressionName)
 			assert.Equal(t, temp, ct)
 			assert.Equal(t, tt.isCompressed, ct.IsCompressed())
 		})

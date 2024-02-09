@@ -130,7 +130,7 @@ func (s *ObsReport) EndMetricsOp(
 	// end span according to errors
 	if span.IsRecording() {
 		span.SetAttributes(
-			attribute.String(obsmetrics.FormatKey, string(component.DataTypeMetrics)),
+			attribute.String(obsmetrics.FormatKey, component.DataTypeMetrics.String()),
 			attribute.Int64(obsmetrics.ScrapedMetricPointsKey, int64(numScrapedMetrics)),
 			attribute.Int64(obsmetrics.ErroredMetricPointsKey, int64(numErroredMetrics)),
 		)

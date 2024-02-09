@@ -67,7 +67,7 @@ func NewScraper(name string, scrape ScrapeFunc, options ...ScraperOption) (Scrap
 	}
 	bs := &baseScraper{
 		ScrapeFunc: scrape,
-		id:         component.NewID(component.Type(name)),
+		id:         component.NewID(component.MustNewType(name)),
 	}
 	for _, op := range options {
 		op(bs)

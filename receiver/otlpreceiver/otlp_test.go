@@ -48,7 +48,7 @@ import (
 
 const otlpReceiverName = "receiver_test"
 
-var otlpReceiverID = component.NewIDWithName("otlp", otlpReceiverName)
+var otlpReceiverID = component.MustNewIDWithName("otlp", otlpReceiverName)
 
 func TestJsonHttp(t *testing.T) {
 	tests := []struct {
@@ -685,7 +685,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
-			GRPC: &configgrpc.GRPCServerSettings{
+			GRPC: &configgrpc.ServerConfig{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: "tcp",
@@ -751,7 +751,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
 			HTTP: &HTTPConfig{
-				HTTPServerConfig: &confighttp.HTTPServerConfig{
+				ServerConfig: &confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 					TLSSetting: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -784,7 +784,7 @@ func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, p
 	cfg := &Config{
 		Protocols: Protocols{
 			HTTP: &HTTPConfig{
-				HTTPServerConfig: &confighttp.HTTPServerConfig{
+				ServerConfig: &confighttp.ServerConfig{
 					Endpoint:           addr,
 					MaxRequestBodySize: int64(size),
 				},
