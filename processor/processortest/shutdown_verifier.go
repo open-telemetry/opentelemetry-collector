@@ -48,12 +48,10 @@ func verifyLogsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Facto
 	// Create a proc and output its produce to a sink.
 	nextSink := new(consumertest.LogsSink)
 	proc, err := factory.CreateLogsProcessor(context.Background(), NewNopCreateSettings(), cfg, nextSink)
-	if err != nil {
-		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
-			return
-		}
-		require.NoError(t, err)
+	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+		return
 	}
+	require.NoError(t, err)
 	assert.NoError(t, proc.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Send some logs to the proc.
