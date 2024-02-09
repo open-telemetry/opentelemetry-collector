@@ -30,13 +30,6 @@ type serviceHost struct {
 	serviceExtensions *extensions.Extensions
 }
 
-// ReportFatalError is used to report to the host that the receiver encountered
-// a fatal error (i.e.: an error that the instance can't recover from) after
-// its start function has already returned.
-// Deprecated: [0.87.0] Replaced by servicetelemetry.Settings.ReportComponentStatus
-func (host *serviceHost) ReportFatalError(err error) {
-	host.asyncErrorChannel <- err
-}
 func (host *serviceHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
 	switch kind {
 	case component.KindReceiver:
