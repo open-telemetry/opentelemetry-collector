@@ -178,6 +178,34 @@ func (gcs *ClientConfig) ToClientConn(ctx context.Context, host component.Host, 
 	return grpc.DialContext(ctx, endpointWithoutHTTPSCheme, opts...)
 }
 
+// SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.GRPCClientSettings.Endpoint.
+// Deprecated: [v0.95.0] This function is unused and will be removed in a future release.
+func (gcs *ClientConfig) SanitizedEndpoint() string {
+	return strings.TrimPrefix(strings.TrimPrefix(gcs.Endpoint, "https://"), "http://")
+}
+
+func (gcs *ClientConfig) toTransportCredentials(settings component.TelemetrySettings) (credentials.TransportCredentials, error) {
+	tlsSetting := gcs.TLSSetting
+	if gcs.TLSSetting.Insecure {
+		// Per https://github.com/alanwest/opentelemetry-specification/blob/main/specification/protocol/exporter.md
+		// If the endpoint uses the https scheme, then the TLS insecure setting must be overriden.
+		if strings.HasPrefix(gcs.Endpoint, "https://") {
+			settings.Logger.Warn("Endpoint %q uses the https scheme. It overrides the TLS `insecure` setting. Set the `insecure` option to false or drop the `https` scheme to remove this warning.")
+			tlsSetting = *(&gcs.TLSSetting)
+			tlsSetting.Insecure = false
+		}
+	}
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	if err != nil {
+		return nil, err
+	}
+	cred := insecure.NewCredentials()
+	if tlsCfg != nil {
+		cred = credentials.NewTLS(tlsCfg)
+	}
+	return cred, err
+}
+
 func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression.IsCompressed() {
@@ -187,15 +215,11 @@ func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.T
 		}
 		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(cp)))
 	}
-
-	tlsCfg, err := gcs.TLSSetting.LoadTLSConfig()
+	cred, err := gcs.toTransportCredentials(settings)
 	if err != nil {
 		return nil, err
 	}
-	cred := insecure.NewCredentials()
-	if tlsCfg != nil {
-		cred = credentials.NewTLS(tlsCfg)
-	}
+
 	opts = append(opts, grpc.WithTransportCredentials(cred))
 
 	if gcs.ReadBufferSize > 0 {

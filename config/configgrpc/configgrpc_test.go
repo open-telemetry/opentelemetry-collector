@@ -1102,3 +1102,27 @@ type mockHost struct {
 func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nh.ext
 }
+
+func TestGrpcHttp(t *testing.T) {
+	c := &ClientConfig{
+		TLSSetting: configtls.TLSClientSetting{Insecure: true, ServerName: "foo"},
+		Endpoint:   "http://example.com",
+	}
+	cred, err := c.toTransportCredentials(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	require.Equal(t, "insecure", cred.Info().SecurityProtocol)
+	require.Equal(t, "", cred.Info().ServerName)
+}
+
+// TestGrpcHttps tests a spec provision that enforces that we must set TLS insecure to false if
+// the endpoint uses a https endpoint.
+func TestGrpcHttps(t *testing.T) {
+	c := &ClientConfig{
+		TLSSetting: configtls.TLSClientSetting{Insecure: true, ServerName: "foo"},
+		Endpoint:   "https://example.com",
+	}
+	cred, err := c.toTransportCredentials(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	require.Equal(t, "tls", cred.Info().SecurityProtocol)
+	require.Equal(t, "foo", cred.Info().ServerName)
+}
