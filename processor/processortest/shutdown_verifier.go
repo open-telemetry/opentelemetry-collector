@@ -22,12 +22,10 @@ func verifyTracesDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fac
 	// Create a proc and output its produce to a sink.
 	nextSink := new(consumertest.TracesSink)
 	proc, err := factory.CreateTracesProcessor(context.Background(), NewNopCreateSettings(), cfg, nextSink)
-	if err != nil {
-		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
-			return
-		}
-		require.NoError(t, err)
+	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+		return
 	}
+	require.NoError(t, err)
 	assert.NoError(t, proc.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Send some traces to the proc.
@@ -72,12 +70,10 @@ func verifyMetricsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fa
 	// Create a proc and output its produce to a sink.
 	nextSink := new(consumertest.MetricsSink)
 	proc, err := factory.CreateMetricsProcessor(context.Background(), NewNopCreateSettings(), cfg, nextSink)
-	if err != nil {
-		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
-			return
-		}
-		require.NoError(t, err)
+	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+		return
 	}
+	require.NoError(t, err)
 	assert.NoError(t, proc.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Send some metrics to the proc. testdata.GenerateMetrics creates metrics with 2 data points each.
