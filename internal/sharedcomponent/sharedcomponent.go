@@ -14,8 +14,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-func NewMap[K comparable, V component.Component]() *Map[K, V] {
+func NewMap[K comparable, V component.Component](lastStop bool) *Map[K, V] {
 	return &Map[K, V]{
+		lastStop:   lastStop,
 		components: map[K]*componentEntry[V]{},
 	}
 }
@@ -23,6 +24,7 @@ func NewMap[K comparable, V component.Component]() *Map[K, V] {
 // Map keeps reference of all created instances for a given shared key such as a component configuration.
 type Map[K comparable, V component.Component] struct {
 	lock       sync.Mutex
+	lastStop   bool
 	components map[K]*componentEntry[V]
 }
 
@@ -41,6 +43,7 @@ func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error)) (component.Comp
 	}
 
 	newComp := &componentEntry[V]{
+		lastStop:  m.lastStop,
 		component: comp,
 		removeFunc: func() {
 			m.lock.Lock()
@@ -55,6 +58,7 @@ func (m *Map[K, V]) LoadOrStore(key K, create func() (V, error)) (component.Comp
 type componentEntry[V component.Component] struct {
 	component V
 
+	lastStop     bool
 	startCounter atomic.Int32
 	startErr     error
 	startOnce    sync.Once
@@ -73,14 +77,13 @@ func (c *componentEntry[V]) Start(ctx context.Context, host component.Host) erro
 
 // Shutdown shuts down the underlying component.
 func (c *componentEntry[V]) Shutdown(ctx context.Context) error {
-	if c.startCounter.Add(-1) <= 0 {
-		var err error
-		c.stopOnce.Do(func() {
-			c.removeFunc()
-			err = c.component.Shutdown(ctx)
-		})
-		return err
+	if c.lastStop && c.startCounter.Add(-1) > 0 {
+		return nil
 	}
-
-	return nil
+	var err error
+	c.stopOnce.Do(func() {
+		c.removeFunc()
+		err = c.component.Shutdown(ctx)
+	})
+	return err
 }

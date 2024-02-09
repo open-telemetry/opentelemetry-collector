@@ -23,12 +23,12 @@ type baseComponent struct {
 }
 
 func TestNewMap(t *testing.T) {
-	comps := NewMap[component.ID, *baseComponent]()
+	comps := NewMap[component.ID, *baseComponent](true)
 	assert.Len(t, comps.components, 0)
 }
 
 func TestNewSharedComponentsCreateError(t *testing.T) {
-	comps := NewMap[component.ID, *baseComponent]()
+	comps := NewMap[component.ID, *baseComponent](true)
 	assert.Len(t, comps.components, 0)
 	myErr := errors.New("my error")
 	_, _, err := comps.LoadOrStore(
@@ -42,7 +42,7 @@ func TestNewSharedComponentsCreateError(t *testing.T) {
 func TestSharedComponentsLoadOrStore(t *testing.T) {
 	nop := &baseComponent{}
 
-	comps := NewMap[component.ID, *baseComponent]()
+	comps := NewMap[component.ID, *baseComponent](true)
 	got, comp, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return nop, nil },
@@ -86,7 +86,7 @@ func TestSharedComponent(t *testing.T) {
 			return wantErr
 		}}
 
-	comps := NewMap[component.ID, *baseComponent]()
+	comps := NewMap[component.ID, *baseComponent](true)
 	got, _, err := comps.LoadOrStore(
 		id,
 		func() (*baseComponent, error) { return comp, nil },
