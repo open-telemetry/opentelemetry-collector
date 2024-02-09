@@ -162,18 +162,7 @@ type ServerConfig struct {
 // SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
 // Deprecated: [v0.95.0] Trim the prefix from configgrpc.ClientConfig.Endpoint directly.
 func (gcs *ClientConfig) SanitizedEndpoint() string {
-	switch {
-	case gcs.isSchemeHTTP():
-		return strings.TrimPrefix(gcs.Endpoint, "http://")
-	case gcs.isSchemeHTTPS():
-		return strings.TrimPrefix(gcs.Endpoint, "https://")
-	default:
-		return gcs.Endpoint
-	}
-}
-
-func (gcs *ClientConfig) isSchemeHTTP() bool {
-	return strings.HasPrefix(gcs.Endpoint, "http://")
+	return strings.TrimPrefix(strings.TrimPrefix(gcs.Endpoint, "https://"), "http://")
 }
 
 func (gcs *ClientConfig) isSchemeHTTPS() bool {
@@ -190,7 +179,8 @@ func (gcs *ClientConfig) ToClientConn(ctx context.Context, host component.Host, 
 		return nil, err
 	}
 	opts = append(opts, extraOpts...)
-	return grpc.DialContext(ctx, gcs.SanitizedEndpoint(), opts...)
+	endpointWithoutHTTPSCheme := strings.TrimPrefix(strings.TrimPrefix(gcs.Endpoint, "https://"), "http://")
+	return grpc.DialContext(ctx, endpointWithoutHTTPSCheme, opts...)
 }
 
 func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
