@@ -634,7 +634,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
-				NetAddr: confignet.NetAddr{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: "tcp",
 				},

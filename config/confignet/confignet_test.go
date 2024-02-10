@@ -14,7 +14,7 @@ import (
 )
 
 func TestNetAddrTimeout(t *testing.T) {
-	nac := &NetAddr{
+	nac := &AddrConfig{
 		Endpoint:  "localhost:0",
 		Transport: "tcp",
 		DialerConfig: DialerConfig{
@@ -32,7 +32,7 @@ func TestNetAddrTimeout(t *testing.T) {
 }
 
 func TestTCPAddrTimeout(t *testing.T) {
-	nac := &TCPAddr{
+	nac := &TCPConfig{
 		Endpoint: "localhost:0",
 		DialerConfig: DialerConfig{
 			Timeout: -1 * time.Second,
@@ -49,7 +49,7 @@ func TestTCPAddrTimeout(t *testing.T) {
 }
 
 func TestNetAddr(t *testing.T) {
-	nas := &NetAddr{
+	nas := &AddrConfig{
 		Endpoint:  "localhost:0",
 		Transport: "tcp",
 	}
@@ -69,7 +69,7 @@ func TestNetAddr(t *testing.T) {
 		done <- true
 	}()
 
-	nac := &NetAddr{
+	nac := &AddrConfig{
 		Endpoint:  ln.Addr().String(),
 		Transport: "tcp",
 	}
@@ -84,7 +84,7 @@ func TestNetAddr(t *testing.T) {
 }
 
 func TestTCPAddr(t *testing.T) {
-	nas := &TCPAddr{
+	nas := &TCPConfig{
 		Endpoint: "localhost:0",
 	}
 	ln, err := nas.Listen(context.Background())
@@ -103,7 +103,7 @@ func TestTCPAddr(t *testing.T) {
 		done <- true
 	}()
 
-	nac := &TCPAddr{
+	nac := &TCPConfig{
 		Endpoint: ln.Addr().String(),
 	}
 	var conn net.Conn
