@@ -4,10 +4,9 @@
 package featuregate // import "go.opentelemetry.io/collector/featuregate"
 
 import (
+	"errors"
 	"flag"
 	"strings"
-
-	"go.uber.org/multierr"
 )
 
 const (
@@ -59,7 +58,7 @@ func (f *flagValue) Set(s string) error {
 		case '+':
 			id = id[1:]
 		}
-		errs = multierr.Append(errs, f.reg.Set(id, val))
+		errs = errors.Join(errs, f.reg.Set(id, val))
 	}
 	return errs
 }
