@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/config/configgrpc
 
-go 1.20
+go 1.21
 
 require (
 	github.com/mostynb/go-grpc-compression v1.2.2

@@ -1,7 +1,7 @@
 // Deprecated: loggingexporter is deprecated in favour of the debugexporter. It will be removed in September 2024.
 module go.opentelemetry.io/collector/exporter/loggingexporter
 
-go 1.20
+go 1.21
 
 require (
 	github.com/stretchr/testify v1.8.4
