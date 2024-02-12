@@ -88,7 +88,10 @@ type NetAddr struct {
 
 func (na *NetAddr) Unmarshal(cm *confmap.Conf) error {
 	if na.Transport != "" {
-		na.TransportType = TransportType(na.Transport)
+		err := na.TransportType.UnmarshalText([]byte(na.Transport))
+		if err != nil {
+			return err
+		}
 	}
 	return cm.Unmarshal(na)
 }
@@ -121,7 +124,7 @@ func (na *NetAddr) Validate() error {
 		TransportTypeUnixPacket:
 		return nil
 	default:
-		return fmt.Errorf("unsupported transport type %q", na.TransportType)
+		return fmt.Errorf("invalid transport type %q", na.TransportType)
 	}
 }
 
