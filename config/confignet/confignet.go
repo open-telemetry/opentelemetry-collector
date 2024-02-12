@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"net"
 	"time"
-
-	"go.opentelemetry.io/collector/confmap"
 )
 
 // TransportType represents a type of network transport protocol
@@ -86,26 +84,24 @@ type NetAddr struct {
 	DialerConfig DialerConfig `mapstructure:"dialer"`
 }
 
-func (na *NetAddr) Unmarshal(cm *confmap.Conf) error {
-	if na.Transport != "" {
-		err := na.TransportType.UnmarshalText([]byte(na.Transport))
-		if err != nil {
-			return err
-		}
-	}
-	return cm.Unmarshal(na)
-}
-
 // Dial equivalent with net.Dialer's DialContext for this address.
 func (na *NetAddr) Dial(ctx context.Context) (net.Conn, error) {
 	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
-	return d.DialContext(ctx, string(na.TransportType), na.Endpoint)
+	tt := string(na.TransportType)
+	if na.Transport != "" {
+		tt = na.Transport
+	}
+	return d.DialContext(ctx, tt, na.Endpoint)
 }
 
 // Listen equivalent with net.ListenConfig's Listen for this address.
 func (na *NetAddr) Listen(ctx context.Context) (net.Listener, error) {
 	lc := net.ListenConfig{}
-	return lc.Listen(ctx, string(na.TransportType), na.Endpoint)
+	tt := string(na.TransportType)
+	if na.Transport != "" {
+		tt = na.Transport
+	}
+	return lc.Listen(ctx, tt, na.Endpoint)
 }
 
 func (na *NetAddr) Validate() error {
