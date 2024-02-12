@@ -18,6 +18,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/internal/experr"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -411,7 +412,7 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 			}
 			assert.Equal(t, 3, ps.Size())
 			require.True(t, ps.Consume(func(context.Context, tracesRequest) error {
-				return NewShutdownErr(nil)
+				return experr.NewShutdownErr(nil)
 			}))
 			assert.Equal(t, 2, ps.Size())
 
@@ -523,7 +524,7 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 		// put one more item in
 		require.NoError(t, ps.Offer(context.Background(), req))
 		require.Equal(t, 5, ps.Size())
-		return NewShutdownErr(nil)
+		return experr.NewShutdownErr(nil)
 	}))
 	assert.NoError(t, ps.Shutdown(context.Background()))
 
