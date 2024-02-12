@@ -441,7 +441,7 @@ func TestServiceValidate(t *testing.T) {
 		expectedErr string
 	}{
 		"same_types": {
-			createSettings: func() Settings { return newNopSettings() },
+			createSettings: newNopSettings,
 			config:         newNopConfig(),
 			expectedErr:    "",
 		},
