@@ -83,6 +83,23 @@ func TestNetAddr(t *testing.T) {
 	assert.NoError(t, ln.Close())
 }
 
+func Test_NetAddr_Validate(t *testing.T) {
+	na := &NetAddr{
+		TransportType: TransportTypeTCP,
+	}
+	assert.NoError(t, na.Validate())
+
+	na = &NetAddr{
+		TransportType: transportTypeEmpty,
+	}
+	assert.Error(t, na.Validate())
+
+	na = &NetAddr{
+		TransportType: "random string",
+	}
+	assert.Error(t, na.Validate())
+}
+
 func TestTCPAddr(t *testing.T) {
 	nas := &TCPAddr{
 		Endpoint: "localhost:0",

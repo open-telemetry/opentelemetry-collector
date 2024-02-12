@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net"
 	"time"
+
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // TransportType represents a type of network transport protocol
@@ -26,13 +28,15 @@ const (
 	TransportTypeUnix       TransportType = "unix"
 	TransportTypeUnixgram   TransportType = "unixgram"
 	TransportTypeUnixPacket TransportType = "unixpacket"
+	transportTypeEmpty      TransportType = ""
 )
 
 // UnmarshalText unmarshalls text to a TransportType.
 // Valid values are "tcp", "tcp4", "tcp6", "udp", "udp4",
 // "udp6", "ip", "ip4", "ip6", "unix", "unixgram" and "unixpacket"
 func (tt *TransportType) UnmarshalText(in []byte) error {
-	switch typ := TransportType(in); typ {
+	typ := TransportType(in)
+	switch typ {
 	case TransportTypeTCP,
 		TransportTypeTCP4,
 		TransportTypeTCP6,
@@ -44,7 +48,8 @@ func (tt *TransportType) UnmarshalText(in []byte) error {
 		TransportTypeIP6,
 		TransportTypeUnix,
 		TransportTypeUnixgram,
-		TransportTypeUnixPacket:
+		TransportTypeUnixPacket,
+		transportTypeEmpty:
 		*tt = typ
 		return nil
 	default:
@@ -81,28 +86,43 @@ type NetAddr struct {
 	DialerConfig DialerConfig `mapstructure:"dialer"`
 }
 
+func (na *NetAddr) Unmarshal(cm *confmap.Conf) error {
+	if na.Transport != "" {
+		na.TransportType = TransportType(na.Transport)
+	}
+	return cm.Unmarshal(na)
+}
+
 // Dial equivalent with net.Dialer's DialContext for this address.
 func (na *NetAddr) Dial(ctx context.Context) (net.Conn, error) {
 	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
-
-	tt := string(na.TransportType)
-	if na.Transport != "" {
-		tt = na.Transport
-	}
-
-	return d.DialContext(ctx, tt, na.Endpoint)
+	return d.DialContext(ctx, string(na.TransportType), na.Endpoint)
 }
 
 // Listen equivalent with net.ListenConfig's Listen for this address.
 func (na *NetAddr) Listen(ctx context.Context) (net.Listener, error) {
 	lc := net.ListenConfig{}
+	return lc.Listen(ctx, string(na.TransportType), na.Endpoint)
+}
 
-	tt := string(na.TransportType)
-	if na.Transport != "" {
-		tt = na.Transport
+func (na *NetAddr) Validate() error {
+	switch na.TransportType {
+	case TransportTypeTCP,
+		TransportTypeTCP4,
+		TransportTypeTCP6,
+		TransportTypeUDP,
+		TransportTypeUDP4,
+		TransportTypeUDP6,
+		TransportTypeIP,
+		TransportTypeIP4,
+		TransportTypeIP6,
+		TransportTypeUnix,
+		TransportTypeUnixgram,
+		TransportTypeUnixPacket:
+		return nil
+	default:
+		return fmt.Errorf("unsupported transport type %q", na.TransportType)
 	}
-
-	return lc.Listen(ctx, tt, na.Endpoint)
 }
 
 // TCPAddr represents a TCP endpoint address.
