@@ -475,7 +475,7 @@ func TestServiceValidate(t *testing.T) {
 				return settings
 			},
 			config:      newNopConfig(),
-			expectedErr: `failed to create "nop" receiver for data type "traces": telemetry type is not supported`,
+			expectedErr: `telemetry type is not supported`,
 		},
 	}
 
