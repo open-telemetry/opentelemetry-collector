@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	exporterID = component.NewID("fakeExporter")
+	exporterID = component.MustNewID("fakeExporter")
 
 	errFake = errors.New("errFake")
 )

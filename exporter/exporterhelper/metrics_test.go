@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	fakeMetricsExporterName   = component.NewIDWithName("fake_metrics_exporter", "with_name")
+	fakeMetricsExporterName   = component.MustNewIDWithName("fake_metrics_exporter", "with_name")
 	fakeMetricsExporterConfig = struct{}{}
 )
 
@@ -158,12 +158,12 @@ func TestMetricsRequestExporter_Default_ExportError(t *testing.T) {
 
 func TestMetricsExporter_WithPersistentQueue(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
-	storageID := component.NewIDWithName("file_storage", "storage")
+	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
 	rCfg := configretry.NewDefaultBackOffConfig()
 	ms := consumertest.MetricsSink{}
 	set := exportertest.NewNopCreateSettings()
-	set.ID = component.NewIDWithName("test_metrics", "with_persistent_queue")
+	set.ID = component.MustNewIDWithName("test_metrics", "with_persistent_queue")
 	te, err := NewMetricsExporter(context.Background(), set, &fakeTracesExporterConfig, ms.ConsumeMetrics, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 

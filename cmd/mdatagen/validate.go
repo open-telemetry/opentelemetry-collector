@@ -6,6 +6,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"regexp"
 
 	"go.uber.org/multierr"
 
@@ -29,9 +30,19 @@ func (md *metadata) Validate() error {
 	return errs
 }
 
+// typeRegexp is used to validate the type of a component.
+// A type must start with an ASCII alphabetic character and
+// can only contain ASCII alphanumeric characters and '_'.
+// This must be kept in sync with the regex in component/config.go.
+var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]*$`)
+
 func (md *metadata) validateType() error {
 	if md.Type == "" {
 		return errors.New("missing type")
+	}
+
+	if !typeRegexp.MatchString(md.Type) {
+		return fmt.Errorf("invalid character(s) in type %q", md.Type)
 	}
 	return nil
 }
