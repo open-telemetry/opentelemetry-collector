@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("zpages")
+	Type      = component.MustNewType("zpages")
+	scopeName = "go.opentelemetry.io/collector/extension/zpagesextension"
 )
 
 const (
@@ -18,9 +19,9 @@ const (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/zpages")
+	return settings.MeterProvider.Meter(scopeName)
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/zpages")
+	return settings.TracerProvider.Tracer(scopeName)
 }

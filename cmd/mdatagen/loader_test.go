@@ -214,7 +214,7 @@ func Test_loadMetadata(t *testing.T) {
 						},
 					},
 				},
-				ScopeName:       "otelcol",
+				ScopeName:       "go.opentelemetry.io/collector",
 				ShortFolderName: ".",
 			},
 		},
@@ -223,7 +223,7 @@ func Test_loadMetadata(t *testing.T) {
 			want: metadata{
 				Type:            "subcomponent",
 				Parent:          "parentComponent",
-				ScopeName:       "otelcol",
+				ScopeName:       "go.opentelemetry.io/collector",
 				ShortFolderName: "testdata",
 			},
 		},

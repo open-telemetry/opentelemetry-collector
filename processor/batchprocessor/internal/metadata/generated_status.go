@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("batch")
+	Type      = component.MustNewType("batch")
+	scopeName = "go.opentelemetry.io/collector/processor/batchprocessor"
 )
 
 const (
@@ -20,9 +21,9 @@ const (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/batch")
+	return settings.MeterProvider.Meter(scopeName)
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/batch")
+	return settings.TracerProvider.Tracer(scopeName)
 }
