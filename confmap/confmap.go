@@ -148,7 +148,6 @@ func decodeConfig(m *Conf, result any, errorUnused bool) error {
 		ErrorUnused:      errorUnused,
 		Result:           result,
 		TagName:          "mapstructure",
-		WeaklyTypedInput: true,
 		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			expandNilStructPointersHookFunc(),
