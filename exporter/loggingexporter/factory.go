@@ -15,9 +15,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/loggingexporter/internal/metadata"
 )
 
+// The value of "type" key in configuration.
+var componentType = component.MustNewType("logging")
+
 const (
-	// The value of "type" key in configuration.
-	typeStr                   = "logging"
 	defaultSamplingInitial    = 2
 	defaultSamplingThereafter = 500
 )
@@ -25,7 +26,7 @@ const (
 // NewFactory creates a factory for Logging exporter
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		componentType,
 		createDefaultConfig,
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),

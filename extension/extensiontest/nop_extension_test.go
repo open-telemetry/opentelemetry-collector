@@ -17,7 +17,7 @@ import (
 func TestNewNopFactory(t *testing.T) {
 	factory := NewNopFactory()
 	require.NotNil(t, factory)
-	assert.Equal(t, component.Type("nop"), factory.Type())
+	assert.Equal(t, component.MustNewType("nop"), factory.Type())
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &nopConfig{}, cfg)
 
@@ -34,7 +34,7 @@ func TestNewNopBuilder(t *testing.T) {
 	factory := NewNopFactory()
 	cfg := factory.CreateDefaultConfig()
 	set := NewNopCreateSettings()
-	set.ID = component.NewID(typeStr)
+	set.ID = component.NewID(nopType)
 
 	ext, err := factory.CreateExtension(context.Background(), set, cfg)
 	require.NoError(t, err)

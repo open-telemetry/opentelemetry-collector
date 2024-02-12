@@ -16,7 +16,10 @@ README](../configtls/README.md).
 
 - `endpoint`: address:port
 - [`tls`](../configtls/README.md)
-- `headers`: name/value pairs added to the HTTP request headers
+- [`headers`](https://pkg.go.dev/net/http#Request): name/value pairs added to the HTTP request headers
+  - certain headers such as Content-Length and Connection are automatically written when needed and values in Header may be ignored.
+  - `Host` header is automatically derived from `endpoint` value. However, this automatic assignment can be overridden by explicitly setting the Host field in the headers field.
+  - if `Host` header is provided then it overrides `Host` field in [Request](https://pkg.go.dev/net/http#Request) which results as an override of `Host` header value.
 - [`read_buffer_size`](https://golang.org/pkg/net/http/#Transport)
 - [`timeout`](https://golang.org/pkg/net/http/#Client)
 - [`write_buffer_size`](https://golang.org/pkg/net/http/#Transport)

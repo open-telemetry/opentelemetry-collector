@@ -59,7 +59,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		},
 	}
 	defaultHTTPSettings := &HTTPConfig{
-		HTTPServerConfig: &confighttp.HTTPServerConfig{
+		ServerConfig: &confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		TracesURLPath:  defaultTracesURLPath,
@@ -106,7 +106,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &HTTPConfig{
-						HTTPServerConfig: &confighttp.HTTPServerConfig{
+						ServerConfig: &confighttp.ServerConfig{
 							Endpoint: "localhost:112233",
 						},
 						TracesURLPath: defaultTracesURLPath,
@@ -122,7 +122,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &HTTPConfig{
-						HTTPServerConfig: &confighttp.HTTPServerConfig{
+						ServerConfig: &confighttp.ServerConfig{
 							Endpoint: "127.0.0.1:1122",
 						},
 					},
@@ -151,7 +151,6 @@ func TestCreateTracesReceiver(t *testing.T) {
 			assert.NoError(t, err)
 			if tt.wantStartErr {
 				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, tr.Shutdown(context.Background()))
 			} else {
 				assert.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, tr.Shutdown(context.Background()))
@@ -169,7 +168,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		},
 	}
 	defaultHTTPSettings := &HTTPConfig{
-		HTTPServerConfig: &confighttp.HTTPServerConfig{
+		ServerConfig: &confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		TracesURLPath:  defaultTracesURLPath,
@@ -216,7 +215,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &HTTPConfig{
-						HTTPServerConfig: &confighttp.HTTPServerConfig{
+						ServerConfig: &confighttp.ServerConfig{
 							Endpoint: "327.0.0.1:1122",
 						},
 						MetricsURLPath: defaultMetricsURLPath,
@@ -232,7 +231,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &HTTPConfig{
-						HTTPServerConfig: &confighttp.HTTPServerConfig{
+						ServerConfig: &confighttp.ServerConfig{
 							Endpoint: "127.0.0.1:1122",
 						},
 					},
@@ -278,7 +277,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		},
 	}
 	defaultHTTPSettings := &HTTPConfig{
-		HTTPServerConfig: &confighttp.HTTPServerConfig{
+		ServerConfig: &confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		TracesURLPath:  defaultTracesURLPath,
@@ -325,7 +324,7 @@ func TestCreateLogReceiver(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &HTTPConfig{
-						HTTPServerConfig: &confighttp.HTTPServerConfig{
+						ServerConfig: &confighttp.ServerConfig{
 							Endpoint: "327.0.0.1:1122",
 						},
 						LogsURLPath: defaultLogsURLPath,
@@ -341,7 +340,7 @@ func TestCreateLogReceiver(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &HTTPConfig{
-						HTTPServerConfig: &confighttp.HTTPServerConfig{
+						ServerConfig: &confighttp.ServerConfig{
 							Endpoint: "127.0.0.1:1122",
 						},
 					},
@@ -370,7 +369,6 @@ func TestCreateLogReceiver(t *testing.T) {
 			assert.NoError(t, err)
 			if tt.wantStartErr {
 				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, mr.Shutdown(context.Background()))
 			} else {
 				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, mr.Shutdown(context.Background()))

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
 
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
@@ -85,17 +86,43 @@ func WithRetry(config configretry.BackOffConfig) Option {
 func WithQueue(config QueueSettings) Option {
 	return func(o *baseExporter) {
 		if o.requestExporter {
-			panic("queueing is not available for the new request exporters yet")
+			panic("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
 		}
 		if !config.Enabled {
 			o.exportFailureMessage += " Try enabling sending_queue to survive temporary failures."
 			return
 		}
-		consumeErrHandler := func(err error, req Request) {
-			o.set.Logger.Error("Exporting failed. Dropping data."+o.exportFailureMessage,
-				zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
+		qf := exporterqueue.NewPersistentQueueFactory[Request](config.StorageID, exporterqueue.PersistentQueueSettings[Request]{
+			Marshaler:   o.marshaler,
+			Unmarshaler: o.unmarshaler,
+		})
+		q := qf(context.Background(), exporterqueue.Settings{
+			DataType:         o.signal,
+			ExporterSettings: o.set,
+		}, exporterqueue.Config{
+			Enabled:      config.Enabled,
+			NumConsumers: config.NumConsumers,
+			QueueSize:    config.QueueSize,
+		})
+		o.queueSender = newQueueSender(q, o.set, config.NumConsumers, o.exportFailureMessage)
+	}
+}
+
+// WithRequestQueue enables queueing for an exporter.
+// This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[Request]) Option {
+	return func(o *baseExporter) {
+		if !cfg.Enabled {
+			o.exportFailureMessage += " Try enabling sending_queue to survive temporary failures."
+			return
 		}
-		o.queueSender = newQueueSender(config, o.set, o.signal, o.marshaler, o.unmarshaler, consumeErrHandler)
+		set := exporterqueue.Settings{
+			DataType:         o.signal,
+			ExporterSettings: o.set,
+		}
+		o.queueSender = newQueueSender(queueFactory(context.Background(), set, cfg), o.set, cfg.NumConsumers, o.exportFailureMessage)
 	}
 }
 
@@ -114,8 +141,8 @@ type baseExporter struct {
 	component.ShutdownFunc
 
 	requestExporter bool
-	marshaler       RequestMarshaler
-	unmarshaler     RequestUnmarshaler
+	marshaler       exporterqueue.Marshaler[Request]
+	unmarshaler     exporterqueue.Unmarshaler[Request]
 	signal          component.DataType
 
 	set    exporter.CreateSettings
@@ -136,8 +163,8 @@ type baseExporter struct {
 }
 
 // TODO: requestExporter, marshaler, and unmarshaler arguments can be removed when the old exporter helpers will be updated to call the new ones.
-func newBaseExporter(set exporter.CreateSettings, signal component.DataType, requestExporter bool, marshaler RequestMarshaler,
-	unmarshaler RequestUnmarshaler, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
+func newBaseExporter(set exporter.CreateSettings, signal component.DataType, requestExporter bool,
+	marshaler exporterqueue.Marshaler[Request], unmarshaler exporterqueue.Unmarshaler[Request], osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
 
 	obsReport, err := NewObsReport(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set})
 	if err != nil {
