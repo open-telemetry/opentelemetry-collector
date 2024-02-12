@@ -48,7 +48,7 @@ func newZpagesTelemetrySettings() component.TelemetrySettings {
 
 func TestZPagesExtensionUsage(t *testing.T) {
 	cfg := &Config{
-		TCPAddrConfig: confignet.TCPAddrConfig{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
@@ -62,7 +62,7 @@ func TestZPagesExtensionUsage(t *testing.T) {
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
 
-	_, zpagesPort, err := net.SplitHostPort(cfg.TCPAddrConfig.Endpoint)
+	_, zpagesPort, err := net.SplitHostPort(cfg.TCPAddr.Endpoint)
 	require.NoError(t, err)
 
 	client := &http.Client{}
@@ -80,7 +80,7 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 	defer ln.Close()
 
 	cfg := &Config{
-		TCPAddrConfig: confignet.TCPAddrConfig{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: endpoint,
 		},
 	}
@@ -92,7 +92,7 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestZPagesMultipleStarts(t *testing.T) {
 	cfg := &Config{
-		TCPAddrConfig: confignet.TCPAddrConfig{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
@@ -109,7 +109,7 @@ func TestZPagesMultipleStarts(t *testing.T) {
 
 func TestZPagesMultipleShutdowns(t *testing.T) {
 	cfg := &Config{
-		TCPAddrConfig: confignet.TCPAddrConfig{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
@@ -124,7 +124,7 @@ func TestZPagesMultipleShutdowns(t *testing.T) {
 
 func TestZPagesShutdownWithoutStart(t *testing.T) {
 	cfg := &Config{
-		TCPAddrConfig: confignet.TCPAddrConfig{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}

@@ -30,7 +30,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateSameReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.AddrConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationSet := receivertest.NewNopCreateSettings()
@@ -53,7 +53,7 @@ func TestCreateSameReceiver(t *testing.T) {
 func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	defaultGRPCSettings := &configgrpc.ServerConfig{
-		AddrConfig: confignet.AddrConfig{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: "tcp",
 		},
@@ -89,7 +89,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.ServerConfig{
-						AddrConfig: confignet.AddrConfig{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:112233",
 							Transport: "tcp",
 						},
@@ -162,7 +162,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 func TestCreateMetricReceiver(t *testing.T) {
 	factory := NewFactory()
 	defaultGRPCSettings := &configgrpc.ServerConfig{
-		AddrConfig: confignet.AddrConfig{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: "tcp",
 		},
@@ -198,7 +198,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.ServerConfig{
-						AddrConfig: confignet.AddrConfig{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "327.0.0.1:1122",
 							Transport: "tcp",
 						},
@@ -271,7 +271,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 func TestCreateLogReceiver(t *testing.T) {
 	factory := NewFactory()
 	defaultGRPCSettings := &configgrpc.ServerConfig{
-		AddrConfig: confignet.AddrConfig{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: "tcp",
 		},
@@ -307,7 +307,7 @@ func TestCreateLogReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.ServerConfig{
-						AddrConfig: confignet.AddrConfig{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "327.0.0.1:1122",
 							Transport: "tcp",
 						},

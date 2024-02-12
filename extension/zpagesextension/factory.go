@@ -23,7 +23,7 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		TCPAddrConfig: confignet.TCPAddrConfig{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: defaultEndpoint,
 		},
 	}

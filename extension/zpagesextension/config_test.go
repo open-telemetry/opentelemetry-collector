@@ -31,7 +31,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
-			TCPAddrConfig: confignet.TCPAddrConfig{
+			TCPAddr: confignet.TCPAddrConfig{
 				Endpoint: "localhost:56888",
 			},
 		}, cfg)

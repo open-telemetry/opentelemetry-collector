@@ -67,7 +67,7 @@ func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error 
 
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
-	ln, err := zpe.config.TCPAddrConfig.Listen(context.Background())
+	ln, err := zpe.config.TCPAddr.Listen(context.Background())
 	if err != nil {
 		return err
 	}
