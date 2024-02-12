@@ -106,7 +106,7 @@ metrics:
   optional.metric:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr]
