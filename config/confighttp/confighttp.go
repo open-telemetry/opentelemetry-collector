@@ -65,7 +65,7 @@ type ClientConfig struct {
 	Auth *configauth.Authentication `mapstructure:"auth"`
 
 	// The compression key for supported compression types within collector.
-	Compression configcompression.CompressionType `mapstructure:"compression"`
+	Compression configcompression.Type `mapstructure:"compression"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	// There's an already set value, and we want to override it only if an explicit value provided
@@ -249,9 +249,16 @@ type headerRoundTripper struct {
 
 // RoundTrip is a custom RoundTripper that adds headers to the request.
 func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	// Set Host header if provided
+	hostHeader, found := interceptor.headers["Host"]
+	if found && hostHeader != "" {
+		// `Host` field should be set to override default `Host` header value which is Endpoint
+		req.Host = string(hostHeader)
+	}
 	for k, v := range interceptor.headers {
 		req.Header.Set(k, string(v))
 	}
+
 	// Send the request to next transport.
 	return interceptor.transport.RoundTrip(req)
 }

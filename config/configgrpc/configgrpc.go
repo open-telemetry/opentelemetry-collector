@@ -59,7 +59,7 @@ type ClientConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// The compression key for supported compression types within collector.
-	Compression configcompression.CompressionType `mapstructure:"compression"`
+	Compression configcompression.Type `mapstructure:"compression"`
 
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
@@ -160,6 +160,7 @@ type ServerConfig struct {
 }
 
 // SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
+// Deprecated: [v0.95.0] Trim the prefix from configgrpc.ClientConfig.Endpoint directly.
 func (gcs *ClientConfig) SanitizedEndpoint() string {
 	switch {
 	case gcs.isSchemeHTTP():
@@ -277,12 +278,13 @@ func validateBalancerName(balancerName string) bool {
 }
 
 // ToListenerContext returns the net.Listener constructed from the settings.
+// Deprecated: [v0.95.0] Call Listen directly on the NetAddr field.
 func (gss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
 	return gss.NetAddr.Listen(ctx)
 }
 
 // ToListener returns the net.Listener constructed from the settings.
-// Deprecated: [v0.94.0] use ToListenerContext instead.
+// Deprecated: [v0.94.0] Call Listen directly on the NetAddr field.
 func (gss *ServerConfig) ToListener() (net.Listener, error) {
 	return gss.ToListenerContext(context.Background())
 }
@@ -390,13 +392,13 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 }
 
 // getGRPCCompressionName returns compression name registered in grpc.
-func getGRPCCompressionName(compressionType configcompression.CompressionType) (string, error) {
+func getGRPCCompressionName(compressionType configcompression.Type) (string, error) {
 	switch compressionType {
-	case configcompression.Gzip:
+	case configcompression.TypeGzip:
 		return gzip.Name, nil
-	case configcompression.Snappy:
+	case configcompression.TypeSnappy:
 		return snappy.Name, nil
-	case configcompression.Zstd:
+	case configcompression.TypeZstd:
 		return zstd.Name, nil
 	default:
 		return "", fmt.Errorf("unsupported compression type %q", compressionType)

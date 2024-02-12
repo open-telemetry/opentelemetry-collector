@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,25 +35,21 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 }
 
 func TestSkipGenerate(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping the test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/5403")
-	}
-
 	cfg := NewDefaultConfig()
 	cfg.Distribution.OutputPath = t.TempDir()
 	cfg.SkipGenerate = true
 	err := Generate(cfg)
 	require.NoError(t, err)
 	outputFile, err := os.Open(cfg.Distribution.OutputPath)
+	defer func() {
+		require.NoError(t, outputFile.Close())
+	}()
 	require.NoError(t, err)
 	_, err = outputFile.Readdirnames(1)
 	require.ErrorIs(t, err, io.EOF, "skip generate should leave output directory empty")
 }
 
 func TestGenerateAndCompile(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping the test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/5403")
-	}
 	// This test is dependent on the current file structure.
 	// The goal is find the root of the repo so we can replace the root module.
 	_, thisFile, _, _ := runtime.Caller(0)
@@ -64,6 +59,12 @@ func TestGenerateAndCompile(t *testing.T) {
 		fmt.Sprintf("go.opentelemetry.io/collector/config/confignet => %s/config/confignet", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/config/configtelemetry => %s/config/configtelemetry", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/confmap => %s/confmap", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/confmap/converter/expandconverter => %s/confmap/converter/expandconverter", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/confmap/provider/envprovider => %s/confmap/provider/envprovider", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/confmap/provider/fileprovider => %s/confmap/provider/fileprovider", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/confmap/provider/httpprovider => %s/confmap/provider/httpprovider", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/confmap/provider/httpsprovider => %s/confmap/provider/httpsprovider", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/confmap/provider/yamlprovider => %s/confmap/provider/yamlprovider", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/consumer => %s/consumer", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/connector => %s/connector", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/exporter => %s/exporter", workspaceDir),
@@ -129,8 +130,4 @@ func TestGenerateAndCompile(t *testing.T) {
 			require.NoError(t, GenerateAndCompile(cfg))
 		})
 	}
-
-	// Sleep for 1 second to make sure all processes using the files are completed
-	// (on Windows fail to delete temp dir otherwise).
-	time.Sleep(1 * time.Second)
 }

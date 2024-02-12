@@ -89,7 +89,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
-				Compression: configcompression.Gzip,
+				Compression: configcompression.TypeGzip,
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
@@ -118,7 +118,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
-				Compression: configcompression.Snappy,
+				Compression: configcompression.TypeSnappy,
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
@@ -147,7 +147,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
-				Compression: configcompression.Zstd,
+				Compression: configcompression.TypeZstd,
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
@@ -638,6 +638,7 @@ func TestHttpReception(t *testing.T) {
 			}
 			grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
 			assert.NoError(t, errClient)
+			defer func() { assert.NoError(t, grpcClientConn.Close()) }()
 			c := ptraceotlp.NewGRPCClient(grpcClientConn)
 			ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 			resp, errResp := c.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
@@ -686,6 +687,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	}
 	grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
 	assert.NoError(t, errClient)
+	defer func() { assert.NoError(t, grpcClientConn.Close()) }()
 	c := ptraceotlp.NewGRPCClient(grpcClientConn)
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 	resp, errResp := c.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
@@ -894,6 +896,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 
 				grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
 				require.NoError(t, errClient)
+				defer func() { assert.NoError(t, grpcClientConn.Close()) }()
 
 				cl := ptraceotlp.NewGRPCClient(grpcClientConn)
 				ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)

@@ -5,11 +5,11 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"runtime"
 	"time"
 
+	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -46,19 +46,13 @@ type baseExporter struct {
 	userAgent string
 }
 
-// Crete new exporter and start it. The exporter will begin connecting but
-// this function may return before the connection is established.
-func newExporter(cfg component.Config, set exporter.CreateSettings) (*baseExporter, error) {
+func newExporter(cfg component.Config, set exporter.CreateSettings) *baseExporter {
 	oCfg := cfg.(*Config)
-
-	if oCfg.Endpoint == "" {
-		return nil, errors.New("OTLP exporter config requires an Endpoint")
-	}
 
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
-	return &baseExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
+	return &baseExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
@@ -97,7 +91,10 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
-		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedSpans()))
+		e.settings.Logger.Warn("Partial success response",
+			zap.String("message", resp.PartialSuccess().ErrorMessage()),
+			zap.Int64("dropped_spans", resp.PartialSuccess().RejectedSpans()),
+		)
 	}
 	return nil
 }
@@ -110,7 +107,10 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
-		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedDataPoints()))
+		e.settings.Logger.Warn("Partial success response",
+			zap.String("message", resp.PartialSuccess().ErrorMessage()),
+			zap.Int64("dropped_data_points", resp.PartialSuccess().RejectedDataPoints()),
+		)
 	}
 	return nil
 }
@@ -123,7 +123,10 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	}
 	partialSuccess := resp.PartialSuccess()
 	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
-		return consumererror.NewPermanent(fmt.Errorf("OTLP partial success: \"%s\" (%d rejected)", resp.PartialSuccess().ErrorMessage(), resp.PartialSuccess().RejectedLogRecords()))
+		e.settings.Logger.Warn("Partial success response",
+			zap.String("message", resp.PartialSuccess().ErrorMessage()),
+			zap.Int64("dropped_log_records", resp.PartialSuccess().RejectedLogRecords()),
+		)
 	}
 	return nil
 }

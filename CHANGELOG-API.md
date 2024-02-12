@@ -7,6 +7,52 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.1.0/v0.94.0
+
+### 🛑 Breaking changes 🛑
+
+- `confignet`: Remove deprecated `DialContext` and `ListenContext` functions (#9363)
+- `confmap/converter/expandconverter`: Add `confmap.ConverterSettings` argument to experimental `expandconverter.New` function. (#5615, #9162)
+  - The `confmap.ConverterSettings` struct currently has no fields. It will be used to pass a logger.
+  
+- `component`: Remove deprecated funcs and types (#9283)
+- `otlpexporter`: Config struct is moving from embedding the deprecated GRPCClientSettings struct to using ClientConfig instead. (#6767)
+- `otlphttpexporter`: otlphttpexporter.Config embeds the struct confighttp.ClientConfig instead of confighttp.HTTPClientSettings (#6767)
+- `otlpreceiver`: HTTPConfig struct is moving from embedding the deprecated ServerSettings struct to using HTTPServerConfig instead. (#6767)
+- `component`: Validate component.Type at creation and unmarshaling time. (#9208)
+  - A component.Type must start with an ASCII alphabetic character and can only contain ASCII alphanumeric characters and '_'.
+  
+
+### 🚩 Deprecations 🚩
+
+- `configcompressions`: Deprecate `IsCompressed`.  Use `CompressionType.IsCompressed instead` instead. (#9435)
+- `configcompression`: Deprecate `CompressionType`, use `Type` instead. (#9416)
+- `confighttp`: Deprecate CORSSettings, use CORSConfig instead (#6767)
+- `configgrpc`: Deprecate `ToListener` function in favor of `ToListenerContext` (#9389)
+- `configgrpc`: Deprecate GRPCServerSettings, use ServerConfig instead (#6767)
+- `confighttp`: Deprecate HTTPClientSettings, use ClientConfig instead (#6767)
+- `confighttp`: Deprecate HTTPServerSettings, use ServerConfig instead (#6767)
+- `confmap/provider`: Deprecate <provider>.New in favor of <provider>.NewWithSettings for all core providers (#5615, #9162)
+  - NewWithSettings now takes an empty confmap.ProviderSettings struct. This will be used to pass a logger in the future.
+  
+
+### 💡 Enhancements 💡
+
+- `exporter/exporterhelper`: Add API for enabling queue in the new exporter helpers. (#7874)
+  The following experimental API is introduced in exporter package:
+    - `exporterhelper.WithRequestQueue`: a new exporter helper option for using a queue.
+    - `exporterqueue.Queue`: an interface for queue implementations.
+    - `exporterqueue.Factory`: a queue factory interface, implementations of this interface are intended to be used with WithRequestQueue option.
+    - `exporterqueue.Settings`: queue factory settings.
+    - `exporterqueue.Config`: common configuration for queue implementations.
+    - `exporterqueue.NewDefaultConfig`: a function for creating a default queue configuration.
+    - `exporterqueue.NewMemoryQueueFactory`: a new factory for creating a memory queue.
+    - `exporterqueue.NewPersistentQueueFactory: a factory for creating a persistent queue.
+  
+- `featuregate`: Add the `featuregate.ErrAlreadyRegistered` error, which is returned by `featuregate.Registry`'s `Register` when adding a feature gate that is already registered. (#8622)
+  Use `errors.Is` to check for this error.
+  
+
 ## v0.93.0
 
 ### 🛑 Breaking changes 🛑
