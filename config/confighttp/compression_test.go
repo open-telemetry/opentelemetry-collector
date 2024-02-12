@@ -191,6 +191,12 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: http.StatusOK,
 		},
 		{
+			name:     "ValidSnappy",
+			encoding: "snappy",
+			reqBody:  compressSnappy(t, testBody),
+			respCode: http.StatusOK,
+		},
+		{
 			name:     "InvalidDeflate",
 			encoding: "deflate",
 			reqBody:  bytes.NewBuffer(testBody),
@@ -217,6 +223,13 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			reqBody:  bytes.NewBuffer(testBody),
 			respCode: http.StatusBadRequest,
 			respBody: "invalid input: magic number mismatch",
+		},
+		{
+			name:     "InvalidSnappy",
+			encoding: "snappy",
+			reqBody:  bytes.NewBuffer(testBody),
+			respCode: http.StatusBadRequest,
+			respBody: "snappy: corrupt input\n",
 		},
 		{
 			name:     "UnsupportedCompression",
