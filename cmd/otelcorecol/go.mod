@@ -87,6 +87,12 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.94.1 // indirect
 	go.opentelemetry.io/collector/config/internal v0.94.1 // indirect
 	go.opentelemetry.io/collector/confmap v0.94.1 // indirect
+	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/confmap/provider/envprovider v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/consumer v0.94.1 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.94.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.1.0 // indirect
@@ -152,6 +158,18 @@ replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
 replace go.opentelemetry.io/collector/config/internal => ../../config/internal
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
+
+replace go.opentelemetry.io/collector/confmap/converter/expandconverter => ../../confmap/converter/expandconverter
+
+replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../../confmap/provider/envprovider
+
+replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
+
+replace go.opentelemetry.io/collector/confmap/provider/httpprovider => ../../confmap/provider/httpprovider
+
+replace go.opentelemetry.io/collector/confmap/provider/httpsprovider => ../../confmap/provider/httpsprovider
+
+replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../confmap/provider/yamlprovider
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 

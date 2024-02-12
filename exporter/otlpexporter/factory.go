@@ -48,10 +48,7 @@ func createTracesExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	oce, err := newExporter(cfg, set)
-	if err != nil {
-		return nil, err
-	}
+	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewTracesExporter(ctx, set, cfg,
 		oce.pushTraces,
@@ -68,10 +65,7 @@ func createMetricsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	oce, err := newExporter(cfg, set)
-	if err != nil {
-		return nil, err
-	}
+	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
 		oce.pushMetrics,
@@ -89,10 +83,7 @@ func createLogsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	oce, err := newExporter(cfg, set)
-	if err != nil {
-		return nil, err
-	}
+	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewLogsExporter(ctx, set, cfg,
 		oce.pushLogs,
