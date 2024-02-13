@@ -51,7 +51,7 @@ type testScrapeMetrics struct {
 	err               error
 }
 
-func (ts *testScrapeMetrics) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (ts *testScrapeMetrics) scrape(context.Context) (pmetric.Metrics, error) {
 	ts.timesScrapeCalled++
 	ts.ch <- ts.timesScrapeCalled
 
@@ -415,7 +415,7 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 		}
 	)
 
-	scp, err := NewScraper("timed", func(_ context.Context) (pmetric.Metrics, error) {
+	scp, err := NewScraper("timed", func(context.Context) (pmetric.Metrics, error) {
 		elapsed <- time.Now()
 		return pmetric.NewMetrics(), nil
 	})

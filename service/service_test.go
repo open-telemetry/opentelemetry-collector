@@ -262,7 +262,7 @@ func TestServiceTelemetry(t *testing.T) {
 func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase) {
 	var once sync.Once
 	loggingHookCalled := false
-	hook := func(_ zapcore.Entry) error {
+	hook := func(zapcore.Entry) error {
 		once.Do(func() {
 			loggingHookCalled = true
 		})
@@ -581,15 +581,15 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 
 type configWatcherExtension struct{}
 
-func (comp *configWatcherExtension) Start(_ context.Context, _ component.Host) error {
+func (comp *configWatcherExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (comp *configWatcherExtension) Shutdown(_ context.Context) error {
+func (comp *configWatcherExtension) Shutdown(context.Context) error {
 	return nil
 }
 
-func (comp *configWatcherExtension) NotifyConfig(_ context.Context, _ *confmap.Conf) error {
+func (comp *configWatcherExtension) NotifyConfig(context.Context, *confmap.Conf) error {
 	return errors.New("Failed to resolve config")
 }
 
@@ -599,7 +599,7 @@ func newConfigWatcherExtensionFactory(name component.Type) extension.Factory {
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
+		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
 			return &configWatcherExtension{}, nil
 		},
 		component.StabilityLevelDevelopment,

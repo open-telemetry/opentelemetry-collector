@@ -17,7 +17,7 @@ func TestGlobalRegistry(t *testing.T) {
 func TestRegistry(t *testing.T) {
 	r := NewRegistry()
 	// Expect that no gates to visit.
-	r.VisitAll(func(_ *Gate) {
+	r.VisitAll(func(*Gate) {
 		t.FailNow()
 	})
 

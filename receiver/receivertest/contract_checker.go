@@ -78,7 +78,7 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 		{
 			name: "always_succeed",
 			// Always succeed. We expect all data to be delivered as is.
-			decisionFunc: func(_ idSet) error { return nil },
+			decisionFunc: func(idSet) error { return nil },
 		},
 		{
 			name:         "random_non_permanent_error",
@@ -96,7 +96,7 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 
 	for _, scenario := range scenarios {
 		params.T.Run(
-			scenario.name, func(_ *testing.T) {
+			scenario.name, func(*testing.T) {
 				checkConsumeContractScenario(params, scenario.decisionFunc)
 			},
 		)
@@ -282,7 +282,7 @@ var errPermanent = errors.New("permanent error")
 
 // randomNonPermanentErrorConsumeDecision is a decision function that succeeds approximately
 // half of the time and fails with a non-permanent error the rest of the time.
-func randomNonPermanentErrorConsumeDecision(_ idSet) error {
+func randomNonPermanentErrorConsumeDecision(idSet) error {
 	if rand.Float32() < 0.5 {
 		return errNonPermanent
 	}
@@ -291,7 +291,7 @@ func randomNonPermanentErrorConsumeDecision(_ idSet) error {
 
 // randomPermanentErrorConsumeDecision is a decision function that succeeds approximately
 // half of the time and fails with a permanent error the rest of the time.
-func randomPermanentErrorConsumeDecision(_ idSet) error {
+func randomPermanentErrorConsumeDecision(idSet) error {
 	if rand.Float32() < 0.5 {
 		return consumererror.NewPermanent(errPermanent)
 	}
@@ -301,7 +301,7 @@ func randomPermanentErrorConsumeDecision(_ idSet) error {
 // randomErrorsConsumeDecision is a decision function that succeeds approximately
 // a third of the time, fails with a permanent error the third of the time and fails with
 // a non-permanent error the rest of the time.
-func randomErrorsConsumeDecision(_ idSet) error {
+func randomErrorsConsumeDecision(idSet) error {
 	r := rand.Float64()
 	third := 1.0 / 3.0
 	if r < third {
