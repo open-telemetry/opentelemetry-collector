@@ -18,10 +18,8 @@ import (
 )
 
 const (
-	grpcPort            = 4317
-	httpPort            = 4318
-	defaultGRPCEndpoint = "0.0.0.0:4317"
-	defaultHTTPEndpoint = "0.0.0.0:4318"
+	grpcPort = 4317
+	httpPort = 4318
 
 	defaultTracesURLPath  = "/v1/traces"
 	defaultMetricsURLPath = "/v1/metrics"
