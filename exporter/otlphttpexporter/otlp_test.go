@@ -163,7 +163,7 @@ func TestErrorResponses(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+			srv := createBackend("/v1/traces", func(writer http.ResponseWriter, _ *http.Request) {
 				for k, v := range test.headers {
 					writer.Header().Add(k, v)
 				}
@@ -420,7 +420,7 @@ func TestPartialSuccessUnsupportedContentType(t *testing.T) {
 }
 
 func TestPartialSuccess_logs(t *testing.T) {
-	srv := createBackend("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
+	srv := createBackend("/v1/logs", func(writer http.ResponseWriter, _ *http.Request) {
 		response := plogotlp.NewExportResponse()
 		partial := response.PartialSuccess()
 		partial.SetErrorMessage("hello")
@@ -591,7 +591,7 @@ func TestPartialSuccessInvalidResponseBody(t *testing.T) {
 }
 
 func TestPartialSuccess_traces(t *testing.T) {
-	srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+	srv := createBackend("/v1/traces", func(writer http.ResponseWriter, _ *http.Request) {
 		response := ptraceotlp.NewExportResponse()
 		partial := response.PartialSuccess()
 		partial.SetErrorMessage("hello")
@@ -631,7 +631,7 @@ func TestPartialSuccess_traces(t *testing.T) {
 }
 
 func TestPartialSuccess_metrics(t *testing.T) {
-	srv := createBackend("/v1/metrics", func(writer http.ResponseWriter, request *http.Request) {
+	srv := createBackend("/v1/metrics", func(writer http.ResponseWriter, _ *http.Request) {
 		response := pmetricotlp.NewExportResponse()
 		partial := response.PartialSuccess()
 		partial.SetErrorMessage("hello")

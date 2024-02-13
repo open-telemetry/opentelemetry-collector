@@ -181,7 +181,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
 	gss := &ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint: "0.0.0.0:1234",
 		},
 	}
@@ -192,7 +192,7 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 
 func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 	gss := &ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  "localhost:1234",
 			Transport: "tcp",
 		},
@@ -225,7 +225,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 
 func TestGrpcServerAuthSettings(t *testing.T) {
 	gss := &ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint: "0.0.0.0:1234",
 		},
 	}
@@ -390,7 +390,7 @@ func TestGRPCServerWarning(t *testing.T) {
 	}{
 		{
 			settings: ServerConfig{
-				NetAddr: confignet.NetAddr{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  "0.0.0.0:1234",
 					Transport: "tcp",
 				},
@@ -399,7 +399,7 @@ func TestGRPCServerWarning(t *testing.T) {
 		},
 		{
 			settings: ServerConfig{
-				NetAddr: confignet.NetAddr{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  "127.0.0.1:1234",
 					Transport: "tcp",
 				},
@@ -408,7 +408,7 @@ func TestGRPCServerWarning(t *testing.T) {
 		},
 		{
 			settings: ServerConfig{
-				NetAddr: confignet.NetAddr{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  "0.0.0.0:1234",
 					Transport: "unix",
 				},
@@ -441,7 +441,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
 			settings: ServerConfig{
-				NetAddr: confignet.NetAddr{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  "127.0.0.1:1234",
 					Transport: "tcp",
 				},
@@ -455,7 +455,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 		{
 			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: ServerConfig{
-				NetAddr: confignet.NetAddr{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  "127.0.0.1:1234",
 					Transport: "tcp",
 				},
@@ -469,7 +469,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 		{
 			err: "^failed to load client CA CertPool: failed to load CA /doesnt/exist:",
 			settings: ServerConfig{
-				NetAddr: confignet.NetAddr{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  "127.0.0.1:1234",
 					Transport: "tcp",
 				},
@@ -489,7 +489,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 
 func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 	settings := ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  "127.0.0.1:1234567",
 			Transport: "tcp",
 		},
@@ -616,7 +616,7 @@ func TestHttpReception(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			gss := &ServerConfig{
-				NetAddr: confignet.NetAddr{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  "localhost:0",
 					Transport: "tcp",
 				},
@@ -664,7 +664,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 
 	socketName := tempSocketName(t)
 	gss := &ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  socketName,
 			Transport: "unix",
 		},
@@ -812,7 +812,7 @@ func TestStreamInterceptorEnhancesClient(t *testing.T) {
 		ctx: inCtx,
 	}
 
-	handler := func(srv any, stream grpc.ServerStream) error {
+	handler := func(_ any, stream grpc.ServerStream) error {
 		outContext = stream.Context()
 		return nil
 	}
@@ -860,7 +860,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 			// prepare the server
 			{
 				gss := &ServerConfig{
-					NetAddr: confignet.NetAddr{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "localhost:0",
 						Transport: "tcp",
 					},
@@ -927,7 +927,7 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 
 		return ctx, nil
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, _ any) (any, error) {
 		handlerCalled = true
 		cl := client.FromContext(ctx)
 		assert.Equal(t, "1.2.3.4", cl.Addr.String())
@@ -953,7 +953,7 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 		authCalled = true
 		return context.Background(), expectedErr
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(_ context.Context, _ any) (any, error) {
 		assert.FailNow(t, "the handler should not have been called on auth failure!")
 		return nil, nil
 	}
@@ -974,7 +974,7 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 		assert.FailNow(t, "the auth func should not have been called!")
 		return context.Background(), nil
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(_ context.Context, _ any) (any, error) {
 		assert.FailNow(t, "the handler should not have been called!")
 		return nil, nil
 	}
@@ -998,7 +998,7 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 		})
 		return ctx, nil
 	}
-	handler := func(srv any, stream grpc.ServerStream) error {
+	handler := func(_ any, stream grpc.ServerStream) error {
 		// ensure that the client information is propagated down to the underlying stream
 		cl := client.FromContext(stream.Context())
 		assert.Equal(t, "1.2.3.4", cl.Addr.String())
@@ -1027,7 +1027,7 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 		authCalled = true
 		return context.Background(), expectedErr
 	}
-	handler := func(srv any, stream grpc.ServerStream) error {
+	handler := func(_ any, _ grpc.ServerStream) error {
 		assert.FailNow(t, "the handler should not have been called on auth failure!")
 		return nil
 	}
@@ -1050,7 +1050,7 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 		assert.FailNow(t, "the auth func should not have been called!")
 		return context.Background(), nil
 	}
-	handler := func(srv any, stream grpc.ServerStream) error {
+	handler := func(_ any, _ grpc.ServerStream) error {
 		assert.FailNow(t, "the handler should not have been called!")
 		return nil
 	}

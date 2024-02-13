@@ -415,7 +415,7 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 		}
 	)
 
-	scp, err := NewScraper("timed", func(ctx context.Context) (pmetric.Metrics, error) {
+	scp, err := NewScraper("timed", func(_ context.Context) (pmetric.Metrics, error) {
 		elapsed <- time.Now()
 		return pmetric.NewMetrics(), nil
 	})

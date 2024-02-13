@@ -410,7 +410,7 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 				require.NoError(t, err)
 			}
 			assert.Equal(t, 3, ps.Size())
-			require.True(t, ps.Consume(func(ctx context.Context, traces tracesRequest) error {
+			require.True(t, ps.Consume(func(_ context.Context, _ tracesRequest) error {
 				return NewShutdownErr(nil)
 			}))
 			assert.Equal(t, 2, ps.Size())
@@ -483,7 +483,7 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 
 	// We should be able to pull all remaining items now
 	for i := 0; i < 4; i++ {
-		newPs.Consume(func(ctx context.Context, traces tracesRequest) error {
+		newPs.Consume(func(_ context.Context, traces tracesRequest) error {
 			assert.Equal(t, req, traces)
 			return nil
 		})
@@ -519,7 +519,7 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 
 	// get one item out, but don't mark it as processed
 	<-ps.putChan
-	require.True(t, ps.Consume(func(ctx context.Context, traces tracesRequest) error {
+	require.True(t, ps.Consume(func(_ context.Context, _ tracesRequest) error {
 		// put one more item in
 		require.NoError(t, ps.Offer(context.Background(), req))
 		require.Equal(t, 5, ps.Size())
@@ -550,13 +550,13 @@ func TestPersistentQueue_PutCloseReadClose(t *testing.T) {
 	require.Equal(t, 2, newPs.Size())
 
 	// Let's read both of the elements we put
-	newPs.Consume(func(ctx context.Context, traces tracesRequest) error {
+	newPs.Consume(func(_ context.Context, traces tracesRequest) error {
 		require.Equal(t, req, traces)
 		return nil
 	})
 	assert.Equal(t, 1, newPs.Size())
 
-	newPs.Consume(func(ctx context.Context, traces tracesRequest) error {
+	newPs.Consume(func(_ context.Context, traces tracesRequest) error {
 		require.Equal(t, req, traces)
 		return nil
 	})
@@ -625,7 +625,7 @@ func TestItemIndexMarshaling(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		t.Run(fmt.Sprintf("#elements:%v", c.in), func(tt *testing.T) {
+		t.Run(fmt.Sprintf("#elements:%v", c.in), func(_ *testing.T) {
 			buf := itemIndexToBytes(c.in)
 			out, err := bytesToItemIndex(buf)
 			require.NoError(t, err)
@@ -654,7 +654,7 @@ func TestItemIndexArrayMarshaling(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		t.Run(fmt.Sprintf("#elements:%v", c.in), func(tt *testing.T) {
+		t.Run(fmt.Sprintf("#elements:%v", c.in), func(_ *testing.T) {
 			buf := itemIndexArrayToBytes(c.in)
 			out, err := bytesToItemIndexArray(buf)
 			require.NoError(t, err)
@@ -791,7 +791,7 @@ func TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown(t *testing.T) {
 	assert.ErrorIs(t, pq.Offer(context.Background(), newTracesRequest(5, 5)), ErrQueueIsFull)
 	assert.Equal(t, 100, pq.Size())
 
-	assert.True(t, pq.Consume(func(ctx context.Context, traces tracesRequest) error {
+	assert.True(t, pq.Consume(func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 40, traces.traces.SpanCount())
 		return nil
 	}))
@@ -809,13 +809,13 @@ func TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown(t *testing.T) {
 	// Check the combined queue size.
 	assert.Equal(t, 70, newPQ.Size())
 
-	assert.True(t, newPQ.Consume(func(ctx context.Context, traces tracesRequest) error {
+	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 40, traces.traces.SpanCount())
 		return nil
 	}))
 	assert.Equal(t, 30, newPQ.Size())
 
-	assert.True(t, newPQ.Consume(func(ctx context.Context, traces tracesRequest) error {
+	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 20, traces.traces.SpanCount())
 		return nil
 	}))
@@ -836,7 +836,7 @@ func TestPersistentQueue_ItemsCapacityUsageIsNotPreserved(t *testing.T) {
 	assert.NoError(t, pq.Offer(context.Background(), newTracesRequest(5, 5)))
 	assert.Equal(t, 3, pq.Size())
 
-	assert.True(t, pq.Consume(func(ctx context.Context, traces tracesRequest) error {
+	assert.True(t, pq.Consume(func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 40, traces.traces.SpanCount())
 		return nil
 	}))
@@ -855,19 +855,19 @@ func TestPersistentQueue_ItemsCapacityUsageIsNotPreserved(t *testing.T) {
 	assert.Equal(t, 10, newPQ.Size())
 
 	// Consuming old items should does not affect the size.
-	assert.True(t, newPQ.Consume(func(ctx context.Context, traces tracesRequest) error {
+	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 20, traces.traces.SpanCount())
 		return nil
 	}))
 	assert.Equal(t, 10, newPQ.Size())
 
-	assert.True(t, newPQ.Consume(func(ctx context.Context, traces tracesRequest) error {
+	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 25, traces.traces.SpanCount())
 		return nil
 	}))
 	assert.Equal(t, 10, newPQ.Size())
 
-	assert.True(t, newPQ.Consume(func(ctx context.Context, traces tracesRequest) error {
+	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 10, traces.traces.SpanCount())
 		return nil
 	}))

@@ -14,8 +14,8 @@ import (
 // NewNop returns a Consumer that just drops all received data and returns no error.
 func NewNop() Consumer {
 	return &baseConsumer{
-		ConsumeTracesFunc:  func(ctx context.Context, td ptrace.Traces) error { return nil },
-		ConsumeMetricsFunc: func(ctx context.Context, md pmetric.Metrics) error { return nil },
-		ConsumeLogsFunc:    func(ctx context.Context, ld plog.Logs) error { return nil },
+		ConsumeTracesFunc:  func(_ context.Context, _ ptrace.Traces) error { return nil },
+		ConsumeMetricsFunc: func(_ context.Context, _ pmetric.Metrics) error { return nil },
+		ConsumeLogsFunc:    func(_ context.Context, _ plog.Logs) error { return nil },
 	}
 }
