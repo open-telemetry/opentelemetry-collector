@@ -13,8 +13,8 @@ import (
 // NewErr returns a Consumer that just drops all received data and returns the specified error to Consume* callers.
 func NewErr(err error) Consumer {
 	return &baseConsumer{
-		ConsumeTracesFunc:  func(ctx context.Context, td ptrace.Traces) error { return err },
-		ConsumeMetricsFunc: func(ctx context.Context, md pmetric.Metrics) error { return err },
-		ConsumeLogsFunc:    func(ctx context.Context, ld plog.Logs) error { return err },
+		ConsumeTracesFunc:  func(_ context.Context, _ ptrace.Traces) error { return err },
+		ConsumeMetricsFunc: func(_ context.Context, _ pmetric.Metrics) error { return err },
+		ConsumeLogsFunc:    func(_ context.Context, _ plog.Logs) error { return err },
 	}
 }

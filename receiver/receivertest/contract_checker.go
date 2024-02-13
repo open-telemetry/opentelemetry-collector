@@ -78,7 +78,7 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 		{
 			name: "always_succeed",
 			// Always succeed. We expect all data to be delivered as is.
-			decisionFunc: func(ids idSet) error { return nil },
+			decisionFunc: func(_ idSet) error { return nil },
 		},
 		{
 			name:         "random_non_permanent_error",
@@ -96,7 +96,7 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 
 	for _, scenario := range scenarios {
 		params.T.Run(
-			scenario.name, func(t *testing.T) {
+			scenario.name, func(_ *testing.T) {
 				checkConsumeContractScenario(params, scenario.decisionFunc)
 			},
 		)

@@ -367,7 +367,7 @@ func TestTracesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 }
 
 func newTraceDataPusher(retError error) consumer.ConsumeTracesFunc {
-	return func(ctx context.Context, td ptrace.Traces) error {
+	return func(_ context.Context, _ ptrace.Traces) error {
 		return retError
 	}
 }

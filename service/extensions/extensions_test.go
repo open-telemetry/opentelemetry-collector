@@ -158,7 +158,7 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 	var startOrder []string
 	var shutdownOrder []string
 
-	recordingExtensionFactory := newRecordingExtensionFactory(func(set extension.CreateSettings, host component.Host) error {
+	recordingExtensionFactory := newRecordingExtensionFactory(func(set extension.CreateSettings, _ component.Host) error {
 		startOrder = append(startOrder, set.ID.String())
 		return nil
 	}, func(set extension.CreateSettings) error {
@@ -326,7 +326,7 @@ func newConfigWatcherExtensionFactory(name component.Type, fn func() error) exte
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
+		func(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
 			return newConfigWatcherExtension(fn), nil
 		},
 		component.StabilityLevelDevelopment,
@@ -339,7 +339,7 @@ func newBadExtensionFactory() extension.Factory {
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
+		func(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
 			return nil, nil
 		},
 		component.StabilityLevelDevelopment,
@@ -352,7 +352,7 @@ func newCreateErrorExtensionFactory() extension.Factory {
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
+		func(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
 			return nil, errors.New("cannot create \"err\" extension type")
 		},
 		component.StabilityLevelDevelopment,
@@ -433,7 +433,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			assert.NoError(t, err)
 
 			var actualStatuses []*component.StatusEvent
-			rep := status.NewReporter(func(id *component.InstanceID, ev *component.StatusEvent) {
+			rep := status.NewReporter(func(_ *component.InstanceID, ev *component.StatusEvent) {
 				actualStatuses = append(actualStatuses, ev)
 			}, func(err error) {
 				require.NoError(t, err)
@@ -476,7 +476,7 @@ func newStatusTestExtensionFactory(name component.Type, startErr, shutdownErr er
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
+		func(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
 			return newStatusTestExtension(startErr, shutdownErr), nil
 		},
 		component.StabilityLevelDevelopment,
@@ -489,7 +489,7 @@ func newRecordingExtensionFactory(startCallback func(set extension.CreateSetting
 		func() component.Config {
 			return &recordingExtensionConfig{}
 		},
-		func(ctx context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+		func(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
 			return &recordingExtension{
 				config:           cfg.(recordingExtensionConfig),
 				createSettings:   set,
