@@ -8,6 +8,7 @@ module-sets:
       - go.opentelemetry.io/collector/featuregate
       - go.opentelemetry.io/collector/pdata
       - go.opentelemetry.io/collector/config/configopaque
+      - go.opentelemetry.io/collector/config/configcompression
   beta:
     version: v0.95.0
     modules:
@@ -23,7 +24,6 @@ module-sets:
       - go.opentelemetry.io/collector/confmap/provider/httpsprovider
       - go.opentelemetry.io/collector/confmap/provider/yamlprovider
       - go.opentelemetry.io/collector/config/configauth
-      - go.opentelemetry.io/collector/config/configcompression
       - go.opentelemetry.io/collector/config/configgrpc
       - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/confignet
