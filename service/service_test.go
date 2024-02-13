@@ -13,9 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver"
-
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
@@ -34,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/pipelines"

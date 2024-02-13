@@ -10,7 +10,6 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/otel/metric/noop"
-
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
