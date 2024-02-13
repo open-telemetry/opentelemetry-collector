@@ -34,7 +34,7 @@ func TestEnsureTemplatesLoaded(t *testing.T) {
 		}
 		count = 0
 	)
-	assert.NoError(t, fs.WalkDir(templateFS, ".", func(path string, d fs.DirEntry, err error) error {
+	assert.NoError(t, fs.WalkDir(templateFS, ".", func(path string, d fs.DirEntry, _ error) error {
 		if d != nil && d.IsDir() {
 			return nil
 		}

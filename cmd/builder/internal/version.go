@@ -34,7 +34,7 @@ func versionCommand() *cobra.Command {
 		Use:   "version",
 		Short: "Version of ocb",
 		Long:  "Prints the version of the ocb binary",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			version, err := binVersion()
 			if err != nil {
 				return err

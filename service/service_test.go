@@ -262,7 +262,7 @@ func TestServiceTelemetry(t *testing.T) {
 func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase) {
 	var once sync.Once
 	loggingHookCalled := false
-	hook := func(entry zapcore.Entry) error {
+	hook := func(_ zapcore.Entry) error {
 		once.Do(func() {
 			loggingHookCalled = true
 		})
@@ -275,7 +275,7 @@ func testCollectorStartHelper(t *testing.T, tc ownMetricsTestCase) {
 	set := newNopSettings()
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
 	set.Extensions = extension.NewBuilder(
-		map[component.ID]component.Config{component.MustNewID("zpages"): &zpagesextension.Config{TCPAddr: confignet.TCPAddr{Endpoint: zpagesAddr}}},
+		map[component.ID]component.Config{component.MustNewID("zpages"): &zpagesextension.Config{TCPAddr: confignet.TCPAddrConfig{Endpoint: zpagesAddr}}},
 		map[component.Type]extension.Factory{component.MustNewType("zpages"): zpagesextension.NewFactory()})
 	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
 
@@ -599,7 +599,7 @@ func newConfigWatcherExtensionFactory(name component.Type) extension.Factory {
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
+		func(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
 			return &configWatcherExtension{}, nil
 		},
 		component.StabilityLevelDevelopment,

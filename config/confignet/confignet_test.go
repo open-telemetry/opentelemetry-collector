@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNetAddrTimeout(t *testing.T) {
-	nac := &NetAddr{
-		Endpoint:      "localhost:0",
+func TestAddrConfigTimeout(t *testing.T) {
+	nac := &AddrConfig{
+		Endpoint:  "localhost:0",
 		TransportType: TransportTypeTCP,
 		DialerConfig: DialerConfig{
 			Timeout: -1 * time.Second,
@@ -31,8 +31,8 @@ func TestNetAddrTimeout(t *testing.T) {
 	}
 }
 
-func TestTCPAddrTimeout(t *testing.T) {
-	nac := &TCPAddr{
+func TestTCPAddrConfigTimeout(t *testing.T) {
+	nac := &TCPAddrConfig{
 		Endpoint: "localhost:0",
 		DialerConfig: DialerConfig{
 			Timeout: -1 * time.Second,
@@ -48,9 +48,9 @@ func TestTCPAddrTimeout(t *testing.T) {
 	}
 }
 
-func TestNetAddr(t *testing.T) {
-	nas := &NetAddr{
-		Endpoint:      "localhost:0",
+func TestAddrConfig(t *testing.T) {
+	nas := &AddrConfig{
+		Endpoint:  "localhost:0",
 		TransportType: TransportTypeTCP,
 	}
 	ln, err := nas.Listen(context.Background())
@@ -69,7 +69,7 @@ func TestNetAddr(t *testing.T) {
 		done <- true
 	}()
 
-	nac := &NetAddr{
+	nac := &AddrConfig{
 		Endpoint:  ln.Addr().String(),
 		Transport: "tcp",
 	}
@@ -84,24 +84,24 @@ func TestNetAddr(t *testing.T) {
 }
 
 func Test_NetAddr_Validate(t *testing.T) {
-	na := &NetAddr{
+	na := &AddrConfig{
 		TransportType: TransportTypeTCP,
 	}
 	assert.NoError(t, na.Validate())
 
-	na = &NetAddr{
+	na = &AddrConfig{
 		TransportType: transportTypeEmpty,
 	}
 	assert.Error(t, na.Validate())
 
-	na = &NetAddr{
+	na = &AddrConfig{
 		TransportType: "random string",
 	}
 	assert.Error(t, na.Validate())
 }
 
-func TestTCPAddr(t *testing.T) {
-	nas := &TCPAddr{
+func TestTCPAddrConfig(t *testing.T) {
+	nas := &TCPAddrConfig{
 		Endpoint: "localhost:0",
 	}
 	ln, err := nas.Listen(context.Background())
@@ -120,7 +120,7 @@ func TestTCPAddr(t *testing.T) {
 		done <- true
 	}()
 
-	nac := &TCPAddr{
+	nac := &TCPAddrConfig{
 		Endpoint: ln.Addr().String(),
 	}
 	var conn net.Conn

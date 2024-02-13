@@ -79,7 +79,7 @@ func TestMapReadOnly(t *testing.T) {
 	assert.Panics(t, func() { m.PutEmptyMap("k2") })
 	assert.Panics(t, func() { m.PutEmptySlice("k2") })
 	assert.Panics(t, func() { m.Remove("k1") })
-	assert.Panics(t, func() { m.RemoveIf(func(k string, v Value) bool { return true }) })
+	assert.Panics(t, func() { m.RemoveIf(func(_ string, _ Value) bool { return true }) })
 	assert.Panics(t, func() { m.EnsureCapacity(2) })
 
 	m2 := NewMap()
@@ -289,7 +289,7 @@ func TestMapWithEmpty(t *testing.T) {
 }
 
 func TestMapIterationNil(t *testing.T) {
-	NewMap().Range(func(k string, v Value) bool {
+	NewMap().Range(func(_ string, _ Value) bool {
 		// Fail if any element is returned
 		t.Fail()
 		return true
@@ -309,7 +309,7 @@ func TestMap_Range(t *testing.T) {
 	assert.Equal(t, 5, am.Len())
 
 	calls := 0
-	am.Range(func(k string, v Value) bool {
+	am.Range(func(_ string, _ Value) bool {
 		calls++
 		return false
 	})
@@ -523,7 +523,7 @@ func generateTestBytesMap(t *testing.T) Map {
 func TestInvalidMap(t *testing.T) {
 	v := Map{}
 
-	testFunc := func(s string, v Value) bool {
+	testFunc := func(_ string, _ Value) bool {
 		return true
 	}
 

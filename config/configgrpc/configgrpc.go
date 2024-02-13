@@ -127,7 +127,7 @@ type GRPCServerSettings = ServerConfig
 // ServerConfig defines common settings for a gRPC server configuration.
 type ServerConfig struct {
 	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
-	NetAddr confignet.NetAddr `mapstructure:",squash"`
+	NetAddr confignet.AddrConfig `mapstructure:",squash"`
 
 	// Configures the protocol to use TLS.
 	// The default value is nil, which will cause the protocol to not use TLS.
