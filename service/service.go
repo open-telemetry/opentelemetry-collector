@@ -219,9 +219,7 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 
 	srv.telemetrySettings.Logger.Info("Shutdown complete.")
 
-	if err := srv.shutdownTelemetry(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown telemetry: %w", err))
-	}
+	errs = multierr.Append(errs, srv.shutdownTelemetry(ctx))
 
 	return errs
 }
