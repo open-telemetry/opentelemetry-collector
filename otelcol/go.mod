@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.94.1
 	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.94.1
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.0.0-00010101000000-000000000000
