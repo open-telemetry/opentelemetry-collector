@@ -243,7 +243,7 @@ func TestUnsupportedScheme(t *testing.T) {
 
 func TestEmptyURI(t *testing.T) {
 	fp := New(HTTPScheme, confmap.ProviderSettings{})
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 	defer ts.Close()
@@ -254,7 +254,7 @@ func TestEmptyURI(t *testing.T) {
 
 func TestRetrieveFromShutdownServer(t *testing.T) {
 	fp := New(HTTPScheme, confmap.ProviderSettings{})
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	ts := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
 	assert.Error(t, err)
@@ -263,7 +263,7 @@ func TestRetrieveFromShutdownServer(t *testing.T) {
 
 func TestNonExistent(t *testing.T) {
 	fp := New(HTTPScheme, confmap.ProviderSettings{})
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer ts.Close()
@@ -274,7 +274,7 @@ func TestNonExistent(t *testing.T) {
 
 func TestInvalidYAML(t *testing.T) {
 	fp := New(HTTPScheme, confmap.ProviderSettings{})
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("wrong : ["))
 		if err != nil {

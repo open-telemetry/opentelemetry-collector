@@ -22,12 +22,10 @@ func verifyTracesDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fac
 	// Create a proc and output its produce to a sink.
 	nextSink := new(consumertest.TracesSink)
 	proc, err := factory.CreateTracesProcessor(context.Background(), NewNopCreateSettings(), cfg, nextSink)
-	if err != nil {
-		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
-			return
-		}
-		require.NoError(t, err)
+	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+		return
 	}
+	require.NoError(t, err)
 	assert.NoError(t, proc.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Send some traces to the proc.
@@ -44,9 +42,57 @@ func verifyTracesDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fac
 	assert.EqualValues(t, generatedCount, nextSink.SpanCount())
 }
 
+func verifyLogsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
+	// Create a proc and output its produce to a sink.
+	nextSink := new(consumertest.LogsSink)
+	proc, err := factory.CreateLogsProcessor(context.Background(), NewNopCreateSettings(), cfg, nextSink)
+	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+		return
+	}
+	require.NoError(t, err)
+	assert.NoError(t, proc.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Send some logs to the proc.
+	const generatedCount = 10
+	for i := 0; i < generatedCount; i++ {
+		require.NoError(t, proc.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
+	}
+
+	// Now shutdown the proc.
+	assert.NoError(t, proc.Shutdown(context.Background()))
+
+	// The Shutdown() is done. It means the proc must have sent everything we
+	// gave it to the next sink.
+	assert.EqualValues(t, generatedCount, nextSink.LogRecordCount())
+}
+
+func verifyMetricsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
+	// Create a proc and output its produce to a sink.
+	nextSink := new(consumertest.MetricsSink)
+	proc, err := factory.CreateMetricsProcessor(context.Background(), NewNopCreateSettings(), cfg, nextSink)
+	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+		return
+	}
+	require.NoError(t, err)
+	assert.NoError(t, proc.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Send some metrics to the proc. testdata.GenerateMetrics creates metrics with 2 data points each.
+	const generatedCount = 10
+	for i := 0; i < generatedCount; i++ {
+		require.NoError(t, proc.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
+	}
+
+	// Now shutdown the proc.
+	assert.NoError(t, proc.Shutdown(context.Background()))
+
+	// The Shutdown() is done. It means the proc must have sent everything we
+	// gave it to the next sink.
+	assert.EqualValues(t, generatedCount*2, nextSink.DataPointCount())
+}
+
 // VerifyShutdown verifies the processor doesn't produce telemetry data after shutdown.
 func VerifyShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
 	verifyTracesDoesNotProduceAfterShutdown(t, factory, cfg)
-	// TODO: add metrics and logs verification.
-	// TODO: add other shutdown verifications.
+	verifyLogsDoesNotProduceAfterShutdown(t, factory, cfg)
+	verifyMetricsDoesNotProduceAfterShutdown(t, factory, cfg)
 }
