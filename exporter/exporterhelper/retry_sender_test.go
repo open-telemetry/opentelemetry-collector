@@ -26,7 +26,7 @@ import (
 )
 
 func mockRequestUnmarshaler(mr Request) exporterqueue.Unmarshaler[Request] {
-	return func(bytes []byte) (Request, error) {
+	return func(_ []byte) (Request, error) {
 		return mr, nil
 	}
 }

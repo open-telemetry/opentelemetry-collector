@@ -391,7 +391,7 @@ func (hss *ServerConfig) ToServer(host component.Host, settings component.Teleme
 		otelhttp.WithTracerProvider(settings.TracerProvider),
 		otelhttp.WithMeterProvider(settings.MeterProvider),
 		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
-		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 			return r.URL.Path
 		}),
 	)

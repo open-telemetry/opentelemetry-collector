@@ -50,8 +50,8 @@ func TestBaseExporterWithOptions(t *testing.T) {
 	want := errors.New("my error")
 	be, err := newBaseExporter(
 		defaultSettings, defaultType, false, nil, nil, newNoopObsrepSender,
-		WithStart(func(ctx context.Context, host component.Host) error { return want }),
-		WithShutdown(func(ctx context.Context) error { return want }),
+		WithStart(func(_ context.Context, _ component.Host) error { return want }),
+		WithShutdown(func(_ context.Context) error { return want }),
 		WithTimeout(NewDefaultTimeoutSettings()),
 	)
 	require.NoError(t, err)
