@@ -86,7 +86,7 @@ func httpContentDecompressor(h http.Handler, eh func(w http.ResponseWriter, r *h
 		errHandler: errHandler,
 		base:       h,
 		decoders: map[string]func(body io.ReadCloser) (io.ReadCloser, error){
-			"": func(_ io.ReadCloser) (io.ReadCloser, error) {
+			"": func(io.ReadCloser) (io.ReadCloser, error) {
 				// Not a compressed payload. Nothing to do.
 				return nil, nil
 			},

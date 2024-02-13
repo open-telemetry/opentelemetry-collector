@@ -28,7 +28,7 @@ func newZPagesHost() *zpagesHost {
 	return &zpagesHost{Host: componenttest.NewNopHost()}
 }
 
-func (*zpagesHost) RegisterZPages(_ *http.ServeMux, _ string) {}
+func (*zpagesHost) RegisterZPages(*http.ServeMux, string) {}
 
 var _ registerableTracerProvider = (*registerableProvider)(nil)
 var _ registerableTracerProvider = sdktrace.NewTracerProvider()

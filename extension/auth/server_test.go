@@ -55,7 +55,7 @@ func TestWithServerAuthenticateFunc(t *testing.T) {
 
 func TestWithServerStart(t *testing.T) {
 	called := false
-	e := NewServer(WithServerStart(func(_ context.Context, _ component.Host) error {
+	e := NewServer(WithServerStart(func(context.Context, component.Host) error {
 		called = true
 		return nil
 	}))
@@ -70,7 +70,7 @@ func TestWithServerStart(t *testing.T) {
 
 func TestWithServerShutdown(t *testing.T) {
 	called := false
-	e := NewServer(WithServerShutdown(func(_ context.Context) error {
+	e := NewServer(WithServerShutdown(func(context.Context) error {
 		called = true
 		return nil
 	}))

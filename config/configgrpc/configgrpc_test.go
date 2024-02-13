@@ -38,7 +38,7 @@ import (
 // testBalancerBuilder facilitates testing validateBalancerName().
 type testBalancerBuilder struct{}
 
-func (testBalancerBuilder) Build(_ balancer.ClientConn, _ balancer.BuildOptions) balancer.Balancer {
+func (testBalancerBuilder) Build(balancer.ClientConn, balancer.BuildOptions) balancer.Balancer {
 	return nil
 }
 
@@ -953,7 +953,7 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 		authCalled = true
 		return context.Background(), expectedErr
 	}
-	handler := func(_ context.Context, _ any) (any, error) {
+	handler := func(context.Context, any) (any, error) {
 		assert.FailNow(t, "the handler should not have been called on auth failure!")
 		return nil, nil
 	}
@@ -974,7 +974,7 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 		assert.FailNow(t, "the auth func should not have been called!")
 		return context.Background(), nil
 	}
-	handler := func(_ context.Context, _ any) (any, error) {
+	handler := func(context.Context, any) (any, error) {
 		assert.FailNow(t, "the handler should not have been called!")
 		return nil, nil
 	}
@@ -1027,7 +1027,7 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 		authCalled = true
 		return context.Background(), expectedErr
 	}
-	handler := func(_ any, _ grpc.ServerStream) error {
+	handler := func(any, grpc.ServerStream) error {
 		assert.FailNow(t, "the handler should not have been called on auth failure!")
 		return nil
 	}
@@ -1050,7 +1050,7 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 		assert.FailNow(t, "the auth func should not have been called!")
 		return context.Background(), nil
 	}
-	handler := func(_ any, _ grpc.ServerStream) error {
+	handler := func(any, grpc.ServerStream) error {
 		assert.FailNow(t, "the handler should not have been called!")
 		return nil
 	}

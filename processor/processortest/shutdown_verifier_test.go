@@ -60,11 +60,11 @@ type passthroughProcessor struct {
 	nextTraces  consumer.Traces
 }
 
-func (passthroughProcessor) Start(_ context.Context, _ component.Host) error {
+func (passthroughProcessor) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (passthroughProcessor) Shutdown(_ context.Context) error {
+func (passthroughProcessor) Shutdown(context.Context) error {
 	return nil
 }
 

@@ -254,7 +254,7 @@ func TestEmptyURI(t *testing.T) {
 
 func TestRetrieveFromShutdownServer(t *testing.T) {
 	fp := New(HTTPScheme, confmap.ProviderSettings{})
-	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+	ts := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
 	assert.Error(t, err)

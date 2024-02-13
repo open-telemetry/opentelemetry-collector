@@ -394,7 +394,7 @@ type errConfig struct {
 	Foo string `mapstructure:"foo"`
 }
 
-func (tc *errConfig) Unmarshal(_ *Conf) error {
+func (tc *errConfig) Unmarshal(*Conf) error {
 	return errors.New("never works")
 }
 
