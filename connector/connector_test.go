@@ -243,7 +243,7 @@ func TestBuilder(t *testing.T) {
 		{
 			name: "unknown",
 			id:   component.MustNewID("unknown"),
-			err: func(_, _ component.DataType) string {
+			err: func(component.DataType, component.DataType) string {
 				return "connector factory not available for: \"unknown\""
 			},
 		},
@@ -257,14 +257,14 @@ func TestBuilder(t *testing.T) {
 		{
 			name: "all",
 			id:   component.MustNewID("all"),
-			err: func(_, _ component.DataType) string {
+			err: func(component.DataType, component.DataType) string {
 				return ""
 			},
 		},
 		{
 			name: "all/named",
 			id:   component.MustNewIDWithName("all", "named"),
-			err: func(_, _ component.DataType) string {
+			err: func(component.DataType, component.DataType) string {
 				return ""
 			},
 		},

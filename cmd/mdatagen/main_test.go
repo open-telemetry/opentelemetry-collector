@@ -366,7 +366,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("foo")
+	Type      = component.MustNewType("foo")
+	scopeName = ""
 )
 
 const (
@@ -374,11 +375,11 @@ const (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("")
+	return settings.MeterProvider.Meter(scopeName)
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("")
+	return settings.TracerProvider.Tracer(scopeName)
 }
 `,
 		},
@@ -403,7 +404,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("foo")
+	Type      = component.MustNewType("foo")
+	scopeName = ""
 )
 
 const (
@@ -411,11 +413,11 @@ const (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("")
+	return settings.MeterProvider.Meter(scopeName)
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("")
+	return settings.TracerProvider.Tracer(scopeName)
 }
 `,
 		},

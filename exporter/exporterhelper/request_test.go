@@ -16,7 +16,7 @@ type fakeRequest struct {
 	err   error
 }
 
-func (r fakeRequest) Export(_ context.Context) error {
+func (r fakeRequest) Export(context.Context) error {
 	return r.err
 }
 

@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("otlphttp")
+	Type      = component.MustNewType("otlphttp")
+	scopeName = "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 )
 
 const (
@@ -20,9 +21,9 @@ const (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/otlphttp")
+	return settings.MeterProvider.Meter(scopeName)
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/otlphttp")
+	return settings.TracerProvider.Tracer(scopeName)
 }

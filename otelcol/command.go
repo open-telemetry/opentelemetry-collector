@@ -19,7 +19,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 		Use:          set.BuildInfo.Command,
 		Version:      set.BuildInfo.Version,
 		SilenceUsage: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			col, err := newCollectorWithFlags(set, flagSet)
 			if err != nil {
 				return err
