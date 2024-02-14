@@ -191,6 +191,12 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: http.StatusOK,
 		},
 		{
+			name:     "ValidSnappy",
+			encoding: "snappy",
+			reqBody:  compressSnappy(t, testBody),
+			respCode: http.StatusOK,
+		},
+		{
 			name:     "InvalidDeflate",
 			encoding: "deflate",
 			reqBody:  bytes.NewBuffer(testBody),
@@ -217,6 +223,13 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			reqBody:  bytes.NewBuffer(testBody),
 			respCode: http.StatusBadRequest,
 			respBody: "invalid input: magic number mismatch",
+		},
+		{
+			name:     "InvalidSnappy",
+			encoding: "snappy",
+			reqBody:  bytes.NewBuffer(testBody),
+			respCode: http.StatusBadRequest,
+			respBody: "snappy: corrupt input\n",
 		},
 		{
 			name:     "UnsupportedCompression",
@@ -287,7 +300,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 type copyFailBody struct {
 }
 
-func (*copyFailBody) Read(_ []byte) (n int, err error) {
+func (*copyFailBody) Read([]byte) (n int, err error) {
 	return 0, fmt.Errorf("read failed")
 }
 
@@ -296,7 +309,7 @@ func (*copyFailBody) Close() error {
 }
 
 func TestHTTPContentCompressionCopyError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	t.Cleanup(server.Close)
@@ -320,7 +333,7 @@ func (*closeFailBody) Close() error {
 }
 
 func TestHTTPContentCompressionRequestBodyCloseError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	t.Cleanup(server.Close)

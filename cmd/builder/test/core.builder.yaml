@@ -31,6 +31,12 @@ replaces:
   - go.opentelemetry.io/collector/config/configtls => ${WORKSPACE_DIR}/config/configtls
   - go.opentelemetry.io/collector/config/internal => ${WORKSPACE_DIR}/config/internal
   - go.opentelemetry.io/collector/confmap => ${WORKSPACE_DIR}/confmap
+  - go.opentelemetry.io/collector/confmap/converter/expandconverter => ${WORKSPACE_DIR}/confmap/converter/expandconverter
+  - go.opentelemetry.io/collector/confmap/provider/envprovider => ${WORKSPACE_DIR}/confmap/provider/envprovider
+  - go.opentelemetry.io/collector/confmap/provider/fileprovider => ${WORKSPACE_DIR}/confmap/provider/fileprovider
+  - go.opentelemetry.io/collector/confmap/provider/httpprovider => ${WORKSPACE_DIR}/confmap/provider/httpprovider
+  - go.opentelemetry.io/collector/confmap/provider/httpsprovider => ${WORKSPACE_DIR}/confmap/provider/httpsprovider
+  - go.opentelemetry.io/collector/confmap/provider/yamlprovider => ${WORKSPACE_DIR}/confmap/provider/yamlprovider
   - go.opentelemetry.io/collector/consumer => ${WORKSPACE_DIR}/consumer
   - go.opentelemetry.io/collector/connector => ${WORKSPACE_DIR}/connector
   - go.opentelemetry.io/collector/exporter => ${WORKSPACE_DIR}/exporter

@@ -31,7 +31,7 @@ var (
 	}()
 )
 
-func newNoopObsrepSender(_ *ObsReport) requestSender {
+func newNoopObsrepSender(*ObsReport) requestSender {
 	return &baseRequestSender{}
 }
 
@@ -50,8 +50,8 @@ func TestBaseExporterWithOptions(t *testing.T) {
 	want := errors.New("my error")
 	be, err := newBaseExporter(
 		defaultSettings, defaultType, false, nil, nil, newNoopObsrepSender,
-		WithStart(func(ctx context.Context, host component.Host) error { return want }),
-		WithShutdown(func(ctx context.Context) error { return want }),
+		WithStart(func(context.Context, component.Host) error { return want }),
+		WithShutdown(func(context.Context) error { return want }),
 		WithTimeout(NewDefaultTimeoutSettings()),
 	)
 	require.NoError(t, err)

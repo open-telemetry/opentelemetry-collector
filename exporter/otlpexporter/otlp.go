@@ -5,7 +5,6 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"runtime"
 	"time"
@@ -47,19 +46,13 @@ type baseExporter struct {
 	userAgent string
 }
 
-// Crete new exporter and start it. The exporter will begin connecting but
-// this function may return before the connection is established.
-func newExporter(cfg component.Config, set exporter.CreateSettings) (*baseExporter, error) {
+func newExporter(cfg component.Config, set exporter.CreateSettings) *baseExporter {
 	oCfg := cfg.(*Config)
-
-	if oCfg.Endpoint == "" {
-		return nil, errors.New("OTLP exporter config requires an Endpoint")
-	}
 
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
-	return &baseExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
+	return &baseExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this

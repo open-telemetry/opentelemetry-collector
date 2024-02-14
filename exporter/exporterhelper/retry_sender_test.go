@@ -26,12 +26,12 @@ import (
 )
 
 func mockRequestUnmarshaler(mr Request) exporterqueue.Unmarshaler[Request] {
-	return func(bytes []byte) (Request, error) {
+	return func([]byte) (Request, error) {
 		return mr, nil
 	}
 }
 
-func mockRequestMarshaler(_ Request) ([]byte, error) {
+func mockRequestMarshaler(Request) ([]byte, error) {
 	return []byte("mockRequest"), nil
 }
 
@@ -261,7 +261,7 @@ func TestQueueRetryWithDisabledRetires(t *testing.T) {
 
 type mockErrorRequest struct{}
 
-func (mer *mockErrorRequest) Export(_ context.Context) error {
+func (mer *mockErrorRequest) Export(context.Context) error {
 	return errors.New("transient error")
 }
 
@@ -330,7 +330,7 @@ type observabilityConsumerSender struct {
 	droppedItemsCount *atomic.Int64
 }
 
-func newObservabilityConsumerSender(_ *ObsReport) requestSender {
+func newObservabilityConsumerSender(*ObsReport) requestSender {
 	return &observabilityConsumerSender{
 		waitGroup:         new(sync.WaitGroup),
 		droppedItemsCount: &atomic.Int64{},

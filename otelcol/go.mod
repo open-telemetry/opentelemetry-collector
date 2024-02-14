@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/otelcol
 
-go 1.20
+go 1.21
 
 require (
 	github.com/spf13/cobra v1.8.0
@@ -8,6 +8,12 @@ require (
 	go.opentelemetry.io/collector/component v0.94.1
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.1
 	go.opentelemetry.io/collector/confmap v0.94.1
+	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/confmap/provider/envprovider v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/connector v0.94.1
 	go.opentelemetry.io/collector/exporter v0.94.1
 	go.opentelemetry.io/collector/extension v0.94.1
@@ -18,7 +24,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
-	golang.org/x/sys v0.16.0
+	golang.org/x/sys v0.17.0
 	google.golang.org/grpc v1.61.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -68,20 +74,20 @@ require (
 	go.opentelemetry.io/collector/semconv v0.94.1 // indirect
 	go.opentelemetry.io/contrib/config v0.3.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.23.0 // indirect
-	go.opentelemetry.io/otel v1.23.0 // indirect
-	go.opentelemetry.io/otel/bridge/opencensus v1.23.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.23.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.23.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.23.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.23.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.23.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.45.1 // indirect
-	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.23.0 // indirect
-	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.23.0 // indirect
-	go.opentelemetry.io/otel/metric v1.23.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.23.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.23.0 // indirect
-	go.opentelemetry.io/otel/trace v1.23.0 // indirect
+	go.opentelemetry.io/otel v1.23.1 // indirect
+	go.opentelemetry.io/otel/bridge/opencensus v1.23.1 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.23.1 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.23.1 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.23.1 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.23.1 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.23.1 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.45.2 // indirect
+	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.23.1 // indirect
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.23.1 // indirect
+	go.opentelemetry.io/otel/metric v1.23.1 // indirect
+	go.opentelemetry.io/otel/sdk v1.23.1 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.23.1 // indirect
+	go.opentelemetry.io/otel/trace v1.23.1 // indirect
 	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
@@ -108,6 +114,18 @@ replace go.opentelemetry.io/collector/extension => ../extension
 replace go.opentelemetry.io/collector/exporter => ../exporter
 
 replace go.opentelemetry.io/collector/confmap => ../confmap
+
+replace go.opentelemetry.io/collector/confmap/converter/expandconverter => ../confmap/converter/expandconverter
+
+replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../confmap/provider/envprovider
+
+replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../confmap/provider/fileprovider
+
+replace go.opentelemetry.io/collector/confmap/provider/httpprovider => ../confmap/provider/httpprovider
+
+replace go.opentelemetry.io/collector/confmap/provider/httpsprovider => ../confmap/provider/httpsprovider
+
+replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../confmap/provider/yamlprovider
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../config/configtelemetry
 
