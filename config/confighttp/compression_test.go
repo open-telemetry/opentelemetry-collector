@@ -300,7 +300,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 type copyFailBody struct {
 }
 
-func (*copyFailBody) Read(_ []byte) (n int, err error) {
+func (*copyFailBody) Read([]byte) (n int, err error) {
 	return 0, fmt.Errorf("read failed")
 }
 
@@ -309,7 +309,7 @@ func (*copyFailBody) Close() error {
 }
 
 func TestHTTPContentCompressionCopyError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	t.Cleanup(server.Close)
@@ -333,7 +333,7 @@ func (*closeFailBody) Close() error {
 }
 
 func TestHTTPContentCompressionRequestBodyCloseError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	t.Cleanup(server.Close)

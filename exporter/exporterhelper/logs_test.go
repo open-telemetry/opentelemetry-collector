@@ -360,7 +360,7 @@ func TestLogsRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 }
 
 func newPushLogsData(retError error) consumer.ConsumeLogsFunc {
-	return func(ctx context.Context, td plog.Logs) error {
+	return func(_ context.Context, _ plog.Logs) error {
 		return retError
 	}
 }
