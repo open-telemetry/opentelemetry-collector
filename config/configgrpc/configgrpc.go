@@ -283,12 +283,6 @@ func (gss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, e
 	return gss.NetAddr.Listen(ctx)
 }
 
-// ToListener returns the net.Listener constructed from the settings.
-// Deprecated: [v0.94.0] Call Listen directly on the NetAddr field.
-func (gss *ServerConfig) ToListener() (net.Listener, error) {
-	return gss.ToListenerContext(context.Background())
-}
-
 func (gss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
 	opts, err := gss.toServerOption(host, settings)
 	if err != nil {
