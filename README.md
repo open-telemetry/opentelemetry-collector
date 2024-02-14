@@ -59,6 +59,13 @@ Objectives:
 - Extensible: Customizable without touching the core code.
 - Unified: Single codebase, deployable as an agent or collector with support for traces, metrics and logs.
 
+## Supported OTLP version
+
+This code base is currently built against using OTLP protocol v1.1.0,
+considered Stable. [See the OpenTelemetry Protocol Stability
+definition
+here.](https://github.com/open-telemetry/opentelemetry-proto?tab=readme-ov-file#stability-definition)
+
 ## Stability levels
 
 The collector components and implementation are in different stages of stability, and usually split between
