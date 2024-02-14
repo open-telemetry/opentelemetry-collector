@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/internal/experr"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
@@ -360,7 +361,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), 
 			pq.mu.Unlock()
 		}()
 
-		if errors.As(consumeErr, &shutdownErr{}) {
+		if experr.IsShutdownErr(consumeErr) {
 			// The queue is shutting down, don't mark the item as dispatched, so it's picked up again after restart.
 			// TODO: Handle partially delivered requests by updating their values in the storage.
 			return
