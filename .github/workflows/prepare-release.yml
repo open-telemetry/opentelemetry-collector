@@ -24,25 +24,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Validate version format
+     - name: Validate version format
       run: |
-        validate_version() {
+        validate_beta_version() {
           local regex_pattern_beta='^[0-9]+\.[0-9]+\.[0-9]+$'
-          local regex_pattern_stable='^[1-9][0-9]*\.[0-9]+\.[0-9]+$'
-
           if [[ ! "$1" =~ $regex_pattern_beta ]]; then
-            if [[ ! "$1" =~ $regex_pattern_stable ]]; then
-              echo "Invalid $2 version format. For beta, it can be 0.1.0 or higher. For stable, Major version must be greater than 1."
-              exit 1
-            fi
+            echo "Invalid $2 version format. For beta, it can be 0.1.0 or higher"
+            exit 1
           fi
-          echo "Valid $2 version: $1"
         }
 
-        validate_version "${{ inputs.candidate-beta }}" "candidate-beta"
-        validate_version "${{ inputs.current-beta }}" "current-beta"
-        validate_version "${{ inputs.candidate-stable }}" "candidate-stable"
-        validate_version "${{ inputs.current-stable }}" "current-stable"
+        validate_stable_version() {
+          local regex_pattern_stable='^[1-9][0-9]*\.[0-9]+\.[0-9]+$'
+          if [[ ! "$1" =~ $regex_pattern_stable ]]; then
+            echo "Invalid stable version format for $2. Major version must be greater than 1."
+            exit 1
+          fi
+        }
+
+        validate_beta_version "${{ inputs.candidate-beta }}" "candidate-beta"
+        validate_beta_version "${{ inputs.current-beta }}" "current-beta"
+        validate_stable_version "${{ inputs.candidate-stable }}" "candidate-stable"
+        validate_stable_version "${{ inputs.current-stable }}" "current-stable"
       shell: bash
   # Releasing opentelemetry-collector
   prepare-release:
