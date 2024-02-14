@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("file")
+	Type    = component.MustNewType("file")
+	nameSep = "/"
 )
 
 const (
@@ -25,4 +26,8 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("otelcol")
+}
+
+func CustomMetricName(name string) string {
+	return "receiver" + nameSep + "file" + nameSep + name
 }
