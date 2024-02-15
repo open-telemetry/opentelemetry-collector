@@ -65,12 +65,10 @@ type Settings struct {
 
 // Service represents the implementation of a component.Host.
 type Service struct {
-	buildInfo            component.BuildInfo
-	telemetry            *telemetry.Telemetry
-	telemetrySettings    servicetelemetry.TelemetrySettings
-	host                 *serviceHost
-	telemetryInitializer *telemetryInitializer
-	collectorConf        *confmap.Conf
+	buildInfo         component.BuildInfo
+	telemetrySettings servicetelemetry.TelemetrySettings
+	host              *serviceHost
+	collectorConf     *confmap.Conf
 }
 
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
@@ -87,31 +85,39 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
-		telemetryInitializer: newColTelemetry(disableHighCard, extendedConfig),
-		collectorConf:        set.CollectorConf,
+		collectorConf: set.CollectorConf,
 	}
-	var err error
-	srv.telemetry, err = telemetry.New(ctx, telemetry.Settings{BuildInfo: set.BuildInfo, ZapOptions: set.LoggingOptions}, cfg.Telemetry)
+	tel, err := telemetry.New(ctx, telemetry.Settings{BuildInfo: set.BuildInfo, ZapOptions: set.LoggingOptions}, cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
 	res := resource.New(set.BuildInfo, cfg.Telemetry.Resource)
 	pcommonRes := pdataFromSdk(res)
 
-	logger := srv.telemetry.Logger()
-	if err = srv.telemetryInitializer.init(res, logger, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
-		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
+	logger := tel.Logger()
+	mp, err := newMeterProvider(
+		meterProviderSettings{
+			res:               res,
+			logger:            logger,
+			cfg:               cfg.Telemetry.Metrics,
+			asyncErrorChannel: set.AsyncErrorChannel,
+		},
+		disableHighCard,
+		extendedConfig,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create metric provider: %w", err)
 	}
 	srv.telemetrySettings = servicetelemetry.TelemetrySettings{
 		Logger:         logger,
-		TracerProvider: srv.telemetry.TracerProvider(),
-		MeterProvider:  srv.telemetryInitializer.mp,
+		MeterProvider:  mp,
+		TracerProvider: tel.TracerProvider(),
 		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 		// Construct telemetry attributes from build info and config's resource attributes.
 		Resource: pcommonRes,
 		Status: status.NewReporter(srv.host.notifyComponentStatusChange, func(err error) {
 			if errors.Is(err, status.ErrStatusNotReady) {
-				srv.telemetry.Logger().Warn("Invalid transition", zap.Error(err))
+				logger.Warn("Invalid transition", zap.Error(err))
 			}
 			// ignore other errors as they represent invalid state transitions and are considered benign.
 		}),
@@ -119,11 +125,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensionsAndPipeline(ctx, set, cfg); err != nil {
-		// If pipeline initialization fails then shut down the telemetry server
-		if shutdownErr := srv.telemetryInitializer.shutdown(); shutdownErr != nil {
-			err = multierr.Append(err, fmt.Errorf("failed to shutdown collector telemetry: %w", shutdownErr))
-		}
-
+		// If pipeline initialization fails then shut down telemetry
+		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 		return nil, err
 	}
 
@@ -168,6 +171,28 @@ func (srv *Service) Start(ctx context.Context) error {
 	return nil
 }
 
+func (srv *Service) shutdownTelemetry(ctx context.Context) error {
+	// The metric.MeterProvider and trace.TracerProvider interfaces do not have a Shutdown method.
+	// To shutdown the providers we try to cast to this interface, which matches the type signature used in the SDK.
+	type shutdownable interface {
+		Shutdown(context.Context) error
+	}
+
+	var err error
+	if prov, ok := srv.telemetrySettings.MeterProvider.(shutdownable); ok {
+		if shutdownErr := prov.Shutdown(ctx); shutdownErr != nil {
+			err = multierr.Append(err, fmt.Errorf("failed to shutdown meter provider: %w", shutdownErr))
+		}
+	}
+
+	if prov, ok := srv.telemetrySettings.TracerProvider.(shutdownable); ok {
+		if shutdownErr := prov.Shutdown(ctx); shutdownErr != nil {
+			err = multierr.Append(err, fmt.Errorf("failed to shutdown tracer provider: %w", shutdownErr))
+		}
+	}
+	return err
+}
+
 // Shutdown the service. Shutdown will do the following steps in order:
 // 1. Notify extensions that the pipeline is shutting down.
 // 2. Shutdown all pipelines.
@@ -194,13 +219,8 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 
 	srv.telemetrySettings.Logger.Info("Shutdown complete.")
 
-	if err := srv.telemetry.Shutdown(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown telemetry: %w", err))
-	}
+	errs = multierr.Append(errs, srv.shutdownTelemetry(ctx))
 
-	if err := srv.telemetryInitializer.shutdown(); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
-	}
 	return errs
 }
 
@@ -231,7 +251,7 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 
 	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
 		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
-		if err = proctelemetry.RegisterProcessMetrics(srv.telemetryInitializer.mp, getBallastSize(srv.host)); err != nil {
+		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings.MeterProvider, getBallastSize(srv.host)); err != nil {
 			return fmt.Errorf("failed to register process metrics: %w", err)
 		}
 	}

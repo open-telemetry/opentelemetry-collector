@@ -38,7 +38,7 @@ type customRoundTripper struct {
 
 var _ http.RoundTripper = (*customRoundTripper)(nil)
 
-func (c *customRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error) {
+func (c *customRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
 	return nil, nil
 }
 
@@ -159,7 +159,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				},
 				ReadBufferSize:     1024,
 				WriteBufferSize:    512,
-				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return nil, errors.New("error") },
+				CustomRoundTripper: func(http.RoundTripper) (http.RoundTripper, error) { return nil, errors.New("error") },
 			},
 			shouldError: true,
 		},
@@ -557,7 +557,7 @@ func TestHTTPServerWarning(t *testing.T) {
 			_, err := test.settings.ToServer(
 				componenttest.NewNopHost(),
 				set,
-				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, errWrite := fmt.Fprint(w, "test")
 					assert.NoError(t, errWrite)
 				}))
@@ -703,7 +703,7 @@ func TestHttpReception(t *testing.T) {
 			s, err := hss.ToServer(
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
-				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, errWrite := fmt.Fprint(w, "test")
 					assert.NoError(t, errWrite)
 				}))
@@ -816,7 +816,7 @@ func TestHttpCors(t *testing.T) {
 			s, err := hss.ToServer(
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
-				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusOK)
 				}))
 			require.NoError(t, err)
@@ -856,7 +856,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 	s, err := hss.ToServer(
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	require.NoError(t, err)
 	require.NotNil(t, s)
 	require.NoError(t, s.Close())
@@ -876,7 +876,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
 			mockID: auth.NewServer(
-				auth.WithServerAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+				auth.WithServerAuthenticate(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 					return ctx, errors.New("Settings failed")
 				}),
 			),
@@ -932,7 +932,7 @@ func TestHttpServerHeaders(t *testing.T) {
 			s, err := hss.ToServer(
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
-				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusOK)
 				}))
 			require.NoError(t, err)
@@ -1177,7 +1177,7 @@ func TestServerAuth(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
 			mockID: auth.NewServer(
-				auth.WithServerAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+				auth.WithServerAuthenticate(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 					authCalled = true
 					return ctx, nil
 				}),
@@ -1186,7 +1186,7 @@ func TestServerAuth(t *testing.T) {
 	}
 
 	handlerCalled := false
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		handlerCalled = true
 	})
 
@@ -1224,14 +1224,14 @@ func TestFailedServerAuth(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
 			mockID: auth.NewServer(
-				auth.WithServerAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+				auth.WithServerAuthenticate(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 					return ctx, errors.New("Settings failed")
 				}),
 			),
 		},
 	}
 
-	srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	require.NoError(t, err)
 
 	// test
@@ -1248,17 +1248,16 @@ func TestServerWithErrorHandler(t *testing.T) {
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
 	}
-	eh := func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int) {
+	eh := func(w http.ResponseWriter, _ *http.Request, _ string, statusCode int) {
 		assert.Equal(t, statusCode, http.StatusBadRequest)
 		// custom error handler changes returned status code
 		http.Error(w, "invalid request", http.StatusInternalServerError)
-
 	}
 
 	srv, err := hss.ToServer(
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
 		WithErrorHandler(eh),
 	)
 	require.NoError(t, err)
@@ -1286,7 +1285,7 @@ func TestServerWithDecoder(t *testing.T) {
 	srv, err := hss.ToServer(
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
 		WithDecoder("something-else", decoder),
 	)
 	require.NoError(t, err)
@@ -1362,7 +1361,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 	s, err := hss.ToServer(
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			_, errWrite := fmt.Fprint(w, "test")
 			require.NoError(b, errWrite)
 		}))

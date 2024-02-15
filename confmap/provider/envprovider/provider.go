@@ -21,7 +21,7 @@ type provider struct{}
 //
 // This Provider supports "env" scheme, and can be called with a selector:
 // `env:NAME_OF_ENVIRONMENT_VARIABLE`
-func NewWithSettings(_ confmap.ProviderSettings) confmap.Provider {
+func NewWithSettings(confmap.ProviderSettings) confmap.Provider {
 	return &provider{}
 }
 

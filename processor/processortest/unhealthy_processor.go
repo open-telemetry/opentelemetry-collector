@@ -62,7 +62,7 @@ type unhealthyProcessor struct {
 	telemetry component.TelemetrySettings
 }
 
-func (p unhealthyProcessor) Start(_ context.Context, _ component.Host) error {
+func (p unhealthyProcessor) Start(context.Context, component.Host) error {
 	go func() {
 		p.telemetry.ReportStatus(component.NewStatusEvent(component.StatusRecoverableError))
 	}()

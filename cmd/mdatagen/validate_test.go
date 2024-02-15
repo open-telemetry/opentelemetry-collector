@@ -113,7 +113,7 @@ func TestValidateMetricDuplicates(t *testing.T) {
 		"container.uptime":          {"docker_stats", "kubeletstats"},
 	}
 	allMetrics := map[string][]string{}
-	err := filepath.Walk("../../receiver", func(path string, info fs.FileInfo, err error) error {
+	err := filepath.Walk("../../receiver", func(path string, info fs.FileInfo, _ error) error {
 		if info.Name() == "metadata.yaml" {
 			md, err := loadMetadata(path)
 			require.NoError(t, err)

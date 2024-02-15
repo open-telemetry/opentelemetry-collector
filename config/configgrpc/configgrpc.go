@@ -127,7 +127,7 @@ type GRPCServerSettings = ServerConfig
 // ServerConfig defines common settings for a gRPC server configuration.
 type ServerConfig struct {
 	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
-	NetAddr confignet.NetAddr `mapstructure:",squash"`
+	NetAddr confignet.AddrConfig `mapstructure:",squash"`
 
 	// Configures the protocol to use TLS.
 	// The default value is nil, which will cause the protocol to not use TLS.
@@ -281,12 +281,6 @@ func validateBalancerName(balancerName string) bool {
 // Deprecated: [v0.95.0] Call Listen directly on the NetAddr field.
 func (gss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
 	return gss.NetAddr.Listen(ctx)
-}
-
-// ToListener returns the net.Listener constructed from the settings.
-// Deprecated: [v0.94.0] Call Listen directly on the NetAddr field.
-func (gss *ServerConfig) ToListener() (net.Listener, error) {
-	return gss.ToListenerContext(context.Background())
 }
 
 func (gss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
