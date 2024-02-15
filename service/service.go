@@ -235,14 +235,20 @@ func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings,
 		return fmt.Errorf("failed to build extensions: %w", err)
 	}
 
+	memoryLimiter, err := getMemoryLimiter(srv.host)
+	if err != nil {
+		return err
+	}
+
 	pSet := graph.Settings{
-		Telemetry:        srv.telemetrySettings,
-		BuildInfo:        srv.buildInfo,
-		ReceiverBuilder:  set.Receivers,
-		ProcessorBuilder: set.Processors,
-		ExporterBuilder:  set.Exporters,
-		ConnectorBuilder: set.Connectors,
-		PipelineConfigs:  cfg.Pipelines,
+		Telemetry:           srv.telemetrySettings,
+		BuildInfo:           srv.buildInfo,
+		ReceiverBuilder:     set.Receivers,
+		ProcessorBuilder:    set.Processors,
+		ExporterBuilder:     set.Exporters,
+		ConnectorBuilder:    set.Connectors,
+		PipelineConfigs:     cfg.Pipelines,
+		GlobalMemoryLimiter: memoryLimiter,
 	}
 
 	if srv.host.pipelines, err = graph.Build(ctx, pSet); err != nil {
@@ -272,6 +278,19 @@ func getBallastSize(host component.Host) uint64 {
 		}
 	}
 	return 0
+}
+
+func getMemoryLimiter(host component.Host) (*component.ID, error) {
+	var memoryLimiter *component.ID
+	for id, ext := range host.GetExtensions() {
+		if ml, ok := ext.(extension.MemoryLimiter); ok && ml.ApplyToAllReceivers() {
+			if memoryLimiter != nil {
+				return nil, fmt.Errorf("only one memory limiter extension can be applied to all receivers")
+			}
+			memoryLimiter = &id
+		}
+	}
+	return memoryLimiter, nil
 }
 
 func pdataFromSdk(res *sdkresource.Resource) pcommon.Resource {

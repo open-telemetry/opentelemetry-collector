@@ -3,8 +3,9 @@
 
 package memorylimiterextension // import "go.opentelemetry.io/collector/extension/memorylimiterextension"
 
-import (
-	"go.opentelemetry.io/collector/internal/memorylimiter"
-)
+import "go.opentelemetry.io/collector/internal/memorylimiter"
 
-type Config = memorylimiter.Config
+type Config struct {
+	memorylimiter.Config `mapstructure:",squash"`
+	ApplyToAllReceivers  bool `mapstructure:"apply_to_all_receivers"`
+}

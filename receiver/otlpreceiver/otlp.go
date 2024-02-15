@@ -145,7 +145,8 @@ func (r *otlpReceiver) startHTTPServer(host component.Host) error {
 	}
 
 	var err error
-	if r.serverHTTP, err = r.cfg.HTTP.ToServer(host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
+	if r.serverHTTP, err = r.cfg.HTTP.ToServer(host, r.settings.TelemetrySettings, httpMux,
+		confighttp.WithErrorHandler(errorHandler), confighttp.WithMemoryLimiter(r.settings.MemoryLimiter)); err != nil {
 		return err
 	}
 

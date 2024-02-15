@@ -291,9 +291,6 @@ type ServerConfig struct {
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
-
-	// MemoryLimiter is memory limiter this receiver will use to restrict incoming requests
-	MemoryLimiter *component.ID `mapstructure:"memory_limiter"`
 }
 
 // ToListener creates a net.Listener.
@@ -318,8 +315,9 @@ func (hss *ServerConfig) ToListener() (net.Listener, error) {
 // toServerOptions has options that change the behavior of the HTTP server
 // returned by ServerConfig.ToServer().
 type toServerOptions struct {
-	errHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
-	decoders   map[string]func(body io.ReadCloser) (io.ReadCloser, error)
+	errHandler    func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
+	decoders      map[string]func(body io.ReadCloser) (io.ReadCloser, error)
+	memoryLimiter *component.ID
 }
 
 // ToServerOption is an option to change the behavior of the HTTP server
@@ -345,6 +343,12 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 	}
 }
 
+func WithMemoryLimiter(extID *component.ID) ToServerOption {
+	return func(opts *toServerOptions) {
+		opts.memoryLimiter = extID
+	}
+}
+
 // ToServer creates an http.Server from settings object.
 func (hss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
@@ -354,8 +358,8 @@ func (hss *ServerConfig) ToServer(host component.Host, settings component.Teleme
 		o(serverOpts)
 	}
 
-	if hss.MemoryLimiter != nil {
-		ml, err := getMemoryLimiterExtension(hss.MemoryLimiter, host.GetExtensions())
+	if serverOpts.memoryLimiter != nil {
+		ml, err := getMemoryLimiterExtension(serverOpts.memoryLimiter, host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}

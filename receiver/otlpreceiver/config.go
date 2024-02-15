@@ -44,6 +44,9 @@ type Protocols struct {
 type Config struct {
 	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
 	Protocols `mapstructure:"protocols"`
+
+	// MemoryLimiter is memory limiter this receiver will use to restrict incoming requests to avoid OOM kills.
+	MemoryLimiter *component.ID `mapstructure:"memory_limiter"`
 }
 
 var _ component.Config = (*Config)(nil)

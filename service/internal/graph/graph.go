@@ -38,6 +38,9 @@ type Settings struct {
 
 	// PipelineConfigs is a map of component.ID to PipelineConfig.
 	PipelineConfigs pipelines.Config
+
+	// MemoryLimiter is an ID of the memory limiter extension to be used by the receivers.
+	GlobalMemoryLimiter *component.ID
 }
 
 type Graph struct {
@@ -280,7 +283,8 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 
 		switch n := node.(type) {
 		case *receiverNode:
-			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
+			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ReceiverBuilder, set.GlobalMemoryLimiter,
+				g.nextConsumers(n.ID()))
 		case *processorNode:
 			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
 		case *exporterNode:
