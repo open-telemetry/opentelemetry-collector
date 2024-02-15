@@ -15,4 +15,5 @@ Generating semantic convention constants from specification version v1.22.0 at /
 .tools/semconvgen -o semconv/v1.22.0 -t semconv/template.j2 -s v1.22.0 -i /tmp/semantic-conventions/model/. --only=resource -p conventionType=resource -f generated_resource.go
 .tools/semconvgen -o semconv/v1.22.0 -t semconv/template.j2 -s v1.22.0 -i /tmp/semantic-conventions/model/. --only=event -p conventionType=event -f generated_event.go
 .tools/semconvgen -o semconv/v1.22.0 -t semconv/template.j2 -s v1.22.0 -i /tmp/semantic-conventions/model/. --only=span -p conventionType=trace -f generated_trace.go
+.tools/semconvgen -o semconv/v1.22.0 -t semconv/template.j2 -s v1.22.0 -i /tmp/semantic-conventions/model/. --only=attribute_group -p conventionType=trace -f generated_attribute_group.go
 ```
