@@ -9,9 +9,12 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -290,4 +293,70 @@ func TestConsumeTracesContract(t *testing.T) {
 
 	// Run the contract checker. This will trigger test failures if any problems are found.
 	CheckConsumeContract(params)
+}
+
+func TestIDSetFromDataPoint(t *testing.T) {
+	require.Error(t, idSetFromDataPoint(map[UniqueIDAttrVal]bool{}, pcommon.NewMap()))
+	m := pcommon.NewMap()
+	m.PutStr("foo", "bar")
+	require.Error(t, idSetFromDataPoint(map[UniqueIDAttrVal]bool{}, m))
+	m.PutInt(UniqueIDAttrName, 64)
+	require.Error(t, idSetFromDataPoint(map[UniqueIDAttrVal]bool{}, m))
+	m.PutStr(UniqueIDAttrName, "myid")
+	result := map[UniqueIDAttrVal]bool{}
+	require.NoError(t, idSetFromDataPoint(result, m))
+	require.True(t, result["myid"])
+}
+
+func TestBadMetricPoint(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		metrics pmetric.Metrics
+	}{
+		{
+			name: "gauge",
+			metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				return m
+			}(),
+		},
+		{
+			name: "sum",
+			metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+				return m
+			}(),
+		},
+		{
+			name: "summary",
+			metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySummary().DataPoints().AppendEmpty()
+				return m
+			}(),
+		},
+		{
+			name: "histogram",
+			metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyHistogram().DataPoints().AppendEmpty()
+				return m
+			}(),
+		},
+		{
+			name: "exponential histogram",
+			metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
+				return m
+			}(),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := idSetFromMetrics(test.metrics)
+			require.Error(t, err)
+		})
+	}
 }
