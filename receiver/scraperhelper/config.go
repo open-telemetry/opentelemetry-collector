@@ -20,7 +20,7 @@ var (
 // ScraperControllerSettings defines common settings for a scraper controller
 // configuration. Scraper controller receivers can embed this struct, instead
 // of receiver.Settings, and extend it with more fields if needed.
-// Deprecated: [v0.94.0] Use ControllerConfig instead
+// Deprecated: [v0.95.0] Use ControllerConfig instead
 type ScraperControllerSettings = ControllerConfig
 
 // ControllerConfig defines common settings for a scraper controller
@@ -40,13 +40,9 @@ type ControllerConfig struct {
 
 // NewDefaultScraperControllerSettings returns default scraper controller
 // settings with a collection interval of one minute.
-// Deprecated: [v0.94.0] Use NewDefaultControllerConfig instead
+// Deprecated: [v0.95.0] Use NewDefaultControllerConfig instead
 func NewDefaultScraperControllerSettings(component.Type) ControllerConfig {
-	return ControllerConfig{
-		CollectionInterval: time.Minute,
-		InitialDelay:       time.Second,
-		Timeout:            0,
-	}
+	return NewDefaultControllerConfig()
 }
 
 // NewDefaultControllerConfig returns default scraper controller
