@@ -104,7 +104,7 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 }
 
 func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFunc func(ids idSet) error) {
-	consumer := &mockConsumer{t: params.T, consumeDecisionFunc: decisionFunc}
+	consumer := &mockConsumer{t: params.T, consumeDecisionFunc: decisionFunc, acceptedIDs: make(idSet), droppedIDs: make(idSet)}
 	ctx := context.Background()
 
 	// Create and start the receiver.
@@ -129,7 +129,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 
 	// Begin generating data to the receiver.
 
-	var generatedIDs idSet
+	generatedIDs := make(idSet)
 	var generatedIndex int64
 	var mux sync.Mutex
 	var wg sync.WaitGroup
@@ -224,30 +224,24 @@ func (ds idSet) compare(other idSet) (missingInOther, onlyInOther []UniqueIDAttr
 }
 
 // merge another set into this one and return a list of duplicate ids.
-func (ds *idSet) merge(other idSet) (duplicates []UniqueIDAttrVal) {
-	if *ds == nil {
-		*ds = map[UniqueIDAttrVal]bool{}
-	}
+func (ds idSet) merge(other idSet) (duplicates []UniqueIDAttrVal) {
 	for k, v := range other {
-		if _, ok := (*ds)[k]; ok {
+		if _, ok := ds[k]; ok {
 			duplicates = append(duplicates, k)
 		} else {
-			(*ds)[k] = v
+			ds[k] = v
 		}
 	}
 	return
 }
 
-// merge another set into this one and return a list of duplicate ids.
-func (ds *idSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrVal) {
-	if *ds == nil {
-		*ds = map[UniqueIDAttrVal]bool{}
-	}
+// mergeSlice merges another set into this one and return a list of duplicate ids.
+func (ds idSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrVal) {
 	for _, id := range other {
-		if _, ok := (*ds)[id]; ok {
+		if _, ok := ds[id]; ok {
 			duplicates = append(duplicates, id)
 		} else {
-			(*ds)[id] = true
+			ds[id] = true
 		}
 	}
 	return
@@ -255,9 +249,9 @@ func (ds *idSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrV
 
 // union computes the union of this and another sets. A new set if created to return the result.
 // Also returns a list of any duplicate ids found.
-func (ds *idSet) union(other idSet) (union idSet, duplicates []UniqueIDAttrVal) {
+func (ds idSet) union(other idSet) (union idSet, duplicates []UniqueIDAttrVal) {
 	union = map[UniqueIDAttrVal]bool{}
-	for k, v := range *ds {
+	for k, v := range ds {
 		union[k] = v
 	}
 	for k, v := range other {
