@@ -152,19 +152,6 @@ func (g *exampleTraceGenerator) Generate() []UniqueIDAttrVal {
 	return []UniqueIDAttrVal{id}
 }
 
-func (g *exampleLogGenerator) GenerateTraces() []UniqueIDAttrVal {
-	// Make sure the id is atomically incremented. Generate() may be called concurrently.
-	id := UniqueIDAttrVal(strconv.FormatInt(atomic.AddInt64(&g.sequenceNum, 1), 10))
-
-	data := CreateOneSpanWithID(id)
-
-	// Send the generated data to the receiver.
-	g.receiver.ReceiveTraces(data)
-
-	// And return the ids for bookkeeping by the test.
-	return []UniqueIDAttrVal{id}
-}
-
 // A generator that can send data to exampleReceiver.
 type exampleMetricGenerator struct {
 	t           *testing.T
@@ -180,9 +167,22 @@ func (g *exampleMetricGenerator) Stop() {}
 
 func (g *exampleMetricGenerator) Generate() []UniqueIDAttrVal {
 	// Make sure the id is atomically incremented. Generate() may be called concurrently.
-	id := UniqueIDAttrVal(strconv.FormatInt(atomic.AddInt64(&g.sequenceNum, 1), 10))
+	next := atomic.AddInt64(&g.sequenceNum, 1)
+	id := UniqueIDAttrVal(strconv.FormatInt(next, 10))
 
-	data := CreateEveryMetricTypeWithID(id)
+	var data pmetric.Metrics
+	switch next % 5 {
+	case 0:
+		data = CreateGaugeMetricWithID(id)
+	case 1:
+		data = CreateSumMetricWithID(id)
+	case 2:
+		data = CreateSummaryMetricWithID(id)
+	case 3:
+		data = CreateHistogramMetricWithID(id)
+	case 4:
+		data = CreateExponentialHistogramMetricWithID(id)
+	}
 
 	// Send the generated data to the receiver.
 	g.receiver.ReceiveMetrics(data)

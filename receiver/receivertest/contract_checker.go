@@ -507,28 +507,48 @@ func CreateOneLogWithID(id UniqueIDAttrVal) plog.Logs {
 	return data
 }
 
-func CreateEveryMetricTypeWithID(id UniqueIDAttrVal) pmetric.Metrics {
+func CreateGaugeMetricWithID(id UniqueIDAttrVal) pmetric.Metrics {
 	data := pmetric.NewMetrics()
 	gauge := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	gauge.AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes().PutStr(
 		UniqueIDAttrName,
 		string(id),
 	)
+	return data
+}
+
+func CreateSumMetricWithID(id UniqueIDAttrVal) pmetric.Metrics {
+	data := pmetric.NewMetrics()
 	sum := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	sum.AppendEmpty().SetEmptySum().DataPoints().AppendEmpty().Attributes().PutStr(
 		UniqueIDAttrName,
 		string(id),
 	)
+	return data
+}
+
+func CreateSummaryMetricWithID(id UniqueIDAttrVal) pmetric.Metrics {
+	data := pmetric.NewMetrics()
 	summary := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	summary.AppendEmpty().SetEmptySummary().DataPoints().AppendEmpty().Attributes().PutStr(
 		UniqueIDAttrName,
 		string(id),
 	)
+	return data
+}
+
+func CreateHistogramMetricWithID(id UniqueIDAttrVal) pmetric.Metrics {
+	data := pmetric.NewMetrics()
 	histogram := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	histogram.AppendEmpty().SetEmptyHistogram().DataPoints().AppendEmpty().Attributes().PutStr(
 		UniqueIDAttrName,
 		string(id),
 	)
+	return data
+}
+
+func CreateExponentialHistogramMetricWithID(id UniqueIDAttrVal) pmetric.Metrics {
+	data := pmetric.NewMetrics()
 	exponentialHistogram := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	exponentialHistogram.AppendEmpty().SetEmptyExponentialHistogram().DataPoints().AppendEmpty().Attributes().PutStr(
 		UniqueIDAttrName,
