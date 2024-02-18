@@ -159,7 +159,6 @@ IPv6: ::1
 IPv6 Reminder:
 In IPv6 setups, ensure your system supports both IPv4 and IPv6 loopback addresses to avoid issues.
 
-Best Practice:
 For clarity and safety, consider explicitly mentioning the IP (`127.0.0.1`) instead of relying solely on `localhost`, especially in sensitive setups. Keep things consistent across different networks.
 
 ## Processors
