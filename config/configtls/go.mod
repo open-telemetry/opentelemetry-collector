@@ -1,11 +1,11 @@
 module go.opentelemetry.io/collector/config/configtls
 
-go 1.20
+go 1.21
 
 require (
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/config/configopaque v0.93.0
+	go.opentelemetry.io/collector/config/configopaque v0.94.1
 )
 
 require (
@@ -17,3 +17,5 @@ require (
 )
 
 replace go.opentelemetry.io/collector/config/configopaque => ../configopaque
+
+replace go.opentelemetry.io/collector/confmap => ../../confmap

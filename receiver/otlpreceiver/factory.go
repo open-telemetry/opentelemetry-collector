@@ -18,10 +18,8 @@ import (
 )
 
 const (
-	grpcPort            = 4317
-	httpPort            = 4318
-	defaultGRPCEndpoint = "0.0.0.0:4317"
-	defaultHTTPEndpoint = "0.0.0.0:4318"
+	grpcPort = 4317
+	httpPort = 4318
 
 	defaultTracesURLPath  = "/v1/traces"
 	defaultMetricsURLPath = "/v1/metrics"
@@ -43,8 +41,8 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Protocols: Protocols{
-			GRPC: &configgrpc.GRPCServerSettings{
-				NetAddr: confignet.NetAddr{
+			GRPC: &configgrpc.ServerConfig{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  localhostgate.EndpointForPort(grpcPort),
 					Transport: "tcp",
 				},
@@ -52,7 +50,7 @@ func createDefaultConfig() component.Config {
 				ReadBufferSize: 512 * 1024,
 			},
 			HTTP: &HTTPConfig{
-				HTTPServerConfig: &confighttp.HTTPServerConfig{
+				ServerConfig: &confighttp.ServerConfig{
 					Endpoint: localhostgate.EndpointForPort(httpPort),
 				},
 				TracesURLPath:  defaultTracesURLPath,

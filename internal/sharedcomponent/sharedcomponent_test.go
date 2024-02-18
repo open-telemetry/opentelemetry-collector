@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-var id = component.NewID("test")
+var id = component.MustNewID("test")
 
 type baseComponent struct {
 	component.StartFunc
@@ -79,11 +79,11 @@ func TestSharedComponent(t *testing.T) {
 	calledStart := 0
 	calledStop := 0
 	comp := &baseComponent{
-		StartFunc: func(ctx context.Context, host component.Host) error {
+		StartFunc: func(context.Context, component.Host) error {
 			calledStart++
 			return wantErr
 		},
-		ShutdownFunc: func(ctx context.Context) error {
+		ShutdownFunc: func(context.Context) error {
 			calledStop++
 			return wantErr
 		}}

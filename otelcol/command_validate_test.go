@@ -27,8 +27,8 @@ func TestValidateSubCommandInvalidComponents(t *testing.T) {
 		ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs:       []string{filepath.Join("testdata", "otelcol-invalid-components.yaml")},
-				Providers:  map[string]confmap.Provider{"file": fileprovider.New()},
-				Converters: []confmap.Converter{expandconverter.New()},
+				Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmap.ProviderSettings{})},
+				Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
 			},
 		})
 	require.NoError(t, err)

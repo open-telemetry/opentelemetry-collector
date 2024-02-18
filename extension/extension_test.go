@@ -21,18 +21,18 @@ type nopExtension struct {
 }
 
 func TestNewFactory(t *testing.T) {
-	const typeStr = "test"
+	var testType = component.MustNewType("test")
 	defaultCfg := struct{}{}
 	nopExtensionInstance := new(nopExtension)
 
 	factory := NewFactory(
-		typeStr,
+		testType,
 		func() component.Config { return &defaultCfg },
-		func(ctx context.Context, settings CreateSettings, extension component.Config) (Extension, error) {
+		func(context.Context, CreateSettings, component.Config) (Extension, error) {
 			return nopExtensionInstance, nil
 		},
 		component.StabilityLevelDevelopment)
-	assert.EqualValues(t, typeStr, factory.Type())
+	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.ExtensionStability())
@@ -48,8 +48,8 @@ func TestMakeFactoryMap(t *testing.T) {
 		out  map[component.Type]Factory
 	}
 
-	p1 := NewFactory("p1", nil, nil, component.StabilityLevelAlpha)
-	p2 := NewFactory("p2", nil, nil, component.StabilityLevelAlpha)
+	p1 := NewFactory(component.MustNewType("p1"), nil, nil, component.StabilityLevelAlpha)
+	p2 := NewFactory(component.MustNewType("p2"), nil, nil, component.StabilityLevelAlpha)
 	testCases := []testCase{
 		{
 			name: "different names",
@@ -61,7 +61,7 @@ func TestMakeFactoryMap(t *testing.T) {
 		},
 		{
 			name: "same name",
-			in:   []Factory{p1, p2, NewFactory("p1", nil, nil, component.StabilityLevelAlpha)},
+			in:   []Factory{p1, p2, NewFactory(component.MustNewType("p1"), nil, nil, component.StabilityLevelAlpha)},
 		},
 	}
 	for i := range testCases {
@@ -79,16 +79,16 @@ func TestMakeFactoryMap(t *testing.T) {
 }
 
 func TestBuilder(t *testing.T) {
-	const typeStr = "test"
+	var testType = component.MustNewType("test")
 	defaultCfg := struct{}{}
-	testID := component.NewID(typeStr)
-	unknownID := component.NewID("unknown")
+	testID := component.NewID(testType)
+	unknownID := component.MustNewID("unknown")
 
 	factories, err := MakeFactoryMap([]Factory{
 		NewFactory(
-			typeStr,
+			testType,
 			func() component.Config { return &defaultCfg },
-			func(ctx context.Context, settings CreateSettings, extension component.Config) (Extension, error) {
+			func(_ context.Context, settings CreateSettings, _ component.Config) (Extension, error) {
 				return nopExtension{CreateSettings: settings}, nil
 			},
 			component.StabilityLevelDevelopment),
@@ -111,20 +111,20 @@ func TestBuilder(t *testing.T) {
 	assert.EqualError(t, err, "extension factory not available for: \"unknown\"")
 	assert.Nil(t, missingType)
 
-	missingCfg, err := b.Create(context.Background(), createSettings(component.NewIDWithName(typeStr, "foo")))
+	missingCfg, err := b.Create(context.Background(), createSettings(component.NewIDWithName(testType, "foo")))
 	assert.EqualError(t, err, "extension \"test/foo\" is not configured")
 	assert.Nil(t, missingCfg)
 }
 
 func TestBuilderFactory(t *testing.T) {
-	factories, err := MakeFactoryMap([]Factory{NewFactory("foo", nil, nil, component.StabilityLevelDevelopment)}...)
+	factories, err := MakeFactoryMap([]Factory{NewFactory(component.MustNewType("foo"), nil, nil, component.StabilityLevelDevelopment)}...)
 	require.NoError(t, err)
 
-	cfgs := map[component.ID]component.Config{component.NewID("foo"): struct{}{}}
+	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
 	b := NewBuilder(cfgs, factories)
 
-	assert.NotNil(t, b.Factory(component.NewID("foo").Type()))
-	assert.Nil(t, b.Factory(component.NewID("bar").Type()))
+	assert.NotNil(t, b.Factory(component.MustNewID("foo").Type()))
+	assert.Nil(t, b.Factory(component.MustNewID("bar").Type()))
 }
 
 func createSettings(id component.ID) CreateSettings {

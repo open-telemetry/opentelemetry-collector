@@ -8,11 +8,21 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/internal/configurablehttpprovider"
 )
 
+// NewWithSettings returns a new confmap.Provider that reads the configuration from a http server.
+//
+// This Provider supports "http" scheme.
+//
+// One example for HTTP URI is: http://localhost:3333/getConfig
+func NewWithSettings(set confmap.ProviderSettings) confmap.Provider {
+	return configurablehttpprovider.New(configurablehttpprovider.HTTPScheme, set)
+}
+
 // New returns a new confmap.Provider that reads the configuration from a http server.
 //
 // This Provider supports "http" scheme.
 //
 // One example for HTTP URI is: http://localhost:3333/getConfig
+// Deprecated: [v0.94.0] Use NewWithSettings instead.
 func New() confmap.Provider {
-	return configurablehttpprovider.New(configurablehttpprovider.HTTPScheme)
+	return NewWithSettings(confmap.ProviderSettings{})
 }

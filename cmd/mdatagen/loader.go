@@ -124,7 +124,7 @@ func (m *metric) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("enabled") {
 		return errors.New("missing required field: `enabled`")
 	}
-	err := parser.Unmarshal(m, confmap.WithErrorUnused())
+	err := parser.Unmarshal(m)
 	if err != nil {
 		return err
 	}
@@ -253,7 +253,7 @@ func loadMetadata(filePath string) (metadata, error) {
 	}
 
 	md := metadata{ScopeName: scopeName(filePath), ShortFolderName: shortFolderName(filePath)}
-	if err := conf.Unmarshal(&md, confmap.WithErrorUnused()); err != nil {
+	if err := conf.Unmarshal(&md); err != nil {
 		return md, err
 	}
 
@@ -267,18 +267,18 @@ func loadMetadata(filePath string) (metadata, error) {
 	return md, nil
 }
 
-var componentTypes = map[string]func(string) string{
-	"connector": func(in string) string { return strings.TrimSuffix(in, "connector") },
-	"exporter":  func(in string) string { return strings.TrimSuffix(in, "exporter") },
-	"extension": func(in string) string { return strings.TrimSuffix(in, "extension") },
-	"processor": func(in string) string { return strings.TrimSuffix(in, "processor") },
-	"scraper":   func(in string) string { return strings.TrimSuffix(in, "scraper") },
-	"receiver":  func(in string) string { return in },
+var componentTypes = []string{
+	"connector",
+	"exporter",
+	"extension",
+	"processor",
+	"scraper",
+	"receiver",
 }
 
 func shortFolderName(filePath string) string {
 	parentFolder := filepath.Base(filepath.Dir(filePath))
-	for cType := range componentTypes {
+	for _, cType := range componentTypes {
 		if strings.HasSuffix(parentFolder, cType) {
 			return strings.TrimSuffix(parentFolder, cType)
 		}
@@ -287,20 +287,12 @@ func shortFolderName(filePath string) string {
 }
 
 func scopeName(filePath string) string {
-	sn := "otelcol"
+	sn := "go.opentelemetry.io/collector"
 	dirs := strings.Split(filepath.Dir(filePath), string(os.PathSeparator))
 	for _, dir := range dirs {
-		// skip directory names for component types
-		if _, ok := componentTypes[dir]; ok {
-			continue
-		}
-		// note here that the only component that receives a different
-		// treatment is receivers. this is to prevent breaking backwards
-		// compatibility for anyone that's using the generated metrics w/
-		// scope names today.
-		for cType, normalizeFunc := range componentTypes {
+		for _, cType := range componentTypes {
 			if strings.HasSuffix(dir, cType) {
-				sn += "/" + normalizeFunc(dir)
+				sn += "/" + dir
 			}
 		}
 	}

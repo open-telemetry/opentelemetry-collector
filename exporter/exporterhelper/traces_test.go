@@ -25,8 +25,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	fakeTracesExporterName   = component.NewIDWithName("fake_traces_exporter", "with_name")
+	fakeTracesExporterName   = component.MustNewIDWithName("fake_traces_exporter", "with_name")
 	fakeTracesExporterConfig = struct{}{}
 )
 
@@ -155,17 +155,17 @@ func TestTracesRequestExporter_Default_ExportError(t *testing.T) {
 
 func TestTracesExporter_WithPersistentQueue(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
-	storageID := component.NewIDWithName("file_storage", "storage")
+	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
 	rCfg := configretry.NewDefaultBackOffConfig()
 	ts := consumertest.TracesSink{}
 	set := exportertest.NewNopCreateSettings()
-	set.ID = component.NewIDWithName("test_traces", "with_persistent_queue")
+	set.ID = component.MustNewIDWithName("test_traces", "with_persistent_queue")
 	te, err := NewTracesExporter(context.Background(), set, &fakeTracesExporterConfig, ts.ConsumeTraces, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
 	host := &mockHost{ext: map[component.ID]component.Component{
-		storageID: internal.NewMockStorageExtension(nil),
+		storageID: queue.NewMockStorageExtension(nil),
 	}}
 	require.NoError(t, te.Start(context.Background(), host))
 	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
@@ -367,7 +367,7 @@ func TestTracesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 }
 
 func newTraceDataPusher(retError error) consumer.ConsumeTracesFunc {
-	return func(ctx context.Context, td ptrace.Traces) error {
+	return func(context.Context, ptrace.Traces) error {
 		return retError
 	}
 }

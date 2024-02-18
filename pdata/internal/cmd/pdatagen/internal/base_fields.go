@@ -285,7 +285,7 @@ func (sf *sliceField) GenerateSetWithTestValue(ms *messageValueStruct) string {
 	return sb.String()
 }
 
-func (sf *sliceField) GenerateCopyToValue(_ *messageValueStruct) string {
+func (sf *sliceField) GenerateCopyToValue(*messageValueStruct) string {
 	return "\tms." + sf.fieldName + "().CopyTo(dest." + sf.fieldName + "())"
 }
 
@@ -341,7 +341,7 @@ func (mf *messageValueField) GenerateSetWithTestValue(ms *messageValueStruct) st
 	return sb.String()
 }
 
-func (mf *messageValueField) GenerateCopyToValue(_ *messageValueStruct) string {
+func (mf *messageValueField) GenerateCopyToValue(*messageValueStruct) string {
 	return "\tms." + mf.fieldName + "().CopyTo(dest." + mf.fieldName + "())"
 }
 
@@ -390,11 +390,11 @@ func (pf *primitiveField) GenerateAccessorsTest(ms *messageValueStruct) string {
 	return sb.String()
 }
 
-func (pf *primitiveField) GenerateSetWithTestValue(_ *messageValueStruct) string {
+func (pf *primitiveField) GenerateSetWithTestValue(*messageValueStruct) string {
 	return "\ttv.orig." + pf.fieldName + " = " + pf.testVal
 }
 
-func (pf *primitiveField) GenerateCopyToValue(_ *messageValueStruct) string {
+func (pf *primitiveField) GenerateCopyToValue(*messageValueStruct) string {
 	return "\tdest.Set" + pf.fieldName + "(ms." + pf.fieldName + "())"
 }
 
@@ -448,7 +448,7 @@ func (ptf *primitiveTypedField) GenerateAccessorsTest(ms *messageValueStruct) st
 	return sb.String()
 }
 
-func (ptf *primitiveTypedField) GenerateSetWithTestValue(_ *messageValueStruct) string {
+func (ptf *primitiveTypedField) GenerateSetWithTestValue(*messageValueStruct) string {
 	originFieldName := ptf.fieldName
 	if ptf.originFieldName != "" {
 		originFieldName = ptf.originFieldName
@@ -456,7 +456,7 @@ func (ptf *primitiveTypedField) GenerateSetWithTestValue(_ *messageValueStruct) 
 	return "\ttv.orig." + originFieldName + " = " + ptf.returnType.testVal
 }
 
-func (ptf *primitiveTypedField) GenerateCopyToValue(_ *messageValueStruct) string {
+func (ptf *primitiveTypedField) GenerateCopyToValue(*messageValueStruct) string {
 	return "\tdest.Set" + ptf.fieldName + "(ms." + ptf.fieldName + "())"
 }
 
@@ -514,11 +514,11 @@ func (psf *primitiveSliceField) GenerateAccessorsTest(ms *messageValueStruct) st
 	return sb.String()
 }
 
-func (psf *primitiveSliceField) GenerateSetWithTestValue(_ *messageValueStruct) string {
+func (psf *primitiveSliceField) GenerateSetWithTestValue(*messageValueStruct) string {
 	return "\ttv.orig." + psf.fieldName + " = " + psf.testVal
 }
 
-func (psf *primitiveSliceField) GenerateCopyToValue(_ *messageValueStruct) string {
+func (psf *primitiveSliceField) GenerateCopyToValue(*messageValueStruct) string {
 	return "\tms." + psf.fieldName + "().CopyTo(dest." + psf.fieldName + "())"
 }
 
@@ -777,7 +777,7 @@ func (opv *optionalPrimitiveValue) GenerateSetWithTestValue(ms *messageValueStru
 	return "\ttv.orig." + opv.fieldName + "_ = &" + ms.originFullName + "_" + opv.fieldName + "{" + opv.fieldName + ":" + opv.testVal + "}"
 }
 
-func (opv *optionalPrimitiveValue) GenerateCopyToValue(_ *messageValueStruct) string {
+func (opv *optionalPrimitiveValue) GenerateCopyToValue(*messageValueStruct) string {
 	return "if ms.Has" + opv.fieldName + "(){\n" +
 		"\tdest.Set" + opv.fieldName + "(ms." + opv.fieldName + "())\n" +
 		"}\n"

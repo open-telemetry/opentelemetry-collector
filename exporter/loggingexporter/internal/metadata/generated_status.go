@@ -9,17 +9,21 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("logging")
+	scopeName = "go.opentelemetry.io/collector/exporter/loggingexporter"
+)
+
 const (
-	Type             = "logging"
 	TracesStability  = component.StabilityLevelDeprecated
 	MetricsStability = component.StabilityLevelDeprecated
 	LogsStability    = component.StabilityLevelDeprecated
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/logging")
+	return settings.MeterProvider.Meter(scopeName)
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/logging")
+	return settings.TracerProvider.Tracer(scopeName)
 }

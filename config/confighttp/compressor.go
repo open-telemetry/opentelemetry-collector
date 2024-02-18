@@ -39,15 +39,15 @@ type compressor struct {
 
 // writerFactory defines writer field in CompressRoundTripper.
 // The validity of input is already checked when NewCompressRoundTripper was called in confighttp,
-func newCompressor(compressionType configcompression.CompressionType) (*compressor, error) {
+func newCompressor(compressionType configcompression.Type) (*compressor, error) {
 	switch compressionType {
-	case configcompression.Gzip:
+	case configcompression.TypeGzip:
 		return gZipPool, nil
-	case configcompression.Snappy:
+	case configcompression.TypeSnappy:
 		return snappyPool, nil
-	case configcompression.Zstd:
+	case configcompression.TypeZstd:
 		return zStdPool, nil
-	case configcompression.Zlib, configcompression.Deflate:
+	case configcompression.TypeZlib, configcompression.TypeDeflate:
 		return zLibPool, nil
 	}
 	return nil, errors.New("unsupported compression type, ")

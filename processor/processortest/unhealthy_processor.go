@@ -24,7 +24,7 @@ func NewUnhealthyProcessorCreateSettings() processor.CreateSettings {
 // NewUnhealthyProcessorFactory returns a component.ProcessorFactory that constructs nop processors.
 func NewUnhealthyProcessorFactory() processor.Factory {
 	return processor.NewFactory(
-		"unhealthy",
+		component.MustNewType("unhealthy"),
 		func() component.Config {
 			return &struct{}{}
 		},
@@ -62,7 +62,7 @@ type unhealthyProcessor struct {
 	telemetry component.TelemetrySettings
 }
 
-func (p unhealthyProcessor) Start(_ context.Context, _ component.Host) error {
+func (p unhealthyProcessor) Start(context.Context, component.Host) error {
 	go func() {
 		p.telemetry.ReportStatus(component.NewStatusEvent(component.StatusRecoverableError))
 	}()

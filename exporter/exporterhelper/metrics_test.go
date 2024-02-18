@@ -25,8 +25,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	fakeMetricsExporterName   = component.NewIDWithName("fake_metrics_exporter", "with_name")
+	fakeMetricsExporterName   = component.MustNewIDWithName("fake_metrics_exporter", "with_name")
 	fakeMetricsExporterConfig = struct{}{}
 )
 
@@ -158,17 +158,17 @@ func TestMetricsRequestExporter_Default_ExportError(t *testing.T) {
 
 func TestMetricsExporter_WithPersistentQueue(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
-	storageID := component.NewIDWithName("file_storage", "storage")
+	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
 	rCfg := configretry.NewDefaultBackOffConfig()
 	ms := consumertest.MetricsSink{}
 	set := exportertest.NewNopCreateSettings()
-	set.ID = component.NewIDWithName("test_metrics", "with_persistent_queue")
+	set.ID = component.MustNewIDWithName("test_metrics", "with_persistent_queue")
 	te, err := NewMetricsExporter(context.Background(), set, &fakeTracesExporterConfig, ms.ConsumeMetrics, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
 	host := &mockHost{ext: map[component.ID]component.Component{
-		storageID: internal.NewMockStorageExtension(nil),
+		storageID: queue.NewMockStorageExtension(nil),
 	}}
 	require.NoError(t, te.Start(context.Background(), host))
 	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
@@ -366,7 +366,7 @@ func TestMetricsRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 }
 
 func newPushMetricsData(retError error) consumer.ConsumeMetricsFunc {
-	return func(ctx context.Context, td pmetric.Metrics) error {
+	return func(_ context.Context, _ pmetric.Metrics) error {
 		return retError
 	}
 }

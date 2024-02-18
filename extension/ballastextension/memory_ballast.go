@@ -21,7 +21,7 @@ type memoryBallast struct {
 	getTotalMem      func() (uint64, error)
 }
 
-func (m *memoryBallast) Start(_ context.Context, _ component.Host) error {
+func (m *memoryBallast) Start(context.Context, component.Host) error {
 	// absolute value supersedes percentage setting
 	if m.cfg.SizeMiB > 0 {
 		m.ballastSizeBytes = m.cfg.SizeMiB * megaBytes
@@ -43,7 +43,7 @@ func (m *memoryBallast) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (m *memoryBallast) Shutdown(_ context.Context) error {
+func (m *memoryBallast) Shutdown(context.Context) error {
 	m.ballast = nil
 	return nil
 }

@@ -23,11 +23,11 @@ type exampleReceiver struct {
 	nextConsumer consumer.Logs
 }
 
-func (s *exampleReceiver) Start(_ context.Context, _ component.Host) error {
+func (s *exampleReceiver) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *exampleReceiver) Shutdown(_ context.Context) error {
+func (s *exampleReceiver) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -83,7 +83,7 @@ func (g *exampleGenerator) Generate() []UniqueIDAttrVal {
 
 func newExampleFactory() receiver.Factory {
 	return receiver.NewFactory(
-		"example_receiver",
+		component.MustNewType("example_receiver"),
 		func() component.Config {
 			return &exampleReceiverConfig{}
 		},

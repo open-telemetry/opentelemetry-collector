@@ -86,8 +86,8 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
-				GRPC: &configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				GRPC: &configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:4317",
 						Transport: "tcp",
 					},
@@ -116,7 +116,7 @@ func TestUnmarshalConfig(t *testing.T) {
 					},
 				},
 				HTTP: &HTTPConfig{
-					HTTPServerConfig: &confighttp.HTTPServerConfig{
+					ServerConfig: &confighttp.ServerConfig{
 						Endpoint: "0.0.0.0:4318",
 						TLSSetting: &configtls.TLSServerSetting{
 							TLSSetting: configtls.TLSSetting{
@@ -147,15 +147,15 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
-				GRPC: &configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				GRPC: &configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "/tmp/grpc_otlp.sock",
 						Transport: "unix",
 					},
 					ReadBufferSize: 512 * 1024,
 				},
 				HTTP: &HTTPConfig{
-					HTTPServerConfig: &confighttp.HTTPServerConfig{
+					ServerConfig: &confighttp.ServerConfig{
 						Endpoint: "/tmp/http_otlp.sock",
 					},
 					TracesURLPath:  defaultTracesURLPath,

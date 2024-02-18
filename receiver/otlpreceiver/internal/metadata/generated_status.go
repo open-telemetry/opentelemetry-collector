@@ -9,17 +9,21 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("otlp")
+	scopeName = "go.opentelemetry.io/collector/receiver/otlpreceiver"
+)
+
 const (
-	Type             = "otlp"
 	LogsStability    = component.StabilityLevelBeta
 	TracesStability  = component.StabilityLevelStable
 	MetricsStability = component.StabilityLevelStable
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/otlpreceiver")
+	return settings.MeterProvider.Meter(scopeName)
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/otlpreceiver")
+	return settings.TracerProvider.Tracer(scopeName)
 }

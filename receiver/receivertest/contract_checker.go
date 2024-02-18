@@ -78,7 +78,7 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 		{
 			name: "always_succeed",
 			// Always succeed. We expect all data to be delivered as is.
-			decisionFunc: func(ids idSet) error { return nil },
+			decisionFunc: func(idSet) error { return nil },
 		},
 		{
 			name:         "random_non_permanent_error",
@@ -96,7 +96,7 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 
 	for _, scenario := range scenarios {
 		params.T.Run(
-			scenario.name, func(t *testing.T) {
+			scenario.name, func(*testing.T) {
 				checkConsumeContractScenario(params, scenario.decisionFunc)
 			},
 		)
@@ -104,7 +104,7 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 }
 
 func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFunc func(ids idSet) error) {
-	consumer := &mockConsumer{t: params.T, consumeDecisionFunc: decisionFunc}
+	consumer := &mockConsumer{t: params.T, consumeDecisionFunc: decisionFunc, acceptedIDs: make(idSet), droppedIDs: make(idSet)}
 	ctx := context.Background()
 
 	// Create and start the receiver.
@@ -129,7 +129,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 
 	// Begin generating data to the receiver.
 
-	var generatedIds idSet
+	generatedIDs := make(idSet)
 	var generatedIndex int64
 	var mux sync.Mutex
 	var wg sync.WaitGroup
@@ -151,7 +151,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 				require.Greater(params.T, len(ids), 0)
 
 				mux.Lock()
-				duplicates := generatedIds.mergeSlice(ids)
+				duplicates := generatedIDs.mergeSlice(ids)
 				mux.Unlock()
 
 				// Check that the generator works correctly. There may not be any duplicates in the
@@ -172,7 +172,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 			assert.Failf(params.T, "found duplicate elements in received and dropped data", "keys=%v", duplicates)
 		}
 		// Compare accepted+dropped with generated. Once they are equal it means all data is seen by the consumer.
-		missingInOther, onlyInOther := generatedIds.compare(acceptedAndDropped)
+		missingInOther, onlyInOther := generatedIDs.compare(acceptedAndDropped)
 		return len(missingInOther) == 0 && len(onlyInOther) == 0
 	}, 5*time.Second, 10*time.Millisecond)
 
@@ -184,7 +184,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 
 	// Make sure generated and accepted+dropped are exactly the same.
 
-	missingInOther, onlyInOther := generatedIds.compare(acceptedAndDropped)
+	missingInOther, onlyInOther := generatedIDs.compare(acceptedAndDropped)
 	if len(missingInOther) != 0 {
 		assert.Failf(params.T, "found elements sent that were not delivered", "keys=%v", missingInOther)
 	}
@@ -198,9 +198,9 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	// Print some stats to help debug test failures.
 	fmt.Printf(
 		"Sent %d, accepted=%d, expected dropped=%d, non-permanent errors retried=%d\n",
-		len(generatedIds),
-		len(consumer.acceptedIds),
-		len(consumer.droppedIds),
+		len(generatedIDs),
+		len(consumer.acceptedIDs),
+		len(consumer.droppedIDs),
 		consumer.nonPermanentFailures,
 	)
 }
@@ -224,30 +224,24 @@ func (ds idSet) compare(other idSet) (missingInOther, onlyInOther []UniqueIDAttr
 }
 
 // merge another set into this one and return a list of duplicate ids.
-func (ds *idSet) merge(other idSet) (duplicates []UniqueIDAttrVal) {
-	if *ds == nil {
-		*ds = map[UniqueIDAttrVal]bool{}
-	}
+func (ds idSet) merge(other idSet) (duplicates []UniqueIDAttrVal) {
 	for k, v := range other {
-		if _, ok := (*ds)[k]; ok {
+		if _, ok := ds[k]; ok {
 			duplicates = append(duplicates, k)
 		} else {
-			(*ds)[k] = v
+			ds[k] = v
 		}
 	}
 	return
 }
 
-// merge another set into this one and return a list of duplicate ids.
-func (ds *idSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrVal) {
-	if *ds == nil {
-		*ds = map[UniqueIDAttrVal]bool{}
-	}
+// mergeSlice merges another set into this one and return a list of duplicate ids.
+func (ds idSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrVal) {
 	for _, id := range other {
-		if _, ok := (*ds)[id]; ok {
+		if _, ok := ds[id]; ok {
 			duplicates = append(duplicates, id)
 		} else {
-			(*ds)[id] = true
+			ds[id] = true
 		}
 	}
 	return
@@ -255,9 +249,9 @@ func (ds *idSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrV
 
 // union computes the union of this and another sets. A new set if created to return the result.
 // Also returns a list of any duplicate ids found.
-func (ds *idSet) union(other idSet) (union idSet, duplicates []UniqueIDAttrVal) {
+func (ds idSet) union(other idSet) (union idSet, duplicates []UniqueIDAttrVal) {
 	union = map[UniqueIDAttrVal]bool{}
-	for k, v := range *ds {
+	for k, v := range ds {
 		union[k] = v
 	}
 	for k, v := range other {
@@ -282,7 +276,7 @@ var errPermanent = errors.New("permanent error")
 
 // randomNonPermanentErrorConsumeDecision is a decision function that succeeds approximately
 // half of the time and fails with a non-permanent error the rest of the time.
-func randomNonPermanentErrorConsumeDecision(_ idSet) error {
+func randomNonPermanentErrorConsumeDecision(idSet) error {
 	if rand.Float32() < 0.5 {
 		return errNonPermanent
 	}
@@ -291,7 +285,7 @@ func randomNonPermanentErrorConsumeDecision(_ idSet) error {
 
 // randomPermanentErrorConsumeDecision is a decision function that succeeds approximately
 // half of the time and fails with a permanent error the rest of the time.
-func randomPermanentErrorConsumeDecision(_ idSet) error {
+func randomPermanentErrorConsumeDecision(idSet) error {
 	if rand.Float32() < 0.5 {
 		return consumererror.NewPermanent(errPermanent)
 	}
@@ -301,7 +295,7 @@ func randomPermanentErrorConsumeDecision(_ idSet) error {
 // randomErrorsConsumeDecision is a decision function that succeeds approximately
 // a third of the time, fails with a permanent error the third of the time and fails with
 // a non-permanent error the rest of the time.
-func randomErrorsConsumeDecision(_ idSet) error {
+func randomErrorsConsumeDecision(idSet) error {
 	r := rand.Float64()
 	third := 1.0 / 3.0
 	if r < third {
@@ -321,8 +315,8 @@ type mockConsumer struct {
 	t                    *testing.T
 	consumeDecisionFunc  consumeDecisionFunc
 	mux                  sync.Mutex
-	acceptedIds          idSet
-	droppedIds           idSet
+	acceptedIDs          idSet
+	droppedIDs           idSet
 	nonPermanentFailures int
 }
 
@@ -404,7 +398,7 @@ func (m *mockConsumer) consume(ids idSet) error {
 		if consumererror.IsPermanent(err) {
 			// It is a permanent error, which means we need to drop the data.
 			// Remember the ids of dropped elements.
-			duplicates := m.droppedIds.merge(ids)
+			duplicates := m.droppedIDs.merge(ids)
 			require.Empty(m.t, duplicates, "elements that were dropped previously were sent again")
 		} else {
 			// It is a non-permanent error. Don't add it to the drop list. Remember the number of
@@ -416,7 +410,7 @@ func (m *mockConsumer) consume(ids idSet) error {
 	}
 
 	// The decision is a success. Remember the ids of the data in the accepted list.
-	duplicates := m.acceptedIds.merge(ids)
+	duplicates := m.acceptedIDs.merge(ids)
 	require.Empty(m.t, duplicates, "elements that were accepted previously were sent again")
 	return nil
 }
@@ -426,7 +420,7 @@ func (m *mockConsumer) consume(ids idSet) error {
 func (m *mockConsumer) acceptedAndDropped() (acceptedAndDropped idSet, duplicates []UniqueIDAttrVal) {
 	m.mux.Lock()
 	defer m.mux.Unlock()
-	return m.acceptedIds.union(m.droppedIds)
+	return m.acceptedIDs.union(m.droppedIDs)
 }
 
 func CreateOneLogWithID(id UniqueIDAttrVal) plog.Logs {

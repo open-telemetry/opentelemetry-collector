@@ -9,17 +9,21 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("memory_limiter")
+	scopeName = "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
+)
+
 const (
-	Type             = "memory_limiter"
 	TracesStability  = component.StabilityLevelBeta
 	MetricsStability = component.StabilityLevelBeta
 	LogsStability    = component.StabilityLevelBeta
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/memorylimiter")
+	return settings.MeterProvider.Meter(scopeName)
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/memorylimiter")
+	return settings.TracerProvider.Tracer(scopeName)
 }

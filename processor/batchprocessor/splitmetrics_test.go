@@ -19,7 +19,7 @@ func TestSplitMetrics_noop(t *testing.T) {
 	assert.Equal(t, td, split)
 
 	i := 0
-	td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(_ pmetric.Metric) bool {
+	td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(pmetric.Metric) bool {
 		i++
 		return i > 5
 	})
