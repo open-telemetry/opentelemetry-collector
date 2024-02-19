@@ -1,7 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
+package experr // import "go.opentelemetry.io/collector/exporter/internal/experr"
+
+import "errors"
 
 type shutdownErr struct {
 	err error
@@ -17,4 +19,9 @@ func (s shutdownErr) Error() string {
 
 func (s shutdownErr) Unwrap() error {
 	return s.err
+}
+
+func IsShutdownErr(err error) bool {
+	var sdErr shutdownErr
+	return errors.As(err, &sdErr)
 }

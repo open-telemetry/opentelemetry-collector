@@ -469,7 +469,7 @@ func newFailureProvider() confmap.Provider {
 	return &failureProvider{}
 }
 
-func (fmp *failureProvider) Retrieve(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+func (fmp *failureProvider) Retrieve(context.Context, string, confmap.WatcherFunc) (*confmap.Retrieved, error) {
 	return nil, errors.New("a failure occurred during configuration retrieval")
 }
 

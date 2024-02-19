@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/internal/queue"
+	"go.opentelemetry.io/collector/exporter/internal/experr"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
@@ -127,7 +127,7 @@ func (rs *retrySender) send(ctx context.Context, req Request) error {
 		case <-ctx.Done():
 			return fmt.Errorf("request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
-			return queue.NewShutdownErr(err)
+			return experr.NewShutdownErr(err)
 		case <-time.After(backoffDelay):
 		}
 	}
