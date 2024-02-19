@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.1
 	go.opentelemetry.io/collector/confmap v0.94.1
 	go.opentelemetry.io/collector/consumer v0.94.1
-	go.opentelemetry.io/collector/pdata v1.1.0
+	go.opentelemetry.io/collector/pdata v1.2.0
 	go.opentelemetry.io/collector/processor v0.94.1
 	go.opentelemetry.io/otel v1.23.1
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.2

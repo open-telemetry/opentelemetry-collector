@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/component v0.94.1
 	go.opentelemetry.io/collector/config/configauth v0.94.1
 	go.opentelemetry.io/collector/config/configcompression v0.94.1
-	go.opentelemetry.io/collector/config/configopaque v0.94.1
+	go.opentelemetry.io/collector/config/configopaque v1.2.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.1
 	go.opentelemetry.io/collector/config/configtls v0.94.1
 	go.opentelemetry.io/collector/config/internal v0.94.1
@@ -48,8 +48,8 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.94.1 // indirect
 	go.opentelemetry.io/collector/extension v0.94.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.1.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.1.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.2.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.2.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.2 // indirect
 	go.opentelemetry.io/otel/metric v1.23.1 // indirect
 	go.opentelemetry.io/otel/sdk v1.23.1 // indirect

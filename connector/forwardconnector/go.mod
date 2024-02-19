@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector/component v0.94.1
 	go.opentelemetry.io/collector/connector v0.94.1
 	go.opentelemetry.io/collector/consumer v0.94.1
-	go.opentelemetry.io/collector/pdata v1.1.0
+	go.opentelemetry.io/collector/pdata v1.2.0
 	go.opentelemetry.io/otel/metric v1.23.1
 	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/goleak v1.3.0
