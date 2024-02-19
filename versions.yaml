@@ -9,7 +9,7 @@ module-sets:
       - go.opentelemetry.io/collector/pdata
       - go.opentelemetry.io/collector/config/configopaque
   beta:
-    version: v0.94.1
+    version: v0.95.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/cmd/builder
