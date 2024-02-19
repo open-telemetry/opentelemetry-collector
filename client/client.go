@@ -151,6 +151,10 @@ func NewMetadata(md map[string][]string) Metadata {
 
 // Get gets the value of the key from metadata, returning a copy.
 func (m Metadata) Get(key string) []string {
+	if m.data == nil {
+		return make([]string, 0)
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	vals := m.data[key]
