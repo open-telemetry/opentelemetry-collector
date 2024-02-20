@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"net"
 	"strings"
 	"time"
 
@@ -46,10 +45,6 @@ type KeepaliveClientConfig struct {
 	Timeout             time.Duration `mapstructure:"timeout"`
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
 }
-
-// GRPCClientSettings defines common settings for a gRPC client configuration.
-// Deprecated: [v0.94.0] Use ClientConfig instead
-type GRPCClientSettings = ClientConfig
 
 // ClientConfig defines common settings for a gRPC client configuration.
 type ClientConfig struct {
@@ -120,10 +115,6 @@ type KeepaliveEnforcementPolicy struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
 }
 
-// GRPCServerSettings defines common settings for a gRPC server configuration.
-// Deprecated: [v0.94.0] Use ServerConfig instead
-type GRPCServerSettings = ServerConfig
-
 // ServerConfig defines common settings for a gRPC server configuration.
 type ServerConfig struct {
 	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
@@ -159,23 +150,6 @@ type ServerConfig struct {
 	IncludeMetadata bool `mapstructure:"include_metadata"`
 }
 
-// SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
-// Deprecated: [v0.95.0] Trim the prefix from configgrpc.ClientConfig.Endpoint directly.
-func (gcs *ClientConfig) SanitizedEndpoint() string {
-	switch {
-	case gcs.isSchemeHTTP():
-		return strings.TrimPrefix(gcs.Endpoint, "http://")
-	case gcs.isSchemeHTTPS():
-		return strings.TrimPrefix(gcs.Endpoint, "https://")
-	default:
-		return gcs.Endpoint
-	}
-}
-
-func (gcs *ClientConfig) isSchemeHTTP() bool {
-	return strings.HasPrefix(gcs.Endpoint, "http://")
-}
-
 func (gcs *ClientConfig) isSchemeHTTPS() bool {
 	return strings.HasPrefix(gcs.Endpoint, "https://")
 }
@@ -190,7 +164,7 @@ func (gcs *ClientConfig) ToClientConn(ctx context.Context, host component.Host, 
 		return nil, err
 	}
 	opts = append(opts, extraOpts...)
-	return grpc.DialContext(ctx, gcs.SanitizedEndpoint(), opts...)
+	return grpc.DialContext(ctx, gcs.Endpoint, opts...)
 }
 
 func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
@@ -275,12 +249,6 @@ func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.T
 
 func validateBalancerName(balancerName string) bool {
 	return balancer.Get(balancerName) != nil
-}
-
-// ToListenerContext returns the net.Listener constructed from the settings.
-// Deprecated: [v0.95.0] Call Listen directly on the NetAddr field.
-func (gss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
-	return gss.NetAddr.Listen(ctx)
 }
 
 func (gss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {

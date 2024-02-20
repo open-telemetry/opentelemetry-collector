@@ -22,7 +22,7 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	if c.SanitizedEndpoint() == "" {
+	if c.Endpoint == "" {
 		return errors.New(`requires a non-empty "endpoint"`)
 	}
 	return nil
