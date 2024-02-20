@@ -89,3 +89,8 @@ func TestMetadata(t *testing.T) {
 
 	assert.Empty(t, md.Get("non-existent-key"))
 }
+
+func TestUninstantiatedMetadata(t *testing.T) {
+	i := Info{}
+	assert.Empty(t, i.Metadata.Get("test"))
+}
