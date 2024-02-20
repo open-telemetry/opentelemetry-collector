@@ -24,7 +24,7 @@ type zpagesExtension struct {
 	config              *Config
 	telemetry           component.TelemetrySettings
 	zpagesSpanProcessor *zpages.SpanProcessor
-	server              http.Server
+	server              *http.Server
 	stopCh              chan struct{}
 }
 
@@ -67,13 +67,17 @@ func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error 
 
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
-	ln, err := zpe.config.TCPAddr.Listen(context.Background())
+	ln, err := zpe.config.ToListener()
 	if err != nil {
 		return err
 	}
 
 	zpe.telemetry.Logger.Info("Starting zPages extension", zap.Any("config", zpe.config))
-	zpe.server = http.Server{Handler: zPagesMux}
+	zpe.server, err = zpe.config.ToServer(host, zpe.telemetry, zPagesMux)
+	if err != nil {
+		return err
+	}
+
 	zpe.stopCh = make(chan struct{})
 	go func() {
 		defer close(zpe.stopCh)
