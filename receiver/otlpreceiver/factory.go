@@ -34,7 +34,13 @@ func NewFactory() receiver.Factory {
 		receiver.WithTraces(createTraces, metadata.TracesStability),
 		receiver.WithMetrics(createMetrics, metadata.MetricsStability),
 		receiver.WithLogs(createLog, metadata.LogsStability),
+		receiver.WithMemoryLimiter(memoryLimiter),
 	)
+}
+
+// memoryLimiter sets the memory limit for the receiver.
+func memoryLimiter(_ context.Context, _ receiver.CreateSettings, cfg component.Config) (*component.ID, error) {
+	return cfg.(*Config).MemoryLimiter, nil
 }
 
 // createDefaultConfig creates the default configuration for receiver.

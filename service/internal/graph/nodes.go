@@ -71,9 +71,15 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
 	builder *receiver.Builder,
+	globalMemoryLimiter *component.ID,
 	nexts []baseConsumer,
 ) error {
-	set := receiver.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := receiver.CreateSettings{
+		ID:                n.componentID,
+		TelemetrySettings: tel,
+		BuildInfo:         info,
+		MemoryLimiter:     globalMemoryLimiter,
+	}
 	set.TelemetrySettings.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
 	var err error
 	switch n.pipelineType {

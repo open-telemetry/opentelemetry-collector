@@ -13,17 +13,21 @@ import (
 )
 
 type memoryLimiterExtension struct {
-	memLimiter *memorylimiter.MemoryLimiter
+	memLimiter          *memorylimiter.MemoryLimiter
+	applyToAllReceivers bool
 }
 
 // newMemoryLimiter returns a new memorylimiter extension.
 func newMemoryLimiter(cfg *Config, logger *zap.Logger) (*memoryLimiterExtension, error) {
-	ml, err := memorylimiter.NewMemoryLimiter(cfg, logger)
+	ml, err := memorylimiter.NewMemoryLimiter(&cfg.Config, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &memoryLimiterExtension{memLimiter: ml}, nil
+	return &memoryLimiterExtension{
+		memLimiter:          ml,
+		applyToAllReceivers: cfg.ApplyToAllReceivers,
+	}, nil
 }
 
 func (ml *memoryLimiterExtension) Start(ctx context.Context, host component.Host) error {
@@ -37,4 +41,9 @@ func (ml *memoryLimiterExtension) Shutdown(ctx context.Context) error {
 // MustRefuse returns if the caller should deny because memory has reached it's configured limits
 func (ml *memoryLimiterExtension) MustRefuse() bool {
 	return ml.memLimiter.MustRefuse()
+}
+
+// ApplyToAllReceivers returns if the memory limiter must be applied to all receivers.
+func (ml *memoryLimiterExtension) ApplyToAllReceivers() bool {
+	return ml.applyToAllReceivers
 }

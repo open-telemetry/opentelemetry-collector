@@ -283,19 +283,54 @@ func (gss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, e
 	return gss.NetAddr.Listen(ctx)
 }
 
-func (gss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
-	opts, err := gss.toServerOption(host, settings)
+// ToListener returns the net.Listener constructed from the settings.
+// Deprecated: [v0.94.0] Call Listen directly on the NetAddr field.
+func (gss *ServerConfig) ToListener() (net.Listener, error) {
+	return gss.ToListenerContext(context.Background())
+}
+
+func (gss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, tso ...ToServerOption) (*grpc.Server, error) {
+	opts, err := gss.toServerOption(host, settings, tso)
 	if err != nil {
 		return nil, err
 	}
-	opts = append(opts, extraOpts...)
 	return grpc.NewServer(opts...), nil
 }
 
-func (gss *ServerConfig) toServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
+// toServerOptions has options that change the behavior of the HTTP server
+// returned by ServerConfig.ToServer().
+type toServerOptions struct {
+	memoryLimiter *component.ID
+	grpcOptions   []grpc.ServerOption
+}
+
+// ToServerOption is an option to change the behavior of the HTTP server
+// returned by ServerConfig.ToServer().
+type ToServerOption func(opts *toServerOptions)
+
+// WithGRPCServerOption adds a grpc.ServerOption to the server.
+func WithGRPCServerOption(opt grpc.ServerOption) ToServerOption {
+	return func(opts *toServerOptions) {
+		opts.grpcOptions = append(opts.grpcOptions, opt)
+	}
+}
+
+// WithMemoryLimiter sets the memory limiter to be used by the server.
+func WithMemoryLimiter(memoryLimiter *component.ID) ToServerOption {
+	return func(opts *toServerOptions) {
+		opts.memoryLimiter = memoryLimiter
+	}
+}
+
+func (gss *ServerConfig) toServerOption(host component.Host, settings component.TelemetrySettings, tso []ToServerOption) ([]grpc.ServerOption, error) {
 	switch gss.NetAddr.Transport {
 	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6":
 		internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint)
+	}
+
+	toServerOpts := &toServerOptions{}
+	for _, o := range tso {
+		o(toServerOpts)
 	}
 
 	var opts []grpc.ServerOption
@@ -369,6 +404,10 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 		})
 	}
 
+	if toServerOpts.memoryLimiter != nil {
+		// TODO: Add memory limiter interceptor.
+	}
+
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithMeterProvider(settings.MeterProvider),
@@ -382,7 +421,7 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 
 	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
 
-	return opts, nil
+	return append(opts, toServerOpts.grpcOptions...), nil
 }
 
 // getGRPCCompressionName returns compression name registered in grpc.

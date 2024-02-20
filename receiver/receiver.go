@@ -5,6 +5,7 @@ package receiver // import "go.opentelemetry.io/collector/receiver"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -49,6 +50,10 @@ type CreateSettings struct {
 
 	// BuildInfo can be used by components for informational purposes.
 	BuildInfo component.BuildInfo
+
+	// MemoryLimiter returns a memory limiter for the receiver.
+	// If the receiver supports memory limiting, it must use this MemoryLimiter.
+	MemoryLimiter *component.ID
 }
 
 // Factory is factory interface for receivers.
@@ -81,6 +86,12 @@ type Factory interface {
 
 	// LogsReceiverStability gets the stability level of the LogsReceiver.
 	LogsReceiverStability() component.StabilityLevel
+
+	// MemoryLimiter returns a memory limiter for the receiver.
+	// Implementing this method means that the receiver supports memory limiting.
+	// Even if calling this method returns nil, memory limiter can be applied implicitly, and the receiver must use
+	// MemoryLimiter provided in CreateSettings.
+	MemoryLimiter(ctx context.Context, set CreateSettings, cfg component.Config) (*component.ID, error)
 
 	unexportedFactoryFunc()
 }
@@ -154,6 +165,7 @@ type factory struct {
 	metricsStabilityLevel component.StabilityLevel
 	CreateLogsFunc
 	logsStabilityLevel component.StabilityLevel
+	MemoryLimiterFunc
 }
 
 func (f *factory) Type() component.Type {
@@ -195,6 +207,23 @@ func WithLogs(createLogsReceiver CreateLogsFunc, sl component.StabilityLevel) Fa
 	return factoryOptionFunc(func(o *factory) {
 		o.logsStabilityLevel = sl
 		o.CreateLogsFunc = createLogsReceiver
+	})
+}
+
+type MemoryLimiterFunc func(context.Context, CreateSettings, component.Config) (*component.ID, error)
+
+// MemoryLimiter implements Factory.MemoryLimiter.
+func (f MemoryLimiterFunc) MemoryLimiter(ctx context.Context, set CreateSettings, cfg component.Config) (*component.ID, error) {
+	if f == nil {
+		return nil, errors.New("the receiver doesn't support memory limiting")
+	}
+	return f(ctx, set, cfg)
+}
+
+// WithMemoryLimiter overrides the default "error not supported" implementation for MemoryLimiter.
+func WithMemoryLimiter(memoryLimiterFunc MemoryLimiterFunc) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.MemoryLimiterFunc = memoryLimiterFunc
 	})
 }
 
@@ -246,8 +275,12 @@ func (b *Builder) CreateTraces(ctx context.Context, set CreateSettings, next con
 		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
 	}
 
+	settings, err := updateSettings(ctx, set, f, cfg)
+	if err != nil {
+		return nil, err
+	}
 	logStabilityLevel(set.Logger, f.TracesReceiverStability())
-	return f.CreateTracesReceiver(ctx, set, cfg, next)
+	return f.CreateTracesReceiver(ctx, settings, cfg, next)
 }
 
 // CreateMetrics creates a Metrics receiver based on the settings and config.
@@ -262,8 +295,12 @@ func (b *Builder) CreateMetrics(ctx context.Context, set CreateSettings, next co
 		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
 	}
 
+	settings, err := updateSettings(ctx, set, f, cfg)
+	if err != nil {
+		return nil, err
+	}
 	logStabilityLevel(set.Logger, f.MetricsReceiverStability())
-	return f.CreateMetricsReceiver(ctx, set, cfg, next)
+	return f.CreateMetricsReceiver(ctx, settings, cfg, next)
 }
 
 // CreateLogs creates a Logs receiver based on the settings and config.
@@ -278,8 +315,12 @@ func (b *Builder) CreateLogs(ctx context.Context, set CreateSettings, next consu
 		return nil, fmt.Errorf("receiver factory not available for: %q", set.ID)
 	}
 
+	settings, err := updateSettings(ctx, set, f, cfg)
+	if err != nil {
+		return nil, err
+	}
 	logStabilityLevel(set.Logger, f.LogsReceiverStability())
-	return f.CreateLogsReceiver(ctx, set, cfg, next)
+	return f.CreateLogsReceiver(ctx, settings, cfg, next)
 }
 
 func (b *Builder) Factory(componentType component.Type) component.Factory {
@@ -295,4 +336,18 @@ func logStabilityLevel(logger *zap.Logger, sl component.StabilityLevel) {
 	} else {
 		logger.Info(sl.LogMessage())
 	}
+}
+
+func updateSettings(ctx context.Context, set CreateSettings, f Factory, cfg component.Config) (CreateSettings, error) {
+	ml, err := f.MemoryLimiter(ctx, set, cfg)
+
+	// Global memory limiter provided, but the receiver does not support it.
+	if set.MemoryLimiter != nil && err != nil {
+		return set, err
+	}
+
+	if ml != nil {
+		set.MemoryLimiter = ml
+	}
+	return set, nil
 }

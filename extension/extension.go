@@ -51,6 +51,12 @@ type ConfigWatcher interface {
 	NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 }
 
+type MemoryLimiter interface {
+	Extension
+	MustRefuse() bool
+	ApplyToAllReceivers() bool
+}
+
 // StatusWatcher is an extra interface for Extension hosted by the OpenTelemetry
 // Collector that is to be implemented by extensions interested in changes to component
 // status.
