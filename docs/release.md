@@ -25,6 +25,9 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 ## Releasing opentelemetry-collector
 
+1. Check if there are any open pull requests that are [ready to merge](https://github.com/open-telemetry/opentelemetry-collector/pulls?q=is:open+is:pr+label:ready-to-merge).
+   Merge them if possible.
+
 1. Update Contrib to use the latest in development version of Core. Run `make update-otel` in Contrib root directory and if it results in any changes submit a draft PR to Contrib. Ensure the CI passes before proceeding. This is to ensure that the latest core does not break contrib in any way. We’ll update it once more to the final release number later.
 
 2. Determine the version number that will be assigned to the release. Usually, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.85.0` as the version to be released, following `v0.84.0`.
@@ -58,6 +61,9 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
 ## Releasing opentelemetry-collector-contrib
+
+1. Check if there are any open pull requests that are [ready to merge](https://github.com/open-telemetry/opentelemetry-collector-contrib/pulls?q=is:open+is:pr+label:"ready+to+merge").
+   Merge them if possible.
 
 1. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/prepare-release.yml). When prompted, enter the version numbers determined in Step 1, but do not include a leading `v`. This action will create a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Contrib should be halted**.
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
