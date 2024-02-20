@@ -311,11 +311,11 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/config/internal  \
 		-dropreplace go.opentelemetry.io/collector/confmap  \
 		-dropreplace go.opentelemetry.io/collector/confmap/converter/expandconverter  \
-		-dropreplace go.opentelemetry.io/collector/confmap/p/provider/envprovider  \
-		-dropreplace go.opentelemetry.io/collector/confmap//provider/fileprovider  \
-		-dropreplace go.opentelemetry.io/collector/confmap//provider/httpprovider  \
+		-dropreplace go.opentelemetry.io/collector/confmap/provider/envprovider  \
+		-dropreplace go.opentelemetry.io/collector/confmap/provider/fileprovider  \
+		-dropreplace go.opentelemetry.io/collector/confmap/provider/httpprovider  \
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/httpsprovider  \
-		-dropreplace go.opentelemetry.io/collector/confmap//provider/yamlprovider  \
+		-dropreplace go.opentelemetry.io/collector/confmap/provider/yamlprovider  \
 		-dropreplace go.opentelemetry.io/collector/connector  \
 		-dropreplace go.opentelemetry.io/collector/connector/forwardconnector  \
 		-dropreplace go.opentelemetry.io/collector/consumer  \
