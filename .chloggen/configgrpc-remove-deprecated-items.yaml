@@ -7,7 +7,7 @@ change_type: breaking
 component: configgrpc
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Remove deprecated `GRPCClientSettings`, `GRPCServerSettings`, `ServerConfig.ToListenerContext` and `ClientConfig.SanitizedEndpoint`.
+note: Remove deprecated `GRPCClientSettings`, `GRPCServerSettings`, and `ServerConfig.ToListenerContext`.
 
 # One or more tracking issues or pull requests related to the change
 issues: [9616]
