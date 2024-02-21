@@ -234,10 +234,10 @@ gensemconv: $(SEMCONVGEN) $(SEMCONVKIT)
 	@[ "${SPECPATH}" ] || ( echo ">> env var SPECPATH is not set"; exit 1 )
 	@[ "${SPECTAG}" ] || ( echo ">> env var SPECTAG is not set"; exit 1 )
 	@echo "Generating semantic convention constants from specification version ${SPECTAG} at ${SPECPATH}"
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=resource -p conventionType=resource -f generated_resource.go
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=event -p conventionType=event -f generated_event.go
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=span -p conventionType=trace -f generated_trace.go
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=attribute_group -p conventionType=trace -f generated_attribute_group.go
+	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=resource -p conventionType=resource -f generated_resource.go -c otel/semconvgen:0.23.0
+	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=event -p conventionType=event -f generated_event.go -c otel/semconvgen:0.23.0
+	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=span -p conventionType=trace -f generated_trace.go -c otel/semconvgen:0.23.0
+	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=attribute_group -p conventionType=trace -f generated_attribute_group.go -c otel/semconvgen:0.23.0
 	$(SEMCONVKIT) -output "semconv/$(SPECTAG)" -tag "$(SPECTAG)"
 
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles

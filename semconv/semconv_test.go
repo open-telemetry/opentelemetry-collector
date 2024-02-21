@@ -14,12 +14,13 @@ import (
 
 func TestAllSemConvFilesAreCrated(t *testing.T) {
 	// Files that have to be present in each semconv package
-	var expectedFiles = []string{"generated_attribute_group","generated_resource.go", "generated_trace.go", "schema.go", "nonstandard.go"}
+	var expectedFiles = []string{"generated_resource.go", "generated_trace.go", "schema.go", "nonstandard.go"}
 
 	files, err := os.ReadDir(".")
 	assert.NoError(t, err)
 
 	constraints, err := version.NewConstraint("> v1.16.0")
+	attrgroupconstraints, err := version.NewConstraint("> v1.21.0")
 	assert.NoError(t, err)
 
 	for _, f := range files {
@@ -37,6 +38,10 @@ func TestAllSemConvFilesAreCrated(t *testing.T) {
 			expected[len(expected)-1] = "generated_event.go"
 		}
 
+        if attrgroupconstraints.Check(ver) {
+			assert.FileExists(t, filepath.Join(".", f.Name(), "generated_attribute_group.go"))
+		}
+		
 		for _, ef := range expected {
 			assert.FileExists(t, filepath.Join(".", f.Name(), ef))
 		}
