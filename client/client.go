@@ -81,7 +81,6 @@ import (
 	"context"
 	"net"
 	"strings"
-	"sync"
 )
 
 type ctxKey struct{}
@@ -106,7 +105,6 @@ type Info struct {
 // Metadata is an immutable map, meant to contain request metadata.
 type Metadata struct {
 	data map[string][]string
-	mu   *sync.Mutex
 }
 
 // AuthData represents the authentication data as seen by authenticators tied to
@@ -143,28 +141,27 @@ func FromContext(ctx context.Context) Info {
 
 // NewMetadata creates a new Metadata object to use in Info. md is used as-is.
 func NewMetadata(md map[string][]string) Metadata {
+	c := make(map[string][]string, len(md))
+	for k, v := range md {
+		c[k] = v
+	}
 	return Metadata{
-		data: md,
-		mu:   &sync.Mutex{},
+		data: c,
 	}
 }
 
 // Get gets the value of the key from metadata, returning a copy.
 func (m Metadata) Get(key string) []string {
-	if m.data == nil {
-		return make([]string, 0)
+	if len(m.data) == 0 {
+		return nil
 	}
 
-	m.mu.Lock()
-	defer m.mu.Unlock()
 	vals := m.data[key]
 	if len(vals) == 0 {
 		// we didn't find the key, but perhaps it just has different cases?
 		for k, v := range m.data {
 			if strings.EqualFold(key, k) {
 				vals = v
-				// we optimize for the next lookup
-				m.data[key] = v
 			}
 		}
 
