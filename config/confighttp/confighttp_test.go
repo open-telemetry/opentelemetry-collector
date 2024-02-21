@@ -1087,7 +1087,7 @@ func TestHttpClientHostHeader(t *testing.T) {
 		}))
 		defer server.Close()
 		serverURL, _ := url.Parse(server.URL)
-		setting := HTTPClientSettings{
+		setting := ClientConfig{
 			Endpoint:        serverURL.String(),
 			TLSSetting:      configtls.TLSClientSetting{},
 			ReadBufferSize:  0,
