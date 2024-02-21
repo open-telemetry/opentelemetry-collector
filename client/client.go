@@ -143,7 +143,7 @@ func FromContext(ctx context.Context) Info {
 func NewMetadata(md map[string][]string) Metadata {
 	c := make(map[string][]string, len(md))
 	for k, v := range md {
-		c[k] = v
+		c[strings.ToLower(k)] = v
 	}
 	return Metadata{
 		data: c,
@@ -156,19 +156,9 @@ func (m Metadata) Get(key string) []string {
 		return nil
 	}
 
-	vals := m.data[key]
+	vals := m.data[strings.ToLower(key)]
 	if len(vals) == 0 {
-		// we didn't find the key, but perhaps it just has different cases?
-		for k, v := range m.data {
-			if strings.EqualFold(key, k) {
-				vals = v
-			}
-		}
-
-		// if it's still not found, it's really not here
-		if len(vals) == 0 {
-			return nil
-		}
+		return nil
 	}
 
 	ret := make([]string, len(vals))
