@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"testing"
 	"time"
@@ -797,9 +796,7 @@ func TestContextWithClient(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			cl := client.FromContext(contextWithClient(tC.input, tC.doMetadata))
-			assert.Equal(t, tC.expected.Addr, cl.Addr)
-			assert.Equal(t, tC.expected.Auth, cl.Auth)
-			assert.True(t, reflect.DeepEqual(tC.expected.Metadata, cl.Metadata))
+			assert.Equal(t, tC.expected, cl)
 		})
 	}
 }
