@@ -69,21 +69,20 @@ func createTraces(
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.LoadOrStore(
+	shared, r, err := receivers.LoadOrStore(
 		oCfg,
 		func() (*otlpReceiver, error) {
 			return newOtlpReceiver(oCfg, &set)
 		},
-		&set.TelemetrySettings,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerTraceConsumer(nextConsumer); err != nil {
+	if err = r.registerTraceConsumer(nextConsumer); err != nil {
 		return nil, err
 	}
-	return r, nil
+	return shared, nil
 }
 
 // createMetrics creates a metrics receiver based on provided config.
@@ -94,21 +93,20 @@ func createMetrics(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.LoadOrStore(
+	shared, r, err := receivers.LoadOrStore(
 		oCfg,
 		func() (*otlpReceiver, error) {
 			return newOtlpReceiver(oCfg, &set)
 		},
-		&set.TelemetrySettings,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerMetricsConsumer(consumer); err != nil {
+	if err = r.registerMetricsConsumer(consumer); err != nil {
 		return nil, err
 	}
-	return r, nil
+	return shared, nil
 }
 
 // createLog creates a log receiver based on provided config.
@@ -119,21 +117,20 @@ func createLog(
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.LoadOrStore(
+	shared, r, err := receivers.LoadOrStore(
 		oCfg,
 		func() (*otlpReceiver, error) {
 			return newOtlpReceiver(oCfg, &set)
 		},
-		&set.TelemetrySettings,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerLogsConsumer(consumer); err != nil {
+	if err = r.registerLogsConsumer(consumer); err != nil {
 		return nil, err
 	}
-	return r, nil
+	return shared, nil
 }
 
 // This is the map of already created OTLP receivers for particular configurations.
@@ -142,4 +139,4 @@ func createLog(
 // create separate objects, they must use one otlpReceiver object per configuration.
 // When the receiver is shutdown it should be removed from this map so the same configuration
 // can be recreated successfully.
-var receivers = sharedcomponent.NewMap[*Config, *otlpReceiver]()
+var receivers = sharedcomponent.NewMap[*Config, *otlpReceiver](false)
