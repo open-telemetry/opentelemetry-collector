@@ -7,6 +7,20 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.2.0/v0.95.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: scope name for all generated Meter/Tracer funcs now includes full package name (#9494)
+
+### 💡 Enhancements 💡
+
+- `confighttp`: Adds support for Snappy decompression of HTTP requests. (#7632)
+- `configretry`: Validate `max_elapsed_time`, ensure it is larger than `max_interval` and `initial_interval` respectively. (#9489)
+- `configopaque`: Mark module as stable (#9167)
+- `otlphttpexporter`: Add support for json content encoding when exporting telemetry (#6945)
+- `confmap/converter/expandconverter, confmap/provider/envprovider, confmap/provider/fileprovider, confmap/provider/httprovider, confmap/provider/httpsprovider, confmap/provider/yamlprovider`: Split confmap.Converter and confmap.Provider implementation packages out of confmap. (#4759, #9460)
+
 ## v1.1.0/v0.94.0
 
 ### 🛑 Breaking changes 🛑
