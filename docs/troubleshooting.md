@@ -38,6 +38,22 @@ service:
 A Grafana dashboard for these metrics can be found
 [here](https://grafana.com/grafana/dashboards/15983-opentelemetry-collector/).
 
+You can enhance metrics telemetry level using `level` field. The following is a list of all possible values and their explanations.
+
+- "none" indicates that no telemetry data should be collected;
+- "basic" is the recommended and covers the basics of the service telemetry.
+- "normal" adds some other indicators on top of basic.
+- "detailed" adds dimensions and views to the previous levels.
+
+For example:
+```yaml
+service:
+  telemetry:
+    metrics:
+      level: detailed
+      address: ":8888"
+```
+
 Also note that a Collector can be configured to scrape its own metrics and send
 it through configured pipelines. For example:
 
@@ -62,6 +78,22 @@ service:
       receivers: [prometheus]
       processors: []
       exporters: [debug]
+```
+
+### Traces
+
+OpenTelemetry Collector has an ability to send it's own traces using OTLP exporter. You can send the traces to OTLP server running on the same OpenTelemetry Collector, so it goes through configured pipelines. For example:
+
+```
+service:
+  telemetry:
+    traces:
+      processors:
+        batch:
+          exporter:
+            otlp:
+              protocol: grpc/protobuf
+              endpoint: ${MY_POD_IP}:4317
 ```
 
 ### zPages
