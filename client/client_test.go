@@ -77,10 +77,11 @@ func TestFromContext(t *testing.T) {
 }
 
 func TestMetadata(t *testing.T) {
-	source := map[string][]string{"test-key": {"test-val"}}
+	source := map[string][]string{"test-key": {"test-val"}, "TEST-KEY-2": {"test-val"}}
 	md := NewMetadata(source)
 	assert.Equal(t, []string{"test-val"}, md.Get("test-key"))
-	assert.Equal(t, []string{"test-val"}, md.Get("test-KEY")) // case insensitive lookup
+	assert.Equal(t, []string{"test-val"}, md.Get("test-KEY"))   // case insensitive lookup
+	assert.Equal(t, []string{"test-val"}, md.Get("test-key-2")) // case insensitive lookup
 
 	// test if copy. In regular use, source cannot change
 	val := md.Get("test-key")
