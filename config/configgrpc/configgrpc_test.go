@@ -489,7 +489,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 
 func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 	settings := ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  "127.0.0.1:1234567",
 			Transport: "tcp",
 		},
