@@ -1008,7 +1008,7 @@ func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaqu
 	}
 }
 
-func ExampleHTTPServerSettings() {
+func ExampleServerConfig() {
 	settings := ServerConfig{
 		Endpoint: "localhost:443",
 	}
