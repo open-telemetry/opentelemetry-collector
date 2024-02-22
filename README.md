@@ -23,6 +23,8 @@
   <a href="https://github.com/open-telemetry/opentelemetry-collector/releases">
     <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/open-telemetry/opentelemetry-collector?include_prereleases&style=for-the-badge">
   </a>
+  <a href="https://www.bestpractices.dev/projects/8404"><img src="https://www.bestpractices.dev/projects/8404/badge">
+  </a> 
 </p>
 
 <p align="center">
