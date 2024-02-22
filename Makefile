@@ -299,7 +299,8 @@ restore-contrib:
 	@echo Restoring contrib at $(CONTRIB_PATH) to its original state
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		-dropreplace go.opentelemetry.io/collector \
-		-dropreplace go.opentelemetry.io/collector/component
+		-dropreplace go.opentelemetry.io/collector/component \
+		-dropreplace go.opentelemetry.io/collector/config/configauth  \
 		-dropreplace go.opentelemetry.io/collector/config/configcompression  \
 		-dropreplace go.opentelemetry.io/collector/config/configgrpc  \
 		-dropreplace go.opentelemetry.io/collector/config/confighttp  \
@@ -328,7 +329,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/extension/auth  \
 		-dropreplace go.opentelemetry.io/collector/extension/ballastextension  \
 		-dropreplace go.opentelemetry.io/collector/extension/memorylimiterextension  \
-		-dropreplace go.opentelemetry.io/collector/extension/zpagestextension  \
+		-dropreplace go.opentelemetry.io/collector/extension/zpagesextension  \
 		-dropreplace go.opentelemetry.io/collector/featuregate  \
 		-dropreplace go.opentelemetry.io/collector/otelcol  \
 		-dropreplace go.opentelemetry.io/collector/pdata  \
