@@ -18,8 +18,12 @@ import (
 
 const defaultOtelColVersion = "0.97.0"
 
-// ErrInvalidGoMod indicates an invalid gomod
-var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
+var (
+	// ErrInvalidGoMod indicates an invalid gomod
+	ErrInvalidGoMod = errors.New("invalid gomod specification for module")
+	// ErrIncompatibleConfigurationValues indicates that there is configuration that cannot be combined
+	ErrIncompatibleConfigurationValues = errors.New("cannot combine configuration values")
+)
 
 // Config holds the builder's configuration
 type Config struct {
@@ -163,7 +167,7 @@ func (c *Config) ParseModules() error {
 
 func (c *Config) validateFlags() error {
 	if c.SkipNewGoModule && (len(c.Replaces) != 0 || len(c.Excludes) != 0) {
-		return fmt.Errorf("cannot combine excludes or replaces with --skip-new-go-module; please modify the enclosing go.mod file directly, in this case")
+		return fmt.Errorf("%w excludes or replaces with --skip-new-go-module; please modify the enclosing go.mod file directly", ErrIncompatibleConfigurationValues)
 	}
 	return nil
 }
@@ -174,8 +178,8 @@ func (c *Config) validateModules(mods []Module) error {
 			return fmt.Errorf("module %q: %w", mod.GoMod, ErrInvalidGoMod)
 		}
 		if mod.Path != "" && c.SkipNewGoModule {
-                        return fmt.Errorf("cannot modify gomod path combined with --skip-new-go-module; please modify the enclosing go.mod file directly, in this case")
-                }
+			return fmt.Errorf("%w cannot modify mod.path \"%v\" combined with --skip-new-go-module; please modify the enclosing go.mod file directly", ErrIncompatibleConfigurationValues, mod.Path)
+		}
 	}
 	return nil
 }
@@ -183,12 +187,8 @@ func (c *Config) validateModules(mods []Module) error {
 func parseModules(mods []Module) ([]Module, error) {
 	var parsedModules []Module
 	for _, mod := range mods {
-		module, _, found := strings.Cut(mod.GoMod, " ")
-		if !found {
-			return mods, fmt.Errorf("go.mod module specifier syntax is <module><space><version>: %q", mod.GoMod)
-		}
 		if mod.Import == "" {
-			mod.Import = module
+			mod.Import, _, _ = strings.Cut(mod.GoMod, " ")
 		}
 
 		if mod.Name == "" {

@@ -15,15 +15,18 @@ import (
 	"text/template"
 	"time"
 
-	"go.opentelemetry.io/collector/cmd/builder/internal/builder/modfile"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapio"
 	"golang.org/x/mod/semver"
+
+	"go.opentelemetry.io/collector/cmd/builder/internal/builder/modfile"
 )
 
 var (
 	// ErrGoNotFound is returned when a Go binary hasn't been found
-	ErrGoNotFound = errors.New("go binary not found")
+	ErrGoNotFound       = errors.New("go binary not found")
+	ErrStrictMode       = errors.New("failing due to strict mode")
+	errFailedToDownload = errors.New("failed to download go modules")
 )
 
 // makeGoCommand is called by runGoCommand and runGoCommandStdout, mainly
@@ -100,7 +103,7 @@ func Generate(cfg Config) error {
 	// create a warning message for non-aligned builder and collector base
 	if cfg.Distribution.OtelColVersion != defaultOtelColVersion {
 		if cfg.StrictVersioning {
-			return fmt.Errorf("Builder version %q does not match build configuration version %q, failing due to strict mode", cfg.Distribution.OtelColVersion, defaultOtelColVersion)
+			return fmt.Errorf("builder version %q does not match build configuration version %q: %w", cfg.Distribution.OtelColVersion, defaultOtelColVersion, ErrStrictMode)
 		}
 
 		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", zap.String("builder-version", defaultOtelColVersion))
@@ -207,7 +210,7 @@ func GetModules(cfg Config) error {
 
 	coremod, corever := cfg.coreModuleAndVersion()
 	if mvm[coremod] != corever {
-		return fmt.Errorf("core collector version calculated by component dependencies %q does not match configured version %q, failing due to strict mode", mvm[coremod], corever)
+		return fmt.Errorf("core collector version calculated by component dependencies %q does not match configured version %q: %w", mvm[coremod], corever, ErrStrictMode)
 	}
 
 	for _, mod := range cfg.allComponents() {
@@ -220,7 +223,7 @@ func GetModules(cfg Config) error {
 		}
 
 		if mvm[module] != version {
-			return fmt.Errorf("component %q version calculated by dependencies %q does not match configured version %q, failing due to strict mode", module, mvm[module], version)
+			return fmt.Errorf("component %q version calculated by dependencies %q does not match configured version %q: %w", module, mvm[module], version, ErrStrictMode)
 		}
 	}
 
@@ -244,7 +247,7 @@ func downloadModules(cfg Config) error {
 		return nil
 	}
 
-	return fmt.Errorf("failed to download go modules: %s", failReason)
+	return fmt.Errorf("%w: %s", errFailedToDownload, failReason)
 }
 
 func (c *Config) coreModuleAndVersion() (string, string) {
