@@ -23,7 +23,7 @@
 {{- if .Status.Codeowners }}
 {{- $codeowners := userLinks .Status.Codeowners.Active }}
 {{- $emeritus := userLinks .Status.Codeowners.Emeritus }}
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | {{ stringsJoin $codeowners ", " }} |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | {{ stringsJoin $codeowners ", " }} {{ if .Status.Codeowners.SeekingNew }}\| Seeking more code owners! {{ end }}|
 {{- if $emeritus }}
 | Emeritus      | {{ stringsJoin $emeritus ", " }} |
 {{- end }}
