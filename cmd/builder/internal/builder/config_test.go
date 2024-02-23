@@ -4,7 +4,6 @@
 package builder
 
 import (
-	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -122,10 +121,37 @@ func TestInvalidModule(t *testing.T) {
 			},
 			err: ErrInvalidGoMod,
 		},
+		{
+			cfg: Config{
+				Logger:          zap.NewNop(),
+				SkipNewGoModule: true,
+				Extensions: []Module{{
+					GoMod: "some-module",
+					Path:  "invalid",
+				}},
+			},
+			err: ErrIncompatibleConfigurationValues,
+		},
+		{
+			cfg: Config{
+				Logger:          zap.NewNop(),
+				SkipNewGoModule: true,
+				Replaces:        []string{"", ""},
+			},
+			err: ErrIncompatibleConfigurationValues,
+		},
+		{
+			cfg: Config{
+				Logger:          zap.NewNop(),
+				SkipNewGoModule: true,
+				Excludes:        []string{"", ""},
+			},
+			err: ErrIncompatibleConfigurationValues,
+		},
 	}
 
 	for _, test := range configurations {
-		assert.True(t, errors.Is(test.cfg.Validate(), test.err))
+		assert.ErrorIs(t, test.cfg.Validate(), test.err)
 	}
 }
 
