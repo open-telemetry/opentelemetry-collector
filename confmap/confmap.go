@@ -157,6 +157,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool) error {
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
 			unmarshalerHookFunc(result),
+			embeddedStructsHookFunc(result),
 			zeroSliceHookFunc(),
 		),
 	}
@@ -258,6 +259,41 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 			m.SetMapIndex(reflect.Indirect(tKey), reflect.ValueOf(true))
 		}
 		return data, nil
+	}
+}
+
+func embeddedStructsHookFunc(_ any) mapstructure.DecodeHookFuncValue {
+	return func(from reflect.Value, to reflect.Value) (any, error) {
+		if to.Type().Kind() != reflect.Struct {
+			return from.Interface(), nil
+		}
+
+		finalFrom := from.Interface()
+
+		for i := 0; i < to.Type().NumField(); i++ {
+			if to.Type().Field(i).IsExported() && to.Type().Field(i).Anonymous {
+				f := to.Field(i)
+				if unmarshaler, ok := f.Addr().Interface().(Unmarshaler); ok {
+					fromMap, ok := finalFrom.(map[string]any)
+					if !ok {
+						return from.Interface(), nil
+					}
+					if err := unmarshaler.Unmarshal(NewFromStringMap(fromMap)); err != nil {
+						return nil, err
+					}
+					conf := New()
+					if err := conf.Marshal(unmarshaler); err != nil {
+						return nil, err
+					}
+					resultMap := conf.ToStringMap()
+					for k, v := range resultMap {
+						fromMap[k] = v
+					}
+					finalFrom = fromMap
+				}
+			}
+		}
+		return finalFrom, nil
 	}
 }
 
