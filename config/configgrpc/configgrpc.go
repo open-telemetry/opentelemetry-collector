@@ -13,6 +13,7 @@ import (
 
 	"github.com/mostynb/go-grpc-compression/nonclobbering/snappy"
 	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
@@ -94,6 +95,18 @@ type ClientConfig struct {
 	Auth *configauth.Authentication `mapstructure:"auth"`
 }
 
+func (gcs *ClientConfig) Unmarshal(component *confmap.Conf) error {
+	if err := component.Unmarshal(gcs, confmap.WithIgnoreUnused()); err != nil {
+		return err
+	}
+	// Per https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md
+	// If the endpoint uses the https scheme, then the TLS insecure setting must be overridden.
+	if strings.HasPrefix(gcs.Endpoint, "https://") {
+		gcs.TLSSetting.Insecure = false
+	}
+	return nil
+}
+
 // KeepaliveServerConfig is the configuration for keepalive.
 type KeepaliveServerConfig struct {
 	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters"`
@@ -159,6 +172,7 @@ type ServerConfig struct {
 }
 
 // SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
+// Deprecated: [v0.95.0] Trim the prefix from configgrpc.ClientConfig.Endpoint directly.
 func (gcs *ClientConfig) SanitizedEndpoint() string {
 	switch {
 	case gcs.isSchemeHTTP():
@@ -191,18 +205,8 @@ func (gcs *ClientConfig) ToClientConn(ctx context.Context, host component.Host, 
 	return grpc.DialContext(ctx, gcs.SanitizedEndpoint(), opts...)
 }
 
-func (gcs *ClientConfig) toTransportCredentials(settings component.TelemetrySettings) (credentials.TransportCredentials, error) {
-	tlsSetting := gcs.TLSSetting
-	if gcs.TLSSetting.Insecure {
-		// Per https://github.com/alanwest/opentelemetry-specification/blob/main/specification/protocol/exporter.md
-		// If the endpoint uses the https scheme, then the TLS insecure setting must be overriden.
-		if strings.HasPrefix(gcs.Endpoint, "https://") {
-			settings.Logger.Warn("Endpoint %q uses the https scheme. It overrides the TLS `insecure` setting. Set the `insecure` option to false or drop the `https` scheme to remove this warning.")
-			tlsSetting = *(&gcs.TLSSetting)
-			tlsSetting.Insecure = false
-		}
-	}
-	tlsCfg, err := tlsSetting.LoadTLSConfig()
+func (gcs *ClientConfig) toTransportCredentials(_ component.TelemetrySettings) (credentials.TransportCredentials, error) {
+	tlsCfg, err := gcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,4 @@
+insecure_with_https:
+  endpoint: https://example.com
+  tls:
+    insecure: true
