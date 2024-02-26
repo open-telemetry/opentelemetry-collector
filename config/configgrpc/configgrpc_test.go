@@ -242,6 +242,25 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 	assert.NotNil(t, srv)
 }
 
+func TestGrpcServerAuthSettings_Deprecated(t *testing.T) {
+	gss := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint: "0.0.0.0:1234",
+		},
+	}
+	gss.Auth = &configauth.Authentication{
+		AuthenticatorID: mockID,
+	}
+	host := &mockHost{
+		ext: map[component.ID]component.Component{
+			mockID: auth.NewServer(),
+		},
+	}
+	srv, err := gss.ToServer(host, componenttest.NewNopTelemetrySettings())
+	assert.NoError(t, err)
+	assert.NotNil(t, srv)
+}
+
 func TestGRPCClientSettingsError(t *testing.T) {
 	tt, err := componenttest.SetupTelemetry(componentID)
 	require.NoError(t, err)
