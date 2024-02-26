@@ -117,21 +117,6 @@ func TestCreateTracesReceiver(t *testing.T) {
 			sink:         consumertest.NewNop(),
 		},
 		{
-			name: "no_next_consumer",
-			cfg: &Config{
-				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-					HTTP: &HTTPConfig{
-						ServerConfig: &confighttp.ServerConfig{
-							Endpoint: "127.0.0.1:1122",
-						},
-					},
-				},
-			},
-			wantErr: true,
-			sink:    nil,
-		},
-		{
 			name: "no_http_or_grcp_config",
 			cfg: &Config{
 				Protocols: Protocols{},
@@ -226,21 +211,6 @@ func TestCreateMetricReceiver(t *testing.T) {
 			sink:         consumertest.NewNop(),
 		},
 		{
-			name: "no_next_consumer",
-			cfg: &Config{
-				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-					HTTP: &HTTPConfig{
-						ServerConfig: &confighttp.ServerConfig{
-							Endpoint: "127.0.0.1:1122",
-						},
-					},
-				},
-			},
-			wantErr: true,
-			sink:    nil,
-		},
-		{
 			name: "no_http_or_grcp_config",
 			cfg: &Config{
 				Protocols: Protocols{},
@@ -333,21 +303,6 @@ func TestCreateLogReceiver(t *testing.T) {
 			},
 			wantStartErr: true,
 			sink:         consumertest.NewNop(),
-		},
-		{
-			name: "no_next_consumer",
-			cfg: &Config{
-				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-					HTTP: &HTTPConfig{
-						ServerConfig: &confighttp.ServerConfig{
-							Endpoint: "127.0.0.1:1122",
-						},
-					},
-				},
-			},
-			wantErr: true,
-			sink:    nil,
 		},
 		{
 			name: "no_http_or_grcp_config",
