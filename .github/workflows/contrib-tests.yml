@@ -17,12 +17,10 @@ permissions:
 
 jobs:
   contrib-tests-matrix:
+    runs-on: ubuntu-latest
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'Skip Contrib Tests') }}
     strategy:
       matrix:
-        runner:
-          - ubuntu-latest
-          - actuated-arm64-4cpu-4gb
         group:
           - receiver-0
           - receiver-1
@@ -38,7 +36,6 @@ jobs:
           - cmd-0
           - cmd-1
           - other
-    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
