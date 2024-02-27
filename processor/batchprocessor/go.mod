@@ -3,9 +3,9 @@ module go.opentelemetry.io/collector/processor/batchprocessor
 go 1.21
 
 require (
-	github.com/prometheus/client_golang v1.18.0
+	github.com/prometheus/client_golang v1.19.0
 	github.com/prometheus/client_model v0.6.0
-	github.com/prometheus/common v0.46.0
+	github.com/prometheus/common v0.48.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.95.0
 	go.opentelemetry.io/collector/component v0.95.0
