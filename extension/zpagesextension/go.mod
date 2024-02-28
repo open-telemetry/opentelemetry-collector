@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/config/confignet v0.95.0
 	go.opentelemetry.io/collector/confmap v0.95.0
 	go.opentelemetry.io/collector/extension v0.95.0
-	go.opentelemetry.io/contrib/zpages v0.48.0
+	go.opentelemetry.io/contrib/zpages v0.49.0
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/sdk v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
