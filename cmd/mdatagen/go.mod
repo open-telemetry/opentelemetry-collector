@@ -62,6 +62,8 @@ replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
 
+replace go.opentelemetry.io/collector/filter => ../../filter
+
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata

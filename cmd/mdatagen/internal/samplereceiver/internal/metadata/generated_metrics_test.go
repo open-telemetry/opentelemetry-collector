@@ -20,6 +20,7 @@ const (
 	testSetDefault testConfigCollection = iota
 	testSetAll
 	testSetNone
+	testSetFilter
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -39,6 +40,10 @@ func TestMetricsBuilder(t *testing.T) {
 			name:      "none_set",
 			configSet: testSetNone,
 		},
+		{
+			name:      "filter_set",
+			configSet: testSetFilter,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -54,15 +59,15 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `default.metric`: This metric will be disabled by default soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.configSet == testSetDefault || test.configSet == testSetAll {
+			if test.configSet == testSetDefault || test.configSet == testSetAll || test.configSet == testSetFilter {
 				assert.Equal(t, "[WARNING] `default.metric.to_be_removed` should not be enabled: This metric is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.configSet == testSetAll || test.configSet == testSetNone {
+			if test.configSet == testSetAll || test.configSet == testSetNone || test.configSet == testSetFilter {
 				assert.Equal(t, "[WARNING] `optional.metric` should not be configured: This metric is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.configSet == testSetAll || test.configSet == testSetNone {
+			if test.configSet == testSetAll || test.configSet == testSetNone || test.configSet == testSetFilter {
 				assert.Equal(t, "[WARNING] `optional.metric.empty_unit` should not be configured: This metric is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -70,11 +75,11 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `string.resource.attr_disable_warning`: This resource_attribute will be disabled by default soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.configSet == testSetAll || test.configSet == testSetNone {
+			if test.configSet == testSetAll || test.configSet == testSetNone || test.configSet == testSetFilter {
 				assert.Equal(t, "[WARNING] `string.resource.attr_remove_warning` should not be configured: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.configSet == testSetDefault || test.configSet == testSetAll {
+			if test.configSet == testSetDefault || test.configSet == testSetAll || test.configSet == testSetFilter {
 				assert.Equal(t, "[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}

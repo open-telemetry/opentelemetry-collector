@@ -29,3 +29,28 @@ none_set:
       enabled: false
     {{- end }}
   {{- end }}
+filter_set:
+  {{- if .Metrics }}
+  metrics:
+    {{- range $name, $_ := .Metrics }}
+    {{ $name }}:
+      enabled: true
+    {{- end }}
+  {{- end }}
+  {{- if .ResourceAttributes }}
+  resource_attributes:
+    {{- range $name, $attr := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: true
+      {{- if eq $attr.Type.String "Str" }}
+      exclude:
+        - strict: "non-existent"
+        - regexp: "non-existent"
+      include:
+        - strict: "non-existent"
+        - regexp: "non-existent"
+        - strict: {{ $attr.TestValue }}
+        - regexp: ".*"
+      {{- end }}
+    {{- end }}
+  {{- end }}
