@@ -4,13 +4,13 @@
 change_type: deprecation
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: confignet
+component: component
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate `confignet.NetAddr` and `confignet.TCPAddr` in favor of `confignet.AddrConfig` and `confignet.TCPAddrConfig`.
+note: deprecate component.ErrNilNextConsumer
 
 # One or more tracking issues or pull requests related to the change
-issues: [9509]
+issues: [9526]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

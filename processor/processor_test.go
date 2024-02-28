@@ -24,11 +24,11 @@ func TestNewFactory(t *testing.T) {
 		func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesProcessor(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err := factory.CreateTracesProcessor(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
-	_, err = factory.CreateMetricsProcessor(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsProcessor(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
-	_, err = factory.CreateLogsProcessor(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsProcessor(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.Error(t, err)
 }
 
@@ -45,15 +45,15 @@ func TestNewFactoryWithOptions(t *testing.T) {
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesProcessorStability())
-	_, err := factory.CreateTracesProcessor(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err := factory.CreateTracesProcessor(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsProcessorStability())
-	_, err = factory.CreateMetricsProcessor(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsProcessor(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsProcessorStability())
-	_, err = factory.CreateLogsProcessor(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsProcessor(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 }
 
@@ -110,27 +110,50 @@ func TestBuilder(t *testing.T) {
 	require.NoError(t, err)
 
 	testCases := []struct {
-		name string
-		id   component.ID
-		err  string
+		name        string
+		id          component.ID
+		err         string
+		nextTraces  consumer.Traces
+		nextLogs    consumer.Logs
+		nextMetrics consumer.Metrics
 	}{
 		{
-			name: "unknown",
-			id:   component.MustNewID("unknown"),
-			err:  "processor factory not available for: \"unknown\"",
+			name:        "unknown",
+			id:          component.MustNewID("unknown"),
+			err:         "processor factory not available for: \"unknown\"",
+			nextTraces:  consumertest.NewNop(),
+			nextLogs:    consumertest.NewNop(),
+			nextMetrics: consumertest.NewNop(),
 		},
 		{
-			name: "err",
-			id:   component.MustNewID("err"),
-			err:  "telemetry type is not supported",
+			name:        "err",
+			id:          component.MustNewID("err"),
+			err:         "telemetry type is not supported",
+			nextTraces:  consumertest.NewNop(),
+			nextLogs:    consumertest.NewNop(),
+			nextMetrics: consumertest.NewNop(),
 		},
 		{
-			name: "all",
-			id:   component.MustNewID("all"),
+			name:        "all",
+			id:          component.MustNewID("all"),
+			nextTraces:  consumertest.NewNop(),
+			nextLogs:    consumertest.NewNop(),
+			nextMetrics: consumertest.NewNop(),
 		},
 		{
-			name: "all/named",
-			id:   component.MustNewIDWithName("all", "named"),
+			name:        "all/named",
+			id:          component.MustNewIDWithName("all", "named"),
+			nextTraces:  consumertest.NewNop(),
+			nextLogs:    consumertest.NewNop(),
+			nextMetrics: consumertest.NewNop(),
+		},
+		{
+			name:        "no next consumer",
+			id:          component.MustNewID("unknown"),
+			err:         "nil next Consumer",
+			nextTraces:  nil,
+			nextLogs:    nil,
+			nextMetrics: nil,
 		},
 	}
 
@@ -139,7 +162,7 @@ func TestBuilder(t *testing.T) {
 			cfgs := map[component.ID]component.Config{tt.id: defaultCfg}
 			b := NewBuilder(cfgs, factories)
 
-			te, err := b.CreateTraces(context.Background(), createSettings(tt.id), nil)
+			te, err := b.CreateTraces(context.Background(), createSettings(tt.id), tt.nextTraces)
 			if tt.err != "" {
 				assert.EqualError(t, err, tt.err)
 				assert.Nil(t, te)
@@ -148,7 +171,7 @@ func TestBuilder(t *testing.T) {
 				assert.Equal(t, nopInstance, te)
 			}
 
-			me, err := b.CreateMetrics(context.Background(), createSettings(tt.id), nil)
+			me, err := b.CreateMetrics(context.Background(), createSettings(tt.id), tt.nextMetrics)
 			if tt.err != "" {
 				assert.EqualError(t, err, tt.err)
 				assert.Nil(t, me)
@@ -157,7 +180,7 @@ func TestBuilder(t *testing.T) {
 				assert.Equal(t, nopInstance, me)
 			}
 
-			le, err := b.CreateLogs(context.Background(), createSettings(tt.id), nil)
+			le, err := b.CreateLogs(context.Background(), createSettings(tt.id), tt.nextLogs)
 			if tt.err != "" {
 				assert.EqualError(t, err, tt.err)
 				assert.Nil(t, le)
@@ -186,15 +209,15 @@ func TestBuilderMissingConfig(t *testing.T) {
 	bErr := NewBuilder(map[component.ID]component.Config{}, factories)
 	missingID := component.MustNewIDWithName("all", "missing")
 
-	te, err := bErr.CreateTraces(context.Background(), createSettings(missingID), nil)
+	te, err := bErr.CreateTraces(context.Background(), createSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "processor \"all/missing\" is not configured")
 	assert.Nil(t, te)
 
-	me, err := bErr.CreateMetrics(context.Background(), createSettings(missingID), nil)
+	me, err := bErr.CreateMetrics(context.Background(), createSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "processor \"all/missing\" is not configured")
 	assert.Nil(t, me)
 
-	le, err := bErr.CreateLogs(context.Background(), createSettings(missingID), nil)
+	le, err := bErr.CreateLogs(context.Background(), createSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "processor \"all/missing\" is not configured")
 	assert.Nil(t, le)
 }

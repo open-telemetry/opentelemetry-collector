@@ -493,14 +493,8 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 			Endpoint:  "127.0.0.1:1234567",
 			Transport: "tcp",
 		},
-		TLSSetting: &configtls.TLSServerSetting{
-			TLSSetting: configtls.TLSSetting{
-				CertFile: "/doesnt/exist",
-			},
-		},
-		Keepalive: nil,
 	}
-	_, err := settings.ToListenerContext(context.Background())
+	_, err := settings.NetAddr.Listen(context.Background())
 	assert.Error(t, err)
 }
 
@@ -622,7 +616,7 @@ func TestHttpReception(t *testing.T) {
 				},
 				TLSSetting: test.tlsServerCreds,
 			}
-			ln, err := gss.ToListenerContext(context.Background())
+			ln, err := gss.NetAddr.Listen(context.Background())
 			assert.NoError(t, err)
 			s, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
@@ -669,7 +663,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 			Transport: "unix",
 		},
 	}
-	ln, err := gss.ToListenerContext(context.Background())
+	ln, err := gss.NetAddr.Listen(context.Background())
 	assert.NoError(t, err)
 	srv, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
@@ -871,7 +865,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 
 				defer srv.Stop()
 
-				l, err = gss.ToListenerContext(context.Background())
+				l, err = gss.NetAddr.Listen(context.Background())
 				require.NoError(t, err)
 
 				go func() {
