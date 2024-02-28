@@ -1008,7 +1008,7 @@ func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaqu
 	}
 }
 
-func ExampleHTTPServerSettings() {
+func ExampleServerConfig() {
 	settings := ServerConfig{
 		Endpoint: "localhost:443",
 	}
@@ -1087,7 +1087,7 @@ func TestHttpClientHostHeader(t *testing.T) {
 		}))
 		defer server.Close()
 		serverURL, _ := url.Parse(server.URL)
-		setting := HTTPClientSettings{
+		setting := ClientConfig{
 			Endpoint:        serverURL.String(),
 			TLSSetting:      configtls.TLSClientSetting{},
 			ReadBufferSize:  0,
