@@ -72,6 +72,11 @@ type Config struct {
 	ReloadInterval time.Duration `mapstructure:"reload_interval"`
 }
 
+// NewDefaultConfig creates a new TLSSetting with any default values set.
+func NewDefaultConfig() Config {
+	return Config{}
+}
+
 // ClientConfig contains TLS configurations that are specific to client
 // connections in addition to the common configurations. This should be used by
 // components configuring TLS client connections.
@@ -96,6 +101,13 @@ type ClientConfig struct {
 	ServerName string `mapstructure:"server_name_override"`
 }
 
+// NewDefaultClientConfig creates a new TLSClientSetting with any default values set.
+func NewDefaultClientConfig() ClientConfig {
+	return ClientConfig{
+		Config: NewDefaultConfig(),
+	}
+}
+
 // ServerConfig contains TLS configurations that are specific to server
 // connections in addition to the common configurations. This should be used by
 // components configuring TLS server connections.
@@ -113,6 +125,13 @@ type ServerConfig struct {
 	// Reload the ClientCAs file when it is modified
 	// (optional, default false)
 	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload"`
+}
+
+// NewDefaultServerConfig creates a new TLSServerSetting with any default values set.
+func NewDefaultServerConfig() ServerConfig {
+	return ServerConfig{
+		Config: NewDefaultConfig(),
+	}
 }
 
 // certReloader is a wrapper object for certificate reloading
