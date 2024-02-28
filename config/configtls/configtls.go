@@ -24,7 +24,7 @@ const defaultMinTLSVersion = tls.VersionTLS12
 const defaultMaxTLSVersion = 0
 
 // TLSSetting exposes the common client and server TLS configurations.
-// Deprecated: [v0.95.0] Use Config instead.
+// Deprecated: [v0.96.0] Use Config instead.
 type TLSSetting = Config
 
 // Config exposes the common client and server TLS configurations.
@@ -71,7 +71,7 @@ type Config struct {
 
 // TSLClientSetting contains TLS configurations that are specific to client
 // connections in addition to the common configurations.
-// Deprecated: [v0.95.0] Use ClientConfig instead.
+// Deprecated: [v0.96.0] Use ClientConfig instead.
 type TLSClientSetting = ClientConfig
 
 // ClientConfig contains TLS configurations that are specific to client
@@ -100,7 +100,7 @@ type ClientConfig struct {
 
 // TLSServerSetting contains TLS configurations that are specific to server
 // connections in addition to the common configurations.
-// Deprecated: [v0.95.0] Use ServerConfig instead.
+// Deprecated: [v0.96.0] Use ServerConfig instead.
 type TLSServerSetting = ServerConfig
 
 // ServerConfig contains TLS configurations that are specific to server
