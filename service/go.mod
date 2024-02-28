@@ -25,7 +25,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.95.0
 	go.opentelemetry.io/collector/receiver v0.95.0
 	go.opentelemetry.io/collector/semconv v0.95.0
-	go.opentelemetry.io/contrib/config v0.3.0
+	go.opentelemetry.io/contrib/config v0.4.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.24.0
 	go.opentelemetry.io/otel v1.24.0
 	go.opentelemetry.io/otel/bridge/opencensus v1.24.0
@@ -79,7 +79,7 @@ require (
 	go.opentelemetry.io/contrib/zpages v0.49.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.24.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
-	golang.org/x/net v0.20.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240102182953-50ed04b92917 // indirect
