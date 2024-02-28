@@ -84,7 +84,7 @@ service:
 
 OpenTelemetry Collector has an ability to send it's own traces using OTLP exporter. You can send the traces to OTLP server running on the same OpenTelemetry Collector, so it goes through configured pipelines. For example:
 
-```
+```yaml
 service:
   telemetry:
     traces:
