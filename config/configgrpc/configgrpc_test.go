@@ -493,14 +493,8 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 			Endpoint:  "127.0.0.1:1234567",
 			Transport: "tcp",
 		},
-		TLSSetting: &configtls.TLSServerSetting{
-			TLSSetting: configtls.TLSSetting{
-				CertFile: "/doesnt/exist",
-			},
-		},
-		Keepalive: nil,
 	}
-	_, err := settings.ToListenerContext(context.Background())
+	_, err := settings.NetAddr.Listen(context.Background())
 	assert.Error(t, err)
 }
 
