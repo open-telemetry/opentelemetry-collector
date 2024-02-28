@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/v2"
-	"github.com/mitchellh/mapstructure"
 
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
 )
@@ -157,7 +157,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool) error {
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
 			unmarshalerHookFunc(result),
-			embeddedStructsHookFunc(result),
+			unmarshalerEmbeddedStructsHookFunc(result),
 			zeroSliceHookFunc(),
 		),
 	}
@@ -262,23 +262,19 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 	}
 }
 
-func embeddedStructsHookFunc(_ any) mapstructure.DecodeHookFuncValue {
+func unmarshalerEmbeddedStructsHookFunc(_ any) mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (any, error) {
 		if to.Type().Kind() != reflect.Struct {
 			return from.Interface(), nil
 		}
-
-		finalFrom := from.Interface()
-
+		fromAsMap, ok := from.Interface().(map[string]any)
+		if !ok {
+			return from.Interface(), nil
+		}
 		for i := 0; i < to.Type().NumField(); i++ {
 			if to.Type().Field(i).IsExported() && to.Type().Field(i).Anonymous {
-				f := to.Field(i)
-				if unmarshaler, ok := f.Addr().Interface().(Unmarshaler); ok {
-					fromMap, ok := finalFrom.(map[string]any)
-					if !ok {
-						return from.Interface(), nil
-					}
-					if err := unmarshaler.Unmarshal(NewFromStringMap(fromMap)); err != nil {
+				if unmarshaler, ok := to.Field(i).Addr().Interface().(Unmarshaler); ok {
+					if err := unmarshaler.Unmarshal(NewFromStringMap(fromAsMap)); err != nil {
 						return nil, err
 					}
 					conf := New()
@@ -287,13 +283,12 @@ func embeddedStructsHookFunc(_ any) mapstructure.DecodeHookFuncValue {
 					}
 					resultMap := conf.ToStringMap()
 					for k, v := range resultMap {
-						fromMap[k] = v
+						fromAsMap[k] = v
 					}
-					finalFrom = fromMap
 				}
 			}
 		}
-		return finalFrom, nil
+		return fromAsMap, nil
 	}
 }
 
