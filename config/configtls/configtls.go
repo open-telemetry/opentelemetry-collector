@@ -173,6 +173,24 @@ func (r *certReloader) GetCertificate() (*tls.Certificate, error) {
 	return r.cert, nil
 }
 
+func (c TLSSetting) Validate() error {
+	minTLS, err := convertVersion(c.MinVersion, defaultMinTLSVersion)
+	if err != nil {
+		return fmt.Errorf("invalid TLS min_version: %w", err)
+	}
+
+	maxTLS, err := convertVersion(c.MaxVersion, defaultMaxTLSVersion)
+	if err != nil {
+		return fmt.Errorf("invalid TLS max_version: %w", err)
+	}
+
+	if maxTLS < minTLS && maxTLS != defaultMaxTLSVersion {
+		return errors.New("invalid TLS configuration: min_version cannot be greater than max_version")
+	}
+
+	return nil
+}
+
 // loadTLSConfig loads TLS certificates and returns a tls.Config.
 // This will set the RootCAs and Certificates of a tls.Config.
 func (c Config) loadTLSConfig() (*tls.Config, error) {
