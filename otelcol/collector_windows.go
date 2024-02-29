@@ -87,7 +87,11 @@ func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 	}
 
 	var err error
-	s.col, err = newCollectorWithFlags(s.settings, s.flags)
+	err = updateSettingsUsingFlags(&s.settings, s.flags)
+	if err != nil {
+		return err
+	}
+	s.col, err = NewCollector(s.settings)
 	if err != nil {
 		return err
 	}
