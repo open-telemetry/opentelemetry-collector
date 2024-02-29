@@ -350,7 +350,7 @@ func (ss *sliceOfPtrs) templateFields() map[string]any {
 	}
 }
 
-func (ss *sliceOfPtrs) generateInternal(_ *bytes.Buffer) {}
+func (ss *sliceOfPtrs) generateInternal(*bytes.Buffer) {}
 
 var _ baseStruct = (*sliceOfPtrs)(nil)
 
@@ -402,6 +402,6 @@ func (ss *sliceOfValues) templateFields() map[string]any {
 	}
 }
 
-func (ss *sliceOfValues) generateInternal(_ *bytes.Buffer) {}
+func (ss *sliceOfValues) generateInternal(*bytes.Buffer) {}
 
 var _ baseStruct = (*sliceOfValues)(nil)

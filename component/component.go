@@ -11,6 +11,8 @@ import (
 var (
 	// ErrNilNextConsumer can be returned by receiver, or processor Start factory funcs that create the Component if the
 	// expected next Consumer is nil.
+	// Deprecated: [v0.96.0] The next consumer is now checked as part of the creation of the pipelines.
+	// This error will be removed in a future release.
 	ErrNilNextConsumer = errors.New("nil next Consumer")
 
 	// ErrDataTypeIsNotSupported can be returned by receiver, exporter or processor factory funcs that create the

@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 func TestScrapeControllerSettings(t *testing.T) {
@@ -17,22 +15,22 @@ func TestScrapeControllerSettings(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		set    ScraperControllerSettings
+		set    ControllerConfig
 		errVal string
 	}{
 		{
 			name:   "default configuration",
-			set:    NewDefaultScraperControllerSettings(component.MustNewType("test")),
+			set:    NewDefaultControllerConfig(),
 			errVal: "",
 		},
 		{
 			name:   "zero value configuration",
-			set:    ScraperControllerSettings{},
+			set:    ControllerConfig{},
 			errVal: `"collection_interval": requires positive value`,
 		},
 		{
 			name: "invalid timeout",
-			set: ScraperControllerSettings{
+			set: ControllerConfig{
 				CollectionInterval: time.Minute,
 				Timeout:            -1 * time.Minute,
 			},

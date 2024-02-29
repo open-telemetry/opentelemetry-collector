@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"net"
 	"strings"
 	"time"
 
@@ -46,10 +45,6 @@ type KeepaliveClientConfig struct {
 	Timeout             time.Duration `mapstructure:"timeout"`
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
 }
-
-// GRPCClientSettings defines common settings for a gRPC client configuration.
-// Deprecated: [v0.94.0] Use ClientConfig instead
-type GRPCClientSettings = ClientConfig
 
 // ClientConfig defines common settings for a gRPC client configuration.
 type ClientConfig struct {
@@ -120,14 +115,10 @@ type KeepaliveEnforcementPolicy struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
 }
 
-// GRPCServerSettings defines common settings for a gRPC server configuration.
-// Deprecated: [v0.94.0] Use ServerConfig instead
-type GRPCServerSettings = ServerConfig
-
 // ServerConfig defines common settings for a gRPC server configuration.
 type ServerConfig struct {
 	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
-	NetAddr confignet.NetAddr `mapstructure:",squash"`
+	NetAddr confignet.AddrConfig `mapstructure:",squash"`
 
 	// Configures the protocol to use TLS.
 	// The default value is nil, which will cause the protocol to not use TLS.
@@ -274,17 +265,6 @@ func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.T
 
 func validateBalancerName(balancerName string) bool {
 	return balancer.Get(balancerName) != nil
-}
-
-// ToListenerContext returns the net.Listener constructed from the settings.
-func (gss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
-	return gss.NetAddr.Listen(ctx)
-}
-
-// ToListener returns the net.Listener constructed from the settings.
-// Deprecated: [v0.94.0] use ToListenerContext instead.
-func (gss *ServerConfig) ToListener() (net.Listener, error) {
-	return gss.ToListenerContext(context.Background())
 }
 
 func (gss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {

@@ -141,28 +141,24 @@ func FromContext(ctx context.Context) Info {
 
 // NewMetadata creates a new Metadata object to use in Info. md is used as-is.
 func NewMetadata(md map[string][]string) Metadata {
+	c := make(map[string][]string, len(md))
+	for k, v := range md {
+		c[strings.ToLower(k)] = v
+	}
 	return Metadata{
-		data: md,
+		data: c,
 	}
 }
 
 // Get gets the value of the key from metadata, returning a copy.
 func (m Metadata) Get(key string) []string {
-	vals := m.data[key]
-	if len(vals) == 0 {
-		// we didn't find the key, but perhaps it just has different cases?
-		for k, v := range m.data {
-			if strings.EqualFold(key, k) {
-				vals = v
-				// we optimize for the next lookup
-				m.data[key] = v
-			}
-		}
+	if len(m.data) == 0 {
+		return nil
+	}
 
-		// if it's still not found, it's really not here
-		if len(vals) == 0 {
-			return nil
-		}
+	vals := m.data[strings.ToLower(key)]
+	if len(vals) == 0 {
+		return nil
 	}
 
 	ret := make([]string, len(vals))

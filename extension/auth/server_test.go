@@ -39,7 +39,7 @@ func TestWithServerAuthenticateFunc(t *testing.T) {
 	// prepare
 	authCalled := false
 	e := NewServer(
-		WithServerAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+		WithServerAuthenticate(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 			authCalled = true
 			return ctx, nil
 		}),
@@ -55,7 +55,7 @@ func TestWithServerAuthenticateFunc(t *testing.T) {
 
 func TestWithServerStart(t *testing.T) {
 	called := false
-	e := NewServer(WithServerStart(func(c context.Context, h component.Host) error {
+	e := NewServer(WithServerStart(func(context.Context, component.Host) error {
 		called = true
 		return nil
 	}))
@@ -70,7 +70,7 @@ func TestWithServerStart(t *testing.T) {
 
 func TestWithServerShutdown(t *testing.T) {
 	called := false
-	e := NewServer(WithServerShutdown(func(c context.Context) error {
+	e := NewServer(WithServerShutdown(func(context.Context) error {
 		called = true
 		return nil
 	}))

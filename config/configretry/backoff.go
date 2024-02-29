@@ -61,11 +61,14 @@ func (bs *BackOffConfig) Validate() error {
 	if bs.MaxElapsedTime < 0 {
 		return errors.New("'max_elapsed_time' must be non-negative")
 	}
-	if bs.MaxElapsedTime < bs.InitialInterval {
-		return errors.New("'max_elapsed_time' must not be less than 'initial_interval'")
-	}
-	if bs.MaxElapsedTime < bs.MaxInterval {
-		return errors.New("'max_elapsed_time' must not be less than 'max_interval'")
+	if bs.MaxElapsedTime > 0 {
+		if bs.MaxElapsedTime < bs.InitialInterval {
+			return errors.New("'max_elapsed_time' must not be less than 'initial_interval'")
+		}
+		if bs.MaxElapsedTime < bs.MaxInterval {
+			return errors.New("'max_elapsed_time' must not be less than 'max_interval'")
+		}
+
 	}
 	return nil
 }

@@ -171,7 +171,7 @@ scrub sensitive data before exporting.
 
 In addition, processors offer safeguards around resource utilization. The
 `batch` and especially `memory_limiter` processor help ensure that the
-Collector is resource efficient and does not out of memory when overloaded. At
+Collector is resource efficient and does not run out of memory when overloaded. At
 least these two processors SHOULD be enabled on every defined pipeline.
 
 > For more information on recommended processors and order, see

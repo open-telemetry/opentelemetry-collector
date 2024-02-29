@@ -16,8 +16,8 @@ type DialerConfig struct {
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
-// NetAddr represents a network endpoint address.
-type NetAddr struct {
+// AddrConfig represents a network endpoint address.
+type AddrConfig struct {
 	// Endpoint configures the address for this network connection.
 	// For TCP and UDP networks, the address has the form "host:port". The host must be a literal IP address,
 	// or a host name that can be resolved to IP addresses. The port must be a literal port number or a service name.
@@ -34,19 +34,19 @@ type NetAddr struct {
 }
 
 // Dial equivalent with net.Dialer's DialContext for this address.
-func (na *NetAddr) Dial(ctx context.Context) (net.Conn, error) {
+func (na *AddrConfig) Dial(ctx context.Context) (net.Conn, error) {
 	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
 	return d.DialContext(ctx, na.Transport, na.Endpoint)
 }
 
 // Listen equivalent with net.ListenConfig's Listen for this address.
-func (na *NetAddr) Listen(ctx context.Context) (net.Listener, error) {
+func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 	lc := net.ListenConfig{}
 	return lc.Listen(ctx, na.Transport, na.Endpoint)
 }
 
-// TCPAddr represents a TCP endpoint address.
-type TCPAddr struct {
+// TCPAddrConfig represents a TCP endpoint address.
+type TCPAddrConfig struct {
 	// Endpoint configures the address for this network connection.
 	// The address has the form "host:port". The host must be a literal IP address, or a host name that can be
 	// resolved to IP addresses. The port must be a literal port number or a service name.
@@ -59,13 +59,13 @@ type TCPAddr struct {
 }
 
 // Dial equivalent with net.Dialer's DialContext for this address.
-func (na *TCPAddr) Dial(ctx context.Context) (net.Conn, error) {
+func (na *TCPAddrConfig) Dial(ctx context.Context) (net.Conn, error) {
 	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
 	return d.DialContext(ctx, "tcp", na.Endpoint)
 }
 
 // Listen equivalent with net.ListenConfig's Listen for this address.
-func (na *TCPAddr) Listen(ctx context.Context) (net.Listener, error) {
+func (na *TCPAddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 	lc := net.ListenConfig{}
 	return lc.Listen(ctx, "tcp", na.Endpoint)
 }

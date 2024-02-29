@@ -275,8 +275,6 @@ func TestTelemetryInit(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			tel := newColTelemetry(tc.disableHighCard, tc.extendedConfig)
-			buildInfo := component.NewDefaultBuildInfo()
 			if tc.extendedConfig {
 				tc.cfg.Metrics.Readers = []config.MetricReader{
 					{
@@ -299,19 +297,26 @@ func TestTelemetryInit(t *testing.T) {
 					},
 				}
 			}
-			otelRes := resource.New(buildInfo, tc.cfg.Resource)
-			err := tel.init(otelRes, zap.NewNop(), *tc.cfg, make(chan error))
+			set := meterProviderSettings{
+				res:               resource.New(component.NewDefaultBuildInfo(), tc.cfg.Resource),
+				logger:            zap.NewNop(),
+				cfg:               tc.cfg.Metrics,
+				asyncErrorChannel: make(chan error),
+			}
+			mp, err := newMeterProvider(set, tc.disableHighCard, tc.extendedConfig)
 			require.NoError(t, err)
 			defer func() {
-				require.NoError(t, tel.shutdown())
+				if prov, ok := mp.(interface{ Shutdown(context.Context) error }); ok {
+					require.NoError(t, prov.Shutdown(context.Background()))
+				}
 			}()
 
-			v := createTestMetrics(t, tel.mp)
+			v := createTestMetrics(t, mp)
 			defer func() {
 				view.Unregister(v)
 			}()
 
-			metrics := getMetricsFromPrometheus(t, tel.servers[0].Handler)
+			metrics := getMetricsFromPrometheus(t, mp.(*meterProvider).servers[0].Handler)
 			require.Equal(t, len(tc.expectedMetrics), len(metrics))
 
 			for metricName, metricValue := range tc.expectedMetrics {

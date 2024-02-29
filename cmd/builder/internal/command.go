@@ -53,7 +53,7 @@ build configuration given by the "--config" argument. If no build
 configuration is provided, ocb will generate a default Collector.
 `,
 		Args: cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := initConfig(cmd.Flags()); err != nil {
 				return err
 			}

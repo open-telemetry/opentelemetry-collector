@@ -5,12 +5,17 @@ package connector // import "go.opentelemetry.io/collector/connector"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+)
+
+var (
+	errNilNextConsumer = errors.New("nil next Consumer")
 )
 
 // A Traces connector acts as an exporter from a traces pipeline and a receiver
@@ -456,6 +461,9 @@ func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.
 
 // CreateTracesToTraces creates a Traces connector based on the settings and config.
 func (b *Builder) CreateTracesToTraces(ctx context.Context, set CreateSettings, next consumer.Traces) (Traces, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -472,6 +480,9 @@ func (b *Builder) CreateTracesToTraces(ctx context.Context, set CreateSettings, 
 
 // CreateTracesToMetrics creates a Traces connector based on the settings and config.
 func (b *Builder) CreateTracesToMetrics(ctx context.Context, set CreateSettings, next consumer.Metrics) (Traces, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -488,6 +499,9 @@ func (b *Builder) CreateTracesToMetrics(ctx context.Context, set CreateSettings,
 
 // CreateTracesToLogs creates a Traces connector based on the settings and config.
 func (b *Builder) CreateTracesToLogs(ctx context.Context, set CreateSettings, next consumer.Logs) (Traces, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -504,6 +518,9 @@ func (b *Builder) CreateTracesToLogs(ctx context.Context, set CreateSettings, ne
 
 // CreateMetricsToTraces creates a Metrics connector based on the settings and config.
 func (b *Builder) CreateMetricsToTraces(ctx context.Context, set CreateSettings, next consumer.Traces) (Metrics, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -520,6 +537,9 @@ func (b *Builder) CreateMetricsToTraces(ctx context.Context, set CreateSettings,
 
 // CreateMetricsToMetrics creates a Metrics connector based on the settings and config.
 func (b *Builder) CreateMetricsToMetrics(ctx context.Context, set CreateSettings, next consumer.Metrics) (Metrics, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -536,6 +556,9 @@ func (b *Builder) CreateMetricsToMetrics(ctx context.Context, set CreateSettings
 
 // CreateMetricsToLogs creates a Metrics connector based on the settings and config.
 func (b *Builder) CreateMetricsToLogs(ctx context.Context, set CreateSettings, next consumer.Logs) (Metrics, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -552,6 +575,9 @@ func (b *Builder) CreateMetricsToLogs(ctx context.Context, set CreateSettings, n
 
 // CreateLogsToTraces creates a Logs connector based on the settings and config.
 func (b *Builder) CreateLogsToTraces(ctx context.Context, set CreateSettings, next consumer.Traces) (Logs, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -568,6 +594,9 @@ func (b *Builder) CreateLogsToTraces(ctx context.Context, set CreateSettings, ne
 
 // CreateLogsToMetrics creates a Logs connector based on the settings and config.
 func (b *Builder) CreateLogsToMetrics(ctx context.Context, set CreateSettings, next consumer.Metrics) (Logs, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -584,6 +613,9 @@ func (b *Builder) CreateLogsToMetrics(ctx context.Context, set CreateSettings, n
 
 // CreateLogsToLogs creates a Logs connector based on the settings and config.
 func (b *Builder) CreateLogsToLogs(ctx context.Context, set CreateSettings, next consumer.Logs) (Logs, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)

@@ -14,7 +14,7 @@ import (
 
 var componentType = component.MustNewType("nop")
 
-// NewNopCreateSettings returns a new nop settings for Create* functions.
+// NewNopCreateSettings returns a new nop settings for Create*Receiver functions.
 func NewNopCreateSettings() receiver.CreateSettings {
 	return receiver.CreateSettings{
 		ID:                component.NewID(componentType),
@@ -49,7 +49,7 @@ type nopConfig struct{}
 
 var nopInstance = &nopReceiver{}
 
-// nopReceiver stores consumed traces and metrics for testing purposes.
+// nopReceiver acts as a receiver for testing purposes.
 type nopReceiver struct {
 	component.StartFunc
 	component.ShutdownFunc

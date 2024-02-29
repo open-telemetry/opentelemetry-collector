@@ -229,7 +229,7 @@ func TestLogsRoundTrip(t *testing.T) {
 }
 
 func TestIssue_4221(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		defer func() { assert.NoError(t, r.Body.Close()) }()
 		compressedData, err := io.ReadAll(r.Body)
 		require.NoError(t, err)

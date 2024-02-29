@@ -28,7 +28,7 @@ func TestNewFactory(t *testing.T) {
 	factory := NewFactory(
 		testType,
 		func() component.Config { return &defaultCfg },
-		func(ctx context.Context, settings CreateSettings, extension component.Config) (Extension, error) {
+		func(context.Context, CreateSettings, component.Config) (Extension, error) {
 			return nopExtensionInstance, nil
 		},
 		component.StabilityLevelDevelopment)
@@ -88,7 +88,7 @@ func TestBuilder(t *testing.T) {
 		NewFactory(
 			testType,
 			func() component.Config { return &defaultCfg },
-			func(ctx context.Context, settings CreateSettings, extension component.Config) (Extension, error) {
+			func(_ context.Context, settings CreateSettings, _ component.Config) (Extension, error) {
 				return nopExtension{CreateSettings: settings}, nil
 			},
 			component.StabilityLevelDevelopment),

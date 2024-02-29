@@ -50,20 +50,10 @@ func TestCreateMetricsExporter(t *testing.T) {
 func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
-		name             string
-		config           *Config
-		mustFailOnCreate bool
-		mustFailOnStart  bool
+		name            string
+		config          *Config
+		mustFailOnStart bool
 	}{
-		{
-			name: "NoEndpoint",
-			config: &Config{
-				ClientConfig: configgrpc.ClientConfig{
-					Endpoint: "",
-				},
-			},
-			mustFailOnCreate: true,
-		},
 		{
 			name: "UseSecure",
 			config: &Config{
@@ -178,10 +168,6 @@ func TestCreateTracesExporter(t *testing.T) {
 			factory := NewFactory()
 			set := exportertest.NewNopCreateSettings()
 			consumer, err := factory.CreateTracesExporter(context.Background(), set, tt.config)
-			if tt.mustFailOnCreate {
-				assert.NotNil(t, err)
-				return
-			}
 			assert.NoError(t, err)
 			assert.NotNil(t, consumer)
 			err = consumer.Start(context.Background(), componenttest.NewNopHost())

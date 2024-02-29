@@ -635,7 +635,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
-				NetAddr: confignet.NetAddr{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: "tcp",
 				},
@@ -903,9 +903,9 @@ func newReceiver(t *testing.T, settings component.TelemetrySettings, cfg *Config
 	set.ID = id
 	r, err := newOtlpReceiver(cfg, &set)
 	require.NoError(t, err)
-	require.NoError(t, r.registerTraceConsumer(c))
-	require.NoError(t, r.registerMetricsConsumer(c))
-	require.NoError(t, r.registerLogsConsumer(c))
+	r.registerTraceConsumer(c)
+	r.registerMetricsConsumer(c)
+	r.registerLogsConsumer(c)
 	return r
 }
 

@@ -6,16 +6,6 @@ package component // import "go.opentelemetry.io/collector/component"
 // Host represents the entity that is hosting a Component. It is used to allow communication
 // between the Component and its host (normally the service.Collector is the host).
 type Host interface {
-	// ReportFatalError is used to report to the host that the component
-	// encountered a fatal error (i.e.: an error that the instance can't recover
-	// from) after its start function had already returned.
-	//
-	// ReportFatalError should be called by the component anytime after Component.Start() ends and
-	// before Component.Shutdown() begins.
-	// Deprecated: [0.87.0] Use TelemetrySettings.ReportComponentStatus instead (with an event
-	// component.StatusFatalError)
-	ReportFatalError(err error)
-
 	// GetFactory of the specified kind. Returns the factory for a component type.
 	// This allows components to create other components. For example:
 	//   func (r MyReceiver) Start(host component.Host) error {

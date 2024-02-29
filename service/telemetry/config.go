@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/contrib/config"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -123,7 +124,7 @@ type MetricsConfig struct {
 
 	// Readers allow configuration of metric readers to emit metrics to
 	// any number of supported backends.
-	Readers []MetricReader `mapstructure:"readers"`
+	Readers []config.MetricReader `mapstructure:"readers"`
 }
 
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
@@ -135,7 +136,7 @@ type TracesConfig struct {
 	Propagators []string `mapstructure:"propagators"`
 	// Processors allow configuration of span processors to emit spans to
 	// any number of suported backends.
-	Processors []SpanProcessor `mapstructure:"processors"`
+	Processors []config.SpanProcessor `mapstructure:"processors"`
 }
 
 // Validate checks whether the current configuration is valid

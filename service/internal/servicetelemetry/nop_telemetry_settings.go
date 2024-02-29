@@ -22,6 +22,6 @@ func NewNopTelemetrySettings() TelemetrySettings {
 		MeterProvider:  noopmetric.NewMeterProvider(),
 		MetricsLevel:   configtelemetry.LevelNone,
 		Resource:       pcommon.NewResource(),
-		Status:         status.NewReporter(func(*component.InstanceID, *component.StatusEvent) {}, func(err error) {}),
+		Status:         status.NewReporter(func(*component.InstanceID, *component.StatusEvent) {}, func(error) {}),
 	}
 }

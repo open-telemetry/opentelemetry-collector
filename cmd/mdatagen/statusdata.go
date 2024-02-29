@@ -28,6 +28,8 @@ type Codeowners struct {
 	Active []string `mapstructure:"active"`
 	// Emeritus codeowners
 	Emeritus []string `mapstructure:"emeritus"`
+	// Whether new codeowners are being sought
+	SeekingNew bool `mapstructure:"seeking_new"`
 }
 
 type Status struct {

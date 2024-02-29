@@ -70,7 +70,7 @@ type logsExporter struct {
 
 // NewLogsExporter creates an exporter.Logs that records observability metrics and wraps every request with a Span.
 func NewLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config,
 	pusher consumer.ConsumeLogsFunc,
@@ -79,40 +79,24 @@ func NewLogsExporter(
 	if cfg == nil {
 		return nil, errNilConfig
 	}
-
-	if set.Logger == nil {
-		return nil, errNilLogger
-	}
-
 	if pusher == nil {
 		return nil, errNilPushLogsData
 	}
-
-	be, err := newBaseExporter(set, component.DataTypeLogs, false, logsRequestMarshaler,
-		newLogsRequestUnmarshalerFunc(pusher), newLogsExporterWithObservability, options...)
-	if err != nil {
-		return nil, err
-	}
-
-	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
-		req := newLogsRequest(ld, pusher)
-		serr := be.send(ctx, req)
-		if errors.Is(serr, queue.ErrQueueIsFull) {
-			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeLogs, int64(req.ItemsCount()))
-		}
-		return serr
-	}, be.consumerOptions...)
-
-	return &logsExporter{
-		baseExporter: be,
-		Logs:         lc,
-	}, err
+	logsOpts := []Option{withMarshaler(logsRequestMarshaler), withUnmarshaler(newLogsRequestUnmarshalerFunc(pusher))}
+	return NewLogsRequestExporter(ctx, set, requestFromLogs(pusher), append(logsOpts, options...)...)
 }
 
 // RequestFromLogsFunc converts plog.Logs data into a user-defined request.
 // This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type RequestFromLogsFunc func(context.Context, plog.Logs) (Request, error)
+
+// requestFromLogs returns a RequestFromLogsFunc that converts plog.Logs into a Request.
+func requestFromLogs(pusher consumer.ConsumeLogsFunc) RequestFromLogsFunc {
+	return func(_ context.Context, ld plog.Logs) (Request, error) {
+		return newLogsRequest(ld, pusher), nil
+	}
+}
 
 // NewLogsRequestExporter creates new logs exporter based on custom LogsConverter and RequestSender.
 // This API is at the early stage of development and may change without backward compatibility
@@ -131,7 +115,7 @@ func NewLogsRequestExporter(
 		return nil, errNilLogsConverter
 	}
 
-	be, err := newBaseExporter(set, component.DataTypeLogs, true, nil, nil, newLogsExporterWithObservability, options...)
+	be, err := newBaseExporter(set, component.DataTypeLogs, newLogsExporterWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}

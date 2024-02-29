@@ -15,7 +15,7 @@ import (
 
 var nopType = component.MustNewType("nop")
 
-// NewNopCreateSettings returns a new nop settings for Create* functions.
+// NewNopCreateSettings returns a new nop settings for Create*Processor functions.
 func NewNopCreateSettings() processor.CreateSettings {
 	return processor.CreateSettings{
 		ID:                component.NewID(nopType),
@@ -53,14 +53,14 @@ var nopInstance = &nopProcessor{
 	Consumer: consumertest.NewNop(),
 }
 
-// nopProcessor stores consumed traces and metrics for testing purposes.
+// nopProcessor acts as a processor for testing purposes.
 type nopProcessor struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumertest.Consumer
 }
 
-// NewNopBuilder returns a processor.Builder that constructs nop receivers.
+// NewNopBuilder returns a processor.Builder that constructs nop processors.
 func NewNopBuilder() *processor.Builder {
 	nopFactory := NewNopFactory()
 	return processor.NewBuilder(

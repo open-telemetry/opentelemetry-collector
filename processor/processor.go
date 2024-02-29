@@ -5,12 +5,17 @@ package processor // import "go.opentelemetry.io/collector/processor"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+)
+
+var (
+	errNilNextConsumer = errors.New("nil next Consumer")
 )
 
 // Traces is a processor that can consume traces.
@@ -229,6 +234,9 @@ func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.
 
 // CreateTraces creates a Traces processor based on the settings and config.
 func (b *Builder) CreateTraces(ctx context.Context, set CreateSettings, next consumer.Traces) (Traces, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("processor %q is not configured", set.ID)
@@ -245,6 +253,9 @@ func (b *Builder) CreateTraces(ctx context.Context, set CreateSettings, next con
 
 // CreateMetrics creates a Metrics processor based on the settings and config.
 func (b *Builder) CreateMetrics(ctx context.Context, set CreateSettings, next consumer.Metrics) (Metrics, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("processor %q is not configured", set.ID)
@@ -261,6 +272,9 @@ func (b *Builder) CreateMetrics(ctx context.Context, set CreateSettings, next co
 
 // CreateLogs creates a Logs processor based on the settings and config.
 func (b *Builder) CreateLogs(ctx context.Context, set CreateSettings, next consumer.Logs) (Logs, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("processor %q is not configured", set.ID)

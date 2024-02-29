@@ -155,7 +155,7 @@ func TestResolverErrors(t *testing.T) {
 			locations: []string{"mock:", "err:"},
 			providers: []Provider{
 				&mockProvider{},
-				&mockProvider{scheme: "err", retM: map[string]any{}, closeFunc: func(ctx context.Context) error { return errors.New("close_err") }},
+				&mockProvider{scheme: "err", retM: map[string]any{}, closeFunc: func(context.Context) error { return errors.New("close_err") }},
 			},
 			expectCloseErr: true,
 		},
@@ -270,7 +270,7 @@ func TestResolver(t *testing.T) {
 	numCalls := atomic.Int32{}
 	resolver, err := NewResolver(ResolverSettings{
 		URIs: []string{"mock:"},
-		Providers: makeMapProvidersMap(&mockProvider{retM: map[string]any{}, closeFunc: func(ctx context.Context) error {
+		Providers: makeMapProvidersMap(&mockProvider{retM: map[string]any{}, closeFunc: func(context.Context) error {
 			numCalls.Add(1)
 			return nil
 		}}),
