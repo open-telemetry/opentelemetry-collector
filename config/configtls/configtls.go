@@ -23,6 +23,8 @@ const defaultMinTLSVersion = tls.VersionTLS12
 // Uses the default MaxVersion from "crypto/tls" which is the maximum supported version
 const defaultMaxTLSVersion = 0
 
+var systemCertPool = x509.SystemCertPool
+
 // TLSSetting exposes the common client and server TLS configurations.
 // Deprecated: [v0.96.0] Use Config instead.
 type TLSSetting = Config
@@ -38,6 +40,10 @@ type Config struct {
 
 	// In memory PEM encoded cert. (optional)
 	CAPem configopaque.String `mapstructure:"ca_pem"`
+
+	// If true, load system CA certificates pool in addition to the certificates
+	// configured in this struct.
+	IncludeSystemCACertsPool bool `mapstructure:"include_system_ca_certs_pool"`
 
 	// Path to the TLS cert to use for TLS required connections. (optional)
 	CertFile string `mapstructure:"cert_file"`
@@ -318,7 +324,15 @@ func (c Config) loadCert(caPath string) (*x509.CertPool, error) {
 		return nil, fmt.Errorf("failed to load CA %s: %w", caPath, err)
 	}
 
-	certPool := x509.NewCertPool()
+	var certPool *x509.CertPool
+	if c.IncludeSystemCACertsPool {
+		if certPool, err = systemCertPool(); err != nil {
+			return nil, err
+		}
+	}
+	if certPool == nil {
+		certPool = x509.NewCertPool()
+	}
 	if !certPool.AppendCertsFromPEM(caPEM) {
 		return nil, fmt.Errorf("failed to parse CA %s", caPath)
 	}
