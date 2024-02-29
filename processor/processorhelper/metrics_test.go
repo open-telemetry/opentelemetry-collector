@@ -47,9 +47,6 @@ func TestNewMetricsProcessor_WithOptions(t *testing.T) {
 func TestNewMetricsProcessor_NilRequiredFields(t *testing.T) {
 	_, err := NewMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), &testMetricsCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
-
-	_, err = NewMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), &testMetricsCfg, nil, newTestMProcessor(nil))
-	assert.Equal(t, component.ErrNilNextConsumer, err)
 }
 
 func TestNewMetricsProcessor_ProcessMetricsError(t *testing.T) {

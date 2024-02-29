@@ -85,7 +85,7 @@ func WithRetry(config configretry.BackOffConfig) Option {
 // This option cannot be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 func WithQueue(config QueueSettings) Option {
 	return func(o *baseExporter) {
-		if o.requestExporter {
+		if o.marshaler == nil || o.unmarshaler == nil {
 			panic("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
 		}
 		if !config.Enabled {
@@ -114,6 +114,9 @@ func WithQueue(config QueueSettings) Option {
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[Request]) Option {
 	return func(o *baseExporter) {
+		if o.marshaler != nil || o.unmarshaler != nil {
+			panic("WithRequestQueue option must be used with the new request exporters only, use WithQueue instead")
+		}
 		if !cfg.Enabled {
 			o.exportFailureMessage += " Try enabling sending_queue to survive temporary failures."
 			return
@@ -135,15 +138,30 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 	}
 }
 
+// withMarshaler is used to set the request marshaler for the new exporter helper.
+// It must be provided as the first option when creating a new exporter helper.
+func withMarshaler(marshaler exporterqueue.Marshaler[Request]) Option {
+	return func(o *baseExporter) {
+		o.marshaler = marshaler
+	}
+}
+
+// withUnmarshaler is used to set the request unmarshaler for the new exporter helper.
+// It must be provided as the first option when creating a new exporter helper.
+func withUnmarshaler(unmarshaler exporterqueue.Unmarshaler[Request]) Option {
+	return func(o *baseExporter) {
+		o.unmarshaler = unmarshaler
+	}
+}
+
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	requestExporter bool
-	marshaler       exporterqueue.Marshaler[Request]
-	unmarshaler     exporterqueue.Unmarshaler[Request]
-	signal          component.DataType
+	marshaler   exporterqueue.Marshaler[Request]
+	unmarshaler exporterqueue.Unmarshaler[Request]
+	signal      component.DataType
 
 	set    exporter.CreateSettings
 	obsrep *ObsReport
@@ -162,20 +180,14 @@ type baseExporter struct {
 	consumerOptions []consumer.Option
 }
 
-// TODO: requestExporter, marshaler, and unmarshaler arguments can be removed when the old exporter helpers will be updated to call the new ones.
-func newBaseExporter(set exporter.CreateSettings, signal component.DataType, requestExporter bool,
-	marshaler exporterqueue.Marshaler[Request], unmarshaler exporterqueue.Unmarshaler[Request], osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
-
+func newBaseExporter(set exporter.CreateSettings, signal component.DataType, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
 	obsReport, err := NewObsReport(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set})
 	if err != nil {
 		return nil, err
 	}
 
 	be := &baseExporter{
-		requestExporter: requestExporter,
-		marshaler:       marshaler,
-		unmarshaler:     unmarshaler,
-		signal:          signal,
+		signal: signal,
 
 		queueSender:   &baseRequestSender{},
 		obsrepSender:  osf(obsReport),

@@ -156,8 +156,8 @@ ocb:
 # The source directory for OTLP ProtoBufs.
 OPENTELEMETRY_PROTO_SRC_DIR=pdata/internal/opentelemetry-proto
 
-# The SHA matching the current version of the proto to use
-OPENTELEMETRY_PROTO_VERSION=v1.0.0
+# The branch matching the current version of the proto to use
+OPENTELEMETRY_PROTO_VERSION=v1.1.0
 
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
@@ -171,7 +171,7 @@ PROTO_PACKAGE=go.opentelemetry.io/collector/$(PROTO_TARGET_GEN_DIR)
 # Intermediate directory used during generation.
 PROTO_INTERMEDIATE_DIR=pdata/internal/.patched-otlp-proto
 
-DOCKER_PROTOBUF ?= otel/build-protobuf:0.9.0
+DOCKER_PROTOBUF ?= otel/build-protobuf:0.23.0
 PROTOC := docker run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD}/$(PROTO_INTERMEDIATE_DIR) ${DOCKER_PROTOBUF} --proto_path=${PWD}
 PROTO_INCLUDES := -I/usr/include/github.com/gogo/protobuf -I./
 
@@ -299,7 +299,8 @@ restore-contrib:
 	@echo Restoring contrib at $(CONTRIB_PATH) to its original state
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		-dropreplace go.opentelemetry.io/collector \
-		-dropreplace go.opentelemetry.io/collector/component
+		-dropreplace go.opentelemetry.io/collector/component \
+		-dropreplace go.opentelemetry.io/collector/config/configauth  \
 		-dropreplace go.opentelemetry.io/collector/config/configcompression  \
 		-dropreplace go.opentelemetry.io/collector/config/configgrpc  \
 		-dropreplace go.opentelemetry.io/collector/config/confighttp  \
@@ -311,11 +312,11 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/config/internal  \
 		-dropreplace go.opentelemetry.io/collector/confmap  \
 		-dropreplace go.opentelemetry.io/collector/confmap/converter/expandconverter  \
-		-dropreplace go.opentelemetry.io/collector/confmap/p/provider/envprovider  \
-		-dropreplace go.opentelemetry.io/collector/confmap//provider/fileprovider  \
-		-dropreplace go.opentelemetry.io/collector/confmap//provider/httpprovider  \
+		-dropreplace go.opentelemetry.io/collector/confmap/provider/envprovider  \
+		-dropreplace go.opentelemetry.io/collector/confmap/provider/fileprovider  \
+		-dropreplace go.opentelemetry.io/collector/confmap/provider/httpprovider  \
 		-dropreplace go.opentelemetry.io/collector/confmap/provider/httpsprovider  \
-		-dropreplace go.opentelemetry.io/collector/confmap//provider/yamlprovider  \
+		-dropreplace go.opentelemetry.io/collector/confmap/provider/yamlprovider  \
 		-dropreplace go.opentelemetry.io/collector/connector  \
 		-dropreplace go.opentelemetry.io/collector/connector/forwardconnector  \
 		-dropreplace go.opentelemetry.io/collector/consumer  \
@@ -328,7 +329,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/extension/auth  \
 		-dropreplace go.opentelemetry.io/collector/extension/ballastextension  \
 		-dropreplace go.opentelemetry.io/collector/extension/memorylimiterextension  \
-		-dropreplace go.opentelemetry.io/collector/extension/zpagestextension  \
+		-dropreplace go.opentelemetry.io/collector/extension/zpagesextension  \
 		-dropreplace go.opentelemetry.io/collector/featuregate  \
 		-dropreplace go.opentelemetry.io/collector/otelcol  \
 		-dropreplace go.opentelemetry.io/collector/pdata  \

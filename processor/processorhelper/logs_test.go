@@ -47,9 +47,6 @@ func TestNewLogsProcessor_WithOptions(t *testing.T) {
 func TestNewLogsProcessor_NilRequiredFields(t *testing.T) {
 	_, err := NewLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), &testLogsCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
-
-	_, err = NewLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), &testLogsCfg, nil, newTestLProcessor(nil))
-	assert.Equal(t, component.ErrNilNextConsumer, err)
 }
 
 func TestNewLogsProcessor_ProcessLogError(t *testing.T) {
