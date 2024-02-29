@@ -665,12 +665,12 @@ func TestGRPCValidTLSCredentials(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		config *configtls.TLSServerSetting
+		config *configtls.ServerConfig
 	}{
 		{
 			name: "Base case",
-			config: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
+			config: &configtls.ServerConfig{
+				TLSSetting: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
@@ -679,8 +679,8 @@ func TestGRPCValidTLSCredentials(t *testing.T) {
 		},
 		{
 			name: "Test reload enabled",
-			config: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
+			config: &configtls.ServerConfig{
+				TLSSetting: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
@@ -695,7 +695,7 @@ func TestGRPCValidTLSCredentials(t *testing.T) {
 			cfg := &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.ServerConfig{
-						NetAddr: confignet.NetAddr{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  testutil.GetAvailableLocalAddress(t),
 							Transport: "tcp",
 						},
@@ -787,12 +787,12 @@ func TestHTTPTLSCredentials(t *testing.T) {
 	// Add test cases like GRPC test
 	tests := []struct {
 		name   string
-		config *configtls.TLSServerSetting
+		config *configtls.ServerConfig
 	}{
 		{
 			name: "Base case",
-			config: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
+			config: &configtls.ServerConfig{
+				TLSSetting: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
@@ -801,8 +801,8 @@ func TestHTTPTLSCredentials(t *testing.T) {
 		},
 		{
 			name: "Test reload enabled",
-			config: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
+			config: &configtls.ServerConfig{
+				TLSSetting: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
