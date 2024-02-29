@@ -120,7 +120,7 @@ In the above example `jaeger` exporter will get data from pipeline `traces` and 
 
 A pipeline can contain sequentially connected processors. The first processor gets the data from one or more receivers that are configured for the pipeline, the last processor sends the data to one or more exporters that are configured for the pipeline. All processors between the first and last receive the data strictly only from one preceding processor and send data strictly only to the succeeding processor.
 
-Processors can transform the data before forwarding it (i.e. add or remove attributes from spans), they can drop the data simply by deciding not to forward it (this is for example how the `probabilisticsampler` processor works), they can also generate new data. This is how a `spanmetrics` processor can produce metrics for spans processed by the pipeline.
+Processors can transform the data before forwarding it (i.e. add or remove attributes from spans), they can drop the data simply by deciding not to forward it (this is for example how the `probabilisticsampler` processor works), they can also generate new data.
 
 The same name of the processor can be referenced in the `processors` key of multiple pipelines. In this case the same configuration will be used for each of these processors however each pipeline will always get its own instance of the processor. Each of these processors will have its own state, the processors are never shared between pipelines. For example if `batch` processor is used in several pipelines each pipeline will have its own batch processor (although each batch processor will be configured exactly the same way if they reference the same key in the configuration). As an example, given the following configuration:
 

@@ -7,7 +7,6 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -66,9 +65,15 @@ type CollectorSettings struct {
 	// and manually handle the signals to shutdown the collector.
 	DisableGracefulShutdown bool
 
+	// Deprecated: [v0.95.0] Use ConfigProviderSettings instead.
 	// ConfigProvider provides the service configuration.
 	// If the provider watches for configuration change, collector may reload the new configuration upon changes.
 	ConfigProvider ConfigProvider
+
+	// ConfigProviderSettings allows configuring the way the Collector retrieves its configuration
+	// The Collector will reload based on configuration changes from the ConfigProvider if any
+	// confmap.Providers watch for configuration changes.
+	ConfigProviderSettings ConfigProviderSettings
 
 	// LoggingOptions provides a way to change behavior of zap logging.
 	LoggingOptions []zap.Option
@@ -92,6 +97,8 @@ type CollectorSettings struct {
 type Collector struct {
 	set CollectorSettings
 
+	configProvider ConfigProvider
+
 	service *service.Service
 	state   *atomic.Int32
 
@@ -105,8 +112,14 @@ type Collector struct {
 
 // NewCollector creates and returns a new instance of Collector.
 func NewCollector(set CollectorSettings) (*Collector, error) {
-	if set.ConfigProvider == nil {
-		return nil, errors.New("invalid nil config provider")
+	var err error
+	configProvider := set.ConfigProvider
+
+	if configProvider == nil {
+		configProvider, err = NewConfigProvider(set.ConfigProviderSettings)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	state := &atomic.Int32{}
@@ -119,6 +132,7 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		// the number of signals getting notified on is recommended.
 		signalsChannel:    make(chan os.Signal, 3),
 		asyncErrorChannel: make(chan error),
+		configProvider:    configProvider,
 	}, nil
 }
 
@@ -146,7 +160,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 
 	var conf *confmap.Conf
 
-	if cp, ok := col.set.ConfigProvider.(ConfmapProvider); ok {
+	if cp, ok := col.configProvider.(ConfmapProvider); ok {
 		var err error
 		conf, err = cp.GetConfmap(ctx)
 
@@ -159,7 +173,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize factories: %w", err)
 	}
-	cfg, err := col.set.ConfigProvider.Get(ctx, factories)
+	cfg, err := col.configProvider.Get(ctx, factories)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
@@ -215,7 +229,7 @@ func (col *Collector) DryRun(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize factories: %w", err)
 	}
-	cfg, err := col.set.ConfigProvider.Get(ctx, factories)
+	cfg, err := col.configProvider.Get(ctx, factories)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
@@ -243,7 +257,7 @@ func (col *Collector) Run(ctx context.Context) error {
 LOOP:
 	for {
 		select {
-		case err := <-col.set.ConfigProvider.Watch():
+		case err := <-col.configProvider.Watch():
 			if err != nil {
 				col.service.Logger().Error("Config watch failed", zap.Error(err))
 				break LOOP
@@ -280,7 +294,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 	// Accumulate errors and proceed with shutting down remaining components.
 	var errs error
 
-	if err := col.set.ConfigProvider.Shutdown(ctx); err != nil {
+	if err := col.configProvider.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown config provider: %w", err))
 	}
 

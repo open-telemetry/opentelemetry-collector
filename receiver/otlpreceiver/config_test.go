@@ -91,8 +91,8 @@ func TestUnmarshalConfig(t *testing.T) {
 						Endpoint:  "0.0.0.0:4317",
 						Transport: "tcp",
 					},
-					TLSSetting: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: &configtls.ServerConfig{
+						TLSSetting: configtls.Config{
 							CertFile: "test.crt",
 							KeyFile:  "test.key",
 						},
@@ -118,8 +118,8 @@ func TestUnmarshalConfig(t *testing.T) {
 				HTTP: &HTTPConfig{
 					ServerConfig: &confighttp.ServerConfig{
 						Endpoint: "0.0.0.0:4318",
-						TLSSetting: &configtls.TLSServerSetting{
-							TLSSetting: configtls.TLSSetting{
+						TLSSetting: &configtls.ServerConfig{
+							TLSSetting: configtls.Config{
 								CertFile: "test.crt",
 								KeyFile:  "test.key",
 							},

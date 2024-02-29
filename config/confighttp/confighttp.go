@@ -38,7 +38,7 @@ type ClientConfig struct {
 	ProxyURL string `mapstructure:"proxy_url"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
+	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
@@ -256,7 +256,7 @@ type ServerConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls"`
+	TLSSetting *configtls.ServerConfig `mapstructure:"tls"`
 
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
 	CORS *CORSConfig `mapstructure:"cors"`

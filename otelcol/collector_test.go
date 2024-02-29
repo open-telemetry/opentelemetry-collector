@@ -18,7 +18,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -32,13 +31,10 @@ func TestStateString(t *testing.T) {
 }
 
 func TestCollectorStartAsGoRoutine(t *testing.T) {
-	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
-	require.NoError(t, err)
-
 	set := CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      nopFactories,
-		ConfigProvider: cfgProvider,
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}),
 	}
 	col, err := NewCollector(set)
 	require.NoError(t, err)
@@ -56,13 +52,10 @@ func TestCollectorStartAsGoRoutine(t *testing.T) {
 }
 
 func TestCollectorCancelContext(t *testing.T) {
-	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
-	require.NoError(t, err)
-
 	set := CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      nopFactories,
-		ConfigProvider: cfgProvider,
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}),
 	}
 	col, err := NewCollector(set)
 	require.NoError(t, err)
@@ -119,13 +112,10 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 }
 
 func TestCollectorReportError(t *testing.T) {
-	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
-	require.NoError(t, err)
-
 	col, err := NewCollector(CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      nopFactories,
-		ConfigProvider: cfgProvider,
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}),
 	})
 	require.NoError(t, err)
 
@@ -235,13 +225,10 @@ func TestComponentStatusWatcher(t *testing.T) {
 }
 
 func TestCollectorSendSignal(t *testing.T) {
-	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
-	require.NoError(t, err)
-
 	col, err := NewCollector(CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      nopFactories,
-		ConfigProvider: cfgProvider,
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}),
 	})
 	require.NoError(t, err)
 
@@ -266,13 +253,10 @@ func TestCollectorSendSignal(t *testing.T) {
 func TestCollectorFailedShutdown(t *testing.T) {
 	t.Skip("This test was using telemetry shutdown failure, switch to use a component that errors on shutdown.")
 
-	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
-	require.NoError(t, err)
-
 	col, err := NewCollector(CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      nopFactories,
-		ConfigProvider: cfgProvider,
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}),
 	})
 	require.NoError(t, err)
 
@@ -294,16 +278,49 @@ func TestCollectorFailedShutdown(t *testing.T) {
 }
 
 func TestCollectorStartInvalidConfig(t *testing.T) {
-	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}))
-	require.NoError(t, err)
-
 	col, err := NewCollector(CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      nopFactories,
-		ConfigProvider: cfgProvider,
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
 	})
 	require.NoError(t, err)
 	assert.Error(t, col.Run(context.Background()))
+}
+
+func TestNewCollectorInvalidConfigProviderSettings(t *testing.T) {
+	_, err := NewCollector(CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: ConfigProviderSettings{},
+	})
+	require.Error(t, err)
+}
+
+func TestNewCollectorUseConfig(t *testing.T) {
+	set := newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")})
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: set,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, col.configProvider)
+}
+
+func TestNewCollectorValidatesResolverSettings(t *testing.T) {
+	set := ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs: []string{filepath.Join("testdata", "otelcol-nop.yaml")},
+		},
+	}
+
+	_, err := NewCollector(CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: set,
+	})
+	require.Error(t, err)
 }
 
 func TestCollectorStartWithTraceContextPropagation(t *testing.T) {
@@ -318,13 +335,10 @@ func TestCollectorStartWithTraceContextPropagation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.file, func(t *testing.T) {
-			cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", tt.file)}))
-			require.NoError(t, err)
-
 			set := CollectorSettings{
-				BuildInfo:      component.NewDefaultBuildInfo(),
-				Factories:      nopFactories,
-				ConfigProvider: cfgProvider,
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", tt.file)}),
 			}
 
 			col, err := NewCollector(set)
@@ -353,13 +367,10 @@ func TestCollectorRun(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.file, func(t *testing.T) {
-			cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", tt.file)}))
-			require.NoError(t, err)
-
 			set := CollectorSettings{
-				BuildInfo:      component.NewDefaultBuildInfo(),
-				Factories:      nopFactories,
-				ConfigProvider: cfgProvider,
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", tt.file)}),
 			}
 			col, err := NewCollector(set)
 			require.NoError(t, err)
@@ -374,13 +385,10 @@ func TestCollectorRun(t *testing.T) {
 }
 
 func TestCollectorShutdownBeforeRun(t *testing.T) {
-	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
-	require.NoError(t, err)
-
 	set := CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      nopFactories,
-		ConfigProvider: cfgProvider,
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}),
 	}
 	col, err := NewCollector(set)
 	require.NoError(t, err)
@@ -396,14 +404,11 @@ func TestCollectorShutdownBeforeRun(t *testing.T) {
 }
 
 func TestCollectorClosedStateOnStartUpError(t *testing.T) {
-	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}))
-	require.NoError(t, err)
-
 	// Load a bad config causing startup to fail
 	set := CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      nopFactories,
-		ConfigProvider: cfgProvider,
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
 	}
 	col, err := NewCollector(set)
 	require.NoError(t, err)
@@ -416,14 +421,11 @@ func TestCollectorClosedStateOnStartUpError(t *testing.T) {
 }
 
 func TestCollectorDryRun(t *testing.T) {
-	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}))
-	require.NoError(t, err)
-
 	// Load a bad config causing startup to fail
 	set := CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      nopFactories,
-		ConfigProvider: cfgProvider,
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
 	}
 	col, err := NewCollector(set)
 	require.NoError(t, err)
@@ -432,19 +434,15 @@ func TestCollectorDryRun(t *testing.T) {
 }
 
 func TestPassConfmapToServiceFailure(t *testing.T) {
-	cfgProvider, err := NewConfigProvider(ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			URIs:       []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-			Providers:  makeMapProvidersMap(newFailureProvider()),
-			Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
-		},
-	})
-	require.NoError(t, err)
-
 	set := CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      nopFactories,
-		ConfigProvider: cfgProvider,
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: nopFactories,
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:      []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
+				Providers: makeMapProvidersMap(newFailureProvider()),
+			},
+		},
 	}
 	col, err := NewCollector(set)
 	require.NoError(t, err)

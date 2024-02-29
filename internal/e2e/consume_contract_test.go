@@ -26,7 +26,7 @@ func testExporterConfig(endpoint string) component.Config {
 		RetryConfig: retryConfig,
 		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: configtls.ClientConfig{
 				Insecure: true,
 			},
 		},

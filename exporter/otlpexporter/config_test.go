@@ -61,8 +61,8 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "gzip",
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "/var/lib/mycert.pem",
 					},
 					Insecure: false,

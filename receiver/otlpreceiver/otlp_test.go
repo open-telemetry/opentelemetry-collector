@@ -639,8 +639,8 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: "tcp",
 				},
-				TLSSetting: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: &configtls.ServerConfig{
+					TLSSetting: configtls.Config{
 						CertFile: "willfail",
 					},
 				},
@@ -758,8 +758,8 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 			HTTP: &HTTPConfig{
 				ServerConfig: &confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
-					TLSSetting: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: &configtls.ServerConfig{
+						TLSSetting: configtls.Config{
 							CertFile: "willfail",
 						},
 					},
