@@ -15,6 +15,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
@@ -1095,4 +1096,26 @@ type mockHost struct {
 
 func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nh.ext
+}
+
+func TestGrpcHttp(t *testing.T) {
+	c := &ClientConfig{
+		TLSSetting: configtls.TLSClientSetting{Insecure: true, ServerName: "foo"},
+		Endpoint:   "http://example.com",
+	}
+	cred, err := c.toTransportCredentials(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	require.Equal(t, "insecure", cred.Info().SecurityProtocol)
+	require.Equal(t, "", cred.Info().ServerName)
+}
+
+func TestUnmarshalGrpcClientConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	cfg := &ClientConfig{}
+	conf, err := cm.Sub("insecure_with_https")
+	require.NoError(t, err)
+	err = component.UnmarshalConfig(conf, cfg)
+	require.NoError(t, err)
+	assert.False(t, cfg.TLSSetting.Insecure)
 }
