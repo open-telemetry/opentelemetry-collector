@@ -491,16 +491,40 @@ func TestPartialResponse_missingHeaderAndBody(t *testing.T) {
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
-	resp := &http.Response{
-		// `-1` indicates a missing Content-Length header in the Go http standard library
-		ContentLength: -1,
-		Body:          io.NopCloser(bytes.NewReader([]byte{})),
-		Header: map[string][]string{
-			"Content-Type": {"application/x-protobuf"},
-		},
+	contentTypes := []struct {
+		contentType string
+	}{
+		{contentType: "application/x-protobuf"},
+		{contentType: "application/json"},
 	}
-	err = handlePartialSuccessResponse(resp, exp.tracesPartialSuccessHandler)
-	assert.Nil(t, err)
+	for _, tt := range contentTypes {
+		for _, telemetryType := range []string{"logs", "metrics", "traces"} {
+			t.Run("Missing header and body for content type "+tt.contentType+" "+telemetryType, func(t *testing.T) {
+				var handler func(b []byte, contentType string) error
+				switch telemetryType {
+				case "logs":
+					handler = exp.logsPartialSuccessHandler
+				case "metrics":
+					handler = exp.metricsPartialSuccessHandler
+				case "traces":
+					handler = exp.tracesPartialSuccessHandler
+				default:
+					panic(telemetryType)
+				}
+
+				resp := &http.Response{
+					// `-1` indicates a missing Content-Length header in the Go http standard library
+					ContentLength: -1,
+					Body:          io.NopCloser(bytes.NewReader([]byte{})),
+					Header: map[string][]string{
+						"Content-Type": {tt.contentType},
+					},
+				}
+				err = handlePartialSuccessResponse(resp, handler)
+				assert.Nil(t, err)
+			})
+		}
+	}
 }
 
 func TestPartialResponse_nonErrUnexpectedEOFError(t *testing.T) {
