@@ -470,54 +470,102 @@ func TestPartialResponse_missingHeaderButHasBody(t *testing.T) {
 	contentTypes := []struct {
 		contentType string
 	}{
-		{contentType: "application/x-protobuf"},
-		{contentType: "application/json"},
+		{contentType: protobufContentType},
+		{contentType: jsonContentType},
 	}
 	for _, tt := range contentTypes {
-		for _, telemetryType := range []string{"logs", "metrics", "traces"} {
-			t.Run("Missing header but has body for content type "+tt.contentType+" "+telemetryType, func(t *testing.T) {
-				response := ptraceotlp.NewExportResponse()
-				partial := response.PartialSuccess()
-				partial.SetErrorMessage("hello")
-				partial.SetRejectedSpans(1)
+		t.Run("traces "+tt.contentType, func(t *testing.T) {
+			response := ptraceotlp.NewExportResponse()
+			partial := response.PartialSuccess()
+			partial.SetErrorMessage("hello")
+			partial.SetRejectedSpans(1)
 
-				var data []byte
-				var err error
+			var data []byte
+			var err error
 
-				switch tt.contentType {
-				case jsonContentType:
-					data, err = response.MarshalJSON()
-				case protobufContentType:
-					data, err = response.MarshalProto()
-				default:
-					panic(tt.contentType)
-				}
-				require.NoError(t, err)
+			switch tt.contentType {
+			case jsonContentType:
+				data, err = response.MarshalJSON()
+			case protobufContentType:
+				data, err = response.MarshalProto()
+			default:
+				panic(tt.contentType)
+			}
+			require.NoError(t, err)
 
-				var handler func(b []byte, contentType string) error
-				switch telemetryType {
-				case "logs":
-					handler = exp.logsPartialSuccessHandler
-				case "metrics":
-					handler = exp.metricsPartialSuccessHandler
-				case "traces":
-					handler = exp.tracesPartialSuccessHandler
-				default:
-					panic(telemetryType)
-				}
+			resp := &http.Response{
+				// `-1` indicates a missing Content-Length header in the Go http standard library
+				ContentLength: -1,
+				Body:          io.NopCloser(bytes.NewReader(data)),
+				Header: map[string][]string{
+					"Content-Type": {tt.contentType},
+				},
+			}
+			err = handlePartialSuccessResponse(resp, exp.tracesPartialSuccessHandler)
+			assert.NoError(t, err)
+		})
 
-				resp := &http.Response{
-					// `-1` indicates a missing Content-Length header in the Go http standard library
-					ContentLength: -1,
-					Body:          io.NopCloser(bytes.NewReader(data)),
-					Header: map[string][]string{
-						"Content-Type": {tt.contentType},
-					},
-				}
-				err = handlePartialSuccessResponse(resp, handler)
-				assert.NoError(t, err)
-			})
-		}
+		t.Run("metrics "+tt.contentType, func(t *testing.T) {
+			response := pmetricotlp.NewExportResponse()
+			partial := response.PartialSuccess()
+			partial.SetErrorMessage("hello")
+			partial.SetRejectedDataPoints(1)
+
+			var data []byte
+			var err error
+
+			switch tt.contentType {
+			case jsonContentType:
+				data, err = response.MarshalJSON()
+			case protobufContentType:
+				data, err = response.MarshalProto()
+			default:
+				panic(tt.contentType)
+			}
+			require.NoError(t, err)
+
+			resp := &http.Response{
+				// `-1` indicates a missing Content-Length header in the Go http standard library
+				ContentLength: -1,
+				Body:          io.NopCloser(bytes.NewReader(data)),
+				Header: map[string][]string{
+					"Content-Type": {tt.contentType},
+				},
+			}
+			err = handlePartialSuccessResponse(resp, exp.metricsPartialSuccessHandler)
+			assert.NoError(t, err)
+		})
+
+		t.Run("logs "+tt.contentType, func(t *testing.T) {
+			response := plogotlp.NewExportResponse()
+			partial := response.PartialSuccess()
+			partial.SetErrorMessage("hello")
+			partial.SetRejectedLogRecords(1)
+
+			var data []byte
+			var err error
+
+			switch tt.contentType {
+			case jsonContentType:
+				data, err = response.MarshalJSON()
+			case protobufContentType:
+				data, err = response.MarshalProto()
+			default:
+				panic(tt.contentType)
+			}
+			require.NoError(t, err)
+
+			resp := &http.Response{
+				// `-1` indicates a missing Content-Length header in the Go http standard library
+				ContentLength: -1,
+				Body:          io.NopCloser(bytes.NewReader(data)),
+				Header: map[string][]string{
+					"Content-Type": {tt.contentType},
+				},
+			}
+			err = handlePartialSuccessResponse(resp, exp.logsPartialSuccessHandler)
+			assert.NoError(t, err)
+		})
 	}
 }
 
@@ -530,12 +578,12 @@ func TestPartialResponse_missingHeaderAndBody(t *testing.T) {
 	contentTypes := []struct {
 		contentType string
 	}{
-		{contentType: "application/x-protobuf"},
-		{contentType: "application/json"},
+		{contentType: protobufContentType},
+		{contentType: jsonContentType},
 	}
 	for _, tt := range contentTypes {
 		for _, telemetryType := range []string{"logs", "metrics", "traces"} {
-			t.Run("Missing header and body for content type "+tt.contentType+" "+telemetryType, func(t *testing.T) {
+			t.Run(telemetryType+" "+tt.contentType, func(t *testing.T) {
 				var handler func(b []byte, contentType string) error
 				switch telemetryType {
 				case "logs":
@@ -587,54 +635,102 @@ func TestPartialSuccess_shortContentLengthHeader(t *testing.T) {
 	contentTypes := []struct {
 		contentType string
 	}{
-		{contentType: "application/x-protobuf"},
-		{contentType: "application/json"},
+		{contentType: protobufContentType},
+		{contentType: jsonContentType},
 	}
 	for _, tt := range contentTypes {
-		for _, telemetryType := range []string{"logs", "metrics", "traces"} {
-			t.Run("Missing header but has body for content type "+tt.contentType+" "+telemetryType, func(t *testing.T) {
-				response := ptraceotlp.NewExportResponse()
-				partial := response.PartialSuccess()
-				partial.SetErrorMessage("hello")
-				partial.SetRejectedSpans(1)
+		t.Run("traces "+tt.contentType, func(t *testing.T) {
+			response := ptraceotlp.NewExportResponse()
+			partial := response.PartialSuccess()
+			partial.SetErrorMessage("hello")
+			partial.SetRejectedSpans(1)
 
-				var data []byte
-				var err error
+			var data []byte
+			var err error
 
-				switch tt.contentType {
-				case jsonContentType:
-					data, err = response.MarshalJSON()
-				case protobufContentType:
-					data, err = response.MarshalProto()
-				default:
-					panic(tt.contentType)
-				}
-				require.NoError(t, err)
+			switch tt.contentType {
+			case jsonContentType:
+				data, err = response.MarshalJSON()
+			case protobufContentType:
+				data, err = response.MarshalProto()
+			default:
+				panic(tt.contentType)
+			}
+			require.NoError(t, err)
 
-				var handler func(b []byte, contentType string) error
-				switch telemetryType {
-				case "logs":
-					handler = exp.logsPartialSuccessHandler
-				case "metrics":
-					handler = exp.metricsPartialSuccessHandler
-				case "traces":
-					handler = exp.tracesPartialSuccessHandler
-				default:
-					panic(telemetryType)
-				}
+			resp := &http.Response{
+				ContentLength: 3,
+				Body:          io.NopCloser(bytes.NewReader(data)),
+				Header: map[string][]string{
+					"Content-Type": {tt.contentType},
+				},
+			}
+			// For short content-length, a real error happens.
+			err = handlePartialSuccessResponse(resp, exp.tracesPartialSuccessHandler)
+			assert.Error(t, err)
+		})
 
-				resp := &http.Response{
-					ContentLength: 3,
-					Body:          io.NopCloser(bytes.NewReader(data)),
-					Header: map[string][]string{
-						"Content-Type": {tt.contentType},
-					},
-				}
-				// For short content-length, a real error happens.
-				err = handlePartialSuccessResponse(resp, handler)
-				assert.Error(t, err)
-			})
-		}
+		t.Run("metrics "+tt.contentType, func(t *testing.T) {
+			response := pmetricotlp.NewExportResponse()
+			partial := response.PartialSuccess()
+			partial.SetErrorMessage("hello")
+			partial.SetRejectedDataPoints(1)
+
+			var data []byte
+			var err error
+
+			switch tt.contentType {
+			case jsonContentType:
+				data, err = response.MarshalJSON()
+			case protobufContentType:
+				data, err = response.MarshalProto()
+			default:
+				panic(tt.contentType)
+			}
+			require.NoError(t, err)
+
+			resp := &http.Response{
+				ContentLength: 3,
+				Body:          io.NopCloser(bytes.NewReader(data)),
+				Header: map[string][]string{
+					"Content-Type": {tt.contentType},
+				},
+			}
+			// For short content-length, a real error happens.
+			err = handlePartialSuccessResponse(resp, exp.metricsPartialSuccessHandler)
+			assert.Error(t, err)
+		})
+
+		t.Run("logs "+tt.contentType, func(t *testing.T) {
+			response := plogotlp.NewExportResponse()
+			partial := response.PartialSuccess()
+			partial.SetErrorMessage("hello")
+			partial.SetRejectedLogRecords(1)
+
+			var data []byte
+			var err error
+
+			switch tt.contentType {
+			case jsonContentType:
+				data, err = response.MarshalJSON()
+			case protobufContentType:
+				data, err = response.MarshalProto()
+			default:
+				panic(tt.contentType)
+			}
+			require.NoError(t, err)
+
+			resp := &http.Response{
+				ContentLength: 3,
+				Body:          io.NopCloser(bytes.NewReader(data)),
+				Header: map[string][]string{
+					"Content-Type": {tt.contentType},
+				},
+			}
+			// For short content-length, a real error happens.
+			err = handlePartialSuccessResponse(resp, exp.logsPartialSuccessHandler)
+			assert.Error(t, err)
+		})
 	}
 }
 
@@ -642,63 +738,129 @@ func TestPartialSuccess_longContentLengthHeader(t *testing.T) {
 	contentTypes := []struct {
 		contentType string
 	}{
-		{contentType: "application/x-protobuf"},
-		{contentType: "application/json"},
+		{contentType: protobufContentType},
+		{contentType: jsonContentType},
 	}
 	for _, tt := range contentTypes {
-		for _, telemetryType := range []string{"logs", "metrics", "traces"} {
-			t.Run("Long content length header for content type "+tt.contentType+" "+telemetryType, func(t *testing.T) {
-				cfg := createDefaultConfig()
-				set := exportertest.NewNopCreateSettings()
-				logger, observed := observer.New(zap.DebugLevel)
-				set.TelemetrySettings.Logger = zap.New(logger)
+		t.Run("traces "+tt.contentType, func(t *testing.T) {
+			cfg := createDefaultConfig()
+			set := exportertest.NewNopCreateSettings()
+			logger, observed := observer.New(zap.DebugLevel)
+			set.TelemetrySettings.Logger = zap.New(logger)
 
-				exp, err := newExporter(cfg, set)
-				require.NoError(t, err)
-				response := ptraceotlp.NewExportResponse()
-				partial := response.PartialSuccess()
-				partial.SetErrorMessage("hello")
-				partial.SetRejectedSpans(1)
+			exp, err := newExporter(cfg, set)
+			require.NoError(t, err)
+			response := ptraceotlp.NewExportResponse()
+			partial := response.PartialSuccess()
+			partial.SetErrorMessage("hello")
+			partial.SetRejectedSpans(1)
 
-				var data []byte
+			var data []byte
 
-				switch tt.contentType {
-				case jsonContentType:
-					data, err = response.MarshalJSON()
-				case protobufContentType:
-					data, err = response.MarshalProto()
-				default:
-					panic(tt.contentType)
-				}
-				require.NoError(t, err)
+			switch tt.contentType {
+			case jsonContentType:
+				data, err = response.MarshalJSON()
+			case protobufContentType:
+				data, err = response.MarshalProto()
+			default:
+				panic(tt.contentType)
+			}
+			require.NoError(t, err)
 
-				var handler func(b []byte, contentType string) error
-				switch telemetryType {
-				case "logs":
-					handler = exp.logsPartialSuccessHandler
-				case "metrics":
-					handler = exp.metricsPartialSuccessHandler
-				case "traces":
-					handler = exp.tracesPartialSuccessHandler
-				default:
-					panic(telemetryType)
-				}
+			resp := &http.Response{
+				ContentLength: 4096,
+				Body:          io.NopCloser(bytes.NewReader(data)),
+				Header: map[string][]string{
+					"Content-Type": {tt.contentType},
+				},
+			}
+			// No real error happens for long content length, so the partial
+			// success is handled as success with a warning.
+			err = handlePartialSuccessResponse(resp, exp.tracesPartialSuccessHandler)
+			assert.NoError(t, err)
+			assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
+			assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
+		})
 
-				resp := &http.Response{
-					ContentLength: 4096,
-					Body:          io.NopCloser(bytes.NewReader(data)),
-					Header: map[string][]string{
-						"Content-Type": {tt.contentType},
-					},
-				}
-				// No real error happens for long content length, so the partial
-				// success is handled as success with a warning.
-				err = handlePartialSuccessResponse(resp, handler)
-				assert.NoError(t, err)
-				assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
-				assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
-			})
-		}
+		t.Run("metrics "+tt.contentType, func(t *testing.T) {
+			cfg := createDefaultConfig()
+			set := exportertest.NewNopCreateSettings()
+			logger, observed := observer.New(zap.DebugLevel)
+			set.TelemetrySettings.Logger = zap.New(logger)
+
+			exp, err := newExporter(cfg, set)
+			require.NoError(t, err)
+			response := pmetricotlp.NewExportResponse()
+			partial := response.PartialSuccess()
+			partial.SetErrorMessage("hello")
+			partial.SetRejectedDataPoints(1)
+
+			var data []byte
+
+			switch tt.contentType {
+			case jsonContentType:
+				data, err = response.MarshalJSON()
+			case protobufContentType:
+				data, err = response.MarshalProto()
+			default:
+				panic(tt.contentType)
+			}
+			require.NoError(t, err)
+
+			resp := &http.Response{
+				ContentLength: 4096,
+				Body:          io.NopCloser(bytes.NewReader(data)),
+				Header: map[string][]string{
+					"Content-Type": {tt.contentType},
+				},
+			}
+			// No real error happens for long content length, so the partial
+			// success is handled as success with a warning.
+			err = handlePartialSuccessResponse(resp, exp.metricsPartialSuccessHandler)
+			assert.NoError(t, err)
+			assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
+			assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
+		})
+
+		t.Run("logs "+tt.contentType, func(t *testing.T) {
+			cfg := createDefaultConfig()
+			set := exportertest.NewNopCreateSettings()
+			logger, observed := observer.New(zap.DebugLevel)
+			set.TelemetrySettings.Logger = zap.New(logger)
+
+			exp, err := newExporter(cfg, set)
+			require.NoError(t, err)
+			response := plogotlp.NewExportResponse()
+			partial := response.PartialSuccess()
+			partial.SetErrorMessage("hello")
+			partial.SetRejectedLogRecords(1)
+
+			var data []byte
+
+			switch tt.contentType {
+			case jsonContentType:
+				data, err = response.MarshalJSON()
+			case protobufContentType:
+				data, err = response.MarshalProto()
+			default:
+				panic(tt.contentType)
+			}
+			require.NoError(t, err)
+
+			resp := &http.Response{
+				ContentLength: 4096,
+				Body:          io.NopCloser(bytes.NewReader(data)),
+				Header: map[string][]string{
+					"Content-Type": {tt.contentType},
+				},
+			}
+			// No real error happens for long content length, so the partial
+			// success is handled as success with a warning.
+			err = handlePartialSuccessResponse(resp, exp.logsPartialSuccessHandler)
+			assert.NoError(t, err)
+			assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
+			assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
+		})
 	}
 }
 
