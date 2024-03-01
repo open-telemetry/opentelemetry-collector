@@ -467,22 +467,58 @@ func TestPartialResponse_missingHeaderButHasBody(t *testing.T) {
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
-	response := ptraceotlp.NewExportResponse()
-	partial := response.PartialSuccess()
-	partial.SetErrorMessage("hello")
-	partial.SetRejectedSpans(1)
-	data, err := response.MarshalProto()
-	require.NoError(t, err)
-	resp := &http.Response{
-		// `-1` indicates a missing Content-Length header in the Go http standard library
-		ContentLength: -1,
-		Body:          io.NopCloser(bytes.NewReader(data)),
-		Header: map[string][]string{
-			"Content-Type": {"application/x-protobuf"},
-		},
+	contentTypes := []struct {
+		contentType string
+	}{
+		{contentType: "application/x-protobuf"},
+		{contentType: "application/json"},
 	}
-	err = handlePartialSuccessResponse(resp, exp.tracesPartialSuccessHandler)
-	assert.NoError(t, err)
+	for _, tt := range contentTypes {
+		for _, telemetryType := range []string{"logs", "metrics", "traces"} {
+			t.Run("Missing header but has body for content type "+tt.contentType+" "+telemetryType, func(t *testing.T) {
+				response := ptraceotlp.NewExportResponse()
+				partial := response.PartialSuccess()
+				partial.SetErrorMessage("hello")
+				partial.SetRejectedSpans(1)
+
+				var data []byte
+				var err error
+
+				switch tt.contentType {
+				case jsonContentType:
+					data, err = response.MarshalJSON()
+				case protobufContentType:
+					data, err = response.MarshalProto()
+				default:
+					panic(tt.contentType)
+				}
+				require.NoError(t, err)
+
+				var handler func(b []byte, contentType string) error
+				switch telemetryType {
+				case "logs":
+					handler = exp.logsPartialSuccessHandler
+				case "metrics":
+					handler = exp.metricsPartialSuccessHandler
+				case "traces":
+					handler = exp.tracesPartialSuccessHandler
+				default:
+					panic(telemetryType)
+				}
+
+				resp := &http.Response{
+					// `-1` indicates a missing Content-Length header in the Go http standard library
+					ContentLength: -1,
+					Body:          io.NopCloser(bytes.NewReader(data)),
+					Header: map[string][]string{
+						"Content-Type": {tt.contentType},
+					},
+				}
+				err = handlePartialSuccessResponse(resp, handler)
+				assert.NoError(t, err)
+			})
+		}
+	}
 }
 
 func TestPartialResponse_missingHeaderAndBody(t *testing.T) {
