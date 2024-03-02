@@ -46,6 +46,16 @@ func WithShutdown(shutdown component.ShutdownFunc) ScraperOption {
 	}
 }
 
+// WithID sets the id for a given scraper
+func WithID(id component.ID) (ScraperOption, error) {
+	if err := id.Type().Validate(); err != nil {
+		return nil, err
+	}
+	return func(o *baseScraper) {
+		o.id = id
+	}, nil
+}
+
 var _ Scraper = (*baseScraper)(nil)
 
 type baseScraper struct {

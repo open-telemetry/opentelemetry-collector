@@ -123,6 +123,8 @@ func (t Type) String() string {
 // This must be kept in sync with the regex in cmd/mdatagen/validate.go.
 var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]*$`)
 
+const NoType = Type("")
+
 // NewType creates a type. It returns an error if the type is invalid.
 // A type must
 // - have at least one character,
@@ -130,12 +132,13 @@ var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]*$`)
 // - can only contain ASCII alphanumeric characters and '_'.
 func NewType(ty string) (Type, error) {
 	if len(ty) == 0 {
-		return Type(""), fmt.Errorf("id must not be empty")
+		return NoType, fmt.Errorf("id must not be empty")
 	}
-	if !typeRegexp.MatchString(ty) {
-		return Type(""), fmt.Errorf("invalid character(s) in type %q", ty)
+	t := Type(ty)
+	if err := t.Validate(); err != nil {
+		return NoType, err
 	}
-	return Type(ty), nil
+	return t, nil
 }
 
 // MustNewType creates a type. It panics if the type is invalid.
@@ -149,6 +152,13 @@ func MustNewType(strType string) Type {
 		panic(err)
 	}
 	return ty
+}
+
+func (t Type) Validate() error {
+	if !typeRegexp.MatchString(t.String()) {
+		return fmt.Errorf("provided value ( %q ) for Type must match regex ( %q )", t.String(), typeRegexp.String())
+	}
+	return nil
 }
 
 // DataType is a special Type that represents the data types supported by the collector. We currently support
