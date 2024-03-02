@@ -286,6 +286,11 @@ type ServerConfig struct {
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
 }
 
+// NewDefaultServerConfig creates new ServerConfig with default values set
+func NewDefaultServerConfig() ServerConfig {
+	return ServerConfig{}
+}
+
 // Deprecated: [v0.99.0] Use ToListener instead.
 func (hss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
 	return hss.ToListener(ctx)
@@ -447,6 +452,10 @@ type CORSConfig struct {
 	MaxAge int `mapstructure:"max_age"`
 }
 
+// NewDefaultCORSConfig creates a new CORSConfig with defaults value set
+func NewDefaultCORSConfig() CORSConfig {
+	return CORSConfig{}
+}
 func authInterceptor(next http.Handler, server auth.Server) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, err := server.Authenticate(r.Context(), r.Header)

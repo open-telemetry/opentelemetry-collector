@@ -49,6 +49,12 @@ var (
 	nonExistingID = component.MustNewID("nonexisting")
 )
 
+func TestNewDefaultServerConfig(t *testing.T) {
+	expectedServerConfig := ServerConfig{}
+	serverConfig := NewDefaultServerConfig()
+	require.Equal(t, expectedServerConfig, serverConfig)
+}
+
 func TestAllHTTPClientSettings(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
