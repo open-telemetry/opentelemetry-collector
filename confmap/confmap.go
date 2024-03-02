@@ -157,7 +157,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool) error {
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
 			unmarshalerHookFunc(result),
-			unmarshalerEmbeddedStructsHookFunc(result),
+			unmarshalerEmbeddedStructsHookFunc(),
 			zeroSliceHookFunc(),
 		),
 	}
@@ -262,7 +262,9 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 	}
 }
 
-func unmarshalerEmbeddedStructsHookFunc(_ any) mapstructure.DecodeHookFuncValue {
+// unmarshalerEmbeddedStructsHookFunc provides a mechanism for embedded structs to define their own unmarshal logic,
+// by implementing the Unmarshaler interface.
+func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (any, error) {
 		if to.Type().Kind() != reflect.Struct {
 			return from.Interface(), nil
