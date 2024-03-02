@@ -55,7 +55,7 @@ func TestNewDefaultServerConfig(t *testing.T) {
 	require.Equal(t, expectedServerConfig, serverConfig)
 }
 
-func TestNewDefaultCORSConfig(t *testing.T){
+func TestNewDefaultCORSConfig(t *testing.T) {
 	expectedCORSConfig := CORSConfig{}
 	corsConfig := NewDefaultCORSConfig()
 	require.Equal(t, expectedCORSConfig, corsConfig)
