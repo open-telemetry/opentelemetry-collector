@@ -11,7 +11,20 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestNewDefaultDialerConfig(t *testing.T) {
+	expectedDialerConfig := DialerConfig{}
+	dialerConfig := NewDefaultDialerConfig()
+	require.Equal(t, expectedDialerConfig, dialerConfig)
+}
+
+func TestNewDefaultAddrConfig(t *testing.T) {
+	expectedAddrConfig := AddrConfig{}
+	addrConfig := NewDefaultAddrConfig()
+	require.Equal(t, expectedAddrConfig, addrConfig)
+}
 
 func TestAddrConfigTimeout(t *testing.T) {
 	nac := &AddrConfig{
