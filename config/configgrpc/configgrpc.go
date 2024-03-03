@@ -38,7 +38,7 @@ import (
 )
 
 var (
-	errMetadataNotFound = errors.New("no request metadata found")
+	errMetadataNotFound   = errors.New("no request metadata found")
 	errMemoryLimitReached = status.Error(codes.ResourceExhausted, "Memory limit has been reached, too many requests.")
 )
 
@@ -418,7 +418,6 @@ func memoryLimiterStreamServerInterceptor(srv any, stream grpc.ServerStream, _ *
 
 	return handler(srv, wrapServerStream(ctx, stream))
 }
-
 
 func getMemoryLimiterExtension(extID *component.ID, extensions map[component.ID]component.Component) (memoryLimiterExtension, error) {
 	if ext, found := extensions[*extID]; found {

@@ -264,7 +264,7 @@ func TestGrpcServerAuthSettings_Deprecated(t *testing.T) {
 }
 
 type mockMemoryLimiterExtension struct {
-	iD component.ID
+	iD         component.ID
 	mustRefuse bool
 	component.StartFunc
 	component.ShutdownFunc
@@ -274,63 +274,51 @@ func (mml *mockMemoryLimiterExtension) MustRefuse() bool {
 	return mml.mustRefuse
 }
 
-func TestGrpcServerMemoryLimiterSettings(t *testing.T) {
+func TestGetMemoryLimiterExtension(t *testing.T) {
 	badID := component.NewID("badmemlimiter")
 	notMLExtensionErr := fmt.Errorf("requested MemoryLimiter, %s, is not a memoryLimiterExtension", badID)
 
 	missingID := component.NewID("missingmemlimiter")
 	missingMLExtensionErr := fmt.Errorf("failed to resolve memoryLimiterExtension %q: %s", missingID, "memory limiter extension not found")
+
+	validID := component.NewID("memorylimiter")
+
 	tests := []struct {
-		name     string
-		refused  bool
+		name        string
 		componentID component.ID
 		// getExtErr refers to whether the requested memory limiter extension was successfully found.
 		getExtErr error
-		// interceptErr refers to whether memorylimiterextension allowed the request.
-		interceptErr error
 	}{
 		{
-			name: "memory limiter not refused",
-			refused: false,
-			componentID: component.NewID("memorylimiter"),
-			getExtErr: nil,
-			interceptErr: nil,
+			name:        "memory extension found",
+			componentID: validID,
+			getExtErr:   nil,
 		},
 		{
-			name: "memory limiter refused, good ID",
-			refused: true,
-			componentID: component.NewID("memorylimiter"),
-			getExtErr: nil,
-			interceptErr: errMemoryLimitReached,
-		},
-		{
-			name: "not a memory limiter extension",
-			refused: true,
+			name:        "not a memory limiter extension",
 			componentID: badID,
-			getExtErr: notMLExtensionErr,
-			interceptErr: nil,
+			getExtErr:   notMLExtensionErr,
 		},
 		{
-			name: "memory limiter extension not found",
-			refused: true,
+			name:        "memory limiter extension not found",
 			componentID: missingID,
-			getExtErr: missingMLExtensionErr,
-			interceptErr: nil,
+			getExtErr:   missingMLExtensionErr,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			comID := test.componentID
 			gss := &ServerConfig{
 				NetAddr: confignet.AddrConfig{
-					Endpoint: "localhost:0",
+					Endpoint:  "localhost:0",
 					Transport: "tcp",
 				},
-				MemoryLimiter: &test.componentID,
+				MemoryLimiter: &comID,
 			}
 
 			nopExt, err := extensiontest.NewNopFactory().CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), ServerConfig{})
 			assert.NoError(t, err)
-			ml := &mockMemoryLimiterExtension{iD: test.componentID, mustRefuse: test.refused}
+			ml := &mockMemoryLimiterExtension{iD: comID}
 			extList := map[component.ID]component.Component{
 				component.NewID("memorylimiter"): ml,
 				badID:                            nopExt,
@@ -340,6 +328,7 @@ func TestGrpcServerMemoryLimiterSettings(t *testing.T) {
 				ext: extList,
 			}
 
+			// ToServer calls getMemoryLimiterExtension().
 			srv, err := gss.ToServer(host, componenttest.NewNopTelemetrySettings())
 
 			// desired extension was not found.
@@ -348,6 +337,52 @@ func TestGrpcServerMemoryLimiterSettings(t *testing.T) {
 				assert.Nil(t, srv)
 				return
 			}
+
+			assert.NoError(t, err)
+		})
+	}
+
+}
+
+func TestGrpcUnaryServerMemoryLimiterSettings(t *testing.T) {
+	tests := []struct {
+		name    string
+		refused bool
+		// interceptErr refers to whether memorylimiterextension allowed the request.
+		interceptErr error
+	}{
+		{
+			name:         "unary memory limiter extension accept",
+			refused:      false,
+			interceptErr: nil,
+		},
+		{
+			name:         "unary memory limiter extension refuse",
+			refused:      true,
+			interceptErr: errMemoryLimitReached,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			comID := component.NewID("memorylimiter")
+			gss := &ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: "tcp",
+				},
+				MemoryLimiter: &comID,
+			}
+
+			ml := &mockMemoryLimiterExtension{iD: comID, mustRefuse: test.refused}
+			extList := map[component.ID]component.Component{
+				comID: ml,
+			}
+
+			host := &mockHost{
+				ext: extList,
+			}
+
+			srv, err := gss.ToServer(host, componenttest.NewNopTelemetrySettings())
 
 			// found extension so finish setting up server and client to test interceptor.
 			assert.NoError(t, err)
@@ -364,7 +399,7 @@ func TestGrpcServerMemoryLimiterSettings(t *testing.T) {
 				_ = srv.Serve(l)
 			}()
 
-			//setup client
+			// setup client
 			gcs := &ClientConfig{
 				Endpoint: l.Addr().String(),
 				TLSSetting: configtls.ClientConfig{
@@ -372,7 +407,7 @@ func TestGrpcServerMemoryLimiterSettings(t *testing.T) {
 				},
 			}
 
-			tt, err := componenttest.SetupTelemetry(componentID)
+			tt, err := componenttest.SetupTelemetry(comID)
 			require.NoError(t, err)
 			defer func() {
 				require.NoError(t, tt.Shutdown(context.Background()))
@@ -387,16 +422,64 @@ func TestGrpcServerMemoryLimiterSettings(t *testing.T) {
 			defer cancelFunc()
 
 			resp, errResp := cl.Export(ctx, ptraceotlp.NewExportRequest())
+			assert.ErrorIs(t, test.interceptErr, errResp)
 
 			if test.interceptErr != nil {
-				assert.ErrorIs(t, test.interceptErr, errResp)
 				assert.Equal(t, resp, ptraceotlp.ExportResponse{})
 			} else {
-				assert.NoError(t, err)
 				assert.NotNil(t, resp)
+				assert.NotEqual(t, resp, ptraceotlp.ExportResponse{})
 			}
 		})
 	}
+}
+
+func TestGrpcStreamServerMemoryLimiterSettings(t *testing.T) {
+	tests := []struct {
+		name    string
+		refused bool
+		// interceptErr refers to whether memorylimiterextension allowed the request.
+		interceptErr error
+	}{
+		{
+			name:         "stream memory limiter extension accept",
+			refused:      false,
+			interceptErr: nil,
+		},
+		{
+			name:         "stream memory limiter extension refuse",
+			refused:      true,
+			interceptErr: errMemoryLimitReached,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			comID := component.NewID("memorylimiter")
+
+			ml := &mockMemoryLimiterExtension{iD: comID, mustRefuse: test.refused}
+			handlerCalled := false
+			handler := func(_ any, _ grpc.ServerStream) error {
+				handlerCalled = true
+				return nil
+			}
+			ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
+			streamServer := &mockServerStream{
+				ctx: ctx,
+			}
+
+			// test
+			err := memoryLimiterStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, ml)
+
+			// verify
+			assert.ErrorIs(t, test.interceptErr, err)
+			if test.refused {
+				assert.False(t, handlerCalled)
+			} else {
+				assert.True(t, handlerCalled)
+			}
+		})
+	}
+
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
