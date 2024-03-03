@@ -284,7 +284,9 @@ func TestGrpcServerMemoryLimiterSettings(t *testing.T) {
 		name     string
 		refused  bool
 		componentID component.ID
+		// getExtErr refers to whether the requested memory limiter extension was successfully found.
 		getExtErr error
+		// interceptErr refers to whether memorylimiterextension allowed the request.
 		interceptErr error
 	}{
 		{
@@ -302,14 +304,14 @@ func TestGrpcServerMemoryLimiterSettings(t *testing.T) {
 			interceptErr: errMemoryLimitReached,
 		},
 		{
-			name: "memory limiter refused, bad ID",
+			name: "not a memory limiter extension",
 			refused: true,
 			componentID: badID,
 			getExtErr: notMLExtensionErr,
 			interceptErr: nil,
 		},
 		{
-			name: "memory limiter refused, missing ID",
+			name: "memory limiter extension not found",
 			refused: true,
 			componentID: missingID,
 			getExtErr: missingMLExtensionErr,
