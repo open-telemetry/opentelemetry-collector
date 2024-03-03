@@ -6,6 +6,7 @@ package configgrpc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -32,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
@@ -259,6 +261,140 @@ func TestGrpcServerAuthSettings_Deprecated(t *testing.T) {
 	srv, err := gss.ToServer(host, componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, srv)
+}
+
+type mockMemoryLimiterExtension struct {
+	iD component.ID
+	mustRefuse bool
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+func (mml *mockMemoryLimiterExtension) MustRefuse() bool {
+	return mml.mustRefuse
+}
+
+func TestGrpcServerMemoryLimiterSettings(t *testing.T) {
+	badID := component.NewID("badmemlimiter")
+	notMLExtensionErr := fmt.Errorf("requested MemoryLimiter, %s, is not a memoryLimiterExtension", badID)
+
+	missingID := component.NewID("missingmemlimiter")
+	missingMLExtensionErr := fmt.Errorf("failed to resolve memoryLimiterExtension %q: %s", missingID, "memory limiter extension not found")
+	tests := []struct {
+		name     string
+		refused  bool
+		componentID component.ID
+		getExtErr error
+		interceptErr error
+	}{
+		{
+			name: "memory limiter not refused",
+			refused: false,
+			componentID: component.NewID("memorylimiter"),
+			getExtErr: nil,
+			interceptErr: nil,
+		},
+		{
+			name: "memory limiter refused, good ID",
+			refused: true,
+			componentID: component.NewID("memorylimiter"),
+			getExtErr: nil,
+			interceptErr: errMemoryLimitReached,
+		},
+		{
+			name: "memory limiter refused, bad ID",
+			refused: true,
+			componentID: badID,
+			getExtErr: notMLExtensionErr,
+			interceptErr: nil,
+		},
+		{
+			name: "memory limiter refused, missing ID",
+			refused: true,
+			componentID: missingID,
+			getExtErr: missingMLExtensionErr,
+			interceptErr: nil,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gss := &ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint: "localhost:0",
+					Transport: "tcp",
+				},
+				MemoryLimiter: &test.componentID,
+			}
+
+			nopExt, err := extensiontest.NewNopFactory().CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), ServerConfig{})
+			assert.NoError(t, err)
+			ml := &mockMemoryLimiterExtension{iD: test.componentID, mustRefuse: test.refused}
+			extList := map[component.ID]component.Component{
+				component.NewID("memorylimiter"): ml,
+				badID:                            nopExt,
+			}
+
+			host := &mockHost{
+				ext: extList,
+			}
+
+			srv, err := gss.ToServer(host, componenttest.NewNopTelemetrySettings())
+
+			// desired extension was not found.
+			if test.getExtErr != nil {
+				assert.Equal(t, test.getExtErr.Error(), err.Error())
+				assert.Nil(t, srv)
+				return
+			}
+
+			// found extension so finish setting up server and client to test interceptor.
+			assert.NoError(t, err)
+			mock := &grpcTraceServer{}
+
+			ptraceotlp.RegisterGRPCServer(srv, mock)
+
+			defer srv.Stop()
+
+			l, err := gss.NetAddr.Listen(context.Background())
+			require.NoError(t, err)
+
+			go func() {
+				_ = srv.Serve(l)
+			}()
+
+			//setup client
+			gcs := &ClientConfig{
+				Endpoint: l.Addr().String(),
+				TLSSetting: configtls.ClientConfig{
+					Insecure: true,
+				},
+			}
+
+			tt, err := componenttest.SetupTelemetry(componentID)
+			require.NoError(t, err)
+			defer func() {
+				require.NoError(t, tt.Shutdown(context.Background()))
+			}()
+
+			grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
+			require.NoError(t, errClient)
+			defer func() { assert.NoError(t, grpcClientConn.Close()) }()
+
+			cl := ptraceotlp.NewGRPCClient(grpcClientConn)
+			ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancelFunc()
+
+			resp, errResp := cl.Export(ctx, ptraceotlp.NewExportRequest())
+
+			if test.interceptErr != nil {
+				assert.ErrorIs(t, test.interceptErr, errResp)
+				assert.Equal(t, resp, ptraceotlp.ExportResponse{})
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, resp)
+			}
+		})
+	}
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
