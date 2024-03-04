@@ -7,5 +7,5 @@ status:
   distributions: [core, contrib]
 
 tests:
-  # TODO: Fix the failing test
+  # TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/9688
   skip_lifecycle: true
