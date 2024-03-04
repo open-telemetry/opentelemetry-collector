@@ -1,6 +1,6 @@
-# Sample metric metadata file with all available configurations.
+# Sample metadata file with all available configurations for a receiver.
 
-type: file
+type: sample
 
 sem_conv_version: 1.9.0
 
@@ -10,7 +10,9 @@ status:
     development: [logs]
     beta: [traces]
     stable: [metrics]
-  distributions: [contrib]
+  distributions: []
+  codeowners:
+    active: [dmitryax]
   warnings:
     - Any additional information that should be brought to the consumer's attention
 

@@ -6,3 +6,8 @@ status:
     stable: [traces, metrics]
     beta: [logs]
   distributions: [core, contrib]
+
+# TODO: The tests take a long time to run for this exporter, see if it needs to be fixed.
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

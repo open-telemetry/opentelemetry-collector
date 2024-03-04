@@ -202,6 +202,7 @@ func (a attribute) TestValue() string {
 type tests struct {
 	Config              any  `mapstructure:"config"`
 	SkipLifecycle       bool `mapstructure:"skip_lifecycle"`
+	SkipShutdown        bool `mapstructure:"skip_shutdown"`
 	ExpectConsumerError bool `mapstructure:"expect_consumer_error"`
 }
 
@@ -225,7 +226,7 @@ type metadata struct {
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
 
-	Tests *tests `mapstructure:"tests"`
+	Tests tests `mapstructure:"tests"`
 }
 
 func setAttributesFullName(attrs map[attributeName]attribute) {
