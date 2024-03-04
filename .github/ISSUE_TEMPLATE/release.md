@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-Like #4522, but for vX.X.X
+Like #9601, but for vX.X.X
 
 **Performed by collector release manager**
 
@@ -19,6 +19,7 @@ Like #4522, but for vX.X.X
 - [ ] Tag and release contrib vX.X.X
 - [ ] Prepare otelcol-releases vX.X.X
 - [ ] Release binaries and container images vX.X.X
+- [ ] Update the release schedule in docs/RELEASE.md
 
 **Performed by operator maintainers**
 
