@@ -42,7 +42,7 @@ require (
 	go.opentelemetry.io/collector/config/configretry v0.95.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.95.0 // indirect
 	go.opentelemetry.io/collector/extension v0.95.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.2.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.3.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.95.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.46.0 // indirect
