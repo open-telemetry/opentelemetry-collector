@@ -125,7 +125,7 @@ func (d *gauge) Unmarshal(parser *confmap.Conf) error {
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err
 	}
-	return parser.Unmarshal(d)
+	return parser.Unmarshal(d, confmap.WithIgnoreUnused())
 }
 
 func (d gauge) Type() string {
@@ -155,7 +155,7 @@ func (d *sum) Unmarshal(parser *confmap.Conf) error {
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err
 	}
-	return parser.Unmarshal(d)
+	return parser.Unmarshal(d, confmap.WithIgnoreUnused())
 }
 
 // TODO: Currently, this func will not be called because of https://github.com/open-telemetry/opentelemetry-collector/issues/6671. Uncomment function and
