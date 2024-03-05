@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -222,7 +222,7 @@ type metadata struct {
 	// Metrics that can be emitted by the component.
 	Metrics map[metricName]metric `mapstructure:"metrics"`
 	// ScopeName of the metrics emitted by the component.
-	ScopeName string `mapstructure:"-"`
+	ScopeName string `mapstructure:"scope_name"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
 
@@ -253,12 +253,18 @@ func loadMetadata(filePath string) (metadata, error) {
 		return metadata{}, err
 	}
 
-	md := metadata{ScopeName: scopeName(filePath), ShortFolderName: shortFolderName(filePath)}
-	if err := conf.Unmarshal(&md); err != nil {
+	md := metadata{ShortFolderName: shortFolderName(filePath)}
+	if err = conf.Unmarshal(&md); err != nil {
 		return md, err
 	}
+	if md.ScopeName == "" {
+		md.ScopeName, err = packageName()
+		if err != nil {
+			return md, err
+		}
+	}
 
-	if err := md.Validate(); err != nil {
+	if err = md.Validate(); err != nil {
 		return md, err
 	}
 
@@ -287,15 +293,11 @@ func shortFolderName(filePath string) string {
 	return parentFolder
 }
 
-func scopeName(filePath string) string {
-	sn := "go.opentelemetry.io/collector"
-	dirs := strings.Split(filepath.Dir(filePath), string(os.PathSeparator))
-	for _, dir := range dirs {
-		for _, cType := range componentTypes {
-			if strings.HasSuffix(dir, cType) {
-				sn += "/" + dir
-			}
-		}
+func packageName() (string, error) {
+	cmd := exec.Command("go", "list", "-f", "{{.ImportPath}}")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
 	}
-	return sn
+	return strings.TrimSpace(string(output)), nil
 }
