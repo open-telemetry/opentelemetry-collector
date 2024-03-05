@@ -134,6 +134,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	return srv, nil
 }
 
+// Validate validates the service. Validation fails if all the components in every
+// service pipeline don't support the same signal type as that of the pipeline.
 func Validate(ctx context.Context, set Settings, cfg Config) error {
 	tel, err := telemetry.New(ctx, telemetry.Settings{ZapOptions: set.LoggingOptions}, cfg.Telemetry)
 	if err != nil {
