@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/extension/memorylimiterextension
 go 1.21
 
 require (
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.96.0
 	go.opentelemetry.io/collector/component v0.96.0
 	go.opentelemetry.io/collector/confmap v0.96.0
