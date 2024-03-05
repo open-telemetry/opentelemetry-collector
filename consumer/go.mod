@@ -3,9 +3,9 @@ module go.opentelemetry.io/collector/consumer
 go 1.21
 
 require (
-	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.95.0
-	go.opentelemetry.io/collector/pdata v1.2.0
+	github.com/stretchr/testify v1.9.0
+	go.opentelemetry.io/collector v0.96.0
+	go.opentelemetry.io/collector/pdata v1.3.0
 	go.uber.org/goleak v1.3.0
 )
 
