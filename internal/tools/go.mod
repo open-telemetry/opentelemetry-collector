@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/build-tools/chloggen v0.12.0
 	go.opentelemetry.io/build-tools/crosslink v0.12.1-0.20240121161735-d70c842b1bf5
 	go.opentelemetry.io/build-tools/multimod v0.12.0
-	go.opentelemetry.io/build-tools/semconvgen v0.12.0
+	go.opentelemetry.io/build-tools/semconvgen v0.13.0
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
 	golang.org/x/tools v0.18.0
 	golang.org/x/vuln v1.0.4
@@ -198,7 +198,7 @@ require (
 	gitlab.com/bosi/decorder v0.4.1 // indirect
 	go-simpler.org/musttag v0.8.0 // indirect
 	go-simpler.org/sloglint v0.4.0 // indirect
-	go.opentelemetry.io/build-tools v0.12.0 // indirect
+	go.opentelemetry.io/build-tools v0.13.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/crypto v0.19.0 // indirect
