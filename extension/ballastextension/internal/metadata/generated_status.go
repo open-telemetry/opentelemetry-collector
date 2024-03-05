@@ -10,8 +10,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("memory_ballast")
-	scopeName = "go.opentelemetry.io/collector/extension/ballastextension"
+	Type = component.MustNewType("memory_ballast")
 )
 
 const (
@@ -19,9 +18,9 @@ const (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter(scopeName)
+	return settings.MeterProvider.Meter("go.opentelemetry.io/collector/extension/ballastextension")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer(scopeName)
+	return settings.TracerProvider.Tracer("go.opentelemetry.io/collector/extension/ballastextension")
 }
