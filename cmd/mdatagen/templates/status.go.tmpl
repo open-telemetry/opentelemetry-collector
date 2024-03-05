@@ -10,7 +10,6 @@ import (
 
 var (
 	Type = component.MustNewType("{{ .Type }}")
-	scopeName = "{{ .ScopeName }}"
 )
 
 const (
@@ -22,9 +21,9 @@ const (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter(scopeName)
+	return settings.MeterProvider.Meter("{{ .ScopeName }}")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer(scopeName)
+	return settings.TracerProvider.Tracer("{{ .ScopeName }}")
 }
