@@ -331,5 +331,10 @@ func (col *Collector) validatePipelineCfg(ctx context.Context, cfg *Config, fact
 		Extensions: extension.NewBuilder(cfg.Extensions, factories.Extensions),
 	}
 
-	return service.Validate(ctx, set, cfg.Service)
+	_, err := service.New(ctx, set, cfg.Service)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

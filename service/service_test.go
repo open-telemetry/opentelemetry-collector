@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector/connectortest"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
@@ -32,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/pipelines"
@@ -430,64 +428,6 @@ func TestServiceFatalError(t *testing.T) {
 	err = <-srv.host.asyncErrorChannel
 
 	require.ErrorIs(t, err, assert.AnError)
-}
-
-func TestServiceValidate(t *testing.T) {
-	tests := map[string]struct {
-		createSettings func() Settings
-		config         Config
-
-		expectedErr string
-	}{
-		"same_types": {
-			createSettings: newNopSettings,
-			config:         newNopConfig(),
-			expectedErr:    "",
-		},
-		"different_types": {
-			createSettings: func() Settings {
-				const typeStr = "nop"
-
-				createMetricsReceiver := func(_ context.Context, _ receiver.CreateSettings, _ component.Config, _ consumer.Metrics) (receiver.Metrics, error) {
-					return struct {
-						component.StartFunc
-						component.ShutdownFunc
-					}{}, nil
-				}
-
-				createDefaultConfig := func() component.Config {
-					return &struct{}{}
-				}
-
-				metricsOnlyReceiverFactory := receiver.NewFactory(
-					typeStr,
-					createDefaultConfig,
-					receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelStable),
-				)
-
-				settings := newNopSettings()
-				settings.Receivers = receiver.NewBuilder(
-					map[component.ID]component.Config{component.NewID(typeStr): metricsOnlyReceiverFactory.CreateDefaultConfig()},
-					map[component.Type]receiver.Factory{typeStr: metricsOnlyReceiverFactory},
-				)
-
-				return settings
-			},
-			config:      newNopConfig(),
-			expectedErr: `telemetry type is not supported`,
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			err := Validate(context.Background(), test.createSettings(), test.config)
-			if test.expectedErr == "" {
-				require.NoError(t, err)
-			} else {
-				require.ErrorContains(t, err, test.expectedErr)
-			}
-		})
-	}
 }
 
 func assertResourceLabels(t *testing.T, res pcommon.Resource, expectedLabels map[string]labelValue) {
