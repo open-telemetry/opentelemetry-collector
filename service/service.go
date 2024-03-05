@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"runtime"
 
-	"go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -132,37 +131,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	}
 
 	return srv, nil
-}
-
-// Validate validates the service. Validation fails if all the components in every
-// service pipeline don't support the same signal type as that of the pipeline.
-func Validate(ctx context.Context, set Settings, cfg Config) error {
-	tel, err := telemetry.New(ctx, telemetry.Settings{ZapOptions: set.LoggingOptions}, cfg.Telemetry)
-	if err != nil {
-		return fmt.Errorf("failed to get logger: %w", err)
-	}
-
-	telSettings := servicetelemetry.TelemetrySettings{
-		Logger:         tel.Logger(),
-		TracerProvider: tel.TracerProvider(),
-		MeterProvider:  noop.NewMeterProvider(),
-	}
-
-	pSet := graph.Settings{
-		Telemetry:        telSettings,
-		BuildInfo:        set.BuildInfo,
-		ReceiverBuilder:  set.Receivers,
-		ProcessorBuilder: set.Processors,
-		ExporterBuilder:  set.Exporters,
-		ConnectorBuilder: set.Connectors,
-		PipelineConfigs:  cfg.Pipelines,
-	}
-
-	if _, err := graph.Build(ctx, pSet); err != nil {
-		return fmt.Errorf("failed to build pipelines for validation: %w", err)
-	}
-
-	return nil
 }
 
 // Start starts the extensions and pipelines. If Start fails Shutdown should be called to ensure a clean state.
