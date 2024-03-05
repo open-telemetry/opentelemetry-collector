@@ -4,6 +4,3 @@ status:
   class: exporter
   stability:
     beta: [traces, logs, metrics]
-
-tests:
-  config:

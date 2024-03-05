@@ -10,13 +10,13 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("file")
-	scopeName = "go.opentelemetry.io/collector"
+	Type      = component.MustNewType("sample")
+	scopeName = "go.opentelemetry.io/collector/samplereceiver"
 )
 
 const (
-	TracesStability  = component.StabilityLevelBeta
 	LogsStability    = component.StabilityLevelDevelopment
+	TracesStability  = component.StabilityLevelBeta
 	MetricsStability = component.StabilityLevelStable
 )
 
