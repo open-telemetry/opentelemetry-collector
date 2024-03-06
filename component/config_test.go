@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var _ fmt.Stringer = (Type)("")
+var _ fmt.Stringer = Type{}
 
 type configChildStruct struct {
 	Child    errConfig
