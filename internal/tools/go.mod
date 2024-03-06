@@ -9,7 +9,7 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/pavius/impi v0.0.3
-	go.opentelemetry.io/build-tools/checkfile v0.12.0
+	go.opentelemetry.io/build-tools/checkfile v0.13.0
 	go.opentelemetry.io/build-tools/chloggen v0.13.0
 	go.opentelemetry.io/build-tools/crosslink v0.13.0
 	go.opentelemetry.io/build-tools/multimod v0.13.0
