@@ -3,8 +3,6 @@
 
 package consumererror // import "go.opentelemetry.io/collector/consumer/consumererror"
 
-var noDataCount = -1
-
 type Partial struct {
 	err   error
 	count int
