@@ -151,15 +151,7 @@ For more information, see [CWE-1327](https://cwe.mitre.org/data/definitions/1327
 To change the default endpoint to be `localhost`-bound in all components, enable the `component.UseLocalHostAsDefaultHost` feature gate. This feature gate will be enabled by default in the Collector in a future release.
 
 
-If `localhost` resolves to a different IP due to DNS then explicitly use these IPs instead:
-```
-IPv4: 127.0.0.1
-IPv6: ::1
-```
-IPv6 Reminder:
-In IPv6 setups, ensure your system supports both IPv4 and IPv6 loopback addresses to avoid issues.
-
-For clarity and safety, consider explicitly mentioning the IP (`127.0.0.1`) instead of relying solely on `localhost`, especially in sensitive setups. Keep things consistent across different networks.
+If `localhost` resolves to a different IP due to your DNS settings then explicitly use the loopback IP instead: `127.0.0.1` for IPv4 or `::1` for IPv6. In IPv6 setups, ensure your system supports both IPv4 and IPv6 loopback addresses to avoid issues.
 
 ## Processors
 
