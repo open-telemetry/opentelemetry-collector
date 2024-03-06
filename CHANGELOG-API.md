@@ -7,6 +7,18 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.3.0/v0.96.0
+
+### 🚩 Deprecations 🚩
+
+- `configgrpc`: Deprecates `ToServer`.  Use `ToServerContext` instead. (#9624)
+- `component`: deprecate component.ErrNilNextConsumer (#9526)
+- `configtls`: Rename TLSClientSetting, TLSServerSetting, and TLSSetting based on the naming convention used in other config packages. (#9474)
+
+### 💡 Enhancements 💡
+
+- `receivertest`: add support for metrics in contract checker (#9551)
+
 ## v1.2.0/v0.95.0
 
 ### 🛑 Breaking changes 🛑

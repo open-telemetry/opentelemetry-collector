@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for file metrics.
+// MetricsConfig provides config for sample metrics.
 type MetricsConfig struct {
 	DefaultMetric            MetricConfig `mapstructure:"default.metric"`
 	DefaultMetricToBeRemoved MetricConfig `mapstructure:"default.metric.to_be_removed"`
@@ -67,7 +67,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for file resource attributes.
+// ResourceAttributesConfig provides config for sample resource attributes.
 type ResourceAttributesConfig struct {
 	MapResourceAttr                  ResourceAttributeConfig `mapstructure:"map.resource.attr"`
 	OptionalResourceAttr             ResourceAttributeConfig `mapstructure:"optional.resource.attr"`
@@ -108,7 +108,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for file metrics builder.
+// MetricsBuilderConfig is a configuration for sample metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
