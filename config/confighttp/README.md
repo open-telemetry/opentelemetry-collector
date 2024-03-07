@@ -39,7 +39,7 @@ Example:
 
 ```yaml
 exporter:
-  otlp:
+  otlphttp:
     endpoint: otelcol2:55690
     auth:
       authenticator: some-authenticator-extension

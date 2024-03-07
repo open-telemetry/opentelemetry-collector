@@ -7,6 +7,30 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.3.0/v0.96.0
+
+### 🛑 Breaking changes 🛑
+
+- `configgrpc`: Remove deprecated `GRPCClientSettings`, `GRPCServerSettings`, and `ServerConfig.ToListenerContext`. (#9616)
+- `confighttp`: Remove deprecated `HTTPClientSettings`, `NewDefaultHTTPClientSettings`, and `CORSSettings`. (#9625)
+- `confignet`: Removes deprecated `NetAddr` and `TCPAddr` (#9614)
+
+### 💡 Enhancements 💡
+
+- `configtls`: Add `include_system_ca_certs_pool` to configtls, allowing to load system certs and additional custom certs. (#7774)
+- `otelcol`: Add `ConfigProviderSettings` to `CollectorSettings` (#4759)
+  This allows passing a custom list of `confmap.Provider`s to `otelcol.NewCommand`.
+- `pdata`: Update to OTLP v1.1.0 (#9587)
+  Introduces Span and SpanLink flags.
+- `confmap`: Update mapstructure to use a maintained fork, github.com/go-viper/mapstructure/v2. (#9634)
+  See https://github.com/mitchellh/mapstructure/issues/349 for context.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `configretry`: Allow max_elapsed_time to be set to 0 for indefinite retries (#9641)
+- `client`: Make `Metadata.Get` thread safe (#9595)
+
 ## v1.2.0/v0.95.0
 
 ### 🛑 Breaking changes 🛑

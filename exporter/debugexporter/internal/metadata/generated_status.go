@@ -10,8 +10,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("debug")
-	scopeName = "go.opentelemetry.io/collector/exporter/debugexporter"
+	Type = component.MustNewType("debug")
 )
 
 const (
@@ -21,9 +20,9 @@ const (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter(scopeName)
+	return settings.MeterProvider.Meter("go.opentelemetry.io/collector/exporter/debugexporter")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer(scopeName)
+	return settings.TracerProvider.Tracer("go.opentelemetry.io/collector/exporter/debugexporter")
 }

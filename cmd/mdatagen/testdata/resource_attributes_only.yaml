@@ -15,3 +15,7 @@ resource_attributes:
     description: Resource attribute 1.
     type: string
     enabled: true
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

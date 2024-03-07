@@ -8,7 +8,7 @@ import (
 )
 
 // Request represents a single request that can be sent to an external endpoint.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type Request interface {
 	// Export exports the request to an external endpoint.
@@ -23,7 +23,7 @@ type Request interface {
 // temporary failures. For example, if some items failed to process and can be retried, this interface allows to
 // return a new Request that contains the items left to be sent. Otherwise, the original Request should be returned.
 // If not implemented, the original Request will be returned assuming the error is applied to the whole Request.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type RequestErrorHandler interface {
 	Request

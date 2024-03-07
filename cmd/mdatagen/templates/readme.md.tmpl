@@ -7,7 +7,7 @@
 {{- if ne $class "connector" }}
 {{- $idx := 0 }}
 {{- range $stability, $value := .Status.Stability }}
-| {{ if not $idx }}Stability{{ else }}         {{ end }}     | [{{ $stability }}]{{ if ne $class "extension" }}: {{ stringsJoin $value ", " }} {{ end }}  |
+| {{ if not $idx }}Stability{{ else }}         {{ end }}     | [{{ toLowerCase $stability.String }}]{{ if ne $class "extension" }}: {{ stringsJoin $value ", " }} {{ end }}  |
 {{- $idx = inc $idx }}
 {{- end }}
 {{- end}}
@@ -29,7 +29,7 @@
 {{- end }}
 {{- end }}
 {{range $stability, $val := .Status.Stability}}
-[{{ $stability }}]: https://github.com/open-telemetry/opentelemetry-collector#{{ $stability }}
+[{{ toLowerCase $stability.String }}]: https://github.com/open-telemetry/opentelemetry-collector#{{ toLowerCase $stability.String }}
 {{- end }}
 {{- range .Status.SortedDistributions }}
 [{{.}}]: {{ distroURL . }}
@@ -43,7 +43,7 @@
 {{- range $stability, $pipelines := .Status.Stability }}
 {{- range $pipeline := $pipelines }}
 {{- $parts := stringsSplit $pipeline "_to_"  }}
-| {{index $parts 0}} | {{index $parts 1}} | [{{$stability}}] |
+| {{index $parts 0}} | {{index $parts 1}} | [{{ toLowerCase $stability.String }}] |
 {{- end }}
 {{- end }}
 
