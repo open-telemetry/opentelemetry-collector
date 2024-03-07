@@ -7,7 +7,7 @@ status:
     beta: [logs]
   distributions: [core, contrib]
 
-# TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/9685
 tests:
-  skip_lifecycle: true
-  skip_shutdown: true
+  config:
+    endpoint: "https://1.2.3.4:1234"
+    
