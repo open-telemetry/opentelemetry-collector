@@ -66,19 +66,19 @@ When persistent queue is enabled, the batches are being buffered using the provi
    │              │     │           │                    │    │    │ 3 │    ├───► (in progress)
  write          read    └─────┬─────┘                    ├───►│    └───┘    │
  index          index         │                          │    │             │
-   ▲                          │                          │    └─────────────┘
-   │                          │                          │
-   │                      currently                      │    ┌─Consumer #4─┐
-   │                      dispatched                     │    │    ┌───┐    │     Temporary
-   │                                                     └───►│    │ 4 │    ├───►  failure
-   │                                                          │    └───┘    │         │
-   │                                                          │             │         │
-   │                                                          └─────────────┘         │
-   │                                                                 ▲                │
-   │                                                                 └── Retry ───────┤
-   │                                                                                  │
-   │                                                                                  │
-   └────────────────────────────────────── Requeuing  ◄────── Retry limit exceeded ───┘
+                              │                          │    └─────────────┘
+                              │                          │
+                          currently                      │    ┌─Consumer #4─┐
+                          dispatched                     │    │    ┌───┐    │     Temporary
+                                                         └───►│    │ 4 │    ├───►  failure
+                                                              │    └───┘    │         │
+                                                              │             │         │
+                                                              └─────────────┘         │
+                                                                     ▲                │
+                                                                     └── Retry ───────┤
+                                                                                      │
+                                                                                      │
+                                                   X  ◄────── Retry limit exceeded ───┘
 ```
 
 Example:
