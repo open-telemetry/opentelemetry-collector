@@ -25,70 +25,36 @@ func NewNopCreateSettings() receiver.CreateSettings {
 	}
 }
 
-// NewNopFactory returns a receiver.Factory that constructs nop receivers.
-func NewNopFactory(opts ...NopOption) receiver.Factory {
-	cfg := defaultNopConfig()
-	for _, opt := range opts {
-		opt(cfg)
-	}
-
-	factoryOpts := make([]receiver.FactoryOption, 0)
-	componentType := defaultComponentType.String()
-	if cfg.withTraces {
-		factoryOpts = append(factoryOpts, receiver.WithTraces(createTraces, component.StabilityLevelStable))
-	} else {
-		componentType += "_notraces"
-	}
-	if cfg.withMetrics {
-		factoryOpts = append(factoryOpts, receiver.WithMetrics(createMetrics, component.StabilityLevelStable))
-	} else {
-		componentType += "_nometrics"
-	}
-	if cfg.withLogs {
-		factoryOpts = append(factoryOpts, receiver.WithLogs(createLogs, component.StabilityLevelStable))
-	} else {
-		componentType += "_nologs"
-	}
-
-	return receiver.NewFactory(component.MustNewType(componentType), func() component.Config { return cfg }, factoryOpts...)
+// NewNopFactory returns a receiver.Factory that constructs nop receivers supporting all data types.
+func NewNopFactory() receiver.Factory {
+	return receiver.NewFactory(
+		defaultComponentType,
+		func() component.Config { return &nopConfig{} },
+		receiver.WithTraces(createTraces, component.StabilityLevelStable),
+		receiver.WithMetrics(createMetrics, component.StabilityLevelStable),
+		receiver.WithLogs(createLogs, component.StabilityLevelStable))
 }
 
-type nopConfig struct {
-	withTraces  bool
-	withMetrics bool
-	withLogs    bool
-}
-
-func defaultNopConfig() *nopConfig {
-	return &nopConfig{
-		withTraces:  true,
-		withMetrics: true,
-		withLogs:    true,
+// NewNopFactoryForType returns a receiver.Factory that constructs nop receivers supporting only the
+// given data type.
+func NewNopFactoryForType(dataType component.DataType) receiver.Factory {
+	var factoryOpt receiver.FactoryOption
+	switch dataType {
+	case component.DataTypeTraces:
+		factoryOpt = receiver.WithTraces(createTraces, component.StabilityLevelStable)
+	case component.DataTypeMetrics:
+		factoryOpt = receiver.WithMetrics(createMetrics, component.StabilityLevelStable)
+	case component.DataTypeLogs:
+		factoryOpt = receiver.WithLogs(createLogs, component.StabilityLevelStable)
+	default:
+		panic("unsupported data type for creating nop receiver factory: " + dataType.String())
 	}
+
+	componentType := component.MustNewType(defaultComponentType.String() + "_" + dataType.String())
+	return receiver.NewFactory(componentType, func() component.Config { return &nopConfig{} }, factoryOpt)
 }
 
-type NopOption func(*nopConfig)
-
-// WithoutTraces creates a NopReceiver that cannot produce traces.
-func WithoutTraces() NopOption {
-	return func(c *nopConfig) {
-		c.withTraces = false
-	}
-}
-
-// WithoutMetrics creates a NopReceiver that cannot produce metrics.
-func WithoutMetrics() NopOption {
-	return func(c *nopConfig) {
-		c.withMetrics = false
-	}
-}
-
-// WithoutLogs creates a NopReceiver that cannot produce logs.
-func WithoutLogs() NopOption {
-	return func(c *nopConfig) {
-		c.withLogs = false
-	}
-}
+type nopConfig struct{}
 
 func createTraces(context.Context, receiver.CreateSettings, component.Config, consumer.Traces) (receiver.Traces, error) {
 	return nopInstance, nil
