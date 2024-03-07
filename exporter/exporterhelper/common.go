@@ -110,7 +110,7 @@ func WithQueue(config QueueSettings) Option {
 
 // WithRequestQueue enables queueing for an exporter.
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[Request]) Option {
 	return func(o *baseExporter) {

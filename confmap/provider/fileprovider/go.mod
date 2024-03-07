@@ -3,8 +3,8 @@ module go.opentelemetry.io/collector/confmap/provider/fileprovider
 go 1.21
 
 require (
-	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/confmap v0.95.0
+	github.com/stretchr/testify v1.9.0
+	go.opentelemetry.io/collector/confmap v0.96.0
 	go.uber.org/goleak v1.3.0
 )
 
