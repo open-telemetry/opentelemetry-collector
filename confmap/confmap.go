@@ -157,6 +157,8 @@ func decodeConfig(m *Conf, result any, errorUnused bool) error {
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
 			unmarshalerHookFunc(result),
+			// after the main unmarshaler hook is called,
+			// we unmarshal the embedded structs if present to merge with the result:
 			unmarshalerEmbeddedStructsHookFunc(),
 			zeroSliceHookFunc(),
 		),
@@ -274,11 +276,15 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 			return from.Interface(), nil
 		}
 		for i := 0; i < to.Type().NumField(); i++ {
+			// embedded structs passed in via `squash` cannot be pointers. We just check if they are structs:
 			if to.Type().Field(i).IsExported() && to.Type().Field(i).Anonymous {
 				if unmarshaler, ok := to.Field(i).Addr().Interface().(Unmarshaler); ok {
 					if err := unmarshaler.Unmarshal(NewFromStringMap(fromAsMap)); err != nil {
 						return nil, err
 					}
+					// the struct we receive from this unmarshaling only contains fields related to the embedded struct.
+					// we merge this partially unmarshaled struct with the rest of the result.
+					// note we already unmarshaled the main struct earlier, and therefore merge with it.
 					conf := New()
 					if err := conf.Marshal(unmarshaler); err != nil {
 						return nil, err
