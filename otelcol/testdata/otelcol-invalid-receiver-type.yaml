@@ -1,5 +1,5 @@
 receivers:
-  nop_logs:
+  nop_notraces:
 
 processors:
   nop:
@@ -13,6 +13,6 @@ service:
       address: localhost:8888
   pipelines:
     traces:
-      receivers: [nop_logs]
+      receivers: [nop_notraces]
       processors: [nop]
       exporters: [nop]

@@ -14,25 +14,80 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-var componentType = component.MustNewType("nop")
+var defaultComponentType = component.MustNewType("nop")
 
 // NewNopCreateSettings returns a new nop settings for Create*Receiver functions.
 func NewNopCreateSettings() receiver.CreateSettings {
 	return receiver.CreateSettings{
-		ID:                component.NewIDWithName(componentType, uuid.NewString()),
+		ID:                component.NewIDWithName(defaultComponentType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
 }
 
 // NewNopFactory returns a receiver.Factory that constructs nop receivers.
-func NewNopFactory() receiver.Factory {
-	return receiver.NewFactory(
-		componentType,
-		func() component.Config { return &nopConfig{} },
-		receiver.WithTraces(createTraces, component.StabilityLevelStable),
-		receiver.WithMetrics(createMetrics, component.StabilityLevelStable),
-		receiver.WithLogs(createLogs, component.StabilityLevelStable))
+func NewNopFactory(opts ...NopOption) receiver.Factory {
+	cfg := defaultNopConfig()
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
+	factoryOpts := make([]receiver.FactoryOption, 0)
+	componentType := defaultComponentType
+	if cfg.withTraces {
+		factoryOpts = append(factoryOpts, receiver.WithTraces(createTraces, component.StabilityLevelStable))
+	} else {
+		componentType += "_notraces"
+	}
+	if cfg.withMetrics {
+		factoryOpts = append(factoryOpts, receiver.WithMetrics(createMetrics, component.StabilityLevelStable))
+	} else {
+		componentType += "_nometrics"
+	}
+	if cfg.withLogs {
+		factoryOpts = append(factoryOpts, receiver.WithLogs(createLogs, component.StabilityLevelStable))
+	} else {
+		componentType += "_nologs"
+	}
+
+	return receiver.NewFactory(componentType, func() component.Config { return cfg }, factoryOpts...)
+}
+
+type nopConfig struct {
+	withTraces  bool
+	withMetrics bool
+	withLogs    bool
+}
+
+func defaultNopConfig() *nopConfig {
+	return &nopConfig{
+		withTraces:  true,
+		withMetrics: true,
+		withLogs:    true,
+	}
+}
+
+type NopOption func(*nopConfig)
+
+// WithoutTraces creates a NopReceiver that cannot produce traces.
+func WithoutTraces() NopOption {
+	return func(c *nopConfig) {
+		c.withTraces = false
+	}
+}
+
+// WithoutMetrics creates a NopReceiver that cannot produce metrics.
+func WithoutMetrics() NopOption {
+	return func(c *nopConfig) {
+		c.withMetrics = false
+	}
+}
+
+// WithoutLogs creates a NopReceiver that cannot produce logs.
+func WithoutLogs() NopOption {
+	return func(c *nopConfig) {
+		c.withLogs = false
+	}
 }
 
 func createTraces(context.Context, receiver.CreateSettings, component.Config, consumer.Traces) (receiver.Traces, error) {
@@ -47,8 +102,6 @@ func createLogs(context.Context, receiver.CreateSettings, component.Config, cons
 	return nopInstance, nil
 }
 
-type nopConfig struct{}
-
 var nopInstance = &nopReceiver{}
 
 // nopReceiver acts as a receiver for testing purposes.
@@ -61,6 +114,6 @@ type nopReceiver struct {
 func NewNopBuilder() *receiver.Builder {
 	nopFactory := NewNopFactory()
 	return receiver.NewBuilder(
-		map[component.ID]component.Config{component.NewID(componentType): nopFactory.CreateDefaultConfig()},
-		map[component.Type]receiver.Factory{componentType: nopFactory})
+		map[component.ID]component.Config{component.NewID(defaultComponentType): nopFactory.CreateDefaultConfig()},
+		map[component.Type]receiver.Factory{defaultComponentType: nopFactory})
 }

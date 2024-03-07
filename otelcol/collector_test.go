@@ -439,7 +439,7 @@ func TestCollectorDryRun(t *testing.T) {
 				Factories:              nopFactories,
 				ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid-receiver-type.yaml")}),
 			},
-			expectedErr: `failed to build pipelines: failed to create "nop_logs" receiver for data type "traces": telemetry type is not supported`,
+			expectedErr: `failed to build pipelines: failed to create "nop_notraces" receiver for data type "traces": telemetry type is not supported`,
 		},
 	}
 
