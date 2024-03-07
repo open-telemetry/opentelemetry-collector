@@ -33,7 +33,7 @@ func NewNopFactory(opts ...NopOption) receiver.Factory {
 	}
 
 	factoryOpts := make([]receiver.FactoryOption, 0)
-	componentType := defaultComponentType
+	componentType := defaultComponentType.String()
 	if cfg.withTraces {
 		factoryOpts = append(factoryOpts, receiver.WithTraces(createTraces, component.StabilityLevelStable))
 	} else {
@@ -50,7 +50,7 @@ func NewNopFactory(opts ...NopOption) receiver.Factory {
 		componentType += "_nologs"
 	}
 
-	return receiver.NewFactory(componentType, func() component.Config { return cfg }, factoryOpts...)
+	return receiver.NewFactory(component.MustNewType(componentType), func() component.Config { return cfg }, factoryOpts...)
 }
 
 type nopConfig struct {
