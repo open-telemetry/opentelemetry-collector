@@ -28,7 +28,7 @@ func nopFactories() (Factories, error) {
 		return Factories{}, err
 	}
 
-	if factories.Receivers, err = receiver.MakeFactoryMap(receivertest.NewNopFactory(), receivertest.NewNopLogsFactory()); err != nil {
+	if factories.Receivers, err = receiver.MakeFactoryMap(receivertest.NewNopFactory(), receivertest.NewNopFactory(receivertest.WithoutTraces())); err != nil {
 		return Factories{}, err
 	}
 
