@@ -301,7 +301,7 @@ func TestTelemetryInit(t *testing.T) {
 				cfg:               tc.cfg.Metrics,
 				asyncErrorChannel: make(chan error),
 			}
-			mp, err := newMeterProvider(set, tc.disableHighCard, tc.extendedConfig)
+			mp, err := newMeterProvider(set, tc.disableHighCard)
 			require.NoError(t, err)
 			defer func() {
 				if prov, ok := mp.(interface{ Shutdown(context.Context) error }); ok {
