@@ -113,6 +113,11 @@ func TestCollectorAsService(t *testing.T) {
 				defer func() {
 					_, err = service.Control(svc.Stop)
 					require.NoError(t, err)
+
+					require.Eventually(t, func() bool {
+						status, _ := service.Query()
+						return status.State == svc.Stopped
+					}, 10*time.Second, 500*time.Millisecond)
 				}()
 			}
 
