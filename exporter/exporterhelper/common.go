@@ -5,6 +5,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -42,41 +43,45 @@ func (b *baseRequestSender) setNextSender(nextSender requestSender) {
 type obsrepSenderFactory func(obsrep *ObsReport) requestSender
 
 // Option apply changes to baseExporter.
-type Option func(*baseExporter)
+type Option func(*baseExporter) error
 
 // WithStart overrides the default Start function for an exporter.
 // The default start function does nothing and always returns nil.
 func WithStart(start component.StartFunc) Option {
-	return func(o *baseExporter) {
+	return func(o *baseExporter) error {
 		o.StartFunc = start
+		return nil
 	}
 }
 
 // WithShutdown overrides the default Shutdown function for an exporter.
 // The default shutdown function does nothing and always returns nil.
 func WithShutdown(shutdown component.ShutdownFunc) Option {
-	return func(o *baseExporter) {
+	return func(o *baseExporter) error {
 		o.ShutdownFunc = shutdown
+		return nil
 	}
 }
 
 // WithTimeout overrides the default TimeoutSettings for an exporter.
 // The default TimeoutSettings is 5 seconds.
 func WithTimeout(timeoutSettings TimeoutSettings) Option {
-	return func(o *baseExporter) {
+	return func(o *baseExporter) error {
 		o.timeoutSender.cfg = timeoutSettings
+		return nil
 	}
 }
 
 // WithRetry overrides the default configretry.BackOffConfig for an exporter.
 // The default configretry.BackOffConfig is to disable retries.
 func WithRetry(config configretry.BackOffConfig) Option {
-	return func(o *baseExporter) {
+	return func(o *baseExporter) error {
 		if !config.Enabled {
 			o.exportFailureMessage += " Try enabling retry_on_failure config option to retry on retryable errors."
-			return
+			return nil
 		}
 		o.retrySender = newRetrySender(config, o.set)
+		return nil
 	}
 }
 
@@ -84,13 +89,13 @@ func WithRetry(config configretry.BackOffConfig) Option {
 // The default QueueSettings is to disable queueing.
 // This option cannot be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 func WithQueue(config QueueSettings) Option {
-	return func(o *baseExporter) {
+	return func(o *baseExporter) error {
 		if o.marshaler == nil || o.unmarshaler == nil {
-			panic("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
+			return fmt.Errorf("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
 		}
 		if !config.Enabled {
 			o.exportFailureMessage += " Try enabling sending_queue to survive temporary failures."
-			return
+			return nil
 		}
 		qf := exporterqueue.NewPersistentQueueFactory[Request](config.StorageID, exporterqueue.PersistentQueueSettings[Request]{
 			Marshaler:   o.marshaler,
@@ -105,6 +110,7 @@ func WithQueue(config QueueSettings) Option {
 			QueueSize:    config.QueueSize,
 		})
 		o.queueSender = newQueueSender(q, o.set, config.NumConsumers, o.exportFailureMessage)
+		return nil
 	}
 }
 
@@ -113,19 +119,20 @@ func WithQueue(config QueueSettings) Option {
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[Request]) Option {
-	return func(o *baseExporter) {
+	return func(o *baseExporter) error {
 		if o.marshaler != nil || o.unmarshaler != nil {
-			panic("WithRequestQueue option must be used with the new request exporters only, use WithQueue instead")
+			return fmt.Errorf("WithRequestQueue option must be used with the new request exporters only, use WithQueue instead")
 		}
 		if !cfg.Enabled {
 			o.exportFailureMessage += " Try enabling sending_queue to survive temporary failures."
-			return
+			return nil
 		}
 		set := exporterqueue.Settings{
 			DataType:         o.signal,
 			ExporterSettings: o.set,
 		}
 		o.queueSender = newQueueSender(queueFactory(context.Background(), set, cfg), o.set, cfg.NumConsumers, o.exportFailureMessage)
+		return nil
 	}
 }
 
@@ -133,24 +140,27 @@ func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Facto
 // The default is non-mutable data.
 // TODO: Verify if we can change the default to be mutable as we do for processors.
 func WithCapabilities(capabilities consumer.Capabilities) Option {
-	return func(o *baseExporter) {
+	return func(o *baseExporter) error {
 		o.consumerOptions = append(o.consumerOptions, consumer.WithCapabilities(capabilities))
+		return nil
 	}
 }
 
 // withMarshaler is used to set the request marshaler for the new exporter helper.
 // It must be provided as the first option when creating a new exporter helper.
 func withMarshaler(marshaler exporterqueue.Marshaler[Request]) Option {
-	return func(o *baseExporter) {
+	return func(o *baseExporter) error {
 		o.marshaler = marshaler
+		return nil
 	}
 }
 
 // withUnmarshaler is used to set the request unmarshaler for the new exporter helper.
 // It must be provided as the first option when creating a new exporter helper.
 func withUnmarshaler(unmarshaler exporterqueue.Unmarshaler[Request]) Option {
-	return func(o *baseExporter) {
+	return func(o *baseExporter) error {
 		o.unmarshaler = unmarshaler
+		return nil
 	}
 }
 
@@ -199,8 +209,12 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, osf
 	}
 
 	for _, op := range options {
-		op(be)
+		err = multierr.Append(err, op(be))
 	}
+	if err != nil {
+		return nil, err
+	}
+
 	be.connectSenders()
 
 	return be, nil
