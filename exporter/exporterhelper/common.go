@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
 
@@ -146,6 +147,37 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 	}
 }
 
+// BatcherOption apply changes to batcher sender.
+type BatcherOption func(*batchSender)
+
+// WithRequestBatchFuncs sets the functions for merging and splitting batches for an exporter built for custom request types.
+func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatcher.BatchMergeSplitFunc[Request]) BatcherOption {
+	return func(bs *batchSender) {
+		bs.mergeFunc = mf
+		bs.mergeSplitFunc = msf
+	}
+}
+
+// WithBatcher enables batching for an exporter based on custom request types.
+// For now, it can be used only with the New[Traces|Metrics|Logs]RequestExporter exporter helpers and
+// WithRequestBatchFuncs provided.
+// TODO: Add OTLP-based batch functions applied by default so it can be used with New[Traces|Metrics|Logs]Exporter exporter helpers.
+// This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func WithBatcher(cfg exporterbatcher.Config, opts ...BatcherOption) Option {
+	return func(o *baseExporter) error {
+		bs := newBatchSender(cfg, o.set)
+		for _, opt := range opts {
+			opt(bs)
+		}
+		if bs.mergeFunc == nil || bs.mergeSplitFunc == nil {
+			return fmt.Errorf("WithRequestBatchFuncs must be provided for the batcher applied to the request-based exporters")
+		}
+		o.batchSender = bs
+		return nil
+	}
+}
+
 // withMarshaler is used to set the request marshaler for the new exporter helper.
 // It must be provided as the first option when creating a new exporter helper.
 func withMarshaler(marshaler exporterqueue.Marshaler[Request]) Option {
@@ -182,6 +214,7 @@ type baseExporter struct {
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
 	// Most of the senders are optional, and initialized with a no-op path-through sender.
+	batchSender   requestSender
 	queueSender   requestSender
 	obsrepSender  requestSender
 	retrySender   requestSender
@@ -199,6 +232,7 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, osf
 	be := &baseExporter{
 		signal: signal,
 
+		batchSender:   &baseRequestSender{},
 		queueSender:   &baseRequestSender{},
 		obsrepSender:  osf(obsReport),
 		retrySender:   &baseRequestSender{},
@@ -217,6 +251,13 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, osf
 
 	be.connectSenders()
 
+	// If queue sender is enabled assign to the batch sender the same number of workers.
+	if qs, ok := be.queueSender.(*queueSender); ok {
+		if bs, ok := be.batchSender.(*batchSender); ok {
+			bs.concurrencyLimit = uint64(qs.numConsumers)
+		}
+	}
+
 	return be, nil
 }
 
@@ -232,7 +273,8 @@ func (be *baseExporter) send(ctx context.Context, req Request) error {
 
 // connectSenders connects the senders in the predefined order.
 func (be *baseExporter) connectSenders() {
-	be.queueSender.setNextSender(be.obsrepSender)
+	be.queueSender.setNextSender(be.batchSender)
+	be.batchSender.setNextSender(be.obsrepSender)
 	be.obsrepSender.setNextSender(be.retrySender)
 	be.retrySender.setNextSender(be.timeoutSender)
 }
@@ -243,7 +285,12 @@ func (be *baseExporter) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	// If no error then start the queueSender.
+	// If no error then start the batchSender.
+	if err := be.batchSender.Start(ctx, host); err != nil {
+		return err
+	}
+
+	// Last start the queueSender.
 	return be.queueSender.Start(ctx, host)
 }
 
@@ -251,6 +298,8 @@ func (be *baseExporter) Shutdown(ctx context.Context) error {
 	return multierr.Combine(
 		// First shutdown the retry sender, so the queue sender can flush the queue without retries.
 		be.retrySender.Shutdown(ctx),
+		// Then shutdown the batch sender
+		be.batchSender.Shutdown(ctx),
 		// Then shutdown the queue sender.
 		be.queueSender.Shutdown(ctx),
 		// Last shutdown the wrapped exporter itself.
