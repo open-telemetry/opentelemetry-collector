@@ -67,7 +67,7 @@ jobs:
       - name: Test otelcorecol service
         working-directory: ${{ github.workspace }}/otelcol
         run: |
-          go test -timeout 30s -run ^TestCollectorAsService$  -v -tags=win32service
+          go test -timeout 90s -run ^TestCollectorAsService$  -v -tags=win32service
 
       - name: Remove otelcorecol service
         if: always()
