@@ -83,6 +83,13 @@ var spanSlice = &sliceOfPtrs{
 	element:    span,
 }
 
+var flagsField = &primitiveField{
+	fieldName:  "Flags",
+	returnType: "uint32",
+	defaultVal: `uint32(0)`,
+	testVal:    `uint32(0xf)`,
+}
+
 var span = &messageValueStruct{
 	structName: "Span",
 	description: "// Span represents a single operation within a trace.\n" +
@@ -94,6 +101,7 @@ var span = &messageValueStruct{
 		traceStateField,
 		parentSpanIDField,
 		nameField,
+		flagsField,
 		&primitiveTypedField{
 			fieldName: "Kind",
 			returnType: &primitiveType{
@@ -167,6 +175,7 @@ var spanLink = &messageValueStruct{
 		traceIDField,
 		spanIDField,
 		traceStateField,
+		flagsField,
 		attributes,
 		droppedAttributesCount,
 	},

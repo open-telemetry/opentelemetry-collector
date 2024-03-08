@@ -4,6 +4,3 @@ status:
   class: processor
   stability:
     beta: [traces, logs, metrics]
-
-tests:
-  config:

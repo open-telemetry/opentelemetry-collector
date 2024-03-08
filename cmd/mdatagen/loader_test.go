@@ -8,30 +8,34 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func Test_loadMetadata(t *testing.T) {
+func TestLoadMetadata(t *testing.T) {
 	tests := []struct {
 		name    string
 		want    metadata
 		wantErr string
 	}{
 		{
-			name: "metadata-sample.yaml",
+			name: "internal/samplereceiver/metadata.yaml",
 			want: metadata{
-				Type:           "file",
+				Type:           "sample",
 				SemConvVersion: "1.9.0",
 				Status: &Status{
 					Class: "receiver",
-					Stability: map[string][]string{
-						"development": {"logs"},
-						"beta":        {"traces"},
-						"stable":      {"metrics"},
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelDevelopment: {"logs"},
+						component.StabilityLevelBeta:        {"traces"},
+						component.StabilityLevelStable:      {"metrics"},
 					},
-					Distributions: []string{"contrib"},
-					Warnings:      []string{"Any additional information that should be brought to the consumer's attention"},
+					Distributions: []string{},
+					Codeowners: &Codeowners{
+						Active: []string{"dmitryax"},
+					},
+					Warnings: []string{"Any additional information that should be brought to the consumer's attention"},
 				},
 				ResourceAttributes: map[attributeName]attribute{
 					"string.resource.attr": {
@@ -214,8 +218,8 @@ func Test_loadMetadata(t *testing.T) {
 						},
 					},
 				},
-				ScopeName:       "otelcol",
-				ShortFolderName: ".",
+				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
+				ShortFolderName: "sample",
 			},
 		},
 		{
@@ -223,7 +227,7 @@ func Test_loadMetadata(t *testing.T) {
 			want: metadata{
 				Type:            "subcomponent",
 				Parent:          "parentComponent",
-				ScopeName:       "otelcol",
+				ScopeName:       "go.opentelemetry.io/collector/cmd/mdatagen",
 				ShortFolderName: "testdata",
 			},
 		},

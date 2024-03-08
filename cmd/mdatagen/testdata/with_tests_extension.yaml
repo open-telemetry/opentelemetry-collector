@@ -4,6 +4,3 @@ status:
   class: extension
   stability:
     beta: [extension]
-
-tests:
-  config:

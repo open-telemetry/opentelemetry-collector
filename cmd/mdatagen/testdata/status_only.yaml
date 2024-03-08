@@ -4,3 +4,7 @@ status:
   stability:
     beta: [traces, metrics, logs]
   distributions: [contrib]
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

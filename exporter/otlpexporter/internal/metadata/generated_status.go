@@ -20,9 +20,9 @@ const (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/otlp")
+	return settings.MeterProvider.Meter("go.opentelemetry.io/collector/exporter/otlpexporter")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/otlp")
+	return settings.TracerProvider.Tracer("go.opentelemetry.io/collector/exporter/otlpexporter")
 }

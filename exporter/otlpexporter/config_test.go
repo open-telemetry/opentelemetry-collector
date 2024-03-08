@@ -61,8 +61,8 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "gzip",
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "/var/lib/mycert.pem",
 					},
 					Insecure: false,
@@ -102,6 +102,10 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 		{
 			name:     "invalid_retry",
 			errorMsg: `'randomization_factor' must be within [0, 1]`,
+		},
+		{
+			name:     "invalid_tls",
+			errorMsg: `invalid TLS min_version: unsupported TLS version: "asd"`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

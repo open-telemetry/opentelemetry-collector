@@ -18,9 +18,9 @@ const (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/zpages")
+	return settings.MeterProvider.Meter("go.opentelemetry.io/collector/extension/zpagesextension")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/zpages")
+	return settings.TracerProvider.Tracer("go.opentelemetry.io/collector/extension/zpagesextension")
 }

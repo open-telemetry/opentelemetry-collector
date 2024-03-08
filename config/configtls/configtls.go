@@ -23,10 +23,16 @@ const defaultMinTLSVersion = tls.VersionTLS12
 // Uses the default MaxVersion from "crypto/tls" which is the maximum supported version
 const defaultMaxTLSVersion = 0
 
+var systemCertPool = x509.SystemCertPool
+
 // TLSSetting exposes the common client and server TLS configurations.
+// Deprecated: [v0.96.0] Use Config instead.
+type TLSSetting = Config
+
+// Config exposes the common client and server TLS configurations.
 // Note: Since there isn't anything specific to a server connection. Components
-// with server connections should use TLSSetting.
-type TLSSetting struct {
+// with server connections should use Config.
+type Config struct {
 	// Path to the CA cert. For a client this verifies the server certificate.
 	// For a server this verifies client certificates. If empty uses system root CA.
 	// (optional)
@@ -34,6 +40,10 @@ type TLSSetting struct {
 
 	// In memory PEM encoded cert. (optional)
 	CAPem configopaque.String `mapstructure:"ca_pem"`
+
+	// If true, load system CA certificates pool in addition to the certificates
+	// configured in this struct.
+	IncludeSystemCACertsPool bool `mapstructure:"include_system_ca_certs_pool"`
 
 	// Path to the TLS cert to use for TLS required connections. (optional)
 	CertFile string `mapstructure:"cert_file"`
@@ -65,10 +75,15 @@ type TLSSetting struct {
 	ReloadInterval time.Duration `mapstructure:"reload_interval"`
 }
 
-// TLSClientSetting contains TLS configurations that are specific to client
+// TSLClientSetting contains TLS configurations that are specific to client
+// connections in addition to the common configurations.
+// Deprecated: [v0.96.0] Use ClientConfig instead.
+type TLSClientSetting = ClientConfig
+
+// ClientConfig contains TLS configurations that are specific to client
 // connections in addition to the common configurations. This should be used by
 // components configuring TLS client connections.
-type TLSClientSetting struct {
+type ClientConfig struct {
 	// squash ensures fields are correctly decoded in embedded struct.
 	TLSSetting `mapstructure:",squash"`
 
@@ -90,9 +105,14 @@ type TLSClientSetting struct {
 }
 
 // TLSServerSetting contains TLS configurations that are specific to server
+// connections in addition to the common configurations.
+// Deprecated: [v0.96.0] Use ServerConfig instead.
+type TLSServerSetting = ServerConfig
+
+// ServerConfig contains TLS configurations that are specific to server
 // connections in addition to the common configurations. This should be used by
 // components configuring TLS server connections.
-type TLSServerSetting struct {
+type ServerConfig struct {
 	// squash ensures fields are correctly decoded in embedded struct.
 	TLSSetting `mapstructure:",squash"`
 
@@ -115,10 +135,10 @@ type certReloader struct {
 	nextReload time.Time
 	cert       *tls.Certificate
 	lock       sync.RWMutex
-	tls        TLSSetting
+	tls        Config
 }
 
-func (c TLSSetting) newCertReloader() (*certReloader, error) {
+func (c Config) newCertReloader() (*certReloader, error) {
 	cert, err := c.loadCertificate()
 	if err != nil {
 		return nil, err
@@ -153,9 +173,27 @@ func (r *certReloader) GetCertificate() (*tls.Certificate, error) {
 	return r.cert, nil
 }
 
+func (c TLSSetting) Validate() error {
+	minTLS, err := convertVersion(c.MinVersion, defaultMinTLSVersion)
+	if err != nil {
+		return fmt.Errorf("invalid TLS min_version: %w", err)
+	}
+
+	maxTLS, err := convertVersion(c.MaxVersion, defaultMaxTLSVersion)
+	if err != nil {
+		return fmt.Errorf("invalid TLS max_version: %w", err)
+	}
+
+	if maxTLS < minTLS && maxTLS != defaultMaxTLSVersion {
+		return errors.New("invalid TLS configuration: min_version cannot be greater than max_version")
+	}
+
+	return nil
+}
+
 // loadTLSConfig loads TLS certificates and returns a tls.Config.
 // This will set the RootCAs and Certificates of a tls.Config.
-func (c TLSSetting) loadTLSConfig() (*tls.Config, error) {
+func (c Config) loadTLSConfig() (*tls.Config, error) {
 	certPool, err := c.loadCACertPool()
 	if err != nil {
 		return nil, err
@@ -215,7 +253,7 @@ func convertCipherSuites(cipherSuites []string) ([]uint16, error) {
 	return result, errors.Join(errs...)
 }
 
-func (c TLSSetting) loadCACertPool() (*x509.CertPool, error) {
+func (c Config) loadCACertPool() (*x509.CertPool, error) {
 	// There is no need to load the System Certs for RootCAs because
 	// if the value is nil, it will default to checking against th System Certs.
 	var err error
@@ -241,7 +279,7 @@ func (c TLSSetting) loadCACertPool() (*x509.CertPool, error) {
 	return certPool, nil
 }
 
-func (c TLSSetting) loadCertFile(certPath string) (*x509.CertPool, error) {
+func (c Config) loadCertFile(certPath string) (*x509.CertPool, error) {
 	certPem, err := os.ReadFile(filepath.Clean(certPath))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load cert %s: %w", certPath, err)
@@ -250,7 +288,7 @@ func (c TLSSetting) loadCertFile(certPath string) (*x509.CertPool, error) {
 	return c.loadCertPem(certPem)
 }
 
-func (c TLSSetting) loadCertPem(certPem []byte) (*x509.CertPool, error) {
+func (c Config) loadCertPem(certPem []byte) (*x509.CertPool, error) {
 	certPool := x509.NewCertPool()
 	if !certPool.AppendCertsFromPEM(certPem) {
 		return nil, fmt.Errorf("failed to parse cert")
@@ -258,7 +296,7 @@ func (c TLSSetting) loadCertPem(certPem []byte) (*x509.CertPool, error) {
 	return certPool, nil
 }
 
-func (c TLSSetting) loadCertificate() (tls.Certificate, error) {
+func (c Config) loadCertificate() (tls.Certificate, error) {
 	switch {
 	case c.hasCert() != c.hasKey():
 		return tls.Certificate{}, fmt.Errorf("for auth via TLS, provide both certificate and key, or neither")
@@ -298,13 +336,21 @@ func (c TLSSetting) loadCertificate() (tls.Certificate, error) {
 	return certificate, err
 }
 
-func (c TLSSetting) loadCert(caPath string) (*x509.CertPool, error) {
+func (c Config) loadCert(caPath string) (*x509.CertPool, error) {
 	caPEM, err := os.ReadFile(filepath.Clean(caPath))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load CA %s: %w", caPath, err)
 	}
 
-	certPool := x509.NewCertPool()
+	var certPool *x509.CertPool
+	if c.IncludeSystemCACertsPool {
+		if certPool, err = systemCertPool(); err != nil {
+			return nil, err
+		}
+	}
+	if certPool == nil {
+		certPool = x509.NewCertPool()
+	}
 	if !certPool.AppendCertsFromPEM(caPEM) {
 		return nil, fmt.Errorf("failed to parse CA %s", caPath)
 	}
@@ -312,7 +358,7 @@ func (c TLSSetting) loadCert(caPath string) (*x509.CertPool, error) {
 }
 
 // LoadTLSConfig loads the TLS configuration.
-func (c TLSClientSetting) LoadTLSConfig() (*tls.Config, error) {
+func (c ClientConfig) LoadTLSConfig() (*tls.Config, error) {
 	if c.Insecure && !c.hasCA() {
 		return nil, nil
 	}
@@ -327,7 +373,7 @@ func (c TLSClientSetting) LoadTLSConfig() (*tls.Config, error) {
 }
 
 // LoadTLSConfig loads the TLS configuration.
-func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
+func (c ServerConfig) LoadTLSConfig() (*tls.Config, error) {
 	tlsCfg, err := c.loadTLSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load TLS config: %w", err)
@@ -350,22 +396,22 @@ func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 	return tlsCfg, nil
 }
 
-func (c TLSServerSetting) loadClientCAFile() (*x509.CertPool, error) {
+func (c ServerConfig) loadClientCAFile() (*x509.CertPool, error) {
 	return c.loadCert(c.ClientCAFile)
 }
 
-func (c TLSSetting) hasCA() bool   { return c.hasCAFile() || c.hasCAPem() }
-func (c TLSSetting) hasCert() bool { return c.hasCertFile() || c.hasCertPem() }
-func (c TLSSetting) hasKey() bool  { return c.hasKeyFile() || c.hasKeyPem() }
+func (c Config) hasCA() bool   { return c.hasCAFile() || c.hasCAPem() }
+func (c Config) hasCert() bool { return c.hasCertFile() || c.hasCertPem() }
+func (c Config) hasKey() bool  { return c.hasKeyFile() || c.hasKeyPem() }
 
-func (c TLSSetting) hasCAFile() bool { return c.CAFile != "" }
-func (c TLSSetting) hasCAPem() bool  { return len(c.CAPem) != 0 }
+func (c Config) hasCAFile() bool { return c.CAFile != "" }
+func (c Config) hasCAPem() bool  { return len(c.CAPem) != 0 }
 
-func (c TLSSetting) hasCertFile() bool { return c.CertFile != "" }
-func (c TLSSetting) hasCertPem() bool  { return len(c.CertPem) != 0 }
+func (c Config) hasCertFile() bool { return c.CertFile != "" }
+func (c Config) hasCertPem() bool  { return len(c.CertPem) != 0 }
 
-func (c TLSSetting) hasKeyFile() bool { return c.KeyFile != "" }
-func (c TLSSetting) hasKeyPem() bool  { return len(c.KeyPem) != 0 }
+func (c Config) hasKeyFile() bool { return c.KeyFile != "" }
+func (c Config) hasKeyPem() bool  { return len(c.KeyPem) != 0 }
 
 func convertVersion(v string, defaultVersion uint16) (uint16, error) {
 	// Use a default that is explicitly defined
