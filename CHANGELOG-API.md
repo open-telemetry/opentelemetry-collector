@@ -7,6 +7,35 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.3.0/v0.96.0
+
+### 🚩 Deprecations 🚩
+
+- `configgrpc`: Deprecates `ToServer`.  Use `ToServerContext` instead. (#9624)
+- `component`: deprecate component.ErrNilNextConsumer (#9526)
+- `configtls`: Rename TLSClientSetting, TLSServerSetting, and TLSSetting based on the naming convention used in other config packages. (#9474)
+
+### 💡 Enhancements 💡
+
+- `receivertest`: add support for metrics in contract checker (#9551)
+
+## v1.2.0/v0.95.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Bump minimum go version to go 1.21 (#9507)
+- `service/telemetry`: Delete generated_config types, use go.opentelemetry.io/contrib/config types instead (#9546)
+- `configcompression`: Remove deprecated `configcompression` types, constants and methods. (#9388)
+- `component`: Remove `host.ReportFatalError` (#6344)
+- `configgrpc`: Remove deprecated `configgrpc.ServerConfig.ToListener` (#9481)
+- `confmap`: Remove deprecated `confmap.WithErrorUnused` (#9484)
+
+### 🚩 Deprecations 🚩
+
+- `confignet`: Deprecate `confignet.NetAddr` and `confignet.TCPAddr` in favor of `confignet.AddrConfig` and `confignet.TCPAddrConfig`. (#9509)
+- `config/configgrpc`: Deprecate `configgrpc.ClientConfig.SanitizedEndpoint`, `configgrpc.ServerConfig.ToListener` and `configgrpc.ServerConfig.ToListenerContext` (#9481, #9482)
+- `scraperhelper`: Deprecate ScraperControllerSettings, use ControllerConfig instead (#6767)
+
 ## v1.1.0/v0.94.0
 
 ### 🛑 Breaking changes 🛑

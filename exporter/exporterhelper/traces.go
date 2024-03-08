@@ -70,7 +70,7 @@ type traceExporter struct {
 
 // NewTracesExporter creates an exporter.Traces that records observability metrics and wraps every request with a Span.
 func NewTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config,
 	pusher consumer.ConsumeTracesFunc,
@@ -79,43 +79,27 @@ func NewTracesExporter(
 	if cfg == nil {
 		return nil, errNilConfig
 	}
-
-	if set.Logger == nil {
-		return nil, errNilLogger
-	}
-
 	if pusher == nil {
 		return nil, errNilPushTraceData
 	}
-
-	be, err := newBaseExporter(set, component.DataTypeTraces, false, tracesRequestMarshaler,
-		newTraceRequestUnmarshalerFunc(pusher), newTracesExporterWithObservability, options...)
-	if err != nil {
-		return nil, err
-	}
-
-	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
-		req := newTracesRequest(td, pusher)
-		serr := be.send(ctx, req)
-		if errors.Is(serr, queue.ErrQueueIsFull) {
-			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeTraces, int64(req.ItemsCount()))
-		}
-		return serr
-	}, be.consumerOptions...)
-
-	return &traceExporter{
-		baseExporter: be,
-		Traces:       tc,
-	}, err
+	tracesOpts := []Option{withMarshaler(tracesRequestMarshaler), withUnmarshaler(newTraceRequestUnmarshalerFunc(pusher))}
+	return NewTracesRequestExporter(ctx, set, requestFromTraces(pusher), append(tracesOpts, options...)...)
 }
 
 // RequestFromTracesFunc converts ptrace.Traces into a user-defined Request.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type RequestFromTracesFunc func(context.Context, ptrace.Traces) (Request, error)
 
+// requestFromTraces returns a RequestFromTracesFunc that converts ptrace.Traces into a Request.
+func requestFromTraces(pusher consumer.ConsumeTracesFunc) RequestFromTracesFunc {
+	return func(_ context.Context, traces ptrace.Traces) (Request, error) {
+		return newTracesRequest(traces, pusher), nil
+	}
+}
+
 // NewTracesRequestExporter creates a new traces exporter based on a custom TracesConverter and RequestSender.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewTracesRequestExporter(
 	_ context.Context,
@@ -131,7 +115,7 @@ func NewTracesRequestExporter(
 		return nil, errNilTracesConverter
 	}
 
-	be, err := newBaseExporter(set, component.DataTypeTraces, true, nil, nil, newTracesExporterWithObservability, options...)
+	be, err := newBaseExporter(set, component.DataTypeTraces, newTracesExporterWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}

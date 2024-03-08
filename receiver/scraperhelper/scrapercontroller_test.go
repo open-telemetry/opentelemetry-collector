@@ -17,7 +17,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -64,8 +63,8 @@ func (ts *testScrapeMetrics) scrape(context.Context) (pmetric.Metrics, error) {
 	return md, nil
 }
 
-func newTestNoDelaySettings() *ScraperControllerSettings {
-	return &ScraperControllerSettings{
+func newTestNoDelaySettings() *ControllerConfig {
+	return &ControllerConfig{
 		CollectionInterval: time.Second,
 		InitialDelay:       0,
 	}
@@ -75,8 +74,7 @@ type metricsTestCase struct {
 	name string
 
 	scrapers                  int
-	scraperControllerSettings *ScraperControllerSettings
-	nilNextConsumer           bool
+	scraperControllerSettings *ControllerConfig
 	scrapeErr                 error
 	expectedNewErr            string
 	expectScraped             bool
@@ -98,15 +96,9 @@ func TestScrapeController(t *testing.T) {
 			expectScraped: true,
 		},
 		{
-			name:            "AddMetricsScrapers_NilNextConsumerError",
-			scrapers:        2,
-			nilNextConsumer: true,
-			expectedNewErr:  "nil next Consumer",
-		},
-		{
 			name:                      "AddMetricsScrapersWithCollectionInterval_InvalidCollectionIntervalError",
 			scrapers:                  2,
-			scraperControllerSettings: &ScraperControllerSettings{CollectionInterval: -time.Millisecond},
+			scraperControllerSettings: &ControllerConfig{CollectionInterval: -time.Millisecond},
 			expectedNewErr:            "collection_interval must be a positive duration",
 		},
 		{
@@ -147,17 +139,13 @@ func TestScrapeController(t *testing.T) {
 			tickerCh := make(chan time.Time)
 			options = append(options, WithTickerChannel(tickerCh))
 
-			var nextConsumer consumer.Metrics
 			sink := new(consumertest.MetricsSink)
-			if !test.nilNextConsumer {
-				nextConsumer = sink
-			}
 			cfg := newTestNoDelaySettings()
 			if test.scraperControllerSettings != nil {
 				cfg = test.scraperControllerSettings
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, nextConsumer, options...)
+			mr, err := NewScraperControllerReceiver(cfg, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, sink, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return
@@ -383,7 +371,7 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating scraper")
 
 	r, err := NewScraperControllerReceiver(
-		&ScraperControllerSettings{
+		&ControllerConfig{
 			CollectionInterval: time.Hour,
 			InitialDelay:       0,
 		},
@@ -409,7 +397,7 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 
 	var (
 		elapsed = make(chan time.Time, 1)
-		cfg     = ScraperControllerSettings{
+		cfg     = ControllerConfig{
 			CollectionInterval: time.Second,
 			InitialDelay:       300 * time.Millisecond,
 		}
