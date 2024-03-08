@@ -17,7 +17,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/otel/metric"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -299,7 +298,6 @@ func TestTelemetryInit(t *testing.T) {
 			}
 			set := meterProviderSettings{
 				res:               resource.New(component.NewDefaultBuildInfo(), tc.cfg.Resource),
-				logger:            zap.NewNop(),
 				cfg:               tc.cfg.Metrics,
 				asyncErrorChannel: make(chan error),
 			}
