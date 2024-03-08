@@ -4,19 +4,20 @@
 package expandconverter // import "go.opentelemetry.io/collector/confmap/converter/expandconverter"
 
 import (
-    "fmt"
 	"context"
+	"fmt"
 	"os"
+	"regexp"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/zap"
 )
 
-type converter struct{
-    logger *zap.Logger
+type converter struct {
+	logger *zap.Logger
 
-    // Record of which env vars we have logged a warning for
-    loggedDeprecations map[string]bool
+	// Record of which env vars we have logged a warning for
+	loggedDeprecations map[string]struct{}
 }
 
 // New returns a confmap.Converter, that expands all environment variables for a given confmap.Conf.
@@ -24,9 +25,9 @@ type converter struct{
 // Notice: This API is experimental.
 func New(_ confmap.ConverterSettings) confmap.Converter {
 	return converter{
-        loggedDeprecations: make(map[string]bool),
-        logger: zap.NewNop(), // TODO: pass logger in ConverterSettings
-    }
+		loggedDeprecations: make(map[string]struct{}),
+		logger:             zap.NewNop(), // TODO: pass logger in ConverterSettings
+	}
 }
 
 func (c converter) Convert(_ context.Context, conf *confmap.Conf) error {
@@ -60,12 +61,15 @@ func (c converter) expandStringValues(value any) any {
 
 func (c converter) expandEnv(s string) string {
 	return os.Expand(s, func(str string) string {
-        if (!c.loggedDeprecations[str]) {
-            msg := fmt.Sprintf("Variable substitution using $VAR will be deprecated in favor of ${env:VAR}, please update $%v", str)
-            c.logger.Warn(msg, zap.String("variable", str))
-            c.loggedDeprecations[str] = true
-        }
 
+		// Matches on $VAR style environment variables
+		// in order to make sure we don't log a warning for ${VAR}
+		var regex = regexp.MustCompile(fmt.Sprintf(`\$%s`, str))
+		if _, exists := c.loggedDeprecations[str]; !exists && regex.MatchString(s) {
+			msg := fmt.Sprintf("Variable substitution using $VAR will be deprecated in favor of ${VAR} and ${env:VAR}, please update $%s", str)
+			c.logger.Warn(msg, zap.String("variable", str))
+			c.loggedDeprecations[str] = struct{}{}
+		}
 		// This allows escaping environment variable substitution via $$, e.g.
 		// - $FOO will be substituted with env var FOO
 		// - $$FOO will be replaced with $FOO
