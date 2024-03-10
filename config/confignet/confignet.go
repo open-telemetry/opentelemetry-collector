@@ -16,6 +16,7 @@ type DialerConfig struct {
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
+//NewDefaultDialerConfig creates a new DialerConfig with any default values set
 func NewDefaultDialerConfig() DialerConfig {
 	return DialerConfig{}
 }
@@ -37,6 +38,7 @@ type AddrConfig struct {
 	DialerConfig DialerConfig `mapstructure:"dialer"`
 }
 
+// NewDefaultAddrConfig creates a new AddrConfig with any default values set
 func NewDefaultAddrConfig() AddrConfig {
 	return AddrConfig{
 		DialerConfig: NewDefaultDialerConfig(),
@@ -68,7 +70,7 @@ type TCPAddrConfig struct {
 	DialerConfig DialerConfig `mapstructure:"dialer"`
 }
 
-//  set default values for the TCP Address configuration
+// NewDefaultTCPAddrConfig creates a new TCPAddrConfig with any default values set
 func NewDefaultTCPAddrConfig() TCPAddrConfig{
 	return TCPAddrConfig{
 		DialerConfig: NewDefaultDialerConfig(),
