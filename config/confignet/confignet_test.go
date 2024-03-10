@@ -26,6 +26,12 @@ func TestNewDefaultAddrConfig(t *testing.T) {
 	require.Equal(t, expectedAddrConfig, addrConfig)
 }
 
+func TestNewDefaultTCPAddrConfig(t *testing.T) {
+	expectedTCPAddrConfig := TCPAddrConfig{}
+	tcpAddrconfig := NewDefaultTCPAddrConfig()
+	require.Equal(t, expectedTCPAddrConfig, tcpAddrconfig)
+}
+
 func TestAddrConfigTimeout(t *testing.T) {
 	nac := &AddrConfig{
 		Endpoint:  "localhost:0",

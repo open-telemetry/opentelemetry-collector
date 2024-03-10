@@ -16,7 +16,7 @@ type DialerConfig struct {
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
-//NewDefaultDialerConfig creates a new DialerConfig with any default values set
+// NewDefaultDialerConfig creates a new DialerConfig with any default values set
 func NewDefaultDialerConfig() DialerConfig {
 	return DialerConfig{}
 }
@@ -71,7 +71,7 @@ type TCPAddrConfig struct {
 }
 
 // NewDefaultTCPAddrConfig creates a new TCPAddrConfig with any default values set
-func NewDefaultTCPAddrConfig() TCPAddrConfig{
+func NewDefaultTCPAddrConfig() TCPAddrConfig {
 	return TCPAddrConfig{
 		DialerConfig: NewDefaultDialerConfig(),
 	}
