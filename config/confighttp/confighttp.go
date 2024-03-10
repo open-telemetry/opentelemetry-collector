@@ -105,8 +105,14 @@ type ClientConfig struct {
 // the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
 // Other config options are not added as they are initialized with 'zero value' by GoLang as default.
 // We encourage to use this function to create an object of ClientConfig.
-func NewDefaultClientConfig() ClientConfig {
+func (c *ClientConfig) NewDefaultClientConfig() ClientConfig {
 	// The default values are taken from the values of 'DefaultTransport' of 'http' package.
+
+	//Check Whether the headers are set to nil, if yes then set it to default map.
+	if c.Headers == nil {
+		c.Headers = make(map[string]configopaque.String)
+	}
+
 	maxIdleConns := 100
 	idleConnTimeout := 90 * time.Second
 
@@ -287,7 +293,13 @@ type ServerConfig struct {
 }
 
 // NewDefaultServerConfig creates new ServerConfig with default values set
-func NewDefaultServerConfig() ServerConfig {
+func (c *ServerConfig) NewDefaultServerConfig() ServerConfig {
+
+	//Check Whether the ResponseHeaders are set to nil, if yes then set it to default map.
+	if c.ResponseHeaders == nil {
+		c.ResponseHeaders = make(map[string]configopaque.String)
+	}
+
 	return ServerConfig{}
 }
 
@@ -456,6 +468,7 @@ type CORSConfig struct {
 func NewDefaultCORSConfig() CORSConfig {
 	return CORSConfig{}
 }
+
 func authInterceptor(next http.Handler, server auth.Server) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, err := server.Authenticate(r.Context(), r.Header)
