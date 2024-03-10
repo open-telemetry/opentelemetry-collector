@@ -68,6 +68,13 @@ type TCPAddrConfig struct {
 	DialerConfig DialerConfig `mapstructure:"dialer"`
 }
 
+//  set default values for the TCP Address configuration
+func NewDefaultTCPAddrConfig() TCPAddrConfig{
+	return TCPAddrConfig{
+		DialerConfig: NewDefaultDialerConfig(),
+	}
+}
+
 // Dial equivalent with net.Dialer's DialContext for this address.
 func (na *TCPAddrConfig) Dial(ctx context.Context) (net.Conn, error) {
 	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
