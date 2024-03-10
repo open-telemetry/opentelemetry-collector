@@ -105,18 +105,17 @@ type ClientConfig struct {
 // the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
 // Other config options are not added as they are initialized with 'zero value' by GoLang as default.
 // We encourage to use this function to create an object of ClientConfig.
-func (c *ClientConfig) NewDefaultClientConfig() ClientConfig {
+func NewDefaultClientConfig() ClientConfig {
 	// The default values are taken from the values of 'DefaultTransport' of 'http' package.
 
-	//Check Whether the headers are set to nil, if yes then set it to default map.
-	if c.Headers == nil {
-		c.Headers = make(map[string]configopaque.String)
-	}
+	// Configure with the non-nil map value.
+	headers := make(map[string]configopaque.String)
 
 	maxIdleConns := 100
 	idleConnTimeout := 90 * time.Second
 
 	return ClientConfig{
+		Headers:         headers,
 		MaxIdleConns:    &maxIdleConns,
 		IdleConnTimeout: &idleConnTimeout,
 	}
@@ -293,14 +292,13 @@ type ServerConfig struct {
 }
 
 // NewDefaultServerConfig creates new ServerConfig with default values set
-func (c *ServerConfig) NewDefaultServerConfig() ServerConfig {
+func NewDefaultServerConfig() ServerConfig {
+	// Create a new map for ResponseHeaders
+	responseHeaders := make(map[string]configopaque.String)
 
-	//Check Whether the ResponseHeaders are set to nil, if yes then set it to default map.
-	if c.ResponseHeaders == nil {
-		c.ResponseHeaders = make(map[string]configopaque.String)
+	return ServerConfig{
+		ResponseHeaders: responseHeaders,
 	}
-
-	return ServerConfig{}
 }
 
 // Deprecated: [v0.99.0] Use ToListener instead.

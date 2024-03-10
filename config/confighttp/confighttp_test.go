@@ -50,7 +50,9 @@ var (
 )
 
 func TestNewDefaultServerConfig(t *testing.T) {
-	expectedServerConfig := ServerConfig{}
+	expectedServerConfig := ServerConfig{
+		ResponseHeaders: map[string]configopaque.String{},
+	}
 	serverConfig := NewDefaultServerConfig()
 	require.Equal(t, expectedServerConfig, serverConfig)
 }
@@ -251,6 +253,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 
 func TestDefaultHTTPClientSettings(t *testing.T) {
 	httpClientSettings := NewDefaultClientConfig()
+	assert.EqualValues(t, map[string]configopaque.String{}, httpClientSettings.Headers)
 	assert.EqualValues(t, 100, *httpClientSettings.MaxIdleConns)
 	assert.EqualValues(t, 90*time.Second, *httpClientSettings.IdleConnTimeout)
 }
