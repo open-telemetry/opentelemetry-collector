@@ -50,8 +50,8 @@
       },
       {
         "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://golang.org"],
-        "groupName": "All golang.org packages"
+        "matchSourceUrlPrefixes": ["https://golang.org/x"],
+        "groupName": "All golang.org/x packages"
       }
     ],
     "ignoreDeps": [
