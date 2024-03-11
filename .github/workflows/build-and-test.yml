@@ -143,12 +143,12 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Set up arkade
-        uses: alexellis/setup-arkade@master
+        uses: alexellis/setup-arkade@v3
       - name: Install vmmeter
         run: |
           sudo -E arkade oci install ghcr.io/openfaasltd/vmmeter:latest --path /usr/local/bin/
       - name: Run vmmeter
-        uses: self-actuated/vmmeter-action@master
+        uses: self-actuated/vmmeter-action@v1
       - name: Checkout Repo
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Setup Go
