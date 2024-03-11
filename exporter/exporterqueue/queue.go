@@ -13,7 +13,7 @@ import (
 
 // Queue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
 // (boundedMemoryQueue) or via a disk-based queue (persistentQueue)
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type Queue[T any] queue.Queue[T]
 
@@ -24,22 +24,22 @@ type Settings struct {
 }
 
 // Marshaler is a function that can marshal a request into bytes.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type Marshaler[T any] func(T) ([]byte, error)
 
 // Unmarshaler is a function that can unmarshal bytes into a request.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type Unmarshaler[T any] func([]byte) (T, error)
 
 // Factory is a function that creates a new queue.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type Factory[T any] func(context.Context, Settings, Config) Queue[T]
 
 // NewMemoryQueueFactory returns a factory to create a new memory queue.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewMemoryQueueFactory[T itemsCounter]() Factory[T] {
 	return func(_ context.Context, _ Settings, cfg Config) Queue[T] {
@@ -51,7 +51,7 @@ func NewMemoryQueueFactory[T itemsCounter]() Factory[T] {
 }
 
 // PersistentQueueSettings defines developer settings for the persistent queue factory.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type PersistentQueueSettings[T any] struct {
 	// Marshaler is used to serialize queue elements before storing them in the persistent storage.
@@ -62,7 +62,7 @@ type PersistentQueueSettings[T any] struct {
 
 // NewPersistentQueueFactory returns a factory to create a new persistent queue.
 // If cfg.StorageID is nil then it falls back to memory queue.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewPersistentQueueFactory[T itemsCounter](storageID *component.ID, factorySettings PersistentQueueSettings[T]) Factory[T] {
 	if storageID == nil {
