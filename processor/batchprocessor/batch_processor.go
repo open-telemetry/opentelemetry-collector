@@ -56,8 +56,9 @@ type batchProcessor struct {
 	// metadataLimit is the limiting size of the batchers map.
 	metadataLimit int
 
-	shutdownC  chan struct{}
-	goroutines sync.WaitGroup
+	shutdownC          chan struct{}
+	goroutines         sync.WaitGroup
+	forceShutdownChans []chan struct{}
 
 	telemetry *batchProcessorTelemetry
 
@@ -90,7 +91,8 @@ type shard struct {
 
 	// batch is an in-flight data item containing one of the
 	// underlying data types.
-	batch batch
+	batch             batch
+	forceShutdownChan chan struct{}
 }
 
 // batch is an interface generalizing the individual signal types.
@@ -151,11 +153,13 @@ func (bp *batchProcessor) newShard(md map[string][]string) *shard {
 		Metadata: client.NewMetadata(md),
 	})
 	b := &shard{
-		processor: bp,
-		newItem:   make(chan any, runtime.NumCPU()),
-		exportCtx: exportCtx,
-		batch:     bp.batchFunc(),
+		processor:         bp,
+		newItem:           make(chan any, runtime.NumCPU()),
+		exportCtx:         exportCtx,
+		batch:             bp.batchFunc(),
+		forceShutdownChan: make(chan struct{}, 1),
 	}
+	b.processor.forceShutdownChans = append(b.processor.forceShutdownChans, b.forceShutdownChan)
 	b.processor.goroutines.Add(1)
 	go b.start()
 	return b
@@ -171,12 +175,30 @@ func (bp *batchProcessor) Start(context.Context, component.Host) error {
 }
 
 // Shutdown is invoked during service shutdown.
-func (bp *batchProcessor) Shutdown(context.Context) error {
-	close(bp.shutdownC)
-
-	// Wait until all goroutines are done.
-	bp.goroutines.Wait()
-	return nil
+func (bp *batchProcessor) Shutdown(ctx context.Context) error {
+	doneChan := make(chan struct{}, 1)
+	startChan := make(chan struct{}, 1)
+	go func() {
+		startChan <- struct{}{}
+	}()
+	for {
+		select {
+		case <-ctx.Done():
+			for _, c := range bp.forceShutdownChans {
+				close(c)
+			}
+			return nil
+		case <-startChan:
+			go func() {
+				close(bp.shutdownC)
+				// Wait until all goroutines are done.
+				bp.goroutines.Wait()
+				close(doneChan)
+			}()
+		case <-doneChan:
+			return nil
+		}
+	}
 }
 
 func (b *shard) start() {
@@ -195,6 +217,8 @@ func (b *shard) start() {
 		DONE:
 			for {
 				select {
+				case <-b.forceShutdownChan:
+					return
 				case item := <-b.newItem:
 					b.processItem(item)
 				default:
@@ -203,8 +227,6 @@ func (b *shard) start() {
 			}
 			// This is the close of the channel
 			if b.batch.itemCount() > 0 {
-				// TODO: Set a timeout on sendTraces or
-				// make it cancellable using the context that Shutdown gets as a parameter
 				b.sendItems(triggerTimeout)
 			}
 			return
