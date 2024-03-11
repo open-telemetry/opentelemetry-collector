@@ -82,7 +82,10 @@ func NewLogsExporter(
 	if pusher == nil {
 		return nil, errNilPushLogsData
 	}
-	logsOpts := []Option{withMarshaler(logsRequestMarshaler), withUnmarshaler(newLogsRequestUnmarshalerFunc(pusher))}
+	logsOpts := []Option{
+		withMarshaler(logsRequestMarshaler), withUnmarshaler(newLogsRequestUnmarshalerFunc(pusher)),
+		withBatchFuncs(mergeLogs, mergeSplitLogs),
+	}
 	return NewLogsRequestExporter(ctx, set, requestFromLogs(pusher), append(logsOpts, options...)...)
 }
 
