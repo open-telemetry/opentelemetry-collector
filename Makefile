@@ -270,6 +270,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/exporter=$(CURDIR)/exporter  \
 		-replace go.opentelemetry.io/collector/exporter/debugexporter=$(CURDIR)/exporter/debugexporter  \
 		-replace go.opentelemetry.io/collector/exporter/loggingexporter=$(CURDIR)/exporter/loggingexporter  \
+		-replace go.opentelemetry.io/collector/exporter/nopexporter=$(CURDIR)/exporter/nopexporter  \
 		-replace go.opentelemetry.io/collector/exporter/otlpexporter=$(CURDIR)/exporter/otlpexporter  \
 		-replace go.opentelemetry.io/collector/exporter/otlphttpexporter=$(CURDIR)/exporter/otlphttpexporter  \
 		-replace go.opentelemetry.io/collector/extension=$(CURDIR)/extension  \
@@ -323,6 +324,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/exporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/debugexporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/loggingexporter  \
+		-dropreplace go.opentelemetry.io/collector/exporter/nopexporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/otlpexporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/otlphttpexporter  \
 		-dropreplace go.opentelemetry.io/collector/extension  \

@@ -70,6 +70,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		fmt.Sprintf("go.opentelemetry.io/collector/exporter => %s/exporter", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/exporter/debugexporter => %s/exporter/debugexporter", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/exporter/loggingexporter => %s/exporter/loggingexporter", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/exporter/nopexporter => %s/exporter/nopexporter", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/exporter/otlpexporter => %s/exporter/otlpexporter", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/exporter/otlphttpexporter => %s/exporter/otlphttpexporter", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/extension => %s/extension", workspaceDir),
