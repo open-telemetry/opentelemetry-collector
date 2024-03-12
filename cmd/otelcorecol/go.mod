@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.96.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.96.0
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.96.0
+	go.opentelemetry.io/collector/exporter/nopexporter v0.96.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.96.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.96.0
 	go.opentelemetry.io/collector/extension v0.96.0
@@ -182,6 +183,8 @@ replace go.opentelemetry.io/collector/exporter => ../../exporter
 replace go.opentelemetry.io/collector/exporter/debugexporter => ../../exporter/debugexporter
 
 replace go.opentelemetry.io/collector/exporter/loggingexporter => ../../exporter/loggingexporter
+
+replace go.opentelemetry.io/collector/exporter/nopexporter => ../../exporter/nopexporter
 
 replace go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/otlpexporter
 
