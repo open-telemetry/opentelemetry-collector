@@ -6,6 +6,8 @@ package connectortest // import "go.opentelemetry.io/collector/connector/connect
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
@@ -18,7 +20,7 @@ var nopType = component.MustNewType("nop")
 // NewNopCreateSettings returns a new nop settings for Create* functions.
 func NewNopCreateSettings() connector.CreateSettings {
 	return connector.CreateSettings{
-		ID:                component.NewID(nopType),
+		ID:                component.NewIDWithName(nopType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
