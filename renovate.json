@@ -52,6 +52,11 @@
         "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://golang.org"],
         "groupName": "All golang.org packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/build-tools"],
+        "groupName": "All go.opentelemetry.io/build-tools packages"
       }
     ],
     "ignoreDeps": [
