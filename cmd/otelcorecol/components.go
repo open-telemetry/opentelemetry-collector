@@ -20,6 +20,7 @@ import (
 	batchprocessor "go.opentelemetry.io/collector/processor/batchprocessor"
 	memorylimiterprocessor "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
+	nopreceiver "go.opentelemetry.io/collector/receiver/nopreceiver"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
@@ -37,6 +38,7 @@ func components() (otelcol.Factories, error) {
 	}
 
 	factories.Receivers, err = receiver.MakeFactoryMap(
+		nopreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
 	)
 	if err != nil {
