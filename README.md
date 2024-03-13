@@ -151,7 +151,7 @@ Here is a list of community roles with current and previous members:
 
 - Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 
-   - [Alex Boten](https://github.com/codeboten), ServiceNow
+   - [Alex Boten](https://github.com/codeboten), Honeycomb
    - [Bogdan Drutu](https://github.com/BogdanDrutu), Snowflake
    - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
    - [Pablo Baeyens](https://github.com/mx-psi), DataDog

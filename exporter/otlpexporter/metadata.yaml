@@ -6,3 +6,7 @@ status:
     stable: [traces, metrics]
     beta: [logs]
   distributions: [core, contrib]
+
+tests:
+  config:
+    endpoint: otelcol:4317

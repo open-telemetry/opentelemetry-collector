@@ -237,6 +237,25 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 			mockID: auth.NewServer(),
 		},
 	}
+	srv, err := gss.ToServerContext(context.Background(), host, componenttest.NewNopTelemetrySettings())
+	assert.NoError(t, err)
+	assert.NotNil(t, srv)
+}
+
+func TestGrpcServerAuthSettings_Deprecated(t *testing.T) {
+	gss := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint: "0.0.0.0:1234",
+		},
+	}
+	gss.Auth = &configauth.Authentication{
+		AuthenticatorID: mockID,
+	}
+	host := &mockHost{
+		ext: map[component.ID]component.Component{
+			mockID: auth.NewServer(),
+		},
+	}
 	srv, err := gss.ToServer(host, componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, srv)
@@ -481,7 +500,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			_, err := test.settings.ToServerContext(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			assert.Regexp(t, test.err, err)
 		})
 	}
@@ -618,7 +637,7 @@ func TestHttpReception(t *testing.T) {
 			}
 			ln, err := gss.NetAddr.Listen(context.Background())
 			assert.NoError(t, err)
-			s, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			s, err := gss.ToServerContext(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 			ptraceotlp.RegisterGRPCServer(s, &grpcTraceServer{})
 
@@ -665,7 +684,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	}
 	ln, err := gss.NetAddr.Listen(context.Background())
 	assert.NoError(t, err)
-	srv, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	srv, err := gss.ToServerContext(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	ptraceotlp.RegisterGRPCServer(srv, &grpcTraceServer{})
 
@@ -859,7 +878,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 						Transport: confignet.TransportTypeTCP,
 					},
 				}
-				srv, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+				srv, err := gss.ToServerContext(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 				require.NoError(t, err)
 				ptraceotlp.RegisterGRPCServer(srv, mock)
 
