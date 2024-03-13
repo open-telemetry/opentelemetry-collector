@@ -124,11 +124,7 @@ func (m *metric) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("enabled") {
 		return errors.New("missing required field: `enabled`")
 	}
-	err := parser.Unmarshal(m)
-	if err != nil {
-		return err
-	}
-	return nil
+	return parser.Unmarshal(m)
 }
 func (m metric) Data() MetricData {
 	if m.Sum != nil {
