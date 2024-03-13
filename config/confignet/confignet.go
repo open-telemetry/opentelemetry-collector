@@ -75,14 +75,9 @@ type AddrConfig struct {
 	// "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
 	Endpoint string `mapstructure:"endpoint"`
 
-	// Transport to use. Known protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only),
+	// Transport to use. Allowed protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only),
 	// "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
-	// Deprecated: [0.94.0] Use TransportType instead
-	Transport string `mapstructure:"-transport"`
-
-	// TransportType to use. Allowed protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only),
-	// "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
-	TransportType TransportType `mapstructure:"transport"`
+	Transport TransportType `mapstructure:"transport"`
 
 	// DialerConfig contains options for connecting to an address.
 	DialerConfig DialerConfig `mapstructure:"dialer"`
@@ -91,25 +86,17 @@ type AddrConfig struct {
 // Dial equivalent with net.Dialer's DialContext for this address.
 func (na *AddrConfig) Dial(ctx context.Context) (net.Conn, error) {
 	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
-	tt := string(na.TransportType)
-	if na.Transport != "" {
-		tt = na.Transport
-	}
-	return d.DialContext(ctx, tt, na.Endpoint)
+	return d.DialContext(ctx, string(na.Transport), na.Endpoint)
 }
 
 // Listen equivalent with net.ListenConfig's Listen for this address.
 func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 	lc := net.ListenConfig{}
-	tt := string(na.TransportType)
-	if na.Transport != "" {
-		tt = na.Transport
-	}
-	return lc.Listen(ctx, tt, na.Endpoint)
+	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
 }
 
 func (na *NetAddr) Validate() error {
-	switch na.TransportType {
+	switch na.Transport {
 	case TransportTypeTCP,
 		TransportTypeTCP4,
 		TransportTypeTCP6,
@@ -124,7 +111,7 @@ func (na *NetAddr) Validate() error {
 		TransportTypeUnixPacket:
 		return nil
 	default:
-		return fmt.Errorf("invalid transport type %q", na.TransportType)
+		return fmt.Errorf("invalid transport type %q", na.Transport)
 	}
 }
 

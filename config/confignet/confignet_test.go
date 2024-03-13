@@ -16,7 +16,7 @@ import (
 func TestAddrConfigTimeout(t *testing.T) {
 	nac := &AddrConfig{
 		Endpoint:  "localhost:0",
-		TransportType: TransportTypeTCP,
+		Transport: TransportTypeTCP,
 		DialerConfig: DialerConfig{
 			Timeout: -1 * time.Second,
 		},
@@ -51,7 +51,7 @@ func TestTCPAddrConfigTimeout(t *testing.T) {
 func TestAddrConfig(t *testing.T) {
 	nas := &AddrConfig{
 		Endpoint:  "localhost:0",
-		TransportType: TransportTypeTCP,
+		Transport: TransportTypeTCP,
 	}
 	ln, err := nas.Listen(context.Background())
 	assert.NoError(t, err)
@@ -71,7 +71,7 @@ func TestAddrConfig(t *testing.T) {
 
 	nac := &AddrConfig{
 		Endpoint:  ln.Addr().String(),
-		Transport: "tcp",
+		Transport: TransportTypeTCP,
 	}
 	var conn net.Conn
 	conn, err = nac.Dial(context.Background())
@@ -85,17 +85,17 @@ func TestAddrConfig(t *testing.T) {
 
 func Test_NetAddr_Validate(t *testing.T) {
 	na := &AddrConfig{
-		TransportType: TransportTypeTCP,
+		Transport: TransportTypeTCP,
 	}
 	assert.NoError(t, na.Validate())
 
 	na = &AddrConfig{
-		TransportType: transportTypeEmpty,
+		Transport: transportTypeEmpty,
 	}
 	assert.Error(t, na.Validate())
 
 	na = &AddrConfig{
-		TransportType: "random string",
+		Transport: "random string",
 	}
 	assert.Error(t, na.Validate())
 }
