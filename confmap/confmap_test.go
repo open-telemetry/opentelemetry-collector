@@ -503,10 +503,6 @@ type testErrConfig struct {
 	Err errConfig `mapstructure:"err"`
 }
 
-func (tc *testErrConfig) Unmarshal(component *Conf) error {
-	return component.Unmarshal(tc)
-}
-
 type errConfig struct {
 	Foo string `mapstructure:"foo"`
 }
@@ -612,4 +608,55 @@ func TestZeroSliceHookFunc(t *testing.T) {
 			}
 		})
 	}
+}
+
+type configWithEmbeddedStruct struct {
+	String                      string `mapstructure:"string"`
+	Num                         int    `mapstructure:"num"`
+	EmbeddedUnmarshallingConfig `mapstructure:",squash"`
+}
+
+type EmbeddedUnmarshallingConfig struct {
+	Embedded string `mapstructure:"embedded"`
+}
+
+func (euc *EmbeddedUnmarshallingConfig) Unmarshal(conf *Conf) error {
+	if err := conf.Unmarshal(euc, WithIgnoreUnused()); err != nil {
+		return err
+	}
+	euc.Embedded += " unmarshaled"
+	return nil
+}
+func TestStructWithEmbeddedUnmarshaling(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"string":   "foo",
+		"num":      123,
+		"embedded": "bar",
+	})
+	tc := &configWithEmbeddedStruct{}
+	err := cfgMap.Unmarshal(tc)
+	require.NoError(t, err)
+	assert.Equal(t, "foo", tc.String)
+	assert.Equal(t, 123, tc.Num)
+	assert.Equal(t, "bar unmarshaled", tc.Embedded)
+}
+
+type configWithEmbeddedUnmarshalMethod struct {
+	EmbeddedUnmarshallingMethodConfig
+}
+
+type EmbeddedUnmarshallingMethodConfig struct {
+	MyValue string
+}
+
+func (euc *EmbeddedUnmarshallingMethodConfig) Unmarshal(_ *Conf) error {
+	euc.MyValue = "my custom value"
+	return nil
+}
+func TestStructWithEmbeddedUnmarshalMethod(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{})
+	tc := &configWithEmbeddedUnmarshalMethod{}
+	err := cfgMap.Unmarshal(tc, WithIgnoreUnused())
+	require.NoError(t, err)
+	assert.Equal(t, "my custom value", tc.MyValue)
 }
