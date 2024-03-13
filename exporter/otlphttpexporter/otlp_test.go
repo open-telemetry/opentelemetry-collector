@@ -545,7 +545,7 @@ func TestPartialResponse_missingHeaderButHasBody(t *testing.T) {
 				case protobufContentType:
 					data, err = serializer.MarshalProto()
 				default:
-					panic(ct.contentType)
+					require.Fail(t, "unsupported content type: %s", ct.contentType)
 				}
 				require.NoError(t, err)
 
@@ -677,7 +677,7 @@ func TestPartialSuccess_shortContentLengthHeader(t *testing.T) {
 				case protobufContentType:
 					data, err = serializer.MarshalProto()
 				default:
-					panic(ct.contentType)
+					require.Fail(t, "unsupported content type: %s", ct.contentType)
 				}
 				require.NoError(t, err)
 
@@ -743,6 +743,8 @@ func TestPartialSuccess_longContentLengthHeader(t *testing.T) {
 					handler = exp.metricsPartialSuccessHandler
 				case logsTelemetryType:
 					handler = exp.logsPartialSuccessHandler
+				default:
+					require.Fail(t, "unsupported telemetry type: %s", ct.contentType)
 				}
 
 				var data []byte
@@ -753,7 +755,7 @@ func TestPartialSuccess_longContentLengthHeader(t *testing.T) {
 				case protobufContentType:
 					data, err = serializer.MarshalProto()
 				default:
-					panic(ct.contentType)
+					require.Fail(t, "unsupported content type: %s", ct.contentType)
 				}
 				require.NoError(t, err)
 
