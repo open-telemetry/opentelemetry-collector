@@ -110,11 +110,13 @@ func callValidateIfPossible(v reflect.Value) error {
 }
 
 // Type is the component type as it is used in the config.
-type Type string
+type Type struct {
+	name string
+}
 
 // String returns the string representation of the type.
 func (t Type) String() string {
-	return string(t)
+	return t.name
 }
 
 // typeRegexp is used to validate the type of a component.
@@ -130,12 +132,12 @@ var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]*$`)
 // - can only contain ASCII alphanumeric characters and '_'.
 func NewType(ty string) (Type, error) {
 	if len(ty) == 0 {
-		return Type(""), fmt.Errorf("id must not be empty")
+		return Type{}, fmt.Errorf("id must not be empty")
 	}
 	if !typeRegexp.MatchString(ty) {
-		return Type(""), fmt.Errorf("invalid character(s) in type %q", ty)
+		return Type{}, fmt.Errorf("invalid character(s) in type %q", ty)
 	}
-	return Type(ty), nil
+	return Type{name: ty}, nil
 }
 
 // MustNewType creates a type. It panics if the type is invalid.
@@ -155,14 +157,18 @@ func MustNewType(strType string) Type {
 // collecting metrics, traces and logs, this can expand in the future.
 type DataType = Type
 
+func mustNewDataType(strType string) DataType {
+	return MustNewType(strType)
+}
+
 // Currently supported data types. Add new data types here when new types are supported in the future.
-const (
+var (
 	// DataTypeTraces is the data type tag for traces.
-	DataTypeTraces DataType = "traces"
+	DataTypeTraces = mustNewDataType("traces")
 
 	// DataTypeMetrics is the data type tag for metrics.
-	DataTypeMetrics DataType = "metrics"
+	DataTypeMetrics = mustNewDataType("metrics")
 
 	// DataTypeLogs is the data type tag for logs.
-	DataTypeLogs DataType = "logs"
+	DataTypeLogs = mustNewDataType("logs")
 )

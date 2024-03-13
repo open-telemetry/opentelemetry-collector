@@ -7,9 +7,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestSupportedScheme(t *testing.T) {
-	fp := New()
+	fp := NewWithSettings(confmap.ProviderSettings{})
 	assert.Equal(t, "https", fp.Scheme())
 }

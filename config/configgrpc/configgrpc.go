@@ -267,7 +267,14 @@ func validateBalancerName(balancerName string) bool {
 	return balancer.Get(balancerName) != nil
 }
 
+// ToServer returns a grpc.Server for the configuration
+// Deprecated: [0.96.0] Use ToServerContext instead.
 func (gss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
+	return gss.ToServerContext(context.Background(), host, settings, extraOpts...)
+}
+
+// ToServerContext returns a grpc.Server for the configuration
+func (gss *ServerConfig) ToServerContext(_ context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
 	opts, err := gss.toServerOption(host, settings)
 	if err != nil {
 		return nil, err

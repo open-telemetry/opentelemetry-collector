@@ -157,6 +157,9 @@ func decodeConfig(m *Conf, result any, errorUnused bool) error {
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
 			unmarshalerHookFunc(result),
+			// after the main unmarshaler hook is called,
+			// we unmarshal the embedded structs if present to merge with the result:
+			unmarshalerEmbeddedStructsHookFunc(),
 			zeroSliceHookFunc(),
 		),
 	}
@@ -258,6 +261,42 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 			m.SetMapIndex(reflect.Indirect(tKey), reflect.ValueOf(true))
 		}
 		return data, nil
+	}
+}
+
+// unmarshalerEmbeddedStructsHookFunc provides a mechanism for embedded structs to define their own unmarshal logic,
+// by implementing the Unmarshaler interface.
+func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
+	return func(from reflect.Value, to reflect.Value) (any, error) {
+		if to.Type().Kind() != reflect.Struct {
+			return from.Interface(), nil
+		}
+		fromAsMap, ok := from.Interface().(map[string]any)
+		if !ok {
+			return from.Interface(), nil
+		}
+		for i := 0; i < to.Type().NumField(); i++ {
+			// embedded structs passed in via `squash` cannot be pointers. We just check if they are structs:
+			if to.Type().Field(i).IsExported() && to.Type().Field(i).Anonymous {
+				if unmarshaler, ok := to.Field(i).Addr().Interface().(Unmarshaler); ok {
+					if err := unmarshaler.Unmarshal(NewFromStringMap(fromAsMap)); err != nil {
+						return nil, err
+					}
+					// the struct we receive from this unmarshaling only contains fields related to the embedded struct.
+					// we merge this partially unmarshaled struct with the rest of the result.
+					// note we already unmarshaled the main struct earlier, and therefore merge with it.
+					conf := New()
+					if err := conf.Marshal(unmarshaler); err != nil {
+						return nil, err
+					}
+					resultMap := conf.ToStringMap()
+					for k, v := range resultMap {
+						fromAsMap[k] = v
+					}
+				}
+			}
+		}
+		return fromAsMap, nil
 	}
 }
 

@@ -83,7 +83,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	var err error
-	if r.serverGRPC, err = r.cfg.GRPC.ToServer(host, r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = r.cfg.GRPC.ToServerContext(context.Background(), host, r.settings.TelemetrySettings); err != nil {
 		return err
 	}
 

@@ -25,7 +25,7 @@ jobs:
           go-version: ~1.21.5
           cache: false
       - name: Cache Go
-        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
         env:
           cache-name: cache-go-modules
         with:
@@ -35,3 +35,41 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
         run: make gotest
+
+  windows-service-test:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Setup Go
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version: ~1.21.5
+          cache: false
+      - name: Cache Go
+        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        env:
+          cache-name: cache-go-modules
+        with:
+          path: |
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+
+      - name: Make otelcorecol
+        run: make otelcorecol
+
+      - name: Install otelcorecol as a service
+        run: |
+          New-Service -Name "otelcorecol" -BinaryPathName "${PWD}\bin\otelcorecol_windows_amd64 --config ${PWD}\examples\local\otel-config.yaml"
+          eventcreate.exe /t information /id 1 /l application /d "Creating event provider for 'otelcorecol'" /so otelcorecol
+
+      - name: Test otelcorecol service
+        run: |
+          (Start-Service otelcorecol -PassThru).WaitForStatus('Running', '00:00:30')
+          (Stop-Service otelcorecol -PassThru).WaitForStatus('Stopped', '00:00:30')
+
+      - name: Remove otelcorecol service
+        run: |
+          Remove-Service otelcorecol
+          Remove-Item HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Application\otelcorecol

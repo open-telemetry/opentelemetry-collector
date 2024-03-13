@@ -71,16 +71,15 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	require.Nil(t, err)
 	require.Nil(t, bs.marshaler)
 	require.Nil(t, bs.unmarshaler)
-	require.Panics(t, func() {
-		_, _ = newBaseExporter(exportertest.NewNopCreateSettings(), defaultType, newNoopObsrepSender,
-			WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueSettings()))
-	})
-	require.Panics(t, func() {
-		_, _ = newBaseExporter(exportertest.NewNopCreateSettings(), defaultType, newNoopObsrepSender,
-			withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
-			WithRetry(configretry.NewDefaultBackOffConfig()),
-			WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[Request]()))
-	})
+	_, err = newBaseExporter(exportertest.NewNopCreateSettings(), defaultType, newNoopObsrepSender,
+		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueSettings()))
+	require.Error(t, err)
+
+	_, err = newBaseExporter(exportertest.NewNopCreateSettings(), defaultType, newNoopObsrepSender,
+		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
+		WithRetry(configretry.NewDefaultBackOffConfig()),
+		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[Request]()))
+	require.Error(t, err)
 }
 
 func TestBaseExporterLogging(t *testing.T) {

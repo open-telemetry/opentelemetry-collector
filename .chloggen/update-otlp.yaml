@@ -1,6 +1,0 @@
-change_type: enhancement
-component: pdata
-note: Update to OTLP v1.1.0
-issues: [9587]
-subtext: Introduces Span and SpanLink flags.
-change_logs: [user]

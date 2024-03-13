@@ -309,8 +309,78 @@ func newConfFromFile(t testing.TB, fileName string) map[string]any {
 }
 
 type testConfig struct {
-	Next    *nextConfig `mapstructure:"next"`
-	Another string      `mapstructure:"another"`
+	Next            *nextConfig `mapstructure:"next"`
+	Another         string      `mapstructure:"another"`
+	EmbeddedConfig  `mapstructure:",squash"`
+	EmbeddedConfig2 `mapstructure:",squash"`
+}
+
+type testConfigWithoutUnmarshaler struct {
+	Next            *nextConfig `mapstructure:"next"`
+	Another         string      `mapstructure:"another"`
+	EmbeddedConfig  `mapstructure:",squash"`
+	EmbeddedConfig2 `mapstructure:",squash"`
+}
+
+type testConfigWithEmbeddedError struct {
+	Next                    *nextConfig `mapstructure:"next"`
+	Another                 string      `mapstructure:"another"`
+	EmbeddedConfigWithError `mapstructure:",squash"`
+}
+
+type testConfigWithMarshalError struct {
+	Next                           *nextConfig `mapstructure:"next"`
+	Another                        string      `mapstructure:"another"`
+	EmbeddedConfigWithMarshalError `mapstructure:",squash"`
+}
+
+func (tc *testConfigWithEmbeddedError) Unmarshal(component *Conf) error {
+	if err := component.Unmarshal(tc, WithIgnoreUnused()); err != nil {
+		return err
+	}
+	return nil
+}
+
+type EmbeddedConfig struct {
+	Some string `mapstructure:"some"`
+}
+
+func (ec *EmbeddedConfig) Unmarshal(component *Conf) error {
+	if err := component.Unmarshal(ec, WithIgnoreUnused()); err != nil {
+		return err
+	}
+	ec.Some += " is also called"
+	return nil
+}
+
+type EmbeddedConfig2 struct {
+	Some2 string `mapstructure:"some_2"`
+}
+
+func (ec *EmbeddedConfig2) Unmarshal(component *Conf) error {
+	if err := component.Unmarshal(ec, WithIgnoreUnused()); err != nil {
+		return err
+	}
+	ec.Some2 += " also called2"
+	return nil
+}
+
+type EmbeddedConfigWithError struct {
+}
+
+func (ecwe *EmbeddedConfigWithError) Unmarshal(_ *Conf) error {
+	return errors.New("embedded error")
+}
+
+type EmbeddedConfigWithMarshalError struct {
+}
+
+func (ecwe EmbeddedConfigWithMarshalError) Marshal(_ *Conf) error {
+	return errors.New("marshaling error")
+}
+
+func (ecwe EmbeddedConfigWithMarshalError) Unmarshal(_ *Conf) error {
+	return nil
 }
 
 func (tc *testConfig) Unmarshal(component *Conf) error {
@@ -340,12 +410,59 @@ func TestUnmarshaler(t *testing.T) {
 			"string": "make sure this",
 		},
 		"another": "make sure this",
+		"some":    "make sure this",
+		"some_2":  "this better be",
 	})
 
 	tc := &testConfig{}
 	assert.NoError(t, cfgMap.Unmarshal(tc))
 	assert.Equal(t, "make sure this", tc.Another)
 	assert.Equal(t, "make sure this is called", tc.Next.String)
+	assert.Equal(t, "make sure this is also called", tc.EmbeddedConfig.Some)
+	assert.Equal(t, "this better be also called2", tc.EmbeddedConfig2.Some2)
+}
+
+func TestEmbeddedUnmarshaler(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"next": map[string]any{
+			"string": "make sure this",
+		},
+		"another": "make sure this",
+		"some":    "make sure this",
+		"some_2":  "this better be",
+	})
+
+	tc := &testConfigWithoutUnmarshaler{}
+	assert.NoError(t, cfgMap.Unmarshal(tc))
+	assert.Equal(t, "make sure this", tc.Another)
+	assert.Equal(t, "make sure this is called", tc.Next.String)
+	assert.Equal(t, "make sure this is also called", tc.EmbeddedConfig.Some)
+	assert.Equal(t, "this better be also called2", tc.EmbeddedConfig2.Some2)
+}
+
+func TestEmbeddedUnmarshalerError(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"next": map[string]any{
+			"string": "make sure this",
+		},
+		"another": "make sure this",
+		"some":    "make sure this",
+	})
+
+	tc := &testConfigWithEmbeddedError{}
+	assert.EqualError(t, cfgMap.Unmarshal(tc), "error decoding '': embedded error")
+}
+
+func TestEmbeddedMarshalerError(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"next": map[string]any{
+			"string": "make sure this",
+		},
+		"another": "make sure this",
+	})
+
+	tc := &testConfigWithMarshalError{}
+	assert.EqualError(t, cfgMap.Unmarshal(tc), "error decoding '': error running encode hook: marshaling error")
 }
 
 func TestUnmarshalerKeepAlreadyInitialized(t *testing.T) {

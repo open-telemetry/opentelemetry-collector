@@ -87,7 +87,7 @@ func NewLogsExporter(
 }
 
 // RequestFromLogsFunc converts plog.Logs data into a user-defined request.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type RequestFromLogsFunc func(context.Context, plog.Logs) (Request, error)
 
@@ -99,7 +99,7 @@ func requestFromLogs(pusher consumer.ConsumeLogsFunc) RequestFromLogsFunc {
 }
 
 // NewLogsRequestExporter creates new logs exporter based on custom LogsConverter and RequestSender.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewLogsRequestExporter(
 	_ context.Context,

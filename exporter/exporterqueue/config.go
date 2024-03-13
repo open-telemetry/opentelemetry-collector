@@ -11,7 +11,7 @@ import (
 
 // Config defines configuration for queueing requests before exporting.
 // It's supposed to be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type Config struct {
 	// Enabled indicates whether to not enqueue batches before exporting.
@@ -23,7 +23,7 @@ type Config struct {
 }
 
 // NewDefaultConfig returns the default Config.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewDefaultConfig() Config {
 	return Config{
@@ -51,7 +51,7 @@ func (qCfg *Config) Validate() error {
 // The struct is provided to be added in the exporter configuration as one struct under the "sending_queue" key.
 // The exporter helper Go interface requires the fields to be provided separately to WithRequestQueue and
 // NewPersistentQueueFactory.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type PersistentQueueConfig struct {
 	Config `mapstructure:",squash"`

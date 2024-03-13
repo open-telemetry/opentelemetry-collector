@@ -57,7 +57,7 @@ expectations.
 - Create new metrics based on information in spans, for example to create a duration metric that is not implemented in the SDK yet
 - Apply arithmetic between multiple incoming metrics to produce an output one, for example divide an `amount` and a `capacity` to create a `utilization` metric
 
-The processors implementing this use case are `metricsgenerationprocessor`, `spanmetricsprocessor`.
+The components implementing this use case are `metricsgenerationprocessor` and the former `spanmetricsprocessor` (now `spanmetricsconnector`).
 
 ### Grouping
 
