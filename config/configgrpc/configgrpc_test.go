@@ -710,7 +710,7 @@ func TestContextWithClient(t *testing.T) {
 			expected: client.Info{},
 		},
 		{
-			desc: "existing client with TransportTypeIP, no peer information",
+			desc: "existing client with IP, no peer information",
 			input: client.NewContext(context.Background(), client.Info{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
@@ -736,7 +736,7 @@ func TestContextWithClient(t *testing.T) {
 			},
 		},
 		{
-			desc: "existing client, existing TransportTypeIP gets overridden with peer information",
+			desc: "existing client, existing IP gets overridden with peer information",
 			input: peer.NewContext(client.NewContext(context.Background(), client.Info{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
@@ -1084,7 +1084,7 @@ func (gts *grpcTraceServer) Export(ctx context.Context, _ ptraceotlp.ExportReque
 	return ptraceotlp.NewExportResponse(), nil
 }
 
-// tempSocketName provides a temporary TransportTypeUnix socket name for testing.
+// tempSocketName provides a temporary Unix socket name for testing.
 func tempSocketName(t *testing.T) string {
 	tmpfile, err := os.CreateTemp("", "sock")
 	require.NoError(t, err)

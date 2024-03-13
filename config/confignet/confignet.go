@@ -69,8 +69,8 @@ type NetAddr = AddrConfig
 // AddrConfig represents a network endpoint address.
 type AddrConfig struct {
 	// Endpoint configures the address for this network connection.
-	// For TransportTypeTCP and TransportTypeUDP networks, the address has the form "host:port". The host must be a literal TransportTypeIP address,
-	// or a host name that can be resolved to TransportTypeIP addresses. The port must be a literal port number or a service name.
+	// For TCP and UDP networks, the address has the form "host:port". The host must be a literal IP address,
+	// or a host name that can be resolved to IP addresses. The port must be a literal port number or a service name.
 	// If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or
 	// "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
 	Endpoint string `mapstructure:"endpoint"`
@@ -122,8 +122,8 @@ type TCPAddr = TCPAddrConfig
 // TCPAddrConfig represents a TCP endpoint address.
 type TCPAddrConfig struct {
 	// Endpoint configures the address for this network connection.
-	// The address has the form "host:port". The host must be a literal TransportTypeIP address, or a host name that can be
-	// resolved to TransportTypeIP addresses. The port must be a literal port number or a service name.
+	// The address has the form "host:port". The host must be a literal IP address, or a host name that can be
+	// resolved to IP addresses. The port must be a literal port number or a service name.
 	// If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or
 	// "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
 	Endpoint string `mapstructure:"endpoint"`
