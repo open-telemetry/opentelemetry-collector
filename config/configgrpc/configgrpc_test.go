@@ -38,7 +38,7 @@ import (
 // testBalancerBuilder facilitates testing validateBalancerName().
 type testBalancerBuilder struct{}
 
-func (testBalancerBuilder) Build(_ balancer.ClientConn, _ balancer.BuildOptions) balancer.Balancer {
+func (testBalancerBuilder) Build(balancer.ClientConn, balancer.BuildOptions) balancer.Balancer {
 	return nil
 }
 
@@ -63,7 +63,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	gcs := &ClientConfig{
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -90,7 +90,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				},
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeGzip,
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.ClientConfig{
 					Insecure: false,
 				},
 				Keepalive: &KeepaliveClientConfig{
@@ -119,7 +119,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				},
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeSnappy,
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.ClientConfig{
 					Insecure: false,
 				},
 				Keepalive: &KeepaliveClientConfig{
@@ -148,7 +148,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				},
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeZstd,
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.ClientConfig{
 					Insecure: false,
 				},
 				Keepalive: &KeepaliveClientConfig{
@@ -196,8 +196,8 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 			Endpoint:  "localhost:1234",
 			Transport: confignet.TransportTypeTCP,
 		},
-		TLSSetting: &configtls.TLSServerSetting{
-			TLSSetting:   configtls.TLSSetting{},
+		TLSSetting: &configtls.ServerConfig{
+			TLSSetting:   configtls.Config{},
 			ClientCAFile: "",
 		},
 		MaxRecvMsgSizeMiB:    1,
@@ -258,8 +258,8 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Headers:     nil,
 				Endpoint:    "",
 				Compression: "",
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "/doesnt/exist",
 					},
 					Insecure:   false,
@@ -274,8 +274,8 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Headers:     nil,
 				Endpoint:    "",
 				Compression: "",
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CertFile: "/doesnt/exist",
 					},
 					Insecure:   false,
@@ -292,7 +292,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				},
 				Endpoint:    "localhost:1234",
 				Compression: "gzip",
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.ClientConfig{
 					Insecure: false,
 				},
 				Keepalive: &KeepaliveClientConfig{
@@ -326,7 +326,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "unsupported compression type \"zlib\"",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.ClientConfig{
 					Insecure: true,
 				},
 				Compression: "zlib",
@@ -337,7 +337,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "unsupported compression type \"deflate\"",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.ClientConfig{
 					Insecure: true,
 				},
 				Compression: "deflate",
@@ -348,7 +348,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "unsupported compression type \"bad\"",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.ClientConfig{
 					Insecure: true,
 				},
 				Compression: "bad",
@@ -374,7 +374,7 @@ func TestUseSecure(t *testing.T) {
 		Headers:     nil,
 		Endpoint:    "",
 		Compression: "",
-		TLSSetting:  configtls.TLSClientSetting{},
+		TLSSetting:  configtls.ClientConfig{},
 		Keepalive:   nil,
 	}
 	dialOpts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings())
@@ -445,8 +445,8 @@ func TestGRPCServerSettingsError(t *testing.T) {
 					Endpoint:  "127.0.0.1:1234",
 					Transport: confignet.TransportTypeTCP,
 				},
-				TLSSetting: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: &configtls.ServerConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "/doesnt/exist",
 					},
 				},
@@ -459,8 +459,8 @@ func TestGRPCServerSettingsError(t *testing.T) {
 					Endpoint:  "127.0.0.1:1234",
 					Transport: confignet.TransportTypeTCP,
 				},
-				TLSSetting: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: &configtls.ServerConfig{
+					TLSSetting: configtls.Config{
 						CertFile: "/doesnt/exist",
 					},
 				},
@@ -473,7 +473,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 					Endpoint:  "127.0.0.1:1234",
 					Transport: confignet.TransportTypeTCP,
 				},
-				TLSSetting: &configtls.TLSServerSetting{
+				TLSSetting: &configtls.ServerConfig{
 					ClientCAFile: "/doesnt/exist",
 				},
 			},
@@ -493,14 +493,8 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 			Endpoint:  "127.0.0.1:1234567",
 			Transport: confignet.TransportTypeTCP,
 		},
-		TLSSetting: &configtls.TLSServerSetting{
-			TLSSetting: configtls.TLSSetting{
-				CertFile: "/doesnt/exist",
-			},
-		},
-		Keepalive: nil,
 	}
-	_, err := settings.ToListenerContext(context.Background())
+	_, err := settings.NetAddr.Listen(context.Background())
 	assert.Error(t, err)
 }
 
@@ -511,28 +505,28 @@ func TestHttpReception(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		tlsServerCreds *configtls.TLSServerSetting
-		tlsClientCreds *configtls.TLSClientSetting
+		tlsServerCreds *configtls.ServerConfig
+		tlsClientCreds *configtls.ClientConfig
 		hasError       bool
 	}{
 		{
 			name:           "noTLS",
 			tlsServerCreds: nil,
-			tlsClientCreds: &configtls.TLSClientSetting{
+			tlsClientCreds: &configtls.ClientConfig{
 				Insecure: true,
 			},
 		},
 		{
 			name: "TLS",
-			tlsServerCreds: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
+			tlsServerCreds: &configtls.ServerConfig{
+				TLSSetting: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
 			},
-			tlsClientCreds: &configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			tlsClientCreds: &configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile: filepath.Join("testdata", "ca.crt"),
 				},
 				ServerName: "localhost",
@@ -540,13 +534,13 @@ func TestHttpReception(t *testing.T) {
 		},
 		{
 			name: "NoServerCertificates",
-			tlsServerCreds: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
+			tlsServerCreds: &configtls.ServerConfig{
+				TLSSetting: configtls.Config{
 					CAFile: filepath.Join("testdata", "ca.crt"),
 				},
 			},
-			tlsClientCreds: &configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			tlsClientCreds: &configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile: filepath.Join("testdata", "ca.crt"),
 				},
 				ServerName: "localhost",
@@ -555,16 +549,16 @@ func TestHttpReception(t *testing.T) {
 		},
 		{
 			name: "mTLS",
-			tlsServerCreds: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
+			tlsServerCreds: &configtls.ServerConfig{
+				TLSSetting: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
 				ClientCAFile: filepath.Join("testdata", "ca.crt"),
 			},
-			tlsClientCreds: &configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			tlsClientCreds: &configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "client.crt"),
 					KeyFile:  filepath.Join("testdata", "client.key"),
@@ -574,16 +568,16 @@ func TestHttpReception(t *testing.T) {
 		},
 		{
 			name: "NoClientCertificate",
-			tlsServerCreds: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
+			tlsServerCreds: &configtls.ServerConfig{
+				TLSSetting: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
 				ClientCAFile: filepath.Join("testdata", "ca.crt"),
 			},
-			tlsClientCreds: &configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			tlsClientCreds: &configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile: filepath.Join("testdata", "ca.crt"),
 				},
 				ServerName: "localhost",
@@ -592,16 +586,16 @@ func TestHttpReception(t *testing.T) {
 		},
 		{
 			name: "WrongClientCA",
-			tlsServerCreds: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
+			tlsServerCreds: &configtls.ServerConfig{
+				TLSSetting: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
 				ClientCAFile: filepath.Join("testdata", "server.crt"),
 			},
-			tlsClientCreds: &configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			tlsClientCreds: &configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "client.crt"),
 					KeyFile:  filepath.Join("testdata", "client.key"),
@@ -622,7 +616,7 @@ func TestHttpReception(t *testing.T) {
 				},
 				TLSSetting: test.tlsServerCreds,
 			}
-			ln, err := gss.ToListenerContext(context.Background())
+			ln, err := gss.NetAddr.Listen(context.Background())
 			assert.NoError(t, err)
 			s, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
@@ -669,7 +663,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 			Transport: confignet.TransportTypeUnix,
 		},
 	}
-	ln, err := gss.ToListenerContext(context.Background())
+	ln, err := gss.NetAddr.Listen(context.Background())
 	assert.NoError(t, err)
 	srv, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
@@ -681,7 +675,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 
 	gcs := &ClientConfig{
 		Endpoint: "unix://" + ln.Addr().String(),
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -871,7 +865,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 
 				defer srv.Stop()
 
-				l, err = gss.ToListenerContext(context.Background())
+				l, err = gss.NetAddr.Listen(context.Background())
 				require.NoError(t, err)
 
 				go func() {
@@ -883,7 +877,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 			{
 				gcs := &ClientConfig{
 					Endpoint: l.Addr().String(),
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure: true,
 					},
 				}
@@ -953,7 +947,7 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 		authCalled = true
 		return context.Background(), expectedErr
 	}
-	handler := func(_ context.Context, _ any) (any, error) {
+	handler := func(context.Context, any) (any, error) {
 		assert.FailNow(t, "the handler should not have been called on auth failure!")
 		return nil, nil
 	}
@@ -974,7 +968,7 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 		assert.FailNow(t, "the auth func should not have been called!")
 		return context.Background(), nil
 	}
-	handler := func(_ context.Context, _ any) (any, error) {
+	handler := func(context.Context, any) (any, error) {
 		assert.FailNow(t, "the handler should not have been called!")
 		return nil, nil
 	}
@@ -1027,7 +1021,7 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 		authCalled = true
 		return context.Background(), expectedErr
 	}
-	handler := func(_ any, _ grpc.ServerStream) error {
+	handler := func(any, grpc.ServerStream) error {
 		assert.FailNow(t, "the handler should not have been called on auth failure!")
 		return nil
 	}
@@ -1050,7 +1044,7 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 		assert.FailNow(t, "the auth func should not have been called!")
 		return context.Background(), nil
 	}
-	handler := func(_ any, _ grpc.ServerStream) error {
+	handler := func(any, grpc.ServerStream) error {
 		assert.FailNow(t, "the handler should not have been called!")
 		return nil
 	}

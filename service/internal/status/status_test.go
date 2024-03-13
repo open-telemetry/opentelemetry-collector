@@ -230,7 +230,7 @@ func TestStatusFuncs(t *testing.T) {
 func TestStatusFuncsConcurrent(t *testing.T) {
 	ids := []*component.InstanceID{{}, {}, {}, {}}
 	count := 0
-	statusFunc := func(_ *component.InstanceID, _ *component.StatusEvent) {
+	statusFunc := func(*component.InstanceID, *component.StatusEvent) {
 		count++
 	}
 	rep := NewReporter(statusFunc,

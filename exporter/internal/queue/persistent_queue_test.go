@@ -18,6 +18,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/internal/experr"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -410,8 +411,8 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 				require.NoError(t, err)
 			}
 			assert.Equal(t, 3, ps.Size())
-			require.True(t, ps.Consume(func(_ context.Context, _ tracesRequest) error {
-				return NewShutdownErr(nil)
+			require.True(t, ps.Consume(func(context.Context, tracesRequest) error {
+				return experr.NewShutdownErr(nil)
 			}))
 			assert.Equal(t, 2, ps.Size())
 
@@ -519,11 +520,11 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 
 	// get one item out, but don't mark it as processed
 	<-ps.putChan
-	require.True(t, ps.Consume(func(_ context.Context, _ tracesRequest) error {
+	require.True(t, ps.Consume(func(context.Context, tracesRequest) error {
 		// put one more item in
 		require.NoError(t, ps.Offer(context.Background(), req))
 		require.Equal(t, 5, ps.Size())
-		return NewShutdownErr(nil)
+		return experr.NewShutdownErr(nil)
 	}))
 	assert.NoError(t, ps.Shutdown(context.Background()))
 
@@ -625,7 +626,7 @@ func TestItemIndexMarshaling(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		t.Run(fmt.Sprintf("#elements:%v", c.in), func(_ *testing.T) {
+		t.Run(fmt.Sprintf("#elements:%v", c.in), func(*testing.T) {
 			buf := itemIndexToBytes(c.in)
 			out, err := bytesToItemIndex(buf)
 			require.NoError(t, err)

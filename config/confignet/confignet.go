@@ -62,10 +62,6 @@ type DialerConfig struct {
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
-// NetAddr represents a network endpoint address.
-// Deprecated: [v0.95.0] Use AddrConfig instead.
-type NetAddr = AddrConfig
-
 // AddrConfig represents a network endpoint address.
 type AddrConfig struct {
 	// Endpoint configures the address for this network connection.
@@ -114,10 +110,6 @@ func (na *NetAddr) Validate() error {
 		return fmt.Errorf("invalid transport type %q", na.Transport)
 	}
 }
-
-// TCPAddr represents a TCP endpoint address.
-// Deprecated: [v0.95.0] Use TCPAddrConfig instead.
-type TCPAddr = TCPAddrConfig
 
 // TCPAddrConfig represents a TCP endpoint address.
 type TCPAddrConfig struct {

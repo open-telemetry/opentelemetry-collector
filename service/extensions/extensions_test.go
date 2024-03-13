@@ -299,15 +299,15 @@ type configWatcherExtension struct {
 	fn func() error
 }
 
-func (comp *configWatcherExtension) Start(_ context.Context, _ component.Host) error {
+func (comp *configWatcherExtension) Start(context.Context, component.Host) error {
 	return comp.fn()
 }
 
-func (comp *configWatcherExtension) Shutdown(_ context.Context) error {
+func (comp *configWatcherExtension) Shutdown(context.Context) error {
 	return comp.fn()
 }
 
-func (comp *configWatcherExtension) NotifyConfig(_ context.Context, _ *confmap.Conf) error {
+func (comp *configWatcherExtension) NotifyConfig(context.Context, *confmap.Conf) error {
 	return comp.fn()
 }
 
@@ -326,7 +326,7 @@ func newConfigWatcherExtensionFactory(name component.Type, fn func() error) exte
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
+		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
 			return newConfigWatcherExtension(fn), nil
 		},
 		component.StabilityLevelDevelopment,
@@ -339,7 +339,7 @@ func newBadExtensionFactory() extension.Factory {
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
+		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
 			return nil, nil
 		},
 		component.StabilityLevelDevelopment,
@@ -352,7 +352,7 @@ func newCreateErrorExtensionFactory() extension.Factory {
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
+		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
 			return nil, errors.New("cannot create \"err\" extension type")
 		},
 		component.StabilityLevelDevelopment,
@@ -455,11 +455,11 @@ type statusTestExtension struct {
 	shutdownErr error
 }
 
-func (ext *statusTestExtension) Start(_ context.Context, _ component.Host) error {
+func (ext *statusTestExtension) Start(context.Context, component.Host) error {
 	return ext.startErr
 }
 
-func (ext *statusTestExtension) Shutdown(_ context.Context) error {
+func (ext *statusTestExtension) Shutdown(context.Context) error {
 	return ext.shutdownErr
 }
 
@@ -476,7 +476,7 @@ func newStatusTestExtensionFactory(name component.Type, startErr, shutdownErr er
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
+		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
 			return newStatusTestExtension(startErr, shutdownErr), nil
 		},
 		component.StabilityLevelDevelopment,
@@ -529,6 +529,6 @@ func (ext *recordingExtension) Start(_ context.Context, host component.Host) err
 	return ext.startCallback(ext.createSettings, host)
 }
 
-func (ext *recordingExtension) Shutdown(_ context.Context) error {
+func (ext *recordingExtension) Shutdown(context.Context) error {
 	return ext.shutdownCallback(ext.createSettings)
 }

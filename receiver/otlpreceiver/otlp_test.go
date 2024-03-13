@@ -638,8 +638,8 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: confignet.TransportTypeTCP,
 				},
-				TLSSetting: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: &configtls.ServerConfig{
+					TLSSetting: configtls.Config{
 						CertFile: "willfail",
 					},
 				},
@@ -701,8 +701,8 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 			HTTP: &HTTPConfig{
 				ServerConfig: &confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
-					TLSSetting: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: &configtls.ServerConfig{
+						TLSSetting: configtls.Config{
 							CertFile: "willfail",
 						},
 					},
@@ -788,9 +788,9 @@ func newReceiver(t *testing.T, settings component.TelemetrySettings, cfg *Config
 	set.ID = id
 	r, err := newOtlpReceiver(cfg, &set)
 	require.NoError(t, err)
-	require.NoError(t, r.registerTraceConsumer(c))
-	require.NoError(t, r.registerMetricsConsumer(c))
-	require.NoError(t, r.registerLogsConsumer(c))
+	r.registerTraceConsumer(c)
+	r.registerMetricsConsumer(c)
+	r.registerLogsConsumer(c)
 	return r
 }
 

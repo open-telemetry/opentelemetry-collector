@@ -23,6 +23,8 @@
   <a href="https://github.com/open-telemetry/opentelemetry-collector/releases">
     <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/open-telemetry/opentelemetry-collector?include_prereleases&style=for-the-badge">
   </a>
+  <a href="https://www.bestpractices.dev/projects/8404"><img src="https://www.bestpractices.dev/projects/8404/badge">
+  </a> 
 </p>
 
 <p align="center">
@@ -58,6 +60,13 @@ Objectives:
 - Observable: An exemplar of an observable service.
 - Extensible: Customizable without touching the core code.
 - Unified: Single codebase, deployable as an agent or collector with support for traces, metrics and logs.
+
+## Supported OTLP version
+
+This code base is currently built against using OTLP protocol v1.1.0,
+considered Stable. [See the OpenTelemetry Protocol Stability
+definition
+here.](https://github.com/open-telemetry/opentelemetry-proto?tab=readme-ov-file#stability-definition)
 
 ## Stability levels
 
@@ -113,6 +122,7 @@ Here is a list of community roles with current and previous members:
 
   - [Andrzej Stencel](https://github.com/astencel-sumo), Sumo Logic
   - [Antoine Toulme](https://github.com/atoulme), Splunk
+  - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
   - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
   - [Yang Song](https://github.com/songy23), Datadog
   - Actively seeking contributors to triage issues
