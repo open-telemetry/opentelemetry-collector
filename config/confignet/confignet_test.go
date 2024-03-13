@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAddrConfigTimeout(t *testing.T) {
@@ -131,4 +132,12 @@ func TestTCPAddrConfig(t *testing.T) {
 	assert.NoError(t, conn.Close())
 	<-done
 	assert.NoError(t, ln.Close())
+}
+
+func Test_TransportType_UnmarshalText(t *testing.T) {
+	var tt TransportType
+	err := tt.UnmarshalText([]byte("tcp"))
+	require.NoError(t, err)
+	err = tt.UnmarshalText([]byte("invalid"))
+	require.Error(t, err)
 }
