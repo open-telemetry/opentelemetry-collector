@@ -134,7 +134,7 @@ func TestGenerateAndCompile(t *testing.T) {
 	}{
 		{
 			testCase: "Default Configuration Compilation",
-			cfgBuilder: func(t *testing.T) Config {
+			cfgBuilder: func(_ *testing.T) Config {
 				cfg := NewDefaultConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
@@ -223,6 +223,7 @@ func TestGetModules(t *testing.T) {
 			description: "Skip New Gomod Success",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := NewDefaultConfig()
+				cfg.downloadModules.wait = 0
 				cfg.Distribution.Go = "go"
 				tempDir := t.TempDir()
 				require.NoError(t, makeModule(tempDir, goModTestFile))
@@ -238,6 +239,7 @@ func TestGetModules(t *testing.T) {
 			description: "Skip New Gomod Success with Strict Versioning",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := NewDefaultConfig()
+				cfg.downloadModules.wait = 0
 				cfg.Distribution.Go = "go"
 				cfg.StrictVersioning = true
 				tempDir := t.TempDir()
@@ -252,8 +254,9 @@ func TestGetModules(t *testing.T) {
 		},
 		{
 			description: "No Go Distribution",
-			cfgBuilder: func(t *testing.T) Config {
+			cfgBuilder: func(_ *testing.T) Config {
 				cfg := NewDefaultConfig()
+				cfg.downloadModules.wait = 0
 				return cfg
 			},
 			expectedErr: "failed to go get",
@@ -262,6 +265,7 @@ func TestGetModules(t *testing.T) {
 			description: "Invalid Dependency",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := NewDefaultConfig()
+				cfg.downloadModules.wait = 0
 				cfg.Distribution.Go = "go"
 				tempDir := t.TempDir()
 				require.NoError(t, makeModule(tempDir, invalidDependencyGoMod))
@@ -283,8 +287,8 @@ func TestGetModules(t *testing.T) {
 			err := GenerateAndCompile(cfg)
 			if len(tc.expectedErr) == 0 {
 				if !assert.NoError(t, err) {
-					mf, mvm, err := cfg.readGoModFile()
-					t.Log("go mod file", mf, mvm, err)
+					mf, mvm, readErr := cfg.readGoModFile()
+					t.Log("go mod file", mf, mvm, readErr)
 				}
 				return
 			}
