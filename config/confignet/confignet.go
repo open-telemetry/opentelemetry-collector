@@ -91,7 +91,7 @@ func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
 }
 
-func (na *NetAddr) Validate() error {
+func (na *AddrConfig) Validate() error {
 	switch na.Transport {
 	case TransportTypeTCP,
 		TransportTypeTCP4,
