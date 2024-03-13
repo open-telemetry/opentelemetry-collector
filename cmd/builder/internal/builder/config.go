@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-version"
 	"go.uber.org/multierr"
@@ -44,6 +45,8 @@ type Config struct {
 	Connectors   []Module     `mapstructure:"connectors"`
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
+
+	downloadModules retry `mapstructure:"-"`
 }
 
 // Distribution holds the parameters for the final binary
@@ -68,6 +71,11 @@ type Module struct {
 	Path   string `mapstructure:"path"`   // an optional path to the local version of this module
 }
 
+type retry struct {
+	numRetries int
+	wait       time.Duration
+}
+
 // NewDefaultConfig creates a new config, with default values
 func NewDefaultConfig() Config {
 	log, err := zap.NewDevelopment()
@@ -86,6 +94,13 @@ func NewDefaultConfig() Config {
 			OutputPath:     outputDir,
 			OtelColVersion: defaultOtelColVersion,
 			Module:         "go.opentelemetry.io/collector/cmd/builder",
+		},
+
+		// basic retry if error from go mod command (in case of transient network error). This could be improved
+		// retry 3 times with 5 second spacing interval
+		downloadModules: retry{
+			numRetries: 3,
+			wait:       5 * time.Second,
 		},
 	}
 }
