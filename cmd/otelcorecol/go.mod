@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.96.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.96.0
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.96.0
+	go.opentelemetry.io/collector/exporter/nopexporter v0.96.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.96.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.96.0
 	go.opentelemetry.io/collector/extension v0.96.0
@@ -23,6 +24,7 @@ require (
 	go.opentelemetry.io/collector/processor/batchprocessor v0.96.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.96.0
 	go.opentelemetry.io/collector/receiver v0.96.0
+	go.opentelemetry.io/collector/receiver/nopreceiver v0.96.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.96.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/sys v0.18.0
@@ -181,6 +183,8 @@ replace go.opentelemetry.io/collector/exporter/debugexporter => ../../exporter/d
 
 replace go.opentelemetry.io/collector/exporter/loggingexporter => ../../exporter/loggingexporter
 
+replace go.opentelemetry.io/collector/exporter/nopexporter => ../../exporter/nopexporter
+
 replace go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/otlpexporter
 
 replace go.opentelemetry.io/collector/exporter/otlphttpexporter => ../../exporter/otlphttpexporter
@@ -202,6 +206,8 @@ replace go.opentelemetry.io/collector/pdata => ../../pdata
 replace go.opentelemetry.io/collector/processor => ../../processor
 
 replace go.opentelemetry.io/collector/receiver => ../../receiver
+
+replace go.opentelemetry.io/collector/receiver/nopreceiver => ../../receiver/nopreceiver
 
 replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
 
