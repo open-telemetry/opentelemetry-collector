@@ -31,10 +31,6 @@ valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 
 ### Persistent Queue
 
-**Status: [alpha]**
-
-> :warning: The capability is under development. To use it, a storage extension needs to be set up.
-
 To use the persistent queue, the following setting needs to be set:
 
 - `sending_queue`
