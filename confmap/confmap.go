@@ -148,18 +148,6 @@ func (l *Conf) ToStringMap() map[string]any {
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
 func decodeConfig(m *Conf, result any, errorUnused bool, topLevelUnmarshaling bool) error {
-	hookFuncs := []mapstructure.DecodeHookFunc{
-		expandNilStructPointersHookFunc(),
-		mapstructure.StringToSliceHookFunc(","),
-		mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
-		mapstructure.StringToTimeDurationHookFunc(),
-		mapstructure.TextUnmarshallerHookFunc(),
-		unmarshalerHookFunc(result, topLevelUnmarshaling),
-		// after the main unmarshaler hook is called,
-		// we unmarshal the embedded structs if present to merge with the result:
-		unmarshalerEmbeddedStructsHookFunc(),
-		zeroSliceHookFunc(),
-	}
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      errorUnused,
 		Result:           result,
@@ -167,7 +155,16 @@ func decodeConfig(m *Conf, result any, errorUnused bool, topLevelUnmarshaling bo
 		WeaklyTypedInput: true,
 		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
-			hookFuncs...,
+			expandNilStructPointersHookFunc(),
+			mapstructure.StringToSliceHookFunc(","),
+			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
+			mapstructure.StringToTimeDurationHookFunc(),
+			mapstructure.TextUnmarshallerHookFunc(),
+			unmarshalerHookFunc(result, topLevelUnmarshaling),
+			// after the main unmarshaler hook is called,
+			// we unmarshal the embedded structs if present to merge with the result:
+			unmarshalerEmbeddedStructsHookFunc(),
+			zeroSliceHookFunc(),
 		),
 	}
 	decoder, err := mapstructure.NewDecoder(dc)
