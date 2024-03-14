@@ -9,8 +9,9 @@ import (
 	"os"
 	"regexp"
 
-	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/confmap"
 )
 
 type converter struct {
@@ -61,7 +62,6 @@ func (c converter) expandStringValues(value any) any {
 
 func (c converter) expandEnv(s string) string {
 	return os.Expand(s, func(str string) string {
-
 		// Matches on $VAR style environment variables
 		// in order to make sure we don't log a warning for ${VAR}
 		var regex = regexp.MustCompile(fmt.Sprintf(`\$%s`, str))
