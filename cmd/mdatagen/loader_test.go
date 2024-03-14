@@ -249,7 +249,7 @@ func TestLoadMetadata(t *testing.T) {
 		},
 		{
 			name:    "testdata/unknown_value_type.yaml",
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'value_type': invalid value_type: \"unknown\"",
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n* error decoding 'sum': invalid value_type: \"unknown\"",
 		},
 		{
 			name:    "testdata/no_aggregation.yaml",
@@ -259,7 +259,7 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/invalid_aggregation.yaml",
 			want:    metadata{},
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'aggregation_temporality': invalid aggregation: \"invalidaggregation\"",
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': invalid aggregation: \"invalidaggregation\"",
 		},
 		{
 			name:    "testdata/invalid_type_attr.yaml",
