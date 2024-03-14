@@ -27,7 +27,7 @@ type Config any
 var configValidatorType = reflect.TypeOf((*ConfigValidator)(nil)).Elem()
 
 // UnmarshalConfig helper function to UnmarshalConfig a Config.
-// Deprecated: [v0.97.0] Use conf.Unmarshal(&intoCfg)
+// Deprecated: [v0.101.0] Use conf.Unmarshal(&intoCfg)
 func UnmarshalConfig(conf *confmap.Conf, intoCfg Config) error {
 	return conf.Unmarshal(intoCfg)
 }
