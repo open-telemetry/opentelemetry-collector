@@ -8,8 +8,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
 
 const (
@@ -100,4 +103,68 @@ func TestNew(t *testing.T) {
 		})
 	}
 
+}
+
+func pdataFromSdk(res *sdkresource.Resource) pcommon.Resource {
+	// pcommon.NewResource is the best way to generate a new resource currently and is safe to use outside of tests.
+	// Because the resource is signal agnostic, and we need a net new resource, not an existing one, this is the only
+	// method of creating it without exposing internal packages.
+	pcommonRes := pcommon.NewResource()
+	for _, keyValue := range res.Attributes() {
+		pcommonRes.Attributes().PutStr(string(keyValue.Key), keyValue.Value.AsString())
+	}
+	return pcommonRes
+}
+
+func TestBuildResource(t *testing.T) {
+	buildInfo := component.NewDefaultBuildInfo()
+
+	// Check default config
+	var resMap map[string]*string
+	otelRes := New(buildInfo, resMap)
+	res := pdataFromSdk(otelRes)
+
+	assert.Equal(t, res.Attributes().Len(), 3)
+	value, ok := res.Attributes().Get(semconv.AttributeServiceName)
+	assert.True(t, ok)
+	assert.Equal(t, buildInfo.Command, value.AsString())
+	value, ok = res.Attributes().Get(semconv.AttributeServiceVersion)
+	assert.True(t, ok)
+	assert.Equal(t, buildInfo.Version, value.AsString())
+
+	_, ok = res.Attributes().Get(semconv.AttributeServiceInstanceID)
+	assert.True(t, ok)
+
+	// Check override by nil
+	resMap = map[string]*string{
+		semconv.AttributeServiceName:       nil,
+		semconv.AttributeServiceVersion:    nil,
+		semconv.AttributeServiceInstanceID: nil,
+	}
+	otelRes = New(buildInfo, resMap)
+	res = pdataFromSdk(otelRes)
+
+	// Attributes should not exist since we nil-ified all.
+	assert.Equal(t, res.Attributes().Len(), 0)
+
+	// Check override values
+	strPtr := func(v string) *string { return &v }
+	resMap = map[string]*string{
+		semconv.AttributeServiceName:       strPtr("a"),
+		semconv.AttributeServiceVersion:    strPtr("b"),
+		semconv.AttributeServiceInstanceID: strPtr("c"),
+	}
+	otelRes = New(buildInfo, resMap)
+	res = pdataFromSdk(otelRes)
+
+	assert.Equal(t, res.Attributes().Len(), 3)
+	value, ok = res.Attributes().Get(semconv.AttributeServiceName)
+	assert.True(t, ok)
+	assert.Equal(t, "a", value.AsString())
+	value, ok = res.Attributes().Get(semconv.AttributeServiceVersion)
+	assert.True(t, ok)
+	assert.Equal(t, "b", value.AsString())
+	value, ok = res.Attributes().Get(semconv.AttributeServiceInstanceID)
+	assert.True(t, ok)
+	assert.Equal(t, "c", value.AsString())
 }
