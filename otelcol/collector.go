@@ -180,8 +180,8 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	if err = cfg.Validate(); err != nil {
-		if errors.Is(err, errMissingReceivers) {
-			return fmt.Errorf("no receiver configuration specified in collector configuration file")
+		if errors.Is(err, errInvalidOrMissingConfigFile) {
+			return errInvalidOrMissingConfigFile
 		}
 		return fmt.Errorf("invalid configuration: %w", err)
 	}

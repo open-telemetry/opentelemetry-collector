@@ -6,14 +6,16 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 import (
 	"errors"
 	"fmt"
+	"reflect"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service"
 )
 
 var (
-	errMissingExporters = errors.New("no exporter configuration specified in config")
-	errMissingReceivers = errors.New("no receiver configuration specified in config")
+	errMissingExporters           = errors.New("no exporter configuration specified in config")
+	errMissingReceivers           = errors.New("no receiver configuration specified in config")
+	errInvalidOrMissingConfigFile = errors.New("missing or invalid configuration file")
 )
 
 // Config defines the configuration for the various elements of collector or agent.
@@ -44,6 +46,11 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	// Currently, there is no default receiver enabled.
 	// The configuration must specify at least one receiver to be valid.
+
+	if cfg == nil || reflect.ValueOf(cfg).Len() < 1 {
+		return errInvalidOrMissingConfigFile
+	}
+
 	if len(cfg.Receivers) == 0 {
 		return errMissingReceivers
 	}
