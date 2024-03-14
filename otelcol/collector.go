@@ -7,7 +7,6 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -180,9 +179,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	if err = cfg.Validate(); err != nil {
-		if errors.Is(err, errInvalidOrMissingConfigFile) {
-			return errInvalidOrMissingConfigFile
-		}
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
