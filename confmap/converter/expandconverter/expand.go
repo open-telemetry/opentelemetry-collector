@@ -64,7 +64,7 @@ func (c converter) expandEnv(s string) string {
 	return os.Expand(s, func(str string) string {
 		// Matches on $VAR style environment variables
 		// in order to make sure we don't log a warning for ${VAR}
-		var regex = regexp.MustCompile(fmt.Sprintf(`\$%s`, str))
+		var regex = regexp.MustCompile(fmt.Sprintf(`\$%s`, regexp.QuoteMeta(str)))
 		if _, exists := c.loggedDeprecations[str]; !exists && regex.MatchString(s) {
 			msg := fmt.Sprintf("Variable substitution using $VAR will be deprecated in favor of ${VAR} and ${env:VAR}, please update $%s", str)
 			c.logger.Warn(msg, zap.String("variable", str))
