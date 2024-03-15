@@ -5,8 +5,10 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 
 import (
 	"encoding"
+	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/knadh/koanf/maps"
@@ -167,7 +169,13 @@ func decodeConfig(m *Conf, result any, errorUnused bool) error {
 	if err != nil {
 		return err
 	}
-	return decoder.Decode(m.ToStringMap())
+	if err = decoder.Decode(m.ToStringMap()); err != nil {
+		if strings.HasPrefix(err.Error(), "error decoding ''") {
+			return errors.Unwrap(err)
+		}
+		return err
+	}
+	return nil
 }
 
 // encoderConfig returns a default encoder.EncoderConfig that includes
