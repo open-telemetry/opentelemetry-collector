@@ -7,6 +7,8 @@
 package obsmetrics // import "go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 
 const (
-	NameSep = "/"
-	Scope   = "go.opentelemetry.io/collector/obsreport"
+	NameSep       = "/"
+	MetricSep     = "_"
+	Scope         = "go.opentelemetry.io/collector/obsreport"
+	otelcolPrefix = "otelcol"
 )

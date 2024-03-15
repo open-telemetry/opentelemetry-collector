@@ -25,8 +25,8 @@ type prometheusChecker struct {
 func (pc *prometheusChecker) checkScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
 	scraperAttrs := attributesForScraperMetrics(receiver, scraper)
 	return multierr.Combine(
-		pc.checkCounter("scraper_scraped_metric_points", scrapedMetricPoints, scraperAttrs),
-		pc.checkCounter("scraper_errored_metric_points", erroredMetricPoints, scraperAttrs))
+		pc.checkCounter("otelcol_scraper_scraped_metric_points", scrapedMetricPoints, scraperAttrs),
+		pc.checkCounter("otelcol_scraper_errored_metric_points", erroredMetricPoints, scraperAttrs))
 }
 
 func (pc *prometheusChecker) checkReceiverTraces(receiver component.ID, protocol string, accepted, dropped int64) error {
@@ -44,8 +44,8 @@ func (pc *prometheusChecker) checkReceiverMetrics(receiver component.ID, protoco
 func (pc *prometheusChecker) checkReceiver(receiver component.ID, datatype, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(
-		pc.checkCounter(fmt.Sprintf("receiver_accepted_%s", datatype), acceptedMetricPoints, receiverAttrs),
-		pc.checkCounter(fmt.Sprintf("receiver_refused_%s", datatype), droppedMetricPoints, receiverAttrs))
+		pc.checkCounter(fmt.Sprintf("otelcol_receiver_accepted_%s", datatype), acceptedMetricPoints, receiverAttrs),
+		pc.checkCounter(fmt.Sprintf("otelcol_receiver_refused_%s", datatype), droppedMetricPoints, receiverAttrs))
 }
 
 func (pc *prometheusChecker) checkProcessorTraces(processor component.ID, accepted, refused, dropped int64) error {
@@ -63,9 +63,9 @@ func (pc *prometheusChecker) checkProcessorLogs(processor component.ID, accepted
 func (pc *prometheusChecker) checkProcessor(processor component.ID, datatype string, accepted, refused, dropped int64) error {
 	processorAttrs := attributesForProcessorMetrics(processor)
 	return multierr.Combine(
-		pc.checkCounter(fmt.Sprintf("processor_accepted_%s", datatype), accepted, processorAttrs),
-		pc.checkCounter(fmt.Sprintf("processor_refused_%s", datatype), refused, processorAttrs),
-		pc.checkCounter(fmt.Sprintf("processor_dropped_%s", datatype), dropped, processorAttrs))
+		pc.checkCounter(fmt.Sprintf("otelcol_processor_accepted_%s", datatype), accepted, processorAttrs),
+		pc.checkCounter(fmt.Sprintf("otelcol_processor_refused_%s", datatype), refused, processorAttrs),
+		pc.checkCounter(fmt.Sprintf("otelcol_processor_dropped_%s", datatype), dropped, processorAttrs))
 }
 
 func (pc *prometheusChecker) checkExporterTraces(exporter component.ID, sent, sendFailed int64) error {
@@ -82,10 +82,10 @@ func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sent, s
 
 func (pc *prometheusChecker) checkExporter(exporter component.ID, datatype string, sent, sendFailed int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
-	errs := pc.checkCounter(fmt.Sprintf("exporter_sent_%s", datatype), sent, exporterAttrs)
+	errs := pc.checkCounter(fmt.Sprintf("otelcol_exporter_sent_%s", datatype), sent, exporterAttrs)
 	if sendFailed > 0 {
 		errs = multierr.Append(errs,
-			pc.checkCounter(fmt.Sprintf("exporter_send_failed_%s", datatype), sendFailed, exporterAttrs))
+			pc.checkCounter(fmt.Sprintf("otelcol_exporter_send_failed_%s", datatype), sendFailed, exporterAttrs))
 	}
 	return errs
 }
@@ -95,7 +95,7 @@ func (pc *prometheusChecker) checkExporterEnqueueFailed(exporter component.ID, d
 		return nil
 	}
 	exporterAttrs := attributesForExporterMetrics(exporter)
-	return pc.checkCounter(fmt.Sprintf("exporter_enqueue_failed_%s", datatype), enqueueFailed, exporterAttrs)
+	return pc.checkCounter(fmt.Sprintf("otelcol_exporter_enqueue_failed_%s", datatype), enqueueFailed, exporterAttrs)
 }
 
 func (pc *prometheusChecker) checkExporterMetricGauge(exporter component.ID, metric string, val int64) error {
