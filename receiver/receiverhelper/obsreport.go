@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	receiverScope = obsmetrics.Scope + obsmetrics.NameSep + obsmetrics.ReceiverKey
+	receiverScope = obsmetrics.Scope + obsmetrics.SpanNameSep + obsmetrics.ReceiverKey
 )
 
 // ObsReport is a helper to add observability to a receiver.

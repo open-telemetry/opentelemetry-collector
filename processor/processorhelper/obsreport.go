@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	processorScope = obsmetrics.Scope + obsmetrics.NameSep + obsmetrics.ProcessorKey
+	processorScope = obsmetrics.Scope + obsmetrics.SpanNameSep + obsmetrics.ProcessorKey
 )
 
 // BuildCustomMetricName is used to be build a metric name following
@@ -27,13 +27,13 @@ var (
 // value used to identify the type on the config.
 func BuildCustomMetricName(configType, metric string) string {
 	componentPrefix := obsmetrics.ProcessorMetricPrefix
-	if !strings.HasSuffix(componentPrefix, obsmetrics.MetricSep) {
-		componentPrefix += obsmetrics.MetricSep
+	if !strings.HasSuffix(componentPrefix, obsmetrics.MetricNameSep) {
+		componentPrefix += obsmetrics.MetricNameSep
 	}
 	if configType == "" {
 		return componentPrefix
 	}
-	return componentPrefix + configType + obsmetrics.MetricSep + metric
+	return componentPrefix + configType + obsmetrics.MetricNameSep + metric
 }
 
 // ObsReport is a helper to add observability to a processor.

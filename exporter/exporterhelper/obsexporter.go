@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	exporterScope = obsmetrics.Scope + obsmetrics.NameSep + obsmetrics.ExporterKey
+	exporterScope = obsmetrics.Scope + obsmetrics.SpanNameSep + obsmetrics.ExporterKey
 )
 
 // ObsReport is a helper to add observability to an exporter.
