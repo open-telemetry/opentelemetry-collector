@@ -14,7 +14,7 @@ import (
 var (
 	errMissingExporters           = errors.New("no exporter configuration specified in config")
 	errMissingReceivers           = errors.New("no receiver configuration specified in config")
-	errInvalidOrMissingConfigFile = errors.New("missing or invalid configuration file")
+	errInvalidOrMissingConfigFile = errors.New("empty configuration file")
 )
 
 // Config defines the configuration for the various elements of collector or agent.
