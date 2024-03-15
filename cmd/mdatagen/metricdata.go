@@ -28,20 +28,18 @@ type MetricData interface {
 type AggregationTemporality struct {
 	// Aggregation describes if the aggregator reports delta changes
 	// since last report time, or cumulative changes since a fixed start time.
-	Aggregation pmetric.AggregationTemporality `mapstructure:"aggregation_temporality"`
+	Aggregation pmetric.AggregationTemporality
 }
 
-func (agg *AggregationTemporality) Unmarshal(parser *confmap.Conf) error {
-	if !parser.IsSet("aggregation_temporality") {
-		return errors.New("missing required field: `aggregation_temporality`")
-	}
-	switch vt := parser.Get("aggregation_temporality"); vt {
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (agg *AggregationTemporality) UnmarshalText(text []byte) error {
+	switch vtStr := string(text); vtStr {
 	case "cumulative":
 		agg.Aggregation = pmetric.AggregationTemporalityCumulative
 	case "delta":
 		agg.Aggregation = pmetric.AggregationTemporalityDelta
 	default:
-		return fmt.Errorf("invalid aggregation: %q", vt)
+		return fmt.Errorf("invalid aggregation: %q", vtStr)
 	}
 	return nil
 }
@@ -75,31 +73,36 @@ func (mit MetricInputType) String() string {
 // MetricValueType defines the metric number type.
 type MetricValueType struct {
 	// ValueType is type of the metric number, options are "double", "int".
-	ValueType pmetric.NumberDataPointValueType `mapstructure:"value_type"`
+	ValueType pmetric.NumberDataPointValueType
 }
 
 func (mvt *MetricValueType) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("value_type") {
 		return errors.New("missing required field: `value_type`")
 	}
-	switch vt := parser.Get("value_type"); vt {
+	return nil
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (mvt *MetricValueType) UnmarshalText(text []byte) error {
+	switch vtStr := string(text); vtStr {
 	case "int":
 		mvt.ValueType = pmetric.NumberDataPointValueTypeInt
 	case "double":
 		mvt.ValueType = pmetric.NumberDataPointValueTypeDouble
 	default:
-		return fmt.Errorf("invalid value_type: %q", vt)
+		return fmt.Errorf("invalid value_type: %q", vtStr)
 	}
 	return nil
 }
 
 // Type returns name of the datapoint type.
-func (mvt *MetricValueType) String() string {
+func (mvt MetricValueType) String() string {
 	return mvt.ValueType.String()
 }
 
 // BasicType returns name of a golang basic type for the datapoint type.
-func (mvt *MetricValueType) BasicType() string {
+func (mvt MetricValueType) BasicType() string {
 	switch mvt.ValueType {
 	case pmetric.NumberDataPointValueTypeInt:
 		return "int64"
@@ -113,8 +116,16 @@ func (mvt *MetricValueType) BasicType() string {
 }
 
 type gauge struct {
-	MetricValueType `mapstructure:",squash"`
+	MetricValueType `mapstructure:"value_type"`
 	MetricInputType `mapstructure:",squash"`
+}
+
+// Unmarshal is a custom unmarshaler for gauge. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
+func (d *gauge) Unmarshal(parser *confmap.Conf) error {
+	if err := d.MetricValueType.Unmarshal(parser); err != nil {
+		return err
+	}
+	return parser.Unmarshal(d, confmap.WithIgnoreUnused())
 }
 
 func (d gauge) Type() string {
@@ -130,10 +141,21 @@ func (d gauge) HasAggregated() bool {
 }
 
 type sum struct {
-	AggregationTemporality `mapstructure:",squash"`
+	AggregationTemporality `mapstructure:"aggregation_temporality"`
 	Mono                   `mapstructure:",squash"`
-	MetricValueType        `mapstructure:",squash"`
+	MetricValueType        `mapstructure:"value_type"`
 	MetricInputType        `mapstructure:",squash"`
+}
+
+// Unmarshal is a custom unmarshaler for sum. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
+func (d *sum) Unmarshal(parser *confmap.Conf) error {
+	if !parser.IsSet("aggregation_temporality") {
+		return errors.New("missing required field: `aggregation_temporality`")
+	}
+	if err := d.MetricValueType.Unmarshal(parser); err != nil {
+		return err
+	}
+	return parser.Unmarshal(d, confmap.WithIgnoreUnused())
 }
 
 // TODO: Currently, this func will not be called because of https://github.com/open-telemetry/opentelemetry-collector/issues/6671. Uncomment function and
