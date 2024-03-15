@@ -194,7 +194,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 	gss := &ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "localhost:1234",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 		TLSSetting: &configtls.ServerConfig{
 			TLSSetting:   configtls.Config{},
@@ -411,7 +411,7 @@ func TestGRPCServerWarning(t *testing.T) {
 			settings: ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  "0.0.0.0:1234",
-					Transport: "tcp",
+					Transport: confignet.TransportTypeTCP,
 				},
 			},
 			len: 1,
@@ -420,7 +420,7 @@ func TestGRPCServerWarning(t *testing.T) {
 			settings: ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  "127.0.0.1:1234",
-					Transport: "tcp",
+					Transport: confignet.TransportTypeTCP,
 				},
 			},
 			len: 0,
@@ -429,7 +429,7 @@ func TestGRPCServerWarning(t *testing.T) {
 			settings: ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  "0.0.0.0:1234",
-					Transport: "unix",
+					Transport: confignet.TransportTypeUnix,
 				},
 			},
 			len: 0,
@@ -462,7 +462,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 			settings: ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  "127.0.0.1:1234",
-					Transport: "tcp",
+					Transport: confignet.TransportTypeTCP,
 				},
 				TLSSetting: &configtls.ServerConfig{
 					TLSSetting: configtls.Config{
@@ -476,7 +476,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 			settings: ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  "127.0.0.1:1234",
-					Transport: "tcp",
+					Transport: confignet.TransportTypeTCP,
 				},
 				TLSSetting: &configtls.ServerConfig{
 					TLSSetting: configtls.Config{
@@ -490,7 +490,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 			settings: ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  "127.0.0.1:1234",
-					Transport: "tcp",
+					Transport: confignet.TransportTypeTCP,
 				},
 				TLSSetting: &configtls.ServerConfig{
 					ClientCAFile: "/doesnt/exist",
@@ -510,7 +510,7 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 	settings := ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "127.0.0.1:1234567",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	_, err := settings.NetAddr.Listen(context.Background())
@@ -631,7 +631,7 @@ func TestHttpReception(t *testing.T) {
 			gss := &ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  "localhost:0",
-					Transport: "tcp",
+					Transport: confignet.TransportTypeTCP,
 				},
 				TLSSetting: test.tlsServerCreds,
 			}
@@ -679,7 +679,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	gss := &ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  socketName,
-			Transport: "unix",
+			Transport: confignet.TransportTypeUnix,
 		},
 	}
 	ln, err := gss.NetAddr.Listen(context.Background())
@@ -875,7 +875,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 				gss := &ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "localhost:0",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 				}
 				srv, err := gss.ToServerContext(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
