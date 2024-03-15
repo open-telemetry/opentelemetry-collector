@@ -88,42 +88,42 @@ func (rec *ObsReport) createOtelMetrics() error {
 	var errors, err error
 
 	rec.acceptedSpansCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedSpansKey,
+		obsmetrics.ReceiverMetricPrefix+obsmetrics.AcceptedSpansKey,
 		metric.WithDescription("Number of spans successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	rec.refusedSpansCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverPrefix+obsmetrics.RefusedSpansKey,
+		obsmetrics.ReceiverMetricPrefix+obsmetrics.RefusedSpansKey,
 		metric.WithDescription("Number of spans that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	rec.acceptedMetricPointsCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedMetricPointsKey,
+		obsmetrics.ReceiverMetricPrefix+obsmetrics.AcceptedMetricPointsKey,
 		metric.WithDescription("Number of metric points successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	rec.refusedMetricPointsCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverPrefix+obsmetrics.RefusedMetricPointsKey,
+		obsmetrics.ReceiverMetricPrefix+obsmetrics.RefusedMetricPointsKey,
 		metric.WithDescription("Number of metric points that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	rec.acceptedLogRecordsCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedLogRecordsKey,
+		obsmetrics.ReceiverMetricPrefix+obsmetrics.AcceptedLogRecordsKey,
 		metric.WithDescription("Number of log records successfully pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	rec.refusedLogRecordsCounter, err = rec.meter.Int64Counter(
-		obsmetrics.ReceiverPrefix+obsmetrics.RefusedLogRecordsKey,
+		obsmetrics.ReceiverMetricPrefix+obsmetrics.RefusedLogRecordsKey,
 		metric.WithDescription("Number of log records that could not be pushed into the pipeline."),
 		metric.WithUnit("1"),
 	)

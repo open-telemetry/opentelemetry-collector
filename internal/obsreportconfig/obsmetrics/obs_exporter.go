@@ -31,6 +31,7 @@ const (
 
 var (
 	ExporterPrefix                 = ExporterKey + NameSep
+	ExporterMetricPrefix           = ExporterKey + MetricSep
 	ExportTraceDataOperationSuffix = NameSep + "traces"
 	ExportMetricsOperationSuffix   = NameSep + "metrics"
 	ExportLogsOperationSuffix      = NameSep + "logs"

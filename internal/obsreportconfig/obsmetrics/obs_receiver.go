@@ -31,6 +31,7 @@ const (
 
 var (
 	ReceiverPrefix                  = ReceiverKey + NameSep
+	ReceiverMetricPrefix            = ReceiverKey + MetricSep
 	ReceiveTraceDataOperationSuffix = NameSep + "TraceDataReceived"
 	ReceiverMetricsOperationSuffix  = NameSep + "MetricsReceived"
 	ReceiverLogsOperationSuffix     = NameSep + "LogsReceived"
