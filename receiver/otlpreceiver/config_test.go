@@ -89,7 +89,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				GRPC: &configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:4317",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					TLSSetting: &configtls.ServerConfig{
 						TLSSetting: configtls.Config{
@@ -150,7 +150,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 				GRPC: &configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "/tmp/grpc_otlp.sock",
-						Transport: "unix",
+						Transport: confignet.TransportTypeUnix,
 					},
 					ReadBufferSize: 512 * 1024,
 				},
