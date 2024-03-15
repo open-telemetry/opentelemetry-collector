@@ -56,7 +56,7 @@ func TestComponentLifecycle(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub("tests::config")
 	require.NoError(t, err)
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	for _, test := range tests {
 		t.Run(test.name+"-lifecycle", func(t *testing.T) {
