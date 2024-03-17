@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	errMissingExporters           = errors.New("no exporter configuration specified in config")
-	errMissingReceivers           = errors.New("no receiver configuration specified in config")
-	errInvalidOrMissingConfigFile = errors.New("empty configuration file")
+	errMissingExporters       = errors.New("no exporter configuration specified in config")
+	errMissingReceivers       = errors.New("no receiver configuration specified in config")
+	errEmptyConfigurationFile = errors.New("empty configuration file")
 )
 
 // Config defines the configuration for the various elements of collector or agent.
@@ -45,7 +45,7 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	// There must be at least one property set in the configuration	file.
 	if len(cfg.Receivers) == 0 && len(cfg.Exporters) == 0 && len(cfg.Processors) == 0 && len(cfg.Connectors) == 0 && len(cfg.Extensions) == 0 {
-		return errInvalidOrMissingConfigFile
+		return errEmptyConfigurationFile
 	}
 
 	// Currently, there is no default receiver enabled.
