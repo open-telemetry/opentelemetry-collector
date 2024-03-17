@@ -21,14 +21,17 @@ func main() {
 		Description: "{{ .Distribution.Description }}",
 		Version:     "{{ .Distribution.Version }}",
 	}
+	{{if .SupportsConfigProviderSettings -}}
 	providers := []confmap.Provider{
 		{{- range .Providers}}
 		{{.Name}}.NewWithSettings(confmap.ProviderSettings{}),
 		{{- end}}
 	}
+	{{end}}
 	set := otelcol.CollectorSettings{
 		BuildInfo: info,
 		Factories: components,
+		{{if .SupportsConfigProviderSettings -}}
 		ConfigProviderSettings: otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				Providers:  makeMapProvidersMap(providers...),
@@ -37,6 +40,7 @@ func main() {
 				},
 			},
 		},
+		{{end}}
 	}
 
 	if err := run(set); err != nil {
@@ -53,6 +57,7 @@ func runInteractive(params otelcol.CollectorSettings) error {
 	return nil
 }
 
+{{if .SupportsConfigProviderSettings -}}
 func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
 	ret := make(map[string]confmap.Provider, len(providers))
 	for _, provider := range providers {
@@ -60,3 +65,4 @@ func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provi
 	}
 	return ret
 }
+{{end}}
