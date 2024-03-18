@@ -268,19 +268,19 @@ func validateBalancerName(balancerName string) bool {
 }
 
 // ToServer returns a grpc.Server for the configuration
-// Deprecated: [0.96.0] Use ToServerContext instead.
-func (gss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
-	return gss.ToServerContext(context.Background(), host, settings, extraOpts...)
-}
-
-// ToServerContext returns a grpc.Server for the configuration
-func (gss *ServerConfig) ToServerContext(_ context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
+func (gss *ServerConfig) ToServer(ctx context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
 	opts, err := gss.toServerOption(host, settings)
 	if err != nil {
 		return nil, err
 	}
 	opts = append(opts, extraOpts...)
 	return grpc.NewServer(opts...), nil
+}
+
+// ToServerContext returns a grpc.Server for the configuration
+// Deprecated: [0.97.0] Use ToServer instead.
+func (gss *ServerConfig) ToServerContext(ctx context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
+	return gss.ToServer(ctx, host, settings, extraOpts...)
 }
 
 func (gss *ServerConfig) toServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
