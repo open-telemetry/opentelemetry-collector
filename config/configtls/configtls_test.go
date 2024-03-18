@@ -36,7 +36,7 @@ func TestOptionsToConfig(t *testing.T) {
 		},
 		{
 			name:    "should load system CA and custom CA",
-			options: TLSSetting{IncludeSystemCACertsPool: true, CAFile: filepath.Join("testdata", "ca-1.crt")},
+			options: Config{IncludeSystemCACertsPool: true, CAFile: filepath.Join("testdata", "ca-1.crt")},
 		},
 		{
 			name:        "should fail with invalid CA file path",
@@ -249,7 +249,7 @@ func readFilePanics(filePath string) configopaque.String {
 
 func TestLoadTLSClientConfigError(t *testing.T) {
 	tlsSetting := ClientConfig{
-		TLSSetting: Config{
+		Config: Config{
 			CertFile: "doesnt/exist",
 			KeyFile:  "doesnt/exist",
 		},
@@ -282,7 +282,7 @@ func TestLoadTLSClientConfig(t *testing.T) {
 
 func TestLoadTLSServerConfigError(t *testing.T) {
 	tlsSetting := ServerConfig{
-		TLSSetting: Config{
+		Config: Config{
 			CertFile: "doesnt/exist",
 			KeyFile:  "doesnt/exist",
 		},
@@ -633,7 +633,7 @@ func TestMinMaxTLSVersions(t *testing.T) {
 	}
 }
 
-func TestTLSSettingValidate(t *testing.T) {
+func TestConfigValidate(t *testing.T) {
 	tests := []struct {
 		name       string
 		minVersion string
@@ -653,7 +653,7 @@ func TestTLSSettingValidate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			setting := TLSSetting{
+			setting := Config{
 				MinVersion: test.minVersion,
 				MaxVersion: test.maxVersion,
 			}
@@ -722,13 +722,13 @@ func TestSystemCertPool(t *testing.T) {
 	anError := errors.New("my error")
 	tests := []struct {
 		name         string
-		tlsSetting   TLSSetting
+		config       Config
 		wantErr      error
 		systemCertFn func() (*x509.CertPool, error)
 	}{
 		{
 			name: "not using system cert pool",
-			tlsSetting: TLSSetting{
+			config: Config{
 				IncludeSystemCACertsPool: false,
 			},
 			wantErr:      nil,
@@ -736,7 +736,7 @@ func TestSystemCertPool(t *testing.T) {
 		},
 		{
 			name: "using system cert pool",
-			tlsSetting: TLSSetting{
+			config: Config{
 				IncludeSystemCACertsPool: true,
 			},
 			wantErr:      nil,
@@ -744,7 +744,7 @@ func TestSystemCertPool(t *testing.T) {
 		},
 		{
 			name: "error loading system cert pool",
-			tlsSetting: TLSSetting{
+			config: Config{
 				IncludeSystemCACertsPool: true,
 			},
 			wantErr: anError,
@@ -754,7 +754,7 @@ func TestSystemCertPool(t *testing.T) {
 		},
 		{
 			name: "nil system cert pool",
-			tlsSetting: TLSSetting{
+			config: Config{
 				IncludeSystemCACertsPool: true,
 			},
 			wantErr: nil,
@@ -770,7 +770,7 @@ func TestSystemCertPool(t *testing.T) {
 			defer func() {
 				systemCertPool = oldSystemCertPool
 			}()
-			certPool, err := test.tlsSetting.loadCert(filepath.Join("testdata", "ca-1.crt"))
+			certPool, err := test.config.loadCert(filepath.Join("testdata", "ca-1.crt"))
 			if test.wantErr != nil {
 				assert.Equal(t, test.wantErr, err)
 			} else {
