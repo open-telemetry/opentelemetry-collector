@@ -294,6 +294,14 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return sink.requestsCount.Load() == 1 && sink.itemsCount.Load() == 16
 	}, 100*time.Millisecond, 10*time.Millisecond)
+
+	// do it a few more times to ensure it produces the correct batch size regardless of goroutine scheduling.
+	for i := 0; i < 4; i++ {
+		assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 8, sink: sink}))
+	}
+	assert.Eventually(t, func() bool {
+		return sink.requestsCount.Load() == 3 && sink.itemsCount.Load() == 48
+	}, 100*time.Millisecond, 10*time.Millisecond)
 }
 
 func TestBatchSender_BatchBlocking(t *testing.T) {
