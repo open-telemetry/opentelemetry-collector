@@ -15,19 +15,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func newInitializedConfig(t *testing.T) Config {
+	cfg := NewDefaultConfig()
+	// Validate and ParseModules will be called before the config is
+	// given to Generate.
+	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, cfg.ParseModules())
+
+	return cfg
+}
+
 func TestGenerateDefault(t *testing.T) {
-	require.NoError(t, Generate(NewDefaultConfig()))
+	require.NoError(t, Generate(newInitializedConfig(t)))
 }
 
 func TestGenerateInvalidCollectorVersion(t *testing.T) {
-	cfg := NewDefaultConfig()
+	cfg := newInitializedConfig(t)
 	cfg.Distribution.OtelColVersion = "invalid"
 	err := Generate(cfg)
 	require.NoError(t, err)
 }
 
 func TestGenerateInvalidOutputPath(t *testing.T) {
-	cfg := NewDefaultConfig()
+	cfg := newInitializedConfig(t)
 	cfg.Distribution.OutputPath = "/:invalid"
 	err := Generate(cfg)
 	require.Error(t, err)
@@ -35,7 +45,7 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 }
 
 func TestSkipGenerate(t *testing.T) {
-	cfg := NewDefaultConfig()
+	cfg := newInitializedConfig(t)
 	cfg.Distribution.OutputPath = t.TempDir()
 	cfg.SkipGenerate = true
 	err := Generate(cfg)
@@ -122,6 +132,16 @@ func TestGenerateAndCompile(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			testCase: "No providers",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.Providers = &[]Module{}
+				return cfg
+			},
+		},
 	}
 
 	for _, tt := range testCases {
@@ -129,6 +149,7 @@ func TestGenerateAndCompile(t *testing.T) {
 			cfg := tt.cfgBuilder(t)
 			assert.NoError(t, cfg.Validate())
 			assert.NoError(t, cfg.SetGoPath())
+			assert.NoError(t, cfg.ParseModules())
 			require.NoError(t, GenerateAndCompile(cfg))
 		})
 	}
