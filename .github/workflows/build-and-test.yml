@@ -23,7 +23,7 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ~/go/bin
@@ -46,7 +46,7 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ~/go/bin
@@ -70,7 +70,7 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ~/go/bin
@@ -95,7 +95,7 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ~/go/bin
@@ -150,14 +150,14 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Cache Build
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: ~/.cache/go-build
           key: unittest-${{ runner.os }}-go-build-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
@@ -193,21 +193,21 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Cache Build
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: ~/.cache/go-build
           key: coverage-${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: Upload coverage report
-        uses: Wandalen/wretry.action@f1ef3f2629b067ead8e23abc5c38abaec4413d2a # v1.4.9
+        uses: Wandalen/wretry.action@1a10d4835a1506f513ad8e7488aeb474ab20055c # v1.4.10
         with:
           action: codecov/codecov-action@v3
           with: |
@@ -261,7 +261,7 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ~/go/bin
