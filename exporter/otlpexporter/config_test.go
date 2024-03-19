@@ -92,6 +92,10 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 			errorMsg: `requires a non-empty "endpoint"`,
 		},
 		{
+			name:     "https_endpoint",
+			errorMsg: `requires a non-empty "endpoint"`,
+		},
+		{
 			name:     "http_endpoint",
 			errorMsg: `requires a non-empty "endpoint"`,
 		},
