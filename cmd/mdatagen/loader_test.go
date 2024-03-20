@@ -217,6 +217,18 @@ func TestLoadMetadata(t *testing.T) {
 							Mono:                   Mono{Monotonic: false},
 						},
 					},
+					"metric.input_type": {
+						Enabled:     true,
+						Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
+						Unit:        strPtr("s"),
+						Sum: &sum{
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							MetricInputType:        MetricInputType{InputType: "string"},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
+						},
+						Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+					},
 				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
@@ -249,7 +261,7 @@ func TestLoadMetadata(t *testing.T) {
 		},
 		{
 			name:    "testdata/unknown_value_type.yaml",
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n* error decoding 'sum': invalid value_type: \"unknown\"",
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'value_type': invalid value_type: \"unknown\"",
 		},
 		{
 			name:    "testdata/no_aggregation.yaml",
@@ -259,7 +271,7 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/invalid_aggregation.yaml",
 			want:    metadata{},
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': invalid aggregation: \"invalidaggregation\"",
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'aggregation_temporality': invalid aggregation: \"invalidaggregation\"",
 		},
 		{
 			name:    "testdata/invalid_type_attr.yaml",

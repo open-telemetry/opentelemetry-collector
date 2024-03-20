@@ -27,6 +27,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 type MetricsConfig struct {
 	DefaultMetric            MetricConfig `mapstructure:"default.metric"`
 	DefaultMetricToBeRemoved MetricConfig `mapstructure:"default.metric.to_be_removed"`
+	MetricInputType          MetricConfig `mapstructure:"metric.input_type"`
 	OptionalMetric           MetricConfig `mapstructure:"optional.metric"`
 	OptionalMetricEmptyUnit  MetricConfig `mapstructure:"optional.metric.empty_unit"`
 }
@@ -37,6 +38,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		DefaultMetricToBeRemoved: MetricConfig{
+			Enabled: true,
+		},
+		MetricInputType: MetricConfig{
 			Enabled: true,
 		},
 		OptionalMetric: MetricConfig{

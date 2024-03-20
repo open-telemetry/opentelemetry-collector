@@ -137,3 +137,14 @@ metrics:
       aggregation_temporality: delta
     warnings:
       if_enabled: This metric is deprecated and will be removed soon.
+
+  metric.input_type:
+    enabled: true
+    description: Monotonic cumulative sum int metric with string input_type enabled by default.
+    unit: s
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [ string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr ]

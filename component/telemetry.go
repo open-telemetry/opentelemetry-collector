@@ -15,7 +15,7 @@ import (
 // TelemetrySettings provides components with APIs to report telemetry.
 //
 // Note: there is a service version of this struct, servicetelemetry.TelemetrySettings, that mirrors
-// this struct with the exception of ReportComponentStatus. When adding or removing anything from
+// this struct with the exception of ReportStatus. When adding or removing anything from
 // this struct consider whether or not the same should be done for the service version.
 type TelemetrySettings struct {
 	// Logger that the factory can use during creation and can pass to the created
