@@ -175,6 +175,9 @@ func TestDeprecatedWarning(t *testing.T) {
 	t.Setenv("HOST", "127.0.0.1")
 	t.Setenv("PORT", "4317")
 
+	t.Setenv("HOST_NAME", "127.0.0.2")
+	t.Setenv("HOST.NAME", "127.0.0.3")
+
 	var testCases = []struct {
 		name             string
 		input            map[string]any
@@ -222,6 +225,16 @@ func TestDeprecatedWarning(t *testing.T) {
 				"test2": "127.0.0.1",
 			},
 			expectedWarnings: []string{"HOST"},
+		},
+		{
+			name: "one warning",
+			input: map[string]any{
+				"test": "$HOST_NAME,${HOST.NAME}",
+			},
+			expectedOutput: map[string]any{
+				"test": "127.0.0.2,127.0.0.3",
+			},
+			expectedWarnings: []string{"HOST_NAME"},
 		},
 	}
 	for _, tt := range testCases {
