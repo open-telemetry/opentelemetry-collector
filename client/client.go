@@ -116,7 +116,7 @@ type AuthData interface {
 	// "membership" might return a list of strings.
 	GetAttribute(string) any
 
-	// GetAttributes returns the names of all attributes in this authentication
+	// GetAttributeNames returns the names of all attributes in this authentication
 	// data.
 	GetAttributeNames() []string
 }
