@@ -59,7 +59,7 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 					InitialFields:     map[string]any(nil),
 				},
 				Metrics: telemetry.MetricsConfig{
-					Level:   configtelemetry.LevelBasic,
+					Level:   configtelemetry.LevelNormal,
 					Address: ":8888",
 				},
 			},
