@@ -58,7 +58,7 @@ func (tt *TransportType) UnmarshalText(in []byte) error {
 // DialerConfig contains options for connecting to an address.
 type DialerConfig struct {
 	// Timeout is the maximum amount of time a dial will wait for
-	// a connect to complete. The default is no timeout.
+	// a connection to complete. The default is no timeout.
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
