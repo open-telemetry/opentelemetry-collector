@@ -40,6 +40,9 @@ func GetHTTPStatusCodeFromStatus(err error) int {
 	// Retryable
 	case codes.Canceled, codes.DeadlineExceeded, codes.Aborted, codes.OutOfRange, codes.Unavailable, codes.DataLoss:
 		return http.StatusServiceUnavailable
+	// Retryable
+	case codes.ResourceExhausted:
+		return http.StatusTooManyRequests
 	// Not Retryable
 	default:
 		return http.StatusInternalServerError

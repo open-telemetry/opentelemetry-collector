@@ -66,6 +66,11 @@ func Test_GetHTTPStatusCodeFromStatus(t *testing.T) {
 			input:    status.New(codes.InvalidArgument, "test").Err(),
 			expected: http.StatusInternalServerError,
 		},
+		{
+			name:     "Specifically 429",
+			input:    status.New(codes.ResourceExhausted, "test").Err(),
+			expected: http.StatusTooManyRequests,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
