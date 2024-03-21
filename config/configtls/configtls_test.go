@@ -4,6 +4,7 @@
 package configtls
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -254,7 +255,7 @@ func TestLoadTLSClientConfigError(t *testing.T) {
 			KeyFile:  "doesnt/exist",
 		},
 	}
-	_, err := tlsSetting.LoadTLSConfig()
+	_, err := tlsSetting.LoadTLSConfigContext(context.Background())
 	assert.Error(t, err)
 }
 
@@ -262,19 +263,19 @@ func TestLoadTLSClientConfig(t *testing.T) {
 	tlsSetting := ClientConfig{
 		Insecure: true,
 	}
-	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	tlsCfg, err := tlsSetting.LoadTLSConfigContext(context.Background())
 	assert.NoError(t, err)
 	assert.Nil(t, tlsCfg)
 
 	tlsSetting = ClientConfig{}
-	tlsCfg, err = tlsSetting.LoadTLSConfig()
+	tlsCfg, err = tlsSetting.LoadTLSConfigContext(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 
 	tlsSetting = ClientConfig{
 		InsecureSkipVerify: true,
 	}
-	tlsCfg, err = tlsSetting.LoadTLSConfig()
+	tlsCfg, err = tlsSetting.LoadTLSConfigContext(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 	assert.True(t, tlsCfg.InsecureSkipVerify)
@@ -287,19 +288,19 @@ func TestLoadTLSServerConfigError(t *testing.T) {
 			KeyFile:  "doesnt/exist",
 		},
 	}
-	_, err := tlsSetting.LoadTLSConfig()
+	_, err := tlsSetting.LoadTLSConfigContext(context.Background())
 	assert.Error(t, err)
 
 	tlsSetting = ServerConfig{
 		ClientCAFile: "doesnt/exist",
 	}
-	_, err = tlsSetting.LoadTLSConfig()
+	_, err = tlsSetting.LoadTLSConfigContext(context.Background())
 	assert.Error(t, err)
 }
 
 func TestLoadTLSServerConfig(t *testing.T) {
 	tlsSetting := ServerConfig{}
-	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	tlsCfg, err := tlsSetting.LoadTLSConfigContext(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 }
@@ -315,7 +316,7 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	tlsCfg, err := tlsSetting.LoadTLSConfigContext(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 
@@ -346,7 +347,7 @@ func TestLoadTLSServerConfigFailingReload(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	tlsCfg, err := tlsSetting.LoadTLSConfigContext(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 
@@ -377,7 +378,7 @@ func TestLoadTLSServerConfigFailingInitialLoad(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	tlsCfg, err := tlsSetting.LoadTLSConfigContext(context.Background())
 	assert.Error(t, err)
 	assert.Nil(t, tlsCfg)
 }
@@ -391,7 +392,7 @@ func TestLoadTLSServerConfigWrongPath(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	tlsCfg, err := tlsSetting.LoadTLSConfigContext(context.Background())
 	assert.Error(t, err)
 	assert.Nil(t, tlsCfg)
 }
@@ -407,7 +408,7 @@ func TestLoadTLSServerConfigFailing(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	tlsCfg, err := tlsSetting.LoadTLSConfigContext(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 

@@ -4,6 +4,7 @@
 package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -357,8 +358,8 @@ func (c Config) loadCert(caPath string) (*x509.CertPool, error) {
 	return certPool, nil
 }
 
-// LoadTLSConfig loads the TLS configuration.
-func (c ClientConfig) LoadTLSConfig() (*tls.Config, error) {
+// LoadTLSConfigContext loads the TLS configuration.
+func (c ClientConfig) LoadTLSConfigContext(_ context.Context) (*tls.Config, error) {
 	if c.Insecure && !c.hasCA() {
 		return nil, nil
 	}
@@ -373,7 +374,13 @@ func (c ClientConfig) LoadTLSConfig() (*tls.Config, error) {
 }
 
 // LoadTLSConfig loads the TLS configuration.
-func (c ServerConfig) LoadTLSConfig() (*tls.Config, error) {
+// Deprecated: [v0.97.0] Use LoadTLSConfigContext instead.
+func (c ClientConfig) LoadTLSConfig() (*tls.Config, error) {
+	return c.LoadTLSConfigContext(context.Background())
+}
+
+// LoadTLSConfigContext loads the TLS configuration.
+func (c ServerConfig) LoadTLSConfigContext(_ context.Context) (*tls.Config, error) {
 	tlsCfg, err := c.loadTLSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load TLS config: %w", err)
@@ -394,6 +401,12 @@ func (c ServerConfig) LoadTLSConfig() (*tls.Config, error) {
 		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 	return tlsCfg, nil
+}
+
+// LoadTLSConfig loads the TLS configuration.
+// Deprecated: [v0.97.0] Use LoadTLSConfigContext instead.
+func (c ServerConfig) LoadTLSConfig() (*tls.Config, error) {
+	return c.LoadTLSConfigContext(context.Background())
 }
 
 func (c ServerConfig) loadClientCAFile() (*x509.CertPool, error) {
