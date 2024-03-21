@@ -25,7 +25,7 @@ jobs:
           go-version: ~1.21.5
           cache: false
       - name: Cache Go
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         env:
           cache-name: cache-go-modules
         with:
@@ -47,7 +47,7 @@ jobs:
           go-version: ~1.21.5
           cache: false
       - name: Cache Go
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         env:
           cache-name: cache-go-modules
         with:
@@ -61,15 +61,16 @@ jobs:
 
       - name: Install otelcorecol as a service
         run: |
-          New-Service -Name "otelcorecol" -BinaryPathName "${PWD}\bin\otelcorecol_windows_amd64 --config ${PWD}\examples\local\otel-config.yaml"
+          New-Service -Name "otelcorecol" -StartupType "Manual" -BinaryPathName "${PWD}\bin\otelcorecol_windows_amd64 --config ${PWD}\examples\local\otel-config.yaml"
           eventcreate.exe /t information /id 1 /l application /d "Creating event provider for 'otelcorecol'" /so otelcorecol
 
       - name: Test otelcorecol service
+        working-directory: ${{ github.workspace }}/otelcol
         run: |
-          (Start-Service otelcorecol -PassThru).WaitForStatus('Running', '00:00:30')
-          (Stop-Service otelcorecol -PassThru).WaitForStatus('Stopped', '00:00:30')
+          go test -timeout 90s -run ^TestCollectorAsService$  -v -tags=win32service
 
       - name: Remove otelcorecol service
+        if: always()
         run: |
           Remove-Service otelcorecol
           Remove-Item HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Application\otelcorecol
