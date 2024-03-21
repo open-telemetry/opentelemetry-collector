@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/exporter/otlpexporter
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/stretchr/testify v1.9.0
@@ -55,6 +55,7 @@ require (
 	github.com/prometheus/client_model v0.6.0 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
+	go.opentelemetry.io/collector/client v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.96.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.96.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.96.0 // indirect
@@ -123,3 +124,5 @@ retract (
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
+
+replace go.opentelemetry.io/collector/client => ../../client

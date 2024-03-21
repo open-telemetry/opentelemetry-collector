@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/receiver/otlpreceiver
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/gogo/protobuf v1.3.2
@@ -55,6 +55,7 @@ require (
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect
+	go.opentelemetry.io/collector/client v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.96.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v0.96.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.3.0 // indirect
@@ -123,3 +124,5 @@ retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 )
+
+replace go.opentelemetry.io/collector/client => ../../client
