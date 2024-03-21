@@ -301,6 +301,9 @@ func handlePartialSuccessResponse(resp *http.Response, partialSuccessHandler par
 type partialSuccessHandler func(bytes []byte, contentType string) error
 
 func (e *baseExporter) tracesPartialSuccessHandler(protoBytes []byte, contentType string) error {
+	if protoBytes == nil {
+		return nil
+	}
 	exportResponse := ptraceotlp.NewExportResponse()
 	switch contentType {
 	case protobufContentType:
@@ -328,6 +331,9 @@ func (e *baseExporter) tracesPartialSuccessHandler(protoBytes []byte, contentTyp
 }
 
 func (e *baseExporter) metricsPartialSuccessHandler(protoBytes []byte, contentType string) error {
+	if protoBytes == nil {
+		return nil
+	}
 	exportResponse := pmetricotlp.NewExportResponse()
 	switch contentType {
 	case protobufContentType:
@@ -355,6 +361,9 @@ func (e *baseExporter) metricsPartialSuccessHandler(protoBytes []byte, contentTy
 }
 
 func (e *baseExporter) logsPartialSuccessHandler(protoBytes []byte, contentType string) error {
+	if protoBytes == nil {
+		return nil
+	}
 	exportResponse := plogotlp.NewExportResponse()
 	switch contentType {
 	case protobufContentType:
