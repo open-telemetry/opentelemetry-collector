@@ -92,6 +92,10 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 			errorMsg: `requires a non-empty "endpoint"`,
 		},
 		{
+			name:     "https_endpoint",
+			errorMsg: `requires a non-empty "endpoint"`,
+		},
+		{
 			name:     "http_endpoint",
 			errorMsg: `requires a non-empty "endpoint"`,
 		},
@@ -102,6 +106,10 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 		{
 			name:     "invalid_retry",
 			errorMsg: `'randomization_factor' must be within [0, 1]`,
+		},
+		{
+			name:     "invalid_tls",
+			errorMsg: `invalid TLS min_version: unsupported TLS version: "asd"`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

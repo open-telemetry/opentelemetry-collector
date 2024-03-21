@@ -124,11 +124,7 @@ func (m *metric) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("enabled") {
 		return errors.New("missing required field: `enabled`")
 	}
-	err := parser.Unmarshal(m)
-	if err != nil {
-		return err
-	}
-	return nil
+	return parser.Unmarshal(m)
 }
 func (m metric) Data() MetricData {
 	if m.Sum != nil {
@@ -243,7 +239,7 @@ type templateContext struct {
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := fileprovider.New().Retrieve(context.Background(), "file:"+filePath, nil)
+	cp, err := fileprovider.NewWithSettings(confmap.ProviderSettings{}).Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}

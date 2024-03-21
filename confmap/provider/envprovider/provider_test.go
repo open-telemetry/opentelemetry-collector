@@ -25,18 +25,18 @@ exporters:
 `
 
 func TestValidateProviderScheme(t *testing.T) {
-	assert.NoError(t, confmaptest.ValidateProviderScheme(New()))
+	assert.NoError(t, confmaptest.ValidateProviderScheme(NewWithSettings(confmap.ProviderSettings{})))
 }
 
 func TestEmptyName(t *testing.T) {
-	env := New()
+	env := NewWithSettings(confmap.ProviderSettings{})
 	_, err := env.Retrieve(context.Background(), "", nil)
 	require.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
 func TestUnsupportedScheme(t *testing.T) {
-	env := New()
+	env := NewWithSettings(confmap.ProviderSettings{})
 	_, err := env.Retrieve(context.Background(), "https://", nil)
 	assert.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
@@ -45,7 +45,7 @@ func TestUnsupportedScheme(t *testing.T) {
 func TestInvalidYAML(t *testing.T) {
 	const envName = "invalid-yaml"
 	t.Setenv(envName, "[invalid,")
-	env := New()
+	env := NewWithSettings(confmap.ProviderSettings{})
 	_, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	assert.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
@@ -55,7 +55,7 @@ func TestEnv(t *testing.T) {
 	const envName = "default-config"
 	t.Setenv(envName, validYAML)
 
-	env := New()
+	env := NewWithSettings(confmap.ProviderSettings{})
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
