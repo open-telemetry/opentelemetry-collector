@@ -52,6 +52,7 @@ require (
 	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect
+	go.opentelemetry.io/collector/client v0.101.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.101.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.8.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.101.0 // indirect
@@ -138,3 +139,5 @@ replace go.opentelemetry.io/collector/exporter => ../../exporter
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
+
+replace go.opentelemetry.io/collector/client => ../../client

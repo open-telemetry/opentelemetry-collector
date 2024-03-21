@@ -53,6 +53,7 @@ require (
 	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect
+	go.opentelemetry.io/collector/client v0.101.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.101.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.8.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.8.0 // indirect
@@ -128,3 +129,5 @@ retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1
 	v0.69.0 // Release failed, use v0.69.1
 )
+
+replace go.opentelemetry.io/collector/client => ../../client

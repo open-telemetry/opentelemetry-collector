@@ -13,6 +13,7 @@ module-sets:
     version: v0.101.0
     modules:
       - go.opentelemetry.io/collector
+      - go.opentelemetry.io/collector/client
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/cmd/mdatagen
       - go.opentelemetry.io/collector/component
