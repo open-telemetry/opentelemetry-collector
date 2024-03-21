@@ -62,6 +62,11 @@ type DialerConfig struct {
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
+// NewDefaultDialerConfig creates a new DialerConfig with any default values set
+func NewDefaultDialerConfig() DialerConfig {
+	return DialerConfig{}
+}
+
 // AddrConfig represents a network endpoint address.
 type AddrConfig struct {
 	// Endpoint configures the address for this network connection.
@@ -77,6 +82,13 @@ type AddrConfig struct {
 
 	// DialerConfig contains options for connecting to an address.
 	DialerConfig DialerConfig `mapstructure:"dialer"`
+}
+
+// NewDefaultAddrConfig creates a new AddrConfig with any default values set
+func NewDefaultAddrConfig() AddrConfig {
+	return AddrConfig{
+		DialerConfig: NewDefaultDialerConfig(),
+	}
 }
 
 // Dial equivalent with net.Dialer's DialContext for this address.
@@ -122,6 +134,13 @@ type TCPAddrConfig struct {
 
 	// DialerConfig contains options for connecting to an address.
 	DialerConfig DialerConfig `mapstructure:"dialer"`
+}
+
+// NewDefaultTCPAddrConfig creates a new TCPAddrConfig with any default values set
+func NewDefaultTCPAddrConfig() TCPAddrConfig {
+	return TCPAddrConfig{
+		DialerConfig: NewDefaultDialerConfig(),
+	}
 }
 
 // Dial equivalent with net.Dialer's DialContext for this address.
