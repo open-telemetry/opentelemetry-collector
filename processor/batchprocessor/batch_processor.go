@@ -307,9 +307,9 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 	}
 	aset := attribute.NewSet(attrs...)
 
+	mb.lock.Lock()
 	b, ok := mb.batchers.Load(aset)
 	if !ok {
-		mb.lock.Lock()
 		if mb.metadataLimit != 0 && mb.size >= mb.metadataLimit {
 			mb.lock.Unlock()
 			return errTooManyBatchers
@@ -322,8 +322,8 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 		if !loaded {
 			mb.size++
 		}
-		mb.lock.Unlock()
 	}
+	mb.lock.Unlock()
 	b.(*shard).newItem <- data
 	return nil
 }
