@@ -44,12 +44,8 @@ filter_set:
       enabled: true
       {{- if eq $attr.Type.String "Str" }}
       exclude:
-        - strict: "non-existent"
-        - regexp: "non-existent"
-      include:
-        - strict: "non-existent"
-        - regexp: "non-existent"
         - strict: {{ $attr.TestValue }}
+      include:
         - regexp: ".*"
       {{- end }}
     {{- end }}
