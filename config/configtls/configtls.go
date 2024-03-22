@@ -406,13 +406,13 @@ func (c *ServerConfig) loadClientCAFile() (*x509.CertPool, error) {
 }
 
 func (c *ServerConfig) Shutdown() error {
-	var err error
+	var errs []error
 
 	for _, shutdown := range c.reloaderShutdownFuncs {
-		err = errors.Join(err, shutdown())
+		errs = append(errs, shutdown())
 	}
 
-	return err
+	return errors.Join(errs...)
 }
 
 func (c Config) hasCA() bool   { return c.hasCAFile() || c.hasCAPem() }
