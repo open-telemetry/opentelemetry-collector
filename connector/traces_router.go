@@ -13,12 +13,6 @@ import (
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 )
 
-// Deprecated: [v0.92.0] use TracesRouterAndConsumer
-type TracesRouter interface {
-	Consumer(...component.ID) (consumer.Traces, error)
-	PipelineIDs() []component.ID
-}
-
 // TracesRouterAndConsumer feeds the first consumer.Traces in each of the specified pipelines.
 type TracesRouterAndConsumer interface {
 	consumer.Traces

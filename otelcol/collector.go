@@ -99,8 +99,9 @@ type Collector struct {
 
 	configProvider ConfigProvider
 
-	service *service.Service
-	state   *atomic.Int32
+	serviceConfig *service.Config
+	service       *service.Service
+	state         *atomic.Int32
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -182,6 +183,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
+	col.serviceConfig = &cfg.Service
 	col.service, err = service.New(ctx, service.Settings{
 		BuildInfo:         col.set.BuildInfo,
 		CollectorConf:     conf,
