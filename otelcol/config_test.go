@@ -55,6 +55,19 @@ func TestConfigValidate(t *testing.T) {
 			expected: nil,
 		},
 		{
+			name: "empty configuration file",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Receivers = nil
+				cfg.Connectors = nil
+				cfg.Processors = nil
+				cfg.Exporters = nil
+				cfg.Extensions = nil
+				return cfg
+			},
+			expected: errEmptyConfigurationFile,
+		},
+		{
 			name: "missing-exporters",
 			cfgFn: func() *Config {
 				cfg := generateConfig()

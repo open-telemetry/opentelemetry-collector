@@ -256,7 +256,7 @@ func TestGrpcServerAuthSettings_Deprecated(t *testing.T) {
 			mockID: auth.NewServer(),
 		},
 	}
-	srv, err := gss.ToServer(host, componenttest.NewNopTelemetrySettings())
+	srv, err := gss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, srv)
 }

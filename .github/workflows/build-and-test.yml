@@ -137,10 +137,18 @@ jobs:
   unittest-matrix:
     strategy:
       matrix:
+        runner: [ubuntu-latest, actuated-arm64-4cpu-4gb]
         go-version: ["~1.22", "~1.21.8"] # 1.20 needs quotes otherwise it's interpreted as 1.2
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
+      - name: Set up arkade
+        uses: alexellis/setup-arkade@v3
+      - name: Install vmmeter
+        run: |
+          sudo -E arkade oci install ghcr.io/openfaasltd/vmmeter:latest --path /usr/local/bin/
+      - name: Run vmmeter
+        uses: self-actuated/vmmeter-action@v1
       - name: Checkout Repo
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Setup Go
@@ -155,14 +163,15 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
       - name: Cache Build
         uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: ~/.cache/go-build
-          key: unittest-${{ runner.os }}-go-build-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+          key: unittest-${{ runner.os }}-${{ matrix.runner }}-go-build-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
-        run: make gotest
+        run: |
+          make -j4 gotest
   unittest:
     if: always()
     runs-on: ubuntu-latest
