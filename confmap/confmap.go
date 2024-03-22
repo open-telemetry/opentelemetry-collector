@@ -423,7 +423,7 @@ func zeroSliceHookFunc() mapstructure.DecodeHookFuncValue {
 func negativeUintHookFunc() mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
 		if from.CanInt() && from.Int() < 0 && to.CanUint() {
-			return nil, fmt.Errorf("cannot convert negative value %v to uint", from.Int())
+			return nil, fmt.Errorf("cannot convert negative value %v to an unsigned integer", from.Int())
 		}
 		return from.Interface(), nil
 	}

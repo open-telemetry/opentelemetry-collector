@@ -100,6 +100,6 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 	cfg := &Config{}
 	err = component.UnmarshalConfig(cm, cfg)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "error decoding 'limit_mib': cannot convert negative value -2000 to uint")
-	require.Contains(t, err.Error(), "error decoding 'spike_limit_mib': cannot convert negative value -2300 to uint")
+	require.Contains(t, err.Error(), "error decoding 'limit_mib': cannot convert negative value -2000 to an unsigned integer")
+	require.Contains(t, err.Error(), "error decoding 'spike_limit_mib': cannot convert negative value -2300 to an unsigned integer")
 }
