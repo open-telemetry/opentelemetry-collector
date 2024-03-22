@@ -341,7 +341,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), 
 
 	// Back up the queue size to storage on every 10 reads. The stored value is used to recover the queue size
 	// in case if the collector is killed. The recovered queue size is allowed to be inaccurate.
-	if (pq.writeIndex % 10) == 0 {
+	if (pq.readIndex % 10) == 0 {
 		if qsErr := pq.backupQueueSize(ctx); qsErr != nil {
 			pq.logger.Error("Error writing queue size to storage", zap.Error(err))
 		}

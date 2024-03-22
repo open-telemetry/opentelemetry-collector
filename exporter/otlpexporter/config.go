@@ -5,6 +5,7 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 
 import (
 	"errors"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -22,10 +23,21 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	if c.SanitizedEndpoint() == "" {
+	if c.sanitizedEndpoint() == "" {
 		return errors.New(`requires a non-empty "endpoint"`)
 	}
 	return nil
+}
+
+func (c *Config) sanitizedEndpoint() string {
+	switch {
+	case strings.HasPrefix(c.Endpoint, "http://"):
+		return strings.TrimPrefix(c.Endpoint, "http://")
+	case strings.HasPrefix(c.Endpoint, "https://"):
+		return strings.TrimPrefix(c.Endpoint, "https://")
+	default:
+		return c.Endpoint
+	}
 }
 
 var _ component.Config = (*Config)(nil)

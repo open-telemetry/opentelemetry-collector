@@ -6,6 +6,8 @@ package receivertest // import "go.opentelemetry.io/collector/receiver/receivert
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
@@ -17,7 +19,7 @@ var componentType = component.MustNewType("nop")
 // NewNopCreateSettings returns a new nop settings for Create*Receiver functions.
 func NewNopCreateSettings() receiver.CreateSettings {
 	return receiver.CreateSettings{
-		ID:                component.NewID(componentType),
+		ID:                component.NewIDWithName(componentType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}

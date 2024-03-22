@@ -13,12 +13,6 @@ import (
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 )
 
-// Deprecated: [v0.92.0] use LogsRouterAndConsumer
-type LogsRouter interface {
-	Consumer(...component.ID) (consumer.Logs, error)
-	PipelineIDs() []component.ID
-}
-
 // LogsRouterAndConsumer feeds the first consumer.Logs in each of the specified pipelines.
 type LogsRouterAndConsumer interface {
 	consumer.Logs

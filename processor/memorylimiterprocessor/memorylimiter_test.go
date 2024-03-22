@@ -99,8 +99,10 @@ func TestNoDataLoss(t *testing.T) {
 
 	// And eventually the exporter must confirm that it delivered exact number of produced logs.
 	require.Eventually(t, func() bool {
-		return receiver.ProduceCount == exporter.DeliveredLogCount()
-	}, 5*time.Second, 1*time.Millisecond)
+		d := exporter.DeliveredLogCount()
+		t.Logf("received: %d, expected: %d\n", d, receiver.ProduceCount)
+		return receiver.ProduceCount == d
+	}, 5*time.Second, 100*time.Millisecond)
 
 	// Double check that the number of logs accepted by exporter matches the number of produced by receiver.
 	assert.Equal(t, receiver.ProduceCount, exporter.AcceptedLogCount())

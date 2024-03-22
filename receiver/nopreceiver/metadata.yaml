@@ -1,0 +1,7 @@
+type: nop
+
+status:
+  class: receiver
+  stability:
+    development: [traces, metrics, logs]
+  distributions: []
