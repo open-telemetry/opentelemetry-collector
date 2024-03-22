@@ -13,8 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/multierr"
-
 	"go.opentelemetry.io/collector/config/configopaque"
 )
 
@@ -411,7 +409,7 @@ func (c *ServerConfig) Shutdown() error {
 	var err error
 
 	for _, shutdown := range c.reloaderShutdownFuncs {
-		err = multierr.Append(err, shutdown())
+		err = errors.Join(err, shutdown())
 	}
 
 	return err
