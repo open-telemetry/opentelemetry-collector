@@ -35,6 +35,47 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
+func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
+	expected := &KeepaliveClientConfig{}
+	result := NewDefaultKeepaliveClientConfig()
+	assert.Equal(t, expected, result)
+}
+func TestNewDefaultClientConfig(t *testing.T) {
+	expected := &ClientConfig{
+		Keepalive: NewDefaultKeepaliveClientConfig(),
+	}
+	result := NewDefaultClientConfig()
+	assert.Equal(t, expected, result)
+}
+func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
+	expected := &KeepaliveServerConfig{
+		ServerParameters:  NewDefaultKeepaliveServerParameters(),
+		EnforcementPolicy: NewDefaultKeepaliveEnforcementPolicy(),
+	}
+	result := NewDefaultKeepaliveServerConfig()
+	assert.Equal(t, expected, result)
+}
+
+func TestNewDefaultKeepaliveServerParameters(t *testing.T) {
+	expected := &KeepaliveServerParameters{}
+	result := NewDefaultKeepaliveServerParameters()
+	assert.Equal(t, expected, result)
+}
+
+func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
+	expected := &KeepaliveEnforcementPolicy{}
+	result := NewDefaultKeepaliveEnforcementPolicy()
+	assert.Equal(t, expected, result)
+}
+
+func TestNewDefaultServerConfig(t *testing.T) {
+	expected := &ServerConfig{
+		Keepalive: NewDefaultKeepaliveServerConfig(),
+	}
+	result := NewDefaultServerConfig()
+	assert.Equal(t, expected, result)
+}
+
 // testBalancerBuilder facilitates testing validateBalancerName().
 type testBalancerBuilder struct{}
 
