@@ -36,7 +36,11 @@ import (
 )
 
 func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
-	expected := &KeepaliveClientConfig{}
+	expected := &KeepaliveClientConfig{
+		Time:                10 * time.Second,
+		Timeout:             10 * time.Second,
+		PermitWithoutStream: false,
+	}
 	result := NewDefaultKeepaliveClientConfig()
 	assert.Equal(t, expected, result)
 }
@@ -57,7 +61,13 @@ func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
 }
 
 func TestNewDefaultKeepaliveServerParameters(t *testing.T) {
-	expected := &KeepaliveServerParameters{}
+	expected := &KeepaliveServerParameters{
+		MaxConnectionIdle:     10,
+		MaxConnectionAge:      10,
+		MaxConnectionAgeGrace: 10,
+		Time:                  10,
+		Timeout:               10,
+	}
 	result := NewDefaultKeepaliveServerParameters()
 	assert.Equal(t, expected, result)
 }
@@ -71,6 +81,7 @@ func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
 func TestNewDefaultServerConfig(t *testing.T) {
 	expected := &ServerConfig{
 		Keepalive: NewDefaultKeepaliveServerConfig(),
+		NetAddr:   confignet.NewDefaultAddrConfig(),
 	}
 	result := NewDefaultServerConfig()
 	assert.Equal(t, expected, result)

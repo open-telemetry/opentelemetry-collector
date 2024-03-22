@@ -48,7 +48,11 @@ type KeepaliveClientConfig struct {
 
 // NewDefaultKeepaliveClientConfig() creates a new KeepaliveClientConfig with any default values set
 func NewDefaultKeepaliveClientConfig() *KeepaliveClientConfig {
-	return &KeepaliveClientConfig{}
+	return &KeepaliveClientConfig{
+		Time:                10 * time.Second,
+		Timeout:             10 * time.Second,
+		PermitWithoutStream: false,
+	}
 }
 
 // ClientConfig defines common settings for a gRPC client configuration.
@@ -129,7 +133,13 @@ type KeepaliveServerParameters struct {
 
 // NewDefaultKeepaliveServerParameters() creates a new KeepaliveServerParameters with any default values set
 func NewDefaultKeepaliveServerParameters() *KeepaliveServerParameters {
-	return &KeepaliveServerParameters{}
+	return &KeepaliveServerParameters{
+		MaxConnectionIdle:     10,
+		MaxConnectionAge:      10,
+		MaxConnectionAgeGrace: 10,
+		Time:                  10,
+		Timeout:               10,
+	}
 }
 
 // KeepaliveEnforcementPolicy allow configuration of the keepalive.EnforcementPolicy.
@@ -184,6 +194,7 @@ type ServerConfig struct {
 func NewDefaultServerConfig() *ServerConfig {
 	return &ServerConfig{
 		Keepalive: NewDefaultKeepaliveServerConfig(),
+		NetAddr:   confignet.NewDefaultAddrConfig(),
 	}
 }
 
