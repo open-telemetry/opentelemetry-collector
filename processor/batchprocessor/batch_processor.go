@@ -129,7 +129,9 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 		metadataLimit:    int(cfg.MetadataCardinalityLimit),
 	}
 	if len(bp.metadataKeys) == 0 {
-		bp.batcher = &singleShardBatcher{batcher: bp.newShard(nil)}
+		s := bp.newShard(nil)
+		s.start()
+		bp.batcher = &singleShardBatcher{batcher: s}
 	} else {
 		bp.batcher = &multiShardBatcher{
 			batchProcessor: bp,
@@ -156,8 +158,6 @@ func (bp *batchProcessor) newShard(md map[string][]string) *shard {
 		exportCtx: exportCtx,
 		batch:     bp.batchFunc(),
 	}
-	b.processor.goroutines.Add(1)
-	go b.start()
 	return b
 }
 
@@ -180,6 +180,11 @@ func (bp *batchProcessor) Shutdown(context.Context) error {
 }
 
 func (b *shard) start() {
+	b.processor.goroutines.Add(1)
+	go b.startLoop()
+}
+
+func (b *shard) startLoop() {
 	defer b.processor.goroutines.Done()
 
 	// timerCh ensures we only block when there is a
@@ -320,6 +325,8 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 		var loaded bool
 		b, loaded = mb.batchers.LoadOrStore(aset, mb.newShard(md))
 		if !loaded {
+			// Start the goroutine only if we added the object to the map, otherwise is already started.
+			b.(*shard).start()
 			mb.size++
 		}
 		mb.lock.Unlock()
