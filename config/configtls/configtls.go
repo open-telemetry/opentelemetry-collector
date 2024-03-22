@@ -403,17 +403,17 @@ func (c *ServerConfig) LoadTLSConfig() (*tls.Config, error) {
 	return tlsCfg, nil
 }
 
-func (c ServerConfig) loadClientCAFile() (*x509.CertPool, error) {
+func (c *ServerConfig) loadClientCAFile() (*x509.CertPool, error) {
 	return c.loadCert(c.ClientCAFile)
 }
 
-func (c ServerConfig) Shutdown() error {
+func (c *ServerConfig) Shutdown() error {
 	var err error
-	if c.ReloadClientCAFile {
-		for _, shutdown := range c.reloaderShutdownFuncs {
-			err = multierr.Append(err, shutdown())
-		}
+
+	for _, shutdown := range c.reloaderShutdownFuncs {
+		err = multierr.Append(err, shutdown())
 	}
+
 	return err
 }
 
