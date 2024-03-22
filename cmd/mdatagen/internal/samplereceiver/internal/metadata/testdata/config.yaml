@@ -57,11 +57,54 @@ none_set:
       enabled: false
     string.resource.attr_to_be_removed:
       enabled: false
-filter_set:
+filter_set_include:
   metrics:
     default.metric:
       enabled: true
     default.metric.to_be_removed:
+      enabled: true
+    metric.input_type:
+      enabled: true
+    optional.metric:
+      enabled: true
+    optional.metric.empty_unit:
+      enabled: true
+  resource_attributes:
+    map.resource.attr:
+      enabled: true
+    optional.resource.attr:
+      enabled: true
+      include:
+        - regexp: ".*"
+    slice.resource.attr:
+      enabled: true
+    string.enum.resource.attr:
+      enabled: true
+      include:
+        - regexp: ".*"
+    string.resource.attr:
+      enabled: true
+      include:
+        - regexp: ".*"
+    string.resource.attr_disable_warning:
+      enabled: true
+      include:
+        - regexp: ".*"
+    string.resource.attr_remove_warning:
+      enabled: true
+      include:
+        - regexp: ".*"
+    string.resource.attr_to_be_removed:
+      enabled: true
+      include:
+        - regexp: ".*"
+filter_set_exclude:
+  metrics:
+    default.metric:
+      enabled: true
+    default.metric.to_be_removed:
+      enabled: true
+    metric.input_type:
       enabled: true
     optional.metric:
       enabled: true
@@ -73,62 +116,26 @@ filter_set:
     optional.resource.attr:
       enabled: true
       exclude:
-        - strict: "non-existent"
-        - regexp: "non-existent"
-      include:
-        - strict: "non-existent"
-        - regexp: "non-existent"
         - strict: "optional.resource.attr-val"
-        - regexp: ".*"
     slice.resource.attr:
       enabled: true
     string.enum.resource.attr:
       enabled: true
       exclude:
-        - strict: "non-existent"
-        - regexp: "non-existent"
-      include:
-        - strict: "non-existent"
-        - regexp: "non-existent"
         - strict: "one"
-        - regexp: ".*"
     string.resource.attr:
       enabled: true
       exclude:
-        - strict: "non-existent"
-        - regexp: "non-existent"
-      include:
-        - strict: "non-existent"
-        - regexp: "non-existent"
         - strict: "string.resource.attr-val"
-        - regexp: ".*"
     string.resource.attr_disable_warning:
       enabled: true
       exclude:
-        - strict: "non-existent"
-        - regexp: "non-existent"
-      include:
-        - strict: "non-existent"
-        - regexp: "non-existent"
         - strict: "string.resource.attr_disable_warning-val"
-        - regexp: ".*"
     string.resource.attr_remove_warning:
       enabled: true
       exclude:
-        - strict: "non-existent"
-        - regexp: "non-existent"
-      include:
-        - strict: "non-existent"
-        - regexp: "non-existent"
         - strict: "string.resource.attr_remove_warning-val"
-        - regexp: ".*"
     string.resource.attr_to_be_removed:
       enabled: true
       exclude:
-        - strict: "non-existent"
-        - regexp: "non-existent"
-      include:
-        - strict: "non-existent"
-        - regexp: "non-existent"
         - strict: "string.resource.attr_to_be_removed-val"
-        - regexp: ".*"
