@@ -5,12 +5,13 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"fmt"
+	"sort"
+
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
-	"sort"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
