@@ -35,7 +35,8 @@ func TestLoadMetadata(t *testing.T) {
 					Codeowners: &Codeowners{
 						Active: []string{"dmitryax"},
 					},
-					Warnings: []string{"Any additional information that should be brought to the consumer's attention"},
+					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},
+					UnsupportedPlatforms: []string{"freebsd", "illumos"},
 				},
 				ResourceAttributes: map[attributeName]attribute{
 					"string.resource.attr": {
