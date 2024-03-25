@@ -14,7 +14,7 @@ import (
 )
 
 func TestSupportedScheme(t *testing.T) {
-	fp := NewWithSettings(confmap.ProviderSettings{})
+	fp := NewWithSettings(confmap.NewProviderSettingsNoopLogger())
 	assert.Equal(t, "http", fp.Scheme())
 	require.NoError(t, fp.Shutdown(context.Background()))
 }

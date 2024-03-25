@@ -48,7 +48,7 @@ func TestConfigProviderYaml(t *testing.T) {
 	require.NoError(t, err)
 
 	uriLocation := "yaml:" + string(yamlBytes)
-	provider := yamlprovider.NewWithSettings(confmap.ProviderSettings{})
+	provider := yamlprovider.NewWithSettings(confmap.NewProviderSettingsNoopLogger())
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:      []string{uriLocation},
@@ -73,7 +73,7 @@ func TestConfigProviderYaml(t *testing.T) {
 
 func TestConfigProviderFile(t *testing.T) {
 	uriLocation := "file:" + filepath.Join("testdata", "otelcol-nop.yaml")
-	provider := fileprovider.NewWithSettings(confmap.ProviderSettings{})
+	provider := fileprovider.NewWithSettings(confmap.NewProviderSettingsNoopLogger())
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:      []string{uriLocation},
@@ -101,7 +101,7 @@ func TestConfigProviderFile(t *testing.T) {
 
 func TestGetConfmap(t *testing.T) {
 	uriLocation := "file:" + filepath.Join("testdata", "otelcol-nop.yaml")
-	provider := fileprovider.NewWithSettings(confmap.ProviderSettings{})
+	provider := fileprovider.NewWithSettings(confmap.NewProviderSettingsNoopLogger())
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:      []string{uriLocation},
