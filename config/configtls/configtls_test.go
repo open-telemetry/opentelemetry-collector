@@ -730,6 +730,86 @@ func TestSystemCertPool(t *testing.T) {
 			name: "not using system cert pool",
 			tlsSetting: TLSSetting{
 				IncludeSystemCACertsPool: false,
+				CAFile:                   filepath.Join("testdata", "ca-1.crt"),
+			},
+			wantErr:      nil,
+			systemCertFn: x509.SystemCertPool,
+		},
+		{
+			name: "using system cert pool",
+			tlsSetting: TLSSetting{
+				IncludeSystemCACertsPool: true,
+				CAFile:                   filepath.Join("testdata", "ca-1.crt"),
+			},
+			wantErr:      nil,
+			systemCertFn: x509.SystemCertPool,
+		},
+		{
+			name: "error loading system cert pool",
+			tlsSetting: TLSSetting{
+				IncludeSystemCACertsPool: true,
+				CAFile:                   filepath.Join("testdata", "ca-1.crt"),
+			},
+			wantErr: anError,
+			systemCertFn: func() (*x509.CertPool, error) {
+				return nil, anError
+			},
+		},
+		{
+			name: "nil system cert pool",
+			tlsSetting: TLSSetting{
+				IncludeSystemCACertsPool: true,
+				CAFile:                   filepath.Join("testdata", "ca-1.crt"),
+			},
+			wantErr: nil,
+			systemCertFn: func() (*x509.CertPool, error) {
+				return nil, nil
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			oldSystemCertPool := systemCertPool
+			systemCertPool = test.systemCertFn
+			defer func() {
+				systemCertPool = oldSystemCertPool
+			}()
+
+			serverConfig := ServerConfig{
+				TLSSetting: test.tlsSetting,
+			}
+			c, err := serverConfig.LoadTLSConfig()
+			if test.wantErr != nil {
+				assert.ErrorContains(t, err, test.wantErr.Error())
+			} else {
+				assert.NotNil(t, c.RootCAs)
+			}
+
+			clientConfig := ClientConfig{
+				TLSSetting: test.tlsSetting,
+			}
+			c, err = clientConfig.LoadTLSConfig()
+			if test.wantErr != nil {
+				assert.ErrorContains(t, err, test.wantErr.Error())
+			} else {
+				assert.NotNil(t, c.RootCAs)
+			}
+		})
+	}
+}
+
+func TestSystemCertPool_loadCert(t *testing.T) {
+	anError := errors.New("my error")
+	tests := []struct {
+		name         string
+		tlsSetting   TLSSetting
+		wantErr      error
+		systemCertFn func() (*x509.CertPool, error)
+	}{
+		{
+			name: "not using system cert pool",
+			tlsSetting: TLSSetting{
+				IncludeSystemCACertsPool: false,
 			},
 			wantErr:      nil,
 			systemCertFn: x509.SystemCertPool,
