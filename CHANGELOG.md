@@ -7,6 +7,47 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.4.0/v0.97.0
+
+### 🛑 Breaking changes 🛑
+
+- `telemetry`: Remove telemetry.useOtelForInternalMetrics stable feature gate (#9752)
+
+### 🚩 Deprecations 🚩
+
+- `configgrpc`: Deprecate `SanitizedEndpoint` (#9788)
+
+### 🚀 New components 🚀
+
+- `exporter/nop`: Add the `nopexporter` to serve as a placeholder exporter in a pipeline (#7316)
+  This is primarily useful for starting the Collector with only extensions enabled
+  or to test Collector pipeline throughput.
+  
+- `receiver/nop`: Add the `nopreceiver` to serve as a placeholder receiver in a pipeline (#7316)
+  This is primarily useful for starting the Collector with only extensions enabled.
+
+### 💡 Enhancements 💡
+
+- `configtls`: Validates TLS min_version and max_version (#9475)
+  Introduces `Validate()` method in TLSSetting.
+- `configcompression`: Mark module as Stable. (#9571)
+- `cmd/mdatagen`: Use go package name for the scope name by default and add an option to provide the scope name in metadata.yaml. (#9693)
+- `cmd/mdatagen`: Generate the lifecycle tests for components by default. (#9683)
+  It's encouraged to have lifecycle tests for all components enadled, but they can be disabled if needed 
+  in metadata.yaml with `skip_lifecycle: true` and `skip_shutdown: true` under `tests` section.
+  
+- `cmd/mdatagen`: optimiz the mdatagen for the case like batchprocessor which use a common struct to implement consumer.Traces, consumer.Metrics, consumer.Logs in the meantime. (#9688)
+- `components`: Give NoOp components a unique name (#9637)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix race in concurrency check in batch sender leading to smaller batch sizes. (#9761)
+- `exporterhelper`: Fix persistent queue size backup on reads. (#9740)
+- `processor/batch`: Prevent starting unnecessary goroutines. (#9739)
+- `otlphttpexporter`: prevent error on empty response body when content type is application/json (#9666)
+- `confmap`: confmap honors `Unmarshal` methods on config embedded structs. (#6671)
+- `otelcol`: Respect telemetry configuration when running as a Windows service (#5300)
+
 ## v1.3.0/v0.96.0
 
 ### 🛑 Breaking changes 🛑
