@@ -13,10 +13,6 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 - `telemetry`: Remove telemetry.useOtelForInternalMetrics stable feature gate (#9752)
 
-### 🚩 Deprecations 🚩
-
-- `configgrpc`: Deprecate `SanitizedEndpoint` (#9788)
-
 ### 🚀 New components 🚀
 
 - `exporter/nop`: Add the `nopexporter` to serve as a placeholder exporter in a pipeline (#7316)
@@ -36,12 +32,10 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   It's encouraged to have lifecycle tests for all components enadled, but they can be disabled if needed 
   in metadata.yaml with `skip_lifecycle: true` and `skip_shutdown: true` under `tests` section.
   
-- `cmd/mdatagen`: optimiz the mdatagen for the case like batchprocessor which use a common struct to implement consumer.Traces, consumer.Metrics, consumer.Logs in the meantime. (#9688)
-- `components`: Give NoOp components a unique name (#9637)
+- `cmd/mdatagen`: optimize the mdatagen for the case like batchprocessor which use a common struct to implement consumer.Traces, consumer.Metrics, consumer.Logs in the meantime. (#9688)
 
 ### 🧰 Bug fixes 🧰
 
-- `exporterhelper`: Fix race in concurrency check in batch sender leading to smaller batch sizes. (#9761)
 - `exporterhelper`: Fix persistent queue size backup on reads. (#9740)
 - `processor/batch`: Prevent starting unnecessary goroutines. (#9739)
 - `otlphttpexporter`: prevent error on empty response body when content type is application/json (#9666)
