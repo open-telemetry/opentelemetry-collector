@@ -23,6 +23,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 ### 🚩 Deprecations 🚩
 
 - `configgrpc`: Deprecated `ToServerContext`, use `ToServer` instead. (#9787)
+- `configgrpc`: Deprecate `SanitizedEndpoint` (#9788)
 
 ### 💡 Enhancements 💡
 
@@ -31,6 +32,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 - `configtls`: Validates TLS min_version and max_version (#9475)
   Introduces `Validate()` method in TLSSetting.
 - `exporterhelper`: Invalid exporterhelper options now make the exporter creation error out instead of panicking. (#9717)
+- `components`: Give NoOp components a unique name (#9637)
 
 ## v1.3.0/v0.96.0
 
