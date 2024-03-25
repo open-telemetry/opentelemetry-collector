@@ -450,7 +450,7 @@ func TestEmbeddedUnmarshalerError(t *testing.T) {
 	})
 
 	tc := &testConfigWithEmbeddedError{}
-	assert.EqualError(t, cfgMap.Unmarshal(tc), "error decoding '': embedded error")
+	assert.EqualError(t, cfgMap.Unmarshal(tc), "embedded error")
 }
 
 func TestEmbeddedMarshalerError(t *testing.T) {
@@ -462,7 +462,7 @@ func TestEmbeddedMarshalerError(t *testing.T) {
 	})
 
 	tc := &testConfigWithMarshalError{}
-	assert.EqualError(t, cfgMap.Unmarshal(tc), "error decoding '': error running encode hook: marshaling error")
+	assert.EqualError(t, cfgMap.Unmarshal(tc), "error running encode hook: marshaling error")
 }
 
 func TestUnmarshalerKeepAlreadyInitialized(t *testing.T) {

@@ -7,6 +7,33 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.4.0/v0.97.0
+
+### 🛑 Breaking changes 🛑
+
+- `configgrpc`: Remove deprecated `ToServer` function. (#9787)
+- `confignet`: Change `Transport` field from `string` to `TransportType` (#9385)
+- `component`: Change underlying type of `component.Type` to an opaque struct. (#9208)
+- `obsreport`: Remove deprecated obsreport/obsreporttest package. (#9724)
+- `component`: Remove deprecated error `ErrNilNextConsumer` (#9322)
+- `connector`: Remove `LogsRouter`, `MetricsRouter` and `TracesRouter`. Use `LogsRouterAndConsumer`, `MetricsRouterAndConsumer`, `TracesRouterAndConsumer` respectively instead. (#9095)
+- `receiver`: Remove deprecated struct `ScraperControllerSettings` and function `NewDefaultScraperControllerSettings` (#6767)
+- `confmap`: Remove deprecated `provider.New` methods, use `NewWithSettings` moving forward. (#9443)
+
+### 🚩 Deprecations 🚩
+
+- `configgrpc`: Deprecated `ToServerContext`, use `ToServer` instead. (#9787)
+- `configgrpc`: Deprecate `SanitizedEndpoint` (#9788)
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add experimental batching capabilities to the exporter helper (#8122)
+- `confignet`: Adds `NewDefault*` functions for all the config structs. (#9656)
+- `configtls`: Validates TLS min_version and max_version (#9475)
+  Introduces `Validate()` method in TLSSetting.
+- `exporterhelper`: Invalid exporterhelper options now make the exporter creation error out instead of panicking. (#9717)
+- `components`: Give NoOp components a unique name (#9637)
+
 ## v1.3.0/v0.96.0
 
 ### 🚩 Deprecations 🚩

@@ -288,10 +288,6 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 	sink := newFakeRequestSink()
 	assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 8, sink: sink}))
 
-	time.Sleep(50 * time.Millisecond)
-	// the first request should be still in-flight.
-	assert.Equal(t, uint64(0), sink.requestsCount.Load())
-
 	// the second request should be sent by reaching max concurrency limit.
 	assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 8, sink: sink}))
 

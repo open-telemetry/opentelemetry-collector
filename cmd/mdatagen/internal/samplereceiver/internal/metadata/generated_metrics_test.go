@@ -92,6 +92,10 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
 
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+
 			allMetricsCount++
 			mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true)
 
@@ -172,6 +176,35 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "metric.input_type":
+					assert.False(t, validatedMetrics["metric.input_type"], "Found a duplicate in the metrics slice: metric.input_type")
+					validatedMetrics["metric.input_type"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Monotonic cumulative sum int metric with string input_type enabled by default.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("string_attr")
+					assert.True(t, ok)
+					assert.EqualValues(t, "string_attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, 19, attrVal.Int())
+					attrVal, ok = dp.Attributes().Get("enum_attr")
+					assert.True(t, ok)
+					assert.EqualValues(t, "red", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("slice_attr")
+					assert.True(t, ok)
+					assert.EqualValues(t, []any{"slice_attr-item1", "slice_attr-item2"}, attrVal.Slice().AsRaw())
+					attrVal, ok = dp.Attributes().Get("map_attr")
+					assert.True(t, ok)
+					assert.EqualValues(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
 				case "optional.metric":
 					assert.False(t, validatedMetrics["optional.metric"], "Found a duplicate in the metrics slice: optional.metric")
 					validatedMetrics["optional.metric"] = true

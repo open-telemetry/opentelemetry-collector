@@ -129,9 +129,6 @@ func (bs *batchSender) send(ctx context.Context, req Request) error {
 		return bs.nextSender.send(ctx, req)
 	}
 
-	bs.activeRequests.Add(1)
-	defer bs.activeRequests.Add(^uint64(0))
-
 	if bs.cfg.MaxSizeItems > 0 {
 		return bs.sendMergeSplitBatch(ctx, req)
 	}
@@ -141,6 +138,8 @@ func (bs *batchSender) send(ctx context.Context, req Request) error {
 // sendMergeSplitBatch sends the request to the batch which may be split into multiple requests.
 func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) error {
 	bs.mu.Lock()
+	bs.activeRequests.Add(1)
+	defer bs.activeRequests.Add(^uint64(0))
 
 	reqs, err := bs.mergeSplitFunc(ctx, bs.cfg.MaxSizeConfig, bs.activeBatch.request, req)
 	if err != nil || len(reqs) == 0 {
@@ -177,6 +176,9 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) err
 // sendMergeBatch sends the request to the batch and waits for the batch to be exported.
 func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
 	bs.mu.Lock()
+	bs.activeRequests.Add(1)
+	defer bs.activeRequests.Add(^uint64(0))
+
 	if bs.activeBatch.request != nil {
 		var err error
 		req, err = bs.mergeFunc(ctx, bs.activeBatch.request, req)

@@ -5,6 +5,8 @@ all_set:
       enabled: true
     default.metric.to_be_removed:
       enabled: true
+    metric.input_type:
+      enabled: true
     optional.metric:
       enabled: true
     optional.metric.empty_unit:
@@ -31,6 +33,8 @@ none_set:
     default.metric:
       enabled: false
     default.metric.to_be_removed:
+      enabled: false
+    metric.input_type:
       enabled: false
     optional.metric:
       enabled: false
