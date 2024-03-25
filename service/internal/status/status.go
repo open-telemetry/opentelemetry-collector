@@ -121,17 +121,6 @@ func (r *Reporter) Ready() {
 	r.ready = true
 }
 
-// ReportComponentStatus reports status for the given InstanceID
-// Deprecated: [v0.92.0] This function will be removed in a future release.
-// Use ReportStatus instead.
-func (r *Reporter) ReportComponentStatus(
-	id *component.InstanceID,
-	ev *component.StatusEvent,
-) error {
-	r.ReportStatus(id, ev)
-	return nil
-}
-
 // ReportStatus reports status for the given InstanceID
 func (r *Reporter) ReportStatus(
 	id *component.InstanceID,
@@ -146,14 +135,6 @@ func (r *Reporter) ReportStatus(
 			r.onInvalidTransition(err)
 		}
 	}
-}
-
-// ReportComponentOkIfStarting reports StatusOK if the component's current status is Starting
-// Deprecated: [v0.92.0] This function will be removed in a future release.
-// Use ReportOKIfStarting instead.
-func (r *Reporter) ReportComponentOKIfStarting(id *component.InstanceID) error {
-	r.ReportOKIfStarting(id)
-	return nil
 }
 
 func (r *Reporter) ReportOKIfStarting(id *component.InstanceID) {

@@ -33,12 +33,18 @@ func (md *metadata) Validate() error {
 // typeRegexp is used to validate the type of a component.
 // A type must start with an ASCII alphabetic character and
 // can only contain ASCII alphanumeric characters and '_'.
+// We allow '/' for subcomponents.
 // This must be kept in sync with the regex in component/config.go.
 var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]*$`)
 
 func (md *metadata) validateType() error {
 	if md.Type == "" {
 		return errors.New("missing type")
+	}
+
+	if md.Parent != "" {
+		// subcomponents are allowed to have a '/' in their type.
+		return nil
 	}
 
 	if !typeRegexp.MatchString(md.Type) {
@@ -84,10 +90,7 @@ func (s *Status) validateStability() error {
 		return errors.New("missing stability")
 	}
 	for stability, component := range s.Stability {
-		if stability != "development" && stability != "alpha" && stability != "beta" && stability != "stable" && stability != "deprecated" && stability != "unmaintained" {
-			errs = multierr.Append(errs, fmt.Errorf("invalid stability: %v", stability))
-		}
-		if component == nil {
+		if len(component) == 0 {
 			errs = multierr.Append(errs, fmt.Errorf("missing component for stability: %v", stability))
 		}
 		for _, c := range component {

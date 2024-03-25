@@ -270,6 +270,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/exporter=$(CURDIR)/exporter  \
 		-replace go.opentelemetry.io/collector/exporter/debugexporter=$(CURDIR)/exporter/debugexporter  \
 		-replace go.opentelemetry.io/collector/exporter/loggingexporter=$(CURDIR)/exporter/loggingexporter  \
+		-replace go.opentelemetry.io/collector/exporter/nopexporter=$(CURDIR)/exporter/nopexporter  \
 		-replace go.opentelemetry.io/collector/exporter/otlpexporter=$(CURDIR)/exporter/otlpexporter  \
 		-replace go.opentelemetry.io/collector/exporter/otlphttpexporter=$(CURDIR)/exporter/otlphttpexporter  \
 		-replace go.opentelemetry.io/collector/extension=$(CURDIR)/extension  \
@@ -284,6 +285,7 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/processor/batchprocessor=$(CURDIR)/processor/batchprocessor  \
 		-replace go.opentelemetry.io/collector/processor/memorylimiterprocessor=$(CURDIR)/processor/memorylimiterprocessor  \
 		-replace go.opentelemetry.io/collector/receiver=$(CURDIR)/receiver  \
+		-replace go.opentelemetry.io/collector/receiver/nopreceiver=$(CURDIR)/receiver/nopreceiver  \
 		-replace go.opentelemetry.io/collector/receiver/otlpreceiver=$(CURDIR)/receiver/otlpreceiver  \
 		-replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv  \
 		-replace go.opentelemetry.io/collector/service=$(CURDIR)/service"
@@ -299,7 +301,8 @@ restore-contrib:
 	@echo Restoring contrib at $(CONTRIB_PATH) to its original state
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		-dropreplace go.opentelemetry.io/collector \
-		-dropreplace go.opentelemetry.io/collector/component
+		-dropreplace go.opentelemetry.io/collector/component \
+		-dropreplace go.opentelemetry.io/collector/config/configauth  \
 		-dropreplace go.opentelemetry.io/collector/config/configcompression  \
 		-dropreplace go.opentelemetry.io/collector/config/configgrpc  \
 		-dropreplace go.opentelemetry.io/collector/config/confighttp  \
@@ -322,13 +325,14 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/exporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/debugexporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/loggingexporter  \
+		-dropreplace go.opentelemetry.io/collector/exporter/nopexporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/otlpexporter  \
 		-dropreplace go.opentelemetry.io/collector/exporter/otlphttpexporter  \
 		-dropreplace go.opentelemetry.io/collector/extension  \
 		-dropreplace go.opentelemetry.io/collector/extension/auth  \
 		-dropreplace go.opentelemetry.io/collector/extension/ballastextension  \
 		-dropreplace go.opentelemetry.io/collector/extension/memorylimiterextension  \
-		-dropreplace go.opentelemetry.io/collector/extension/zpagestextension  \
+		-dropreplace go.opentelemetry.io/collector/extension/zpagesextension  \
 		-dropreplace go.opentelemetry.io/collector/featuregate  \
 		-dropreplace go.opentelemetry.io/collector/otelcol  \
 		-dropreplace go.opentelemetry.io/collector/pdata  \
@@ -336,6 +340,7 @@ restore-contrib:
 		-dropreplace go.opentelemetry.io/collector/processor/batchprocessor  \
 		-dropreplace go.opentelemetry.io/collector/processor/memorylimiterprocessor  \
 		-dropreplace go.opentelemetry.io/collector/receiver  \
+		-dropreplace go.opentelemetry.io/collector/receiver/nopreceiver  \
 		-dropreplace go.opentelemetry.io/collector/receiver/otlpreceiver  \
 		-dropreplace go.opentelemetry.io/collector/semconv  \
 		-dropreplace go.opentelemetry.io/collector/service"

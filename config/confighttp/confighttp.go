@@ -29,10 +29,6 @@ import (
 
 const headerContentEncoding = "Content-Encoding"
 
-// HTTPClientSettings defines settings for creating an HTTP client.
-// Deprecated: [v0.94.0] Use ClientConfig instead
-type HTTPClientSettings = ClientConfig
-
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {
 	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
@@ -42,7 +38,7 @@ type ClientConfig struct {
 	ProxyURL string `mapstructure:"proxy_url"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
+	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
@@ -101,15 +97,6 @@ type ClientConfig struct {
 	// HTTP2PingTimeout if there's no response to the ping within the configured value, the connection will be closed.
 	// If not set or set to 0, it defaults to 15s.
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout"`
-}
-
-// NewDefaultHTTPClientSettings returns HTTPClientSettings type object with
-// the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
-// Other config options are not added as they are initialized with 'zero value' by GoLang as default.
-// We encourage to use this function to create an object of HTTPClientSettings.
-// Deprecated: [v0.94.0] Use NewDefaultClientConfig instead
-func NewDefaultHTTPClientSettings() ClientConfig {
-	return NewDefaultClientConfig()
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
@@ -263,17 +250,13 @@ func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Respo
 	return interceptor.transport.RoundTrip(req)
 }
 
-// HTTPServerSettings defines settings for creating an HTTP server.
-// Deprecated: [v0.94.0] Use ServerConfig instead
-type HTTPServerSettings = ServerConfig
-
 // ServerConfig defines settings for creating an HTTP server.
 type ServerConfig struct {
 	// Endpoint configures the listening address for the server.
 	Endpoint string `mapstructure:"endpoint"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls"`
+	TLSSetting *configtls.ServerConfig `mapstructure:"tls"`
 
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
 	CORS *CORSConfig `mapstructure:"cors"`
@@ -418,11 +401,6 @@ func responseHeadersHandler(handler http.Handler, headers map[string]configopaqu
 		handler.ServeHTTP(w, r)
 	})
 }
-
-// CORSSettings configures a receiver for HTTP cross-origin resource sharing (CORS).
-// See the underlying https://github.com/rs/cors package for details.
-// Deprecated: [v0.94.0] Use CORSConfig instead
-type CORSSettings = CORSConfig
 
 // CORSConfig configures a receiver for HTTP cross-origin resource sharing (CORS).
 // See the underlying https://github.com/rs/cors package for details.

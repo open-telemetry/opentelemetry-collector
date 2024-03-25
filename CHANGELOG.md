@@ -7,6 +7,65 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.4.0/v0.97.0
+
+### 🛑 Breaking changes 🛑
+
+- `telemetry`: Remove telemetry.useOtelForInternalMetrics stable feature gate (#9752)
+
+### 🚀 New components 🚀
+
+- `exporter/nop`: Add the `nopexporter` to serve as a placeholder exporter in a pipeline (#7316)
+  This is primarily useful for starting the Collector with only extensions enabled
+  or to test Collector pipeline throughput.
+  
+- `receiver/nop`: Add the `nopreceiver` to serve as a placeholder receiver in a pipeline (#7316)
+  This is primarily useful for starting the Collector with only extensions enabled.
+
+### 💡 Enhancements 💡
+
+- `configtls`: Validates TLS min_version and max_version (#9475)
+  Introduces `Validate()` method in TLSSetting.
+- `configcompression`: Mark module as Stable. (#9571)
+- `cmd/mdatagen`: Use go package name for the scope name by default and add an option to provide the scope name in metadata.yaml. (#9693)
+- `cmd/mdatagen`: Generate the lifecycle tests for components by default. (#9683)
+  It's encouraged to have lifecycle tests for all components enadled, but they can be disabled if needed 
+  in metadata.yaml with `skip_lifecycle: true` and `skip_shutdown: true` under `tests` section.
+  
+- `cmd/mdatagen`: optimize the mdatagen for the case like batchprocessor which use a common struct to implement consumer.Traces, consumer.Metrics, consumer.Logs in the meantime. (#9688)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix persistent queue size backup on reads. (#9740)
+- `processor/batch`: Prevent starting unnecessary goroutines. (#9739)
+- `otlphttpexporter`: prevent error on empty response body when content type is application/json (#9666)
+- `confmap`: confmap honors `Unmarshal` methods on config embedded structs. (#6671)
+- `otelcol`: Respect telemetry configuration when running as a Windows service (#5300)
+
+## v1.3.0/v0.96.0
+
+### 🛑 Breaking changes 🛑
+
+- `configgrpc`: Remove deprecated `GRPCClientSettings`, `GRPCServerSettings`, and `ServerConfig.ToListenerContext`. (#9616)
+- `confighttp`: Remove deprecated `HTTPClientSettings`, `NewDefaultHTTPClientSettings`, and `CORSSettings`. (#9625)
+- `confignet`: Removes deprecated `NetAddr` and `TCPAddr` (#9614)
+
+### 💡 Enhancements 💡
+
+- `configtls`: Add `include_system_ca_certs_pool` to configtls, allowing to load system certs and additional custom certs. (#7774)
+- `otelcol`: Add `ConfigProviderSettings` to `CollectorSettings` (#4759)
+  This allows passing a custom list of `confmap.Provider`s to `otelcol.NewCommand`.
+- `pdata`: Update to OTLP v1.1.0 (#9587)
+  Introduces Span and SpanLink flags.
+- `confmap`: Update mapstructure to use a maintained fork, github.com/go-viper/mapstructure/v2. (#9634)
+  See https://github.com/mitchellh/mapstructure/issues/349 for context.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `configretry`: Allow max_elapsed_time to be set to 0 for indefinite retries (#9641)
+- `client`: Make `Metadata.Get` thread safe (#9595)
+
 ## v1.2.0/v0.95.0
 
 ### 🛑 Breaking changes 🛑

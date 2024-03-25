@@ -83,7 +83,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	var err error
-	if r.serverGRPC, err = r.cfg.GRPC.ToServer(host, r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = r.cfg.GRPC.ToServerContext(context.Background(), host, r.settings.TelemetrySettings); err != nil {
 		return err
 	}
 
@@ -101,7 +101,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.GRPC.NetAddr.Endpoint))
 	var gln net.Listener
-	if gln, err = r.cfg.GRPC.ToListenerContext(context.Background()); err != nil {
+	if gln, err = r.cfg.GRPC.NetAddr.Listen(context.Background()); err != nil {
 		return err
 	}
 
@@ -198,26 +198,14 @@ func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 	return err
 }
 
-func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
-	if tc == nil {
-		return component.ErrNilNextConsumer
-	}
+func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) {
 	r.nextTraces = tc
-	return nil
 }
 
-func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
-	if mc == nil {
-		return component.ErrNilNextConsumer
-	}
+func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) {
 	r.nextMetrics = mc
-	return nil
 }
 
-func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
-	if lc == nil {
-		return component.ErrNilNextConsumer
-	}
+func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) {
 	r.nextLogs = lc
-	return nil
 }

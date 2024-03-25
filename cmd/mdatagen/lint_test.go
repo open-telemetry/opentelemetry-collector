@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_formatIdentifier(t *testing.T) {
+func TestFormatIdentifier(t *testing.T) {
 	var tests = []struct {
 		input    string
 		want     string

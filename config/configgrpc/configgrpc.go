@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"net"
 	"strings"
 	"time"
 
@@ -47,10 +46,6 @@ type KeepaliveClientConfig struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
 }
 
-// GRPCClientSettings defines common settings for a gRPC client configuration.
-// Deprecated: [v0.94.0] Use ClientConfig instead
-type GRPCClientSettings = ClientConfig
-
 // ClientConfig defines common settings for a gRPC client configuration.
 type ClientConfig struct {
 	// The target to which the exporter is going to send traces or metrics,
@@ -62,7 +57,7 @@ type ClientConfig struct {
 	Compression configcompression.Type `mapstructure:"compression"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
+	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
 
 	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
@@ -120,10 +115,6 @@ type KeepaliveEnforcementPolicy struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
 }
 
-// GRPCServerSettings defines common settings for a gRPC server configuration.
-// Deprecated: [v0.94.0] Use ServerConfig instead
-type GRPCServerSettings = ServerConfig
-
 // ServerConfig defines common settings for a gRPC server configuration.
 type ServerConfig struct {
 	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
@@ -131,7 +122,7 @@ type ServerConfig struct {
 
 	// Configures the protocol to use TLS.
 	// The default value is nil, which will cause the protocol to not use TLS.
-	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls"`
+	TLSSetting *configtls.ServerConfig `mapstructure:"tls"`
 
 	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
 	MaxRecvMsgSizeMiB uint64 `mapstructure:"max_recv_msg_size_mib"`
@@ -160,7 +151,7 @@ type ServerConfig struct {
 }
 
 // SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
-// Deprecated: [v0.95.0] Trim the prefix from configgrpc.ClientConfig.Endpoint directly.
+// Deprecated: [v0.97.0]
 func (gcs *ClientConfig) SanitizedEndpoint() string {
 	switch {
 	case gcs.isSchemeHTTP():
@@ -277,13 +268,8 @@ func validateBalancerName(balancerName string) bool {
 	return balancer.Get(balancerName) != nil
 }
 
-// ToListenerContext returns the net.Listener constructed from the settings.
-// Deprecated: [v0.95.0] Call Listen directly on the NetAddr field.
-func (gss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
-	return gss.NetAddr.Listen(ctx)
-}
-
-func (gss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
+// ToServer returns a grpc.Server for the configuration
+func (gss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
 	opts, err := gss.toServerOption(host, settings)
 	if err != nil {
 		return nil, err
@@ -292,9 +278,15 @@ func (gss *ServerConfig) ToServer(host component.Host, settings component.Teleme
 	return grpc.NewServer(opts...), nil
 }
 
+// ToServerContext returns a grpc.Server for the configuration
+// Deprecated: [v0.97.0] Use ToServer instead.
+func (gss *ServerConfig) ToServerContext(ctx context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
+	return gss.ToServer(ctx, host, settings, extraOpts...)
+}
+
 func (gss *ServerConfig) toServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
 	switch gss.NetAddr.Transport {
-	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6":
+	case confignet.TransportTypeTCP, confignet.TransportTypeTCP4, confignet.TransportTypeTCP6, confignet.TransportTypeUDP, confignet.TransportTypeUDP4, confignet.TransportTypeUDP6:
 		internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint)
 	}
 

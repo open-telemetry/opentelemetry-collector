@@ -39,10 +39,6 @@ func NewLogsProcessor(
 		return nil, errors.New("nil logsFunc")
 	}
 
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
 	logsConsumer, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
