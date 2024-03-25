@@ -6,11 +6,14 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 )
 
 // ProviderSettings are the settings to initialize a Provider.
 // Any Provider should take this as a parameter in its constructor.
-type ProviderSettings struct{}
+type ProviderSettings struct {
+	Logger *zap.Logger
+}
 
 // Provider is an interface that helps to retrieve a config map and watch for any
 // changes to the config map. Implementations may load the config from a file,
