@@ -14,7 +14,7 @@ type permanent struct {
 // NewPermanent wraps an error to indicate that it is a permanent error, i.e. an
 // error that will be always returned if its source receives the same inputs.
 func NewPermanent(err error) error {
-	return permanent{err: err}
+	return Partial{err: err}
 }
 
 func (p permanent) Error() string {
