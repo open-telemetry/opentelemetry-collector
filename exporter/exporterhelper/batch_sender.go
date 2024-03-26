@@ -113,6 +113,7 @@ func (bs *batchSender) exportActiveBatch() {
 		close(b.done)
 	}(bs.activeBatch)
 	bs.activeBatch = newEmptyBatch()
+	bs.activeRequests.Store(0)
 }
 
 // isActiveBatchReady returns true if the active batch is ready to be exported.
@@ -139,7 +140,6 @@ func (bs *batchSender) send(ctx context.Context, req Request) error {
 func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) error {
 	bs.mu.Lock()
 	bs.activeRequests.Add(1)
-	defer bs.activeRequests.Add(^uint64(0))
 
 	reqs, err := bs.mergeSplitFunc(ctx, bs.cfg.MaxSizeConfig, bs.activeBatch.request, req)
 	if err != nil || len(reqs) == 0 {
@@ -177,7 +177,6 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) err
 func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
 	bs.mu.Lock()
 	bs.activeRequests.Add(1)
-	defer bs.activeRequests.Add(^uint64(0))
 
 	if bs.activeBatch.request != nil {
 		var err error
