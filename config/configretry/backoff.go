@@ -4,6 +4,7 @@
 package configretry // import "go.opentelemetry.io/collector/config/configretry"
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -11,7 +12,8 @@ import (
 )
 
 // NewDefaultBackOffConfig returns the default settings for RetryConfig.
-func NewDefaultBackOffConfig() BackOffConfig {
+// Deprecated: [v0.97.0] Use NewDefaultBackOffConfigContext instead.
+func NewDefaultBackOffConfigContext(_ context.Context) BackOffConfig {
 	return BackOffConfig{
 		Enabled:             true,
 		InitialInterval:     5 * time.Second,

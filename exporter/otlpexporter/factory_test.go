@@ -30,7 +30,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.RetryConfig, configretry.NewDefaultBackOffConfig())
+	assert.Equal(t, ocfg.RetryConfig, configretry.NewDefaultBackOffConfigContext(context.Background()))
 	assert.Equal(t, ocfg.QueueConfig, exporterhelper.NewDefaultQueueSettings())
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutSettings())
 	assert.Equal(t, ocfg.Compression, configcompression.TypeGzip)

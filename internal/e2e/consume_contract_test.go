@@ -4,6 +4,7 @@
 package e2e
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -19,7 +20,7 @@ import (
 )
 
 func testExporterConfig(endpoint string) component.Config {
-	retryConfig := configretry.NewDefaultBackOffConfig()
+	retryConfig := configretry.NewDefaultBackOffConfigContext(context.Background())
 	retryConfig.InitialInterval = time.Millisecond // interval is short for the test purposes
 	return &otlpexporter.Config{
 		QueueConfig: exporterhelper.QueueSettings{Enabled: false},

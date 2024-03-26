@@ -34,7 +34,7 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		RetryConfig: configretry.NewDefaultBackOffConfig(),
+		RetryConfig: configretry.NewDefaultBackOffConfigContext(context.Background()),
 		QueueConfig: exporterhelper.NewDefaultQueueSettings(),
 		Encoding:    EncodingProto,
 		ClientConfig: confighttp.ClientConfig{

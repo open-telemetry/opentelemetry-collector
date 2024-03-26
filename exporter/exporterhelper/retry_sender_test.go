@@ -37,7 +37,7 @@ func mockRequestMarshaler(Request) ([]byte, error) {
 
 func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	mockR := newMockRequest(2, consumererror.NewPermanent(errors.New("bad data")))
 	be, err := newBaseExporter(defaultSettings, defaultType, newObservabilityConsumerSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(mockR)), WithRetry(rCfg), WithQueue(qCfg))
@@ -61,7 +61,7 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 
 func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	rCfg.Enabled = false
 	be, err := newBaseExporter(defaultSettings, defaultType, newObservabilityConsumerSender, withMarshaler(mockRequestMarshaler),
 		withUnmarshaler(mockRequestUnmarshaler(newMockRequest(2, errors.New("transient error")))),
@@ -88,7 +88,7 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 func TestQueuedRetry_OnError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	rCfg.InitialInterval = 0
 	be, err := newBaseExporter(defaultSettings, defaultType, newObservabilityConsumerSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
@@ -117,7 +117,7 @@ func TestQueuedRetry_OnError(t *testing.T) {
 func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 100 * time.Millisecond
 	be, err := newBaseExporter(defaultSettings, defaultType, newObservabilityConsumerSender,
@@ -166,7 +166,7 @@ func (e wrappedError) Unwrap() error {
 func TestQueuedRetry_ThrottleError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	rCfg.InitialInterval = 10 * time.Millisecond
 	be, err := newBaseExporter(defaultSettings, defaultType, newObservabilityConsumerSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
@@ -200,7 +200,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 1
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	rCfg.InitialInterval = 0
 	be, err := newBaseExporter(defaultSettings, defaultType, newObservabilityConsumerSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
@@ -227,7 +227,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 }
 
 func TestQueueRetryWithNoQueue(t *testing.T) {
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	rCfg.MaxElapsedTime = time.Nanosecond // fail fast
 	be, err := newBaseExporter(exportertest.NewNopCreateSettings(), component.DataTypeLogs, newObservabilityConsumerSender, WithRetry(rCfg))
 	require.NoError(t, err)
@@ -245,7 +245,7 @@ func TestQueueRetryWithNoQueue(t *testing.T) {
 }
 
 func TestQueueRetryWithDisabledRetires(t *testing.T) {
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	rCfg.Enabled = false
 	set := exportertest.NewNopCreateSettings()
 	logger, observed := observer.New(zap.ErrorLevel)

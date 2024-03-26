@@ -67,17 +67,17 @@ func checkStatus(t *testing.T, sd sdktrace.ReadOnlySpan, err error) {
 
 func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	bs, err := newBaseExporter(exportertest.NewNopCreateSettings(), defaultType, newNoopObsrepSender,
-		WithRetry(configretry.NewDefaultBackOffConfig()))
+		WithRetry(configretry.NewDefaultBackOffConfigContext(context.Background())))
 	require.Nil(t, err)
 	require.Nil(t, bs.marshaler)
 	require.Nil(t, bs.unmarshaler)
 	_, err = newBaseExporter(exportertest.NewNopCreateSettings(), defaultType, newNoopObsrepSender,
-		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueSettings()))
+		WithRetry(configretry.NewDefaultBackOffConfigContext(context.Background())), WithQueue(NewDefaultQueueSettings()))
 	require.Error(t, err)
 
 	_, err = newBaseExporter(exportertest.NewNopCreateSettings(), defaultType, newNoopObsrepSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
-		WithRetry(configretry.NewDefaultBackOffConfig()),
+		WithRetry(configretry.NewDefaultBackOffConfigContext(context.Background())),
 		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[Request]()))
 	require.Error(t, err)
 }
@@ -86,7 +86,7 @@ func TestBaseExporterLogging(t *testing.T) {
 	set := exportertest.NewNopCreateSettings()
 	logger, observed := observer.New(zap.DebugLevel)
 	set.Logger = zap.New(logger)
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	rCfg.Enabled = false
 	bs, err := newBaseExporter(set, defaultType, newNoopObsrepSender, WithRetry(rCfg))
 	require.Nil(t, err)

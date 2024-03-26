@@ -4,6 +4,7 @@
 package configretry
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 )
 
 func TestNewDefaultBackOffSettings(t *testing.T) {
-	cfg := NewDefaultBackOffConfig()
+	cfg := NewDefaultBackOffConfigContext(context.Background())
 	assert.NoError(t, cfg.Validate())
 	assert.Equal(t,
 		BackOffConfig{
@@ -25,14 +26,14 @@ func TestNewDefaultBackOffSettings(t *testing.T) {
 }
 
 func TestInvalidInitialInterval(t *testing.T) {
-	cfg := NewDefaultBackOffConfig()
+	cfg := NewDefaultBackOffConfigContext(context.Background())
 	assert.NoError(t, cfg.Validate())
 	cfg.InitialInterval = -1
 	assert.Error(t, cfg.Validate())
 }
 
 func TestInvalidRandomizationFactor(t *testing.T) {
-	cfg := NewDefaultBackOffConfig()
+	cfg := NewDefaultBackOffConfigContext(context.Background())
 	assert.NoError(t, cfg.Validate())
 	cfg.RandomizationFactor = -1
 	assert.Error(t, cfg.Validate())
@@ -41,28 +42,28 @@ func TestInvalidRandomizationFactor(t *testing.T) {
 }
 
 func TestInvalidMultiplier(t *testing.T) {
-	cfg := NewDefaultBackOffConfig()
+	cfg := NewDefaultBackOffConfigContext(context.Background())
 	assert.NoError(t, cfg.Validate())
 	cfg.Multiplier = -1
 	assert.Error(t, cfg.Validate())
 }
 
 func TestZeroMultiplierIsValid(t *testing.T) {
-	cfg := NewDefaultBackOffConfig()
+	cfg := NewDefaultBackOffConfigContext(context.Background())
 	assert.NoError(t, cfg.Validate())
 	cfg.Multiplier = 0
 	assert.NoError(t, cfg.Validate())
 }
 
 func TestInvalidMaxInterval(t *testing.T) {
-	cfg := NewDefaultBackOffConfig()
+	cfg := NewDefaultBackOffConfigContext(context.Background())
 	assert.NoError(t, cfg.Validate())
 	cfg.MaxInterval = -1
 	assert.Error(t, cfg.Validate())
 }
 
 func TestInvalidMaxElapsedTime(t *testing.T) {
-	cfg := NewDefaultBackOffConfig()
+	cfg := NewDefaultBackOffConfigContext(context.Background())
 	assert.NoError(t, cfg.Validate())
 	cfg.MaxElapsedTime = -1
 	assert.Error(t, cfg.Validate())

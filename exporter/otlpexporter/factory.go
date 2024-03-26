@@ -31,7 +31,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		RetryConfig:     configretry.NewDefaultBackOffConfig(),
+		RetryConfig:     configretry.NewDefaultBackOffConfigContext(context.Background()),
 		QueueConfig:     exporterhelper.NewDefaultQueueSettings(),
 		ClientConfig: configgrpc.ClientConfig{
 			Headers: map[string]configopaque.String{},

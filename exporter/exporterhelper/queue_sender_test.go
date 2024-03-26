@@ -26,7 +26,7 @@ import (
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	be, err := newBaseExporter(defaultSettings, defaultType, newObservabilityConsumerSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(rCfg), WithQueue(qCfg))
@@ -60,7 +60,7 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	be, err := newBaseExporter(defaultSettings, defaultType, newObservabilityConsumerSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
 		WithRetry(rCfg), WithQueue(qCfg))
@@ -122,7 +122,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 					QueueSize:    10,
 					NumConsumers: 1,
 				}),
-				WithRetry(configretry.NewDefaultBackOffConfig()),
+				WithRetry(configretry.NewDefaultBackOffConfigContext(context.Background())),
 			},
 		},
 		{
@@ -133,7 +133,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 					QueueSize:    10,
 					NumConsumers: 1,
 				}, exporterqueue.NewMemoryQueueFactory[Request]()),
-				WithRetry(configretry.NewDefaultBackOffConfig()),
+				WithRetry(configretry.NewDefaultBackOffConfigContext(context.Background())),
 			},
 		},
 		{
@@ -144,7 +144,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 					QueueSize:    10,
 					NumConsumers: 1,
 				}, exporterqueue.NewPersistentQueueFactory[Request](nil, exporterqueue.PersistentQueueSettings[Request]{})),
-				WithRetry(configretry.NewDefaultBackOffConfig()),
+				WithRetry(configretry.NewDefaultBackOffConfigContext(context.Background())),
 			},
 		},
 		{
@@ -155,7 +155,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 					QueueSize:    10,
 					NumConsumers: 1,
 				}, exporterqueue.NewPersistentQueueFactory[Request](nil, exporterqueue.PersistentQueueSettings[Request]{})),
-				WithRetry(configretry.NewDefaultBackOffConfig()),
+				WithRetry(configretry.NewDefaultBackOffConfigContext(context.Background())),
 			},
 		},
 	}
@@ -207,7 +207,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 0 // to make every request go straight to the queue
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	set := exporter.CreateSettings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
 	be, err := newBaseExporter(set, defaultType, newObservabilityConsumerSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
@@ -336,7 +336,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	set := exporter.CreateSettings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
 	be, err := newBaseExporter(set, defaultType, newObservabilityConsumerSender,
 		withMarshaler(mockRequestMarshaler), withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
@@ -362,7 +362,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	set := exporter.CreateSettings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
 	be, err := newBaseExporter(set, defaultType, newObservabilityConsumerSender, withMarshaler(mockRequestMarshaler),
 		withUnmarshaler(mockRequestUnmarshaler(&mockRequest{})), WithRetry(rCfg), WithQueue(qCfg))
@@ -383,7 +383,7 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID // enable persistence to ensure data is re-queued on shutdown
 
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 

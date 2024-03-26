@@ -18,7 +18,7 @@ import (
 
 // retryConfig is a configuration to quickly retry failed exports.
 var retryConfig = func() configretry.BackOffConfig {
-	c := configretry.NewDefaultBackOffConfig()
+	c := configretry.NewDefaultBackOffConfigContext(context.Background())
 	c.InitialInterval = time.Millisecond
 	return c
 }()

@@ -160,7 +160,7 @@ func TestMetricsExporter_WithPersistentQueue(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	ms := consumertest.MetricsSink{}
 	set := exportertest.NewNopCreateSettings()
 	set.ID = component.MustNewIDWithName("test_metrics", "with_persistent_queue")
@@ -239,7 +239,7 @@ func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg := configretry.NewDefaultBackOffConfigContext(context.Background())
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
