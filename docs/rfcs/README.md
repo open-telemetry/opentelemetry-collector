@@ -5,7 +5,6 @@ Proposals here imply changes only on the OpenTelemetry Collector and not on othe
 
 Accepted RFCs:
 
-- [Scraping Metrics Receivers](./scraping-receivers.md)
 - [OpenTelemetry Collector Processor Exploration](./processing.md)
 
 [1]: https://github.com/open-telemetry/oteps
