@@ -38,8 +38,7 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 	val, exists := os.LookupEnv(envVarName)
 	if !exists {
 		emp.logger.Warn(fmt.Sprintf("Environment variable %s is used in configuration but is unset", envVarName))
-	}
-	if len(val) == 0 {
+	} else if len(val) == 0 {
 		emp.logger.Warn(fmt.Sprintf("Environment variable %s is used in configuration but is empty", envVarName))
 	}
 

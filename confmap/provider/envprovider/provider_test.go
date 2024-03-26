@@ -92,9 +92,8 @@ func TestEnvWithLogger(t *testing.T) {
 	assert.Equal(t, ol.Len(), 0)
 }
 
-func TestEnvWithLoggerWarn(t *testing.T) {
+func TestUnsetEnvWithLoggerWarn(t *testing.T) {
 	const envName = "default-config"
-	t.Setenv(envName, validYAML)
 	core, ol := observer.New(zap.WarnLevel)
 	logger := zap.New(core)
 
@@ -103,12 +102,30 @@ func TestEnvWithLoggerWarn(t *testing.T) {
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
-	expectedMap := confmap.NewFromStringMap(map[string]any{
-		"processors::batch":         nil,
-		"exporters::otlp::endpoint": "localhost:4317",
-	})
+	expectedMap := confmap.NewFromStringMap(map[string]any{})
 	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
 
 	assert.NoError(t, env.Shutdown(context.Background()))
-	assert.Equal(t, ol.Len(), 0)
+	assert.Equal(t, ol.Len(), 1)
+	assert.Equal(t, ol.All()[0].Message, "Environment variable default-config is used in configuration but is unset")
+}
+
+func TestEmptyEnvWithLoggerWarn(t *testing.T) {
+	const envName = "default-config"
+	t.Setenv(envName, "")
+
+	core, ol := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+
+	env := NewWithSettings(confmap.ProviderSettings{Logger: logger})
+	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	require.NoError(t, err)
+	retMap, err := ret.AsConf()
+	assert.NoError(t, err)
+	expectedMap := confmap.NewFromStringMap(map[string]any{})
+	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
+
+	assert.NoError(t, env.Shutdown(context.Background()))
+	assert.Equal(t, ol.Len(), 1)
+	assert.Equal(t, ol.All()[0].Message, "Environment variable default-config is used in configuration but is empty")
 }
