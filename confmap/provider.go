@@ -6,6 +6,7 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 import (
 	"context"
 	"fmt"
+
 	"go.uber.org/zap"
 )
 

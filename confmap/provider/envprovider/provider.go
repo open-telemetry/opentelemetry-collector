@@ -6,9 +6,10 @@ package envprovider // import "go.opentelemetry.io/collector/confmap/provider/en
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"os"
 	"strings"
+
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/internal"

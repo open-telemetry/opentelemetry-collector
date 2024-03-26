@@ -5,9 +5,10 @@ package envprovider
 
 import (
 	"context"
+	"testing"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
