@@ -897,6 +897,122 @@ func TestHttpCorsWithSettings(t *testing.T) {
 	assert.Equal(t, "*", rec.Header().Get("Access-Control-Allow-Origin"))
 }
 
+func TestIPDenied(t *testing.T) {
+	_, localhostRange, err := net.ParseCIDR("127.0.0.1/32")
+	require.NoError(t, err)
+	_, someOtherRange, err := net.ParseCIDR("192.168.1.3/32")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name         string
+		deniedRanges []*net.IPNet
+		closed       bool
+	}{
+		{
+			"127.0.0.1 denied",
+			[]*net.IPNet{localhostRange},
+			true,
+		},
+		{
+			"127.0.0.1 allowed",
+			[]*net.IPNet{someOtherRange},
+			false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			hss := &HTTPServerSettings{
+				Endpoint:       "localhost:0",
+				DeniedIPRanges: test.deniedRanges,
+			}
+
+			host := &mockHost{}
+
+			srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				writer.WriteHeader(412)
+			}))
+			require.NoError(t, err)
+			require.NotNil(t, srv)
+			l, err := hss.ToListener()
+			require.NoError(t, err)
+			go func() {
+				_ = srv.Serve(l)
+			}()
+			t.Cleanup(func() {
+				_ = l.Close()
+			})
+			req, err := http.NewRequest(http.MethodOptions, fmt.Sprintf("http://%s", l.Addr().String()), nil)
+			require.NoError(t, err)
+			resp, err := http.DefaultClient.Do(req)
+			if test.closed {
+				require.Error(t, err)
+			} else {
+				assert.Equal(t, 412, resp.StatusCode)
+			}
+
+		})
+	}
+}
+
+func TestIPIsAllowed(t *testing.T) {
+	_, localhostRange, err := net.ParseCIDR("127.0.0.1/32")
+	require.NoError(t, err)
+	_, someOtherRange, err := net.ParseCIDR("192.168.1.3/32")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name          string
+		allowedRanges []*net.IPNet
+		closed        bool
+	}{
+		{
+			"127.0.0.1 denied",
+			[]*net.IPNet{someOtherRange},
+			true,
+		},
+		{
+			"127.0.0.1 allowed",
+			[]*net.IPNet{localhostRange},
+			false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			hss := &HTTPServerSettings{
+				Endpoint:        "localhost:0",
+				AllowedIPRanges: test.allowedRanges,
+			}
+
+			host := &mockHost{}
+
+			srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				writer.WriteHeader(412)
+			}))
+			require.NoError(t, err)
+			require.NotNil(t, srv)
+			l, err := hss.ToListener()
+			require.NoError(t, err)
+			go func() {
+				_ = srv.Serve(l)
+			}()
+			t.Cleanup(func() {
+				_ = l.Close()
+			})
+			req, err := http.NewRequest(http.MethodOptions, fmt.Sprintf("http://%s", l.Addr().String()), nil)
+			require.NoError(t, err)
+			resp, err := http.DefaultClient.Do(req)
+			if test.closed {
+				require.Error(t, err)
+			} else {
+				assert.Equal(t, 412, resp.StatusCode)
+			}
+
+		})
+	}
+}
+
 func TestHttpServerHeaders(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1270,7 +1386,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 
 	srv.Handler.ServeHTTP(response, req)
 	// verify
-	assert.Equal(t, response.Result().StatusCode, http.StatusInternalServerError)
+	assert.Equal(t, http.StatusInternalServerError, response.Result().StatusCode)
 }
 
 func TestServerWithDecoder(t *testing.T) {
@@ -1300,6 +1416,95 @@ func TestServerWithDecoder(t *testing.T) {
 	// verify
 	assert.Equal(t, response.Result().StatusCode, http.StatusOK)
 
+}
+
+type noopConn struct {
+	rAddr  net.Addr
+	closed bool
+}
+
+func (*noopConn) LocalAddr() net.Addr                { return nil }
+func (c *noopConn) RemoteAddr() net.Addr             { return c.rAddr }
+func (*noopConn) SetDeadline(_ time.Time) error      { return nil }
+func (*noopConn) SetReadDeadline(_ time.Time) error  { return nil }
+func (*noopConn) SetWriteDeadline(_ time.Time) error { return nil }
+func (c *noopConn) Read(_ []byte) (int, error)       { return 0, nil }
+func (c *noopConn) Write(_ []byte) (int, error)      { return 0, nil }
+func (c *noopConn) Close() error {
+	c.closed = true
+	return nil
+}
+
+func TestAllowIPRanges(t *testing.T) {
+	_, n, err := net.ParseCIDR("2.10.15.4/32")
+	require.NoError(t, err)
+	_, n2, err := net.ParseCIDR("192.10.15.132/32")
+	require.NoError(t, err)
+
+	h := connStateWithIPRanges([]*net.IPNet{}, []*net.IPNet{n, n2})
+
+	tests := []struct {
+		name           string
+		ip             string
+		expectedClosed bool
+	}{
+		{
+			"allowed",
+			"2.10.15.4",
+			false,
+		},
+		{
+			"forbidden",
+			"192.168.1.24",
+			true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			addr, err := net.ResolveTCPAddr("tcp", test.ip+":1234")
+			require.NoError(t, err)
+			conn := &noopConn{rAddr: addr}
+			h(conn, http.StateNew)
+			assert.Equal(t, test.expectedClosed, conn.closed)
+		})
+	}
+}
+
+func TestDenyIPRanges(t *testing.T) {
+	_, n, err := net.ParseCIDR("2.10.15.4/32")
+	require.NoError(t, err)
+	_, n2, err := net.ParseCIDR("192.10.15.132/32")
+	require.NoError(t, err)
+
+	h := connStateWithIPRanges([]*net.IPNet{n, n2}, []*net.IPNet{})
+
+	tests := []struct {
+		name           string
+		ip             string
+		expectedClosed bool
+	}{
+		{
+			"allowed",
+			"192.168.1.24",
+			false,
+		},
+		{
+			"forbidden",
+			"2.10.15.4",
+			true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			addr, err := net.ResolveTCPAddr("tcp", test.ip+":1234")
+			require.NoError(t, err)
+			conn := &noopConn{rAddr: addr}
+			h(conn, http.StateNew)
+			assert.Equal(t, test.expectedClosed, conn.closed)
+		})
+	}
 }
 
 type mockHost struct {

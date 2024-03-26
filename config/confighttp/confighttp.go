@@ -274,6 +274,20 @@ type ServerConfig struct {
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
+
+	// AllowedIPRanges limits incoming requests to specific IP ranges.
+	// If empty, all IPs are allowed.
+	// Connections outside the ranges will be closed.
+	// IP ranges are represented using the CIDR notation.
+	// `DeniedIPRanges` are evaluated before `AllowedIPRanges`.
+	AllowedIPRanges []*net.IPNet `mapstructure:"allowed_ip_ranges"`
+
+	// DeniedIPRanges rejects incoming requests from specific IP ranges.
+	// If empty, all IPs are allowed.
+	// Connections inside the ranges will be closed.
+	// IP ranges are represented using the CIDR notation.
+	// `DeniedIPRanges` are evaluated before `AllowedIPRanges`.
+	DeniedIPRanges []*net.IPNet `mapstructure:"denied_ip_ranges"`
 }
 
 // ToListener creates a net.Listener.
@@ -385,9 +399,46 @@ func (hss *ServerConfig) ToServer(host component.Host, settings component.Teleme
 		includeMetadata: hss.IncludeMetadata,
 	}
 
+	var connStateFn func(conn net.Conn, state http.ConnState)
+	if len(hss.DeniedIPRanges) > 0 || len(hss.AllowedIPRanges) > 0 {
+		connStateFn = connStateWithIPRanges(hss.DeniedIPRanges, hss.AllowedIPRanges)
+	}
+
 	return &http.Server{
-		Handler: handler,
+		Handler:   handler,
+		ConnState: connStateFn,
 	}, nil
+}
+
+func connStateWithIPRanges(deniedIPRanges []*net.IPNet, allowedIPRanges []*net.IPNet) func(conn net.Conn, state http.ConnState) {
+	return func(conn net.Conn, state http.ConnState) {
+		if state != http.StateNew {
+			return
+		}
+		ip := conn.RemoteAddr().(*net.TCPAddr).IP
+		for _, n := range deniedIPRanges {
+			if n.Contains(ip) {
+				_ = conn.Close()
+				return
+			}
+		}
+
+		if len(allowedIPRanges) == 0 {
+			return
+		}
+
+		var allowed bool
+		for _, n := range allowedIPRanges {
+			if n.Contains(ip) {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			_ = conn.Close()
+			return
+		}
+	}
 }
 
 func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {

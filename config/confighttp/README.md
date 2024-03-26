@@ -51,6 +51,11 @@ exporter:
       test1: "value1"
       "test 2": "value 2"
     compression: zstd
+    allowed_ip_ranges:
+     - 10.0.0.1/16
+     - 192.168.1.1/32
+    denied_ip_ranges:
+     - 5.0.0.0/8
 ```
 
 ## Server Configuration
@@ -77,6 +82,15 @@ will not be enabled.
 - `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `0` (no restriction)
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
+- `allowed_ip_ranges`: limits incoming requests to specific IP ranges.
+If empty, all IPs are allowed.
+Connections outside the ranges will be closed.
+IP ranges are represented using the CIDR notation.
+- `denied_ip_ranges`: denies incoming requests from specific IP ranges.
+If empty, all IPs are allowed.
+Connections inside the ranges will be closed.
+IP ranges are represented using the CIDR notation.
+`denied_ip_ranges` are evaluated before `allowed_ip_ranges`.
 
 You can enable [`attribute processor`][attribute-processor] to append any http header to span's attribute using custom key. You also need to enable the "include_metadata"
 
