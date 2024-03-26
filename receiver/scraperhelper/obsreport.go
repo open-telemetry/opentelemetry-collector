@@ -78,14 +78,14 @@ func (s *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
 	var errors, err error
 
 	s.scrapedMetricsPoints, err = meter.Int64Counter(
-		obsmetrics.ScraperPrefix+obsmetrics.ScrapedMetricPointsKey,
+		obsmetrics.ScraperMetricPrefix+obsmetrics.ScrapedMetricPointsKey,
 		metric.WithDescription("Number of metric points successfully scraped."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	s.erroredMetricsPoints, err = meter.Int64Counter(
-		obsmetrics.ScraperPrefix+obsmetrics.ErroredMetricPointsKey,
+		obsmetrics.ScraperMetricPrefix+obsmetrics.ErroredMetricPointsKey,
 		metric.WithDescription("Number of metric points that were unable to be scraped."),
 		metric.WithUnit("1"),
 	)

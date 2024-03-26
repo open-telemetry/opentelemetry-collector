@@ -92,7 +92,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 	require.NoError(t, err)
 
 	if expected.sendSizeBytesSum > 0 {
-		name := "processor_batch_batch_send_size_bytes"
+		name := "otelcol_processor_batch_batch_send_size_bytes"
 		metric := tt.getMetric(t, name, io_prometheus_client.MetricType_HISTOGRAM, metrics)
 
 		assertFloat(t, expected.sendSizeBytesSum, metric.GetHistogram().GetSampleSum(), name)
@@ -108,7 +108,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 	}
 
 	if expected.sendSizeSum > 0 {
-		name := "processor_batch_batch_send_size"
+		name := "otelcol_processor_batch_batch_send_size"
 		metric := tt.getMetric(t, name, io_prometheus_client.MetricType_HISTOGRAM, metrics)
 
 		assertFloat(t, expected.sendSizeSum, metric.GetHistogram().GetSampleSum(), name)
@@ -122,14 +122,14 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 	}
 
 	if expected.sizeTrigger > 0 {
-		name := "processor_batch_batch_size_trigger_send"
+		name := "otelcol_processor_batch_batch_size_trigger_send"
 		metric := tt.getMetric(t, name, io_prometheus_client.MetricType_COUNTER, metrics)
 
 		assertFloat(t, expected.sizeTrigger, metric.GetCounter().GetValue(), name)
 	}
 
 	if expected.timeoutTrigger > 0 {
-		name := "processor_batch_timeout_trigger_send"
+		name := "otelcol_processor_batch_timeout_trigger_send"
 		metric := tt.getMetric(t, name, io_prometheus_client.MetricType_COUNTER, metrics)
 
 		assertFloat(t, expected.timeoutTrigger, metric.GetCounter().GetValue(), name)

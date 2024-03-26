@@ -43,12 +43,12 @@ func TestPromChecker(t *testing.T) {
 	transport := "fakeTransport"
 
 	assert.NoError(t,
-		pc.checkCounter("receiver_accepted_spans", 42, []attribute.KeyValue{attribute.String("receiver", receiver.String()), attribute.String("transport", transport)}),
+		pc.checkCounter("otelcol_receiver_accepted_spans", 42, []attribute.KeyValue{attribute.String("receiver", receiver.String()), attribute.String("transport", transport)}),
 		"correct assertion should return no error",
 	)
 
 	assert.Error(t,
-		pc.checkCounter("receiver_accepted_spans", 15, []attribute.KeyValue{attribute.String("receiver", receiver.String()), attribute.String("transport", transport)}),
+		pc.checkCounter("otelcol_receiver_accepted_spans", 15, []attribute.KeyValue{attribute.String("receiver", receiver.String()), attribute.String("transport", transport)}),
 		"invalid value should return error",
 	)
 
@@ -58,7 +58,7 @@ func TestPromChecker(t *testing.T) {
 	)
 
 	assert.Error(t,
-		pc.checkCounter("receiver_accepted_spans", 42, []attribute.KeyValue{attribute.String("receiver", "notFakeReceiver"), attribute.String("transport", transport)}),
+		pc.checkCounter("otelcol_receiver_accepted_spans", 42, []attribute.KeyValue{attribute.String("receiver", "notFakeReceiver"), attribute.String("transport", transport)}),
 		"invalid attributes should return error",
 	)
 

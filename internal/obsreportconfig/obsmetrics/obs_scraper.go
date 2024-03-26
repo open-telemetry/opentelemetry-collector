@@ -6,7 +6,6 @@ package obsmetrics // import "go.opentelemetry.io/collector/internal/obsreportco
 const (
 	// ScraperKey used to identify scrapers in metrics and traces.
 	ScraperKey = "scraper"
-
 	// ScrapedMetricPointsKey used to identify metric points scraped by the
 	// Collector.
 	ScrapedMetricPointsKey = "scraped_metric_points"
@@ -16,6 +15,7 @@ const (
 )
 
 const (
+	ScraperMetricPrefix           = otelcolPrefix + MetricSep + ScraperKey + MetricSep
 	ScraperPrefix                 = ScraperKey + NameSep
 	ScraperMetricsOperationSuffix = NameSep + "MetricsScraped"
 )

@@ -63,11 +63,11 @@ func TestBuildProcessorCustomMetricName(t *testing.T) {
 	}{
 		{
 			name: "firstMeasure",
-			want: "processor/test_type/firstMeasure",
+			want: "otelcol_processor_test_type_firstMeasure",
 		},
 		{
 			name: "secondMeasure",
-			want: "processor/test_type/secondMeasure",
+			want: "otelcol_processor_test_type_secondMeasure",
 		},
 	}
 	for _, tt := range tests {
