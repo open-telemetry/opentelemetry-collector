@@ -38,9 +38,9 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 	envVarName := uri[len(schemeName)+1:]
 	val, exists := os.LookupEnv(envVarName)
 	if !exists {
-		emp.logger.Warn(fmt.Sprintf("Environment variable %s is used in configuration but is unset", envVarName))
+		emp.logger.Warn("Configuration references unset environment variable", zap.String("name", envVarName))
 	} else if len(val) == 0 {
-		emp.logger.Warn(fmt.Sprintf("Environment variable %s is used in configuration but is empty", envVarName))
+		emp.logger.Info("Configuration references empty environment variable", zap.String("name", envVarName))
 	}
 
 	return internal.NewRetrievedFromYAML([]byte(val))

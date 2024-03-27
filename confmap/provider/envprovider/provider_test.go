@@ -107,15 +107,19 @@ func TestUnsetEnvWithLoggerWarn(t *testing.T) {
 	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
 
 	assert.NoError(t, env.Shutdown(context.Background()))
+
 	assert.Equal(t, 1, ol.Len())
-	assert.Equal(t, "Environment variable default-config is used in configuration but is unset", ol.All()[0].Message)
+	logLine := ol.All()[0]
+	assert.Equal(t, "Configuration references unset environment variable", logLine.Message)
+	assert.Equal(t, zap.WarnLevel, logLine.Level)
+	assert.Equal(t, envName, logLine.Context[0].String)
 }
 
 func TestEmptyEnvWithLoggerWarn(t *testing.T) {
 	const envName = "default-config"
 	t.Setenv(envName, "")
 
-	core, ol := observer.New(zap.WarnLevel)
+	core, ol := observer.New(zap.InfoLevel)
 	logger := zap.New(core)
 
 	env := NewWithSettings(confmap.ProviderSettings{Logger: logger})
@@ -127,6 +131,10 @@ func TestEmptyEnvWithLoggerWarn(t *testing.T) {
 	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
 
 	assert.NoError(t, env.Shutdown(context.Background()))
+
 	assert.Equal(t, 1, ol.Len())
-	assert.Equal(t, "Environment variable default-config is used in configuration but is empty", ol.All()[0].Message)
+	logLine := ol.All()[0]
+	assert.Equal(t, "Configuration references empty environment variable", logLine.Message)
+	assert.Equal(t, zap.InfoLevel, logLine.Level)
+	assert.Equal(t, envName, logLine.Context[0].String)
 }
