@@ -90,7 +90,7 @@ func TestEnvWithLogger(t *testing.T) {
 	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
 
 	assert.NoError(t, env.Shutdown(context.Background()))
-	assert.Equal(t, ol.Len(), 0)
+	assert.Equal(t, 0, ol.Len())
 }
 
 func TestUnsetEnvWithLoggerWarn(t *testing.T) {
@@ -107,8 +107,8 @@ func TestUnsetEnvWithLoggerWarn(t *testing.T) {
 	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
 
 	assert.NoError(t, env.Shutdown(context.Background()))
-	assert.Equal(t, ol.Len(), 1)
-	assert.Equal(t, ol.All()[0].Message, "Environment variable default-config is used in configuration but is unset")
+	assert.Equal(t, 1, ol.Len())
+	assert.Equal(t, "Environment variable default-config is used in configuration but is unset", ol.All()[0].Message)
 }
 
 func TestEmptyEnvWithLoggerWarn(t *testing.T) {
@@ -127,6 +127,6 @@ func TestEmptyEnvWithLoggerWarn(t *testing.T) {
 	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
 
 	assert.NoError(t, env.Shutdown(context.Background()))
-	assert.Equal(t, ol.Len(), 1)
-	assert.Equal(t, ol.All()[0].Message, "Environment variable default-config is used in configuration but is empty")
+	assert.Equal(t, 1, ol.Len())
+	assert.Equal(t, "Environment variable default-config is used in configuration but is empty", ol.All()[0].Message)
 }
