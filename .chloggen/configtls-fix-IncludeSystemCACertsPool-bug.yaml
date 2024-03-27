@@ -4,13 +4,13 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: exporterhelper
+component: configtls
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix race in concurrency check in batch sender leading to smaller batch sizes.
+note: Fix issue where `IncludeSystemCACertsPool` was not consistently used between `ServerConfig` and `ClientConfig`.
 
 # One or more tracking issues or pull requests related to the change
-issues: [9761]
+issues: [9835]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
