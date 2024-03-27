@@ -55,7 +55,7 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error
 		// Provide a default set of providers and converters if none have been specified.
 		// TODO: Remove this after CollectorSettings.ConfigProvider is removed and instead
 		// do it in the builder.
-		if len(resolverSet.Providers) == 0 && len(resolverSet.Converters) == 0 {
+		if len(resolverSet.ProviderFactories) == 0 && len(resolverSet.ConverterFactories) == 0 {
 			set.ConfigProviderSettings = newDefaultConfigProviderSettings(resolverSet.URIs)
 		}
 	}
