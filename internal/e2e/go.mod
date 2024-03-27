@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.96.0
 	go.opentelemetry.io/collector/pdata v1.4.0
 	go.opentelemetry.io/collector/receiver v0.97.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.96.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.97.0
 	go.uber.org/goleak v1.3.0
 )
 
