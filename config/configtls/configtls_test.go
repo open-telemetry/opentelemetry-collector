@@ -635,30 +635,25 @@ func TestMinMaxTLSVersions(t *testing.T) {
 
 func TestConfigValidate(t *testing.T) {
 	tests := []struct {
-		name       string
-		minVersion string
-		maxVersion string
-		errorTxt   string
+		name      string
+		tlsConfig Config
+		errorTxt  string
 	}{
-		{name: `TLS Config ["", ""] to be valid`, minVersion: "", maxVersion: ""},
-		{name: `TLS Config ["", "1.3"] to be valid`, minVersion: "", maxVersion: "1.3"},
-		{name: `TLS Config ["1.2", ""] to be valid`, minVersion: "1.2", maxVersion: ""},
-		{name: `TLS Config ["1.3", "1.3"] to be valid`, minVersion: "1.3", maxVersion: "1.3"},
-		{name: `TLS Config ["1.0", "1.1"] to be valid`, minVersion: "1.0", maxVersion: "1.1"},
-		{name: `TLS Config ["asd", ""] to give [Error]`, minVersion: "asd", maxVersion: "", errorTxt: `invalid TLS min_version: unsupported TLS version: "asd"`},
-		{name: `TLS Config ["", "asd"] to give [Error]`, minVersion: "", maxVersion: "asd", errorTxt: `invalid TLS max_version: unsupported TLS version: "asd"`},
-		{name: `TLS Config ["0.4", ""] to give [Error]`, minVersion: "0.4", maxVersion: "", errorTxt: `invalid TLS min_version: unsupported TLS version: "0.4"`},
-		{name: `TLS Config ["1.2", "1.1"] to give [Error]`, minVersion: "1.2", maxVersion: "1.1", errorTxt: `invalid TLS configuration: min_version cannot be greater than max_version`},
+		{name: `TLS Config ["", ""] to be valid`, tlsConfig: Config{MinVersion: "", MaxVersion: ""}},
+		{name: `TLS Config ["", "1.3"] to be valid`, tlsConfig: Config{MinVersion: "", MaxVersion: "1.3"}},
+		{name: `TLS Config ["1.2", ""] to be valid`, tlsConfig: Config{MinVersion: "1.2", MaxVersion: ""}},
+		{name: `TLS Config ["1.3", "1.3"] to be valid`, tlsConfig: Config{MinVersion: "1.3", MaxVersion: "1.3"}},
+		{name: `TLS Config ["1.0", "1.1"] to be valid`, tlsConfig: Config{MinVersion: "1.0", MaxVersion: "1.1"}},
+		{name: `TLS Config ["asd", ""] to give [Error]`, tlsConfig: Config{MinVersion: "asd", MaxVersion: ""}, errorTxt: `invalid TLS min_version: unsupported TLS version: "asd"`},
+		{name: `TLS Config ["", "asd"] to give [Error]`, tlsConfig: Config{MinVersion: "", MaxVersion: "asd"}, errorTxt: `invalid TLS max_version: unsupported TLS version: "asd"`},
+		{name: `TLS Config ["0.4", ""] to give [Error]`, tlsConfig: Config{MinVersion: "0.4", MaxVersion: ""}, errorTxt: `invalid TLS min_version: unsupported TLS version: "0.4"`},
+		{name: `TLS Config ["1.2", "1.1"] to give [Error]`, tlsConfig: Config{MinVersion: "1.2", MaxVersion: "1.1"}, errorTxt: `invalid TLS configuration: min_version cannot be greater than max_version`},
+		{name: `TLS Config with both CA File and PEM`, tlsConfig: Config{CAFile: "test", CAPem: "test"}, errorTxt: `provide either a CA file or the PEM-encoded string, but not both`},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			setting := Config{
-				MinVersion: test.minVersion,
-				MaxVersion: test.maxVersion,
-			}
-
-			err := setting.Validate()
+			err := test.tlsConfig.Validate()
 
 			if test.errorTxt == "" {
 				assert.Nil(t, err)
@@ -722,13 +717,93 @@ func TestSystemCertPool(t *testing.T) {
 	anError := errors.New("my error")
 	tests := []struct {
 		name         string
-		config       Config
+		tlsConfig    Config
 		wantErr      error
 		systemCertFn func() (*x509.CertPool, error)
 	}{
 		{
 			name: "not using system cert pool",
-			config: Config{
+			tlsConfig: Config{
+				IncludeSystemCACertsPool: false,
+				CAFile:                   filepath.Join("testdata", "ca-1.crt"),
+			},
+			wantErr:      nil,
+			systemCertFn: x509.SystemCertPool,
+		},
+		{
+			name: "using system cert pool",
+			tlsConfig: Config{
+				IncludeSystemCACertsPool: true,
+				CAFile:                   filepath.Join("testdata", "ca-1.crt"),
+			},
+			wantErr:      nil,
+			systemCertFn: x509.SystemCertPool,
+		},
+		{
+			name: "error loading system cert pool",
+			tlsConfig: Config{
+				IncludeSystemCACertsPool: true,
+				CAFile:                   filepath.Join("testdata", "ca-1.crt"),
+			},
+			wantErr: anError,
+			systemCertFn: func() (*x509.CertPool, error) {
+				return nil, anError
+			},
+		},
+		{
+			name: "nil system cert pool",
+			tlsConfig: Config{
+				IncludeSystemCACertsPool: true,
+				CAFile:                   filepath.Join("testdata", "ca-1.crt"),
+			},
+			wantErr: nil,
+			systemCertFn: func() (*x509.CertPool, error) {
+				return nil, nil
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			oldSystemCertPool := systemCertPool
+			systemCertPool = test.systemCertFn
+			defer func() {
+				systemCertPool = oldSystemCertPool
+			}()
+
+			serverConfig := ServerConfig{
+				Config: test.tlsConfig,
+			}
+			c, err := serverConfig.LoadTLSConfig()
+			if test.wantErr != nil {
+				assert.ErrorContains(t, err, test.wantErr.Error())
+			} else {
+				assert.NotNil(t, c.RootCAs)
+			}
+
+			clientConfig := ClientConfig{
+				Config: test.tlsConfig,
+			}
+			c, err = clientConfig.LoadTLSConfig()
+			if test.wantErr != nil {
+				assert.ErrorContains(t, err, test.wantErr.Error())
+			} else {
+				assert.NotNil(t, c.RootCAs)
+			}
+		})
+	}
+}
+
+func TestSystemCertPool_loadCert(t *testing.T) {
+	anError := errors.New("my error")
+	tests := []struct {
+		name         string
+		tlsConfig    Config
+		wantErr      error
+		systemCertFn func() (*x509.CertPool, error)
+	}{
+		{
+			name: "not using system cert pool",
+			tlsConfig: Config{
 				IncludeSystemCACertsPool: false,
 			},
 			wantErr:      nil,
@@ -736,7 +811,7 @@ func TestSystemCertPool(t *testing.T) {
 		},
 		{
 			name: "using system cert pool",
-			config: Config{
+			tlsConfig: Config{
 				IncludeSystemCACertsPool: true,
 			},
 			wantErr:      nil,
@@ -744,7 +819,7 @@ func TestSystemCertPool(t *testing.T) {
 		},
 		{
 			name: "error loading system cert pool",
-			config: Config{
+			tlsConfig: Config{
 				IncludeSystemCACertsPool: true,
 			},
 			wantErr: anError,
@@ -754,7 +829,7 @@ func TestSystemCertPool(t *testing.T) {
 		},
 		{
 			name: "nil system cert pool",
-			config: Config{
+			tlsConfig: Config{
 				IncludeSystemCACertsPool: true,
 			},
 			wantErr: nil,
@@ -770,7 +845,7 @@ func TestSystemCertPool(t *testing.T) {
 			defer func() {
 				systemCertPool = oldSystemCertPool
 			}()
-			certPool, err := test.config.loadCert(filepath.Join("testdata", "ca-1.crt"))
+			certPool, err := test.tlsConfig.loadCert(filepath.Join("testdata", "ca-1.crt"))
 			if test.wantErr != nil {
 				assert.Equal(t, test.wantErr, err)
 			} else {
