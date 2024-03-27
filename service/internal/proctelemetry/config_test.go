@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -339,7 +340,7 @@ func TestMetricReader(t *testing.T) {
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, server, err := InitMetricReader(context.Background(), tt.reader, make(chan error))
+			reader, server, err := InitMetricReader(context.Background(), tt.reader, make(chan error), &sync.WaitGroup{})
 			defer func() {
 				if reader != nil {
 					assert.NoError(t, reader.Shutdown(context.Background()))

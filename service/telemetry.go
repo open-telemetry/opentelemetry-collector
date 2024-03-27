@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"sync"
 
 	ocmetric "go.opencensus.io/metric"
 	"go.opencensus.io/metric/metricproducer"
@@ -33,6 +34,7 @@ type meterProvider struct {
 	*sdkmetric.MeterProvider
 	ocRegistry *ocmetric.Registry
 	servers    []*http.Server
+	serverWG   sync.WaitGroup
 }
 
 type meterProviderSettings struct {
@@ -88,7 +90,7 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool, ex
 	opts := []sdkmetric.Option{}
 	for _, reader := range set.cfg.Readers {
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/8045
-		r, server, err := proctelemetry.InitMetricReader(context.Background(), reader, set.asyncErrorChannel)
+		r, server, err := proctelemetry.InitMetricReader(context.Background(), reader, set.asyncErrorChannel, &mp.serverWG)
 		if err != nil {
 			return nil, err
 		}
@@ -122,5 +124,8 @@ func (mp *meterProvider) Shutdown(ctx context.Context) error {
 			errs = multierr.Append(errs, server.Close())
 		}
 	}
-	return multierr.Append(errs, mp.MeterProvider.Shutdown(ctx))
+	errs = multierr.Append(errs, mp.MeterProvider.Shutdown(ctx))
+	mp.serverWG.Wait()
+
+	return errs
 }
