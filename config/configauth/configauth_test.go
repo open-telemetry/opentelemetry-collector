@@ -15,6 +15,12 @@ import (
 
 var mockID = component.MustNewID("mock")
 
+func TestNewDefaultAuthentication(t *testing.T) {
+	auth := NewDefaultAuthentication()
+	assert.NotNil(t, auth)
+	assert.Empty(t, auth)
+}
+
 func TestGetServer(t *testing.T) {
 	testCases := []struct {
 		desc          string
