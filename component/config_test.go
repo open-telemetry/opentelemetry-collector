@@ -424,15 +424,15 @@ func TestNewType(t *testing.T) {
 }
 
 type configWithEmbeddedStruct struct {
-	String                      string `mapstructure:"string"`
-	Num                         int    `mapstructure:"num"`
-	EmbeddedUnmarshallingConfig `mapstructure:",squash"`
+	String string `mapstructure:"string"`
+	Num    int    `mapstructure:"num"`
+	embeddedUnmarshallingConfig
 }
 
-type EmbeddedUnmarshallingConfig struct {
+type embeddedUnmarshallingConfig struct {
 }
 
-func (euc *EmbeddedUnmarshallingConfig) Unmarshal(c *confmap.Conf) error {
+func (euc *embeddedUnmarshallingConfig) Unmarshal(_ *confmap.Conf) error {
 	return nil // do nothing.
 }
 func TestStructWithEmbeddedUnmarshaling(t *testing.T) {
