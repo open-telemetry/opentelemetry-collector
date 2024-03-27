@@ -19,21 +19,21 @@ import (
 )
 
 var (
-	processorScope = obsmetrics.Scope + obsmetrics.NameSep + obsmetrics.ProcessorKey
+	processorScope = obsmetrics.Scope + obsmetrics.SpanNameSep + obsmetrics.ProcessorKey
 )
 
 // BuildCustomMetricName is used to be build a metric name following
 // the standards used in the Collector. The configType should be the same
 // value used to identify the type on the config.
 func BuildCustomMetricName(configType, metric string) string {
-	componentPrefix := obsmetrics.ProcessorPrefix
-	if !strings.HasSuffix(componentPrefix, obsmetrics.NameSep) {
-		componentPrefix += obsmetrics.NameSep
+	componentPrefix := obsmetrics.ProcessorMetricPrefix
+	if !strings.HasSuffix(componentPrefix, obsmetrics.MetricNameSep) {
+		componentPrefix += obsmetrics.MetricNameSep
 	}
 	if configType == "" {
 		return componentPrefix
 	}
-	return componentPrefix + configType + obsmetrics.NameSep + metric
+	return componentPrefix + configType + obsmetrics.MetricNameSep + metric
 }
 
 // ObsReport is a helper to add observability to a processor.
@@ -87,63 +87,63 @@ func (or *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
 	var errors, err error
 
 	or.acceptedSpansCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorPrefix+obsmetrics.AcceptedSpansKey,
+		obsmetrics.ProcessorMetricPrefix+obsmetrics.AcceptedSpansKey,
 		metric.WithDescription("Number of spans successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	or.refusedSpansCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorPrefix+obsmetrics.RefusedSpansKey,
+		obsmetrics.ProcessorMetricPrefix+obsmetrics.RefusedSpansKey,
 		metric.WithDescription("Number of spans that were rejected by the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	or.droppedSpansCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorPrefix+obsmetrics.DroppedSpansKey,
+		obsmetrics.ProcessorMetricPrefix+obsmetrics.DroppedSpansKey,
 		metric.WithDescription("Number of spans that were dropped."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	or.acceptedMetricPointsCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorPrefix+obsmetrics.AcceptedMetricPointsKey,
+		obsmetrics.ProcessorMetricPrefix+obsmetrics.AcceptedMetricPointsKey,
 		metric.WithDescription("Number of metric points successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	or.refusedMetricPointsCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorPrefix+obsmetrics.RefusedMetricPointsKey,
+		obsmetrics.ProcessorMetricPrefix+obsmetrics.RefusedMetricPointsKey,
 		metric.WithDescription("Number of metric points that were rejected by the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	or.droppedMetricPointsCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorPrefix+obsmetrics.DroppedMetricPointsKey,
+		obsmetrics.ProcessorMetricPrefix+obsmetrics.DroppedMetricPointsKey,
 		metric.WithDescription("Number of metric points that were dropped."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	or.acceptedLogRecordsCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorPrefix+obsmetrics.AcceptedLogRecordsKey,
+		obsmetrics.ProcessorMetricPrefix+obsmetrics.AcceptedLogRecordsKey,
 		metric.WithDescription("Number of log records successfully pushed into the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	or.refusedLogRecordsCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorPrefix+obsmetrics.RefusedLogRecordsKey,
+		obsmetrics.ProcessorMetricPrefix+obsmetrics.RefusedLogRecordsKey,
 		metric.WithDescription("Number of log records that were rejected by the next component in the pipeline."),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
 
 	or.droppedLogRecordsCounter, err = meter.Int64Counter(
-		obsmetrics.ProcessorPrefix+obsmetrics.DroppedLogRecordsKey,
+		obsmetrics.ProcessorMetricPrefix+obsmetrics.DroppedLogRecordsKey,
 		metric.WithDescription("Number of log records that were dropped."),
 		metric.WithUnit("1"),
 	)
