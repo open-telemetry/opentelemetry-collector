@@ -119,9 +119,9 @@ func (t Type) String() string {
 	return t.name
 }
 
-// MarshalYAML marshals returns the Type name.
-func (t Type) MarshalYAML() (interface{}, error) {
-	return t.name, nil
+// MarshalText marshals returns the Type name.
+func (t Type) MarshalText() ([]byte, error) {
+	return []byte(t.name), nil
 }
 
 // typeRegexp is used to validate the type of a component.
