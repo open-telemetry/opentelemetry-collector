@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
@@ -39,7 +40,8 @@ func NewFromStringMap(data map[string]any) *Conf {
 // Conf represents the raw configuration map for the OpenTelemetry Collector.
 // The confmap.Conf can be unmarshalled into the Collector's config using the "service" package.
 type Conf struct {
-	k *koanf.Koanf
+	k    *koanf.Koanf
+	self any
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.
@@ -78,7 +80,7 @@ func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
 	for _, opt := range opts {
 		opt.apply(&set)
 	}
-	return decodeConfig(l, result, !set.ignoreUnused)
+	return decodeConfig(l, result, !set.ignoreUnused, l.self != result)
 }
 
 type marshalOption struct{}
@@ -145,7 +147,7 @@ func (l *Conf) ToStringMap() map[string]any {
 // uniqueness of component IDs (see mapKeyStringToMapKeyTextUnmarshalerHookFunc).
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
-func decodeConfig(m *Conf, result any, errorUnused bool) error {
+func decodeConfig(m *Conf, result any, errorUnused bool, topLevelUnmarshaling bool) error {
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      errorUnused,
 		Result:           result,
@@ -158,7 +160,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool) error {
 			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
-			unmarshalerHookFunc(result),
+			unmarshalerHookFunc(result, topLevelUnmarshaling),
 			// after the main unmarshaler hook is called,
 			// we unmarshal the embedded structs if present to merge with the result:
 			unmarshalerEmbeddedStructsHookFunc(),
@@ -285,9 +287,12 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 		}
 		for i := 0; i < to.Type().NumField(); i++ {
 			// embedded structs passed in via `squash` cannot be pointers. We just check if they are structs:
-			if to.Type().Field(i).IsExported() && to.Type().Field(i).Anonymous {
+			f := to.Type().Field(i)
+			if f.IsExported() && f.Anonymous && f.Tag.Get("mapstructure") == ",squash" {
 				if unmarshaler, ok := to.Field(i).Addr().Interface().(Unmarshaler); ok {
-					if err := unmarshaler.Unmarshal(NewFromStringMap(fromAsMap)); err != nil {
+					c := NewFromStringMap(fromAsMap)
+					c.self = unmarshaler
+					if err := unmarshaler.Unmarshal(c); err != nil {
 						return nil, err
 					}
 					// the struct we receive from this unmarshaling only contains fields related to the embedded struct.
@@ -310,7 +315,7 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 
 // Provides a mechanism for individual structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface.
-func unmarshalerHookFunc(result any) mapstructure.DecodeHookFuncValue {
+func unmarshalerHookFunc(result any, allowTopLevelUnmarshaler bool) mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (any, error) {
 		if !to.CanAddr() {
 			return from.Interface(), nil
@@ -318,7 +323,7 @@ func unmarshalerHookFunc(result any) mapstructure.DecodeHookFuncValue {
 
 		toPtr := to.Addr().Interface()
 		// Need to ignore the top structure to avoid circular dependency.
-		if toPtr == result {
+		if toPtr == result && !allowTopLevelUnmarshaler {
 			return from.Interface(), nil
 		}
 
@@ -326,17 +331,31 @@ func unmarshalerHookFunc(result any) mapstructure.DecodeHookFuncValue {
 		if !ok {
 			return from.Interface(), nil
 		}
-
-		if _, ok = from.Interface().(map[string]any); !ok {
-			return from.Interface(), nil
+		unmarshalMethod := reflect.ValueOf(toPtr).MethodByName("Unmarshal")
+		// check that the Unmarshal method is not defined on one of the squash embedded structs defined.
+		// This allows us to have composition where the Unmarshaler may embed structs implementing Unmarshaler.
+		if to.Type().Kind() == reflect.Struct {
+			for i := 0; i < to.Type().NumField(); i++ {
+				// check embedded structs:
+				f := to.Type().Field(i)
+				if f.IsExported() && f.Anonymous && slices.Contains(strings.Split(f.Tag.Get("mapstructure"), ","), "squash") {
+					if embedded, ok := to.Field(i).Addr().Interface().(Unmarshaler); ok {
+						embeddedUnmarshalMethod := reflect.ValueOf(embedded).MethodByName("Unmarshal")
+						if unmarshalMethod.Pointer() == embeddedUnmarshalMethod.Pointer() {
+							return from.Interface(), nil
+						}
+					}
+				}
+			}
 		}
 
 		// Use the current object if not nil (to preserve other configs in the object), otherwise zero initialize.
 		if to.Addr().IsNil() {
 			unmarshaler = reflect.New(to.Type()).Interface().(Unmarshaler)
 		}
-
-		if err := unmarshaler.Unmarshal(NewFromStringMap(from.Interface().(map[string]any))); err != nil {
+		c := NewFromStringMap(from.Interface().(map[string]any))
+		c.self = unmarshaler
+		if err := unmarshaler.Unmarshal(c); err != nil {
 			return nil, err
 		}
 
