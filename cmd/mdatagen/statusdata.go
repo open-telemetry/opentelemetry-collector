@@ -14,18 +14,11 @@ import (
 
 // distros is a collection of distributions that can be referenced in the metadata.yaml files.
 // The rules below apply to every distribution added to this list:
-// - The distribution must be open source.
+// - The distribution is open source and maintained by the OpenTelemetry project.
 // - The link must point to a publicly accessible repository.
 var distros = map[string]string{
-	"core":     "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol",
-	"contrib":  "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib",
-	"aws":      "https://github.com/aws-observability/aws-otel-collector",
-	"grafana":  "https://github.com/grafana/agent",
-	"observiq": "https://github.com/observIQ/observiq-otel-collector",
-	"redhat":   "https://github.com/os-observability/redhat-opentelemetry-collector",
-	"splunk":   "https://github.com/signalfx/splunk-otel-collector",
-	"sumo":     "https://github.com/SumoLogic/sumologic-otel-collector",
-	"liatrio":  "https://github.com/liatrio/liatrio-otel-collector",
+	"core":    "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol",
+	"contrib": "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib",
 }
 
 type Codeowners struct {
