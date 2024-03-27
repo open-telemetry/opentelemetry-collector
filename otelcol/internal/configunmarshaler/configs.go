@@ -5,7 +5,8 @@ package configunmarshaler // import "go.opentelemetry.io/collector/otelcol/inter
 
 import (
 	"fmt"
-	"reflect"
+
+	"golang.org/x/exp/maps"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -34,7 +35,7 @@ func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
 		// Find factory based on component kind and type that we read from config source.
 		factory, ok := c.factories[id.Type()]
 		if !ok {
-			return errorUnknownType(id, reflect.ValueOf(c.factories).MapKeys())
+			return errorUnknownType(id, maps.Keys(c.factories))
 		}
 
 		// Create the default config for this component.
@@ -56,7 +57,7 @@ func (c *Configs[F]) Configs() map[component.ID]component.Config {
 	return c.cfgs
 }
 
-func errorUnknownType(id component.ID, factories []reflect.Value) error {
+func errorUnknownType(id component.ID, factories []component.Type) error {
 	return fmt.Errorf("unknown type: %q for id: %q (valid values: %v)", id.Type(), id, factories)
 }
 
