@@ -75,6 +75,21 @@ func (n *NetworkScrape) Unmarshal(c *confmap.Conf) error {
 	return nil
 }
 
+type ManualScrapeInfo struct {
+	Disk   string
+	Scrape time.Duration
+}
+
+func (m *ManualScrapeInfo) Unmarshal(c *confmap.Conf) error {
+	m.Disk = c.Get("disk").(string)
+	if c.Get("vinyl") == "33" {
+		m.Scrape = 10 * time.Second
+	} else {
+		m.Scrape = 2 * time.Second
+	}
+	return nil
+}
+
 type RouterScrape struct {
 	NetworkScrape `mapstructure:",squash"`
 }
@@ -94,4 +109,19 @@ func Example_embeddedManualUnmarshaling() {
 	// Networks: ["eth0" "eth1" "wlan0"]
 	// Wifi: true
 	// Enabled: true
+}
+
+func Example_manualUnmarshaling() {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"disk":  "Beatles",
+		"vinyl": "33",
+	})
+	scrapeInfo := &ManualScrapeInfo{}
+	if err := conf.Unmarshal(scrapeInfo, confmap.WithIgnoreUnused()); err != nil {
+		panic(err)
+	}
+	fmt.Printf("Configuration contains the following:\nDisk: %q\nScrape: %s\n", scrapeInfo.Disk, scrapeInfo.Scrape)
+	//Output: Configuration contains the following:
+	// Disk: "Beatles"
+	// Scrape: 10s
 }
