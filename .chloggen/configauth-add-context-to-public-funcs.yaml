@@ -7,7 +7,7 @@ change_type: deprecation
 component: configauth
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note:  Deprecate `GetClientAuthenticator` and `GetServerAuthenticator`, use `GetClientAuthenticatorContext` and `GetServerAuthenticatorContext` instead. and 
+note:  Deprecate `GetClientAuthenticator` and `GetServerAuthenticator`, use `GetClientAuthenticatorContext` and `GetServerAuthenticatorContext` instead. 
 
 # One or more tracking issues or pull requests related to the change
 issues: [9808]
