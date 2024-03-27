@@ -111,6 +111,14 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 			name:     "invalid_tls",
 			errorMsg: `invalid TLS min_version: unsupported TLS version: "asd"`,
 		},
+		{
+			name:     "missing_port",
+			errorMsg: `missing port in address`,
+		},
+		{
+			name:     "invalid_port",
+			errorMsg: `invalid port "port"`,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
