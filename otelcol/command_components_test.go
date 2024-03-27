@@ -32,14 +32,24 @@ func TestNewBuildSubCommand(t *testing.T) {
 
 	ExpectedYamlStruct := componentsOutput{
 		BuildInfo: component.NewDefaultBuildInfo(),
-		Receivers: []componentWithStability{{
-			Name: nopType,
-			Stability: map[string]string{
-				"logs":    "Stable",
-				"metrics": "Stable",
-				"traces":  "Stable",
+		Receivers: []componentWithStability{
+			{
+				Name: nopType,
+				Stability: map[string]string{
+					"logs":    "Stable",
+					"metrics": "Stable",
+					"traces":  "Stable",
+				},
 			},
-		}},
+			{
+				Name: nopType,
+				Stability: map[string]string{
+					"logs":    "Stable",
+					"metrics": "Undefined",
+					"traces":  "Undefined",
+				},
+			},
+		},
 		Processors: []componentWithStability{{
 			Name: nopType,
 			Stability: map[string]string{
