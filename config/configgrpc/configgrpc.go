@@ -46,6 +46,15 @@ type KeepaliveClientConfig struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
 }
 
+// NewDefaultKeepaliveClientConfig() creates a new KeepaliveClientConfig with any default values set
+func NewDefaultKeepaliveClientConfig() *KeepaliveClientConfig {
+	return &KeepaliveClientConfig{
+		Time:                10 * time.Second,
+		Timeout:             10 * time.Second,
+		PermitWithoutStream: false,
+	}
+}
+
 // ClientConfig defines common settings for a gRPC client configuration.
 type ClientConfig struct {
 	// The target to which the exporter is going to send traces or metrics,
@@ -90,10 +99,25 @@ type ClientConfig struct {
 	Auth *configauth.Authentication `mapstructure:"auth"`
 }
 
+// NewDefaultClientConfig() creates a new ClientConfig with any default values set
+func NewDefaultClientConfig() *ClientConfig {
+	return &ClientConfig{
+		Keepalive: NewDefaultKeepaliveClientConfig(),
+	}
+}
+
 // KeepaliveServerConfig is the configuration for keepalive.
 type KeepaliveServerConfig struct {
 	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters"`
 	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy"`
+}
+
+// NewDefaultKeepaliveServerConfig() creates a new KeepaliveServerConfig with any default values set
+func NewDefaultKeepaliveServerConfig() *KeepaliveServerConfig {
+	return &KeepaliveServerConfig{
+		ServerParameters:  NewDefaultKeepaliveServerParameters(),
+		EnforcementPolicy: NewDefaultKeepaliveEnforcementPolicy(),
+	}
 }
 
 // KeepaliveServerParameters allow configuration of the keepalive.ServerParameters.
@@ -107,12 +131,28 @@ type KeepaliveServerParameters struct {
 	Timeout               time.Duration `mapstructure:"timeout"`
 }
 
+// NewDefaultKeepaliveServerParameters() creates a new KeepaliveServerParameters with any default values set
+func NewDefaultKeepaliveServerParameters() *KeepaliveServerParameters {
+	return &KeepaliveServerParameters{
+		MaxConnectionIdle:     10,
+		MaxConnectionAge:      10,
+		MaxConnectionAgeGrace: 10,
+		Time:                  10,
+		Timeout:               10,
+	}
+}
+
 // KeepaliveEnforcementPolicy allow configuration of the keepalive.EnforcementPolicy.
 // The same default values as keepalive.EnforcementPolicy are applicable and get applied by the server.
 // See https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.
 type KeepaliveEnforcementPolicy struct {
 	MinTime             time.Duration `mapstructure:"min_time"`
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
+}
+
+// NewDefaultKeepaliveEnforcementPolicy() creates a new KeepaliveEnforcementPolicy with any default values set
+func NewDefaultKeepaliveEnforcementPolicy() *KeepaliveEnforcementPolicy {
+	return &KeepaliveEnforcementPolicy{}
 }
 
 // ServerConfig defines common settings for a gRPC server configuration.
@@ -148,6 +188,14 @@ type ServerConfig struct {
 	// Include propagates the incoming connection's metadata to downstream consumers.
 	// Experimental: *NOTE* this option is subject to change or removal in the future.
 	IncludeMetadata bool `mapstructure:"include_metadata"`
+}
+
+// NewDefaultServerConfig() creates a new ServerConfig with any default values set
+func NewDefaultServerConfig() *ServerConfig {
+	return &ServerConfig{
+		Keepalive: NewDefaultKeepaliveServerConfig(),
+		NetAddr:   confignet.NewDefaultAddrConfig(),
+	}
 }
 
 // SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
