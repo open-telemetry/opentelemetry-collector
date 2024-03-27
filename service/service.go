@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"go.opentelemetry.io/otel/metric"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -95,19 +96,20 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	pcommonRes := pdataFromSdk(res)
 
 	logger := tel.Logger()
+	logger.Info("Setting up own telemetry...")
 	mp, err := newMeterProvider(
 		meterProviderSettings{
 			res:               res,
-			logger:            logger,
 			cfg:               cfg.Telemetry.Metrics,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
 		disableHighCard,
-		extendedConfig,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metric provider: %w", err)
 	}
+
+	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp, extendedConfig)
 	srv.telemetrySettings = servicetelemetry.TelemetrySettings{
 		Logger:         logger,
 		MeterProvider:  mp,
@@ -131,6 +133,27 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	}
 
 	return srv, nil
+}
+
+func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp metric.MeterProvider, extendedConfig bool) {
+	if cfg.Level == configtelemetry.LevelNone || (cfg.Address == "" && len(cfg.Readers) == 0) {
+		logger.Info(
+			"Skipped telemetry setup.",
+			zap.String(zapKeyTelemetryAddress, cfg.Address),
+			zap.Stringer(zapKeyTelemetryLevel, cfg.Level),
+		)
+		return
+	}
+
+	if len(cfg.Address) != 0 && extendedConfig {
+		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
+	}
+
+	if lmp, ok := mp.(interface {
+		LogAboutServers(logger *zap.Logger, cfg telemetry.MetricsConfig)
+	}); ok {
+		lmp.LogAboutServers(logger, cfg)
+	}
 }
 
 // Start starts the extensions and pipelines. If Start fails Shutdown should be called to ensure a clean state.
