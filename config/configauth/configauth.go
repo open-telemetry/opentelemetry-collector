@@ -30,6 +30,17 @@ type Authentication struct {
 // GetServerAuthenticator attempts to select the appropriate auth.Server from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned.
 // Deprecated: [v0.97.0] Use GetServerAuthenticatorContext instead.
+func (a Authentication) GetServerAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (auth.Server, error) {
+	if ext, found := extensions[a.AuthenticatorID]; found {
+		if server, ok := ext.(auth.Server); ok {
+			return server, nil
+		}
+		return nil, errNotServer
+	}
+
+	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
+}
+
 func (a Authentication) GetServerAuthenticatorContext(_ context.Context, extensions map[component.ID]component.Component) (auth.Server, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
 		if server, ok := ext.(auth.Server); ok {
@@ -45,6 +56,16 @@ func (a Authentication) GetServerAuthenticatorContext(_ context.Context, extensi
 // based on the component id of the extension. If an authenticator is not found, an error is returned.
 // This should be only used by HTTP clients.
 // Deprecated: [v0.97.0] Use GetClientAuthenticatorContext instead.
+func (a Authentication) GetClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (auth.Client, error) {
+	if ext, found := extensions[a.AuthenticatorID]; found {
+		if client, ok := ext.(auth.Client); ok {
+			return client, nil
+		}
+		return nil, errNotClient
+	}
+	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
+}
+
 func (a Authentication) GetClientAuthenticatorContext(_ context.Context, extensions map[component.ID]component.Component) (auth.Client, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
 		if client, ok := ext.(auth.Client); ok {
