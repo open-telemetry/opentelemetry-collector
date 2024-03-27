@@ -175,6 +175,10 @@ func (r *certReloader) GetCertificate() (*tls.Certificate, error) {
 }
 
 func (c TLSSetting) Validate() error {
+	if c.hasCAFile() && c.hasCAPem() {
+		return fmt.Errorf("provide either a CA file or the PEM-encoded string, but not both")
+	}
+
 	minTLS, err := convertVersion(c.MinVersion, defaultMinTLSVersion)
 	if err != nil {
 		return fmt.Errorf("invalid TLS min_version: %w", err)
@@ -291,6 +295,15 @@ func (c Config) loadCertFile(certPath string) (*x509.CertPool, error) {
 
 func (c Config) loadCertPem(certPem []byte) (*x509.CertPool, error) {
 	certPool := x509.NewCertPool()
+	if c.IncludeSystemCACertsPool {
+		scp, err := systemCertPool()
+		if err != nil {
+			return nil, err
+		}
+		if scp != nil {
+			certPool = scp
+		}
+	}
 	if !certPool.AppendCertsFromPEM(certPem) {
 		return nil, fmt.Errorf("failed to parse cert")
 	}
