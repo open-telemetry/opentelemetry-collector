@@ -20,6 +20,8 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/encoding/gzip"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
@@ -275,7 +277,9 @@ func (gss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		return nil, err
 	}
 	opts = append(opts, extraOpts...)
-	return grpc.NewServer(opts...), nil
+	grpcServer := grpc.NewServer(opts...)
+	grpc_health_v1.RegisterHealthServer(grpcServer, health.NewServer())
+	return grpcServer, nil
 }
 
 // ToServerContext returns a grpc.Server for the configuration
