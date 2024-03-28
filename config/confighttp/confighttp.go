@@ -179,7 +179,7 @@ func (hcs *ClientConfig) ToClient(host component.Host, settings component.Teleme
 			return nil, errors.New("extensions configuration not found")
 		}
 
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(ext)
+		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticatorContext(context.Background(), ext)
 		if aerr != nil {
 			return nil, aerr
 		}
@@ -343,7 +343,7 @@ func (hss *ServerConfig) ToServer(host component.Host, settings component.Teleme
 	}
 
 	if hss.Auth != nil {
-		server, err := hss.Auth.GetServerAuthenticator(host.GetExtensions())
+		server, err := hss.Auth.GetServerAuthenticatorContext(context.Background(), host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
