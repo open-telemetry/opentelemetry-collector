@@ -112,6 +112,40 @@ Support for Go versions on the OpenTelemetry Collector is updated as follows:
 
 Official OpenTelemetry Collector distro binaries may be built with any supported Go version.
 
+## Verifying the images signatures
+
+> **Note**: To verify a signed artifact or blob, first [install Cosign](https://docs.sigstore.dev/system_config/installation/), then follow the instructions below.
+
+We are signing the images `otel/opentelemetry-collector` and `otel/opentelemetry-collector-contrib` using [sigstore cosign](https://github.com/sigstore/cosign) tool and to verify the signatures you can run the following command:
+
+```console
+$ cosign verify \
+  --certificate-identity=https://github.com/open-telemetry/opentelemetry-collector-releases/.github/workflows/release.yaml@refs/tags/<RELEASE_TAG>
+  --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+  <OTEL_COLLECTOR_IMAGE>
+```
+
+where:
+
+- `<RELEASE_TAG>`: is the release that you want to validate
+- `<OTEL_COLLECTOR_IMAGE>`: is the image that you want to check
+
+Example:
+
+```console
+$ cosign verify --certificate-identity=https://github.com/open-telemetry/opentelemetry-collector-releases/.github/workflows/release.yaml@refs/tags/v99.99.01 --certificate-oidc-issuer=https://token.actions.githubusercontent.com ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector:99.99.01
+
+Verification for ghcr.io/cpanato/opentelemetry-collector-releases/opentelemetry-collector:99.99.01 --
+The following checks were performed on each of these signatures:
+  - The cosign claims were validated
+  - Existence of the claims in the transparency log was verified offline
+  - The code-signing certificate was verified using trusted certificate authority certificates
+
+[{"critical":{"identity":{"docker-reference":"ghcr.io/cpanato/opentelemetry-collector-releases/opentelemetry-collector"},"image":{"docker-manifest-digest":"sha256:94b02330e851e3abde5daba2fd8fbcfad7460304091105c3a833023d1f72ad41"},"type":"cosign container image signature"},"optional":{"1.3.6.1.4.1.57264.1.1":"https://token.actions.githubusercontent.com","1.3.6.1.4.1.57264.1.2":"push","1.3.6.1.4.1.57264.1.3":"ae8f64b2f70b623314258dfb858006c1439d7e28","1.3.6.1.4.1.57264.1.4":"Release","1.3.6.1.4.1.57264.1.5":"cpanato/opentelemetry-collector-releases","1.3.6.1.4.1.57264.1.6":"refs/tags/v99.99.01","Bundle":{"SignedEntryTimestamp":"MEUCIDnW5HXg7doXPabv9ijQm448R9RHkw3ZkwXdg7f5eEXGAiEA5brTNQgqYHeBnZmJRLBOaapD8DMIrQPJ2XZYY/dYWjg=","Payload":{"body":"eyJhcGlWZXJzaW9uIjoiMC4wLjEiLCJraW5kIjoiaGFzaGVkcmVrb3JkIiwic3BlYyI6eyJkYXRhIjp7Imhhc2giOnsiYWxnb3JpdGhtIjoic2hhMjU2IiwidmFsdWUiOiJmYmY1MTVhMTZmNzM4ZWJkOGZjMDdkYWQ5NWIyYTdkZDQ4YzRhNmRiMzYyMDE4NjhlZTI0YmIyYjgzMDBkNzVmIn19LCJzaWduYXR1cmUiOnsiY29udGVudCI6Ik1FUUNJREFWN0MzaGM0R1FIKzNtL3p3VUdkODhEUjNUODh0N0ErMkFkamhBWllKUEFpQXFEUFVXVDMvcS8zZXhBT2JoQnFGNFlaVlprZnlVZlJuQ1JRMTlyZnQ5ckE9PSIsInB1YmxpY0tleSI6eyJjb250ZW50IjoiTFMwdExTMUNSVWRKVGlCRFJWSlVTVVpKUTBGVVJTMHRMUzB0Q2sxSlNVUjVha05EUVRBclowRjNTVUpCWjBsVlFYcEZaSEJtZWtaaGRGbEZjbkZ4U1hwbU5YVm9WSEJ4VkU4MGQwTm5XVWxMYjFwSmVtb3dSVUYzVFhjS1RucEZWazFDVFVkQk1WVkZRMmhOVFdNeWJHNWpNMUoyWTIxVmRWcEhWakpOVWpSM1NFRlpSRlpSVVVSRmVGWjZZVmRrZW1SSE9YbGFVekZ3WW01U2JBcGpiVEZzV2tkc2FHUkhWWGRJYUdOT1RXcEpkMDlVVFhkTlZFMHhUV3BKTTFkb1kwNU5ha2wzVDFSTmQwMVVVWGROYWtrelYycEJRVTFHYTNkRmQxbElDa3R2V2tsNmFqQkRRVkZaU1V0dldrbDZhakJFUVZGalJGRm5RVVYwUld0aFlsWnpVRXQ1YzJSSlZYaFlibEJoZVRVME9EUmpOVGRsVnpGaUszcFdaMHNLU3psaFRITXdOSHBwY0hGb1oxbE1SSGRoVlUxQlRsUXdUaXRCTUhGSVJHUXdkRVptUlZocmQyRm5kRFoyWWs5SVRXRlBRMEZ0TkhkblowcHhUVUUwUndwQk1WVmtSSGRGUWk5M1VVVkJkMGxJWjBSQlZFSm5UbFpJVTFWRlJFUkJTMEpuWjNKQ1owVkdRbEZqUkVGNlFXUkNaMDVXU0ZFMFJVWm5VVlZ1YUhaT0NtaHhablV2V1d0NVl6QllUemRhV0NzMldFaG9iVEIzZDBoM1dVUldVakJxUWtKbmQwWnZRVlV6T1ZCd2VqRlphMFZhWWpWeFRtcHdTMFpYYVhocE5Ga0tXa1E0ZDJaQldVUldVakJTUVZGSUwwSklTWGRqU1ZwMVlVaFNNR05JVFRaTWVUbHVZVmhTYjJSWFNYVlpNamwwVERKT2QxbFhOV2hrUnpoMllqTkNiQXBpYmxKc1lrZFdkRnBZVW5sbFV6RnFZako0YzFwWFRqQmlNMGwwWTIxV2MxcFhSbnBhV0UxMlRHMWtjR1JIYURGWmFUa3pZak5LY2xwdGVIWmtNMDEyQ21OdFZuTmFWMFo2V2xNMU5WbFhNWE5SU0Vwc1dtNU5kbVJIUm01amVUa3lUMVJyZFU5VWEzVk5SRVYzVDFGWlMwdDNXVUpDUVVkRWRucEJRa0ZSVVhJS1lVaFNNR05JVFRaTWVUa3dZakowYkdKcE5XaFpNMUp3WWpJMWVreHRaSEJrUjJneFdXNVdlbHBZU21waU1qVXdXbGMxTUV4dFRuWmlWRUZUUW1kdmNncENaMFZGUVZsUEwwMUJSVU5DUVZKM1pGaE9iMDFFV1VkRGFYTkhRVkZSUW1jM09IZEJVVTFGUzBkR2JFOUhXVEpPUjBsNVdtcGpkMWxxV1hsTmVrMTRDazVFU1RGUFIxSnRXV3BuTVU5RVFYZE9iVTE0VGtSTk5WcEVaR3hOYW1kM1JsRlpTMHQzV1VKQ1FVZEVkbnBCUWtKQlVVaFZiVlp6V2xkR2VscFVRVElLUW1kdmNrSm5SVVZCV1U4dlRVRkZSa0pEYUdwalIwWjFXVmhTZGt3eU9YZGFWelV3V2xkNGJHSlhWakJqYm10MFdUSTVjMkpIVm1wa1J6bDVURmhLYkFwaVIxWm9ZekpXZWsxRFJVZERhWE5IUVZGUlFtYzNPSGRCVVZsRlJUTktiRnB1VFhaa1IwWnVZM2s1TWs5VWEzVlBWR3QxVFVSRmQyZFpjMGREYVhOSENrRlJVVUl4Ym10RFFrRkpSV1pSVWpkQlNHdEJaSGRCU1ZsS1RIZExSa3d2WVVWWVVqQlhjMjVvU25oR1duaHBjMFpxTTBSUFRrcDBOWEozYVVKcVduWUtZMmRCUVVGWlQwOXhORUUwUVVGQlJVRjNRa2xOUlZsRFNWRkVhWGs0TkVaak5GRkpkVXhRTTFkMFNtTkdhbVUzYWtoMU5HVkZXRzVVVFdsQ2RXMWpUd3BRUzFKSE0zZEphRUZRV2psdVpYSjRaWGRFZVZncldUUXlSMVl3Tm5CbWNFMUZRVnB1ZDNWcVZsSlJZa0pQYjNOMVExUk5UVUZ2UjBORGNVZFRUVFE1Q2tKQlRVUkJNbXRCVFVkWlEwMVJRMlJLWkRONGFUaFlRMmhvVjI5eVlsWlpUVVZ5YWtSR1YyYzFZV2xJZVM5d0wycG1hRFphV2t3MVMxTjVaRzFvT1drS1ozbEViM2h3U2poa2NHSm5OMGRuUTAxUlEwVlFVMFJqVEZodFVUZ3haU3MyUm5GUk5VMVBWRUptTlU1TUwxUmFhVUZVYzNKRGFFdFJTR0ZyTURKTWF3cFFNbmRaYW1SNlRIQkJNa05NUWtoMFVGUkZQUW90TFMwdExVVk9SQ0JEUlZKVVNVWkpRMEZVUlMwdExTMHRDZz09In19fX0=","integratedTime":1664545948,"logIndex":4288624,"logID":"c0d23d6ad406973f9559f3ba2d1ca01f84147d8ffc5b8445c224f98b9591801d"}},"Issuer":"https://token.actions.githubusercontent.com","Subject":"https://github.com/cpanato/opentelemetry-collector-releases/.github/workflows/release.yaml@refs/tags/v99.99.01","githubWorkflowName":"Release","githubWorkflowRef":"refs/tags/v99.99.01","githubWorkflowRepository":"cpanato/opentelemetry-collector-releases","githubWorkflowSha":"ae8f64b2f70b623314258dfb858006c1439d7e28","githubWorkflowTrigger":"push"}}]
+```
+
+> **Note**: We started signing the images with release x.y.z
+
 ## Contributing
 
 See the [Contributing Guide](CONTRIBUTING.md) for details.
