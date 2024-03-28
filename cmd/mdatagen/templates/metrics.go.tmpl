@@ -16,6 +16,9 @@ import (
 	{{- if .SemConvVersion }}
 	conventions "go.opentelemetry.io/collector/semconv/v{{ .SemConvVersion }}"
 	{{- end }}
+	{{ if .ResourceAttributes -}}
+	"go.opentelemetry.io/collector/filter"
+	{{- end }}
 )
 
 {{ range $name, $info := .Attributes }}
@@ -132,6 +135,10 @@ type MetricsBuilder struct {
 	metricsCapacity int                  // maximum observed number of metrics per resource.
 	metricsBuffer   pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo       component.BuildInfo  // contains version information.
+	{{ if .ResourceAttributes -}}
+	resourceAttributeIncludeFilter map[string]filter.Filter
+	resourceAttributeExcludeFilter map[string]filter.Filter
+	{{- end }}
 	{{- range $name, $metric := .Metrics }}
 	metric{{ $name.Render }} metric{{ $name.Render }}
 	{{- end }}
@@ -190,7 +197,20 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		{{- range $name, $metric := .Metrics }}
 		metric{{ $name.Render }}: newMetric{{ $name.Render }}(mbc.Metrics.{{ $name.Render }}),
 		{{- end }}
+		{{ if .ResourceAttributes -}}
+		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		{{- end }}
 	}
+	{{- range $name, $attr := .ResourceAttributes }}
+	if mbc.ResourceAttributes.{{ $name.Render }}.Include != nil {
+		mb.resourceAttributeIncludeFilter["{{ $name }}"] = filter.CreateFilter(mbc.ResourceAttributes.{{ $name.Render }}.Include)
+	}
+	if mbc.ResourceAttributes.{{ $name.Render }}.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["{{ $name }}"] = filter.CreateFilter(mbc.ResourceAttributes.{{ $name.Render }}.Exclude)
+	}
+	{{- end }}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -263,6 +283,21 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	{{ if .ResourceAttributes -}}
+	for name, val := range rm.Resource().Attributes().AsRaw() {
+		if filter, ok := mb.resourceAttributeIncludeFilter[name]; ok {
+			if !filter.Matches(val) {
+				return
+			}
+		}
+		if filter, ok := mb.resourceAttributeExcludeFilter[name]; ok {
+			if filter.Matches(val) {
+				return
+			}
+		}
+	}
+	{{- end }}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

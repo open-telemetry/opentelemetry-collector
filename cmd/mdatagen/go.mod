@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.97.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.97.0
 	go.opentelemetry.io/collector/consumer v0.97.0
+	go.opentelemetry.io/collector/filter v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v1.4.0
 	go.opentelemetry.io/collector/receiver v0.97.0
 	go.opentelemetry.io/collector/semconv v0.97.0
@@ -61,6 +62,8 @@ replace go.opentelemetry.io/collector/component => ../../component
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
+
+replace go.opentelemetry.io/collector/filter => ../../filter
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 

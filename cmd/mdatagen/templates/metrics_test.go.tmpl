@@ -20,6 +20,8 @@ const (
 	testSetDefault testConfigCollection = iota
 	testSetAll
 	testSetNone
+	testSetFilterInclude
+	testSetFilterExclude
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -39,6 +41,14 @@ func TestMetricsBuilder(t *testing.T) {
 			name:       "none_set",
 			configSet: testSetNone,
 		},
+		{
+			name:       "filter_set_include",
+			configSet: testSetFilterInclude,
+		},
+		{
+			name:       "filter_set_exclude",
+			configSet: testSetFilterExclude,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -52,7 +62,7 @@ func TestMetricsBuilder(t *testing.T) {
 			expectedWarnings := 0
 			{{- range $name, $metric := .Metrics }}
 			{{- if and $metric.Enabled $metric.Warnings.IfEnabled }}
-			if test.configSet == testSetDefault || test.configSet == testSetAll {
+			if test.configSet == testSetDefault || test.configSet == testSetAll || test.configSet == testSetFilterInclude || test.configSet == testSetFilterExclude {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -64,7 +74,7 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			{{- end }}
 			{{- if $metric.Warnings.IfConfigured }}
-			if test.configSet == testSetAll || test.configSet == testSetNone {
+			if test.configSet == testSetAll || test.configSet == testSetNone || test.configSet == testSetFilterInclude || test.configSet == testSetFilterExclude {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -72,7 +82,7 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end }}
 			{{- range $name, $attr := .ResourceAttributes }}
 			{{- if and $attr.Enabled $attr.Warnings.IfEnabled }}
-			if test.configSet == testSetDefault || test.configSet == testSetAll {
+			if test.configSet == testSetDefault || test.configSet == testSetAll || test.configSet == testSetFilterInclude || test.configSet == testSetFilterExclude {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $attr.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -84,7 +94,7 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			{{- end }}
 			{{- if $attr.Warnings.IfConfigured }}
-			if test.configSet == testSetAll || test.configSet == testSetNone {
+			if test.configSet == testSetAll || test.configSet == testSetNone || test.configSet == testSetFilterInclude || test.configSet == testSetFilterExclude {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be configured: {{ $attr.Warnings.IfConfigured }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -121,7 +131,7 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end }}
 			metrics := mb.Emit(WithResource(res))
 
-			if test.configSet == testSetNone {
+			if test.configSet == testSetNone || test.configSet == testSetFilterExclude {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
