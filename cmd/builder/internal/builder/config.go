@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-version"
 	"go.uber.org/multierr"
@@ -18,17 +19,23 @@ import (
 
 const defaultOtelColVersion = "0.97.0"
 
-// ErrInvalidGoMod indicates an invalid gomod
-var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
+var (
+	// ErrInvalidGoMod indicates an invalid gomod
+	ErrInvalidGoMod = errors.New("invalid gomod specification for module")
+	// ErrIncompatibleConfigurationValues indicates that there is configuration that cannot be combined
+	ErrIncompatibleConfigurationValues = errors.New("cannot combine configuration values")
+)
 
 // Config holds the builder's configuration
 type Config struct {
-	Logger          *zap.Logger
-	SkipGenerate    bool   `mapstructure:"-"`
-	SkipCompilation bool   `mapstructure:"-"`
-	SkipGetModules  bool   `mapstructure:"-"`
-	LDFlags         string `mapstructure:"-"`
-	Verbose         bool   `mapstructure:"-"`
+	Logger           *zap.Logger
+	SkipGenerate     bool   `mapstructure:"-"`
+	SkipCompilation  bool   `mapstructure:"-"`
+	SkipGetModules   bool   `mapstructure:"-"`
+	SkipNewGoModule  bool   `mapstructure:"-"`
+	StrictVersioning bool   `mapstructure:"-"`
+	LDFlags          string `mapstructure:"-"`
+	Verbose          bool   `mapstructure:"-"`
 
 	Distribution Distribution `mapstructure:"dist"`
 	Exporters    []Module     `mapstructure:"exporters"`
@@ -38,6 +45,8 @@ type Config struct {
 	Connectors   []Module     `mapstructure:"connectors"`
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
+
+	downloadModules retry `mapstructure:"-"`
 }
 
 // Distribution holds the parameters for the final binary
@@ -62,6 +71,11 @@ type Module struct {
 	Path   string `mapstructure:"path"`   // an optional path to the local version of this module
 }
 
+type retry struct {
+	numRetries int
+	wait       time.Duration
+}
+
 // NewDefaultConfig creates a new config, with default values
 func NewDefaultConfig() Config {
 	log, err := zap.NewDevelopment()
@@ -81,17 +95,25 @@ func NewDefaultConfig() Config {
 			OtelColVersion: defaultOtelColVersion,
 			Module:         "go.opentelemetry.io/collector/cmd/builder",
 		},
+
+		// basic retry if error from go mod command (in case of transient network error). This could be improved
+		// retry 3 times with 5 second spacing interval
+		downloadModules: retry{
+			numRetries: 3,
+			wait:       5 * time.Second,
+		},
 	}
 }
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
 	return multierr.Combine(
-		validateModules(c.Extensions),
-		validateModules(c.Receivers),
-		validateModules(c.Exporters),
-		validateModules(c.Processors),
-		validateModules(c.Connectors),
+		c.validateModules(c.Extensions),
+		c.validateModules(c.Receivers),
+		c.validateModules(c.Exporters),
+		c.validateModules(c.Processors),
+		c.validateModules(c.Connectors),
+		c.validateFlags(),
 	)
 }
 
@@ -158,10 +180,20 @@ func (c *Config) ParseModules() error {
 	return nil
 }
 
-func validateModules(mods []Module) error {
+func (c *Config) validateFlags() error {
+	if c.SkipNewGoModule && (len(c.Replaces) != 0 || len(c.Excludes) != 0) {
+		return fmt.Errorf("%w excludes or replaces with --skip-new-go-module; please modify the enclosing go.mod file directly", ErrIncompatibleConfigurationValues)
+	}
+	return nil
+}
+
+func (c *Config) validateModules(mods []Module) error {
 	for _, mod := range mods {
 		if mod.GoMod == "" {
 			return fmt.Errorf("module %q: %w", mod.GoMod, ErrInvalidGoMod)
+		}
+		if mod.Path != "" && c.SkipNewGoModule {
+			return fmt.Errorf("%w cannot modify mod.path \"%v\" combined with --skip-new-go-module; please modify the enclosing go.mod file directly", ErrIncompatibleConfigurationValues, mod.Path)
 		}
 	}
 	return nil
@@ -171,7 +203,7 @@ func parseModules(mods []Module) ([]Module, error) {
 	var parsedModules []Module
 	for _, mod := range mods {
 		if mod.Import == "" {
-			mod.Import = strings.Split(mod.GoMod, " ")[0]
+			mod.Import, _, _ = strings.Cut(mod.GoMod, " ")
 		}
 
 		if mod.Name == "" {
