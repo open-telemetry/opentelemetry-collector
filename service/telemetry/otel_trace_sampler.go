@@ -24,5 +24,5 @@ func alwaysRecord() sdktrace.Sampler {
 		sdktrace.WithRemoteParentSampled(sdktrace.AlwaysSample()),
 		sdktrace.WithRemoteParentNotSampled(rs),
 		sdktrace.WithLocalParentSampled(sdktrace.AlwaysSample()),
-		sdktrace.WithRemoteParentSampled(rs))
+		sdktrace.WithLocalParentNotSampled(rs))
 }
