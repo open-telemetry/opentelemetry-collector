@@ -106,10 +106,12 @@ type ClientConfig struct {
 // We encourage to use this function to create an object of ClientConfig.
 func NewDefaultClientConfig() ClientConfig {
 	// The default values are taken from the values of 'DefaultTransport' of 'http' package.
+
 	maxIdleConns := 100
 	idleConnTimeout := 90 * time.Second
 
 	return ClientConfig{
+		Headers:         make(map[string]configopaque.String),
 		MaxIdleConns:    &maxIdleConns,
 		IdleConnTimeout: &idleConnTimeout,
 	}
@@ -277,6 +279,14 @@ type ServerConfig struct {
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
 }
 
+// NewDefaultServerConfig creates new ServerConfig with default values set
+func NewDefaultServerConfig() ServerConfig {
+
+	return ServerConfig{
+		ResponseHeaders: make(map[string]configopaque.String),
+	}
+}
+
 // ToListener creates a net.Listener.
 func (hss *ServerConfig) ToListener() (net.Listener, error) {
 	listener, err := net.Listen("tcp", hss.Endpoint)
@@ -424,6 +434,11 @@ type CORSConfig struct {
 	// Set it to the number of seconds that browsers should cache a CORS
 	// preflight response for.
 	MaxAge int `mapstructure:"max_age"`
+}
+
+// NewDefaultCORSConfig creates a new CORSConfig with defaults value set
+func NewDefaultCORSConfig() CORSConfig {
+	return CORSConfig{}
 }
 
 func authInterceptor(next http.Handler, server auth.Server) http.Handler {

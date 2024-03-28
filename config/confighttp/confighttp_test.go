@@ -49,6 +49,20 @@ var (
 	nonExistingID = component.MustNewID("nonexisting")
 )
 
+func TestNewDefaultServerConfig(t *testing.T) {
+	expectedServerConfig := ServerConfig{
+		ResponseHeaders: map[string]configopaque.String{},
+	}
+	serverConfig := NewDefaultServerConfig()
+	require.Equal(t, expectedServerConfig, serverConfig)
+}
+
+func TestNewDefaultCORSConfig(t *testing.T) {
+	expectedCORSConfig := CORSConfig{}
+	corsConfig := NewDefaultCORSConfig()
+	require.Equal(t, expectedCORSConfig, corsConfig)
+}
+
 func TestAllHTTPClientSettings(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
@@ -239,6 +253,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 
 func TestDefaultHTTPClientSettings(t *testing.T) {
 	httpClientSettings := NewDefaultClientConfig()
+	assert.EqualValues(t, map[string]configopaque.String{}, httpClientSettings.Headers)
 	assert.EqualValues(t, 100, *httpClientSettings.MaxIdleConns)
 	assert.EqualValues(t, 90*time.Second, *httpClientSettings.IdleConnTimeout)
 }
