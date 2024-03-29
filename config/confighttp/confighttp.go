@@ -115,8 +115,13 @@ func NewDefaultClientConfig() ClientConfig {
 	}
 }
 
-// ToClient creates an HTTP client.
-func (hcs *ClientConfig) ToClient(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+// Deprecated: [v0.98.0] Use ToClientContext instead.
+func (hcs *ClientConfig) ToClient(_ context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+	return hcs.ToClientContext(context.Background(), host, settings)
+}
+
+// ToClientContext creates an HTTP client.
+func (hcs *ClientConfig) ToClientContext(_ context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfigContext(context.Background())
 	if err != nil {
 		return nil, err
@@ -277,8 +282,13 @@ type ServerConfig struct {
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
 }
 
-// ToListener creates a net.Listener.
-func (hss *ServerConfig) ToListener() (net.Listener, error) {
+// Deprecated: [v0.98.0] Use ToListenerContext instead.
+func (hss *ServerConfig) ToListener(_ context.Context) (net.Listener, error) {
+	return hss.ToListenerContext(context.Background())
+}
+
+// ToListenerContext creates a net.Listener.
+func (hss *ServerConfig) ToListenerContext(_ context.Context) (net.Listener, error) {
 	listener, err := net.Listen("tcp", hss.Endpoint)
 	if err != nil {
 		return nil, err
@@ -327,8 +337,13 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 	}
 }
 
-// ToServer creates an http.Server from settings object.
-func (hss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+// Deprecated: [v0.98.0] Use ToServerContext instead.
+func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+	return hss.ToServerContext(context.Background(), host, settings, handler, opts...)
+}
+
+// ToServerContext creates an http.Server from settings object.
+func (hss *ServerConfig) ToServerContext(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
 
 	serverOpts := &toServerOptions{}
