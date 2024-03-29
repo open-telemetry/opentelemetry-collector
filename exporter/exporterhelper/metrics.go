@@ -82,7 +82,10 @@ func NewMetricsExporter(
 	if pusher == nil {
 		return nil, errNilPushMetricsData
 	}
-	metricsOpts := []Option{withMarshaler(metricsRequestMarshaler), withUnmarshaler(newMetricsRequestUnmarshalerFunc(pusher))}
+	metricsOpts := []Option{
+		withMarshaler(metricsRequestMarshaler), withUnmarshaler(newMetricsRequestUnmarshalerFunc(pusher)),
+		withBatchFuncs(mergeMetrics, mergeSplitMetrics),
+	}
 	return NewMetricsRequestExporter(ctx, set, requestFromMetrics(pusher), append(metricsOpts, options...)...)
 }
 
