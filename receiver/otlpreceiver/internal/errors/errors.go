@@ -4,6 +4,8 @@
 package errors // import "go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 
 import (
+	"net/http"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -23,4 +25,26 @@ func GetStatusFromError(err error) error {
 		s = status.New(code, err.Error())
 	}
 	return s.Err()
+}
+
+func GetHTTPStatusCodeFromStatus(err error) int {
+	s, ok := status.FromError(err)
+	if !ok {
+		return http.StatusInternalServerError
+	}
+	// See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures
+	// to see if a code is retryable.
+	// See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures-1
+	// to see a list of retryable http status codes.
+	switch s.Code() {
+	// Retryable
+	case codes.Canceled, codes.DeadlineExceeded, codes.Aborted, codes.OutOfRange, codes.Unavailable, codes.DataLoss:
+		return http.StatusServiceUnavailable
+	// Retryable
+	case codes.ResourceExhausted:
+		return http.StatusTooManyRequests
+	// Not Retryable
+	default:
+		return http.StatusInternalServerError
+	}
 }
