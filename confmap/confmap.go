@@ -5,13 +5,15 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 
 import (
 	"encoding"
+	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/v2"
-	"github.com/mitchellh/mapstructure"
 
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
 )
@@ -51,15 +53,15 @@ type UnmarshalOption interface {
 }
 
 type unmarshalOption struct {
-	errorUnused bool
+	ignoreUnused bool
 }
 
-// WithErrorUnused sets an option to error when there are existing
-// keys in the original Conf that were unused in the decoding process
+// WithIgnoreUnused sets an option to ignore errors if existing
+// keys in the original Conf were unused in the decoding process
 // (extra keys).
-func WithErrorUnused() UnmarshalOption {
+func WithIgnoreUnused() UnmarshalOption {
 	return unmarshalOptionFunc(func(uo *unmarshalOption) {
-		uo.errorUnused = true
+		uo.ignoreUnused = true
 	})
 }
 
@@ -76,7 +78,7 @@ func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
 	for _, opt := range opts {
 		opt.apply(&set)
 	}
-	return decodeConfig(l, result, set.errorUnused)
+	return decodeConfig(l, result, !set.ignoreUnused)
 }
 
 type marshalOption struct{}
@@ -157,6 +159,9 @@ func decodeConfig(m *Conf, result any, errorUnused bool) error {
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
 			unmarshalerHookFunc(result),
+			// after the main unmarshaler hook is called,
+			// we unmarshal the embedded structs if present to merge with the result:
+			unmarshalerEmbeddedStructsHookFunc(),
 			zeroSliceHookFunc(),
 		),
 	}
@@ -164,7 +169,13 @@ func decodeConfig(m *Conf, result any, errorUnused bool) error {
 	if err != nil {
 		return err
 	}
-	return decoder.Decode(m.ToStringMap())
+	if err = decoder.Decode(m.ToStringMap()); err != nil {
+		if strings.HasPrefix(err.Error(), "error decoding ''") {
+			return errors.Unwrap(err)
+		}
+		return err
+	}
+	return nil
 }
 
 // encoderConfig returns a default encoder.EncoderConfig that includes
@@ -258,6 +269,42 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 			m.SetMapIndex(reflect.Indirect(tKey), reflect.ValueOf(true))
 		}
 		return data, nil
+	}
+}
+
+// unmarshalerEmbeddedStructsHookFunc provides a mechanism for embedded structs to define their own unmarshal logic,
+// by implementing the Unmarshaler interface.
+func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
+	return func(from reflect.Value, to reflect.Value) (any, error) {
+		if to.Type().Kind() != reflect.Struct {
+			return from.Interface(), nil
+		}
+		fromAsMap, ok := from.Interface().(map[string]any)
+		if !ok {
+			return from.Interface(), nil
+		}
+		for i := 0; i < to.Type().NumField(); i++ {
+			// embedded structs passed in via `squash` cannot be pointers. We just check if they are structs:
+			if to.Type().Field(i).IsExported() && to.Type().Field(i).Anonymous {
+				if unmarshaler, ok := to.Field(i).Addr().Interface().(Unmarshaler); ok {
+					if err := unmarshaler.Unmarshal(NewFromStringMap(fromAsMap)); err != nil {
+						return nil, err
+					}
+					// the struct we receive from this unmarshaling only contains fields related to the embedded struct.
+					// we merge this partially unmarshaled struct with the rest of the result.
+					// note we already unmarshaled the main struct earlier, and therefore merge with it.
+					conf := New()
+					if err := conf.Marshal(unmarshaler); err != nil {
+						return nil, err
+					}
+					resultMap := conf.ToStringMap()
+					for k, v := range resultMap {
+						fromAsMap[k] = v
+					}
+				}
+			}
+		}
+		return fromAsMap, nil
 	}
 }
 

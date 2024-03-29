@@ -14,21 +14,17 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-)
-
-const (
-	// The value of "type" key in configuration.
-	typeStr = "otlp"
+	"go.opentelemetry.io/collector/exporter/otlpexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, component.StabilityLevelStable),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelStable),
-		exporter.WithLogs(createLogsExporter, component.StabilityLevelBeta),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
@@ -37,10 +33,10 @@ func createDefaultConfig() component.Config {
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		RetryConfig:     configretry.NewDefaultBackOffConfig(),
 		QueueConfig:     exporterhelper.NewDefaultQueueSettings(),
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Headers: map[string]configopaque.String{},
 			// Default to gzip compression
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},
@@ -52,10 +48,7 @@ func createTracesExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	oce, err := newExporter(cfg, set)
-	if err != nil {
-		return nil, err
-	}
+	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewTracesExporter(ctx, set, cfg,
 		oce.pushTraces,
@@ -72,10 +65,7 @@ func createMetricsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	oce, err := newExporter(cfg, set)
-	if err != nil {
-		return nil, err
-	}
+	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
 		oce.pushMetrics,
@@ -93,10 +83,7 @@ func createLogsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	oce, err := newExporter(cfg, set)
-	if err != nil {
-		return nil, err
-	}
+	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewLogsExporter(ctx, set, cfg,
 		oce.pushLogs,

@@ -48,7 +48,7 @@ func TestSliceReadOnly(t *testing.T) {
 	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
 	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
 
-	assert.Panics(t, func() { es.RemoveIf(func(el Value) bool { return false }) })
+	assert.Panics(t, func() { es.RemoveIf(func(Value) bool { return false }) })
 
 	assert.Equal(t, []any{int64(3)}, es.AsRaw())
 	assert.Panics(t, func() { _ = es.FromRaw([]any{3}) })
@@ -122,7 +122,7 @@ func TestSlice_MoveAndAppendTo(t *testing.T) {
 func TestSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
 	emptySlice := NewSlice()
-	emptySlice.RemoveIf(func(el Value) bool {
+	emptySlice.RemoveIf(func(Value) bool {
 		t.Fail()
 		return false
 	})
@@ -130,9 +130,23 @@ func TestSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := Slice(internal.GenerateTestSlice())
 	pos := 0
-	filtered.RemoveIf(func(el Value) bool {
+	filtered.RemoveIf(func(Value) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestInvalidSlice(t *testing.T) {
+	es := Slice{}
+
+	assert.Panics(t, func() { es.Len() })
+	assert.Panics(t, func() { es.At(0) })
+	assert.Panics(t, func() { es.CopyTo(Slice{}) })
+	assert.Panics(t, func() { es.EnsureCapacity(1) })
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.MoveAndAppendTo(Slice{}) })
+	assert.Panics(t, func() { es.RemoveIf(func(Value) bool { return false }) })
+	assert.Panics(t, func() { es.AsRaw() })
+	assert.Panics(t, func() { _ = es.FromRaw([]any{3}) })
 }

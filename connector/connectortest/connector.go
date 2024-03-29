@@ -6,6 +6,8 @@ package connectortest // import "go.opentelemetry.io/collector/connector/connect
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
@@ -13,11 +15,12 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
-const typeStr = "nop"
+var nopType = component.MustNewType("nop")
 
 // NewNopCreateSettings returns a new nop settings for Create* functions.
 func NewNopCreateSettings() connector.CreateSettings {
 	return connector.CreateSettings{
+		ID:                component.NewIDWithName(nopType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -28,7 +31,7 @@ type nopConfig struct{}
 // NewNopFactory returns a connector.Factory that constructs nop processors.
 func NewNopFactory() connector.Factory {
 	return connector.NewFactory(
-		"nop",
+		nopType,
 		func() component.Config {
 			return &nopConfig{}
 		},
@@ -93,8 +96,8 @@ func NewNopBuilder() *connector.Builder {
 	// Use a different ID than receivertest and exportertest to avoid ambiguous
 	// configuration scenarios. Ambiguous IDs are detected in the 'otelcol' package,
 	// but lower level packages such as 'service' assume that IDs are disambiguated.
-	connID := component.NewIDWithName(typeStr, "conn")
+	connID := component.NewIDWithName(nopType, "conn")
 	return connector.NewBuilder(
 		map[component.ID]component.Config{connID: nopFactory.CreateDefaultConfig()},
-		map[component.Type]connector.Factory{typeStr: nopFactory})
+		map[component.Type]connector.Factory{nopType: nopFactory})
 }

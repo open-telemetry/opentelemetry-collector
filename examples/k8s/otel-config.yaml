@@ -65,7 +65,7 @@ spec:
       - command:
           - "/otelcol"
           - "--config=/conf/otel-agent-config.yaml"
-        image: otel/opentelemetry-collector:0.91.0
+        image: otel/opentelemetry-collector:0.94.0
         name: otel-agent
         resources:
           limits:
@@ -183,7 +183,7 @@ spec:
       - command:
           - "/otelcol"
           - "--config=/conf/otel-collector-config.yaml"
-        image: otel/opentelemetry-collector:0.91.0
+        image: otel/opentelemetry-collector:0.94.0
         name: otel-collector
         resources:
           limits:
@@ -206,7 +206,7 @@ spec:
                 apiVersion: v1
                 fieldPath: status.podIP
           - name: GOMEMLIMIT
-              value: 1600MiB
+            value: 1600MiB
         volumeMounts:
         - name: otel-collector-config-vol
           mountPath: /conf

@@ -33,7 +33,7 @@ func TestHTTPClientCompression(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		encoding    configcompression.CompressionType
+		encoding    configcompression.Type
 		reqBody     []byte
 		shouldError bool
 	}{
@@ -51,31 +51,31 @@ func TestHTTPClientCompression(t *testing.T) {
 		},
 		{
 			name:        "ValidGzip",
-			encoding:    configcompression.Gzip,
+			encoding:    configcompression.TypeGzip,
 			reqBody:     compressedGzipBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidZlib",
-			encoding:    configcompression.Zlib,
+			encoding:    configcompression.TypeZlib,
 			reqBody:     compressedZlibBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidDeflate",
-			encoding:    configcompression.Deflate,
+			encoding:    configcompression.TypeDeflate,
 			reqBody:     compressedDeflateBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidSnappy",
-			encoding:    configcompression.Snappy,
+			encoding:    configcompression.TypeSnappy,
 			reqBody:     compressedSnappyBody.Bytes(),
 			shouldError: false,
 		},
 		{
 			name:        "ValidZstd",
-			encoding:    configcompression.Zstd,
+			encoding:    configcompression.TypeZstd,
 			reqBody:     compressedZstdBody.Bytes(),
 			shouldError: false,
 		},
@@ -95,7 +95,7 @@ func TestHTTPClientCompression(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, srv.URL, reqBody)
 			require.NoError(t, err, "failed to create request to test handler")
 
-			clientSettings := HTTPClientSettings{
+			clientSettings := ClientConfig{
 				Endpoint:    srv.URL,
 				Compression: tt.encoding,
 			}
@@ -191,6 +191,12 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: http.StatusOK,
 		},
 		{
+			name:     "ValidSnappy",
+			encoding: "snappy",
+			reqBody:  compressSnappy(t, testBody),
+			respCode: http.StatusOK,
+		},
+		{
 			name:     "InvalidDeflate",
 			encoding: "deflate",
 			reqBody:  bytes.NewBuffer(testBody),
@@ -217,6 +223,13 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			reqBody:  bytes.NewBuffer(testBody),
 			respCode: http.StatusBadRequest,
 			respBody: "invalid input: magic number mismatch",
+		},
+		{
+			name:     "InvalidSnappy",
+			encoding: "snappy",
+			reqBody:  bytes.NewBuffer(testBody),
+			respCode: http.StatusBadRequest,
+			respBody: "snappy: corrupt input\n",
 		},
 		{
 			name:     "UnsupportedCompression",
@@ -274,7 +287,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	require.NoError(t, err, "failed to create request to test handler")
 
 	client := http.Client{}
-	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip)
 	require.NoError(t, err)
 	res, err := client.Do(req)
 	require.NoError(t, err)
@@ -287,7 +300,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 type copyFailBody struct {
 }
 
-func (*copyFailBody) Read(_ []byte) (n int, err error) {
+func (*copyFailBody) Read([]byte) (n int, err error) {
 	return 0, fmt.Errorf("read failed")
 }
 
@@ -296,7 +309,7 @@ func (*copyFailBody) Close() error {
 }
 
 func TestHTTPContentCompressionCopyError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	t.Cleanup(server.Close)
@@ -305,7 +318,7 @@ func TestHTTPContentCompressionCopyError(t *testing.T) {
 	require.NoError(t, err)
 
 	client := http.Client{}
-	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip)
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	require.Error(t, err)
@@ -320,7 +333,7 @@ func (*closeFailBody) Close() error {
 }
 
 func TestHTTPContentCompressionRequestBodyCloseError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	t.Cleanup(server.Close)
@@ -329,7 +342,7 @@ func TestHTTPContentCompressionRequestBodyCloseError(t *testing.T) {
 	require.NoError(t, err)
 
 	client := http.Client{}
-	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+	client.Transport, err = newCompressRoundTripper(http.DefaultTransport, configcompression.TypeGzip)
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	require.Error(t, err)

@@ -18,7 +18,7 @@ const schemeName = "file"
 
 type provider struct{}
 
-// New returns a new confmap.Provider that reads the configuration from a file.
+// NewWithSettings returns a new confmap.Provider that reads the configuration from a file.
 //
 // This Provider supports "file" scheme, and can be called with a "uri" that follows:
 //
@@ -33,7 +33,7 @@ type provider struct{}
 // `file:/path/to/file` - absolute path (unix, windows)
 // `file:c:/path/to/file` - absolute path including drive-letter (windows)
 // `file:c:\path\to\file` - absolute path including drive-letter (windows)
-func New() confmap.Provider {
+func NewWithSettings(confmap.ProviderSettings) confmap.Provider {
 	return &provider{}
 }
 

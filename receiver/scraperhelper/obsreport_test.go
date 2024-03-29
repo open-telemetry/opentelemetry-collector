@@ -14,17 +14,15 @@ import (
 	"go.opentelemetry.io/otel/codes"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 var (
-	receiverID = component.NewID("fakeReceiver")
-	scraperID  = component.NewID("fakeScraper")
+	receiverID = component.MustNewID("fakeReceiver")
+	scraperID  = component.MustNewID("fakeScraper")
 
 	errFake        = errors.New("errFake")
 	partialErrFake = scrapererror.NewPartialScrapeError(errFake, 1)
@@ -36,8 +34,8 @@ type testParams struct {
 }
 
 func TestScrapeMetricsDataOp(t *testing.T) {
-	testTelemetry(t, receiverID, func(t *testing.T, tt obsreporttest.TestTelemetry, useOtel bool) {
-		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	testTelemetry(t, receiverID, func(t *testing.T, tt componenttest.TestTelemetry) {
+		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		params := []testParams{
@@ -49,8 +47,8 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 			scrp, err := newScraper(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Scraper:                scraperID,
-				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()},
-			}, useOtel)
+				ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+			})
 			require.NoError(t, err)
 			ctx := scrp.StartMetricsOp(parentCtx)
 			assert.NotNil(t, ctx)
@@ -88,29 +86,37 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 			}
 		}
 
-		require.NoError(t, obsreporttest.CheckScraperMetrics(tt, receiverID, scraperID, int64(scrapedMetricPoints), int64(erroredMetricPoints)))
+		require.NoError(t, tt.CheckScraperMetrics(receiverID, scraperID, int64(scrapedMetricPoints), int64(erroredMetricPoints)))
 	})
 }
 
-func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt obsreporttest.TestTelemetry, useOtel bool)) {
-	t.Run("WithOC", func(t *testing.T) {
-		originalValue := obsreportconfig.UseOtelForInternalMetricsfeatureGate.IsEnabled()
-		require.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelForInternalMetricsfeatureGate.ID(), false))
-		defer func() {
-			require.NoError(t, featuregate.GlobalRegistry().Set(obsreportconfig.UseOtelForInternalMetricsfeatureGate.ID(), originalValue))
-		}()
-		tt, err := obsreporttest.SetupTelemetry(id)
-		require.NoError(t, err)
-		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+func TestCheckScraperMetricsViews(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(receiverID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-		testFunc(t, tt, false)
+	s, err := NewObsReport(ObsReportSettings{
+		ReceiverID:             receiverID,
+		Scraper:                scraperID,
+		ReceiverCreateSettings: receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
+	require.NoError(t, err)
+	ctx := s.StartMetricsOp(context.Background())
+	require.NotNil(t, ctx)
+	s.EndMetricsOp(ctx, 7, nil)
 
+	assert.NoError(t, tt.CheckScraperMetrics(receiverID, scraperID, 7, 0))
+	assert.Error(t, tt.CheckScraperMetrics(receiverID, scraperID, 7, 7))
+	assert.Error(t, tt.CheckScraperMetrics(receiverID, scraperID, 0, 0))
+	assert.Error(t, tt.CheckScraperMetrics(receiverID, scraperID, 0, 7))
+}
+
+func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry)) {
 	t.Run("WithOTel", func(t *testing.T) {
-		tt, err := obsreporttest.SetupTelemetry(id)
+		tt, err := componenttest.SetupTelemetry(id)
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-		testFunc(t, tt, true)
+		testFunc(t, tt)
 	})
 }

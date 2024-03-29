@@ -10,6 +10,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   Check-Compatibility:
     runs-on: macos-latest
@@ -19,20 +22,20 @@ jobs:
     steps:
 
       - name: Checkout-Main
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ github.base_ref }}
           path: ${{ github.base_ref }}
 
       - name: Checkout-HEAD
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           path: ${{ github.head_ref }}
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: ~1.20.12
+          go-version: ~1.21.5
 
       # Generate apidiff states of Main
       - name: Generate-States

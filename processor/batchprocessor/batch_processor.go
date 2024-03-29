@@ -110,7 +110,7 @@ var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
 
 // newBatchProcessor returns a new batch processor component.
-func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func() batch, useOtel bool) (*batchProcessor, error) {
+func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func() batch) (*batchProcessor, error) {
 	// use lower-case, to be consistent with http/2 headers.
 	mks := make([]string, len(cfg.MetadataKeys))
 	for i, k := range cfg.MetadataKeys {
@@ -129,14 +129,16 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 		metadataLimit:    int(cfg.MetadataCardinalityLimit),
 	}
 	if len(bp.metadataKeys) == 0 {
-		bp.batcher = &singleShardBatcher{batcher: bp.newShard(nil)}
+		s := bp.newShard(nil)
+		s.start()
+		bp.batcher = &singleShardBatcher{batcher: s}
 	} else {
 		bp.batcher = &multiShardBatcher{
 			batchProcessor: bp,
 		}
 	}
 
-	bpt, err := newBatchProcessorTelemetry(set, bp.batcher.currentMetadataCardinality, useOtel)
+	bpt, err := newBatchProcessorTelemetry(set, bp.batcher.currentMetadataCardinality)
 	if err != nil {
 		return nil, fmt.Errorf("error creating batch processor telemetry: %w", err)
 	}
@@ -156,8 +158,6 @@ func (bp *batchProcessor) newShard(md map[string][]string) *shard {
 		exportCtx: exportCtx,
 		batch:     bp.batchFunc(),
 	}
-	b.processor.goroutines.Add(1)
-	go b.start()
 	return b
 }
 
@@ -180,6 +180,11 @@ func (bp *batchProcessor) Shutdown(context.Context) error {
 }
 
 func (b *shard) start() {
+	b.processor.goroutines.Add(1)
+	go b.startLoop()
+}
+
+func (b *shard) startLoop() {
 	defer b.processor.goroutines.Done()
 
 	// timerCh ensures we only block when there is a
@@ -320,6 +325,8 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 		var loaded bool
 		b, loaded = mb.batchers.LoadOrStore(aset, mb.newShard(md))
 		if !loaded {
+			// Start the goroutine only if we added the object to the map, otherwise is already started.
+			b.(*shard).start()
 			mb.size++
 		}
 		mb.lock.Unlock()
@@ -350,18 +357,18 @@ func (bp *batchProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 // newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
-func newBatchTracesProcessor(set processor.CreateSettings, next consumer.Traces, cfg *Config, useOtel bool) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, func() batch { return newBatchTraces(next) }, useOtel)
+func newBatchTracesProcessor(set processor.CreateSettings, next consumer.Traces, cfg *Config) (*batchProcessor, error) {
+	return newBatchProcessor(set, cfg, func() batch { return newBatchTraces(next) })
 }
 
 // newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
-func newBatchMetricsProcessor(set processor.CreateSettings, next consumer.Metrics, cfg *Config, useOtel bool) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, func() batch { return newBatchMetrics(next) }, useOtel)
+func newBatchMetricsProcessor(set processor.CreateSettings, next consumer.Metrics, cfg *Config) (*batchProcessor, error) {
+	return newBatchProcessor(set, cfg, func() batch { return newBatchMetrics(next) })
 }
 
 // newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
-func newBatchLogsProcessor(set processor.CreateSettings, next consumer.Logs, cfg *Config, useOtel bool) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, func() batch { return newBatchLogs(next) }, useOtel)
+func newBatchLogsProcessor(set processor.CreateSettings, next consumer.Logs, cfg *Config) (*batchProcessor, error) {
+	return newBatchProcessor(set, cfg, func() batch { return newBatchLogs(next) })
 }
 
 type batchTraces struct {

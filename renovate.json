@@ -5,13 +5,22 @@
       "dependencies"
     ],
     "constraints": {
-      "go": "1.20"
+      "go": "1.21"
     },
-    "extends": [
-      "config:base"
-    ],
+    "extends": ["config:recommended"],
     "schedule": ["every tuesday"],
     "packageRules": [
+      {
+        "matchManagers": ["gomod"],
+        "matchUpdateTypes": ["pin", "pinDigest", "digest", "lockFileMaintenance", "rollback", "bump", "replacement"],
+        "enabled": false
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchUpdateTypes": ["major"],
+        "prBodyNotes": [":warning: MAJOR VERSION UPDATE :warning: - please manually update this package"],
+        "labels": ["dependency-major-update"]
+      },
       {
         "matchManagers": ["dockerfile"],
         "groupName": "dockerfile deps"
@@ -25,20 +34,34 @@
         "groupName": "github-actions deps"
       },
       {
-        "groupName": "all patch dependencies",
-        "matchPackagePatterns": [
-          "*"
-        ],
-        "matchUpdateTypes": [
-          "patch"
-        ]
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/contrib"],
+        "groupName": "All go.opentelemetry.io/contrib packages"
       },
       {
         "matchManagers": ["gomod"],
-        "matchUpdateTypes": ["minor", "major"]
+        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/otel"],
+        "groupName": "All go.opentelemetry.io/contrib packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://google.golang.org"],
+        "groupName": "All google.golang.org packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://golang.org/x"],
+        "groupName": "All golang.org/x packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/build-tools"],
+        "groupName": "All go.opentelemetry.io/build-tools packages"
       }
     ],
     "ignoreDeps": [
       "github.com/mattn/go-ieproxy"
-    ]
+    ],
+    "prConcurrentLimit": 200,
+    "suppressNotifications": ["prEditedNotification"]
   }

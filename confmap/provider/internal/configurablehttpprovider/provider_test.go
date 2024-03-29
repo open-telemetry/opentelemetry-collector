@@ -23,11 +23,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
-func newConfigurableHTTPProvider(scheme SchemeType) *provider {
-	return New(scheme).(*provider)
+func newConfigurableHTTPProvider(scheme SchemeType, set confmap.ProviderSettings) *provider {
+	return New(scheme, set).(*provider)
 }
 
 func answerGet(w http.ResponseWriter, _ *http.Request) {
@@ -122,7 +123,7 @@ func generateCertificate(hostname string) (cert string, key string, err error) {
 }
 
 func TestFunctionalityDownloadFileHTTP(t *testing.T) {
-	fp := newConfigurableHTTPProvider(HTTPScheme)
+	fp := newConfigurableHTTPProvider(HTTPScheme, confmap.ProviderSettings{})
 	ts := httptest.NewServer(http.HandlerFunc(answerGet))
 	defer ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
@@ -210,7 +211,7 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			fp := newConfigurableHTTPProvider(HTTPSScheme)
+			fp := newConfigurableHTTPProvider(HTTPSScheme, confmap.ProviderSettings{})
 			// Parse url of the test server to get the port number.
 			tsURL, err := url.Parse(ts.URL)
 			require.NoError(t, err)
@@ -229,20 +230,20 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 }
 
 func TestUnsupportedScheme(t *testing.T) {
-	fp := New(HTTPScheme)
+	fp := New(HTTPScheme, confmap.ProviderSettings{})
 	_, err := fp.Retrieve(context.Background(), "https://...", nil)
 	assert.Error(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 
-	fp = New(HTTPSScheme)
+	fp = New(HTTPSScheme, confmap.ProviderSettings{})
 	_, err = fp.Retrieve(context.Background(), "http://...", nil)
 	assert.Error(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestEmptyURI(t *testing.T) {
-	fp := New(HTTPScheme)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	fp := New(HTTPScheme, confmap.ProviderSettings{})
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 	defer ts.Close()
@@ -252,8 +253,8 @@ func TestEmptyURI(t *testing.T) {
 }
 
 func TestRetrieveFromShutdownServer(t *testing.T) {
-	fp := New(HTTPScheme)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	fp := New(HTTPScheme, confmap.ProviderSettings{})
+	ts := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
 	assert.Error(t, err)
@@ -261,8 +262,8 @@ func TestRetrieveFromShutdownServer(t *testing.T) {
 }
 
 func TestNonExistent(t *testing.T) {
-	fp := New(HTTPScheme)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	fp := New(HTTPScheme, confmap.ProviderSettings{})
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer ts.Close()
@@ -272,8 +273,8 @@ func TestNonExistent(t *testing.T) {
 }
 
 func TestInvalidYAML(t *testing.T) {
-	fp := New(HTTPScheme)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	fp := New(HTTPScheme, confmap.ProviderSettings{})
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("wrong : ["))
 		if err != nil {
@@ -287,17 +288,17 @@ func TestInvalidYAML(t *testing.T) {
 }
 
 func TestScheme(t *testing.T) {
-	fp := New(HTTPScheme)
+	fp := New(HTTPScheme, confmap.ProviderSettings{})
 	assert.Equal(t, "http", fp.Scheme())
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestValidateProviderScheme(t *testing.T) {
-	assert.NoError(t, confmaptest.ValidateProviderScheme(New(HTTPScheme)))
+	assert.NoError(t, confmaptest.ValidateProviderScheme(New(HTTPScheme, confmap.ProviderSettings{})))
 }
 
 func TestInvalidTransport(t *testing.T) {
-	fp := New("foo")
+	fp := New("foo", confmap.ProviderSettings{})
 
 	_, err := fp.Retrieve(context.Background(), "foo://..", nil)
 	assert.Error(t, err)

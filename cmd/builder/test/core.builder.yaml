@@ -1,20 +1,20 @@
 dist:
   module: go.opentelemetry.io/collector/builder/test/core
-  otelcol_version: 0.91.0
+  otelcol_version: 0.94.0
 
 extensions:
   - import: go.opentelemetry.io/collector/extension/zpagesextension
-    gomod: go.opentelemetry.io/collector v0.91.0
+    gomod: go.opentelemetry.io/collector v0.94.0
     path: ${WORKSPACE_DIR}
 
 receivers:
   - import: go.opentelemetry.io/collector/receiver/otlpreceiver
-    gomod: go.opentelemetry.io/collector v0.91.0
+    gomod: go.opentelemetry.io/collector v0.94.0
     path: ${WORKSPACE_DIR}
 
 exporters:
   - import: go.opentelemetry.io/collector/exporter/debugexporter
-    gomod: go.opentelemetry.io/collector v0.91.0
+    gomod: go.opentelemetry.io/collector v0.94.0
     path: ${WORKSPACE_DIR}
 
 replaces:
@@ -31,6 +31,12 @@ replaces:
   - go.opentelemetry.io/collector/config/configtls => ${WORKSPACE_DIR}/config/configtls
   - go.opentelemetry.io/collector/config/internal => ${WORKSPACE_DIR}/config/internal
   - go.opentelemetry.io/collector/confmap => ${WORKSPACE_DIR}/confmap
+  - go.opentelemetry.io/collector/confmap/converter/expandconverter => ${WORKSPACE_DIR}/confmap/converter/expandconverter
+  - go.opentelemetry.io/collector/confmap/provider/envprovider => ${WORKSPACE_DIR}/confmap/provider/envprovider
+  - go.opentelemetry.io/collector/confmap/provider/fileprovider => ${WORKSPACE_DIR}/confmap/provider/fileprovider
+  - go.opentelemetry.io/collector/confmap/provider/httpprovider => ${WORKSPACE_DIR}/confmap/provider/httpprovider
+  - go.opentelemetry.io/collector/confmap/provider/httpsprovider => ${WORKSPACE_DIR}/confmap/provider/httpsprovider
+  - go.opentelemetry.io/collector/confmap/provider/yamlprovider => ${WORKSPACE_DIR}/confmap/provider/yamlprovider
   - go.opentelemetry.io/collector/consumer => ${WORKSPACE_DIR}/consumer
   - go.opentelemetry.io/collector/connector => ${WORKSPACE_DIR}/connector
   - go.opentelemetry.io/collector/exporter => ${WORKSPACE_DIR}/exporter

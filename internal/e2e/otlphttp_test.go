@@ -38,7 +38,7 @@ import (
 
 func TestInvalidConfig(t *testing.T) {
 	config := &otlphttpexporter.Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
 		},
 	}
@@ -229,7 +229,7 @@ func TestLogsRoundTrip(t *testing.T) {
 }
 
 func TestIssue_4221(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		defer func() { assert.NoError(t, r.Body.Close()) }()
 		compressedData, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
@@ -250,6 +250,7 @@ func TestIssue_4221(t *testing.T) {
 		spanID := span.SpanID()
 		assert.Equal(t, "e5513c32795c41b9", hex.EncodeToString(spanID[:]))
 	}))
+	defer func() { svr.Close() }()
 
 	exp := startTracesExporter(t, "", svr.URL)
 

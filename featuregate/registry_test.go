@@ -17,7 +17,7 @@ func TestGlobalRegistry(t *testing.T) {
 func TestRegistry(t *testing.T) {
 	r := NewRegistry()
 	// Expect that no gates to visit.
-	r.VisitAll(func(gate *Gate) {
+	r.VisitAll(func(*Gate) {
 		t.FailNow()
 	})
 
@@ -33,7 +33,7 @@ func TestRegistry(t *testing.T) {
 	assert.False(t, g.IsEnabled())
 
 	_, err = r.Register(id, StageBeta)
-	assert.Error(t, err)
+	assert.ErrorIs(t, err, ErrAlreadyRegistered)
 	assert.Panics(t, func() {
 		r.MustRegister(id, StageBeta)
 	})

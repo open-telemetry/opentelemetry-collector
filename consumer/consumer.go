@@ -38,7 +38,7 @@ func WithCapabilities(capabilities Capabilities) Option {
 	}
 }
 
-// Capabilities implementation of the base
+// Capabilities returns the capabilities of the component
 func (bs baseImpl) Capabilities() Capabilities {
 	return bs.capabilities
 }

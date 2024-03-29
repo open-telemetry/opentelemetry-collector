@@ -5,11 +5,15 @@ package expandconverter
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -45,7 +49,7 @@ func TestNewExpandConverter(t *testing.T) {
 			require.NoError(t, err, "Unable to get config")
 
 			// Test that expanded configs are the same with the simple config with no env vars.
-			require.NoError(t, New().Convert(context.Background(), conf))
+			require.NoError(t, New(confmap.ConverterSettings{}).Convert(context.Background(), conf))
 			assert.Equal(t, expectedCfgMap.ToStringMap(), conf.ToStringMap())
 		})
 	}
@@ -64,7 +68,7 @@ func TestNewExpandConverter_EscapedMaps(t *testing.T) {
 				"recv": "$MAP_VALUE",
 			}},
 	)
-	require.NoError(t, New().Convert(context.Background(), conf))
+	require.NoError(t, New(confmap.ConverterSettings{}).Convert(context.Background(), conf))
 
 	expectedMap := map[string]any{
 		"test_string_map": map[string]any{
@@ -101,7 +105,7 @@ func TestNewExpandConverter_EscapedEnvVars(t *testing.T) {
 			// escaped $ alone
 			"recv.7": "$",
 		}}
-	require.NoError(t, New().Convert(context.Background(), conf))
+	require.NoError(t, New(confmap.ConverterSettings{}).Convert(context.Background(), conf))
 	assert.Equal(t, expectedMap, conf.ToStringMap())
 }
 
@@ -154,8 +158,97 @@ func TestNewExpandConverterHostPort(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := confmap.NewFromStringMap(tt.input)
-			require.NoError(t, New().Convert(context.Background(), conf))
+			require.NoError(t, New(confmap.ConverterSettings{}).Convert(context.Background(), conf))
 			assert.Equal(t, tt.expected, conf.ToStringMap())
+		})
+	}
+}
+
+func NewTestConverter() (confmap.Converter, *observer.ObservedLogs) {
+	core, logs := observer.New(zapcore.InfoLevel)
+	conv := converter{loggedDeprecations: make(map[string]struct{}), logger: zap.New(core)}
+	return conv, logs
+}
+
+func TestDeprecatedWarning(t *testing.T) {
+	msgTemplate := `Variable substitution using $VAR will be deprecated in favor of ${VAR} and ${env:VAR}, please update $%s`
+	t.Setenv("HOST", "127.0.0.1")
+	t.Setenv("PORT", "4317")
+
+	t.Setenv("HOST_NAME", "127.0.0.2")
+	t.Setenv("HOST.NAME", "127.0.0.3")
+
+	var testCases = []struct {
+		name             string
+		input            map[string]any
+		expectedOutput   map[string]any
+		expectedWarnings []string
+	}{
+		{
+			name: "no warning",
+			input: map[string]any{
+				"test": "${HOST}:${PORT}",
+			},
+			expectedOutput: map[string]any{
+				"test": "127.0.0.1:4317",
+			},
+			expectedWarnings: []string{},
+		},
+		{
+			name: "one deprecated var",
+			input: map[string]any{
+				"test": "${HOST}:$PORT",
+			},
+			expectedOutput: map[string]any{
+				"test": "127.0.0.1:4317",
+			},
+			expectedWarnings: []string{"PORT"},
+		},
+		{
+			name: "two deprecated vars",
+			input: map[string]any{
+				"test": "$HOST:$PORT",
+			},
+			expectedOutput: map[string]any{
+				"test": "127.0.0.1:4317",
+			},
+			expectedWarnings: []string{"HOST", "PORT"},
+		},
+		{
+			name: "one depracated serveral times",
+			input: map[string]any{
+				"test":  "$HOST,$HOST",
+				"test2": "$HOST",
+			},
+			expectedOutput: map[string]any{
+				"test":  "127.0.0.1,127.0.0.1",
+				"test2": "127.0.0.1",
+			},
+			expectedWarnings: []string{"HOST"},
+		},
+		{
+			name: "one warning",
+			input: map[string]any{
+				"test": "$HOST_NAME,${HOST.NAME}",
+			},
+			expectedOutput: map[string]any{
+				"test": "127.0.0.2,127.0.0.3",
+			},
+			expectedWarnings: []string{"HOST_NAME"},
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			conf := confmap.NewFromStringMap(tt.input)
+			conv, logs := NewTestConverter()
+			require.NoError(t, conv.Convert(context.Background(), conf))
+
+			assert.Equal(t, tt.expectedOutput, conf.ToStringMap())
+			assert.Equal(t, len(tt.expectedWarnings), len(logs.All()))
+			for i, variable := range tt.expectedWarnings {
+				errorMsg := fmt.Sprintf(msgTemplate, variable)
+				assert.Equal(t, errorMsg, logs.All()[i].Message)
+			}
 		})
 	}
 }

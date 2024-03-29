@@ -23,10 +23,6 @@ func NewPartialScrapeError(err error, failed int) PartialScrapeError {
 
 // IsPartialScrapeError checks if an error was wrapped with PartialScrapeError.
 func IsPartialScrapeError(err error) bool {
-	if err == nil {
-		return false
-	}
-
 	var partialScrapeErr PartialScrapeError
 	return errors.As(err, &partialScrapeErr)
 }

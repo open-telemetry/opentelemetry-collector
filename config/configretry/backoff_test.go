@@ -43,8 +43,15 @@ func TestInvalidRandomizationFactor(t *testing.T) {
 func TestInvalidMultiplier(t *testing.T) {
 	cfg := NewDefaultBackOffConfig()
 	assert.NoError(t, cfg.Validate())
-	cfg.Multiplier = 0
+	cfg.Multiplier = -1
 	assert.Error(t, cfg.Validate())
+}
+
+func TestZeroMultiplierIsValid(t *testing.T) {
+	cfg := NewDefaultBackOffConfig()
+	assert.NoError(t, cfg.Validate())
+	cfg.Multiplier = 0
+	assert.NoError(t, cfg.Validate())
 }
 
 func TestInvalidMaxInterval(t *testing.T) {
@@ -59,6 +66,18 @@ func TestInvalidMaxElapsedTime(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 	cfg.MaxElapsedTime = -1
 	assert.Error(t, cfg.Validate())
+	cfg.MaxElapsedTime = 60
+	// MaxElapsedTime is 60, InitialInterval is 5s, so it should be invalid
+	assert.Error(t, cfg.Validate())
+	cfg.InitialInterval = 0
+	// MaxElapsedTime is 60, MaxInterval is 30s, so it should be invalid
+	assert.Error(t, cfg.Validate())
+	cfg.MaxInterval = 0
+	assert.NoError(t, cfg.Validate())
+	cfg.InitialInterval = 50
+	// MaxElapsedTime is 0, so it should be valid
+	cfg.MaxElapsedTime = 0
+	assert.NoError(t, cfg.Validate())
 }
 
 func TestDisabledWithInvalidValues(t *testing.T) {

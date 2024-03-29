@@ -4,6 +4,7 @@
 package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 import (
+	"fmt"
 	"io"
 	"mime"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
@@ -22,92 +24,124 @@ var fallbackMsg = []byte(`{"code": 13, "message": "failed to marshal error messa
 
 const fallbackContentType = "application/json"
 
-func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *trace.Receiver, encoder encoder) {
-	body, ok := readAndCloseBody(resp, req, encoder)
+func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *trace.Receiver) {
+	enc, ok := readContentType(resp, req)
 	if !ok {
 		return
 	}
 
-	otlpReq, err := encoder.unmarshalTracesRequest(body)
+	body, ok := readAndCloseBody(resp, req, enc)
+	if !ok {
+		return
+	}
+
+	otlpReq, err := enc.unmarshalTracesRequest(body)
 	if err != nil {
-		writeError(resp, encoder, err, http.StatusBadRequest)
+		writeError(resp, enc, err, http.StatusBadRequest)
 		return
 	}
 
 	otlpResp, err := tracesReceiver.Export(req.Context(), otlpReq)
 	if err != nil {
-		writeError(resp, encoder, err, http.StatusInternalServerError)
+		writeError(resp, enc, err, errors.GetHTTPStatusCodeFromStatus(err))
 		return
 	}
 
-	msg, err := encoder.marshalTracesResponse(otlpResp)
+	msg, err := enc.marshalTracesResponse(otlpResp)
 	if err != nil {
-		writeError(resp, encoder, err, http.StatusInternalServerError)
+		writeError(resp, enc, err, http.StatusInternalServerError)
 		return
 	}
-	writeResponse(resp, encoder.contentType(), http.StatusOK, msg)
+	writeResponse(resp, enc.contentType(), http.StatusOK, msg)
 }
 
-func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver *metrics.Receiver, encoder encoder) {
-	body, ok := readAndCloseBody(resp, req, encoder)
+func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver *metrics.Receiver) {
+	enc, ok := readContentType(resp, req)
 	if !ok {
 		return
 	}
 
-	otlpReq, err := encoder.unmarshalMetricsRequest(body)
+	body, ok := readAndCloseBody(resp, req, enc)
+	if !ok {
+		return
+	}
+
+	otlpReq, err := enc.unmarshalMetricsRequest(body)
 	if err != nil {
-		writeError(resp, encoder, err, http.StatusBadRequest)
+		writeError(resp, enc, err, http.StatusBadRequest)
 		return
 	}
 
 	otlpResp, err := metricsReceiver.Export(req.Context(), otlpReq)
 	if err != nil {
-		writeError(resp, encoder, err, http.StatusInternalServerError)
+		writeError(resp, enc, err, errors.GetHTTPStatusCodeFromStatus(err))
 		return
 	}
 
-	msg, err := encoder.marshalMetricsResponse(otlpResp)
+	msg, err := enc.marshalMetricsResponse(otlpResp)
 	if err != nil {
-		writeError(resp, encoder, err, http.StatusInternalServerError)
+		writeError(resp, enc, err, http.StatusInternalServerError)
 		return
 	}
-	writeResponse(resp, encoder.contentType(), http.StatusOK, msg)
+	writeResponse(resp, enc.contentType(), http.StatusOK, msg)
 }
 
-func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.Receiver, encoder encoder) {
-	body, ok := readAndCloseBody(resp, req, encoder)
+func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.Receiver) {
+	enc, ok := readContentType(resp, req)
 	if !ok {
 		return
 	}
 
-	otlpReq, err := encoder.unmarshalLogsRequest(body)
+	body, ok := readAndCloseBody(resp, req, enc)
+	if !ok {
+		return
+	}
+
+	otlpReq, err := enc.unmarshalLogsRequest(body)
 	if err != nil {
-		writeError(resp, encoder, err, http.StatusBadRequest)
+		writeError(resp, enc, err, http.StatusBadRequest)
 		return
 	}
 
 	otlpResp, err := logsReceiver.Export(req.Context(), otlpReq)
 	if err != nil {
-		writeError(resp, encoder, err, http.StatusInternalServerError)
+		writeError(resp, enc, err, errors.GetHTTPStatusCodeFromStatus(err))
 		return
 	}
 
-	msg, err := encoder.marshalLogsResponse(otlpResp)
+	msg, err := enc.marshalLogsResponse(otlpResp)
 	if err != nil {
-		writeError(resp, encoder, err, http.StatusInternalServerError)
+		writeError(resp, enc, err, http.StatusInternalServerError)
 		return
 	}
-	writeResponse(resp, encoder.contentType(), http.StatusOK, msg)
+	writeResponse(resp, enc.contentType(), http.StatusOK, msg)
 }
 
-func readAndCloseBody(resp http.ResponseWriter, req *http.Request, encoder encoder) ([]byte, bool) {
+func readContentType(resp http.ResponseWriter, req *http.Request) (encoder, bool) {
+	if req.Method != http.MethodPost {
+		handleUnmatchedMethod(resp)
+		return nil, false
+	}
+
+	switch getMimeTypeFromContentType(req.Header.Get("Content-Type")) {
+	case pbContentType:
+		return pbEncoder, true
+	case jsonContentType:
+		return jsEncoder, true
+	default:
+		handleUnmatchedContentType(resp)
+		return nil, false
+	}
+}
+
+func readAndCloseBody(resp http.ResponseWriter, req *http.Request, enc encoder) ([]byte, bool) {
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		writeError(resp, encoder, err, http.StatusBadRequest)
+		writeError(resp, enc, err, http.StatusBadRequest)
 		return nil, false
 	}
 	if err = req.Body.Close(); err != nil {
-		writeError(resp, encoder, err, http.StatusBadRequest)
+		writeError(resp, enc, err, http.StatusBadRequest)
 		return nil, false
 	}
 	return body, true
@@ -137,14 +171,14 @@ func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusC
 	writeResponse(w, fallbackContentType, http.StatusInternalServerError, fallbackMsg)
 }
 
-func writeStatusResponse(w http.ResponseWriter, encoder encoder, statusCode int, rsp *spb.Status) {
-	msg, err := encoder.marshalStatus(rsp)
+func writeStatusResponse(w http.ResponseWriter, enc encoder, statusCode int, rsp *spb.Status) {
+	msg, err := enc.marshalStatus(rsp)
 	if err != nil {
 		writeResponse(w, fallbackContentType, http.StatusInternalServerError, fallbackMsg)
 		return
 	}
 
-	writeResponse(w, encoder.contentType(), statusCode, msg)
+	writeResponse(w, enc.contentType(), statusCode, msg)
 }
 
 func writeResponse(w http.ResponseWriter, contentType string, statusCode int, msg []byte) {
@@ -167,4 +201,14 @@ func getMimeTypeFromContentType(contentType string) string {
 		return ""
 	}
 	return mediatype
+}
+
+func handleUnmatchedMethod(resp http.ResponseWriter) {
+	status := http.StatusMethodNotAllowed
+	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v method not allowed, supported: [POST]", status)))
+}
+
+func handleUnmatchedContentType(resp http.ResponseWriter) {
+	status := http.StatusUnsupportedMediaType
+	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v unsupported media type, supported: [%s, %s]", status, jsonContentType, pbContentType)))
 }

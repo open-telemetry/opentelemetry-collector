@@ -11,7 +11,6 @@ import (
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -24,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
-	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
+	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -37,63 +36,6 @@ const (
 	counterName  = "test_counter"
 )
 
-func TestBuildResource(t *testing.T) {
-	buildInfo := component.NewDefaultBuildInfo()
-
-	// Check default config
-	cfg := telemetry.Config{}
-	otelRes := buildResource(buildInfo, cfg)
-	res := pdataFromSdk(otelRes)
-
-	assert.Equal(t, res.Attributes().Len(), 3)
-	value, ok := res.Attributes().Get(semconv.AttributeServiceName)
-	assert.True(t, ok)
-	assert.Equal(t, buildInfo.Command, value.AsString())
-	value, ok = res.Attributes().Get(semconv.AttributeServiceVersion)
-	assert.True(t, ok)
-	assert.Equal(t, buildInfo.Version, value.AsString())
-
-	_, ok = res.Attributes().Get(semconv.AttributeServiceInstanceID)
-	assert.True(t, ok)
-
-	// Check override by nil
-	cfg = telemetry.Config{
-		Resource: map[string]*string{
-			semconv.AttributeServiceName:       nil,
-			semconv.AttributeServiceVersion:    nil,
-			semconv.AttributeServiceInstanceID: nil,
-		},
-	}
-	otelRes = buildResource(buildInfo, cfg)
-	res = pdataFromSdk(otelRes)
-
-	// Attributes should not exist since we nil-ified all.
-	assert.Equal(t, res.Attributes().Len(), 0)
-
-	// Check override values
-	strPtr := func(v string) *string { return &v }
-	cfg = telemetry.Config{
-		Resource: map[string]*string{
-			semconv.AttributeServiceName:       strPtr("a"),
-			semconv.AttributeServiceVersion:    strPtr("b"),
-			semconv.AttributeServiceInstanceID: strPtr("c"),
-		},
-	}
-	otelRes = buildResource(buildInfo, cfg)
-	res = pdataFromSdk(otelRes)
-
-	assert.Equal(t, res.Attributes().Len(), 3)
-	value, ok = res.Attributes().Get(semconv.AttributeServiceName)
-	assert.True(t, ok)
-	assert.Equal(t, "a", value.AsString())
-	value, ok = res.Attributes().Get(semconv.AttributeServiceVersion)
-	assert.True(t, ok)
-	assert.Equal(t, "b", value.AsString())
-	value, ok = res.Attributes().Get(semconv.AttributeServiceInstanceID)
-	assert.True(t, ok)
-	assert.Equal(t, "c", value.AsString())
-}
-
 func TestTelemetryInit(t *testing.T) {
 	type metricValue struct {
 		value  float64
@@ -102,29 +44,13 @@ func TestTelemetryInit(t *testing.T) {
 
 	for _, tc := range []struct {
 		name            string
-		useOtel         bool
 		disableHighCard bool
 		expectedMetrics map[string]metricValue
 		extendedConfig  bool
 		cfg             *telemetry.Config
 	}{
 		{
-			name:    "UseOpenCensusForInternalMetrics",
-			useOtel: false,
-			expectedMetrics: map[string]metricValue{
-				metricPrefix + ocPrefix + counterName: {
-					value: 13,
-					labels: map[string]string{
-						"service_name":        "otelcol",
-						"service_version":     "latest",
-						"service_instance_id": testInstanceID,
-					},
-				},
-			},
-		},
-		{
-			name:    "UseOpenTelemetryForInternalMetrics",
-			useOtel: true,
+			name: "UseOpenTelemetryForInternalMetrics",
 			expectedMetrics: map[string]metricValue{
 				metricPrefix + ocPrefix + counterName: {
 					value: 13,
@@ -175,7 +101,6 @@ func TestTelemetryInit(t *testing.T) {
 		},
 		{
 			name:            "DisableHighCardinalityWithOtel",
-			useOtel:         true,
 			disableHighCard: true,
 			expectedMetrics: map[string]metricValue{
 				metricPrefix + ocPrefix + counterName: {
@@ -292,8 +217,6 @@ func TestTelemetryInit(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			tel := newColTelemetry(tc.useOtel, tc.disableHighCard, tc.extendedConfig)
-			buildInfo := component.NewDefaultBuildInfo()
 			if tc.extendedConfig {
 				tc.cfg.Metrics.Readers = []config.MetricReader{
 					{
@@ -316,24 +239,26 @@ func TestTelemetryInit(t *testing.T) {
 					},
 				}
 			}
-			otelRes := buildResource(buildInfo, *tc.cfg)
-			res := pdataFromSdk(otelRes)
-			settings := servicetelemetry.TelemetrySettings{
-				Logger:   zap.NewNop(),
-				Resource: res,
+			set := meterProviderSettings{
+				res:               resource.New(component.NewDefaultBuildInfo(), tc.cfg.Resource),
+				logger:            zap.NewNop(),
+				cfg:               tc.cfg.Metrics,
+				asyncErrorChannel: make(chan error),
 			}
-			err := tel.init(otelRes, settings, *tc.cfg, make(chan error))
+			mp, err := newMeterProvider(set, tc.disableHighCard, tc.extendedConfig)
 			require.NoError(t, err)
 			defer func() {
-				require.NoError(t, tel.shutdown())
+				if prov, ok := mp.(interface{ Shutdown(context.Context) error }); ok {
+					require.NoError(t, prov.Shutdown(context.Background()))
+				}
 			}()
 
-			v := createTestMetrics(t, tel.mp)
+			v := createTestMetrics(t, mp)
 			defer func() {
 				view.Unregister(v)
 			}()
 
-			metrics := getMetricsFromPrometheus(t, tel.servers[0].Handler)
+			metrics := getMetricsFromPrometheus(t, mp.(*meterProvider).servers[0].Handler)
 			require.Equal(t, len(tc.expectedMetrics), len(metrics))
 
 			for metricName, metricValue := range tc.expectedMetrics {

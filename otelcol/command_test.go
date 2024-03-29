@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -14,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestNewCommandVersion(t *testing.T) {
@@ -26,17 +28,85 @@ func TestNewCommandNoConfigURI(t *testing.T) {
 	require.Error(t, cmd.Execute())
 }
 
-func TestNewCommandInvalidComponent(t *testing.T) {
-	cfgProvider, err := NewConfigProvider(
-		ConfigProviderSettings{
+// This test emulates usage of Collector in Jaeger all-in-one, which
+// allows running the binary with no explicit configuration.
+func TestNewCommandProgrammaticallyPassedConfig(t *testing.T) {
+	cmd := NewCommand(CollectorSettings{Factories: nopFactories})
+	otelRunE := cmd.RunE
+	cmd.RunE = func(c *cobra.Command, args []string) error {
+		configFlag := c.Flag("config")
+		cfg := `
+service:
+  extensions: [invalid_component_name]
+receivers:
+  invalid_component_name:
+`
+		require.NoError(t, configFlag.Value.Set("yaml:"+cfg))
+		return otelRunE(cmd, args)
+	}
+	// verify that cmd.Execute was run with the implicitly provided config.
+	require.ErrorContains(t, cmd.Execute(), "invalid_component_name")
+}
+
+func TestAddFlagToSettings(t *testing.T) {
+	set := CollectorSettings{
+		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs:       []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-				Providers:  map[string]confmap.Provider{"file": fileprovider.New()},
-				Converters: []confmap.Converter{expandconverter.New()},
+				Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmap.ProviderSettings{})},
+				Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
 			},
-		})
+		},
+	}
+	flgs := flags(featuregate.NewRegistry())
+	err := flgs.Parse([]string{"--config=otelcol-nop.yaml"})
 	require.NoError(t, err)
 
-	cmd := NewCommand(CollectorSettings{Factories: nopFactories, ConfigProvider: cfgProvider})
+	err = updateSettingsUsingFlags(&set, flgs)
+	require.NoError(t, err)
+	require.Len(t, set.ConfigProviderSettings.ResolverSettings.URIs, 1)
+}
+
+func TestAddDefaultConfmapModules(t *testing.T) {
+	set := CollectorSettings{
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{},
+		},
+	}
+	flgs := flags(featuregate.NewRegistry())
+	err := flgs.Parse([]string{"--config=otelcol-nop.yaml"})
+	require.NoError(t, err)
+
+	err = updateSettingsUsingFlags(&set, flgs)
+	require.NoError(t, err)
+	require.Len(t, set.ConfigProviderSettings.ResolverSettings.URIs, 1)
+	require.Len(t, set.ConfigProviderSettings.ResolverSettings.Converters, 1)
+	require.Len(t, set.ConfigProviderSettings.ResolverSettings.Providers, 5)
+}
+
+func TestInvalidCollectorSettings(t *testing.T) {
+	set := CollectorSettings{
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
+				URIs:       []string{"--config=otelcol-nop.yaml"},
+			},
+		},
+	}
+
+	cmd := NewCommand(set)
+	require.Error(t, cmd.Execute())
+}
+
+func TestNewCommandInvalidComponent(t *testing.T) {
+	set := ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs:       []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
+			Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmap.ProviderSettings{})},
+			Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
+		},
+	}
+
+	cmd := NewCommand(CollectorSettings{Factories: nopFactories, ConfigProviderSettings: set})
 	require.Error(t, cmd.Execute())
 }

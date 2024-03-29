@@ -17,11 +17,11 @@ const schemeName = "env"
 
 type provider struct{}
 
-// New returns a new confmap.Provider that reads the configuration from the given environment variable.
+// NewWithSettings returns a new confmap.Provider that reads the configuration from the given environment variable.
 //
 // This Provider supports "env" scheme, and can be called with a selector:
 // `env:NAME_OF_ENVIRONMENT_VARIABLE`
-func New() confmap.Provider {
+func NewWithSettings(confmap.ProviderSettings) confmap.Provider {
 	return &provider{}
 }
 

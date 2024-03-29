@@ -11,19 +11,11 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
-
-	"go.opentelemetry.io/collector/featuregate"
 )
 
 // follows drive-letter specification:
 // https://datatracker.ietf.org/doc/html/draft-kerwin-file-scheme-07.html#section-2.2
 var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"confmap.expandEnabled",
-	featuregate.StageStable,
-	featuregate.WithRegisterToVersion("v0.75.0"),
-	featuregate.WithRegisterDescription("controls whether expanding embedded external config providers URIs"))
 
 // Resolver resolves a configuration as a Conf.
 type Resolver struct {

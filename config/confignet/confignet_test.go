@@ -4,23 +4,43 @@
 package confignet
 
 import (
+	"context"
 	"errors"
 	"net"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestNetAddrTimeout(t *testing.T) {
-	nac := &NetAddr{
+func TestNewDefaultDialerConfig(t *testing.T) {
+	expectedDialerConfig := DialerConfig{}
+	dialerConfig := NewDefaultDialerConfig()
+	require.Equal(t, expectedDialerConfig, dialerConfig)
+}
+
+func TestNewDefaultAddrConfig(t *testing.T) {
+	expectedAddrConfig := AddrConfig{}
+	addrConfig := NewDefaultAddrConfig()
+	require.Equal(t, expectedAddrConfig, addrConfig)
+}
+
+func TestNewDefaultTCPAddrConfig(t *testing.T) {
+	expectedTCPAddrConfig := TCPAddrConfig{}
+	tcpAddrconfig := NewDefaultTCPAddrConfig()
+	require.Equal(t, expectedTCPAddrConfig, tcpAddrconfig)
+}
+
+func TestAddrConfigTimeout(t *testing.T) {
+	nac := &AddrConfig{
 		Endpoint:  "localhost:0",
-		Transport: "tcp",
+		Transport: TransportTypeTCP,
 		DialerConfig: DialerConfig{
 			Timeout: -1 * time.Second,
 		},
 	}
-	_, err := nac.Dial()
+	_, err := nac.Dial(context.Background())
 	assert.Error(t, err)
 	var netErr net.Error
 	if errors.As(err, &netErr) {
@@ -30,14 +50,14 @@ func TestNetAddrTimeout(t *testing.T) {
 	}
 }
 
-func TestTCPAddrTimeout(t *testing.T) {
-	nac := &TCPAddr{
+func TestTCPAddrConfigTimeout(t *testing.T) {
+	nac := &TCPAddrConfig{
 		Endpoint: "localhost:0",
 		DialerConfig: DialerConfig{
 			Timeout: -1 * time.Second,
 		},
 	}
-	_, err := nac.Dial()
+	_, err := nac.Dial(context.Background())
 	assert.Error(t, err)
 	var netErr net.Error
 	if errors.As(err, &netErr) {
@@ -47,12 +67,12 @@ func TestTCPAddrTimeout(t *testing.T) {
 	}
 }
 
-func TestNetAddr(t *testing.T) {
-	nas := &NetAddr{
+func TestAddrConfig(t *testing.T) {
+	nas := &AddrConfig{
 		Endpoint:  "localhost:0",
-		Transport: "tcp",
+		Transport: TransportTypeTCP,
 	}
-	ln, err := nas.Listen()
+	ln, err := nas.Listen(context.Background())
 	assert.NoError(t, err)
 	done := make(chan bool, 1)
 
@@ -68,12 +88,12 @@ func TestNetAddr(t *testing.T) {
 		done <- true
 	}()
 
-	nac := &NetAddr{
+	nac := &AddrConfig{
 		Endpoint:  ln.Addr().String(),
-		Transport: "tcp",
+		Transport: TransportTypeTCP,
 	}
 	var conn net.Conn
-	conn, err = nac.Dial()
+	conn, err = nac.Dial(context.Background())
 	assert.NoError(t, err)
 	_, err = conn.Write([]byte("test"))
 	assert.NoError(t, err)
@@ -82,11 +102,28 @@ func TestNetAddr(t *testing.T) {
 	assert.NoError(t, ln.Close())
 }
 
-func TestTCPAddr(t *testing.T) {
-	nas := &TCPAddr{
+func Test_NetAddr_Validate(t *testing.T) {
+	na := &AddrConfig{
+		Transport: TransportTypeTCP,
+	}
+	assert.NoError(t, na.Validate())
+
+	na = &AddrConfig{
+		Transport: transportTypeEmpty,
+	}
+	assert.Error(t, na.Validate())
+
+	na = &AddrConfig{
+		Transport: "random string",
+	}
+	assert.Error(t, na.Validate())
+}
+
+func TestTCPAddrConfig(t *testing.T) {
+	nas := &TCPAddrConfig{
 		Endpoint: "localhost:0",
 	}
-	ln, err := nas.Listen()
+	ln, err := nas.Listen(context.Background())
 	assert.NoError(t, err)
 	done := make(chan bool, 1)
 
@@ -102,15 +139,23 @@ func TestTCPAddr(t *testing.T) {
 		done <- true
 	}()
 
-	nac := &TCPAddr{
+	nac := &TCPAddrConfig{
 		Endpoint: ln.Addr().String(),
 	}
 	var conn net.Conn
-	conn, err = nac.Dial()
+	conn, err = nac.Dial(context.Background())
 	assert.NoError(t, err)
 	_, err = conn.Write([]byte("test"))
 	assert.NoError(t, err)
 	assert.NoError(t, conn.Close())
 	<-done
 	assert.NoError(t, ln.Close())
+}
+
+func Test_TransportType_UnmarshalText(t *testing.T) {
+	var tt TransportType
+	err := tt.UnmarshalText([]byte("tcp"))
+	require.NoError(t, err)
+	err = tt.UnmarshalText([]byte("invalid"))
+	require.Error(t, err)
 }

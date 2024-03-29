@@ -61,7 +61,7 @@ type receiverNode struct {
 
 func newReceiverNode(pipelineType component.DataType, recvID component.ID) *receiverNode {
 	return &receiverNode{
-		nodeID:       newNodeID(receiverSeed, string(pipelineType), recvID.String()),
+		nodeID:       newNodeID(receiverSeed, pipelineType.String(), recvID.String()),
 		componentID:  recvID,
 		pipelineType: pipelineType,
 	}
@@ -165,7 +165,7 @@ type exporterNode struct {
 
 func newExporterNode(pipelineType component.DataType, exprID component.ID) *exporterNode {
 	return &exporterNode{
-		nodeID:       newNodeID(exporterSeed, string(pipelineType), exprID.String()),
+		nodeID:       newNodeID(exporterSeed, pipelineType.String(), exprID.String()),
 		componentID:  exprID,
 		pipelineType: pipelineType,
 	}
@@ -215,7 +215,7 @@ type connectorNode struct {
 
 func newConnectorNode(exprPipelineType, rcvrPipelineType component.DataType, connID component.ID) *connectorNode {
 	return &connectorNode{
-		nodeID:           newNodeID(connectorSeed, connID.String(), string(exprPipelineType), string(rcvrPipelineType)),
+		nodeID:           newNodeID(connectorSeed, connID.String(), exprPipelineType.String(), rcvrPipelineType.String()),
 		componentID:      connID,
 		exprPipelineType: exprPipelineType,
 		rcvrPipelineType: rcvrPipelineType,

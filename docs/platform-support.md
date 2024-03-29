@@ -56,16 +56,16 @@ Tier 2 platforms are currently:
 Tier 3 platforms are _guaranteed to build_. Precompiled binaries are made available as part of the release process and as result of a cross compile build on Linux amd64 but the binaries are not tested at all. Any build failure delays the release of the binaries for the respective platform but not the collector distribution for all other platforms. Defects are addressed based on community contributions. Core developers might provide guidance or code reviews, but direct fixes may be limited.
 
 Tier 3 platforms are currently:
-| Platform      | Owner(s)                                                                                                    |
-|---------------|-------------------------------------------------------------------------------------------------------------|
-| darwin/amd64  |                                                                                                             |
-| darwin/arm64  | [@MovieStoreGuy](https://github.com/MovieStoreGuy)                                                          |
-| linux/arm64   | [@atoulme](https://github.com/atoulme)                                                                      |
-| linux/386     |                                                                                                             |
-| linux/arm     | [@Wal8800](https://github.com/Wal8800), [@atoulme](https://github.com/atoulme)                              |
-| linux/ppc64le |                                                                                                             |
-| linux/s390x   | [@bwalk-at-ibm](https://github.com/bwalk-at-ibm), [@rrschulze](https://github.com/rrschulze)                |
-| windows/386   | [@pjanotti](https://github.com/pjanotti)                                                                    |
+| Platform      | Owner(s)                                                                                                                                                        |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| darwin/amd64  | [@h0cheung](https://github.com/h0cheung)                                                                                                                        |
+| darwin/arm64  | [@MovieStoreGuy](https://github.com/MovieStoreGuy)                                                                                                              |
+| linux/arm64   | [@atoulme](https://github.com/atoulme)                                                                                                                          |
+| linux/386     | [@astencel-sumo](https://github.com/astencel-sumo)                                                                                                              |
+| linux/arm     | [@Wal8800](https://github.com/Wal8800), [@atoulme](https://github.com/atoulme)                                                                                  |
+| linux/ppc64le | [@IBM-Currency-Helper](https://github.com/IBM-Currency-Helper), [@adilhusain-s](https://github.com/adilhusain-s), [@seth-priya](https://github.com/seth-priya)  |
+| linux/s390x   | [@bwalk-at-ibm](https://github.com/bwalk-at-ibm), [@rrschulze](https://github.com/rrschulze)                                                                    |
+| windows/386   | [@pjanotti](https://github.com/pjanotti)                                                                                                                        |
 
 The proposed additional platform aix/ppc64 ([#19195](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19195)) will be included into Tier 3 once it's added to the OpenTelemetry Collector as platform. 
 

@@ -17,128 +17,123 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
+var (
+	testType = component.MustNewType("test")
+	testID   = component.MustNewIDWithName("type", "name")
+)
+
 func TestNewFactoryNoOptions(t *testing.T) {
-	const typeStr = "test"
 	defaultCfg := struct{}{}
-	factory := NewFactory(typeStr, func() component.Config { return &defaultCfg })
-	assert.EqualValues(t, typeStr, factory.Type())
+	factory := NewFactory(testType, func() component.Config { return &defaultCfg })
+	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	testID := component.NewIDWithName("type", "name")
-
-	_, err := factory.CreateTracesToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err := factory.CreateTracesToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeTraces))
-	_, err = factory.CreateTracesToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateTracesToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeMetrics))
-	_, err = factory.CreateTracesToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateTracesToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeLogs))
 
-	_, err = factory.CreateMetricsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeTraces))
-	_, err = factory.CreateMetricsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeMetrics))
-	_, err = factory.CreateMetricsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeLogs))
 
-	_, err = factory.CreateLogsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeTraces))
-	_, err = factory.CreateLogsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeMetrics))
-	_, err = factory.CreateLogsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeLogs))
 }
 
 func TestNewFactoryWithSameTypes(t *testing.T) {
-	const typeStr = "test"
 	defaultCfg := struct{}{}
-	factory := NewFactory(typeStr, func() component.Config { return &defaultCfg },
+	factory := NewFactory(testType, func() component.Config { return &defaultCfg },
 		WithTracesToTraces(createTracesToTraces, component.StabilityLevelAlpha),
 		WithMetricsToMetrics(createMetricsToMetrics, component.StabilityLevelBeta),
 		WithLogsToLogs(createLogsToLogs, component.StabilityLevelUnmaintained))
-	assert.EqualValues(t, typeStr, factory.Type())
+	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	testID := component.NewIDWithName("type", "name")
-
 	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesToTracesStability())
-	_, err := factory.CreateTracesToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err := factory.CreateTracesToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsToMetricsStability())
-	_, err = factory.CreateMetricsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsToLogsStability())
-	_, err = factory.CreateLogsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
-	_, err = factory.CreateTracesToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateTracesToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeMetrics))
-	_, err = factory.CreateTracesToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateTracesToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeLogs))
 
-	_, err = factory.CreateMetricsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeTraces))
-	_, err = factory.CreateMetricsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeLogs))
 
-	_, err = factory.CreateLogsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeTraces))
-	_, err = factory.CreateLogsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeMetrics))
 }
 
 func TestNewFactoryWithTranslateTypes(t *testing.T) {
-	const typeStr = "test"
 	defaultCfg := struct{}{}
-	factory := NewFactory(typeStr, func() component.Config { return &defaultCfg },
+	factory := NewFactory(testType, func() component.Config { return &defaultCfg },
 		WithTracesToMetrics(createTracesToMetrics, component.StabilityLevelDevelopment),
 		WithTracesToLogs(createTracesToLogs, component.StabilityLevelAlpha),
 		WithMetricsToTraces(createMetricsToTraces, component.StabilityLevelBeta),
 		WithMetricsToLogs(createMetricsToLogs, component.StabilityLevelStable),
 		WithLogsToTraces(createLogsToTraces, component.StabilityLevelDeprecated),
 		WithLogsToMetrics(createLogsToMetrics, component.StabilityLevelUnmaintained))
-	assert.EqualValues(t, typeStr, factory.Type())
+	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	testID := component.NewIDWithName("type", "name")
-
-	_, err := factory.CreateTracesToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err := factory.CreateTracesToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeTraces))
-	_, err = factory.CreateMetricsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeMetrics))
-	_, err = factory.CreateLogsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeLogs))
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.TracesToMetricsStability())
-	_, err = factory.CreateTracesToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateTracesToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesToLogsStability())
-	_, err = factory.CreateTracesToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateTracesToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsToTracesStability())
-	_, err = factory.CreateMetricsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelStable, factory.MetricsToLogsStability())
-	_, err = factory.CreateMetricsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelDeprecated, factory.LogsToTracesStability())
-	_, err = factory.CreateLogsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsToMetricsStability())
-	_, err = factory.CreateLogsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 }
 
 func TestNewFactoryWithAllTypes(t *testing.T) {
-	const typeStr = "test"
 	defaultCfg := struct{}{}
-	factory := NewFactory(typeStr, func() component.Config { return &defaultCfg },
+	factory := NewFactory(testType, func() component.Config { return &defaultCfg },
 		WithTracesToTraces(createTracesToTraces, component.StabilityLevelAlpha),
 		WithTracesToMetrics(createTracesToMetrics, component.StabilityLevelDevelopment),
 		WithTracesToLogs(createTracesToLogs, component.StabilityLevelAlpha),
@@ -148,37 +143,37 @@ func TestNewFactoryWithAllTypes(t *testing.T) {
 		WithLogsToTraces(createLogsToTraces, component.StabilityLevelDeprecated),
 		WithLogsToMetrics(createLogsToMetrics, component.StabilityLevelUnmaintained),
 		WithLogsToLogs(createLogsToLogs, component.StabilityLevelUnmaintained))
-	assert.EqualValues(t, typeStr, factory.Type())
+	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesToTracesStability())
-	_, err := factory.CreateTracesToTraces(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err := factory.CreateTracesToTraces(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.TracesToMetricsStability())
-	_, err = factory.CreateTracesToMetrics(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateTracesToMetrics(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesToLogsStability())
-	_, err = factory.CreateTracesToLogs(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateTracesToLogs(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsToTracesStability())
-	_, err = factory.CreateMetricsToTraces(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToTraces(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsToMetricsStability())
-	_, err = factory.CreateMetricsToMetrics(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToMetrics(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.Equal(t, component.StabilityLevelStable, factory.MetricsToLogsStability())
-	_, err = factory.CreateMetricsToLogs(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToLogs(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelDeprecated, factory.LogsToTracesStability())
-	_, err = factory.CreateLogsToTraces(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToTraces(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsToMetricsStability())
-	_, err = factory.CreateLogsToMetrics(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToMetrics(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsToLogsStability())
-	_, err = factory.CreateLogsToLogs(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToLogs(context.Background(), CreateSettings{}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 }
 
@@ -189,8 +184,8 @@ func TestMakeFactoryMap(t *testing.T) {
 		out  map[component.Type]Factory
 	}
 
-	p1 := NewFactory("p1", nil)
-	p2 := NewFactory("p2", nil)
+	p1 := NewFactory(component.MustNewType("p1"), nil)
+	p2 := NewFactory(component.MustNewType("p2"), nil)
 	testCases := []testCase{
 		{
 			name: "different names",
@@ -202,7 +197,7 @@ func TestMakeFactoryMap(t *testing.T) {
 		},
 		{
 			name: "same name",
-			in:   []Factory{p1, p2, NewFactory("p1", nil)},
+			in:   []Factory{p1, p2, NewFactory(component.MustNewType("p1"), nil)},
 		},
 	}
 
@@ -223,9 +218,9 @@ func TestMakeFactoryMap(t *testing.T) {
 func TestBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := MakeFactoryMap([]Factory{
-		NewFactory("err", nil),
+		NewFactory(component.MustNewType("err"), nil),
 		NewFactory(
-			"all",
+			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
 			WithTracesToTraces(createTracesToTraces, component.StabilityLevelDevelopment),
 			WithTracesToMetrics(createTracesToMetrics, component.StabilityLevelDevelopment),
@@ -241,37 +236,62 @@ func TestBuilder(t *testing.T) {
 	require.NoError(t, err)
 
 	testCases := []struct {
-		name string
-		id   component.ID
-		err  func(component.DataType, component.DataType) string
+		name        string
+		id          component.ID
+		err         func(component.DataType, component.DataType) string
+		nextTraces  consumer.Traces
+		nextLogs    consumer.Logs
+		nextMetrics consumer.Metrics
 	}{
 		{
 			name: "unknown",
-			id:   component.NewID("unknown"),
-			err: func(_, _ component.DataType) string {
+			id:   component.MustNewID("unknown"),
+			err: func(component.DataType, component.DataType) string {
 				return "connector factory not available for: \"unknown\""
 			},
+			nextTraces:  consumertest.NewNop(),
+			nextLogs:    consumertest.NewNop(),
+			nextMetrics: consumertest.NewNop(),
 		},
 		{
 			name: "err",
-			id:   component.NewID("err"),
+			id:   component.MustNewID("err"),
 			err: func(expType, rcvType component.DataType) string {
 				return fmt.Sprintf("connector \"err\" cannot connect from %s to %s: telemetry type is not supported", expType, rcvType)
 			},
+			nextTraces:  consumertest.NewNop(),
+			nextLogs:    consumertest.NewNop(),
+			nextMetrics: consumertest.NewNop(),
 		},
 		{
 			name: "all",
-			id:   component.NewID("all"),
-			err: func(_, _ component.DataType) string {
+			id:   component.MustNewID("all"),
+			err: func(component.DataType, component.DataType) string {
 				return ""
 			},
+			nextTraces:  consumertest.NewNop(),
+			nextLogs:    consumertest.NewNop(),
+			nextMetrics: consumertest.NewNop(),
 		},
 		{
 			name: "all/named",
-			id:   component.NewIDWithName("all", "named"),
-			err: func(_, _ component.DataType) string {
+			id:   component.MustNewIDWithName("all", "named"),
+			err: func(component.DataType, component.DataType) string {
 				return ""
 			},
+			nextTraces:  consumertest.NewNop(),
+			nextLogs:    consumertest.NewNop(),
+			nextMetrics: consumertest.NewNop(),
+		},
+		{
+			name: "no next consumer",
+			id:   component.MustNewID("unknown"),
+			err: func(_, _ component.DataType) string {
+				return "nil next Consumer"
+			},
+			nextTraces:  nil,
+			nextLogs:    nil,
+			nextMetrics: nil,
 		},
 	}
 
@@ -280,7 +300,7 @@ func TestBuilder(t *testing.T) {
 			cfgs := map[component.ID]component.Config{tt.id: defaultCfg}
 			b := NewBuilder(cfgs, factories)
 
-			t2t, err := b.CreateTracesToTraces(context.Background(), createSettings(tt.id), nil)
+			t2t, err := b.CreateTracesToTraces(context.Background(), createSettings(tt.id), tt.nextTraces)
 			if expectedErr := tt.err(component.DataTypeTraces, component.DataTypeTraces); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, t2t)
@@ -288,7 +308,7 @@ func TestBuilder(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, nopInstance, t2t)
 			}
-			t2m, err := b.CreateTracesToMetrics(context.Background(), createSettings(tt.id), nil)
+			t2m, err := b.CreateTracesToMetrics(context.Background(), createSettings(tt.id), tt.nextMetrics)
 			if expectedErr := tt.err(component.DataTypeTraces, component.DataTypeMetrics); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, t2m)
@@ -296,7 +316,7 @@ func TestBuilder(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, nopInstance, t2m)
 			}
-			t2l, err := b.CreateTracesToLogs(context.Background(), createSettings(tt.id), nil)
+			t2l, err := b.CreateTracesToLogs(context.Background(), createSettings(tt.id), tt.nextLogs)
 			if expectedErr := tt.err(component.DataTypeTraces, component.DataTypeLogs); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, t2l)
@@ -305,7 +325,7 @@ func TestBuilder(t *testing.T) {
 				assert.Equal(t, nopInstance, t2l)
 			}
 
-			m2t, err := b.CreateMetricsToTraces(context.Background(), createSettings(tt.id), nil)
+			m2t, err := b.CreateMetricsToTraces(context.Background(), createSettings(tt.id), tt.nextTraces)
 			if expectedErr := tt.err(component.DataTypeMetrics, component.DataTypeTraces); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, m2t)
@@ -314,7 +334,7 @@ func TestBuilder(t *testing.T) {
 				assert.Equal(t, nopInstance, m2t)
 			}
 
-			m2m, err := b.CreateMetricsToMetrics(context.Background(), createSettings(tt.id), nil)
+			m2m, err := b.CreateMetricsToMetrics(context.Background(), createSettings(tt.id), tt.nextMetrics)
 			if expectedErr := tt.err(component.DataTypeMetrics, component.DataTypeMetrics); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, m2m)
@@ -323,7 +343,7 @@ func TestBuilder(t *testing.T) {
 				assert.Equal(t, nopInstance, m2m)
 			}
 
-			m2l, err := b.CreateMetricsToLogs(context.Background(), createSettings(tt.id), nil)
+			m2l, err := b.CreateMetricsToLogs(context.Background(), createSettings(tt.id), tt.nextLogs)
 			if expectedErr := tt.err(component.DataTypeMetrics, component.DataTypeLogs); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, m2l)
@@ -332,7 +352,7 @@ func TestBuilder(t *testing.T) {
 				assert.Equal(t, nopInstance, m2l)
 			}
 
-			l2t, err := b.CreateLogsToTraces(context.Background(), createSettings(tt.id), nil)
+			l2t, err := b.CreateLogsToTraces(context.Background(), createSettings(tt.id), tt.nextTraces)
 			if expectedErr := tt.err(component.DataTypeLogs, component.DataTypeTraces); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, l2t)
@@ -341,7 +361,7 @@ func TestBuilder(t *testing.T) {
 				assert.Equal(t, nopInstance, l2t)
 			}
 
-			l2m, err := b.CreateLogsToMetrics(context.Background(), createSettings(tt.id), nil)
+			l2m, err := b.CreateLogsToMetrics(context.Background(), createSettings(tt.id), tt.nextMetrics)
 			if expectedErr := tt.err(component.DataTypeLogs, component.DataTypeMetrics); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, l2m)
@@ -350,7 +370,7 @@ func TestBuilder(t *testing.T) {
 				assert.Equal(t, nopInstance, l2m)
 			}
 
-			l2l, err := b.CreateLogsToLogs(context.Background(), createSettings(tt.id), nil)
+			l2l, err := b.CreateLogsToLogs(context.Background(), createSettings(tt.id), tt.nextLogs)
 			if expectedErr := tt.err(component.DataTypeLogs, component.DataTypeLogs); expectedErr != "" {
 				assert.EqualError(t, err, expectedErr)
 				assert.Nil(t, l2l)
@@ -366,7 +386,7 @@ func TestBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
 	factories, err := MakeFactoryMap([]Factory{
 		NewFactory(
-			"all",
+			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
 			WithTracesToTraces(createTracesToTraces, component.StabilityLevelDevelopment),
 			WithTracesToMetrics(createTracesToMetrics, component.StabilityLevelDevelopment),
@@ -383,57 +403,57 @@ func TestBuilderMissingConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	bErr := NewBuilder(map[component.ID]component.Config{}, factories)
-	missingID := component.NewIDWithName("all", "missing")
+	missingID := component.MustNewIDWithName("all", "missing")
 
-	t2t, err := bErr.CreateTracesToTraces(context.Background(), createSettings(missingID), nil)
+	t2t, err := bErr.CreateTracesToTraces(context.Background(), createSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, t2t)
 
-	t2m, err := bErr.CreateTracesToMetrics(context.Background(), createSettings(missingID), nil)
+	t2m, err := bErr.CreateTracesToMetrics(context.Background(), createSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, t2m)
 
-	t2l, err := bErr.CreateTracesToLogs(context.Background(), createSettings(missingID), nil)
+	t2l, err := bErr.CreateTracesToLogs(context.Background(), createSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, t2l)
 
-	m2t, err := bErr.CreateMetricsToTraces(context.Background(), createSettings(missingID), nil)
+	m2t, err := bErr.CreateMetricsToTraces(context.Background(), createSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, m2t)
 
-	m2m, err := bErr.CreateMetricsToMetrics(context.Background(), createSettings(missingID), nil)
+	m2m, err := bErr.CreateMetricsToMetrics(context.Background(), createSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, m2m)
 
-	m2l, err := bErr.CreateMetricsToLogs(context.Background(), createSettings(missingID), nil)
+	m2l, err := bErr.CreateMetricsToLogs(context.Background(), createSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, m2l)
 
-	l2t, err := bErr.CreateLogsToTraces(context.Background(), createSettings(missingID), nil)
+	l2t, err := bErr.CreateLogsToTraces(context.Background(), createSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, l2t)
 
-	l2m, err := bErr.CreateLogsToMetrics(context.Background(), createSettings(missingID), nil)
+	l2m, err := bErr.CreateLogsToMetrics(context.Background(), createSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, l2m)
 
-	l2l, err := bErr.CreateLogsToLogs(context.Background(), createSettings(missingID), nil)
+	l2l, err := bErr.CreateLogsToLogs(context.Background(), createSettings(missingID), consumertest.NewNop())
 	assert.EqualError(t, err, "connector \"all/missing\" is not configured")
 	assert.Nil(t, l2l)
 }
 
 func TestBuilderGetters(t *testing.T) {
-	factories, err := MakeFactoryMap([]Factory{NewFactory("foo", nil)}...)
+	factories, err := MakeFactoryMap([]Factory{NewFactory(component.MustNewType("foo"), nil)}...)
 	require.NoError(t, err)
 
-	cfgs := map[component.ID]component.Config{component.NewID("foo"): struct{}{}}
+	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
 	b := NewBuilder(cfgs, factories)
 
-	assert.True(t, b.IsConfigured(component.NewID("foo")))
-	assert.False(t, b.IsConfigured(component.NewID("bar")))
+	assert.True(t, b.IsConfigured(component.MustNewID("foo")))
+	assert.False(t, b.IsConfigured(component.MustNewID("bar")))
 
-	assert.NotNil(t, b.Factory(component.NewID("foo").Type()))
-	assert.Nil(t, b.Factory(component.NewID("bar").Type()))
+	assert.NotNil(t, b.Factory(component.MustNewID("foo").Type()))
+	assert.Nil(t, b.Factory(component.MustNewID("bar").Type()))
 }
 
 var nopInstance = &nopConnector{

@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/internal/localhostgate"
 )
 
 func shouldWarn(endpoint string) bool {
@@ -36,13 +38,14 @@ func shouldWarn(endpoint string) bool {
 
 // WarnOnUnspecifiedHost emits a warning if an endpoint has an unspecified host.
 func WarnOnUnspecifiedHost(logger *zap.Logger, endpoint string) {
-	if shouldWarn(endpoint) {
+	if !localhostgate.UseLocalHostAsDefaultHostfeatureGate.IsEnabled() && shouldWarn(endpoint) {
 		logger.Warn(
-			"Using the 0.0.0.0 address exposes this server to every network interface, which may facilitate Denial of Service attacks",
+			"Using the 0.0.0.0 address exposes this server to every network interface, which may facilitate Denial of Service attacks. Enable the feature gate to change the default and remove this warning.",
 			zap.String(
 				"documentation",
 				"https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md#safeguards-against-denial-of-service-attacks",
 			),
+			zap.String("feature gate ID", localhostgate.UseLocalHostAsDefaultHostID),
 		)
 	}
 }

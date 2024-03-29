@@ -38,7 +38,7 @@ type provider struct {
 // One example for http-uri: http://localhost:3333/getConfig
 // One example for https-uri: https://localhost:3333/getConfig
 // This is used by the http and https external implementations.
-func New(scheme SchemeType) confmap.Provider {
+func New(scheme SchemeType, _ confmap.ProviderSettings) confmap.Provider {
 	return &provider{scheme: scheme}
 }
 

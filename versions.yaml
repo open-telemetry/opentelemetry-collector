@@ -3,23 +3,30 @@
 
 module-sets:
   stable:
-    version: v1.0.0
+    version: v1.4.0
     modules:
       - go.opentelemetry.io/collector/featuregate
       - go.opentelemetry.io/collector/pdata
+      - go.opentelemetry.io/collector/config/configopaque
+      - go.opentelemetry.io/collector/config/configcompression
   beta:
-    version: v0.91.0
+    version: v0.97.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/cmd/builder
+      - go.opentelemetry.io/collector/cmd/mdatagen
       - go.opentelemetry.io/collector/component
       - go.opentelemetry.io/collector/confmap
+      - go.opentelemetry.io/collector/confmap/converter/expandconverter
+      - go.opentelemetry.io/collector/confmap/provider/envprovider
+      - go.opentelemetry.io/collector/confmap/provider/fileprovider
+      - go.opentelemetry.io/collector/confmap/provider/httpprovider
+      - go.opentelemetry.io/collector/confmap/provider/httpsprovider
+      - go.opentelemetry.io/collector/confmap/provider/yamlprovider
       - go.opentelemetry.io/collector/config/configauth
-      - go.opentelemetry.io/collector/config/configcompression
       - go.opentelemetry.io/collector/config/configgrpc
       - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/confignet
-      - go.opentelemetry.io/collector/config/configopaque
       - go.opentelemetry.io/collector/config/configretry
       - go.opentelemetry.io/collector/config/configtelemetry
       - go.opentelemetry.io/collector/config/configtls
@@ -30,17 +37,20 @@ module-sets:
       - go.opentelemetry.io/collector/exporter
       - go.opentelemetry.io/collector/exporter/debugexporter
       - go.opentelemetry.io/collector/exporter/loggingexporter
+      - go.opentelemetry.io/collector/exporter/nopexporter
       - go.opentelemetry.io/collector/exporter/otlpexporter
       - go.opentelemetry.io/collector/exporter/otlphttpexporter
       - go.opentelemetry.io/collector/extension
       - go.opentelemetry.io/collector/extension/auth
       - go.opentelemetry.io/collector/extension/ballastextension
       - go.opentelemetry.io/collector/extension/zpagesextension
+      - go.opentelemetry.io/collector/extension/memorylimiterextension
       - go.opentelemetry.io/collector/otelcol
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/processor/batchprocessor
       - go.opentelemetry.io/collector/processor/memorylimiterprocessor
       - go.opentelemetry.io/collector/receiver
+      - go.opentelemetry.io/collector/receiver/nopreceiver
       - go.opentelemetry.io/collector/receiver/otlpreceiver
       - go.opentelemetry.io/collector/semconv
       - go.opentelemetry.io/collector/service
