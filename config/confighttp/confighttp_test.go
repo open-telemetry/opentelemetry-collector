@@ -523,7 +523,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToListener(context.Background())
+			_, err := test.settings.ToListenerContext(context.Background())
 			assert.Regexp(t, test.err, err)
 		})
 	}

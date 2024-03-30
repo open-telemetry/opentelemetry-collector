@@ -116,7 +116,7 @@ func NewDefaultClientConfig() ClientConfig {
 }
 
 // Deprecated: [v0.98.0] Use ToClientContext instead.
-func (hcs *ClientConfig) ToClient(_ context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+func (hcs *ClientConfig) ToClient(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
 	return hcs.ToClientContext(context.Background(), host, settings)
 }
 
@@ -283,7 +283,7 @@ type ServerConfig struct {
 }
 
 // Deprecated: [v0.98.0] Use ToListenerContext instead.
-func (hss *ServerConfig) ToListener(_ context.Context) (net.Listener, error) {
+func (hss *ServerConfig) ToListener() (net.Listener, error) {
 	return hss.ToListenerContext(context.Background())
 }
 
@@ -338,7 +338,7 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // Deprecated: [v0.98.0] Use ToServerContext instead.
-func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+func (hss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	return hss.ToServerContext(context.Background(), host, settings, handler, opts...)
 }
 
