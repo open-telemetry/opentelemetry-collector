@@ -78,7 +78,7 @@ func TestEnvWithLogger(t *testing.T) {
 	core, ol := observer.New(zap.WarnLevel)
 	logger := zap.New(core)
 
-	env := NewWithSettings(confmap.NewProviderSettings(logger))
+	env := NewWithSettings(confmap.ProviderSettings{Logger: logger})
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
@@ -98,7 +98,7 @@ func TestUnsetEnvWithLoggerWarn(t *testing.T) {
 	core, ol := observer.New(zap.WarnLevel)
 	logger := zap.New(core)
 
-	env := NewWithSettings(confmap.NewProviderSettings(logger))
+	env := NewWithSettings(confmap.ProviderSettings{Logger: logger})
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
@@ -122,7 +122,7 @@ func TestEmptyEnvWithLoggerWarn(t *testing.T) {
 	core, ol := observer.New(zap.InfoLevel)
 	logger := zap.New(core)
 
-	env := NewWithSettings(confmap.NewProviderSettings(logger))
+	env := NewWithSettings(confmap.ProviderSettings{Logger: logger})
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()

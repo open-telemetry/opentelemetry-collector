@@ -16,12 +16,8 @@ type ProviderSettings struct {
 	Logger *zap.Logger
 }
 
-func NewProviderSettings(logger *zap.Logger) ProviderSettings {
-	return ProviderSettings{Logger: logger}
-}
-
 func NewProviderSettingsNoopLogger() ProviderSettings {
-	return NewProviderSettings(zap.NewNop())
+	return ProviderSettings{zap.NewNop()}
 }
 
 // Provider is an interface that helps to retrieve a config map and watch for any
