@@ -4,6 +4,7 @@
 package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -24,10 +25,6 @@ const defaultMinTLSVersion = tls.VersionTLS12
 const defaultMaxTLSVersion = 0
 
 var systemCertPool = x509.SystemCertPool
-
-// TLSSetting exposes the common client and server TLS configurations.
-// Deprecated: [v0.96.0] Use Config instead.
-type TLSSetting = Config
 
 // Config exposes the common client and server TLS configurations.
 // Note: Since there isn't anything specific to a server connection. Components
@@ -75,17 +72,12 @@ type Config struct {
 	ReloadInterval time.Duration `mapstructure:"reload_interval"`
 }
 
-// TSLClientSetting contains TLS configurations that are specific to client
-// connections in addition to the common configurations.
-// Deprecated: [v0.96.0] Use ClientConfig instead.
-type TLSClientSetting = ClientConfig
-
 // ClientConfig contains TLS configurations that are specific to client
 // connections in addition to the common configurations. This should be used by
 // components configuring TLS client connections.
 type ClientConfig struct {
 	// squash ensures fields are correctly decoded in embedded struct.
-	TLSSetting `mapstructure:",squash"`
+	Config `mapstructure:",squash"`
 
 	// These are config options specific to client connections.
 
@@ -104,17 +96,12 @@ type ClientConfig struct {
 	ServerName string `mapstructure:"server_name_override"`
 }
 
-// TLSServerSetting contains TLS configurations that are specific to server
-// connections in addition to the common configurations.
-// Deprecated: [v0.96.0] Use ServerConfig instead.
-type TLSServerSetting = ServerConfig
-
 // ServerConfig contains TLS configurations that are specific to server
 // connections in addition to the common configurations. This should be used by
 // components configuring TLS server connections.
 type ServerConfig struct {
 	// squash ensures fields are correctly decoded in embedded struct.
-	TLSSetting `mapstructure:",squash"`
+	Config `mapstructure:",squash"`
 
 	// These are config options specific to server connections.
 
@@ -173,7 +160,11 @@ func (r *certReloader) GetCertificate() (*tls.Certificate, error) {
 	return r.cert, nil
 }
 
-func (c TLSSetting) Validate() error {
+func (c Config) Validate() error {
+	if c.hasCAFile() && c.hasCAPem() {
+		return fmt.Errorf("provide either a CA file or the PEM-encoded string, but not both")
+	}
+
 	minTLS, err := convertVersion(c.MinVersion, defaultMinTLSVersion)
 	if err != nil {
 		return fmt.Errorf("invalid TLS min_version: %w", err)
@@ -290,6 +281,15 @@ func (c Config) loadCertFile(certPath string) (*x509.CertPool, error) {
 
 func (c Config) loadCertPem(certPem []byte) (*x509.CertPool, error) {
 	certPool := x509.NewCertPool()
+	if c.IncludeSystemCACertsPool {
+		scp, err := systemCertPool()
+		if err != nil {
+			return nil, err
+		}
+		if scp != nil {
+			certPool = scp
+		}
+	}
 	if !certPool.AppendCertsFromPEM(certPem) {
 		return nil, fmt.Errorf("failed to parse cert")
 	}
@@ -357,13 +357,13 @@ func (c Config) loadCert(caPath string) (*x509.CertPool, error) {
 	return certPool, nil
 }
 
-// LoadTLSConfig loads the TLS configuration.
-func (c ClientConfig) LoadTLSConfig() (*tls.Config, error) {
+// LoadTLSConfigContext loads the TLS configuration.
+func (c ClientConfig) LoadTLSConfigContext(_ context.Context) (*tls.Config, error) {
 	if c.Insecure && !c.hasCA() {
 		return nil, nil
 	}
 
-	tlsCfg, err := c.TLSSetting.loadTLSConfig()
+	tlsCfg, err := c.loadTLSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load TLS config: %w", err)
 	}
@@ -373,7 +373,13 @@ func (c ClientConfig) LoadTLSConfig() (*tls.Config, error) {
 }
 
 // LoadTLSConfig loads the TLS configuration.
-func (c ServerConfig) LoadTLSConfig() (*tls.Config, error) {
+// Deprecated: [v0.97.0] Use LoadTLSConfigContext instead.
+func (c ClientConfig) LoadTLSConfig() (*tls.Config, error) {
+	return c.LoadTLSConfigContext(context.Background())
+}
+
+// LoadTLSConfigContext loads the TLS configuration.
+func (c ServerConfig) LoadTLSConfigContext(_ context.Context) (*tls.Config, error) {
 	tlsCfg, err := c.loadTLSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load TLS config: %w", err)
@@ -394,6 +400,12 @@ func (c ServerConfig) LoadTLSConfig() (*tls.Config, error) {
 		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 	return tlsCfg, nil
+}
+
+// LoadTLSConfig loads the TLS configuration.
+// Deprecated: [v0.97.0] Use LoadTLSConfigContext instead.
+func (c ServerConfig) LoadTLSConfig() (*tls.Config, error) {
+	return c.LoadTLSConfigContext(context.Background())
 }
 
 func (c ServerConfig) loadClientCAFile() (*x509.CertPool, error) {
