@@ -16,7 +16,7 @@ type ProviderSettings struct {
 	Logger *zap.Logger
 }
 
-func NewProviderSettingsNoopLogger() ProviderSettings {
+func NewProviderSettingsNopLogger() ProviderSettings {
 	return ProviderSettings{zap.NewNop()}
 }
 

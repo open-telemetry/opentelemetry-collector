@@ -28,18 +28,18 @@ exporters:
 `
 
 func TestValidateProviderScheme(t *testing.T) {
-	assert.NoError(t, confmaptest.ValidateProviderScheme(NewWithSettings(confmap.NewProviderSettingsNoopLogger())))
+	assert.NoError(t, confmaptest.ValidateProviderScheme(NewWithSettings(confmap.NewProviderSettingsNopLogger())))
 }
 
 func TestEmptyName(t *testing.T) {
-	env := NewWithSettings(confmap.NewProviderSettingsNoopLogger())
+	env := NewWithSettings(confmap.NewProviderSettingsNopLogger())
 	_, err := env.Retrieve(context.Background(), "", nil)
 	require.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
 func TestUnsupportedScheme(t *testing.T) {
-	env := NewWithSettings(confmap.NewProviderSettingsNoopLogger())
+	env := NewWithSettings(confmap.NewProviderSettingsNopLogger())
 	_, err := env.Retrieve(context.Background(), "https://", nil)
 	assert.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
@@ -48,7 +48,7 @@ func TestUnsupportedScheme(t *testing.T) {
 func TestInvalidYAML(t *testing.T) {
 	const envName = "invalid-yaml"
 	t.Setenv(envName, "[invalid,")
-	env := NewWithSettings(confmap.NewProviderSettingsNoopLogger())
+	env := NewWithSettings(confmap.NewProviderSettingsNopLogger())
 	_, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	assert.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
@@ -58,7 +58,7 @@ func TestEnv(t *testing.T) {
 	const envName = "default-config"
 	t.Setenv(envName, validYAML)
 
-	env := NewWithSettings(confmap.NewProviderSettingsNoopLogger())
+	env := NewWithSettings(confmap.NewProviderSettingsNopLogger())
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
