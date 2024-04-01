@@ -7,11 +7,10 @@ import (
 	"context"
 	"testing"
 
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
