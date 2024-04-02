@@ -82,7 +82,10 @@ func NewTracesExporter(
 	if pusher == nil {
 		return nil, errNilPushTraceData
 	}
-	tracesOpts := []Option{withMarshaler(tracesRequestMarshaler), withUnmarshaler(newTraceRequestUnmarshalerFunc(pusher))}
+	tracesOpts := []Option{
+		withMarshaler(tracesRequestMarshaler), withUnmarshaler(newTraceRequestUnmarshalerFunc(pusher)),
+		withBatchFuncs(mergeTraces, mergeSplitTraces),
+	}
 	return NewTracesRequestExporter(ctx, set, requestFromTraces(pusher), append(tracesOpts, options...)...)
 }
 

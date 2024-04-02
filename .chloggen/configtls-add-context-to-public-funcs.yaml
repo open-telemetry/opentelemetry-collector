@@ -1,27 +1,25 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: deprecation
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: cmd/mdatagen
+component: configtls
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Generate the lifecycle tests for components by default.
+note: Deprecate `ClientConfig.LoadTLSConfig` and `ServerConfig.LoadTLSConfig`, use `ClientConfig.LoadTLSConfigContext` and `ServerConfig.LoadTLSConfigContext` instead.
 
 # One or more tracking issues or pull requests related to the change
-issues: [9683]
+issues: [9811]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  It's encouraged to have lifecycle tests for all components enadled, but they can be disabled if needed 
-  in metadata.yaml with `skip_lifecycle: true` and `skip_shutdown: true` under `tests` section.
+subtext:
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: []
+change_logs: [api]

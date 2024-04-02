@@ -4,13 +4,13 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: confmap
+component: component
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: confmap honors `Unmarshal` methods on config embedded structs.
+note: Fix issue where the `components` command wasn't properly printing the component type.
 
 # One or more tracking issues or pull requests related to the change
-issues: [6671]
+issues: [9856]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
