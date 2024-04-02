@@ -9,6 +9,6 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-func NewProviderSettingsNopLogger() confmap.ProviderSettings {
+func NewNopProviderSettings() confmap.ProviderSettings {
 	return confmap.ProviderSettings{Logger: zap.NewNop()}
 }

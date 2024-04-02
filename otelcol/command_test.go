@@ -54,7 +54,7 @@ func TestAddFlagToSettings(t *testing.T) {
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs:       []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-				Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmaptest.NewProviderSettingsNopLogger())},
+				Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmaptest.NewNopProviderSettings())},
 				Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
 			},
 		},
@@ -103,7 +103,7 @@ func TestNewCommandInvalidComponent(t *testing.T) {
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:       []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-			Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmaptest.NewProviderSettingsNopLogger())},
+			Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmaptest.NewNopProviderSettings())},
 			Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
 		},
 	}

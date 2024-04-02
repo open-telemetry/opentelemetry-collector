@@ -134,7 +134,7 @@ func (cm *configProvider) GetConfmap(ctx context.Context) (*confmap.Conf, error)
 
 func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
 	converterSet := confmap.ConverterSettings{}
-	providerSet := confmaptest.NewProviderSettingsNopLogger()
+	providerSet := confmaptest.NewNopProviderSettings()
 	return ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs: uris,
