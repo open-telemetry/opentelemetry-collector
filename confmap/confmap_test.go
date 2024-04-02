@@ -613,3 +613,91 @@ func TestZeroSliceHookFunc(t *testing.T) {
 		})
 	}
 }
+
+type C struct {
+	Modifiers []string `mapstructure:"modifiers"`
+}
+
+func (c *C) Unmarshal(conf *Conf) error {
+	if err := conf.Unmarshal(c); err != nil {
+		return err
+	}
+	c.Modifiers = append(c.Modifiers, "C.Unmarshal")
+	return nil
+}
+
+type B struct {
+	Modifiers []string `mapstructure:"modifiers"`
+	C         C        `mapstructure:"c"`
+}
+
+func (b *B) Unmarshal(conf *Conf) error {
+	if err := conf.Unmarshal(b); err != nil {
+		return err
+	}
+	b.Modifiers = append(b.Modifiers, "B.Unmarshal")
+	b.C.Modifiers = append(b.C.Modifiers, "B.Unmarshal")
+	return nil
+}
+
+type A struct {
+	Modifiers []string `mapstructure:"modifiers"`
+	B         B        `mapstructure:"b"`
+}
+
+func (a *A) Unmarshal(conf *Conf) error {
+	if err := conf.Unmarshal(a); err != nil {
+		return err
+	}
+	a.Modifiers = append(a.Modifiers, "A.Unmarshal")
+	a.B.Modifiers = append(a.B.Modifiers, "A.Unmarshal")
+	a.B.C.Modifiers = append(a.B.C.Modifiers, "A.Unmarshal")
+	return nil
+}
+
+type Wrapper struct {
+	A A `mapstructure:"a"`
+}
+
+// Test that calling the Unmarshal method on configuration structs is done from the inside out.
+func TestNestedUnmarshalerImplementations(t *testing.T) {
+	conf := NewFromStringMap(map[string]any{"a": map[string]any{
+		"modifiers": []string{"conf.Unmarshal"},
+		"b": map[string]any{
+			"modifiers": []string{"conf.Unmarshal"},
+			"c": map[string]any{
+				"modifiers": []string{"conf.Unmarshal"},
+			},
+		},
+	}})
+
+	// Use a wrapper struct until we deprecate component.UnmarshalConfig
+	w := &Wrapper{}
+	assert.NoError(t, conf.Unmarshal(w))
+
+	a := w.A
+	assert.Equal(t, []string{"conf.Unmarshal", "A.Unmarshal"}, a.Modifiers)
+	assert.Equal(t, []string{"conf.Unmarshal", "B.Unmarshal", "A.Unmarshal"}, a.B.Modifiers)
+	assert.Equal(t, []string{"conf.Unmarshal", "C.Unmarshal", "B.Unmarshal", "A.Unmarshal"}, a.B.C.Modifiers)
+}
+
+// Test that unmarshaling the same conf twice works.
+func TestUnmarshalDouble(t *testing.T) {
+	conf := NewFromStringMap(map[string]any{
+		"str": "test",
+	})
+
+	type Struct struct {
+		Str string `mapstructure:"str"`
+	}
+	s := &Struct{}
+	assert.NoError(t, conf.Unmarshal(s))
+	assert.Equal(t, "test", s.Str)
+
+	type Struct2 struct {
+		Str string `mapstructure:"str"`
+	}
+	s2 := &Struct2{}
+	assert.NoError(t, conf.Unmarshal(s2))
+	assert.Equal(t, "test", s2.Str)
+}
