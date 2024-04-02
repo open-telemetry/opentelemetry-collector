@@ -22,22 +22,22 @@ import (
 )
 
 func TestNewDefaultConfig(t *testing.T) {
-	expectedConfig := TLSSetting{}
+	expectedConfig := Config{}
 	config := NewDefaultConfig()
 	require.Equal(t, expectedConfig, config)
 }
 
 func TestNewDefaultClientConfig(t *testing.T) {
-	expectedConfig := TLSClientSetting{
-		TLSSetting: NewDefaultConfig(),
+	expectedConfig := ClientConfig{
+		Config: NewDefaultConfig(),
 	}
 	config := NewDefaultClientConfig()
 	require.Equal(t, expectedConfig, config)
 }
 
 func TestNewDefaultServerConfig(t *testing.T) {
-	expectedConfig := TLSServerSetting{
-		TLSSetting: NewDefaultConfig(),
+	expectedConfig := ServerConfig{
+		Config: NewDefaultConfig(),
 	}
 	config := NewDefaultServerConfig()
 	require.Equal(t, expectedConfig, config)
