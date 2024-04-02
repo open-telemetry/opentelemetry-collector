@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -239,7 +240,7 @@ type templateContext struct {
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := fileprovider.NewWithSettings(confmap.NewProviderSettingsNopLogger()).Retrieve(context.Background(), "file:"+filePath, nil)
+	cp, err := fileprovider.NewWithSettings(confmaptest.NewProviderSettingsNopLogger()).Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}

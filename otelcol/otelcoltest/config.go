@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -22,10 +23,10 @@ func LoadConfig(fileName string, factories otelcol.Factories) (*otelcol.Config, 
 		ResolverSettings: confmap.ResolverSettings{
 			URIs: []string{fileName},
 			Providers: makeMapProvidersMap(
-				fileprovider.NewWithSettings(confmap.NewProviderSettingsNopLogger()),
-				envprovider.NewWithSettings(confmap.NewProviderSettingsNopLogger()),
-				yamlprovider.NewWithSettings(confmap.NewProviderSettingsNopLogger()),
-				httpprovider.NewWithSettings(confmap.NewProviderSettingsNopLogger()),
+				fileprovider.NewWithSettings(confmaptest.NewProviderSettingsNopLogger()),
+				envprovider.NewWithSettings(confmaptest.NewProviderSettingsNopLogger()),
+				yamlprovider.NewWithSettings(confmaptest.NewProviderSettingsNopLogger()),
+				httpprovider.NewWithSettings(confmaptest.NewProviderSettingsNopLogger()),
 			),
 			Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
 		},

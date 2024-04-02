@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/featuregate"
@@ -53,7 +54,7 @@ func TestAddFlagToSettings(t *testing.T) {
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs:       []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-				Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmap.NewProviderSettingsNopLogger())},
+				Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmaptest.NewProviderSettingsNopLogger())},
 				Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
 			},
 		},
@@ -102,7 +103,7 @@ func TestNewCommandInvalidComponent(t *testing.T) {
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:       []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-			Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmap.NewProviderSettingsNopLogger())},
+			Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmaptest.NewProviderSettingsNopLogger())},
 			Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
 		},
 	}

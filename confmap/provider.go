@@ -16,10 +16,6 @@ type ProviderSettings struct {
 	Logger *zap.Logger
 }
 
-func NewProviderSettingsNopLogger() ProviderSettings {
-	return ProviderSettings{zap.NewNop()}
-}
-
 // Provider is an interface that helps to retrieve a config map and watch for any
 // changes to the config map. Implementations may load the config from a file,
 // a database or any other source.
