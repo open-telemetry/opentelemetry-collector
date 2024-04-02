@@ -27,7 +27,7 @@ type Authentication struct {
 	AuthenticatorID component.ID `mapstructure:"authenticator"`
 }
 
-// Deprecated: [v0.97.0] Use GetServerAuthenticatorContext instead.
+// Deprecated: [v0.98.0] Use GetServerAuthenticatorContext instead.
 func (a Authentication) GetServerAuthenticator(extensions map[component.ID]component.Component) (auth.Server, error) {
 	return a.GetServerAuthenticatorContext(context.Background(), extensions)
 }
@@ -45,7 +45,7 @@ func (a Authentication) GetServerAuthenticatorContext(_ context.Context, extensi
 	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
 }
 
-// Deprecated: [v0.97.0] Use GetClientAuthenticatorContext instead.
+// Deprecated: [v0.98.0] Use GetClientAuthenticatorContext instead.
 func (a Authentication) GetClientAuthenticator(extensions map[component.ID]component.Component) (auth.Client, error) {
 	return a.GetClientAuthenticatorContext(context.Background(), extensions)
 }
