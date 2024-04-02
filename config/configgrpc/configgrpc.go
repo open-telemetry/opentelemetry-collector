@@ -150,6 +150,7 @@ type ServerConfig struct {
 	IncludeMetadata bool `mapstructure:"include_metadata"`
 }
 
+// sanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
 func (gcs *ClientConfig) sanitizedEndpoint() string {
 	switch {
 	case gcs.isSchemeHTTP():
