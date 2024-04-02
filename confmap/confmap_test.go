@@ -655,9 +655,13 @@ func (a *A) Unmarshal(conf *Conf) error {
 	return nil
 }
 
+type Wrapper struct {
+	A A `mapstructure:"a"`
+}
+
 // Test that calling the Unmarshal method on configuration structs is done from the inside out.
 func TestNestedUnmarshalerImplementations(t *testing.T) {
-	conf := NewFromStringMap(map[string]any{
+	conf := NewFromStringMap(map[string]any{"a": map[string]any{
 		"modifiers": []string{"conf.Unmarshal"},
 		"b": map[string]any{
 			"modifiers": []string{"conf.Unmarshal"},
@@ -665,13 +669,16 @@ func TestNestedUnmarshalerImplementations(t *testing.T) {
 				"modifiers": []string{"conf.Unmarshal"},
 			},
 		},
-	})
+	}})
 
-	a := &A{}
-	assert.NoError(t, conf.Unmarshal(a))
+	// Use a wrapper struct until we deprecate component.UnmarshalConfig
+	w := &Wrapper{}
+	assert.NoError(t, conf.Unmarshal(w))
+
+	a := w.A
 	assert.Equal(t, []string{"conf.Unmarshal", "A.Unmarshal"}, a.Modifiers)
-	assert.Equal(t, []string{"conf.Unmarshal", "A.Unmarshal", "B.Unmarshal"}, a.B.Modifiers)
-	assert.Equal(t, []string{"conf.Unmarshal", "A.Unmarshal", "B.Unmarshal", "C.Unmarshal"}, a.B.C.Modifiers)
+	assert.Equal(t, []string{"conf.Unmarshal", "B.Unmarshal", "A.Unmarshal"}, a.B.Modifiers)
+	assert.Equal(t, []string{"conf.Unmarshal", "C.Unmarshal", "B.Unmarshal", "A.Unmarshal"}, a.B.C.Modifiers)
 }
 
 // Test that unmarshaling the same conf twice works.
