@@ -216,7 +216,7 @@ jobs:
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: Upload coverage report
-        uses: Wandalen/wretry.action@f062299947903c6e425ff67d6a93f52066e4ee1c # v2.1.0
+        uses: Wandalen/wretry.action@7e3e094b56685165ba2fb92f14c86f900907663a # v3.0.0
         with:
           action: codecov/codecov-action@v3
           with: |
