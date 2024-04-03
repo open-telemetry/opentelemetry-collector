@@ -151,7 +151,7 @@ func (l *Conf) ToStringMap() map[string]any {
 // uniqueness of component IDs (see mapKeyStringToMapKeyTextUnmarshalerHookFunc).
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
-func decodeConfig(m *Conf, result any, errorUnused bool, topLevelUnmarshaling bool) error {
+func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler bool) error {
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      errorUnused,
 		Result:           result,
