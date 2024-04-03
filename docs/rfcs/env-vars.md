@@ -1,4 +1,4 @@
-# A more sensible Collector environment variable resolution
+# Stabilizing environment variable resolution
 
 ## Overview
 
@@ -162,7 +162,7 @@ variable resolution:
 1.  The *braces syntax*, `${ENV}`.
 2.  The *env provider syntax*, `${env:ENV}`.
 
-These both have** the same character set and behavior**. They both use
+These both have **the same character set and behavior**. They both use
 the env provider under the hood.
 
 The naked syntax supported in BASH is not supported in the Collector.
@@ -180,14 +180,14 @@ how it works for some edge cases in this example:
 [*https://go.dev/play/p/RtPmH8aZA1X*](https://go.dev/play/p/RtPmH8aZA1X).
 
 When unmarshalling, we use mapstructure with WeaklyTypedInput
-**disabled**. We check via a hook an AsString method from confmap.Conf
+**disabled**. We check via a hook an `AsString` method from confmap.Conf
 and use its return value when it is valid and we are mapping to a string
 field. This method has default casting rules for unambiguous scalar
 types but may return the original representation depending on the
 construction of confmap.Conf
 
 For using this notation in inline mode (e.g.`http://endpoint/${env:PATH}`), we
-use the AsString method from confmap.Conf.
+use the `AsString` method from confmap.Conf.
 
 ### Character set
 
@@ -208,9 +208,9 @@ loading a field with the braces syntax, `env` syntax.
 |--------------|------------|------------------------------------------|------------------------------------------------|--------------------------------|---------------------------------------|
 | `123`        | integer    | 123                                      | 123                                            | 123                            | n/a                                   |
 | `0123`       | integer    | 83                                       | 83                                             | 83                             | n/a                                   |
-| `0123`       | string     | 0123                                     | 83                                             | 0123 (83?)                     | 0123                                  |
-| `0xdeadbeef` | string     | 0xdeadbeef                               | 3735928559                                     | 0xdeadbeef (3735928559?)       | 0xdeadbeef                            |
+| `0123`       | string     | 0123                                     | 83                                             | 0123                           | 0123                                  |
+| `0xdeadbeef` | string     | 0xdeadbeef                               | 3735928559                                     | 0xdeadbeef                     | 0xdeadbeef                            |
 | `"0123"`     | string     | "0123"                                   | 0123                                           | 0123                           | 0123                                  |
-| `!!str 0123` | string     | !!str 0123                               | 0123                                           | 0123                           | 0123 (!!str 0123)                     |
+| `!!str 0123` | string     | !!str 0123                               | 0123                                           | 0123                           | 0123                                  |
 | `t`          | boolean    | true                                     | true                                           | Error: mapping string to bool  | n/a                                   |
 | `23`         | boolean    | true                                     | true                                           | Error: mapping integer to bool | n/a                                   |
