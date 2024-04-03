@@ -150,9 +150,8 @@ type ServerConfig struct {
 	IncludeMetadata bool `mapstructure:"include_metadata"`
 }
 
-// SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
-// Deprecated: [v0.97.0]
-func (gcs *ClientConfig) SanitizedEndpoint() string {
+// sanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
+func (gcs *ClientConfig) sanitizedEndpoint() string {
 	switch {
 	case gcs.isSchemeHTTP():
 		return strings.TrimPrefix(gcs.Endpoint, "http://")
@@ -181,7 +180,7 @@ func (gcs *ClientConfig) ToClientConn(ctx context.Context, host component.Host, 
 		return nil, err
 	}
 	opts = append(opts, extraOpts...)
-	return grpc.DialContext(ctx, gcs.SanitizedEndpoint(), opts...)
+	return grpc.DialContext(ctx, gcs.sanitizedEndpoint(), opts...)
 }
 
 func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
@@ -276,12 +275,6 @@ func (gss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 	}
 	opts = append(opts, extraOpts...)
 	return grpc.NewServer(opts...), nil
-}
-
-// ToServerContext returns a grpc.Server for the configuration
-// Deprecated: [v0.97.0] Use ToServer instead.
-func (gss *ServerConfig) ToServerContext(ctx context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
-	return gss.ToServer(ctx, host, settings, extraOpts...)
 }
 
 func (gss *ServerConfig) toServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
