@@ -84,7 +84,7 @@ func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
 	for _, opt := range opts {
 		opt.apply(&set)
 	}
-	return decodeConfig(l, result, !set.ignoreUnused, l.self != result)
+	return decodeConfig(l, result, !set.ignoreUnused, l.self == result)
 }
 
 type marshalOption struct{}
