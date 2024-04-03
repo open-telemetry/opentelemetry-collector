@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.97.0
 	go.opentelemetry.io/collector/consumer v0.97.0
 	go.opentelemetry.io/collector/pdata v1.4.0
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/receiver v0.97.0
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
@@ -114,6 +115,8 @@ replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
+
+replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
 replace go.opentelemetry.io/collector/receiver => ../
 
