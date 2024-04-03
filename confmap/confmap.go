@@ -328,7 +328,7 @@ func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.
 
 		toPtr := to.Addr().Interface()
 		// Need to ignore the top structure to avoid circular dependency.
-		if toPtr == result && !allowTopLevelUnmarshaler {
+		if toPtr == result && skipTopLevelUnmarshaler {
 			return from.Interface(), nil
 		}
 
