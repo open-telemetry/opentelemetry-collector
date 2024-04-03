@@ -6,10 +6,14 @@ The OpenTelemetry Collector supports three different syntaxes for
 environment variable resolution which differ in their syntax, semantics
 and allowed variable names. Before we stabilize confmap, we need to
 address several issues related to environment variables. This document
-describes: the current (as of v0.97.0) behavior of the Collector, the
-goals that an environment variable resolution should aim for, existing
-deviations from these goals and the desired behavior after making some
-changes.
+describes:
+
+- the current (as of v0.97.0) behavior of the Collector
+- the goals that an environment variable resolution should aim for
+- existing deviations from these goals
+- the desired behavior after making some changes
+
+### Out of scope
 
 CLI environment variable resolution has a single syntax (`--config env:ENV`) 
 and it is considered out of scope for this document, focusing
@@ -27,10 +31,10 @@ The following are considered goals of the expansion system:
     should aim to expand when the user expects it and keep the original
     value when we don't (e.g. because the syntax is used for something
     different).
-2.  ***Expansion should have predictable behavior***.
+2.  ***Expansion must have predictable behavior***.
 3.  ***Multiple expansion methods, if present, should have similar behavior.***
     Switching from `${env:ENV}` to `${ENV}` or vice versa
-    should not lead to (too many?) surprises.
+    should not lead to any surprises.
 4.  ***When the syntax overlaps, expansion should be aligned with*** 
     [***the expansion defined by the Configuration Working Group***](https://github.com/open-telemetry/opentelemetry-specification/blob/032213cedde54a2171dfbd234a371501a3537919/specification/configuration/file-configuration.md#environment-variable-substitution).
 
@@ -51,8 +55,8 @@ syntaxes by using two dollar signs.
 
 A provider or converter takes a string and returns some sort of value
 after potentially doing some parsing. This gets stored in a
-confmap.Conf. When unmarshalling, we use mapstructure with
-WeaklyTypedInput enabled, which does a lot of implicit casting. The
+`confmap.Conf`. When unmarshalling, we use [mapstructure](https://github.com/mitchellh/mapstructure) with
+`WeaklyTypedInput` enabled, which does a lot of implicit casting. The
 details of this type casting are complex and are outlined on issue
 [#9532](https://github.com/open-telemetry/opentelemetry-collector/issues/9532).
 
@@ -90,9 +94,9 @@ string.
 
 ### `env` provider
 
-The `env` provider syntax is supported via (you guessed it) the `env`
-provider. Its implementation is custom made. This syntax supports any
-identifier that does not have a $ in it, to support recursive
+The `env` provider syntax is supported via the `env`
+provider. It is a custom implementation with a syntax that supports any
+identifier that does not contain a `$`. This is done to support recursive
 resolution (e.g. `${env:${http://example.com}}` would get the
 environment variable whose name is stored in the URL
 `http://example.com`).
