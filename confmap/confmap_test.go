@@ -701,3 +701,60 @@ func TestUnmarshalDouble(t *testing.T) {
 	assert.NoError(t, conf.Unmarshal(s2))
 	assert.Equal(t, "test", s2.Str)
 }
+
+type EmbeddedStructWithUnmarshal struct {
+	Foo     string `mapstructure:"foo"`
+	success string
+}
+
+func (e *EmbeddedStructWithUnmarshal) Unmarshal(c *Conf) error {
+	if err := c.Unmarshal(e, WithIgnoreUnused()); err != nil {
+		return err
+	}
+	e.success = "success"
+	return nil
+}
+
+type configWithUnmarshalFromEmbeddedStruct struct {
+	EmbeddedStructWithUnmarshal
+}
+
+type topLevel struct {
+	Cfg *configWithUnmarshalFromEmbeddedStruct `mapstructure:"toplevel"`
+}
+
+// Test that Unmarshal is called on the embedded struct on the struct.
+func TestUnmarshalThroughEmbeddedStruct(t *testing.T) {
+	c := NewFromStringMap(map[string]any{
+		"toplevel": map[string]any{
+			"foo": "bar",
+		},
+	})
+	cfg := &topLevel{}
+	err := c.Unmarshal(cfg)
+	require.NoError(t, err)
+	require.Equal(t, "success", cfg.Cfg.EmbeddedStructWithUnmarshal.success)
+	require.Equal(t, "bar", cfg.Cfg.EmbeddedStructWithUnmarshal.Foo)
+}
+
+type configWithOwnUnmarshalAndEmbeddedSquashedStruct struct {
+	EmbeddedStructWithUnmarshal `mapstructure:",squash"`
+}
+
+type topLevelSquashedEmbedded struct {
+	Cfg *configWithOwnUnmarshalAndEmbeddedSquashedStruct `mapstructure:"toplevel"`
+}
+
+// Test that the Unmarshal method is called on the squashed, embedded struct.
+func TestUnmarshalOwnThroughEmbeddedSquashedStruct(t *testing.T) {
+	c := NewFromStringMap(map[string]any{
+		"toplevel": map[string]any{
+			"foo": "bar",
+		},
+	})
+	cfg := &topLevelSquashedEmbedded{}
+	err := c.Unmarshal(cfg)
+	require.NoError(t, err)
+	require.Equal(t, "success", cfg.Cfg.EmbeddedStructWithUnmarshal.success)
+	require.Equal(t, "bar", cfg.Cfg.EmbeddedStructWithUnmarshal.Foo)
+}
