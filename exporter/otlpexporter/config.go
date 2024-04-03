@@ -5,6 +5,9 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 
 import (
 	"errors"
+	"fmt"
+	"net"
+	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -23,9 +26,20 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	if c.sanitizedEndpoint() == "" {
+	endpoint := c.sanitizedEndpoint()
+	if endpoint == "" {
 		return errors.New(`requires a non-empty "endpoint"`)
 	}
+
+	// Validate that the port is in the address
+	_, port, err := net.SplitHostPort(endpoint)
+	if err != nil {
+		return err
+	}
+	if _, err := strconv.Atoi(port); err != nil {
+		return fmt.Errorf(`invalid port "%s"`, port)
+	}
+
 	return nil
 }
 
