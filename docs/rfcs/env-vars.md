@@ -71,9 +71,9 @@ The naked syntax is supported via the expand converter. It is
 implemented using the [`os.Expand`](https://pkg.go.dev/os#Expand) stdlib
 function. This syntax supports identifiers made up of:
 
-1.   ASCII alphanumerics and the `_` character
-2.  Certain special characters if they appear alone typically used in
-    Bash: `*`, `#`, `$`, `@`, `!`, `?` and `-`.
+1. ASCII alphanumerics and the `_` character
+2. Certain special characters if they appear alone typically used in
+   Bash: `*`, `#`, `$`, `@`, `!`, `?` and `-`.
 
 You can see supported identifiers in this example:
 [`go.dev/play/p/YfxLtYbsL6j`](https://go.dev/play/p/YfxLtYbsL6j).
