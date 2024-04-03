@@ -41,6 +41,10 @@ func NewFromStringMap(data map[string]any) *Conf {
 // The confmap.Conf can be unmarshalled into the Collector's config using the "service" package.
 type Conf struct {
 	k    *koanf.Koanf
+
+	// self stores the struct where we are unmarshaling Conf.
+	// Conf structs built outside of the confmap package will have this set to nil.
+	// self it not nil on auxiliary Conf structs built in the mapstructure hooks that check for the Unmarshaler interface.
 	self any
 }
 
