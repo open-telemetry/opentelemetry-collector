@@ -12,6 +12,7 @@ status:
     beta: [traces]
     stable: [metrics]
   distributions: []
+  unsupported_platforms: [freebsd, illumos]
   codeowners:
     active: [dmitryax]
   warnings:

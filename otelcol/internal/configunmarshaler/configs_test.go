@@ -104,7 +104,7 @@ func TestUnmarshalError(t *testing.T) {
 					conf: confmap.NewFromStringMap(map[string]any{
 						"nosuch" + tk.kind: nil,
 					}),
-					expectedError: "unknown type: \"nosuch" + tk.kind + "\"",
+					expectedError: "unknown type: \"nosuch" + tk.kind + "\" for id: \"nosuch" + tk.kind + "\" (valid values: [nop])",
 				},
 				{
 					name: "duplicate",
