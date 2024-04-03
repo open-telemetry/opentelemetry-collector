@@ -828,3 +828,27 @@ func TestUnmarshalOwnThroughEmbeddedSquashedStruct(t *testing.T) {
 	require.Equal(t, "success", cfg.Cfg.EmbeddedStructWithUnmarshal.success)
 	require.Equal(t, "bar", cfg.Cfg.EmbeddedStructWithUnmarshal.Foo)
 }
+
+type Recursive struct {
+	Foo string `mapstructure:"foo"`
+}
+
+func (r *Recursive) Unmarshal(conf *Conf) error {
+	newR := &Recursive{}
+	if err := conf.Unmarshal(newR); err != nil {
+		return err
+	}
+	*r = *newR
+	return nil
+}
+
+// Tests that a struct can unmarshal itself by creating a new copy of itself, unmarshaling itself, and setting its value.
+func TestRecursiveUnmarshaling(t *testing.T) {
+	t.Skip("this test fails to run because it engages in recursive unmarshaling")
+	conf := NewFromStringMap(map[string]any{
+		"foo": "something",
+	})
+	r := &Recursive{}
+	require.NoError(t, conf.Unmarshal(r))
+	require.Equal(t, "something", r.Foo)
+}
