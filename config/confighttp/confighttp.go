@@ -121,8 +121,8 @@ func (hcs *ClientConfig) ToClient(host component.Host, settings component.Teleme
 }
 
 // ToClientContext creates an HTTP client.
-func (hcs *ClientConfig) ToClientContext(_ context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	tlsCfg, err := hcs.TLSSetting.LoadTLSConfigContext(context.Background())
+func (hcs *ClientConfig) ToClientContext(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+	tlsCfg, err := hcs.TLSSetting.LoadTLSConfigContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +288,7 @@ func (hss *ServerConfig) ToListener() (net.Listener, error) {
 }
 
 // ToListenerContext creates a net.Listener.
-func (hss *ServerConfig) ToListenerContext(_ context.Context) (net.Listener, error) {
+func (hss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
 	listener, err := net.Listen("tcp", hss.Endpoint)
 	if err != nil {
 		return nil, err
@@ -296,7 +296,7 @@ func (hss *ServerConfig) ToListenerContext(_ context.Context) (net.Listener, err
 
 	if hss.TLSSetting != nil {
 		var tlsCfg *tls.Config
-		tlsCfg, err = hss.TLSSetting.LoadTLSConfigContext(context.Background())
+		tlsCfg, err = hss.TLSSetting.LoadTLSConfigContext(ctx)
 		if err != nil {
 			return nil, err
 		}
