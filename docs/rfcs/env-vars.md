@@ -36,7 +36,7 @@ The following are considered goals of the expansion system:
     Switching from `${env:ENV}` to `${ENV}` or vice versa
     should not lead to any surprises.
 4.  ***When the syntax overlaps, expansion should be aligned with*** 
-    [***the expansion defined by the Configuration Working Group***](https://github.com/open-telemetry/opentelemetry-specification/blob/032213cedde54a2171dfbd234a371501a3537919/specification/configuration/file-configuration.md#environment-variable-substitution).
+    [***the expansion defined by the Configuration Working Group***](https://github.com/open-telemetry/opentelemetry-specification/blob/032213cedde54a2171dfbd234a371501a3537919/specification/configuration/file-configuration.md#environment-variable-substitution). See [opentelemetry-specification/issues/3963](https://github.com/open-telemetry/opentelemetry-specification/issues/3963) for the counterpart to this line of work in the SDK File spec.
 
 ## Current behavior
 
@@ -153,7 +153,7 @@ configurations*](https://github.com/open-telemetry/opentelemetry-specification/b
 This accepts only non empty alphanumeric + underscore identifiers
 starting with alphabetic or underscore. If the Configuration WG were to
 expand this in the future (e.g. to include other features present in
-Bash-like syntax), we would not be able to expand our braces syntax to
+Bash-like syntax as in [opentelemetry-specification/pull/3948](https://github.com/open-telemetry/opentelemetry-specification/pull/3948)), we would not be able to expand our braces syntax to
 support new features without breaking users.
 
 ## Desired behavior
