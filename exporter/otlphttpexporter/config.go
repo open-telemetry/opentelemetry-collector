@@ -4,13 +4,44 @@
 package otlphttpexporter // import "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 
 import (
+	"encoding"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
+
+// EncodingType defines the type for content encoding
+type EncodingType string
+
+const (
+	EncodingProto EncodingType = "proto"
+	EncodingJSON  EncodingType = "json"
+)
+
+var _ encoding.TextUnmarshaler = (*EncodingType)(nil)
+
+// UnmarshalText unmarshalls text to an EncodingType.
+func (e *EncodingType) UnmarshalText(text []byte) error {
+	if e == nil {
+		return errors.New("cannot unmarshal to a nil *EncodingType")
+	}
+
+	str := string(text)
+	switch str {
+	case string(EncodingProto):
+		*e = EncodingProto
+	case string(EncodingJSON):
+		*e = EncodingJSON
+	default:
+		return fmt.Errorf("invalid encoding type: %s", str)
+	}
+
+	return nil
+}
 
 // Config defines configuration for OTLP/HTTP exporter.
 type Config struct {
@@ -26,6 +57,9 @@ type Config struct {
 
 	// The URL to send logs to. If omitted the Endpoint + "/v1/logs" will be used.
 	LogsEndpoint string `mapstructure:"logs_endpoint"`
+
+	// The encoding to export telemetry (default: "proto")
+	Encoding EncodingType `mapstructure:"encoding"`
 }
 
 var _ component.Config = (*Config)(nil)

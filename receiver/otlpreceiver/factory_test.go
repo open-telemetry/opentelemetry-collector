@@ -53,9 +53,9 @@ func TestCreateSameReceiver(t *testing.T) {
 func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	defaultGRPCSettings := &configgrpc.ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	defaultHTTPSettings := &HTTPConfig{
@@ -89,9 +89,9 @@ func TestCreateTracesReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.ServerConfig{
-						NetAddr: confignet.NetAddr{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:112233",
-							Transport: "tcp",
+							Transport: confignet.TransportTypeTCP,
 						},
 					},
 					HTTP: defaultHTTPSettings,
@@ -117,21 +117,6 @@ func TestCreateTracesReceiver(t *testing.T) {
 			sink:         consumertest.NewNop(),
 		},
 		{
-			name: "no_next_consumer",
-			cfg: &Config{
-				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-					HTTP: &HTTPConfig{
-						ServerConfig: &confighttp.ServerConfig{
-							Endpoint: "127.0.0.1:1122",
-						},
-					},
-				},
-			},
-			wantErr: true,
-			sink:    nil,
-		},
-		{
 			name: "no_http_or_grcp_config",
 			cfg: &Config{
 				Protocols: Protocols{},
@@ -151,7 +136,6 @@ func TestCreateTracesReceiver(t *testing.T) {
 			assert.NoError(t, err)
 			if tt.wantStartErr {
 				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, tr.Shutdown(context.Background()))
 			} else {
 				assert.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, tr.Shutdown(context.Background()))
@@ -163,9 +147,9 @@ func TestCreateTracesReceiver(t *testing.T) {
 func TestCreateMetricReceiver(t *testing.T) {
 	factory := NewFactory()
 	defaultGRPCSettings := &configgrpc.ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	defaultHTTPSettings := &HTTPConfig{
@@ -199,9 +183,9 @@ func TestCreateMetricReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.ServerConfig{
-						NetAddr: confignet.NetAddr{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "327.0.0.1:1122",
-							Transport: "tcp",
+							Transport: confignet.TransportTypeTCP,
 						},
 					},
 					HTTP: defaultHTTPSettings,
@@ -225,21 +209,6 @@ func TestCreateMetricReceiver(t *testing.T) {
 			},
 			wantStartErr: true,
 			sink:         consumertest.NewNop(),
-		},
-		{
-			name: "no_next_consumer",
-			cfg: &Config{
-				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-					HTTP: &HTTPConfig{
-						ServerConfig: &confighttp.ServerConfig{
-							Endpoint: "127.0.0.1:1122",
-						},
-					},
-				},
-			},
-			wantErr: true,
-			sink:    nil,
 		},
 		{
 			name: "no_http_or_grcp_config",
@@ -272,9 +241,9 @@ func TestCreateMetricReceiver(t *testing.T) {
 func TestCreateLogReceiver(t *testing.T) {
 	factory := NewFactory()
 	defaultGRPCSettings := &configgrpc.ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	defaultHTTPSettings := &HTTPConfig{
@@ -308,9 +277,9 @@ func TestCreateLogReceiver(t *testing.T) {
 			cfg: &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.ServerConfig{
-						NetAddr: confignet.NetAddr{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "327.0.0.1:1122",
-							Transport: "tcp",
+							Transport: confignet.TransportTypeTCP,
 						},
 					},
 					HTTP: defaultHTTPSettings,
@@ -336,21 +305,6 @@ func TestCreateLogReceiver(t *testing.T) {
 			sink:         consumertest.NewNop(),
 		},
 		{
-			name: "no_next_consumer",
-			cfg: &Config{
-				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-					HTTP: &HTTPConfig{
-						ServerConfig: &confighttp.ServerConfig{
-							Endpoint: "127.0.0.1:1122",
-						},
-					},
-				},
-			},
-			wantErr: true,
-			sink:    nil,
-		},
-		{
 			name: "no_http_or_grcp_config",
 			cfg: &Config{
 				Protocols: Protocols{},
@@ -370,7 +324,6 @@ func TestCreateLogReceiver(t *testing.T) {
 			assert.NoError(t, err)
 			if tt.wantStartErr {
 				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, mr.Shutdown(context.Background()))
 			} else {
 				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, mr.Shutdown(context.Background()))

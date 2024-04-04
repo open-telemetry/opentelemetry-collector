@@ -98,13 +98,7 @@ type Info struct {
 	Auth AuthData
 
 	// Metadata is the request metadata from the client connecting to this connector.
-	// Experimental: *NOTE* this structure is subject to change or removal in the future.
 	Metadata Metadata
-}
-
-// Metadata is an immutable map, meant to contain request metadata.
-type Metadata struct {
-	data map[string][]string
 }
 
 // AuthData represents the authentication data as seen by authenticators tied to
@@ -116,8 +110,7 @@ type AuthData interface {
 	// "membership" might return a list of strings.
 	GetAttribute(string) any
 
-	// GetAttributes returns the names of all attributes in this authentication
-	// data.
+	// GetAttributeNames returns the names of all attributes in this authentication data.
 	GetAttributeNames() []string
 }
 
@@ -139,30 +132,32 @@ func FromContext(ctx context.Context) Info {
 	return c
 }
 
-// NewMetadata creates a new Metadata object to use in Info. md is used as-is.
+// Metadata is an immutable map, meant to contain request metadata.
+type Metadata struct {
+	data map[string][]string
+}
+
+// NewMetadata creates a new Metadata object to use in Info.
 func NewMetadata(md map[string][]string) Metadata {
+	c := make(map[string][]string, len(md))
+	for k, v := range md {
+		c[strings.ToLower(k)] = v
+	}
 	return Metadata{
-		data: md,
+		data: c,
 	}
 }
 
 // Get gets the value of the key from metadata, returning a copy.
+// The key lookup is case-insensitive.
 func (m Metadata) Get(key string) []string {
-	vals := m.data[key]
-	if len(vals) == 0 {
-		// we didn't find the key, but perhaps it just has different cases?
-		for k, v := range m.data {
-			if strings.EqualFold(key, k) {
-				vals = v
-				// we optimize for the next lookup
-				m.data[key] = v
-			}
-		}
+	if len(m.data) == 0 {
+		return nil
+	}
 
-		// if it's still not found, it's really not here
-		if len(vals) == 0 {
-			return nil
-		}
+	vals := m.data[strings.ToLower(key)]
+	if len(vals) == 0 {
+		return nil
 	}
 
 	ret := make([]string, len(vals))

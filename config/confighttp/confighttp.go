@@ -4,6 +4,7 @@
 package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -29,10 +30,6 @@ import (
 
 const headerContentEncoding = "Content-Encoding"
 
-// HTTPClientSettings defines settings for creating an HTTP client.
-// Deprecated: [v0.94.0] Use ClientConfig instead
-type HTTPClientSettings = ClientConfig
-
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {
 	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
@@ -42,7 +39,7 @@ type ClientConfig struct {
 	ProxyURL string `mapstructure:"proxy_url"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
+	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
@@ -65,7 +62,7 @@ type ClientConfig struct {
 	Auth *configauth.Authentication `mapstructure:"auth"`
 
 	// The compression key for supported compression types within collector.
-	Compression configcompression.CompressionType `mapstructure:"compression"`
+	Compression configcompression.Type `mapstructure:"compression"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	// There's an already set value, and we want to override it only if an explicit value provided
@@ -103,15 +100,6 @@ type ClientConfig struct {
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout"`
 }
 
-// NewDefaultHTTPClientSettings returns HTTPClientSettings type object with
-// the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
-// Other config options are not added as they are initialized with 'zero value' by GoLang as default.
-// We encourage to use this function to create an object of HTTPClientSettings.
-// Deprecated: [v0.94.0] Use NewDefaultClientConfig instead
-func NewDefaultHTTPClientSettings() ClientConfig {
-	return NewDefaultClientConfig()
-}
-
 // NewDefaultClientConfig returns ClientConfig type object with
 // the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
 // Other config options are not added as they are initialized with 'zero value' by GoLang as default.
@@ -129,7 +117,7 @@ func NewDefaultClientConfig() ClientConfig {
 
 // ToClient creates an HTTP client.
 func (hcs *ClientConfig) ToClient(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
+	tlsCfg, err := hcs.TLSSetting.LoadTLSConfigContext(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -249,16 +237,19 @@ type headerRoundTripper struct {
 
 // RoundTrip is a custom RoundTripper that adds headers to the request.
 func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	// Set Host header if provided
+	hostHeader, found := interceptor.headers["Host"]
+	if found && hostHeader != "" {
+		// `Host` field should be set to override default `Host` header value which is Endpoint
+		req.Host = string(hostHeader)
+	}
 	for k, v := range interceptor.headers {
 		req.Header.Set(k, string(v))
 	}
+
 	// Send the request to next transport.
 	return interceptor.transport.RoundTrip(req)
 }
-
-// HTTPServerSettings defines settings for creating an HTTP server.
-// Deprecated: [v0.94.0] Use ServerConfig instead
-type HTTPServerSettings = ServerConfig
 
 // ServerConfig defines settings for creating an HTTP server.
 type ServerConfig struct {
@@ -266,7 +257,7 @@ type ServerConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls"`
+	TLSSetting *configtls.ServerConfig `mapstructure:"tls"`
 
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
 	CORS *CORSConfig `mapstructure:"cors"`
@@ -295,13 +286,14 @@ func (hss *ServerConfig) ToListener() (net.Listener, error) {
 
 	if hss.TLSSetting != nil {
 		var tlsCfg *tls.Config
-		tlsCfg, err = hss.TLSSetting.LoadTLSConfig()
+		tlsCfg, err = hss.TLSSetting.LoadTLSConfigContext(context.Background())
 		if err != nil {
 			return nil, err
 		}
 		tlsCfg.NextProtos = []string{http2.NextProtoTLS, "http/1.1"}
 		listener = tls.NewListener(listener, tlsCfg)
 	}
+
 	return listener, nil
 }
 
@@ -384,7 +376,7 @@ func (hss *ServerConfig) ToServer(host component.Host, settings component.Teleme
 		otelhttp.WithTracerProvider(settings.TracerProvider),
 		otelhttp.WithMeterProvider(settings.MeterProvider),
 		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
-		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 			return r.URL.Path
 		}),
 	)
@@ -411,11 +403,6 @@ func responseHeadersHandler(handler http.Handler, headers map[string]configopaqu
 		handler.ServeHTTP(w, r)
 	})
 }
-
-// CORSSettings configures a receiver for HTTP cross-origin resource sharing (CORS).
-// See the underlying https://github.com/rs/cors package for details.
-// Deprecated: [v0.94.0] Use CORSConfig instead
-type CORSSettings = CORSConfig
 
 // CORSConfig configures a receiver for HTTP cross-origin resource sharing (CORS).
 // See the underlying https://github.com/rs/cors package for details.

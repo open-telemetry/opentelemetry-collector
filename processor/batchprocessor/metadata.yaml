@@ -5,3 +5,5 @@ status:
   stability:
     beta: [traces, metrics, logs]
   distributions: [core, contrib]
+
+tests:

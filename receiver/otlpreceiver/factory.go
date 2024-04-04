@@ -18,10 +18,8 @@ import (
 )
 
 const (
-	grpcPort            = 4317
-	httpPort            = 4318
-	defaultGRPCEndpoint = "0.0.0.0:4317"
-	defaultHTTPEndpoint = "0.0.0.0:4318"
+	grpcPort = 4317
+	httpPort = 4318
 
 	defaultTracesURLPath  = "/v1/traces"
 	defaultMetricsURLPath = "/v1/metrics"
@@ -44,9 +42,9 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
-				NetAddr: confignet.NetAddr{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  localhostgate.EndpointForPort(grpcPort),
-					Transport: "tcp",
+					Transport: confignet.TransportTypeTCP,
 				},
 				// We almost write 0 bytes, so no need to tune WriteBufferSize.
 				ReadBufferSize: 512 * 1024,
@@ -82,9 +80,7 @@ func createTraces(
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerTraceConsumer(nextConsumer); err != nil {
-		return nil, err
-	}
+	r.Unwrap().registerTraceConsumer(nextConsumer)
 	return r, nil
 }
 
@@ -107,9 +103,7 @@ func createMetrics(
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerMetricsConsumer(consumer); err != nil {
-		return nil, err
-	}
+	r.Unwrap().registerMetricsConsumer(consumer)
 	return r, nil
 }
 
@@ -132,9 +126,7 @@ func createLog(
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerLogsConsumer(consumer); err != nil {
-		return nil, err
-	}
+	r.Unwrap().registerLogsConsumer(consumer)
 	return r, nil
 }
 

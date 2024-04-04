@@ -13,7 +13,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -32,7 +33,7 @@ func newMetricsRequest(md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) R
 	}
 }
 
-func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) RequestUnmarshaler {
+func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) exporterqueue.Unmarshaler[Request] {
 	return func(bytes []byte) (Request, error) {
 		metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
 		if err != nil {
@@ -69,7 +70,7 @@ type metricsExporter struct {
 
 // NewMetricsExporter creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
 func NewMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config,
 	pusher consumer.ConsumeMetricsFunc,
@@ -78,43 +79,30 @@ func NewMetricsExporter(
 	if cfg == nil {
 		return nil, errNilConfig
 	}
-
-	if set.Logger == nil {
-		return nil, errNilLogger
-	}
-
 	if pusher == nil {
 		return nil, errNilPushMetricsData
 	}
-
-	be, err := newBaseExporter(set, component.DataTypeMetrics, false, metricsRequestMarshaler,
-		newMetricsRequestUnmarshalerFunc(pusher), newMetricsSenderWithObservability, options...)
-	if err != nil {
-		return nil, err
+	metricsOpts := []Option{
+		withMarshaler(metricsRequestMarshaler), withUnmarshaler(newMetricsRequestUnmarshalerFunc(pusher)),
+		withBatchFuncs(mergeMetrics, mergeSplitMetrics),
 	}
-
-	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
-		req := newMetricsRequest(md, pusher)
-		serr := be.send(ctx, req)
-		if errors.Is(serr, internal.ErrQueueIsFull) {
-			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
-		}
-		return serr
-	}, be.consumerOptions...)
-
-	return &metricsExporter{
-		baseExporter: be,
-		Metrics:      mc,
-	}, err
+	return NewMetricsRequestExporter(ctx, set, requestFromMetrics(pusher), append(metricsOpts, options...)...)
 }
 
 // RequestFromMetricsFunc converts pdata.Metrics into a user-defined request.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type RequestFromMetricsFunc func(context.Context, pmetric.Metrics) (Request, error)
 
+// requestFromMetrics returns a RequestFromMetricsFunc that converts pdata.Metrics into a Request.
+func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestFromMetricsFunc {
+	return func(_ context.Context, md pmetric.Metrics) (Request, error) {
+		return newMetricsRequest(md, pusher), nil
+	}
+}
+
 // NewMetricsRequestExporter creates a new metrics exporter based on a custom MetricsConverter and RequestSender.
-// This API is at the early stage of development and may change without backward compatibility
+// Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewMetricsRequestExporter(
 	_ context.Context,
@@ -130,7 +118,7 @@ func NewMetricsRequestExporter(
 		return nil, errNilMetricsConverter
 	}
 
-	be, err := newBaseExporter(set, component.DataTypeMetrics, true, nil, nil, newMetricsSenderWithObservability, options...)
+	be, err := newBaseExporter(set, component.DataTypeMetrics, newMetricsSenderWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +132,7 @@ func NewMetricsRequestExporter(
 			return consumererror.NewPermanent(cErr)
 		}
 		sErr := be.send(ctx, req)
-		if errors.Is(sErr, internal.ErrQueueIsFull) {
+		if errors.Is(sErr, queue.ErrQueueIsFull) {
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
 		}
 		return sErr

@@ -7,6 +7,108 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.4.0/v0.97.0
+
+### 🛑 Breaking changes 🛑
+
+- `configgrpc`: Remove deprecated `ToServer` function. (#9787)
+- `confignet`: Change `Transport` field from `string` to `TransportType` (#9385)
+- `component`: Change underlying type of `component.Type` to an opaque struct. (#9208)
+- `obsreport`: Remove deprecated obsreport/obsreporttest package. (#9724)
+- `component`: Remove deprecated error `ErrNilNextConsumer` (#9322)
+- `connector`: Remove `LogsRouter`, `MetricsRouter` and `TracesRouter`. Use `LogsRouterAndConsumer`, `MetricsRouterAndConsumer`, `TracesRouterAndConsumer` respectively instead. (#9095)
+- `receiver`: Remove deprecated struct `ScraperControllerSettings` and function `NewDefaultScraperControllerSettings` (#6767)
+- `confmap`: Remove deprecated `provider.New` methods, use `NewWithSettings` moving forward. (#9443)
+
+### 🚩 Deprecations 🚩
+
+- `configgrpc`: Deprecated `ToServerContext`, use `ToServer` instead. (#9787)
+- `configgrpc`: Deprecate `SanitizedEndpoint` (#9788)
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add experimental batching capabilities to the exporter helper (#8122)
+- `confignet`: Adds `NewDefault*` functions for all the config structs. (#9656)
+- `configtls`: Validates TLS min_version and max_version (#9475)
+  Introduces `Validate()` method in TLSSetting.
+- `exporterhelper`: Invalid exporterhelper options now make the exporter creation error out instead of panicking. (#9717)
+- `components`: Give NoOp components a unique name (#9637)
+
+## v1.3.0/v0.96.0
+
+### 🚩 Deprecations 🚩
+
+- `configgrpc`: Deprecates `ToServer`.  Use `ToServerContext` instead. (#9624)
+- `component`: deprecate component.ErrNilNextConsumer (#9526)
+- `configtls`: Rename TLSClientSetting, TLSServerSetting, and TLSSetting based on the naming convention used in other config packages. (#9474)
+
+### 💡 Enhancements 💡
+
+- `receivertest`: add support for metrics in contract checker (#9551)
+
+## v1.2.0/v0.95.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Bump minimum go version to go 1.21 (#9507)
+- `service/telemetry`: Delete generated_config types, use go.opentelemetry.io/contrib/config types instead (#9546)
+- `configcompression`: Remove deprecated `configcompression` types, constants and methods. (#9388)
+- `component`: Remove `host.ReportFatalError` (#6344)
+- `configgrpc`: Remove deprecated `configgrpc.ServerConfig.ToListener` (#9481)
+- `confmap`: Remove deprecated `confmap.WithErrorUnused` (#9484)
+
+### 🚩 Deprecations 🚩
+
+- `confignet`: Deprecate `confignet.NetAddr` and `confignet.TCPAddr` in favor of `confignet.AddrConfig` and `confignet.TCPAddrConfig`. (#9509)
+- `config/configgrpc`: Deprecate `configgrpc.ClientConfig.SanitizedEndpoint`, `configgrpc.ServerConfig.ToListener` and `configgrpc.ServerConfig.ToListenerContext` (#9481, #9482)
+- `scraperhelper`: Deprecate ScraperControllerSettings, use ControllerConfig instead (#6767)
+
+## v1.1.0/v0.94.0
+
+### 🛑 Breaking changes 🛑
+
+- `confignet`: Remove deprecated `DialContext` and `ListenContext` functions (#9363)
+- `confmap/converter/expandconverter`: Add `confmap.ConverterSettings` argument to experimental `expandconverter.New` function. (#5615, #9162)
+  - The `confmap.ConverterSettings` struct currently has no fields. It will be used to pass a logger.
+  
+- `component`: Remove deprecated funcs and types (#9283)
+- `otlpexporter`: Config struct is moving from embedding the deprecated GRPCClientSettings struct to using ClientConfig instead. (#6767)
+- `otlphttpexporter`: otlphttpexporter.Config embeds the struct confighttp.ClientConfig instead of confighttp.HTTPClientSettings (#6767)
+- `otlpreceiver`: HTTPConfig struct is moving from embedding the deprecated ServerSettings struct to using HTTPServerConfig instead. (#6767)
+- `component`: Validate component.Type at creation and unmarshaling time. (#9208)
+  - A component.Type must start with an ASCII alphabetic character and can only contain ASCII alphanumeric characters and '_'.
+  
+
+### 🚩 Deprecations 🚩
+
+- `configcompressions`: Deprecate `IsCompressed`.  Use `CompressionType.IsCompressed instead` instead. (#9435)
+- `configcompression`: Deprecate `CompressionType`, use `Type` instead. (#9416)
+- `confighttp`: Deprecate CORSSettings, use CORSConfig instead (#6767)
+- `configgrpc`: Deprecate `ToListener` function in favor of `ToListenerContext` (#9389)
+- `configgrpc`: Deprecate GRPCServerSettings, use ServerConfig instead (#6767)
+- `confighttp`: Deprecate HTTPClientSettings, use ClientConfig instead (#6767)
+- `confighttp`: Deprecate HTTPServerSettings, use ServerConfig instead (#6767)
+- `confmap/provider`: Deprecate <provider>.New in favor of <provider>.NewWithSettings for all core providers (#5615, #9162)
+  - NewWithSettings now takes an empty confmap.ProviderSettings struct. This will be used to pass a logger in the future.
+  
+
+### 💡 Enhancements 💡
+
+- `exporter/exporterhelper`: Add API for enabling queue in the new exporter helpers. (#7874)
+  The following experimental API is introduced in exporter package:
+    - `exporterhelper.WithRequestQueue`: a new exporter helper option for using a queue.
+    - `exporterqueue.Queue`: an interface for queue implementations.
+    - `exporterqueue.Factory`: a queue factory interface, implementations of this interface are intended to be used with WithRequestQueue option.
+    - `exporterqueue.Settings`: queue factory settings.
+    - `exporterqueue.Config`: common configuration for queue implementations.
+    - `exporterqueue.NewDefaultConfig`: a function for creating a default queue configuration.
+    - `exporterqueue.NewMemoryQueueFactory`: a new factory for creating a memory queue.
+    - `exporterqueue.NewPersistentQueueFactory: a factory for creating a persistent queue.
+  
+- `featuregate`: Add the `featuregate.ErrAlreadyRegistered` error, which is returned by `featuregate.Registry`'s `Register` when adding a feature gate that is already registered. (#8622)
+  Use `errors.Is` to check for this error.
+  
+
 ## v0.93.0
 
 ### 🛑 Breaking changes 🛑

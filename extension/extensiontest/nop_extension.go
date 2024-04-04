@@ -6,6 +6,8 @@ package extensiontest // import "go.opentelemetry.io/collector/extension/extensi
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
@@ -16,7 +18,7 @@ var nopType = component.MustNewType("nop")
 // NewNopCreateSettings returns a new nop settings for extension.Factory Create* functions.
 func NewNopCreateSettings() extension.CreateSettings {
 	return extension.CreateSettings{
-		ID:                component.NewID(nopType),
+		ID:                component.NewIDWithName(nopType, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -39,13 +41,13 @@ type nopConfig struct{}
 
 var nopInstance = &nopExtension{}
 
-// nopExtension stores consumed traces and metrics for testing purposes.
+// nopExtension acts as an extension for testing purposes.
 type nopExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
 }
 
-// NewNopBuilder returns a extension.Builder that constructs nop receivers.
+// NewNopBuilder returns a extension.Builder that constructs nop extension.
 func NewNopBuilder() *extension.Builder {
 	nopFactory := NewNopFactory()
 	return extension.NewBuilder(

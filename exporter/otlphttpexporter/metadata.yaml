@@ -6,3 +6,8 @@ status:
     stable: [traces, metrics]
     beta: [logs]
   distributions: [core, contrib]
+
+tests:
+  config:
+    endpoint: "https://1.2.3.4:1234"
+    

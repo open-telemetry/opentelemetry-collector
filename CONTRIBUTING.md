@@ -147,7 +147,7 @@ section of general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.20 and up)
+2. [go](https://golang.org/) (version 1.21 and up)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 
@@ -204,7 +204,7 @@ before merging (but see above paragraph about writing good commit messages in th
 
 ## General Notes
 
-This project uses Go 1.20.* and [Github Actions.](https://github.com/features/actions)
+This project uses Go 1.21.* and [Github Actions.](https://github.com/features/actions)
 
 It is recommended to run `make gofmt all` before submitting your PR
 
@@ -278,6 +278,11 @@ and should be followed.
 
 Within the project, there are some packages that are yet to follow the recommendations and are being address, however, any new code should adhere to the recommendations.
 
+### Default Configuration
+
+To guarantee backwards compatible behavior, all configuration packages should supply a `NewDefault[config name]` functions that create a default version of the config. The package does not need to guarantee that `NewDefault[config name]` returns a usable configuration, only that default values will be set. For example, if the configuration requires that a field, such as `Endpoint` be set, but there is no valid default value, then `NewDefault[config name]` may set that value to `""` with the expectation that the user will set a valid value.
+
+Users should always initialize the config struct with this function and overwrite anything as needed.
 
 ### Startup Error Handling
 
@@ -660,6 +665,19 @@ target would result in unacceptable latency in the local development loop.
 
 The default repo-level target (i.e. running `make` at the root of the repo) should meaningfully validate the entire repo. This should include
 running the default common target for each module as well as additional repo-level targets.
+
+## How to update the OTLP protocol version
+
+When a new OTLP version is published, the following steps are required to update this code base:
+
+1. Edit the top-level Makefile's `OPENTELEMETRY_PROTO_VERSION` variable
+2. Run `make genproto` 
+3. Inspect modifications to the generated code in `pdata/internal/data/protogen`
+4. When new fields are added in the protocol, make corresponding changes in `pdata/internal/cmd/pdatagen/internal`
+5. Run `make genpdata` 
+6. Inspect modifications to the generated code in `pdata/*`
+7. Run `make genproto-cleanup`, to remove temporary files
+8. Update the supported OTLP version in [README.md](./README.md).
 
 ## Exceptions
 

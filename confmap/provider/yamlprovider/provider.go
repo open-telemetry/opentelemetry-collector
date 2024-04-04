@@ -25,22 +25,8 @@ type provider struct{}
 // Examples:
 // `yaml:processors::batch::timeout: 2s`
 // `yaml:processors::batch/foo::timeout: 3s`
-func NewWithSettings(_ confmap.ProviderSettings) confmap.Provider {
+func NewWithSettings(confmap.ProviderSettings) confmap.Provider {
 	return &provider{}
-}
-
-// New returns a new confmap.Provider that allows to provide yaml bytes.
-//
-// This Provider supports "yaml" scheme, and can be called with a "uri" that follows:
-//
-//	bytes-uri = "yaml:" yaml-bytes
-//
-// Examples:
-// `yaml:processors::batch::timeout: 2s`
-// `yaml:processors::batch/foo::timeout: 3s`
-// Deprecated: [v0.94.0] Use NewWithSettings instead.
-func New() confmap.Provider {
-	return NewWithSettings(confmap.ProviderSettings{})
 }
 
 func (s *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {

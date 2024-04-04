@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"net"
 	"strings"
 	"time"
 
@@ -49,10 +48,6 @@ type KeepaliveClientConfig struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
 }
 
-// GRPCClientSettings defines common settings for a gRPC client configuration.
-// Deprecated: [v0.94.0] Use ClientConfig instead
-type GRPCClientSettings = ClientConfig
-
 // ClientConfig defines common settings for a gRPC client configuration.
 type ClientConfig struct {
 	// The target to which the exporter is going to send traces or metrics,
@@ -61,10 +56,10 @@ type ClientConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// The compression key for supported compression types within collector.
-	Compression configcompression.CompressionType `mapstructure:"compression"`
+	Compression configcompression.Type `mapstructure:"compression"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
+	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
 
 	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
@@ -122,18 +117,14 @@ type KeepaliveEnforcementPolicy struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
 }
 
-// GRPCServerSettings defines common settings for a gRPC server configuration.
-// Deprecated: [v0.94.0] Use ServerConfig instead
-type GRPCServerSettings = ServerConfig
-
 // ServerConfig defines common settings for a gRPC server configuration.
 type ServerConfig struct {
 	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
-	NetAddr confignet.NetAddr `mapstructure:",squash"`
+	NetAddr confignet.AddrConfig `mapstructure:",squash"`
 
 	// Configures the protocol to use TLS.
 	// The default value is nil, which will cause the protocol to not use TLS.
-	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls"`
+	TLSSetting *configtls.ServerConfig `mapstructure:"tls"`
 
 	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
 	MaxRecvMsgSizeMiB uint64 `mapstructure:"max_recv_msg_size_mib"`
@@ -161,8 +152,8 @@ type ServerConfig struct {
 	IncludeMetadata bool `mapstructure:"include_metadata"`
 }
 
-// SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
-func (gcs *ClientConfig) SanitizedEndpoint() string {
+// sanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
+func (gcs *ClientConfig) sanitizedEndpoint() string {
 	switch {
 	case gcs.isSchemeHTTP():
 		return strings.TrimPrefix(gcs.Endpoint, "http://")
@@ -191,7 +182,7 @@ func (gcs *ClientConfig) ToClientConn(ctx context.Context, host component.Host, 
 		return nil, err
 	}
 	opts = append(opts, extraOpts...)
-	return grpc.DialContext(ctx, gcs.SanitizedEndpoint(), opts...)
+	return grpc.DialContext(ctx, gcs.sanitizedEndpoint(), opts...)
 }
 
 func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
@@ -204,7 +195,7 @@ func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.T
 		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(cp)))
 	}
 
-	tlsCfg, err := gcs.TLSSetting.LoadTLSConfig()
+	tlsCfg, err := gcs.TLSSetting.LoadTLSConfigContext(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -278,18 +269,8 @@ func validateBalancerName(balancerName string) bool {
 	return balancer.Get(balancerName) != nil
 }
 
-// ToListenerContext returns the net.Listener constructed from the settings.
-func (gss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
-	return gss.NetAddr.Listen(ctx)
-}
-
-// ToListener returns the net.Listener constructed from the settings.
-// Deprecated: [v0.94.0] use ToListenerContext instead.
-func (gss *ServerConfig) ToListener() (net.Listener, error) {
-	return gss.ToListenerContext(context.Background())
-}
-
-func (gss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
+// ToServer returns a grpc.Server for the configuration
+func (gss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
 	opts, err := gss.toServerOption(host, settings)
 	if err != nil {
 		return nil, err
@@ -302,14 +283,14 @@ func (gss *ServerConfig) ToServer(host component.Host, settings component.Teleme
 
 func (gss *ServerConfig) toServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
 	switch gss.NetAddr.Transport {
-	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6":
+	case confignet.TransportTypeTCP, confignet.TransportTypeTCP4, confignet.TransportTypeTCP6, confignet.TransportTypeUDP, confignet.TransportTypeUDP4, confignet.TransportTypeUDP6:
 		internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint)
 	}
 
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {
-		tlsCfg, err := gss.TLSSetting.LoadTLSConfig()
+		tlsCfg, err := gss.TLSSetting.LoadTLSConfigContext(context.Background())
 		if err != nil {
 			return nil, err
 		}
@@ -394,13 +375,13 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 }
 
 // getGRPCCompressionName returns compression name registered in grpc.
-func getGRPCCompressionName(compressionType configcompression.CompressionType) (string, error) {
+func getGRPCCompressionName(compressionType configcompression.Type) (string, error) {
 	switch compressionType {
-	case configcompression.Gzip:
+	case configcompression.TypeGzip:
 		return gzip.Name, nil
-	case configcompression.Snappy:
+	case configcompression.TypeSnappy:
 		return snappy.Name, nil
-	case configcompression.Zstd:
+	case configcompression.TypeZstd:
 		return zstd.Name, nil
 	default:
 		return "", fmt.Errorf("unsupported compression type %q", compressionType)

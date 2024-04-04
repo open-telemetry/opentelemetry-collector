@@ -150,6 +150,9 @@ For more information, see [CWE-1327](https://cwe.mitre.org/data/definitions/1327
 
 To change the default endpoint to be `localhost`-bound in all components, enable the `component.UseLocalHostAsDefaultHost` feature gate. This feature gate will be enabled by default in the Collector in a future release.
 
+
+If `localhost` resolves to a different IP due to your DNS settings then explicitly use the loopback IP instead: `127.0.0.1` for IPv4 or `::1` for IPv6. In IPv6 setups, ensure your system supports both IPv4 and IPv6 loopback addresses to avoid issues.
+
 ## Processors
 
 Processors sit between receivers and exporters. They are responsible for
@@ -171,7 +174,7 @@ scrub sensitive data before exporting.
 
 In addition, processors offer safeguards around resource utilization. The
 `batch` and especially `memory_limiter` processor help ensure that the
-Collector is resource efficient and does not out of memory when overloaded. At
+Collector is resource efficient and does not run out of memory when overloaded. At
 least these two processors SHOULD be enabled on every defined pipeline.
 
 > For more information on recommended processors and order, see

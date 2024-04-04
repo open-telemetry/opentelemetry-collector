@@ -8,30 +8,35 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func Test_loadMetadata(t *testing.T) {
+func TestLoadMetadata(t *testing.T) {
 	tests := []struct {
 		name    string
 		want    metadata
 		wantErr string
 	}{
 		{
-			name: "metadata-sample.yaml",
+			name: "internal/samplereceiver/metadata.yaml",
 			want: metadata{
-				Type:           "file",
+				Type:           "sample",
 				SemConvVersion: "1.9.0",
 				Status: &Status{
 					Class: "receiver",
-					Stability: map[string][]string{
-						"development": {"logs"},
-						"beta":        {"traces"},
-						"stable":      {"metrics"},
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelDevelopment: {"logs"},
+						component.StabilityLevelBeta:        {"traces"},
+						component.StabilityLevelStable:      {"metrics"},
 					},
-					Distributions: []string{"contrib"},
-					Warnings:      []string{"Any additional information that should be brought to the consumer's attention"},
+					Distributions: []string{},
+					Codeowners: &Codeowners{
+						Active: []string{"dmitryax"},
+					},
+					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},
+					UnsupportedPlatforms: []string{"freebsd", "illumos"},
 				},
 				ResourceAttributes: map[attributeName]attribute{
 					"string.resource.attr": {
@@ -213,9 +218,21 @@ func Test_loadMetadata(t *testing.T) {
 							Mono:                   Mono{Monotonic: false},
 						},
 					},
+					"metric.input_type": {
+						Enabled:     true,
+						Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
+						Unit:        strPtr("s"),
+						Sum: &sum{
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							MetricInputType:        MetricInputType{InputType: "string"},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
+						},
+						Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+					},
 				},
-				ScopeName:       "otelcol",
-				ShortFolderName: ".",
+				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
+				ShortFolderName: "sample",
 			},
 		},
 		{
@@ -223,7 +240,7 @@ func Test_loadMetadata(t *testing.T) {
 			want: metadata{
 				Type:            "subcomponent",
 				Parent:          "parentComponent",
-				ScopeName:       "otelcol",
+				ScopeName:       "go.opentelemetry.io/collector/cmd/mdatagen",
 				ShortFolderName: "testdata",
 			},
 		},

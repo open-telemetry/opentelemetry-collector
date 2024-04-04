@@ -7,11 +7,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -124,11 +125,7 @@ func (m *metric) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("enabled") {
 		return errors.New("missing required field: `enabled`")
 	}
-	err := parser.Unmarshal(m, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	return nil
+	return parser.Unmarshal(m)
 }
 func (m metric) Data() MetricData {
 	if m.Sum != nil {
@@ -202,6 +199,7 @@ func (a attribute) TestValue() string {
 type tests struct {
 	Config              any  `mapstructure:"config"`
 	SkipLifecycle       bool `mapstructure:"skip_lifecycle"`
+	SkipShutdown        bool `mapstructure:"skip_shutdown"`
 	ExpectConsumerError bool `mapstructure:"expect_consumer_error"`
 }
 
@@ -221,11 +219,11 @@ type metadata struct {
 	// Metrics that can be emitted by the component.
 	Metrics map[metricName]metric `mapstructure:"metrics"`
 	// ScopeName of the metrics emitted by the component.
-	ScopeName string `mapstructure:"-"`
+	ScopeName string `mapstructure:"scope_name"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
 
-	Tests *tests `mapstructure:"tests"`
+	Tests tests `mapstructure:"tests"`
 }
 
 func setAttributesFullName(attrs map[attributeName]attribute) {
@@ -242,7 +240,7 @@ type templateContext struct {
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := fileprovider.New().Retrieve(context.Background(), "file:"+filePath, nil)
+	cp, err := fileprovider.NewWithSettings(confmaptest.NewNopProviderSettings()).Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}
@@ -252,12 +250,18 @@ func loadMetadata(filePath string) (metadata, error) {
 		return metadata{}, err
 	}
 
-	md := metadata{ScopeName: scopeName(filePath), ShortFolderName: shortFolderName(filePath)}
-	if err := conf.Unmarshal(&md, confmap.WithErrorUnused()); err != nil {
+	md := metadata{ShortFolderName: shortFolderName(filePath)}
+	if err = conf.Unmarshal(&md); err != nil {
 		return md, err
 	}
+	if md.ScopeName == "" {
+		md.ScopeName, err = packageName()
+		if err != nil {
+			return md, err
+		}
+	}
 
-	if err := md.Validate(); err != nil {
+	if err = md.Validate(); err != nil {
 		return md, err
 	}
 
@@ -267,18 +271,18 @@ func loadMetadata(filePath string) (metadata, error) {
 	return md, nil
 }
 
-var componentTypes = map[string]func(string) string{
-	"connector": func(in string) string { return strings.TrimSuffix(in, "connector") },
-	"exporter":  func(in string) string { return strings.TrimSuffix(in, "exporter") },
-	"extension": func(in string) string { return strings.TrimSuffix(in, "extension") },
-	"processor": func(in string) string { return strings.TrimSuffix(in, "processor") },
-	"scraper":   func(in string) string { return strings.TrimSuffix(in, "scraper") },
-	"receiver":  func(in string) string { return in },
+var componentTypes = []string{
+	"connector",
+	"exporter",
+	"extension",
+	"processor",
+	"scraper",
+	"receiver",
 }
 
 func shortFolderName(filePath string) string {
 	parentFolder := filepath.Base(filepath.Dir(filePath))
-	for cType := range componentTypes {
+	for _, cType := range componentTypes {
 		if strings.HasSuffix(parentFolder, cType) {
 			return strings.TrimSuffix(parentFolder, cType)
 		}
@@ -286,23 +290,11 @@ func shortFolderName(filePath string) string {
 	return parentFolder
 }
 
-func scopeName(filePath string) string {
-	sn := "otelcol"
-	dirs := strings.Split(filepath.Dir(filePath), string(os.PathSeparator))
-	for _, dir := range dirs {
-		// skip directory names for component types
-		if _, ok := componentTypes[dir]; ok {
-			continue
-		}
-		// note here that the only component that receives a different
-		// treatment is receivers. this is to prevent breaking backwards
-		// compatibility for anyone that's using the generated metrics w/
-		// scope names today.
-		for cType, normalizeFunc := range componentTypes {
-			if strings.HasSuffix(dir, cType) {
-				sn += "/" + normalizeFunc(dir)
-			}
-		}
+func packageName() (string, error) {
+	cmd := exec.Command("go", "list", "-f", "{{.ImportPath}}")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
 	}
-	return sn
+	return strings.TrimSpace(string(output)), nil
 }

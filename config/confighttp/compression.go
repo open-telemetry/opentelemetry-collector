@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/golang/snappy"
 	"github.com/klauspost/compress/zstd"
 
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -20,11 +21,11 @@ import (
 
 type compressRoundTripper struct {
 	rt              http.RoundTripper
-	compressionType configcompression.CompressionType
+	compressionType configcompression.Type
 	compressor      *compressor
 }
 
-func newCompressRoundTripper(rt http.RoundTripper, compressionType configcompression.CompressionType) (*compressRoundTripper, error) {
+func newCompressRoundTripper(rt http.RoundTripper, compressionType configcompression.Type) (*compressRoundTripper, error) {
 	encoder, err := newCompressor(compressionType)
 	if err != nil {
 		return nil, err
@@ -85,7 +86,7 @@ func httpContentDecompressor(h http.Handler, eh func(w http.ResponseWriter, r *h
 		errHandler: errHandler,
 		base:       h,
 		decoders: map[string]func(body io.ReadCloser) (io.ReadCloser, error){
-			"": func(body io.ReadCloser) (io.ReadCloser, error) {
+			"": func(io.ReadCloser) (io.ReadCloser, error) {
 				// Not a compressed payload. Nothing to do.
 				return nil, nil
 			},
@@ -116,6 +117,18 @@ func httpContentDecompressor(h http.Handler, eh func(w http.ResponseWriter, r *h
 					return nil, err
 				}
 				return zr, nil
+			},
+			"snappy": func(body io.ReadCloser) (io.ReadCloser, error) {
+				sr := snappy.NewReader(body)
+				sb := new(bytes.Buffer)
+				_, err := io.Copy(sb, sr)
+				if err != nil {
+					return nil, err
+				}
+				if err = body.Close(); err != nil {
+					return nil, err
+				}
+				return io.NopCloser(sb), nil
 			},
 		},
 	}

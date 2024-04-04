@@ -33,7 +33,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, ocfg.RetryConfig, configretry.NewDefaultBackOffConfig())
 	assert.Equal(t, ocfg.QueueConfig, exporterhelper.NewDefaultQueueSettings())
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutSettings())
-	assert.Equal(t, ocfg.Compression, configcompression.Gzip)
+	assert.Equal(t, ocfg.Compression, configcompression.TypeGzip)
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
@@ -50,26 +50,16 @@ func TestCreateMetricsExporter(t *testing.T) {
 func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
-		name             string
-		config           *Config
-		mustFailOnCreate bool
-		mustFailOnStart  bool
+		name            string
+		config          *Config
+		mustFailOnStart bool
 	}{
-		{
-			name: "NoEndpoint",
-			config: &Config{
-				ClientConfig: configgrpc.ClientConfig{
-					Endpoint: "",
-				},
-			},
-			mustFailOnCreate: true,
-		},
 		{
 			name: "UseSecure",
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure: false,
 					},
 				},
@@ -102,7 +92,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
-					Compression: configcompression.Gzip,
+					Compression: configcompression.TypeGzip,
 				},
 			},
 		},
@@ -111,7 +101,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
-					Compression: configcompression.Snappy,
+					Compression: configcompression.TypeSnappy,
 				},
 			},
 		},
@@ -120,7 +110,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
-					Compression: configcompression.Zstd,
+					Compression: configcompression.TypeZstd,
 				},
 			},
 		},
@@ -149,8 +139,8 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile: filepath.Join("testdata", "test_cert.pem"),
 						},
 					},
@@ -162,8 +152,8 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: &Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile: "nosuchfile",
 						},
 					},
@@ -178,10 +168,6 @@ func TestCreateTracesExporter(t *testing.T) {
 			factory := NewFactory()
 			set := exportertest.NewNopCreateSettings()
 			consumer, err := factory.CreateTracesExporter(context.Background(), set, tt.config)
-			if tt.mustFailOnCreate {
-				assert.NotNil(t, err)
-				return
-			}
 			assert.NoError(t, err)
 			assert.NotNil(t, consumer)
 			err = consumer.Start(context.Background(), componenttest.NewNopHost())

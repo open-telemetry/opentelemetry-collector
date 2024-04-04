@@ -65,14 +65,11 @@ type controller struct {
 
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
 func NewScraperControllerReceiver(
-	cfg *ScraperControllerSettings,
+	cfg *ControllerConfig,
 	set receiver.CreateSettings,
 	nextConsumer consumer.Metrics,
 	options ...ScraperControllerOption,
 ) (component.Component, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 
 	if cfg.CollectionInterval <= 0 {
 		return nil, errors.New("collection_interval must be a positive duration")

@@ -13,12 +13,6 @@ import (
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 )
 
-// Deprecated: [v0.92.0] use MetricsRouterAndConsumer.
-type MetricsRouter interface {
-	Consumer(...component.ID) (consumer.Metrics, error)
-	PipelineIDs() []component.ID
-}
-
 // MetricsRouterAndConsumer feeds the first consumer.Metrics in each of the specified pipelines.
 type MetricsRouterAndConsumer interface {
 	consumer.Metrics

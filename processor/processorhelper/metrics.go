@@ -39,10 +39,6 @@ func NewMetricsProcessor(
 		return nil, errors.New("nil metricsFunc")
 	}
 
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
 	metricsConsumer, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {

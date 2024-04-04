@@ -141,7 +141,7 @@ func checkMetrics(t *testing.T, params CheckConsumeContractParams, mockReceiver 
 	fmt.Printf("Number of permanent errors: %d\n", reqCounter.error.permanent)
 	fmt.Printf("Number of non-permanent errors: %d\n", reqCounter.error.nonpermanent)
 
-	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+	assert.EventuallyWithT(t, func(*assert.CollectT) {
 		checkIfTestPassed(t, params.NumberOfTestElements, *reqCounter)
 	}, 2*time.Second, 100*time.Millisecond)
 }
@@ -181,7 +181,7 @@ func checkTraces(t *testing.T, params CheckConsumeContractParams, mockReceiver c
 	fmt.Printf("Number of permanent errors: %d\n", reqCounter.error.permanent)
 	fmt.Printf("Number of non-permanent errors: %d\n", reqCounter.error.nonpermanent)
 
-	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+	assert.EventuallyWithT(t, func(*assert.CollectT) {
 		checkIfTestPassed(t, params.NumberOfTestElements, *reqCounter)
 	}, 2*time.Second, 100*time.Millisecond)
 }
@@ -220,7 +220,7 @@ func checkLogs(t *testing.T, params CheckConsumeContractParams, mockReceiver com
 	fmt.Printf("Number of permanent errors: %d\n", reqCounter.error.permanent)
 	fmt.Printf("Number of non-permanent errors: %d\n", reqCounter.error.nonpermanent)
 
-	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+	assert.EventuallyWithT(t, func(*assert.CollectT) {
 		checkIfTestPassed(t, params.NumberOfTestElements, *reqCounter)
 	}, 2*time.Second, 100*time.Millisecond)
 }

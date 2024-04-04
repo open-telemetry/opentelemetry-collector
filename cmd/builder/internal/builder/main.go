@@ -135,7 +135,7 @@ func GetModules(cfg Config) error {
 		return fmt.Errorf("failed to go get: %w", err)
 	}
 
-	if err := runGoCommand(cfg, "mod", "tidy", "-compat=1.20"); err != nil {
+	if err := runGoCommand(cfg, "mod", "tidy", "-compat=1.21"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 
@@ -162,5 +162,6 @@ func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplPa
 		return err
 	}
 
+	defer out.Close()
 	return tmpl.Execute(out, tmplParams)
 }

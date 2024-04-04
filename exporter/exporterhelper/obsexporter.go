@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	exporterScope = obsmetrics.Scope + obsmetrics.NameSep + obsmetrics.ExporterKey
+	exporterScope = obsmetrics.Scope + obsmetrics.SpanNameSep + obsmetrics.ExporterKey
 )
 
 // ObsReport is a helper to add observability to an exporter.
@@ -78,55 +78,55 @@ func (or *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
 	var errors, err error
 
 	or.sentSpans, err = meter.Int64Counter(
-		obsmetrics.ExporterPrefix+obsmetrics.SentSpansKey,
+		obsmetrics.ExporterMetricPrefix+obsmetrics.SentSpansKey,
 		metric.WithDescription("Number of spans successfully sent to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	or.failedToSendSpans, err = meter.Int64Counter(
-		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendSpansKey,
+		obsmetrics.ExporterMetricPrefix+obsmetrics.FailedToSendSpansKey,
 		metric.WithDescription("Number of spans in failed attempts to send to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	or.failedToEnqueueSpans, err = meter.Int64Counter(
-		obsmetrics.ExporterPrefix+obsmetrics.FailedToEnqueueSpansKey,
+		obsmetrics.ExporterMetricPrefix+obsmetrics.FailedToEnqueueSpansKey,
 		metric.WithDescription("Number of spans failed to be added to the sending queue."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	or.sentMetricPoints, err = meter.Int64Counter(
-		obsmetrics.ExporterPrefix+obsmetrics.SentMetricPointsKey,
+		obsmetrics.ExporterMetricPrefix+obsmetrics.SentMetricPointsKey,
 		metric.WithDescription("Number of metric points successfully sent to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	or.failedToSendMetricPoints, err = meter.Int64Counter(
-		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendMetricPointsKey,
+		obsmetrics.ExporterMetricPrefix+obsmetrics.FailedToSendMetricPointsKey,
 		metric.WithDescription("Number of metric points in failed attempts to send to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	or.failedToEnqueueMetricPoints, err = meter.Int64Counter(
-		obsmetrics.ExporterPrefix+obsmetrics.FailedToEnqueueMetricPointsKey,
+		obsmetrics.ExporterMetricPrefix+obsmetrics.FailedToEnqueueMetricPointsKey,
 		metric.WithDescription("Number of metric points failed to be added to the sending queue."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	or.sentLogRecords, err = meter.Int64Counter(
-		obsmetrics.ExporterPrefix+obsmetrics.SentLogRecordsKey,
+		obsmetrics.ExporterMetricPrefix+obsmetrics.SentLogRecordsKey,
 		metric.WithDescription("Number of log record successfully sent to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	or.failedToSendLogRecords, err = meter.Int64Counter(
-		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendLogRecordsKey,
+		obsmetrics.ExporterMetricPrefix+obsmetrics.FailedToSendLogRecordsKey,
 		metric.WithDescription("Number of log records in failed attempts to send to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	or.failedToEnqueueLogRecords, err = meter.Int64Counter(
-		obsmetrics.ExporterPrefix+obsmetrics.FailedToEnqueueLogRecordsKey,
+		obsmetrics.ExporterMetricPrefix+obsmetrics.FailedToEnqueueLogRecordsKey,
 		metric.WithDescription("Number of log records failed to be added to the sending queue."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
