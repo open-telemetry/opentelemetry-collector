@@ -40,7 +40,7 @@ func NewFromStringMap(data map[string]any) *Conf {
 // Conf represents the raw configuration map for the OpenTelemetry Collector.
 // The confmap.Conf can be unmarshalled into the Collector's config using the "service" package.
 type Conf struct {
-	k    *koanf.Koanf
+	k *koanf.Koanf
 
 	// self stores the struct where we are unmarshaling Conf.
 	// Conf structs built outside of the confmap package will have this set to nil.
