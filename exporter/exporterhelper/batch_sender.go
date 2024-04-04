@@ -27,8 +27,8 @@ type batchSender struct {
 	mergeFunc      exporterbatcher.BatchMergeFunc[Request]
 	mergeSplitFunc exporterbatcher.BatchMergeSplitFunc[Request]
 
-	// concurrencyLimit is the maximum number of goroutines that can be created by the batcher.
-	// If this number is reached and all the goroutines are busy, the batch will be sent right away.
+	// concurrencyLimit is the maximum number of goroutines that can be blocked by the batcher.
+	// If all the goroutines are blocked by the same batch, the batch will be sent right away.
 	// Populated from the number of queue consumers if queue is enabled.
 	concurrencyLimit uint64
 	activeRequests   atomic.Uint64
@@ -95,10 +95,11 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 }
 
 type batch struct {
-	ctx     context.Context
-	request Request
-	done    chan struct{}
-	err     error
+	ctx        context.Context
+	request    Request
+	done       chan struct{}
+	err        error
+	goroutines uint64
 }
 
 func newEmptyBatch() *batch {
@@ -123,7 +124,7 @@ func (bs *batchSender) exportActiveBatch() {
 // Caller must hold the lock.
 func (bs *batchSender) isActiveBatchReady() bool {
 	return bs.activeBatch.request.ItemsCount() >= bs.cfg.MinSizeItems ||
-		(bs.concurrencyLimit > 0 && bs.activeRequests.Load() >= bs.concurrencyLimit)
+		(bs.concurrencyLimit > 0 && bs.activeBatch.goroutines >= bs.concurrencyLimit)
 }
 
 func (bs *batchSender) send(ctx context.Context, req Request) error {
@@ -152,6 +153,7 @@ func (bs *batchSender) sendMergeSplitBatch(ctx context.Context, req Request) err
 	if len(reqs) == 1 || bs.activeBatch.request != nil {
 		bs.updateActiveBatch(ctx, reqs[0])
 		batch := bs.activeBatch
+		batch.goroutines++
 		if bs.isActiveBatchReady() || len(reqs) > 1 {
 			bs.exportActiveBatch()
 			bs.resetTimerCh <- struct{}{}
@@ -192,6 +194,7 @@ func (bs *batchSender) sendMergeBatch(ctx context.Context, req Request) error {
 	}
 	bs.updateActiveBatch(ctx, req)
 	batch := bs.activeBatch
+	batch.goroutines++
 	if bs.isActiveBatchReady() {
 		bs.exportActiveBatch()
 		bs.resetTimerCh <- struct{}{}
