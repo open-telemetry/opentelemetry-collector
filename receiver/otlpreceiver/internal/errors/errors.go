@@ -27,11 +27,7 @@ func GetStatusFromError(err error) error {
 	return s.Err()
 }
 
-func GetHTTPStatusCodeFromStatus(err error) int {
-	s, ok := status.FromError(err)
-	if !ok {
-		return http.StatusInternalServerError
-	}
+func GetHTTPStatusCodeFromStatus(s *status.Status) int {
 	// See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures
 	// to see if a code is retryable.
 	// See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures-1
@@ -47,4 +43,27 @@ func GetHTTPStatusCodeFromStatus(err error) int {
 	default:
 		return http.StatusInternalServerError
 	}
+}
+
+func NewStatusFromMsgAndHTTPCode(errMsg string, statusCode int) *status.Status {
+	var c codes.Code
+	// Mapping based on https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
+	// 429 mapping to ResourceExhausted and 400 mapping to StatusBadRequest are exceptions.
+	switch statusCode {
+	case http.StatusBadRequest:
+		c = codes.InvalidArgument
+	case http.StatusUnauthorized:
+		c = codes.Unauthenticated
+	case http.StatusForbidden:
+		c = codes.PermissionDenied
+	case http.StatusNotFound:
+		c = codes.Unimplemented
+	case http.StatusTooManyRequests:
+		c = codes.ResourceExhausted
+	case http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		c = codes.Unavailable
+	default:
+		c = codes.Unknown
+	}
+	return status.New(c, errMsg)
 }
