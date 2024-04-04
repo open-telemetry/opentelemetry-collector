@@ -273,27 +273,74 @@ func TestBatchSender_PostShutdown(t *testing.T) {
 }
 
 func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
-	qCfg := exporterqueue.NewDefaultConfig()
-	qCfg.NumConsumers = 2
-	be, err := newBaseExporter(defaultSettings, defaultType, newNoopObsrepSender,
-		WithBatcher(exporterbatcher.NewDefaultConfig(), WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
-		WithRequestQueue(qCfg, exporterqueue.NewMemoryQueueFactory[Request]()))
-	require.NotNil(t, be)
-	require.NoError(t, err)
-	assert.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() {
-		assert.NoError(t, be.Shutdown(context.Background()))
-	})
+	cfg := exporterbatcher.NewDefaultConfig()
+	tests := []struct {
+		name             string
+		batcherOption    Option
+		expectedRequests uint64
+		expectedItems    uint64
+	}{
+		{
+			name:             "merge_only",
+			batcherOption:    WithBatcher(cfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)),
+			expectedRequests: 3,
+			expectedItems:    36,
+		},
+		{
+			name: "merge_without_split_triggered",
+			batcherOption: func() Option {
+				c := cfg
+				c.MaxSizeItems = 200
+				return WithBatcher(c, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc))
+			}(),
+			expectedRequests: 3,
+			expectedItems:    36,
+		},
+		{
+			name: "merge_with_split_triggered",
+			batcherOption: func() Option {
+				c := cfg
+				c.MaxSizeItems = 10
+				return WithBatcher(c, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc))
+			}(),
+			expectedRequests: 5,
+			expectedItems:    36,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			qCfg := exporterqueue.NewDefaultConfig()
+			qCfg.NumConsumers = 2
+			be, err := newBaseExporter(defaultSettings, defaultType, newNoopObsrepSender,
+				tt.batcherOption,
+				WithRequestQueue(qCfg, exporterqueue.NewMemoryQueueFactory[Request]()))
+			require.NotNil(t, be)
+			require.NoError(t, err)
+			assert.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				assert.NoError(t, be.Shutdown(context.Background()))
+			})
 
-	sink := newFakeRequestSink()
-	assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 8, sink: sink}))
+			sink := newFakeRequestSink()
+			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 2, sink: sink}))
 
-	// the second request should be sent by reaching max concurrency limit.
-	assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 8, sink: sink}))
+			// the second request should be sent by reaching max concurrency limit.
+			assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 2, sink: sink}))
 
-	assert.Eventually(t, func() bool {
-		return sink.requestsCount.Load() == 1 && sink.itemsCount.Load() == 16
-	}, 100*time.Millisecond, 10*time.Millisecond)
+			assert.Eventually(t, func() bool {
+				return sink.requestsCount.Load() == 1 && sink.itemsCount.Load() == 4
+			}, 100*time.Millisecond, 10*time.Millisecond)
+
+			// do it a few more times to ensure it produces the correct batch size regardless of goroutine scheduling.
+			for i := 0; i < 4; i++ {
+				assert.NoError(t, be.send(context.Background(), &fakeRequest{items: 8, sink: sink}))
+			}
+			assert.Eventually(t, func() bool {
+				return sink.requestsCount.Load() == tt.expectedRequests && sink.itemsCount.Load() == tt.expectedItems
+			}, 100*time.Millisecond, 10*time.Millisecond)
+		})
+	}
+
 }
 
 func TestBatchSender_BatchBlocking(t *testing.T) {
