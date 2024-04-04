@@ -40,12 +40,8 @@ func NewFromStringMap(data map[string]any) *Conf {
 // Conf represents the raw configuration map for the OpenTelemetry Collector.
 // The confmap.Conf can be unmarshalled into the Collector's config using the "service" package.
 type Conf struct {
-	k *koanf.Koanf
-
-	// self stores the struct where we are unmarshaling Conf.
-	// Conf structs built outside of the confmap package will have this set to nil.
-	// self it not nil on auxiliary Conf structs built in the mapstructure hooks that check for the Unmarshaler interface.
-	self any
+	k                       *koanf.Koanf
+	skipTopLevelUnmarshaler bool
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.
@@ -84,7 +80,7 @@ func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
 	for _, opt := range opts {
 		opt.apply(&set)
 	}
-	return decodeConfig(l, result, !set.ignoreUnused, l.self == result)
+	return decodeConfig(l, result, !set.ignoreUnused, l.skipTopLevelUnmarshaler)
 }
 
 type marshalOption struct{}
@@ -296,7 +292,7 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 			if f.IsExported() && slices.Contains(strings.Split(f.Tag.Get("mapstructure"), ","), "squash") {
 				if unmarshaler, ok := to.Field(i).Addr().Interface().(Unmarshaler); ok {
 					c := NewFromStringMap(fromAsMap)
-					c.self = unmarshaler
+					c.skipTopLevelUnmarshaler = true
 					if err := unmarshaler.Unmarshal(c); err != nil {
 						return nil, err
 					}
@@ -347,7 +343,7 @@ func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.
 		}
 
 		c := NewFromStringMap(from.Interface().(map[string]any))
-		c.self = unmarshaler
+		c.skipTopLevelUnmarshaler = true
 		if err := unmarshaler.Unmarshal(c); err != nil {
 			return nil, err
 		}
