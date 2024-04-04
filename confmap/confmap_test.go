@@ -309,8 +309,78 @@ func newConfFromFile(t testing.TB, fileName string) map[string]any {
 }
 
 type testConfig struct {
-	Next    *nextConfig `mapstructure:"next"`
-	Another string      `mapstructure:"another"`
+	Next            *nextConfig `mapstructure:"next"`
+	Another         string      `mapstructure:"another"`
+	EmbeddedConfig  `mapstructure:",squash"`
+	EmbeddedConfig2 `mapstructure:",squash"`
+}
+
+type testConfigWithoutUnmarshaler struct {
+	Next            *nextConfig `mapstructure:"next"`
+	Another         string      `mapstructure:"another"`
+	EmbeddedConfig  `mapstructure:",squash"`
+	EmbeddedConfig2 `mapstructure:",squash"`
+}
+
+type testConfigWithEmbeddedError struct {
+	Next                    *nextConfig `mapstructure:"next"`
+	Another                 string      `mapstructure:"another"`
+	EmbeddedConfigWithError `mapstructure:",squash"`
+}
+
+type testConfigWithMarshalError struct {
+	Next                           *nextConfig `mapstructure:"next"`
+	Another                        string      `mapstructure:"another"`
+	EmbeddedConfigWithMarshalError `mapstructure:",squash"`
+}
+
+func (tc *testConfigWithEmbeddedError) Unmarshal(component *Conf) error {
+	if err := component.Unmarshal(tc, WithIgnoreUnused()); err != nil {
+		return err
+	}
+	return nil
+}
+
+type EmbeddedConfig struct {
+	Some string `mapstructure:"some"`
+}
+
+func (ec *EmbeddedConfig) Unmarshal(component *Conf) error {
+	if err := component.Unmarshal(ec, WithIgnoreUnused()); err != nil {
+		return err
+	}
+	ec.Some += " is also called"
+	return nil
+}
+
+type EmbeddedConfig2 struct {
+	Some2 string `mapstructure:"some_2"`
+}
+
+func (ec *EmbeddedConfig2) Unmarshal(component *Conf) error {
+	if err := component.Unmarshal(ec, WithIgnoreUnused()); err != nil {
+		return err
+	}
+	ec.Some2 += " also called2"
+	return nil
+}
+
+type EmbeddedConfigWithError struct {
+}
+
+func (ecwe *EmbeddedConfigWithError) Unmarshal(_ *Conf) error {
+	return errors.New("embedded error")
+}
+
+type EmbeddedConfigWithMarshalError struct {
+}
+
+func (ecwe EmbeddedConfigWithMarshalError) Marshal(_ *Conf) error {
+	return errors.New("marshaling error")
+}
+
+func (ecwe EmbeddedConfigWithMarshalError) Unmarshal(_ *Conf) error {
+	return nil
 }
 
 func (tc *testConfig) Unmarshal(component *Conf) error {
@@ -340,12 +410,59 @@ func TestUnmarshaler(t *testing.T) {
 			"string": "make sure this",
 		},
 		"another": "make sure this",
+		"some":    "make sure this",
+		"some_2":  "this better be",
 	})
 
 	tc := &testConfig{}
 	assert.NoError(t, cfgMap.Unmarshal(tc))
 	assert.Equal(t, "make sure this", tc.Another)
 	assert.Equal(t, "make sure this is called", tc.Next.String)
+	assert.Equal(t, "make sure this is also called", tc.EmbeddedConfig.Some)
+	assert.Equal(t, "this better be also called2", tc.EmbeddedConfig2.Some2)
+}
+
+func TestEmbeddedUnmarshaler(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"next": map[string]any{
+			"string": "make sure this",
+		},
+		"another": "make sure this",
+		"some":    "make sure this",
+		"some_2":  "this better be",
+	})
+
+	tc := &testConfigWithoutUnmarshaler{}
+	assert.NoError(t, cfgMap.Unmarshal(tc))
+	assert.Equal(t, "make sure this", tc.Another)
+	assert.Equal(t, "make sure this is called", tc.Next.String)
+	assert.Equal(t, "make sure this is also called", tc.EmbeddedConfig.Some)
+	assert.Equal(t, "this better be also called2", tc.EmbeddedConfig2.Some2)
+}
+
+func TestEmbeddedUnmarshalerError(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"next": map[string]any{
+			"string": "make sure this",
+		},
+		"another": "make sure this",
+		"some":    "make sure this",
+	})
+
+	tc := &testConfigWithEmbeddedError{}
+	assert.EqualError(t, cfgMap.Unmarshal(tc), "embedded error")
+}
+
+func TestEmbeddedMarshalerError(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"next": map[string]any{
+			"string": "make sure this",
+		},
+		"another": "make sure this",
+	})
+
+	tc := &testConfigWithMarshalError{}
+	assert.EqualError(t, cfgMap.Unmarshal(tc), "error running encode hook: marshaling error")
 }
 
 func TestUnmarshalerKeepAlreadyInitialized(t *testing.T) {
@@ -495,4 +612,149 @@ func TestZeroSliceHookFunc(t *testing.T) {
 			}
 		})
 	}
+}
+
+type C struct {
+	Modifiers []string `mapstructure:"modifiers"`
+}
+
+func (c *C) Unmarshal(conf *Conf) error {
+	if err := conf.Unmarshal(c); err != nil {
+		return err
+	}
+	c.Modifiers = append(c.Modifiers, "C.Unmarshal")
+	return nil
+}
+
+type B struct {
+	Modifiers []string `mapstructure:"modifiers"`
+	C         C        `mapstructure:"c"`
+}
+
+func (b *B) Unmarshal(conf *Conf) error {
+	if err := conf.Unmarshal(b); err != nil {
+		return err
+	}
+	b.Modifiers = append(b.Modifiers, "B.Unmarshal")
+	b.C.Modifiers = append(b.C.Modifiers, "B.Unmarshal")
+	return nil
+}
+
+type A struct {
+	Modifiers []string `mapstructure:"modifiers"`
+	B         B        `mapstructure:"b"`
+}
+
+func (a *A) Unmarshal(conf *Conf) error {
+	if err := conf.Unmarshal(a); err != nil {
+		return err
+	}
+	a.Modifiers = append(a.Modifiers, "A.Unmarshal")
+	a.B.Modifiers = append(a.B.Modifiers, "A.Unmarshal")
+	a.B.C.Modifiers = append(a.B.C.Modifiers, "A.Unmarshal")
+	return nil
+}
+
+type Wrapper struct {
+	A A `mapstructure:"a"`
+}
+
+// Test that calling the Unmarshal method on configuration structs is done from the inside out.
+func TestNestedUnmarshalerImplementations(t *testing.T) {
+	conf := NewFromStringMap(map[string]any{"a": map[string]any{
+		"modifiers": []string{"conf.Unmarshal"},
+		"b": map[string]any{
+			"modifiers": []string{"conf.Unmarshal"},
+			"c": map[string]any{
+				"modifiers": []string{"conf.Unmarshal"},
+			},
+		},
+	}})
+
+	// Use a wrapper struct until we deprecate component.UnmarshalConfig
+	w := &Wrapper{}
+	assert.NoError(t, conf.Unmarshal(w))
+
+	a := w.A
+	assert.Equal(t, []string{"conf.Unmarshal", "A.Unmarshal"}, a.Modifiers)
+	assert.Equal(t, []string{"conf.Unmarshal", "B.Unmarshal", "A.Unmarshal"}, a.B.Modifiers)
+	assert.Equal(t, []string{"conf.Unmarshal", "C.Unmarshal", "B.Unmarshal", "A.Unmarshal"}, a.B.C.Modifiers)
+}
+
+// Test that unmarshaling the same conf twice works.
+func TestUnmarshalDouble(t *testing.T) {
+	conf := NewFromStringMap(map[string]any{
+		"str": "test",
+	})
+
+	type Struct struct {
+		Str string `mapstructure:"str"`
+	}
+	s := &Struct{}
+	assert.NoError(t, conf.Unmarshal(s))
+	assert.Equal(t, "test", s.Str)
+
+	type Struct2 struct {
+		Str string `mapstructure:"str"`
+	}
+	s2 := &Struct2{}
+	assert.NoError(t, conf.Unmarshal(s2))
+	assert.Equal(t, "test", s2.Str)
+}
+
+type EmbeddedStructWithUnmarshal struct {
+	Foo     string `mapstructure:"foo"`
+	success string
+}
+
+func (e *EmbeddedStructWithUnmarshal) Unmarshal(c *Conf) error {
+	if err := c.Unmarshal(e, WithIgnoreUnused()); err != nil {
+		return err
+	}
+	e.success = "success"
+	return nil
+}
+
+type configWithUnmarshalFromEmbeddedStruct struct {
+	EmbeddedStructWithUnmarshal
+}
+
+type topLevel struct {
+	Cfg *configWithUnmarshalFromEmbeddedStruct `mapstructure:"toplevel"`
+}
+
+// Test that Unmarshal is called on the embedded struct on the struct.
+func TestUnmarshalThroughEmbeddedStruct(t *testing.T) {
+	c := NewFromStringMap(map[string]any{
+		"toplevel": map[string]any{
+			"foo": "bar",
+		},
+	})
+	cfg := &topLevel{}
+	err := c.Unmarshal(cfg)
+	require.NoError(t, err)
+	require.Equal(t, "success", cfg.Cfg.EmbeddedStructWithUnmarshal.success)
+	require.Equal(t, "bar", cfg.Cfg.EmbeddedStructWithUnmarshal.Foo)
+}
+
+type configWithOwnUnmarshalAndEmbeddedSquashedStruct struct {
+	EmbeddedStructWithUnmarshal `mapstructure:",squash"`
+}
+
+type topLevelSquashedEmbedded struct {
+	Cfg *configWithOwnUnmarshalAndEmbeddedSquashedStruct `mapstructure:"toplevel"`
+}
+
+// Test that the Unmarshal method is called on the squashed, embedded struct.
+func TestUnmarshalOwnThroughEmbeddedSquashedStruct(t *testing.T) {
+	c := NewFromStringMap(map[string]any{
+		"toplevel": map[string]any{
+			"foo": "bar",
+		},
+	})
+	cfg := &topLevelSquashedEmbedded{}
+	err := c.Unmarshal(cfg)
+	require.NoError(t, err)
+	require.Equal(t, "success", cfg.Cfg.EmbeddedStructWithUnmarshal.success)
+	require.Equal(t, "bar", cfg.Cfg.EmbeddedStructWithUnmarshal.Foo)
 }

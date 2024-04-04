@@ -38,7 +38,7 @@ func shouldWarn(endpoint string) bool {
 
 // WarnOnUnspecifiedHost emits a warning if an endpoint has an unspecified host.
 func WarnOnUnspecifiedHost(logger *zap.Logger, endpoint string) {
-	if shouldWarn(endpoint) {
+	if !localhostgate.UseLocalHostAsDefaultHostfeatureGate.IsEnabled() && shouldWarn(endpoint) {
 		logger.Warn(
 			"Using the 0.0.0.0 address exposes this server to every network interface, which may facilitate Denial of Service attacks. Enable the feature gate to change the default and remove this warning.",
 			zap.String(

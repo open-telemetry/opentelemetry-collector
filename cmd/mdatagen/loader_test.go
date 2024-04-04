@@ -35,7 +35,8 @@ func TestLoadMetadata(t *testing.T) {
 					Codeowners: &Codeowners{
 						Active: []string{"dmitryax"},
 					},
-					Warnings: []string{"Any additional information that should be brought to the consumer's attention"},
+					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},
+					UnsupportedPlatforms: []string{"freebsd", "illumos"},
 				},
 				ResourceAttributes: map[attributeName]attribute{
 					"string.resource.attr": {
@@ -216,6 +217,18 @@ func TestLoadMetadata(t *testing.T) {
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityDelta},
 							Mono:                   Mono{Monotonic: false},
 						},
+					},
+					"metric.input_type": {
+						Enabled:     true,
+						Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
+						Unit:        strPtr("s"),
+						Sum: &sum{
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							MetricInputType:        MetricInputType{InputType: "string"},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
+						},
+						Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",

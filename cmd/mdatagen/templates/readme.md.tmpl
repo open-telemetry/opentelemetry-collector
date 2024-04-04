@@ -11,6 +11,9 @@
 {{- $idx = inc $idx }}
 {{- end }}
 {{- end}}
+{{- if .Status.UnsupportedPlatforms }}
+| Unsupported Platforms | {{ stringsJoin .Status.UnsupportedPlatforms ", " }} |
+{{- end }}
 {{- if and (ne $class "cmd") (ne $class "pkg")  }}
 | Distributions | [{{ stringsJoin .Status.SortedDistributions "], [" }}] |
 {{- end }}

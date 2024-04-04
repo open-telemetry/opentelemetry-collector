@@ -150,8 +150,8 @@ type ServerConfig struct {
 	IncludeMetadata bool `mapstructure:"include_metadata"`
 }
 
-// SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
-func (gcs *ClientConfig) SanitizedEndpoint() string {
+// sanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
+func (gcs *ClientConfig) sanitizedEndpoint() string {
 	switch {
 	case gcs.isSchemeHTTP():
 		return strings.TrimPrefix(gcs.Endpoint, "http://")
@@ -180,7 +180,7 @@ func (gcs *ClientConfig) ToClientConn(ctx context.Context, host component.Host, 
 		return nil, err
 	}
 	opts = append(opts, extraOpts...)
-	return grpc.DialContext(ctx, gcs.SanitizedEndpoint(), opts...)
+	return grpc.DialContext(ctx, gcs.sanitizedEndpoint(), opts...)
 }
 
 func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
@@ -193,7 +193,7 @@ func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.T
 		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(cp)))
 	}
 
-	tlsCfg, err := gcs.TLSSetting.LoadTLSConfig()
+	tlsCfg, err := gcs.TLSSetting.LoadTLSConfigContext(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -268,13 +268,7 @@ func validateBalancerName(balancerName string) bool {
 }
 
 // ToServer returns a grpc.Server for the configuration
-// Deprecated: [0.96.0] Use ToServerContext instead.
-func (gss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
-	return gss.ToServerContext(context.Background(), host, settings, extraOpts...)
-}
-
-// ToServerContext returns a grpc.Server for the configuration
-func (gss *ServerConfig) ToServerContext(_ context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
+func (gss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
 	opts, err := gss.toServerOption(host, settings)
 	if err != nil {
 		return nil, err
@@ -285,14 +279,14 @@ func (gss *ServerConfig) ToServerContext(_ context.Context, host component.Host,
 
 func (gss *ServerConfig) toServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
 	switch gss.NetAddr.Transport {
-	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6":
+	case confignet.TransportTypeTCP, confignet.TransportTypeTCP4, confignet.TransportTypeTCP6, confignet.TransportTypeUDP, confignet.TransportTypeUDP4, confignet.TransportTypeUDP6:
 		internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint)
 	}
 
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {
-		tlsCfg, err := gss.TLSSetting.LoadTLSConfig()
+		tlsCfg, err := gss.TLSSetting.LoadTLSConfigContext(context.Background())
 		if err != nil {
 			return nil, err
 		}

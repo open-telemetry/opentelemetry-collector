@@ -62,7 +62,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "gzip",
 				TLSSetting: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "/var/lib/mycert.pem",
 					},
 					Insecure: false,
@@ -92,6 +92,10 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 			errorMsg: `requires a non-empty "endpoint"`,
 		},
 		{
+			name:     "https_endpoint",
+			errorMsg: `requires a non-empty "endpoint"`,
+		},
+		{
 			name:     "http_endpoint",
 			errorMsg: `requires a non-empty "endpoint"`,
 		},
@@ -106,6 +110,14 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 		{
 			name:     "invalid_tls",
 			errorMsg: `invalid TLS min_version: unsupported TLS version: "asd"`,
+		},
+		{
+			name:     "missing_port",
+			errorMsg: `missing port in address`,
+		},
+		{
+			name:     "invalid_port",
+			errorMsg: `invalid port "port"`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

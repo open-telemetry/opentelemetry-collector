@@ -11,7 +11,6 @@ import (
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -35,63 +34,6 @@ const (
 	httpPrefix   = "http_"
 	counterName  = "test_counter"
 )
-
-func TestBuildResource(t *testing.T) {
-	buildInfo := component.NewDefaultBuildInfo()
-
-	// Check default config
-	cfg := telemetry.Config{}
-	otelRes := resource.New(buildInfo, cfg.Resource)
-	res := pdataFromSdk(otelRes)
-
-	assert.Equal(t, res.Attributes().Len(), 3)
-	value, ok := res.Attributes().Get(semconv.AttributeServiceName)
-	assert.True(t, ok)
-	assert.Equal(t, buildInfo.Command, value.AsString())
-	value, ok = res.Attributes().Get(semconv.AttributeServiceVersion)
-	assert.True(t, ok)
-	assert.Equal(t, buildInfo.Version, value.AsString())
-
-	_, ok = res.Attributes().Get(semconv.AttributeServiceInstanceID)
-	assert.True(t, ok)
-
-	// Check override by nil
-	cfg = telemetry.Config{
-		Resource: map[string]*string{
-			semconv.AttributeServiceName:       nil,
-			semconv.AttributeServiceVersion:    nil,
-			semconv.AttributeServiceInstanceID: nil,
-		},
-	}
-	otelRes = resource.New(buildInfo, cfg.Resource)
-	res = pdataFromSdk(otelRes)
-
-	// Attributes should not exist since we nil-ified all.
-	assert.Equal(t, res.Attributes().Len(), 0)
-
-	// Check override values
-	strPtr := func(v string) *string { return &v }
-	cfg = telemetry.Config{
-		Resource: map[string]*string{
-			semconv.AttributeServiceName:       strPtr("a"),
-			semconv.AttributeServiceVersion:    strPtr("b"),
-			semconv.AttributeServiceInstanceID: strPtr("c"),
-		},
-	}
-	otelRes = resource.New(buildInfo, cfg.Resource)
-	res = pdataFromSdk(otelRes)
-
-	assert.Equal(t, res.Attributes().Len(), 3)
-	value, ok = res.Attributes().Get(semconv.AttributeServiceName)
-	assert.True(t, ok)
-	assert.Equal(t, "a", value.AsString())
-	value, ok = res.Attributes().Get(semconv.AttributeServiceVersion)
-	assert.True(t, ok)
-	assert.Equal(t, "b", value.AsString())
-	value, ok = res.Attributes().Get(semconv.AttributeServiceInstanceID)
-	assert.True(t, ok)
-	assert.Equal(t, "c", value.AsString())
-}
 
 func TestTelemetryInit(t *testing.T) {
 	type metricValue struct {

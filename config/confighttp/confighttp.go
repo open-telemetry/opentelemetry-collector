@@ -4,6 +4,7 @@
 package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -116,7 +117,7 @@ func NewDefaultClientConfig() ClientConfig {
 
 // ToClient creates an HTTP client.
 func (hcs *ClientConfig) ToClient(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
+	tlsCfg, err := hcs.TLSSetting.LoadTLSConfigContext(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -285,13 +286,14 @@ func (hss *ServerConfig) ToListener() (net.Listener, error) {
 
 	if hss.TLSSetting != nil {
 		var tlsCfg *tls.Config
-		tlsCfg, err = hss.TLSSetting.LoadTLSConfig()
+		tlsCfg, err = hss.TLSSetting.LoadTLSConfigContext(context.Background())
 		if err != nil {
 			return nil, err
 		}
 		tlsCfg.NextProtos = []string{http2.NextProtoTLS, "http/1.1"}
 		listener = tls.NewListener(listener, tlsCfg)
 	}
+
 	return listener, nil
 }
 

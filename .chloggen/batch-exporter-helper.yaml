@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add experimental batching capabilities to the exporter helper
+note: Make the `WithBatcher` option available for regular exporter helpers based on OTLP data type.
 
 # One or more tracking issues or pull requests related to the change
 issues: [8122]
@@ -15,7 +15,10 @@ issues: [8122]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  Not `WithBatcher` can be used with both regular exporter helper (e.g. NewTracesExporter) and the request-based exporter 
+  helper (e.g. NewTracesRequestExporter). The request-based exporter helpers require `WithRequestBatchFuncs` option 
+  providing batching functions. 
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
