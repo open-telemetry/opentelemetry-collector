@@ -34,6 +34,14 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to create output path")
 }
 
+func TestStrictVersioning(t *testing.T) {
+	cfg := NewDefaultConfig()
+	cfg.Distribution.OtelColVersion = "0.0.0"
+	cfg.StrictVersioning = true
+	err := Generate(cfg)
+	require.ErrorIs(t, err, ErrStrictMode)
+}
+
 func TestSkipGenerate(t *testing.T) {
 	cfg := NewDefaultConfig()
 	cfg.Distribution.OutputPath = t.TempDir()

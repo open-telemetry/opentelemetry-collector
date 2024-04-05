@@ -4,28 +4,65 @@
 package builder // import "go.opentelemetry.io/collector/cmd/builder/internal/builder"
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapio"
+
+	"go.opentelemetry.io/collector/cmd/builder/internal/builder/modfile"
 )
 
 var (
 	// ErrGoNotFound is returned when a Go binary hasn't been found
-	ErrGoNotFound = errors.New("go binary not found")
+	ErrGoNotFound       = errors.New("go binary not found")
+	ErrStrictMode       = errors.New("failing due to strict mode")
+	errFailedToDownload = errors.New("failed to download go modules")
 )
 
-func runGoCommand(cfg Config, args ...string) error {
-	cfg.Logger.Info("Running go subcommand.", zap.Any("arguments", args))
+// makeGoCommand is called by runGoCommand and runGoCommandStdout, mainly
+// to isolate the security annotation.
+func makeGoCommand(cfg Config, args []string) *exec.Cmd {
 	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path and the caller is assumed to have carried out necessary input validation
 	cmd := exec.Command(cfg.Distribution.Go, args...)
 	cmd.Dir = cfg.Distribution.OutputPath
+	return cmd
+}
+
+// runGoCommandStdout is similar to `runGoCommand` but returns the
+// standard output.  The subcommand is only printed with Verbose=true,
+// since it is invoked frequently when --skip-new-go-module is set.
+func runGoCommandStdout(cfg Config, args ...string) ([]byte, error) {
+	if cfg.Verbose {
+		cfg.Logger.Info("Running go subcommand.", zap.Any("arguments", args))
+	}
+	cmd := makeGoCommand(cfg, args)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("go subcommand failed with args '%v': %w, error message: %s", args, err, stderr.String())
+	}
+	if cfg.Verbose && stderr.Len() != 0 {
+		cfg.Logger.Info("go subcommand error", zap.String("message", stderr.String()))
+	}
+
+	return stdout.Bytes(), nil
+}
+
+func runGoCommand(cfg Config, args ...string) error {
+	cfg.Logger.Info("Running go subcommand.", zap.Any("arguments", args))
+	cmd := makeGoCommand(cfg, args)
 
 	if cfg.Verbose {
 		writer := &zapio.Writer{Log: cfg.Logger}
@@ -64,6 +101,9 @@ func Generate(cfg Config) error {
 	}
 	// create a warning message for non-aligned builder and collector base
 	if cfg.Distribution.OtelColVersion != defaultOtelColVersion {
+		if cfg.StrictVersioning {
+			return fmt.Errorf("builder version %q does not match build configuration version %q: %w", cfg.Distribution.OtelColVersion, defaultOtelColVersion, ErrStrictMode)
+		}
 		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", zap.String("builder-version", defaultOtelColVersion))
 	}
 	// if the file does not exist, try to create it
@@ -139,21 +179,37 @@ func GetModules(cfg Config) error {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 
-	cfg.Logger.Info("Getting go modules")
-	// basic retry if error from go mod command (in case of transient network error). This could be improved
-	// retry 3 times with 5 second spacing interval
-	retries := 3
-	failReason := "unknown"
-	for i := 1; i <= retries; i++ {
-		if err := runGoCommand(cfg, "mod", "download"); err != nil {
-			failReason = err.Error()
-			cfg.Logger.Info("Failed modules download", zap.String("retry", fmt.Sprintf("%d/%d", i, retries)))
-			time.Sleep(5 * time.Second)
+	if !cfg.StrictVersioning {
+		return downloadModules(cfg)
+	}
+
+	// Perform strict version checking.  For each component listed and the
+	// otelcol core dependency, check that the enclosing go module matches.
+	mf, mvm, err := cfg.readGoModFile()
+	if err != nil {
+		return err
+	}
+
+	coremod, corever := cfg.coreModuleAndVersion()
+	if mvm[coremod] != corever {
+		return fmt.Errorf("core collector version calculated by component dependencies %q does not match configured version %q: %w", mvm[coremod], corever, ErrStrictMode)
+	}
+
+	for _, mod := range cfg.allComponents() {
+		module, version, _ := strings.Cut(mod.GoMod, " ")
+		if module == mf.Module.Path {
+			// Main module is not checked, by definition.  This happens
+			// with --skip-new-go-module where the enclosing module
+			// contains the components used in the build.
 			continue
 		}
-		return nil
+
+		if mvm[module] != version {
+			return fmt.Errorf("component %q version calculated by dependencies %q does not match configured version %q: %w", module, mvm[module], version, ErrStrictMode)
+		}
 	}
-	return fmt.Errorf("failed to download go modules: %s", failReason)
+
+	return downloadModules(cfg)
 }
 
 func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplParams any) error {
@@ -164,4 +220,52 @@ func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplPa
 
 	defer out.Close()
 	return tmpl.Execute(out, tmplParams)
+}
+
+func downloadModules(cfg Config) error {
+	cfg.Logger.Info("Getting go modules")
+
+	failReason := "unknown"
+	for i := 1; i <= cfg.downloadModules.numRetries; i++ {
+		if err := runGoCommand(cfg, "mod", "download"); err != nil {
+			failReason = err.Error()
+			cfg.Logger.Info("Failed modules download", zap.String("retry", fmt.Sprintf("%d/%d", i, cfg.downloadModules.numRetries)))
+			time.Sleep(cfg.downloadModules.wait)
+			continue
+		}
+		return nil
+	}
+
+	return fmt.Errorf("%w: %s", errFailedToDownload, failReason)
+}
+
+func (c *Config) coreModuleAndVersion() (string, string) {
+	module := "go.opentelemetry.io/collector"
+	if c.Distribution.RequireOtelColModule {
+		module += "/otelcol"
+	}
+	return module, "v" + c.Distribution.OtelColVersion
+}
+
+func (c *Config) allComponents() []Module {
+	return append(c.Exporters,
+		append(c.Receivers,
+			append(c.Processors,
+				append(c.Extensions,
+					c.Connectors...)...)...)...)
+}
+
+func (c *Config) readGoModFile() (mf modfile.GoMod, _ map[string]string, _ error) {
+	stdout, err := runGoCommandStdout(*c, "mod", "edit", "-json")
+	if err != nil {
+		return mf, nil, err
+	}
+	if err := json.Unmarshal(stdout, &mf); err != nil {
+		return mf, nil, err
+	}
+	mvm := map[string]string{}
+	for _, req := range mf.Require {
+		mvm[req.Path] = req.Version
+	}
+	return mf, mvm, nil
 }

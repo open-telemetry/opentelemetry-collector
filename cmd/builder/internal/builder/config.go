@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-version"
 	"go.uber.org/multierr"
@@ -18,17 +19,22 @@ import (
 
 const defaultOtelColVersion = "0.98.0"
 
-// ErrInvalidGoMod indicates an invalid gomod
-var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
+var (
+	// ErrInvalidGoMod indicates an invalid gomod
+	ErrInvalidGoMod = errors.New("invalid gomod specification for module")
+	// ErrIncompatibleConfigurationValues indicates that there is configuration that cannot be combined
+	ErrIncompatibleConfigurationValues = errors.New("cannot combine configuration values")
+)
 
 // Config holds the builder's configuration
 type Config struct {
-	Logger          *zap.Logger
-	SkipGenerate    bool   `mapstructure:"-"`
-	SkipCompilation bool   `mapstructure:"-"`
-	SkipGetModules  bool   `mapstructure:"-"`
-	LDFlags         string `mapstructure:"-"`
-	Verbose         bool   `mapstructure:"-"`
+	Logger           *zap.Logger
+	SkipGenerate     bool   `mapstructure:"-"`
+	SkipCompilation  bool   `mapstructure:"-"`
+	SkipGetModules   bool   `mapstructure:"-"`
+	StrictVersioning bool   `mapstructure:"-"`
+	LDFlags          string `mapstructure:"-"`
+	Verbose          bool   `mapstructure:"-"`
 
 	Distribution Distribution `mapstructure:"dist"`
 	Exporters    []Module     `mapstructure:"exporters"`
@@ -38,6 +44,8 @@ type Config struct {
 	Connectors   []Module     `mapstructure:"connectors"`
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
+
+	downloadModules retry `mapstructure:"-"`
 }
 
 // Distribution holds the parameters for the final binary
@@ -62,6 +70,12 @@ type Module struct {
 	Path   string `mapstructure:"path"`   // an optional path to the local version of this module
 }
 
+// retry dictates how many times to retry and how long to wait between attempts.
+type retry struct {
+	numRetries int
+	wait       time.Duration
+}
+
 // NewDefaultConfig creates a new config, with default values
 func NewDefaultConfig() Config {
 	log, err := zap.NewDevelopment()
@@ -80,6 +94,12 @@ func NewDefaultConfig() Config {
 			OutputPath:     outputDir,
 			OtelColVersion: defaultOtelColVersion,
 			Module:         "go.opentelemetry.io/collector/cmd/builder",
+		},
+		// basic retry if error from go mod command (in case of transient network error). This could be improved
+		// retry 3 times with 5 second spacing interval
+		downloadModules: retry{
+			numRetries: 3,
+			wait:       5 * time.Second,
 		},
 	}
 }
