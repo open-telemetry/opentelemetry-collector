@@ -115,7 +115,7 @@ how it works for some edge cases in this example:
 When an environment variable is empty, all syntaxes return an empty
 string with no warning given; this is frequently unexpected but can also
 be used intentionally. This is especially unintuitive when the user did
-not expect expansion to happen. Two examples where this is unexpected
+not expect expansion to happen. Three examples where this is unexpected
 are the following:
 
 1.  **Opaque values such as passwords that contain `$`** (issue
