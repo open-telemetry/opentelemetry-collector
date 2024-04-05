@@ -844,7 +844,6 @@ func (r *Recursive) Unmarshal(conf *Conf) error {
 
 // Tests that a struct can unmarshal itself by creating a new copy of itself, unmarshaling itself, and setting its value.
 func TestRecursiveUnmarshaling(t *testing.T) {
-	t.Skip("this test fails to run because it engages in recursive unmarshaling")
 	conf := NewFromStringMap(map[string]any{
 		"foo": "something",
 	})
