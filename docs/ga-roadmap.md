@@ -18,11 +18,10 @@ These modules depend on a list of other modules, the full list is available in i
 
 Explicitly, the following are not in the scope of v1 for the purposes of this document:
 
-* stabilization of all component developer APIs or other parts of the Collector. Component developers are NOT the audience for this work
-* stabilization of additional components needed by distribution maintainers. Vendors are not the audience
+* stabilization of additional components/APIs needed by distribution maintainers. Vendors are not the audience
 * Collector Builder
 * telemetrygen
-* Component APIs as part of the Core repository
+* mdatagen
 * Operator
 
 Those components are free to pursue v1 at their own pace and may be the focus of future stability work.
@@ -48,6 +47,7 @@ The following is a list of requirements for the Collector to be deemed as 1.0:
   * Error scenarios should be documented
   * Specifically, error propagation
   * Troubleshooting, including how to obtain telemetry from the Collector for the purposes of bug reporting
+  * Queueing, batching, and handling of backpressure
 * The Collector MUST be supported
   * We need to make sure we can support the collector distribution and set clear expectations.
   * We need to have workflows, processes in place to handle the influx of questions.
