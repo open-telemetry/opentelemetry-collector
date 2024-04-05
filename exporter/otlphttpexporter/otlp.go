@@ -16,7 +16,9 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"google.golang.org/genproto/googleapis/rpc/status"
+	spb "google.golang.org/genproto/googleapis/rpc/status"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
@@ -184,16 +186,18 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	respStatus := readResponseStatus(resp)
 
 	// Format the error message. Use the status if it is present in the response.
+	var errString string
 	var formattedErr error
 	if respStatus != nil {
-		formattedErr = fmt.Errorf(
+		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s, Details=%v",
 			url, resp.StatusCode, respStatus.Message, respStatus.Details)
 	} else {
-		formattedErr = fmt.Errorf(
+		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d",
 			url, resp.StatusCode)
 	}
+	formattedErr = newStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
 
 	if isRetryableStatusCode(resp.StatusCode) {
 		// A retry duration of 0 seconds will trigger the default backoff policy
@@ -267,8 +271,8 @@ func readResponseBody(resp *http.Response) ([]byte, error) {
 
 // Read the response and decode the status.Status from the body.
 // Returns nil if the response is empty or cannot be decoded.
-func readResponseStatus(resp *http.Response) *status.Status {
-	var respStatus *status.Status
+func readResponseStatus(resp *http.Response) *spb.Status {
+	var respStatus *spb.Status
 	if resp.StatusCode >= 400 && resp.StatusCode <= 599 {
 		// Request failed. Read the body. OTLP spec says:
 		// "Response body for all HTTP 4xx and HTTP 5xx responses MUST be a
@@ -279,7 +283,7 @@ func readResponseStatus(resp *http.Response) *status.Status {
 		}
 
 		// Decode it as Status struct. See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#failures
-		respStatus = &status.Status{}
+		respStatus = &spb.Status{}
 		err = proto.Unmarshal(respBytes, respStatus)
 		if err != nil {
 			return nil
@@ -388,4 +392,28 @@ func (e *baseExporter) logsPartialSuccessHandler(protoBytes []byte, contentType 
 		)
 	}
 	return nil
+}
+
+// This is a copy from the OTLP HTTP Receiver, i'm not sure the right place to share this logic...
+func newStatusFromMsgAndHTTPCode(errMsg string, statusCode int) *status.Status {
+	var c codes.Code
+	// Mapping based on https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
+	// 429 mapping to ResourceExhausted and 400 mapping to StatusBadRequest are exceptions.
+	switch statusCode {
+	case http.StatusBadRequest:
+		c = codes.InvalidArgument
+	case http.StatusUnauthorized:
+		c = codes.Unauthenticated
+	case http.StatusForbidden:
+		c = codes.PermissionDenied
+	case http.StatusNotFound:
+		c = codes.Unimplemented
+	case http.StatusTooManyRequests:
+		c = codes.ResourceExhausted
+	case http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		c = codes.Unavailable
+	default:
+		c = codes.Unknown
+	}
+	return status.New(c, errMsg)
 }
