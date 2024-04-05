@@ -9,30 +9,29 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestValidateProviderScheme(t *testing.T) {
-	assert.NoError(t, confmaptest.ValidateProviderScheme(NewWithSettings(confmap.ProviderSettings{})))
+	assert.NoError(t, confmaptest.ValidateProviderScheme(NewWithSettings(confmaptest.NewNopProviderSettings())))
 }
 
 func TestEmpty(t *testing.T) {
-	sp := NewWithSettings(confmap.ProviderSettings{})
+	sp := NewWithSettings(confmaptest.NewNopProviderSettings())
 	_, err := sp.Retrieve(context.Background(), "", nil)
 	assert.Error(t, err)
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }
 
 func TestInvalidYAML(t *testing.T) {
-	sp := NewWithSettings(confmap.ProviderSettings{})
+	sp := NewWithSettings(confmaptest.NewNopProviderSettings())
 	_, err := sp.Retrieve(context.Background(), "yaml:[invalid,", nil)
 	assert.Error(t, err)
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }
 
 func TestOneValue(t *testing.T) {
-	sp := NewWithSettings(confmap.ProviderSettings{})
+	sp := NewWithSettings(confmaptest.NewNopProviderSettings())
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch::timeout: 2s", nil)
 	assert.NoError(t, err)
 	retMap, err := ret.AsConf()
@@ -48,7 +47,7 @@ func TestOneValue(t *testing.T) {
 }
 
 func TestNamedComponent(t *testing.T) {
-	sp := NewWithSettings(confmap.ProviderSettings{})
+	sp := NewWithSettings(confmaptest.NewNopProviderSettings())
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch/foo::timeout: 3s", nil)
 	assert.NoError(t, err)
 	retMap, err := ret.AsConf()
@@ -64,7 +63,7 @@ func TestNamedComponent(t *testing.T) {
 }
 
 func TestMapEntry(t *testing.T) {
-	sp := NewWithSettings(confmap.ProviderSettings{})
+	sp := NewWithSettings(confmaptest.NewNopProviderSettings())
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors: {batch/foo::timeout: 3s, batch::timeout: 2s}", nil)
 	assert.NoError(t, err)
 	retMap, err := ret.AsConf()
@@ -83,7 +82,7 @@ func TestMapEntry(t *testing.T) {
 }
 
 func TestArrayEntry(t *testing.T) {
-	sp := NewWithSettings(confmap.ProviderSettings{})
+	sp := NewWithSettings(confmaptest.NewNopProviderSettings())
 	ret, err := sp.Retrieve(context.Background(), "yaml:service::extensions: [zpages, zpages/foo]", nil)
 	assert.NoError(t, err)
 	retMap, err := ret.AsConf()
@@ -100,7 +99,7 @@ func TestArrayEntry(t *testing.T) {
 }
 
 func TestNewLine(t *testing.T) {
-	sp := NewWithSettings(confmap.ProviderSettings{})
+	sp := NewWithSettings(confmaptest.NewNopProviderSettings())
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch/foo::timeout: 3s\nprocessors::batch::timeout: 2s", nil)
 	assert.NoError(t, err)
 	retMap, err := ret.AsConf()
@@ -119,7 +118,7 @@ func TestNewLine(t *testing.T) {
 }
 
 func TestDotSeparator(t *testing.T) {
-	sp := NewWithSettings(confmap.ProviderSettings{})
+	sp := NewWithSettings(confmaptest.NewNopProviderSettings())
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors.batch.timeout: 4s", nil)
 	assert.NoError(t, err)
 	retMap, err := ret.AsConf()
