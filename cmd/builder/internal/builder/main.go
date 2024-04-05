@@ -25,7 +25,6 @@ import (
 var (
 	// ErrGoNotFound is returned when a Go binary hasn't been found
 	ErrGoNotFound       = errors.New("go binary not found")
-	ErrStrictMode       = errors.New("failing due to strict mode")
 	errFailedToDownload = errors.New("failed to download go modules")
 )
 
@@ -102,10 +101,6 @@ func Generate(cfg Config) error {
 	}
 	// create a warning message for non-aligned builder and collector base
 	if cfg.Distribution.OtelColVersion != defaultOtelColVersion {
-		if cfg.StrictVersioning {
-			return fmt.Errorf("builder version %q does not match build configuration version %q: %w", cfg.Distribution.OtelColVersion, defaultOtelColVersion, ErrStrictMode)
-		}
-
 		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", zap.String("builder-version", defaultOtelColVersion))
 	}
 	// if the file does not exist, try to create it
@@ -145,10 +140,6 @@ func Compile(cfg Config) error {
 	if cfg.SkipCompilation {
 		cfg.Logger.Info("Generating source codes only, the distribution will not be compiled.")
 		return nil
-	}
-
-	if err := downloadModules(cfg); err != nil {
-		return err
 	}
 
 	cfg.Logger.Info("Compiling")
@@ -197,37 +188,7 @@ func GetModules(cfg Config) error {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 
-	if !cfg.StrictVersioning {
-		return nil
-	}
-
-	// Perform strict version checking.  For each component listed and the
-	// otelcol core dependency, check that the enclosing go module matches.
-	mf, mvm, err := cfg.readGoModFile()
-	if err != nil {
-		return err
-	}
-
-	coremod, corever := cfg.coreModuleAndVersion()
-	if mvm[coremod] != corever {
-		return fmt.Errorf("core collector version calculated by component dependencies %q does not match configured version %q: %w", mvm[coremod], corever, ErrStrictMode)
-	}
-
-	for _, mod := range cfg.allComponents() {
-		module, version, _ := strings.Cut(mod.GoMod, " ")
-		if module == mf.Module.Path {
-			// Main module is not checked, by definition.  This happens
-			// with --skip-new-go-module where the enclosing module
-			// contains the components used in the build.
-			continue
-		}
-
-		if mvm[module] != version {
-			return fmt.Errorf("component %q version calculated by dependencies %q does not match configured version %q: %w", module, mvm[module], version, ErrStrictMode)
-		}
-	}
-
-	return nil
+	return downloadModules(cfg)
 }
 
 func downloadModules(cfg Config) error {

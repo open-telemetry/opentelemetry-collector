@@ -65,14 +65,6 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to create output path")
 }
 
-func TestStrictVersioning(t *testing.T) {
-	cfg := NewDefaultConfig()
-	cfg.Distribution.OtelColVersion = "0.0.0"
-	cfg.StrictVersioning = true
-	err := Generate(cfg)
-	require.ErrorIs(t, err, ErrStrictMode)
-}
-
 func TestSkipGenerate(t *testing.T) {
 	cfg := NewDefaultConfig()
 	cfg.Distribution.OutputPath = t.TempDir()
@@ -237,7 +229,8 @@ func TestGetModules(t *testing.T) {
 				return cfg
 			},
 		},
-		{
+		// this test requires SkipNewGoModule and StrictVersioning
+		/* {
 			description: "Skip New Gomod Success with Strict Versioning",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := NewDefaultConfig()
@@ -253,7 +246,7 @@ func TestGetModules(t *testing.T) {
 				cfg.SkipNewGoModule = true
 				return cfg
 			},
-		},
+		}, */
 		{
 			description: "No Go Distribution",
 			cfgBuilder: func(_ *testing.T) Config {

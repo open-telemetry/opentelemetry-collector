@@ -7,7 +7,7 @@ change_type: enhancement
 component: builder
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add a --skip-new-go-module flag to skip creating a module in the output directory, and a --strict-versioning flag to error on mismatch between the otelcol_version configurted and the builder version or versions in the go.mod.
+note: Add a --skip-new-go-module flag to skip creating a module in the output directory.
 
 # One or more tracking issues or pull requests related to the change
 issues: [9252]
