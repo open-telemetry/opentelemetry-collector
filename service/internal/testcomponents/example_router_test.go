@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestExampleRouter(t *testing.T) {

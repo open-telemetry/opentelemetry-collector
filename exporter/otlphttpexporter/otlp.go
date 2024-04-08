@@ -77,8 +77,8 @@ func newExporter(cfg component.Config, set exporter.CreateSettings) (*baseExport
 
 // start actually creates the HTTP client. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
-func (e *baseExporter) start(_ context.Context, host component.Host) error {
-	client, err := e.config.ClientConfig.ToClient(host, e.settings)
+func (e *baseExporter) start(ctx context.Context, host component.Host) error {
+	client, err := e.config.ClientConfig.ToClientContext(ctx, host, e.settings)
 	if err != nil {
 		return err
 	}

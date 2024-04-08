@@ -25,7 +25,8 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 ## Releasing opentelemetry-collector
 
-1. Update Contrib to use the latest in development version of Core. Run `make update-otel` in Contrib root directory and if it results in any changes submit a draft PR to Contrib. Ensure the CI passes before proceeding. This is to ensure that the latest core does not break contrib in any way. We’ll update it once more to the final release number later.
+1. Update Contrib to use the latest in development version of Core by running `make update-otel` in Contrib root directory. This is to ensure that the latest core does not break contrib in any way. If it results in any changes, submit a PR to Contrib.
+   -  🛑 **Do not move forward until this PR is merged.**
 
 2. Determine the version number that will be assigned to the release. Usually, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.85.0` as the version to be released, following `v0.84.0`.
    Check if stable modules have any changes since the last release by running `make check-changes PREVIOUS_VERSION=v1.0.0 MODSET=stable`. If there are no changes, there is no need to release new version for stable modules.
@@ -157,10 +158,10 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager |
 |------------|----------|-----------------|
-| 2024-03-25 | v0.97.0  | @djaglowski     |
-| 2024-04-08 | v0.98.0  | @dmitryax       |
+| 2024-04-10 | v0.98.0  | @dmitryax       |
 | 2024-04-22 | v0.99.0  | @codeboten      |
 | 2024-05-06 | v0.100.0 | @bogdandrutu    |
 | 2024-05-20 | v0.101.0 | @Aneurysm9      |
 | 2024-06-03 | v0.102.0 | @jpkrohling     |
 | 2024-06-17 | v0.103.0 | @mx-psi         |
+| 2024-06-24 | v0.104.0 | @djaglowski     |
