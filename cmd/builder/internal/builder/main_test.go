@@ -322,6 +322,69 @@ func TestGenerateAndCompile(t *testing.T) {
 	}
 }
 
+func TestConfigProviderVersions(t *testing.T) {
+	testCases := []struct {
+		version   string
+		supported bool
+	}{
+		{
+			version:   "1.0",
+			supported: false,
+		},
+		{
+			version:   "x.0.0",
+			supported: false,
+		},
+		{
+			version:   "0.x.0",
+			supported: false,
+		},
+		{
+			version:   "0.0.0",
+			supported: false,
+		},
+		{
+			version:   "0.94.0",
+			supported: false,
+		},
+		{
+			version:   "0.94.1",
+			supported: false,
+		},
+		{
+			version:   "0.95.0",
+			supported: true,
+		},
+		{
+			version:   "0.95.7",
+			supported: true,
+		},
+		{
+			version:   "0.96.0",
+			supported: true,
+		},
+		{
+			version:   "0.100.0",
+			supported: true,
+		},
+		{
+			version:   "1.0.0",
+			supported: true,
+		},
+	}
+
+	for _, tt := range testCases {
+		cfg := Config{
+			Distribution: Distribution{
+				OtelColVersion: tt.version,
+			},
+		}
+
+		shouldSupport := supportsConfigProviderSettings(cfg)
+		require.Equal(t, tt.supported, shouldSupport)
+	}
+}
+
 func makeModule(dir string, fileContents []byte) error {
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
