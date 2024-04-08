@@ -188,10 +188,10 @@ When unmarshalling, we use mapstructure with WeaklyTypedInput
 and use its return value when it is valid and we are mapping to a string
 field. This method has default casting rules for unambiguous scalar
 types but may return the original representation depending on the
-construction of confmap.Conf
+construction of confmap.Conf (see the comparison table below for details).
 
 For using this notation in inline mode (e.g.`http://endpoint/${env:PATH}`), we
-use the `AsString` method from confmap.Conf.
+use the `AsString` method from confmap.Conf (see the comparison table below for details).
 
 ### Character set
 
