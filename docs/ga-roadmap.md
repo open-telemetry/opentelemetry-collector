@@ -37,7 +37,7 @@ The following is a list of requirements for this minimal Collector distribution 
   * Metrics should be documented in the end-user documentation
   * Metrics, or a subset of them, should be marked as stable in the documentation
   * Logs should be produced for Collector lifecycle events
-  * Telemetry should be stable, so that users can rely on that on for their dashboards and alerts
+  * Stability expectations and lifecycle for telemetry should be documented, so that users can know what they can rely on  for their dashboards and alerts
 * The Collector should correctly handle backpressure and queueing
   * Support backpressure from the exporter all the way back to the receiver
   * Setting performance metrics in place and following best practices for benchmarking, load testing
