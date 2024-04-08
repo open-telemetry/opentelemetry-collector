@@ -38,10 +38,13 @@ The following is a list of requirements for this minimal Collector distribution 
   * Metrics, or a subset of them, should be marked as stable in the documentation
   * Logs should be produced for Collector lifecycle events
   * Stability expectations and lifecycle for telemetry should be documented, so that users can know what they can rely on  for their dashboards and alerts
-* The Collector should correctly handle backpressure and queueing
-  * Support backpressure from the exporter all the way back to the receiver
-  * Setting performance metrics in place and following best practices for benchmarking, load testing
-  * Enshrine in tests (generated for contrib) lifecycle expectations of components
+* The Collector must be scalable
+  * Backpressure from the exporter all the way back to the receiver should be supported
+  * Queueing must be supported to handle increased loads
+  * Performance metrics are in place and follow best practices for benchmarking
+  * Individual components must:
+    * Have their lifecycle expectations enshrined in tests
+    * Have goleak enabled
 * End-user documentation should be provided as part of the official project’s documentation under opentelemetry.io, including:
   * Getting started with the Collector
   * Available (stable) components and how to use them
