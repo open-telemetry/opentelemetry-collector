@@ -5,13 +5,13 @@ go 1.21
 require (
 	github.com/google/go-cmp v0.6.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.96.0
-	go.opentelemetry.io/collector/confmap v0.96.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.96.0
-	go.opentelemetry.io/collector/consumer v0.96.0
-	go.opentelemetry.io/collector/pdata v1.3.0
-	go.opentelemetry.io/collector/receiver v0.96.0
-	go.opentelemetry.io/collector/semconv v0.96.0
+	go.opentelemetry.io/collector/component v0.97.0
+	go.opentelemetry.io/collector/confmap v0.97.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.97.0
+	go.opentelemetry.io/collector/consumer v0.97.0
+	go.opentelemetry.io/collector/pdata v1.4.0
+	go.opentelemetry.io/collector/receiver v0.97.0
+	go.opentelemetry.io/collector/semconv v0.97.0
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
 	go.uber.org/goleak v1.3.0
@@ -43,13 +43,13 @@ require (
 	github.com/prometheus/client_model v0.6.0 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.96.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.97.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.24.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
 	google.golang.org/grpc v1.62.1 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
@@ -63,6 +63,8 @@ replace go.opentelemetry.io/collector/confmap => ../../confmap
 replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
+
+replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
 replace go.opentelemetry.io/collector/receiver => ../../receiver
 

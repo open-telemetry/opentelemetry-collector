@@ -3,13 +3,14 @@ module go.opentelemetry.io/collector
 go 1.21
 
 require (
-	github.com/shirou/gopsutil/v3 v3.24.2
+	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.96.0
-	go.opentelemetry.io/collector/confmap v0.96.0
-	go.opentelemetry.io/collector/consumer v0.96.0
-	go.opentelemetry.io/collector/featuregate v1.3.0
-	go.opentelemetry.io/collector/pdata v1.3.0
+	go.opentelemetry.io/collector/component v0.97.0
+	go.opentelemetry.io/collector/confmap v0.97.0
+	go.opentelemetry.io/collector/consumer v0.97.0
+	go.opentelemetry.io/collector/featuregate v1.4.0
+	go.opentelemetry.io/collector/pdata v1.4.0
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/contrib/config v0.4.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -47,7 +48,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.96.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.97.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.24.0 // indirect
@@ -59,8 +60,8 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
@@ -80,6 +81,8 @@ replace go.opentelemetry.io/collector/consumer => ./consumer
 replace go.opentelemetry.io/collector/featuregate => ./featuregate
 
 replace go.opentelemetry.io/collector/pdata => ./pdata
+
+replace go.opentelemetry.io/collector/pdata/testdata => ./pdata/testdata
 
 retract (
 	v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module, use v0.76.1

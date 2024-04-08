@@ -45,14 +45,17 @@ type batchSender struct {
 }
 
 // newBatchSender returns a new batch consumer component.
-func newBatchSender(cfg exporterbatcher.Config, set exporter.CreateSettings) *batchSender {
+func newBatchSender(cfg exporterbatcher.Config, set exporter.CreateSettings,
+	mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatcher.BatchMergeSplitFunc[Request]) *batchSender {
 	bs := &batchSender{
-		activeBatch:  newEmptyBatch(),
-		cfg:          cfg,
-		logger:       set.Logger,
-		shutdownCh:   make(chan struct{}),
-		stopped:      &atomic.Bool{},
-		resetTimerCh: make(chan struct{}),
+		activeBatch:    newEmptyBatch(),
+		cfg:            cfg,
+		logger:         set.Logger,
+		mergeFunc:      mf,
+		mergeSplitFunc: msf,
+		shutdownCh:     make(chan struct{}),
+		stopped:        &atomic.Bool{},
+		resetTimerCh:   make(chan struct{}),
 	}
 	return bs
 }

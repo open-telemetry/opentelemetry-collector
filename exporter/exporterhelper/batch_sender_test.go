@@ -394,6 +394,51 @@ func TestBatchSender_DrainActiveRequests(t *testing.T) {
 	assert.Equal(t, uint64(3), sink.itemsCount.Load())
 }
 
+func TestBatchSender_WithBatcherOption(t *testing.T) {
+	tests := []struct {
+		name        string
+		opts        []Option
+		expectedErr bool
+	}{
+		{
+			name:        "no_funcs_set",
+			opts:        []Option{WithBatcher(exporterbatcher.NewDefaultConfig())},
+			expectedErr: true,
+		},
+		{
+			name:        "funcs_set_internally",
+			opts:        []Option{withBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc), WithBatcher(exporterbatcher.NewDefaultConfig())},
+			expectedErr: false,
+		},
+		{
+			name: "funcs_set_twice",
+			opts: []Option{
+				withBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc),
+				WithBatcher(exporterbatcher.NewDefaultConfig(), WithRequestBatchFuncs(fakeBatchMergeFunc,
+					fakeBatchMergeSplitFunc)),
+			},
+			expectedErr: true,
+		},
+		{
+			name:        "nil_funcs",
+			opts:        []Option{WithBatcher(exporterbatcher.NewDefaultConfig(), WithRequestBatchFuncs(nil, nil))},
+			expectedErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			be, err := newBaseExporter(defaultSettings, defaultType, newNoopObsrepSender, tt.opts...)
+			if tt.expectedErr {
+				assert.Nil(t, be)
+				assert.Error(t, err)
+			} else {
+				assert.NotNil(t, be)
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func queueBatchExporter(t *testing.T, batchOption Option) *baseExporter {
 	be, err := newBaseExporter(defaultSettings, defaultType, newNoopObsrepSender, batchOption,
 		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[Request]()))

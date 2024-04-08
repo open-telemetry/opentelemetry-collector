@@ -7,24 +7,25 @@ require (
 	github.com/prometheus/client_golang v1.19.0
 	github.com/prometheus/client_model v0.6.0
 	github.com/prometheus/common v0.48.0
-	github.com/shirou/gopsutil/v3 v3.24.2
+	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.96.0
-	go.opentelemetry.io/collector/component v0.96.0
-	go.opentelemetry.io/collector/config/confignet v0.96.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.96.0
-	go.opentelemetry.io/collector/confmap v0.96.0
-	go.opentelemetry.io/collector/connector v0.96.0
-	go.opentelemetry.io/collector/consumer v0.96.0
-	go.opentelemetry.io/collector/exporter v0.96.0
-	go.opentelemetry.io/collector/extension v0.96.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.96.0
-	go.opentelemetry.io/collector/featuregate v1.3.0
-	go.opentelemetry.io/collector/pdata v1.3.0
-	go.opentelemetry.io/collector/processor v0.96.0
-	go.opentelemetry.io/collector/receiver v0.96.0
-	go.opentelemetry.io/collector/semconv v0.96.0
+	go.opentelemetry.io/collector v0.97.0
+	go.opentelemetry.io/collector/component v0.97.0
+	go.opentelemetry.io/collector/config/confignet v0.97.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.97.0
+	go.opentelemetry.io/collector/confmap v0.97.0
+	go.opentelemetry.io/collector/connector v0.97.0
+	go.opentelemetry.io/collector/consumer v0.97.0
+	go.opentelemetry.io/collector/exporter v0.97.0
+	go.opentelemetry.io/collector/extension v0.97.0
+	go.opentelemetry.io/collector/extension/zpagesextension v0.97.0
+	go.opentelemetry.io/collector/featuregate v1.4.0
+	go.opentelemetry.io/collector/pdata v1.4.0
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/processor v0.97.0
+	go.opentelemetry.io/collector/receiver v0.97.0
+	go.opentelemetry.io/collector/semconv v0.97.0
 	go.opentelemetry.io/contrib/config v0.4.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.24.0
 	go.opentelemetry.io/otel v1.24.0
@@ -48,7 +49,7 @@ require (
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
+	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
@@ -79,7 +80,7 @@ require (
 	go.opentelemetry.io/contrib/zpages v0.49.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.24.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80 // indirect
@@ -96,6 +97,8 @@ replace go.opentelemetry.io/collector/connector => ../connector
 replace go.opentelemetry.io/collector/component => ../component
 
 replace go.opentelemetry.io/collector/pdata => ../pdata
+
+replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
 

@@ -25,17 +25,17 @@ func (ct *Type) IsCompressed() bool {
 }
 
 func (ct *Type) UnmarshalText(in []byte) error {
-	switch typ := Type(in); typ {
-	case TypeGzip,
-		TypeZlib,
-		TypeDeflate,
-		TypeSnappy,
-		TypeZstd,
-		typeNone,
-		typeEmpty:
+	typ := Type(in)
+	if typ == TypeGzip ||
+		typ == TypeZlib ||
+		typ == TypeDeflate ||
+		typ == TypeSnappy ||
+		typ == TypeZstd ||
+		typ == typeNone ||
+		typ == typeEmpty {
 		*ct = typ
 		return nil
-	default:
-		return fmt.Errorf("unsupported compression type %q", typ)
 	}
+	return fmt.Errorf("unsupported compression type %q", typ)
+
 }
