@@ -171,7 +171,8 @@ the env provider under the hood.
 
 The naked syntax supported in BASH is not supported in the Collector.
 Escaping is supported by using two dollar signs. Escaping is also
-honored for unsupported identifiers like `${1}`.
+honored for unsupported identifiers like `${1}` (i.e. anything that 
+matches `\${[^$}]+}`).
 
 ### Type casting rules
 
