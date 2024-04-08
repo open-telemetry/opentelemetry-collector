@@ -32,11 +32,11 @@ Those components are free to pursue v1 at their own pace and may be the focus of
 
 The following is a list of requirements for this minimal Collector distribution to be deemed as 1.0:
 
-* The Collector MUST be observable
-  * Metrics and traces SHOULD be produced for data in the hot path
+* The Collector must be observable
+  * Metrics and traces should be produced for data in the hot path
   * Metrics should be documented in the end-user documentation
   * Metrics, or a subset of them, should be marked as stable in the documentation
-  * Logs SHOULD be produced for Collector lifecycle events
+  * Logs should be produced for Collector lifecycle events
   * Telemetry should be stable, so that users can rely on that on for their dashboards and alerts
 * The Collector should correctly handle backpressure and queueing
   * Support backpressure from the exporter all the way back to the receiver
@@ -49,6 +49,6 @@ The following is a list of requirements for this minimal Collector distribution 
   * Error scenarios and error propagation
   * Troubleshooting and how to obtain telemetry from the Collector for the purposes of bug reporting
   * Queueing, batching, and handling of backpressure
-* The Collector MUST be supported
+* The Collector must be supported
   * Processes, workflows and expectations regarding support, bug reporting and questions should be documented.
   * We need to have a support policy in place for 1.0 with an end of life date.
