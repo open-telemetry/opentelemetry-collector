@@ -198,6 +198,10 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	logger := col.service.Logger()
+	for _, log := range col.set.ConfigProviderSettings.ResolverSettings.Ol.All() {
+		logger.Log(log.Level, log.Message)
+	}
 
 	if !col.set.SkipSettingGRPCLogger {
 		grpclog.SetLogger(col.service.Logger(), cfg.Service.Telemetry.Logs.Level)

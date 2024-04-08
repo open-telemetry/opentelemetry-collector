@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 // follows drive-letter specification:
@@ -39,6 +40,8 @@ type ResolverSettings struct {
 
 	// MapConverters is a slice of Converter.
 	Converters []Converter
+
+	Ol *observer.ObservedLogs
 }
 
 // NewResolver returns a new Resolver that resolves configuration from multiple URIs.
