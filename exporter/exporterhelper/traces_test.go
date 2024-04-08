@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 const (
