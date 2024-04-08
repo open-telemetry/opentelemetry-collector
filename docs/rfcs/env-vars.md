@@ -200,8 +200,8 @@ or underscore starting with an alphabetic or underscore character. Its
 maximum length is 200 characters. Both syntaxes support recursive
 resolution.
 
-When an invalid identifier is found, a warning log is emitted, and the
-string is kept as-is.
+When an invalid identifier is found, an error is emitted. To use an invalid
+identifier, the string must be escaped.
 
 ### Comparison table with current behavior
 
