@@ -17,11 +17,22 @@ import (
 	"github.com/knadh/koanf/v2"
 
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 const (
 	// KeyDelimiter is used as the default key delimiter in the default koanf instance.
 	KeyDelimiter = "::"
+	// DisableWeaklyTyped is the feature gate name that that disables implicit type conversions in confmap.
+	DisableWeaklyTyped = "confmap.DisableWeaklyTypedInput"
+)
+
+// DisableWeaklyTypedfeatureGate is the feature gate that disables implicit type conversions in confmap.
+var DisableWeaklyTypedfeatureGate = featuregate.GlobalRegistry().MustRegister(
+	DisableWeaklyTyped,
+	featuregate.StageBeta,
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/9532"),
+	featuregate.WithRegisterDescription("disables weakly typed input option in confmap"),
 )
 
 // New creates a new empty confmap.Conf instance.
@@ -148,11 +159,10 @@ func (l *Conf) ToStringMap() map[string]any {
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
 func decodeConfig(m *Conf, result any, errorUnused bool) error {
 	dc := &mapstructure.DecoderConfig{
-		ErrorUnused:      errorUnused,
-		Result:           result,
-		TagName:          "mapstructure",
-		WeaklyTypedInput: true,
-		MatchName:        caseSensitiveMatchName,
+		ErrorUnused: errorUnused,
+		Result:      result,
+		TagName:     "mapstructure",
+		MatchName:   caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			expandNilStructPointersHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),
@@ -165,6 +175,9 @@ func decodeConfig(m *Conf, result any, errorUnused bool) error {
 			unmarshalerEmbeddedStructsHookFunc(),
 			zeroSliceHookFunc(),
 		),
+	}
+	if !DisableWeaklyTypedfeatureGate.IsEnabled() {
+		dc.WeaklyTypedInput = true
 	}
 	decoder, err := mapstructure.NewDecoder(dc)
 	if err != nil {

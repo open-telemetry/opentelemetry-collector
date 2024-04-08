@@ -128,7 +128,7 @@ func TestPipelineConfigUnmarshalError(t *testing.T) {
 					},
 				},
 			}),
-			expectError: "'[traces].receivers[0]' has invalid keys: nop",
+			expectError: "1 error(s) decoding:\n\n* '[traces].receivers': source data must be an array or slice, got map",
 		},
 	}
 
