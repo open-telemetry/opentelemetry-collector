@@ -13,6 +13,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -712,6 +713,62 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		`failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither`)
 }
 
+func TestGRPCValidTLSCredentials(t *testing.T) {
+
+	tests := []struct {
+		name   string
+		config *configtls.ServerConfig
+	}{
+		{
+			name: "Base case",
+			config: &configtls.ServerConfig{
+				TLSSetting: configtls.Config{
+					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CertFile: filepath.Join("testdata", "server.crt"),
+					KeyFile:  filepath.Join("testdata", "server.key"),
+				},
+			},
+		},
+		{
+			name: "Test reload enabled",
+			config: &configtls.ServerConfig{
+				TLSSetting: configtls.Config{
+					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CertFile: filepath.Join("testdata", "server.crt"),
+					KeyFile:  filepath.Join("testdata", "server.key"),
+				},
+				ReloadClientCAFile: true,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &Config{
+				Protocols: Protocols{
+					GRPC: &configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
+							Endpoint:  testutil.GetAvailableLocalAddress(t),
+							Transport: "tcp",
+						},
+						TLSSetting: test.config,
+					},
+				},
+			}
+
+			r, err := NewFactory().CreateTracesReceiver(
+				context.Background(),
+				receivertest.NewNopCreateSettings(),
+				cfg,
+				consumertest.NewNop())
+			require.NoError(t, err)
+			assert.NotNil(t, r)
+			assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, r.Shutdown(context.Background()))
+		})
+	}
+}
+
 func TestGRPCMaxRecvSize(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	sink := newErrOrSinkConsumer()
@@ -776,6 +833,64 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	assert.NotNil(t, r)
 	assert.EqualError(t, r.Start(context.Background(), componenttest.NewNopHost()),
 		`failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither`)
+}
+
+func TestHTTPTLSCredentials(t *testing.T) {
+	// Add test cases like GRPC test
+	tests := []struct {
+		name   string
+		config *configtls.ServerConfig
+	}{
+		{
+			name: "Base case",
+			config: &configtls.ServerConfig{
+				TLSSetting: configtls.Config{
+					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CertFile: filepath.Join("testdata", "server.crt"),
+					KeyFile:  filepath.Join("testdata", "server.key"),
+				},
+			},
+		},
+		{
+			name: "Test reload enabled",
+			config: &configtls.ServerConfig{
+				TLSSetting: configtls.Config{
+					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CertFile: filepath.Join("testdata", "server.crt"),
+					KeyFile:  filepath.Join("testdata", "server.key"),
+				},
+				ReloadClientCAFile: true,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &Config{
+				Protocols: Protocols{
+					HTTP: &HTTPConfig{
+						ServerConfig: &confighttp.ServerConfig{
+							Endpoint:   testutil.GetAvailableLocalAddress(t),
+							TLSSetting: test.config,
+						},
+						TracesURLPath:  defaultTracesURLPath,
+						MetricsURLPath: defaultMetricsURLPath,
+						LogsURLPath:    defaultLogsURLPath,
+					},
+				},
+			}
+
+			r, err := NewFactory().CreateTracesReceiver(
+				context.Background(),
+				receivertest.NewNopCreateSettings(),
+				cfg,
+				consumertest.NewNop())
+			require.NoError(t, err)
+			assert.NotNil(t, r)
+			assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, r.Shutdown(context.Background()))
+		})
+	}
 }
 
 func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, payload []byte, size int, expectedStatusCode int) {

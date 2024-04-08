@@ -132,7 +132,7 @@ func (r *clientCAsFileReloader) handleWatcherEvents() {
 
 func (r *clientCAsFileReloader) shutdown() error {
 	if r.shutdownCH == nil {
-		return fmt.Errorf("client CAs file watcher is not running")
+		return nil
 	}
 	r.shutdownCH <- true
 	close(r.shutdownCH)
