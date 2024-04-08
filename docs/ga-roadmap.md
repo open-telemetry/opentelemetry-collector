@@ -51,6 +51,5 @@ The following is a list of requirements for this minimal Collector distribution 
   * Troubleshooting and how to obtain telemetry from the Collector for the purposes of bug reporting
   * Queueing, batching, and handling of backpressure
 * The Collector MUST be supported
-  * We need to make sure we can support the collector distribution and set clear expectations.
-  * We need to have workflows, processes in place to handle the influx of questions.
+  * Processes, workflows and expectations regarding support, bug reporting and questions should be documented.
   * We need to have a support policy in place for 1.0 with an end of life date.
