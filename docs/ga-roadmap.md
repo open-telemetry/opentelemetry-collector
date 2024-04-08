@@ -51,4 +51,4 @@ The following is a list of requirements for this minimal Collector distribution 
   * Queueing, batching, and handling of backpressure
 * The Collector must be supported
   * Processes, workflows and expectations regarding support, bug reporting and questions should be documented.
-  * We need to have a support policy in place for 1.0 with an end of life date.
+  * A minimum support period for 1.0 is documented
