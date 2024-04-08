@@ -51,4 +51,4 @@ The following is a list of requirements for this minimal Collector distribution 
   * Queueing, batching, and handling of backpressure
 * The Collector must be supported
   * Processes, workflows and expectations regarding support, bug reporting and questions should be documented.
-  * A minimum support period for 1.0 is documented
+  * A minimum support period for 1.0 is documented, similarly to [API and SDK](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/versioning-and-stability.md#api-support) stability guarantees.
