@@ -46,8 +46,7 @@ The following is a list of requirements for this minimal Collector distribution 
   * Getting started with the Collector
   * Available (stable) components and how to use them
   * Blueprints for common use cases
-  * Error scenarios should be documented
-  * Specifically, error propagation
+  * Error scenarios and error propagation
   * Troubleshooting and how to obtain telemetry from the Collector for the purposes of bug reporting
   * Queueing, batching, and handling of backpressure
 * The Collector MUST be supported
