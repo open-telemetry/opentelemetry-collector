@@ -288,7 +288,8 @@ check-contrib:
 		-replace go.opentelemetry.io/collector/receiver/nopreceiver=$(CURDIR)/receiver/nopreceiver  \
 		-replace go.opentelemetry.io/collector/receiver/otlpreceiver=$(CURDIR)/receiver/otlpreceiver  \
 		-replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv  \
-		-replace go.opentelemetry.io/collector/service=$(CURDIR)/service"
+		-replace go.opentelemetry.io/collector/service=$(CURDIR)/service \
+		-replace go.opentelemetry.io/collector/pdata/testdata=$(CURDIR)/pdata/testdata"
 	@$(MAKE) -C $(CONTRIB_PATH) gotidy
 	@$(MAKE) -C $(CONTRIB_PATH) gotest
 	@if [ -z "$(SKIP_RESTORE_CONTRIB)" ]; then \
