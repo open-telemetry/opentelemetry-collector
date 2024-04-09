@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.97.0
 	go.opentelemetry.io/collector/extension v0.97.0
 	go.opentelemetry.io/collector/pdata v1.4.0
-	go.opentelemetry.io/collector/pdata/testdata v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a
 	go.opentelemetry.io/collector/receiver v0.97.0
 	go.opentelemetry.io/otel v1.24.0
 	go.opentelemetry.io/otel/metric v1.24.0
@@ -45,7 +45,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
-	github.com/prometheus/client_model v0.6.0 // indirect
+	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.97.0 // indirect
