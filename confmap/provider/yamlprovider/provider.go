@@ -29,6 +29,20 @@ func NewWithSettings(confmap.ProviderSettings) confmap.Provider {
 	return &provider{}
 }
 
+// NewFactory returns a factory for a confmap.Provider that allows to provide yaml bytes.
+// Deprecated [v0.99.0]: Use NewFactory instead.
+//
+// This Provider supports "yaml" scheme, and can be called with a "uri" that follows:
+//
+//	bytes-uri = "yaml:" yaml-bytes
+//
+// Examples:
+// `yaml:processors::batch::timeout: 2s`
+// `yaml:processors::batch/foo::timeout: 3s`
+func NewFactory() confmap.ProviderFactory {
+	return confmap.NewProviderFactory(NewWithSettings)
+}
+
 func (s *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)

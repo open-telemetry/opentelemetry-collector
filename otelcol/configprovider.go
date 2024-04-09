@@ -136,13 +136,13 @@ func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
 		ResolverSettings: confmap.ResolverSettings{
 			URIs: uris,
 			ProviderFactories: []confmap.ProviderFactory{
-				fileprovider.NewWithSettings,
-				envprovider.NewWithSettings,
-				yamlprovider.NewWithSettings,
-				httpprovider.NewWithSettings,
-				httpsprovider.NewWithSettings,
+				fileprovider.NewFactory(),
+				envprovider.NewFactory(),
+				yamlprovider.NewFactory(),
+				httpprovider.NewFactory(),
+				httpsprovider.NewFactory(),
 			},
-			ConverterFactories: []confmap.ConverterFactory{expandconverter.New},
+			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
 		},
 	}
 }

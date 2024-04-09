@@ -53,8 +53,8 @@ func TestAddFlagToSettings(t *testing.T) {
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs:               []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-				ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewWithSettings},
-				ConverterFactories: []confmap.ConverterFactory{expandconverter.New},
+				ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewFactory()},
+				ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
 			},
 		},
 	}
@@ -88,7 +88,7 @@ func TestInvalidCollectorSettings(t *testing.T) {
 	set := CollectorSettings{
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				ConverterFactories: []confmap.ConverterFactory{expandconverter.New},
+				ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
 				URIs:               []string{"--config=otelcol-nop.yaml"},
 			},
 		},
@@ -102,8 +102,8 @@ func TestNewCommandInvalidComponent(t *testing.T) {
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:               []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-			ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewWithSettings},
-			ConverterFactories: []confmap.ConverterFactory{expandconverter.New},
+			ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewFactory()},
+			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
 		},
 	}
 

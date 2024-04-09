@@ -13,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 type mockProvider struct {
@@ -48,14 +49,15 @@ func (m *mockProvider) Shutdown(context.Context) error {
 }
 
 func newMockProvider(m *mockProvider) ProviderFactory {
-	return func(_ ProviderSettings) Provider {
+	return NewProviderFactory(func(_ ProviderSettings) Provider {
 		return m
-	}
+	})
 }
 
 type fakeProvider struct {
 	scheme string
 	ret    func(ctx context.Context, uri string, watcher WatcherFunc) (*Retrieved, error)
+	logger *zap.Logger
 }
 
 func newFileProvider(t testing.TB) ProviderFactory {
@@ -65,12 +67,30 @@ func newFileProvider(t testing.TB) ProviderFactory {
 }
 
 func newFakeProvider(scheme string, ret func(ctx context.Context, uri string, watcher WatcherFunc) (*Retrieved, error)) ProviderFactory {
-	return func(ProviderSettings) Provider {
+	return NewProviderFactory(func(ps ProviderSettings) Provider {
 		return &fakeProvider{
 			scheme: scheme,
 			ret:    ret,
+			logger: ps.Logger,
 		}
+	})
+}
+
+func newObservableFileProvider(t testing.TB) (ProviderFactory, *fakeProvider) {
+	return newObservableProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
+		return NewRetrieved(newConfFromFile(t, uri[5:]))
+	})
+}
+
+func newObservableProvider(scheme string, ret func(ctx context.Context, uri string, watcher WatcherFunc) (*Retrieved, error)) (ProviderFactory, *fakeProvider) {
+	fp := &fakeProvider{
+		scheme: scheme,
+		ret:    ret,
 	}
+	return NewProviderFactory(func(ps ProviderSettings) Provider {
+		fp.logger = ps.Logger
+		return fp
+	}), fp
 }
 
 func (f *fakeProvider) Retrieve(ctx context.Context, uri string, watcher WatcherFunc) (*Retrieved, error) {
@@ -174,12 +194,12 @@ func TestResolverErrors(t *testing.T) {
 			mockProviderFuncs := make([]ProviderFactory, len(tt.providers))
 			for i, provider := range tt.providers {
 				p := provider
-				mockProviderFuncs[i] = func(_ ProviderSettings) Provider { return p }
+				mockProviderFuncs[i] = NewProviderFactory(func(_ ProviderSettings) Provider { return p })
 			}
 			converterFuncs := make([]ConverterFactory, len(tt.converters))
 			for i, converter := range tt.converters {
 				c := converter
-				converterFuncs[i] = func(_ ConverterSettings) Converter { return c }
+				converterFuncs[i] = NewConverterFactory(func(_ ConverterSettings) Converter { return c })
 			}
 			resolver, err := NewResolver(ResolverSettings{URIs: tt.locations, ProviderFactories: mockProviderFuncs, ConverterFactories: converterFuncs})
 			if tt.expectBuildErr {
@@ -376,7 +396,7 @@ func TestCantConfigureTwoConverterSettings(t *testing.T) {
 	_, err := NewResolver(ResolverSettings{
 		URIs:               []string{filepath.Join("testdata", "config.yaml")},
 		ProviderFactories:  []ProviderFactory{newFileProvider(t)},
-		ConverterFactories: []ConverterFactory{func(_ ConverterSettings) Converter { return &mockConverter{} }},
+		ConverterFactories: []ConverterFactory{NewConverterFactory(func(_ ConverterSettings) Converter { return &mockConverter{} })},
 		Converters:         []Converter{&mockConverter{err: errors.New("converter_err")}},
 	})
 	require.Error(t, err)
@@ -398,4 +418,14 @@ func TestTakesInstantiatedConverters(t *testing.T) {
 		Converters:        []Converter{&mockConverter{err: errors.New("converter_err")}},
 	})
 	require.NoError(t, err)
+}
+
+func TestProvidesDefaultLogger(t *testing.T) {
+	factory, provider := newObservableFileProvider(t)
+	_, err := NewResolver(ResolverSettings{
+		URIs:              []string{filepath.Join("testdata", "config.yaml")},
+		ProviderFactories: []ProviderFactory{factory},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, provider.logger)
 }

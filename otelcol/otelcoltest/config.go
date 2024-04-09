@@ -22,12 +22,12 @@ func LoadConfig(fileName string, factories otelcol.Factories) (*otelcol.Config, 
 		ResolverSettings: confmap.ResolverSettings{
 			URIs: []string{fileName},
 			ProviderFactories: []confmap.ProviderFactory{
-				fileprovider.NewWithSettings,
-				envprovider.NewWithSettings,
-				yamlprovider.NewWithSettings,
-				httpprovider.NewWithSettings,
+				fileprovider.NewFactory(),
+				envprovider.NewFactory(),
+				yamlprovider.NewFactory(),
+				httpprovider.NewFactory(),
 			},
-			ConverterFactories: []confmap.ConverterFactory{expandconverter.New},
+			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
 		},
 	})
 	if err != nil {

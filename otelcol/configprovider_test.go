@@ -51,7 +51,7 @@ func TestConfigProviderYaml(t *testing.T) {
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:              []string{uriLocation},
-			ProviderFactories: []confmap.ProviderFactory{yamlprovider.NewWithSettings},
+			ProviderFactories: []confmap.ProviderFactory{yamlprovider.NewFactory()},
 		},
 	}
 
@@ -75,7 +75,7 @@ func TestConfigProviderFile(t *testing.T) {
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:              []string{uriLocation},
-			ProviderFactories: []confmap.ProviderFactory{fileprovider.NewWithSettings},
+			ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
 		},
 	}
 
@@ -102,7 +102,7 @@ func TestGetConfmap(t *testing.T) {
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:              []string{uriLocation},
-			ProviderFactories: []confmap.ProviderFactory{fileprovider.NewWithSettings},
+			ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
 		},
 	}
 

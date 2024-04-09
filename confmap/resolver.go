@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 )
 
 // follows drive-letter specification:
@@ -26,10 +27,6 @@ type Resolver struct {
 	closers []CloseFunc
 	watcher chan error
 }
-
-type ConverterFactory = func(ConverterSettings) Converter
-
-type ProviderFactory = func(ProviderSettings) Provider
 
 // ResolverSettings are the settings to configure the behavior of the Resolver.
 type ResolverSettings struct {
@@ -87,6 +84,10 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		return nil, errors.New("invalid map resolver config: no Providers")
 	}
 
+	if set.ProviderSettings.Logger == nil {
+		set.ProviderSettings.Logger = zap.NewNop()
+	}
+
 	var providers map[string]Provider
 	var converters []Converter
 
@@ -97,8 +98,8 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		providers = set.Providers
 	} else {
 		providers = make(map[string]Provider, len(set.ProviderFactories))
-		for _, newProvider := range set.ProviderFactories {
-			provider := newProvider(set.ProviderSettings)
+		for _, factory := range set.ProviderFactories {
+			provider := factory.Create(set.ProviderSettings)
 			providers[provider.Scheme()] = provider
 		}
 	}
@@ -110,8 +111,8 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		converters = set.Converters
 	} else {
 		converters = make([]Converter, len(set.ConverterFactories))
-		for i, newConverter := range set.ConverterFactories {
-			converters[i] = newConverter(set.ConverterSettings)
+		for i, factory := range set.ConverterFactories {
+			converters[i] = factory.Create(set.ConverterSettings)
 		}
 	}
 

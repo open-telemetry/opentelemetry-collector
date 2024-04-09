@@ -440,7 +440,7 @@ func TestPassConfmapToServiceFailure(t *testing.T) {
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs:              []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-				ProviderFactories: []confmap.ProviderFactory{newFailureProvider},
+				ProviderFactories: []confmap.ProviderFactory{confmap.NewProviderFactory(newFailureProvider)},
 			},
 		},
 	}

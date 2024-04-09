@@ -22,6 +22,7 @@ type provider struct {
 }
 
 // NewWithSettings returns a new confmap.Provider that reads the configuration from the given environment variable.
+// Deprecated [v0.99.0]: Use NewFactory instead.
 //
 // This Provider supports "env" scheme, and can be called with a selector:
 // `env:NAME_OF_ENVIRONMENT_VARIABLE`
@@ -29,6 +30,14 @@ func NewWithSettings(ps confmap.ProviderSettings) confmap.Provider {
 	return &provider{
 		logger: ps.Logger,
 	}
+}
+
+// NewFactory returns a factory for a confmap.Provider that reads the configuration from the given environment variable.
+//
+// This Provider supports "env" scheme, and can be called with a selector:
+// `env:NAME_OF_ENVIRONMENT_VARIABLE`
+func NewFactory() confmap.ProviderFactory {
+	return confmap.NewProviderFactory(NewWithSettings)
 }
 
 func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {

@@ -22,6 +22,7 @@ type converter struct {
 }
 
 // New returns a confmap.Converter, that expands all environment variables for a given confmap.Conf.
+// Deprecated [v0.99.0]: Use NewFactory instead.
 //
 // Notice: This API is experimental.
 func New(_ confmap.ConverterSettings) confmap.Converter {
@@ -29,6 +30,12 @@ func New(_ confmap.ConverterSettings) confmap.Converter {
 		loggedDeprecations: make(map[string]struct{}),
 		logger:             zap.NewNop(), // TODO: pass logger in ConverterSettings
 	}
+}
+
+// NewFactory returns a factory for a  confmap.Converter,
+// which expands all environment variables for a given confmap.Conf.
+func NewFactory() confmap.ConverterFactory {
+	return confmap.NewConverterFactory(New)
 }
 
 func (c converter) Convert(_ context.Context, conf *confmap.Conf) error {
