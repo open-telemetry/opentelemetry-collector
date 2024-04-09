@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
@@ -15,8 +16,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 type componentWithStability struct {
