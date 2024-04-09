@@ -218,11 +218,12 @@ jobs:
       - name: Upload coverage report
         uses: Wandalen/wretry.action@1b2dcdbf61a2b96c52858ce7c24c5db099d58e77 # v3.0.1
         with:
-          action: codecov/codecov-action@v3
+          action: codecov/codecov-action@v4
           with: |
             file: ./coverage.txt
             fail_ci_if_error: true
             verbose: true
+            token: ${{ secrets.CODECOV_TOKEN }}
           attempt_limit: 10
           attempt_delay: 15000
 
