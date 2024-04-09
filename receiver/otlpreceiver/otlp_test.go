@@ -722,7 +722,7 @@ func TestGRPCValidTLSCredentials(t *testing.T) {
 		{
 			name: "Base case",
 			config: &configtls.ServerConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
@@ -732,7 +732,7 @@ func TestGRPCValidTLSCredentials(t *testing.T) {
 		{
 			name: "Test reload enabled",
 			config: &configtls.ServerConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
@@ -844,7 +844,7 @@ func TestHTTPTLSCredentials(t *testing.T) {
 		{
 			name: "Base case",
 			config: &configtls.ServerConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
@@ -854,7 +854,7 @@ func TestHTTPTLSCredentials(t *testing.T) {
 		{
 			name: "Test reload enabled",
 			config: &configtls.ServerConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile:   filepath.Join("testdata", "ca.crt"),
 					CertFile: filepath.Join("testdata", "server.crt"),
 					KeyFile:  filepath.Join("testdata", "server.key"),
