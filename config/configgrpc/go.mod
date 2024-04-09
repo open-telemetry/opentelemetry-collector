@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.97.0
 	go.opentelemetry.io/collector/extension/auth v0.97.0
 	go.opentelemetry.io/collector/pdata v1.4.0
-	go.opentelemetry.io/collector/pdata/testdata v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0
 	go.opentelemetry.io/otel v1.24.0
 	go.uber.org/goleak v1.3.0
