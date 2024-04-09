@@ -9,10 +9,10 @@ require (
 	go.opentelemetry.io/collector/config/confignet v0.97.0
 	go.opentelemetry.io/collector/confmap v0.97.0
 	go.opentelemetry.io/collector/extension v0.97.0
-	go.opentelemetry.io/contrib/zpages v0.49.0
-	go.opentelemetry.io/otel/metric v1.24.0
-	go.opentelemetry.io/otel/sdk v1.24.0
-	go.opentelemetry.io/otel/trace v1.24.0
+	go.opentelemetry.io/contrib/zpages v0.50.0
+	go.opentelemetry.io/otel/metric v1.25.0
+	go.opentelemetry.io/otel/sdk v1.25.0
+	go.opentelemetry.io/otel/trace v1.25.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -42,7 +42,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.97.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.4.0 // indirect
 	go.opentelemetry.io/contrib/config v0.4.0 // indirect
-	go.opentelemetry.io/otel v1.24.0 // indirect
+	go.opentelemetry.io/otel v1.25.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.24.0 // indirect
