@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/gogo/protobuf v1.3.2
-	github.com/klauspost/compress v1.17.7
+	github.com/klauspost/compress v1.17.8
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.97.0
 	go.opentelemetry.io/collector/component v0.97.0
