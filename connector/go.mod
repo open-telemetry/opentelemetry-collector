@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/component v0.97.0
 	go.opentelemetry.io/collector/consumer v0.97.0
 	go.opentelemetry.io/collector/pdata v1.4.0
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-00010101000000-000000000000
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -66,3 +67,5 @@ replace go.opentelemetry.io/collector/consumer => ../consumer
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../pdata
+
+replace go.opentelemetry.io/collector/pdata/testdata => ../pdata/testdata

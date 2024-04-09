@@ -48,6 +48,7 @@ replaces:
   - go.opentelemetry.io/collector/featuregate => ${WORKSPACE_DIR}/featuregate
   - go.opentelemetry.io/collector/otelcol => ${WORKSPACE_DIR}/otelcol
   - go.opentelemetry.io/collector/pdata => ${WORKSPACE_DIR}/pdata
+  - go.opentelemetry.io/collector/pdata/testdata => ${WORKSPACE_DIR}/pdata/testdata
   - go.opentelemetry.io/collector/processor => ${WORKSPACE_DIR}/processor
   - go.opentelemetry.io/collector/receiver => ${WORKSPACE_DIR}/receiver
   - go.opentelemetry.io/collector/receiver/otlpreceiver => ${WORKSPACE_DIR}/receiver/otlpreceiver
