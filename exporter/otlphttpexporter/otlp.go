@@ -15,10 +15,9 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/internal/httphelper"
 	"go.uber.org/zap"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
@@ -197,7 +196,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 			"error exporting items, request to %s responded with HTTP Status Code %d",
 			url, resp.StatusCode)
 	}
-	formattedErr = newStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
+	formattedErr = httphelper.NewStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
 
 	if isRetryableStatusCode(resp.StatusCode) {
 		// A retry duration of 0 seconds will trigger the default backoff policy
@@ -392,28 +391,4 @@ func (e *baseExporter) logsPartialSuccessHandler(protoBytes []byte, contentType 
 		)
 	}
 	return nil
-}
-
-// This is a copy from the OTLP HTTP Receiver, i'm not sure the right place to share this logic...
-func newStatusFromMsgAndHTTPCode(errMsg string, statusCode int) *status.Status {
-	var c codes.Code
-	// Mapping based on https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
-	// 429 mapping to ResourceExhausted and 400 mapping to StatusBadRequest are exceptions.
-	switch statusCode {
-	case http.StatusBadRequest:
-		c = codes.InvalidArgument
-	case http.StatusUnauthorized:
-		c = codes.Unauthenticated
-	case http.StatusForbidden:
-		c = codes.PermissionDenied
-	case http.StatusNotFound:
-		c = codes.Unimplemented
-	case http.StatusTooManyRequests:
-		c = codes.ResourceExhausted
-	case http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
-		c = codes.Unavailable
-	default:
-		c = codes.Unknown
-	}
-	return status.New(c, errMsg)
 }
