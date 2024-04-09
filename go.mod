@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.97.0
 	go.opentelemetry.io/collector/featuregate v1.4.0
 	go.opentelemetry.io/collector/pdata v1.4.0
-	go.opentelemetry.io/collector/pdata/testdata v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/pdata/testdata v0.97.0
 	go.opentelemetry.io/contrib/config v0.4.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0

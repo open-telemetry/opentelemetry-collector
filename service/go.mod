@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/extension/zpagesextension v0.97.0
 	go.opentelemetry.io/collector/featuregate v1.4.0
 	go.opentelemetry.io/collector/pdata v1.4.0
-	go.opentelemetry.io/collector/pdata/testdata v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/pdata/testdata v0.97.0
 	go.opentelemetry.io/collector/processor v0.97.0
 	go.opentelemetry.io/collector/receiver v0.97.0
 	go.opentelemetry.io/collector/semconv v0.97.0
