@@ -134,6 +134,8 @@ go.opentelemetry.io/contrib/config v0.4.0 h1:Xb+ncYOqseLroMuBesGNRgVQolXcXOhMj7E
 go.opentelemetry.io/contrib/config v0.4.0/go.mod h1:drNk2xRqLWW4/amk6Uh1S+sDAJTc7bcEEN1GfJzj418=
 go.opentelemetry.io/contrib/propagators/b3 v1.24.0 h1:n4xwCdTx3pZqZs2CjS/CUZAs03y3dZcGhC/FepKtEUY=
 go.opentelemetry.io/contrib/propagators/b3 v1.24.0/go.mod h1:k5wRxKRU2uXx2F8uNJ4TaonuEO/V7/5xoz7kdsDACT8=
+go.opentelemetry.io/contrib/propagators/b3 v1.25.0 h1:QU8UEKyPqgr/8vCC9LlDmkPnfFmiWAUF9GtJdcLz+BU=
+go.opentelemetry.io/contrib/propagators/b3 v1.25.0/go.mod h1:qonC7wyvtX1E6cEpAR+bJmhcGr6IVRGc/f6ZTpvi7jA=
 go.opentelemetry.io/contrib/zpages v0.50.0 h1:hKC5asr83xDN4ErwSHVdk3gv053pZiF8SZKmS86IPEw=
 go.opentelemetry.io/contrib/zpages v0.50.0/go.mod h1:8WovRn95fZdaX/dr3e4h7D8IqiVsnZ+WxY0Yn4LyU3k=
 go.opentelemetry.io/otel v1.25.0 h1:gldB5FfhRl7OJQbUHt/8s0a7cE8fbsPAtdpRaApKy4k=
