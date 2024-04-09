@@ -26,7 +26,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.98.0
 	go.opentelemetry.io/collector/receiver v0.98.0
 	go.opentelemetry.io/collector/semconv v0.98.0
-	go.opentelemetry.io/contrib/config v0.4.0
+	go.opentelemetry.io/contrib/config v0.5.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.25.0
 	go.opentelemetry.io/otel v1.25.0
 	go.opentelemetry.io/otel/bridge/opencensus v1.25.0
