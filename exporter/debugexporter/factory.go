@@ -7,6 +7,9 @@ import (
 	"context"
 	"time"
 
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
@@ -14,8 +17,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/internal/otlptext"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // The value of "type" key in configuration.
