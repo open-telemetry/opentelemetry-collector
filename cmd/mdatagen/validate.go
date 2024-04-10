@@ -35,7 +35,7 @@ func (md *metadata) Validate() error {
 // can only contain ASCII alphanumeric characters and '_'.
 // We allow '/' for subcomponents.
 // This must be kept in sync with the regex in component/config.go.
-var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]*$`)
+var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]{0,62}$`)
 
 func (md *metadata) validateType() error {
 	if md.Type == "" {
