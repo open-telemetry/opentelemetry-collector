@@ -19,15 +19,14 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 ### 🚩 Deprecations 🚩
 
-- `internal/testdata`: move internal/testdata to pdata/testdata (#9886)
-  This reduces dependencies from the consumer package while making testdata available across repos. It will allow us to remove duplicated code and its a fairly small surface area.
 - `confighttp`: Deprecate `ToClient`,`ToListener`and `ToServer` use `ToClientContext`,`ToListenerContext` and `ToServerContext`instead. (#9807)
 - `configtls`: Deprecate `ClientConfig.LoadTLSConfig` and `ServerConfig.LoadTLSConfig`, use `ClientConfig.LoadTLSConfigContext` and `ServerConfig.LoadTLSConfigContext` instead. (#9811)
 
 ### 💡 Enhancements 💡
 
+- Introduce new module for generating pdata: pdata/testdata (#9886)
 - `exporterhelper`: Make the `WithBatcher` option available for regular exporter helpers based on OTLP data type. (#8122)
-  Not `WithBatcher` can be used with both regular exporter helper (e.g. NewTracesExporter) and the request-based exporter 
+  Now, `WithBatcher` can be used with both regular exporter helper (e.g. NewTracesExporter) and the request-based exporter 
   helper (e.g. NewTracesRequestExporter). The request-based exporter helpers require `WithRequestBatchFuncs` option 
   providing batching functions. 
   
