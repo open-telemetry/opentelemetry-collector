@@ -30,7 +30,7 @@ Errors can be created through one of the three constructors provided:
 
 Any error that is not retryable is considered to be a permanent error and will not be retried.
 
-Errors can be joined by passing them to a call to `consumererror.New`.
+Errors can be joined by passing them to a call to `errors.Join`.
 
 ## Other considerations
 
@@ -61,7 +61,7 @@ the upward flow of information at the asynchronous component.
 Creating an error:
 
 ```golang
-consumererror.New(
+errors.Join(
     consumererror.NewTraces(
         error,
         traces,

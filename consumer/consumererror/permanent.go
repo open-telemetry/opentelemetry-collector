@@ -11,18 +11,20 @@ type permanent struct {
 	err error
 }
 
+var _ error = &permanent{}
+
 // NewPermanent wraps an error to indicate that it is a permanent error, i.e. an
 // error that will be always returned if its source receives the same inputs.
 func NewPermanent(err error) error {
-	return Partial{err: err}
+	return &permanent{err: err}
 }
 
-func (p permanent) Error() string {
+func (p *permanent) Error() string {
 	return "Permanent error: " + p.err.Error()
 }
 
 // Unwrap returns the wrapped error for functions Is and As in standard package errors.
-func (p permanent) Unwrap() error {
+func (p *permanent) Unwrap() error {
 	return p.err
 }
 
@@ -33,5 +35,6 @@ func IsPermanent(err error) bool {
 	if err == nil {
 		return false
 	}
-	return errors.As(err, &permanent{})
+	p := &permanent{}
+	return errors.As(err, &p)
 }

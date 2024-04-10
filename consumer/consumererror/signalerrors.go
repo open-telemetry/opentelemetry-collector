@@ -21,6 +21,8 @@ type retryable[V ptrace.Traces | pmetric.Metrics | plog.Logs] struct {
 	data V
 }
 
+var _ error = &retryable[ptrace.Traces]{}
+
 // Unwrap returns the wrapped error for functions Is and As in standard package errors.
 func (err *retryable[V]) Unwrap() error {
 	return err.error
@@ -64,7 +66,7 @@ func NewTraces(err error, data ptrace.Traces, options ...RetryOption) error {
 		opt(&t.retryableCommon)
 	}
 
-	return t
+	return &t
 }
 
 // Logs is an error that may carry associated Log data for a subset of received data
@@ -88,7 +90,7 @@ func NewLogs(err error, data plog.Logs, options ...RetryOption) error {
 		opt(&l.retryableCommon)
 	}
 
-	return l
+	return &l
 }
 
 // Metrics is an error that may carry associated Metrics data for a subset of received data
@@ -112,5 +114,5 @@ func NewMetrics(err error, data pmetric.Metrics, options ...RetryOption) error {
 		opt(&m.retryableCommon)
 	}
 
-	return m
+	return &m
 }

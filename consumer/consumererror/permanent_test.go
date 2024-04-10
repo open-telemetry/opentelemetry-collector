@@ -12,14 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type testErrorType struct {
-	s string
-}
-
-func (t testErrorType) Error() string {
-	return ""
-}
-
 func TestIsPermanent(t *testing.T) {
 	var err error
 	assert.False(t, IsPermanent(err))

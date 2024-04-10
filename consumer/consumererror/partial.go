@@ -8,15 +8,21 @@ type Partial struct {
 	count int
 }
 
+var _ error = &Partial{}
+
 func NewPartial(err error, count int) error {
-	return Partial{err: err, count: count}
+	return &Partial{err: err, count: count}
 }
 
-func (p Partial) Error() string {
+func (p *Partial) Error() string {
 	return "Partial success: " + p.err.Error()
 }
 
 // Unwrap returns the wrapped error for functions Is and As in standard package errors.
-func (p Partial) Unwrap() error {
+func (p *Partial) Unwrap() error {
 	return p.err
+}
+
+func (p *Partial) Count() int {
+	return p.count
 }

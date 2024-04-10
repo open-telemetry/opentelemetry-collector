@@ -13,12 +13,20 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
+type testErrorType struct {
+	s string
+}
+
+func (t testErrorType) Error() string {
+	return ""
+}
+
 func TestTraces(t *testing.T) {
 	td := testdata.GenerateTraces(1)
 	err := errors.New("some error")
 	traceErr := NewTraces(err, td)
 	assert.Equal(t, err.Error(), traceErr.Error())
-	var target Traces
+	target := &Traces{}
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
 	assert.True(t, errors.As(traceErr, &target))
@@ -42,7 +50,7 @@ func TestLogs(t *testing.T) {
 	err := errors.New("some error")
 	logsErr := NewLogs(err, td)
 	assert.Equal(t, err.Error(), logsErr.Error())
-	var target Logs
+	target := &Logs{}
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
 	assert.True(t, errors.As(logsErr, &target))
@@ -66,7 +74,7 @@ func TestMetrics(t *testing.T) {
 	err := errors.New("some error")
 	metricErr := NewMetrics(err, td)
 	assert.Equal(t, err.Error(), metricErr.Error())
-	var target Metrics
+	target := &Metrics{}
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
 	assert.True(t, errors.As(metricErr, &target))
