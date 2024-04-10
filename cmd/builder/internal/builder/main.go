@@ -101,7 +101,7 @@ func Generate(cfg Config) error {
 	}
 	// create a warning message for non-aligned builder and collector base
 	if cfg.Distribution.OtelColVersion != defaultOtelColVersion {
-		if cfg.StrictVersioning {
+		if !cfg.SkipStrictVersioning {
 			return fmt.Errorf("builder version %q does not match build configuration version %q: %w", cfg.Distribution.OtelColVersion, defaultOtelColVersion, ErrStrictMode)
 		}
 		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", zap.String("builder-version", defaultOtelColVersion))
@@ -179,7 +179,7 @@ func GetModules(cfg Config) error {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 
-	if !cfg.StrictVersioning {
+	if cfg.SkipStrictVersioning {
 		return downloadModules(cfg)
 	}
 

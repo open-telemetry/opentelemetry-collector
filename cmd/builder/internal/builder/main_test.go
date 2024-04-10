@@ -19,13 +19,6 @@ func TestGenerateDefault(t *testing.T) {
 	require.NoError(t, Generate(NewDefaultConfig()))
 }
 
-func TestGenerateInvalidCollectorVersion(t *testing.T) {
-	cfg := NewDefaultConfig()
-	cfg.Distribution.OtelColVersion = "invalid"
-	err := Generate(cfg)
-	require.NoError(t, err)
-}
-
 func TestGenerateInvalidOutputPath(t *testing.T) {
 	cfg := NewDefaultConfig()
 	cfg.Distribution.OutputPath = "/:invalid"
@@ -34,12 +27,85 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to create output path")
 }
 
-func TestStrictVersioning(t *testing.T) {
-	cfg := NewDefaultConfig()
-	cfg.Distribution.OtelColVersion = "0.0.0"
-	cfg.StrictVersioning = true
-	err := Generate(cfg)
-	require.ErrorIs(t, err, ErrStrictMode)
+func TestVersioning(t *testing.T) {
+	tests := []struct {
+		description string
+		cfgBuilder  func() Config
+		expectedErr error
+	}{
+		{
+			description: "success",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.Go = "go"
+				return cfg
+			},
+			expectedErr: nil,
+		},
+		{
+			description: "old otel version",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OtelColVersion = "0.90.0"
+				return cfg
+			},
+			expectedErr: ErrStrictMode,
+		},
+		{
+			description: "old otel version without strict mode",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.Go = "go"
+				cfg.SkipStrictVersioning = true
+				cfg.Distribution.OtelColVersion = "0.90.0"
+				return cfg
+			},
+			expectedErr: nil,
+		},
+		{
+			description: "invalid version",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OtelColVersion = "invalid"
+				return cfg
+			},
+			expectedErr: ErrStrictMode,
+		},
+		{
+			description: "invalid version without strict mode, only generate",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OtelColVersion = "invalid"
+				cfg.SkipGetModules = true
+				cfg.SkipCompilation = true
+				cfg.SkipStrictVersioning = true
+				return cfg
+			},
+			expectedErr: nil,
+		},
+		{
+			description: "old component version",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.Go = "go"
+				cfg.Exporters = []Module{
+					{
+						Import: "go.opentelemetry.io/collector/receiver/otlpreceiver",
+						GoMod:  "go.opentelemetry.io/collector v0.96.0",
+					},
+				}
+				return cfg
+			},
+			expectedErr: ErrStrictMode,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			cfg := tc.cfgBuilder()
+			err := GenerateAndCompile(cfg)
+			require.ErrorIs(t, err, tc.expectedErr)
+		})
+	}
 }
 
 func TestSkipGenerate(t *testing.T) {

@@ -148,10 +148,9 @@ to only execute the compilation step.
 
 ### Strict versioning checks
 
-There is an option that controls version strictness applied by the
-builder.  When the `--strict-versioning` command-line flag is used,
-the following additional checks apply to the finished `go.mod` file
-after getting all the components and tidying the result.
+Strict version checking is enabled by default and checks the relevant `go.mod` 
+file for the following things after `go get`ing all components and calling 
+`go mod tidy`:
 
 1. The `dist::otelcol_version` field in the build configuration must
    match the core library version calculated by the Go toolchain,
@@ -163,6 +162,3 @@ after getting all the components and tidying the result.
    the Go toolchain, considering all components.  A mismatch could
    happen, for example, when the enclosing Go module uses a newer
    release of the core collector library.
-
-When `--skip-new-go-module` is used, these checks apply to the
-enclosing Go module; otherwise, they apply to the generated module.

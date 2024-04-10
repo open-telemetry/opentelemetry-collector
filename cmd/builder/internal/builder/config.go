@@ -28,13 +28,13 @@ var (
 
 // Config holds the builder's configuration
 type Config struct {
-	Logger           *zap.Logger
-	SkipGenerate     bool   `mapstructure:"-"`
-	SkipCompilation  bool   `mapstructure:"-"`
-	SkipGetModules   bool   `mapstructure:"-"`
-	StrictVersioning bool   `mapstructure:"-"`
-	LDFlags          string `mapstructure:"-"`
-	Verbose          bool   `mapstructure:"-"`
+	Logger               *zap.Logger
+	SkipGenerate         bool   `mapstructure:"-"`
+	SkipCompilation      bool   `mapstructure:"-"`
+	SkipGetModules       bool   `mapstructure:"-"`
+	SkipStrictVersioning bool   `mapstructure:"-"`
+	LDFlags              string `mapstructure:"-"`
+	Verbose              bool   `mapstructure:"-"`
 
 	Distribution Distribution `mapstructure:"dist"`
 	Exporters    []Module     `mapstructure:"exporters"`
