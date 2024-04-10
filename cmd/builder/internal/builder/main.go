@@ -5,7 +5,6 @@ package builder // import "go.opentelemetry.io/collector/cmd/builder/internal/bu
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -16,35 +15,24 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapio"
-
-	"go.opentelemetry.io/collector/cmd/builder/internal/builder/modfile"
+	"golang.org/x/mod/modfile"
 )
 
 var (
 	// ErrGoNotFound is returned when a Go binary hasn't been found
 	ErrGoNotFound       = errors.New("go binary not found")
-	ErrStrictMode       = errors.New("failing due to strict mode")
+	ErrStrictMode       = errors.New("mismatch in go.mod and builder configuration versions")
 	errFailedToDownload = errors.New("failed to download go modules")
 )
 
-// makeGoCommand is called by runGoCommand and runGoCommandStdout, mainly
-// to isolate the security annotation.
-func makeGoCommand(cfg Config, args []string) *exec.Cmd {
-	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path and the caller is assumed to have carried out necessary input validation
-	cmd := exec.Command(cfg.Distribution.Go, args...)
-	cmd.Dir = cfg.Distribution.OutputPath
-	return cmd
-}
-
-// runGoCommandStdout is similar to `runGoCommand` but returns the
-// standard output.  The subcommand is only printed with Verbose=true,
-// since it is invoked frequently when --skip-new-go-module is set.
-func runGoCommandStdout(cfg Config, args ...string) ([]byte, error) {
+func runGoCommand(cfg Config, args ...string) ([]byte, error) {
 	if cfg.Verbose {
 		cfg.Logger.Info("Running go subcommand.", zap.Any("arguments", args))
 	}
-	cmd := makeGoCommand(cfg, args)
+
+	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path and the caller is assumed to have carried out necessary input validation
+	cmd := exec.Command(cfg.Distribution.Go, args...)
+	cmd.Dir = cfg.Distribution.OutputPath
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -58,25 +46,6 @@ func runGoCommandStdout(cfg Config, args ...string) ([]byte, error) {
 	}
 
 	return stdout.Bytes(), nil
-}
-
-func runGoCommand(cfg Config, args ...string) error {
-	cfg.Logger.Info("Running go subcommand.", zap.Any("arguments", args))
-	cmd := makeGoCommand(cfg, args)
-
-	if cfg.Verbose {
-		writer := &zapio.Writer{Log: cfg.Logger}
-		defer func() { _ = writer.Close() }()
-		cmd.Stdout = writer
-		cmd.Stderr = writer
-		return cmd.Run()
-	}
-
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("go subcommand failed with args '%v': %w. Output:\n%s", args, err, out)
-	}
-
-	return nil
 }
 
 // GenerateAndCompile will generate the source files based on the given configuration, update go mod, and will compile into a binary
@@ -155,7 +124,7 @@ func Compile(cfg Config) error {
 	if cfg.Distribution.BuildTags != "" {
 		args = append(args, "-tags", cfg.Distribution.BuildTags)
 	}
-	if err := runGoCommand(cfg, args...); err != nil {
+	if _, err := runGoCommand(cfg, args...); err != nil {
 		return fmt.Errorf("failed to compile the OpenTelemetry Collector distribution: %w", err)
 	}
 	cfg.Logger.Info("Compiled", zap.String("binary", fmt.Sprintf("%s/%s", cfg.Distribution.OutputPath, cfg.Distribution.Name)))
@@ -171,11 +140,11 @@ func GetModules(cfg Config) error {
 	}
 
 	// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
-	if err := runGoCommand(cfg, "get", "cloud.google.com/go"); err != nil {
+	if _, err := runGoCommand(cfg, "get", "cloud.google.com/go"); err != nil {
 		return fmt.Errorf("failed to go get: %w", err)
 	}
 
-	if err := runGoCommand(cfg, "mod", "tidy", "-compat=1.21"); err != nil {
+	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.21"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 
@@ -185,31 +154,52 @@ func GetModules(cfg Config) error {
 
 	// Perform strict version checking.  For each component listed and the
 	// otelcol core dependency, check that the enclosing go module matches.
-	mf, mvm, err := cfg.readGoModFile()
+	modulePath, dependencyVersions, err := cfg.readGoModFile()
 	if err != nil {
 		return err
 	}
 
-	coremod, corever := cfg.coreModuleAndVersion()
-	if mvm[coremod] != corever {
-		return fmt.Errorf("core collector version calculated by component dependencies %q does not match configured version %q: %w. Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version", mvm[coremod], corever, ErrStrictMode)
+	corePath, coreVersion := cfg.coreModuleAndVersion()
+	if dependencyVersions[corePath] != coreVersion {
+		return fmt.Errorf(
+			"%w: core collector version calculated by component dependencies %q does not match configured version %q. Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version",
+			ErrStrictMode, dependencyVersions[corePath], coreVersion)
 	}
 
 	for _, mod := range cfg.allComponents() {
 		module, version, _ := strings.Cut(mod.GoMod, " ")
-		if module == mf.Module.Path {
-			// Main module is not checked, by definition.  This happens
-			// with --skip-new-go-module where the enclosing module
-			// contains the components used in the build.
+		if module == modulePath {
+			// No need to check the version of components that are part of the
+			// module we're building from.
 			continue
 		}
 
-		if mvm[module] != version {
-			return fmt.Errorf("component %q version calculated by dependencies %q does not match configured version %q: %w. Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version", module, mvm[module], version, ErrStrictMode)
+		if dependencyVersions[module] != version {
+			return fmt.Errorf(
+				"%w: component %q version calculated by dependencies %q does not match configured version %q. Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version",
+				ErrStrictMode, module, dependencyVersions[module], version)
 		}
 	}
 
 	return downloadModules(cfg)
+}
+
+func downloadModules(cfg Config) error {
+	cfg.Logger.Info("Getting go modules")
+	// basic retry if error from go mod command (in case of transient network error). This could be improved
+	// retry 3 times with 5 second spacing interval
+	retries := 3
+	failReason := "unknown"
+	for i := 1; i <= retries; i++ {
+		if _, err := runGoCommand(cfg, "mod", "download"); err != nil {
+			failReason = err.Error()
+			cfg.Logger.Info("Failed modules download", zap.String("retry", fmt.Sprintf("%d/%d", i, retries)))
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		return nil
+	}
+	return fmt.Errorf("%w: %s", errFailedToDownload, failReason)
 }
 
 func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplParams any) error {
@@ -220,23 +210,6 @@ func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplPa
 
 	defer out.Close()
 	return tmpl.Execute(out, tmplParams)
-}
-
-func downloadModules(cfg Config) error {
-	cfg.Logger.Info("Getting go modules")
-
-	failReason := "unknown"
-	for i := 1; i <= cfg.downloadModules.numRetries; i++ {
-		if err := runGoCommand(cfg, "mod", "download"); err != nil {
-			failReason = err.Error()
-			cfg.Logger.Info("Failed modules download", zap.String("retry", fmt.Sprintf("%d/%d", i, cfg.downloadModules.numRetries)))
-			time.Sleep(cfg.downloadModules.wait)
-			continue
-		}
-		return nil
-	}
-
-	return fmt.Errorf("%w: %s", errFailedToDownload, failReason)
 }
 
 func (c *Config) coreModuleAndVersion() (string, string) {
@@ -255,17 +228,25 @@ func (c *Config) allComponents() []Module {
 					c.Connectors...)...)...)...)
 }
 
-func (c *Config) readGoModFile() (mf modfile.GoMod, _ map[string]string, _ error) {
-	stdout, err := runGoCommandStdout(*c, "mod", "edit", "-json")
+func (c *Config) readGoModFile() (string, map[string]string, error) {
+	var modPath string
+	stdout, err := runGoCommand(*c, "mod", "edit", "-print")
 	if err != nil {
-		return mf, nil, err
+		return modPath, nil, err
 	}
-	if err := json.Unmarshal(stdout, &mf); err != nil {
-		return mf, nil, err
+	parsedFile, err := modfile.Parse("go.mod", stdout, nil)
+	if err != nil {
+		return modPath, nil, err
 	}
-	mvm := map[string]string{}
-	for _, req := range mf.Require {
-		mvm[req.Path] = req.Version
+	if parsedFile != nil && parsedFile.Module != nil {
+		modPath = parsedFile.Module.Mod.Path
 	}
-	return mf, mvm, nil
+	dependencies := map[string]string{}
+	for _, req := range parsedFile.Require {
+		if req == nil {
+			continue
+		}
+		dependencies[req.Mod.Path] = req.Mod.Version
+	}
+	return modPath, dependencies, nil
 }
