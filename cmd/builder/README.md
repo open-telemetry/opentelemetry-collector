@@ -148,7 +148,7 @@ to only execute the compilation step.
 
 ### Strict versioning checks
 
-Strict version checking is enabled by default and checks the relevant `go.mod` 
+The builder checks the relevant `go.mod`
 file for the following things after `go get`ing all components and calling 
 `go mod tidy`:
 
@@ -162,3 +162,7 @@ file for the following things after `go get`ing all components and calling
    the Go toolchain, considering all components.  A mismatch could
    happen, for example, when the enclosing Go module uses a newer
    release of the core collector library.
+   
+The `--skip-strict-versioning` flag disables these versioning checks. 
+This flag is available temporarily and 
+**will be removed in a future minor version**.

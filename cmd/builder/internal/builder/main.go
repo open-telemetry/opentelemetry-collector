@@ -192,7 +192,7 @@ func GetModules(cfg Config) error {
 
 	coremod, corever := cfg.coreModuleAndVersion()
 	if mvm[coremod] != corever {
-		return fmt.Errorf("core collector version calculated by component dependencies %q does not match configured version %q: %w", mvm[coremod], corever, ErrStrictMode)
+		return fmt.Errorf("core collector version calculated by component dependencies %q does not match configured version %q: %w. Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version", mvm[coremod], corever, ErrStrictMode)
 	}
 
 	for _, mod := range cfg.allComponents() {
@@ -205,7 +205,7 @@ func GetModules(cfg Config) error {
 		}
 
 		if mvm[module] != version {
-			return fmt.Errorf("component %q version calculated by dependencies %q does not match configured version %q: %w", module, mvm[module], version, ErrStrictMode)
+			return fmt.Errorf("component %q version calculated by dependencies %q does not match configured version %q: %w. Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version", module, mvm[module], version, ErrStrictMode)
 		}
 	}
 
