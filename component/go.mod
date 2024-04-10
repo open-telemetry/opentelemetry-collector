@@ -7,9 +7,9 @@ require (
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.48.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.97.0
-	go.opentelemetry.io/collector/confmap v0.97.0
-	go.opentelemetry.io/collector/pdata v1.4.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.98.0
+	go.opentelemetry.io/collector/confmap v0.98.0
+	go.opentelemetry.io/collector/pdata v1.5.0
 	go.opentelemetry.io/otel v1.25.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.47.0
 	go.opentelemetry.io/otel/metric v1.25.0
