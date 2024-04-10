@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestSupportedScheme(t *testing.T) {
-	fp := NewWithSettings(confmap.ProviderSettings{})
+	fp := NewWithSettings(confmaptest.NewNopProviderSettings())
 	assert.Equal(t, "http", fp.Scheme())
 	require.NoError(t, fp.Shutdown(context.Background()))
 }

@@ -61,6 +61,7 @@ replaces:
   - go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ../../featuregate
   - go.opentelemetry.io/collector/pdata => ../../pdata
+  - go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
   - go.opentelemetry.io/collector/processor => ../../processor
   - go.opentelemetry.io/collector/receiver => ../../receiver
   - go.opentelemetry.io/collector/receiver/nopreceiver => ../../receiver/nopreceiver
