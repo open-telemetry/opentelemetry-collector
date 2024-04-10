@@ -33,7 +33,7 @@ func AddScraper(scraper Scraper) ScraperControllerOption {
 	}
 }
 
-// WithTickerChannel allows you to override the scraper controllers ticker
+// WithTickerChannel allows you to override the scraper controller's ticker
 // channel to specify when scrape is called. This is only expected to be
 // used by tests.
 func WithTickerChannel(tickerCh <-chan time.Time) ScraperControllerOption {
@@ -163,7 +163,7 @@ func (sc *controller) startScraping() {
 
 			sc.tickerCh = ticker.C
 		}
-		// Call scrape method on initialision to ensure
+		// Call scrape method on initialization to ensure
 		// that scrapers start from when the component starts
 		// instead of waiting for the full duration to start.
 		sc.scrapeMetricsAndReport()

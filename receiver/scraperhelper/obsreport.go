@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	scraperScope = obsmetrics.Scope + obsmetrics.NameSep + obsmetrics.ScraperKey
+	scraperScope = obsmetrics.Scope + obsmetrics.SpanNameSep + obsmetrics.ScraperKey
 )
 
 // ObsReport is a helper to add observability to a scraper.
@@ -98,7 +98,7 @@ func (s *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
 // returned context should be used in other calls to the obsreport functions
 // dealing with the same scrape operation.
 func (s *ObsReport) StartMetricsOp(ctx context.Context) context.Context {
-	spanName := obsmetrics.ScraperPrefix + s.receiverID.String() + obsmetrics.NameSep + s.scraper.String() + obsmetrics.ScraperMetricsOperationSuffix
+	spanName := obsmetrics.ScraperPrefix + s.receiverID.String() + obsmetrics.SpanNameSep + s.scraper.String() + obsmetrics.ScraperMetricsOperationSuffix
 	ctx, _ = s.tracer.Start(ctx, spanName)
 	return ctx
 }
