@@ -10,22 +10,22 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.97.0
-	go.opentelemetry.io/collector/component v0.97.0
-	go.opentelemetry.io/collector/config/confignet v0.97.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.97.0
-	go.opentelemetry.io/collector/confmap v0.97.0
-	go.opentelemetry.io/collector/connector v0.97.0
-	go.opentelemetry.io/collector/consumer v0.97.0
-	go.opentelemetry.io/collector/exporter v0.97.0
-	go.opentelemetry.io/collector/extension v0.97.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.97.0
+	go.opentelemetry.io/collector v0.98.0
+	go.opentelemetry.io/collector/component v0.98.0
+	go.opentelemetry.io/collector/config/confignet v0.98.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.98.0
+	go.opentelemetry.io/collector/confmap v0.98.0
+	go.opentelemetry.io/collector/connector v0.98.0
+	go.opentelemetry.io/collector/consumer v0.98.0
+	go.opentelemetry.io/collector/exporter v0.98.0
+	go.opentelemetry.io/collector/extension v0.98.0
+	go.opentelemetry.io/collector/extension/zpagesextension v0.98.0
 	go.opentelemetry.io/collector/featuregate v1.5.0
 	go.opentelemetry.io/collector/pdata v1.5.0
-	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a
-	go.opentelemetry.io/collector/processor v0.97.0
-	go.opentelemetry.io/collector/receiver v0.97.0
-	go.opentelemetry.io/collector/semconv v0.97.0
+	go.opentelemetry.io/collector/pdata/testdata v0.98.0
+	go.opentelemetry.io/collector/processor v0.98.0
+	go.opentelemetry.io/collector/receiver v0.98.0
+	go.opentelemetry.io/collector/semconv v0.98.0
 	go.opentelemetry.io/contrib/config v0.4.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.25.0
 	go.opentelemetry.io/otel v1.25.0

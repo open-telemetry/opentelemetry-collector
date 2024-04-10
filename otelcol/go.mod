@@ -5,22 +5,22 @@ go 1.21
 require (
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.97.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.97.0
-	go.opentelemetry.io/collector/confmap v0.97.0
-	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.97.0
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.97.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.97.0
-	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.97.0
-	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.97.0
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.97.0
-	go.opentelemetry.io/collector/connector v0.97.0
-	go.opentelemetry.io/collector/exporter v0.97.0
-	go.opentelemetry.io/collector/extension v0.97.0
+	go.opentelemetry.io/collector/component v0.98.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.98.0
+	go.opentelemetry.io/collector/confmap v0.98.0
+	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.98.0
+	go.opentelemetry.io/collector/confmap/provider/envprovider v0.98.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.98.0
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.98.0
+	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.98.0
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.98.0
+	go.opentelemetry.io/collector/connector v0.98.0
+	go.opentelemetry.io/collector/exporter v0.98.0
+	go.opentelemetry.io/collector/extension v0.98.0
 	go.opentelemetry.io/collector/featuregate v1.5.0
-	go.opentelemetry.io/collector/processor v0.97.0
-	go.opentelemetry.io/collector/receiver v0.97.0
-	go.opentelemetry.io/collector/service v0.97.0
+	go.opentelemetry.io/collector/processor v0.98.0
+	go.opentelemetry.io/collector/receiver v0.98.0
+	go.opentelemetry.io/collector/service v0.98.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -67,11 +67,11 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.97.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.97.0 // indirect
+	go.opentelemetry.io/collector v0.98.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.98.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.5.0 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a // indirect
-	go.opentelemetry.io/collector/semconv v0.97.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.98.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.98.0 // indirect
 	go.opentelemetry.io/contrib/config v0.4.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.25.0 // indirect
 	go.opentelemetry.io/otel v1.25.0 // indirect
