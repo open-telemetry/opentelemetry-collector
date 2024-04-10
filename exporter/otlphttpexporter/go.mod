@@ -6,15 +6,15 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.97.0
 	go.opentelemetry.io/collector/component v0.97.0
-	go.opentelemetry.io/collector/config/configcompression v1.4.0
+	go.opentelemetry.io/collector/config/configcompression v1.5.0
 	go.opentelemetry.io/collector/config/confighttp v0.97.0
-	go.opentelemetry.io/collector/config/configopaque v1.4.0
+	go.opentelemetry.io/collector/config/configopaque v1.5.0
 	go.opentelemetry.io/collector/config/configretry v0.97.0
 	go.opentelemetry.io/collector/config/configtls v0.97.0
 	go.opentelemetry.io/collector/confmap v0.97.0
 	go.opentelemetry.io/collector/consumer v0.97.0
 	go.opentelemetry.io/collector/exporter v0.97.0
-	go.opentelemetry.io/collector/pdata v1.4.0
+	go.opentelemetry.io/collector/pdata v1.5.0
 	go.opentelemetry.io/otel/metric v1.25.0
 	go.opentelemetry.io/otel/trace v1.25.0
 	go.uber.org/goleak v1.3.0
@@ -60,7 +60,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.97.0 // indirect
 	go.opentelemetry.io/collector/extension v0.97.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.97.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.4.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.5.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.97.0 // indirect
 	go.opentelemetry.io/contrib/config v0.4.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
