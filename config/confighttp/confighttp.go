@@ -115,13 +115,8 @@ func NewDefaultClientConfig() ClientConfig {
 	}
 }
 
-// Deprecated: [v0.98.0] Use ToClientContext instead.
-func (hcs *ClientConfig) ToClient(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	return hcs.ToClientContext(context.Background(), host, settings)
-}
-
-// ToClientContext creates an HTTP client.
-func (hcs *ClientConfig) ToClientContext(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+// ToClient creates an HTTP client.
+func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfigContext(ctx)
 	if err != nil {
 		return nil, err
@@ -234,6 +229,11 @@ func (hcs *ClientConfig) ToClientContext(ctx context.Context, host component.Hos
 	}, nil
 }
 
+// Deprecated: [v0.99.0] Use ToClient instead.
+func (hcs *ClientConfig) ToClientContext(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+	return hcs.ToClient(ctx, host, settings)
+}
+
 // Custom RoundTripper that adds headers.
 type headerRoundTripper struct {
 	transport http.RoundTripper
@@ -282,13 +282,13 @@ type ServerConfig struct {
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
 }
 
-// Deprecated: [v0.98.0] Use ToListenerContext instead.
-func (hss *ServerConfig) ToListener() (net.Listener, error) {
-	return hss.ToListenerContext(context.Background())
+// Deprecated: [v0.99.0] Use ToListener instead.
+func (hss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
+	return hss.ToListener(ctx)
 }
 
-// ToListenerContext creates a net.Listener.
-func (hss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
+// ToListener creates a net.Listener.
+func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 	listener, err := net.Listen("tcp", hss.Endpoint)
 	if err != nil {
 		return nil, err
@@ -337,13 +337,13 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 	}
 }
 
-// Deprecated: [v0.98.0] Use ToServerContext instead.
-func (hss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
-	return hss.ToServerContext(context.Background(), host, settings, handler, opts...)
+// Deprecated: [v0.99.0] Use ToServer instead.
+func (hss *ServerConfig) ToServerContext(ctx context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+	return hss.ToServer(ctx, host, settings, handler, opts...)
 }
 
-// ToServerContext creates an http.Server from settings object.
-func (hss *ServerConfig) ToServerContext(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+// ToServer creates an http.Server from settings object.
+func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
 
 	serverOpts := &toServerOptions{}
