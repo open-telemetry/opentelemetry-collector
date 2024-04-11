@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.19.0
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.48.0
+	github.com/prometheus/common v0.52.3
 	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0

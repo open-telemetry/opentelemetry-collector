@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/prometheus/client_golang v1.19.0
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.48.0
+	github.com/prometheus/common v0.52.3
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.98.0
 	go.opentelemetry.io/collector/component v0.98.0
