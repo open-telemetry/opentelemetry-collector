@@ -26,7 +26,7 @@ func TestTraces(t *testing.T) {
 	err := errors.New("some error")
 	traceErr := NewTraces(err, td)
 	assert.Equal(t, err.Error(), traceErr.Error())
-	target := &Traces{}
+	var target Traces
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
 	assert.True(t, errors.As(traceErr, &target))
@@ -50,7 +50,7 @@ func TestLogs(t *testing.T) {
 	err := errors.New("some error")
 	logsErr := NewLogs(err, td)
 	assert.Equal(t, err.Error(), logsErr.Error())
-	target := &Logs{}
+	var target Logs
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
 	assert.True(t, errors.As(logsErr, &target))
@@ -74,7 +74,7 @@ func TestMetrics(t *testing.T) {
 	err := errors.New("some error")
 	metricErr := NewMetrics(err, td)
 	assert.Equal(t, err.Error(), metricErr.Error())
-	target := &Metrics{}
+	var target Metrics
 	assert.False(t, errors.As(nil, &target))
 	assert.False(t, errors.As(err, &target))
 	assert.True(t, errors.As(metricErr, &target))
