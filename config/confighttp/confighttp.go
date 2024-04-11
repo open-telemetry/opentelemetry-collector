@@ -122,7 +122,7 @@ func (hcs *ClientConfig) ToClient(host component.Host, settings component.Teleme
 
 // ToClientContext creates an HTTP client.
 func (hcs *ClientConfig) ToClientContext(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	tlsCfg, err := hcs.TLSSetting.LoadTLSConfigContext(ctx)
+	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +296,7 @@ func (hss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, e
 
 	if hss.TLSSetting != nil {
 		var tlsCfg *tls.Config
-		tlsCfg, err = hss.TLSSetting.LoadTLSConfigContext(ctx)
+		tlsCfg, err = hss.TLSSetting.LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, err
 		}
