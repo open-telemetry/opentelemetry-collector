@@ -13,10 +13,6 @@ var (
 	componentsBytes    []byte
 	componentsTemplate = parseTemplate("components.go", componentsBytes)
 
-	//go:embed templates/components_test.go.tmpl
-	componentsTestBytes    []byte
-	componentsTestTemplate = parseTemplate("components_test.go", componentsTestBytes)
-
 	//go:embed templates/main.go.tmpl
 	mainBytes    []byte
 	mainTemplate = parseTemplate("main.go", mainBytes)
