@@ -4,23 +4,23 @@ go 1.21
 
 require (
 	github.com/prometheus/client_golang v1.19.0
-	github.com/prometheus/client_model v0.6.0
+	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.48.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.97.0
-	go.opentelemetry.io/collector/component v0.97.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.97.0
-	go.opentelemetry.io/collector/confmap v0.97.0
-	go.opentelemetry.io/collector/consumer v0.97.0
-	go.opentelemetry.io/collector/pdata v1.4.0
-	go.opentelemetry.io/collector/pdata/testdata v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector/processor v0.97.0
-	go.opentelemetry.io/otel v1.24.0
-	go.opentelemetry.io/otel/exporters/prometheus v0.46.0
-	go.opentelemetry.io/otel/metric v1.24.0
-	go.opentelemetry.io/otel/sdk v1.24.0
-	go.opentelemetry.io/otel/sdk/metric v1.24.0
-	go.opentelemetry.io/otel/trace v1.24.0
+	go.opentelemetry.io/collector v0.98.0
+	go.opentelemetry.io/collector/component v0.98.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.98.0
+	go.opentelemetry.io/collector/confmap v0.98.0
+	go.opentelemetry.io/collector/consumer v0.98.0
+	go.opentelemetry.io/collector/pdata v1.5.0
+	go.opentelemetry.io/collector/pdata/testdata v0.98.0
+	go.opentelemetry.io/collector/processor v0.98.0
+	go.opentelemetry.io/otel v1.25.0
+	go.opentelemetry.io/otel/exporters/prometheus v0.47.0
+	go.opentelemetry.io/otel/metric v1.25.0
+	go.opentelemetry.io/otel/sdk v1.25.0
+	go.opentelemetry.io/otel/sdk/metric v1.25.0
+	go.opentelemetry.io/otel/trace v1.25.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -39,7 +39,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
-	github.com/knadh/koanf/v2 v2.1.0 // indirect
+	github.com/knadh/koanf/v2 v2.1.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
