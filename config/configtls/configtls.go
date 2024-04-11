@@ -373,6 +373,7 @@ func (c ClientConfig) LoadTLSConfigContext(_ context.Context) (*tls.Config, erro
 }
 
 // LoadTLSConfig loads the TLS configuration.
+//
 // Deprecated: [v0.97.0] Use LoadTLSConfigContext instead.
 func (c ClientConfig) LoadTLSConfig() (*tls.Config, error) {
 	return c.LoadTLSConfigContext(context.Background())
@@ -403,6 +404,7 @@ func (c ServerConfig) LoadTLSConfigContext(_ context.Context) (*tls.Config, erro
 }
 
 // LoadTLSConfig loads the TLS configuration.
+//
 // Deprecated: [v0.97.0] Use LoadTLSConfigContext instead.
 func (c ServerConfig) LoadTLSConfig() (*tls.Config, error) {
 	return c.LoadTLSConfigContext(context.Background())
