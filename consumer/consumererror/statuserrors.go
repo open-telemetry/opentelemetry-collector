@@ -6,7 +6,7 @@ package consumererror // import "go.opentelemetry.io/collector/consumer/consumer
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/internal/statusconversion"
+	"go.opentelemetry.io/collector/consumer/consumererror/internal/statusconversion"
 	"google.golang.org/grpc/status"
 )
 
