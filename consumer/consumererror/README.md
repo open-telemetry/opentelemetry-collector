@@ -28,7 +28,8 @@ Errors can be created through one of the three constructors provided:
 - `consumererror.NewHTTPStatus` for errors resulting from an HTTP call with an error status code.
 - `consumererror.NewGRPCStatus` for errors resulting from a gRPC call with an error status code.
 
-Any error that is not retryable is considered to be a permanent error and will not be retried.
+Only retryable errors will be retried, all other errors are considered permanent
+and will not be retried.
 
 Errors can be joined by passing them to a call to `errors.Join`.
 
@@ -41,20 +42,37 @@ special considerations may need to be made.
 
 ### Fanouts
 
-Pipeline components that perform fanouts should determine for themselves the
-precedence of errors they receive when multiple downstream components report an
-error.
+#### Permanent errors
+
+When a fanout component receives multiple permanent errors from downstream in
+the pipeline, it should determine the error with the highest precedence and
+forward that upward in the pipeline. If a precedence cannot be determined,
+the component should forward all errors.
+
+#### Retryable errors
+
+When a fanout component receives a retryable error, it must only retry the data
+the failed pipeline branch.
+
+#### Mixed errors
+
+When a mix of retryable and permanent errors are received from downstream
+pipeline branches, the fanout component should continue all retries for
+retryable data, then return an upstream error with partial success information
+that indicates which branch failed.
 
 ### Signal conversion
 
 When converting between signals in a pipeline, it is expected that the component
 performing the conversion should perform the translation necessary in the error
-for any signal item counts.
+for any signal item counts. If the converted count cannot be determined, the full
+count of pre-converted signals should be returned.
 
 ### Asynchronous processing
 
-Note that the use of any components that do asynchronous processing will cut off
-the upward flow of information at the asynchronous component.
+The use of any components that do asynchronous processing in a pipeline will cut
+off error backpropagation at the asynchronous component. The asynchronous
+component may communicate error information using the Collector's own signals.
 
 ## Examples
 
