@@ -38,7 +38,7 @@ func TestStatusError_Error(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		se := &StatusError{}
+		var se *StatusError
 		require.True(t, errors.As(tt.statusError, &se))
 		tt.validate(t, se)
 	}
@@ -76,7 +76,7 @@ func TestStatusError_GRPCStatus(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		se := &StatusError{}
+		var se *StatusError
 		require.True(t, errors.As(tt.statusError, &se))
 		status, ok := se.GRPCStatus()
 		require.Equal(t, tt.ok, ok)
@@ -108,7 +108,7 @@ func TestStatusError_HTTPStatus(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		se := &StatusError{}
+		var se *StatusError
 		require.True(t, errors.As(tt.statusError, &se))
 		code, ok := se.HTTPStatus()
 		require.Equal(t, tt.ok, ok)

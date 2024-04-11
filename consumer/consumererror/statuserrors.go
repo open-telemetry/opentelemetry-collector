@@ -6,8 +6,9 @@ package consumererror // import "go.opentelemetry.io/collector/consumer/consumer
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/consumer/consumererror/internal/statusconversion"
 	"google.golang.org/grpc/status"
+
+	"go.opentelemetry.io/collector/consumer/consumererror/internal/statusconversion"
 )
 
 // StatusError contains either an HTTP or gRPC status code
@@ -30,9 +31,9 @@ func (se *StatusError) Error() string {
 		return fmt.Sprintf("HTTP Status: %d", *se.httpStatus)
 	} else if se.grpcStatus != nil {
 		return fmt.Sprintf("gRPC Status: %s", se.grpcStatus.Code().String())
-	} else {
-		return "no error code set"
 	}
+
+	return "no error code set"
 }
 
 func (se *StatusError) Unwrap() error {
