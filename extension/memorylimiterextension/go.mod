@@ -71,3 +71,5 @@ replace go.opentelemetry.io/collector/pdata => ../../pdata
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
+
+replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
