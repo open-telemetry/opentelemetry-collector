@@ -357,7 +357,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	if !mbc.ResourceAttributes.StringResourceAttrDisableWarning.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `string.resource.attr_disable_warning`: This resource_attribute will be disabled by default soon.")
 	}
-	if mbc.ResourceAttributes.StringResourceAttrRemoveWarning.enabledSetByUser {
+	if mbc.ResourceAttributes.StringResourceAttrRemoveWarning.enabledSetByUser || mbc.ResourceAttributes.StringResourceAttrRemoveWarning.Include != nil || mbc.ResourceAttributes.StringResourceAttrRemoveWarning.Exclude != nil {
 		settings.Logger.Warn("[WARNING] `string.resource.attr_remove_warning` should not be configured: This resource_attribute is deprecated and will be removed soon.")
 	}
 	if mbc.ResourceAttributes.StringResourceAttrToBeRemoved.Enabled {
@@ -495,16 +495,14 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
-	for name, val := range rm.Resource().Attributes().AsRaw() {
-		if filter, ok := mb.resourceAttributeIncludeFilter[name]; ok {
-			if !filter.Matches(val) {
-				return
-			}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
 		}
-		if filter, ok := mb.resourceAttributeExcludeFilter[name]; ok {
-			if filter.Matches(val) {
-				return
-			}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
 		}
 	}
 

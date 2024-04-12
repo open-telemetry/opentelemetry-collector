@@ -184,7 +184,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	}
 	{{- end }}
 	{{- if $attr.Warnings.IfConfigured }}
-	if mbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser {
+	if mbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser || mbc.ResourceAttributes.{{ $name.Render }}.Include != nil || mbc.ResourceAttributes.{{ $name.Render }}.Exclude != nil {
 		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $attr.Warnings.IfConfigured }}")
 	}
 	{{- end }}
@@ -284,16 +284,14 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 		op(rm)
 	}
 	{{ if .ResourceAttributes -}}
-	for name, val := range rm.Resource().Attributes().AsRaw() {
-		if filter, ok := mb.resourceAttributeIncludeFilter[name]; ok {
-			if !filter.Matches(val) {
-				return
-			}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
 		}
-		if filter, ok := mb.resourceAttributeExcludeFilter[name]; ok {
-			if filter.Matches(val) {
-				return
-			}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
 		}
 	}
 	{{- end }}
