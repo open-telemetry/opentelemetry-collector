@@ -121,10 +121,7 @@ Here is a list of community roles with current and previous members:
 - Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triagers)):
 
   - [Andrzej Stencel](https://github.com/astencel-sumo), Sumo Logic
-  - [Antoine Toulme](https://github.com/atoulme), Splunk
   - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
-  - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
-  - [Yang Song](https://github.com/songy23), Datadog
   - Actively seeking contributors to triage issues
 
 - Emeritus Triagers:
@@ -137,8 +134,11 @@ Here is a list of community roles with current and previous members:
 - Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
    - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
+   - [Antoine Toulme](https://github.com/atoulme), Splunk
    - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
    - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
+   - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
+   - [Yang Song](https://github.com/songy23), Datadog
 
 - Emeritus Approvers:
 
