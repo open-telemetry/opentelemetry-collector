@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -153,6 +154,10 @@ type attribute struct {
 	NameOverride string `mapstructure:"name_override"`
 	// Enabled defines whether the attribute is enabled by default.
 	Enabled bool `mapstructure:"enabled"`
+	// Include can be used to filter attributes.
+	Include []filter.Config `mapstructure:"include"`
+	// Include can be used to filter attributes.
+	Exclude []filter.Config `mapstructure:"exclude"`
 	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string `mapstructure:"enum"`
 	// Type is an attribute type.

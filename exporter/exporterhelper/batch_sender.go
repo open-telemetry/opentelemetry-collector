@@ -18,8 +18,8 @@ import (
 
 // batchSender is a component that places requests into batches before passing them to the downstream senders.
 // Batches are sent out with any of the following conditions:
-// - batch size reaches cfg.SendBatchSize
-// - cfg.Timeout is elapsed since the timestamp when the previous batch was sent out.
+// - batch size reaches cfg.MinSizeItems
+// - cfg.FlushTimeout is elapsed since the timestamp when the previous batch was sent out.
 // - concurrencyLimit is reached.
 type batchSender struct {
 	baseRequestSender
