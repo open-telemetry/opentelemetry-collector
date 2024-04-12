@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	spb "google.golang.org/genproto/googleapis/rpc/status"
+	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
@@ -79,7 +79,7 @@ func newExporter(cfg component.Config, set exporter.CreateSettings) (*baseExport
 // start actually creates the HTTP client. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *baseExporter) start(ctx context.Context, host component.Host) error {
-	client, err := e.config.ClientConfig.ToClientContext(ctx, host, e.settings)
+	client, err := e.config.ClientConfig.ToClient(ctx, host, e.settings)
 	if err != nil {
 		return err
 	}
@@ -270,8 +270,8 @@ func readResponseBody(resp *http.Response) ([]byte, error) {
 
 // Read the response and decode the status.Status from the body.
 // Returns nil if the response is empty or cannot be decoded.
-func readResponseStatus(resp *http.Response) *spb.Status {
-	var respStatus *spb.Status
+func readResponseStatus(resp *http.Response) *status.Status {
+	var respStatus *status.Status
 	if resp.StatusCode >= 400 && resp.StatusCode <= 599 {
 		// Request failed. Read the body. OTLP spec says:
 		// "Response body for all HTTP 4xx and HTTP 5xx responses MUST be a
@@ -282,7 +282,7 @@ func readResponseStatus(resp *http.Response) *spb.Status {
 		}
 
 		// Decode it as Status struct. See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#failures
-		respStatus = &spb.Status{}
+		respStatus = &status.Status{}
 		err = proto.Unmarshal(respBytes, respStatus)
 		if err != nil {
 			return nil

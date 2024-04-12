@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -397,6 +398,7 @@ func TestNewType(t *testing.T) {
 		{name: "zipkin_encoding"},
 		{name: "zookeeper"},
 		{name: "zpages"},
+		{name: strings.Repeat("a", 63)},
 
 		{name: "", shouldErr: true},
 		{name: "contains spaces", shouldErr: true},
@@ -405,6 +407,7 @@ func TestNewType(t *testing.T) {
 		{name: "contains/slash", shouldErr: true},
 		{name: "contains:colon", shouldErr: true},
 		{name: "contains#hash", shouldErr: true},
+		{name: strings.Repeat("a", 64), shouldErr: true},
 	}
 
 	for _, tt := range tests {
