@@ -61,67 +61,67 @@ filter_set_include:
   resource_attributes:
     map.resource.attr:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     optional.resource.attr:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     slice.resource.attr:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     string.enum.resource.attr:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     string.resource.attr:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     string.resource.attr_disable_warning:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     string.resource.attr_remove_warning:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     string.resource.attr_to_be_removed:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     map.resource.attr:
       enabled: true
-      exclude:
+      metrics_exclude:
         - regexp: ".*"
     optional.resource.attr:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "optional.resource.attr-val"
     slice.resource.attr:
       enabled: true
-      exclude:
+      metrics_exclude:
         - regexp: ".*"
     string.enum.resource.attr:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "one"
     string.resource.attr:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "string.resource.attr-val"
     string.resource.attr_disable_warning:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "string.resource.attr_disable_warning-val"
     string.resource.attr_remove_warning:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "string.resource.attr_remove_warning-val"
     string.resource.attr_to_be_removed:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "string.resource.attr_to_be_removed-val"
