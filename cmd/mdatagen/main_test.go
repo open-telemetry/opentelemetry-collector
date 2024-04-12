@@ -23,6 +23,8 @@ func TestRunContents(t *testing.T) {
 		wantMetricsGenerated bool
 		wantConfigGenerated  bool
 		wantStatusGenerated  bool
+		wantGoleakIgnore     bool
+		wantGoleakSkip       bool
 		wantErr              bool
 	}{
 		{
@@ -63,6 +65,16 @@ func TestRunContents(t *testing.T) {
 		{
 			yml:                 "with_tests_connector.yaml",
 			wantStatusGenerated: true,
+		},
+		{
+			yml:                 "with_goleak_ignores.yaml",
+			wantStatusGenerated: true,
+			wantGoleakIgnore:    true,
+		},
+		{
+			yml:                 "with_goleak_skip.yaml",
+			wantStatusGenerated: true,
+			wantGoleakSkip:      true,
 		},
 	}
 	for _, tt := range tests {
@@ -123,6 +135,25 @@ foo
 			require.Contains(t, string(contents), "func Test")
 			_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
 			require.NoError(t, err)
+
+			require.FileExists(t, filepath.Join(tmpdir, "generated_package_test.go"))
+			contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_package_test.go")) // nolint: gosec
+			require.NoError(t, err)
+			require.Contains(t, string(contents), "func TestMain")
+			_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
+			require.NoError(t, err)
+
+			if tt.wantGoleakSkip {
+				require.Contains(t, string(contents), "skipping goleak test")
+			} else {
+				require.NotContains(t, string(contents), "skipping goleak test")
+			}
+
+			if tt.wantGoleakIgnore {
+				require.Contains(t, string(contents), "IgnoreTopFunction")
+			} else {
+				require.NotContains(t, string(contents), "IgnoreTopFunction")
+			}
 		})
 	}
 }
