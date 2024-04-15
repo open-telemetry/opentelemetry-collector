@@ -35,5 +35,7 @@ func IsPermanent(err error) bool {
 	if err == nil {
 		return false
 	}
-	return errors.As(err, &permanent{})
+	var partial *Partial
+	var statusErr *StatusError
+	return errors.As(err, &permanent{}) || errors.As(err, &partial) || errors.As(err, &statusErr)
 }
