@@ -73,6 +73,25 @@ func New(ctx context.Context, set Settings, cfg Config) (*Telemetry, error) {
 			config.OpenTelemetryConfiguration{
 				TracerProvider: &config.TracerProvider{
 					Processors: cfg.Traces.Processors,
+					// TODO: once https://github.com/open-telemetry/opentelemetry-configuration/issues/83 is resolved,
+					// configuration for sampler should be done here via something like the following:
+					//
+					// Sampler: &config.Sampler{
+					// 	ParentBased: &config.SamplerParentBased{
+					// 		LocalParentSampled: &config.Sampler{
+					// 			AlwaysOn: config.SamplerAlwaysOn{},
+					// 		},
+					// 		LocalParentNotSampled: &config.Sampler{
+					//	        RecordOnly: config.SamplerRecordOnly{},
+					//      },
+					// 		RemoteParentSampled: &config.Sampler{
+					// 			AlwaysOn: config.SamplerAlwaysOn{},
+					// 		},
+					// 		RemoteParentNotSampled: &config.Sampler{
+					//	        RecordOnly: config.SamplerRecordOnly{},
+					//      },
+					// 	},
+					// },
 				},
 			},
 		),
