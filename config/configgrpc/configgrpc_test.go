@@ -60,6 +60,21 @@ func TestNewDefaultClientConfig(t *testing.T) {
 		t.Error("Expected Keepalive to be initialized")
 	}
 }
+func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
+	config := NewDefaultKeepaliveServerConfig()
+
+	if config == nil {
+		t.Error("Expected non-nil KeepaliveServerConfig, got nil")
+	}
+
+}
+func TestNewDefaultServerConfig(t *testing.T) {
+	config := NewDefaultServerConfig()
+
+	if config == nil {
+		t.Error("Expected non-nil ServerConfig, got nil")
+	}
+}
 
 // testBalancerBuilder facilitates testing validateBalancerName().
 type testBalancerBuilder struct{}
