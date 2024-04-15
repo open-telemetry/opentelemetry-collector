@@ -46,6 +46,15 @@ type KeepaliveClientConfig struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
 }
 
+// NewDefaultKeepaliveClientConfig returns a new instance of KeepaliveClientConfig with default values.
+
+func NewDefaultKeepaliveClientConfig() *KeepaliveClientConfig {
+	return &KeepaliveClientConfig{
+		Time:    time.Second * 10,
+		Timeout: time.Second * 10,
+	}
+}
+
 // ClientConfig defines common settings for a gRPC client configuration.
 type ClientConfig struct {
 	// The target to which the exporter is going to send traces or metrics,
@@ -90,10 +99,24 @@ type ClientConfig struct {
 	Auth *configauth.Authentication `mapstructure:"auth"`
 }
 
+// NewDefaultClientConfig returns a new instance of ClientConfig with default values.
+func NewDefaultClientConfig() *ClientConfig {
+	return &ClientConfig{
+		TLSSetting: configtls.NewDefaultClientConfig(),
+		Keepalive:  NewDefaultKeepaliveClientConfig(),
+	}
+}
+
 // KeepaliveServerConfig is the configuration for keepalive.
 type KeepaliveServerConfig struct {
 	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters"`
 	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy"`
+}
+
+// NewDefaultKeepaliveServerConfig returns a new instance of KeepaliveServerConfig with default values.
+
+func NewDefaultKeepaliveServerConfig() *KeepaliveServerConfig {
+	return &KeepaliveServerConfig{}
 }
 
 // KeepaliveServerParameters allow configuration of the keepalive.ServerParameters.
@@ -148,6 +171,13 @@ type ServerConfig struct {
 	// Include propagates the incoming connection's metadata to downstream consumers.
 	// Experimental: *NOTE* this option is subject to change or removal in the future.
 	IncludeMetadata bool `mapstructure:"include_metadata"`
+}
+
+// NewDefaultServerConfig returns a new instance of ServerConfig with default values.
+func NewDefaultServerConfig() *ServerConfig {
+	return &ServerConfig{
+		Keepalive: NewDefaultKeepaliveServerConfig(),
+	}
 }
 
 // sanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
