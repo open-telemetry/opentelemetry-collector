@@ -33,10 +33,14 @@ func (err retryable[V]) Data() V {
 	return err.data
 }
 
+// Delay returns the time duration before the telemetry data should
+// be resent to the destination.
 func (err retryable[V]) Delay() time.Duration {
 	return err.delay
 }
 
+// RetryOption allows adding data to a retryable error,
+// e.g. the duration before sending should be retried.
 type RetryOption func(err *retryableCommon)
 
 func WithRetryDelay(delay time.Duration) RetryOption {
