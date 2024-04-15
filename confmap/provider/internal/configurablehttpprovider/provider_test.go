@@ -123,7 +123,7 @@ func generateCertificate(hostname string) (cert string, key string, err error) {
 }
 
 func TestFunctionalityDownloadFileHTTP(t *testing.T) {
-	fp := newConfigurableHTTPProvider(HTTPScheme, confmap.ProviderSettings{})
+	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
 	ts := httptest.NewServer(http.HandlerFunc(answerGet))
 	defer ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
@@ -211,7 +211,7 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			fp := newConfigurableHTTPProvider(HTTPSScheme, confmap.ProviderSettings{})
+			fp := newConfigurableHTTPProvider(HTTPSScheme, confmaptest.NewNopProviderSettings())
 			// Parse url of the test server to get the port number.
 			tsURL, err := url.Parse(ts.URL)
 			require.NoError(t, err)
@@ -230,19 +230,19 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 }
 
 func TestUnsupportedScheme(t *testing.T) {
-	fp := New(HTTPScheme, confmap.ProviderSettings{})
+	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
 	_, err := fp.Retrieve(context.Background(), "https://...", nil)
 	assert.Error(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 
-	fp = New(HTTPSScheme, confmap.ProviderSettings{})
+	fp = New(HTTPSScheme, confmaptest.NewNopProviderSettings())
 	_, err = fp.Retrieve(context.Background(), "http://...", nil)
 	assert.Error(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestEmptyURI(t *testing.T) {
-	fp := New(HTTPScheme, confmap.ProviderSettings{})
+	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
@@ -253,7 +253,7 @@ func TestEmptyURI(t *testing.T) {
 }
 
 func TestRetrieveFromShutdownServer(t *testing.T) {
-	fp := New(HTTPScheme, confmap.ProviderSettings{})
+	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
 	ts := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
@@ -262,7 +262,7 @@ func TestRetrieveFromShutdownServer(t *testing.T) {
 }
 
 func TestNonExistent(t *testing.T) {
-	fp := New(HTTPScheme, confmap.ProviderSettings{})
+	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
@@ -273,7 +273,7 @@ func TestNonExistent(t *testing.T) {
 }
 
 func TestInvalidYAML(t *testing.T) {
-	fp := New(HTTPScheme, confmap.ProviderSettings{})
+	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("wrong : ["))
@@ -288,17 +288,17 @@ func TestInvalidYAML(t *testing.T) {
 }
 
 func TestScheme(t *testing.T) {
-	fp := New(HTTPScheme, confmap.ProviderSettings{})
+	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
 	assert.Equal(t, "http", fp.Scheme())
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestValidateProviderScheme(t *testing.T) {
-	assert.NoError(t, confmaptest.ValidateProviderScheme(New(HTTPScheme, confmap.ProviderSettings{})))
+	assert.NoError(t, confmaptest.ValidateProviderScheme(New(HTTPScheme, confmaptest.NewNopProviderSettings())))
 }
 
 func TestInvalidTransport(t *testing.T) {
-	fp := New("foo", confmap.ProviderSettings{})
+	fp := New("foo", confmaptest.NewNopProviderSettings())
 
 	_, err := fp.Retrieve(context.Background(), "foo://..", nil)
 	assert.Error(t, err)

@@ -7,17 +7,20 @@
 package {{ .Package }}
 
 import (
+	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	"context"
+	{{- end }}
 	"testing"
-	{{- if or isExporter isProcessor }}
+	{{- if and (not (and .Tests.SkipLifecycle .Tests.SkipShutdown)) (or isExporter isProcessor) }}
 	"time"
 	{{- end }}
 
 	"github.com/stretchr/testify/require"
+	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	"go.opentelemetry.io/collector/component"
-	{{- if not .Tests.SkipLifecycle }}
-	"go.opentelemetry.io/collector/component/componenttest"
 	{{- end }}
+	"go.opentelemetry.io/collector/component/componenttest"
+	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	{{- if isExporter }}
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -47,8 +50,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	{{- end }}
+	{{- end }}
 )
 
+func TestComponentFactoryType(t *testing.T) {
+	require.Equal(t, "{{ .Type }}", NewFactory().Type().String())
+}
+
+func TestComponentConfigStruct(t *testing.T) {
+	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
+{{ if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) -}}
 {{ if isExporter -}}
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
@@ -498,4 +511,5 @@ func generateLifecycleTestTraces() ptrace.Traces {
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return traces
 }
+{{- end }}
 {{- end }}
