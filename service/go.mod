@@ -6,26 +6,26 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.19.0
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.48.0
+	github.com/prometheus/common v0.52.3
 	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.97.0
-	go.opentelemetry.io/collector/component v0.97.0
-	go.opentelemetry.io/collector/config/confignet v0.97.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.97.0
-	go.opentelemetry.io/collector/confmap v0.97.0
-	go.opentelemetry.io/collector/connector v0.97.0
-	go.opentelemetry.io/collector/consumer v0.97.0
-	go.opentelemetry.io/collector/exporter v0.97.0
-	go.opentelemetry.io/collector/extension v0.97.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.97.0
-	go.opentelemetry.io/collector/featuregate v1.4.0
-	go.opentelemetry.io/collector/pdata v1.4.0
-	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a
-	go.opentelemetry.io/collector/processor v0.97.0
-	go.opentelemetry.io/collector/receiver v0.97.0
-	go.opentelemetry.io/collector/semconv v0.97.0
+	go.opentelemetry.io/collector v0.98.0
+	go.opentelemetry.io/collector/component v0.98.0
+	go.opentelemetry.io/collector/config/confignet v0.98.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.98.0
+	go.opentelemetry.io/collector/confmap v0.98.0
+	go.opentelemetry.io/collector/connector v0.98.0
+	go.opentelemetry.io/collector/consumer v0.98.0
+	go.opentelemetry.io/collector/exporter v0.98.0
+	go.opentelemetry.io/collector/extension v0.98.0
+	go.opentelemetry.io/collector/extension/zpagesextension v0.98.0
+	go.opentelemetry.io/collector/featuregate v1.5.0
+	go.opentelemetry.io/collector/pdata v1.5.0
+	go.opentelemetry.io/collector/pdata/testdata v0.98.0
+	go.opentelemetry.io/collector/processor v0.98.0
+	go.opentelemetry.io/collector/receiver v0.98.0
+	go.opentelemetry.io/collector/semconv v0.98.0
 	go.opentelemetry.io/contrib/config v0.4.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.25.0
 	go.opentelemetry.io/otel v1.25.0
@@ -84,7 +84,7 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda // indirect
-	google.golang.org/grpc v1.63.0 // indirect
+	google.golang.org/grpc v1.63.2 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

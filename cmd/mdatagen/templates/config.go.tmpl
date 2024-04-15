@@ -2,10 +2,12 @@
 
 package {{ .Package }}
 
-{{ if or .Metrics .ResourceAttributes -}}
-import "go.opentelemetry.io/collector/confmap"
-{{- end }}
-
+import (
+    "go.opentelemetry.io/collector/confmap"
+    {{ if and .Metrics .ResourceAttributes -}}
+    "go.opentelemetry.io/collector/filter"
+    {{- end }}
+)
 {{ if .Metrics -}}
 
 // MetricConfig provides common config for a particular metric.
@@ -49,6 +51,10 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	{{- if .Metrics }}
+	Include []filter.Config `mapstructure:"include"`
+	Exclude []filter.Config `mapstructure:"exclude"`
+	{{- end }}
 
 	enabledSetByUser bool
 }

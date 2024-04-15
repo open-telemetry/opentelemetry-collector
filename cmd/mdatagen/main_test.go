@@ -6,6 +6,8 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"testing"
@@ -21,7 +23,6 @@ func TestRunContents(t *testing.T) {
 		wantMetricsGenerated bool
 		wantConfigGenerated  bool
 		wantStatusGenerated  bool
-		wantTestsGenerated   bool
 		wantErr              bool
 	}{
 		{
@@ -45,27 +46,22 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                 "with_tests_receiver.yaml",
-			wantTestsGenerated:  true,
 			wantStatusGenerated: true,
 		},
 		{
 			yml:                 "with_tests_exporter.yaml",
-			wantTestsGenerated:  true,
 			wantStatusGenerated: true,
 		},
 		{
 			yml:                 "with_tests_processor.yaml",
-			wantTestsGenerated:  true,
 			wantStatusGenerated: true,
 		},
 		{
 			yml:                 "with_tests_extension.yaml",
-			wantTestsGenerated:  true,
 			wantStatusGenerated: true,
 		},
 		{
 			yml:                 "with_tests_connector.yaml",
-			wantTestsGenerated:  true,
 			wantStatusGenerated: true,
 		},
 	}
@@ -108,26 +104,25 @@ foo
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_config_test.go"))
 			}
 
+			var contents []byte
 			if tt.wantStatusGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_status.go"))
-				contents, err := os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
+				contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
 				require.NoError(t, err)
 				require.NotContains(t, string(contents), "foo")
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_status.go"))
-				contents, err := os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
+				contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
 				require.NoError(t, err)
 				require.Contains(t, string(contents), "foo")
 			}
 
-			if tt.wantTestsGenerated {
-				require.FileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
-				contents, err := os.ReadFile(filepath.Join(tmpdir, "generated_component_test.go")) // nolint: gosec
-				require.NoError(t, err)
-				require.Contains(t, string(contents), "func Test")
-			} else {
-				require.NoFileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
-			}
+			require.FileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
+			contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_component_test.go")) // nolint: gosec
+			require.NoError(t, err)
+			require.Contains(t, string(contents), "func Test")
+			_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
+			require.NoError(t, err)
 		})
 	}
 }
