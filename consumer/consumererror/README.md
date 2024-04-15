@@ -33,6 +33,15 @@ and will not be retried.
 
 Errors can be joined by passing them to a call to `errors.Join`.
 
+
+### Retryable errors
+
+If an error is considered transient and data processing should be retried, the data
+that should be retried should be created using `NewTraces`, `NewMetrics` or `NewLogs`
+with the data that should be retried, e.g. `NewTraces(err, traces)`. The data that
+is contained in the error will be the only data that is retried, the caller should
+not use its copy of the data for the retry.
+
 ## Other considerations
 
 To keep error analysis simple when looking at an error upstream in a pipeline,
