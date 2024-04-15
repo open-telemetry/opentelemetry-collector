@@ -57,3 +57,55 @@ none_set:
       enabled: false
     string.resource.attr_to_be_removed:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    map.resource.attr:
+      include:
+        - regexp: ".*"
+    optional.resource.attr:
+      include:
+        - regexp: ".*"
+    slice.resource.attr:
+      include:
+        - regexp: ".*"
+    string.enum.resource.attr:
+      include:
+        - regexp: ".*"
+    string.resource.attr:
+      include:
+        - regexp: ".*"
+    string.resource.attr_disable_warning:
+      include:
+        - regexp: ".*"
+    string.resource.attr_remove_warning:
+      include:
+        - regexp: ".*"
+    string.resource.attr_to_be_removed:
+      include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    map.resource.attr:
+      exclude:
+        - regexp: ".*"
+    optional.resource.attr:
+      exclude:
+        - strict: "optional.resource.attr-val"
+    slice.resource.attr:
+      exclude:
+        - regexp: ".*"
+    string.enum.resource.attr:
+      exclude:
+        - strict: "one"
+    string.resource.attr:
+      exclude:
+        - strict: "string.resource.attr-val"
+    string.resource.attr_disable_warning:
+      exclude:
+        - strict: "string.resource.attr_disable_warning-val"
+    string.resource.attr_remove_warning:
+      exclude:
+        - strict: "string.resource.attr_remove_warning-val"
+    string.resource.attr_to_be_removed:
+      exclude:
+        - strict: "string.resource.attr_to_be_removed-val"
