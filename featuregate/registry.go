@@ -107,6 +107,18 @@ func WithRegisterToVersion(toVersion string) RegisterOption {
 	})
 }
 
+// WithRegisterFeatureGateEnableFunc is used to set the Gate "featureGateEnableFunc".
+func WithRegisterFeatureGateEnableFunc(f func()) RegisterOption {
+	return registerOptionFunc(func(g *Gate) error {
+		if f == nil {
+			return fmt.Errorf("WithRegisterFeatureGateEnableFunc: invalid nil function")
+		}
+
+		g.featureGateEnableFunc = f
+		return nil
+	})
+}
+
 // MustRegister like Register but panics if an invalid ID or gate options are provided.
 func (r *Registry) MustRegister(id string, stage Stage, opts ...RegisterOption) *Gate {
 	g, err := r.Register(id, stage, opts...)
@@ -193,6 +205,10 @@ func (r *Registry) Set(id string, enabled bool) error {
 		fmt.Printf("Feature gate %q is deprecated and already disabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.\n", id, g.toVersion, g.toVersion)
 	default:
 		g.enabled.Store(enabled)
+
+		if enabled && g.featureGateEnableFunc != nil {
+			g.featureGateEnableFunc()
+		}
 	}
 	return nil
 }

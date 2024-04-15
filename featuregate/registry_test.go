@@ -207,3 +207,9 @@ func TestRegisterGateLifecycle(t *testing.T) {
 		})
 	}
 }
+
+func TestRegistryFeatureGateEnableFunc(t *testing.T) {
+	r := NewRegistry()
+	fooGate := r.MustRegister("foo", StageAlpha, WithRegisterFeatureGateEnableFunc(func() {}))
+	assert.NotNil(t, fooGate.featureGateEnableFunc)
+}

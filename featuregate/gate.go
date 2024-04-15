@@ -13,13 +13,14 @@ import (
 // Gate is an immutable object that is owned by the Registry and represents an individual feature that
 // may be enabled or disabled based on the lifecycle state of the feature and CLI flags specified by the user.
 type Gate struct {
-	id           string
-	description  string
-	referenceURL string
-	fromVersion  *version.Version
-	toVersion    *version.Version
-	stage        Stage
-	enabled      *atomic.Bool
+	id                    string
+	description           string
+	referenceURL          string
+	fromVersion           *version.Version
+	toVersion             *version.Version
+	stage                 Stage
+	enabled               *atomic.Bool
+	featureGateEnableFunc func()
 }
 
 // ID returns the id of the Gate.
