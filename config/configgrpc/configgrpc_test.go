@@ -35,6 +35,32 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
+func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
+	// Call the function to get a new instance of KeepaliveClientConfig
+	config := NewDefaultKeepaliveClientConfig()
+
+	// Check if the Time field has the default value of 10 seconds
+	expectedTime := time.Second * 10
+	if config.Time != expectedTime {
+		t.Errorf("Expected Time to be %v, but got %v", expectedTime, config.Time)
+	}
+
+	// Check if the Timeout field has the default value of 10 seconds
+	expectedTimeout := time.Second * 10
+	if config.Timeout != expectedTimeout {
+		t.Errorf("Expected Timeout to be %v, but got %v", expectedTimeout, config.Timeout)
+	}
+}
+
+func TestNewDefaultClientConfig(t *testing.T) {
+	// Call the function to get a new instance of ClientConfig
+	config := NewDefaultClientConfig()
+	// Check if Keepalive field is initialized
+	if config.Keepalive == nil {
+		t.Error("Expected Keepalive to be initialized")
+	}
+}
+
 // testBalancerBuilder facilitates testing validateBalancerName().
 type testBalancerBuilder struct{}
 
