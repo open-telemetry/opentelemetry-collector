@@ -21,6 +21,28 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 )
 
+func TestNewDefaultConfig(t *testing.T) {
+	expectedConfig := Config{}
+	config := NewDefaultConfig()
+	require.Equal(t, expectedConfig, config)
+}
+
+func TestNewDefaultClientConfig(t *testing.T) {
+	expectedConfig := ClientConfig{
+		Config: NewDefaultConfig(),
+	}
+	config := NewDefaultClientConfig()
+	require.Equal(t, expectedConfig, config)
+}
+
+func TestNewDefaultServerConfig(t *testing.T) {
+	expectedConfig := ServerConfig{
+		Config: NewDefaultConfig(),
+	}
+	config := NewDefaultServerConfig()
+	require.Equal(t, expectedConfig, config)
+}
+
 func TestOptionsToConfig(t *testing.T) {
 	tests := []struct {
 		name        string
