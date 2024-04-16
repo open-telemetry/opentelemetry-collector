@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
@@ -56,8 +57,17 @@ func newBatchProcessorTelemetry(set processor.CreateSettings, currentMetadataCar
 }
 
 func (bpt *batchProcessorTelemetry) createOtelMetrics(set component.TelemetrySettings, currentMetadataCardinality func() int) error {
-	var errors, err error
-	meter := metadata.Meter(set)
+	var (
+		errors, err error
+		meter       metric.Meter
+	)
+
+	// BatchProcessor are emitted starting from Normal level only.
+	if bpt.level >= configtelemetry.LevelNormal {
+		meter = metadata.Meter(set)
+	} else {
+		meter = noopmetric.Meter{}
+	}
 
 	bpt.batchSizeTriggerSend, err = meter.Int64Counter(
 		processorhelper.BuildCustomMetricName(typeStr, "batch_size_trigger_send"),
