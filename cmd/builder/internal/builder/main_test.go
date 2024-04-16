@@ -49,7 +49,7 @@ func TestVersioning(t *testing.T) {
 				cfg.Distribution.OtelColVersion = "0.90.0"
 				return cfg
 			},
-			expectedErr: ErrStrictMode,
+			expectedErr: ErrVersionMismatch,
 		},
 		{
 			description: "old otel version without strict mode",
@@ -69,7 +69,7 @@ func TestVersioning(t *testing.T) {
 				cfg.Distribution.OtelColVersion = "invalid"
 				return cfg
 			},
-			expectedErr: ErrStrictMode,
+			expectedErr: ErrVersionMismatch,
 		},
 		{
 			description: "invalid version without strict mode, only generate",
@@ -96,7 +96,7 @@ func TestVersioning(t *testing.T) {
 				}
 				return cfg
 			},
-			expectedErr: ErrStrictMode,
+			expectedErr: ErrVersionMismatch,
 		},
 	}
 	for _, tc := range tests {

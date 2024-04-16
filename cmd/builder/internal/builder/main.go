@@ -21,8 +21,10 @@ import (
 var (
 	// ErrGoNotFound is returned when a Go binary hasn't been found
 	ErrGoNotFound       = errors.New("go binary not found")
-	ErrStrictMode       = errors.New("mismatch in go.mod and builder configuration versions")
+	ErrDepNotFound      = errors.New("dependency not found in go mod file")
+	ErrVersionMismatch  = errors.New("mismatch in go.mod and builder configuration versions")
 	errFailedToDownload = errors.New("failed to download go modules")
+	skipStrictMsg       = "Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version"
 )
 
 func runGoCommand(cfg Config, args ...string) ([]byte, error) {
@@ -71,7 +73,7 @@ func Generate(cfg Config) error {
 	// create a warning message for non-aligned builder and collector base
 	if cfg.Distribution.OtelColVersion != defaultOtelColVersion {
 		if !cfg.SkipStrictVersioning {
-			return fmt.Errorf("builder version %q does not match build configuration version %q: %w", cfg.Distribution.OtelColVersion, defaultOtelColVersion, ErrStrictMode)
+			return fmt.Errorf("builder version %q does not match build configuration version %q: %w", cfg.Distribution.OtelColVersion, defaultOtelColVersion, ErrVersionMismatch)
 		}
 		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", zap.String("builder-version", defaultOtelColVersion))
 	}
@@ -160,10 +162,14 @@ func GetModules(cfg Config) error {
 	}
 
 	corePath, coreVersion := cfg.coreModuleAndVersion()
-	if dependencyVersions[corePath] != coreVersion {
+	coreDepVersion, ok := dependencyVersions[corePath]
+	if !ok {
+		return fmt.Errorf("core collector %w: '%s'. %s", ErrDepNotFound, corePath, skipStrictMsg)
+	}
+	if coreDepVersion != coreVersion {
 		return fmt.Errorf(
-			"%w: core collector version calculated by component dependencies %q does not match configured version %q. Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version",
-			ErrStrictMode, dependencyVersions[corePath], coreVersion)
+			"%w: core collector version calculated by component dependencies %q does not match configured version %q. %s",
+			ErrVersionMismatch, coreDepVersion, coreVersion, skipStrictMsg)
 	}
 
 	for _, mod := range cfg.allComponents() {
@@ -174,10 +180,14 @@ func GetModules(cfg Config) error {
 			continue
 		}
 
-		if dependencyVersions[module] != version {
+		moduleDepVersion, ok := dependencyVersions[module]
+		if !ok {
+			return fmt.Errorf("component %w: '%s'. %s", ErrDepNotFound, module, skipStrictMsg)
+		}
+		if moduleDepVersion != version {
 			return fmt.Errorf(
-				"%w: component %q version calculated by dependencies %q does not match configured version %q. Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version",
-				ErrStrictMode, module, dependencyVersions[module], version)
+				"%w: component %q version calculated by dependencies %q does not match configured version %q. %s",
+				ErrVersionMismatch, module, moduleDepVersion, version, skipStrictMsg)
 		}
 	}
 
@@ -221,6 +231,7 @@ func (c *Config) coreModuleAndVersion() (string, string) {
 }
 
 func (c *Config) allComponents() []Module {
+	// TODO: Use slices.Concat when we drop support for Go 1.21
 	return append(c.Exporters,
 		append(c.Receivers,
 			append(c.Processors,
