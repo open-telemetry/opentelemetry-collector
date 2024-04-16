@@ -135,7 +135,7 @@ type MetricsBuilder struct {
 	metricsCapacity int                  // maximum observed number of metrics per resource.
 	metricsBuffer   pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo       component.BuildInfo  // contains version information.
-	{{ if .ResourceAttributes -}}
+	{{- if .ResourceAttributes }}
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
 	{{- end }}

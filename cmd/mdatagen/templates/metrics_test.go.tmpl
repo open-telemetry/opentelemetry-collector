@@ -43,6 +43,7 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsConfigured: true,
 			expectEmpty:        true,
 		},
+		{{- if .ResourceAttributes }}
 		{
 			name:               "filter_set_include",
 			resAttrsConfigured: true,
@@ -52,6 +53,7 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsConfigured: true,
 			expectEmpty:        true,
 		},
+		{{- end }}
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
