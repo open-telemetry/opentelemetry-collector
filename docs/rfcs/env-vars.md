@@ -167,7 +167,8 @@ variable resolution:
 2.  The *env provider syntax*, `${env:ENV}`.
 
 These both have **the same character set and behavior**. They both use
-the env provider under the hood.
+the env provider under the hood. This means we support the exact same
+syntax as the Configuration WG.
 
 The naked syntax supported in BASH is not supported in the Collector.
 Escaping is supported by using two dollar signs. Escaping is also
