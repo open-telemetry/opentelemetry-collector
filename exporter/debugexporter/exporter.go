@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // NOTE: If you are making changes to this file, consider whether you want to make similar changes
-// to the Debug exporter in /exporter/debugexporter/exporter.go, which has similar logic.
+// to the Logging exporter in /exporter/internal/common/logging_exporter.go, which has similar logic.
 // This is especially important for security issues.
 
-package common // import "go.opentelemetry.io/collector/exporter/internal/common"
+package debugexporter // import "go.opentelemetry.io/collector/exporter/debugexporter"
 
 import (
 	"context"
@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type loggingExporter struct {
+type debugExporter struct {
 	verbosity        configtelemetry.Level
 	logger           *zap.Logger
 	logsMarshaler    plog.Marshaler
@@ -27,7 +27,17 @@ type loggingExporter struct {
 	tracesMarshaler  ptrace.Marshaler
 }
 
-func (s *loggingExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
+func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debugExporter {
+	return &debugExporter{
+		verbosity:        verbosity,
+		logger:           logger,
+		logsMarshaler:    otlptext.NewTextLogsMarshaler(),
+		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
+		tracesMarshaler:  otlptext.NewTextTracesMarshaler(),
+	}
+}
+
+func (s *debugExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	s.logger.Info("TracesExporter",
 		zap.Int("resource spans", td.ResourceSpans().Len()),
 		zap.Int("spans", td.SpanCount()))
@@ -43,7 +53,7 @@ func (s *loggingExporter) pushTraces(_ context.Context, td ptrace.Traces) error 
 	return nil
 }
 
-func (s *loggingExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error {
+func (s *debugExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error {
 	s.logger.Info("MetricsExporter",
 		zap.Int("resource metrics", md.ResourceMetrics().Len()),
 		zap.Int("metrics", md.MetricCount()),
@@ -60,7 +70,7 @@ func (s *loggingExporter) pushMetrics(_ context.Context, md pmetric.Metrics) err
 	return nil
 }
 
-func (s *loggingExporter) pushLogs(_ context.Context, ld plog.Logs) error {
+func (s *debugExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	s.logger.Info("LogsExporter",
 		zap.Int("resource logs", ld.ResourceLogs().Len()),
 		zap.Int("log records", ld.LogRecordCount()))
@@ -74,14 +84,4 @@ func (s *loggingExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	}
 	s.logger.Info(string(buf))
 	return nil
-}
-
-func newLoggingExporter(logger *zap.Logger, verbosity configtelemetry.Level) *loggingExporter {
-	return &loggingExporter{
-		verbosity:        verbosity,
-		logger:           logger,
-		logsMarshaler:    otlptext.NewTextLogsMarshaler(),
-		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
-		tracesMarshaler:  otlptext.NewTextTracesMarshaler(),
-	}
 }
