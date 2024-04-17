@@ -201,11 +201,22 @@ func (a attribute) TestValue() string {
 	return ""
 }
 
+type ignore struct {
+	Top []string `mapstructure:"top"`
+	Any []string `mapstructure:"any"`
+}
+
+type goLeak struct {
+	Skip   bool   `mapstructure:"skip"`
+	Ignore ignore `mapstructure:"ignore"`
+}
+
 type tests struct {
-	Config              any  `mapstructure:"config"`
-	SkipLifecycle       bool `mapstructure:"skip_lifecycle"`
-	SkipShutdown        bool `mapstructure:"skip_shutdown"`
-	ExpectConsumerError bool `mapstructure:"expect_consumer_error"`
+	Config              any    `mapstructure:"config"`
+	SkipLifecycle       bool   `mapstructure:"skip_lifecycle"`
+	SkipShutdown        bool   `mapstructure:"skip_shutdown"`
+	GoLeak              goLeak `mapstructure:"goleak"`
+	ExpectConsumerError bool   `mapstructure:"expect_consumer_error"`
 }
 
 type metadata struct {
