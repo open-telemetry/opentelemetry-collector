@@ -65,6 +65,10 @@ type ConfmapProvider interface {
 
 type configProvider struct {
 	mapResolver *confmap.Resolver
+	resolveRet  *struct {
+		conf *confmap.Conf
+		err  error
+	}
 }
 
 var _ ConfigProvider = &configProvider{}
@@ -94,7 +98,7 @@ func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 }
 
 func (cm *configProvider) Get(ctx context.Context, factories Factories) (*Config, error) {
-	conf, err := cm.mapResolver.Resolve(ctx)
+	conf, err := cm.resolve(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
 	}
@@ -123,12 +127,27 @@ func (cm *configProvider) Shutdown(ctx context.Context) error {
 }
 
 func (cm *configProvider) GetConfmap(ctx context.Context) (*confmap.Conf, error) {
-	conf, err := cm.mapResolver.Resolve(ctx)
+	conf, err := cm.resolve(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
 	}
 
 	return conf, nil
+}
+
+func (cm *configProvider) resolve(ctx context.Context) (*confmap.Conf, error) {
+	if cm.resolveRet == nil {
+		conf, err := cm.mapResolver.Resolve(ctx)
+		cm.resolveRet = &struct {
+			conf *confmap.Conf
+			err  error
+		}{
+			conf: conf,
+			err:  err,
+		}
+	}
+
+	return cm.resolveRet.conf, cm.resolveRet.err
 }
 
 func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
