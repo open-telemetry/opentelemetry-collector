@@ -14,43 +14,43 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-type metricsSet int
+type testDataSet int
 
 const (
-	metricsSetDefault metricsSet = iota
-	metricsSetAll
-	metricsSetNone
+	testDataSetDefault testDataSet = iota
+	testDataSetAll
+	testDataSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name               string
-		metricsSet         metricsSet
-		resAttrsConfigured bool
-		expectEmpty        bool
+		name        string
+		metricsSet  testDataSet
+		resAttrsSet testDataSet
+		expectEmpty bool
 	}{
 		{
 			name: "default",
 		},
 		{
-			name:               "all_set",
-			metricsSet:         metricsSetAll,
-			resAttrsConfigured: true,
+			name:        "all_set",
+			metricsSet:  testDataSetAll,
+			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:               "none_set",
-			metricsSet:         metricsSetNone,
-			resAttrsConfigured: true,
-			expectEmpty:        true,
+			name:        "none_set",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
 		},
 		{
-			name:               "filter_set_include",
-			resAttrsConfigured: true,
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:               "filter_set_exclude",
-			resAttrsConfigured: true,
-			expectEmpty:        true,
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
 		},
 	}
 	for _, test := range tests {
@@ -63,31 +63,31 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if test.metricsSet == metricsSetDefault {
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `default.metric`: This metric will be disabled by default soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.metricsSet == metricsSetDefault || test.metricsSet == metricsSetAll {
+			if test.metricsSet == testDataSetDefault || test.metricsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `default.metric.to_be_removed` should not be enabled: This metric is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.metricsSet == metricsSetAll || test.metricsSet == metricsSetNone {
+			if test.metricsSet == testDataSetAll || test.metricsSet == testDataSetNone {
 				assert.Equal(t, "[WARNING] `optional.metric` should not be configured: This metric is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.metricsSet == metricsSetAll || test.metricsSet == metricsSetNone {
+			if test.metricsSet == testDataSetAll || test.metricsSet == testDataSetNone {
 				assert.Equal(t, "[WARNING] `optional.metric.empty_unit` should not be configured: This metric is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.metricsSet == metricsSetDefault {
+			if test.resAttrsSet == testDataSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `string.resource.attr_disable_warning`: This resource_attribute will be disabled by default soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.resAttrsConfigured {
+			if test.resAttrsSet == testDataSetAll || test.resAttrsSet == testDataSetNone {
 				assert.Equal(t, "[WARNING] `string.resource.attr_remove_warning` should not be configured: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.metricsSet == metricsSetDefault || test.metricsSet == metricsSetAll {
+			if test.resAttrsSet == testDataSetDefault || test.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -137,10 +137,10 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.metricsSet == metricsSetDefault {
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.metricsSet == metricsSetAll {
+			if test.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
