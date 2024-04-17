@@ -28,9 +28,10 @@ var (
 	_          writeCloserReset = (*snappy.Writer)(nil)
 	snappyPool                  = &compressor{pool: sync.Pool{New: func() any { return snappy.NewBufferedWriter(nil) }}}
 	_          writeCloserReset = (*zstd.Encoder)(nil)
-	zStdPool                    = &compressor{pool: sync.Pool{New: func() any { zw, _ := zstd.NewWriter(nil); return zw }}}
-	_          writeCloserReset = (*zlib.Writer)(nil)
-	zLibPool                    = &compressor{pool: sync.Pool{New: func() any { return zlib.NewWriter(nil) }}}
+	// Concurrency 1 disables async decoding via goroutines. This is useful to reduce memory usage and isn't a bottleneck for compression using sync.Pool.
+	zStdPool                  = &compressor{pool: sync.Pool{New: func() any { zw, _ := zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1)); return zw }}}
+	_        writeCloserReset = (*zlib.Writer)(nil)
+	zLibPool                  = &compressor{pool: sync.Pool{New: func() any { return zlib.NewWriter(nil) }}}
 )
 
 type compressor struct {
