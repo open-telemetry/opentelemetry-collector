@@ -19,7 +19,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: ~1.21.8
+          go-version: ~1.21.9
           cache: false
       - name: Cache Go
         id: go-cache
@@ -42,7 +42,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: ~1.21.8
+          go-version: ~1.21.9
           cache: false
       - name: Cache Go
         id: go-cache
@@ -66,7 +66,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: ~1.21.8
+          go-version: ~1.21.9
           cache: false
       - name: Cache Go
         id: go-cache
@@ -91,7 +91,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: ~1.21.8
+          go-version: ~1.21.9
           cache: false
       - name: Cache Go
         id: go-cache
@@ -138,7 +138,7 @@ jobs:
     strategy:
       matrix:
         runner: [ubuntu-latest, actuated-arm64-4cpu-4gb]
-        go-version: ["~1.22", "~1.21.8"] # 1.20 needs quotes otherwise it's interpreted as 1.2
+        go-version: ["~1.22", "~1.21.9"] # 1.20 needs quotes otherwise it's interpreted as 1.2
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
@@ -198,7 +198,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: ~1.21.8
+          go-version: ~1.21.9
           cache: false
       - name: Cache Go
         id: go-cache
@@ -216,13 +216,14 @@ jobs:
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: Upload coverage report
-        uses: Wandalen/wretry.action@1b2dcdbf61a2b96c52858ce7c24c5db099d58e77 # v3.0.1
+        uses: Wandalen/wretry.action@0dd1d5d77d019a6f85beb53d29e2ea2c7294d4f2 # v3.4.0
         with:
-          action: codecov/codecov-action@v3
+          action: codecov/codecov-action@v4
           with: |
             file: ./coverage.txt
             fail_ci_if_error: true
             verbose: true
+            token: ${{ secrets.CODECOV_TOKEN }}
           attempt_limit: 10
           attempt_delay: 15000
 
@@ -266,7 +267,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: ~1.21.8
+          go-version: ~1.21.9
           cache: false
       - name: Cache Go
         id: go-cache

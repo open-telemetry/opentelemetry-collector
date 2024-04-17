@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 
+	"go.opentelemetry.io/contrib/config"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -17,8 +18,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service/internal/proctelemetry"
-	"go.opentelemetry.io/collector/service/internal/resource"
 )
 
 const (
@@ -33,7 +32,7 @@ var (
 
 type Telemetry struct {
 	logger         *zap.Logger
-	tracerProvider *sdktrace.TracerProvider
+	tracerProvider trace.TracerProvider
 }
 
 func (t *Telemetry) TracerProvider() trace.TracerProvider {
@@ -46,9 +45,13 @@ func (t *Telemetry) Logger() *zap.Logger {
 
 func (t *Telemetry) Shutdown(ctx context.Context) error {
 	// TODO: Sync logger.
-	return multierr.Combine(
-		t.tracerProvider.Shutdown(ctx),
-	)
+	if tp, ok := t.tracerProvider.(*sdktrace.TracerProvider); ok {
+		return multierr.Combine(
+			tp.Shutdown(ctx),
+		)
+	}
+	// should this return an error?
+	return nil
 }
 
 // Settings holds configuration for building Telemetry.
@@ -64,29 +67,36 @@ func New(ctx context.Context, set Settings, cfg Config) (*Telemetry, error) {
 		return nil, err
 	}
 
-	tp, err := newTracerProvider(ctx, set, cfg)
-	if err != nil {
-		return nil, err
-	}
+	sdk, err := config.NewSDK(
+		config.WithContext(ctx),
+		config.WithOpenTelemetryConfiguration(
+			config.OpenTelemetryConfiguration{
+				TracerProvider: &config.TracerProvider{
+					Processors: cfg.Traces.Processors,
+					// TODO: once https://github.com/open-telemetry/opentelemetry-configuration/issues/83 is resolved,
+					// configuration for sampler should be done here via something like the following:
+					//
+					// Sampler: &config.Sampler{
+					// 	ParentBased: &config.SamplerParentBased{
+					// 		LocalParentSampled: &config.Sampler{
+					// 			AlwaysOn: config.SamplerAlwaysOn{},
+					// 		},
+					// 		LocalParentNotSampled: &config.Sampler{
+					//	        RecordOnly: config.SamplerRecordOnly{},
+					//      },
+					// 		RemoteParentSampled: &config.Sampler{
+					// 			AlwaysOn: config.SamplerAlwaysOn{},
+					// 		},
+					// 		RemoteParentNotSampled: &config.Sampler{
+					//	        RecordOnly: config.SamplerRecordOnly{},
+					//      },
+					// 	},
+					// },
+				},
+			},
+		),
+	)
 
-	return &Telemetry{
-		logger:         logger,
-		tracerProvider: tp,
-	}, nil
-}
-
-func newTracerProvider(ctx context.Context, set Settings, cfg Config) (*sdktrace.TracerProvider, error) {
-	opts := []sdktrace.TracerProviderOption{sdktrace.WithSampler(alwaysRecord())}
-	for _, processor := range cfg.Traces.Processors {
-		sp, err := proctelemetry.InitSpanProcessor(ctx, processor)
-		if err != nil {
-			return nil, err
-		}
-		opts = append(opts, sdktrace.WithSpanProcessor(sp))
-	}
-
-	res := resource.New(set.BuildInfo, cfg.Resource)
-	tp, err := proctelemetry.InitTracerProvider(res, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +107,10 @@ func newTracerProvider(ctx context.Context, set Settings, cfg Config) (*sdktrace
 		return nil, err
 	}
 
-	return tp, nil
+	return &Telemetry{
+		logger:         logger,
+		tracerProvider: sdk.TracerProvider(),
+	}, nil
 }
 
 func textMapPropagatorFromConfig(props []string) (propagation.TextMapPropagator, error) {
