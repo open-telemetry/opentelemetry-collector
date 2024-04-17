@@ -5,12 +5,18 @@ package debugexporter // import "go.opentelemetry.io/collector/exporter/debugexp
 
 import (
 	"context"
+	"time"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
-	"go.opentelemetry.io/collector/exporter/internal/common"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/internal/otlptext"
 )
 
 // The value of "type" key in configuration.
@@ -42,27 +48,47 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
-	return common.CreateTracesExporter(ctx, set, config, &common.Common{
-		Verbosity:          cfg.Verbosity,
-		SamplingInitial:    cfg.SamplingInitial,
-		SamplingThereafter: cfg.SamplingThereafter,
-	})
+	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
+	debugExporter := newDebugExporter(exporterLogger, cfg.Verbosity)
+	return exporterhelper.NewTracesExporter(ctx, set, config,
+		debugExporter.pushTraces,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+	)
 }
 
 func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
 	cfg := config.(*Config)
-	return common.CreateMetricsExporter(ctx, set, config, &common.Common{
-		Verbosity:          cfg.Verbosity,
-		SamplingInitial:    cfg.SamplingInitial,
-		SamplingThereafter: cfg.SamplingThereafter,
-	})
+	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
+	debugExporter := newDebugExporter(exporterLogger, cfg.Verbosity)
+	return exporterhelper.NewMetricsExporter(ctx, set, config,
+		debugExporter.pushMetrics,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+	)
 }
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
-	return common.CreateLogsExporter(ctx, set, config, &common.Common{
-		Verbosity:          cfg.Verbosity,
-		SamplingInitial:    cfg.SamplingInitial,
-		SamplingThereafter: cfg.SamplingThereafter,
-	})
+	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
+	debugExporter := newDebugExporter(exporterLogger, cfg.Verbosity)
+	return exporterhelper.NewLogsExporter(ctx, set, config,
+		debugExporter.pushLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+	)
+}
+
+func createLogger(cfg *Config, logger *zap.Logger) *zap.Logger {
+	core := zapcore.NewSamplerWithOptions(
+		logger.Core(),
+		1*time.Second,
+		cfg.SamplingInitial,
+		cfg.SamplingThereafter,
+	)
+
+	return zap.New(core)
 }

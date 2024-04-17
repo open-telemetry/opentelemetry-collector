@@ -80,7 +80,6 @@ func Generate(cfg Config) error {
 		mainOthersTemplate,
 		mainWindowsTemplate,
 		componentsTemplate,
-		componentsTestTemplate,
 		goModTemplate,
 	} {
 		if err := processAndWrite(cfg, tmpl, tmpl.Name(), cfg); err != nil {

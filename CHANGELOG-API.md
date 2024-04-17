@@ -7,6 +7,31 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.5.0/v0.98.0
+
+### 🛑 Breaking changes 🛑
+
+- `component`: Restricts maximum length for `component.Type` to 63 characters. (#9872)
+- `configgrpc`: Remove deprecated `ToServerContext`, use `ToServer` instead. (#9836)
+- `configgrpc`: Remove deprecated `SanitizedEndpoint`. (#9836)
+- `configtls`: Remove Deprecated `TLSSetting`, `TLSClientSetting`, and `TLSServerSetting`. (#9786)
+- `configtls`: Rename `TLSSetting` to `Config` on `ClientConfig` and `ServerConfig`. (#9786)
+
+### 🚩 Deprecations 🚩
+
+- `confighttp`: Deprecate `ToClient`,`ToListener`and `ToServer` use `ToClientContext`,`ToListenerContext` and `ToServerContext`instead. (#9807)
+- `configtls`: Deprecate `ClientConfig.LoadTLSConfig` and `ServerConfig.LoadTLSConfig`, use `ClientConfig.LoadTLSConfigContext` and `ServerConfig.LoadTLSConfigContext` instead. (#9811)
+
+### 💡 Enhancements 💡
+
+- Introduce new module for generating pdata: pdata/testdata (#9886)
+- `exporterhelper`: Make the `WithBatcher` option available for regular exporter helpers based on OTLP data type. (#8122)
+  Now, `WithBatcher` can be used with both regular exporter helper (e.g. NewTracesExporter) and the request-based exporter 
+  helper (e.g. NewTracesRequestExporter). The request-based exporter helpers require `WithRequestBatchFuncs` option 
+  providing batching functions. 
+  
+- `confmap`: Creates a logger in the confmap.ProviderSettings and uses it to log when there is a missing or blank environment variable referenced in config. For now the noop logger is used everywhere except tests. (#5615)
+
 ## v1.4.0/v0.97.0
 
 ### 🛑 Breaking changes 🛑

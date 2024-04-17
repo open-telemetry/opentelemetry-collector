@@ -421,16 +421,41 @@ func TestCollectorClosedStateOnStartUpError(t *testing.T) {
 }
 
 func TestCollectorDryRun(t *testing.T) {
-	// Load a bad config causing startup to fail
-	set := CollectorSettings{
-		BuildInfo:              component.NewDefaultBuildInfo(),
-		Factories:              nopFactories,
-		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
+	tests := map[string]struct {
+		settings    CollectorSettings
+		expectedErr string
+	}{
+		"invalid_processor": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
+			},
+			expectedErr: `service::pipelines::traces: references processor "invalid" which is not configured`,
+		},
+		"logs_receiver_traces_pipeline": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid-receiver-type.yaml")}),
+			},
+			expectedErr: `failed to build pipelines: failed to create "nop_logs" receiver for data type "traces": telemetry type is not supported`,
+		},
 	}
-	col, err := NewCollector(set)
-	require.NoError(t, err)
 
-	require.Error(t, col.DryRun(context.Background()))
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			col, err := NewCollector(test.settings)
+			require.NoError(t, err)
+
+			err = col.DryRun(context.Background())
+			if test.expectedErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, test.expectedErr)
+			}
+		})
+	}
 }
 
 func TestPassConfmapToServiceFailure(t *testing.T) {
