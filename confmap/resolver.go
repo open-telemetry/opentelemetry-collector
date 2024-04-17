@@ -41,18 +41,24 @@ type ResolverSettings struct {
 
 	// Providers is a map of pairs <scheme, Provider>.
 	// It is required to have at least one Provider.
-	// Deprecated: [v0.96.0] Use ProviderFactories instead
+	//
+	// Deprecated: [v0.99.0] Use ProviderFactories instead
 	Providers map[string]Provider
 
+	// ProviderSettings contains settings that will be passed to Provider
+	// factories when instantiating Providers.
 	ProviderSettings ProviderSettings
 
 	// ConverterFactories is a slice of Converter creation functions.
 	ConverterFactories []ConverterFactory
 
 	// Converters is a slice of Converters.
-	// Deprecated: [v0.96.0] Use ConverterFactories instead
+	//
+	// Deprecated: [v0.99.0] Use ConverterFactories instead
 	Converters []Converter
 
+	// ConverterSettings contains settings that will be passed to Converter
+	// factories when instantiating Converters.
 	ConverterSettings ConverterSettings
 }
 

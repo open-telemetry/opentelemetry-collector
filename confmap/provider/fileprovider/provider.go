@@ -19,7 +19,6 @@ const schemeName = "file"
 type provider struct{}
 
 // NewWithSettings returns a new confmap.Provider that reads the configuration from a file.
-// Deprecated [v0.99.0]: Use NewFactory instead.
 //
 // This Provider supports "file" scheme, and can be called with a "uri" that follows:
 //
@@ -34,6 +33,8 @@ type provider struct{}
 // `file:/path/to/file` - absolute path (unix, windows)
 // `file:c:/path/to/file` - absolute path including drive-letter (windows)
 // `file:c:\path\to\file` - absolute path including drive-letter (windows)
+//
+// Deprecated [v0.99.0]: Use NewFactory instead.
 func NewWithSettings(confmap.ProviderSettings) confmap.Provider {
 	return &provider{}
 }

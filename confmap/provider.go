@@ -12,6 +12,10 @@ import (
 
 // ProviderSettings are the settings to initialize a Provider.
 type ProviderSettings struct {
+	// Logger is a zap.Logger that will be passed to Providers.
+	// Providers should be able to rely on the Logger being non-nil;
+	// when instantiating a Provider with a ProviderFactory,
+	// nil Logger references should be replaced with a no-op Logger.
 	Logger *zap.Logger
 }
 

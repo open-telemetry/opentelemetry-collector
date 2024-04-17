@@ -25,12 +25,13 @@ type provider struct{}
 // Examples:
 // `yaml:processors::batch::timeout: 2s`
 // `yaml:processors::batch/foo::timeout: 3s`
+//
+// Deprecated [v0.99.0]: Use NewFactory instead.
 func NewWithSettings(confmap.ProviderSettings) confmap.Provider {
 	return &provider{}
 }
 
 // NewFactory returns a factory for a confmap.Provider that allows to provide yaml bytes.
-// Deprecated [v0.99.0]: Use NewFactory instead.
 //
 // This Provider supports "yaml" scheme, and can be called with a "uri" that follows:
 //
