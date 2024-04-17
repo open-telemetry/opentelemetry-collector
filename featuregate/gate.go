@@ -20,6 +20,7 @@ type Gate struct {
 	toVersion    *version.Version
 	stage        Stage
 	enabled      *atomic.Bool
+	operatorType string
 }
 
 // ID returns the id of the Gate.
@@ -55,4 +56,9 @@ func (g *Gate) FromVersion() string {
 // ToVersion returns the version information when Gate's in StageStable.
 func (g *Gate) ToVersion() string {
 	return fmt.Sprintf("v%s", g.toVersion)
+}
+
+// OperatorType returns the operator_type when Gate for operator.
+func (g *Gate) OperatorType() string {
+	return g.operatorType
 }

@@ -22,6 +22,7 @@ func TestGate(t *testing.T) {
 
 	g := &Gate{
 		id:           "test",
+		operatorType: "test_type",
 		description:  "test gate",
 		enabled:      enabled,
 		stage:        StageAlpha,
@@ -37,4 +38,5 @@ func TestGate(t *testing.T) {
 	assert.Equal(t, "http://example.com", g.ReferenceURL())
 	assert.Equal(t, "v0.61.0", g.FromVersion())
 	assert.Equal(t, "v0.64.0", g.ToVersion())
+	assert.Equal(t, "test_type", g.OperatorType())
 }

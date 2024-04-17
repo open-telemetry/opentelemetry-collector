@@ -107,6 +107,19 @@ func WithRegisterToVersion(toVersion string) RegisterOption {
 	})
 }
 
+// WithRegisterOperatorType is used to set the Gate "operatorType".
+// Optional, when you register Gate for operator, you should call this method to set the "operatorType".
+func WithRegisterOperatorType(operatorType string) RegisterOption {
+	return registerOptionFunc(func(g *Gate) error {
+		if len(operatorType) == 0 {
+			return fmt.Errorf("WithRegisterOperatorType: empty operator_type: %s", operatorType)
+		}
+
+		g.operatorType = operatorType
+		return nil
+	})
+}
+
 // MustRegister like Register but panics if an invalid ID or gate options are provided.
 func (r *Registry) MustRegister(id string, stage Stage, opts ...RegisterOption) *Gate {
 	g, err := r.Register(id, stage, opts...)
