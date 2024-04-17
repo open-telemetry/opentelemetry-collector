@@ -4,6 +4,7 @@
 package otelcol
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter"
@@ -28,7 +29,7 @@ func nopFactories() (Factories, error) {
 		return Factories{}, err
 	}
 
-	if factories.Receivers, err = receiver.MakeFactoryMap(receivertest.NewNopFactory()); err != nil {
+	if factories.Receivers, err = receiver.MakeFactoryMap(receivertest.NewNopFactory(), receivertest.NewNopFactoryForType(component.DataTypeLogs)); err != nil {
 		return Factories{}, err
 	}
 

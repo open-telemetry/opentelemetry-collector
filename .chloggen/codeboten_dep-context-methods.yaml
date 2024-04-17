@@ -7,7 +7,7 @@ change_type: deprecation
 component: confighttp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note:  Deprecate `ToClient`,`ToListener`and `ToServer` use `ToClientContext`,`ToListenerContext` and `ToServerContext`instead. 
+note: deprecate ToClientContext, ToServerContext, ToListenerContext, replaced by ToClient, ToServer, ToListener
 
 # One or more tracking issues or pull requests related to the change
 issues: [9807]
