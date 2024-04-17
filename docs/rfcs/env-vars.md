@@ -170,7 +170,7 @@ These both have **the same character set and behavior**. They both use
 the env provider under the hood. This means we support the exact same
 syntax as the Configuration WG.
 
-The naked syntax supported in BASH is not supported in the Collector.
+The naked syntax supported in Bash is not supported in the Collector.
 Escaping is supported by using two dollar signs. Escaping is also
 honored for unsupported identifiers like `${1}` (i.e. anything that 
 matches `\${[^$}]+}`).
