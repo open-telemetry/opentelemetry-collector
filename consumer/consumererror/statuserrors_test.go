@@ -5,6 +5,7 @@ package consumererror // import "go.opentelemetry.io/collector/consumer/consumer
 
 import (
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -31,7 +32,7 @@ func TestStatusError_Error(t *testing.T) {
 			},
 		},
 		{
-			statusError: &StatusError{},
+			statusError: NewGRPCStatus(errors.New("nil"), nil),
 			validate: func(t *testing.T, se *StatusError) {
 				require.NotNil(t, se.Error())
 			},
@@ -58,31 +59,25 @@ func TestStatusError_GRPCStatus(t *testing.T) {
 	tests := []struct {
 		statusError error
 		code        codes.Code
-		ok          bool
 	}{
 		{
 			statusError: NewHTTPStatus(errors.New("httperror"), 429),
 			code:        codes.ResourceExhausted,
-			ok:          true,
 		},
 		{
 			statusError: NewGRPCStatus(errors.New("status"), status.New(codes.ResourceExhausted, "")),
 			code:        codes.ResourceExhausted,
-			ok:          true,
 		},
 		{
-			statusError: &StatusError{},
-			ok:          false,
+			statusError: NewGRPCStatus(errors.New("nil"), nil),
+			code:        codes.Unknown,
 		},
 	}
 	for _, tt := range tests {
 		var se *StatusError
 		require.True(t, errors.As(tt.statusError, &se))
-		status, ok := se.GRPCStatus()
-		require.Equal(t, tt.ok, ok)
-		if ok {
-			require.Equal(t, tt.code, status.Code())
-		}
+		status := se.GRPCStatus()
+		require.Equal(t, tt.code, status.Code())
 	}
 }
 
@@ -93,27 +88,24 @@ func TestStatusError_HTTPStatus(t *testing.T) {
 		ok          bool
 	}{
 		{
-			statusError: NewHTTPStatus(errors.New("httperror"), 429),
-			code:        429,
+			statusError: NewHTTPStatus(errors.New("httperror"), http.StatusTooManyRequests),
+			code:        http.StatusTooManyRequests,
 			ok:          true,
 		},
 		{
 			statusError: NewGRPCStatus(errors.New("status"), status.New(codes.ResourceExhausted, "")),
-			code:        429,
+			code:        http.StatusTooManyRequests,
 			ok:          true,
 		},
 		{
-			statusError: &StatusError{},
-			ok:          false,
+			statusError: NewGRPCStatus(errors.New("nil"), nil),
+			code:        http.StatusInternalServerError,
 		},
 	}
 	for _, tt := range tests {
 		var se *StatusError
 		require.True(t, errors.As(tt.statusError, &se))
-		code, ok := se.HTTPStatus()
-		require.Equal(t, tt.ok, ok)
-		if ok {
-			require.Equal(t, tt.code, code)
-		}
+		code := se.HTTPStatus()
+		require.Equal(t, tt.code, code)
 	}
 }
