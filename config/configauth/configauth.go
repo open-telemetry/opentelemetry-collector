@@ -26,7 +26,7 @@ type Authentication struct {
 	AuthenticatorID component.ID `mapstructure:"authenticator"`
 }
 
-// DefaultAuthentication returns a default authentication configuration.
+// NewDefaultAuthentication returns a default authentication configuration.
 func NewDefaultAuthentication() *Authentication {
 	return &Authentication{}
 }
