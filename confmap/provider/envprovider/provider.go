@@ -26,7 +26,7 @@ type provider struct {
 // This Provider supports "env" scheme, and can be called with a selector:
 // `env:NAME_OF_ENVIRONMENT_VARIABLE`
 //
-// Deprecated [v0.99.0]: Use NewFactory instead.
+// Deprecated: [v0.99.0] Use NewFactory instead.
 func NewWithSettings(ps confmap.ProviderSettings) confmap.Provider {
 	return &provider{
 		logger: ps.Logger,

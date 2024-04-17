@@ -34,7 +34,7 @@ type provider struct{}
 // `file:c:/path/to/file` - absolute path including drive-letter (windows)
 // `file:c:\path\to\file` - absolute path including drive-letter (windows)
 //
-// Deprecated [v0.99.0]: Use NewFactory instead.
+// Deprecated: [v0.99.0] Use NewFactory instead.
 func NewWithSettings(confmap.ProviderSettings) confmap.Provider {
 	return &provider{}
 }

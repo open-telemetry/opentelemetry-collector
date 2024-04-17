@@ -25,7 +25,7 @@ type converter struct {
 //
 // Notice: This API is experimental.
 //
-// Deprecated [v0.99.0]: Use NewFactory instead.
+// Deprecated: [v0.99.0] Use NewFactory instead.
 func New(_ confmap.ConverterSettings) confmap.Converter {
 	return converter{
 		loggedDeprecations: make(map[string]struct{}),

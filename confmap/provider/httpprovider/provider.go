@@ -14,7 +14,7 @@ import (
 //
 // One example for HTTP URI is: http://localhost:3333/getConfig
 //
-// Deprecated [v0.99.0]: Use NewFactory instead.
+// Deprecated: [v0.99.0] Use NewFactory instead.
 func NewWithSettings(set confmap.ProviderSettings) confmap.Provider {
 	return configurablehttpprovider.New(configurablehttpprovider.HTTPScheme, set)
 }

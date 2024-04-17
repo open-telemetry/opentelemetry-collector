@@ -26,7 +26,7 @@ type provider struct{}
 // `yaml:processors::batch::timeout: 2s`
 // `yaml:processors::batch/foo::timeout: 3s`
 //
-// Deprecated [v0.99.0]: Use NewFactory instead.
+// Deprecated: [v0.99.0] Use NewFactory instead.
 func NewWithSettings(confmap.ProviderSettings) confmap.Provider {
 	return &provider{}
 }
