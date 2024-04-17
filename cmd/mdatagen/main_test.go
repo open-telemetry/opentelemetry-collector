@@ -151,8 +151,10 @@ foo
 
 			if tt.wantGoleakIgnore {
 				require.Contains(t, string(contents), "IgnoreTopFunction")
+				require.Contains(t, string(contents), "IgnoreAnyFunction")
 			} else {
 				require.NotContains(t, string(contents), "IgnoreTopFunction")
+				require.NotContains(t, string(contents), "IgnoreAnyFunction")
 			}
 		})
 	}

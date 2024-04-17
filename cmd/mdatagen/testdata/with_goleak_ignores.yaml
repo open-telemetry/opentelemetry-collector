@@ -8,4 +8,7 @@ status:
 tests:
   goleak:
     ignore:
-      - "testfunc1"
+      top:
+        - "testfunc1"
+      any:
+        - "testfunc2"

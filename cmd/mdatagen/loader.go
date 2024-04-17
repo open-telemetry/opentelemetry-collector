@@ -201,9 +201,14 @@ func (a attribute) TestValue() string {
 	return ""
 }
 
+type ignore struct {
+	Top []string `mapstructure:"top"`
+	Any []string `mapstructure:"any"`
+}
+
 type goLeak struct {
-	Skip   bool     `mapstructure:"skip"`
-	Ignore []string `mapstructure:"ignore"`
+	Skip   bool   `mapstructure:"skip"`
+	Ignore ignore `mapstructure:"ignore"`
 }
 
 type tests struct {
