@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"sync"
 
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
@@ -185,20 +184,20 @@ func (r *otlpReceiver) Start(ctx context.Context, host component.Host) error {
 
 // Shutdown is a method to turn off receiving.
 func (r *otlpReceiver) Shutdown(ctx context.Context) error {
-	var err error
+	var errs []error
 
 	if r.cfg != nil {
 		if r.cfg.HTTP != nil && r.cfg.HTTP.TLSSetting != nil {
-			err = r.cfg.HTTP.TLSSetting.Shutdown()
+			errs = append(errs, r.cfg.HTTP.TLSSetting.Shutdown())
 		}
 
 		if r.cfg.GRPC != nil && r.cfg.GRPC.TLSSetting != nil {
-			err = multierr.Append(err, r.cfg.GRPC.TLSSetting.Shutdown())
+			errs = append(errs, r.cfg.GRPC.TLSSetting.Shutdown())
 		}
 	}
 
 	if r.serverHTTP != nil {
-		err = multierr.Append(err, r.serverHTTP.Shutdown(ctx))
+		errs = append(errs, r.serverHTTP.Shutdown(ctx))
 	}
 
 	if r.serverGRPC != nil {
@@ -206,7 +205,7 @@ func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 	}
 
 	r.shutdownWG.Wait()
-	return err
+	return errors.Join(errs...)
 }
 
 func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) {
