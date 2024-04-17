@@ -20,11 +20,13 @@ import (
 
 var (
 	// ErrGoNotFound is returned when a Go binary hasn't been found
-	ErrGoNotFound       = errors.New("go binary not found")
-	ErrDepNotFound      = errors.New("dependency not found in go mod file")
-	ErrVersionMismatch  = errors.New("mismatch in go.mod and builder configuration versions")
-	errFailedToDownload = errors.New("failed to download go modules")
-	skipStrictMsg       = "Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version"
+	ErrGoNotFound      = errors.New("go binary not found")
+	ErrDepNotFound     = errors.New("dependency not found in go mod file")
+	ErrVersionMismatch = errors.New("mismatch in go.mod and builder configuration versions")
+	errGoGetFailed     = errors.New("failed to go get")
+	errDownloadFailed  = errors.New("failed to download go modules")
+	errCompileFailed   = errors.New("failed to compile the OpenTelemetry Collector distribution")
+	skipStrictMsg      = "Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version"
 )
 
 func runGoCommand(cfg Config, args ...string) ([]byte, error) {
@@ -127,7 +129,7 @@ func Compile(cfg Config) error {
 		args = append(args, "-tags", cfg.Distribution.BuildTags)
 	}
 	if _, err := runGoCommand(cfg, args...); err != nil {
-		return fmt.Errorf("failed to compile the OpenTelemetry Collector distribution: %w", err)
+		return fmt.Errorf("%w: %s", errCompileFailed, err.Error())
 	}
 	cfg.Logger.Info("Compiled", zap.String("binary", fmt.Sprintf("%s/%s", cfg.Distribution.OutputPath, cfg.Distribution.Name)))
 
@@ -143,7 +145,7 @@ func GetModules(cfg Config) error {
 
 	// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
 	if _, err := runGoCommand(cfg, "get", "cloud.google.com/go"); err != nil {
-		return fmt.Errorf("failed to go get: %w", err)
+		return fmt.Errorf("%w: %s", errGoGetFailed, err.Error())
 	}
 
 	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.21"); err != nil {
@@ -209,7 +211,7 @@ func downloadModules(cfg Config) error {
 		}
 		return nil
 	}
-	return fmt.Errorf("%w: %s", errFailedToDownload, failReason)
+	return fmt.Errorf("%w: %s", errDownloadFailed, failReason)
 }
 
 func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplParams any) error {

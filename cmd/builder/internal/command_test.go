@@ -179,6 +179,26 @@ func Test_applyCfgFromFile(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Skip strict versioning true",
+			args: args{
+				flags: flag.NewFlagSet("version=1.0.0", 1),
+				cfgFromFile: builder.Config{
+					Logger:               zap.NewNop(),
+					SkipCompilation:      true,
+					SkipStrictVersioning: true,
+					Distribution:         testDistribution,
+				},
+			},
+			want: builder.Config{
+				Logger:               zap.NewNop(),
+				SkipCompilation:      true,
+				SkipGetModules:       true,
+				SkipStrictVersioning: true,
+				Distribution:         testDistribution,
+			},
+			wantErr: false,
+		},
+		{
 			name: "Skip generate false",
 			args: args{
 				flags: flag.NewFlagSet("version=1.0.0", 1),
@@ -191,11 +211,12 @@ func Test_applyCfgFromFile(t *testing.T) {
 				},
 			},
 			want: builder.Config{
-				Logger:          zap.NewNop(),
-				SkipGenerate:    false,
-				SkipCompilation: true,
-				SkipGetModules:  true,
-				Distribution:    testDistribution,
+				Logger:               zap.NewNop(),
+				SkipGenerate:         false,
+				SkipCompilation:      true,
+				SkipGetModules:       true,
+				SkipStrictVersioning: true,
+				Distribution:         testDistribution,
 			},
 			wantErr: false,
 		},
@@ -212,11 +233,12 @@ func Test_applyCfgFromFile(t *testing.T) {
 				},
 			},
 			want: builder.Config{
-				Logger:          zap.NewNop(),
-				SkipGenerate:    true,
-				SkipCompilation: true,
-				SkipGetModules:  true,
-				Distribution:    testDistribution,
+				Logger:               zap.NewNop(),
+				SkipGenerate:         true,
+				SkipCompilation:      true,
+				SkipGetModules:       true,
+				SkipStrictVersioning: true,
+				Distribution:         testDistribution,
 			},
 			wantErr: false,
 		},
@@ -228,6 +250,7 @@ func Test_applyCfgFromFile(t *testing.T) {
 			assert.Equal(t, tt.want.SkipGenerate, cfg.SkipGenerate)
 			assert.Equal(t, tt.want.SkipCompilation, cfg.SkipCompilation)
 			assert.Equal(t, tt.want.SkipGetModules, cfg.SkipGetModules)
+			assert.Equal(t, tt.want.SkipStrictVersioning, cfg.SkipStrictVersioning)
 			assert.Equal(t, tt.want.Excludes, cfg.Excludes)
 			assert.Equal(t, tt.want.Exporters, cfg.Exporters)
 			assert.Equal(t, tt.want.Receivers, cfg.Receivers)
