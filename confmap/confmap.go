@@ -428,5 +428,24 @@ func negativeUintHookFunc() mapstructure.DecodeHookFuncValue {
 			return nil, fmt.Errorf("cannot convert negative value %v to an unsigned integer", from.Int())
 		}
 		return from.Interface(), nil
+}
+
+type moduleFactory[T any, S any] interface {
+	Create(s S) T
+}
+
+type createConfmapFunc[T any, S any] func(s S) T
+
+type confmapModuleFactory[T any, S any] struct {
+	f createConfmapFunc[T, S]
+}
+
+func (c confmapModuleFactory[T, S]) Create(s S) T {
+	return c.f(s)
+}
+
+func newConfmapModuleFactory[T any, S any](f createConfmapFunc[T, S]) moduleFactory[T, S] {
+	return confmapModuleFactory[T, S]{
+		f: f,
 	}
 }
