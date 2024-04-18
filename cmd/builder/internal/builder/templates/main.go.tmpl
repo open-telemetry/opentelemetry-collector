@@ -7,7 +7,7 @@ import (
 	"log"
 
 	"go.opentelemetry.io/collector/component"
-	{{- if .SupportsConfigProviderSettings}}
+	{{- if .SupportsConfmapFactories}}
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	{{- range .Providers}}
@@ -23,22 +23,20 @@ func main() {
 		Description: "{{ .Distribution.Description }}",
 		Version:     "{{ .Distribution.Version }}",
 	}
-	{{- if .SupportsConfigProviderSettings}}
-	providers := []confmap.Provider{
-		{{- range .Providers}}
-		{{.Name}}.NewWithSettings(confmap.ProviderSettings{}),
-		{{- end}}
-	}
-	{{- end}}
+
 	set := otelcol.CollectorSettings{
 		BuildInfo: info,
 		Factories: components,
-		{{- if .SupportsConfigProviderSettings}}
+		{{- if .SupportsConfmapFactories}}
 		ConfigProviderSettings: otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				Providers:  makeMapProvidersMap(providers...),
-				Converters: []confmap.Converter{
-					expandconverter.New(confmap.ConverterSettings{}),
+				ProviderFactories: []confmap.ProviderFactory{
+					{{- range .Providers}}
+					{{.Name}}.NewFactory(),
+					{{- end}}
+				},
+				ConverterFactories: []confmap.ConverterFactory{
+					expandconverter.NewFactory(),
 				},
 			},
 		},
@@ -58,13 +56,3 @@ func runInteractive(params otelcol.CollectorSettings) error {
 
 	return nil
 }
-
-{{if .SupportsConfigProviderSettings}}
-func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
-	ret := make(map[string]confmap.Provider, len(providers))
-	for _, provider := range providers {
-		ret[provider.Scheme()] = provider
-	}
-	return ret
-}
-{{- end}}

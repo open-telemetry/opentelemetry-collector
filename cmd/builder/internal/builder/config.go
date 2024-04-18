@@ -23,8 +23,8 @@ var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
 
 // Config holds the builder's configuration
 type Config struct {
-	Logger                         *zap.Logger
-	SupportsConfigProviderSettings bool
+	Logger                   *zap.Logger
+	SupportsConfmapFactories bool
 
 	SkipGenerate         bool   `mapstructure:"-"`
 	SkipCompilation      bool   `mapstructure:"-"`

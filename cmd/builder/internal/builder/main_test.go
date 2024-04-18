@@ -322,7 +322,7 @@ func TestGenerateAndCompile(t *testing.T) {
 	}
 }
 
-func TestConfigProviderVersions(t *testing.T) {
+func TestConfmapFactoryVersions(t *testing.T) {
 	testCases := []struct {
 		version   string
 		supported bool
@@ -352,19 +352,19 @@ func TestConfigProviderVersions(t *testing.T) {
 			supported: false,
 		},
 		{
-			version:   "0.95.0",
+			version:   "0.99.0",
 			supported: true,
 		},
 		{
-			version:   "0.95.7",
-			supported: true,
-		},
-		{
-			version:   "0.96.0",
+			version:   "0.99.7",
 			supported: true,
 		},
 		{
 			version:   "0.100.0",
+			supported: true,
+		},
+		{
+			version:   "0.100.1",
 			supported: true,
 		},
 		{
@@ -380,7 +380,7 @@ func TestConfigProviderVersions(t *testing.T) {
 			},
 		}
 
-		shouldSupport := supportsConfigProviderSettings(cfg)
+		shouldSupport := supportsConfmapFactories(cfg)
 		require.Equal(t, tt.supported, shouldSupport)
 	}
 }

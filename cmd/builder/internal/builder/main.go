@@ -80,7 +80,7 @@ func Generate(cfg Config) error {
 		}
 		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", zap.String("builder-version", defaultOtelColVersion))
 	}
-	cfg.SupportsConfigProviderSettings = supportsConfigProviderSettings(cfg)
+	cfg.SupportsConfmapFactories = supportsConfmapFactories(cfg)
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(cfg.Distribution.OutputPath); os.IsNotExist(err) {
 		if err = os.Mkdir(cfg.Distribution.OutputPath, 0750); err != nil {
@@ -265,7 +265,7 @@ func (c *Config) readGoModFile() (string, map[string]string, error) {
 	return modPath, dependencies, nil
 }
 
-func supportsConfigProviderSettings(cfg Config) bool {
+func supportsConfmapFactories(cfg Config) bool {
 	splitVersion := strings.Split(cfg.Distribution.OtelColVersion, ".")
 
 	if len(splitVersion) != 3 {
@@ -288,7 +288,8 @@ func supportsConfigProviderSettings(cfg Config) bool {
 		return true
 	}
 
-	if majorVer == 0 && minorVer >= 95 {
+	// confmap factories were introduced in v0.99.0.
+	if majorVer == 0 && minorVer >= 99 {
 		return true
 	}
 
