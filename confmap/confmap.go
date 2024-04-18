@@ -422,6 +422,7 @@ func zeroSliceHookFunc() mapstructure.DecodeHookFuncValue {
 // This hook is used to solve the issue: https://github.com/open-telemetry/opentelemetry-collector/issues/9060
 // Decoding should fail when converting a negative integer to any type of unsigned integer. This prevents
 // negative values being decoded as large uint values.
+// TODO: This should be removed as a part of https://github.com/open-telemetry/opentelemetry-collector/issues/9532
 func negativeUintHookFunc() mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
 		if from.CanInt() && from.Int() < 0 && to.CanUint() {
