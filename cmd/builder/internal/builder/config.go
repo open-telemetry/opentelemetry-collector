@@ -16,19 +16,20 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.97.0"
+const defaultOtelColVersion = "0.98.0"
 
 // ErrInvalidGoMod indicates an invalid gomod
 var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
 
 // Config holds the builder's configuration
 type Config struct {
-	Logger          *zap.Logger
-	SkipGenerate    bool   `mapstructure:"-"`
-	SkipCompilation bool   `mapstructure:"-"`
-	SkipGetModules  bool   `mapstructure:"-"`
-	LDFlags         string `mapstructure:"-"`
-	Verbose         bool   `mapstructure:"-"`
+	Logger               *zap.Logger
+	SkipGenerate         bool   `mapstructure:"-"`
+	SkipCompilation      bool   `mapstructure:"-"`
+	SkipGetModules       bool   `mapstructure:"-"`
+	SkipStrictVersioning bool   `mapstructure:"-"`
+	LDFlags              string `mapstructure:"-"`
+	Verbose              bool   `mapstructure:"-"`
 
 	Distribution Distribution `mapstructure:"dist"`
 	Exporters    []Module     `mapstructure:"exporters"`

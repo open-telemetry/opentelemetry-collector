@@ -132,27 +132,17 @@ func (cm *configProvider) GetConfmap(ctx context.Context) (*confmap.Conf, error)
 }
 
 func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
-	converterSet := confmap.ConverterSettings{}
-	providerSet := confmap.ProviderSettings{}
 	return ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs: uris,
-			Providers: makeMapProvidersMap(
-				fileprovider.NewWithSettings(providerSet),
-				envprovider.NewWithSettings(providerSet),
-				yamlprovider.NewWithSettings(providerSet),
-				httpprovider.NewWithSettings(providerSet),
-				httpsprovider.NewWithSettings(providerSet),
-			),
-			Converters: []confmap.Converter{expandconverter.New(converterSet)},
+			ProviderFactories: []confmap.ProviderFactory{
+				fileprovider.NewFactory(),
+				envprovider.NewFactory(),
+				yamlprovider.NewFactory(),
+				httpprovider.NewFactory(),
+				httpsprovider.NewFactory(),
+			},
+			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
 		},
 	}
-}
-
-func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
-	ret := make(map[string]confmap.Provider, len(providers))
-	for _, provider := range providers {
-		ret[provider.Scheme()] = provider
-	}
-	return ret
 }

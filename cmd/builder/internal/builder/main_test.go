@@ -13,17 +13,28 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+)
+
+var (
+	goModTestFile = []byte(`// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+module go.opentelemetry.io/collector/cmd/builder/internal/tester
+go 1.20
+require (
+	go.opentelemetry.io/collector/component v0.96.0
+	go.opentelemetry.io/collector/connector v0.94.1
+	go.opentelemetry.io/collector/exporter v0.94.1
+	go.opentelemetry.io/collector/extension v0.94.1
+	go.opentelemetry.io/collector/otelcol v0.94.1
+	go.opentelemetry.io/collector/processor v0.94.1
+	go.opentelemetry.io/collector/receiver v0.94.1
+	go.opentelemetry.io/collector v0.96.0
+)`)
 )
 
 func TestGenerateDefault(t *testing.T) {
 	require.NoError(t, Generate(NewDefaultConfig()))
-}
-
-func TestGenerateInvalidCollectorVersion(t *testing.T) {
-	cfg := NewDefaultConfig()
-	cfg.Distribution.OtelColVersion = "invalid"
-	err := Generate(cfg)
-	require.NoError(t, err)
 }
 
 func TestGenerateInvalidOutputPath(t *testing.T) {
@@ -32,6 +43,153 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	err := Generate(cfg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to create output path")
+}
+
+func TestVersioning(t *testing.T) {
+	tests := []struct {
+		description string
+		cfgBuilder  func() Config
+		expectedErr error
+	}{
+		{
+			description: "defaults",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.Go = "go"
+				return cfg
+			},
+			expectedErr: nil,
+		},
+		{
+			description: "require otelcol",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.Go = "go"
+				cfg.Distribution.RequireOtelColModule = true
+				return cfg
+			},
+			expectedErr: nil,
+		},
+		{
+			description: "only gomod file, skip generate",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				tempDir := t.TempDir()
+				err := makeModule(tempDir, goModTestFile)
+				require.NoError(t, err)
+				cfg.Distribution.OutputPath = tempDir
+				cfg.SkipGenerate = true
+				cfg.Distribution.Go = "go"
+				return cfg
+			},
+			expectedErr: ErrDepNotFound,
+		},
+		{
+			description: "old otel version",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OtelColVersion = "0.90.0"
+				return cfg
+			},
+			expectedErr: ErrVersionMismatch,
+		},
+		{
+			description: "old otel version without strict mode",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Verbose = true
+				cfg.Distribution.Go = "go"
+				cfg.SkipStrictVersioning = true
+				cfg.Distribution.OtelColVersion = "0.90.0"
+				return cfg
+			},
+			expectedErr: nil,
+		},
+		{
+			description: "invalid collector version",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OtelColVersion = "invalid"
+				return cfg
+			},
+			expectedErr: ErrVersionMismatch,
+		},
+		{
+			description: "invalid collector version without strict mode, only generate",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OtelColVersion = "invalid"
+				cfg.SkipGetModules = true
+				cfg.SkipCompilation = true
+				cfg.SkipStrictVersioning = true
+				return cfg
+			},
+			expectedErr: nil,
+		},
+		{
+			description: "invalid collector version without strict mode",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OtelColVersion = "invalid"
+				cfg.SkipStrictVersioning = true
+				return cfg
+			},
+			expectedErr: errGoGetFailed,
+		},
+		{
+			description: "old component version",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.Go = "go"
+				cfg.Exporters = []Module{
+					{
+						Import: "go.opentelemetry.io/collector/receiver/otlpreceiver",
+						GoMod:  "go.opentelemetry.io/collector v0.96.0",
+					},
+				}
+				return cfg
+			},
+			expectedErr: ErrVersionMismatch,
+		},
+		{
+			description: "old component version without strict mode",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.Go = "go"
+				cfg.SkipStrictVersioning = true
+				cfg.Exporters = []Module{
+					{
+						Import: "go.opentelemetry.io/collector/receiver/otlpreceiver",
+						GoMod:  "go.opentelemetry.io/collector v0.96.0",
+					},
+				}
+				return cfg
+			},
+			expectedErr: errCompileFailed,
+		},
+		{
+			description: "invalid component version",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.Go = "go"
+				cfg.Exporters = []Module{
+					{
+						Import: "go.opentelemetry.io/collector/receiver/otlpreceiver",
+						GoMod:  "go.opentelemetry.io/collector invalid",
+					},
+				}
+				return cfg
+			},
+			expectedErr: errGoGetFailed,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			cfg := tc.cfgBuilder()
+			err := GenerateAndCompile(cfg)
+			require.ErrorIs(t, err, tc.expectedErr)
+		})
+	}
 }
 
 func TestSkipGenerate(t *testing.T) {
@@ -85,6 +243,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		fmt.Sprintf("go.opentelemetry.io/collector/receiver/otlpreceiver => %s/receiver/otlpreceiver", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/otelcol => %s/otelcol", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/pdata => %s/pdata", workspaceDir),
+		fmt.Sprintf("go.opentelemetry.io/collector/pdata/testdata => %s/pdata/testdata", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/semconv => %s/semconv", workspaceDir),
 		fmt.Sprintf("go.opentelemetry.io/collector/service => %s/service", workspaceDir),
 	}
@@ -118,6 +277,7 @@ func TestGenerateAndCompile(t *testing.T) {
 				cfg := NewDefaultConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.Logger = zap.NewNop()
 				cfg.Distribution.DebugCompilation = true
 				return cfg
 			},
@@ -132,4 +292,21 @@ func TestGenerateAndCompile(t *testing.T) {
 			require.NoError(t, GenerateAndCompile(cfg))
 		})
 	}
+}
+
+func makeModule(dir string, fileContents []byte) error {
+	// if the file does not exist, try to create it
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err = os.Mkdir(dir, 0750); err != nil {
+			return fmt.Errorf("failed to create output path: %w", err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to create output path: %w", err)
+	}
+
+	err := os.WriteFile(filepath.Clean(filepath.Join(dir, "go.mod")), fileContents, 0600)
+	if err != nil {
+		return fmt.Errorf("failed to write go.mod file: %w", err)
+	}
+	return nil
 }

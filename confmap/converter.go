@@ -8,8 +8,19 @@ import (
 )
 
 // ConverterSettings are the settings to initialize a Converter.
-// Any Converter should take this as a parameter in its constructor.
 type ConverterSettings struct{}
+
+// ConverterFactory defines a factory that can be used to instantiate
+// new instances of a Converter.
+type ConverterFactory = moduleFactory[Converter, ConverterSettings]
+
+// CreateConverterFunc is a function that creates a Converter instance.
+type CreateConverterFunc = createConfmapFunc[Converter, ConverterSettings]
+
+// NewConverterFactory can be used to create a ConverterFactory.
+func NewConverterFactory(f CreateConverterFunc) ConverterFactory {
+	return newConfmapModuleFactory(f)
+}
 
 // Converter is a converter interface for the confmap.Conf that allows distributions
 // (in the future components as well) to build backwards compatible config converters.

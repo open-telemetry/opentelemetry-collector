@@ -52,9 +52,9 @@ func TestAddFlagToSettings(t *testing.T) {
 	set := CollectorSettings{
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs:       []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-				Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmap.ProviderSettings{})},
-				Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
+				URIs:               []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
+				ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewFactory()},
+				ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
 			},
 		},
 	}
@@ -80,16 +80,16 @@ func TestAddDefaultConfmapModules(t *testing.T) {
 	err = updateSettingsUsingFlags(&set, flgs)
 	require.NoError(t, err)
 	require.Len(t, set.ConfigProviderSettings.ResolverSettings.URIs, 1)
-	require.Len(t, set.ConfigProviderSettings.ResolverSettings.Converters, 1)
-	require.Len(t, set.ConfigProviderSettings.ResolverSettings.Providers, 5)
+	require.Len(t, set.ConfigProviderSettings.ResolverSettings.ConverterFactories, 1)
+	require.Len(t, set.ConfigProviderSettings.ResolverSettings.ProviderFactories, 5)
 }
 
 func TestInvalidCollectorSettings(t *testing.T) {
 	set := CollectorSettings{
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
-				URIs:       []string{"--config=otelcol-nop.yaml"},
+				ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
+				URIs:               []string{"--config=otelcol-nop.yaml"},
 			},
 		},
 	}
@@ -101,9 +101,9 @@ func TestInvalidCollectorSettings(t *testing.T) {
 func TestNewCommandInvalidComponent(t *testing.T) {
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
-			URIs:       []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-			Providers:  map[string]confmap.Provider{"file": fileprovider.NewWithSettings(confmap.ProviderSettings{})},
-			Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
+			URIs:               []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
+			ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewFactory()},
+			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
 		},
 	}
 

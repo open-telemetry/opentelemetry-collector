@@ -116,6 +116,9 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 	var err error
 	configProvider := set.ConfigProvider
 
+	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: zap.NewNop()}
+	set.ConfigProviderSettings.ResolverSettings.ConverterSettings = confmap.ConverterSettings{}
+
 	if configProvider == nil {
 		configProvider, err = NewConfigProvider(set.ConfigProviderSettings)
 		if err != nil {
@@ -236,7 +239,11 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	return cfg.Validate()
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
+
+	return col.validatePipelineCfg(ctx, cfg, factories)
 }
 
 // Run starts the collector according to the given configuration, and waits for it to complete.
@@ -313,4 +320,24 @@ func (col *Collector) shutdown(ctx context.Context) error {
 // setCollectorState provides current state of the collector
 func (col *Collector) setCollectorState(state State) {
 	col.state.Store(int32(state))
+}
+
+// validatePipelineConfig validates that the components in a pipeline support the
+// signal type of the pipeline. For example, this function will return an error if
+// a metrics pipeline has non-metrics components.
+func (col *Collector) validatePipelineCfg(ctx context.Context, cfg *Config, factories Factories) error {
+	set := service.Settings{
+		Receivers:  receiver.NewBuilder(cfg.Receivers, factories.Receivers),
+		Processors: processor.NewBuilder(cfg.Processors, factories.Processors),
+		Exporters:  exporter.NewBuilder(cfg.Exporters, factories.Exporters),
+		Connectors: connector.NewBuilder(cfg.Connectors, factories.Connectors),
+		Extensions: extension.NewBuilder(cfg.Extensions, factories.Extensions),
+	}
+
+	_, err := service.New(ctx, set, cfg.Service)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

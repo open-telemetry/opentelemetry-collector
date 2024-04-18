@@ -16,6 +16,14 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
+func TestComponentFactoryType(t *testing.T) {
+	require.Equal(t, "forward", NewFactory().Type().String())
+}
+
+func TestComponentConfigStruct(t *testing.T) {
+	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 

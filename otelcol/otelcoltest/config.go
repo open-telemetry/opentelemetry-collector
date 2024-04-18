@@ -21,13 +21,13 @@ func LoadConfig(fileName string, factories otelcol.Factories) (*otelcol.Config, 
 	provider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs: []string{fileName},
-			Providers: makeMapProvidersMap(
-				fileprovider.NewWithSettings(confmap.ProviderSettings{}),
-				envprovider.NewWithSettings(confmap.ProviderSettings{}),
-				yamlprovider.NewWithSettings(confmap.ProviderSettings{}),
-				httpprovider.NewWithSettings(confmap.ProviderSettings{}),
-			),
-			Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
+			ProviderFactories: []confmap.ProviderFactory{
+				fileprovider.NewFactory(),
+				envprovider.NewFactory(),
+				yamlprovider.NewFactory(),
+				httpprovider.NewFactory(),
+			},
+			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
 		},
 	})
 	if err != nil {
@@ -43,12 +43,4 @@ func LoadConfigAndValidate(fileName string, factories otelcol.Factories) (*otelc
 		return nil, err
 	}
 	return cfg, cfg.Validate()
-}
-
-func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
-	ret := make(map[string]confmap.Provider, len(providers))
-	for _, provider := range providers {
-		ret[provider.Scheme()] = provider
-	}
-	return ret
 }

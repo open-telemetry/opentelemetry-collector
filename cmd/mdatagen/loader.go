@@ -12,7 +12,9 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -152,6 +154,10 @@ type attribute struct {
 	NameOverride string `mapstructure:"name_override"`
 	// Enabled defines whether the attribute is enabled by default.
 	Enabled bool `mapstructure:"enabled"`
+	// Include can be used to filter attributes.
+	Include []filter.Config `mapstructure:"include"`
+	// Include can be used to filter attributes.
+	Exclude []filter.Config `mapstructure:"exclude"`
 	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string `mapstructure:"enum"`
 	// Type is an attribute type.
@@ -195,11 +201,24 @@ func (a attribute) TestValue() string {
 	return ""
 }
 
+type ignore struct {
+	Top []string `mapstructure:"top"`
+	Any []string `mapstructure:"any"`
+}
+
+type goLeak struct {
+	Skip     bool   `mapstructure:"skip"`
+	Ignore   ignore `mapstructure:"ignore"`
+	Setup    string `mapstructure:"setup"`
+	Teardown string `mapstructure:"teardown"`
+}
+
 type tests struct {
-	Config              any  `mapstructure:"config"`
-	SkipLifecycle       bool `mapstructure:"skip_lifecycle"`
-	SkipShutdown        bool `mapstructure:"skip_shutdown"`
-	ExpectConsumerError bool `mapstructure:"expect_consumer_error"`
+	Config              any    `mapstructure:"config"`
+	SkipLifecycle       bool   `mapstructure:"skip_lifecycle"`
+	SkipShutdown        bool   `mapstructure:"skip_shutdown"`
+	GoLeak              goLeak `mapstructure:"goleak"`
+	ExpectConsumerError bool   `mapstructure:"expect_consumer_error"`
 }
 
 type metadata struct {
@@ -239,7 +258,7 @@ type templateContext struct {
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := fileprovider.NewWithSettings(confmap.ProviderSettings{}).Retrieve(context.Background(), "file:"+filePath, nil)
+	cp, err := fileprovider.NewFactory().Create(confmaptest.NewNopProviderSettings()).Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}
