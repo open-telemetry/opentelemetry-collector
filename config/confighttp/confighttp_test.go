@@ -21,7 +21,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -29,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumerconnection"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
 )
@@ -1114,19 +1114,19 @@ func TestContextWithClient(t *testing.T) {
 		desc       string
 		input      *http.Request
 		doMetadata bool
-		expected   client.Info
+		expected   consumerconnection.Info
 	}{
 		{
 			desc:     "request without client IP or headers",
 			input:    &http.Request{},
-			expected: client.Info{},
+			expected: consumerconnection.Info{},
 		},
 		{
 			desc: "request with client IP",
 			input: &http.Request{
 				RemoteAddr: "1.2.3.4:55443",
 			},
-			expected: client.Info{
+			expected: consumerconnection.Info{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
@@ -1138,7 +1138,7 @@ func TestContextWithClient(t *testing.T) {
 				Header: map[string][]string{"x-test-header": {"test-value"}},
 			},
 			doMetadata: false,
-			expected:   client.Info{},
+			expected:   consumerconnection.Info{},
 		},
 		{
 			desc: "request with client headers",
@@ -1146,8 +1146,8 @@ func TestContextWithClient(t *testing.T) {
 				Header: map[string][]string{"x-test-header": {"test-value"}},
 			},
 			doMetadata: true,
-			expected: client.Info{
-				Metadata: client.NewMetadata(map[string][]string{"x-test-header": {"test-value"}}),
+			expected: consumerconnection.Info{
+				Metadata: consumerconnection.NewMetadata(map[string][]string{"x-test-header": {"test-value"}}),
 			},
 		},
 		{
@@ -1157,15 +1157,15 @@ func TestContextWithClient(t *testing.T) {
 				Host:   "localhost:55443",
 			},
 			doMetadata: true,
-			expected: client.Info{
-				Metadata: client.NewMetadata(map[string][]string{"x-test-header": {"test-value"}, "Host": {"localhost:55443"}}),
+			expected: consumerconnection.Info{
+				Metadata: consumerconnection.NewMetadata(map[string][]string{"x-test-header": {"test-value"}, "Host": {"localhost:55443"}}),
 			},
 		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			ctx := contextWithClient(tC.input, tC.doMetadata)
-			assert.Equal(t, tC.expected, client.FromContext(ctx))
+			assert.Equal(t, tC.expected, consumerconnection.InfoFromContext(ctx))
 		})
 	}
 }

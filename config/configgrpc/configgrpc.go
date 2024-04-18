@@ -24,7 +24,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -33,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
+	"go.opentelemetry.io/collector/consumer/consumerconnection"
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
@@ -390,7 +390,7 @@ func getGRPCCompressionName(compressionType configcompression.Type) (string, err
 }
 
 // enhanceWithClientInformation intercepts the incoming RPC, replacing the incoming context with one that includes
-// a client.Info, potentially with the peer's address.
+// a consumerconnection.Info, potentially with the peer's address.
 func enhanceWithClientInformation(includeMetadata bool) func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		return handler(contextWithClient(ctx, includeMetadata), req)
@@ -403,23 +403,23 @@ func enhanceStreamWithClientInformation(includeMetadata bool) func(srv any, ss g
 	}
 }
 
-// contextWithClient attempts to add the peer address to the client.Info from the context. When no
-// client.Info exists in the context, one is created.
+// contextWithClient attempts to add the peer address to the consumerconnection.Info from the context. When no
+// consumerconnection.Info exists in the context, one is created.
 func contextWithClient(ctx context.Context, includeMetadata bool) context.Context {
-	cl := client.FromContext(ctx)
+	cl := consumerconnection.InfoFromContext(ctx)
 	if p, ok := peer.FromContext(ctx); ok {
 		cl.Addr = p.Addr
 	}
 	if includeMetadata {
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
 			copiedMD := md.Copy()
-			if len(md[client.MetadataHostName]) == 0 && len(md[":authority"]) > 0 {
-				copiedMD[client.MetadataHostName] = md[":authority"]
+			if len(md[consumerconnection.MetadataHostName]) == 0 && len(md[":authority"]) > 0 {
+				copiedMD[consumerconnection.MetadataHostName] = md[":authority"]
 			}
-			cl.Metadata = client.NewMetadata(copiedMD)
+			cl.Metadata = consumerconnection.NewMetadata(copiedMD)
 		}
 	}
-	return client.NewContext(ctx, cl)
+	return consumerconnection.NewContextWithInfo(ctx, cl)
 }
 
 func authUnaryServerInterceptor(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler, server auth.Server) (any, error) {
