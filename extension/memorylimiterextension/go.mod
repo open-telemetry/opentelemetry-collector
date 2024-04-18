@@ -10,6 +10,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.98.0
 	go.opentelemetry.io/otel/metric v1.25.0
 	go.opentelemetry.io/otel/trace v1.25.0
+	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
 
