@@ -14,7 +14,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 )
@@ -49,11 +48,10 @@ func TestConfigProviderYaml(t *testing.T) {
 	require.NoError(t, err)
 
 	uriLocation := "yaml:" + string(yamlBytes)
-	provider := yamlprovider.NewWithSettings(confmaptest.NewNopProviderSettings())
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
-			URIs:      []string{uriLocation},
-			Providers: map[string]confmap.Provider{provider.Scheme(): provider},
+			URIs:              []string{uriLocation},
+			ProviderFactories: []confmap.ProviderFactory{yamlprovider.NewFactory()},
 		},
 	}
 
@@ -74,11 +72,10 @@ func TestConfigProviderYaml(t *testing.T) {
 
 func TestConfigProviderFile(t *testing.T) {
 	uriLocation := "file:" + filepath.Join("testdata", "otelcol-nop.yaml")
-	provider := fileprovider.NewWithSettings(confmaptest.NewNopProviderSettings())
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
-			URIs:      []string{uriLocation},
-			Providers: map[string]confmap.Provider{provider.Scheme(): provider},
+			URIs:              []string{uriLocation},
+			ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
 		},
 	}
 
@@ -102,11 +99,10 @@ func TestConfigProviderFile(t *testing.T) {
 
 func TestGetConfmap(t *testing.T) {
 	uriLocation := "file:" + filepath.Join("testdata", "otelcol-nop.yaml")
-	provider := fileprovider.NewWithSettings(confmaptest.NewNopProviderSettings())
 	set := ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
-			URIs:      []string{uriLocation},
-			Providers: map[string]confmap.Provider{provider.Scheme(): provider},
+			URIs:              []string{uriLocation},
+			ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
 		},
 	}
 

@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -22,13 +21,13 @@ func LoadConfig(fileName string, factories otelcol.Factories) (*otelcol.Config, 
 	provider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs: []string{fileName},
-			Providers: makeMapProvidersMap(
-				fileprovider.NewWithSettings(confmaptest.NewNopProviderSettings()),
-				envprovider.NewWithSettings(confmaptest.NewNopProviderSettings()),
-				yamlprovider.NewWithSettings(confmaptest.NewNopProviderSettings()),
-				httpprovider.NewWithSettings(confmaptest.NewNopProviderSettings()),
-			),
-			Converters: []confmap.Converter{expandconverter.New(confmap.ConverterSettings{})},
+			ProviderFactories: []confmap.ProviderFactory{
+				fileprovider.NewFactory(),
+				envprovider.NewFactory(),
+				yamlprovider.NewFactory(),
+				httpprovider.NewFactory(),
+			},
+			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
 		},
 	})
 	if err != nil {
@@ -44,12 +43,4 @@ func LoadConfigAndValidate(fileName string, factories otelcol.Factories) (*otelc
 		return nil, err
 	}
 	return cfg, cfg.Validate()
-}
-
-func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
-	ret := make(map[string]confmap.Provider, len(providers))
-	for _, provider := range providers {
-		ret[provider.Scheme()] = provider
-	}
-	return ret
 }

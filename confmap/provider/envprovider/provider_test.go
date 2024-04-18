@@ -27,18 +27,18 @@ exporters:
 `
 
 func TestValidateProviderScheme(t *testing.T) {
-	assert.NoError(t, confmaptest.ValidateProviderScheme(NewWithSettings(confmaptest.NewNopProviderSettings())))
+	assert.NoError(t, confmaptest.ValidateProviderScheme(createProvider()))
 }
 
 func TestEmptyName(t *testing.T) {
-	env := NewWithSettings(confmaptest.NewNopProviderSettings())
+	env := createProvider()
 	_, err := env.Retrieve(context.Background(), "", nil)
 	require.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
 func TestUnsupportedScheme(t *testing.T) {
-	env := NewWithSettings(confmaptest.NewNopProviderSettings())
+	env := createProvider()
 	_, err := env.Retrieve(context.Background(), "https://", nil)
 	assert.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
@@ -47,7 +47,7 @@ func TestUnsupportedScheme(t *testing.T) {
 func TestInvalidYAML(t *testing.T) {
 	const envName = "invalid-yaml"
 	t.Setenv(envName, "[invalid,")
-	env := NewWithSettings(confmaptest.NewNopProviderSettings())
+	env := createProvider()
 	_, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	assert.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
@@ -57,7 +57,7 @@ func TestEnv(t *testing.T) {
 	const envName = "default-config"
 	t.Setenv(envName, validYAML)
 
-	env := NewWithSettings(confmaptest.NewNopProviderSettings())
+	env := createProvider()
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
@@ -136,4 +136,8 @@ func TestEmptyEnvWithLoggerWarn(t *testing.T) {
 	assert.Equal(t, "Configuration references empty environment variable", logLine.Message)
 	assert.Equal(t, zap.InfoLevel, logLine.Level)
 	assert.Equal(t, envName, logLine.Context[0].String)
+}
+
+func createProvider() confmap.Provider {
+	return NewFactory().Create(confmaptest.NewNopProviderSettings())
 }
