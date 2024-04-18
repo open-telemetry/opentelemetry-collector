@@ -12,6 +12,7 @@ import (
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/internal/httphelper"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
@@ -152,7 +153,7 @@ func writeError(w http.ResponseWriter, encoder encoder, err error, statusCode in
 	if ok {
 		statusCode = errors.GetHTTPStatusCodeFromStatus(s)
 	} else {
-		s = errors.NewStatusFromMsgAndHTTPCode(err.Error(), statusCode)
+		s = httphelper.NewStatusFromMsgAndHTTPCode(err.Error(), statusCode)
 	}
 	writeStatusResponse(w, encoder, statusCode, s.Proto())
 }
@@ -160,7 +161,7 @@ func writeError(w http.ResponseWriter, encoder encoder, err error, statusCode in
 // errorHandler encodes the HTTP error message inside a rpc.Status message as required
 // by the OTLP protocol.
 func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusCode int) {
-	s := errors.NewStatusFromMsgAndHTTPCode(errMsg, statusCode)
+	s := httphelper.NewStatusFromMsgAndHTTPCode(errMsg, statusCode)
 	switch getMimeTypeFromContentType(r.Header.Get("Content-Type")) {
 	case pbContentType:
 		writeStatusResponse(w, pbEncoder, statusCode, s.Proto())
