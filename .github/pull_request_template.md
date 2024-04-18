@@ -3,7 +3,7 @@ Ex. Adding a feature - Explain what this achieves.-->
 #### Description
 
 <!-- Issue number if applicable -->
-#### Link to tracking Issue
+#### Link to tracking issue
 Fixes #
 
 <!--Describe what testing was performed and which tests were added.-->
