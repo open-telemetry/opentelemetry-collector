@@ -428,6 +428,7 @@ func negativeUintHookFunc() mapstructure.DecodeHookFuncValue {
 			return nil, fmt.Errorf("cannot convert negative value %v to an unsigned integer", from.Int())
 		}
 		return from.Interface(), nil
+	}
 }
 
 type moduleFactory[T any, S any] interface {
