@@ -25,6 +25,8 @@ func TestRunContents(t *testing.T) {
 		wantStatusGenerated  bool
 		wantGoleakIgnore     bool
 		wantGoleakSkip       bool
+		wantGoleakSetup      bool
+		wantGoleakTeardown   bool
 		wantErr              bool
 	}{
 		{
@@ -75,6 +77,16 @@ func TestRunContents(t *testing.T) {
 			yml:                 "with_goleak_skip.yaml",
 			wantStatusGenerated: true,
 			wantGoleakSkip:      true,
+		},
+		{
+			yml:                 "with_goleak_setup.yaml",
+			wantStatusGenerated: true,
+			wantGoleakSetup:     true,
+		},
+		{
+			yml:                 "with_goleak_teardown.yaml",
+			wantStatusGenerated: true,
+			wantGoleakTeardown:  true,
 		},
 	}
 	for _, tt := range tests {
@@ -155,6 +167,18 @@ foo
 			} else {
 				require.NotContains(t, string(contents), "IgnoreTopFunction")
 				require.NotContains(t, string(contents), "IgnoreAnyFunction")
+			}
+
+			if tt.wantGoleakSetup {
+				require.Contains(t, string(contents), "setupFunc")
+			} else {
+				require.NotContains(t, string(contents), "setupFunc")
+			}
+
+			if tt.wantGoleakTeardown {
+				require.Contains(t, string(contents), "teardownFunc")
+			} else {
+				require.NotContains(t, string(contents), "teardownFunc")
 			}
 		})
 	}

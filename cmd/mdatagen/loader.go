@@ -207,8 +207,10 @@ type ignore struct {
 }
 
 type goLeak struct {
-	Skip   bool   `mapstructure:"skip"`
-	Ignore ignore `mapstructure:"ignore"`
+	Skip     bool   `mapstructure:"skip"`
+	Ignore   ignore `mapstructure:"ignore"`
+	Setup    string `mapstructure:"setup"`
+	Teardown string `mapstructure:"teardown"`
 }
 
 type tests struct {
