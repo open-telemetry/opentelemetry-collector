@@ -14,6 +14,11 @@ import (
 	"go.opentelemetry.io/collector/service/internal/graph"
 )
 
+type getExporters interface {
+	GetExporters() map[component.DataType]map[component.ID]component.Component
+}
+
+var _ getExporters = (*serviceHost)(nil)
 var _ component.Host = (*serviceHost)(nil)
 
 type serviceHost struct {
