@@ -7,7 +7,7 @@ import (
 	"log"
 
 	"go.opentelemetry.io/collector/component"
-	{{- if .SupportsConfmapFactories}}
+	{{- if .Distribution.SupportsConfmapFactories}}
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	{{- range .Providers}}
@@ -27,7 +27,7 @@ func main() {
 	set := otelcol.CollectorSettings{
 		BuildInfo: info,
 		Factories: components,
-		{{- if .SupportsConfmapFactories}}
+		{{- if .Distribution.SupportsConfmapFactories}}
 		ConfigProviderSettings: otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				ProviderFactories: []confmap.ProviderFactory{

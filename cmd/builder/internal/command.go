@@ -66,7 +66,7 @@ configuration is provided, ocb will generate a default Collector.
 				return fmt.Errorf("go not found: %w", err)
 			}
 
-			if err := cfg.SetRequireOtelColModule(); err != nil {
+			if err := cfg.SetBackwardsCompatibility(); err != nil {
 				return fmt.Errorf("unable to compare otelcol version: %w", err)
 			}
 

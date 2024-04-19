@@ -23,8 +23,7 @@ var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
 
 // Config holds the builder's configuration
 type Config struct {
-	Logger                   *zap.Logger
-	SupportsConfmapFactories bool
+	Logger *zap.Logger
 
 	SkipGenerate         bool   `mapstructure:"-"`
 	SkipCompilation      bool   `mapstructure:"-"`
@@ -46,16 +45,17 @@ type Config struct {
 
 // Distribution holds the parameters for the final binary
 type Distribution struct {
-	Module               string `mapstructure:"module"`
-	Name                 string `mapstructure:"name"`
-	Go                   string `mapstructure:"go"`
-	Description          string `mapstructure:"description"`
-	OtelColVersion       string `mapstructure:"otelcol_version"`
-	RequireOtelColModule bool   `mapstructure:"-"` // required for backwards-compatibility with builds older than 0.86.0
-	OutputPath           string `mapstructure:"output_path"`
-	Version              string `mapstructure:"version"`
-	BuildTags            string `mapstructure:"build_tags"`
-	DebugCompilation     bool   `mapstructure:"debug_compilation"`
+	Module                   string `mapstructure:"module"`
+	Name                     string `mapstructure:"name"`
+	Go                       string `mapstructure:"go"`
+	Description              string `mapstructure:"description"`
+	OtelColVersion           string `mapstructure:"otelcol_version"`
+	RequireOtelColModule     bool   `mapstructure:"-"` // required for backwards-compatibility with builds older than 0.86.0
+	SupportsConfmapFactories bool   `mapstructure:"-"` // Required for backwards-compatibility with builds older than 0.99.0
+	OutputPath               string `mapstructure:"output_path"`
+	Version                  string `mapstructure:"version"`
+	BuildTags                string `mapstructure:"build_tags"`
+	DebugCompilation         bool   `mapstructure:"debug_compilation"`
 }
 
 // Module represents a receiver, exporter, processor or extension for the distribution
@@ -120,7 +120,8 @@ func (c *Config) SetGoPath() error {
 	return nil
 }
 
-func (c *Config) SetRequireOtelColModule() error {
+func (c *Config) SetBackwardsCompatibility() error {
+	// check whether we need to adjust the core API module import
 	constraint, err := version.NewConstraint(">= 0.86.0")
 	if err != nil {
 		return err
@@ -132,6 +133,20 @@ func (c *Config) SetRequireOtelColModule() error {
 	}
 
 	c.Distribution.RequireOtelColModule = constraint.Check(otelColVersion)
+
+	// check whether confmap factories are supported
+	constraint, err = version.NewConstraint(">= 0.99.0")
+	if err != nil {
+		return err
+	}
+
+	otelColVersion, err = version.NewVersion(c.Distribution.OtelColVersion)
+	if err != nil {
+		return err
+	}
+
+	c.Distribution.SupportsConfmapFactories = constraint.Check(otelColVersion)
+
 	return nil
 }
 

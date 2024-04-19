@@ -38,7 +38,7 @@ func newInitializedConfig(t *testing.T) Config {
 	// Validate and ParseModules will be called before the config is
 	// given to Generate.
 	assert.NoError(t, cfg.Validate())
-	assert.NoError(t, cfg.SetRequireOtelColModule())
+	assert.NoError(t, cfg.SetBackwardsCompatibility())
 	assert.NoError(t, cfg.ParseModules())
 
 	return cfg
