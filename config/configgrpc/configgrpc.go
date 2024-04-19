@@ -118,7 +118,7 @@ type KeepaliveServerConfig struct {
 // NewDefaultKeepaliveServerConfig returns a new instance of KeepaliveServerConfig with default values.
 func NewDefaultKeepaliveServerConfig() *KeepaliveServerConfig {
 	return &KeepaliveServerConfig{
-		ServerParameters: NewDefaultKeepaliveServerParameters(),
+		ServerParameters:  NewDefaultKeepaliveServerParameters(),
 		EnforcementPolicy: NewDefaultKeepaliveEnforcementPolicy(),
 	}
 }
