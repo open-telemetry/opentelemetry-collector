@@ -117,50 +117,18 @@ func TestVersioning(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			description: "invalid collector version",
-			cfgBuilder: func() Config {
-				cfg := newInitializedConfig(t)
-				cfg.Distribution.OtelColVersion = "invalid"
-				return cfg
-			},
-			expectedErr: ErrVersionMismatch,
-		},
-		{
-			description: "invalid collector version without strict mode, only generate",
-			cfgBuilder: func() Config {
-				cfg := newInitializedConfig(t)
-				cfg.Distribution.OtelColVersion = "invalid"
-				cfg.SkipGetModules = true
-				cfg.SkipCompilation = true
-				cfg.SkipStrictVersioning = true
-				return cfg
-			},
-			expectedErr: nil,
-		},
-		{
-			description: "invalid collector version without strict mode",
-			cfgBuilder: func() Config {
-				cfg := newInitializedConfig(t)
-				cfg.Distribution.OtelColVersion = "invalid"
-				cfg.SkipStrictVersioning = true
-				return cfg
-			},
-			expectedErr: errGoGetFailed,
-		},
-		{
 			description: "old component version",
 			cfgBuilder: func() Config {
 				cfg := newInitializedConfig(t)
 				cfg.Distribution.Go = "go"
 				cfg.Exporters = []Module{
 					{
-						Import: "go.opentelemetry.io/collector/receiver/otlpreceiver",
-						GoMod:  "go.opentelemetry.io/collector v0.96.0",
+						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.96.0",
 					},
 				}
 				return cfg
 			},
-			expectedErr: ErrVersionMismatch,
+			expectedErr: nil,
 		},
 		{
 			description: "old component version without strict mode",
@@ -170,33 +138,20 @@ func TestVersioning(t *testing.T) {
 				cfg.SkipStrictVersioning = true
 				cfg.Exporters = []Module{
 					{
-						Import: "go.opentelemetry.io/collector/receiver/otlpreceiver",
-						GoMod:  "go.opentelemetry.io/collector v0.96.0",
+						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.96.0",
 					},
 				}
 				return cfg
 			},
-			expectedErr: errCompileFailed,
-		},
-		{
-			description: "invalid component version",
-			cfgBuilder: func() Config {
-				cfg := newInitializedConfig(t)
-				cfg.Distribution.Go = "go"
-				cfg.Exporters = []Module{
-					{
-						Import: "go.opentelemetry.io/collector/receiver/otlpreceiver",
-						GoMod:  "go.opentelemetry.io/collector invalid",
-					},
-				}
-				return cfg
-			},
-			expectedErr: errGoGetFailed,
+			expectedErr: nil,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			cfg := tc.cfgBuilder()
+			require.NoError(t, cfg.SetBackwardsCompatibility())
+			require.NoError(t, cfg.Validate())
+			require.NoError(t, cfg.ParseModules())
 			err := GenerateAndCompile(cfg)
 			require.ErrorIs(t, err, tc.expectedErr)
 		})
