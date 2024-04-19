@@ -63,9 +63,14 @@ func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
 }
 
 func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
-	config := NewDefaultKeepaliveServerConfig()
+    config := NewDefaultKeepaliveServerConfig()
 
-	assert.NotNil(t, config)
+    assert.NotNil(t, config, "NewDefaultKeepaliveServerConfig() should not return nil")
+
+    assert.NotNil(t, config.ServerParameters, "ServerParameters should not be nil")
+
+    assert.NotNil(t, config.EnforcementPolicy, "EnforcementPolicy should not be nil")
+
 }
 
 // added comment

@@ -117,7 +117,10 @@ type KeepaliveServerConfig struct {
 
 // NewDefaultKeepaliveServerConfig returns a new instance of KeepaliveServerConfig with default values.
 func NewDefaultKeepaliveServerConfig() *KeepaliveServerConfig {
-	return &KeepaliveServerConfig{}
+	return &KeepaliveServerConfig{
+		ServerParameters: NewDefaultKeepaliveServerParameters(),
+		EnforcementPolicy: NewDefaultKeepaliveEnforcementPolicy(),
+	}
 }
 
 // KeepaliveServerParameters allow configuration of the keepalive.ServerParameters.
@@ -131,8 +134,8 @@ type KeepaliveServerParameters struct {
 	Timeout               time.Duration `mapstructure:"timeout"`
 }
 
-func NewDefaultKeepaliveServerParameters() KeepaliveServerParameters {
-	return KeepaliveServerParameters{
+func NewDefaultKeepaliveServerParameters() *KeepaliveServerParameters {
+	return &KeepaliveServerParameters{
 		Time:    2 * time.Hour,
 		Timeout: 20 * time.Second,
 	}
@@ -146,8 +149,8 @@ type KeepaliveEnforcementPolicy struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
 }
 
-func NewDefaultKeepaliveEnforcementPolicy() KeepaliveEnforcementPolicy {
-	return KeepaliveEnforcementPolicy{}
+func NewDefaultKeepaliveEnforcementPolicy() *KeepaliveEnforcementPolicy {
+	return &KeepaliveEnforcementPolicy{}
 }
 
 // ServerConfig defines common settings for a gRPC server configuration.
