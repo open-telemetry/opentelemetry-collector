@@ -110,7 +110,7 @@ var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
 
 // newBatchProcessor returns a new batch processor component.
-func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func() batch) (*batchProcessor, error) {
+func newBatchProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, batchFunc func() batch) (*batchProcessor, error) {
 	// use lower-case, to be consistent with http/2 headers.
 	mks := make([]string, len(cfg.MetadataKeys))
 	for i, k := range cfg.MetadataKeys {
@@ -129,7 +129,9 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 		metadataLimit:    int(cfg.MetadataCardinalityLimit),
 	}
 	if len(bp.metadataKeys) == 0 {
-		s := bp.newShard(nil)
+		// Retrieve info from the context and preserve Auth
+		info := client.FromContext(ctx)
+		s := bp.newShard(nil, info.Auth)
 		s.start()
 		bp.batcher = &singleShardBatcher{batcher: s}
 	} else {
@@ -148,8 +150,10 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 }
 
 // newShard gets or creates a batcher corresponding with attrs.
-func (bp *batchProcessor) newShard(md map[string][]string) *shard {
+func (bp *batchProcessor) newShard(md map[string][]string, auth client.AuthData) *shard {
+	// Get the clientInfo from the context
 	exportCtx := client.NewContext(context.Background(), client.Info{
+		Auth:     auth,
 		Metadata: client.NewMetadata(md),
 	})
 	b := &shard{
@@ -323,7 +327,7 @@ func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 		// aset.ToSlice() returns the sorted, deduplicated,
 		// and name-downcased list of attributes.
 		var loaded bool
-		b, loaded = mb.batchers.LoadOrStore(aset, mb.newShard(md))
+		b, loaded = mb.batchers.LoadOrStore(aset, mb.newShard(md, info.Auth))
 		if !loaded {
 			// Start the goroutine only if we added the object to the map, otherwise is already started.
 			b.(*shard).start()
@@ -357,18 +361,18 @@ func (bp *batchProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 // newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
-func newBatchTracesProcessor(set processor.CreateSettings, next consumer.Traces, cfg *Config) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, func() batch { return newBatchTraces(next) })
+func newBatchTracesProcessor(ctx context.Context, set processor.CreateSettings, next consumer.Traces, cfg *Config) (*batchProcessor, error) {
+	return newBatchProcessor(ctx, set, cfg, func() batch { return newBatchTraces(next) })
 }
 
 // newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
-func newBatchMetricsProcessor(set processor.CreateSettings, next consumer.Metrics, cfg *Config) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, func() batch { return newBatchMetrics(next) })
+func newBatchMetricsProcessor(ctx context.Context, set processor.CreateSettings, next consumer.Metrics, cfg *Config) (*batchProcessor, error) {
+	return newBatchProcessor(ctx, set, cfg, func() batch { return newBatchMetrics(next) })
 }
 
 // newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
-func newBatchLogsProcessor(set processor.CreateSettings, next consumer.Logs, cfg *Config) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, func() batch { return newBatchLogs(next) })
+func newBatchLogsProcessor(ctx context.Context, set processor.CreateSettings, next consumer.Logs, cfg *Config) (*batchProcessor, error) {
+	return newBatchProcessor(ctx, set, cfg, func() batch { return newBatchLogs(next) })
 }
 
 type batchTraces struct {

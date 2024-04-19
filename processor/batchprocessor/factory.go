@@ -44,28 +44,28 @@ func createDefaultConfig() component.Config {
 }
 
 func createTraces(
-	_ context.Context,
+	ctx context.Context,
 	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
-	return newBatchTracesProcessor(set, nextConsumer, cfg.(*Config))
+	return newBatchTracesProcessor(ctx, set, nextConsumer, cfg.(*Config))
 }
 
 func createMetrics(
-	_ context.Context,
+	ctx context.Context,
 	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-	return newBatchMetricsProcessor(set, nextConsumer, cfg.(*Config))
+	return newBatchMetricsProcessor(ctx, set, nextConsumer, cfg.(*Config))
 }
 
 func createLogs(
-	_ context.Context,
+	ctx context.Context,
 	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
-	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config))
+	return newBatchLogsProcessor(ctx, set, nextConsumer, cfg.(*Config))
 }
