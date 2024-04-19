@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestMetric_MoveTo(t *testing.T) {
@@ -63,6 +64,13 @@ func TestMetric_Unit(t *testing.T) {
 	assert.Equal(t, "1", ms.Unit())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetUnit("1") })
+}
+
+func TestMetric_Metadata(t *testing.T) {
+	ms := NewMetric()
+	assert.Equal(t, pcommon.NewMap(), ms.Metadata())
+	internal.FillTestMap(internal.Map(ms.Metadata()))
+	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Metadata())
 }
 
 func TestMetric_Type(t *testing.T) {
@@ -175,6 +183,7 @@ func fillTestMetric(tv Metric) {
 	tv.orig.Name = "test_name"
 	tv.orig.Description = "test_description"
 	tv.orig.Unit = "1"
+	internal.FillTestMap(internal.NewMap(&tv.orig.Metadata, tv.state))
 	tv.orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
 	fillTestSum(newSum(tv.orig.GetSum(), tv.state))
 }
