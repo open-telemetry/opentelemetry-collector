@@ -16,7 +16,7 @@ issues: [4759]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  If no providers or converters are specified, the defaults are used.
+  If no providers are specified, the defaults are used.
   The default providers are: env, file, http, https, and yaml.
 
   To configure providers, use the `providers` key in your OCB build
