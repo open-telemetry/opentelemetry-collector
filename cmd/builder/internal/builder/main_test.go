@@ -88,19 +88,23 @@ func TestVersioning(t *testing.T) {
 			description: "old otel version",
 			cfgBuilder: func() Config {
 				cfg := NewDefaultConfig()
-				cfg.Distribution.OtelColVersion = "0.90.0"
-				return cfg
-			},
-			expectedErr: ErrVersionMismatch,
-		},
-		{
-			description: "old otel version without strict mode",
-			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
 				cfg.Verbose = true
 				cfg.Distribution.Go = "go"
-				cfg.SkipStrictVersioning = true
-				cfg.Distribution.OtelColVersion = "0.90.0"
+				cfg.Distribution.OtelColVersion = "0.97.0"
+				cfg.Distribution.RequireOtelColModule = true
+				var err error
+				cfg.Exporters, err = parseModules([]Module{
+					{
+						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.97.0",
+					},
+				})
+				require.NoError(t, err)
+				cfg.Receivers, err = parseModules([]Module{
+					{
+						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.97.0",
+					},
+				})
+				require.NoError(t, err)
 				return cfg
 			},
 			expectedErr: nil,
