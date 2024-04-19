@@ -88,18 +88,8 @@ func TestVersioning(t *testing.T) {
 			description: "old otel version",
 			cfgBuilder: func() Config {
 				cfg := NewDefaultConfig()
-				cfg.Distribution.OtelColVersion = "0.90.0"
-				return cfg
-			},
-			expectedErr: ErrVersionMismatch,
-		},
-		{
-			description: "old otel version without strict mode",
-			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
 				cfg.Verbose = true
 				cfg.Distribution.Go = "go"
-				cfg.SkipStrictVersioning = true
 				cfg.Distribution.OtelColVersion = "0.90.0"
 				return cfg
 			},
