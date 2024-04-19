@@ -90,18 +90,18 @@ func TestVersioning(t *testing.T) {
 				cfg := NewDefaultConfig()
 				cfg.Verbose = true
 				cfg.Distribution.Go = "go"
-				cfg.Distribution.OutputPath = "/tmp/otelcol-distribution"
-				cfg.Distribution.OtelColVersion = "0.96.0"
+				cfg.Distribution.OtelColVersion = "0.97.0"
+				cfg.Distribution.RequireOtelColModule = true
 				var err error
 				cfg.Exporters, err = parseModules([]Module{
 					{
-						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.96.0",
+						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.97.0",
 					},
 				})
 				require.NoError(t, err)
 				cfg.Receivers, err = parseModules([]Module{
 					{
-						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.96.0",
+						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.97.0",
 					},
 				})
 				require.NoError(t, err)
