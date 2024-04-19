@@ -15,6 +15,7 @@ import (
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -109,6 +110,8 @@ type Collector struct {
 	signalsChannel chan os.Signal
 	// asyncErrorChannel is used to signal a fatal error from any component.
 	asyncErrorChannel chan error
+
+	ol *observer.ObservedLogs
 }
 
 // NewCollector creates and returns a new instance of Collector.
@@ -116,7 +119,8 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 	var err error
 	configProvider := set.ConfigProvider
 
-	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: zap.NewNop()}
+	core, ol := observer.New(zap.DebugLevel)
+	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: zap.New(core)}
 	set.ConfigProviderSettings.ResolverSettings.ConverterSettings = confmap.ConverterSettings{}
 
 	if configProvider == nil {
@@ -137,6 +141,7 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		signalsChannel:    make(chan os.Signal, 3),
 		asyncErrorChannel: make(chan error),
 		configProvider:    configProvider,
+		ol:                ol,
 	}, nil
 }
 
@@ -200,6 +205,12 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}, cfg.Service)
 	if err != nil {
 		return err
+	}
+
+	if col.ol != nil {
+		for _, log := range col.ol.All() {
+			col.service.Logger().Log(log.Level, log.Message)
+		}
 	}
 
 	if !col.set.SkipSettingGRPCLogger {
