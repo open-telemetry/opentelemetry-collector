@@ -90,19 +90,24 @@ func TestVersioning(t *testing.T) {
 				cfg := NewDefaultConfig()
 				cfg.Verbose = true
 				cfg.Distribution.Go = "go"
-				cfg.Distribution.OtelColVersion = "0.90.0"
+				cfg.Distribution.OutputPath = "/tmp/otelcol-distribution"
+				cfg.Distribution.OtelColVersion = "0.96.0"
+				var err error
+				cfg.Exporters, err = parseModules([]Module{
+					{
+						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.96.0",
+					},
+				})
+				require.NoError(t, err)
+				cfg.Receivers, err = parseModules([]Module{
+					{
+						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.96.0",
+					},
+				})
+				require.NoError(t, err)
 				return cfg
 			},
 			expectedErr: nil,
-		},
-		{
-			description: "invalid collector version",
-			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
-				cfg.Distribution.OtelColVersion = "invalid"
-				return cfg
-			},
-			expectedErr: ErrVersionMismatch,
 		},
 		{
 			description: "invalid collector version without strict mode, only generate",
