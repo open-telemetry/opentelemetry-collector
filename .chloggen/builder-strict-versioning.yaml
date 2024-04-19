@@ -15,7 +15,11 @@ issues: [9896]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:  Strict version checking will error on mismatches between the `otelcol_version` configured and the builder version or versions in the go.mod. This check can be temporarily disabled by using the `--skip-strict-versioning` flag. This flag will be removed in a future minor version.
+subtext:  |
+  Strict version checking will error on major and minor version mismatches 
+  between the `otelcol_version` configured and the builder version or versions 
+  in the go.mod. This check can be temporarily disabled by using the `--skip-strict-versioning` 
+  flag. This flag will be removed in a future minor version.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
