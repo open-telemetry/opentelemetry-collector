@@ -73,7 +73,6 @@ func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
 
 }
 
-// added comment
 func TestNewDefaultServerConfig(t *testing.T) {
 	config := NewDefaultServerConfig()
 
