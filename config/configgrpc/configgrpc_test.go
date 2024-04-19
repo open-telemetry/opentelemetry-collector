@@ -50,6 +50,17 @@ func TestNewDefaultClientConfig(t *testing.T) {
 
 	assert.NotNil(t, config.Keepalive)
 }
+func TestNewDefaultKeepaliveServerParameters(t *testing.T) {
+	config := NewDefaultKeepaliveServerParameters()
+
+	assert.Equal(t, 2*time.Hour, config.Time, "Expected Time to be 2 hours")
+	assert.Equal(t, 20*time.Second, config.Timeout, "Expected Timeout to be 20 seconds")
+
+}
+func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
+	policy := NewDefaultKeepaliveEnforcementPolicy()
+	assert.NotNil(t, policy, "NewDefaultKeepaliveEnforcementPolicy() should not return nil")
+}
 
 func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
 	config := NewDefaultKeepaliveServerConfig()

@@ -132,12 +132,23 @@ type KeepaliveServerParameters struct {
 	Timeout               time.Duration `mapstructure:"timeout"`
 }
 
+func NewDefaultKeepaliveServerParameters() KeepaliveServerParameters {
+	return KeepaliveServerParameters{
+		Time:    2 * time.Hour,
+		Timeout: 20 * time.Second,
+	}
+}
+
 // KeepaliveEnforcementPolicy allow configuration of the keepalive.EnforcementPolicy.
 // The same default values as keepalive.EnforcementPolicy are applicable and get applied by the server.
 // See https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.
 type KeepaliveEnforcementPolicy struct {
 	MinTime             time.Duration `mapstructure:"min_time"`
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
+}
+
+func NewDefaultKeepaliveEnforcementPolicy() KeepaliveEnforcementPolicy {
+	return KeepaliveEnforcementPolicy{}
 }
 
 // ServerConfig defines common settings for a gRPC server configuration.
