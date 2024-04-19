@@ -79,7 +79,6 @@ func Generate(cfg Config) error {
 		}
 		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", zap.String("builder-version", defaultOtelColVersion))
 	}
-
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(cfg.Distribution.OutputPath); os.IsNotExist(err) {
 		if err = os.Mkdir(cfg.Distribution.OutputPath, 0750); err != nil {
