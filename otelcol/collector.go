@@ -15,6 +15,7 @@ import (
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -111,12 +112,30 @@ type Collector struct {
 	asyncErrorChannel chan error
 }
 
+func newLogger(options []zap.Option) (*zap.Logger, error) {
+	ec := zap.NewProductionEncoderConfig()
+	ec.EncodeTime = zapcore.ISO8601TimeEncoder
+	zapCfg := &zap.Config{
+		Level:            zap.NewAtomicLevelAt(zapcore.DebugLevel),
+		Encoding:         "console",
+		EncoderConfig:    ec,
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+	}
+	return zapCfg.Build(options...)
+}
+
 // NewCollector creates and returns a new instance of Collector.
 func NewCollector(set CollectorSettings) (*Collector, error) {
 	var err error
 	configProvider := set.ConfigProvider
 
-	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: zap.NewNop()}
+	logger, err := newLogger(set.LoggingOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: logger}
 	set.ConfigProviderSettings.ResolverSettings.ConverterSettings = confmap.ConverterSettings{}
 
 	if configProvider == nil {
