@@ -47,13 +47,6 @@ func TestGenerateDefault(t *testing.T) {
 	require.NoError(t, Generate(newInitializedConfig(t)))
 }
 
-func TestGenerateInvalidCollectorVersion(t *testing.T) {
-	cfg := newInitializedConfig(t)
-	cfg.Distribution.OtelColVersion = "invalid"
-	err := Generate(cfg)
-	require.NoError(t, err)
-}
-
 func TestGenerateInvalidOutputPath(t *testing.T) {
 	cfg := newInitializedConfig(t)
 	cfg.Distribution.OutputPath = "/:invalid"
@@ -71,7 +64,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "defaults",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Distribution.Go = "go"
 				return cfg
 			},
@@ -80,7 +73,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "require otelcol",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Distribution.Go = "go"
 				cfg.Distribution.RequireOtelColModule = true
 				return cfg
@@ -90,7 +83,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "only gomod file, skip generate",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				tempDir := t.TempDir()
 				err := makeModule(tempDir, goModTestFile)
 				require.NoError(t, err)
@@ -104,7 +97,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "old otel version",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Distribution.OtelColVersion = "0.90.0"
 				return cfg
 			},
@@ -113,7 +106,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "old otel version without strict mode",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Verbose = true
 				cfg.Distribution.Go = "go"
 				cfg.SkipStrictVersioning = true
@@ -125,7 +118,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "invalid collector version",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Distribution.OtelColVersion = "invalid"
 				return cfg
 			},
@@ -134,7 +127,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "invalid collector version without strict mode, only generate",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Distribution.OtelColVersion = "invalid"
 				cfg.SkipGetModules = true
 				cfg.SkipCompilation = true
@@ -146,7 +139,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "invalid collector version without strict mode",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Distribution.OtelColVersion = "invalid"
 				cfg.SkipStrictVersioning = true
 				return cfg
@@ -156,7 +149,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "old component version",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Distribution.Go = "go"
 				cfg.Exporters = []Module{
 					{
@@ -171,7 +164,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "old component version without strict mode",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Distribution.Go = "go"
 				cfg.SkipStrictVersioning = true
 				cfg.Exporters = []Module{
@@ -187,7 +180,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "invalid component version",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Distribution.Go = "go"
 				cfg.Exporters = []Module{
 					{

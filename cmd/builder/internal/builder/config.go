@@ -90,7 +90,7 @@ func NewDefaultConfig() Config {
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
-	var providersError, convertersError error
+	var providersError error
 	if c.Providers != nil {
 		providersError = validateModules(*c.Providers)
 	}
@@ -101,7 +101,6 @@ func (c *Config) Validate() error {
 		validateModules(c.Processors),
 		validateModules(c.Connectors),
 		providersError,
-		convertersError,
 	)
 }
 
