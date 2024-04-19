@@ -119,7 +119,19 @@ func TestGetConfmap(t *testing.T) {
 	cmp, ok := cp.(ConfmapProvider)
 	require.True(t, ok)
 
-	cmap, err := cmp.GetConfmap(context.Background())
+	// Fail as no previous call to Get()
+	cmap, err := cmp.GetConfmap()
+	require.Nil(t, cmap)
+	require.Error(t, err)
+
+	// Succeed after call Get() first
+	factories, err := nopFactories()
+	require.NoError(t, err)
+
+	_, err = cp.Get(context.Background(), factories)
+	require.NoError(t, err)
+
+	cmap, err = cmp.GetConfmap()
 	require.NoError(t, err)
 
 	assert.EqualValues(t, yamlMap, cmap.ToStringMap())

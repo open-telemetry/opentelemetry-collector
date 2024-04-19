@@ -57,18 +57,15 @@ type ConfigProvider interface {
 // The purpose of this interface is that otelcol.ConfigProvider structs do not
 // necessarily need to use confmap.Conf as their underlying config structure.
 type ConfmapProvider interface {
-	// GetConfmap resolves the Collector's configuration and provides it as a confmap.Conf object.
+	// GetConfmap returns the confmap.Conf object from the result of last call to Get().
 	//
 	// Should never be called concurrently with itself or any ConfigProvider method.
-	GetConfmap(ctx context.Context) (*confmap.Conf, error)
+	GetConfmap() (*confmap.Conf, error)
 }
 
 type configProvider struct {
 	mapResolver *confmap.Resolver
-	resolveRet  *struct {
-		conf *confmap.Conf
-		err  error
-	}
+	lastConf    *confmap.Conf
 }
 
 var _ ConfigProvider = &configProvider{}
@@ -98,7 +95,8 @@ func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 }
 
 func (cm *configProvider) Get(ctx context.Context, factories Factories) (*Config, error) {
-	conf, err := cm.resolve(ctx)
+	conf, err := cm.mapResolver.Resolve(ctx)
+	cm.lastConf = conf
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
 	}
@@ -126,28 +124,12 @@ func (cm *configProvider) Shutdown(ctx context.Context) error {
 	return cm.mapResolver.Shutdown(ctx)
 }
 
-func (cm *configProvider) GetConfmap(ctx context.Context) (*confmap.Conf, error) {
-	conf, err := cm.resolve(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
+func (cm *configProvider) GetConfmap() (*confmap.Conf, error) {
+	if cm.lastConf == nil {
+		return nil, fmt.Errorf("last resolve failed, or not called to get first")
 	}
 
-	return conf, nil
-}
-
-func (cm *configProvider) resolve(ctx context.Context) (*confmap.Conf, error) {
-	if cm.resolveRet == nil {
-		conf, err := cm.mapResolver.Resolve(ctx)
-		cm.resolveRet = &struct {
-			conf *confmap.Conf
-			err  error
-		}{
-			conf: conf,
-			err:  err,
-		}
-	}
-
-	return cm.resolveRet.conf, cm.resolveRet.err
+	return cm.lastConf, nil
 }
 
 func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {

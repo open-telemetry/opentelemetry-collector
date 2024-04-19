@@ -162,17 +162,6 @@ func (col *Collector) Shutdown() {
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(StateStarting)
 
-	var conf *confmap.Conf
-
-	if cp, ok := col.configProvider.(ConfmapProvider); ok {
-		var err error
-		conf, err = cp.GetConfmap(ctx)
-
-		if err != nil {
-			return fmt.Errorf("failed to resolve config: %w", err)
-		}
-	}
-
 	factories, err := col.set.Factories()
 	if err != nil {
 		return fmt.Errorf("failed to initialize factories: %w", err)
@@ -180,6 +169,17 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	cfg, err := col.configProvider.Get(ctx, factories)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
+	}
+
+	var conf *confmap.Conf
+
+	if cp, ok := col.set.ConfigProvider.(ConfmapProvider); ok {
+		var err error
+		conf, err = cp.GetConfmap()
+
+		if err != nil {
+			return fmt.Errorf("failed to resolve config: %w", err)
+		}
 	}
 
 	if err = cfg.Validate(); err != nil {
