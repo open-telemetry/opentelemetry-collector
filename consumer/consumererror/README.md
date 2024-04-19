@@ -67,8 +67,10 @@ the failed pipeline branch.
 
 When a mix of retryable and permanent errors are received from downstream
 pipeline branches, the fanout component should continue all retries for
-retryable data, then return an upstream error with partial success information
-that indicates which branch failed.
+retryable data and return a permanent error upstream regardless of whether
+any of the retries succeed. The component performing retries should capture
+which pipelines succeeded or failed using the Collector's pipeline observability
+mechanisms.
 
 ### Signal conversion
 
@@ -102,8 +104,8 @@ Using an error:
 
 ```golang
 err := nextConsumer(ctx, traces)
-status := consumererror.StatusError{}
-retry := consumererror.Traces{}
+var status consumererror.StatusError
+var retry consumererror.Traces
 
 if errors.As(err, &status) {
   if status.HTTPStatus >= 500 && errors.As(err, &retry) {

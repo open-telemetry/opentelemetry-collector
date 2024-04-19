@@ -13,26 +13,26 @@ type Partial struct {
 	count int
 }
 
-var _ error = &Partial{}
+var _ error = Partial{}
 
 // NewPartial instantiates a new Partial error.
 // `count` should be a positive number representing
 // the number of failed records.
 func NewPartial(err error, count int) error {
-	return &Partial{err: err, count: count}
+	return Partial{err: err, count: count}
 }
 
 // Error returns a string representation of the underlying error.
-func (p *Partial) Error() string {
+func (p Partial) Error() string {
 	return "Partial success: " + p.err.Error()
 }
 
 // Unwrap returns the wrapped error for functions Is and As in standard package errors.
-func (p *Partial) Unwrap() error {
+func (p Partial) Unwrap() error {
 	return p.err
 }
 
 // Count returns the count of rejected records.
-func (p *Partial) Count() int {
+func (p Partial) Count() int {
 	return p.count
 }

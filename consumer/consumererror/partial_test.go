@@ -29,7 +29,7 @@ func TestPartial_Unwrap(t *testing.T) {
 func TestPartial_Count(t *testing.T) {
 	count := 4
 	e := NewPartial(errors.New("couldn't export"), count)
-	var pe *Partial
+	var pe Partial
 	ok := errors.As(e, &pe)
 	require.True(t, ok)
 	require.Equal(t, count, pe.Count())

@@ -17,29 +17,29 @@ func TestStatusError_Error(t *testing.T) {
 	tests := []struct {
 		statusError error
 		msgContains string
-		validate    func(t *testing.T, se *StatusError)
+		validate    func(t *testing.T, se StatusError)
 	}{
 		{
 			statusError: NewHTTPStatus(errors.New("httperror"), 400),
-			validate: func(t *testing.T, se *StatusError) {
+			validate: func(t *testing.T, se StatusError) {
 				require.Contains(t, se.Error(), "400")
 			},
 		},
 		{
 			statusError: NewGRPCStatus(errors.New("status"), status.New(codes.InvalidArgument, "")),
-			validate: func(t *testing.T, se *StatusError) {
+			validate: func(t *testing.T, se StatusError) {
 				require.Contains(t, se.Error(), "InvalidArgument")
 			},
 		},
 		{
 			statusError: NewGRPCStatus(errors.New("nil"), nil),
-			validate: func(t *testing.T, se *StatusError) {
+			validate: func(t *testing.T, se StatusError) {
 				require.NotNil(t, se.Error())
 			},
 		},
 	}
 	for _, tt := range tests {
-		var se *StatusError
+		var se StatusError
 		require.True(t, errors.As(tt.statusError, &se))
 		tt.validate(t, se)
 	}
@@ -74,7 +74,7 @@ func TestStatusError_GRPCStatus(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		var se *StatusError
+		var se StatusError
 		require.True(t, errors.As(tt.statusError, &se))
 		status := se.GRPCStatus()
 		require.Equal(t, tt.code, status.Code())
@@ -103,7 +103,7 @@ func TestStatusError_HTTPStatus(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		var se *StatusError
+		var se StatusError
 		require.True(t, errors.As(tt.statusError, &se))
 		code := se.HTTPStatus()
 		require.Equal(t, tt.code, code)

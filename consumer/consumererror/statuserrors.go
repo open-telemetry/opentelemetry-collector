@@ -25,10 +25,10 @@ type StatusError struct {
 	grpcStatus *status.Status
 }
 
-var _ error = &StatusError{}
+var _ error = StatusError{}
 
 // Error returns a string specifying the transport and corresponding status code.
-func (se *StatusError) Error() string {
+func (se StatusError) Error() string {
 	if se.httpStatus != nil {
 		return fmt.Sprintf("HTTP Status (%d): %s", *se.httpStatus, se.error.Error())
 	} else if se.grpcStatus != nil {
@@ -38,7 +38,7 @@ func (se *StatusError) Error() string {
 	return "Network error (no error code set): " + se.error.Error()
 }
 
-func (se *StatusError) Unwrap() error {
+func (se StatusError) Unwrap() error {
 	return se.error
 }
 
@@ -47,7 +47,7 @@ func (se *StatusError) Unwrap() error {
 // by the source.
 // If no code has been set, the second return value is
 // an HTTP 500 code.
-func (se *StatusError) HTTPStatus() int {
+func (se StatusError) HTTPStatus() int {
 	if se.httpStatus != nil {
 		return *se.httpStatus
 	} else if se.grpcStatus != nil {
@@ -62,7 +62,7 @@ func (se *StatusError) HTTPStatus() int {
 // by the source.
 // If no code has been set, the second return value is set
 // to `false`.
-func (se *StatusError) GRPCStatus() *status.Status {
+func (se StatusError) GRPCStatus() *status.Status {
 	if se.grpcStatus != nil {
 		return se.grpcStatus
 	} else if se.httpStatus != nil {
@@ -74,7 +74,7 @@ func (se *StatusError) GRPCStatus() *status.Status {
 
 // NewHTTPStatus wraps an error with a given HTTP status code.
 func NewHTTPStatus(err error, code int) error {
-	return &StatusError{
+	return StatusError{
 		error:      err,
 		httpStatus: &code,
 	}
@@ -82,7 +82,7 @@ func NewHTTPStatus(err error, code int) error {
 
 // NewHTTPStatus wraps an error with a given gRPC status code.
 func NewGRPCStatus(err error, status *status.Status) error {
-	return &StatusError{
+	return StatusError{
 		error:      err,
 		grpcStatus: status,
 	}
