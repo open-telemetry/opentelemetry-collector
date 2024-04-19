@@ -10,13 +10,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/semver"
 )
 
 var (
@@ -80,7 +80,9 @@ func Generate(cfg Config) error {
 		}
 		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", zap.String("builder-version", defaultOtelColVersion))
 	}
-	cfg.SupportsConfmapFactories = supportsConfmapFactories(cfg)
+
+	// confmap factories were introduced in v0.99.0.
+	cfg.SupportsConfmapFactories = semver.Compare("v"+cfg.Distribution.OtelColVersion, "v0.99.0") > -1
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(cfg.Distribution.OutputPath); os.IsNotExist(err) {
 		if err = os.Mkdir(cfg.Distribution.OutputPath, 0750); err != nil {
@@ -264,35 +266,4 @@ func (c *Config) readGoModFile() (string, map[string]string, error) {
 		dependencies[req.Mod.Path] = req.Mod.Version
 	}
 	return modPath, dependencies, nil
-}
-
-func supportsConfmapFactories(cfg Config) bool {
-	splitVersion := strings.Split(cfg.Distribution.OtelColVersion, ".")
-
-	if len(splitVersion) != 3 {
-		return false
-	}
-
-	majorVer, err := strconv.Atoi(splitVersion[0])
-
-	if err != nil {
-		return false
-	}
-
-	minorVer, err := strconv.Atoi(splitVersion[1])
-
-	if err != nil {
-		return false
-	}
-
-	if majorVer >= 1 {
-		return true
-	}
-
-	// confmap factories were introduced in v0.99.0.
-	if majorVer == 0 && minorVer >= 99 {
-		return true
-	}
-
-	return false
 }

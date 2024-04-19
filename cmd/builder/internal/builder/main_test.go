@@ -302,6 +302,28 @@ func TestGenerateAndCompile(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			testCase: "Pre-confmap factories",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.Distribution.OtelColVersion = "0.98.0"
+				cfg.SkipStrictVersioning = true
+				return cfg
+			},
+		},
+		{
+			testCase: "With confmap factories",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.Distribution.OtelColVersion = "0.99.0"
+				cfg.SkipStrictVersioning = true
+				return cfg
+			},
+		},
 	}
 
 	for _, tt := range testCases {
@@ -312,69 +334,6 @@ func TestGenerateAndCompile(t *testing.T) {
 			assert.NoError(t, cfg.ParseModules())
 			require.NoError(t, GenerateAndCompile(cfg))
 		})
-	}
-}
-
-func TestConfmapFactoryVersions(t *testing.T) {
-	testCases := []struct {
-		version   string
-		supported bool
-	}{
-		{
-			version:   "1.0",
-			supported: false,
-		},
-		{
-			version:   "x.0.0",
-			supported: false,
-		},
-		{
-			version:   "0.x.0",
-			supported: false,
-		},
-		{
-			version:   "0.0.0",
-			supported: false,
-		},
-		{
-			version:   "0.94.0",
-			supported: false,
-		},
-		{
-			version:   "0.94.1",
-			supported: false,
-		},
-		{
-			version:   "0.99.0",
-			supported: true,
-		},
-		{
-			version:   "0.99.7",
-			supported: true,
-		},
-		{
-			version:   "0.100.0",
-			supported: true,
-		},
-		{
-			version:   "0.100.1",
-			supported: true,
-		},
-		{
-			version:   "1.0.0",
-			supported: true,
-		},
-	}
-
-	for _, tt := range testCases {
-		cfg := Config{
-			Distribution: Distribution{
-				OtelColVersion: tt.version,
-			},
-		}
-
-		shouldSupport := supportsConfmapFactories(cfg)
-		require.Equal(t, tt.supported, shouldSupport)
 	}
 }
 
