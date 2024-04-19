@@ -116,6 +116,9 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 	var err error
 	configProvider := set.ConfigProvider
 
+	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: zap.NewNop()}
+	set.ConfigProviderSettings.ResolverSettings.ConverterSettings = confmap.ConverterSettings{}
+
 	if configProvider == nil {
 		configProvider, err = NewConfigProvider(set.ConfigProviderSettings)
 		if err != nil {

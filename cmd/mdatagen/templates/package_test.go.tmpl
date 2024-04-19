@@ -9,9 +9,15 @@ import (
 )
 
 func TestMain(m *testing.M) {
+    {{- if .Tests.GoLeak.Setup }}
+    {{.Tests.GoLeak.Setup}}
+    {{- end }}
     {{- if .Tests.GoLeak.Skip }}
     // skipping goleak test as per metadata.yml configuration
     {{- else }}
 	goleak.VerifyTestMain(m {{- range $val := .Tests.GoLeak.Ignore.Top}}, goleak.IgnoreTopFunction("{{$val}}"){{end}}{{- range $val := .Tests.GoLeak.Ignore.Any}}, goleak.IgnoreAnyFunction("{{$val}}"){{end}} )
+    {{- end }}
+    {{- if .Tests.GoLeak.Teardown }}
+    {{.Tests.GoLeak.Teardown}}
     {{- end }}
 }

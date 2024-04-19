@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/httphelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -184,16 +185,18 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 	respStatus := readResponseStatus(resp)
 
 	// Format the error message. Use the status if it is present in the response.
+	var errString string
 	var formattedErr error
 	if respStatus != nil {
-		formattedErr = fmt.Errorf(
+		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s, Details=%v",
 			url, resp.StatusCode, respStatus.Message, respStatus.Details)
 	} else {
-		formattedErr = fmt.Errorf(
+		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d",
 			url, resp.StatusCode)
 	}
+	formattedErr = httphelper.NewStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
 
 	if isRetryableStatusCode(resp.StatusCode) {
 		// A retry duration of 0 seconds will trigger the default backoff policy
