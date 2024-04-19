@@ -34,7 +34,7 @@ jobs:
             ~\AppData\Local\go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
-        run: make gotest GOTEST_TIMEOUT=240s
+        run: make gotest
 
   windows-service-test:
     runs-on: windows-latest
