@@ -16,6 +16,7 @@ import (
 
 	"go.uber.org/zap"
 	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/semver"
 )
 
 var (
@@ -164,7 +165,7 @@ func GetModules(cfg Config) error {
 	if !ok {
 		return fmt.Errorf("core collector %w: '%s'. %s", ErrDepNotFound, corePath, skipStrictMsg)
 	}
-	if coreDepVersion != coreVersion {
+	if semver.MajorMinor(coreDepVersion) != semver.MajorMinor(coreVersion) {
 		return fmt.Errorf(
 			"%w: core collector version calculated by component dependencies %q does not match configured version %q. %s",
 			ErrVersionMismatch, coreDepVersion, coreVersion, skipStrictMsg)
@@ -182,7 +183,7 @@ func GetModules(cfg Config) error {
 		if !ok {
 			return fmt.Errorf("component %w: '%s'. %s", ErrDepNotFound, module, skipStrictMsg)
 		}
-		if moduleDepVersion != version {
+		if semver.MajorMinor(moduleDepVersion) != semver.MajorMinor(version) {
 			return fmt.Errorf(
 				"%w: component %q version calculated by dependencies %q does not match configured version %q. %s",
 				ErrVersionMismatch, module, moduleDepVersion, version, skipStrictMsg)
