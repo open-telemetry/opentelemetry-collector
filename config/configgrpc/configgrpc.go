@@ -135,10 +135,7 @@ type KeepaliveServerParameters struct {
 }
 
 func NewDefaultKeepaliveServerParameters() *KeepaliveServerParameters {
-	return &KeepaliveServerParameters{
-		Time:    2 * time.Hour,
-		Timeout: 20 * time.Second,
-	}
+	return &KeepaliveServerParameters{}
 }
 
 // KeepaliveEnforcementPolicy allow configuration of the keepalive.EnforcementPolicy.

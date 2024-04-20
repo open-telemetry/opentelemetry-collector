@@ -36,47 +36,54 @@ import (
 )
 
 func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
-	config := NewDefaultKeepaliveClientConfig()
-
-	expectedTime := time.Second * 10
-	assert.Equal(t, expectedTime, config.Time)
-
-	expectedTimeout := time.Second * 10
-	assert.Equal(t, expectedTimeout, config.Timeout)
+	expectedKeepaliveClientConfig := NewDefaultKeepaliveClientConfig()
+	keepaliveClientConfig := NewDefaultKeepaliveClientConfig()
+	assert.Equal(t, expectedKeepaliveClientConfig, keepaliveClientConfig)
 }
 
 func TestNewDefaultClientConfig(t *testing.T) {
-	config := NewDefaultClientConfig()
+	expected := &ClientConfig{
+		TLSSetting: configtls.NewDefaultClientConfig(),
+		Keepalive:  NewDefaultKeepaliveClientConfig(),
+		Auth:       configauth.NewDefaultAuthentication(),
+	}
 
-	assert.NotNil(t, config.Keepalive)
+	result := NewDefaultClientConfig()
+
+	assert.Equal(t, expected, result)
 }
 func TestNewDefaultKeepaliveServerParameters(t *testing.T) {
-	config := NewDefaultKeepaliveServerParameters()
+	expectedParams := &KeepaliveServerParameters{}
+	params := NewDefaultKeepaliveServerParameters()
 
-	assert.Equal(t, 2*time.Hour, config.Time, "Expected Time to be 2 hours")
-	assert.Equal(t, 20*time.Second, config.Timeout, "Expected Timeout to be 20 seconds")
-
+	assert.Equal(t, expectedParams, params)
 }
 func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
+	expectedPolicy := &KeepaliveEnforcementPolicy{}
+
 	policy := NewDefaultKeepaliveEnforcementPolicy()
-	assert.NotNil(t, policy, "NewDefaultKeepaliveEnforcementPolicy() should not return nil")
+
+	assert.Equal(t, expectedPolicy, policy)
 }
 
 func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
-	config := NewDefaultKeepaliveServerConfig()
-
-	assert.NotNil(t, config, "NewDefaultKeepaliveServerConfig() should not return nil")
-
-	assert.NotNil(t, config.ServerParameters, "ServerParameters should not be nil")
-
-	assert.NotNil(t, config.EnforcementPolicy, "EnforcementPolicy should not be nil")
-
+	expected := &KeepaliveServerConfig{
+		ServerParameters:  NewDefaultKeepaliveServerParameters(),
+		EnforcementPolicy: NewDefaultKeepaliveEnforcementPolicy(),
+	}
+	result := NewDefaultKeepaliveServerConfig()
+	assert.Equal(t, expected, result)
 }
 
 func TestNewDefaultServerConfig(t *testing.T) {
-	config := NewDefaultServerConfig()
+	expected := &ServerConfig{
+		Keepalive: NewDefaultKeepaliveServerConfig(),
+		Auth:      configauth.NewDefaultAuthentication(),
+	}
 
-	assert.NotNil(t, config)
+	result := NewDefaultServerConfig()
+
+	assert.Equal(t, expected, result)
 }
 
 // testBalancerBuilder facilitates testing validateBalancerName().
