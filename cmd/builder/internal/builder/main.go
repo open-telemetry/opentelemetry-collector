@@ -16,6 +16,7 @@ import (
 
 	"go.uber.org/zap"
 	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/semver"
 )
 
 var (
@@ -74,9 +75,6 @@ func Generate(cfg Config) error {
 	}
 	// create a warning message for non-aligned builder and collector base
 	if cfg.Distribution.OtelColVersion != defaultOtelColVersion {
-		if !cfg.SkipStrictVersioning {
-			return fmt.Errorf("builder version %q does not match build configuration version %q: %w", cfg.Distribution.OtelColVersion, defaultOtelColVersion, ErrVersionMismatch)
-		}
 		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", zap.String("builder-version", defaultOtelColVersion))
 	}
 	// if the file does not exist, try to create it
@@ -167,7 +165,7 @@ func GetModules(cfg Config) error {
 	if !ok {
 		return fmt.Errorf("core collector %w: '%s'. %s", ErrDepNotFound, corePath, skipStrictMsg)
 	}
-	if coreDepVersion != coreVersion {
+	if semver.MajorMinor(coreDepVersion) != semver.MajorMinor(coreVersion) {
 		return fmt.Errorf(
 			"%w: core collector version calculated by component dependencies %q does not match configured version %q. %s",
 			ErrVersionMismatch, coreDepVersion, coreVersion, skipStrictMsg)
@@ -185,7 +183,7 @@ func GetModules(cfg Config) error {
 		if !ok {
 			return fmt.Errorf("component %w: '%s'. %s", ErrDepNotFound, module, skipStrictMsg)
 		}
-		if moduleDepVersion != version {
+		if semver.MajorMinor(moduleDepVersion) != semver.MajorMinor(version) {
 			return fmt.Errorf(
 				"%w: component %q version calculated by dependencies %q does not match configured version %q. %s",
 				ErrVersionMismatch, module, moduleDepVersion, version, skipStrictMsg)

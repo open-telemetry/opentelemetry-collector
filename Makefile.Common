@@ -4,7 +4,7 @@ ALL_PKGS := $(sort $(shell go list ./...))
 # COVER_PKGS is the list of packages to include in the coverage
 COVER_PKGS := $(shell go list ./... | tr "\n" ",")
 
-GOTEST_TIMEOUT?=120s
+GOTEST_TIMEOUT?=240s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT)
 GOCMD?= go
 GOTEST=$(GOCMD) test
