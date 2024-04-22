@@ -33,12 +33,23 @@ require (
 )`)
 )
 
+func newInitializedConfig(t *testing.T) Config {
+	cfg := NewDefaultConfig()
+	// Validate and ParseModules will be called before the config is
+	// given to Generate.
+	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, cfg.SetBackwardsCompatibility())
+	assert.NoError(t, cfg.ParseModules())
+
+	return cfg
+}
+
 func TestGenerateDefault(t *testing.T) {
-	require.NoError(t, Generate(NewDefaultConfig()))
+	require.NoError(t, Generate(newInitializedConfig(t)))
 }
 
 func TestGenerateInvalidOutputPath(t *testing.T) {
-	cfg := NewDefaultConfig()
+	cfg := newInitializedConfig(t)
 	cfg.Distribution.OutputPath = "/:invalid"
 	err := Generate(cfg)
 	require.Error(t, err)
@@ -54,7 +65,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "defaults",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Distribution.Go = "go"
 				return cfg
 			},
@@ -63,7 +74,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "require otelcol",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Distribution.Go = "go"
 				cfg.Distribution.RequireOtelColModule = true
 				return cfg
@@ -73,7 +84,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "only gomod file, skip generate",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				tempDir := t.TempDir()
 				err := makeModule(tempDir, goModTestFile)
 				require.NoError(t, err)
@@ -87,7 +98,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "old otel version",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Verbose = true
 				cfg.Distribution.Go = "go"
 				cfg.Distribution.OtelColVersion = "0.97.0"
@@ -105,6 +116,12 @@ func TestVersioning(t *testing.T) {
 					},
 				})
 				require.NoError(t, err)
+				*cfg.Providers, err = parseModules([]Module{
+					{
+						GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider v0.97.0",
+					},
+				})
+				require.NoError(t, err)
 				return cfg
 			},
 			expectedErr: nil,
@@ -112,7 +129,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "old component version",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Distribution.Go = "go"
 				cfg.Exporters = []Module{
 					{
@@ -126,7 +143,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "old component version without strict mode",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newInitializedConfig(t)
 				cfg.Distribution.Go = "go"
 				cfg.SkipStrictVersioning = true
 				cfg.Exporters = []Module{
@@ -142,7 +159,7 @@ func TestVersioning(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			cfg := tc.cfgBuilder()
-			require.NoError(t, cfg.SetRequireOtelColModule())
+			require.NoError(t, cfg.SetBackwardsCompatibility())
 			require.NoError(t, cfg.Validate())
 			require.NoError(t, cfg.ParseModules())
 			err := GenerateAndCompile(cfg)
@@ -152,7 +169,7 @@ func TestVersioning(t *testing.T) {
 }
 
 func TestSkipGenerate(t *testing.T) {
-	cfg := NewDefaultConfig()
+	cfg := newInitializedConfig(t)
 	cfg.Distribution.OutputPath = t.TempDir()
 	cfg.SkipGenerate = true
 	err := Generate(cfg)
@@ -241,6 +258,38 @@ func TestGenerateAndCompile(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			testCase: "No providers",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.Providers = &[]Module{}
+				return cfg
+			},
+		},
+		{
+			testCase: "Pre-confmap factories",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.Distribution.OtelColVersion = "0.98.0"
+				cfg.SkipStrictVersioning = true
+				return cfg
+			},
+		},
+		{
+			testCase: "With confmap factories",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.Distribution.OtelColVersion = "0.99.0"
+				cfg.SkipStrictVersioning = true
+				return cfg
+			},
+		},
 	}
 
 	for _, tt := range testCases {
@@ -248,6 +297,7 @@ func TestGenerateAndCompile(t *testing.T) {
 			cfg := tt.cfgBuilder(t)
 			assert.NoError(t, cfg.Validate())
 			assert.NoError(t, cfg.SetGoPath())
+			assert.NoError(t, cfg.ParseModules())
 			require.NoError(t, GenerateAndCompile(cfg))
 		})
 	}

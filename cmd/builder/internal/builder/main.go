@@ -235,7 +235,8 @@ func (c *Config) allComponents() []Module {
 		append(c.Receivers,
 			append(c.Processors,
 				append(c.Extensions,
-					c.Connectors...)...)...)...)
+					append(c.Connectors,
+						*c.Providers...)...)...)...)...)
 }
 
 func (c *Config) readGoModFile() (string, map[string]string, error) {
