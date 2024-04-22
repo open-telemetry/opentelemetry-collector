@@ -74,6 +74,7 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 }
 
 // Creates a node for each instance of a component and adds it to the graph
+// Validates that connectors are configured to export and receive correctly
 func (g *Graph) createNodes(set Settings) error {
 	// Build a list of all connectors for easy reference
 	connectors := make(map[component.ID]struct{})
@@ -82,9 +83,12 @@ func (g *Graph) createNodes(set Settings) error {
 	connectorsAsExporter := make(map[component.ID][]component.ID)
 	connectorsAsReceiver := make(map[component.ID][]component.ID)
 
+	// build each pipelineNodes struct for each pipeline by parsing the pipelineCfg
+	// also populates the connectors, connectorsAsExporter and connectorsAsReceiver maps
 	for pipelineID, pipelineCfg := range set.PipelineConfigs {
 		pipe := g.pipelines[pipelineID]
 		for _, recvID := range pipelineCfg.Receivers {
+			// checks if this receiver a connector or a regular receiver
 			if set.ConnectorBuilder.IsConfigured(recvID) {
 				connectors[recvID] = struct{}{}
 				connectorsAsReceiver[recvID] = append(connectorsAsReceiver[recvID], pipelineID)
@@ -138,6 +142,8 @@ func (g *Graph) createNodes(set Settings) error {
 
 		for expType := range expTypes {
 			for recType := range recTypes {
+				// checks if the connector supports being a receiver of a certain datatype and an exporter of the other
+				// datatype - this is powered by the connector's metadata.yaml file
 				if connectorStability(connFactory, expType, recType) != component.StabilityLevelUndefined {
 					expTypes[expType] = true
 					recTypes[recType] = true
@@ -241,12 +247,15 @@ func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID, connID component
 	return connNode
 }
 
+// Iterates through the pipelines and creates edges between components
 func (g *Graph) createEdges() {
 	for _, pg := range g.pipelines {
+		// draw edges from each receiver to the capability node
 		for _, receiver := range pg.receivers {
 			g.componentGraph.SetEdge(g.componentGraph.NewEdge(receiver, pg.capabilitiesNode))
 		}
 
+		// iterates through processors, chaining them together.  starts with the capabilities node
 		var from, to graph.Node
 		from = pg.capabilitiesNode
 		for _, processor := range pg.processors {
@@ -254,6 +263,8 @@ func (g *Graph) createEdges() {
 			g.componentGraph.SetEdge(g.componentGraph.NewEdge(from, to))
 			from = processor
 		}
+		// always inserts a fanout node before any exporters. if there is only one
+		// exporter, the fanout node is still created and acts as a noop
 		to = pg.fanOutNode
 		g.componentGraph.SetEdge(g.componentGraph.NewEdge(from, to))
 
@@ -263,6 +274,9 @@ func (g *Graph) createEdges() {
 	}
 }
 
+// Uses the already built graph g to instantiate the actual components for each component of each pipeline
+// Handles calling the factories for each component - and hooking up each component to the next
+// Also calculates whether each pipeline mutates data so the receiver can know whether it needs to clone the data
 func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 	nodes, err := topo.Sort(g.componentGraph)
 	if err != nil {
@@ -282,6 +296,7 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 		case *receiverNode:
 			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
 		case *processorNode:
+			// nextConsumers is guaranteed to be length 1.  either it is the next processor or it's the fanout node for the exporters
 			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
 		case *exporterNode:
 			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ExporterBuilder)

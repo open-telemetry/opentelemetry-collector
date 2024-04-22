@@ -72,6 +72,10 @@ type Service struct {
 	collectorConf     *confmap.Conf
 }
 
+// Service.New has a few responsibilities:
+// 1.  initializes the Service function given a complete set of Settings
+// 2.  sets up internal facing telemetry
+// 3.  builds the graph from the settings
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()

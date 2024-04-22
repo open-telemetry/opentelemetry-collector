@@ -163,7 +163,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(StateStarting)
 
 	var conf *confmap.Conf
-
 	if cp, ok := col.configProvider.(ConfmapProvider); ok {
 		var err error
 		conf, err = cp.GetConfmap(ctx)
@@ -187,6 +186,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	col.serviceConfig = &cfg.Service
+
 	col.service, err = service.New(ctx, service.Settings{
 		BuildInfo:         col.set.BuildInfo,
 		CollectorConf:     conf,
@@ -263,6 +263,8 @@ func (col *Collector) Run(ctx context.Context) error {
 		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
 	}
 
+	// control loop: selects between channels for various interrupts - when this loop is broken, the collector exits
+	// if a configuration reload fails, we return without waiting for graceful shutdown
 LOOP:
 	for {
 		select {
