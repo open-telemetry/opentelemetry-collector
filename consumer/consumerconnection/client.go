@@ -1,10 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package client contains generic representations of clients connecting to
-// different receivers. Components, such as processors or exporters, can make
-// use of this information to make decisions related to grouping of batches,
-// tenancy, load balancing, tagging, among others.
+// Package consumerconnection contains generic representations of clients connecting to
+// different components. Components can make use of this information to make decisions
+// related to grouping of batches, tenancy, load balancing, tagging, among others.
 //
 // The structs defined here are typically used within the context that is
 // propagated down the pipeline, with the values being produced by
@@ -12,20 +11,20 @@
 //
 // # Producers
 //
-// Receivers are responsible for obtaining a client.Info from the current
-// context and enhancing the client.Info with the net.Addr from the peer,
-// storing a new client.Info into the context that it passes down. For HTTP
+// Receivers are typically responsible for obtaining a consumerconnection.Info from the current
+// context and enhancing the consumerconnection.Info with the net.Addr from the peer,
+// storing a new consumerconnection.Info into the context that it passes down. For HTTP
 // requests, the net.Addr is typically the IP address of the client.
 //
-// Typically, however, receivers would delegate this processing to helpers such
+// Components should typically delegate this processing to helpers such
 // as the confighttp or configgrpc packages: both contain interceptors that will
-// enhance the context with the client.Info, such that no actions are needed by
+// enhance the context with the consumerconnection.Info, such that no actions are needed by
 // receivers that are built using confighttp.HTTPServerSettings or
 // configgrpc.GRPCServerSettings.
 //
-// Authenticators are responsible for obtaining a client.Info from the current
-// context, enhancing the client.Info with an implementation of client.AuthData,
-// and storing a new client.Info into the context that it passes down. The
+// Authenticators are responsible for obtaining a consumerconnection.Info from the current
+// context, enhancing the consumerconnection.Info with an implementation of consumerconnection.AuthData,
+// and storing a new consumerconnection.Info into the context that it passes down. The
 // attribute names should be documented with their return types and considered
 // part of the public API for the authenticator.
 //
@@ -33,7 +32,7 @@
 //
 // Provided that the pipeline does not contain processors that would discard or
 // rewrite the context, such as the batch processor, processors and exporters
-// have access to the client.Info via client.FromContext. Among other usages,
+// have access to the consumerconnection.Info via consumerconnection.FromContext. Among other usages,
 // this data can be used to:
 //
 // - annotate data points with authentication data (username, tenant, ...)
@@ -43,7 +42,7 @@
 // - rate limit client calls based on IP addresses
 //
 // Processors and exporters relying on the existence of data from the
-// client.Info, especially client.AuthData, should clearly document this as part
+// consumerconnection.Info, especially consumerconnection.AuthData, should clearly document this as part
 // of the component's README file. The expected pattern for consuming data is to
 // allow users to specify the attribute name to use in the component. The
 // expected data type should also be communicated to users, who should then
@@ -75,7 +74,7 @@
 //	      receivers: [otlp]
 //	      processors: [authprinter]
 //	      exporters: [debug]
-package client // import "go.opentelemetry.io/collector/client"
+package consumerconnection // import "go.opentelemetry.io/collector/consumer/consumerconnection"
 
 import (
 	"context"
@@ -86,8 +85,6 @@ import (
 type ctxKey struct{}
 
 // Info contains data related to the clients connecting to receivers.
-//
-// Deprecated: [v0.99.0] Use consumerconnection.Info instead
 type Info struct {
 	// Addr for the client connecting to this collector. Available in a
 	// best-effort basis, and generally reliable for receivers making use of
@@ -105,8 +102,6 @@ type Info struct {
 
 // AuthData represents the authentication data as seen by authenticators tied to
 // the receivers.
-//
-// Deprecated: [v0.99.0] Use consumerconnection.AuthData instead
 type AuthData interface {
 	// GetAttribute returns the value for the given attribute. Authenticator
 	// implementations might define different data types for different
@@ -118,22 +113,17 @@ type AuthData interface {
 	GetAttributeNames() []string
 }
 
-// Deprecated: [v0.99.0] Use consumerconnection.MetadataHostName instead
 const MetadataHostName = "Host"
 
-// NewContext takes an existing context and derives a new context with the
-// client.Info value stored on it.
-//
-// Deprecated: [v0.99.0] Use consumerconnection.NewContextWithConnection instead
-func NewContext(ctx context.Context, c Info) context.Context {
+// NewContextWithInfo takes an existing context and derives a new context with the
+// consumerconnection.Info value stored on it.
+func NewContextWithInfo(ctx context.Context, c Info) context.Context {
 	return context.WithValue(ctx, ctxKey{}, c)
 }
 
-// FromContext takes a context and returns a ClientInfo from it.
+// InfoFromContext takes a context and returns a ClientInfo from it.
 // When a ClientInfo isn't present, a new empty one is returned.
-//
-// Deprecated: [v0.99.0] Use consumerconnection.InfoFromContext instead
-func FromContext(ctx context.Context) Info {
+func InfoFromContext(ctx context.Context) Info {
 	c, ok := ctx.Value(ctxKey{}).(Info)
 	if !ok {
 		c = Info{}
@@ -142,15 +132,11 @@ func FromContext(ctx context.Context) Info {
 }
 
 // Metadata is an immutable map, meant to contain request metadata.
-//
-// Deprecated: [v0.99.0] Use consumerconnection.Metadata instead
 type Metadata struct {
 	data map[string][]string
 }
 
 // NewMetadata creates a new Metadata object to use in Info.
-//
-// Deprecated: [v0.99.0] Use consumerconnection.NewMetadata instead
 func NewMetadata(md map[string][]string) Metadata {
 	c := make(map[string][]string, len(md))
 	for k, v := range md {

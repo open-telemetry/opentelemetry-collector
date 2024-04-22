@@ -14,10 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerconnection"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -884,7 +884,7 @@ func formatTwo(first, second []string) string {
 }
 
 func (mts *metadataTracesSink) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	info := client.FromContext(ctx)
+	info := consumerconnection.InfoFromContext(ctx)
 	token1 := info.Metadata.Get("token1")
 	token2 := info.Metadata.Get("token2")
 	mts.lock.Lock()
@@ -914,27 +914,27 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 
 	bg := context.Background()
 	callCtxs := []context.Context{
-		client.NewContext(bg, client.Info{
-			Metadata: client.NewMetadata(map[string][]string{
+		consumerconnection.NewContextWithInfo(bg, consumerconnection.Info{
+			Metadata: consumerconnection.NewMetadata(map[string][]string{
 				"token1": {"single"},
 				"token3": {"n/a"},
 			}),
 		}),
-		client.NewContext(bg, client.Info{
-			Metadata: client.NewMetadata(map[string][]string{
+		consumerconnection.NewContextWithInfo(bg, consumerconnection.Info{
+			Metadata: consumerconnection.NewMetadata(map[string][]string{
 				"token1": {"single"},
 				"token2": {"one", "two"},
 				"token4": {"n/a"},
 			}),
 		}),
-		client.NewContext(bg, client.Info{
-			Metadata: client.NewMetadata(map[string][]string{
+		consumerconnection.NewContextWithInfo(bg, consumerconnection.Info{
+			Metadata: consumerconnection.NewMetadata(map[string][]string{
 				"token1": nil,
 				"token2": {"single"},
 			}),
 		}),
-		client.NewContext(bg, client.Info{
-			Metadata: client.NewMetadata(map[string][]string{
+		consumerconnection.NewContextWithInfo(bg, consumerconnection.Info{
+			Metadata: consumerconnection.NewMetadata(map[string][]string{
 				"token1": {"one", "two", "three"},
 				"token2": {"single"},
 				"token3": {"n/a"},
@@ -978,7 +978,7 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 	// This test ensures each context had the expected number of spans.
 	require.Equal(t, len(callCtxs), len(sink.spanCountByToken12))
 	for idx, ctx := range callCtxs {
-		md := client.FromContext(ctx).Metadata
+		md := consumerconnection.InfoFromContext(ctx).Metadata
 		exp := formatTwo(md.Get("token1"), md.Get("token2"))
 		require.Equal(t, expectByContext[idx], sink.spanCountByToken12[exp])
 	}
@@ -1008,8 +1008,8 @@ func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
 	bg := context.Background()
 	for requestNum := 0; requestNum < cardLimit; requestNum++ {
 		td := testdata.GenerateTraces(1)
-		ctx := client.NewContext(bg, client.Info{
-			Metadata: client.NewMetadata(map[string][]string{
+		ctx := consumerconnection.NewContextWithInfo(bg, consumerconnection.Info{
+			Metadata: consumerconnection.NewMetadata(map[string][]string{
 				"token": {fmt.Sprint(requestNum)},
 			}),
 		})
@@ -1018,8 +1018,8 @@ func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
 	}
 
 	td := testdata.GenerateTraces(1)
-	ctx := client.NewContext(bg, client.Info{
-		Metadata: client.NewMetadata(map[string][]string{
+	ctx := consumerconnection.NewContextWithInfo(bg, consumerconnection.Info{
+		Metadata: consumerconnection.NewMetadata(map[string][]string{
 			"token": {"limit_exceeded"},
 		}),
 	})

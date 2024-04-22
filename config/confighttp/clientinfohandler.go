@@ -8,10 +8,10 @@ import (
 	"net"
 	"net/http"
 
-	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/consumer/consumerconnection"
 )
 
-// clientInfoHandler is an http.Handler that enhances the incoming request context with client.Info.
+// clientInfoHandler is an http.Handler that enhances the incoming request context with consumerconnection.Info.
 type clientInfoHandler struct {
 	next http.Handler
 
@@ -20,16 +20,16 @@ type clientInfoHandler struct {
 }
 
 // ServeHTTP intercepts incoming HTTP requests, replacing the request's context with one that contains
-// a client.Info containing the client's IP address.
+// a consumerconnection.Info containing the client's IP address.
 func (h *clientInfoHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	req = req.WithContext(contextWithClient(req, h.includeMetadata))
 	h.next.ServeHTTP(w, req)
 }
 
-// contextWithClient attempts to add the client IP address to the client.Info from the context. When no
-// client.Info exists in the context, one is created.
+// contextWithClient attempts to add the client IP address to the consumerconnection.Info from the context. When no
+// consumerconnection.Info exists in the context, one is created.
 func contextWithClient(req *http.Request, includeMetadata bool) context.Context {
-	cl := client.FromContext(req.Context())
+	cl := consumerconnection.InfoFromContext(req.Context())
 
 	ip := parseIP(req.RemoteAddr)
 	if ip != nil {
@@ -38,14 +38,14 @@ func contextWithClient(req *http.Request, includeMetadata bool) context.Context 
 
 	if includeMetadata {
 		md := req.Header.Clone()
-		if len(md.Get(client.MetadataHostName)) == 0 && req.Host != "" {
-			md.Add(client.MetadataHostName, req.Host)
+		if len(md.Get(consumerconnection.MetadataHostName)) == 0 && req.Host != "" {
+			md.Add(consumerconnection.MetadataHostName, req.Host)
 		}
 
-		cl.Metadata = client.NewMetadata(md)
+		cl.Metadata = consumerconnection.NewMetadata(md)
 	}
 
-	ctx := client.NewContext(req.Context(), cl)
+	ctx := consumerconnection.NewContextWithInfo(req.Context(), cl)
 	return ctx
 }
 

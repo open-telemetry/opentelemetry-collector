@@ -22,7 +22,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -30,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumerconnection"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -696,21 +696,21 @@ func TestContextWithClient(t *testing.T) {
 		desc       string
 		input      context.Context
 		doMetadata bool
-		expected   client.Info
+		expected   consumerconnection.Info
 	}{
 		{
 			desc:     "no peer information, empty client",
 			input:    context.Background(),
-			expected: client.Info{},
+			expected: consumerconnection.Info{},
 		},
 		{
 			desc: "existing client with IP, no peer information",
-			input: client.NewContext(context.Background(), client.Info{
+			input: consumerconnection.NewContextWithInfo(context.Background(), consumerconnection.Info{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
 			}),
-			expected: client.Info{
+			expected: consumerconnection.Info{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
@@ -723,7 +723,7 @@ func TestContextWithClient(t *testing.T) {
 					IP: net.IPv4(1, 2, 3, 4),
 				},
 			}),
-			expected: client.Info{
+			expected: consumerconnection.Info{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
@@ -731,7 +731,7 @@ func TestContextWithClient(t *testing.T) {
 		},
 		{
 			desc: "existing client, existing IP gets overridden with peer information",
-			input: peer.NewContext(client.NewContext(context.Background(), client.Info{
+			input: peer.NewContext(consumerconnection.NewContextWithInfo(context.Background(), consumerconnection.Info{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
@@ -740,7 +740,7 @@ func TestContextWithClient(t *testing.T) {
 					IP: net.IPv4(1, 2, 3, 5),
 				},
 			}),
-			expected: client.Info{
+			expected: consumerconnection.Info{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 5),
 				},
@@ -748,48 +748,48 @@ func TestContextWithClient(t *testing.T) {
 		},
 		{
 			desc: "existing client with metadata",
-			input: client.NewContext(context.Background(), client.Info{
-				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
+			input: consumerconnection.NewContextWithInfo(context.Background(), consumerconnection.Info{
+				Metadata: consumerconnection.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
 			}),
 			doMetadata: true,
-			expected: client.Info{
-				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
+			expected: consumerconnection.Info{
+				Metadata: consumerconnection.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
 			},
 		},
 		{
 			desc: "existing client with metadata in context",
 			input: metadata.NewIncomingContext(
-				client.NewContext(context.Background(), client.Info{}),
+				consumerconnection.NewContextWithInfo(context.Background(), consumerconnection.Info{}),
 				metadata.Pairs("test-metadata-key", "test-value"),
 			),
 			doMetadata: true,
-			expected: client.Info{
-				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
+			expected: consumerconnection.Info{
+				Metadata: consumerconnection.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
 			},
 		},
 		{
 			desc: "existing client with metadata in context, no metadata processing",
 			input: metadata.NewIncomingContext(
-				client.NewContext(context.Background(), client.Info{}),
+				consumerconnection.NewContextWithInfo(context.Background(), consumerconnection.Info{}),
 				metadata.Pairs("test-metadata-key", "test-value"),
 			),
-			expected: client.Info{},
+			expected: consumerconnection.Info{},
 		},
 		{
 			desc: "existing client with Host and metadata",
 			input: metadata.NewIncomingContext(
-				client.NewContext(context.Background(), client.Info{}),
+				consumerconnection.NewContextWithInfo(context.Background(), consumerconnection.Info{}),
 				metadata.Pairs("test-metadata-key", "test-value", ":authority", "localhost:55443"),
 			),
 			doMetadata: true,
-			expected: client.Info{
-				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}, ":authority": {"localhost:55443"}, "Host": {"localhost:55443"}}),
+			expected: consumerconnection.Info{
+				Metadata: consumerconnection.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}, ":authority": {"localhost:55443"}, "Host": {"localhost:55443"}}),
 			},
 		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			cl := client.FromContext(contextWithClient(tC.input, tC.doMetadata))
+			cl := consumerconnection.InfoFromContext(contextWithClient(tC.input, tC.doMetadata))
 			assert.Equal(t, tC.expected, cl)
 		})
 	}
@@ -817,7 +817,7 @@ func TestStreamInterceptorEnhancesClient(t *testing.T) {
 	// verify
 	assert.NoError(t, err)
 
-	cl := client.FromContext(outContext)
+	cl := consumerconnection.InfoFromContext(outContext)
 	assert.Equal(t, "1.1.1.1", cl.Addr.String())
 }
 
@@ -901,7 +901,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 			}
 
 			// verify
-			cl := client.FromContext(mock.recordedContext)
+			cl := consumerconnection.InfoFromContext(mock.recordedContext)
 
 			// the client address is something like 127.0.0.1:41086
 			assert.Contains(t, cl.Addr.String(), "127.0.0.1")
@@ -915,7 +915,7 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	authCalled := false
 	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
 		authCalled = true
-		ctx := client.NewContext(context.Background(), client.Info{
+		ctx := consumerconnection.NewContextWithInfo(context.Background(), consumerconnection.Info{
 			Addr: &net.IPAddr{IP: net.IPv4(1, 2, 3, 4)},
 		})
 
@@ -923,7 +923,7 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	}
 	handler := func(ctx context.Context, _ any) (any, error) {
 		handlerCalled = true
-		cl := client.FromContext(ctx)
+		cl := consumerconnection.InfoFromContext(ctx)
 		assert.Equal(t, "1.2.3.4", cl.Addr.String())
 		return nil, nil
 	}
@@ -987,14 +987,14 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	authCalled := false
 	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
 		authCalled = true
-		ctx := client.NewContext(context.Background(), client.Info{
+		ctx := consumerconnection.NewContextWithInfo(context.Background(), consumerconnection.Info{
 			Addr: &net.IPAddr{IP: net.IPv4(1, 2, 3, 4)},
 		})
 		return ctx, nil
 	}
 	handler := func(_ any, stream grpc.ServerStream) error {
 		// ensure that the client information is propagated down to the underlying stream
-		cl := client.FromContext(stream.Context())
+		cl := consumerconnection.InfoFromContext(stream.Context())
 		assert.Equal(t, "1.2.3.4", cl.Addr.String())
 		handlerCalled = true
 		return nil
