@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.99.0
 	go.opentelemetry.io/collector/exporter v0.99.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.99.0
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.98.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.99.0
 	go.opentelemetry.io/collector/pdata v1.6.0
 	go.opentelemetry.io/collector/pdata/testdata v0.99.0
 	go.opentelemetry.io/collector/receiver v0.99.0
