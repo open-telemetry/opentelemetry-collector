@@ -130,3 +130,10 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 	}
 
 }
+
+func TestValidDNSEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "dns:///backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+}
