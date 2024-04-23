@@ -480,7 +480,7 @@ func TestCollectorConfmapLogs(t *testing.T) {
 	set := CollectorSettings{
 		BuildInfo:              component.NewDefaultBuildInfo(),
 		Factories:              nopFactories,
-		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-env-var.yaml")}),
 	}
 	col, err := NewCollector(set)
 	require.NoError(t, err)
@@ -492,7 +492,7 @@ func TestCollectorConfmapLogs(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 
 	assert.NotNil(t, col.ol)
-	assert.True(t, col.ol.Len() > 0)
+	assert.Greater(t, col.ol.Len(), 0)
 }
 
 func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.WaitGroup {
