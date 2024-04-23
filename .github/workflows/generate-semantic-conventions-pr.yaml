@@ -14,7 +14,7 @@ jobs:
       already-added: ${{ steps.check-versions.outputs.already-added }}
       already-opened: ${{ steps.check-versions.outputs.already-opened }}
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
 
       - id: check-versions
         name: Check versions
@@ -56,9 +56,9 @@ jobs:
     needs:
       - check-versions
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
       - name: Checkout semantic-convention
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
         with:
           repository: open-telemetry/semantic-convention
           path: tmp-semantic-conventions
