@@ -476,6 +476,25 @@ func TestPassConfmapToServiceFailure(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestCollectorConfmapLogs(t *testing.T) {
+	set := CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+	}
+	col, err := NewCollector(set)
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+
+	assert.NotNil(t, col.ol)
+	assert.True(t, col.ol.Len() > 0)
+}
+
 func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.WaitGroup {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
