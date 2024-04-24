@@ -40,7 +40,10 @@ func NewFromStringMap(data map[string]any) *Conf {
 // Conf represents the raw configuration map for the OpenTelemetry Collector.
 // The confmap.Conf can be unmarshalled into the Collector's config using the "service" package.
 type Conf struct {
-	k                       *koanf.Koanf
+	k *koanf.Koanf
+	// If true, upon unmarshaling do not call the Unmarshal function on the struct
+	// if it implements Unmarshaler and is the top-level struct.
+	// This avoids running into a circular dependency.
 	skipTopLevelUnmarshaler bool
 }
 
@@ -315,7 +318,8 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 }
 
 // Provides a mechanism for individual structs to define their own unmarshal logic,
-// by implementing the Unmarshaler interface.
+// by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
+// true and the struct matches the top level object being unmarshaled.
 func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (any, error) {
 		if !to.CanAddr() {
@@ -381,6 +385,7 @@ func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
 type Unmarshaler interface {
 	// Unmarshal a Conf into the struct in a custom way.
 	// The Conf for this specific component may be nil or empty if no config available.
+	// This method should only be called by decoding hooks when calling Conf.Unmarshal.
 	Unmarshal(component *Conf) error
 }
 
