@@ -53,6 +53,8 @@ type Graph struct {
 	telemetry servicetelemetry.TelemetrySettings
 }
 
+// Build converts Settings into a full pipeline Graph
+// Build also validates the configuration of the pipelines and does the actual initialization of each Component in the Graph
 func Build(ctx context.Context, set Settings) (*Graph, error) {
 	pipelines := &Graph{
 		componentGraph: simple.NewDirectedGraph(),

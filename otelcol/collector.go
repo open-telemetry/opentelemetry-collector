@@ -163,6 +163,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(StateStarting)
 
 	var conf *confmap.Conf
+
 	if cp, ok := col.configProvider.(ConfmapProvider); ok {
 		var err error
 		conf, err = cp.GetConfmap(ctx)

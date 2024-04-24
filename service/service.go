@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-// Settings holds configuration for building a new service.
+// Settings holds configuration for building a new Service.
 type Settings struct {
 	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
@@ -72,7 +72,7 @@ type Service struct {
 	collectorConf     *confmap.Conf
 }
 
-// Service.New has a few responsibilities:
+// New has a few responsibilities:
 // 1.  initializes the Service function given a complete set of Settings
 // 2.  sets up internal facing telemetry
 // 3.  builds the graph from the settings
@@ -96,6 +96,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
+
+	// fetch data for internal telemetry like instance id and sdk version to provide for internal telemetry
 	res := resource.New(set.BuildInfo, cfg.Telemetry.Resource)
 	pcommonRes := pdataFromSdk(res)
 
@@ -251,6 +253,7 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 	return errs
 }
 
+// creates extensions and then builds the pipeline graph
 func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings, cfg Config) error {
 	var err error
 	extensionsSettings := extensions.Settings{
