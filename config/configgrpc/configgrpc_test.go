@@ -36,7 +36,10 @@ import (
 )
 
 func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
-	expectedKeepaliveClientConfig := NewDefaultKeepaliveClientConfig()
+	expectedKeepaliveClientConfig := &KeepaliveClientConfig{
+		Time:    time.Second * 10,
+		Timeout: time.Second * 10,
+	}
 	keepaliveClientConfig := NewDefaultKeepaliveClientConfig()
 	assert.Equal(t, expectedKeepaliveClientConfig, keepaliveClientConfig)
 }
