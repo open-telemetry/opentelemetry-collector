@@ -174,7 +174,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	var conf *confmap.Conf
 
 	if cp, ok := col.set.ConfigProvider.(ConfmapProvider); ok {
-		var err error
 		conf, err = cp.GetConfmap()
 
 		if err != nil {
