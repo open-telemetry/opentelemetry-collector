@@ -131,6 +131,36 @@ func TestVersioning(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
+			// Check that these tests won't break during a release,
+			// where the local version of these packages will not
+			// yet exist on the Go package repository.
+			description: "unreleased otel version",
+			cfgBuilder: func() Config {
+				cfg := NewDefaultConfig()
+				cfg.Verbose = true
+				cfg.Distribution.Go = "go"
+				cfg.Distribution.OtelColVersion = "1.9999.9999"
+				var err error
+				cfg.Exporters, err = parseModules([]Module{
+					{
+						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v1.9999.9999",
+					},
+				})
+				require.NoError(t, err)
+				cfg.Receivers, err = parseModules([]Module{
+					{
+						GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v1.9999.9999",
+					},
+				})
+				require.NoError(t, err)
+
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+
+				return cfg
+			},
+			expectedErr: nil,
+		},
+		{
 			description: "old component version",
 			cfgBuilder: func() Config {
 				cfg := NewDefaultConfig()
