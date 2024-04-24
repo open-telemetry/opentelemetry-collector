@@ -390,7 +390,7 @@ func (m *mockConsumer) ConsumeMetrics(_ context.Context, data pmetric.Metrics) e
 	return m.consume(ids)
 }
 
-// idSetFromLogs computes an idSet from given pmetric.Metrics. The idSet will contain ids of all metric data points.
+// idSetFromMetrics computes an idSet from given pmetric.Metrics. The idSet will contain ids of all metric data points.
 func idSetFromMetrics(data pmetric.Metrics) (idSet, error) {
 	ds := map[UniqueIDAttrVal]bool{}
 	rss := data.ResourceMetrics()
