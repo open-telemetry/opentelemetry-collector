@@ -137,7 +137,7 @@ func TestVersioning(t *testing.T) {
 				cfg.Distribution.Go = "go"
 				cfg.Exporters = []Module{
 					{
-						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.96.0",
+						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.97.0",
 					},
 				}
 				cfg.Providers = &[]Module{}
@@ -154,7 +154,7 @@ func TestVersioning(t *testing.T) {
 				cfg.SkipStrictVersioning = true
 				cfg.Exporters = []Module{
 					{
-						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.96.0",
+						GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v0.97.0",
 					},
 				}
 				cfg.Providers = &[]Module{}

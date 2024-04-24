@@ -24,7 +24,6 @@ var (
 	ErrGoNotFound      = errors.New("go binary not found")
 	ErrDepNotFound     = errors.New("dependency not found in go mod file")
 	ErrVersionMismatch = errors.New("mismatch in go.mod and builder configuration versions")
-	errGoGetFailed     = errors.New("failed to go get")
 	errDownloadFailed  = errors.New("failed to download go modules")
 	errCompileFailed   = errors.New("failed to compile the OpenTelemetry Collector distribution")
 	skipStrictMsg      = "Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version"
@@ -138,11 +137,6 @@ func GetModules(cfg Config) error {
 	if cfg.SkipGetModules {
 		cfg.Logger.Info("Generating source codes only, will not update go.mod and retrieve Go modules.")
 		return nil
-	}
-
-	// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
-	if _, err := runGoCommand(cfg, "get", "cloud.google.com/go"); err != nil {
-		return fmt.Errorf("%w: %s", errGoGetFailed, err.Error())
 	}
 
 	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.21"); err != nil {
