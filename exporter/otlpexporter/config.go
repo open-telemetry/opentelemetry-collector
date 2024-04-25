@@ -49,6 +49,8 @@ func (c *Config) sanitizedEndpoint() string {
 		return strings.TrimPrefix(c.Endpoint, "http://")
 	case strings.HasPrefix(c.Endpoint, "https://"):
 		return strings.TrimPrefix(c.Endpoint, "https://")
+	case strings.HasPrefix(c.Endpoint, "dns:///"):
+		return strings.TrimPrefix(c.Endpoint, "dns:///")
 	default:
 		return c.Endpoint
 	}

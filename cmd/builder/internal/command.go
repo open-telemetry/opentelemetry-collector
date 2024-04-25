@@ -23,6 +23,7 @@ const (
 	skipGenerateFlag               = "skip-generate"
 	skipCompilationFlag            = "skip-compilation"
 	skipGetModulesFlag             = "skip-get-modules"
+	skipStrictVersioningFlag       = "skip-strict-versioning"
 	ldflagsFlag                    = "ldflags"
 	distributionNameFlag           = "name"
 	distributionDescriptionFlag    = "description"
@@ -65,7 +66,7 @@ configuration is provided, ocb will generate a default Collector.
 				return fmt.Errorf("go not found: %w", err)
 			}
 
-			if err := cfg.SetRequireOtelColModule(); err != nil {
+			if err := cfg.SetBackwardsCompatibility(); err != nil {
 				return fmt.Errorf("unable to compare otelcol version: %w", err)
 			}
 
@@ -83,6 +84,7 @@ configuration is provided, ocb will generate a default Collector.
 	cmd.Flags().BoolVar(&cfg.SkipGenerate, skipGenerateFlag, false, "Whether builder should skip generating go code (default false)")
 	cmd.Flags().BoolVar(&cfg.SkipCompilation, skipCompilationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
 	cmd.Flags().BoolVar(&cfg.SkipGetModules, skipGetModulesFlag, false, "Whether builder should skip updating go.mod and retrieve Go module list (default false)")
+	cmd.Flags().BoolVar(&cfg.SkipStrictVersioning, skipStrictVersioningFlag, false, "Whether builder should skip strictly checking the calculated versions following dependency resolution")
 	cmd.Flags().BoolVar(&cfg.Verbose, verboseFlag, false, "Whether builder should print verbose output (default false)")
 	cmd.Flags().StringVar(&cfg.LDFlags, ldflagsFlag, "", `ldflags to include in the "go build" command`)
 	cmd.Flags().StringVar(&cfg.Distribution.Name, distributionNameFlag, "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
@@ -168,6 +170,7 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 	cfg.Receivers = cfgFromFile.Receivers
 	cfg.Processors = cfgFromFile.Processors
 	cfg.Connectors = cfgFromFile.Connectors
+	cfg.Providers = cfgFromFile.Providers
 	cfg.Replaces = cfgFromFile.Replaces
 	cfg.Excludes = cfgFromFile.Excludes
 
@@ -179,6 +182,9 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 	}
 	if !flags.Changed(skipGetModulesFlag) && cfgFromFile.SkipGetModules {
 		cfg.SkipGetModules = cfgFromFile.SkipGetModules
+	}
+	if !flags.Changed(skipStrictVersioningFlag) && cfgFromFile.SkipStrictVersioning {
+		cfg.SkipStrictVersioning = cfgFromFile.SkipStrictVersioning
 	}
 	if !flags.Changed(distributionNameFlag) && cfgFromFile.Distribution.Name != "" {
 		cfg.Distribution.Name = cfgFromFile.Distribution.Name

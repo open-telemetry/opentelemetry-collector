@@ -115,6 +115,10 @@ var metric = &messageValueStruct{
 			defaultVal: `""`,
 			testVal:    `"1"`,
 		},
+		&sliceField{
+			fieldName:   "Metadata",
+			returnSlice: mapStruct,
+		},
 		&oneOfField{
 			typeName:                   "MetricType",
 			originFieldName:            "Data",

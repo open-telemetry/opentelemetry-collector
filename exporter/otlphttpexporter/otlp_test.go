@@ -128,12 +128,12 @@ func TestErrorResponses(t *testing.T) {
 			isPermErr:      true,
 		},
 		{
-			name:           "419",
+			name:           "429",
 			responseStatus: http.StatusTooManyRequests,
-			responseBody:   status.New(codes.InvalidArgument, "Quota exceeded"),
+			responseBody:   status.New(codes.ResourceExhausted, "Quota exceeded"),
 			err: func(srv *httptest.Server) error {
 				return exporterhelper.NewThrottleRetry(
-					errors.New(errMsgPrefix(srv)+"429, Message=Quota exceeded, Details=[]"),
+					status.New(codes.ResourceExhausted, errMsgPrefix(srv)+"429, Message=Quota exceeded, Details=[]").Err(),
 					time.Duration(0)*time.Second)
 			},
 		},
@@ -149,7 +149,7 @@ func TestErrorResponses(t *testing.T) {
 			responseBody:   status.New(codes.InvalidArgument, "Bad gateway"),
 			err: func(srv *httptest.Server) error {
 				return exporterhelper.NewThrottleRetry(
-					errors.New(errMsgPrefix(srv)+"502, Message=Bad gateway, Details=[]"),
+					status.New(codes.Unavailable, errMsgPrefix(srv)+"502, Message=Bad gateway, Details=[]").Err(),
 					time.Duration(0)*time.Second)
 			},
 		},
@@ -159,7 +159,7 @@ func TestErrorResponses(t *testing.T) {
 			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
 			err: func(srv *httptest.Server) error {
 				return exporterhelper.NewThrottleRetry(
-					errors.New(errMsgPrefix(srv)+"503, Message=Server overloaded, Details=[]"),
+					status.New(codes.Unavailable, errMsgPrefix(srv)+"503, Message=Server overloaded, Details=[]").Err(),
 					time.Duration(0)*time.Second)
 			},
 		},
@@ -170,7 +170,7 @@ func TestErrorResponses(t *testing.T) {
 			headers:        map[string]string{"Retry-After": "30"},
 			err: func(srv *httptest.Server) error {
 				return exporterhelper.NewThrottleRetry(
-					errors.New(errMsgPrefix(srv)+"503, Message=Server overloaded, Details=[]"),
+					status.New(codes.Unavailable, errMsgPrefix(srv)+"503, Message=Server overloaded, Details=[]").Err(),
 					time.Duration(30)*time.Second)
 			},
 		},
@@ -180,7 +180,7 @@ func TestErrorResponses(t *testing.T) {
 			responseBody:   status.New(codes.InvalidArgument, "Gateway timeout"),
 			err: func(srv *httptest.Server) error {
 				return exporterhelper.NewThrottleRetry(
-					errors.New(errMsgPrefix(srv)+"504, Message=Gateway timeout, Details=[]"),
+					status.New(codes.Unavailable, errMsgPrefix(srv)+"504, Message=Gateway timeout, Details=[]").Err(),
 					time.Duration(0)*time.Second)
 			},
 		},
@@ -190,7 +190,7 @@ func TestErrorResponses(t *testing.T) {
 			responseBody:   status.New(codes.InvalidArgument, strings.Repeat("a", maxHTTPResponseReadBytes+1)),
 			err: func(srv *httptest.Server) error {
 				return exporterhelper.NewThrottleRetry(
-					errors.New(errMsgPrefix(srv)+"503"),
+					status.New(codes.Unavailable, errMsgPrefix(srv)+"503").Err(),
 					time.Duration(0)*time.Second)
 			},
 		},
