@@ -53,7 +53,7 @@ type Graph struct {
 	telemetry servicetelemetry.TelemetrySettings
 }
 
-// Build converts Settings into a full pipeline Graph
+// Build builds a full pipeline graph.
 // Build also validates the configuration of the pipelines and does the actual initialization of each Component in the Graph
 func Build(ctx context.Context, set Settings) (*Graph, error) {
 	pipelines := &Graph{
@@ -90,7 +90,7 @@ func (g *Graph) createNodes(set Settings) error {
 	for pipelineID, pipelineCfg := range set.PipelineConfigs {
 		pipe := g.pipelines[pipelineID]
 		for _, recvID := range pipelineCfg.Receivers {
-			// checks if this receiver a connector or a regular receiver
+			// checks if this receiver is a connector or a regular receiver
 			if set.ConnectorBuilder.IsConfigured(recvID) {
 				connectors[recvID] = struct{}{}
 				connectorsAsReceiver[recvID] = append(connectorsAsReceiver[recvID], pipelineID)
@@ -144,8 +144,7 @@ func (g *Graph) createNodes(set Settings) error {
 
 		for expType := range expTypes {
 			for recType := range recTypes {
-				// checks if the connector supports being a receiver of a certain datatype and an exporter of the other
-				// datatype - this is powered by the connector's metadata.yaml file
+				// Typechecks the connector's receiving and exporting datatypes.
 				if connectorStability(connFactory, expType, recType) != component.StabilityLevelUndefined {
 					expTypes[expType] = true
 					recTypes[recType] = true
@@ -298,7 +297,7 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 		case *receiverNode:
 			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
 		case *processorNode:
-			// nextConsumers is guaranteed to be length 1.  either it is the next processor or it's the fanout node for the exporters
+			// nextConsumers is guaranteed to be length 1.  Either it is the next processor or it is the fanout node for the exporters
 			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
 		case *exporterNode:
 			err = n.buildComponent(ctx, telemetrySettings, set.BuildInfo, set.ExporterBuilder)
