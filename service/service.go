@@ -73,9 +73,9 @@ type Service struct {
 }
 
 // New has a few responsibilities:
-// 1.  initializes the Service function given a complete set of Settings
-// 2.  sets up internal facing telemetry
-// 3.  builds the graph from the settings
+// 1.  Initializes the Service function given a complete set of Settings.
+// 2.  Sets up internal facing telemetry.
+// 3.  Builds the graph from the settings.
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
@@ -97,7 +97,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
 
-	// fetch data for internal telemetry like instance id and sdk version to provide for internal telemetry
+	// Fetch data for internal telemetry like instance id and sdk version to provide for internal telemetry.
 	res := resource.New(set.BuildInfo, cfg.Telemetry.Resource)
 	pcommonRes := pdataFromSdk(res)
 
@@ -253,7 +253,7 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-// creates extensions and then builds the pipeline graph
+// Creates extensions and then builds the pipeline graph.
 func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings, cfg Config) error {
 	var err error
 	extensionsSettings := extensions.Settings{

@@ -264,8 +264,8 @@ func (col *Collector) Run(ctx context.Context) error {
 		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
 	}
 
-	// control loop: selects between channels for various interrupts - when this loop is broken, the collector exits
-	// if a configuration reload fails, we return without waiting for graceful shutdown
+	// Control loop: selects between channels for various interrupts - when this loop is broken, the collector exits.
+	// If a configuration reload fails, we return without waiting for graceful shutdown.
 LOOP:
 	for {
 		select {

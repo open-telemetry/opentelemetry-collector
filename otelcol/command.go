@@ -41,7 +41,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 	return rootCmd
 }
 
-// puts command line flags from flags into the CollectorSettings, to be used during config resolution
+// Puts command line flags from flags into the CollectorSettings, to be used during config resolution.
 func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error {
 	if set.ConfigProvider == nil {
 		resolverSet := &set.ConfigProviderSettings.ResolverSettings
