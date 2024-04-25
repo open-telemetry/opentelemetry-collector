@@ -17,7 +17,7 @@ service:
   telemetry:
     logs:
       initial_fields:
-        "test": ${env:DOESNOTEXIST}
+        "test": ${test:ANYTHING}
   extensions: [nop]
   pipelines:
     traces:

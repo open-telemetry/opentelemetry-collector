@@ -15,6 +15,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -476,11 +477,42 @@ func TestPassConfmapToServiceFailure(t *testing.T) {
 	require.Error(t, err)
 }
 
+type provider struct {
+	logger *zap.Logger
+}
+
+func newWithSettings(ps confmap.ProviderSettings) confmap.Provider {
+	return &provider{
+		logger: ps.Logger,
+	}
+}
+
+func newFactory() confmap.ProviderFactory {
+	return confmap.NewProviderFactory(newWithSettings)
+}
+
+func (p *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	p.logger.Info("this is a test log")
+
+	return confmap.NewRetrieved("test")
+}
+
+func (*provider) Scheme() string {
+	return "test"
+}
+
+func (*provider) Shutdown(context.Context) error {
+	return nil
+}
+
 func TestCollectorConfmapLogs(t *testing.T) {
+	configProviderSettings := newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-confmap-logging.yaml")})
+	configProviderSettings.ResolverSettings.ProviderFactories = append(configProviderSettings.ResolverSettings.ProviderFactories, newFactory())
+
 	set := CollectorSettings{
 		BuildInfo:              component.NewDefaultBuildInfo(),
 		Factories:              nopFactories,
-		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-env-var.yaml")}),
+		ConfigProviderSettings: configProviderSettings,
 	}
 	col, err := NewCollector(set)
 	require.NoError(t, err)
@@ -491,8 +523,9 @@ func TestCollectorConfmapLogs(t *testing.T) {
 	wg.Wait()
 	assert.Equal(t, StateClosed, col.GetState())
 
-	assert.NotNil(t, col.ol)
-	assert.Greater(t, col.ol.Len(), 0)
+	require.NotNil(t, col.ol)
+	require.Greater(t, col.ol.Len(), 0)
+	assert.Equal(t, "this is a test log", col.ol.All()[0].Message)
 }
 
 func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.WaitGroup {
