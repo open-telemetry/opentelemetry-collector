@@ -10,7 +10,7 @@ flowchart TD
     A --> |2| C("`**NewCollector**
     Creates and returns a new instance of Collector`")
     A --> |3| D("`**Collector.Run**
-    Starts the collector and waits for its completion.  Also includes the control logic for config reloading and shutdown`")
+    Starts the collector and blocks until it shuts down`")
     D --> E("`**setupConfigurationComponents**`")
     E -->  |1| F("`**getConfMap**`")
     E ---> |2| G("`**Service.New**
@@ -40,7 +40,7 @@ Here is a brief list of useful and/or important files that you may find valuable
 #### [collector.go](../otelcol/collector.go)
 This file contains the main Collector struct and its constructor `NewCollector`.
 
-`Collector.Run` starts the collector and sets up its lifecycle management loop.
+`Collector.Run` starts the collector blocks until it shuts down.
 
 `setupConfigurationComponents` is the "main" function responsible for startup - it orchestrates the loading of the 
 configuration, the creation of the graph, and the starting of all the components.
