@@ -291,8 +291,8 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 	cfg.Distribution.OutputPath = dir
 	// Use a deliberately nonexistent version to simulate an unreleased
 	// version of the package. Not strictly necessary since this test
-	// will catch gaps in the replace statements before a relase is in
-	// progres.
+	// will catch gaps in the replace statements before a release is in
+	// progress.
 	cfg.Distribution.OtelColVersion = "1.9999.9999"
 	cfg.Replaces = append(cfg.Replaces, generateReplaces()...)
 	cfg.Providers = &[]Module{}
