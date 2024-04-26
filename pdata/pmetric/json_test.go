@@ -21,11 +21,13 @@ var metricsOTLP = func() Metrics {
 	il := rm.ScopeMetrics().AppendEmpty()
 	il.Scope().SetName("name")
 	il.Scope().SetVersion("version")
-	il.Metrics().AppendEmpty().SetName("testMetric")
+	m := il.Metrics().AppendEmpty()
+	m.SetName("testMetric")
+	m.Metadata().PutStr("metadatakey", "metadatavalue")
 	return md
 }()
 
-var metricsJSON = `{"resourceMetrics":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeMetrics":[{"scope":{"name":"name","version":"version"},"metrics":[{"name":"testMetric"}]}]}]}`
+var metricsJSON = `{"resourceMetrics":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeMetrics":[{"scope":{"name":"name","version":"version"},"metrics":[{"name":"testMetric","metadata":[{"key":"metadatakey","value":{"stringValue":"metadatavalue"}}]}]}]}]}`
 
 func TestMetricsJSON(t *testing.T) {
 	encoder := &JSONMarshaler{}
