@@ -189,15 +189,12 @@ func GetModules(cfg Config) error {
 
 func downloadModules(cfg Config) error {
 	cfg.Logger.Info("Getting go modules")
-	// basic retry if error from go mod command (in case of transient network error). This could be improved
-	// retry 3 times with 5 second spacing interval
-	retries := 3
 	failReason := "unknown"
-	for i := 1; i <= retries; i++ {
+	for i := 1; i <= cfg.downloadModules.numRetries; i++ {
 		if _, err := runGoCommand(cfg, "mod", "download"); err != nil {
 			failReason = err.Error()
-			cfg.Logger.Info("Failed modules download", zap.String("retry", fmt.Sprintf("%d/%d", i, retries)))
-			time.Sleep(5 * time.Second)
+			cfg.Logger.Info("Failed modules download", zap.String("retry", fmt.Sprintf("%d/%d", i, cfg.downloadModules.numRetries)))
+			time.Sleep(cfg.downloadModules.wait)
 			continue
 		}
 		return nil
