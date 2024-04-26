@@ -14,6 +14,12 @@ import (
 	"go.opentelemetry.io/collector/service/internal/graph"
 )
 
+// TODO: remove as part of https://github.com/open-telemetry/opentelemetry-collector/issues/7370 for service 1.0
+type getExporters interface {
+	GetExporters() map[component.DataType]map[component.ID]component.Component
+}
+
+var _ getExporters = (*serviceHost)(nil)
 var _ component.Host = (*serviceHost)(nil)
 
 type serviceHost struct {

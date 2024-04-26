@@ -594,7 +594,7 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	require.NoError(t, tt.CheckReceiverTraces("grpc", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs)))
 }
 
-// TestOTLPReceiverHTTPTracesNextConsumerResponse checks that the HTTP trace receiver
+// TestOTLPReceiverHTTPTracesIngestTest checks that the HTTP trace receiver
 // is returning the proper response (return and metrics) when the next consumer
 // in the pipeline reports error. The test changes the responses returned by the
 // next trace consumer, checks if data was passed down the pipeline and if

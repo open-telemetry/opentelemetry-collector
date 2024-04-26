@@ -16,6 +16,7 @@ import (
 
 	"go.uber.org/zap"
 	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/semver"
 )
 
 var (
@@ -23,7 +24,6 @@ var (
 	ErrGoNotFound      = errors.New("go binary not found")
 	ErrDepNotFound     = errors.New("dependency not found in go mod file")
 	ErrVersionMismatch = errors.New("mismatch in go.mod and builder configuration versions")
-	errGoGetFailed     = errors.New("failed to go get")
 	errDownloadFailed  = errors.New("failed to download go modules")
 	errCompileFailed   = errors.New("failed to compile the OpenTelemetry Collector distribution")
 	skipStrictMsg      = "Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version"
@@ -139,11 +139,6 @@ func GetModules(cfg Config) error {
 		return nil
 	}
 
-	// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
-	if _, err := runGoCommand(cfg, "get", "cloud.google.com/go"); err != nil {
-		return fmt.Errorf("%w: %s", errGoGetFailed, err.Error())
-	}
-
 	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.21"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
@@ -164,7 +159,7 @@ func GetModules(cfg Config) error {
 	if !ok {
 		return fmt.Errorf("core collector %w: '%s'. %s", ErrDepNotFound, corePath, skipStrictMsg)
 	}
-	if coreDepVersion != coreVersion {
+	if semver.MajorMinor(coreDepVersion) != semver.MajorMinor(coreVersion) {
 		return fmt.Errorf(
 			"%w: core collector version calculated by component dependencies %q does not match configured version %q. %s",
 			ErrVersionMismatch, coreDepVersion, coreVersion, skipStrictMsg)
@@ -182,7 +177,7 @@ func GetModules(cfg Config) error {
 		if !ok {
 			return fmt.Errorf("component %w: '%s'. %s", ErrDepNotFound, module, skipStrictMsg)
 		}
-		if moduleDepVersion != version {
+		if semver.MajorMinor(moduleDepVersion) != semver.MajorMinor(version) {
 			return fmt.Errorf(
 				"%w: component %q version calculated by dependencies %q does not match configured version %q. %s",
 				ErrVersionMismatch, module, moduleDepVersion, version, skipStrictMsg)
@@ -234,7 +229,8 @@ func (c *Config) allComponents() []Module {
 		append(c.Receivers,
 			append(c.Processors,
 				append(c.Extensions,
-					c.Connectors...)...)...)...)
+					append(c.Connectors,
+						*c.Providers...)...)...)...)...)
 }
 
 func (c *Config) readGoModFile() (string, map[string]string, error) {

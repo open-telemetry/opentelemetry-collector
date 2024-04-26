@@ -4,13 +4,13 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: mdatagen
+component: builder
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: enable goleak tests by default via mdatagen
+note: remove the need to go get a module to address ambiguous import paths
 
 # One or more tracking issues or pull requests related to the change
-issues: [9959]
+issues: [10015]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

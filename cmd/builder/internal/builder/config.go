@@ -16,14 +16,15 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.98.0"
+const defaultOtelColVersion = "0.99.0"
 
 // ErrInvalidGoMod indicates an invalid gomod
 var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
 
 // Config holds the builder's configuration
 type Config struct {
-	Logger               *zap.Logger
+	Logger *zap.Logger
+
 	SkipGenerate         bool   `mapstructure:"-"`
 	SkipCompilation      bool   `mapstructure:"-"`
 	SkipGetModules       bool   `mapstructure:"-"`
@@ -37,22 +38,24 @@ type Config struct {
 	Receivers    []Module     `mapstructure:"receivers"`
 	Processors   []Module     `mapstructure:"processors"`
 	Connectors   []Module     `mapstructure:"connectors"`
+	Providers    *[]Module    `mapstructure:"providers"`
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
 }
 
 // Distribution holds the parameters for the final binary
 type Distribution struct {
-	Module               string `mapstructure:"module"`
-	Name                 string `mapstructure:"name"`
-	Go                   string `mapstructure:"go"`
-	Description          string `mapstructure:"description"`
-	OtelColVersion       string `mapstructure:"otelcol_version"`
-	RequireOtelColModule bool   `mapstructure:"-"` // required for backwards-compatibility with builds older than 0.86.0
-	OutputPath           string `mapstructure:"output_path"`
-	Version              string `mapstructure:"version"`
-	BuildTags            string `mapstructure:"build_tags"`
-	DebugCompilation     bool   `mapstructure:"debug_compilation"`
+	Module                   string `mapstructure:"module"`
+	Name                     string `mapstructure:"name"`
+	Go                       string `mapstructure:"go"`
+	Description              string `mapstructure:"description"`
+	OtelColVersion           string `mapstructure:"otelcol_version"`
+	RequireOtelColModule     bool   `mapstructure:"-"` // required for backwards-compatibility with builds older than 0.86.0
+	SupportsConfmapFactories bool   `mapstructure:"-"` // Required for backwards-compatibility with builds older than 0.99.0
+	OutputPath               string `mapstructure:"output_path"`
+	Version                  string `mapstructure:"version"`
+	BuildTags                string `mapstructure:"build_tags"`
+	DebugCompilation         bool   `mapstructure:"debug_compilation"`
 }
 
 // Module represents a receiver, exporter, processor or extension for the distribution
@@ -87,12 +90,17 @@ func NewDefaultConfig() Config {
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
+	var providersError error
+	if c.Providers != nil {
+		providersError = validateModules(*c.Providers)
+	}
 	return multierr.Combine(
 		validateModules(c.Extensions),
 		validateModules(c.Receivers),
 		validateModules(c.Exporters),
 		validateModules(c.Processors),
 		validateModules(c.Connectors),
+		providersError,
 	)
 }
 
@@ -112,7 +120,8 @@ func (c *Config) SetGoPath() error {
 	return nil
 }
 
-func (c *Config) SetRequireOtelColModule() error {
+func (c *Config) SetBackwardsCompatibility() error {
+	// check whether we need to adjust the core API module import
 	constraint, err := version.NewConstraint(">= 0.86.0")
 	if err != nil {
 		return err
@@ -124,6 +133,20 @@ func (c *Config) SetRequireOtelColModule() error {
 	}
 
 	c.Distribution.RequireOtelColModule = constraint.Check(otelColVersion)
+
+	// check whether confmap factories are supported
+	constraint, err = version.NewConstraint(">= 0.99.0")
+	if err != nil {
+		return err
+	}
+
+	otelColVersion, err = version.NewVersion(c.Distribution.OtelColVersion)
+	if err != nil {
+		return err
+	}
+
+	c.Distribution.SupportsConfmapFactories = constraint.Check(otelColVersion)
+
 	return nil
 }
 
@@ -154,6 +177,36 @@ func (c *Config) ParseModules() error {
 	c.Connectors, err = parseModules(c.Connectors)
 	if err != nil {
 		return err
+	}
+
+	if c.Providers != nil {
+		providers, err := parseModules(*c.Providers)
+		if err != nil {
+			return err
+		}
+		c.Providers = &providers
+	} else {
+		providers, err := parseModules([]Module{
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/envprovider v" + c.Distribution.OtelColVersion,
+			},
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/fileprovider v" + c.Distribution.OtelColVersion,
+			},
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpprovider v" + c.Distribution.OtelColVersion,
+			},
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/httpsprovider v" + c.Distribution.OtelColVersion,
+			},
+			{
+				GoMod: "go.opentelemetry.io/collector/confmap/provider/yamlprovider v" + c.Distribution.OtelColVersion,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		c.Providers = &providers
 	}
 
 	return nil

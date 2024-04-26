@@ -333,7 +333,7 @@ func (col *Collector) setCollectorState(state State) {
 	col.state.Store(int32(state))
 }
 
-// validatePipelineConfig validates that the components in a pipeline support the
+// validatePipelineCfg validates that the components in a pipeline support the
 // signal type of the pipeline. For example, this function will return an error if
 // a metrics pipeline has non-metrics components.
 func (col *Collector) validatePipelineCfg(ctx context.Context, cfg *Config, factories Factories) error {
