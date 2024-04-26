@@ -525,7 +525,7 @@ func TestCollectorConfmapLogs(t *testing.T) {
 	require.NotNil(t, col.ol)
 	require.Greater(t, col.ol.Len(), 0)
 
-	messages := make([]string, 0)
+	messages := make([]string, 0, col.ol.Len())
 	for _, l := range col.ol.All() {
 		messages = append(messages, l.Message)
 	}
