@@ -133,6 +133,7 @@ type KeepaliveServerParameters struct {
 	Timeout               time.Duration `mapstructure:"timeout"`
 }
 
+// NewDefaultKeepaliveServerParameters creates and returns a new instance of KeepaliveServerParameters with default settings.
 func NewDefaultKeepaliveServerParameters() *KeepaliveServerParameters {
 	return &KeepaliveServerParameters{}
 }
@@ -145,6 +146,7 @@ type KeepaliveEnforcementPolicy struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
 }
 
+// NewDefaultKeepaliveEnforcementPolicy creates and returns a new instance of KeepaliveEnforcementPolicy with default settings.
 func NewDefaultKeepaliveEnforcementPolicy() *KeepaliveEnforcementPolicy {
 	return &KeepaliveEnforcementPolicy{}
 }
