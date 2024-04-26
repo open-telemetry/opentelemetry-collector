@@ -48,7 +48,6 @@ type KeepaliveClientConfig struct {
 }
 
 // NewDefaultKeepaliveClientConfig returns a new instance of KeepaliveClientConfig with default values.
-
 func NewDefaultKeepaliveClientConfig() *KeepaliveClientConfig {
 	return &KeepaliveClientConfig{
 		Time:    time.Second * 10,
