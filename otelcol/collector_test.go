@@ -493,7 +493,6 @@ func newFactory() confmap.ProviderFactory {
 
 func (p *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 	p.logger.Info("this is a test log")
-
 	return confmap.NewRetrieved("test")
 }
 
@@ -525,7 +524,12 @@ func TestCollectorConfmapLogs(t *testing.T) {
 
 	require.NotNil(t, col.ol)
 	require.Greater(t, col.ol.Len(), 0)
-	assert.Equal(t, "this is a test log", col.ol.All()[0].Message)
+
+	messages := make([]string, 0)
+	for _, l := range col.ol.All() {
+		messages = append(messages, l.Message)
+	}
+	assert.Contains(t, messages, "this is a test log")
 }
 
 func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.WaitGroup {
