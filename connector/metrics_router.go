@@ -12,8 +12,8 @@ import (
 // MetricsRouterAndConsumer feeds the first consumer.Metrics in each of the specified pipelines.
 type MetricsRouterAndConsumer interface {
 	consumer.Metrics
-	Consumer(...component.ID) (consumer.Metrics, error)
-	PipelineIDs() []component.ID
+	Consumer(...component.DataTypeID) (consumer.Metrics, error)
+	PipelineIDs() []component.DataTypeID
 	privateFunc()
 }
 
@@ -22,7 +22,7 @@ type metricsRouter struct {
 	baseRouter[consumer.Metrics]
 }
 
-func NewMetricsRouter(cm map[component.ID]consumer.Metrics) MetricsRouterAndConsumer {
+func NewMetricsRouter(cm map[component.DataTypeID]consumer.Metrics) MetricsRouterAndConsumer {
 	consumers := make([]consumer.Metrics, 0, len(cm))
 	for _, cons := range cm {
 		consumers = append(consumers, cons)

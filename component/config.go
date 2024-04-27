@@ -109,7 +109,14 @@ func callValidateIfPossible(v reflect.Value) error {
 	return nil
 }
 
+//type SignalOrComponentType interface {
+//	String() string
+//	MarshalText() ([]byte, error)
+//}
+
 // Type is the component type as it is used in the config.
+// Examples of a Type include the names of receivers (otlp, filelog, etc),
+// processors (batch, memory_limit, etc), or exporters (debug, rabbitmq)
 type Type struct {
 	name string
 }
@@ -160,20 +167,53 @@ func MustNewType(strType string) Type {
 
 // DataType is a special Type that represents the data types supported by the collector. We currently support
 // collecting metrics, traces and logs, this can expand in the future.
-type DataType = Type
-
-func mustNewDataType(strType string) DataType {
-	return MustNewType(strType)
-}
+type DataType string
 
 // Currently supported data types. Add new data types here when new types are supported in the future.
-var (
+const (
 	// DataTypeTraces is the data type tag for traces.
-	DataTypeTraces = mustNewDataType("traces")
+	DataTypeTraces DataType = "traces"
 
 	// DataTypeMetrics is the data type tag for metrics.
-	DataTypeMetrics = mustNewDataType("metrics")
+	DataTypeMetrics DataType = "metrics"
 
 	// DataTypeLogs is the data type tag for logs.
-	DataTypeLogs = mustNewDataType("logs")
+	DataTypeLogs DataType = "logs"
 )
+
+func (dt DataType) String() string {
+	return string(dt)
+}
+
+func (dt DataType) MarshalText() (text []byte, err error) {
+	return []byte(dt), nil
+}
+
+func NewDataType(ty string) (DataType, error) {
+	if len(ty) == 0 {
+		return "", fmt.Errorf("id must not be empty")
+	}
+	switch ty {
+	case "metrics":
+		return DataTypeMetrics, nil
+	case "logs":
+		return DataTypeLogs, nil
+	case "traces":
+		return DataTypeTraces, nil
+	default:
+		return "", fmt.Errorf("invalid data type %s", ty)
+	}
+}
+
+// MustNewType creates a type. It panics if the type is invalid.
+// A type must
+// - have at least one character,
+// - start with an ASCII alphabetic character and
+// - can only contain ASCII alphanumeric characters and '_'.
+func MustNewDataType(strType string) DataType {
+	ty, err := NewDataType(strType)
+	if err != nil {
+		panic(err)
+	}
+	return ty
+}
