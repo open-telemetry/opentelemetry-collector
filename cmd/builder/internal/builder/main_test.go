@@ -276,6 +276,10 @@ func TestGenerateAndCompile(t *testing.T) {
 	}
 }
 
+// Test that the go.mod files that other tests in this file
+// may generate have all their modules covered by our
+// "replace" statements created in `generateReplaces`.
+//
 // An incomplete set of replace statements in these tests
 // may cause them to fail during the release process, when
 // the local version of modules in the release branch is
@@ -295,7 +299,9 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 	// progress.
 	cfg.Distribution.OtelColVersion = "1.9999.9999"
 	cfg.Replaces = append(cfg.Replaces, generateReplaces()...)
-	cfg.Providers = &[]Module{}
+	// Configure all components that we want to use elsewhere in these tests.
+	// This ensures the resulting go.mod file has maximum coverage of modules
+	// that exist in the Core repository.
 	cfg.Exporters, err = parseModules([]Module{
 		{
 			GoMod: "go.opentelemetry.io/collector/exporter/debugexporter v1.9999.9999",
@@ -361,13 +367,13 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 		}
 
 		_, ok := replaceMods[req.Mod.Path]
-		require.True(t, ok, fmt.Sprintf("Module missing from replace statements list: %s", req.Mod.Path))
+		assert.Truef(t, ok, "Module missing from replace statements list: %s", req.Mod.Path)
 
 		replaceMods[req.Mod.Path] = true
 	}
 
 	for k, v := range replaceMods {
-		require.Truef(t, v, "Module not used: %s", k)
+		assert.Truef(t, v, "Module not used: %s", k)
 	}
 }
 
