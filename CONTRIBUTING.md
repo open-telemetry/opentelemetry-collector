@@ -510,6 +510,19 @@ that each of the following steps is done in a separate version:
 1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo(context.Context) Foo` if desired or remove it entirely if
    needed.
 
+#### Exceptions
+
+For changes to modules that do not have a version of `v1` or higher, we may skip the deprecation process described above
+for the following situations. Note that these changes should still be recorded as breaking changes in the changelog.
+
+* **Variadic arguments.** Functions that are not already variadic may have a variadic parameter added as a method of
+  supporting optional parameters, particularly through the functional options pattern. If a variadic parameter is
+  added to a function with no change in functionality when no variadic arguments are passed, the deprecation process
+  may be skipped. Calls to updated functions without the new argument will continue to work before, but users who depend
+  on the exact function signature as a type, for example as an argument to another function, will experience a
+  breaking change. For this reason, the deprecation process should only be skipped when it is not expected that
+  the function is commonly passed as a value.
+
 #### Configuration changes
 
 ##### Alpha components
