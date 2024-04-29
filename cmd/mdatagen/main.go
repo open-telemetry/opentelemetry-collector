@@ -66,6 +66,10 @@ func run(ymlPath string) error {
 				filepath.Join(codeDir, "generated_telemetry.go"), md, "metadata"); err != nil {
 				return err
 			}
+			if err = generateFile(filepath.Join(tmplDir, "telemetry_test.go.tmpl"),
+				filepath.Join(codeDir, "generated_telemetry_test.go"), md, "metadata"); err != nil {
+				return err
+			}
 			if err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
 				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName); err != nil {
 				return err
