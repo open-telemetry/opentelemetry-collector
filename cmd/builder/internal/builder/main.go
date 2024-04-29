@@ -29,7 +29,26 @@ var (
 	skipStrictMsg      = "Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version"
 )
 
-func runGoCommand(cfg Config, args ...string) ([]byte, error) {
+func getGoEnv(cfg Config) ([]string, error) {
+	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path and the caller is assumed to have carried out necessary input validation
+	cmd := exec.Command(cfg.Distribution.Go, "env")
+	cmd.Dir = cfg.Distribution.OutputPath
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("go env failed: %w, error message: %s", err, stderr.String())
+	}
+
+	str := stdout.String()
+	str = strings.ReplaceAll(str, "'", "")
+
+	return strings.Split(str, "\n"), nil
+}
+
+func runGoCommand(cfg Config, env []string, args ...string) ([]byte, error) {
 	if cfg.Verbose {
 		cfg.Logger.Info("Running go subcommand.", zap.Any("arguments", args))
 	}
@@ -37,6 +56,7 @@ func runGoCommand(cfg Config, args ...string) ([]byte, error) {
 	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path and the caller is assumed to have carried out necessary input validation
 	cmd := exec.Command(cfg.Distribution.Go, args...)
 	cmd.Dir = cfg.Distribution.OutputPath
+	cmd.Env = append(cmd.Env, env...)
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -110,6 +130,16 @@ func Compile(cfg Config) error {
 
 	cfg.Logger.Info("Compiling")
 
+	env := []string{}
+	if !cfg.Distribution.CgoEnabled {
+		initialEnv, err := getGoEnv(cfg)
+		if err != nil {
+			return err
+		}
+		env = append(env, initialEnv...)
+		env = append(env, "CGO_ENABLED=0")
+	}
+
 	var ldflags = "-s -w"
 
 	args := []string{"build", "-trimpath", "-o", cfg.Distribution.Name}
@@ -124,7 +154,7 @@ func Compile(cfg Config) error {
 	if cfg.Distribution.BuildTags != "" {
 		args = append(args, "-tags", cfg.Distribution.BuildTags)
 	}
-	if _, err := runGoCommand(cfg, args...); err != nil {
+	if _, err := runGoCommand(cfg, env, args...); err != nil {
 		return fmt.Errorf("%w: %s", errCompileFailed, err.Error())
 	}
 	cfg.Logger.Info("Compiled", zap.String("binary", fmt.Sprintf("%s/%s", cfg.Distribution.OutputPath, cfg.Distribution.Name)))
@@ -139,7 +169,7 @@ func GetModules(cfg Config) error {
 		return nil
 	}
 
-	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.21"); err != nil {
+	if _, err := runGoCommand(cfg, []string{}, "mod", "tidy", "-compat=1.21"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 
@@ -194,7 +224,7 @@ func downloadModules(cfg Config) error {
 	retries := 3
 	failReason := "unknown"
 	for i := 1; i <= retries; i++ {
-		if _, err := runGoCommand(cfg, "mod", "download"); err != nil {
+		if _, err := runGoCommand(cfg, []string{}, "mod", "download"); err != nil {
 			failReason = err.Error()
 			cfg.Logger.Info("Failed modules download", zap.String("retry", fmt.Sprintf("%d/%d", i, retries)))
 			time.Sleep(5 * time.Second)
@@ -235,7 +265,7 @@ func (c *Config) allComponents() []Module {
 
 func (c *Config) readGoModFile() (string, map[string]string, error) {
 	var modPath string
-	stdout, err := runGoCommand(*c, "mod", "edit", "-print")
+	stdout, err := runGoCommand(*c, []string{}, "mod", "edit", "-print")
 	if err != nil {
 		return modPath, nil, err
 	}

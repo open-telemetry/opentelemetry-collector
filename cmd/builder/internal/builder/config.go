@@ -48,6 +48,7 @@ type Distribution struct {
 	Module                   string `mapstructure:"module"`
 	Name                     string `mapstructure:"name"`
 	Go                       string `mapstructure:"go"`
+	CgoEnabled               bool   `mapstructure:"cgo_enabled"`
 	Description              string `mapstructure:"description"`
 	OtelColVersion           string `mapstructure:"otelcol_version"`
 	RequireOtelColModule     bool   `mapstructure:"-"` // required for backwards-compatibility with builds older than 0.86.0
