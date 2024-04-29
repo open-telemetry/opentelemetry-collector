@@ -367,7 +367,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 	}
 
 	for k, v := range replaceMods {
-		require.True(t, v, fmt.Sprintf("Module not used: %s", k))
+		require.Truef(t, v, "Module not used: %s", k)
 	}
 }
 
