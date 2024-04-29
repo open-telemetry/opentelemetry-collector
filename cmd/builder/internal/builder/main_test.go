@@ -348,11 +348,12 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 	err = GenerateAndCompile(cfg)
 	require.NoError(t, err)
 
-	gomodname := path.Join(dir, "go.mod")
-	gomod, err := os.ReadFile(gomodname)
+	gomodpath := path.Join(dir, "go.mod")
+	// #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
+	gomod, err := os.ReadFile(gomodpath)
 	require.NoError(t, err)
 
-	mod, err := modfile.Parse(path.Join(dir, "go.mod"), gomod, nil)
+	mod, err := modfile.Parse(gomodpath, gomod, nil)
 	require.NoError(t, err)
 
 	replaceMods := map[string]bool{}
