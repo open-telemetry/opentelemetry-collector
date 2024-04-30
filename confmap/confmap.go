@@ -43,7 +43,8 @@ type Conf struct {
 	k *koanf.Koanf
 	// If true, upon unmarshaling do not call the Unmarshal function on the struct
 	// if it implements Unmarshaler and is the top-level struct.
-	// This avoids running into a circular dependency.
+	// This avoids running into an infinite recursion where Unmarshaler.Unmarshal and
+	// Conf.Unmarshal would call each other.
 	skipTopLevelUnmarshaler bool
 }
 
@@ -327,7 +328,8 @@ func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.
 		}
 
 		toPtr := to.Addr().Interface()
-		// Need to ignore the top structure to avoid circular dependency.
+		// Need to ignore the top structure to avoid running into an infinite recursion
+		// where Unmarshaler.Unmarshal and Conf.Unmarshal would call each other.
 		if toPtr == result && skipTopLevelUnmarshaler {
 			return from.Interface(), nil
 		}
