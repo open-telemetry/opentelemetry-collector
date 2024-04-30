@@ -15,6 +15,7 @@ import (
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -109,6 +110,50 @@ type Collector struct {
 	signalsChannel chan os.Signal
 	// asyncErrorChannel is used to signal a fatal error from any component.
 	asyncErrorChannel chan error
+	cc                *collectorCore
+}
+
+var _ zapcore.Core = &collectorCore{}
+
+type collectorCore struct {
+	core zapcore.Core
+}
+
+func (c *collectorCore) Enabled(l zapcore.Level) bool {
+	return c.core.Enabled(l)
+}
+
+func (c *collectorCore) With(f []zapcore.Field) zapcore.Core {
+	return c.core.With(f)
+}
+
+func (c *collectorCore) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	return c.core.Check(e, ce)
+}
+
+func (c *collectorCore) Write(e zapcore.Entry, f []zapcore.Field) error {
+	return c.core.Write(e, f)
+}
+
+func (c *collectorCore) Sync() error {
+	return c.core.Sync()
+}
+
+func newCollectorCore(options []zap.Option) (*collectorCore, error) {
+	ec := zap.NewProductionEncoderConfig()
+	ec.EncodeTime = zapcore.ISO8601TimeEncoder
+	zapCfg := &zap.Config{
+		Level:            zap.NewAtomicLevelAt(zapcore.InfoLevel),
+		Encoding:         "console",
+		EncoderConfig:    ec,
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+	}
+	logger, err := zapCfg.Build(options...)
+	if err != nil {
+		return nil, err
+	}
+	return &collectorCore{core: logger.Core()}, nil
 }
 
 // NewCollector creates and returns a new instance of Collector.
@@ -116,7 +161,11 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 	var err error
 	configProvider := set.ConfigProvider
 
-	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: zap.NewNop()}
+	cc, err := newCollectorCore(set.LoggingOptions)
+	if err != nil {
+		return nil, err
+	}
+	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: zap.New(cc, set.LoggingOptions...)}
 	set.ConfigProviderSettings.ResolverSettings.ConverterSettings = confmap.ConverterSettings{}
 
 	if configProvider == nil {
@@ -137,6 +186,7 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		signalsChannel:    make(chan os.Signal, 3),
 		asyncErrorChannel: make(chan error),
 		configProvider:    configProvider,
+		cc:                cc,
 	}, nil
 }
 
@@ -201,6 +251,12 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}, cfg.Service)
 	if err != nil {
 		return err
+	}
+
+	col.cc.core = col.service.Logger().Core()
+	_, err = col.configProvider.Get(ctx, factories)
+	if err != nil {
+		return fmt.Errorf("failed to get config: %w", err)
 	}
 
 	if !col.set.SkipSettingGRPCLogger {

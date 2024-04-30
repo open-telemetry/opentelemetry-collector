@@ -92,6 +92,9 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 
 	if set.ProviderSettings.Logger == nil {
 		set.ProviderSettings.Logger = zap.NewNop()
+	} else {
+		set.ProviderSettings.Logger.Info("hey look, a logger")
+		set.ProviderSettings.Logger.Debug("a debug log")
 	}
 
 	var providers map[string]Provider
