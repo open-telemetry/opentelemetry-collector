@@ -206,10 +206,7 @@ before merging (but see above paragraph about writing good commit messages in th
 
 This project uses Go 1.21.* and [Github Actions.](https://github.com/features/actions)
 
-It is recommended to run `make gofmt all` before submitting your PR
-
-The dependencies are managed with `go mod` if you work with the sources under your
-`$GOPATH` you need to set the environment variable `GO111MODULE=on`.
+It is recommended to run `make gofmt all` before submitting your PR.
 
 ## Coding Guidelines
 

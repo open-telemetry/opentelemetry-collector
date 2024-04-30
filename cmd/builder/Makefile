@@ -2,7 +2,7 @@ include ../../Makefile.Common
 
 .PHONY: ocb
 ocb:
-	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/ocb_$(GOOS)_$(GOARCH) .
+	CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/ocb_$(GOOS)_$(GOARCH) .
 
 # Generate the default build config from otelcorecol, by removing the
 # "replaces" stanza, which is assumed to be at the end of the file.
