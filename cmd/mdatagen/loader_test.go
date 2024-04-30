@@ -231,6 +231,27 @@ func TestLoadMetadata(t *testing.T) {
 						Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 				},
+				Telemetry: telemetry{
+					Metrics: map[metricName]internalMetric{
+						"batch_size_trigger_send": {
+							Enabled:     true,
+							Description: "Number of times the batch was sent due to a size trigger",
+							Unit:        "1",
+							Counter: &counter{
+								ValueType: "int",
+								Monotonic: true,
+							},
+						},
+						"request_duration": {
+							Enabled:     true,
+							Description: "Duration of request",
+							Unit:        "s",
+							Histogram: &histogram{
+								ValueType: "double",
+							},
+						},
+					},
+				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
 			},
