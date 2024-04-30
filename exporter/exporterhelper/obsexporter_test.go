@@ -141,7 +141,7 @@ func TestExportLogsOp(t *testing.T) {
 			ctx := obsrep.StartLogsOp(parentCtx)
 			assert.NotNil(t, ctx)
 
-			obsrep.EndLogsOp(ctx, params[i].items, params[i].err)
+			obsrep.EndLogsOp(ctx, params[i].items, 0, params[i].err)
 		}
 
 		spans := tt.SpanRecorder.Ended()
@@ -223,7 +223,7 @@ func TestCheckExporterLogsViews(t *testing.T) {
 	require.NoError(t, err)
 	ctx := obsrep.StartLogsOp(context.Background())
 	require.NotNil(t, ctx)
-	obsrep.EndLogsOp(ctx, 7, nil)
+	obsrep.EndLogsOp(ctx, 7, 0, nil)
 
 	assert.NoError(t, tt.CheckExporterLogs(7, 0))
 	assert.Error(t, tt.CheckExporterLogs(7, 7))

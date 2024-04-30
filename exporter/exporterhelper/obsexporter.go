@@ -38,6 +38,7 @@ type ObsReport struct {
 	failedToSendMetricPoints    metric.Int64Counter
 	failedToEnqueueMetricPoints metric.Int64Counter
 	sentLogRecords              metric.Int64Counter
+	sentLogRecordsBytes         metric.Int64Histogram
 	failedToSendLogRecords      metric.Int64Counter
 	failedToEnqueueLogRecords   metric.Int64Counter
 }
@@ -115,8 +116,14 @@ func (or *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
 
 	or.sentLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterMetricPrefix+obsmetrics.SentLogRecordsKey,
-		metric.WithDescription("Number of log record successfully sent to destination."),
+		metric.WithDescription("Number of log record successfully sent to destination. patched"),
 		metric.WithUnit("1"))
+	errors = multierr.Append(errors, err)
+
+	or.sentLogRecordsBytes, err = meter.Int64Histogram(
+		obsmetrics.ExporterMetricPrefix+obsmetrics.SentLogRecordsBytesKey,
+		metric.WithDescription("Bytes of log records succesfully sent to destination."),
+		metric.WithUnit("By"))
 	errors = multierr.Append(errors, err)
 
 	or.failedToSendLogRecords, err = meter.Int64Counter(
@@ -144,7 +151,7 @@ func (or *ObsReport) StartTracesOp(ctx context.Context) context.Context {
 // EndTracesOp completes the export operation that was started with StartTracesOp.
 func (or *ObsReport) EndTracesOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeTraces, numSent, numFailedToSend)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeTraces, numSent, 0, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSpansKey, obsmetrics.FailedToSendSpansKey)
 }
 
@@ -159,7 +166,7 @@ func (or *ObsReport) StartMetricsOp(ctx context.Context) context.Context {
 // StartMetricsOp.
 func (or *ObsReport) EndMetricsOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeMetrics, numSent, numFailedToSend)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeMetrics, numSent, 0, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentMetricPointsKey, obsmetrics.FailedToSendMetricPointsKey)
 }
 
@@ -171,9 +178,9 @@ func (or *ObsReport) StartLogsOp(ctx context.Context) context.Context {
 }
 
 // EndLogsOp completes the export operation that was started with StartLogsOp.
-func (or *ObsReport) EndLogsOp(ctx context.Context, numLogRecords int, err error) {
+func (or *ObsReport) EndLogsOp(ctx context.Context, numLogRecords int, bytesLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
-	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeLogs, numSent, numFailedToSend)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeLogs, numSent, int64(bytesLogRecords), numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
 }
 
@@ -185,7 +192,7 @@ func (or *ObsReport) startOp(ctx context.Context, operationSuffix string) contex
 	return ctx
 }
 
-func (or *ObsReport) recordMetrics(ctx context.Context, dataType component.DataType, sent, failed int64) {
+func (or *ObsReport) recordMetrics(ctx context.Context, dataType component.DataType, sent, sentBytes, failed int64) {
 	if or.level == configtelemetry.LevelNone {
 		return
 	}
@@ -200,6 +207,7 @@ func (or *ObsReport) recordMetrics(ctx context.Context, dataType component.DataT
 	case component.DataTypeLogs:
 		sentMeasure = or.sentLogRecords
 		failedMeasure = or.failedToSendLogRecords
+		or.sentLogRecordsBytes.Record(ctx, sentBytes, metric.WithAttributes(or.otelAttrs...))
 	}
 
 	sentMeasure.Add(ctx, sent, metric.WithAttributes(or.otelAttrs...))

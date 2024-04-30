@@ -282,6 +282,10 @@ func (mer *mockErrorRequest) ItemsCount() int {
 	return 7
 }
 
+func (mer *mockErrorRequest) BytesSize() int {
+	return 0
+}
+
 func newErrorRequest() Request {
 	return &mockErrorRequest{}
 }
@@ -305,6 +309,8 @@ func (m *mockRequest) Export(ctx context.Context) error {
 	// Respond like gRPC/HTTP, if context is cancelled, return error
 	return ctx.Err()
 }
+
+func (m *mockRequest) BytesSize() int { return 0 }
 
 func (m *mockRequest) OnError(error) Request {
 	return &mockRequest{

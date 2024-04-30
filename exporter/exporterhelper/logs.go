@@ -63,6 +63,10 @@ func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
 }
 
+func (req *logsRequest) BytesSize() int {
+	return req.ld.LogRecordBytes()
+}
+
 type logsExporter struct {
 	*baseExporter
 	consumer.Logs
@@ -156,6 +160,6 @@ func newLogsExporterWithObservability(obsrep *ObsReport) requestSender {
 func (lewo *logsExporterWithObservability) send(ctx context.Context, req Request) error {
 	c := lewo.obsrep.StartLogsOp(ctx)
 	err := lewo.nextSender.send(c, req)
-	lewo.obsrep.EndLogsOp(c, req.ItemsCount(), err)
+	lewo.obsrep.EndLogsOp(c, req.ItemsCount(), req.BytesSize(), err)
 	return err
 }

@@ -23,6 +23,8 @@ const (
 
 	// SentLogRecordsKey used to track logs sent by exporters.
 	SentLogRecordsKey = "sent_log_records"
+	// SentLogRecordsKey used to track logs sent by exporters.
+	SentLogRecordsBytesKey = "sent_log_records_bytes"
 	// FailedToSendLogRecordsKey used to track logs that failed to be sent by exporters.
 	FailedToSendLogRecordsKey = "send_failed_log_records"
 	// FailedToEnqueueLogRecordsKey used to track logs that failed to be enqueued by exporters.

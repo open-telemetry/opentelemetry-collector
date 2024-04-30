@@ -54,6 +54,8 @@ func (r *fakeRequest) ItemsCount() int {
 	return r.items
 }
 
+func (r *fakeRequest) BytesSize() int { return 0 }
+
 func fakeBatchMergeFunc(_ context.Context, r1 Request, r2 Request) (Request, error) {
 	if r1 == nil {
 		return r2, nil

@@ -83,6 +83,7 @@ type queueSender struct {
 
 	metricCapacity otelmetric.Int64ObservableGauge
 	metricSize     otelmetric.Int64ObservableGauge
+	metricBytes    otelmetric.Int64Histogram
 }
 
 func newQueueSender(q exporterqueue.Queue[Request], set exporter.CreateSettings, numConsumers int,
@@ -125,6 +126,13 @@ func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 			o.Observe(int64(qs.queue.Size()), attrs)
 			return nil
 		}),
+	)
+	errs = multierr.Append(errs, err)
+
+	qs.metricBytes, err = qs.meter.Int64Histogram(
+		obsmetrics.ExporterKey+"/queue_size_bytes",
+		otelmetric.WithDescription("Current size of the retry queue (in bytes)"),
+		otelmetric.WithUnit("By"),
 	)
 	errs = multierr.Append(errs, err)
 

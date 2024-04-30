@@ -17,6 +17,8 @@ type Request interface {
 	// sent. For example, for OTLP exporter, this value represents the number of spans,
 	// metric data points or log records.
 	ItemsCount() int
+
+	BytesSize() int
 }
 
 // RequestErrorHandler is an optional interface that can be implemented by Request to provide a way handle partial
