@@ -27,17 +27,17 @@ require (
 	go.opentelemetry.io/collector/receiver v0.99.0
 	go.opentelemetry.io/collector/semconv v0.99.0
 	go.opentelemetry.io/contrib/config v0.5.0
-	go.opentelemetry.io/contrib/propagators/b3 v1.25.0
-	go.opentelemetry.io/otel v1.25.0
+	go.opentelemetry.io/contrib/propagators/b3 v1.26.0
+	go.opentelemetry.io/otel v1.26.0
 	go.opentelemetry.io/otel/bridge/opencensus v1.25.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.25.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.25.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.47.0
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.25.0
-	go.opentelemetry.io/otel/metric v1.25.0
+	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/sdk v1.25.0
 	go.opentelemetry.io/otel/sdk/metric v1.25.0
-	go.opentelemetry.io/otel/trace v1.25.0
+	go.opentelemetry.io/otel/trace v1.26.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
