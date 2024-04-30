@@ -10,12 +10,14 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"sync/atomic"
 	"syscall"
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -109,51 +111,56 @@ type Collector struct {
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
 	// asyncErrorChannel is used to signal a fatal error from any component.
-	asyncErrorChannel chan error
-	cc                *collectorCore
+	asyncErrorChannel          chan error
+	ol                         *observer.ObservedLogs
+	updateConfigProviderLogger func(core zapcore.Core)
 }
 
 var _ zapcore.Core = &collectorCore{}
 
 type collectorCore struct {
 	core zapcore.Core
+	mu   sync.Mutex
 }
 
 func (c *collectorCore) Enabled(l zapcore.Level) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.core.Enabled(l)
 }
 
 func (c *collectorCore) With(f []zapcore.Field) zapcore.Core {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.core.With(f)
 }
 
 func (c *collectorCore) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.core.Check(e, ce)
 }
 
 func (c *collectorCore) Write(e zapcore.Entry, f []zapcore.Field) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.core.Write(e, f)
 }
 
 func (c *collectorCore) Sync() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.core.Sync()
 }
 
-func newCollectorCore(options []zap.Option) (*collectorCore, error) {
-	ec := zap.NewProductionEncoderConfig()
-	ec.EncodeTime = zapcore.ISO8601TimeEncoder
-	zapCfg := &zap.Config{
-		Level:            zap.NewAtomicLevelAt(zapcore.InfoLevel),
-		Encoding:         "console",
-		EncoderConfig:    ec,
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
-	}
-	logger, err := zapCfg.Build(options...)
-	if err != nil {
-		return nil, err
-	}
-	return &collectorCore{core: logger.Core()}, nil
+func (c *collectorCore) SetCore(core zapcore.Core) {
+	c.mu.Lock()
+	c.mu.Unlock()
+	c.core = core
+}
+
+func newCollectorCore(core zapcore.Core) (*collectorCore, error) {
+	return &collectorCore{core: core}, nil
 }
 
 // NewCollector creates and returns a new instance of Collector.
@@ -161,7 +168,8 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 	var err error
 	configProvider := set.ConfigProvider
 
-	cc, err := newCollectorCore(set.LoggingOptions)
+	core, ol := observer.New(zap.DebugLevel)
+	cc, err := newCollectorCore(core)
 	if err != nil {
 		return nil, err
 	}
@@ -183,10 +191,11 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		shutdownChan: make(chan struct{}),
 		// Per signal.Notify documentation, a size of the channel equaled with
 		// the number of signals getting notified on is recommended.
-		signalsChannel:    make(chan os.Signal, 3),
-		asyncErrorChannel: make(chan error),
-		configProvider:    configProvider,
-		cc:                cc,
+		signalsChannel:             make(chan os.Signal, 3),
+		asyncErrorChannel:          make(chan error),
+		configProvider:             configProvider,
+		ol:                         ol,
+		updateConfigProviderLogger: cc.SetCore,
 	}, nil
 }
 
@@ -252,11 +261,13 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	col.cc.core = col.service.Logger().Core()
-	_, err = col.configProvider.Get(ctx, factories)
-	if err != nil {
-		return fmt.Errorf("failed to get config: %w", err)
+	if col.updateConfigProviderLogger != nil {
+		col.updateConfigProviderLogger(col.service.Logger().Core())
+	}
+	if col.ol != nil {
+		for _, log := range col.ol.All() {
+			col.service.Logger().Log(log.Level, log.Message, log.Context...)
+		}
 	}
 
 	if !col.set.SkipSettingGRPCLogger {

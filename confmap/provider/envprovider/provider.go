@@ -42,8 +42,6 @@ func NewFactory() confmap.ProviderFactory {
 }
 
 func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
-	emp.logger.Debug("env:debug_log")
-
 	if !strings.HasPrefix(uri, schemeName+":") {
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
