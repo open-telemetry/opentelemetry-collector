@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package component outlines the abstraction of components within OTEL collector.  It provides details on the component
-// lifecycle as well as defining the interface that components must fulfil.
+// lifecycle as well as defining the interface that components must fulfill.
 package component // import "go.opentelemetry.io/collector/component"
 
 import (
