@@ -109,18 +109,23 @@ func callValidateIfPossible(v reflect.Value) error {
 	return nil
 }
 
+type Type interface {
+	String() string
+	MarshalText() ([]byte, error)
+}
+
 // Type is the component type as it is used in the config.
-type Type struct {
+type ComponentType struct {
 	name string
 }
 
 // String returns the string representation of the type.
-func (t Type) String() string {
+func (t ComponentType) String() string {
 	return t.name
 }
 
 // MarshalText marshals returns the Type name.
-func (t Type) MarshalText() ([]byte, error) {
+func (t ComponentType) MarshalText() ([]byte, error) {
 	return []byte(t.name), nil
 }
 
@@ -137,12 +142,12 @@ var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]{0,62}$`)
 // - can only contain ASCII alphanumeric characters and '_'.
 func NewType(ty string) (Type, error) {
 	if len(ty) == 0 {
-		return Type{}, fmt.Errorf("id must not be empty")
+		return ComponentType{}, fmt.Errorf("id must not be empty")
 	}
 	if !typeRegexp.MatchString(ty) {
-		return Type{}, fmt.Errorf("invalid character(s) in type %q", ty)
+		return ComponentType{}, fmt.Errorf("invalid character(s) in type %q", ty)
 	}
-	return Type{name: ty}, nil
+	return ComponentType{name: ty}, nil
 }
 
 // MustNewType creates a type. It panics if the type is invalid.
@@ -151,6 +156,7 @@ func NewType(ty string) (Type, error) {
 // - start with an ASCII alphabetic character and
 // - can only contain ASCII alphanumeric characters and '_'.
 func MustNewType(strType string) Type {
+	// todo ban the signal types from here OR return the data type
 	ty, err := NewType(strType)
 	if err != nil {
 		panic(err)
@@ -160,20 +166,40 @@ func MustNewType(strType string) Type {
 
 // DataType is a special Type that represents the data types supported by the collector. We currently support
 // collecting metrics, traces and logs, this can expand in the future.
-type DataType = Type
-
-func mustNewDataType(strType string) DataType {
-	return MustNewType(strType)
-}
+type DataType string
 
 // Currently supported data types. Add new data types here when new types are supported in the future.
 var (
 	// DataTypeTraces is the data type tag for traces.
-	DataTypeTraces = mustNewDataType("traces")
+	DataTypeTraces DataType = "traces"
 
 	// DataTypeMetrics is the data type tag for metrics.
-	DataTypeMetrics = mustNewDataType("metrics")
+	DataTypeMetrics DataType = "metrics"
 
 	// DataTypeLogs is the data type tag for logs.
-	DataTypeLogs = mustNewDataType("logs")
+	DataTypeLogs DataType = "logs"
+
+	signalNameToDataType = map[string]DataType{
+		"logs":    DataTypeLogs,
+		"metrics": DataTypeMetrics,
+		"traces":  DataTypeTraces,
+	}
 )
+
+func (dt DataType) String() string {
+	return string(dt)
+}
+func (dt DataType) MarshalText() (text []byte, err error) {
+	return []byte(dt), nil
+}
+
+// DataTypeFromSignal takes in a string of a datatype, and returns a DataType and a bool.
+// The bool is set to true if the string corresponds to a supported DataType, else it is False.
+// if there is a matching DataType, it returns the matching DataType enum.  If not, it returns an empty string.
+func DataTypeFromSignal(s string) (DataType, bool) {
+	val, ok := signalNameToDataType[s]
+	if !ok {
+		return "", ok
+	}
+	return val, ok
+}

@@ -132,14 +132,14 @@ func (g *Graph) createNodes(set Settings) error {
 			// The presence of each key indicates how the connector is used as an exporter.
 			// The value is initially set to false. Later we will set the value to true *if* we
 			// confirm that there is a supported corresponding use as a receiver.
-			expTypes[pipelineID.Type()] = false
+			expTypes[pipelineID.Type().(component.DataType)] = false
 		}
 		recTypes := make(map[component.DataType]bool)
 		for _, pipelineID := range connectorsAsReceiver[connID] {
 			// The presence of each key indicates how the connector is used as a receiver.
 			// The value is initially set to false. Later we will set the value to true *if* we
 			// confirm that there is a supported corresponding use as an exporter.
-			recTypes[pipelineID.Type()] = false
+			recTypes[pipelineID.Type().(component.DataType)] = false
 		}
 
 		for expType := range expTypes {
@@ -182,7 +182,7 @@ func (g *Graph) createNodes(set Settings) error {
 }
 
 func (g *Graph) createReceiver(pipelineID, recvID component.ID) *receiverNode {
-	rcvrNode := newReceiverNode(pipelineID.Type(), recvID)
+	rcvrNode := newReceiverNode(pipelineID.Type().(component.DataType), recvID)
 	if node := g.componentGraph.Node(rcvrNode.ID()); node != nil {
 		g.instanceIDs[node.ID()].PipelineIDs[pipelineID] = struct{}{}
 		return node.(*receiverNode)
@@ -212,7 +212,7 @@ func (g *Graph) createProcessor(pipelineID, procID component.ID) *processorNode 
 }
 
 func (g *Graph) createExporter(pipelineID, exprID component.ID) *exporterNode {
-	expNode := newExporterNode(pipelineID.Type(), exprID)
+	expNode := newExporterNode(pipelineID.Type().(component.DataType), exprID)
 	if node := g.componentGraph.Node(expNode.ID()); node != nil {
 		g.instanceIDs[expNode.ID()].PipelineIDs[pipelineID] = struct{}{}
 		return node.(*exporterNode)
@@ -229,7 +229,7 @@ func (g *Graph) createExporter(pipelineID, exprID component.ID) *exporterNode {
 }
 
 func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID, connID component.ID) *connectorNode {
-	connNode := newConnectorNode(exprPipelineID.Type(), rcvrPipelineID.Type(), connID)
+	connNode := newConnectorNode(exprPipelineID.Type().(component.DataType), rcvrPipelineID.Type().(component.DataType), connID)
 	if node := g.componentGraph.Node(connNode.ID()); node != nil {
 		instanceID := g.instanceIDs[connNode.ID()]
 		instanceID.PipelineIDs[exprPipelineID] = struct{}{}

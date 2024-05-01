@@ -28,7 +28,14 @@ func (cfg Config) Validate() error {
 	// Check that all pipelines have at least one receiver and one exporter, and they reference
 	// only configured components.
 	for pipelineID, pipeline := range cfg {
-		if pipelineID.Type() != component.DataTypeTraces && pipelineID.Type() != component.DataTypeMetrics && pipelineID.Type() != component.DataTypeLogs {
+		switch pipelineID.Type().(type) {
+		case component.DataType:
+			t := pipelineID.Type().(component.DataType)
+			// This check should never really be necessary since the parsing logic should never create an unknown DataType - but there are no enums in go so this is probably good practice.
+			if t != component.DataTypeTraces && t != component.DataTypeMetrics && t != component.DataTypeLogs {
+				return fmt.Errorf("pipeline %q: unknown datatype %q", pipelineID, pipelineID.Type())
+			}
+		default:
 			return fmt.Errorf("pipeline %q: unknown datatype %q", pipelineID, pipelineID.Type())
 		}
 

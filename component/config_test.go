@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-var _ fmt.Stringer = Type{}
+var _ fmt.Stringer = ComponentType{}
 
 type configChildStruct struct {
 	Child    errConfig

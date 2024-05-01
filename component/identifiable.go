@@ -83,11 +83,15 @@ func (id *ID) UnmarshalText(text []byte) error {
 			return fmt.Errorf("in %q id: the part after %s should not be empty", idStr, typeAndNameSeparator)
 		}
 	}
-
-	var err error
-	if id.typeVal, err = NewType(typeStr); err != nil {
-		return fmt.Errorf("in %q id: %w", idStr, err)
+	if dataType, ok := DataTypeFromSignal(typeStr); ok {
+		id.typeVal = dataType
+	} else {
+		var err error
+		if id.typeVal, err = NewType(typeStr); err != nil {
+			return fmt.Errorf("in %q id: %w", idStr, err)
+		}
 	}
+
 	id.nameVal = nameStr
 
 	return nil
