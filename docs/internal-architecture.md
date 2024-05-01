@@ -1,8 +1,5 @@
 ## Collector internal architecture
 There are a few resources available to understand how the collector works:
-### [Startup Diagram](#startup-diagram)
-### [Architecture Docs](https://opentelemetry.io/docs/collector/architecture/)
-### [Important Files](#important-files)
 ### Startup Diagram
 ```mermaid
 flowchart TD
@@ -65,3 +62,6 @@ Each component type contains a Factory interface along with its corresponding Ne
 Implementations of new components use this NewFactory function in their implementation to register key functions with 
 the collector.  For example, the collector uses this interface to give receivers a handle to a nextConsumer - 
 representing where the receiver can send data to that it has received.
+
+### [Architecture Docs](https://opentelemetry.io/docs/collector/architecture/)
+OpenTelemetry's Collector architecture is a great resource to understand the Collector!
