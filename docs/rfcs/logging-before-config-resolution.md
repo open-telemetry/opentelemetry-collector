@@ -1,0 +1,62 @@
+# How To Log Before Config Resolution
+
+## Overview
+
+The OpenTelemetry Collector supports configuring a primary logger that the collector and its components use to write logs.
+This logger cannot be created until the user's configuration has been completely resolved.
+There is a need to write logs during the collector start-up, before the primary logger is instantiated, such as during
+configuration resolution or config validation. This document describes
+
+- why providing logging capabilities during startup is important
+- the current (as of v0.99.0) behavior of the Collector
+- different solutions to the problem
+- the accepted solution
+
+## Why Logging During Startup is Important
+
+When the collector is starting it tries to resolve user configuration as quickly as possible.
+But the Collector's configuration resolution strategy is not trivial - it allows for complex interactions between
+multiple, different config sources that must all resolve without error. During this process important information could
+be shared with users such as:
+- [Warnings about deprecated syntax](https://github.com/open-telemetry/opentelemetry-collector/issues/9162)
+- [Warnings about undesired, but handled, situations](https://github.com/open-telemetry/opentelemetry-collector/issues/5615)
+- Debug information
+
+## Requirements for any solution
+
+1. Once the primary logger is instantiated, it should be usable anywhere in the Collector that does logging.
+
+## Current behavior
+
+As of v0.99.0, the collector does not provide a way to log before the primary logger is instantiated.
+
+## Solutions
+
+### Buffer Logs in Memory and Write Them Once the Primary Logger Exists
+
+The Collector could provide a temporary logger that, when written to, keeps the logs in memory. These logs could then
+be passed to the primary logger to be written out in the properly configured format/level.
+
+Benefits:
+- Logs are written in the user-specified format/level
+
+Downsides:
+- If an error occurs before the primary logger is created the buffered logs will not be written out
+- If the primary logger is used to write any logs before the buffered logs are passed, logs will be out of order
+
+### Create a Logger Using the Primary Logger's Defaults
+
+When the user provides no primary logger configuration the Collector creates a Logger using a set of default values.
+The Collector could, very early in startup, create a logger using these exact defaults and use it until the primary
+logger is instantiated.
+
+Benefits:
+- Logs order is preserved
+- Logs are still writen when an error occurs before the primary logger can be instantiated
+
+Downsides:
+- Logs may be written in a format/level that differs from the format/level of the primary logger
+
+## Accepted Solution
+
+I'll fill this out once we decide.
