@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // This logger implements zapcore.Core and is based on zaptest/observer.
+
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
@@ -43,7 +44,7 @@ func (bc *bufferedCore) With(fields []zapcore.Field) zapcore.Core {
 	return &bufferedCore{
 		LevelEnabler: bc.LevelEnabler,
 		logs:         bc.logs,
-		context:      append(bc.context[:len(bc.context):len(bc.context)], fields...),
+		context:      append(bc.context, fields...),
 	}
 }
 

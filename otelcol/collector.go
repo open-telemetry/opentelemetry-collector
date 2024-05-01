@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"sync"
 	"sync/atomic"
 	"syscall"
+	"time"
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -115,49 +115,6 @@ type Collector struct {
 	updateConfigProviderLogger func(core zapcore.Core)
 }
 
-var _ zapcore.Core = &collectorCore{}
-
-type collectorCore struct {
-	core zapcore.Core
-	mu   sync.Mutex
-}
-
-func (c *collectorCore) Enabled(l zapcore.Level) bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.core.Enabled(l)
-}
-
-func (c *collectorCore) With(f []zapcore.Field) zapcore.Core {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.core.With(f)
-}
-
-func (c *collectorCore) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.core.Check(e, ce)
-}
-
-func (c *collectorCore) Write(e zapcore.Entry, f []zapcore.Field) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.core.Write(e, f)
-}
-
-func (c *collectorCore) Sync() error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.core.Sync()
-}
-
-func (c *collectorCore) SetCore(core zapcore.Core) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.core = core
-}
-
 // NewCollector creates and returns a new instance of Collector.
 func NewCollector(set CollectorSettings) (*Collector, error) {
 	var err error
@@ -236,6 +193,8 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
+	time.Sleep(time.Second * 5)
+
 	col.serviceConfig = &cfg.Service
 
 	col.service, err = service.New(ctx, service.Settings{
@@ -256,8 +215,11 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		col.updateConfigProviderLogger(col.service.Logger().Core())
 	}
 	if col.bc != nil {
-		for _, log := range col.bc.TakeLogs() {
-			col.service.Logger().Log(log.Level, log.Message, log.Context...)
+		x := col.bc.TakeLogs()
+		fmt.Println(len(x))
+		for _, log := range x {
+			ce := col.service.Logger().Core().Check(log.Entry, nil)
+			ce.Write(log.Context...)
 		}
 	}
 
@@ -301,12 +263,37 @@ func (col *Collector) DryRun(ctx context.Context) error {
 	return cfg.Validate()
 }
 
+func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {
+	ec := zap.NewProductionEncoderConfig()
+	ec.EncodeTime = zapcore.ISO8601TimeEncoder
+	zapCfg := &zap.Config{
+		Level:            zap.NewAtomicLevelAt(zapcore.DebugLevel),
+		Encoding:         "console",
+		EncoderConfig:    ec,
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+	}
+	return zapCfg.Build(options...)
+}
+
 // Run starts the collector according to the given configuration, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 // Sets up the control logic for config reloading and shutdown.
 func (col *Collector) Run(ctx context.Context) error {
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(StateClosed)
+		logger, loggerErr := newFallbackLogger(col.set.LoggingOptions)
+		if loggerErr != nil {
+			fmt.Printf("unable to create fallback logger, %v", err)
+		} else {
+			if col.bc != nil {
+				for _, log := range col.bc.TakeLogs() {
+					logger.Log(log.Level, log.Message, log.Context...)
+				}
+			}
+			logger.Warn("unable to resolve configuration", zap.Error(err))
+		}
+
 		return err
 	}
 
