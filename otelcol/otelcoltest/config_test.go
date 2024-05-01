@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 			Processors: []component.ID{component.MustNewID("nop")},
 			Exporters:  []component.ID{component.MustNewID("nop")},
 		},
-		cfg.Service.Pipelines[component.NewIDWithName(component.DataTypeTraces, "")],
+		cfg.Service.Pipelines[component.NewID(component.DataTypeTraces)],
 		"Did not load pipeline config correctly")
 }
 

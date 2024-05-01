@@ -140,6 +140,7 @@ var typeRegexp = regexp.MustCompile(`^[a-zA-Z][0-9a-zA-Z_]{0,62}$`)
 // - have at least one character,
 // - start with an ASCII alphabetic character and
 // - can only contain ASCII alphanumeric characters and '_'.
+// If the type string is a supported DataType, one is returned.  Otherwise, a ComponentType is returned.
 func NewType(ty string) (Type, error) {
 	if len(ty) == 0 {
 		return ComponentType{}, fmt.Errorf("id must not be empty")
