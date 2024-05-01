@@ -17,7 +17,6 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -112,7 +111,7 @@ type Collector struct {
 	signalsChannel chan os.Signal
 	// asyncErrorChannel is used to signal a fatal error from any component.
 	asyncErrorChannel          chan error
-	ol                         *observer.ObservedLogs
+	bc                         *bufferedCore
 	updateConfigProviderLogger func(core zapcore.Core)
 }
 
@@ -155,24 +154,16 @@ func (c *collectorCore) Sync() error {
 
 func (c *collectorCore) SetCore(core zapcore.Core) {
 	c.mu.Lock()
-	c.mu.Unlock()
+	defer c.mu.Unlock()
 	c.core = core
-}
-
-func newCollectorCore(core zapcore.Core) (*collectorCore, error) {
-	return &collectorCore{core: core}, nil
 }
 
 // NewCollector creates and returns a new instance of Collector.
 func NewCollector(set CollectorSettings) (*Collector, error) {
 	var err error
 	configProvider := set.ConfigProvider
-
-	core, ol := observer.New(zap.DebugLevel)
-	cc, err := newCollectorCore(core)
-	if err != nil {
-		return nil, err
-	}
+	bc := newBufferedCore(zapcore.DebugLevel)
+	cc := &collectorCore{core: bc}
 	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: zap.New(cc, set.LoggingOptions...)}
 	set.ConfigProviderSettings.ResolverSettings.ConverterSettings = confmap.ConverterSettings{}
 
@@ -194,7 +185,7 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		signalsChannel:             make(chan os.Signal, 3),
 		asyncErrorChannel:          make(chan error),
 		configProvider:             configProvider,
-		ol:                         ol,
+		bc:                         bc,
 		updateConfigProviderLogger: cc.SetCore,
 	}, nil
 }
@@ -264,8 +255,8 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if col.updateConfigProviderLogger != nil {
 		col.updateConfigProviderLogger(col.service.Logger().Core())
 	}
-	if col.ol != nil {
-		for _, log := range col.ol.All() {
+	if col.bc != nil {
+		for _, log := range col.bc.TakeLogs() {
 			col.service.Logger().Log(log.Level, log.Message, log.Context...)
 		}
 	}
