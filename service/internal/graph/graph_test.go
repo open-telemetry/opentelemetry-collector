@@ -2399,7 +2399,7 @@ func expectedInstances(m pipelines.Config, pID component.ID) (int, int) {
 		}
 
 		// This is a connector. Count the pipeline types where it is an exporter.
-		typeMap := map[component.DataType]bool{}
+		typeMap := map[component.Type]bool{}
 		for pID, pCfg := range m {
 			for _, eID := range pCfg.Exporters {
 				if eID == rID {
@@ -2416,7 +2416,7 @@ func expectedInstances(m pipelines.Config, pID component.ID) (int, int) {
 		}
 
 		// This is a connector. Count the pipeline types where it is a receiver.
-		typeMap := map[component.DataType]bool{}
+		typeMap := map[component.Type]bool{}
 		for pID, pCfg := range m {
 			for _, rID := range pCfg.Receivers {
 				if rID == eID {

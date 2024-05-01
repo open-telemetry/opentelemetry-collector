@@ -114,7 +114,7 @@ type Type interface {
 	MarshalText() ([]byte, error)
 }
 
-// Type is the component type as it is used in the config.
+// ComponentType is the component type as it is used in the config.
 type ComponentType struct {
 	name string
 }
@@ -146,6 +146,9 @@ func NewType(ty string) (Type, error) {
 	}
 	if !typeRegexp.MatchString(ty) {
 		return ComponentType{}, fmt.Errorf("invalid character(s) in type %q", ty)
+	}
+	if dataType, ok := DataTypeFromSignal(ty); ok {
+		return dataType, nil
 	}
 	return ComponentType{name: ty}, nil
 }
