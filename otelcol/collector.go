@@ -12,7 +12,6 @@ import (
 	"os/signal"
 	"sync/atomic"
 	"syscall"
-	"time"
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -192,8 +191,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err = cfg.Validate(); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
-
-	time.Sleep(time.Second * 5)
 
 	col.serviceConfig = &cfg.Service
 
