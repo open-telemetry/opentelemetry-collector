@@ -90,7 +90,7 @@ func (g *Graph) createNodes(set Settings) error {
 	for pipelineID, pipelineCfg := range set.PipelineConfigs {
 		pipe := g.pipelines[pipelineID]
 		for _, recvID := range pipelineCfg.Receivers {
-			// checks if this receiver is a connector or a regular receiver
+			// Checks if this receiver is a connector or a regular receiver.
 			if set.ConnectorBuilder.IsConfigured(recvID) {
 				connectors[recvID] = struct{}{}
 				connectorsAsReceiver[recvID] = append(connectorsAsReceiver[recvID], pipelineID)
