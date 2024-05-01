@@ -159,7 +159,6 @@ func NewType(ty string) (Type, error) {
 // - start with an ASCII alphabetic character and
 // - can only contain ASCII alphanumeric characters and '_'.
 func MustNewType(strType string) Type {
-	// todo ban the signal types from here OR return the data type
 	ty, err := NewType(strType)
 	if err != nil {
 		panic(err)
