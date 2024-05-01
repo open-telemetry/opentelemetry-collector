@@ -23,6 +23,8 @@ func TestEnsureTemplatesLoaded(t *testing.T) {
 			path.Join(rootDir, "component_test.go.tmpl"):           {},
 			path.Join(rootDir, "component_telemetry_test.go.tmpl"): {},
 			path.Join(rootDir, "documentation.md.tmpl"):            {},
+			path.Join(rootDir, "match.go.tmpl"):                    {},
+			path.Join(rootDir, "match_test.go.tmpl"):               {},
 			path.Join(rootDir, "metrics.go.tmpl"):                  {},
 			path.Join(rootDir, "metrics_test.go.tmpl"):             {},
 			path.Join(rootDir, "resource.go.tmpl"):                 {},

@@ -10,6 +10,12 @@ import (
 )
 {{ if .Metrics -}}
 
+var MetricNames = []string{
+	{{- range $name, $metric := .Metrics }}
+	"{{ $name }}",
+	{{- end }}
+}
+
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -45,9 +51,28 @@ func DefaultMetricsConfig() MetricsConfig {
 		{{- end }}
 	}
 }
+
+func (msc *MetricsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	if ContainsPattern(parser.AllKeys()) {
+		confStrMap := parser.ToStringMap()
+		expandedConfig := ExpandPatternMap(confStrMap, MetricNames)
+		newParser := confmap.NewFromStringMap(expandedConfig)
+		return newParser.Unmarshal(msc)
+	}
+	return parser.Unmarshal(msc)
+}
 {{- end }}
 
 {{ if .ResourceAttributes -}}
+var ResourceAttributeNames = []string{
+	{{- range $name, $attr := .ResourceAttributes }}
+	"{{ $name }}",
+	{{- end }}
+}
+
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -91,6 +116,19 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		{{- end }}
 	}
+}
+
+func (rasc *ResourceAttributesConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	if ContainsPattern(parser.AllKeys()) {
+		confStrMap := parser.ToStringMap()
+		expandedConfig := ExpandPatternMap(confStrMap, ResourceAttributeNames)
+		newParser := confmap.NewFromStringMap(expandedConfig)
+		return newParser.Unmarshal(rasc)
+	}
+	return parser.Unmarshal(rasc)
 }
 {{- end }}
 

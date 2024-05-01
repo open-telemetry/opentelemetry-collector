@@ -1,0 +1,249 @@
+package metadata
+
+import (
+	"testing"
+)
+
+func TestMatch(t *testing.T) {
+	type tryMatch struct {
+		text    string
+		matched bool
+	}
+	testCases := []struct {
+		pattern    string
+		tryMatches []tryMatch
+	}{
+		{
+			pattern: "process.memory.*",
+			tryMatches: []tryMatch{
+				{
+					text:    "process.memory.rss",
+					matched: true,
+				},
+				{
+					text:    "process.memory.virtual",
+					matched: true,
+				},
+			},
+		},
+		{
+			pattern: "*.memory.usage",
+			tryMatches: []tryMatch{
+				{
+					text:    "process.memory.usage",
+					matched: true,
+				},
+				{
+					text:    "process.memory.rss",
+					matched: false,
+				},
+				{
+					text:    ".memory.usage",
+					matched: true,
+				},
+			},
+		},
+		{
+			pattern: "process.memory.{rss,virtual}",
+			tryMatches: []tryMatch{
+				{
+					text:    "process.memory.rss",
+					matched: true,
+				},
+				{
+					text:    "process.memory.virtual",
+					matched: true,
+				},
+				{
+					text:    "process.memory.usage",
+					matched: false,
+				},
+			},
+		},
+		{
+			pattern: "{process,system}.memory.utilization",
+			tryMatches: []tryMatch{
+				{
+					text:    "process.memory.utilization",
+					matched: true,
+				},
+				{
+					text:    "system.memory.utilization",
+					matched: true,
+				},
+				{
+					text:    "process.memory.rss",
+					matched: false,
+				},
+				{
+					text:    "some.random.metric",
+					matched: false,
+				},
+			},
+		},
+		{
+			pattern: "illegal.multimatch.{pattern",
+			tryMatches: []tryMatch{
+				{
+					text:    "illegal.multimatch.pattern",
+					matched: false,
+				},
+				{
+					text:    "illegal.multimatch.{pattern",
+					matched: true,
+				},
+			},
+		},
+		{
+			pattern: "process.{memory,cpu}.*",
+			tryMatches: []tryMatch{
+				{
+					text:    "process.memory.rss",
+					matched: true,
+				},
+				{
+					text:    "process.cpu.utilization",
+					matched: true,
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		p := NewPattern(tc.pattern, false)
+		for _, m := range tc.tryMatches {
+			matched := p.Match(m.text)
+			if matched != m.matched {
+				t.Errorf("pattern=%q, text=%q = %v, want %v", tc.pattern, m.text, matched, m.matched)
+			}
+		}
+	}
+}
+
+func TestPatternPriority(t *testing.T) {
+	type tryPattern struct {
+		pattern string
+		value   int
+	}
+	type tryMetric struct {
+		name  string
+		value int
+	}
+	testCases := []struct {
+		patterns []tryPattern
+		metrics  []tryMetric
+	}{
+		{
+			patterns: []tryPattern{
+				{
+					pattern: "processes.*",
+					value:   1,
+				},
+				{
+					pattern: "*",
+					value:   0,
+				},
+			},
+			metrics: []tryMetric{
+				{
+					name:  "process.memory.rss",
+					value: 0,
+				},
+				{
+					name:  "process.memory.usage",
+					value: 0,
+				},
+				{
+					name:  "process.memory.utilization",
+					value: 0,
+				},
+				{
+					name:  "processes.count",
+					value: 1,
+				},
+				{
+					name:  "processes.created",
+					value: 1,
+				},
+			},
+		},
+		{
+			patterns: []tryPattern{
+				{
+					pattern: "process.memory.*",
+					value:   1,
+				},
+				{
+					pattern: "process.memory.rss",
+					value:   0,
+				},
+			},
+			metrics: []tryMetric{
+				{
+					name:  "process.memory.vm",
+					value: 1,
+				},
+				{
+					name:  "process.memory.rss",
+					value: 0,
+				},
+			},
+		},
+		{
+			patterns: []tryPattern{
+				{
+					pattern: "*",
+					value:   1,
+				},
+				{
+					pattern: "process.memory.rss",
+					value:   0,
+				},
+			},
+			metrics: []tryMetric{
+				{
+					name:  "process.memory.rss",
+					value: 0,
+				},
+				{
+					name:  "process.memory.usage",
+					value: 1,
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		patterns := Patterns{}
+		for _, p := range tc.patterns {
+			AddPattern(&patterns, NewPattern(p.pattern, p.value))
+		}
+		metrics := map[string]any{}
+		for _, m := range tc.metrics {
+			metrics[m.name] = false
+		}
+
+		for _, p := range patterns {
+			for _, m := range tc.metrics {
+				if p.Match(m.name) {
+					metrics[m.name] = p.valueAssign
+				}
+			}
+		}
+
+		for _, m := range tc.metrics {
+			valueAny, ok := metrics[m.name]
+			if !ok {
+				t.Errorf("metric=%q not found", m.name)
+				continue
+			}
+			value, ok := valueAny.(int)
+			if !ok {
+				t.Errorf("invalid test data, metric=%q value is not an int", m.name)
+				continue
+			}
+
+			if value != m.value {
+				t.Fatalf("metric=%q, got value=%v, want %v", m.name, metrics[m.name], m.value)
+			}
+		}
+	}
+}
