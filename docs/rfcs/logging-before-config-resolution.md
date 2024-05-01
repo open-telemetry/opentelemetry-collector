@@ -52,7 +52,7 @@ logger is instantiated.
 
 Benefits:
 - Logs order is preserved
-- Logs are still writen when an error occurs before the primary logger can be instantiated
+- Logs are still written when an error occurs before the primary logger can be instantiated
 
 Downsides:
 - Logs may be written in a format/level that differs from the format/level of the primary logger
