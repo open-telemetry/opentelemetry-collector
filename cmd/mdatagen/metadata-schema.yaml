@@ -118,3 +118,10 @@ tests:
   skip_shutdown: false # false by default
   # Whether it's expected that the Consume[Logs|Metrics|Traces] method will return an error with the given configuration.
   expect_consumer_error: true # false by default
+  goleak: # {} by default generates a package_test to enable check for leaks
+    skip: false # set to true if goleak tests should be skipped
+    setup: string # Optional: supports configuring a setup function that runs before goleak checks
+    teardown: string # Optional: supports configuring a teardown function that runs before goleak checks
+    ignore:
+      top: [string] # Optional: array of strings representing functions that should be ignore via IgnoreTopFunction
+      any: [string] # Optional: array of strings representing functions that should be ignore via IgnoreAnyFunction

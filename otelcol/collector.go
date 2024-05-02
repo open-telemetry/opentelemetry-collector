@@ -116,6 +116,9 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 	var err error
 	configProvider := set.ConfigProvider
 
+	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: zap.NewNop()}
+	set.ConfigProviderSettings.ResolverSettings.ConverterSettings = confmap.ConverterSettings{}
+
 	if configProvider == nil {
 		configProvider, err = NewConfigProvider(set.ConfigProviderSettings)
 		if err != nil {
@@ -319,7 +322,7 @@ func (col *Collector) setCollectorState(state State) {
 	col.state.Store(int32(state))
 }
 
-// validatePipelineConfig validates that the components in a pipeline support the
+// validatePipelineCfg validates that the components in a pipeline support the
 // signal type of the pipeline. For example, this function will return an error if
 // a metrics pipeline has non-metrics components.
 func (col *Collector) validatePipelineCfg(ctx context.Context, cfg *Config, factories Factories) error {

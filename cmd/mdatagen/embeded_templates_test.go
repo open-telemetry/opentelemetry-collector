@@ -28,8 +28,11 @@ func TestEnsureTemplatesLoaded(t *testing.T) {
 			path.Join(rootDir, "resource_test.go.tmpl"):        {},
 			path.Join(rootDir, "config.go.tmpl"):               {},
 			path.Join(rootDir, "config_test.go.tmpl"):          {},
+			path.Join(rootDir, "package_test.go.tmpl"):         {},
 			path.Join(rootDir, "readme.md.tmpl"):               {},
 			path.Join(rootDir, "status.go.tmpl"):               {},
+			path.Join(rootDir, "telemetry.go.tmpl"):            {},
+			path.Join(rootDir, "telemetry_test.go.tmpl"):       {},
 			path.Join(rootDir, "testdata", "config.yaml.tmpl"): {},
 		}
 		count = 0

@@ -49,7 +49,7 @@ func TestNewExpandConverter(t *testing.T) {
 			require.NoError(t, err, "Unable to get config")
 
 			// Test that expanded configs are the same with the simple config with no env vars.
-			require.NoError(t, New(confmap.ConverterSettings{}).Convert(context.Background(), conf))
+			require.NoError(t, createConverter().Convert(context.Background(), conf))
 			assert.Equal(t, expectedCfgMap.ToStringMap(), conf.ToStringMap())
 		})
 	}
@@ -68,7 +68,7 @@ func TestNewExpandConverter_EscapedMaps(t *testing.T) {
 				"recv": "$MAP_VALUE",
 			}},
 	)
-	require.NoError(t, New(confmap.ConverterSettings{}).Convert(context.Background(), conf))
+	require.NoError(t, createConverter().Convert(context.Background(), conf))
 
 	expectedMap := map[string]any{
 		"test_string_map": map[string]any{
@@ -105,7 +105,7 @@ func TestNewExpandConverter_EscapedEnvVars(t *testing.T) {
 			// escaped $ alone
 			"recv.7": "$",
 		}}
-	require.NoError(t, New(confmap.ConverterSettings{}).Convert(context.Background(), conf))
+	require.NoError(t, createConverter().Convert(context.Background(), conf))
 	assert.Equal(t, expectedMap, conf.ToStringMap())
 }
 
@@ -158,7 +158,7 @@ func TestNewExpandConverterHostPort(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := confmap.NewFromStringMap(tt.input)
-			require.NoError(t, New(confmap.ConverterSettings{}).Convert(context.Background(), conf))
+			require.NoError(t, createConverter().Convert(context.Background(), conf))
 			assert.Equal(t, tt.expected, conf.ToStringMap())
 		})
 	}
@@ -251,4 +251,8 @@ func TestDeprecatedWarning(t *testing.T) {
 			}
 		})
 	}
+}
+
+func createConverter() confmap.Converter {
+	return NewFactory().Create(confmap.ConverterSettings{})
 }
