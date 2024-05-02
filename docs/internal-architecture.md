@@ -36,11 +36,9 @@ flowchart TD
 Here is a brief list of useful and/or important files and interfaces that you may find valuable to glance through.
 Most of these have package level documentation and function / struct level comments that help explain the collector!
 
-#### [collector.go](../otelcol/collector.go)
-
-#### [graph.go](../service/internal/graph/graph.go)
-
-#### [component.go](../component/component.go)
+- [collector.go](../otelcol/collector.go)
+- [graph.go](../service/internal/graph/graph.go)
+- [component.go](../component/component.go)
 
 #### Factories
 Each component type contains a Factory interface along with its corresponding NewFactory function.
