@@ -101,7 +101,7 @@ func TestReceiveLogsOp(t *testing.T) {
 
 			ctx := rec.StartLogsOp(parentCtx)
 			assert.NotNil(t, ctx)
-			rec.EndLogsOp(ctx, format, params[i].items, param.err)
+			rec.EndLogsOp(ctx, format, params[i].items, 0, param.err)
 		}
 
 		spans := tt.SpanRecorder.Ended()
@@ -288,7 +288,7 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	require.NoError(t, err)
 	ctx := rec.StartLogsOp(context.Background())
 	require.NotNil(t, ctx)
-	rec.EndLogsOp(ctx, format, 7, nil)
+	rec.EndLogsOp(ctx, format, 7, 0, nil)
 
 	assert.NoError(t, tt.CheckReceiverLogs(transport, 7, 0))
 	assert.Error(t, tt.CheckReceiverLogs(transport, 7, 7))

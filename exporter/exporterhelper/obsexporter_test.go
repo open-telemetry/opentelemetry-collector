@@ -43,7 +43,7 @@ func TestExportTraceDataOp(t *testing.T) {
 		for i := range params {
 			ctx := obsrep.StartTracesOp(parentCtx)
 			assert.NotNil(t, ctx)
-			obsrep.EndTracesOp(ctx, params[i].items, params[i].err)
+			obsrep.EndTracesOp(ctx, params[i].items, 0, params[i].err)
 		}
 
 		spans := tt.SpanRecorder.Ended()
@@ -92,7 +92,7 @@ func TestExportMetricsOp(t *testing.T) {
 			ctx := obsrep.StartMetricsOp(parentCtx)
 			assert.NotNil(t, ctx)
 
-			obsrep.EndMetricsOp(ctx, params[i].items, params[i].err)
+			obsrep.EndMetricsOp(ctx, params[i].items, 0, params[i].err)
 		}
 
 		spans := tt.SpanRecorder.Ended()
@@ -203,7 +203,7 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	ctx := obsrep.StartMetricsOp(context.Background())
 	require.NotNil(t, ctx)
-	obsrep.EndMetricsOp(ctx, 7, nil)
+	obsrep.EndMetricsOp(ctx, 7, 0, nil)
 
 	assert.NoError(t, tt.CheckExporterMetrics(7, 0))
 	assert.Error(t, tt.CheckExporterMetrics(7, 7))

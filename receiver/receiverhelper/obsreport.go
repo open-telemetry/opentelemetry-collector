@@ -35,12 +35,13 @@ type ObsReport struct {
 
 	otelAttrs []attribute.KeyValue
 
-	acceptedSpansCounter        metric.Int64Counter
-	refusedSpansCounter         metric.Int64Counter
-	acceptedMetricPointsCounter metric.Int64Counter
-	refusedMetricPointsCounter  metric.Int64Counter
-	acceptedLogRecordsCounter   metric.Int64Counter
-	refusedLogRecordsCounter    metric.Int64Counter
+	acceptedSpansCounter              metric.Int64Counter
+	refusedSpansCounter               metric.Int64Counter
+	acceptedMetricPointsCounter       metric.Int64Counter
+	refusedMetricPointsCounter        metric.Int64Counter
+	acceptedLogRecordsCounter         metric.Int64Counter
+	acceptedLogRecodsInBytesHistogram metric.Int64Histogram
+	refusedLogRecordsCounter          metric.Int64Counter
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
@@ -122,6 +123,13 @@ func (rec *ObsReport) createOtelMetrics() error {
 	)
 	errors = multierr.Append(errors, err)
 
+	rec.acceptedLogRecodsInBytesHistogram, err = rec.meter.Int64Histogram(
+		obsmetrics.ReceiverMetricPrefix+"accepted_log_recods_bytes",
+		metric.WithDescription("Bytes of log records successfully pushed into the pipeline."),
+		metric.WithUnit("By"),
+	)
+	errors = multierr.Append(errors, err)
+
 	rec.refusedLogRecordsCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverMetricPrefix+obsmetrics.RefusedLogRecordsKey,
 		metric.WithDescription("Number of log records that could not be pushed into the pipeline."),
@@ -147,7 +155,7 @@ func (rec *ObsReport) EndTracesOp(
 	numReceivedSpans int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedSpans, err, component.DataTypeTraces)
+	rec.endOp(receiverCtx, format, numReceivedSpans, 0, err, component.DataTypeTraces)
 }
 
 // StartLogsOp is called when a request is received from a client.
@@ -163,9 +171,10 @@ func (rec *ObsReport) EndLogsOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedLogRecords int,
+	bytesReceivedLogRecords int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedLogRecords, err, component.DataTypeLogs)
+	rec.endOp(receiverCtx, format, numReceivedLogRecords, bytesReceivedLogRecords, err, component.DataTypeLogs)
 }
 
 // StartMetricsOp is called when a request is received from a client.
@@ -183,7 +192,7 @@ func (rec *ObsReport) EndMetricsOp(
 	numReceivedPoints int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedPoints, err, component.DataTypeMetrics)
+	rec.endOp(receiverCtx, format, numReceivedPoints, 0, err, component.DataTypeMetrics)
 }
 
 // startOp creates the span used to trace the operation. Returning
@@ -216,6 +225,7 @@ func (rec *ObsReport) endOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedItems int,
+	bytesReceivedItems int,
 	err error,
 	dataType component.DataType,
 ) {
@@ -229,7 +239,7 @@ func (rec *ObsReport) endOp(
 	span := trace.SpanFromContext(receiverCtx)
 
 	if rec.level != configtelemetry.LevelNone {
-		rec.recordMetrics(receiverCtx, dataType, numAccepted, numRefused)
+		rec.recordMetrics(receiverCtx, dataType, numAccepted, bytesReceivedItems, numRefused)
 	}
 
 	// end span according to errors
@@ -250,6 +260,7 @@ func (rec *ObsReport) endOp(
 		span.SetAttributes(
 			attribute.String(obsmetrics.FormatKey, format),
 			attribute.Int64(acceptedItemsKey, int64(numAccepted)),
+			attribute.Int64("accepted_log_recods_bytes", int64(bytesReceivedItems)),
 			attribute.Int64(refusedItemsKey, int64(numRefused)),
 		)
 		if err != nil {
@@ -259,7 +270,7 @@ func (rec *ObsReport) endOp(
 	span.End()
 }
 
-func (rec *ObsReport) recordMetrics(receiverCtx context.Context, dataType component.DataType, numAccepted, numRefused int) {
+func (rec *ObsReport) recordMetrics(receiverCtx context.Context, dataType component.DataType, numAccepted, bytesAccepted, numRefused int) {
 	var acceptedMeasure, refusedMeasure metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
@@ -271,6 +282,7 @@ func (rec *ObsReport) recordMetrics(receiverCtx context.Context, dataType compon
 	case component.DataTypeLogs:
 		acceptedMeasure = rec.acceptedLogRecordsCounter
 		refusedMeasure = rec.refusedLogRecordsCounter
+		rec.acceptedLogRecodsInBytesHistogram.Record(receiverCtx, int64(bytesAccepted), metric.WithAttributes(rec.otelAttrs...))
 	}
 
 	acceptedMeasure.Add(receiverCtx, int64(numAccepted), metric.WithAttributes(rec.otelAttrs...))

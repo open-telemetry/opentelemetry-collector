@@ -121,7 +121,7 @@ func (or *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
 	errors = multierr.Append(errors, err)
 
 	or.sentLogRecordsBytes, err = meter.Int64Histogram(
-		obsmetrics.ExporterMetricPrefix+obsmetrics.SentLogRecordsBytesKey,
+		obsmetrics.ExporterMetricPrefix+"sent_log_records_bytes",
 		metric.WithDescription("Bytes of log records succesfully sent to destination."),
 		metric.WithUnit("By"))
 	errors = multierr.Append(errors, err)
