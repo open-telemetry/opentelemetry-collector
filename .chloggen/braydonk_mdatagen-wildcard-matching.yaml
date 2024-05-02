@@ -8,7 +8,7 @@ component: mdatagen
 note: Adds wildcard matching for names in metrics and resource attributes configs.
 
 # One or more tracking issues or pull requests related to the change
-issues: [https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31285]
+issues: [10074] # TODO: Change this when the issue is moved
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
