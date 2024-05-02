@@ -198,3 +198,15 @@ func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 	r.shutdownWG.Wait()
 	return err
 }
+
+func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) {
+	r.nextTraces = tc
+}
+
+func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) {
+	r.nextMetrics = mc
+}
+
+func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) {
+	r.nextLogs = lc
+}

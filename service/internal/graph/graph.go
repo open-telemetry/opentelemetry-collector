@@ -281,6 +281,11 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 		return cycleErr(err, topo.DirectedCyclesIn(g.componentGraph))
 	}
 
+	set.ReceiverBuilder.Reset()
+	defer func() {
+		set.ReceiverBuilder.Reset()
+	}()
+
 	for i := len(nodes) - 1; i >= 0; i-- {
 		node := nodes[i]
 

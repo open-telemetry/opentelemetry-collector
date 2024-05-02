@@ -841,9 +841,9 @@ func newReceiver(t *testing.T, settings component.TelemetrySettings, cfg *Config
 	set.ID = id
 	r, err := newOtlpReceiver(cfg, &set)
 	require.NoError(t, err)
-	r.nextTraces = c
-	r.nextMetrics = c
-	r.nextLogs = c
+	r.registerTraceConsumer(c)
+	r.registerMetricsConsumer(c)
+	r.registerLogsConsumer(c)
 	return r
 }
 

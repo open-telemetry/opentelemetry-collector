@@ -30,17 +30,14 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTraces, metadata.TracesStability),
-		receiver.WithMetrics(createMetrics, metadata.MetricsStability),
-		receiver.WithLogs(createLog, metadata.LogsStability),
-		receiver.WithSharedLogs(func(receiver component.Component, logs consumer.Logs) {
-			receiver.(*otlpReceiver).nextLogs = logs
+		receiver.WithSharedLogs(createLog, metadata.LogsStability, func(r receiver.Logs, l consumer.Logs) {
+			r.(*otlpReceiver).registerLogsConsumer(l)
 		}),
-		receiver.WithSharedMetrics(func(receiver component.Component, metrics consumer.Metrics) {
-			receiver.(*otlpReceiver).nextMetrics = metrics
+		receiver.WithSharedMetrics(createMetrics, metadata.MetricsStability, func(r receiver.Metrics, m consumer.Metrics) {
+			r.(*otlpReceiver).registerMetricsConsumer(m)
 		}),
-		receiver.WithSharedTraces(func(receiver component.Component, traces consumer.Traces) {
-			receiver.(*otlpReceiver).nextTraces = traces
+		receiver.WithSharedTraces(createTraces, metadata.TracesStability, func(r receiver.Traces, t consumer.Traces) {
+			r.(*otlpReceiver).registerTraceConsumer(t)
 		}),
 	)
 }

@@ -5,6 +5,7 @@ package receiver // import "go.opentelemetry.io/collector/receiver"
 
 import (
 	"fmt"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/internal"
 )
@@ -73,6 +74,11 @@ type factory struct {
 	SharedLogsFunc
 	SharedMetricsFunc
 	SharedTracesFunc
+}
+
+type sharedFactory struct {
+	factory
+	shared map[component.Config]component.Component
 }
 
 func (f *factory) Type() component.Type {
