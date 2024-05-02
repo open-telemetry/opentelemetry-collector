@@ -11,20 +11,20 @@
 //
 // # Producers
 //
-// Receivers are typically responsible for obtaining a consumerconnection.Info from the current
-// context and enhancing the consumerconnection.Info with the net.Addr from the peer,
-// storing a new consumerconnection.Info into the context that it passes down. For HTTP
+// Receivers are typically responsible for obtaining a consumerconn.Info from the current
+// context and enhancing the consumerconn.Info with the net.Addr from the peer,
+// storing a new consumerconn.Info into the context that it passes down. For HTTP
 // requests, the net.Addr is typically the IP address of the client.
 //
 // Components should typically delegate this processing to helpers such
 // as the confighttp or configgrpc packages: both contain interceptors that will
-// enhance the context with the consumerconnection.Info, such that no actions are needed by
+// enhance the context with the consumerconn.Info, such that no actions are needed by
 // receivers that are built using confighttp.HTTPServerSettings or
 // configgrpc.GRPCServerSettings.
 //
-// Authenticators are responsible for obtaining a consumerconnection.Info from the current
-// context, enhancing the consumerconnection.Info with an implementation of consumerconnection.AuthData,
-// and storing a new consumerconnection.Info into the context that it passes down. The
+// Authenticators are responsible for obtaining a consumerconn.Info from the current
+// context, enhancing the consumerconn.Info with an implementation of consumerconn.AuthData,
+// and storing a new consumerconn.Info into the context that it passes down. The
 // attribute names should be documented with their return types and considered
 // part of the public API for the authenticator.
 //
@@ -32,7 +32,7 @@
 //
 // Provided that the pipeline does not contain processors that would discard or
 // rewrite the context, such as the batch processor, processors and exporters
-// have access to the consumerconnection.Info via consumerconnection.FromContext. Among other usages,
+// have access to the consumerconn.Info via consumerconnection.FromContext. Among other usages,
 // this data can be used to:
 //
 // - annotate data points with authentication data (username, tenant, ...)
@@ -42,7 +42,7 @@
 // - rate limit client calls based on IP addresses
 //
 // Processors and exporters relying on the existence of data from the
-// consumerconnection.Info, especially consumerconnection.AuthData, should clearly document this as part
+// consumerconn.Info, especially consumerconn.AuthData, should clearly document this as part
 // of the component's README file. The expected pattern for consuming data is to
 // allow users to specify the attribute name to use in the component. The
 // expected data type should also be communicated to users, who should then
@@ -74,7 +74,7 @@
 //	      receivers: [otlp]
 //	      processors: [authprinter]
 //	      exporters: [debug]
-package consumerconnection // import "go.opentelemetry.io/collector/consumer/consumerconnection"
+package consumerconn // import "go.opentelemetry.io/collector/consumer/consumerconnection"
 
 import (
 	"context"
@@ -116,7 +116,7 @@ type AuthData interface {
 const MetadataHostName = "Host"
 
 // NewContextWithInfo takes an existing context and derives a new context with the
-// consumerconnection.Info value stored on it.
+// consumerconn.Info value stored on it.
 func NewContextWithInfo(ctx context.Context, c Info) context.Context {
 	return context.WithValue(ctx, ctxKey{}, c)
 }

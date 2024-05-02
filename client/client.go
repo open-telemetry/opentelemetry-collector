@@ -87,7 +87,7 @@ type ctxKey struct{}
 
 // Info contains data related to the clients connecting to receivers.
 //
-// Deprecated: [v0.99.0] Use consumerconnection.Info instead
+// Deprecated: [v0.99.0] Use consumerconn.Info instead
 type Info struct {
 	// Addr for the client connecting to this collector. Available in a
 	// best-effort basis, and generally reliable for receivers making use of
@@ -106,7 +106,7 @@ type Info struct {
 // AuthData represents the authentication data as seen by authenticators tied to
 // the receivers.
 //
-// Deprecated: [v0.99.0] Use consumerconnection.AuthData instead
+// Deprecated: [v0.99.0] Use consumerconn.AuthData instead
 type AuthData interface {
 	// GetAttribute returns the value for the given attribute. Authenticator
 	// implementations might define different data types for different
@@ -118,7 +118,7 @@ type AuthData interface {
 	GetAttributeNames() []string
 }
 
-// Deprecated: [v0.99.0] Use consumerconnection.MetadataHostName instead
+// Deprecated: [v0.99.0] Use consumerconn.MetadataHostName instead
 const MetadataHostName = "Host"
 
 // NewContext takes an existing context and derives a new context with the
@@ -132,7 +132,7 @@ func NewContext(ctx context.Context, c Info) context.Context {
 // FromContext takes a context and returns a ClientInfo from it.
 // When a ClientInfo isn't present, a new empty one is returned.
 //
-// Deprecated: [v0.99.0] Use consumerconnection.InfoFromContext instead
+// Deprecated: [v0.99.0] Use consumerconn.InfoFromContext instead
 func FromContext(ctx context.Context) Info {
 	c, ok := ctx.Value(ctxKey{}).(Info)
 	if !ok {
@@ -143,14 +143,14 @@ func FromContext(ctx context.Context) Info {
 
 // Metadata is an immutable map, meant to contain request metadata.
 //
-// Deprecated: [v0.99.0] Use consumerconnection.Metadata instead
+// Deprecated: [v0.99.0] Use consumerconn.Metadata instead
 type Metadata struct {
 	data map[string][]string
 }
 
 // NewMetadata creates a new Metadata object to use in Info.
 //
-// Deprecated: [v0.99.0] Use consumerconnection.NewMetadata instead
+// Deprecated: [v0.99.0] Use consumerconn.NewMetadata instead
 func NewMetadata(md map[string][]string) Metadata {
 	c := make(map[string][]string, len(md))
 	for k, v := range md {

@@ -18,7 +18,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerconnection"
+	"go.opentelemetry.io/collector/consumer/consumerconn"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -149,8 +149,8 @@ func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func
 
 // newShard gets or creates a batcher corresponding with attrs.
 func (bp *batchProcessor) newShard(md map[string][]string) *shard {
-	exportCtx := consumerconnection.NewContextWithInfo(context.Background(), consumerconnection.Info{
-		Metadata: consumerconnection.NewMetadata(md),
+	exportCtx := consumerconn.NewContextWithInfo(context.Background(), consumerconn.Info{
+		Metadata: consumerconn.NewMetadata(md),
 	})
 	b := &shard{
 		processor: bp,
@@ -295,7 +295,7 @@ type multiShardBatcher struct {
 func (mb *multiShardBatcher) consume(ctx context.Context, data any) error {
 	// Get each metadata key value, form the corresponding
 	// attribute set for use as a map lookup key.
-	info := consumerconnection.InfoFromContext(ctx)
+	info := consumerconn.InfoFromContext(ctx)
 	md := map[string][]string{}
 	var attrs []attribute.KeyValue
 	for _, k := range mb.metadataKeys {

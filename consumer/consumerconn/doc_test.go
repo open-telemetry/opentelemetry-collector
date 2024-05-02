@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package consumerconnection_test
+package consumerconn_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"net"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerconnection"
+	"go.opentelemetry.io/collector/consumer/consumerconn"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -26,7 +26,7 @@ func Example_receiver() {
 
 	// Get the client from the context: if it doesn't exist, FromContext will
 	// create one
-	cl := consumerconnection.InfoFromContext(ctx)
+	cl := consumerconn.InfoFromContext(ctx)
 
 	// Extract the client information based on your original context and set it
 	// to Addr
@@ -43,7 +43,7 @@ func Example_processor() {
 	// Your processor or exporter will receive a context, from which you get the
 	// client information
 	ctx := context.Background()
-	cl := consumerconnection.InfoFromContext(ctx)
+	cl := consumerconn.InfoFromContext(ctx)
 
 	// And use the information from the client as you need
 	fmt.Println(cl.Addr)
@@ -55,7 +55,7 @@ func Example_authenticator() {
 
 	// Get the client from the context: if it doesn't exist, FromContext will
 	// create one
-	cl := consumerconnection.InfoFromContext(ctx)
+	cl := consumerconn.InfoFromContext(ctx)
 
 	// After a successful authentication, place the data you want to propagate
 	// as part of an AuthData implementation of your own
@@ -64,7 +64,7 @@ func Example_authenticator() {
 	}
 
 	// Your configauth.AuthenticateFunc should return this new context
-	_ = consumerconnection.NewContextWithInfo(ctx, cl)
+	_ = consumerconn.NewContextWithInfo(ctx, cl)
 }
 
 type exampleAuthData struct {

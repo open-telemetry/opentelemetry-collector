@@ -8,10 +8,10 @@ import (
 	"net"
 	"net/http"
 
-	"go.opentelemetry.io/collector/consumer/consumerconnection"
+	"go.opentelemetry.io/collector/consumer/consumerconn"
 )
 
-// clientInfoHandler is an http.Handler that enhances the incoming request context with consumerconnection.Info.
+// clientInfoHandler is an http.Handler that enhances the incoming request context with consumerconn.Info.
 type clientInfoHandler struct {
 	next http.Handler
 
@@ -20,16 +20,16 @@ type clientInfoHandler struct {
 }
 
 // ServeHTTP intercepts incoming HTTP requests, replacing the request's context with one that contains
-// a consumerconnection.Info containing the client's IP address.
+// a consumerconn.Info containing the client's IP address.
 func (h *clientInfoHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	req = req.WithContext(contextWithClient(req, h.includeMetadata))
 	h.next.ServeHTTP(w, req)
 }
 
-// contextWithClient attempts to add the client IP address to the consumerconnection.Info from the context. When no
-// consumerconnection.Info exists in the context, one is created.
+// contextWithClient attempts to add the client IP address to the consumerconn.Info from the context. When no
+// consumerconn.Info exists in the context, one is created.
 func contextWithClient(req *http.Request, includeMetadata bool) context.Context {
-	cl := consumerconnection.InfoFromContext(req.Context())
+	cl := consumerconn.InfoFromContext(req.Context())
 
 	ip := parseIP(req.RemoteAddr)
 	if ip != nil {
@@ -38,14 +38,14 @@ func contextWithClient(req *http.Request, includeMetadata bool) context.Context 
 
 	if includeMetadata {
 		md := req.Header.Clone()
-		if len(md.Get(consumerconnection.MetadataHostName)) == 0 && req.Host != "" {
-			md.Add(consumerconnection.MetadataHostName, req.Host)
+		if len(md.Get(consumerconn.MetadataHostName)) == 0 && req.Host != "" {
+			md.Add(consumerconn.MetadataHostName, req.Host)
 		}
 
-		cl.Metadata = consumerconnection.NewMetadata(md)
+		cl.Metadata = consumerconn.NewMetadata(md)
 	}
 
-	ctx := consumerconnection.NewContextWithInfo(req.Context(), cl)
+	ctx := consumerconn.NewContextWithInfo(req.Context(), cl)
 	return ctx
 }
 

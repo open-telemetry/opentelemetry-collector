@@ -3,7 +3,7 @@
 
 // Package client contains generic representations of clients connecting to
 // different receivers
-package consumerconnection
+package consumerconn
 
 import (
 	"context"
