@@ -26,7 +26,7 @@ be shared with users such as:
 
 1. Once the primary logger is instantiated, it should be usable anywhere in the Collector that does logging.
 2. Log timestamps must be accurate to when the log was written, regardless of when the log is written to the user-specified location(s)
-3. If an error occurs before the primary logger is created any previously written logs MUST be written to the user-specified location(s) if they have not already been written there.
+3. If an error occurs before the primary logger is created any previously written logs MUST be written to the either stout or stderr if they have not already been written there.
 
 ## Current behavior
 
