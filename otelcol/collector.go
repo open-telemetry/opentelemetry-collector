@@ -187,6 +187,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	col.serviceConfig = &cfg.Service
+
 	col.service, err = service.New(ctx, service.Settings{
 		BuildInfo:         col.set.BuildInfo,
 		CollectorConf:     conf,
@@ -248,6 +249,7 @@ func (col *Collector) DryRun(ctx context.Context) error {
 
 // Run starts the collector according to the given configuration, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
+// Sets up the control logic for config reloading and shutdown.
 func (col *Collector) Run(ctx context.Context) error {
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(StateClosed)
@@ -263,6 +265,8 @@ func (col *Collector) Run(ctx context.Context) error {
 		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
 	}
 
+	// Control loop: selects between channels for various interrupts - when this loop is broken, the collector exits.
+	// If a configuration reload fails, we return without waiting for graceful shutdown.
 LOOP:
 	for {
 		select {
