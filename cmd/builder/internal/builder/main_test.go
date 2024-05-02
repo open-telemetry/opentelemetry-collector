@@ -19,8 +19,8 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
-var (
-	goModTestFile = []byte(`// Copyright The OpenTelemetry Authors
+const (
+	goModTestFile = `// Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 module go.opentelemetry.io/collector/cmd/builder/internal/tester
 go 1.20
@@ -33,8 +33,53 @@ require (
 	go.opentelemetry.io/collector/processor v0.94.1
 	go.opentelemetry.io/collector/receiver v0.94.1
 	go.opentelemetry.io/collector v0.96.0
-)`)
+)`
 	modulePrefix = "go.opentelemetry.io/collector"
+)
+
+var (
+	replaceModules = []string{
+		"",
+		"/component",
+		"/config/configauth",
+		"/config/configcompression",
+		"/config/configgrpc",
+		"/config/confighttp",
+		"/config/confignet",
+		"/config/configopaque",
+		"/config/configretry",
+		"/config/configtelemetry",
+		"/config/configtls",
+		"/config/internal",
+		"/confmap",
+		"/confmap/converter/expandconverter",
+		"/confmap/provider/envprovider",
+		"/confmap/provider/fileprovider",
+		"/confmap/provider/httpprovider",
+		"/confmap/provider/httpsprovider",
+		"/confmap/provider/yamlprovider",
+		"/consumer",
+		"/connector",
+		"/exporter",
+		"/exporter/debugexporter",
+		"/exporter/nopexporter",
+		"/exporter/otlpexporter",
+		"/exporter/otlphttpexporter",
+		"/extension",
+		"/extension/auth",
+		"/extension/zpagesextension",
+		"/featuregate",
+		"/processor",
+		"/processor/batchprocessor",
+		"/processor/memorylimiterprocessor",
+		"/receiver",
+		"/receiver/nopreceiver",
+		"/receiver/otlpreceiver",
+		"/otelcol",
+		"/pdata",
+		"/semconv",
+		"/service",
+	}
 )
 
 func newInitializedConfig(t *testing.T) Config {
@@ -93,7 +138,7 @@ func TestVersioning(t *testing.T) {
 			cfgBuilder: func() Config {
 				cfg := NewDefaultConfig()
 				tempDir := t.TempDir()
-				err := makeModule(tempDir, goModTestFile)
+				err := makeModule(tempDir, []byte(goModTestFile))
 				require.NoError(t, err)
 				cfg.Distribution.OutputPath = tempDir
 				cfg.SkipGenerate = true
@@ -358,7 +403,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 
 	replaceMods := map[string]bool{}
 
-	for _, suffix := range replaceModules() {
+	for _, suffix := range replaceModules {
 		replaceMods[modulePrefix+suffix] = false
 	}
 
@@ -395,57 +440,12 @@ func makeModule(dir string, fileContents []byte) error {
 	return nil
 }
 
-func replaceModules() []string {
-	return []string{
-		"",
-		"/component",
-		"/config/configauth",
-		"/config/configcompression",
-		"/config/configgrpc",
-		"/config/confighttp",
-		"/config/confignet",
-		"/config/configopaque",
-		"/config/configretry",
-		"/config/configtelemetry",
-		"/config/configtls",
-		"/config/internal",
-		"/confmap",
-		"/confmap/converter/expandconverter",
-		"/confmap/provider/envprovider",
-		"/confmap/provider/fileprovider",
-		"/confmap/provider/httpprovider",
-		"/confmap/provider/httpsprovider",
-		"/confmap/provider/yamlprovider",
-		"/consumer",
-		"/connector",
-		"/exporter",
-		"/exporter/debugexporter",
-		"/exporter/nopexporter",
-		"/exporter/otlpexporter",
-		"/exporter/otlphttpexporter",
-		"/extension",
-		"/extension/auth",
-		"/extension/zpagesextension",
-		"/featuregate",
-		"/processor",
-		"/processor/batchprocessor",
-		"/processor/memorylimiterprocessor",
-		"/receiver",
-		"/receiver/nopreceiver",
-		"/receiver/otlpreceiver",
-		"/otelcol",
-		"/pdata",
-		"/semconv",
-		"/service",
-	}
-}
-
 func generateReplaces() []string {
 	// This test is dependent on the current file structure.
 	// The goal is find the root of the repo so we can replace the root module.
 	_, thisFile, _, _ := runtime.Caller(0)
 	workspaceDir := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile)))))
-	modules := replaceModules()
+	modules := replaceModules
 	replaces := make([]string, len(modules))
 
 	for i, mod := range modules {
