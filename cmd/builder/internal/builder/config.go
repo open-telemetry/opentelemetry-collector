@@ -93,7 +93,7 @@ func NewDefaultConfig() Config {
 			OtelColVersion: defaultOtelColVersion,
 			Module:         "go.opentelemetry.io/collector/cmd/builder",
 		},
-		// basic retry if error from go mod command (in case of transient network error). This could be improved
+		// basic retry if error from go mod command (in case of transient network error).
 		// retry 3 times with 5 second spacing interval
 		downloadModules: retry{
 			numRetries: 3,
