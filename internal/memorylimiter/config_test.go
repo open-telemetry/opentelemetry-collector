@@ -93,3 +93,13 @@ func TestConfigValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestUnmarshalInvalidConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "negative_unsigned_limits_config.yaml"))
+	require.NoError(t, err)
+	cfg := &Config{}
+	err = component.UnmarshalConfig(cm, cfg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error decoding 'limit_mib': cannot convert negative value -2000 to an unsigned integer")
+	require.Contains(t, err.Error(), "error decoding 'spike_limit_mib': cannot convert negative value -2300 to an unsigned integer")
+}

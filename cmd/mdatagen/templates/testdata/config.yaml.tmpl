@@ -35,7 +35,7 @@ filter_set_include:
     {{- range $name, $attr := .ResourceAttributes }}
     {{ $name }}:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     {{- end }}
 filter_set_exclude:
@@ -43,7 +43,7 @@ filter_set_exclude:
     {{- range $name, $attr := .ResourceAttributes }}
     {{ $name }}:
       enabled: true
-      exclude:
+      metrics_exclude:
         {{- if eq $attr.Type.String "Str" }}
         - strict: {{ $attr.TestValue }}
         {{- else }}

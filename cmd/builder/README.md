@@ -5,21 +5,27 @@ This program generates a custom OpenTelemetry Collector binary based on a given 
 ## TL;DR
 
 ```console
-$ GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@latest
+$ go install go.opentelemetry.io/collector/cmd/builder@latest
 $ cat > otelcol-builder.yaml <<EOF
 dist:
   name: otelcol-custom
   description: Local OpenTelemetry Collector binary
   output_path: /tmp/dist
 exporters:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.86.0
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.86.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.99.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.99.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.86.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.99.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.86.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.99.0
+
+providers:
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v0.99.0
+
+converters:
+  - gomod: go.opentelemetry.io/collector/confmap/converter/expandconverter v0.99.0
 EOF
 $ builder --config=otelcol-builder.yaml
 $ cat > /tmp/otelcol.yaml <<EOF
@@ -145,3 +151,24 @@ then commit the code in a git repo. A CI can sync the code and execute
 ocb --skip-generate --skip-get-modules --config=config.yaml
 ```
 to only execute the compilation step.
+
+### Strict versioning checks
+
+The builder checks the relevant `go.mod`
+file for the following things after `go get`ing all components and calling 
+`go mod tidy`:
+
+1. The `dist::otelcol_version` field in the build configuration must have 
+   matching major and minor versions as the core library version calculated by 
+   the Go toolchain, considering all components.  A mismatch could happen, for 
+   example, when the builder or one of the components depends on a newer release 
+   of the core collector library.
+2. For each component in the build configuration, the major and minor versions 
+   included in the `gomod` module specifier must match the one calculated by
+   the Go toolchain, considering all components.  A mismatch could
+   happen, for example, when the enclosing Go module uses a newer
+   release of the core collector library.
+   
+The `--skip-strict-versioning` flag disables these versioning checks. 
+This flag is available temporarily and 
+**will be removed in a future minor version**.

@@ -7,6 +7,58 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.6.0/v0.99.0
+
+### 🛑 Breaking changes 🛑
+
+- `builder`: Add strict version checking when using the builder. Add the temporary flag `--skip-strict-versioning `for skipping this check. (#9896)
+  Strict version checking will error on major and minor version mismatches 
+  between the `otelcol_version` configured and the builder version or versions 
+  in the go.mod. This check can be temporarily disabled by using the `--skip-strict-versioning` 
+  flag. This flag will be removed in a future minor version.
+  
+- `telemetry`: Distributed internal metrics across different levels. (#7890)
+  The internal metrics levels are updated along with reported metrics:
+  - The default level is changed from `basic` to `normal`, which can be overridden with `service::telmetry::metrics::level` configuration.
+  - Batch processor metrics are updated to be reported starting from `normal` level:
+    - `processor_batch_batch_send_size` 
+    - `processor_batch_metadata_cardinality`
+    - `processor_batch_timeout_trigger_send`
+    - `processor_batch_size_trigger_send`
+  - GRPC/HTTP server and client metrics are updated to be reported starting from `detailed` level:
+    - http.client.* metrics
+    - http.server.* metrics
+    - rpc.server.* metrics
+    - rpc.client.* metrics
+  
+
+### 💡 Enhancements 💡
+
+- `confighttp`: Disable concurrency in zstd compression (#8216)
+- `cmd/builder`: Allow configuring `confmap.Provider`s in the builder. (#4759)
+  If no providers are specified, the defaults are used.
+  The default providers are: env, file, http, https, and yaml.
+  
+  To configure providers, use the `providers` key in your OCB build
+  manifest with a list of Go modules for your providers.
+  The modules will work the same as other Collector components.
+  
+- `mdatagen`: enable goleak tests by default via mdatagen (#9959)
+- `cmd/mdatagen`: support excluding some metrics based on string and regexes in resource_attributes (#9661)
+- `cmd/mdatagen`: Generate config and factory tests covering their requirements. (#9940)
+  The tests are moved from cmd/builder.
+  
+- `confmap`: Add `ProviderSettings`, `ConverterSettings`, `ProviderFactories`, and `ConverterFactories` fields to `confmap.ResolverSettings` (#9516)
+  This allows configuring providers and converters, which are instantiated by `NewResolver` using the given factories.
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/otlp`: Allow DNS scheme to be used in endpoint (#4274)
+- `service`: fix record sampler configuration (#9968)
+- `service`: ensure the tracer provider is configured via go.opentelemetry.io/contrib/config (#9967)
+- `otlphttpexporter`: Fixes a bug that was preventing the otlp http exporter from propagating status. (#9892)
+- `confmap`: Fix decoding negative configuration values into uints (#9060)
+
 ## v1.5.0/v0.98.0
 
 ### 🛑 Breaking changes 🛑
