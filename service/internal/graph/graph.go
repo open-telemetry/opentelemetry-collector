@@ -386,7 +386,6 @@ func (g *Graph) StartAll(ctx context.Context, host *Host) error {
 		return err
 	}
 
-	started := make(map[component.Component]struct{}, len(nodes))
 	// Start in reverse topological order so that downstream components
 	// are started before upstream components. This ensures that each
 	// component's consumer is ready to consume.
@@ -398,12 +397,6 @@ func (g *Graph) StartAll(ctx context.Context, host *Host) error {
 			// Skip capabilities/fanout nodes
 			continue
 		}
-
-		if _, ok := started[comp]; ok {
-			// if a component is reused in the graph, start it once.
-			continue
-		}
-		started[comp] = struct{}{}
 
 		instanceID := g.instanceIDs[node.ID()]
 		host.Reporter.ReportStatus(
@@ -437,7 +430,6 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 		return err
 	}
 
-	shut := make(map[component.Component]struct{}, len(nodes))
 	// Stop in topological order so that upstream components
 	// are stopped before downstream components.  This ensures
 	// that each component has a chance to drain to its consumer
@@ -451,11 +443,6 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 			// Skip capabilities/fanout nodes
 			continue
 		}
-		if _, ok := shut[comp]; ok {
-			// if a component is reused in the graph, shut it once.
-			continue
-		}
-		shut[comp] = struct{}{}
 
 		instanceID := g.instanceIDs[node.ID()]
 		reporter.ReportStatus(
