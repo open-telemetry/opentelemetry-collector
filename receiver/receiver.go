@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 
 	"go.uber.org/zap"
 
@@ -104,108 +103,119 @@ func (f factoryOptionFunc) applyOption(o *factory) {
 	f(o)
 }
 
-type sharedComponentMap struct {
-	sync.RWMutex
-	components map[component.Config]component.Component
-}
-
-func (scm *sharedComponentMap) set(config component.Config, comp component.Component) {
-	scm.RWMutex.Lock()
-	defer scm.RWMutex.Unlock()
-	scm.components[config] = comp
-}
-
-func (scm *sharedComponentMap) get(config component.Config) component.Component {
-	scm.RWMutex.RLock()
-	defer scm.RWMutex.RUnlock()
-	return scm.components[config]
-}
-
-// SharedTracesFunc sets the trace consumer on the receiver if it is already configured.
-// If the function returns nil and no errors, a new receiver will be created.
-type SharedTracesFunc func(receiver component.Component, traces consumer.Traces)
+// SetTracesFunc sets the trace consumer on the receiver.
+type SetTracesFunc func(Traces, consumer.Traces)
 
 // CreateTracesFunc is the equivalent of Factory.CreateTraces.
 type CreateTracesFunc func(context.Context, CreateSettings, component.Config, consumer.Traces) (Traces, error)
 
 // CreateTracesReceiver implements Factory.CreateTracesReceiver().
-func (f *factory) CreateTracesReceiver(
+func (f CreateTracesFunc) CreateTracesReceiver(
 	ctx context.Context,
 	set CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces) (Traces, error) {
-	if f == nil || f.CreateTracesFunc == nil {
+	if f == nil {
 		return nil, component.ErrDataTypeIsNotSupported
 	}
-	if f.SharedTracesFunc != nil {
-		if r := f.shared.get(cfg); r != nil {
-			f.SharedTracesFunc(r, nextConsumer)
+	return f(ctx, set, cfg, nextConsumer)
+}
+
+// CreateTracesReceiver implements Factory.CreateTracesReceiver().
+func (s *sharedFactory) CreateTracesReceiver(
+	ctx context.Context,
+	set CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Traces) (Traces, error) {
+	if s.SetTracesFunc != nil {
+		if r := s.shared[cfg]; r != nil {
+			s.SetTracesFunc(r, nextConsumer)
 			return r, nil
 		}
 	}
-	r, err := f.CreateTracesFunc(ctx, set, cfg, nextConsumer)
-	if f.SharedTracesFunc != nil {
-		f.shared.set(cfg, r)
+	r, err := s.factory.CreateTracesReceiver(ctx, set, cfg, nextConsumer)
+	if err == nil {
+		s.shared[cfg] = r
 	}
 
 	return r, err
 }
 
-// SharedMetricsFunc sets the metrics consumer on the receiver.
-type SharedMetricsFunc func(receiver component.Component, metrics consumer.Metrics)
+// SetMetricsFunc sets the metrics consumer on the receiver.
+type SetMetricsFunc func(Metrics, consumer.Metrics)
 
 // CreateMetricsFunc is the equivalent of Factory.CreateMetrics.
 type CreateMetricsFunc func(context.Context, CreateSettings, component.Config, consumer.Metrics) (Metrics, error)
 
 // CreateMetricsReceiver implements Factory.CreateMetricsReceiver().
-func (f *factory) CreateMetricsReceiver(
+func (f CreateMetricsFunc) CreateMetricsReceiver(
 	ctx context.Context,
 	set CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (Metrics, error) {
-	if f == nil || f.CreateMetricsFunc == nil {
+	if f == nil {
 		return nil, component.ErrDataTypeIsNotSupported
 	}
-	if f.SharedMetricsFunc != nil {
-		if r := f.shared.get(cfg); r != nil {
-			f.SharedMetricsFunc(r, nextConsumer)
+	return f(ctx, set, cfg, nextConsumer)
+}
+
+// CreateMetricsReceiver implements Factory.CreateMetricsReceiver().
+func (s *sharedFactory) CreateMetricsReceiver(
+	ctx context.Context,
+	set CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics,
+) (Metrics, error) {
+	if s.SetMetricsFunc != nil {
+		if r := s.shared[cfg]; r != nil {
+			s.SetMetricsFunc(r, nextConsumer)
 			return r, nil
 		}
 	}
-	r, err := f.CreateMetricsFunc(ctx, set, cfg, nextConsumer)
-	if f.SharedMetricsFunc != nil {
-		f.shared.set(cfg, r)
+	r, err := s.factory.CreateMetricsFunc(ctx, set, cfg, nextConsumer)
+	if s.SetMetricsFunc != nil {
+		s.shared[cfg] = r
 	}
 
 	return r, err
 }
 
-// SharedLogsFunc sets the logs consumer on the receiver.
-type SharedLogsFunc func(receiver component.Component, logs consumer.Logs)
+// SetLogsFunc sets the logs consumer on the receiver.
+type SetLogsFunc func(Logs, consumer.Logs)
 
 // CreateLogsFunc is the equivalent of ReceiverFactory.CreateLogsReceiver().
 type CreateLogsFunc func(context.Context, CreateSettings, component.Config, consumer.Logs) (Logs, error)
 
 // CreateLogsReceiver implements Factory.CreateLogsReceiver().
-func (f *factory) CreateLogsReceiver(
+func (f CreateLogsFunc) CreateLogsReceiver(
 	ctx context.Context,
 	set CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (Logs, error) {
-	if f == nil || f.CreateLogsFunc == nil {
+	if f == nil {
 		return nil, component.ErrDataTypeIsNotSupported
 	}
-	if f.SharedLogsFunc != nil {
-		if r := f.shared.get(cfg); r != nil {
-			f.SharedLogsFunc(r, nextConsumer)
+	return f(ctx, set, cfg, nextConsumer)
+}
+
+// CreateLogsReceiver implements Factory.CreateLogsReceiver().
+func (s *sharedFactory) CreateLogsReceiver(
+	ctx context.Context,
+	set CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (Logs, error) {
+	if s.SetLogsFunc != nil {
+		if r := s.shared[cfg]; r != nil {
+			s.SetLogsFunc(r, nextConsumer)
 			return r, nil
 		}
 	}
-	r, err := f.CreateLogsFunc(ctx, set, cfg, nextConsumer)
-	if f.SharedLogsFunc != nil {
-		f.shared.set(cfg, r)
+	r, err := s.factory.CreateLogsReceiver(ctx, set, cfg, nextConsumer)
+	if s.SetLogsFunc != nil {
+		s.shared[cfg] = r
 	}
 
 	return r, err
@@ -213,7 +223,6 @@ func (f *factory) CreateLogsReceiver(
 
 type factory struct {
 	cfgType component.Type
-	shared  *sharedComponentMap
 	component.CreateDefaultConfigFunc
 	CreateTracesFunc
 	tracesStabilityLevel component.StabilityLevel
@@ -221,9 +230,14 @@ type factory struct {
 	metricsStabilityLevel component.StabilityLevel
 	CreateLogsFunc
 	logsStabilityLevel component.StabilityLevel
-	SharedLogsFunc
-	SharedMetricsFunc
-	SharedTracesFunc
+	SetLogsFunc
+	SetMetricsFunc
+	SetTracesFunc
+}
+
+type sharedFactory struct {
+	factory
+	shared map[component.Config]component.Component
 }
 
 func (f *factory) Type() component.Type {
@@ -252,10 +266,13 @@ func WithTraces(createTracesReceiver CreateTracesFunc, sl component.StabilityLev
 	})
 }
 
-// WithSharedTraces sets the trace consumer on the receiver if it is already configured.
-func WithSharedTraces(sharedTracesFunc SharedTracesFunc) FactoryOption {
+// WithSharedTraces overrides the default "error not supported" implementation for CreateTracesReceiver and the default "undefined" stability level.
+// It also sets the trace consumer on the receiver if it is already configured.
+func WithSharedTraces(createTracesReceiver CreateTracesFunc, sl component.StabilityLevel, sharedTracesFunc SetTracesFunc) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
-		o.SharedTracesFunc = sharedTracesFunc
+		o.tracesStabilityLevel = sl
+		o.CreateTracesFunc = createTracesReceiver
+		o.SetTracesFunc = sharedTracesFunc
 	})
 }
 
@@ -267,10 +284,13 @@ func WithMetrics(createMetricsReceiver CreateMetricsFunc, sl component.Stability
 	})
 }
 
-// WithSharedMetrics sets the metrics consumer on the receiver if it is already configured.
-func WithSharedMetrics(sharedMetricsFunc SharedMetricsFunc) FactoryOption {
+// WithSharedMetrics overrides the default "error not supported" implementation for CreateMetricsReceiver and the default "undefined" stability level.
+// It sets the metrics consumer on the receiver if it is already configured.
+func WithSharedMetrics(createMetricsReceiver CreateMetricsFunc, sl component.StabilityLevel, sharedMetricsFunc SetMetricsFunc) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
-		o.SharedMetricsFunc = sharedMetricsFunc
+		o.metricsStabilityLevel = sl
+		o.CreateMetricsFunc = createMetricsReceiver
+		o.SetMetricsFunc = sharedMetricsFunc
 	})
 }
 
@@ -282,10 +302,13 @@ func WithLogs(createLogsReceiver CreateLogsFunc, sl component.StabilityLevel) Fa
 	})
 }
 
-// WithSharedLogs sets the logs consumer on the receiver if it is already configured.
-func WithSharedLogs(sharedLogsFunc SharedLogsFunc) FactoryOption {
+// WithSharedLogs overrides the default "error not supported" implementation for CreateLogsReceiver and the default "undefined" stability level.
+// It sets the logs consumer on the receiver if it is already configured.
+func WithSharedLogs(createLogsReceiver CreateLogsFunc, sl component.StabilityLevel, sharedLogsFunc SetLogsFunc) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
-		o.SharedLogsFunc = sharedLogsFunc
+		o.logsStabilityLevel = sl
+		o.CreateLogsFunc = createLogsReceiver
+		o.SetLogsFunc = sharedLogsFunc
 	})
 }
 
@@ -294,12 +317,12 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 	f := &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,
-		shared: &sharedComponentMap{
-			components: map[component.Config]component.Component{},
-		},
 	}
 	for _, opt := range options {
 		opt.applyOption(f)
+	}
+	if f.SetLogsFunc != nil || f.SetTracesFunc != nil || f.SetMetricsFunc != nil {
+		return &sharedFactory{factory: *f, shared: make(map[component.Config]component.Component)}
 	}
 	return f
 }
@@ -326,6 +349,16 @@ type Builder struct {
 // NewBuilder creates a new receiver.Builder to help with creating components form a set of configs and factories.
 func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]Factory) *Builder {
 	return &Builder{cfgs: cfgs, factories: factories}
+}
+
+// Reset the builder's cache of components, so they can be rebuilt instead of being associated with new consumers.
+func (b *Builder) Reset() {
+	state := map[component.Config]component.Component{}
+	for _, f := range b.factories {
+		if s, ok := f.(*sharedFactory); ok {
+			s.shared = state
+		}
+	}
 }
 
 // CreateTraces creates a Traces receiver based on the settings and config.
