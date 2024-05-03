@@ -7,7 +7,7 @@ change_type: enhancement
 component: confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Remove top level lock when considering struct as Unmarshalers
+note: Remove top level condition when considering struct as Unmarshalers
 
 # One or more tracking issues or pull requests related to the change
 issues: [7101]
