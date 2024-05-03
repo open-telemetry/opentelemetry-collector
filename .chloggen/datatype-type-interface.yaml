@@ -1,0 +1,28 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
+component: component
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Change Type to an interface, the new types ComponentType and DataType now implement it."
+
+# One or more tracking issues or pull requests related to the change
+issues: [9429]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Creates ComponentType and DataType - ComponentType represents the names of components and DataType is an enum for Traces,Logs, and Metrics.
+  
+  NewType will now automatically create a DataType instead of ComponentType for the strings "traces", "logs", and "metrics". In addition, ID's zero value now contains a null value for Type - since it is now an interface."
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: ['api']
