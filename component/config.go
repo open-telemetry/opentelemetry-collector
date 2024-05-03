@@ -115,7 +115,7 @@ type Type interface {
 }
 
 // ComponentType is the component type as it is used in the config.
-type ComponentType struct {
+type ComponentType struct { //revive:disable-line:exported
 	name string
 }
 
