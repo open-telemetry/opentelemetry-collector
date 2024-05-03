@@ -172,6 +172,10 @@ func WithRequestBatchFuncs(mf exporterbatcher.BatchMergeFunc[Request], msf expor
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func WithBatcher(cfg exporterbatcher.Config, opts ...BatcherOption) Option {
 	return func(o *baseExporter) error {
+		if !cfg.Enabled {
+			return nil
+		}
+
 		bs := newBatchSender(cfg, o.set, o.batchMergeFunc, o.batchMergeSplitfunc)
 		for _, opt := range opts {
 			if err := opt(bs); err != nil {
