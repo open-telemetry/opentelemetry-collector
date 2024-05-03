@@ -26,7 +26,8 @@ be shared with users such as:
 
 1. Once the primary logger is instantiated, it should be usable anywhere in the Collector that does logging.
 2. Log timestamps must be accurate to when the log was written, regardless of when the log is written to the user-specified location(s)
-3. If an error causes the collector to gracefully terminate before the primary logger is created any previously written logs MUST be written to the either stout or stderr if they have not already been written there.
+3. The EntryCaller (what line number the log originates from) must be accurate to where the log was written.
+4. If an error causes the collector to gracefully terminate before the primary logger is created any previously written logs MUST be written to the either stout or stderr if they have not already been written there.
 
 ## Current behavior
 
@@ -61,4 +62,6 @@ Downsides:
 
 ## Accepted Solution
 
-I'll fill this out once we decide.
+[Buffer Logs in Memory and Write Them Once the Primary Logger Exists](#Buffer-Logs-in-Memory-and-Write-Them-Once-the-Primary-Logger-Exists)
+
+This solution, while more complex, allows the collector to write out the logs in the user-specified format whenever possible.  A fallback logger must be used in situations where the primary logger could not be created and the collector is shutting down, such as when encountering an error during configuration resolution, but otherwise the primary logger will be used to write logs that occurred before the primary logger existed.
