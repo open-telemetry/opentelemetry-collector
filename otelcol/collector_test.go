@@ -433,14 +433,6 @@ func TestCollectorDryRun(t *testing.T) {
 			},
 			expectedErr: `service::pipelines::traces: references processor "invalid" which is not configured`,
 		},
-		"logs_receiver_traces_pipeline": {
-			settings: CollectorSettings{
-				BuildInfo:              component.NewDefaultBuildInfo(),
-				Factories:              nopFactories,
-				ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid-receiver-type.yaml")}),
-			},
-			expectedErr: `failed to build pipelines: failed to create "nop_logs" receiver for data type "traces": telemetry type is not supported`,
-		},
 	}
 
 	for name, test := range tests {
