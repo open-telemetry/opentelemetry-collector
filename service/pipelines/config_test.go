@@ -70,7 +70,20 @@ func TestConfigValidate(t *testing.T) {
 				}
 				return cfg
 			},
-			expected: errors.New(`pipeline "wrongtype": unknown datatype "wrongtype"`),
+			expected: errors.New(`pipeline "wrongtype": is not a DataType "wrongtype"`),
+		},
+		{
+			name: "unknown-service-pipeline-type",
+			cfgFn: func() Config {
+				cfg := generateConfig()
+				cfg[component.NewIDWithName(component.DataType("asdf"), "")] = &PipelineConfig{
+					Receivers:  []component.ID{component.MustNewID("nop")},
+					Processors: []component.ID{component.MustNewID("nop")},
+					Exporters:  []component.ID{component.MustNewID("nop")},
+				}
+				return cfg
+			},
+			expected: errors.New(`pipeline "asdf": unknown DataType "asdf"`),
 		},
 	}
 
