@@ -110,6 +110,9 @@ func callValidateIfPossible(v reflect.Value) error {
 	return nil
 }
 
+// Type represents the names of receivers (otlp, filelog, etc),
+// processors (batch, memory_limit, etc), or exporters (debug, rabbitmq)
+// It also includes the DataType - things like "metrics", "traces", "logs"
 type Type interface {
 	fmt.Stringer
 	encoding.TextMarshaler

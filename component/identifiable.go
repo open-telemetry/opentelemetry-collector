@@ -13,9 +13,10 @@ import (
 const typeAndNameSeparator = "/"
 
 // ID represents the identity for a component. It combines two values:
-// * type - the Type of the component.
-// * name - the name of that component.
-// The component ID (combination type + name) is unique for a given component.Kind.
+// * typeVal - the Type of the component.
+// * nameVal - the name of that component.  This is optional and can be an empty string.
+// The Component ID (combination type + name) is unique for a given component.Kind.
+// Component IDs are defined in configuration by type[/name] - for examples [traces/1] or [oltp/blah]
 type ID struct {
 	typeVal Type   `mapstructure:"-"`
 	nameVal string `mapstructure:"-"`
