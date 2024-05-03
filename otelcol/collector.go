@@ -118,9 +118,11 @@ type Collector struct {
 func NewCollector(set CollectorSettings) (*Collector, error) {
 	var err error
 	configProvider := set.ConfigProvider
+
 	bc := newBufferedCore(zapcore.DebugLevel)
 	cc := &collectorCore{core: bc}
-	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: zap.New(cc, set.LoggingOptions...)}
+	options := append([]zap.Option{zap.WithCaller(true)}, set.LoggingOptions...)
+	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: zap.New(cc, options...)}
 	set.ConfigProviderSettings.ResolverSettings.ConverterSettings = confmap.ConverterSettings{}
 
 	if configProvider == nil {
@@ -213,7 +215,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 	if col.bc != nil {
 		x := col.bc.TakeLogs()
-		fmt.Println(len(x))
 		for _, log := range x {
 			ce := col.service.Logger().Core().Check(log.Entry, nil)
 			ce.Write(log.Context...)
