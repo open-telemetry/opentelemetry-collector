@@ -208,7 +208,7 @@ func TestBatchSender_Shutdown(t *testing.T) {
 func TestBatchSender_Disabled(t *testing.T) {
 	cfg := exporterbatcher.NewDefaultConfig()
 	cfg.Enabled = false
-	cfg.MaxSizeItems = 10
+	cfg.MaxSizeItems = 5
 	be, err := newBaseExporter(defaultSettings, defaultType, newNoopObsrepSender,
 		WithBatcher(cfg, WithRequestBatchFuncs(fakeBatchMergeFunc, fakeBatchMergeSplitFunc)))
 	require.NotNil(t, be)
@@ -220,7 +220,7 @@ func TestBatchSender_Disabled(t *testing.T) {
 	})
 
 	sink := newFakeRequestSink()
-	// should be sent right away because batching is disabled.
+	// should be sent right away without splitting because batching is disabled.
 	require.NoError(t, be.send(context.Background(), &fakeRequest{items: 8, sink: sink}))
 	assert.Equal(t, uint64(1), sink.requestsCount.Load())
 	assert.Equal(t, uint64(8), sink.itemsCount.Load())
