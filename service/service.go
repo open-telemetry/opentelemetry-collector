@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-// Settings holds configuration for building a new service.
+// Settings holds configuration for building a new Service.
 type Settings struct {
 	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
@@ -72,6 +72,7 @@ type Service struct {
 	collectorConf     *confmap.Conf
 }
 
+// New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	disableHighCard := obsreportconfig.DisableHighCardinalityMetricsfeatureGate.IsEnabled()
 	extendedConfig := obsreportconfig.UseOtelWithSDKConfigurationForInternalTelemetryFeatureGate.IsEnabled()
@@ -92,6 +93,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
+
+	// Fetch data for internal telemetry like instance id and sdk version to provide for internal telemetry.
 	res := resource.New(set.BuildInfo, cfg.Telemetry.Resource)
 	pcommonRes := pdataFromSdk(res)
 
@@ -247,6 +250,7 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 	return errs
 }
 
+// Creates extensions and then builds the pipeline graph.
 func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings, cfg Config) error {
 	var err error
 	extensionsSettings := extensions.Settings{
