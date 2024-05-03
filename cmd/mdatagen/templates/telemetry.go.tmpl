@@ -22,7 +22,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	{{- range $name, $metric := .Telemetry.Metrics }}
-	{{ $name.Render }} metric.{{ $metric.Type }}
+	{{ $name.Render }} metric.{{ $metric.Data.Instrument }}
 	{{- end }}
 }
 
@@ -36,7 +36,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
     var err, errors error
     meter := Meter(settings)
     {{- range $name, $metric := .Telemetry.Metrics }}
-    builder.{{ $name.Render }}, err = meter.{{ $metric.Type }}(
+    builder.{{ $name.Render }}, err = meter.{{ $metric.Data.Instrument }}(
         "{{ $name }}",
         metric.WithDescription("{{ $metric.Description }}"),
         metric.WithUnit("{{ $metric.Unit }}"),

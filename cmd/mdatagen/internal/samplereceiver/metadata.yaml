@@ -156,7 +156,7 @@ telemetry:
       enabled: true
       description: Number of times the batch was sent due to a size trigger
       unit: 1
-      counter:
+      sum:
         value_type: int
         monotonic: true
     request_duration:

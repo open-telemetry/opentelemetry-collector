@@ -117,6 +117,8 @@ type metric struct {
 	Sum *sum `mapstructure:"sum,omitempty"`
 	// Gauge stores metadata for gauge metric type
 	Gauge *gauge `mapstructure:"gauge,omitempty"`
+	// Gauge stores metadata for gauge metric type
+	Histogram *histogram `mapstructure:"histogram,omitempty"`
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []attributeName `mapstructure:"attributes"`
@@ -134,6 +136,9 @@ func (m metric) Data() MetricData {
 	}
 	if m.Gauge != nil {
 		return m.Gauge
+	}
+	if m.Histogram != nil {
+		return m.Histogram
 	}
 	return nil
 }
@@ -221,69 +226,8 @@ type tests struct {
 	ExpectConsumerError bool   `mapstructure:"expect_consumer_error"`
 }
 
-type counter struct {
-	ValueType   string `mapstructure:"value_type"`
-	Monotonic   bool   `mapstructure:"monotonic"`
-	Synchronous bool   `mapstructure:"synchronous"`
-}
-
-type histogram struct {
-	ValueType string `mapstructure:"value_type"`
-}
-
-func (m *internalMetric) Unmarshal(parser *confmap.Conf) error {
-	if !parser.IsSet("enabled") {
-		return errors.New("missing required field: `enabled`")
-	}
-	return parser.Unmarshal(m)
-}
-
-func (m internalMetric) Type() string {
-	typeStr := ""
-	if m.Counter != nil {
-		switch m.Counter.ValueType {
-		case "int":
-			typeStr += "Int64"
-		case "double":
-			typeStr += "Float64"
-		}
-
-		if !m.Counter.Monotonic {
-			typeStr += "UpDown"
-		}
-		typeStr += "Counter"
-		return typeStr
-	}
-	if m.Histogram != nil {
-		switch m.Histogram.ValueType {
-		case "int":
-			return "Int64Histogram"
-		case "double":
-			return "Float64Histogram"
-		}
-	}
-	return typeStr
-}
-
-type internalMetric struct {
-	// Enabled defines whether the metric is enabled by default.
-	Enabled bool `mapstructure:"enabled"`
-
-	// Description of the metric.
-	Description string `mapstructure:"description"`
-
-	// Unit of the metric.
-	Unit string `mapstructure:"unit"`
-
-	// Counter stores metadata for counter metric type
-	Counter *counter `mapstructure:"counter,omitempty"`
-
-	// Histogram stores metadata for histogram metric type
-	Histogram *histogram `mapstructure:"histogram,omitempty"`
-}
-
 type telemetry struct {
-	Metrics map[metricName]internalMetric `mapstructure:"metrics"`
+	Metrics map[metricName]metric `mapstructure:"metrics"`
 }
 
 type metadata struct {
