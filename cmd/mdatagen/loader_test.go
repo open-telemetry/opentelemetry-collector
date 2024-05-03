@@ -232,22 +232,22 @@ func TestLoadMetadata(t *testing.T) {
 					},
 				},
 				Telemetry: telemetry{
-					Metrics: map[metricName]internalMetric{
+					Metrics: map[metricName]metric{
 						"batch_size_trigger_send": {
 							Enabled:     true,
 							Description: "Number of times the batch was sent due to a size trigger",
-							Unit:        "1",
-							Counter: &counter{
-								ValueType: "int",
-								Monotonic: true,
+							Unit:        strPtr("1"),
+							Sum: &sum{
+								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
+								Mono:            Mono{Monotonic: true},
 							},
 						},
 						"request_duration": {
 							Enabled:     true,
 							Description: "Duration of request",
-							Unit:        "s",
+							Unit:        strPtr("s"),
 							Histogram: &histogram{
-								ValueType: "double",
+								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 							},
 						},
 					},
@@ -284,11 +284,6 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/unknown_value_type.yaml",
 			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'value_type': invalid value_type: \"unknown\"",
-		},
-		{
-			name:    "testdata/no_aggregation.yaml",
-			want:    metadata{},
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': missing required field: `aggregation_temporality`",
 		},
 		{
 			name:    "testdata/invalid_aggregation.yaml",
