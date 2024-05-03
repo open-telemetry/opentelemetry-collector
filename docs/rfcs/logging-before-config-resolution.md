@@ -62,6 +62,6 @@ Downsides:
 
 ## Accepted Solution
 
-[Buffer Logs in Memory and Write Them Once the Primary Logger Exists](#Buffer-Logs-in-Memory-and-Write-Them-Once-the-Primary-Logger-Exists)
+[Buffer Logs in Memory and Write Them Once the Primary Logger Exists](#buffer-logs-in-memory-and-write-them-once-the-primary-logger-exists)
 
 This solution, while more complex, allows the collector to write out the logs in the user-specified format whenever possible.  A fallback logger must be used in situations where the primary logger could not be created and the collector is shutting down, such as when encountering an error during configuration resolution, but otherwise the primary logger will be used to write logs that occurred before the primary logger existed.
