@@ -423,6 +423,18 @@ func TestNewType(t *testing.T) {
 	}
 }
 
+func TestNewTypeDataType(t *testing.T) {
+	ty, err := NewType("logs")
+	require.NoError(t, err)
+	assert.Equal(t, ty, DataTypeLogs)
+
+	// hopefully this reminds us to update DataType when profiles get included
+	ty, err = NewType("profiles")
+	require.NoError(t, err)
+	assert.Equal(t, ty.(ComponentType).name, "profiles")
+
+}
+
 type configWithEmbeddedStruct struct {
 	String string `mapstructure:"string"`
 	Num    int    `mapstructure:"num"`
