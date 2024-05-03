@@ -3,9 +3,10 @@
 package metadata
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -34,31 +35,31 @@ type telemetryBuilderOption func(*TelemetryBuilder)
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
 	builder := TelemetryBuilder{}
-	var err, errors error
+	var err, errs error
 	meter := Meter(settings)
 	builder.ProcessorBatchBatchSendSize, err = meter.Int64Histogram(
 		"processor_batch_batch_send_size",
 		metric.WithDescription("Number of units in the batch"),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = errors.Join(errs, err)
 	builder.ProcessorBatchBatchSendSizeBytes, err = meter.Int64Histogram(
 		"processor_batch_batch_send_size_bytes",
 		metric.WithDescription("Number of bytes in batch that was sent"),
 		metric.WithUnit("By"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = errors.Join(errs, err)
 	builder.ProcessorBatchBatchSizeTriggerSend, err = meter.Int64Counter(
 		"processor_batch_batch_size_trigger_send",
 		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = errors.Join(errs, err)
 	builder.ProcessorBatchTimeoutTriggerSend, err = meter.Int64Counter(
 		"processor_batch_timeout_trigger_send",
 		metric.WithDescription("Number of times the batch was sent due to a timeout trigger"),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
-	return &builder, errors
+	errs = errors.Join(errs, err)
+	return &builder, errs
 }

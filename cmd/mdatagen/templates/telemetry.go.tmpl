@@ -3,12 +3,13 @@
 package {{ .Package }}
 
 import (
+    {{- if .Telemetry.Metrics }}
+    "errors"
+    {{- end }}
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-    {{- if .Telemetry.Metrics }}
-    "go.uber.org/multierr"
-    {{- end }}
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -35,7 +36,7 @@ type telemetryBuilderOption func(*TelemetryBuilder)
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
     builder := TelemetryBuilder{}
-    var err, errors error
+    var err, errs error
     meter := Meter(settings)
     {{- range $name, $metric := .Telemetry.Metrics }}
     builder.{{ $name.Render }}, err = meter.{{ $metric.Data.Instrument }}(
@@ -43,9 +44,9 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
         metric.WithDescription("{{ $metric.Description }}"),
         metric.WithUnit("{{ $metric.Unit }}"),
     )
-    errors = multierr.Append(errors, err)
+    errs = errors.Join(errs, err)
     {{- end }}
-    return &builder, errors
+    return &builder, errs
 }
 
 {{- end }}

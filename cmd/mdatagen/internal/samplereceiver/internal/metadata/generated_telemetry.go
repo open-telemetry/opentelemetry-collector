@@ -3,9 +3,10 @@
 package metadata
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -32,19 +33,19 @@ type telemetryBuilderOption func(*TelemetryBuilder)
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
 	builder := TelemetryBuilder{}
-	var err, errors error
+	var err, errs error
 	meter := Meter(settings)
 	builder.BatchSizeTriggerSend, err = meter.Int64Counter(
 		"batch_size_trigger_send",
 		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
 		metric.WithUnit("1"),
 	)
-	errors = multierr.Append(errors, err)
+	errs = errors.Join(errs, err)
 	builder.RequestDuration, err = meter.Float64Histogram(
 		"request_duration",
 		metric.WithDescription("Duration of request"),
 		metric.WithUnit("s"),
 	)
-	errors = multierr.Append(errors, err)
-	return &builder, errors
+	errs = errors.Join(errs, err)
+	return &builder, errs
 }
