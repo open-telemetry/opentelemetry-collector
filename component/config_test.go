@@ -447,3 +447,13 @@ func TestStructWithEmbeddedUnmarshaling(t *testing.T) {
 	assert.Equal(t, "foo", tc.String)
 	assert.Equal(t, 123, tc.Num)
 }
+
+func TestDataTypeFromSignal(t *testing.T) {
+	dt, ok := DataTypeFromSignal("logs")
+	assert.Equal(t, ok, true)
+	assert.Equal(t, DataTypeLogs, dt)
+
+	dt, ok = DataTypeFromSignal("asdf")
+	assert.Equal(t, ok, false)
+	assert.Equal(t, DataType(""), dt)
+}
