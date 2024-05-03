@@ -25,13 +25,18 @@ func (c *collectorCore) Enabled(l zapcore.Level) bool {
 func (c *collectorCore) With(f []zapcore.Field) zapcore.Core {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.core.With(f)
+	return &collectorCore{
+		core: c.core.With(f),
+	}
 }
 
 func (c *collectorCore) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.core.Check(e, ce)
+	if c.core.Enabled(e.Level) {
+		return ce.AddCore(e, c)
+	}
+	return ce
 }
 
 func (c *collectorCore) Write(e zapcore.Entry, f []zapcore.Field) error {
