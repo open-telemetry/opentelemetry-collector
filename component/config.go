@@ -4,6 +4,7 @@
 package component // import "go.opentelemetry.io/collector/component"
 
 import (
+	"encoding"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -110,8 +111,8 @@ func callValidateIfPossible(v reflect.Value) error {
 }
 
 type Type interface {
-	String() string
-	MarshalText() ([]byte, error)
+	fmt.Stringer
+	encoding.TextMarshaler
 }
 
 // ComponentType is the component type as it is used in the config.
