@@ -158,9 +158,6 @@ type sum struct {
 
 // Unmarshal is a custom unmarshaler for sum. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
 func (d *sum) Unmarshal(parser *confmap.Conf) error {
-	// if !parser.IsSet("aggregation_temporality") {
-	// 	return errors.New("missing required field: `aggregation_temporality`")
-	// }
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err
 	}
