@@ -59,7 +59,7 @@ func TestConfigValidate(t *testing.T) {
 				}
 				return cfg
 			},
-			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, errors.New(`pipeline "wrongtype": unknown datatype "wrongtype"`)),
+			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, errors.New(`pipeline "wrongtype": is not a DataType "wrongtype"`)),
 		},
 		{
 			name: "invalid-telemetry-metric-config",
