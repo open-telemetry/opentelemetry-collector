@@ -65,6 +65,6 @@ the data ingested by the Collector.
 
 ### Data Egress
 
-The `otecol_exporter_sent_spans` and
+The `otelcol_exporter_sent_spans` and
 `otelcol_exporter_sent_metric_points`metrics provide information about
 the data exported by the Collector.
