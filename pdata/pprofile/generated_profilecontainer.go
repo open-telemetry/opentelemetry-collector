@@ -95,6 +95,11 @@ func (ms ProfileContainer) SetDroppedAttributesCount(v uint32) {
 	ms.orig.DroppedAttributesCount = v
 }
 
+// Profile returns the profile associated with this ProfileContainer.
+func (ms ProfileContainer) Profile() Profile {
+	return newProfile(&ms.orig.Profile, ms.state)
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ProfileContainer) CopyTo(dest ProfileContainer) {
 	dest.state.AssertMutable()
@@ -103,4 +108,5 @@ func (ms ProfileContainer) CopyTo(dest ProfileContainer) {
 	dest.SetEndTime(ms.EndTime())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+	ms.Profile().CopyTo(dest.Profile())
 }

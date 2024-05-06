@@ -28,5 +28,7 @@ func FillTestFloat64Slice(tv Float64Slice) {
 
 func GenerateTestFloat64Slice() Float64Slice {
 	state := StateMutable
-	return Float64Slice{&[]float64{}, &state}
+	var orig []float64 = nil
+
+	return Float64Slice{&orig, &state}
 }

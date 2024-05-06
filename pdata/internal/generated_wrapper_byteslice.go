@@ -28,5 +28,7 @@ func FillTestByteSlice(tv ByteSlice) {
 
 func GenerateTestByteSlice() ByteSlice {
 	state := StateMutable
-	return ByteSlice{&[]byte{}, &state}
+	var orig []byte = nil
+
+	return ByteSlice{&orig, &state}
 }

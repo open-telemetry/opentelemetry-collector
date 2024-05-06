@@ -197,7 +197,9 @@ func FillTest{{ .structName }}(tv {{ .structName}}) {
 
 func GenerateTest{{ .structName }}() {{ .structName }} {
 	state := StateMutable
-	return {{ .structName }}{&[]{{ .itemType }}{}, &state}
+	var orig []{{ .itemType }} = nil
+
+	return {{ .structName }}{&orig, &state}
 }`
 
 // primitiveSliceStruct generates a struct for a slice of primitive value elements. The structs are always generated

@@ -28,5 +28,7 @@ func FillTestUInt64Slice(tv UInt64Slice) {
 
 func GenerateTestUInt64Slice() UInt64Slice {
 	state := StateMutable
-	return UInt64Slice{&[]uint64{}, &state}
+	var orig []uint64 = nil
+
+	return UInt64Slice{&orig, &state}
 }

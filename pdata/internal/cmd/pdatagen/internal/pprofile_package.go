@@ -29,6 +29,11 @@ var pprofile = &Package{
 		scopeProfiles,
 		profilesContainersSlice,
 		profileContainer,
+		profile,
+		valueType,
+		valueTypes,
+		samples,
+		sample,
 	},
 }
 
@@ -97,6 +102,37 @@ var profileContainer = &messageValueStruct{
 		},
 		attributes,
 		droppedAttributesCount,
+		&messageValueField{
+			fieldName:     "Profile",
+			returnMessage: profile,
+		},
+	},
+}
+
+var profile = &messageValueStruct{
+	structName:     "Profile",
+	description:    "// Profile are an implementation of the pprofextended data model.\n",
+	originFullName: "otlpprofiles.Profile",
+	fields: []baseField{
+		&sliceField{
+			fieldName:   "SampleType",
+			returnSlice: valueTypes,
+		},
+		&sliceField{
+			fieldName:   "Sample",
+			returnSlice: samples,
+		},
+		&primitiveTypedField{
+			fieldName:       "StartTime",
+			originFieldName: "TimeNanos",
+			returnType: &primitiveType{
+				structName:  "Timestamp",
+				packageName: "pcommon",
+				rawType:     "int64",
+				defaultVal:  "0",
+				testVal:     "1234567890",
+			},
+		},
 	},
 }
 
@@ -105,4 +141,52 @@ var byteSliceType = &primitiveType{
 	rawType:    "[]byte",
 	defaultVal: "[]byte(nil)",
 	testVal:    `[]byte("test")`,
+}
+
+var valueTypes = &sliceOfValues{
+	structName: "ValueTypes",
+	element:    valueType,
+}
+
+var valueType = &messageValueStruct{
+	structName:     "ValueType",
+	description:    "// ValueType describes the type and units of a value, with an optional aggregation temporality.",
+	originFullName: "otlpprofiles.ValueType",
+	fields: []baseField{
+		&primitiveField{
+			fieldName:  "Type",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+		&primitiveField{
+			fieldName:  "Unit",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+		&primitiveField{
+			fieldName:  "AggregationTemporality",
+			returnType: "otlpprofiles.AggregationTemporality",
+			defaultVal: "otlpprofiles.AggregationTemporality(0)",
+			testVal:    "otlpprofiles.AggregationTemporality(1)",
+		},
+	},
+}
+
+var samples = &sliceOfValues{
+	structName: "Samples",
+	element:    sample,
+}
+
+var sample = &messageValueStruct{
+	structName:     "Sample",
+	description:    "// Sample represents each record value encountered within a profiled program.",
+	originFullName: "otlpprofiles.Sample",
+	fields: []baseField{
+		&sliceField{
+			fieldName:   "LocationIndex",
+			returnSlice: uInt64Slice,
+		},
+	},
 }

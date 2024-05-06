@@ -81,6 +81,12 @@ func TestProfileContainer_DroppedAttributesCount(t *testing.T) {
 	})
 }
 
+func TestProfileContainer_Profile(t *testing.T) {
+	ms := NewProfileContainer()
+	fillTestProfile(ms.Profile())
+	assert.Equal(t, generateTestProfile(), ms.Profile())
+}
+
 func generateTestProfileContainer() ProfileContainer {
 	tv := NewProfileContainer()
 	fillTestProfileContainer(tv)
@@ -93,4 +99,5 @@ func fillTestProfileContainer(tv ProfileContainer) {
 	tv.orig.EndTimeUnixNano = 1234567890
 	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.DroppedAttributesCount = uint32(17)
+	fillTestProfile(newProfile(&tv.orig.Profile, tv.state))
 }
