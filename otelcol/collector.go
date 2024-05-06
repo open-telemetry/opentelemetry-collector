@@ -217,7 +217,9 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		x := col.bc.TakeLogs()
 		for _, log := range x {
 			ce := col.service.Logger().Core().Check(log.Entry, nil)
-			ce.Write(log.Context...)
+			if ce != nil {
+				ce.Write(log.Context...)
+			}
 		}
 	}
 
@@ -285,8 +287,12 @@ func (col *Collector) Run(ctx context.Context) error {
 			fmt.Printf("unable to create fallback logger, %v", err)
 		} else {
 			if col.bc != nil {
-				for _, log := range col.bc.TakeLogs() {
-					logger.Log(log.Level, log.Message, log.Context...)
+				x := col.bc.TakeLogs()
+				for _, log := range x {
+					ce := logger.Core().Check(log.Entry, nil)
+					if ce != nil {
+						ce.Write(log.Context...)
+					}
 				}
 			}
 			logger.Warn("unable to resolve configuration", zap.Error(err))

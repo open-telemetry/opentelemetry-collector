@@ -6,6 +6,7 @@
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
+	"fmt"
 	"sync"
 
 	"go.uber.org/zap/zapcore"
@@ -24,9 +25,10 @@ var _ zapcore.Core = (*bufferedCore)(nil)
 
 type bufferedCore struct {
 	zapcore.LevelEnabler
-	mu      sync.RWMutex
-	logs    []loggedEntry
-	context []zapcore.Field
+	mu        sync.RWMutex
+	logs      []loggedEntry
+	context   []zapcore.Field
+	logsTaken bool
 }
 
 func (bc *bufferedCore) Level() zapcore.Level {
@@ -44,17 +46,21 @@ func (bc *bufferedCore) With(fields []zapcore.Field) zapcore.Core {
 	return &bufferedCore{
 		LevelEnabler: bc.LevelEnabler,
 		logs:         bc.logs,
+		logsTaken:    bc.logsTaken,
 		context:      append(bc.context, fields...),
 	}
 }
 
 func (bc *bufferedCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
+	bc.mu.Lock()
+	defer bc.mu.Unlock()
+	if bc.logsTaken {
+		return fmt.Errorf("the buffered logs have already been taken so writing is no longer supported")
+	}
 	all := make([]zapcore.Field, 0, len(fields)+len(bc.context))
 	all = append(all, bc.context...)
 	all = append(all, fields...)
-	bc.mu.Lock()
 	bc.logs = append(bc.logs, loggedEntry{ent, all})
-	bc.mu.Unlock()
 	return nil
 }
 
@@ -63,9 +69,13 @@ func (bc *bufferedCore) Sync() error {
 }
 
 func (bc *bufferedCore) TakeLogs() []loggedEntry {
-	bc.mu.Lock()
-	logs := bc.logs
-	bc.logs = nil
-	bc.mu.Unlock()
-	return logs
+	if !bc.logsTaken {
+		bc.mu.Lock()
+		defer bc.mu.Unlock()
+		logs := bc.logs
+		bc.logs = nil
+		bc.logsTaken = true
+		return logs
+	}
+	return nil
 }

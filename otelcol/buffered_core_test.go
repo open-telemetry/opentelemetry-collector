@@ -40,6 +40,7 @@ func Test_bufferedCore_Check(t *testing.T) {
 
 func Test_bufferedCore_With(t *testing.T) {
 	bc := newBufferedCore(zapcore.InfoLevel)
+	bc.logsTaken = true
 	bc.context = []zapcore.Field{
 		{Key: "original", String: "context"},
 	}
@@ -52,6 +53,7 @@ func Test_bufferedCore_With(t *testing.T) {
 	}
 	newBC := bc.With(inputs)
 	assert.Equal(t, expected, newBC.(*bufferedCore).context)
+	assert.True(t, newBC.(*bufferedCore).logsTaken)
 }
 
 func Test_bufferedCore_Write(t *testing.T) {
@@ -99,4 +101,7 @@ func Test_bufferedCore_TakeLogs(t *testing.T) {
 	}
 	assert.Equal(t, expected, bc.TakeLogs())
 	assert.Nil(t, bc.logs)
+
+	assert.Error(t, bc.Write(e, fields))
+	assert.Nil(t, bc.TakeLogs())
 }

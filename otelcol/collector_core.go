@@ -13,26 +13,26 @@ var _ zapcore.Core = (*collectorCore)(nil)
 
 type collectorCore struct {
 	core zapcore.Core
-	mu   sync.Mutex
+	rw   sync.RWMutex
 }
 
 func (c *collectorCore) Enabled(l zapcore.Level) bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.rw.RLock()
+	defer c.rw.RUnlock()
 	return c.core.Enabled(l)
 }
 
 func (c *collectorCore) With(f []zapcore.Field) zapcore.Core {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.rw.RLock()
+	defer c.rw.RUnlock()
 	return &collectorCore{
 		core: c.core.With(f),
 	}
 }
 
 func (c *collectorCore) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.rw.RLock()
+	defer c.rw.RUnlock()
 	if c.core.Enabled(e.Level) {
 		return ce.AddCore(e, c)
 	}
@@ -40,19 +40,19 @@ func (c *collectorCore) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcor
 }
 
 func (c *collectorCore) Write(e zapcore.Entry, f []zapcore.Field) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.rw.RLock()
+	defer c.rw.RUnlock()
 	return c.core.Write(e, f)
 }
 
 func (c *collectorCore) Sync() error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.rw.RLock()
+	defer c.rw.RUnlock()
 	return c.core.Sync()
 }
 
 func (c *collectorCore) SetCore(core zapcore.Core) {
-	c.mu.Lock()
+	c.rw.Lock()
+	defer c.rw.Unlock()
 	c.core = core
-	c.mu.Unlock()
 }
