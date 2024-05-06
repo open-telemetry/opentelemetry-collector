@@ -209,11 +209,11 @@ func (d histogram) Type() string {
 }
 
 func (d histogram) HasMonotonic() bool {
-	return true
+	return false
 }
 
 func (d histogram) HasAggregated() bool {
-	return true
+	return false
 }
 
 func (d histogram) Instrument() string {
