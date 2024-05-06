@@ -82,8 +82,15 @@ var (
 	}
 )
 
-func newInitializedConfig(t *testing.T) Config {
+func newTestConfig() Config {
 	cfg := NewDefaultConfig()
+	cfg.downloadModules.wait = 0
+	cfg.downloadModules.numRetries = 1
+	return cfg
+}
+
+func newInitializedConfig(t *testing.T) Config {
+	cfg := newTestConfig()
 	// Validate and ParseModules will be called before the config is
 	// given to Generate.
 	assert.NoError(t, cfg.Validate())
@@ -115,7 +122,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "defaults",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newTestConfig()
 				cfg.Distribution.Go = "go"
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
@@ -125,7 +132,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "require otelcol",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newTestConfig()
 				cfg.Distribution.Go = "go"
 				cfg.Distribution.RequireOtelColModule = true
 				cfg.Replaces = append(cfg.Replaces, replaces...)
@@ -136,7 +143,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "only gomod file, skip generate",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newTestConfig()
 				tempDir := t.TempDir()
 				err := makeModule(tempDir, []byte(goModTestFile))
 				require.NoError(t, err)
@@ -150,7 +157,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "old otel version",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newTestConfig()
 				cfg.Verbose = true
 				cfg.Distribution.Go = "go"
 				cfg.Distribution.OtelColVersion = "0.97.0"
@@ -182,7 +189,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "old component version",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newTestConfig()
 				cfg.Distribution.Go = "go"
 				cfg.Exporters = []Module{
 					{
@@ -198,7 +205,7 @@ func TestVersioning(t *testing.T) {
 		{
 			description: "old component version without strict mode",
 			cfgBuilder: func() Config {
-				cfg := NewDefaultConfig()
+				cfg := newTestConfig()
 				cfg.Distribution.Go = "go"
 				cfg.SkipStrictVersioning = true
 				cfg.Exporters = []Module{
@@ -249,7 +256,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		{
 			testCase: "Default Configuration Compilation",
 			cfgBuilder: func(t *testing.T) Config {
-				cfg := NewDefaultConfig()
+				cfg := newTestConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				return cfg
@@ -258,7 +265,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		{
 			testCase: "LDFlags Compilation",
 			cfgBuilder: func(t *testing.T) Config {
-				cfg := NewDefaultConfig()
+				cfg := newTestConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.LDFlags = `-X "test.gitVersion=0743dc6c6411272b98494a9b32a63378e84c34da" -X "test.gitTag=local-testing" -X "test.goVersion=go version go1.20.7 darwin/amd64"`
@@ -268,7 +275,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		{
 			testCase: "Debug Compilation",
 			cfgBuilder: func(t *testing.T) Config {
-				cfg := NewDefaultConfig()
+				cfg := newTestConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Logger = zap.NewNop()
@@ -279,7 +286,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		{
 			testCase: "No providers",
 			cfgBuilder: func(t *testing.T) Config {
-				cfg := NewDefaultConfig()
+				cfg := newTestConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Providers = &[]Module{}
@@ -289,7 +296,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		{
 			testCase: "Pre-confmap factories",
 			cfgBuilder: func(t *testing.T) Config {
-				cfg := NewDefaultConfig()
+				cfg := newTestConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Distribution.OtelColVersion = "0.98.0"
@@ -300,7 +307,7 @@ func TestGenerateAndCompile(t *testing.T) {
 		{
 			testCase: "With confmap factories",
 			cfgBuilder: func(t *testing.T) Config {
-				cfg := NewDefaultConfig()
+				cfg := newTestConfig()
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Distribution.OtelColVersion = "0.99.0"

@@ -54,7 +54,7 @@ func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 // createAndStartTestPersistentQueue creates and starts a fake queue with the given capacity and number of consumers.
-func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[tracesRequest], capacity int, numConsumers int,
+func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[tracesRequest], capacity int64, numConsumers int,
 	consumeFunc func(_ context.Context, item tracesRequest) error) Queue[tracesRequest] {
 	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
 		Sizer:            sizer,
@@ -90,16 +90,16 @@ func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue
 	return pq
 }
 
-func createTestPersistentQueueWithRequestsCapacity(t testing.TB, ext storage.Extension, capacity int) *persistentQueue[tracesRequest] {
+func createTestPersistentQueueWithRequestsCapacity(t testing.TB, ext storage.Extension, capacity int64) *persistentQueue[tracesRequest] {
 	return createTestPersistentQueueWithCapacityLimiter(t, ext, &RequestSizer[tracesRequest]{}, capacity)
 }
 
-func createTestPersistentQueueWithItemsCapacity(t testing.TB, ext storage.Extension, capacity int) *persistentQueue[tracesRequest] {
+func createTestPersistentQueueWithItemsCapacity(t testing.TB, ext storage.Extension, capacity int64) *persistentQueue[tracesRequest] {
 	return createTestPersistentQueueWithCapacityLimiter(t, ext, &ItemsSizer[tracesRequest]{}, capacity)
 }
 
 func createTestPersistentQueueWithCapacityLimiter(t testing.TB, ext storage.Extension, sizer Sizer[tracesRequest],
-	capacity int) *persistentQueue[tracesRequest] {
+	capacity int64) *persistentQueue[tracesRequest] {
 	pq := NewPersistentQueue[tracesRequest](PersistentQueueSettings[tracesRequest]{
 		Sizer:            sizer,
 		Capacity:         capacity,
@@ -117,7 +117,7 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 	tests := []struct {
 		name           string
 		sizer          Sizer[tracesRequest]
-		capacity       int
+		capacity       int64
 		sizeMultiplier int
 	}{
 		{
@@ -518,8 +518,6 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// get one item out, but don't mark it as processed
-	<-ps.putChan
 	require.True(t, ps.Consume(func(context.Context, tracesRequest) error {
 		// put one more item in
 		require.NoError(t, ps.Offer(context.Background(), req))
@@ -847,34 +845,132 @@ func TestPersistentQueue_ItemsCapacityUsageIsNotPreserved(t *testing.T) {
 
 	newPQ := createTestPersistentQueueWithItemsCapacity(t, ext, 100)
 
-	// The queue items size cannot be restored to the previous size. Falls back to 0.
-	assert.Equal(t, 0, newPQ.Size())
+	// The queue items size cannot be restored, fall back to request-based size
+	assert.Equal(t, 2, newPQ.Size())
 
 	assert.NoError(t, newPQ.Offer(context.Background(), newTracesRequest(2, 5)))
 
-	// Only new items are reflected
-	assert.Equal(t, 10, newPQ.Size())
+	// Only new items are correctly reflected
+	assert.Equal(t, 12, newPQ.Size())
 
-	// Consuming old items should does not affect the size.
+	// Consuming a restored request should reduce the restored size by 20 but it should not go to below zero
 	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 20, traces.traces.SpanCount())
 		return nil
 	}))
-	assert.Equal(t, 10, newPQ.Size())
+	assert.Equal(t, 0, newPQ.Size())
 
+	// Consuming another restored request should not affect the restored size since it's already dropped to 0.
 	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 25, traces.traces.SpanCount())
 		return nil
 	}))
-	assert.Equal(t, 10, newPQ.Size())
+	assert.Equal(t, 0, newPQ.Size())
+
+	// Adding another batch should update the size accordingly
+	assert.NoError(t, newPQ.Offer(context.Background(), newTracesRequest(5, 5)))
+	assert.Equal(t, 25, newPQ.Size())
 
 	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
 		assert.Equal(t, 10, traces.traces.SpanCount())
 		return nil
 	}))
+	assert.Equal(t, 15, newPQ.Size())
+
+	assert.NoError(t, newPQ.Shutdown(context.Background()))
+}
+
+// This test covers the case when the queue is restarted with the less capacity than needed to restore the queued items.
+// In that case, the queue has to be restored anyway even if it exceeds the capacity limit.
+func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
+	ext := NewMockStorageExtension(nil)
+	pq := createTestPersistentQueueWithRequestsCapacity(t, ext, 100)
+
+	assert.Equal(t, 0, pq.Size())
+
+	assert.NoError(t, pq.Offer(context.Background(), newTracesRequest(4, 10)))
+	assert.NoError(t, pq.Offer(context.Background(), newTracesRequest(2, 10)))
+	assert.NoError(t, pq.Offer(context.Background(), newTracesRequest(5, 5)))
+	assert.NoError(t, pq.Offer(context.Background(), newTracesRequest(1, 5)))
+
+	// Read the first request just to populate the read index in the storage.
+	// Otherwise, the write index won't be restored either.
+	assert.True(t, pq.Consume(func(_ context.Context, traces tracesRequest) error {
+		assert.Equal(t, 40, traces.traces.SpanCount())
+		return nil
+	}))
+	assert.Equal(t, 3, pq.Size())
+
+	assert.NoError(t, pq.Shutdown(context.Background()))
+
+	// The queue is restarted with the less capacity than needed to restore the queued items, but with the same
+	// underlying storage. No need to drop requests that are over capacity since they are already in the storage.
+	newPQ := createTestPersistentQueueWithRequestsCapacity(t, ext, 2)
+
+	// The queue items size cannot be restored, fall back to request-based size
+	assert.Equal(t, 3, newPQ.Size())
+
+	// Queue is full
+	assert.Error(t, newPQ.Offer(context.Background(), newTracesRequest(2, 5)))
+
+	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
+		assert.Equal(t, 20, traces.traces.SpanCount())
+		return nil
+	}))
+	assert.Equal(t, 2, newPQ.Size())
+
+	// Still full
+	assert.Error(t, newPQ.Offer(context.Background(), newTracesRequest(2, 5)))
+
+	assert.True(t, newPQ.Consume(func(_ context.Context, traces tracesRequest) error {
+		assert.Equal(t, 25, traces.traces.SpanCount())
+		return nil
+	}))
+	assert.Equal(t, 1, newPQ.Size())
+
+	// Now it can accept new items
+	assert.NoError(t, newPQ.Offer(context.Background(), newTracesRequest(2, 5)))
+
+	assert.NoError(t, newPQ.Shutdown(context.Background()))
+}
+
+// This test covers the case when the persistent storage is recovered from a snapshot which has
+// bigger value for the used size than the size of the actual items in the storage.
+func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
+	ext := NewMockStorageExtension(nil)
+	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 1000)
+
+	assert.Equal(t, 0, pq.Size())
+
+	for i := 0; i < 6; i++ {
+		assert.NoError(t, pq.Offer(context.Background(), newTracesRequest(2, 5)))
+	}
+	assert.Equal(t, 60, pq.Size())
+
+	// Consume 30 items
+	for i := 0; i < 3; i++ {
+		assert.True(t, pq.Consume(func(context.Context, tracesRequest) error { return nil }))
+	}
+	// The used size is now 30, but the snapshot should have 50, because it's taken every 5 read/writes.
+	assert.Equal(t, 30, pq.Size())
+
+	// Create a new queue pointed to the same storage
+	newPQ := createTestPersistentQueueWithItemsCapacity(t, ext, 1000)
+
+	// This is an incorrect size restored from the snapshot.
+	// In reality the size should be 30. Once the queue is drained, it will be updated to the correct size.
+	assert.Equal(t, 50, newPQ.Size())
+
+	assert.True(t, newPQ.Consume(func(context.Context, tracesRequest) error { return nil }))
+	assert.True(t, newPQ.Consume(func(context.Context, tracesRequest) error { return nil }))
+	assert.Equal(t, 30, newPQ.Size())
+
+	// Now the size must be correctly reflected
+	assert.True(t, newPQ.Consume(func(context.Context, tracesRequest) error { return nil }))
 	assert.Equal(t, 0, newPQ.Size())
 
 	assert.NoError(t, newPQ.Shutdown(context.Background()))
+	assert.NoError(t, pq.Shutdown(context.Background()))
 }
 
 func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[tracesRequest], compare []uint64) {

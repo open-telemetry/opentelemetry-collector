@@ -187,6 +187,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	col.serviceConfig = &cfg.Service
+
 	col.service, err = service.New(ctx, service.Settings{
 		BuildInfo:         col.set.BuildInfo,
 		CollectorConf:     conf,
@@ -239,15 +240,12 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	if err := cfg.Validate(); err != nil {
-		return err
-	}
-
-	return col.validatePipelineCfg(ctx, cfg, factories)
+	return cfg.Validate()
 }
 
 // Run starts the collector according to the given configuration, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
+// Sets up the control logic for config reloading and shutdown.
 func (col *Collector) Run(ctx context.Context) error {
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(StateClosed)
@@ -263,6 +261,8 @@ func (col *Collector) Run(ctx context.Context) error {
 		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
 	}
 
+	// Control loop: selects between channels for various interrupts - when this loop is broken, the collector exits.
+	// If a configuration reload fails, we return without waiting for graceful shutdown.
 LOOP:
 	for {
 		select {
@@ -320,24 +320,4 @@ func (col *Collector) shutdown(ctx context.Context) error {
 // setCollectorState provides current state of the collector
 func (col *Collector) setCollectorState(state State) {
 	col.state.Store(int32(state))
-}
-
-// validatePipelineCfg validates that the components in a pipeline support the
-// signal type of the pipeline. For example, this function will return an error if
-// a metrics pipeline has non-metrics components.
-func (col *Collector) validatePipelineCfg(ctx context.Context, cfg *Config, factories Factories) error {
-	set := service.Settings{
-		Receivers:  receiver.NewBuilder(cfg.Receivers, factories.Receivers),
-		Processors: processor.NewBuilder(cfg.Processors, factories.Processors),
-		Exporters:  exporter.NewBuilder(cfg.Exporters, factories.Exporters),
-		Connectors: connector.NewBuilder(cfg.Connectors, factories.Connectors),
-		Extensions: extension.NewBuilder(cfg.Extensions, factories.Extensions),
-	}
-
-	_, err := service.New(ctx, set, cfg.Service)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
