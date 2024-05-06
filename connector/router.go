@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package connector
+package connector // import "go.opentelemetry.io/collector/connector"
 
 import (
 	"fmt"
