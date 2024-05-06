@@ -25,7 +25,7 @@ be shared with users such as:
 ## Requirements for any solution
 
 1. Once the primary logger is instantiated, it should be usable anywhere in the Collector that does logging.
-2. Log timestamps must be accurate to when the log was written, regardless of when the log is written to the user-specified location(s)
+2. Log timestamps must be accurate to when the log was written, regardless of when the log is written to the user-specified location(s).
 3. The EntryCaller (what line number the log originates from) must be accurate to where the log was written.
 4. If an error causes the collector to gracefully terminate before the primary logger is created any previously written logs MUST be written to the either stout or stderr if they have not already been written there.
 
@@ -44,8 +44,7 @@ Benefits:
 - Logs are written in the user-specified format/level
 
 Downsides:
-- If an error occurs before the primary logger is created the buffered logs will not be written out
-- If the primary logger is used to write any logs before the buffered logs are passed, logs will be out of order
+- If the primary logger is used to write any logs before the buffered logs are passed, logs may be out of order. There are no guarantees that logs will be written in order, so the log timestamps should be taken as the source of truth for ordering.
 
 ### Create a Logger Using the Primary Logger's Defaults
 
