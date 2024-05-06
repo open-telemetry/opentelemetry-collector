@@ -21,15 +21,11 @@ import (
 	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
-	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
@@ -63,7 +59,6 @@ var (
 	}
 
 	errNoValidMetricExporter = errors.New("no valid metric exporter")
-	errNoValidSpanExporter   = errors.New("no valid span exporter")
 )
 
 func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErrorChannel chan error) (sdkmetric.Reader, *http.Server, error) {
@@ -84,47 +79,6 @@ func InitMetricReader(ctx context.Context, reader config.MetricReader, asyncErro
 		return initPeriodicExporter(ctx, reader.Periodic.Exporter, opts...)
 	}
 	return nil, nil, fmt.Errorf("unsupported metric reader type %v", reader)
-}
-
-func InitSpanProcessor(ctx context.Context, processor config.SpanProcessor) (sdktrace.SpanProcessor, error) {
-	if processor.Batch != nil {
-		if processor.Batch.Exporter.Console != nil {
-			exp, err := stdouttrace.New(
-				stdouttrace.WithPrettyPrint(),
-			)
-			if err != nil {
-				return nil, err
-			}
-			return initBatchSpanProcessor(processor.Batch, exp)
-		}
-		if processor.Batch.Exporter.OTLP != nil {
-			var err error
-			var exp sdktrace.SpanExporter
-			switch processor.Batch.Exporter.OTLP.Protocol {
-			case protocolProtobufHTTP:
-				exp, err = initOTLPHTTPSpanExporter(ctx, processor.Batch.Exporter.OTLP)
-			case protocolProtobufGRPC:
-				exp, err = initOTLPgRPCSpanExporter(ctx, processor.Batch.Exporter.OTLP)
-			default:
-				return nil, fmt.Errorf("unsupported protocol %q", processor.Batch.Exporter.OTLP.Protocol)
-			}
-			if err != nil {
-				return nil, err
-			}
-			return initBatchSpanProcessor(processor.Batch, exp)
-		}
-		return nil, errNoValidSpanExporter
-	}
-	return nil, fmt.Errorf("unsupported span processor type %v", processor)
-}
-
-func InitTracerProvider(res *resource.Resource, options []sdktrace.TracerProviderOption) (*sdktrace.TracerProvider, error) {
-	opts := []sdktrace.TracerProviderOption{
-		sdktrace.WithResource(res),
-	}
-
-	opts = append(opts, options...)
-	return sdktrace.NewTracerProvider(opts...), nil
 }
 
 func InitOpenTelemetry(res *resource.Resource, options []sdkmetric.Option, disableHighCardinality bool) (*sdkmetric.MeterProvider, error) {
@@ -339,105 +293,4 @@ func initOTLPHTTPExporter(ctx context.Context, otlpConfig *config.OTLPMetric) (s
 	}
 
 	return otlpmetrichttp.New(ctx, opts...)
-}
-
-func initOTLPgRPCSpanExporter(ctx context.Context, otlpConfig *config.OTLP) (sdktrace.SpanExporter, error) {
-	opts := []otlptracegrpc.Option{}
-
-	if len(otlpConfig.Endpoint) > 0 {
-		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
-		if err != nil {
-			return nil, err
-		}
-		opts = append(opts, otlptracegrpc.WithEndpoint(u.Host))
-		if u.Scheme == "http" {
-			opts = append(opts, otlptracegrpc.WithInsecure())
-		}
-	}
-
-	if otlpConfig.Compression != nil {
-		switch *otlpConfig.Compression {
-		case "gzip":
-			opts = append(opts, otlptracegrpc.WithCompressor(*otlpConfig.Compression))
-		case "none":
-			break
-		default:
-			return nil, fmt.Errorf("unsupported compression %q", *otlpConfig.Compression)
-		}
-	}
-	if otlpConfig.Timeout != nil && *otlpConfig.Timeout > 0 {
-		opts = append(opts, otlptracegrpc.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
-	}
-	if len(otlpConfig.Headers) > 0 {
-		opts = append(opts, otlptracegrpc.WithHeaders(otlpConfig.Headers))
-	}
-
-	return otlptracegrpc.New(ctx, opts...)
-}
-
-func initOTLPHTTPSpanExporter(ctx context.Context, otlpConfig *config.OTLP) (sdktrace.SpanExporter, error) {
-	opts := []otlptracehttp.Option{}
-
-	if len(otlpConfig.Endpoint) > 0 {
-		u, err := url.ParseRequestURI(normalizeEndpoint(otlpConfig.Endpoint))
-		if err != nil {
-			return nil, err
-		}
-		opts = append(opts, otlptracehttp.WithEndpoint(u.Host))
-
-		if u.Scheme == "http" {
-			opts = append(opts, otlptracehttp.WithInsecure())
-		}
-		if len(u.Path) > 0 {
-			opts = append(opts, otlptracehttp.WithURLPath(u.Path))
-		}
-	}
-	if otlpConfig.Compression != nil {
-		switch *otlpConfig.Compression {
-		case "gzip":
-			opts = append(opts, otlptracehttp.WithCompression(otlptracehttp.GzipCompression))
-		case "none":
-			opts = append(opts, otlptracehttp.WithCompression(otlptracehttp.NoCompression))
-		default:
-			return nil, fmt.Errorf("unsupported compression %q", *otlpConfig.Compression)
-		}
-	}
-	if otlpConfig.Timeout != nil && *otlpConfig.Timeout > 0 {
-		opts = append(opts, otlptracehttp.WithTimeout(time.Millisecond*time.Duration(*otlpConfig.Timeout)))
-	}
-	if len(otlpConfig.Headers) > 0 {
-		opts = append(opts, otlptracehttp.WithHeaders(otlpConfig.Headers))
-	}
-
-	return otlptracehttp.New(ctx, opts...)
-}
-
-func initBatchSpanProcessor(bsp *config.BatchSpanProcessor, exp sdktrace.SpanExporter) (sdktrace.SpanProcessor, error) {
-	opts := []sdktrace.BatchSpanProcessorOption{}
-	if bsp.ExportTimeout != nil {
-		if *bsp.ExportTimeout < 0 {
-			return nil, fmt.Errorf("invalid export timeout %d", *bsp.ExportTimeout)
-		}
-		opts = append(opts, sdktrace.WithExportTimeout(time.Millisecond*time.Duration(*bsp.ExportTimeout)))
-	}
-	if bsp.MaxExportBatchSize != nil {
-		if *bsp.MaxExportBatchSize < 0 {
-			return nil, fmt.Errorf("invalid batch size %d", *bsp.MaxExportBatchSize)
-		}
-		opts = append(opts, sdktrace.WithMaxExportBatchSize(*bsp.MaxExportBatchSize))
-	}
-	if bsp.MaxQueueSize != nil {
-		if *bsp.MaxQueueSize < 0 {
-			return nil, fmt.Errorf("invalid queue size %d", *bsp.MaxQueueSize)
-		}
-		opts = append(opts, sdktrace.WithMaxQueueSize(*bsp.MaxQueueSize))
-	}
-	if bsp.ScheduleDelay != nil {
-		if *bsp.ScheduleDelay < 0 {
-			return nil, fmt.Errorf("invalid schedule delay %d", *bsp.ScheduleDelay)
-		}
-		opts = append(opts, sdktrace.WithBatchTimeout(time.Millisecond*time.Duration(*bsp.ScheduleDelay)))
-	}
-	return sdktrace.NewBatchSpanProcessor(exp, opts...), nil
-
 }

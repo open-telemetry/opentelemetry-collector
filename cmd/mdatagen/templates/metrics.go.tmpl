@@ -16,6 +16,9 @@ import (
 	{{- if .SemConvVersion }}
 	conventions "go.opentelemetry.io/collector/semconv/v{{ .SemConvVersion }}"
 	{{- end }}
+	{{ if .ResourceAttributes -}}
+	"go.opentelemetry.io/collector/filter"
+	{{- end }}
 )
 
 {{ range $name, $info := .Attributes }}
@@ -132,6 +135,10 @@ type MetricsBuilder struct {
 	metricsCapacity int                  // maximum observed number of metrics per resource.
 	metricsBuffer   pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo       component.BuildInfo  // contains version information.
+	{{- if .ResourceAttributes }}
+	resourceAttributeIncludeFilter map[string]filter.Filter
+	resourceAttributeExcludeFilter map[string]filter.Filter
+	{{- end }}
 	{{- range $name, $metric := .Metrics }}
 	metric{{ $name.Render }} metric{{ $name.Render }}
 	{{- end }}
@@ -177,7 +184,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	}
 	{{- end }}
 	{{- if $attr.Warnings.IfConfigured }}
-	if mbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser {
+	if mbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser || mbc.ResourceAttributes.{{ $name.Render }}.MetricsInclude != nil || mbc.ResourceAttributes.{{ $name.Render }}.MetricsExclude != nil {
 		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $attr.Warnings.IfConfigured }}")
 	}
 	{{- end }}
@@ -190,7 +197,20 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		{{- range $name, $metric := .Metrics }}
 		metric{{ $name.Render }}: newMetric{{ $name.Render }}(mbc.Metrics.{{ $name.Render }}),
 		{{- end }}
+		{{ if .ResourceAttributes -}}
+		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		{{- end }}
 	}
+	{{- range $name, $attr := .ResourceAttributes }}
+	if mbc.ResourceAttributes.{{ $name.Render }}.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["{{ $name }}"] = filter.CreateFilter(mbc.ResourceAttributes.{{ $name.Render }}.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.{{ $name.Render }}.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["{{ $name }}"] = filter.CreateFilter(mbc.ResourceAttributes.{{ $name.Render }}.MetricsExclude)
+	}
+	{{- end }}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -263,6 +283,19 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	{{ if .ResourceAttributes -}}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	{{- end }}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

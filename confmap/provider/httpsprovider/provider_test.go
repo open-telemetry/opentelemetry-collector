@@ -12,6 +12,6 @@ import (
 )
 
 func TestSupportedScheme(t *testing.T) {
-	fp := NewWithSettings(confmaptest.NewNopProviderSettings())
+	fp := NewFactory().Create(confmaptest.NewNopProviderSettings())
 	assert.Equal(t, "https", fp.Scheme())
 }

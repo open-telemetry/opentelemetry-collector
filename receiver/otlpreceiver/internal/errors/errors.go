@@ -27,11 +27,7 @@ func GetStatusFromError(err error) error {
 	return s.Err()
 }
 
-func GetHTTPStatusCodeFromStatus(err error) int {
-	s, ok := status.FromError(err)
-	if !ok {
-		return http.StatusInternalServerError
-	}
+func GetHTTPStatusCodeFromStatus(s *status.Status) int {
 	// See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures
 	// to see if a code is retryable.
 	// See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures-1

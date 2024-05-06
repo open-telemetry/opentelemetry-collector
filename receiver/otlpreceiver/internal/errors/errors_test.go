@@ -48,27 +48,22 @@ func Test_GetStatusFromError(t *testing.T) {
 func Test_GetHTTPStatusCodeFromStatus(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    error
+		input    *status.Status
 		expected int
 	}{
 		{
-			name:     "Not a Status",
-			input:    fmt.Errorf("not a status error"),
-			expected: http.StatusInternalServerError,
-		},
-		{
 			name:     "Retryable Status",
-			input:    status.New(codes.Unavailable, "test").Err(),
+			input:    status.New(codes.Unavailable, "test"),
 			expected: http.StatusServiceUnavailable,
 		},
 		{
 			name:     "Non-retryable Status",
-			input:    status.New(codes.InvalidArgument, "test").Err(),
+			input:    status.New(codes.InvalidArgument, "test"),
 			expected: http.StatusInternalServerError,
 		},
 		{
 			name:     "Specifically 429",
-			input:    status.New(codes.ResourceExhausted, "test").Err(),
+			input:    status.New(codes.ResourceExhausted, "test"),
 			expected: http.StatusTooManyRequests,
 		},
 	}

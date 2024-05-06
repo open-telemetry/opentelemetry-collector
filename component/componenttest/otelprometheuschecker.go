@@ -196,7 +196,7 @@ func attributesForProcessorMetrics(processor component.ID) []attribute.KeyValue 
 	return []attribute.KeyValue{attribute.String(processorTag, processor.String())}
 }
 
-// attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
+// attributesForExporterMetrics returns the attributes that are needed for the receiver metrics.
 func attributesForExporterMetrics(exporter component.ID) []attribute.KeyValue {
 	return []attribute.KeyValue{attribute.String(exporterTag, exporter.String())}
 }

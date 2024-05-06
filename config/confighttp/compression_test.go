@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -99,7 +100,7 @@ func TestHTTPClientCompression(t *testing.T) {
 				Endpoint:    srv.URL,
 				Compression: tt.encoding,
 			}
-			client, err := clientSettings.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			client, err := clientSettings.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 			res, err := client.Do(req)
 			if tt.shouldError {

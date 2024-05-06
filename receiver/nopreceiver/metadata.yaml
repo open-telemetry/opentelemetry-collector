@@ -3,5 +3,5 @@ type: nop
 status:
   class: receiver
   stability:
-    development: [traces, metrics, logs]
-  distributions: []
+    beta: [traces, metrics, logs]
+  distributions: [core, contrib]

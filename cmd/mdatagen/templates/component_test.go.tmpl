@@ -7,17 +7,20 @@
 package {{ .Package }}
 
 import (
+	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	"context"
+	{{- end }}
 	"testing"
-	{{- if or isExporter isProcessor }}
+	{{- if and (not (and .Tests.SkipLifecycle .Tests.SkipShutdown)) (or isExporter isProcessor) }}
 	"time"
 	{{- end }}
 
 	"github.com/stretchr/testify/require"
+	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	"go.opentelemetry.io/collector/component"
-	{{- if not .Tests.SkipLifecycle }}
-	"go.opentelemetry.io/collector/component/componenttest"
 	{{- end }}
+	"go.opentelemetry.io/collector/component/componenttest"
+	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	{{- if isExporter }}
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -47,8 +50,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	{{- end }}
+	{{- end }}
 )
 
+func TestComponentFactoryType(t *testing.T) {
+	require.Equal(t, "{{ .Type }}", NewFactory().Type().String())
+}
+
+func TestComponentConfigStruct(t *testing.T) {
+	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
+{{ if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) -}}
 {{ if isExporter -}}
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
@@ -358,7 +371,8 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs_to_logs",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogsToLogs(ctx, set, cfg, consumertest.NewNop())
+				router := connector.NewLogsRouter(map[component.ID]consumer.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
+				return factory.CreateLogsToLogs(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -366,7 +380,8 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs_to_metrics",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogsToMetrics(ctx, set, cfg, consumertest.NewNop())
+				router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{component.NewID(component.DataTypeMetrics): consumertest.NewNop()})
+				return factory.CreateLogsToMetrics(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -374,7 +389,8 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs_to_traces",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogsToTraces(ctx, set, cfg, consumertest.NewNop())
+				router := connector.NewTracesRouter(map[component.ID]consumer.Traces{component.NewID(component.DataTypeTraces): consumertest.NewNop()})
+				return factory.CreateLogsToTraces(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -382,7 +398,8 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "metrics_to_logs",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateMetricsToLogs(ctx, set, cfg, consumertest.NewNop())
+				router := connector.NewLogsRouter(map[component.ID]consumer.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
+				return factory.CreateMetricsToLogs(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -390,7 +407,8 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "metrics_to_metrics",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateMetricsToMetrics(ctx, set, cfg, consumertest.NewNop())
+				router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{component.NewID(component.DataTypeMetrics): consumertest.NewNop()})
+				return factory.CreateMetricsToMetrics(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -398,7 +416,8 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "metrics_to_traces",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateMetricsToTraces(ctx, set, cfg, consumertest.NewNop())
+				router := connector.NewTracesRouter(map[component.ID]consumer.Traces{component.NewID(component.DataTypeTraces): consumertest.NewNop()})
+				return factory.CreateMetricsToTraces(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -406,7 +425,8 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "traces_to_logs",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTracesToLogs(ctx, set, cfg, consumertest.NewNop())
+				router := connector.NewLogsRouter(map[component.ID]consumer.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
+				return factory.CreateTracesToLogs(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -414,7 +434,8 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "traces_to_metrics",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTracesToMetrics(ctx, set, cfg, consumertest.NewNop())
+				router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{component.NewID(component.DataTypeMetrics): consumertest.NewNop()})
+				return factory.CreateTracesToMetrics(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -422,7 +443,8 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "traces_to_traces",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTracesToTraces(ctx, set, cfg, consumertest.NewNop())
+				router := connector.NewTracesRouter(map[component.ID]consumer.Traces{component.NewID(component.DataTypeTraces): consumertest.NewNop()})
+				return factory.CreateTracesToTraces(ctx, set, cfg, router)
 			},
 		},
 {{ end }}
@@ -498,4 +520,5 @@ func generateLifecycleTestTraces() ptrace.Traces {
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return traces
 }
+{{- end }}
 {{- end }}

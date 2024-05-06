@@ -33,10 +33,12 @@ type RequestErrorHandler interface {
 }
 
 // RequestMarshaler is a function that can marshal a Request into bytes.
+//
 // Deprecated: [v0.94.0] Use exporterqueue.Marshaler[Request] instead.
 type RequestMarshaler func(req Request) ([]byte, error)
 
 // RequestUnmarshaler is a function that can unmarshal bytes into a Request.
+//
 // Deprecated: [v0.94.0] Use exporterqueue.Unmarshaler[Request] instead.
 type RequestUnmarshaler func(data []byte) (Request, error)
 

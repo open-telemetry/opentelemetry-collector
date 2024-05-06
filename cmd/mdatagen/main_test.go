@@ -6,6 +6,8 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"testing"
@@ -21,7 +23,10 @@ func TestRunContents(t *testing.T) {
 		wantMetricsGenerated bool
 		wantConfigGenerated  bool
 		wantStatusGenerated  bool
-		wantTestsGenerated   bool
+		wantGoleakIgnore     bool
+		wantGoleakSkip       bool
+		wantGoleakSetup      bool
+		wantGoleakTeardown   bool
 		wantErr              bool
 	}{
 		{
@@ -45,28 +50,43 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                 "with_tests_receiver.yaml",
-			wantTestsGenerated:  true,
 			wantStatusGenerated: true,
 		},
 		{
 			yml:                 "with_tests_exporter.yaml",
-			wantTestsGenerated:  true,
 			wantStatusGenerated: true,
 		},
 		{
 			yml:                 "with_tests_processor.yaml",
-			wantTestsGenerated:  true,
 			wantStatusGenerated: true,
 		},
 		{
 			yml:                 "with_tests_extension.yaml",
-			wantTestsGenerated:  true,
 			wantStatusGenerated: true,
 		},
 		{
 			yml:                 "with_tests_connector.yaml",
-			wantTestsGenerated:  true,
 			wantStatusGenerated: true,
+		},
+		{
+			yml:                 "with_goleak_ignores.yaml",
+			wantStatusGenerated: true,
+			wantGoleakIgnore:    true,
+		},
+		{
+			yml:                 "with_goleak_skip.yaml",
+			wantStatusGenerated: true,
+			wantGoleakSkip:      true,
+		},
+		{
+			yml:                 "with_goleak_setup.yaml",
+			wantStatusGenerated: true,
+			wantGoleakSetup:     true,
+		},
+		{
+			yml:                 "with_goleak_teardown.yaml",
+			wantStatusGenerated: true,
+			wantGoleakTeardown:  true,
 		},
 	}
 	for _, tt := range tests {
@@ -108,25 +128,57 @@ foo
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_config_test.go"))
 			}
 
+			var contents []byte
 			if tt.wantStatusGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_status.go"))
-				contents, err := os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
+				contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
 				require.NoError(t, err)
 				require.NotContains(t, string(contents), "foo")
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_status.go"))
-				contents, err := os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
+				contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) // nolint: gosec
 				require.NoError(t, err)
 				require.Contains(t, string(contents), "foo")
 			}
 
-			if tt.wantTestsGenerated {
-				require.FileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
-				contents, err := os.ReadFile(filepath.Join(tmpdir, "generated_component_test.go")) // nolint: gosec
-				require.NoError(t, err)
-				require.Contains(t, string(contents), "func Test")
+			require.FileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
+			contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_component_test.go")) // nolint: gosec
+			require.NoError(t, err)
+			require.Contains(t, string(contents), "func Test")
+			_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
+			require.NoError(t, err)
+
+			require.FileExists(t, filepath.Join(tmpdir, "generated_package_test.go"))
+			contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_package_test.go")) // nolint: gosec
+			require.NoError(t, err)
+			require.Contains(t, string(contents), "func TestMain")
+			_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
+			require.NoError(t, err)
+
+			if tt.wantGoleakSkip {
+				require.Contains(t, string(contents), "skipping goleak test")
 			} else {
-				require.NoFileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
+				require.NotContains(t, string(contents), "skipping goleak test")
+			}
+
+			if tt.wantGoleakIgnore {
+				require.Contains(t, string(contents), "IgnoreTopFunction")
+				require.Contains(t, string(contents), "IgnoreAnyFunction")
+			} else {
+				require.NotContains(t, string(contents), "IgnoreTopFunction")
+				require.NotContains(t, string(contents), "IgnoreAnyFunction")
+			}
+
+			if tt.wantGoleakSetup {
+				require.Contains(t, string(contents), "setupFunc")
+			} else {
+				require.NotContains(t, string(contents), "setupFunc")
+			}
+
+			if tt.wantGoleakTeardown {
+				require.Contains(t, string(contents), "teardownFunc")
+			} else {
+				require.NotContains(t, string(contents), "teardownFunc")
 			}
 		})
 	}
@@ -385,8 +437,6 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -395,6 +445,80 @@ var (
 
 const (
 	MetricsStability = component.StabilityLevelBeta
+)
+`,
+		},
+		{
+			name: "foo component with alpha status",
+			md: metadata{
+				Type: "foo",
+				Status: &Status{
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelAlpha: {"metrics"},
+					},
+					Distributions: []string{"contrib"},
+					Class:         "receiver",
+				},
+			},
+			expected: `// Code generated by mdatagen. DO NOT EDIT.
+
+package metadata
+
+import (
+	"go.opentelemetry.io/collector/component"
+)
+
+var (
+	Type = component.MustNewType("foo")
+)
+
+const (
+	MetricsStability = component.StabilityLevelAlpha
+)
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpdir := t.TempDir()
+			err := generateFile("templates/status.go.tmpl",
+				filepath.Join(tmpdir, "generated_status.go"), tt.md, "metadata")
+			require.NoError(t, err)
+			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_status.go")) // nolint: gosec
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, string(actual))
+		})
+	}
+}
+
+func TestGenerateTelemetryMetadata(t *testing.T) {
+	tests := []struct {
+		name     string
+		output   string
+		md       metadata
+		expected string
+	}{
+		{
+			name: "foo component with beta status",
+			md: metadata{
+				Type: "foo",
+				Status: &Status{
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"metrics"},
+					},
+					Distributions: []string{"contrib"},
+					Class:         "receiver",
+				},
+			},
+			expected: `// Code generated by mdatagen. DO NOT EDIT.
+
+package metadata
+
+import (
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -428,14 +552,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-var (
-	Type = component.MustNewType("foo")
-)
-
-const (
-	MetricsStability = component.StabilityLevelAlpha
-)
-
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("")
 }
@@ -450,10 +566,10 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpdir := t.TempDir()
-			err := generateFile("templates/status.go.tmpl",
-				filepath.Join(tmpdir, "generated_status.go"), tt.md, "metadata")
+			err := generateFile("templates/telemetry.go.tmpl",
+				filepath.Join(tmpdir, "generated_telemetry.go"), tt.md, "metadata")
 			require.NoError(t, err)
-			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_status.go")) // nolint: gosec
+			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_telemetry.go")) // nolint: gosec
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, string(actual))
 		})

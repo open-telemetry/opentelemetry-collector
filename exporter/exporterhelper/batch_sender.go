@@ -18,8 +18,8 @@ import (
 
 // batchSender is a component that places requests into batches before passing them to the downstream senders.
 // Batches are sent out with any of the following conditions:
-// - batch size reaches cfg.SendBatchSize
-// - cfg.Timeout is elapsed since the timestamp when the previous batch was sent out.
+// - batch size reaches cfg.MinSizeItems
+// - cfg.FlushTimeout is elapsed since the timestamp when the previous batch was sent out.
 // - concurrencyLimit is reached.
 type batchSender struct {
 	baseRequestSender
@@ -27,7 +27,7 @@ type batchSender struct {
 	mergeFunc      exporterbatcher.BatchMergeFunc[Request]
 	mergeSplitFunc exporterbatcher.BatchMergeSplitFunc[Request]
 
-	// concurrencyLimit is the maximum number of goroutines that can be created by the batcher.
+	// concurrencyLimit is the maximum number of goroutines that can be blocked by the batcher.
 	// If this number is reached and all the goroutines are busy, the batch will be sent right away.
 	// Populated from the number of queue consumers if queue is enabled.
 	concurrencyLimit uint64

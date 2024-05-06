@@ -421,16 +421,33 @@ func TestCollectorClosedStateOnStartUpError(t *testing.T) {
 }
 
 func TestCollectorDryRun(t *testing.T) {
-	// Load a bad config causing startup to fail
-	set := CollectorSettings{
-		BuildInfo:              component.NewDefaultBuildInfo(),
-		Factories:              nopFactories,
-		ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
+	tests := map[string]struct {
+		settings    CollectorSettings
+		expectedErr string
+	}{
+		"invalid_processor": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
+			},
+			expectedErr: `service::pipelines::traces: references processor "invalid" which is not configured`,
+		},
 	}
-	col, err := NewCollector(set)
-	require.NoError(t, err)
 
-	require.Error(t, col.DryRun(context.Background()))
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			col, err := NewCollector(test.settings)
+			require.NoError(t, err)
+
+			err = col.DryRun(context.Background())
+			if test.expectedErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, test.expectedErr)
+			}
+		})
+	}
 }
 
 func TestPassConfmapToServiceFailure(t *testing.T) {
@@ -439,8 +456,8 @@ func TestPassConfmapToServiceFailure(t *testing.T) {
 		Factories: nopFactories,
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs:      []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-				Providers: makeMapProvidersMap(newFailureProvider()),
+				URIs:              []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
+				ProviderFactories: []confmap.ProviderFactory{confmap.NewProviderFactory(newFailureProvider)},
 			},
 		},
 	}
@@ -463,7 +480,7 @@ func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.Wai
 
 type failureProvider struct{}
 
-func newFailureProvider() confmap.Provider {
+func newFailureProvider(_ confmap.ProviderSettings) confmap.Provider {
 	return &failureProvider{}
 }
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -321,6 +322,8 @@ type MetricsBuilder struct {
 	metricsCapacity                int                  // maximum observed number of metrics per resource.
 	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                      component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter map[string]filter.Filter
+	resourceAttributeExcludeFilter map[string]filter.Filter
 	metricDefaultMetric            metricDefaultMetric
 	metricDefaultMetricToBeRemoved metricDefaultMetricToBeRemoved
 	metricMetricInputType          metricMetricInputType
@@ -354,7 +357,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	if !mbc.ResourceAttributes.StringResourceAttrDisableWarning.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `string.resource.attr_disable_warning`: This resource_attribute will be disabled by default soon.")
 	}
-	if mbc.ResourceAttributes.StringResourceAttrRemoveWarning.enabledSetByUser {
+	if mbc.ResourceAttributes.StringResourceAttrRemoveWarning.enabledSetByUser || mbc.ResourceAttributes.StringResourceAttrRemoveWarning.MetricsInclude != nil || mbc.ResourceAttributes.StringResourceAttrRemoveWarning.MetricsExclude != nil {
 		settings.Logger.Warn("[WARNING] `string.resource.attr_remove_warning` should not be configured: This resource_attribute is deprecated and will be removed soon.")
 	}
 	if mbc.ResourceAttributes.StringResourceAttrToBeRemoved.Enabled {
@@ -370,7 +373,58 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricMetricInputType:          newMetricMetricInputType(mbc.Metrics.MetricInputType),
 		metricOptionalMetric:           newMetricOptionalMetric(mbc.Metrics.OptionalMetric),
 		metricOptionalMetricEmptyUnit:  newMetricOptionalMetricEmptyUnit(mbc.Metrics.OptionalMetricEmptyUnit),
+		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.MapResourceAttr.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["map.resource.attr"] = filter.CreateFilter(mbc.ResourceAttributes.MapResourceAttr.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MapResourceAttr.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["map.resource.attr"] = filter.CreateFilter(mbc.ResourceAttributes.MapResourceAttr.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.OptionalResourceAttr.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["optional.resource.attr"] = filter.CreateFilter(mbc.ResourceAttributes.OptionalResourceAttr.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.OptionalResourceAttr.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["optional.resource.attr"] = filter.CreateFilter(mbc.ResourceAttributes.OptionalResourceAttr.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.SliceResourceAttr.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["slice.resource.attr"] = filter.CreateFilter(mbc.ResourceAttributes.SliceResourceAttr.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SliceResourceAttr.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["slice.resource.attr"] = filter.CreateFilter(mbc.ResourceAttributes.SliceResourceAttr.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.StringEnumResourceAttr.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["string.enum.resource.attr"] = filter.CreateFilter(mbc.ResourceAttributes.StringEnumResourceAttr.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.StringEnumResourceAttr.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["string.enum.resource.attr"] = filter.CreateFilter(mbc.ResourceAttributes.StringEnumResourceAttr.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.StringResourceAttr.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["string.resource.attr"] = filter.CreateFilter(mbc.ResourceAttributes.StringResourceAttr.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.StringResourceAttr.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["string.resource.attr"] = filter.CreateFilter(mbc.ResourceAttributes.StringResourceAttr.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.StringResourceAttrDisableWarning.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["string.resource.attr_disable_warning"] = filter.CreateFilter(mbc.ResourceAttributes.StringResourceAttrDisableWarning.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.StringResourceAttrDisableWarning.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["string.resource.attr_disable_warning"] = filter.CreateFilter(mbc.ResourceAttributes.StringResourceAttrDisableWarning.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.StringResourceAttrRemoveWarning.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["string.resource.attr_remove_warning"] = filter.CreateFilter(mbc.ResourceAttributes.StringResourceAttrRemoveWarning.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.StringResourceAttrRemoveWarning.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["string.resource.attr_remove_warning"] = filter.CreateFilter(mbc.ResourceAttributes.StringResourceAttrRemoveWarning.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.StringResourceAttrToBeRemoved.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["string.resource.attr_to_be_removed"] = filter.CreateFilter(mbc.ResourceAttributes.StringResourceAttrToBeRemoved.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.StringResourceAttrToBeRemoved.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["string.resource.attr_to_be_removed"] = filter.CreateFilter(mbc.ResourceAttributes.StringResourceAttrToBeRemoved.MetricsExclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -441,6 +495,17 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

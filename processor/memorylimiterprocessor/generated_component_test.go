@@ -21,6 +21,14 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
+func TestComponentFactoryType(t *testing.T) {
+	require.Equal(t, "memory_limiter", NewFactory().Type().String())
+}
+
+func TestComponentConfigStruct(t *testing.T) {
+	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 

@@ -1,18 +1,15 @@
-## Important (read before submitting)
-We are currently preparing for the upcoming 1.0 GA release. Pull requests that are not aligned with
-the current roadmap and are not aimed at stabilizing and preparing the Collector for the release will
-not be accepted.
-
-_Delete the preceding paragraph before submitting._
-
-**Description:** <Describe what has changed.>
 <!--Ex. Fixing a bug - Describe the bug and how this fixes the issue.
 Ex. Adding a feature - Explain what this achieves.-->
+#### Description
 
-**Link to tracking Issue:** <Issue number if applicable>
+<!-- Issue number if applicable -->
+#### Link to tracking issue
+Fixes #
 
-**Testing:** <Describe what testing was performed and which tests were added.>
+<!--Describe what testing was performed and which tests were added.-->
+#### Testing
 
-**Documentation:** <Describe the documentation added.>
+<!--Describe the documentation added.-->
+#### Documentation
 
-_Please delete paragraphs that you did not use before submitting._
+<!--Please delete paragraphs that you did not use before submitting.-->

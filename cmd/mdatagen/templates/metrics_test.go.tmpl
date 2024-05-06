@@ -14,31 +14,46 @@ import (
 )
 
 
-type testConfigCollection int
+type testDataSet int
 
 const (
-	testSetDefault testConfigCollection = iota
-	testSetAll
-	testSetNone
+	testDataSetDefault testDataSet = iota
+	testDataSetAll
+	testDataSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name      string
-		configSet testConfigCollection
+		name               string
+		metricsSet         testDataSet
+		resAttrsSet        testDataSet
+		expectEmpty        bool
 	}{
 		{
-			name:       "default",
-			configSet: testSetDefault,
+			name: "default",
 		},
 		{
-			name:       "all_set",
-			configSet: testSetAll,
+			name:        "all_set",
+			metricsSet:  testDataSetAll,
+			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:       "none_set",
-			configSet: testSetNone,
+			name:        "none_set",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
 		},
+		{{- if .ResourceAttributes }}
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
+		},
+		{{- end }}
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -52,19 +67,19 @@ func TestMetricsBuilder(t *testing.T) {
 			expectedWarnings := 0
 			{{- range $name, $metric := .Metrics }}
 			{{- if and $metric.Enabled $metric.Warnings.IfEnabled }}
-			if test.configSet == testSetDefault || test.configSet == testSetAll {
+			if test.metricsSet == testDataSetDefault || test.metricsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			{{- end }}
 			{{- if $metric.Warnings.IfEnabledNotSet }}
-			if test.configSet == testSetDefault {
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $metric.Warnings.IfEnabledNotSet }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			{{- end }}
 			{{- if $metric.Warnings.IfConfigured }}
-			if test.configSet == testSetAll || test.configSet == testSetNone {
+			if test.metricsSet == testDataSetAll || test.metricsSet == testDataSetNone {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -72,19 +87,19 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end }}
 			{{- range $name, $attr := .ResourceAttributes }}
 			{{- if and $attr.Enabled $attr.Warnings.IfEnabled }}
-			if test.configSet == testSetDefault || test.configSet == testSetAll {
+			if test.resAttrsSet == testDataSetDefault || test.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $attr.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			{{- end }}
 			{{- if $attr.Warnings.IfEnabledNotSet }}
-			if test.configSet == testSetDefault {
+			if test.resAttrsSet == testDataSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $attr.Warnings.IfEnabledNotSet }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			{{- end }}
 			{{- if $attr.Warnings.IfConfigured }}
-			if test.configSet == testSetAll || test.configSet == testSetNone {
+			if test.resAttrsSet == testDataSetAll || test.resAttrsSet == testDataSetNone {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be configured: {{ $attr.Warnings.IfConfigured }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -121,7 +136,7 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end }}
 			metrics := mb.Emit(WithResource(res))
 
-			if test.configSet == testSetNone {
+			if test.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
@@ -131,10 +146,10 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.configSet == testSetDefault {
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.configSet == testSetAll {
+			if test.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)

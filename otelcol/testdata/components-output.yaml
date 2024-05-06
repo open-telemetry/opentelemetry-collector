@@ -8,6 +8,11 @@ receivers:
         logs: Stable
         metrics: Stable
         traces: Stable
+    - name: nop_logs
+      stability:
+        logs: Stable
+        metrics: Undefined
+        traces: Undefined
 processors:
     - name: nop
       stability:

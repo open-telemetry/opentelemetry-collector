@@ -10,9 +10,9 @@ import (
 	"net/http"
 
 	spb "google.golang.org/genproto/googleapis/rpc/status"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/internal/httphelper"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
@@ -43,7 +43,7 @@ func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *t
 
 	otlpResp, err := tracesReceiver.Export(req.Context(), otlpReq)
 	if err != nil {
-		writeError(resp, enc, err, errors.GetHTTPStatusCodeFromStatus(err))
+		writeError(resp, enc, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -74,7 +74,7 @@ func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver 
 
 	otlpResp, err := metricsReceiver.Export(req.Context(), otlpReq)
 	if err != nil {
-		writeError(resp, enc, err, errors.GetHTTPStatusCodeFromStatus(err))
+		writeError(resp, enc, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -105,7 +105,7 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.
 
 	otlpResp, err := logsReceiver.Export(req.Context(), otlpReq)
 	if err != nil {
-		writeError(resp, enc, err, errors.GetHTTPStatusCodeFromStatus(err))
+		writeError(resp, enc, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -150,8 +150,10 @@ func readAndCloseBody(resp http.ResponseWriter, req *http.Request, enc encoder) 
 // writeError encodes the HTTP error inside a rpc.Status message as required by the OTLP protocol.
 func writeError(w http.ResponseWriter, encoder encoder, err error, statusCode int) {
 	s, ok := status.FromError(err)
-	if !ok {
-		s = errorMsgToStatus(err.Error(), statusCode)
+	if ok {
+		statusCode = errors.GetHTTPStatusCodeFromStatus(s)
+	} else {
+		s = httphelper.NewStatusFromMsgAndHTTPCode(err.Error(), statusCode)
 	}
 	writeStatusResponse(w, encoder, statusCode, s.Proto())
 }
@@ -159,7 +161,7 @@ func writeError(w http.ResponseWriter, encoder encoder, err error, statusCode in
 // errorHandler encodes the HTTP error message inside a rpc.Status message as required
 // by the OTLP protocol.
 func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusCode int) {
-	s := errorMsgToStatus(errMsg, statusCode)
+	s := httphelper.NewStatusFromMsgAndHTTPCode(errMsg, statusCode)
 	switch getMimeTypeFromContentType(r.Header.Get("Content-Type")) {
 	case pbContentType:
 		writeStatusResponse(w, pbEncoder, statusCode, s.Proto())
@@ -186,13 +188,6 @@ func writeResponse(w http.ResponseWriter, contentType string, statusCode int, ms
 	w.WriteHeader(statusCode)
 	// Nothing we can do with the error if we cannot write to the response.
 	_, _ = w.Write(msg)
-}
-
-func errorMsgToStatus(errMsg string, statusCode int) *status.Status {
-	if statusCode == http.StatusBadRequest {
-		return status.New(codes.InvalidArgument, errMsg)
-	}
-	return status.New(codes.Unknown, errMsg)
 }
 
 func getMimeTypeFromContentType(contentType string) string {

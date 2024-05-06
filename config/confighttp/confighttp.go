@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
@@ -116,8 +117,8 @@ func NewDefaultClientConfig() ClientConfig {
 }
 
 // ToClient creates an HTTP client.
-func (hcs *ClientConfig) ToClient(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	tlsCfg, err := hcs.TLSSetting.LoadTLSConfigContext(context.Background())
+func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -206,14 +207,17 @@ func (hcs *ClientConfig) ToClient(host component.Host, settings component.Teleme
 		}
 	}
 
+	otelOpts := []otelhttp.Option{
+		otelhttp.WithTracerProvider(settings.TracerProvider),
+		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
+	}
+	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
+		otelOpts = append(otelOpts, otelhttp.WithMeterProvider(settings.MeterProvider))
+	}
+
 	// wrapping http transport with otelhttp transport to enable otel instrumentation
 	if settings.TracerProvider != nil && settings.MeterProvider != nil {
-		clientTransport = otelhttp.NewTransport(
-			clientTransport,
-			otelhttp.WithTracerProvider(settings.TracerProvider),
-			otelhttp.WithMeterProvider(settings.MeterProvider),
-			otelhttp.WithPropagators(otel.GetTextMapPropagator()),
-		)
+		clientTransport = otelhttp.NewTransport(clientTransport, otelOpts...)
 	}
 
 	if hcs.CustomRoundTripper != nil {
@@ -227,6 +231,11 @@ func (hcs *ClientConfig) ToClient(host component.Host, settings component.Teleme
 		Transport: clientTransport,
 		Timeout:   hcs.Timeout,
 	}, nil
+}
+
+// Deprecated: [v0.99.0] Use ToClient instead.
+func (hcs *ClientConfig) ToClientContext(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+	return hcs.ToClient(ctx, host, settings)
 }
 
 // Custom RoundTripper that adds headers.
@@ -277,8 +286,13 @@ type ServerConfig struct {
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
 }
 
+// Deprecated: [v0.99.0] Use ToListener instead.
+func (hss *ServerConfig) ToListenerContext(ctx context.Context) (net.Listener, error) {
+	return hss.ToListener(ctx)
+}
+
 // ToListener creates a net.Listener.
-func (hss *ServerConfig) ToListener() (net.Listener, error) {
+func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 	listener, err := net.Listen("tcp", hss.Endpoint)
 	if err != nil {
 		return nil, err
@@ -286,7 +300,7 @@ func (hss *ServerConfig) ToListener() (net.Listener, error) {
 
 	if hss.TLSSetting != nil {
 		var tlsCfg *tls.Config
-		tlsCfg, err = hss.TLSSetting.LoadTLSConfigContext(context.Background())
+		tlsCfg, err = hss.TLSSetting.LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -327,8 +341,13 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 	}
 }
 
+// Deprecated: [v0.99.0] Use ToServer instead.
+func (hss *ServerConfig) ToServerContext(ctx context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+	return hss.ToServer(ctx, host, settings, handler, opts...)
+}
+
 // ToServer creates an http.Server from settings object.
-func (hss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
 
 	serverOpts := &toServerOptions{}
@@ -368,18 +387,20 @@ func (hss *ServerConfig) ToServer(host component.Host, settings component.Teleme
 		handler = responseHeadersHandler(handler, hss.ResponseHeaders)
 	}
 
-	// Enable OpenTelemetry observability plugin.
-	// TODO: Consider to use component ID string as prefix for all the operations.
-	handler = otelhttp.NewHandler(
-		handler,
-		"",
+	otelOpts := []otelhttp.Option{
 		otelhttp.WithTracerProvider(settings.TracerProvider),
-		otelhttp.WithMeterProvider(settings.MeterProvider),
 		otelhttp.WithPropagators(otel.GetTextMapPropagator()),
 		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 			return r.URL.Path
 		}),
-	)
+	}
+	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
+		otelOpts = append(otelOpts, otelhttp.WithMeterProvider(settings.MeterProvider))
+	}
+
+	// Enable OpenTelemetry observability plugin.
+	// TODO: Consider to use component ID string as prefix for all the operations.
+	handler = otelhttp.NewHandler(handler, "", otelOpts...)
 
 	// wrap the current handler in an interceptor that will add client.Info to the request's context
 	handler = &clientInfoHandler{
