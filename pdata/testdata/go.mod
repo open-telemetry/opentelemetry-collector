@@ -2,7 +2,7 @@ module go.opentelemetry.io/collector/pdata/testdata
 
 go 1.21
 
-require go.opentelemetry.io/collector/pdata v1.6.0
+require go.opentelemetry.io/collector/pdata v1.7.0
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect

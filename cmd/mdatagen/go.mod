@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.99.0
 	go.opentelemetry.io/collector/consumer v0.99.0
 	go.opentelemetry.io/collector/filter v0.99.0
-	go.opentelemetry.io/collector/pdata v1.6.0
+	go.opentelemetry.io/collector/pdata v1.7.0
 	go.opentelemetry.io/collector/receiver v0.99.0
 	go.opentelemetry.io/collector/semconv v0.99.0
 	go.opentelemetry.io/otel/metric v1.26.0
