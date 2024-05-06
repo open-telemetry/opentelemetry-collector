@@ -19,10 +19,6 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
-const (
-	exporterScope = obsmetrics.Scope + obsmetrics.SpanNameSep + obsmetrics.ExporterKey
-)
-
 // ObsReport is a helper to add observability to an exporter.
 type ObsReport struct {
 	level          configtelemetry.Level
