@@ -54,7 +54,7 @@ type Distribution struct {
 	Description              string `mapstructure:"description"`
 	OtelColVersion           string `mapstructure:"otelcol_version"`
 	RequireOtelColModule     bool   `mapstructure:"-"` // required for backwards-compatibility with builds older than 0.86.0
-	SupportsConfmapFactories bool   `mapstructure:"-"` // Required for backwards-compatibility with builds older than 0.100.0
+	SupportsConfmapFactories bool   `mapstructure:"-"` // Required for backwards-compatibility with builds older than 0.99.0
 	OutputPath               string `mapstructure:"output_path"`
 	Version                  string `mapstructure:"version"`
 	BuildTags                string `mapstructure:"build_tags"`
@@ -149,7 +149,7 @@ func (c *Config) SetBackwardsCompatibility() error {
 	c.Distribution.RequireOtelColModule = constraint.Check(otelColVersion)
 
 	// check whether confmap factories are supported
-	constraint, err = version.NewConstraint(">= 0.100.0")
+	constraint, err = version.NewConstraint(">= 0.99.0")
 	if err != nil {
 		return err
 	}
