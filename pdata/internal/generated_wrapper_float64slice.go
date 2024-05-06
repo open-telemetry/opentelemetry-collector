@@ -22,3 +22,11 @@ func GetFloat64SliceState(ms Float64Slice) *State {
 func NewFloat64Slice(orig *[]float64, state *State) Float64Slice {
 	return Float64Slice{orig: orig, state: state}
 }
+
+func FillTestFloat64Slice(tv Float64Slice) {
+}
+
+func GenerateTestFloat64Slice() Float64Slice {
+	state := StateMutable
+	return Float64Slice{&[]float64{}, &state}
+}

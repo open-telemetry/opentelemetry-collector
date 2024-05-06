@@ -22,3 +22,11 @@ func GetByteSliceState(ms ByteSlice) *State {
 func NewByteSlice(orig *[]byte, state *State) ByteSlice {
 	return ByteSlice{orig: orig, state: state}
 }
+
+func FillTestByteSlice(tv ByteSlice) {
+}
+
+func GenerateTestByteSlice() ByteSlice {
+	state := StateMutable
+	return ByteSlice{&[]byte{}, &state}
+}

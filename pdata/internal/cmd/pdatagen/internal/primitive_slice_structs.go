@@ -80,13 +80,13 @@ func (ms {{ .structName }}) EnsureCapacity(newCap int) {
 }
 
 // Append appends extra elements to {{ .structName }}.
-// Equivalent of {{ .lowerStructName }} = append({{ .lowerStructName }}, elms...) 
+// Equivalent of {{ .lowerStructName }} = append({{ .lowerStructName }}, elms...)
 func (ms {{ .structName }}) Append(elms ...{{ .itemType }}) {
 	ms.getState().AssertMutable()
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
-// MoveTo moves all elements from the current slice overriding the destination and 
+// MoveTo moves all elements from the current slice overriding the destination and
 // resetting the current instance to its zero value.
 func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 	ms.getState().AssertMutable()
@@ -117,7 +117,7 @@ const immutableSliceTestTemplate = `func TestNew{{ .structName }}(t *testing.T) 
 	ms.FromRaw([]{{ .itemType }}{3})
 	assert.Equal(t, 1, ms.Len())
 	assert.Equal(t, {{ .itemType }}(3), ms.At(0))
-	
+
 	cp := New{{ .structName }}()
 	ms.CopyTo(cp)
 	ms.SetAt(0, {{ .itemType }}(2))
@@ -125,7 +125,7 @@ const immutableSliceTestTemplate = `func TestNew{{ .structName }}(t *testing.T) 
 	assert.Equal(t, {{ .itemType }}(3), cp.At(0))
 	ms.CopyTo(cp)
 	assert.Equal(t, {{ .itemType }}(2), cp.At(0))
-	
+
 	mv := New{{ .structName }}()
 	ms.MoveTo(mv)
 	assert.Equal(t, 0, ms.Len())
@@ -153,7 +153,7 @@ func Test{{ .structName }}ReadOnly(t *testing.T) {
 	ms.CopyTo(ms2)
 	assert.Equal(t, ms.AsRaw(), ms2.AsRaw())
 	assert.Panics(t, func() { ms2.CopyTo(ms) })
-	
+
 	assert.Panics(t, func() { ms.MoveTo(ms2) })
 	assert.Panics(t, func() { ms2.MoveTo(ms) })
 }
@@ -190,6 +190,14 @@ func Get{{ .structName }}State(ms {{ .structName }}) *State {
 
 func New{{ .structName }}(orig *[]{{ .itemType }}, state *State) {{ .structName }} {
 	return {{ .structName }}{orig: orig, state: state}
+}
+
+func FillTest{{ .structName }}(tv {{ .structName}}) {
+}
+
+func GenerateTest{{ .structName }}() {{ .structName }} {
+	state := StateMutable
+	return {{ .structName }}{&[]{{ .itemType }}{}, &state}
 }`
 
 // primitiveSliceStruct generates a struct for a slice of primitive value elements. The structs are always generated
