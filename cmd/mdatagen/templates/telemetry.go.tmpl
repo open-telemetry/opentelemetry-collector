@@ -3,6 +3,10 @@
 package {{ .Package }}
 
 import (
+    {{- if .Telemetry.Metrics }}
+    "errors"
+    {{- end }}
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -15,3 +19,34 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("{{ .ScopeName }}")
 }
+{{- if .Telemetry.Metrics }}
+
+// TelemetryBuilder provides an interface for components to report telemetry 
+// as defined in metadata and user config.
+type TelemetryBuilder struct {
+	{{- range $name, $metric := .Telemetry.Metrics }}
+	{{ $name.Render }} metric.{{ $metric.Data.Instrument }}
+	{{- end }}
+}
+
+// telemetryBuilderOption applies changes to default builder.
+type telemetryBuilderOption func(*TelemetryBuilder)
+
+// NewTelemetryBuilder provides a struct with methods to update all internal telemetry
+// for a component
+func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
+    builder := TelemetryBuilder{}
+    var err, errs error
+    meter := Meter(settings)
+    {{- range $name, $metric := .Telemetry.Metrics }}
+    builder.{{ $name.Render }}, err = meter.{{ $metric.Data.Instrument }}(
+        "{{ $name }}",
+        metric.WithDescription("{{ $metric.Description }}"),
+        metric.WithUnit("{{ $metric.Unit }}"),
+    )
+    errs = errors.Join(errs, err)
+    {{- end }}
+    return &builder, errs
+}
+
+{{- end }}

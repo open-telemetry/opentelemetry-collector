@@ -7,6 +7,9 @@ import (
 	"errors"
 	"fmt"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -14,6 +17,7 @@ import (
 var (
 	_ MetricData = &gauge{}
 	_ MetricData = &sum{}
+	_ MetricData = &histogram{}
 )
 
 // MetricData is generic interface for all metric datatypes.
@@ -22,6 +26,7 @@ type MetricData interface {
 	HasMonotonic() bool
 	HasAggregated() bool
 	HasMetricInputType() bool
+	Instrument() string
 }
 
 // AggregationTemporality defines a metric aggregation type.
@@ -140,6 +145,10 @@ func (d gauge) HasAggregated() bool {
 	return false
 }
 
+func (d gauge) Instrument() string {
+	return ""
+}
+
 type sum struct {
 	AggregationTemporality `mapstructure:"aggregation_temporality"`
 	Mono                   `mapstructure:",squash"`
@@ -149,9 +158,6 @@ type sum struct {
 
 // Unmarshal is a custom unmarshaler for sum. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
 func (d *sum) Unmarshal(parser *confmap.Conf) error {
-	if !parser.IsSet("aggregation_temporality") {
-		return errors.New("missing required field: `aggregation_temporality`")
-	}
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err
 	}
@@ -179,4 +185,46 @@ func (d sum) HasMonotonic() bool {
 
 func (d sum) HasAggregated() bool {
 	return true
+}
+
+func (d sum) Instrument() string {
+	instrumentName := cases.Title(language.English).String(d.MetricValueType.BasicType())
+
+	if !d.Monotonic {
+		instrumentName += "UpDown"
+	}
+	instrumentName += "Counter"
+	return instrumentName
+}
+
+type histogram struct {
+	AggregationTemporality `mapstructure:"aggregation_temporality"`
+	Mono                   `mapstructure:",squash"`
+	MetricValueType        `mapstructure:"value_type"`
+	MetricInputType        `mapstructure:",squash"`
+}
+
+func (d histogram) Type() string {
+	return "Histogram"
+}
+
+func (d histogram) HasMonotonic() bool {
+	return true
+}
+
+func (d histogram) HasAggregated() bool {
+	return true
+}
+
+func (d histogram) Instrument() string {
+	instrumentName := cases.Title(language.English).String(d.MetricValueType.BasicType())
+	return instrumentName + d.Type()
+}
+
+// Unmarshal is a custom unmarshaler for histogram. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
+func (d *histogram) Unmarshal(parser *confmap.Conf) error {
+	if err := d.MetricValueType.Unmarshal(parser); err != nil {
+		return err
+	}
+	return parser.Unmarshal(d, confmap.WithIgnoreUnused())
 }

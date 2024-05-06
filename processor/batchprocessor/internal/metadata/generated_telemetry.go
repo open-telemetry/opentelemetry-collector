@@ -3,6 +3,8 @@
 package metadata
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
@@ -15,4 +17,49 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("go.opentelemetry.io/collector/processor/batchprocessor")
+}
+
+// TelemetryBuilder provides an interface for components to report telemetry
+// as defined in metadata and user config.
+type TelemetryBuilder struct {
+	ProcessorBatchBatchSendSize        metric.Int64Histogram
+	ProcessorBatchBatchSendSizeBytes   metric.Int64Histogram
+	ProcessorBatchBatchSizeTriggerSend metric.Int64Counter
+	ProcessorBatchTimeoutTriggerSend   metric.Int64Counter
+}
+
+// telemetryBuilderOption applies changes to default builder.
+type telemetryBuilderOption func(*TelemetryBuilder)
+
+// NewTelemetryBuilder provides a struct with methods to update all internal telemetry
+// for a component
+func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
+	builder := TelemetryBuilder{}
+	var err, errs error
+	meter := Meter(settings)
+	builder.ProcessorBatchBatchSendSize, err = meter.Int64Histogram(
+		"processor_batch_batch_send_size",
+		metric.WithDescription("Number of units in the batch"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorBatchBatchSendSizeBytes, err = meter.Int64Histogram(
+		"processor_batch_batch_send_size_bytes",
+		metric.WithDescription("Number of bytes in batch that was sent"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorBatchBatchSizeTriggerSend, err = meter.Int64Counter(
+		"processor_batch_batch_size_trigger_send",
+		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorBatchTimeoutTriggerSend, err = meter.Int64Counter(
+		"processor_batch_timeout_trigger_send",
+		metric.WithDescription("Number of times the batch was sent due to a timeout trigger"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	return &builder, errs
 }
