@@ -3,14 +3,14 @@
 
 module-sets:
   stable:
-    version: v1.6.0
+    version: v1.7.0
     modules:
       - go.opentelemetry.io/collector/featuregate
       - go.opentelemetry.io/collector/pdata
       - go.opentelemetry.io/collector/config/configopaque
       - go.opentelemetry.io/collector/config/configcompression
   beta:
-    version: v0.99.0
+    version: v0.100.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/cmd/builder

@@ -5,7 +5,9 @@ package {{ .Package }}
 import (
 	"testing"
 
-	"go.uber.org/goleak"
+    {{- if not .Tests.GoLeak.Skip }}
+    "go.uber.org/goleak"
+    {{- end }}
 )
 
 func TestMain(m *testing.M) {

@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	{{- end }}
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	{{- if isExporter }}
 	"go.opentelemetry.io/collector/exporter"
@@ -39,11 +40,11 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	{{- end }}
 	{{- if isConnector }}
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	{{- end }}
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	{{- if or isExporter isProcessor }}
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
