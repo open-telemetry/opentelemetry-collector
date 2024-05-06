@@ -7,7 +7,7 @@ change_type: enhancement
 component: component
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Change Type to an interface, the new types ComponentType and DataType now implement it."
+note: "Change Type to an interface, introduce the new types ComponentType and DataType now implement it."
 
 # One or more tracking issues or pull requests related to the change
 issues: [9429]
@@ -16,7 +16,7 @@ issues: [9429]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Creates ComponentType and DataType - ComponentType represents the names of components and DataType is an enum for Traces,Logs, and Metrics.
+  Creates ComponentType and DataType - ComponentType represents the names of components and DataType is an enum for Traces,Logs, and Metrics (and future signal types!).
   
   NewType will now automatically create a DataType instead of ComponentType for the strings "traces", "logs", and "metrics". In addition, ID's zero value now contains a null value for Type - since it is now an interface."
 
