@@ -63,6 +63,9 @@ s+repeated Mapping \(.*\);+repeated Mapping \1\
 s+repeated Location \(.*\);+repeated Location \1\
   [ (gogoproto.nullable) = false ];+g
 
+s+repeated Label \(.*\);+repeated Label \1\
+  [ (gogoproto.nullable) = false ];+g
+
 s+repeated Function \(.*\);+repeated Function \1\
   [ (gogoproto.nullable) = false ];+g
 

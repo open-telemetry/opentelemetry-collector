@@ -24,6 +24,7 @@ var pcommon = &Package{
 		byteSlice,
 		float64Slice,
 		uInt64Slice,
+		int64Slice,
 	},
 }
 
@@ -179,4 +180,10 @@ var uInt64Slice = &primitiveSliceStruct{
 	structName:  "UInt64Slice",
 	packageName: "pcommon",
 	itemType:    "uint64",
+}
+
+var int64Slice = &primitiveSliceStruct{
+	structName:  "Int64Slice",
+	packageName: "pcommon",
+	itemType:    "int64",
 }

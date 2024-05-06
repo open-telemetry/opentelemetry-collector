@@ -34,6 +34,8 @@ var pprofile = &Package{
 		valueTypes,
 		samples,
 		sample,
+		labels,
+		label,
 	},
 }
 
@@ -187,6 +189,83 @@ var sample = &messageValueStruct{
 		&sliceField{
 			fieldName:   "LocationIndex",
 			returnSlice: uInt64Slice,
+		},
+		&primitiveField{
+			fieldName:  "LocationsStartIndex",
+			returnType: "uint64",
+			defaultVal: "uint64(0)",
+			testVal:    "uint64(1)",
+		},
+		&primitiveField{
+			fieldName:  "LocationsLength",
+			returnType: "uint64",
+			defaultVal: "uint64(0)",
+			testVal:    "uint64(1)",
+		},
+		&primitiveField{
+			fieldName:  "StacktraceIdIndex",
+			returnType: "uint32",
+			defaultVal: "uint32(0)",
+			testVal:    "uint32(1)",
+		},
+		&sliceField{
+			fieldName:   "Value",
+			returnSlice: int64Slice,
+		},
+		&sliceField{
+			fieldName:   "Label",
+			returnSlice: labels,
+		},
+		&sliceField{
+			fieldName:   "Attributes",
+			returnSlice: uInt64Slice,
+		},
+		&primitiveField{
+			fieldName:  "Link",
+			returnType: "uint64",
+			defaultVal: "uint64(0)",
+			testVal:    "uint64(1)",
+		},
+		&sliceField{
+			fieldName:   "TimestampsUnixNano",
+			returnSlice: uInt64Slice,
+		},
+	},
+}
+
+var labels = &sliceOfValues{
+	structName: "Labels",
+	element:    label,
+}
+
+var label = &messageValueStruct{
+	structName:     "Label",
+	description:    "// Label provided additional context for a sample",
+	originFullName: "otlpprofiles.Label",
+	fields: []baseField{
+		&primitiveField{
+			fieldName:  "Key",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+		&primitiveField{
+			fieldName:  "Str",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+		&primitiveField{
+			fieldName:  "Num",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+		&primitiveField{
+			fieldName:  "NumUnit",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
 		},
 	},
 }
