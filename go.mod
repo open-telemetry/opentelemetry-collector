@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector
 go 1.21
 
 require (
-	github.com/shirou/gopsutil/v3 v3.24.3
+	github.com/shirou/gopsutil/v3 v3.24.4
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.100.0
 	go.opentelemetry.io/collector/confmap v0.100.0
