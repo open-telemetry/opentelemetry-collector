@@ -82,9 +82,9 @@ func TestSample_Value(t *testing.T) {
 
 func TestSample_Label(t *testing.T) {
 	ms := NewSample()
-	assert.Equal(t, NewLabels(), ms.Label())
-	fillTestLabels(ms.Label())
-	assert.Equal(t, generateTestLabels(), ms.Label())
+	assert.Equal(t, NewLabelSlice(), ms.Label())
+	fillTestLabelSlice(ms.Label())
+	assert.Equal(t, generateTestLabelSlice(), ms.Label())
 }
 
 func TestSample_Attributes(t *testing.T) {
@@ -122,7 +122,7 @@ func fillTestSample(tv Sample) {
 	tv.orig.LocationsLength = uint64(1)
 	tv.orig.StacktraceIdIndex = uint32(1)
 	internal.FillTestInt64Slice(internal.NewInt64Slice(&tv.orig.Value, tv.state))
-	fillTestLabels(newLabels(&tv.orig.Label, tv.state))
+	fillTestLabelSlice(newLabelSlice(&tv.orig.Label, tv.state))
 	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.Attributes, tv.state))
 	tv.orig.Link = uint64(1)
 	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.TimestampsUnixNano, tv.state))

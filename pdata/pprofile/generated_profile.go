@@ -52,8 +52,13 @@ func (ms Profile) SampleType() ValueTypes {
 }
 
 // Sample returns the Sample associated with this Profile.
-func (ms Profile) Sample() Samples {
-	return newSamples(&ms.orig.Sample, ms.state)
+func (ms Profile) Sample() SampleSlice {
+	return newSampleSlice(&ms.orig.Sample, ms.state)
+}
+
+// Mapping returns the Mapping associated with this Profile.
+func (ms Profile) Mapping() MappingSlice {
+	return newMappingSlice(&ms.orig.Mapping, ms.state)
 }
 
 // StartTime returns the starttime associated with this Profile.
@@ -72,5 +77,6 @@ func (ms Profile) CopyTo(dest Profile) {
 	dest.state.AssertMutable()
 	ms.SampleType().CopyTo(dest.SampleType())
 	ms.Sample().CopyTo(dest.Sample())
+	ms.Mapping().CopyTo(dest.Mapping())
 	dest.SetStartTime(ms.StartTime())
 }

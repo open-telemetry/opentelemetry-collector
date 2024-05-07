@@ -90,8 +90,8 @@ func (ms Sample) Value() pcommon.Int64Slice {
 }
 
 // Label returns the Label associated with this Sample.
-func (ms Sample) Label() Labels {
-	return newLabels(&ms.orig.Label, ms.state)
+func (ms Sample) Label() LabelSlice {
+	return newLabelSlice(&ms.orig.Label, ms.state)
 }
 
 // Attributes returns the Attributes associated with this Sample.

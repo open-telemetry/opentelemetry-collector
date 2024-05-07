@@ -48,9 +48,16 @@ func TestProfile_SampleType(t *testing.T) {
 
 func TestProfile_Sample(t *testing.T) {
 	ms := NewProfile()
-	assert.Equal(t, NewSamples(), ms.Sample())
-	fillTestSamples(ms.Sample())
-	assert.Equal(t, generateTestSamples(), ms.Sample())
+	assert.Equal(t, NewSampleSlice(), ms.Sample())
+	fillTestSampleSlice(ms.Sample())
+	assert.Equal(t, generateTestSampleSlice(), ms.Sample())
+}
+
+func TestProfile_Mapping(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, NewMappingSlice(), ms.Mapping())
+	fillTestMappingSlice(ms.Mapping())
+	assert.Equal(t, generateTestMappingSlice(), ms.Mapping())
 }
 
 func TestProfile_StartTime(t *testing.T) {
@@ -69,6 +76,7 @@ func generateTestProfile() Profile {
 
 func fillTestProfile(tv Profile) {
 	fillTestValueTypes(newValueTypes(&tv.orig.SampleType, tv.state))
-	fillTestSamples(newSamples(&tv.orig.Sample, tv.state))
+	fillTestSampleSlice(newSampleSlice(&tv.orig.Sample, tv.state))
+	fillTestMappingSlice(newMappingSlice(&tv.orig.Mapping, tv.state))
 	tv.orig.TimeNanos = 1234567890
 }

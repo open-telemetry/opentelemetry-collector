@@ -32,10 +32,12 @@ var pprofile = &Package{
 		profile,
 		valueType,
 		valueTypes,
-		samples,
+		sampleSlice,
 		sample,
-		labels,
+		labelSlice,
 		label,
+		mappingSlice,
+		mapping,
 	},
 }
 
@@ -87,10 +89,10 @@ var profileContainer = &messageValueStruct{
 	description:    "// ProfileContainer are an experimental implementation of the OpenTelemetry Profiles Data Model.\n",
 	originFullName: "otlpprofiles.ProfileContainer",
 	fields: []baseField{
-		&primitiveTypedField{
+		&sliceField{
 			fieldName:       "ProfileID",
 			originFieldName: "ProfileId",
-			returnType:      byteSliceType,
+			returnSlice:     byteSlice,
 		},
 		&primitiveTypedField{
 			fieldName:       "StartTime",
@@ -122,7 +124,11 @@ var profile = &messageValueStruct{
 		},
 		&sliceField{
 			fieldName:   "Sample",
-			returnSlice: samples,
+			returnSlice: sampleSlice,
+		},
+		&sliceField{
+			fieldName:   "Mapping",
+			returnSlice: mappingSlice,
 		},
 		&primitiveTypedField{
 			fieldName:       "StartTime",
@@ -136,13 +142,6 @@ var profile = &messageValueStruct{
 			},
 		},
 	},
-}
-
-var byteSliceType = &primitiveType{
-	structName: "[]byte",
-	rawType:    "[]byte",
-	defaultVal: "[]byte(nil)",
-	testVal:    `[]byte("test")`,
 }
 
 var valueTypes = &sliceOfValues{
@@ -176,8 +175,8 @@ var valueType = &messageValueStruct{
 	},
 }
 
-var samples = &sliceOfValues{
-	structName: "Samples",
+var sampleSlice = &sliceOfValues{
+	structName: "SampleSlice",
 	element:    sample,
 }
 
@@ -214,7 +213,7 @@ var sample = &messageValueStruct{
 		},
 		&sliceField{
 			fieldName:   "Label",
-			returnSlice: labels,
+			returnSlice: labelSlice,
 		},
 		&sliceField{
 			fieldName:   "Attributes",
@@ -233,9 +232,95 @@ var sample = &messageValueStruct{
 	},
 }
 
-var labels = &sliceOfValues{
-	structName: "Labels",
+var labelSlice = &sliceOfValues{
+	structName: "LabelSlice",
 	element:    label,
+}
+
+var mappingSlice = &sliceOfValues{
+	structName: "MappingSlice",
+	element:    mapping,
+}
+
+var mapping = &messageValueStruct{
+	structName:     "Mapping",
+	description:    "// Sample represents each record value encountered within a profiled program.",
+	originFullName: "otlpprofiles.Mapping",
+	fields: []baseField{
+		&primitiveField{
+			fieldName:       "ID",
+			originFieldName: "Id",
+			returnType:      "uint64",
+			defaultVal:      "uint64(0)",
+			testVal:         "uint64(1)",
+		},
+		&primitiveField{
+			fieldName:  "MemoryStart",
+			returnType: "uint64",
+			defaultVal: "uint64(0)",
+			testVal:    "uint64(1)",
+		},
+		&primitiveField{
+			fieldName:  "MemoryLimit",
+			returnType: "uint64",
+			defaultVal: "uint64(0)",
+			testVal:    "uint64(1)",
+		},
+		&primitiveField{
+			fieldName:  "FileOffset",
+			returnType: "uint64",
+			defaultVal: "uint64(0)",
+			testVal:    "uint64(1)",
+		},
+		&primitiveField{
+			fieldName:  "Filename",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+		&primitiveField{
+			fieldName:       "BuildID",
+			originFieldName: "BuildId",
+			returnType:      "int64",
+			defaultVal:      "int64(0)",
+			testVal:         "int64(1)",
+		},
+		&primitiveField{
+			fieldName:       "BuildIDKind",
+			originFieldName: "BuildIdKind",
+			returnType:      "otlpprofiles.BuildIdKind",
+			defaultVal:      "otlpprofiles.BuildIdKind(0)",
+			testVal:         "otlpprofiles.BuildIdKind(1)",
+		},
+		&sliceField{
+			fieldName:   "Attributes",
+			returnSlice: uInt64Slice,
+		},
+		&primitiveField{
+			fieldName:  "HasFunctions",
+			returnType: "bool",
+			defaultVal: "false",
+			testVal:    "true",
+		},
+		&primitiveField{
+			fieldName:  "HasFilenames",
+			returnType: "bool",
+			defaultVal: "false",
+			testVal:    "true",
+		},
+		&primitiveField{
+			fieldName:  "HasLineNumbers",
+			returnType: "bool",
+			defaultVal: "false",
+			testVal:    "true",
+		},
+		&primitiveField{
+			fieldName:  "HasInlineFrames",
+			returnType: "bool",
+			defaultVal: "false",
+			testVal:    "true",
+		},
+	},
 }
 
 var label = &messageValueStruct{

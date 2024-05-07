@@ -46,15 +46,9 @@ func (ms ProfileContainer) MoveTo(dest ProfileContainer) {
 	*ms.orig = otlpprofiles.ProfileContainer{}
 }
 
-// ProfileID returns the profileid associated with this ProfileContainer.
-func (ms ProfileContainer) ProfileID() []byte {
-	return []byte(ms.orig.ProfileId)
-}
-
-// SetProfileID replaces the profileid associated with this ProfileContainer.
-func (ms ProfileContainer) SetProfileID(v []byte) {
-	ms.state.AssertMutable()
-	ms.orig.ProfileId = []byte(v)
+// ProfileID returns the ProfileId associated with this ProfileContainer.
+func (ms ProfileContainer) ProfileID() pcommon.ByteSlice {
+	return pcommon.ByteSlice(internal.NewByteSlice(&ms.orig.ProfileId, ms.state))
 }
 
 // StartTime returns the starttime associated with this ProfileContainer.
@@ -103,7 +97,7 @@ func (ms ProfileContainer) Profile() Profile {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ProfileContainer) CopyTo(dest ProfileContainer) {
 	dest.state.AssertMutable()
-	dest.SetProfileID(ms.ProfileID())
+	ms.ProfileID().CopyTo(dest.ProfileID())
 	dest.SetStartTime(ms.StartTime())
 	dest.SetEndTime(ms.EndTime())
 	ms.Attributes().CopyTo(dest.Attributes())

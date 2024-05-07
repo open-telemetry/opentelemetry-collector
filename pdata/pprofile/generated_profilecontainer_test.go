@@ -41,10 +41,9 @@ func TestProfileContainer_CopyTo(t *testing.T) {
 
 func TestProfileContainer_ProfileID(t *testing.T) {
 	ms := NewProfileContainer()
-	assert.Equal(t, []byte([]byte(nil)), ms.ProfileID())
-	testValProfileID := []byte([]byte("test"))
-	ms.SetProfileID(testValProfileID)
-	assert.Equal(t, testValProfileID, ms.ProfileID())
+	assert.Equal(t, pcommon.NewByteSlice(), ms.ProfileID())
+	internal.FillTestByteSlice(internal.ByteSlice(ms.ProfileID()))
+	assert.Equal(t, pcommon.ByteSlice(internal.GenerateTestByteSlice()), ms.ProfileID())
 }
 
 func TestProfileContainer_StartTime(t *testing.T) {
@@ -94,7 +93,7 @@ func generateTestProfileContainer() ProfileContainer {
 }
 
 func fillTestProfileContainer(tv ProfileContainer) {
-	tv.orig.ProfileId = []byte("test")
+	internal.FillTestByteSlice(internal.NewByteSlice(&tv.orig.ProfileId, tv.state))
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.EndTimeUnixNano = 1234567890
 	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
