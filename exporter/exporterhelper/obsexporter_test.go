@@ -183,7 +183,7 @@ func TestCheckExporterTracesViews(t *testing.T) {
 	require.NoError(t, err)
 	ctx := obsrep.StartTracesOp(context.Background())
 	require.NotNil(t, ctx)
-	obsrep.EndTracesOp(ctx, 7, nil)
+	obsrep.EndTracesOp(ctx, 7, 0, nil)
 
 	assert.NoError(t, tt.CheckExporterTraces(7, 0))
 	assert.Error(t, tt.CheckExporterTraces(7, 7))

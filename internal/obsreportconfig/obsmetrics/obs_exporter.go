@@ -9,6 +9,8 @@ const (
 
 	// SentSpansKey used to track spans sent by exporters.
 	SentSpansKey = "sent_spans"
+	// SentSpansKey used to track spans (in bytes) sent by exporters.
+	SentSpansBytesKey = "sent_spans_bytes"
 	// FailedToSendSpansKey used to track spans that failed to be sent by exporters.
 	FailedToSendSpansKey = "send_failed_spans"
 	// FailedToEnqueueSpansKey used to track spans that failed to be enqueued by exporters.
@@ -16,6 +18,8 @@ const (
 
 	// SentMetricPointsKey used to track metric points sent by exporters.
 	SentMetricPointsKey = "sent_metric_points"
+	// SentMetricPointsKey used to track metric points (in bytes) sent by exporters.
+	SentMetricPointsBytesKey = "sent_metric_points_bytes"
 	// FailedToSendMetricPointsKey used to track metric points that failed to be sent by exporters.
 	FailedToSendMetricPointsKey = "send_failed_metric_points"
 	// FailedToEnqueueMetricPointsKey used to track metric points that failed to be enqueued by exporters.
@@ -23,7 +27,7 @@ const (
 
 	// SentLogRecordsKey used to track logs sent by exporters.
 	SentLogRecordsKey = "sent_log_records"
-	// SentLogRecordsKey used to track logs sent by exporters.
+	// SentLogRecordsBytesKey used to track logs (in bytes) sent by exporters.
 	SentLogRecordsBytesKey = "sent_log_records_bytes"
 	// FailedToSendLogRecordsKey used to track logs that failed to be sent by exporters.
 	FailedToSendLogRecordsKey = "send_failed_log_records"

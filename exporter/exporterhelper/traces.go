@@ -24,12 +24,14 @@ var tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
 type tracesRequest struct {
 	td     ptrace.Traces
 	pusher consumer.ConsumeTracesFunc
+	sizer  ptrace.Sizer
 }
 
 func newTracesRequest(td ptrace.Traces, pusher consumer.ConsumeTracesFunc) Request {
 	return &tracesRequest{
 		td:     td,
 		pusher: pusher,
+		sizer:  &ptrace.ProtoMarshaler{},
 	}
 }
 
@@ -63,7 +65,9 @@ func (req *tracesRequest) ItemsCount() int {
 	return req.td.SpanCount()
 }
 
-func (req *tracesRequest) BytesSize() int { return 0 }
+func (req *tracesRequest) BytesSize() int {
+	return req.sizer.TracesSize(req.td)
+}
 
 type traceExporter struct {
 	*baseExporter
@@ -159,6 +163,6 @@ func (tewo *tracesExporterWithObservability) send(ctx context.Context, req Reque
 	c := tewo.obsrep.StartTracesOp(ctx)
 	// Forward the data to the next consumer (this pusher is the next).
 	err := tewo.nextSender.send(c, req)
-	tewo.obsrep.EndTracesOp(c, req.ItemsCount(), err)
+	tewo.obsrep.EndTracesOp(c, req.ItemsCount(), req.BytesSize(), err)
 	return err
 }

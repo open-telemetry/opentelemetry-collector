@@ -32,9 +32,11 @@ type ObsReport struct {
 
 	otelAttrs                   []attribute.KeyValue
 	sentSpans                   metric.Int64Counter
+	sentSpansBytes              metric.Int64Histogram
 	failedToSendSpans           metric.Int64Counter
 	failedToEnqueueSpans        metric.Int64Counter
 	sentMetricPoints            metric.Int64Counter
+	sentMetricPointsBytes       metric.Int64Histogram
 	failedToSendMetricPoints    metric.Int64Counter
 	failedToEnqueueMetricPoints metric.Int64Counter
 	sentLogRecords              metric.Int64Counter
@@ -84,6 +86,12 @@ func (or *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
+	or.sentSpansBytes, err = meter.Int64Histogram(
+		obsmetrics.ExporterMetricPrefix+obsmetrics.SentSpansBytesKey,
+		metric.WithDescription("Bytes of spans succesfully sent to destination."),
+		metric.WithUnit("By"))
+	errors = multierr.Append(errors, err)
+
 	or.failedToSendSpans, err = meter.Int64Counter(
 		obsmetrics.ExporterMetricPrefix+obsmetrics.FailedToSendSpansKey,
 		metric.WithDescription("Number of spans in failed attempts to send to destination."),
@@ -102,6 +110,12 @@ func (or *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
+	or.sentMetricPointsBytes, err = meter.Int64Histogram(
+		obsmetrics.ExporterMetricPrefix+obsmetrics.SentMetricPointsBytesKey,
+		metric.WithDescription("Bytes of metric point succesfully sent to destination."),
+		metric.WithUnit("By"))
+	errors = multierr.Append(errors, err)
+
 	or.failedToSendMetricPoints, err = meter.Int64Counter(
 		obsmetrics.ExporterMetricPrefix+obsmetrics.FailedToSendMetricPointsKey,
 		metric.WithDescription("Number of metric points in failed attempts to send to destination."),
@@ -116,12 +130,12 @@ func (or *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
 
 	or.sentLogRecords, err = meter.Int64Counter(
 		obsmetrics.ExporterMetricPrefix+obsmetrics.SentLogRecordsKey,
-		metric.WithDescription("Number of log record successfully sent to destination. patched"),
+		metric.WithDescription("Number of log record successfully sent to destination."),
 		metric.WithUnit("1"))
 	errors = multierr.Append(errors, err)
 
 	or.sentLogRecordsBytes, err = meter.Int64Histogram(
-		obsmetrics.ExporterMetricPrefix+"sent_log_records_bytes",
+		obsmetrics.ExporterMetricPrefix+obsmetrics.SentLogRecordsBytesKey,
 		metric.WithDescription("Bytes of log records succesfully sent to destination."),
 		metric.WithUnit("By"))
 	errors = multierr.Append(errors, err)
@@ -149,9 +163,9 @@ func (or *ObsReport) StartTracesOp(ctx context.Context) context.Context {
 }
 
 // EndTracesOp completes the export operation that was started with StartTracesOp.
-func (or *ObsReport) EndTracesOp(ctx context.Context, numSpans int, err error) {
+func (or *ObsReport) EndTracesOp(ctx context.Context, numSpans int, bytesSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeTraces, numSent, 0, numFailedToSend)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeTraces, numSent, int64(bytesSpans), numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSpansKey, obsmetrics.FailedToSendSpansKey)
 }
 
@@ -164,9 +178,9 @@ func (or *ObsReport) StartMetricsOp(ctx context.Context) context.Context {
 
 // EndMetricsOp completes the export operation that was started with
 // StartMetricsOp.
-func (or *ObsReport) EndMetricsOp(ctx context.Context, numMetricPoints int, err error) {
+func (or *ObsReport) EndMetricsOp(ctx context.Context, numMetricPoints int, bytesMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeMetrics, numSent, 0, numFailedToSend)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeMetrics, numSent, int64(bytesMetricPoints), numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentMetricPointsKey, obsmetrics.FailedToSendMetricPointsKey)
 }
 
@@ -197,21 +211,25 @@ func (or *ObsReport) recordMetrics(ctx context.Context, dataType component.DataT
 		return
 	}
 	var sentMeasure, failedMeasure metric.Int64Counter
+	var sentMeasureBytes metric.Int64Histogram
 	switch dataType {
 	case component.DataTypeTraces:
 		sentMeasure = or.sentSpans
 		failedMeasure = or.failedToSendSpans
+		sentMeasureBytes = or.sentSpansBytes
 	case component.DataTypeMetrics:
 		sentMeasure = or.sentMetricPoints
+		sentMeasureBytes = or.sentMetricPointsBytes
 		failedMeasure = or.failedToSendMetricPoints
 	case component.DataTypeLogs:
 		sentMeasure = or.sentLogRecords
+		sentMeasureBytes = or.sentLogRecordsBytes
 		failedMeasure = or.failedToSendLogRecords
-		or.sentLogRecordsBytes.Record(ctx, sentBytes, metric.WithAttributes(or.otelAttrs...))
 	}
 
 	sentMeasure.Add(ctx, sent, metric.WithAttributes(or.otelAttrs...))
 	failedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))
+	sentMeasureBytes.Record(ctx, sentBytes, metric.WithAttributes(or.otelAttrs...))
 }
 
 func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sentItemsKey, failedToSendItemsKey string) {

@@ -83,3 +83,5 @@ replace go.opentelemetry.io/collector/config/configtelemetry => ../config/config
 replace go.opentelemetry.io/collector/pdata => ../pdata
 
 replace go.opentelemetry.io/collector/pdata/plog => ../pdata/plog
+
+replace go.opentelemetry.io/collector/internal/obsreportconfig => ../internal/obsreportconfig
