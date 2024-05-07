@@ -61,6 +61,21 @@ func (ms Profile) Mapping() MappingSlice {
 	return newMappingSlice(&ms.orig.Mapping, ms.state)
 }
 
+// Location returns the Location associated with this Profile.
+func (ms Profile) Location() LocationSlice {
+	return newLocationSlice(&ms.orig.Location, ms.state)
+}
+
+// LocationIndices returns the LocationIndices associated with this Profile.
+func (ms Profile) LocationIndices() pcommon.Int64Slice {
+	return pcommon.Int64Slice(internal.NewInt64Slice(&ms.orig.LocationIndices, ms.state))
+}
+
+// Function returns the Function associated with this Profile.
+func (ms Profile) Function() FunctionSlice {
+	return newFunctionSlice(&ms.orig.Function, ms.state)
+}
+
 // StartTime returns the starttime associated with this Profile.
 func (ms Profile) StartTime() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.TimeNanos)
@@ -78,5 +93,8 @@ func (ms Profile) CopyTo(dest Profile) {
 	ms.SampleType().CopyTo(dest.SampleType())
 	ms.Sample().CopyTo(dest.Sample())
 	ms.Mapping().CopyTo(dest.Mapping())
+	ms.Location().CopyTo(dest.Location())
+	ms.LocationIndices().CopyTo(dest.LocationIndices())
+	ms.Function().CopyTo(dest.Function())
 	dest.SetStartTime(ms.StartTime())
 }

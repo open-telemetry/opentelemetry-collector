@@ -38,6 +38,12 @@ var pprofile = &Package{
 		label,
 		mappingSlice,
 		mapping,
+		locationSlice,
+		location,
+		lineSlice,
+		line,
+		functionSlice,
+		function,
 	},
 }
 
@@ -129,6 +135,18 @@ var profile = &messageValueStruct{
 		&sliceField{
 			fieldName:   "Mapping",
 			returnSlice: mappingSlice,
+		},
+		&sliceField{
+			fieldName:   "Location",
+			returnSlice: locationSlice,
+		},
+		&sliceField{
+			fieldName:   "LocationIndices",
+			returnSlice: int64Slice,
+		},
+		&sliceField{
+			fieldName:   "Function",
+			returnSlice: functionSlice,
 		},
 		&primitiveTypedField{
 			fieldName:       "StartTime",
@@ -237,6 +255,38 @@ var labelSlice = &sliceOfValues{
 	element:    label,
 }
 
+var label = &messageValueStruct{
+	structName:     "Label",
+	description:    "// Label provided additional context for a sample",
+	originFullName: "otlpprofiles.Label",
+	fields: []baseField{
+		&primitiveField{
+			fieldName:  "Key",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+		&primitiveField{
+			fieldName:  "Str",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+		&primitiveField{
+			fieldName:  "Num",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+		&primitiveField{
+			fieldName:  "NumUnit",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+	},
+}
+
 var mappingSlice = &sliceOfValues{
 	structName: "MappingSlice",
 	element:    mapping,
@@ -244,7 +294,7 @@ var mappingSlice = &sliceOfValues{
 
 var mapping = &messageValueStruct{
 	structName:     "Mapping",
-	description:    "// Sample represents each record value encountered within a profiled program.",
+	description:    "// Mapping describes the mapping of a binary in memory, including its address range, file offset, and metadata like build ID",
 	originFullName: "otlpprofiles.Mapping",
 	fields: []baseField{
 		&primitiveField{
@@ -323,31 +373,125 @@ var mapping = &messageValueStruct{
 	},
 }
 
-var label = &messageValueStruct{
-	structName:     "Label",
-	description:    "// Label provided additional context for a sample",
-	originFullName: "otlpprofiles.Label",
+var locationSlice = &sliceOfValues{
+	structName: "LocationSlice",
+	element:    location,
+}
+var location = &messageValueStruct{
+	structName:     "Location",
+	description:    "// Location describes function and line table debug information.",
+	originFullName: "otlpprofiles.Location",
 	fields: []baseField{
 		&primitiveField{
-			fieldName:  "Key",
+			fieldName:       "ID",
+			originFieldName: "Id",
+			returnType:      "uint64",
+			defaultVal:      "uint64(0)",
+			testVal:         "uint64(1)",
+		},
+		&primitiveField{
+			fieldName:  "MappingIndex",
+			returnType: "uint64",
+			defaultVal: "uint64(0)",
+			testVal:    "uint64(1)",
+		},
+		&primitiveField{
+			fieldName:  "Address",
+			returnType: "uint64",
+			defaultVal: "uint64(0)",
+			testVal:    "uint64(1)",
+		},
+		&sliceField{
+			fieldName:   "Line",
+			returnSlice: lineSlice,
+		},
+		&primitiveField{
+			fieldName:  "IsFolded",
+			returnType: "bool",
+			defaultVal: "false",
+			testVal:    "true",
+		},
+		&primitiveField{
+			fieldName:  "TypeIndex",
+			returnType: "uint32",
+			defaultVal: "uint32(0)",
+			testVal:    "uint32(1)",
+		},
+		&sliceField{
+			fieldName:   "Attributes",
+			returnSlice: uInt64Slice,
+		},
+	},
+}
+
+var lineSlice = &sliceOfValues{
+	structName: "LineSlice",
+	element:    line,
+}
+
+var line = &messageValueStruct{
+	structName:     "Line",
+	description:    "// Line details a specific line in a source code, linked to a function.",
+	originFullName: "otlpprofiles.Line",
+	fields: []baseField{
+		&primitiveField{
+			fieldName:  "FunctionIndex",
+			returnType: "uint64",
+			defaultVal: "uint64(0)",
+			testVal:    "uint64(1)",
+		},
+		&primitiveField{
+			fieldName:  "Line",
 			returnType: "int64",
 			defaultVal: "int64(0)",
 			testVal:    "int64(1)",
 		},
 		&primitiveField{
-			fieldName:  "Str",
+			fieldName:  "Column",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+	},
+}
+
+var functionSlice = &sliceOfValues{
+	structName: "FunctionSlice",
+	element:    function,
+}
+
+var function = &messageValueStruct{
+	structName:     "Function",
+	description:    "// Function describes a function, including its human-readable name, system name, source file, and starting line number in the source.",
+	originFullName: "otlpprofiles.Function",
+	fields: []baseField{
+		&primitiveField{
+			fieldName:       "ID",
+			originFieldName: "Id",
+			returnType:      "uint64",
+			defaultVal:      "uint64(0)",
+			testVal:         "uint64(1)",
+		},
+		&primitiveField{
+			fieldName:  "Name",
 			returnType: "int64",
 			defaultVal: "int64(0)",
 			testVal:    "int64(1)",
 		},
 		&primitiveField{
-			fieldName:  "Num",
+			fieldName:  "SystemName",
 			returnType: "int64",
 			defaultVal: "int64(0)",
 			testVal:    "int64(1)",
 		},
 		&primitiveField{
-			fieldName:  "NumUnit",
+			fieldName:  "Filename",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+		&primitiveField{
+			fieldName:  "StartLine",
 			returnType: "int64",
 			defaultVal: "int64(0)",
 			testVal:    "int64(1)",

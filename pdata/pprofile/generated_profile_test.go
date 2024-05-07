@@ -60,6 +60,27 @@ func TestProfile_Mapping(t *testing.T) {
 	assert.Equal(t, generateTestMappingSlice(), ms.Mapping())
 }
 
+func TestProfile_Location(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, NewLocationSlice(), ms.Location())
+	fillTestLocationSlice(ms.Location())
+	assert.Equal(t, generateTestLocationSlice(), ms.Location())
+}
+
+func TestProfile_LocationIndices(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, pcommon.NewInt64Slice(), ms.LocationIndices())
+	internal.FillTestInt64Slice(internal.Int64Slice(ms.LocationIndices()))
+	assert.Equal(t, pcommon.Int64Slice(internal.GenerateTestInt64Slice()), ms.LocationIndices())
+}
+
+func TestProfile_Function(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, NewFunctionSlice(), ms.Function())
+	fillTestFunctionSlice(ms.Function())
+	assert.Equal(t, generateTestFunctionSlice(), ms.Function())
+}
+
 func TestProfile_StartTime(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, pcommon.Timestamp(0), ms.StartTime())
@@ -78,5 +99,8 @@ func fillTestProfile(tv Profile) {
 	fillTestValueTypes(newValueTypes(&tv.orig.SampleType, tv.state))
 	fillTestSampleSlice(newSampleSlice(&tv.orig.Sample, tv.state))
 	fillTestMappingSlice(newMappingSlice(&tv.orig.Mapping, tv.state))
+	fillTestLocationSlice(newLocationSlice(&tv.orig.Location, tv.state))
+	internal.FillTestInt64Slice(internal.NewInt64Slice(&tv.orig.LocationIndices, tv.state))
+	fillTestFunctionSlice(newFunctionSlice(&tv.orig.Function, tv.state))
 	tv.orig.TimeNanos = 1234567890
 }

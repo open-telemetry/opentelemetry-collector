@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// Sample represents each record value encountered within a profiled program.
+// Mapping describes the mapping of a binary in memory, including its address range, file offset, and metadata like build ID
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
