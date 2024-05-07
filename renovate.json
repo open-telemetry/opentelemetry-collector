@@ -52,7 +52,7 @@
       },
       {
         "matchManagers": ["gomod"],
-        "matchPackagePrefixes": ["https://golang.org/x"],
+        "matchPackagePrefixes": ["golang.org/x"],
         "groupName": "All golang.org/x packages"
       },
       {
