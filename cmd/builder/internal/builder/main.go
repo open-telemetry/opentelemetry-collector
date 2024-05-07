@@ -86,16 +86,28 @@ func Generate(cfg Config) error {
 		return fmt.Errorf("failed to create output path: %w", err)
 	}
 
-	for _, tmpl := range []*template.Template{
+	allTemplates := []*template.Template{
 		mainTemplate,
 		mainOthersTemplate,
 		mainWindowsTemplate,
 		componentsTemplate,
-		goModTemplate,
-	} {
+	}
+
+	// Add the go.mod template unless that file is skipped.
+	if !cfg.SkipNewGoModule {
+		allTemplates = append(allTemplates, goModTemplate)
+	}
+
+	for _, tmpl := range allTemplates {
 		if err := processAndWrite(cfg, tmpl, tmpl.Name(), cfg); err != nil {
 			return fmt.Errorf("failed to generate source file %q: %w", tmpl.Name(), err)
 		}
+	}
+
+	// when not creating a new go.mod file, update modules one-by-one in the
+	// enclosing go module.
+	if err := cfg.updateModules(); err != nil {
+		return err
 	}
 
 	cfg.Logger.Info("Sources created", zap.String("path", cfg.Distribution.OutputPath))
@@ -224,6 +236,64 @@ func (c *Config) coreModuleAndVersion() (string, string) {
 func (c *Config) allComponents() []Module {
 	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors,
 		c.Extensions, c.Connectors, *c.Providers)
+}
+
+func (c *Config) updateModules() error {
+	if !c.SkipNewGoModule {
+		return nil
+	}
+
+	// Build the main service dependency
+	coremod, corever := c.coreModuleAndVersion()
+	corespec := coremod + " " + corever
+
+	if err := c.updateGoModule(corespec); err != nil {
+		return err
+	}
+
+	for _, comp := range c.allComponents() {
+		if err := c.updateGoModule(comp.GoMod); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *Config) updateGoModule(modspec string) error {
+	// Re-parse the go.mod file on each iteration, since it can
+	// change each time.
+	modulePath, dependencyVersions, err := c.readGoModFile()
+	if err != nil {
+		return err
+	}
+
+	mod, ver, _ := strings.Cut(modspec, " ")
+	if mod == modulePath {
+		// this component is part of the same module, nothing to update.
+		return nil
+	}
+
+	// check for exact match
+	hasVer, ok := dependencyVersions[mod]
+	if ok && hasVer == ver {
+		c.Logger.Info("Component version match", zap.String("module", mod), zap.String("version", ver))
+		return nil
+	}
+
+	scomp := semver.Compare(hasVer, ver)
+	if scomp > 0 {
+		// version in enclosing module is newer, do not change
+		c.Logger.Info("Not upgrading component, enclosing module is newer.", zap.String("module", mod), zap.String("existing", hasVer), zap.String("config_version", ver))
+		return nil
+	}
+
+	// upgrading or changing version
+	updatespec := mod + "@" + ver
+
+	if _, err := runGoCommand(*c, "get", updatespec); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Config) readGoModFile() (string, map[string]string, error) {
