@@ -7,6 +7,7 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
