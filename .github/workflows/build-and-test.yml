@@ -137,10 +137,7 @@ jobs:
   unittest-matrix:
     strategy:
       matrix:
-        runner: [ubuntu-latest, actuated-arm64-4cpu-4gb]
-        exclude:
-          - go-version: "~1.21.9"
-            runner: actuated-arm64-4cpu-4gb
+        runner: [ubuntu-latest]
         go-version: ["~1.22", "~1.21.9"] # 1.20 needs quotes otherwise it's interpreted as 1.2
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
