@@ -164,9 +164,9 @@ var profile = &messageValueStruct{
 			fieldName:   "LinkTable",
 			returnSlice: linkSlice,
 		},
-		&sliceField{
-			fieldName:   "StringTable",
-			returnSlice: stringSlice,
+		&primitiveTypedField{
+			fieldName:  "StringTable",
+			returnType: stringSlice,
 		},
 		&primitiveField{
 			fieldName:  "DropFrames",
