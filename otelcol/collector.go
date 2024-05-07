@@ -284,7 +284,7 @@ func (col *Collector) Run(ctx context.Context) error {
 		col.setCollectorState(StateClosed)
 		logger, loggerErr := newFallbackLogger(col.set.LoggingOptions)
 		if loggerErr != nil {
-			fmt.Printf("unable to create fallback logger, %v", err)
+			return errors.Join(err, fmt.Errorf("unable to create fallback logger: %w", loggerErr))
 		} else {
 			if col.bc != nil {
 				x := col.bc.TakeLogs()
