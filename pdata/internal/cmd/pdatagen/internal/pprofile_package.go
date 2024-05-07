@@ -44,6 +44,8 @@ var pprofile = &Package{
 		line,
 		functionSlice,
 		function,
+		attributeUnitSlice,
+		attributeUnit,
 	},
 }
 
@@ -147,6 +149,14 @@ var profile = &messageValueStruct{
 		&sliceField{
 			fieldName:   "Function",
 			returnSlice: functionSlice,
+		},
+		&sliceField{
+			fieldName:   "AttributeTable",
+			returnSlice: mapStruct,
+		},
+		&sliceField{
+			fieldName:   "AttributeUnits",
+			returnSlice: attributeUnitSlice,
 		},
 		&primitiveTypedField{
 			fieldName:       "StartTime",
@@ -492,6 +502,31 @@ var function = &messageValueStruct{
 		},
 		&primitiveField{
 			fieldName:  "StartLine",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+	},
+}
+
+var attributeUnitSlice = &sliceOfValues{
+	structName: "AttributeUnitSlice",
+	element:    attributeUnit,
+}
+
+var attributeUnit = &messageValueStruct{
+	structName:     "AttributeUnit",
+	description:    "// AttributeUnit Represents a mapping between Attribute Keys and Units.",
+	originFullName: "otlpprofiles.AttributeUnit",
+	fields: []baseField{
+		&primitiveField{
+			fieldName:  "AttributeKey",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+		&primitiveField{
+			fieldName:  "Unit",
 			returnType: "int64",
 			defaultVal: "int64(0)",
 			testVal:    "int64(1)",

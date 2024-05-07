@@ -76,6 +76,16 @@ func (ms Profile) Function() FunctionSlice {
 	return newFunctionSlice(&ms.orig.Function, ms.state)
 }
 
+// AttributeTable returns the AttributeTable associated with this Profile.
+func (ms Profile) AttributeTable() pcommon.Map {
+	return pcommon.Map(internal.NewMap(&ms.orig.AttributeTable, ms.state))
+}
+
+// AttributeUnits returns the AttributeUnits associated with this Profile.
+func (ms Profile) AttributeUnits() AttributeUnitSlice {
+	return newAttributeUnitSlice(&ms.orig.AttributeUnits, ms.state)
+}
+
 // StartTime returns the starttime associated with this Profile.
 func (ms Profile) StartTime() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.TimeNanos)
@@ -96,5 +106,7 @@ func (ms Profile) CopyTo(dest Profile) {
 	ms.Location().CopyTo(dest.Location())
 	ms.LocationIndices().CopyTo(dest.LocationIndices())
 	ms.Function().CopyTo(dest.Function())
+	ms.AttributeTable().CopyTo(dest.AttributeTable())
+	ms.AttributeUnits().CopyTo(dest.AttributeUnits())
 	dest.SetStartTime(ms.StartTime())
 }

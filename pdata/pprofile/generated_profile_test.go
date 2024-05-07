@@ -81,6 +81,20 @@ func TestProfile_Function(t *testing.T) {
 	assert.Equal(t, generateTestFunctionSlice(), ms.Function())
 }
 
+func TestProfile_AttributeTable(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, pcommon.NewMap(), ms.AttributeTable())
+	internal.FillTestMap(internal.Map(ms.AttributeTable()))
+	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.AttributeTable())
+}
+
+func TestProfile_AttributeUnits(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, NewAttributeUnitSlice(), ms.AttributeUnits())
+	fillTestAttributeUnitSlice(ms.AttributeUnits())
+	assert.Equal(t, generateTestAttributeUnitSlice(), ms.AttributeUnits())
+}
+
 func TestProfile_StartTime(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, pcommon.Timestamp(0), ms.StartTime())
@@ -102,5 +116,7 @@ func fillTestProfile(tv Profile) {
 	fillTestLocationSlice(newLocationSlice(&tv.orig.Location, tv.state))
 	internal.FillTestInt64Slice(internal.NewInt64Slice(&tv.orig.LocationIndices, tv.state))
 	fillTestFunctionSlice(newFunctionSlice(&tv.orig.Function, tv.state))
+	internal.FillTestMap(internal.NewMap(&tv.orig.AttributeTable, tv.state))
+	fillTestAttributeUnitSlice(newAttributeUnitSlice(&tv.orig.AttributeUnits, tv.state))
 	tv.orig.TimeNanos = 1234567890
 }
