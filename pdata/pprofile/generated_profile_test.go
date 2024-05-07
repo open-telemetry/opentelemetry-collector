@@ -41,9 +41,9 @@ func TestProfile_CopyTo(t *testing.T) {
 
 func TestProfile_SampleType(t *testing.T) {
 	ms := NewProfile()
-	assert.Equal(t, NewValueTypes(), ms.SampleType())
-	fillTestValueTypes(ms.SampleType())
-	assert.Equal(t, generateTestValueTypes(), ms.SampleType())
+	assert.Equal(t, NewValueTypeSlice(), ms.SampleType())
+	fillTestValueTypeSlice(ms.SampleType())
+	assert.Equal(t, generateTestValueTypeSlice(), ms.SampleType())
 }
 
 func TestProfile_Sample(t *testing.T) {
@@ -95,12 +95,83 @@ func TestProfile_AttributeUnits(t *testing.T) {
 	assert.Equal(t, generateTestAttributeUnitSlice(), ms.AttributeUnits())
 }
 
+func TestProfile_LinkTable(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, NewLinkSlice(), ms.LinkTable())
+	fillTestLinkSlice(ms.LinkTable())
+	assert.Equal(t, generateTestLinkSlice(), ms.LinkTable())
+}
+
+func TestProfile_StringTable(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, pcommon.NewStringSlice(), ms.StringTable())
+	internal.FillTestStringSlice(internal.StringSlice(ms.StringTable()))
+	assert.Equal(t, pcommon.StringSlice(internal.GenerateTestStringSlice()), ms.StringTable())
+}
+
+func TestProfile_DropFrames(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, int64(0), ms.DropFrames())
+	ms.SetDropFrames(int64(1))
+	assert.Equal(t, int64(1), ms.DropFrames())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newProfile(&otlpprofiles.Profile{}, &sharedState).SetDropFrames(int64(1)) })
+}
+
+func TestProfile_KeepFrames(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, int64(0), ms.KeepFrames())
+	ms.SetKeepFrames(int64(1))
+	assert.Equal(t, int64(1), ms.KeepFrames())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newProfile(&otlpprofiles.Profile{}, &sharedState).SetKeepFrames(int64(1)) })
+}
+
 func TestProfile_StartTime(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, pcommon.Timestamp(0), ms.StartTime())
 	testValStartTime := pcommon.Timestamp(1234567890)
 	ms.SetStartTime(testValStartTime)
 	assert.Equal(t, testValStartTime, ms.StartTime())
+}
+
+func TestProfile_Duration(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, pcommon.Timestamp(0), ms.Duration())
+	testValDuration := pcommon.Timestamp(1234567890)
+	ms.SetDuration(testValDuration)
+	assert.Equal(t, testValDuration, ms.Duration())
+}
+
+func TestProfile_PeriodType(t *testing.T) {
+	ms := NewProfile()
+	fillTestValueType(ms.PeriodType())
+	assert.Equal(t, generateTestValueType(), ms.PeriodType())
+}
+
+func TestProfile_Period(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, int64(0), ms.Period())
+	ms.SetPeriod(int64(1))
+	assert.Equal(t, int64(1), ms.Period())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newProfile(&otlpprofiles.Profile{}, &sharedState).SetPeriod(int64(1)) })
+}
+
+func TestProfile_Comment(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, pcommon.NewInt64Slice(), ms.Comment())
+	internal.FillTestInt64Slice(internal.Int64Slice(ms.Comment()))
+	assert.Equal(t, pcommon.Int64Slice(internal.GenerateTestInt64Slice()), ms.Comment())
+}
+
+func TestProfile_DefaultSampleType(t *testing.T) {
+	ms := NewProfile()
+	assert.Equal(t, int64(0), ms.DefaultSampleType())
+	ms.SetDefaultSampleType(int64(1))
+	assert.Equal(t, int64(1), ms.DefaultSampleType())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newProfile(&otlpprofiles.Profile{}, &sharedState).SetDefaultSampleType(int64(1)) })
 }
 
 func generateTestProfile() Profile {
@@ -110,7 +181,7 @@ func generateTestProfile() Profile {
 }
 
 func fillTestProfile(tv Profile) {
-	fillTestValueTypes(newValueTypes(&tv.orig.SampleType, tv.state))
+	fillTestValueTypeSlice(newValueTypeSlice(&tv.orig.SampleType, tv.state))
 	fillTestSampleSlice(newSampleSlice(&tv.orig.Sample, tv.state))
 	fillTestMappingSlice(newMappingSlice(&tv.orig.Mapping, tv.state))
 	fillTestLocationSlice(newLocationSlice(&tv.orig.Location, tv.state))
@@ -118,5 +189,14 @@ func fillTestProfile(tv Profile) {
 	fillTestFunctionSlice(newFunctionSlice(&tv.orig.Function, tv.state))
 	internal.FillTestMap(internal.NewMap(&tv.orig.AttributeTable, tv.state))
 	fillTestAttributeUnitSlice(newAttributeUnitSlice(&tv.orig.AttributeUnits, tv.state))
+	fillTestLinkSlice(newLinkSlice(&tv.orig.LinkTable, tv.state))
+	internal.FillTestStringSlice(internal.NewStringSlice(&tv.orig.StringTable, tv.state))
+	tv.orig.DropFrames = int64(1)
+	tv.orig.KeepFrames = int64(1)
 	tv.orig.TimeNanos = 1234567890
+	tv.orig.DurationNanos = 1234567890
+	fillTestValueType(newValueType(&tv.orig.PeriodType, tv.state))
+	tv.orig.Period = int64(1)
+	internal.FillTestInt64Slice(internal.NewInt64Slice(&tv.orig.Comment, tv.state))
+	tv.orig.DefaultSampleType = int64(1)
 }

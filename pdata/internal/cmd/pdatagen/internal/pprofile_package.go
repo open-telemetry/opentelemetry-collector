@@ -30,8 +30,8 @@ var pprofile = &Package{
 		profilesContainersSlice,
 		profileContainer,
 		profile,
+		valueTypeSlice,
 		valueType,
-		valueTypes,
 		sampleSlice,
 		sample,
 		labelSlice,
@@ -46,6 +46,8 @@ var pprofile = &Package{
 		function,
 		attributeUnitSlice,
 		attributeUnit,
+		linkSlice,
+		link,
 	},
 }
 
@@ -128,7 +130,7 @@ var profile = &messageValueStruct{
 	fields: []baseField{
 		&sliceField{
 			fieldName:   "SampleType",
-			returnSlice: valueTypes,
+			returnSlice: valueTypeSlice,
 		},
 		&sliceField{
 			fieldName:   "Sample",
@@ -158,6 +160,26 @@ var profile = &messageValueStruct{
 			fieldName:   "AttributeUnits",
 			returnSlice: attributeUnitSlice,
 		},
+		&sliceField{
+			fieldName:   "LinkTable",
+			returnSlice: linkSlice,
+		},
+		&sliceField{
+			fieldName:   "StringTable",
+			returnSlice: stringSlice,
+		},
+		&primitiveField{
+			fieldName:  "DropFrames",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+		&primitiveField{
+			fieldName:  "KeepFrames",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
 		&primitiveTypedField{
 			fieldName:       "StartTime",
 			originFieldName: "TimeNanos",
@@ -169,11 +191,42 @@ var profile = &messageValueStruct{
 				testVal:     "1234567890",
 			},
 		},
+		&primitiveTypedField{
+			fieldName:       "Duration",
+			originFieldName: "DurationNanos",
+			returnType: &primitiveType{
+				structName:  "Timestamp",
+				packageName: "pcommon",
+				rawType:     "int64",
+				defaultVal:  "0",
+				testVal:     "1234567890",
+			},
+		},
+		&messageValueField{
+			fieldName:     "PeriodType",
+			returnMessage: valueType,
+		},
+		&primitiveField{
+			fieldName:  "Period",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
+		&sliceField{
+			fieldName:   "Comment",
+			returnSlice: int64Slice,
+		},
+		&primitiveField{
+			fieldName:  "DefaultSampleType",
+			returnType: "int64",
+			defaultVal: "int64(0)",
+			testVal:    "int64(1)",
+		},
 	},
 }
 
-var valueTypes = &sliceOfValues{
-	structName: "ValueTypes",
+var valueTypeSlice = &sliceOfValues{
+	structName: "ValueTypeSlice",
 	element:    valueType,
 }
 
@@ -531,5 +584,20 @@ var attributeUnit = &messageValueStruct{
 			defaultVal: "int64(0)",
 			testVal:    "int64(1)",
 		},
+	},
+}
+
+var linkSlice = &sliceOfValues{
+	structName: "LinkSlice",
+	element:    link,
+}
+
+var link = &messageValueStruct{
+	structName:     "Link",
+	description:    "// Link represents a pointer from a profile Sample to a trace Span.",
+	originFullName: "otlpprofiles.Link",
+	fields: []baseField{
+		traceIDField,
+		spanIDField,
 	},
 }

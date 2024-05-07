@@ -48,6 +48,9 @@ s+optional \(.*\) \(.*\) = \(.*\);+ oneof \2_ { \1 \2 = \3;}+g
 s+\(.*\)PartialSuccess partial_success = \(.*\);+\1PartialSuccess partial_success = \2\
   [ (gogoproto.nullable) = false ];+g
 
+#
+# Profiles replacements
+#
 s+opentelemetry.proto.profiles.v1experimental.Profile \(.*\);+opentelemetry.proto.profiles.v1experimental.Profile \1\
   [ (gogoproto.nullable) = false ];+g
 
@@ -76,4 +79,7 @@ s+repeated Link link_table \(.*\);+repeated Link link_table \1\
   [ (gogoproto.nullable) = false ];+g
 
 s+repeated Line \(.*\);+repeated Line \1\
-	[ (gogoproto.nullable) = false ];+g
+  [ (gogoproto.nullable) = false ];+g
+
+s+ValueType period_type \(.*\);+ValueType period_type \1\
+  [ (gogoproto.nullable) = false ];+g

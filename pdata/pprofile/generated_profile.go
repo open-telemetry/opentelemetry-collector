@@ -47,8 +47,8 @@ func (ms Profile) MoveTo(dest Profile) {
 }
 
 // SampleType returns the SampleType associated with this Profile.
-func (ms Profile) SampleType() ValueTypes {
-	return newValueTypes(&ms.orig.SampleType, ms.state)
+func (ms Profile) SampleType() ValueTypeSlice {
+	return newValueTypeSlice(&ms.orig.SampleType, ms.state)
 }
 
 // Sample returns the Sample associated with this Profile.
@@ -86,6 +86,38 @@ func (ms Profile) AttributeUnits() AttributeUnitSlice {
 	return newAttributeUnitSlice(&ms.orig.AttributeUnits, ms.state)
 }
 
+// LinkTable returns the LinkTable associated with this Profile.
+func (ms Profile) LinkTable() LinkSlice {
+	return newLinkSlice(&ms.orig.LinkTable, ms.state)
+}
+
+// StringTable returns the StringTable associated with this Profile.
+func (ms Profile) StringTable() pcommon.StringSlice {
+	return pcommon.StringSlice(internal.NewStringSlice(&ms.orig.StringTable, ms.state))
+}
+
+// DropFrames returns the dropframes associated with this Profile.
+func (ms Profile) DropFrames() int64 {
+	return ms.orig.DropFrames
+}
+
+// SetDropFrames replaces the dropframes associated with this Profile.
+func (ms Profile) SetDropFrames(v int64) {
+	ms.state.AssertMutable()
+	ms.orig.DropFrames = v
+}
+
+// KeepFrames returns the keepframes associated with this Profile.
+func (ms Profile) KeepFrames() int64 {
+	return ms.orig.KeepFrames
+}
+
+// SetKeepFrames replaces the keepframes associated with this Profile.
+func (ms Profile) SetKeepFrames(v int64) {
+	ms.state.AssertMutable()
+	ms.orig.KeepFrames = v
+}
+
 // StartTime returns the starttime associated with this Profile.
 func (ms Profile) StartTime() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.TimeNanos)
@@ -95,6 +127,49 @@ func (ms Profile) StartTime() pcommon.Timestamp {
 func (ms Profile) SetStartTime(v pcommon.Timestamp) {
 	ms.state.AssertMutable()
 	ms.orig.TimeNanos = int64(v)
+}
+
+// Duration returns the duration associated with this Profile.
+func (ms Profile) Duration() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.orig.DurationNanos)
+}
+
+// SetDuration replaces the duration associated with this Profile.
+func (ms Profile) SetDuration(v pcommon.Timestamp) {
+	ms.state.AssertMutable()
+	ms.orig.DurationNanos = int64(v)
+}
+
+// PeriodType returns the periodtype associated with this Profile.
+func (ms Profile) PeriodType() ValueType {
+	return newValueType(&ms.orig.PeriodType, ms.state)
+}
+
+// Period returns the period associated with this Profile.
+func (ms Profile) Period() int64 {
+	return ms.orig.Period
+}
+
+// SetPeriod replaces the period associated with this Profile.
+func (ms Profile) SetPeriod(v int64) {
+	ms.state.AssertMutable()
+	ms.orig.Period = v
+}
+
+// Comment returns the Comment associated with this Profile.
+func (ms Profile) Comment() pcommon.Int64Slice {
+	return pcommon.Int64Slice(internal.NewInt64Slice(&ms.orig.Comment, ms.state))
+}
+
+// DefaultSampleType returns the defaultsampletype associated with this Profile.
+func (ms Profile) DefaultSampleType() int64 {
+	return ms.orig.DefaultSampleType
+}
+
+// SetDefaultSampleType replaces the defaultsampletype associated with this Profile.
+func (ms Profile) SetDefaultSampleType(v int64) {
+	ms.state.AssertMutable()
+	ms.orig.DefaultSampleType = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -108,5 +183,14 @@ func (ms Profile) CopyTo(dest Profile) {
 	ms.Function().CopyTo(dest.Function())
 	ms.AttributeTable().CopyTo(dest.AttributeTable())
 	ms.AttributeUnits().CopyTo(dest.AttributeUnits())
+	ms.LinkTable().CopyTo(dest.LinkTable())
+	ms.StringTable().CopyTo(dest.StringTable())
+	dest.SetDropFrames(ms.DropFrames())
+	dest.SetKeepFrames(ms.KeepFrames())
 	dest.SetStartTime(ms.StartTime())
+	dest.SetDuration(ms.Duration())
+	ms.PeriodType().CopyTo(dest.PeriodType())
+	dest.SetPeriod(ms.Period())
+	ms.Comment().CopyTo(dest.Comment())
+	dest.SetDefaultSampleType(ms.DefaultSampleType())
 }
