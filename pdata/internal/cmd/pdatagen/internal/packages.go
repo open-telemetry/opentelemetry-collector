@@ -25,8 +25,8 @@ var AllPackages = []*Package{
 	pmetricotlp,
 	ptrace,
 	ptraceotlp,
-	pprofile,
-	pprofileotlp,
+	pprofileExperimental,
+	pprofileotlpExperimental,
 }
 
 // Package is a struct used to generate files.
