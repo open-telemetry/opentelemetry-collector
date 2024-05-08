@@ -286,18 +286,18 @@ func (col *Collector) Run(ctx context.Context) error {
 		logger, loggerErr := newFallbackLogger(col.set.LoggingOptions)
 		if loggerErr != nil {
 			return errors.Join(err, fmt.Errorf("unable to create fallback logger: %w", loggerErr))
-		} else {
-			if col.bc != nil {
-				x := col.bc.TakeLogs()
-				for _, log := range x {
-					ce := logger.Core().Check(log.Entry, nil)
-					if ce != nil {
-						ce.Write(log.Context...)
-					}
+		}
+
+		if col.bc != nil {
+			x := col.bc.TakeLogs()
+			for _, log := range x {
+				ce := logger.Core().Check(log.Entry, nil)
+				if ce != nil {
+					ce.Write(log.Context...)
 				}
 			}
-			logger.Warn("unable to resolve configuration", zap.Error(err))
 		}
+		logger.Warn("unable to resolve configuration", zap.Error(err))
 
 		return err
 	}
