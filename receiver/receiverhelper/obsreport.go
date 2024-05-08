@@ -35,15 +35,15 @@ type ObsReport struct {
 
 	otelAttrs []attribute.KeyValue
 
-	acceptedSpansCounter               metric.Int64Counter
-	acceptedSpansBytesHistogram        metric.Int64Histogram
-	refusedSpansCounter                metric.Int64Counter
-	acceptedMetricPointsCounter        metric.Int64Counter
-	acceptedMetricPointsBytesHistogram metric.Int64Histogram
-	refusedMetricPointsCounter         metric.Int64Counter
-	acceptedLogRecordsCounter          metric.Int64Counter
-	acceptedLogRecodsBytesHistogram    metric.Int64Histogram
-	refusedLogRecordsCounter           metric.Int64Counter
+	acceptedSpansCounter             metric.Int64Counter
+	acceptedSpansBytesCounter        metric.Int64Counter
+	refusedSpansCounter              metric.Int64Counter
+	acceptedMetricPointsCounter      metric.Int64Counter
+	acceptedMetricPointsBytesCounter metric.Int64Counter
+	refusedMetricPointsCounter       metric.Int64Counter
+	acceptedLogRecordsCounter        metric.Int64Counter
+	acceptedLogRecordsBytesCounter   metric.Int64Counter
+	refusedLogRecordsCounter         metric.Int64Counter
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
@@ -97,7 +97,7 @@ func (rec *ObsReport) createOtelMetrics() error {
 	)
 	errors = multierr.Append(errors, err)
 
-	rec.acceptedSpansBytesHistogram, err = rec.meter.Int64Histogram(
+	rec.acceptedSpansBytesCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverMetricPrefix+obsmetrics.AcceptedLogRecordsBytesKey,
 		metric.WithDescription("Bytes of spans successfully pushed into the pipeline."),
 		metric.WithUnit("By"),
@@ -118,7 +118,7 @@ func (rec *ObsReport) createOtelMetrics() error {
 	)
 	errors = multierr.Append(errors, err)
 
-	rec.acceptedMetricPointsBytesHistogram, err = rec.meter.Int64Histogram(
+	rec.acceptedMetricPointsBytesCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverMetricPrefix+obsmetrics.AcceptedLogRecordsBytesKey,
 		metric.WithDescription("Bytes of metric points successfully pushed into the pipeline."),
 		metric.WithUnit("By"),
@@ -139,7 +139,7 @@ func (rec *ObsReport) createOtelMetrics() error {
 	)
 	errors = multierr.Append(errors, err)
 
-	rec.acceptedLogRecodsBytesHistogram, err = rec.meter.Int64Histogram(
+	rec.acceptedLogRecordsBytesCounter, err = rec.meter.Int64Counter(
 		obsmetrics.ReceiverMetricPrefix+obsmetrics.AcceptedLogRecordsBytesKey,
 		metric.WithDescription("Bytes of log records successfully pushed into the pipeline."),
 		metric.WithUnit("By"),
@@ -290,8 +290,7 @@ func (rec *ObsReport) endOp(
 }
 
 func (rec *ObsReport) recordMetrics(receiverCtx context.Context, dataType component.DataType, numAccepted, bytesAccepted, numRefused int) {
-	var acceptedMeasure, refusedMeasure metric.Int64Counter
-	var accecptedBytesMeasure metric.Int64Histogram
+	var acceptedMeasure, accecptedBytesMeasure, refusedMeasure metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
 		acceptedMeasure = rec.acceptedSpansCounter
@@ -309,5 +308,5 @@ func (rec *ObsReport) recordMetrics(receiverCtx context.Context, dataType compon
 
 	acceptedMeasure.Add(receiverCtx, int64(numAccepted), metric.WithAttributes(rec.otelAttrs...))
 	refusedMeasure.Add(receiverCtx, int64(numRefused), metric.WithAttributes(rec.otelAttrs...))
-	accecptedBytesMeasure.Record(receiverCtx, int64(bytesAccepted), metric.WithAttributes(rec.otelAttrs...))
+	accecptedBytesMeasure.Add(receiverCtx, int64(bytesAccepted), metric.WithAttributes(rec.otelAttrs...))
 }
