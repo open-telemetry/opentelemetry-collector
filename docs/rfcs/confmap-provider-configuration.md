@@ -12,11 +12,18 @@ the behavior of how the source is obtained.
 For example, consider the case where the Collector obtains configuration over
 HTTP from an HTTP endpoint. A user may want to:
 
-1. Poll the HTTP endpoint for configuration and reload the Collector service if
-   the configuration changes.
-2. Change the polling interval if polling has been enabled.
-3. Authenticate the request to get configuration by including a header in the
+1. Poll the HTTP endpoint for configuration at a configurable interval and
+   reload the Collector service if the configuration changes.
+2. Authenticate the request to get configuration by including a header in the
    request.
+
+This would produce a set of options like the following:
+
+- `poll-interval`: Sets an interval for the Provider to check the HTTP endpoint
+  for changes. If the config has changed, the service will be reloaded. Defaults
+  to `0`, which disables polling.
+- `headers`: Specifies a semicolon-delimited set of headers that will be passed
+  to the config backend. Header keys and values should be separated by `=`.
 
 Configuration for Providers cannot be stored in the same place as the rest of
 the Collector's configuration since the Providers are the ones tasked with
@@ -108,6 +115,9 @@ etc. For example:
 ```text
 https://config.com/config#refresh-interval=env:REFRESH_INTERVAL&headers=file:headers.yaml
 ```
+
+Using this strategy would also allow us to more easily get env vars and to get
+values from files for things like API tokens.
 
 ### Add to the string passed to the config flag
 
