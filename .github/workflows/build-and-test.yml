@@ -17,9 +17,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Setup Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: ~1.21.9
+          go-version: ~1.21.10
           cache: false
       - name: Cache Go
         id: go-cache
@@ -40,9 +40,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Setup Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: ~1.21.9
+          go-version: ~1.21.10
           cache: false
       - name: Cache Go
         id: go-cache
@@ -64,9 +64,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Setup Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: ~1.21.9
+          go-version: ~1.21.10
           cache: false
       - name: Cache Go
         id: go-cache
@@ -89,9 +89,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Setup Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: ~1.21.9
+          go-version: ~1.21.10
           cache: false
       - name: Cache Go
         id: go-cache
@@ -137,11 +137,8 @@ jobs:
   unittest-matrix:
     strategy:
       matrix:
-        runner: [ubuntu-latest, actuated-arm64-4cpu-4gb]
-        exclude:
-          - go-version: "~1.21.9"
-            runner: actuated-arm64-4cpu-4gb
-        go-version: ["~1.22", "~1.21.9"] # 1.20 needs quotes otherwise it's interpreted as 1.2
+        runner: [ubuntu-latest]
+        go-version: ["~1.22", "~1.21.10"] # 1.20 needs quotes otherwise it's interpreted as 1.2
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
@@ -155,7 +152,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Setup Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version: ${{ matrix.go-version }}
           cache: false
@@ -199,9 +196,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Setup Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: ~1.21.9
+          go-version: ~1.21.10
           cache: false
       - name: Cache Go
         id: go-cache
@@ -261,9 +258,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
       - name: Setup Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: ~1.21.9
+          go-version: ~1.21.10
           cache: false
       - name: Cache Go
         id: go-cache

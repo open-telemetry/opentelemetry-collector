@@ -158,13 +158,12 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager |
 |------------|----------|-----------------|
-| 2024-04-10 | v0.98.0  | @dmitryax       |
-| 2024-04-22 | v0.99.0  | @codeboten      |
-| 2024-05-06 | v0.100.0 | @bogdandrutu    |
-| 2024-05-20 | v0.101.0 | @Aneurysm9      |
-| 2024-06-03 | v0.102.0 | @jpkrohling     |
-| 2024-06-17 | v0.103.0 | @mx-psi         |
-| 2024-07-01 | v0.104.0 | @djaglowski     |
-| 2024-07-15 | v0.105.0 | @atoulme        |
-| 2024-07-29 | v0.106.0 | @TylerHelmuth   |
-| 2024-08-12 | v0.107.0 | @songy23        |
+| 2024-05-20 | v0.101.0 | @jpkrohling     |
+| 2024-06-03 | v0.102.0 | @mx-psi         |
+| 2024-06-17 | v0.103.0 | @djaglowski     |
+| 2024-07-01 | v0.104.0 | @atoulme        |
+| 2024-07-15 | v0.105.0 | @TylerHelmuth   |
+| 2024-07-29 | v0.106.0 | @songy23        |
+| 2024-08-12 | v0.107.0 | @dmitryax       |
+| 2024-08-26 | v0.108.0 | @codeboten      |
+| 2024-09-09 | v0.109.0 | @bogdandrutu    |
