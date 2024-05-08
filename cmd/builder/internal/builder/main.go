@@ -260,6 +260,11 @@ func (c *Config) updateModules() error {
 }
 
 func (c *Config) updateGoModule(modspec string) error {
+	mod, ver, found := strings.Cut(modspec, " ")
+	if !found {
+		return fmt.Errorf("ill-formatted modspec %q: missing space separator", modspec)
+	}
+
 	// Re-parse the go.mod file on each iteration, since it can
 	// change each time.
 	modulePath, dependencyVersions, err := c.readGoModFile()
@@ -267,7 +272,6 @@ func (c *Config) updateGoModule(modspec string) error {
 		return err
 	}
 
-	mod, ver, _ := strings.Cut(modspec, " ")
 	if mod == modulePath {
 		// this component is part of the same module, nothing to update.
 		return nil
@@ -288,9 +292,9 @@ func (c *Config) updateGoModule(modspec string) error {
 	}
 
 	// upgrading or changing version
-	updatespec := mod + "@" + ver
+	updatespec := "-require=" + mod + "@" + ver
 
-	if _, err := runGoCommand(*c, "get", updatespec); err != nil {
+	if _, err := runGoCommand(*c, "mod", "edit", updatespec); err != nil {
 		return err
 	}
 	return nil

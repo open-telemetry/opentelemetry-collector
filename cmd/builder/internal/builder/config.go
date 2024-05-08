@@ -259,7 +259,7 @@ func (c *Config) validateModules(name string, mods []Module) error {
 			return fmt.Errorf("%s module at index %v: %w", name, i, ErrMissingGoMod)
 		}
 		if mod.Path != "" && c.SkipNewGoModule {
-			return fmt.Errorf("%w cannot modify mod.path \"%v\" combined with --skip-new-go-module; please modify the enclosing go.mod file directly", ErrIncompatibleConfigurationValues, mod.Path)
+			return fmt.Errorf("%w cannot modify mod.path %q combined with --skip-new-go-module; please modify the enclosing go.mod file directly", ErrIncompatibleConfigurationValues, mod.Path)
 		}
 	}
 	return nil
