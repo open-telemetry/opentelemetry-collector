@@ -21,10 +21,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper/internal/metadata"
 )
 
-var (
-	scraperScope = obsmetrics.Scope + obsmetrics.SpanNameSep + obsmetrics.ScraperKey
-)
-
 // ObsReport is a helper to add observability to a scraper.
 type ObsReport struct {
 	level      configtelemetry.Level
