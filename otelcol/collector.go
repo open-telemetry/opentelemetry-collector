@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package otelcol handles the command-line, configuration, and runs the OpenTelemetry Collector.
-// otelcol/collector.go contains the main Collector struct and its constructor [NewCollector].
+// It contains the main [Collector] struct and its constructor [NewCollector].
 // [Collector.Run] starts the collector blocks until it shuts down.
-// [Collector.setupConfigurationComponents] is the "main" function responsible for startup - it orchestrates the loading of the
+// Collector.setupConfigurationComponents is the "main" function responsible for startup - it orchestrates the loading of the
 // configuration, the creation of the graph, and the starting of all the components.
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 

@@ -1,5 +1,7 @@
-## Collector internal architecture
-There are a few resources available to understand how the collector works:
+## Internal architecture
+
+There are a few resources available to understand how the Collector works:
+
 ### Startup Diagram
 ```mermaid
 flowchart TD
@@ -30,20 +32,20 @@ flowchart TD
      Iterates through the pipelines and creates edges between components`")
     I --> L("`**buildComponents**
      Topological sort the graph, and create each component in reverse order`")
-    L --> M(Receiver Factory) & N(Processor Factory) & O(Exporter Factory)
+    L --> M(Receiver Factory) & N(Processor Factory) & O(Exporter Factory) & P(Connector Factory)
 ```
 ### Important Files
 Here is a brief list of useful and/or important files and interfaces that you may find valuable to glance through.
-Most of these have package level documentation and function / struct level comments that help explain the collector!
+Most of these have package level documentation and function / struct level comments that help explain the Collector!
 
 - [collector.go](../otelcol/collector.go)
 - [graph.go](../service/internal/graph/graph.go)
 - [component.go](../component/component.go)
 
 #### Factories
-Each component type contains a Factory interface along with its corresponding NewFactory function.
-Implementations of new components use this NewFactory function in their implementation to register key functions with 
-the collector.  For example, the collector uses this interface to give receivers a handle to a nextConsumer - 
+Each component type contains a `Factory` interface along with its corresponding `NewFactory` function.
+Implementations of new components use this `NewFactory` function in their implementation to register key functions with 
+the Collector.  For example, the Collector uses this interface to give receivers a handle to a `nextConsumer` - 
 representing where the receiver can send data to that it has received.
 An example of this is in [exporter.go](../exporter/exporter.go)
 
