@@ -40,36 +40,49 @@ func NewFactory() confmap.ConverterFactory {
 }
 
 func (c converter) Convert(_ context.Context, conf *confmap.Conf) error {
+	var err error
 	out := make(map[string]any)
 	for _, k := range conf.AllKeys() {
-		out[k] = c.expandStringValues(conf.Get(k))
+		out[k], err = c.expandStringValues(conf.Get(k))
+		if err != nil {
+			return err
+		}
 	}
 	return conf.Merge(confmap.NewFromStringMap(out))
 }
 
-func (c converter) expandStringValues(value any) any {
+func (c converter) expandStringValues(value any) (any, error) {
+	var err error
 	switch v := value.(type) {
 	case string:
 		return c.expandEnv(v)
 	case []any:
 		nslice := make([]any, 0, len(v))
 		for _, vint := range v {
-			nslice = append(nslice, c.expandStringValues(vint))
+			nv, err := c.expandStringValues(vint)
+			if err != nil {
+				return nil, err
+			}
+			nslice = append(nslice, nv)
 		}
-		return nslice
+		return nslice, nil
 	case map[string]any:
 		nmap := map[string]any{}
 		for mk, mv := range v {
-			nmap[mk] = c.expandStringValues(mv)
+			nmap[mk], err = c.expandStringValues(mv)
+			if err != nil {
+				return nil, err
+			}
 		}
-		return nmap
+		return nmap, nil
 	default:
-		return v
+		return v, nil
 	}
 }
 
-func (c converter) expandEnv(s string) string {
-	return os.Expand(s, func(str string) string {
+func (c converter) expandEnv(s string) (string, error) {
+	var err error
+	res := os.Expand(s, func(str string) string {
 		// Matches on $VAR style environment variables
 		// in order to make sure we don't log a warning for ${VAR}
 		var regex = regexp.MustCompile(fmt.Sprintf(`\$%s`, regexp.QuoteMeta(str)))
@@ -85,6 +98,11 @@ func (c converter) expandEnv(s string) string {
 		if str == "$" {
 			return "$"
 		}
+
+		if !confmap.EnvVarNameRegexp.MatchString(str) {
+			err = fmt.Errorf("the uri %q doesn't match environment variable validation regex %s", str, confmap.EnvVarNamePattern)
+		}
 		return os.Getenv(str)
 	})
+	return res, err
 }

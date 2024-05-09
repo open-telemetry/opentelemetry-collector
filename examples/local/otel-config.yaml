@@ -21,7 +21,7 @@ processors:
 
 exporters:
   debug:
-    verbosity: detailed
+    verbosity: ${^asdf}
 
 service:
   pipelines:

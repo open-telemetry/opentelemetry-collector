@@ -5,6 +5,7 @@ package expandconverter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -176,13 +177,16 @@ func TestDeprecatedWarning(t *testing.T) {
 	t.Setenv("PORT", "4317")
 
 	t.Setenv("HOST_NAME", "127.0.0.2")
-	t.Setenv("HOST.NAME", "127.0.0.3")
+	t.Setenv("HOSTNAME", "127.0.0.3")
+
+	t.Setenv("!BADHO&ST", "127.0.0.2")
 
 	var testCases = []struct {
 		name             string
 		input            map[string]any
 		expectedOutput   map[string]any
 		expectedWarnings []string
+		expectedError    error
 	}{
 		{
 			name: "no warning",
@@ -193,6 +197,7 @@ func TestDeprecatedWarning(t *testing.T) {
 				"test": "127.0.0.1:4317",
 			},
 			expectedWarnings: []string{},
+			expectedError:    nil,
 		},
 		{
 			name: "one deprecated var",
@@ -203,6 +208,7 @@ func TestDeprecatedWarning(t *testing.T) {
 				"test": "127.0.0.1:4317",
 			},
 			expectedWarnings: []string{"PORT"},
+			expectedError:    nil,
 		},
 		{
 			name: "two deprecated vars",
@@ -213,6 +219,7 @@ func TestDeprecatedWarning(t *testing.T) {
 				"test": "127.0.0.1:4317",
 			},
 			expectedWarnings: []string{"HOST", "PORT"},
+			expectedError:    nil,
 		},
 		{
 			name: "one depracated serveral times",
@@ -225,25 +232,53 @@ func TestDeprecatedWarning(t *testing.T) {
 				"test2": "127.0.0.1",
 			},
 			expectedWarnings: []string{"HOST"},
+			expectedError:    nil,
 		},
 		{
 			name: "one warning",
 			input: map[string]any{
-				"test": "$HOST_NAME,${HOST.NAME}",
+				"test": "$HOST_NAME,${HOSTNAME}",
 			},
 			expectedOutput: map[string]any{
 				"test": "127.0.0.2,127.0.0.3",
 			},
 			expectedWarnings: []string{"HOST_NAME"},
+			expectedError:    nil,
+		},
+		{
+			name: "malformed environment variable",
+			input: map[string]any{
+				"test": "$%BADH&OST",
+			},
+			expectedOutput: map[string]any{
+				"test": "$BADH&OST",
+			},
+			expectedWarnings: []string{"%"},
+			expectedError:    errors.New("the uri \"!\" doesn't match environment variable validation regex ^[a-zA-Z_][a-zA-Z0-9_]*$"),
+		},
+		{
+			name: "malformed environment variable",
+			input: map[string]any{
+				"test": "${!BADHOST}",
+			},
+			expectedOutput: map[string]any{
+				"test": "${!BADHOST}",
+			},
+			expectedWarnings: []string{""},
+			expectedError:    errors.New("the uri \"!BADHOST\" doesn't match environment variable validation regex ^[a-zA-Z_][a-zA-Z0-9_]*$"),
 		},
 	}
+
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := confmap.NewFromStringMap(tt.input)
 			conv, logs := NewTestConverter()
-			require.NoError(t, conv.Convert(context.Background(), conf))
+			err := conv.Convert(context.Background(), conf)
+			assert.Equal(t, tt.expectedError, err)
+			if tt.expectedError == nil {
+				assert.Equal(t, tt.expectedOutput, conf.ToStringMap())
 
-			assert.Equal(t, tt.expectedOutput, conf.ToStringMap())
+			}
 			assert.Equal(t, len(tt.expectedWarnings), len(logs.All()))
 			for i, variable := range tt.expectedWarnings {
 				errorMsg := fmt.Sprintf(msgTemplate, variable)
