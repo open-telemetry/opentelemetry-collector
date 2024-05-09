@@ -149,6 +149,8 @@ Disadvantages:
 
 - The flags would need to be placed in a certain position in the arguments list
   to specify which URI they apply to.
+- Configuring URIs present in files requires users to look in two places for
+  each URI and is suboptimal UX.
 - Complicating the flags like this would be suboptimal UX.
 
 ### Separate config file
