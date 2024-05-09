@@ -7,17 +7,20 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"golang.org/x/mod/modfile"
 )
 
-var (
-	goModTestFile = []byte(`// Copyright The OpenTelemetry Authors
+const (
+	goModTestFile = `// Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 module go.opentelemetry.io/collector/cmd/builder/internal/tester
 go 1.20
@@ -30,7 +33,53 @@ require (
 	go.opentelemetry.io/collector/processor v0.94.1
 	go.opentelemetry.io/collector/receiver v0.94.1
 	go.opentelemetry.io/collector v0.96.0
-)`)
+)`
+	modulePrefix = "go.opentelemetry.io/collector"
+)
+
+var (
+	replaceModules = []string{
+		"",
+		"/component",
+		"/config/configauth",
+		"/config/configcompression",
+		"/config/configgrpc",
+		"/config/confighttp",
+		"/config/confignet",
+		"/config/configopaque",
+		"/config/configretry",
+		"/config/configtelemetry",
+		"/config/configtls",
+		"/config/internal",
+		"/confmap",
+		"/confmap/converter/expandconverter",
+		"/confmap/provider/envprovider",
+		"/confmap/provider/fileprovider",
+		"/confmap/provider/httpprovider",
+		"/confmap/provider/httpsprovider",
+		"/confmap/provider/yamlprovider",
+		"/consumer",
+		"/connector",
+		"/exporter",
+		"/exporter/debugexporter",
+		"/exporter/nopexporter",
+		"/exporter/otlpexporter",
+		"/exporter/otlphttpexporter",
+		"/extension",
+		"/extension/auth",
+		"/extension/zpagesextension",
+		"/featuregate",
+		"/processor",
+		"/processor/batchprocessor",
+		"/processor/memorylimiterprocessor",
+		"/receiver",
+		"/receiver/nopreceiver",
+		"/receiver/otlpreceiver",
+		"/otelcol",
+		"/pdata",
+		"/semconv",
+		"/service",
+	}
 )
 
 func newTestConfig() Config {
@@ -96,7 +145,7 @@ func TestVersioning(t *testing.T) {
 			cfgBuilder: func() Config {
 				cfg := newTestConfig()
 				tempDir := t.TempDir()
-				err := makeModule(tempDir, goModTestFile)
+				err := makeModule(tempDir, []byte(goModTestFile))
 				require.NoError(t, err)
 				cfg.Distribution.OutputPath = tempDir
 				cfg.SkipGenerate = true
@@ -279,6 +328,108 @@ func TestGenerateAndCompile(t *testing.T) {
 	}
 }
 
+// Test that the go.mod files that other tests in this file
+// may generate have all their modules covered by our
+// "replace" statements created in `generateReplaces`.
+//
+// An incomplete set of replace statements in these tests
+// may cause them to fail during the release process, when
+// the local version of modules in the release branch is
+// not yet available on the Go package repository.
+// Unless the replace statements route all modules to the
+// local copy, `go get` will try to fetch the unreleased
+// version remotely and some tests will fail.
+func TestReplaceStatementsAreComplete(t *testing.T) {
+	var err error
+	dir := t.TempDir()
+	cfg := NewDefaultConfig()
+	cfg.Distribution.Go = "go"
+	cfg.Distribution.OutputPath = dir
+	// Use a deliberately nonexistent version to simulate an unreleased
+	// version of the package. Not strictly necessary since this test
+	// will catch gaps in the replace statements before a release is in
+	// progress.
+	cfg.Distribution.OtelColVersion = "1.9999.9999"
+	cfg.Replaces = append(cfg.Replaces, generateReplaces()...)
+	// Configure all components that we want to use elsewhere in these tests.
+	// This ensures the resulting go.mod file has maximum coverage of modules
+	// that exist in the Core repository.
+	cfg.Exporters, err = parseModules([]Module{
+		{
+			GoMod: "go.opentelemetry.io/collector/exporter/debugexporter v1.9999.9999",
+		},
+		{
+			GoMod: "go.opentelemetry.io/collector/exporter/nopexporter v1.9999.9999",
+		},
+		{
+			GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter v1.9999.9999",
+		},
+		{
+			GoMod: "go.opentelemetry.io/collector/exporter/otlphttpexporter v1.9999.9999",
+		},
+	})
+	require.NoError(t, err)
+	cfg.Receivers, err = parseModules([]Module{
+		{
+			GoMod: "go.opentelemetry.io/collector/receiver/nopreceiver v1.9999.9999",
+		},
+		{
+			GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v1.9999.9999",
+		},
+	})
+	require.NoError(t, err)
+	cfg.Extensions, err = parseModules([]Module{
+		{
+			GoMod: "go.opentelemetry.io/collector/extension/zpagesextension v1.9999.9999",
+		},
+	})
+	require.NoError(t, err)
+	cfg.Processors, err = parseModules([]Module{
+		{
+			GoMod: "go.opentelemetry.io/collector/processor/batchprocessor v1.9999.9999",
+		},
+		{
+			GoMod: "go.opentelemetry.io/collector/processor/memorylimiterprocessor v1.9999.9999",
+		},
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, cfg.SetBackwardsCompatibility())
+	require.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.ParseModules())
+	err = GenerateAndCompile(cfg)
+	require.NoError(t, err)
+
+	gomodpath := path.Join(dir, "go.mod")
+	// #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
+	gomod, err := os.ReadFile(gomodpath)
+	require.NoError(t, err)
+
+	mod, err := modfile.Parse(gomodpath, gomod, nil)
+	require.NoError(t, err)
+
+	replaceMods := map[string]bool{}
+
+	for _, suffix := range replaceModules {
+		replaceMods[modulePrefix+suffix] = false
+	}
+
+	for _, req := range mod.Require {
+		if !strings.HasPrefix(req.Mod.Path, modulePrefix) {
+			continue
+		}
+
+		_, ok := replaceMods[req.Mod.Path]
+		assert.Truef(t, ok, "Module missing from replace statements list: %s", req.Mod.Path)
+
+		replaceMods[req.Mod.Path] = true
+	}
+
+	for k, v := range replaceMods {
+		assert.Truef(t, v, "Module not used: %s", k)
+	}
+}
+
 func makeModule(dir string, fileContents []byte) error {
 	// if the file does not exist, try to create it
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -301,47 +452,12 @@ func generateReplaces() []string {
 	// The goal is find the root of the repo so we can replace the root module.
 	_, thisFile, _, _ := runtime.Caller(0)
 	workspaceDir := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile)))))
-	return []string{fmt.Sprintf("go.opentelemetry.io/collector => %s", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/component => %s/component", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/config/configauth => %s/config/configauth", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/config/configcompression => %s/config/configcompression", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/config/configgrpc => %s/config/configgrpc", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/config/confignet => %s/config/confignet", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/config/configopaque => %s/config/configopaque", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/config/configretry => %s/config/configretry", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/config/configtelemetry => %s/config/configtelemetry", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/config/configtls => %s/config/configtls", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/config/internal => %s/config/internal", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/confmap => %s/confmap", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/confmap/converter/expandconverter => %s/confmap/converter/expandconverter", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/confmap/provider/envprovider => %s/confmap/provider/envprovider", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/confmap/provider/fileprovider => %s/confmap/provider/fileprovider", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/confmap/provider/httpprovider => %s/confmap/provider/httpprovider", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/confmap/provider/httpsprovider => %s/confmap/provider/httpsprovider", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/confmap/provider/yamlprovider => %s/confmap/provider/yamlprovider", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/consumer => %s/consumer", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/connector => %s/connector", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/exporter => %s/exporter", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/exporter/debugexporter => %s/exporter/debugexporter", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/exporter/loggingexporter => %s/exporter/loggingexporter", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/exporter/nopexporter => %s/exporter/nopexporter", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/exporter/otlpexporter => %s/exporter/otlpexporter", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/exporter/otlphttpexporter => %s/exporter/otlphttpexporter", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/extension => %s/extension", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/extension/auth => %s/extension/auth", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/extension/ballastextension => %s/extension/ballastextension", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/extension/zpagesextension => %s/extension/zpagesextension", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/featuregate => %s/featuregate", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/processor => %s/processor", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/processor/batchprocessor => %s/processor/batchprocessor", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/processor/memorylimiterprocessor => %s/processor/memorylimiterprocessor", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/receiver => %s/receiver", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/receiver/nopreceiver => %s/receiver/nopreceiver", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/receiver/otlpreceiver => %s/receiver/otlpreceiver", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/otelcol => %s/otelcol", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/pdata => %s/pdata", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/pdata/testdata => %s/pdata/testdata", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/semconv => %s/semconv", workspaceDir),
-		fmt.Sprintf("go.opentelemetry.io/collector/service => %s/service", workspaceDir),
+	modules := replaceModules
+	replaces := make([]string, len(modules))
+
+	for i, mod := range modules {
+		replaces[i] = fmt.Sprintf("%s%s => %s%s", modulePrefix, mod, workspaceDir, mod)
 	}
+
+	return replaces
 }
