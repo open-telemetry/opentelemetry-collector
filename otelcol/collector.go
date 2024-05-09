@@ -297,7 +297,6 @@ func (col *Collector) Run(ctx context.Context) error {
 				}
 			}
 		}
-		logger.Warn("unable to resolve configuration", zap.Error(err))
 
 		return err
 	}
