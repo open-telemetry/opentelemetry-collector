@@ -75,7 +75,7 @@ fragments.
 
 Advantages:
 
-- Explicitly intended to  specify non-hierarchical data in a URI.
+- Explicitly intended to specify non-hierarchical data in a URI.
 - Often used for this purpose.
 - Fits into existing config URIs.
 
