@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package main
 
 import (
@@ -203,6 +205,9 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				},
 				"isConnector": func() bool {
 					return md.Status.Class == "connector"
+				},
+				"isCommand": func() bool {
+					return md.Status.Class == "cmd"
 				},
 				"supportsLogs": func() bool {
 					for _, signals := range md.Status.Stability {
