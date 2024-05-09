@@ -49,20 +49,28 @@ requirements:
 ## Solutions
 
 Providers are invoked through passing `--config` flags to the Collector binary
-with a scheme and URI to obtain. A single instance of each Provider is then
-tasked with retrieving from config from all URIs passed to the Collector for the
-scheme the provider is registered to handle.
+or by using the braces syntax inside a Collector config file (`${scheme:uri}`).
+Each invocation contains a scheme specifying how to obtain config and URI
+specifying the config to be obtained. A single instance of a Provider is created
+for each scheme and is tasked with retrieving config for its scheme for each
+corresponding URI passed to the Collector.
 
-We have the following places where it may make sense to hook into options for
-Providers:
+With the above in mind, we have the following places where it may make sense to
+support specifying options for Providers:
 
 1. Parts of the URI we are requesting.
-2. Part of the string passed to `--config`.
+2. Part of the string passed to `--config` or inside braces in a config file.
 3. Separate flags to configure Providers per config URI.
 4. Use a separate config file that specifies config sources inside a map
    structure.
 5. Extend the Collector's config schema to support specifying additional places
-   to obtain configuration
+   to obtain configuration.
+
+All of the above options are targeted toward configuring how specific URIs are
+resolved into config. To configure how a Provider resolves every URI it
+receives, we should consider how to extend the above options to be specified
+without a URI and to ensure the options are always applied to all URI
+resolutions.
 
 ### Configure options inside the URI
 
@@ -98,7 +106,7 @@ Advantages:
 
 - Not likely to be used by config backends for any of our supported protocols,
   so has a low chance of conflict.
-- Fits into existing config URIs.
+- Fits into existing config URIs for URL-based Providers.
 
 Disadvantages:
 
@@ -106,6 +114,8 @@ Disadvantages:
   their use in upstream Providers.
 - Doesn't conform to the spirit of how fragments should be used according to RFC
   3986.
+- Will not work with Providers like the env Provider. This is likely minor, as
+  the env Provider can be expected to work differently than URL-based Providers.
 - Only allows easily specifying key-value pairs.
 
 We could likely partially circumvent the key-value pair limitation by
@@ -175,6 +185,14 @@ Disadvantages:
 - Using the existing bracket syntax inside config files does not support
   options, and neither does specifying them through the command line.
 - Complicates the config schema and the config resolution process.
+
+## Exceptions
+
+None of these approaches are proposed to be the only way Providers can be
+configured, but as a suggested unified approach for Providers that handle URLs
+with hierarchical structure. The notable exception within the current set of
+default Providers is the env Provider, which users will expect to behave with
+shell semantics instead of parsing environment variables as URIs.
 
 ## Resolution
 
