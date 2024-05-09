@@ -85,7 +85,7 @@ Advantages:
 
 - Explicitly intended to specify non-hierarchical data in a URI.
 - Often used for this purpose.
-- Fits into existing config URIs.
+- Fits into existing config URIs for URL-based Providers.
 
 Disadvantages:
 
