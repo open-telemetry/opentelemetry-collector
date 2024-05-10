@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -29,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
 )
@@ -1307,7 +1309,24 @@ func TestServerWithDecoder(t *testing.T) {
 	srv.Handler.ServeHTTP(response, req)
 	// verify
 	assert.Equal(t, response.Result().StatusCode, http.StatusOK)
+}
 
+func TestClientConfigCanBeMarshaled(t *testing.T) {
+	clientCfg := ClientConfig{}
+	conf := confmap.New()
+	err := conf.Marshal(clientCfg)
+	require.NoError(t, err)
+	_, err = yaml.Marshal(conf.ToStringMap())
+	require.NoError(t, err)
+}
+
+func TestServerConfigCanBeMarshaled(t *testing.T) {
+	cfg := ServerConfig{}
+	conf := confmap.New()
+	err := conf.Marshal(cfg)
+	require.NoError(t, err)
+	_, err = yaml.Marshal(conf.ToStringMap())
+	require.NoError(t, err)
 }
 
 type mockHost struct {
