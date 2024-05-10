@@ -10,7 +10,7 @@ component: confmap
 note: Support string-like types as map keys when marshaling
 
 # One or more tracking issues or pull requests related to the change
-issues: []
+issues: [10137]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
