@@ -168,6 +168,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 			// after the main unmarshaler hook is called,
 			// we unmarshal the embedded structs if present to merge with the result:
 			unmarshalerEmbeddedStructsHookFunc(),
+			unmarshalerHookFuncV2(result, skipTopLevelUnmarshaler),
 			zeroSliceHookFunc(),
 			negativeUintHookFunc(),
 		),
@@ -318,6 +319,43 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 	}
 }
 
+func unmarshalerHookFuncV2(result any, skipTopLevelUnmarshaler bool) mapstructure.DecodeHookFuncValue {
+	return func(from reflect.Value, to reflect.Value) (any, error) {
+		if !to.CanAddr() {
+			return from.Interface(), nil
+		}
+		toPtr := to.Addr().Interface()
+		// Need to ignore the top structure to avoid circular dependency.
+		if toPtr == result && skipTopLevelUnmarshaler {
+			return from.Interface(), nil
+		}
+
+		unmarshaler, ok := toPtr.(UnmarshalerV2)
+		if !ok {
+			return from.Interface(), nil
+		}
+
+		if _, ok = from.Interface().(map[string]any); !ok {
+			return from.Interface(), nil
+		}
+
+		// Use the current object if not nil (to preserve other configs in the object), otherwise zero initialize.
+		if to.Addr().IsNil() {
+			unmarshaler = reflect.New(to.Type()).Interface().(UnmarshalerV2)
+		}
+
+		if err := unmarshaler.UnmarshalV2(func(i interface{}) error {
+			c := NewFromStringMap(from.Interface().(map[string]any))
+			c.skipTopLevelUnmarshaler = true
+			return c.Unmarshal(i, WithIgnoreUnused())
+		}); err != nil {
+			return nil, err
+		}
+
+		return unmarshaler, nil
+	}
+}
+
 // Provides a mechanism for individual structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
 // true and the struct matches the top level object being unmarshaled.
@@ -398,6 +436,12 @@ type Marshaler interface {
 	// Marshal the config into a Conf in a custom way.
 	// The Conf will be empty and can be merged into.
 	Marshal(component *Conf) error
+}
+
+// UnmarshalerV2 interface may be implemented by types to customize their behavior when being unmarshaled from a Conf.
+type UnmarshalerV2 interface {
+	// UnmarshalV2 unmarshals the struct in a custom way.
+	UnmarshalV2(unmarshal func(interface{}) error) error
 }
 
 // This hook is used to solve the issue: https://github.com/open-telemetry/opentelemetry-collector/issues/4001

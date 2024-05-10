@@ -851,3 +851,31 @@ func TestRecursiveUnmarshaling(t *testing.T) {
 	require.NoError(t, conf.Unmarshal(r))
 	require.Equal(t, "something", r.Foo)
 }
+
+type CustomUnmarshalEmbeddedV2 struct {
+	Field string `mapstructure:"field"`
+}
+type customUnmarshalV2 struct {
+	Foo      string `mapstructure:"foo"`
+	bar      string
+	Embedded CustomUnmarshalEmbeddedV2 `mapstructure:"embedded"`
+}
+
+func (c *customUnmarshalV2) UnmarshalV2(i func(c interface{}) error) error {
+	c.bar = "yes"
+	return i(c)
+}
+
+func TestUnmarshallV2(t *testing.T) {
+	c := NewFromStringMap(map[string]any{
+		"foo": "bar",
+		"embedded": map[string]any{
+			"field": "field",
+		},
+	})
+	cfg := &customUnmarshalV2{}
+	require.NoError(t, c.Unmarshal(cfg))
+	require.Equal(t, "yes", cfg.bar)
+	require.Equal(t, "bar", cfg.Foo)
+	require.Equal(t, "field", cfg.Embedded.Field)
+}
