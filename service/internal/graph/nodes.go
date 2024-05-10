@@ -380,7 +380,7 @@ func (n *connectorNode) buildComponent(
 				consumers[next.(*capabilitiesNode).pipelineID] = next.(consumer.Profiles)
 				capability.MutatesData = capability.MutatesData || next.Capabilities().MutatesData
 			}
-			next = fanoutconsumer.NewProfilesRouter(consumers)
+			next = connector.NewProfilesRouter(consumers)
 		}
 		switch n.exprPipelineType {
 		case component.DataTypeTraces:

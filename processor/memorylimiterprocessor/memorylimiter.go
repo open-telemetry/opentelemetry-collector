@@ -105,21 +105,20 @@ func (p *memoryLimiterProcessor) processLogs(ctx context.Context, ld plog.Logs) 
 	return ld, nil
 }
 
-func (ml *memoryLimiterProcessor) processProfiles(ctx context.Context, ld pprofile.Profiles) (pprofile.Profiles, error) {
+func (p *memoryLimiterProcessor) processProfiles(ctx context.Context, ld pprofile.Profiles) (pprofile.Profiles, error) {
 	numRecords := ld.ProfileCount()
-	if ml.memlimiter.Load() {
+	if p.memlimiter.MustRefuse() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
-		ml.obsrep.ProfilesRefused(ctx, numRecords)
-
+		p.obsrep.ProfilesRefused(ctx, numRecords)
 		return ld, memorylimiter.ErrDataRefused
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	ml.obsrep.ProfilesAccepted(ctx, numRecords)
+	p.obsrep.ProfilesAccepted(ctx, numRecords)
 	return ld, nil
 }

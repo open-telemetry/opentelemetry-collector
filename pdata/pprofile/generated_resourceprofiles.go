@@ -21,10 +21,11 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type ResourceProfiles struct {
 	orig *otlpprofiles.ResourceProfiles
+	state *internal.State
 }
 
-func newResourceProfiles(orig *otlpprofiles.ResourceProfiles) ResourceProfiles {
-	return ResourceProfiles{orig}
+func newResourceProfiles(orig *otlpprofiles.ResourceProfiles, state *internal.State) ResourceProfiles {
+	return ResourceProfiles{orig: orig, state: state}
 }
 
 // NewResourceProfiles creates a new empty ResourceProfiles.
@@ -32,7 +33,8 @@ func newResourceProfiles(orig *otlpprofiles.ResourceProfiles) ResourceProfiles {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceProfiles() ResourceProfiles {
-	return newResourceProfiles(&otlpprofiles.ResourceProfiles{})
+	state := internal.StateMutable
+	return newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,7 +46,7 @@ func (ms ResourceProfiles) MoveTo(dest ResourceProfiles) {
 
 // Resource returns the resource associated with this ResourceProfiles.
 func (ms ResourceProfiles) Resource() pcommon.Resource {
-	return pcommon.Resource(internal.NewResource(&ms.orig.Resource))
+	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceProfiles.
@@ -59,7 +61,7 @@ func (ms ResourceProfiles) SetSchemaUrl(v string) {
 
 // ScopeProfiles returns the ScopeProfiles associated with this ResourceProfiles.
 func (ms ResourceProfiles) ScopeProfiles() ScopeProfilesSlice {
-	return newScopeProfilesSlice(&ms.orig.ScopeProfiles)
+	return newScopeProfilesSlice(&ms.orig.ScopeProfiles, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

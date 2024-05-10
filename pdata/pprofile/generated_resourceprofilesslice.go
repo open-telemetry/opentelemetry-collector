@@ -9,6 +9,7 @@ package pprofile
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
 )
 
@@ -21,17 +22,19 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type ResourceProfilesSlice struct {
 	orig *[]*otlpprofiles.ResourceProfiles
+	state *internal.State
 }
 
-func newResourceProfilesSlice(orig *[]*otlpprofiles.ResourceProfiles) ResourceProfilesSlice {
-	return ResourceProfilesSlice{orig}
+func newResourceProfilesSlice(orig *[]*otlpprofiles.ResourceProfiles, state *internal.State) ResourceProfilesSlice {
+	return ResourceProfilesSlice{orig: orig, state: state}
 }
 
 // NewResourceProfilesSlice creates a ResourceProfilesSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewResourceProfilesSlice() ResourceProfilesSlice {
 	orig := []*otlpprofiles.ResourceProfiles(nil)
-	return newResourceProfilesSlice(&orig)
+	state := internal.StateMutable
+	return newResourceProfilesSlice(&orig, &state)
 }
 
 // Len returns the number of elements in the slice.
@@ -50,7 +53,7 @@ func (es ResourceProfilesSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ResourceProfilesSlice) At(i int) ResourceProfiles {
-	return newResourceProfiles((*es.orig)[i])
+	return newResourceProfiles((*es.orig)[i], es.state)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -122,7 +125,7 @@ func (es ResourceProfilesSlice) CopyTo(dest ResourceProfilesSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newResourceProfiles((*es.orig)[i]).CopyTo(newResourceProfiles((*dest.orig)[i]))
+			newResourceProfiles((*es.orig)[i], es.state).CopyTo(newResourceProfiles((*dest.orig)[i], dest.state))
 		}
 		return
 	}
@@ -130,7 +133,7 @@ func (es ResourceProfilesSlice) CopyTo(dest ResourceProfilesSlice) {
 	wrappers := make([]*otlpprofiles.ResourceProfiles, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newResourceProfiles((*es.orig)[i]).CopyTo(newResourceProfiles(wrappers[i]))
+		newResourceProfiles((*es.orig)[i], es.state).CopyTo(newResourceProfiles(wrappers[i],dest.state))
 	}
 	*dest.orig = wrappers
 }

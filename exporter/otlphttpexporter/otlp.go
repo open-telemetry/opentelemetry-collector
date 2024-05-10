@@ -411,7 +411,7 @@ func (e *baseExporter) profilesPartialSuccessHandler(protoBytes []byte, contentT
 	if protoBytes == nil {
 		return nil
 	}
-	exportResponse := plogotlp.NewExportResponse()
+	exportResponse := pprofileotlp.NewExportResponse()
 	switch contentType {
 	case protobufContentType:
 		err := exportResponse.UnmarshalProto(protoBytes)

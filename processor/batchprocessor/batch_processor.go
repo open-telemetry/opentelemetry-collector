@@ -378,8 +378,8 @@ func newBatchLogsProcessor(set processor.CreateSettings, next consumer.Logs, cfg
 }
 
 // newBatchProfilesProcessor creates a new batch processor that batches logs by size or with timeout
-func newBatchProfilesProcessor(set processor.CreateSettings, next consumer.Profiles, cfg *Config, useOtel bool) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, func() batch { return newBatchProfiles(next) }, useOtel)
+func newBatchProfilesProcessor(set processor.CreateSettings, next consumer.Profiles, cfg *Config) (*batchProcessor, error) {
+	return newBatchProcessor(set, cfg, func() batch { return newBatchProfiles(next) })
 }
 
 type batchTraces struct {

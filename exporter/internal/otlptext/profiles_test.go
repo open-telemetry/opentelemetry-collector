@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestProfilesText(t *testing.T) {
@@ -45,13 +45,6 @@ func TestProfilesText(t *testing.T) {
 				ls := pprofile.NewProfiles()
 				l := ls.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 				l.SetStartTime(pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)))
-				l.SetSeverityNumber(pprofile.SeverityNumberInfo)
-				l.SetSeverityText("INFO")
-				bm := l.Body().SetEmptyMap()
-				bm.PutStr("key1", "val1")
-				bmm := bm.PutEmptyMap("key2")
-				bmm.PutStr("key21", "val21")
-				bmm.PutStr("key22", "val22")
 				am := l.Attributes().PutEmptyMap("key1")
 				am.PutStr("key11", "val11")
 				am.PutStr("key12", "val12")

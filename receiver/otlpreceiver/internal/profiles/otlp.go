@@ -7,8 +7,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const dataFormatProtobuf = "protobuf"
@@ -17,14 +17,14 @@ const dataFormatProtobuf = "protobuf"
 type Receiver struct {
 	pprofileotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Profiles
-	obsrecv      *obsreport.Receiver
+	obsreport    *receiverhelper.ObsReport
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumer.Profiles, obsrecv *obsreport.Receiver) *Receiver {
+func New(nextConsumer consumer.Profiles, obsreport *receiverhelper.ObsReport) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
-		obsrecv:      obsrecv,
+		obsreport:    obsreport,
 	}
 }
 
@@ -36,9 +36,9 @@ func (r *Receiver) Export(ctx context.Context, req pprofileotlp.ExportRequest) (
 		return pprofileotlp.NewExportResponse(), nil
 	}
 
-	ctx = r.obsrecv.StartProfilesOp(ctx)
+	ctx = r.obsreport.StartProfilesOp(ctx)
 	err := r.nextConsumer.ConsumeProfiles(ctx, ld)
-	r.obsrecv.EndProfilesOp(ctx, dataFormatProtobuf, numProfiles, err)
+	r.obsreport.EndProfilesOp(ctx, dataFormatProtobuf, numProfiles, err)
 
 	return pprofileotlp.NewExportResponse(), err
 }

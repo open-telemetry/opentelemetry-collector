@@ -139,16 +139,18 @@ func createProfile(
 	consumer consumer.Profiles,
 ) (receiver.Profiles, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.GetOrAdd(oCfg, func() (*otlpReceiver, error) {
-		return newOtlpReceiver(oCfg, set)
-	})
+	r, err := receivers.LoadOrStore(
+		oCfg,
+		func() (*otlpReceiver, error) {
+			return newOtlpReceiver(oCfg, &set)
+		},
+		&set.TelemetrySettings,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerProfilesConsumer(consumer); err != nil {
-		return nil, err
-	}
+	r.Unwrap().registerProfilesConsumer(consumer)
 	return r, nil
 }
 

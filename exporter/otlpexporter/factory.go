@@ -102,17 +102,14 @@ func createProfilesExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Profiles, error) {
-	oce, err := newExporter(cfg, set)
-	if err != nil {
-		return nil, err
-	}
+	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
 	return exporterhelper.NewProfilesExporter(ctx, set, cfg,
 		oce.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)

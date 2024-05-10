@@ -9,6 +9,7 @@ package pprofile
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
 )
 
@@ -21,17 +22,19 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type ScopeProfilesSlice struct {
 	orig *[]*otlpprofiles.ScopeProfiles
+	state *internal.State
 }
 
-func newScopeProfilesSlice(orig *[]*otlpprofiles.ScopeProfiles) ScopeProfilesSlice {
-	return ScopeProfilesSlice{orig}
+func newScopeProfilesSlice(orig *[]*otlpprofiles.ScopeProfiles, state *internal.State) ScopeProfilesSlice {
+	return ScopeProfilesSlice{orig: orig, state: state}
 }
 
 // NewScopeProfilesSlice creates a ScopeProfilesSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewScopeProfilesSlice() ScopeProfilesSlice {
 	orig := []*otlpprofiles.ScopeProfiles(nil)
-	return newScopeProfilesSlice(&orig)
+	state := internal.StateMutable
+	return newScopeProfilesSlice(&orig, &state)
 }
 
 // Len returns the number of elements in the slice.
@@ -50,7 +53,7 @@ func (es ScopeProfilesSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ScopeProfilesSlice) At(i int) ScopeProfiles {
-	return newScopeProfiles((*es.orig)[i])
+	return newScopeProfiles((*es.orig)[i], es.state)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -122,7 +125,7 @@ func (es ScopeProfilesSlice) CopyTo(dest ScopeProfilesSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newScopeProfiles((*es.orig)[i]).CopyTo(newScopeProfiles((*dest.orig)[i]))
+			newScopeProfiles((*es.orig)[i], es.state).CopyTo(newScopeProfiles((*dest.orig)[i], dest.state))
 		}
 		return
 	}
@@ -130,7 +133,7 @@ func (es ScopeProfilesSlice) CopyTo(dest ScopeProfilesSlice) {
 	wrappers := make([]*otlpprofiles.ScopeProfiles, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newScopeProfiles((*es.orig)[i]).CopyTo(newScopeProfiles(wrappers[i]))
+		newScopeProfiles((*es.orig)[i], es.state).CopyTo(newScopeProfiles(wrappers[i], dest.state))
 	}
 	*dest.orig = wrappers
 }

@@ -152,3 +152,24 @@ func (or *ObsReport) LogsDropped(ctx context.Context, numRecords int) {
 		or.recordData(ctx, component.DataTypeLogs, int64(0), int64(0), int64(numRecords))
 	}
 }
+
+// ProfilesAccepted reports that the logs were accepted.
+func (or *ObsReport) ProfilesAccepted(ctx context.Context, numRecords int) {
+	if or.level != configtelemetry.LevelNone {
+		or.recordData(ctx, component.DataTypeProfiles, int64(numRecords), int64(0), int64(0))
+	}
+}
+
+// ProfilesRefused reports that the logs were refused.
+func (or *ObsReport) ProfilesRefused(ctx context.Context, numRecords int) {
+	if or.level != configtelemetry.LevelNone {
+		or.recordData(ctx, component.DataTypeProfiles, int64(0), int64(numRecords), int64(0))
+	}
+}
+
+// ProfilesDropped reports that the logs were dropped.
+func (or *ObsReport) ProfilesDropped(ctx context.Context, numRecords int) {
+	if or.level != configtelemetry.LevelNone {
+		or.recordData(ctx, component.DataTypeProfiles, int64(0), int64(0), int64(numRecords))
+	}
+}

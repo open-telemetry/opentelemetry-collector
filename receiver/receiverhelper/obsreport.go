@@ -127,6 +127,24 @@ func (rec *ObsReport) EndMetricsOp(
 	rec.endOp(receiverCtx, format, numReceivedPoints, err, component.DataTypeMetrics)
 }
 
+// StartProfilesOp is called when a request is received from a client.
+// The returned context should be used in other calls to the obsreport functions
+// dealing with the same receive operation.
+func (rec *ObsReport) StartProfilesOp(operationCtx context.Context) context.Context {
+	return rec.startOp(operationCtx, obsmetrics.ReceiverProfilesOperationSuffix)
+}
+
+// EndProfilesOp completes the receive operation that was started with
+// StartProfilesOp.
+func (rec *ObsReport) EndProfilesOp(
+	receiverCtx context.Context,
+	format string,
+	numReceivedPoints int,
+	err error,
+) {
+	rec.endOp(receiverCtx, format, numReceivedPoints, err, component.DataTypeProfiles)
+}
+
 // startOp creates the span used to trace the operation. Returning
 // the updated context with the created span.
 func (rec *ObsReport) startOp(receiverCtx context.Context, operationSuffix string) context.Context {

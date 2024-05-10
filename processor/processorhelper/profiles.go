@@ -39,10 +39,6 @@ func NewProfilesProcessor(
 		return nil, errors.New("nil profilesFunc")
 	}
 
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
 	profilesConsumer, err := consumer.NewProfiles(func(ctx context.Context, ld pprofile.Profiles) error {

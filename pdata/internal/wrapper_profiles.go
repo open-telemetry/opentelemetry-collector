@@ -9,11 +9,20 @@ import (
 )
 
 type Profiles struct {
-	orig *otlpcollectorprofile.ExportProfilesServiceRequest
+	orig  *otlpcollectorprofile.ExportProfilesServiceRequest
+	state *State
 }
 
 func GetOrigProfiles(ms Profiles) *otlpcollectorprofile.ExportProfilesServiceRequest {
 	return ms.orig
+}
+
+func GetProfilesState(ms Profiles) *State {
+	return ms.state
+}
+
+func SetProfilesState(ms Profiles, state State) {
+	*ms.state = state
 }
 
 func NewProfiles(orig *otlpcollectorprofile.ExportProfilesServiceRequest) Profiles {

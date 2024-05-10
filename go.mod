@@ -7,6 +7,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.100.0
 	go.opentelemetry.io/collector/confmap v0.100.0
+	go.opentelemetry.io/collector/connector v0.100.0
 	go.opentelemetry.io/collector/consumer v0.100.0
 	go.opentelemetry.io/collector/featuregate v1.7.0
 	go.opentelemetry.io/collector/pdata v1.7.0
@@ -31,7 +32,6 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/jzelinskie/must v0.0.1
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect

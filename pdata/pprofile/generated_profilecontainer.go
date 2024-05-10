@@ -22,10 +22,11 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type ProfileContainer struct {
 	orig *otlpprofiles.ProfileContainer
+	state *internal.State
 }
 
-func newProfileContainer(orig *otlpprofiles.ProfileContainer) ProfileContainer {
-	return ProfileContainer{orig}
+func newProfileContainer(orig *otlpprofiles.ProfileContainer, state *internal.State) ProfileContainer {
+	return ProfileContainer{orig: orig, state: state}
 }
 
 // NewProfileContainer creates a new empty ProfileContainer.
@@ -33,7 +34,8 @@ func newProfileContainer(orig *otlpprofiles.ProfileContainer) ProfileContainer {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfileContainer() ProfileContainer {
-	return newProfileContainer(&otlpprofiles.ProfileContainer{})
+	state := internal.StateMutable
+	return newProfileContainer(&otlpprofiles.ProfileContainer{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -75,7 +77,7 @@ func (ms ProfileContainer) SetEndTime(v pcommon.Timestamp) {
 
 // Attributes returns the Attributes associated with this ProfileContainer.
 func (ms ProfileContainer) Attributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Attributes))
+	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this ProfileContainer.

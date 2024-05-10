@@ -14,4 +14,5 @@ const (
 	TracesToTracesStability   = component.StabilityLevelBeta
 	MetricsToMetricsStability = component.StabilityLevelBeta
 	LogsToLogsStability       = component.StabilityLevelBeta
+	ProfilesToProfilesStability       = component.StabilityLevelBeta
 )

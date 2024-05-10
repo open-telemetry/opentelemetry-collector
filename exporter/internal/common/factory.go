@@ -62,6 +62,17 @@ func CreateLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 	)
 }
 
+func CreateProfilesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config, c *Common) (exporter.Profiles, error) {
+	exporterLogger := c.createLogger(set.TelemetrySettings.Logger)
+	s := newLoggingExporter(exporterLogger, c.Verbosity)
+	return exporterhelper.NewProfilesExporter(ctx, set, config,
+		s.pushProfiles,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+	)
+}
+
 func (c *Common) createLogger(logger *zap.Logger) *zap.Logger {
 	if c.WarnLogLevel {
 		onceWarnLogLevel.Do(func() {

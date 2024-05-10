@@ -9,6 +9,7 @@ package pprofile
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
 )
 
@@ -21,17 +22,19 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type ProfileSlice struct {
 	orig *[]*otlpprofiles.ProfileContainer
+	state *internal.State
 }
 
-func newProfileSlice(orig *[]*otlpprofiles.ProfileContainer) ProfileSlice {
-	return ProfileSlice{orig}
+func newProfileSlice(orig *[]*otlpprofiles.ProfileContainer, state *internal.State) ProfileSlice {
+	return ProfileSlice{orig: orig, state: state}
 }
 
 // NewProfileSlice creates a ProfileSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewProfileSlice() ProfileSlice {
 	orig := []*otlpprofiles.ProfileContainer(nil)
-	return newProfileSlice(&orig)
+	state := internal.StateMutable
+	return newProfileSlice(&orig, &state)
 }
 
 // Len returns the number of elements in the slice.
@@ -50,7 +53,7 @@ func (es ProfileSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ProfileSlice) At(i int) ProfileContainer {
-	return newProfileContainer((*es.orig)[i])
+	return newProfileContainer((*es.orig)[i], es.state)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -122,7 +125,7 @@ func (es ProfileSlice) CopyTo(dest ProfileSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newProfileContainer((*es.orig)[i]).CopyTo(newProfileContainer((*dest.orig)[i]))
+			newProfileContainer((*es.orig)[i],es.state).CopyTo(newProfileContainer((*dest.orig)[i], dest.state))
 		}
 		return
 	}
@@ -130,7 +133,7 @@ func (es ProfileSlice) CopyTo(dest ProfileSlice) {
 	wrappers := make([]*otlpprofiles.ProfileContainer, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newProfileContainer((*es.orig)[i]).CopyTo(newProfileContainer(wrappers[i]))
+		newProfileContainer((*es.orig)[i], es.state).CopyTo(newProfileContainer(wrappers[i], es.state))
 	}
 	*dest.orig = wrappers
 }

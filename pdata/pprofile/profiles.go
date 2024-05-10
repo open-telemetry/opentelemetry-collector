@@ -20,9 +20,18 @@ func (ms Profiles) getOrig() *otlpcollectorprofile.ExportProfilesServiceRequest 
 	return internal.GetOrigProfiles(internal.Profiles(ms))
 }
 
+func (ms Profiles) getState() *internal.State {
+	return internal.GetProfilesState(internal.Profiles(ms))
+}
+
 // NewProfiles creates a new Profiles struct.
 func NewProfiles() Profiles {
 	return newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{})
+}
+
+// IsReadOnly returns true if this Logs instance is read-only.
+func (ms Profiles) IsReadOnly() bool {
+	return *ms.getState() == internal.StateReadOnly
 }
 
 // CopyTo copies the Profiles instance overriding the destination.
@@ -47,5 +56,10 @@ func (ms Profiles) ProfileCount() int {
 
 // ResourceProfiles returns the ResourceProfilesSlice associated with this Profiles.
 func (ms Profiles) ResourceProfiles() ResourceProfilesSlice {
-	return newResourceProfilesSlice(&ms.getOrig().ResourceProfiles)
+	return newResourceProfilesSlice(&ms.getOrig().ResourceProfiles, internal.GetProfilesState(internal.Profiles(ms)))
+}
+
+// MarkReadOnly marks the Logs as shared so that no further modifications can be done on it.
+func (ms Profiles) MarkReadOnly() {
+	internal.SetProfilesState(internal.Profiles(ms), internal.StateReadOnly)
 }
