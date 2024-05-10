@@ -85,6 +85,12 @@ func (c converter) expandEnv(s string) string {
 		if str == "$" {
 			return "$"
 		}
-		return os.Getenv(str)
+		val, exists := os.LookupEnv(str)
+		if !exists {
+			c.logger.Warn("Configuration references unset environment variable", zap.String("name", str))
+		} else if len(val) == 0 {
+			c.logger.Info("Configuration references empty environment variable", zap.String("name", str))
+		}
+		return val
 	})
 }
