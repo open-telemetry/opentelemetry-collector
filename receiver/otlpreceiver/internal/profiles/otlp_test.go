@@ -17,47 +17,47 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestExport(t *testing.T) {
-	ld := testdata.GenerateLogs(1)
-	req := pprofileotlp.NewExportRequestFromLogs(ld)
+	ld := testdata.GenerateProfiles(1)
+	req := pprofileotlp.NewExportRequestFromProfiles(ld)
 
-	profileSink := new(consumertest.LogsSink)
-	profileClient := makeLogsServiceClient(t, profileSink)
+	profileSink := new(consumertest.ProfilesSink)
+	profileClient := makeProfilesServiceClient(t, profileSink)
 	resp, err := profileClient.Export(context.Background(), req)
 	require.NoError(t, err, "Failed to export trace: %v", err)
 	require.NotNil(t, resp, "The response is missing")
 
-	lds := profileSink.AllLogs()
+	lds := profileSink.AllProfiles()
 	require.Len(t, lds, 1)
 	assert.EqualValues(t, ld, lds[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
-	profileSink := new(consumertest.LogsSink)
+	profileSink := new(consumertest.ProfilesSink)
 
-	profileClient := makeLogsServiceClient(t, profileSink)
+	profileClient := makeProfilesServiceClient(t, profileSink)
 	resp, err := profileClient.Export(context.Background(), pprofileotlp.NewExportRequest())
 	assert.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
-	ld := testdata.GenerateLogs(1)
-	req := pprofileotlp.NewExportRequestFromLogs(ld)
+	ld := testdata.GenerateProfiles(1)
+	req := pprofileotlp.NewExportRequestFromProfiles(ld)
 
-	profileClient := makeLogsServiceClient(t, consumertest.NewErr(errors.New("my error")))
+	profileClient := makeProfilesServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := profileClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Equal(t, pprofileotlp.ExportResponse{}, resp)
 }
 
-func makeLogsServiceClient(t *testing.T, lc consumer.Logs) pprofileotlp.GRPCClient {
+func makeProfilesServiceClient(t *testing.T, lc consumer.Profiles) pprofileotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, lc)
 	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
@@ -68,7 +68,7 @@ func makeLogsServiceClient(t *testing.T, lc consumer.Logs) pprofileotlp.GRPCClie
 	return pprofileotlp.NewGRPCClient(cc)
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
+func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Profiles) net.Addr {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -77,14 +77,14 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
 	})
 
 	set := receivertest.NewNopCreateSettings()
-	set.ID = component.NewIDWithName("otlp", "profile")
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	set.ID = component.MustNewIDWithName("otlp", "profile")
+	obsreport, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "grpc",
 		ReceiverCreateSettings: set,
 	})
 	require.NoError(t, err)
-	r := New(lc, obsrecv)
+	r := New(lc, obsreport)
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
 	pprofileotlp.RegisterGRPCServer(srv, r)

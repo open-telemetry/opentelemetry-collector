@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -96,7 +95,7 @@ func TestProfilesExporter_Default_ReturnError(t *testing.T) {
 }
 
 func TestProfilesExporter_WithRecordProfiles(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(fakeProfilesExporterName)
+	tt, err := componenttest.SetupTelemetry(fakeProfilesExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -109,7 +108,7 @@ func TestProfilesExporter_WithRecordProfiles(t *testing.T) {
 
 func TestProfilesExporter_WithRecordProfiles_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	tt, err := obsreporttest.SetupTelemetry(fakeProfilesExporterName)
+	tt, err := componenttest.SetupTelemetry(fakeProfilesExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -121,7 +120,7 @@ func TestProfilesExporter_WithRecordProfiles_ReturnError(t *testing.T) {
 }
 
 func TestProfilesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(fakeProfilesExporterName)
+	tt, err := componenttest.SetupTelemetry(fakeProfilesExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -201,7 +200,7 @@ func newPushProfilesData(retError error) consumer.ConsumeProfilesFunc {
 	}
 }
 
-func checkRecordedMetricsForProfilesExporter(t *testing.T, tt obsreporttest.TestTelemetry, le exporter.Profiles, wantError error) {
+func checkRecordedMetricsForProfilesExporter(t *testing.T, tt componenttest.TestTelemetry, le exporter.Profiles, wantError error) {
 	ld := testdata.GenerateProfiles(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
