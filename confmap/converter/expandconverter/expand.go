@@ -27,10 +27,10 @@ func NewFactory() confmap.ConverterFactory {
 	return confmap.NewConverterFactory(newConverter)
 }
 
-func newConverter(_ confmap.ConverterSettings) confmap.Converter {
+func newConverter(set confmap.ConverterSettings) confmap.Converter {
 	return converter{
 		loggedDeprecations: make(map[string]struct{}),
-		logger:             zap.NewNop(), // TODO: pass logger in ConverterSettings
+		logger:             set.Logger,
 	}
 }
 
@@ -80,6 +80,12 @@ func (c converter) expandEnv(s string) string {
 		if str == "$" {
 			return "$"
 		}
-		return os.Getenv(str)
+		val, exists := os.LookupEnv(str)
+		if !exists {
+			c.logger.Warn("Configuration references unset environment variable", zap.String("name", str))
+		} else if len(val) == 0 {
+			c.logger.Info("Configuration references empty environment variable", zap.String("name", str))
+		}
+		return val
 	})
 }
