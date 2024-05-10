@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -19,10 +18,7 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-)
-
-var (
-	scraperScope = obsmetrics.Scope + obsmetrics.SpanNameSep + obsmetrics.ScraperKey
+	"go.opentelemetry.io/collector/receiver/scraperhelper/internal/metadata"
 )
 
 // ObsReport is a helper to add observability to a scraper.
@@ -34,9 +30,8 @@ type ObsReport struct {
 
 	logger *zap.Logger
 
-	otelAttrs            []attribute.KeyValue
-	scrapedMetricsPoints metric.Int64Counter
-	erroredMetricsPoints metric.Int64Counter
+	otelAttrs        []attribute.KeyValue
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
@@ -52,7 +47,11 @@ func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 }
 
 func newScraper(cfg ObsReportSettings) (*ObsReport, error) {
-	scraper := &ObsReport{
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ReceiverCreateSettings.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+	return &ObsReport{
 		level:      cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
 		receiverID: cfg.ReceiverID,
 		scraper:    cfg.Scraper,
@@ -63,35 +62,8 @@ func newScraper(cfg ObsReportSettings) (*ObsReport, error) {
 			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
 			attribute.String(obsmetrics.ScraperKey, cfg.Scraper.String()),
 		},
-	}
-
-	if err := scraper.createOtelMetrics(cfg); err != nil {
-		return nil, err
-	}
-
-	return scraper, nil
-}
-
-func (s *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
-	meter := cfg.ReceiverCreateSettings.MeterProvider.Meter(scraperScope)
-
-	var errors, err error
-
-	s.scrapedMetricsPoints, err = meter.Int64Counter(
-		obsmetrics.ScraperPrefix+obsmetrics.ScrapedMetricPointsKey,
-		metric.WithDescription("Number of metric points successfully scraped."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	s.erroredMetricsPoints, err = meter.Int64Counter(
-		obsmetrics.ScraperPrefix+obsmetrics.ErroredMetricPointsKey,
-		metric.WithDescription("Number of metric points that were unable to be scraped."),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	return errors
+		telemetryBuilder: telemetryBuilder,
+	}, nil
 }
 
 // StartMetricsOp is called when a scrape operation is started. The
@@ -144,6 +116,6 @@ func (s *ObsReport) EndMetricsOp(
 }
 
 func (s *ObsReport) recordMetrics(scraperCtx context.Context, numScrapedMetrics, numErroredMetrics int) {
-	s.scrapedMetricsPoints.Add(scraperCtx, int64(numScrapedMetrics), metric.WithAttributes(s.otelAttrs...))
-	s.erroredMetricsPoints.Add(scraperCtx, int64(numErroredMetrics), metric.WithAttributes(s.otelAttrs...))
+	s.telemetryBuilder.ScraperScrapedMetricPoints.Add(scraperCtx, int64(numScrapedMetrics), metric.WithAttributes(s.otelAttrs...))
+	s.telemetryBuilder.ScraperErroredMetricPoints.Add(scraperCtx, int64(numErroredMetrics), metric.WithAttributes(s.otelAttrs...))
 }

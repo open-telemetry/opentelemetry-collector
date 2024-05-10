@@ -16,6 +16,7 @@ import (
 
 	"go.uber.org/zap"
 	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/semver"
 )
 
 var (
@@ -23,7 +24,6 @@ var (
 	ErrGoNotFound      = errors.New("go binary not found")
 	ErrDepNotFound     = errors.New("dependency not found in go mod file")
 	ErrVersionMismatch = errors.New("mismatch in go.mod and builder configuration versions")
-	errGoGetFailed     = errors.New("failed to go get")
 	errDownloadFailed  = errors.New("failed to download go modules")
 	errCompileFailed   = errors.New("failed to compile the OpenTelemetry Collector distribution")
 	skipStrictMsg      = "Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version"
@@ -74,9 +74,6 @@ func Generate(cfg Config) error {
 	}
 	// create a warning message for non-aligned builder and collector base
 	if cfg.Distribution.OtelColVersion != defaultOtelColVersion {
-		if !cfg.SkipStrictVersioning {
-			return fmt.Errorf("builder version %q does not match build configuration version %q: %w", cfg.Distribution.OtelColVersion, defaultOtelColVersion, ErrVersionMismatch)
-		}
 		cfg.Logger.Info("You're building a distribution with non-aligned version of the builder. Compilation may fail due to API changes. Please upgrade your builder or API", zap.String("builder-version", defaultOtelColVersion))
 	}
 	// if the file does not exist, try to create it
@@ -142,11 +139,6 @@ func GetModules(cfg Config) error {
 		return nil
 	}
 
-	// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
-	if _, err := runGoCommand(cfg, "get", "cloud.google.com/go"); err != nil {
-		return fmt.Errorf("%w: %s", errGoGetFailed, err.Error())
-	}
-
 	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.21"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
@@ -167,7 +159,7 @@ func GetModules(cfg Config) error {
 	if !ok {
 		return fmt.Errorf("core collector %w: '%s'. %s", ErrDepNotFound, corePath, skipStrictMsg)
 	}
-	if coreDepVersion != coreVersion {
+	if semver.MajorMinor(coreDepVersion) != semver.MajorMinor(coreVersion) {
 		return fmt.Errorf(
 			"%w: core collector version calculated by component dependencies %q does not match configured version %q. %s",
 			ErrVersionMismatch, coreDepVersion, coreVersion, skipStrictMsg)
@@ -185,7 +177,7 @@ func GetModules(cfg Config) error {
 		if !ok {
 			return fmt.Errorf("component %w: '%s'. %s", ErrDepNotFound, module, skipStrictMsg)
 		}
-		if moduleDepVersion != version {
+		if semver.MajorMinor(moduleDepVersion) != semver.MajorMinor(version) {
 			return fmt.Errorf(
 				"%w: component %q version calculated by dependencies %q does not match configured version %q. %s",
 				ErrVersionMismatch, module, moduleDepVersion, version, skipStrictMsg)
@@ -197,15 +189,12 @@ func GetModules(cfg Config) error {
 
 func downloadModules(cfg Config) error {
 	cfg.Logger.Info("Getting go modules")
-	// basic retry if error from go mod command (in case of transient network error). This could be improved
-	// retry 3 times with 5 second spacing interval
-	retries := 3
 	failReason := "unknown"
-	for i := 1; i <= retries; i++ {
+	for i := 1; i <= cfg.downloadModules.numRetries; i++ {
 		if _, err := runGoCommand(cfg, "mod", "download"); err != nil {
 			failReason = err.Error()
-			cfg.Logger.Info("Failed modules download", zap.String("retry", fmt.Sprintf("%d/%d", i, retries)))
-			time.Sleep(5 * time.Second)
+			cfg.Logger.Info("Failed modules download", zap.String("retry", fmt.Sprintf("%d/%d", i, cfg.downloadModules.numRetries)))
+			time.Sleep(cfg.downloadModules.wait)
 			continue
 		}
 		return nil
@@ -237,7 +226,8 @@ func (c *Config) allComponents() []Module {
 		append(c.Receivers,
 			append(c.Processors,
 				append(c.Extensions,
-					c.Connectors...)...)...)...)
+					append(c.Connectors,
+						*c.Providers...)...)...)...)...)
 }
 
 func (c *Config) readGoModFile() (string, map[string]string, error) {

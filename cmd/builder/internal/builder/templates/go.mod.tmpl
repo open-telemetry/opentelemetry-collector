@@ -5,6 +5,12 @@ module {{.Distribution.Module}}
 go 1.21
 
 require (
+	{{if .Distribution.SupportsConfmapFactories -}}
+	go.opentelemetry.io/collector/confmap/converter/expandconverter v{{.Distribution.OtelColVersion}}
+	{{- range .Providers}}
+	{{if .GoMod}}{{.GoMod}}{{end}}
+	{{- end}}
+	{{- end}}
 	{{- range .Connectors}}
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}

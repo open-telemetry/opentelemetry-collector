@@ -52,8 +52,13 @@ func DefaultMetricsConfig() MetricsConfig {
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 	{{- if .Metrics }}
-	Include []filter.Config `mapstructure:"include"`
-	Exclude []filter.Config `mapstructure:"exclude"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
 	{{- end }}
 
 	enabledSetByUser bool
