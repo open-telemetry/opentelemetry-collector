@@ -5,10 +5,18 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 
 import (
 	"context"
+
+	"go.uber.org/zap"
 )
 
 // ConverterSettings are the settings to initialize a Converter.
-type ConverterSettings struct{}
+type ConverterSettings struct {
+	// Logger is a zap.Logger that will be passed to Converters.
+	// Converters should be able to rely on the Logger being non-nil;
+	// when instantiating a Converter with a ConverterFactory,
+	// nil Logger references should be replaced with a no-op Logger.
+	Logger *zap.Logger
+}
 
 // ConverterFactory defines a factory that can be used to instantiate
 // new instances of a Converter.

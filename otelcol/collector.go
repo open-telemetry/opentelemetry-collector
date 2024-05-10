@@ -123,8 +123,9 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 	bc := newBufferedCore(zapcore.DebugLevel)
 	cc := &collectorCore{core: bc}
 	options := append([]zap.Option{zap.WithCaller(true)}, set.LoggingOptions...)
-	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: zap.New(cc, options...)}
-	set.ConfigProviderSettings.ResolverSettings.ConverterSettings = confmap.ConverterSettings{}
+	logger := zap.New(cc, options...)
+	set.ConfigProviderSettings.ResolverSettings.ProviderSettings = confmap.ProviderSettings{Logger: logger}
+	set.ConfigProviderSettings.ResolverSettings.ConverterSettings = confmap.ConverterSettings{Logger: logger}
 
 	if configProvider == nil {
 		configProvider, err = NewConfigProvider(set.ConfigProviderSettings)

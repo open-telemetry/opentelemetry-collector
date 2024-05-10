@@ -94,6 +94,10 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		set.ProviderSettings.Logger = zap.NewNop()
 	}
 
+	if set.ConverterSettings.Logger == nil {
+		set.ConverterSettings.Logger = zap.NewNop()
+	}
+
 	var providers map[string]Provider
 	var converters []Converter
 
