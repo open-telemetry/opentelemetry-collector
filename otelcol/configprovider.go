@@ -58,6 +58,9 @@ type ConfigProvider interface {
 //
 // The purpose of this interface is that otelcol.ConfigProvider structs do not
 // necessarily need to use confmap.Conf as their underlying config structure.
+//
+// Deprecated: [v0.105.0] This interface is deprecated. otelcol.Collector will now obtain
+// a confmap.Conf object from the unmarshaled config itself.
 type ConfmapProvider interface {
 	// GetConfmap resolves the Collector's configuration and provides it as a confmap.Conf object.
 	//
@@ -70,7 +73,6 @@ type configProvider struct {
 }
 
 var _ ConfigProvider = (*configProvider)(nil)
-var _ ConfmapProvider = (*configProvider)(nil)
 
 // ConfigProviderSettings are the settings to configure the behavior of the ConfigProvider.
 type ConfigProviderSettings struct {
@@ -141,13 +143,4 @@ func (cm *configProvider) Watch() <-chan error {
 
 func (cm *configProvider) Shutdown(ctx context.Context) error {
 	return cm.mapResolver.Shutdown(ctx)
-}
-
-func (cm *configProvider) GetConfmap(ctx context.Context) (*confmap.Conf, error) {
-	conf, err := cm.mapResolver.Resolve(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
-	}
-
-	return conf, nil
 }
