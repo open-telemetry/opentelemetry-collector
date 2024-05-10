@@ -15,6 +15,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -29,13 +31,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 type mockReceiver struct {
@@ -234,10 +236,10 @@ func TestSendTraces(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
-	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+	cfg.QueueConfig.Enabled = false
+	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure: true,
 		},
 		Headers: map[string]configopaque.String{
@@ -247,6 +249,11 @@ func TestSendTraces(t *testing.T) {
 	set := exportertest.NewNopCreateSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
+
+	// For testing the "Partial success" warning.
+	logger, observed := observer.New(zap.DebugLevel)
+	set.TelemetrySettings.Logger = zap.New(logger)
+
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -310,7 +317,9 @@ func TestSendTraces(t *testing.T) {
 	td = testdata.GenerateTraces(2)
 
 	err = exp.ConsumeTraces(context.Background(), td)
-	assert.Error(t, err)
+	assert.NoError(t, err)
+	assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
+	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }
 
 func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
@@ -318,20 +327,20 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 		name               string
 		useTLS             bool
 		scheme             string
-		gRPCClientSettings configgrpc.GRPCClientSettings
+		gRPCClientSettings configgrpc.ClientConfig
 	}{
 		{
 			name:               "Use https scheme",
 			useTLS:             true,
 			scheme:             "https://",
-			gRPCClientSettings: configgrpc.GRPCClientSettings{},
+			gRPCClientSettings: configgrpc.ClientConfig{},
 		},
 		{
 			name:   "Use http scheme",
 			useTLS: false,
 			scheme: "http://",
-			gRPCClientSettings: configgrpc.GRPCClientSettings{
-				TLSSetting: configtls.TLSClientSetting{
+			gRPCClientSettings: configgrpc.ClientConfig{
+				TLSSetting: configtls.ClientConfig{
 					Insecure: true,
 				},
 			},
@@ -351,10 +360,10 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			// Start an OTLP exporter and point to the receiver.
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.GRPCClientSettings = test.gRPCClientSettings
-			cfg.GRPCClientSettings.Endpoint = test.scheme + ln.Addr().String()
+			cfg.ClientConfig = test.gRPCClientSettings
+			cfg.ClientConfig.Endpoint = test.scheme + ln.Addr().String()
 			if test.useTLS {
-				cfg.GRPCClientSettings.TLSSetting.InsecureSkipVerify = true
+				cfg.ClientConfig.TLSSetting.InsecureSkipVerify = true
 			}
 			set := exportertest.NewNopCreateSettings()
 			exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
@@ -399,10 +408,10 @@ func TestSendMetrics(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeMetrics
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
-	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+	cfg.QueueConfig.Enabled = false
+	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure: true,
 		},
 		Headers: map[string]configopaque.String{
@@ -412,6 +421,11 @@ func TestSendMetrics(t *testing.T) {
 	set := exportertest.NewNopCreateSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
+
+	// For testing the "Partial success" warning.
+	logger, observed := observer.New(zap.DebugLevel)
+	set.TelemetrySettings.Logger = zap.New(logger)
+
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -484,7 +498,9 @@ func TestSendMetrics(t *testing.T) {
 
 	// Send two metrics.
 	md = testdata.GenerateMetrics(2)
-	assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+	assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
+	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }
 
 func TestSendTraceDataServerDownAndUp(t *testing.T) {
@@ -497,10 +513,10 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
-	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+	cfg.QueueConfig.Enabled = false
+	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure: true,
 		},
 		// Need to wait for every request blocking until either request timeouts or succeed.
@@ -558,9 +574,9 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	// Start an OTLP exporter and point to the receiver.
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -608,10 +624,10 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.RetrySettings.InitialInterval = 0
-	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+	cfg.RetryConfig.InitialInterval = 0
+	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -689,16 +705,21 @@ func TestSendLogData(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeLogs
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
-	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+	cfg.QueueConfig.Enabled = false
+	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
 	set := exportertest.NewNopCreateSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
+
+	// For testing the "Partial success" warning.
+	logger, observed := observer.New(zap.DebugLevel)
+	set.TelemetrySettings.Logger = zap.New(logger)
+
 	exp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -770,5 +791,7 @@ func TestSendLogData(t *testing.T) {
 	ld = testdata.GenerateLogs(2)
 
 	err = exp.ConsumeLogs(context.Background(), ld)
-	assert.Error(t, err)
+	assert.NoError(t, err)
+	assert.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), 1)
+	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }

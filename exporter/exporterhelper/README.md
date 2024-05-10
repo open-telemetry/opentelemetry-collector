@@ -12,7 +12,7 @@ The following configuration options can be modified:
   - `enabled` (default = true)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
   - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
-  - `max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
+  - `max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`. If set to 0, the retries are never stopped.
 - `sending_queue`
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
@@ -22,7 +22,7 @@ The following configuration options can be modified:
     - `requests_per_second` is the average number of requests per seconds
     - `requests_per_batch` is the average number of requests per batch (if 
       [the batch processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor)
-      is used, the metric `batch_send_size` can be used for estimation)
+      is used, the metric `send_batch_size` can be used for estimation)
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
 
 The `initial_interval`, `max_interval`, `max_elapsed_time`, and `timeout` options accept 
@@ -31,19 +31,16 @@ valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 
 ### Persistent Queue
 
-**Status: [alpha]**
-
-> :warning: The capability is under development. To use it, a storage extension needs to be set up.
-
 To use the persistent queue, the following setting needs to be set:
 
 - `sending_queue`
-  - `storage` (default = none): When set, enables persistence and uses the component specified as a storage extension for the persistent queue
+  - `storage` (default = none): When set, enables persistence and uses the component specified as a storage extension for the persistent queue.
+    There is no in-memory queue when set.
 
 The maximum number of batches stored to disk can be controlled using `sending_queue.queue_size` parameter (which,
 similarly as for in-memory buffering, defaults to 1000 batches).
 
-When persistent queue is enabled, the batches are being buffered using the provided storage extension - [filestorage] is a popular and safe choice. If the collector instance is killed while having some items in the persistent queue, on restart the items will be be picked and the exporting is continued.
+When persistent queue is enabled, the batches are being buffered using the provided storage extension - [filestorage] is a popular and safe choice. If the collector instance is killed while having some items in the persistent queue, on restart the items will be picked and the exporting is continued.
 
 ```
                                                               ┌─Consumer #1─┐
@@ -65,19 +62,19 @@ When persistent queue is enabled, the batches are being buffered using the provi
    │              │     │           │                    │    │    │ 3 │    ├───► (in progress)
  write          read    └─────┬─────┘                    ├───►│    └───┘    │
  index          index         │                          │    │             │
-   ▲                          │                          │    └─────────────┘
-   │                          │                          │
-   │                      currently                      │    ┌─Consumer #4─┐
-   │                      dispatched                     │    │    ┌───┐    │     Temporary
-   │                                                     └───►│    │ 4 │    ├───►  failure
-   │                                                          │    └───┘    │         │
-   │                                                          │             │         │
-   │                                                          └─────────────┘         │
-   │                                                                 ▲                │
-   │                                                                 └── Retry ───────┤
-   │                                                                                  │
-   │                                                                                  │
-   └────────────────────────────────────── Requeuing  ◄────── Retry limit exceeded ───┘
+                              │                          │    └─────────────┘
+                              │                          │
+                          currently                      │    ┌─Consumer #4─┐
+                          dispatched                     │    │    ┌───┐    │     Temporary
+                                                         └───►│    │ 4 │    ├───►  failure
+                                                              │    └───┘    │         │
+                                                              │             │         │
+                                                              └─────────────┘         │
+                                                                     ▲                │
+                                                                     └── Retry ───────┤
+                                                                                      │
+                                                                                      │
+                                                   X  ◄────── Retry limit exceeded ───┘
 ```
 
 Example:

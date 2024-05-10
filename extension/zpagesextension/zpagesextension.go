@@ -67,7 +67,7 @@ func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error 
 
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
-	ln, err := zpe.config.TCPAddr.Listen()
+	ln, err := zpe.config.TCPAddr.Listen(context.Background())
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error 
 		defer close(zpe.stopCh)
 
 		if errHTTP := zpe.server.Serve(ln); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			host.ReportFatalError(errHTTP)
+			zpe.telemetry.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 

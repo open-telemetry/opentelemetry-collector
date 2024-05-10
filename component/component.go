@@ -9,10 +9,6 @@ import (
 )
 
 var (
-	// ErrNilNextConsumer can be returned by receiver, or processor Start factory funcs that create the Component if the
-	// expected next Consumer is nil.
-	ErrNilNextConsumer = errors.New("nil next Consumer")
-
 	// ErrDataTypeIsNotSupported can be returned by receiver, exporter or processor factory funcs that create the
 	// Component if the particular telemetry data type is not supported by the receiver, exporter or processor.
 	ErrDataTypeIsNotSupported = errors.New("telemetry type is not supported")
@@ -96,6 +92,22 @@ const (
 	KindConnector
 )
 
+func (k Kind) String() string {
+	switch k {
+	case KindReceiver:
+		return "Receiver"
+	case KindProcessor:
+		return "Processor"
+	case KindExporter:
+		return "Exporter"
+	case KindExtension:
+		return "Extension"
+	case KindConnector:
+		return "Connector"
+	}
+	return ""
+}
+
 // StabilityLevel represents the stability level of the component created by the factory.
 // The stability level is used to determine if the component should be used in production
 // or not. For more details see:
@@ -174,4 +186,11 @@ type CreateDefaultConfigFunc func() Config
 // CreateDefaultConfig implements Factory.CreateDefaultConfig().
 func (f CreateDefaultConfigFunc) CreateDefaultConfig() Config {
 	return f()
+}
+
+// InstanceID uniquely identifies a component instance
+type InstanceID struct {
+	ID          ID
+	Kind        Kind
+	PipelineIDs map[ID]struct{}
 }

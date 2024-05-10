@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
@@ -20,6 +21,9 @@ func TestHistogram_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewHistogram(), ms)
 	assert.Equal(t, generateTestHistogram(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newHistogram(&otlpmetrics.Histogram{}, &sharedState)) })
+	assert.Panics(t, func() { newHistogram(&otlpmetrics.Histogram{}, &sharedState).MoveTo(dest) })
 }
 
 func TestHistogram_CopyTo(t *testing.T) {
@@ -30,6 +34,8 @@ func TestHistogram_CopyTo(t *testing.T) {
 	orig = generateTestHistogram()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newHistogram(&otlpmetrics.Histogram{}, &sharedState)) })
 }
 
 func TestHistogram_AggregationTemporality(t *testing.T) {
@@ -55,5 +61,5 @@ func generateTestHistogram() Histogram {
 
 func fillTestHistogram(tv Histogram) {
 	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	fillTestHistogramDataPointSlice(newHistogramDataPointSlice(&tv.orig.DataPoints))
+	fillTestHistogramDataPointSlice(newHistogramDataPointSlice(&tv.orig.DataPoints, tv.state))
 }

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/contrib/config"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
@@ -36,6 +37,18 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 			success: false,
+		},
+		{
+			name: "valid metric telemetry with metric readers",
+			cfg: &Config{
+				Metrics: MetricsConfig{
+					Level: configtelemetry.LevelBasic,
+					Readers: []config.MetricReader{
+						{Pull: &config.PullMetricReader{}},
+					},
+				},
+			},
+			success: true,
 		},
 	}
 

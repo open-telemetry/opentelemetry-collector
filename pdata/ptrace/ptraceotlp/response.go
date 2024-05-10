@@ -8,18 +8,24 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ExportResponse represents the response for gRPC/HTTP client/server.
 type ExportResponse struct {
-	orig *otlpcollectortrace.ExportTraceServiceResponse
+	orig  *otlpcollectortrace.ExportTraceServiceResponse
+	state *internal.State
 }
 
 // NewExportResponse returns an empty ExportResponse.
 func NewExportResponse() ExportResponse {
-	return ExportResponse{orig: &otlpcollectortrace.ExportTraceServiceResponse{}}
+	state := internal.StateMutable
+	return ExportResponse{
+		orig:  &otlpcollectortrace.ExportTraceServiceResponse{},
+		state: &state,
+	}
 }
 
 // MarshalProto marshals ExportResponse into proto bytes.
@@ -64,11 +70,11 @@ func (ms ExportResponse) unmarshalJsoniter(iter *jsoniter.Iterator) {
 
 // PartialSuccess returns the ExportLogsPartialSuccess associated with this ExportResponse.
 func (ms ExportResponse) PartialSuccess() ExportPartialSuccess {
-	return newExportPartialSuccess(&ms.orig.PartialSuccess)
+	return newExportPartialSuccess(&ms.orig.PartialSuccess, ms.state)
 }
 
 func (ms ExportPartialSuccess) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iterator *jsoniter.Iterator, f string) bool {
+	iter.ReadObjectCB(func(_ *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "rejected_spans", "rejectedSpans":
 			ms.orig.RejectedSpans = json.ReadInt64(iter)

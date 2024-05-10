@@ -17,17 +17,19 @@ const sliceTemplate = `// {{ .structName }} logically represents a slice of {{ .
 // Important: zero-initialized instance is not valid for use.
 type {{ .structName }} struct {
 	orig *[]{{ .originElementType }}
+	state *internal.State
 }
 
-func new{{ .structName }}(orig *[]{{ .originElementType }}) {{ .structName }} {
-	return {{ .structName }}{orig}
+func new{{ .structName }}(orig *[]{{ .originElementType }}, state *internal.State) {{ .structName }} {
+	return {{ .structName }}{orig: orig, state: state}
 }
 
 // New{{ .structName }} creates a {{ .structName }} with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func New{{ .structName }}() {{ .structName }} {
 	orig := []{{ .originElementType }}(nil)
-	return new{{ .structName }}(&orig)
+	state := internal.StateMutable
+	return new{{ .structName }}(&orig, &state)
 }
 
 // Len returns the number of elements in the slice.
@@ -60,6 +62,7 @@ func (es {{ .structName }}) At(i int) {{ .elementName }} {
 //       // Here should set all the values for e.
 //   }
 func (es {{ .structName }}) EnsureCapacity(newCap int) {
+	es.state.AssertMutable()
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -73,6 +76,7 @@ func (es {{ .structName }}) EnsureCapacity(newCap int) {
 // AppendEmpty will append to the end of the slice an empty {{ .elementName }}.
 // It returns the newly added {{ .elementName }}.
 func (es {{ .structName }}) AppendEmpty() {{ .elementName }} {
+	es.state.AssertMutable()
 	*es.orig = append(*es.orig, {{ .emptyOriginElement }})
 	return es.At(es.Len() - 1)
 }
@@ -80,6 +84,8 @@ func (es {{ .structName }}) AppendEmpty() {{ .elementName }} {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es {{ .structName }}) MoveAndAppendTo(dest {{ .structName }}) {
+	es.state.AssertMutable()
+	dest.state.AssertMutable()
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -92,6 +98,7 @@ func (es {{ .structName }}) MoveAndAppendTo(dest {{ .structName }}) {
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
 func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
+	es.state.AssertMutable()
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -105,13 +112,13 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 		(*es.orig)[newLen] = (*es.orig)[i]
 		newLen++
 	}
-	// TODO: Prevent memory leak by erasing truncated values.
 	*es.orig = (*es.orig)[:newLen]
 }
 
 
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
+	dest.state.AssertMutable()
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
@@ -119,7 +126,7 @@ func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
 
 	{{- if eq .type "sliceOfPtrs" }}
 		for i := range *es.orig {
-			new{{ .elementName }}((*es.orig)[i]).CopyTo(new{{ .elementName }}((*dest.orig)[i]))
+			new{{ .elementName }}((*es.orig)[i], es.state).CopyTo(new{{ .elementName }}((*dest.orig)[i], dest.state))
 		}
 		return
 	}
@@ -127,7 +134,7 @@ func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	wrappers := make([]*{{ .originName }}, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		new{{ .elementName }}((*es.orig)[i]).CopyTo(new{{ .elementName }}(wrappers[i]))
+		new{{ .elementName }}((*es.orig)[i], es.state).CopyTo(new{{ .elementName }}(wrappers[i], dest.state))
 	}
 	*dest.orig = wrappers
 
@@ -136,7 +143,7 @@ func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
 		(*dest.orig) = make([]{{ .originElementType }}, srcLen)
 	}
 	for i := range *es.orig {
-		{{ .newElement }}.CopyTo(new{{ .elementName }}(&(*dest.orig)[i]))
+		{{ .newElement }}.CopyTo(new{{ .elementName }}(&(*dest.orig)[i], dest.state))
 	}
 	{{- end }}
 }
@@ -146,6 +153,7 @@ func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
 // provided less function so that two instances of {{ .structName }}
 // can be compared.
 func (es {{ .structName }}) Sort(less func(a, b {{ .elementName }}) bool) {
+	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 {{- end }}`
@@ -153,7 +161,8 @@ func (es {{ .structName }}) Sort(less func(a, b {{ .elementName }}) bool) {
 const sliceTestTemplate = `func Test{{ .structName }}(t *testing.T) {
 	es := New{{ .structName }}()
 	assert.Equal(t, 0, es.Len())
-	es = new{{ .structName }}(&[]{{ .originElementType }}{})
+	state := internal.StateMutable
+	es = new{{ .structName }}(&[]{{ .originElementType }}{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := New{{ .elementName }}()
@@ -165,6 +174,19 @@ const sliceTestTemplate = `func Test{{ .structName }}(t *testing.T) {
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
+}
+
+func Test{{ .structName }}ReadOnly(t *testing.T) {
+	sharedState := internal.StateReadOnly
+	es := new{{ .structName }}(&[]{{ .originElementType }}{}, &sharedState)
+	assert.Equal(t, 0, es.Len())
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.EnsureCapacity(2) })
+	es2 := New{{ .structName }}()
+	es.CopyTo(es2)
+	assert.Panics(t, func() { es2.CopyTo(es) })
+	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
+	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
 }
 
 func Test{{ .structName }}_CopyTo(t *testing.T) {
@@ -324,11 +346,11 @@ func (ss *sliceOfPtrs) templateFields() map[string]any {
 		"originName":         ss.element.originFullName,
 		"originElementType":  "*" + ss.element.originFullName,
 		"emptyOriginElement": "&" + ss.element.originFullName + "{}",
-		"newElement":         "new" + ss.element.structName + "((*es.orig)[i])",
+		"newElement":         "new" + ss.element.structName + "((*es.orig)[i], es.state)",
 	}
 }
 
-func (ss *sliceOfPtrs) generateInternal(_ *bytes.Buffer) {}
+func (ss *sliceOfPtrs) generateInternal(*bytes.Buffer) {}
 
 var _ baseStruct = (*sliceOfPtrs)(nil)
 
@@ -376,10 +398,10 @@ func (ss *sliceOfValues) templateFields() map[string]any {
 		"originName":         ss.element.originFullName,
 		"originElementType":  ss.element.originFullName,
 		"emptyOriginElement": ss.element.originFullName + "{}",
-		"newElement":         "new" + ss.element.structName + "(&(*es.orig)[i])",
+		"newElement":         "new" + ss.element.structName + "(&(*es.orig)[i], es.state)",
 	}
 }
 
-func (ss *sliceOfValues) generateInternal(_ *bytes.Buffer) {}
+func (ss *sliceOfValues) generateInternal(*bytes.Buffer) {}
 
 var _ baseStruct = (*sliceOfValues)(nil)

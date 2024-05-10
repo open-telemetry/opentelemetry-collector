@@ -1,0 +1,8 @@
+type: mdatagen
+
+status:
+  class: cmd
+  stability:
+    alpha: [metrics]
+  codeowners:
+    active: [dmitryax]

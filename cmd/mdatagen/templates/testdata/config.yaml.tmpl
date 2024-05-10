@@ -1,0 +1,53 @@
+default:
+all_set:
+  {{- if .Metrics }}
+  metrics:
+    {{- range $name, $_ := .Metrics }}
+    {{ $name }}:
+      enabled: true
+    {{- end }}
+  {{- end }}
+  {{- if .ResourceAttributes }}
+  resource_attributes:
+    {{- range $name, $_ := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: true
+    {{- end }}
+  {{- end }}
+none_set:
+  {{- if .Metrics }}
+  metrics:
+    {{- range $name, $_ := .Metrics }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+  {{- if .ResourceAttributes }}
+  resource_attributes:
+    {{- range $name, $_ := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
+{{- if and .Metrics .ResourceAttributes }}
+filter_set_include:
+  resource_attributes:
+    {{- range $name, $attr := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    {{- end }}
+filter_set_exclude:
+  resource_attributes:
+    {{- range $name, $attr := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: true
+      metrics_exclude:
+        {{- if eq $attr.Type.String "Str" }}
+        - strict: {{ $attr.TestValue }}
+        {{- else }}
+        - regexp: ".*"
+        {{- end }}
+    {{- end }}
+{{- end }}

@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -29,16 +30,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.RetrySettings, exporterhelper.NewDefaultRetrySettings())
-	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueSettings())
+	assert.Equal(t, ocfg.RetryConfig, configretry.NewDefaultBackOffConfig())
+	assert.Equal(t, ocfg.QueueConfig, exporterhelper.NewDefaultQueueSettings())
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutSettings())
-	assert.Equal(t, ocfg.Compression, configcompression.Gzip)
+	assert.Equal(t, ocfg.Compression, configcompression.TypeGzip)
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
@@ -49,26 +50,16 @@ func TestCreateMetricsExporter(t *testing.T) {
 func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
-		name             string
-		config           Config
-		mustFailOnCreate bool
-		mustFailOnStart  bool
+		name            string
+		config          *Config
+		mustFailOnStart bool
 	}{
 		{
-			name: "NoEndpoint",
-			config: Config{
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Endpoint: "",
-				},
-			},
-			mustFailOnCreate: true,
-		},
-		{
 			name: "UseSecure",
-			config: Config{
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+			config: &Config{
+				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure: false,
 					},
 				},
@@ -76,8 +67,8 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "Keepalive",
-			config: Config{
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+			config: &Config{
+				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 					Keepalive: &configgrpc.KeepaliveClientConfig{
 						Time:                30 * time.Second,
@@ -89,8 +80,8 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "NoneCompression",
-			config: Config{
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+			config: &Config{
+				ClientConfig: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
 					Compression: "none",
 				},
@@ -98,35 +89,35 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "GzipCompression",
-			config: Config{
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+			config: &Config{
+				ClientConfig: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
-					Compression: configcompression.Gzip,
+					Compression: configcompression.TypeGzip,
 				},
 			},
 		},
 		{
 			name: "SnappyCompression",
-			config: Config{
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+			config: &Config{
+				ClientConfig: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
-					Compression: configcompression.Snappy,
+					Compression: configcompression.TypeSnappy,
 				},
 			},
 		},
 		{
 			name: "ZstdCompression",
-			config: Config{
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+			config: &Config{
+				ClientConfig: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
-					Compression: configcompression.Zstd,
+					Compression: configcompression.TypeZstd,
 				},
 			},
 		},
 		{
 			name: "Headers",
-			config: Config{
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+			config: &Config{
+				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 					Headers: map[string]configopaque.String{
 						"hdr1": "val1",
@@ -137,19 +128,19 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "NumConsumers",
-			config: Config{
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+			config: &Config{
+				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 				},
 			},
 		},
 		{
 			name: "CaCert",
-			config: Config{
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+			config: &Config{
+				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile: filepath.Join("testdata", "test_cert.pem"),
 						},
 					},
@@ -158,11 +149,11 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "CertPemFileError",
-			config: Config{
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+			config: &Config{
+				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile: "nosuchfile",
 						},
 					},
@@ -176,11 +167,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			set := exportertest.NewNopCreateSettings()
-			consumer, err := factory.CreateTracesExporter(context.Background(), set, &tt.config)
-			if tt.mustFailOnCreate {
-				assert.NotNil(t, err)
-				return
-			}
+			consumer, err := factory.CreateTracesExporter(context.Background(), set, tt.config)
 			assert.NoError(t, err)
 			assert.NotNil(t, consumer)
 			err = consumer.Start(context.Background(), componenttest.NewNopHost())
@@ -203,7 +190,7 @@ func TestCreateTracesExporter(t *testing.T) {
 func TestCreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)

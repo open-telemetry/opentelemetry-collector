@@ -22,12 +22,12 @@ func (cs *componentState) Stopped() bool {
 	return cs.stopped
 }
 
-func (cs *componentState) Start(_ context.Context, _ component.Host) error {
+func (cs *componentState) Start(context.Context, component.Host) error {
 	cs.started = true
 	return nil
 }
 
-func (cs *componentState) Shutdown(_ context.Context) error {
+func (cs *componentState) Shutdown(context.Context) error {
 	cs.stopped = true
 	return nil
 }

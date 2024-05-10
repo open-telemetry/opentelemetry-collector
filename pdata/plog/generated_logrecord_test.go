@@ -23,6 +23,9 @@ func TestLogRecord_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewLogRecord(), ms)
 	assert.Equal(t, generateTestLogRecord(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newLogRecord(&otlplogs.LogRecord{}, &sharedState)) })
+	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).MoveTo(dest) })
 }
 
 func TestLogRecord_CopyTo(t *testing.T) {
@@ -33,6 +36,8 @@ func TestLogRecord_CopyTo(t *testing.T) {
 	orig = generateTestLogRecord()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newLogRecord(&otlplogs.LogRecord{}, &sharedState)) })
 }
 
 func TestLogRecord_ObservedTimestamp(t *testing.T) {
@@ -80,6 +85,8 @@ func TestLogRecord_SeverityText(t *testing.T) {
 	assert.Equal(t, "", ms.SeverityText())
 	ms.SetSeverityText("INFO")
 	assert.Equal(t, "INFO", ms.SeverityText())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetSeverityText("INFO") })
 }
 
 func TestLogRecord_SeverityNumber(t *testing.T) {
@@ -108,6 +115,8 @@ func TestLogRecord_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
 	ms.SetDroppedAttributesCount(uint32(17))
 	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetDroppedAttributesCount(uint32(17)) })
 }
 
 func generateTestLogRecord() LogRecord {
@@ -124,7 +133,7 @@ func fillTestLogRecord(tv LogRecord) {
 	tv.orig.Flags = 1
 	tv.orig.SeverityText = "INFO"
 	tv.orig.SeverityNumber = otlplogs.SeverityNumber(5)
-	internal.FillTestValue(internal.NewValue(&tv.orig.Body))
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
+	internal.FillTestValue(internal.NewValue(&tv.orig.Body, tv.state))
+	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.DroppedAttributesCount = uint32(17)
 }

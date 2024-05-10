@@ -26,6 +26,7 @@ README](../configtls/README.md).
   - `timeout`
 - [`read_buffer_size`](https://godoc.org/google.golang.org/grpc#ReadBufferSize)
 - [`write_buffer_size`](https://godoc.org/google.golang.org/grpc#WriteBufferSize)
+- [`auth`](../configauth/README.md)
 
 Please note that [`per_rpc_auth`](https://pkg.go.dev/google.golang.org/grpc#PerRPCCredentials) which allows the credentials to send for every RPC is now moved to become an [extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/bearertokenauthextension). Note that this feature isn't about sending the headers only during the initial connection as an `authorization` header under the `headers` would do: this is sent for every RPC performed during an established connection.
 
@@ -35,6 +36,8 @@ Example:
 exporters:
   otlp:
     endpoint: otelcol2:55690
+    auth:
+      authenticator: some-authenticator-extension
     tls:
       ca_file: ca.pem
       cert_file: cert.pem
@@ -107,3 +110,4 @@ see [confignet README](../confignet/README.md).
 - [`read_buffer_size`](https://godoc.org/google.golang.org/grpc#ReadBufferSize)
 - [`tls`](../configtls/README.md)
 - [`write_buffer_size`](https://godoc.org/google.golang.org/grpc#WriteBufferSize)
+- [`auth`](../configauth/README.md)

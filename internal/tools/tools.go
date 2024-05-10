@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build tools
-// +build tools
 
 package tools // import "go.opentelemetry.io/collector/internal/tools"
 
@@ -17,11 +16,8 @@ import (
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/google/addlicense"
 	_ "github.com/jcchavezs/porto/cmd/porto"
-	_ "github.com/mikefarah/yq/v4"
-	_ "github.com/ory/go-acc"
 	_ "github.com/pavius/impi/cmd/impi"
-	_ "github.com/wadey/gocovmerge"
-	_ "go.opentelemetry.io/build-tools/checkdoc"
+	_ "go.opentelemetry.io/build-tools/checkfile"
 	_ "go.opentelemetry.io/build-tools/chloggen"
 	_ "go.opentelemetry.io/build-tools/crosslink"
 	_ "go.opentelemetry.io/build-tools/multimod"
@@ -29,4 +25,6 @@ import (
 	_ "golang.org/x/exp/cmd/apidiff"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/vuln/cmd/govulncheck"
+
+	_ "go.opentelemetry.io/collector/internal/tools/semconvkit"
 )

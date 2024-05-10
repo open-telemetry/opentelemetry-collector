@@ -16,30 +16,24 @@ import (
 )
 
 func TestValidateSubCommandNoConfig(t *testing.T) {
-	factories, err := nopFactories()
-	require.NoError(t, err)
-
-	cmd := newValidateSubCommand(CollectorSettings{Factories: factories}, flags(featuregate.GlobalRegistry()))
-	err = cmd.Execute()
+	cmd := newValidateSubCommand(CollectorSettings{Factories: nopFactories}, flags(featuregate.GlobalRegistry()))
+	err := cmd.Execute()
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "at least one config flag must be provided")
 }
 
 func TestValidateSubCommandInvalidComponents(t *testing.T) {
-	factories, err := nopFactories()
-	require.NoError(t, err)
-
 	cfgProvider, err := NewConfigProvider(
 		ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs:       []string{filepath.Join("testdata", "otelcol-invalid-components.yaml")},
-				Providers:  map[string]confmap.Provider{"file": fileprovider.New()},
-				Converters: []confmap.Converter{expandconverter.New()},
+				URIs:               []string{filepath.Join("testdata", "otelcol-invalid-components.yaml")},
+				ProviderFactories:  []confmap.ProviderFactory{fileprovider.NewFactory()},
+				ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
 			},
 		})
 	require.NoError(t, err)
 
-	cmd := newValidateSubCommand(CollectorSettings{Factories: factories, ConfigProvider: cfgProvider}, flags(featuregate.GlobalRegistry()))
+	cmd := newValidateSubCommand(CollectorSettings{Factories: nopFactories, ConfigProvider: cfgProvider}, flags(featuregate.GlobalRegistry()))
 	err = cmd.Execute()
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unknown type: \"nosuchprocessor\"")

@@ -11,9 +11,6 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-// Deprecated: [v0.80.0] use pipelines.PipelineConfig.
-type PipelineConfig = pipelines.PipelineConfig
-
 // Config defines the configurable components of the Service.
 type Config struct {
 	// Telemetry is the configuration for collector's own telemetry.

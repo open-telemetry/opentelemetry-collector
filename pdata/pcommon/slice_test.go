@@ -15,11 +15,12 @@ import (
 func TestSlice(t *testing.T) {
 	es := NewSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newSlice(&[]otlpcommon.AnyValue{})
+	state := internal.StateMutable
+	es = newSlice(&[]otlpcommon.AnyValue{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	es.EnsureCapacity(7)
-	emptyVal := newValue(&otlpcommon.AnyValue{})
+	emptyVal := newValue(&otlpcommon.AnyValue{}, &state)
 	testVal := Value(internal.GenerateTestValue())
 	assert.Equal(t, 7, cap(*es.getOrig()))
 	for i := 0; i < es.Len(); i++ {
@@ -28,6 +29,29 @@ func TestSlice(t *testing.T) {
 		internal.FillTestValue(internal.Value(el))
 		assert.Equal(t, testVal, el)
 	}
+}
+
+func TestSliceReadOnly(t *testing.T) {
+	state := internal.StateReadOnly
+	es := newSlice(&[]otlpcommon.AnyValue{{Value: &otlpcommon.AnyValue_IntValue{IntValue: 3}}}, &state)
+
+	assert.Equal(t, 1, es.Len())
+	assert.Equal(t, int64(3), es.At(0).Int())
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.EnsureCapacity(2) })
+
+	es2 := NewSlice()
+	es.CopyTo(es2)
+	assert.Equal(t, es.AsRaw(), es2.AsRaw())
+	assert.Panics(t, func() { es2.CopyTo(es) })
+
+	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
+	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
+
+	assert.Panics(t, func() { es.RemoveIf(func(Value) bool { return false }) })
+
+	assert.Equal(t, []any{int64(3)}, es.AsRaw())
+	assert.Panics(t, func() { _ = es.FromRaw([]any{3}) })
 }
 
 func TestSlice_CopyTo(t *testing.T) {
@@ -98,7 +122,7 @@ func TestSlice_MoveAndAppendTo(t *testing.T) {
 func TestSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
 	emptySlice := NewSlice()
-	emptySlice.RemoveIf(func(el Value) bool {
+	emptySlice.RemoveIf(func(Value) bool {
 		t.Fail()
 		return false
 	})
@@ -106,9 +130,23 @@ func TestSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := Slice(internal.GenerateTestSlice())
 	pos := 0
-	filtered.RemoveIf(func(el Value) bool {
+	filtered.RemoveIf(func(Value) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestInvalidSlice(t *testing.T) {
+	es := Slice{}
+
+	assert.Panics(t, func() { es.Len() })
+	assert.Panics(t, func() { es.At(0) })
+	assert.Panics(t, func() { es.CopyTo(Slice{}) })
+	assert.Panics(t, func() { es.EnsureCapacity(1) })
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.MoveAndAppendTo(Slice{}) })
+	assert.Panics(t, func() { es.RemoveIf(func(Value) bool { return false }) })
+	assert.Panics(t, func() { es.AsRaw() })
+	assert.Panics(t, func() { _ = es.FromRaw([]any{3}) })
 }

@@ -15,7 +15,7 @@ type Config struct {
 	// TCPAddr is the address and port in which the zPages will be listening to.
 	// Use localhost:<port> to make it available only locally, or ":<port>" to
 	// make it available on all network interfaces.
-	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
+	TCPAddr confignet.TCPAddrConfig `mapstructure:",squash"`
 }
 
 var _ component.Config = (*Config)(nil)

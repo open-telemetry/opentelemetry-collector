@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// Metrics is the new metrics consumer interface that receives pmetric.Metrics, processes it
+// Metrics is an interface that receives pmetric.Metrics, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type Metrics interface {
 	baseConsumer
@@ -18,11 +18,11 @@ type Metrics interface {
 }
 
 // ConsumeMetricsFunc is a helper function that is similar to ConsumeMetrics.
-type ConsumeMetricsFunc func(ctx context.Context, ld pmetric.Metrics) error
+type ConsumeMetricsFunc func(ctx context.Context, md pmetric.Metrics) error
 
-// ConsumeMetrics calls f(ctx, ld).
-func (f ConsumeMetricsFunc) ConsumeMetrics(ctx context.Context, ld pmetric.Metrics) error {
-	return f(ctx, ld)
+// ConsumeMetrics calls f(ctx, md).
+func (f ConsumeMetricsFunc) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	return f(ctx, md)
 }
 
 type baseMetrics struct {

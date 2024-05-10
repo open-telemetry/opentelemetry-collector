@@ -95,15 +95,14 @@ for general practices for OpenTelemetry project.
 Select a good issue from the links below (ordered by difficulty/complexity):
 
 * [Good First Issue](https://github.com/open-telemetry/opentelemetry-collector/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-* [Up for Grabs](https://github.com/open-telemetry/opentelemetry-collector/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3Aup-for-grabs+)
 * [Help Wanted](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
 Comment on the issue that you want to work on so we can assign it to you and
 clarify anything related to it.
 
 If you would like to work on something that is not listed as an issue
-(e.g. a new feature or enhancement) please first read our [vision](docs/vision.md) and
-[roadmap](docs/roadmap.md) to make sure your proposal aligns with the goals of the
+(e.g. a new feature or enhancement) please first read our [vision](docs/vision.md) 
+to make sure your proposal aligns with the goals of the
 Collector, then create an issue and describe your proposal. It is best to do this
 in advance so that maintainers can decide if the proposal is a good fit for
 this repository. This will help avoid situations when you spend significant time
@@ -148,7 +147,7 @@ section of general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.18 and up)
+2. [go](https://golang.org/) (version 1.21 and up)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 
@@ -205,17 +204,13 @@ before merging (but see above paragraph about writing good commit messages in th
 
 ## General Notes
 
-This project uses Go 1.18.* and [Github Actions.](https://github.com/features/actions)
+This project uses Go 1.21.* and [Github Actions.](https://github.com/features/actions)
 
-It is recommended to run `make gofmt all` before submitting your PR
-
-The dependencies are managed with `go mod` if you work with the sources under your
-`$GOPATH` you need to set the environment variable `GO111MODULE=on`.
+It is recommended to run `make gofmt all` before submitting your PR.
 
 ## Coding Guidelines
 
-Although OpenTelemetry project as a whole is still in Alpha stage we consider
-OpenTelemetry Collector to be close to production quality and the quality bar
+We consider the OpenTelemetry Collector to be close to production quality and the quality bar
 for contributions is set accordingly. Contributions must have readable code written
 with maintainability in mind (if in doubt check [Effective Go](https://golang.org/doc/effective_go.html)
 for coding advice). The code must adhere to the following robustness principles that
@@ -253,6 +248,20 @@ To keep naming patterns consistent across the project, naming patterns are enfor
   - `func CreateTracesExport(...) {...}`
   - `func CreateTracesToTracesFunc(...) {...}`
 
+### Enumerations
+
+To keep naming patterns consistent across the project, enumeration patterns are enforced to make intent clear:
+
+- Enumerations should be defined using a type definition, such as `type Level int32`.
+- Enumerations should use either `int` or `string` as the underlying type
+- Enumeration name should succinctly describe the enumeration's purpose
+  - If the package name represents the entity described by the enumeration then the package name should be factored into the name of the enumeration.  For example, `component.Type` instead of `component.ComponentType`.
+  - The name should convey a sense of limited categorization. For example, `pcommon.ValueType` is better than `pcommon.Value` and `component.Kind` is better than `component.KindType`, since `Kind` already conveys categorization.
+- Constant values of an enumeration should be prefixed with the enumeration type name in the name:
+  - `pcommon.ValueTypeStr` for `pcommon.ValueType`
+  - `pmetric.MetricTypeGauge` for `pmetric.MetricType`
+
+
 ### Recommended Libraries / Defaults
 
 In order to simplify developing within the project, library recommendations have been set
@@ -266,6 +275,11 @@ and should be followed.
 
 Within the project, there are some packages that are yet to follow the recommendations and are being address, however, any new code should adhere to the recommendations.
 
+### Default Configuration
+
+To guarantee backwards compatible behavior, all configuration packages should supply a `NewDefault[config name]` functions that create a default version of the config. The package does not need to guarantee that `NewDefault[config name]` returns a usable configuration, only that default values will be set. For example, if the configuration requires that a field, such as `Endpoint` be set, but there is no valid default value, then `NewDefault[config name]` may set that value to `""` with the expectation that the user will set a valid value.
+
+Users should always initialize the config struct with this function and overwrite anything as needed.
 
 ### Startup Error Handling
 
@@ -364,8 +378,7 @@ The following limitations are recommended:
 ### Observability
 
 Out of the box, your users should be able to observe the state of your component.
-The collector exposes an OpenMetrics endpoint at `http://localhost:8888/metrics`
-where your data will land.
+See [observability.md](docs/observability.md) for more details.
 
 When using the regular helpers, you should have some metrics added around key
 events automatically. For instance, exporters should have `otelcol_exporter_sent_spans`
@@ -455,6 +468,8 @@ package test
 func DoFoo() {}
 ```
 
+#### End-user impacting changes
+
 When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it
 behind a [feature
 gate](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/)
@@ -492,6 +507,63 @@ that each of the following steps is done in a separate version:
 1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo(context.Context) Foo` if desired or remove it entirely if
    needed.
 
+#### Exceptions
+
+For changes to modules that do not have a version of `v1` or higher, we may skip the deprecation process described above
+for the following situations. Note that these changes should still be recorded as breaking changes in the changelog.
+
+* **Variadic arguments.** Functions that are not already variadic may have a variadic parameter added as a method of
+  supporting optional parameters, particularly through the functional options pattern. If a variadic parameter is
+  added to a function with no change in functionality when no variadic arguments are passed, the deprecation process
+  may be skipped. Calls to updated functions without the new argument will continue to work before, but users who depend
+  on the exact function signature as a type, for example as an argument to another function, will experience a
+  breaking change. For this reason, the deprecation process should only be skipped when it is not expected that
+  the function is commonly passed as a value.
+
+#### Configuration changes
+
+##### Alpha components
+
+Configuration for alpha components can be changed with minimal notice. Documenting them as part of the changelog is
+sufficient. We still recommend giving users one or two minor version's notice before breaking the configuration, such as
+when removing or renaming a configuration option. Providing a migration path in the component's repository is NOT
+required for alpha components, although still recommended.
+
+- when adding a new configuration option, components MAY mark the new option as required and are not required to provide
+  a reasonable default.
+- when renaming a configuration option, components MAY treat the old name as an alias to the new one and log a WARN
+  level message in case the old option is being used.
+- when removing a configuration option, components MAY keep the old option for a few minor releases and log a WARN level
+  message instructing users to remove the option.
+
+##### Beta components
+
+One of the requirements for a component to be marked as beta is to have its configuration options stabilized. Therefore,
+backward incompatible changes should be rare events for beta components. Users of those components are not expecting to
+have their Collector instances failing at startup because of a configuration change. When doing backward incompatible
+changes, component owners should add the migration path to a place within the component's repository, linked from the
+component's main README. This is to ensure that people using older instructions can understand how to migrate to the
+latest version of the component.
+
+When adding a new required option:
+- the option MUST come with a sensible default value
+
+When renaming or removing a configuration option:
+- the option MUST be deprecated in one version
+- a WARN level message should be logged, with a link to a place within the component's repository where the change is
+  documented and a migration path is provided
+- the option MUST be kept for at least N+1 version, and MAY be hidden behind a feature gate in N+2
+- the option and the WARN level message MAY be removed after N+2 or 6 months, whichever comes later
+
+Additionally, when removing an option:
+- the option MAY be made non operational already by the same version where it is deprecated
+
+##### Stable components
+
+Stable component MUST be compatible between minor versions, unless critical security issues are found. In that case, the
+component owner MUST provide a migration path and a reasonable time frame for users to upgrade. The same rules from beta
+components apply to stable when it comes to configuration changes.
+
 ### Specification Tracking
 
 The [OpenTelemetry Specification](https://github.com/open-telemetry/opentelemetry-specification) can be a rapidly
@@ -503,28 +575,39 @@ prior to inclusion in a stable release of the specification.
 
 ## Changelog
 
+### Overview
+
+There are two Changelogs for this repository:
+
+- `CHANGELOG.md` is intended for users of the collector and lists changes that affect the behavior of the collector.
+- `CHANGELOG-API.md` is intended for developers who are importing packages from the collector codebase.
+
+### When to add a Changelog Entry
+
 An entry into the changelog is required for the following reasons:
 
 - Changes made to the behaviour of the component
 - Changes to the configuration
 - Changes to default settings
 - New components being added
+- Changes to exported elements of a package
 
 It is reasonable to omit an entry to the changelog under these circuimstances:
 
 - Updating test to remove flakiness or improve coverage
 - Updates to the CI/CD process
+- Updates to internal packages
 
 If there is some uncertainty with regards to if a changelog entry is needed, the recomendation is to create
 an entry to in the event that the change is important to the project consumers.
 
 ### Adding a Changelog Entry
 
-The [CHANGELOG.md](./CHANGELOG.md) file in this repo is autogenerated from `.yaml` files in the `./.chloggen` directory.
+The [CHANGELOG.md](./CHANGELOG.md) and [CHANGELOG-API.md](./CHANGELOG-API.md) files in this repo is autogenerated from `.yaml` files in the `./.chloggen` directory.
 
 Your pull-request should add a new `.yaml` file to this directory. The name of your file must be unique since the last release.
 
-During the collector release process, all `./chloggen/*.yaml` files are transcribed into `CHANGELOG.md` and then deleted.
+During the collector release process, all `./chloggen/*.yaml` files are transcribed into `CHANGELOG.md` and `CHANGELOG-API.md` and then deleted.
 
 **Recommended Steps**
 1. Create an entry file using `make chlog-new`. This generates a file based on your current branch (e.g. `./.chloggen/my-branch.yaml`)
@@ -592,6 +675,19 @@ target would result in unacceptable latency in the local development loop.
 
 The default repo-level target (i.e. running `make` at the root of the repo) should meaningfully validate the entire repo. This should include
 running the default common target for each module as well as additional repo-level targets.
+
+## How to update the OTLP protocol version
+
+When a new OTLP version is published, the following steps are required to update this code base:
+
+1. Edit the top-level Makefile's `OPENTELEMETRY_PROTO_VERSION` variable
+2. Run `make genproto` 
+3. Inspect modifications to the generated code in `pdata/internal/data/protogen`
+4. When new fields are added in the protocol, make corresponding changes in `pdata/internal/cmd/pdatagen/internal`
+5. Run `make genpdata` 
+6. Inspect modifications to the generated code in `pdata/*`
+7. Run `make genproto-cleanup`, to remove temporary files
+8. Update the supported OTLP version in [README.md](./README.md).
 
 ## Exceptions
 

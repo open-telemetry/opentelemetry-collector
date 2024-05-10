@@ -14,6 +14,12 @@ import (
 	"go.opentelemetry.io/collector/service/internal/graph"
 )
 
+// TODO: remove as part of https://github.com/open-telemetry/opentelemetry-collector/issues/7370 for service 1.0
+type getExporters interface {
+	GetExporters() map[component.DataType]map[component.ID]component.Component
+}
+
+var _ getExporters = (*serviceHost)(nil)
 var _ component.Host = (*serviceHost)(nil)
 
 type serviceHost struct {
@@ -28,13 +34,6 @@ type serviceHost struct {
 
 	pipelines         *graph.Graph
 	serviceExtensions *extensions.Extensions
-}
-
-// ReportFatalError is used to report to the host that the receiver encountered
-// a fatal error (i.e.: an error that the instance can't recover from) after
-// its start function has already returned.
-func (host *serviceHost) ReportFatalError(err error) {
-	host.asyncErrorChannel <- err
 }
 
 func (host *serviceHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
@@ -65,4 +64,11 @@ func (host *serviceHost) GetExtensions() map[component.ID]component.Component {
 // for additional information.
 func (host *serviceHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return host.pipelines.GetExporters()
+}
+
+func (host *serviceHost) notifyComponentStatusChange(source *component.InstanceID, event *component.StatusEvent) {
+	host.serviceExtensions.NotifyComponentStatusChange(source, event)
+	if event.Status() == component.StatusFatalError {
+		host.asyncErrorChannel <- event.Err()
+	}
 }

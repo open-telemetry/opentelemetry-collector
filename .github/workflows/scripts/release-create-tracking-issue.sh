@@ -11,7 +11,7 @@ if [ "${CANDIDATE_BETA}" == "" ]; then
     RELEASE_VERSION="v${CANDIDATE_STABLE}"
 fi
 
-EXISTING_ISSUE=$( gh issue list --search "Release ${RELEASE_VERSION}" --json url --jq '.[].url' --repo "${REPO}" )
+EXISTING_ISSUE=$( gh issue list --search "in:title Release ${RELEASE_VERSION}" --json url --jq '.[].url' --repo "${REPO}" --state open --label release )
 
 if [ "${EXISTING_ISSUE}" != "" ]; then
     echo "Issue already exists: ${EXISTING_ISSUE}"

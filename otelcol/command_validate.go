@@ -16,7 +16,7 @@ func newValidateSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.
 		Use:   "validate",
 		Short: "Validates the config without running the collector",
 		Args:  cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if set.ConfigProvider == nil {
 				var err error
 

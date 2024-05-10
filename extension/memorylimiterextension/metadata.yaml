@@ -1,0 +1,15 @@
+type: memory_limiter
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+
+tests:
+  config:
+    check_interval: 5s
+    limit_mib: 400
+    spike_limit_mib: 50
+  # TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/9686
+  skip_shutdown: true

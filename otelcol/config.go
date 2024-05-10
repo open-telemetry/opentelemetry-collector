@@ -8,13 +8,13 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/otelcol/internal/sharedgate"
 	"go.opentelemetry.io/collector/service"
 )
 
 var (
-	errMissingExporters = errors.New("no exporter configuration specified in config")
-	errMissingReceivers = errors.New("no receiver configuration specified in config")
+	errMissingExporters       = errors.New("no exporter configuration specified in config")
+	errMissingReceivers       = errors.New("no receiver configuration specified in config")
+	errEmptyConfigurationFile = errors.New("empty configuration file")
 )
 
 // Config defines the configuration for the various elements of collector or agent.
@@ -43,6 +43,11 @@ type Config struct {
 // invalid cases that we currently don't check for but which we may want to add in
 // the future (e.g. disallowing receiving and exporting on the same endpoint).
 func (cfg *Config) Validate() error {
+	// There must be at least one property set in the configuration	file.
+	if len(cfg.Receivers) == 0 && len(cfg.Exporters) == 0 && len(cfg.Processors) == 0 && len(cfg.Connectors) == 0 && len(cfg.Extensions) == 0 {
+		return errEmptyConfigurationFile
+	}
+
 	// Currently, there is no default receiver enabled.
 	// The configuration must specify at least one receiver to be valid.
 	if len(cfg.Receivers) == 0 {
@@ -83,10 +88,14 @@ func (cfg *Config) Validate() error {
 		}
 
 		if _, ok := cfg.Exporters[connID]; ok {
-			return fmt.Errorf("connectors::%s: there's already an exporter named %q", connID, connID)
+			return fmt.Errorf("connectors::%s: ambiguous ID: Found both %q exporter and %q connector. "+
+				"Change one of the components' IDs to eliminate ambiguity (e.g. rename %q connector to %q)",
+				connID, connID, connID, connID, connID.String()+"/connector")
 		}
 		if _, ok := cfg.Receivers[connID]; ok {
-			return fmt.Errorf("connectors::%s: there's already a receiver named %q", connID, connID)
+			return fmt.Errorf("connectors::%s: ambiguous ID: Found both %q receiver and %q connector. "+
+				"Change one of the components' IDs to eliminate ambiguity (e.g. rename %q connector to %q)",
+				connID, connID, connID, connID, connID.String()+"/connector")
 		}
 	}
 
@@ -95,10 +104,6 @@ func (cfg *Config) Validate() error {
 		if err := component.ValidateConfig(extCfg); err != nil {
 			return fmt.Errorf("extensions::%s: %w", extID, err)
 		}
-	}
-
-	if len(cfg.Connectors) != 0 && !sharedgate.ConnectorsFeatureGate.IsEnabled() {
-		return fmt.Errorf("connectors require feature gate: %s", sharedgate.ConnectorsFeatureGate.ID())
 	}
 
 	if err := cfg.Service.Validate(); err != nil {
@@ -113,10 +118,6 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	// Keep track of whether connectors are used as receivers and exporters
-	connectorsAsReceivers := make(map[component.ID]struct{}, len(cfg.Connectors))
-	connectorsAsExporters := make(map[component.ID]struct{}, len(cfg.Connectors))
-
 	// Check that all pipelines reference only configured components.
 	for pipelineID, pipeline := range cfg.Service.Pipelines {
 		// Validate pipeline receiver name references.
@@ -127,7 +128,6 @@ func (cfg *Config) Validate() error {
 			}
 
 			if _, ok := cfg.Connectors[ref]; ok {
-				connectorsAsReceivers[ref] = struct{}{}
 				continue
 			}
 			return fmt.Errorf("service::pipelines::%s: references receiver %q which is not configured", pipelineID, ref)
@@ -148,24 +148,10 @@ func (cfg *Config) Validate() error {
 				continue
 			}
 			if _, ok := cfg.Connectors[ref]; ok {
-				connectorsAsExporters[ref] = struct{}{}
 				continue
 			}
 			return fmt.Errorf("service::pipelines::%s: references exporter %q which is not configured", pipelineID, ref)
 		}
 	}
-
-	// Validate that connectors are used as both receiver and exporter
-	for connID := range cfg.Connectors {
-		_, recOK := connectorsAsReceivers[connID]
-		_, expOK := connectorsAsExporters[connID]
-		if recOK && !expOK {
-			return fmt.Errorf("connectors::%s: must be used as both receiver and exporter but is not used as exporter", connID)
-		}
-		if !recOK && expOK {
-			return fmt.Errorf("connectors::%s: must be used as both receiver and exporter but is not used as receiver", connID)
-		}
-	}
-
 	return nil
 }

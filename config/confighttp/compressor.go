@@ -28,9 +28,10 @@ var (
 	_          writeCloserReset = (*snappy.Writer)(nil)
 	snappyPool                  = &compressor{pool: sync.Pool{New: func() any { return snappy.NewBufferedWriter(nil) }}}
 	_          writeCloserReset = (*zstd.Encoder)(nil)
-	zStdPool                    = &compressor{pool: sync.Pool{New: func() any { zw, _ := zstd.NewWriter(nil); return zw }}}
-	_          writeCloserReset = (*zlib.Writer)(nil)
-	zLibPool                    = &compressor{pool: sync.Pool{New: func() any { return zlib.NewWriter(nil) }}}
+	// Concurrency 1 disables async decoding via goroutines. This is useful to reduce memory usage and isn't a bottleneck for compression using sync.Pool.
+	zStdPool                  = &compressor{pool: sync.Pool{New: func() any { zw, _ := zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1)); return zw }}}
+	_        writeCloserReset = (*zlib.Writer)(nil)
+	zLibPool                  = &compressor{pool: sync.Pool{New: func() any { return zlib.NewWriter(nil) }}}
 )
 
 type compressor struct {
@@ -39,15 +40,15 @@ type compressor struct {
 
 // writerFactory defines writer field in CompressRoundTripper.
 // The validity of input is already checked when NewCompressRoundTripper was called in confighttp,
-func newCompressor(compressionType configcompression.CompressionType) (*compressor, error) {
+func newCompressor(compressionType configcompression.Type) (*compressor, error) {
 	switch compressionType {
-	case configcompression.Gzip:
+	case configcompression.TypeGzip:
 		return gZipPool, nil
-	case configcompression.Snappy:
+	case configcompression.TypeSnappy:
 		return snappyPool, nil
-	case configcompression.Zstd:
+	case configcompression.TypeZstd:
 		return zStdPool, nil
-	case configcompression.Zlib, configcompression.Deflate:
+	case configcompression.TypeZlib, configcompression.TypeDeflate:
 		return zLibPool, nil
 	}
 	return nil, errors.New("unsupported compression type, ")

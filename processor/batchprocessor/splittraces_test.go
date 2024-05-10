@@ -8,8 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestSplitTraces_noop(t *testing.T) {
@@ -19,7 +19,7 @@ func TestSplitTraces_noop(t *testing.T) {
 	assert.Equal(t, td, split)
 
 	i := 0
-	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(_ ptrace.Span) bool {
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(ptrace.Span) bool {
 		i++
 		return i > 5
 	})

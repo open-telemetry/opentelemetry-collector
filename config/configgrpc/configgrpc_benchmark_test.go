@@ -9,17 +9,17 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mostynb/go-grpc-compression/snappy"
-	"github.com/mostynb/go-grpc-compression/zstd"
+	"github.com/mostynb/go-grpc-compression/nonclobbering/snappy"
+	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/status"
 
-	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func BenchmarkCompressors(b *testing.B) {

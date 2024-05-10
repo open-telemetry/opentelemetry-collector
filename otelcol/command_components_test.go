@@ -5,41 +5,30 @@ package otelcol
 
 import (
 	"bytes"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/component"
 )
 
 func TestNewBuildSubCommand(t *testing.T) {
-	factories, err := nopFactories()
-	require.NoError(t, err)
-
 	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
 	require.NoError(t, err)
 
 	set := CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      factories,
+		Factories:      nopFactories,
 		ConfigProvider: cfgProvider,
 	}
 	cmd := NewCommand(set)
 	cmd.SetArgs([]string{"components"})
 
-	ExpectedYamlStruct := componentsOutput{
-		BuildInfo:  component.NewDefaultBuildInfo(),
-		Receivers:  []component.Type{"nop"},
-		Processors: []component.Type{"nop"},
-		Exporters:  []component.Type{"nop"},
-		Connectors: []component.Type{"nop"},
-		Extensions: []component.Type{"nop"},
-	}
-	ExpectedOutput, err := yaml.Marshal(ExpectedYamlStruct)
+	ExpectedOutput, err := os.ReadFile(filepath.Join("testdata", "components-output.yaml"))
 	require.NoError(t, err)
 
 	b := bytes.NewBufferString("")
@@ -49,5 +38,5 @@ func TestNewBuildSubCommand(t *testing.T) {
 
 	// Trim new line at the end of the two strings to make a better comparison as string() adds an extra new
 	// line that makes the test fail.
-	assert.Equal(t, strings.Trim(string(ExpectedOutput), "\n"), strings.Trim(b.String(), "\n"))
+	assert.Equal(t, strings.ReplaceAll(strings.ReplaceAll(string(ExpectedOutput), "\n", ""), "\r", ""), strings.ReplaceAll(strings.ReplaceAll(b.String(), "\n", ""), "\r", ""))
 }

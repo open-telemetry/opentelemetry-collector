@@ -7,20 +7,27 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGate(t *testing.T) {
 	enabled := &atomic.Bool{}
 	enabled.Store(true)
+	from, err := version.NewVersion("v0.61.0")
+	require.NoError(t, err)
+	to, err := version.NewVersion("v0.64.0")
+	require.NoError(t, err)
+
 	g := &Gate{
 		id:           "test",
 		description:  "test gate",
 		enabled:      enabled,
 		stage:        StageAlpha,
 		referenceURL: "http://example.com",
-		fromVersion:  "v0.61.0",
-		toVersion:    "v0.64.0",
+		fromVersion:  from,
+		toVersion:    to,
 	}
 
 	assert.Equal(t, "test", g.ID())

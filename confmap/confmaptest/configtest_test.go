@@ -54,6 +54,6 @@ func (s schemeProvider) Scheme() string {
 	return s.scheme
 }
 
-func (s schemeProvider) Shutdown(_ context.Context) error {
+func (s schemeProvider) Shutdown(context.Context) error {
 	return nil
 }

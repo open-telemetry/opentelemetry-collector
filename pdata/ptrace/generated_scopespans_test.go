@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,6 +22,9 @@ func TestScopeSpans_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewScopeSpans(), ms)
 	assert.Equal(t, generateTestScopeSpans(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState)) })
+	assert.Panics(t, func() { newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState).MoveTo(dest) })
 }
 
 func TestScopeSpans_CopyTo(t *testing.T) {
@@ -31,6 +35,8 @@ func TestScopeSpans_CopyTo(t *testing.T) {
 	orig = generateTestScopeSpans()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState)) })
 }
 
 func TestScopeSpans_Scope(t *testing.T) {
@@ -44,6 +50,10 @@ func TestScopeSpans_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "", ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() {
+		newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
+	})
 }
 
 func TestScopeSpans_Spans(t *testing.T) {
@@ -60,7 +70,7 @@ func generateTestScopeSpans() ScopeSpans {
 }
 
 func fillTestScopeSpans(tv ScopeSpans) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope))
+	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestSpanSlice(newSpanSlice(&tv.orig.Spans))
+	fillTestSpanSlice(newSpanSlice(&tv.orig.Spans, tv.state))
 }

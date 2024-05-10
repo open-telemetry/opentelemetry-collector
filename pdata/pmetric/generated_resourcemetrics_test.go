@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,6 +22,9 @@ func TestResourceMetrics_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewResourceMetrics(), ms)
 	assert.Equal(t, generateTestResourceMetrics(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState)) })
+	assert.Panics(t, func() { newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState).MoveTo(dest) })
 }
 
 func TestResourceMetrics_CopyTo(t *testing.T) {
@@ -31,6 +35,8 @@ func TestResourceMetrics_CopyTo(t *testing.T) {
 	orig = generateTestResourceMetrics()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState)) })
 }
 
 func TestResourceMetrics_Resource(t *testing.T) {
@@ -44,6 +50,10 @@ func TestResourceMetrics_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "", ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() {
+		newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
+	})
 }
 
 func TestResourceMetrics_ScopeMetrics(t *testing.T) {
@@ -60,7 +70,7 @@ func generateTestResourceMetrics() ResourceMetrics {
 }
 
 func fillTestResourceMetrics(tv ResourceMetrics) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource))
+	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeMetricsSlice(newScopeMetricsSlice(&tv.orig.ScopeMetrics))
+	fillTestScopeMetricsSlice(newScopeMetricsSlice(&tv.orig.ScopeMetrics, tv.state))
 }

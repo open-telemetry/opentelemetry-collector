@@ -19,25 +19,25 @@ import (
 const fileSchemePrefix = schemeName + ":"
 
 func TestValidateProviderScheme(t *testing.T) {
-	assert.NoError(t, confmaptest.ValidateProviderScheme(New()))
+	assert.NoError(t, confmaptest.ValidateProviderScheme(createProvider()))
 }
 
 func TestEmptyName(t *testing.T) {
-	fp := New()
+	fp := createProvider()
 	_, err := fp.Retrieve(context.Background(), "", nil)
 	require.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestUnsupportedScheme(t *testing.T) {
-	fp := New()
+	fp := createProvider()
 	_, err := fp.Retrieve(context.Background(), "https://", nil)
 	assert.Error(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestNonExistent(t *testing.T) {
-	fp := New()
+	fp := createProvider()
 	_, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "non-existent.yaml"), nil)
 	assert.Error(t, err)
 	_, err = fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "non-existent.yaml")), nil)
@@ -46,7 +46,7 @@ func TestNonExistent(t *testing.T) {
 }
 
 func TestInvalidYAML(t *testing.T) {
-	fp := New()
+	fp := createProvider()
 	_, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "invalid-yaml.yaml"), nil)
 	assert.Error(t, err)
 	_, err = fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "invalid-yaml.yaml")), nil)
@@ -55,7 +55,7 @@ func TestInvalidYAML(t *testing.T) {
 }
 
 func TestRelativePath(t *testing.T) {
-	fp := New()
+	fp := createProvider()
 	ret, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "default-config.yaml"), nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
@@ -69,7 +69,7 @@ func TestRelativePath(t *testing.T) {
 }
 
 func TestAbsolutePath(t *testing.T) {
-	fp := New()
+	fp := createProvider()
 	ret, err := fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "default-config.yaml")), nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
@@ -86,4 +86,8 @@ func absolutePath(t *testing.T, relativePath string) string {
 	dir, err := os.Getwd()
 	require.NoError(t, err)
 	return filepath.Join(dir, relativePath)
+}
+
+func createProvider() confmap.Provider {
+	return NewFactory().Create(confmaptest.NewNopProviderSettings())
 }

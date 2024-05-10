@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
@@ -79,7 +80,7 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 		{
 			name: "always_succeed",
 			// Always succeed. We expect all data to be delivered as is.
-			decisionFunc: func(ids idSet) error { return nil },
+			decisionFunc: func(idSet) error { return nil },
 		},
 		{
 			name:         "random_non_permanent_error",
@@ -97,7 +98,7 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 
 	for _, scenario := range scenarios {
 		params.T.Run(
-			scenario.name, func(t *testing.T) {
+			scenario.name, func(*testing.T) {
 				checkConsumeContractScenario(params, scenario.decisionFunc)
 			},
 		)
@@ -105,7 +106,7 @@ func CheckConsumeContract(params CheckConsumeContractParams) {
 }
 
 func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFunc func(ids idSet) error) {
-	consumer := &mockConsumer{t: params.T, consumeDecisionFunc: decisionFunc}
+	consumer := &mockConsumer{t: params.T, consumeDecisionFunc: decisionFunc, acceptedIDs: make(idSet), droppedIDs: make(idSet)}
 	ctx := context.Background()
 
 	// Create and start the receiver.
@@ -119,8 +120,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	case component.DataTypeTraces:
 		receiver, err = params.Factory.CreateTracesReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
 	case component.DataTypeMetrics:
-		// TODO: add metrics support to mockConsumer so that this case can be also implemented.
-		require.FailNow(params.T, "DataTypeMetrics is not implemented")
+		receiver, err = params.Factory.CreateMetricsReceiver(ctx, NewNopCreateSettings(), params.Config, consumer)
 	default:
 		require.FailNow(params.T, "must specify a valid DataType to test for")
 	}
@@ -132,7 +132,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 
 	// Begin generating data to the receiver.
 
-	var generatedIds idSet
+	generatedIDs := make(idSet)
 	var generatedIndex int64
 	var mux sync.Mutex
 	var wg sync.WaitGroup
@@ -154,7 +154,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 				require.Greater(params.T, len(ids), 0)
 
 				mux.Lock()
-				duplicates := generatedIds.mergeSlice(ids)
+				duplicates := generatedIDs.mergeSlice(ids)
 				mux.Unlock()
 
 				// Check that the generator works correctly. There may not be any duplicates in the
@@ -175,7 +175,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 			assert.Failf(params.T, "found duplicate elements in received and dropped data", "keys=%v", duplicates)
 		}
 		// Compare accepted+dropped with generated. Once they are equal it means all data is seen by the consumer.
-		missingInOther, onlyInOther := generatedIds.compare(acceptedAndDropped)
+		missingInOther, onlyInOther := generatedIDs.compare(acceptedAndDropped)
 		return len(missingInOther) == 0 && len(onlyInOther) == 0
 	}, 5*time.Second, 10*time.Millisecond)
 
@@ -187,7 +187,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 
 	// Make sure generated and accepted+dropped are exactly the same.
 
-	missingInOther, onlyInOther := generatedIds.compare(acceptedAndDropped)
+	missingInOther, onlyInOther := generatedIDs.compare(acceptedAndDropped)
 	if len(missingInOther) != 0 {
 		assert.Failf(params.T, "found elements sent that were not delivered", "keys=%v", missingInOther)
 	}
@@ -201,9 +201,9 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	// Print some stats to help debug test failures.
 	fmt.Printf(
 		"Sent %d, accepted=%d, expected dropped=%d, non-permanent errors retried=%d\n",
-		len(generatedIds),
-		len(consumer.acceptedIds),
-		len(consumer.droppedIds),
+		len(generatedIDs),
+		len(consumer.acceptedIDs),
+		len(consumer.droppedIDs),
 		consumer.nonPermanentFailures,
 	)
 }
@@ -227,30 +227,24 @@ func (ds idSet) compare(other idSet) (missingInOther, onlyInOther []UniqueIDAttr
 }
 
 // merge another set into this one and return a list of duplicate ids.
-func (ds *idSet) merge(other idSet) (duplicates []UniqueIDAttrVal) {
-	if *ds == nil {
-		*ds = map[UniqueIDAttrVal]bool{}
-	}
+func (ds idSet) merge(other idSet) (duplicates []UniqueIDAttrVal) {
 	for k, v := range other {
-		if _, ok := (*ds)[k]; ok {
+		if _, ok := ds[k]; ok {
 			duplicates = append(duplicates, k)
 		} else {
-			(*ds)[k] = v
+			ds[k] = v
 		}
 	}
 	return
 }
 
-// merge another set into this one and return a list of duplicate ids.
-func (ds *idSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrVal) {
-	if *ds == nil {
-		*ds = map[UniqueIDAttrVal]bool{}
-	}
+// mergeSlice merges another set into this one and return a list of duplicate ids.
+func (ds idSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrVal) {
 	for _, id := range other {
-		if _, ok := (*ds)[id]; ok {
+		if _, ok := ds[id]; ok {
 			duplicates = append(duplicates, id)
 		} else {
-			(*ds)[id] = true
+			ds[id] = true
 		}
 	}
 	return
@@ -258,9 +252,9 @@ func (ds *idSet) mergeSlice(other []UniqueIDAttrVal) (duplicates []UniqueIDAttrV
 
 // union computes the union of this and another sets. A new set if created to return the result.
 // Also returns a list of any duplicate ids found.
-func (ds *idSet) union(other idSet) (union idSet, duplicates []UniqueIDAttrVal) {
+func (ds idSet) union(other idSet) (union idSet, duplicates []UniqueIDAttrVal) {
 	union = map[UniqueIDAttrVal]bool{}
-	for k, v := range *ds {
+	for k, v := range ds {
 		union[k] = v
 	}
 	for k, v := range other {
@@ -285,7 +279,7 @@ var errPermanent = errors.New("permanent error")
 
 // randomNonPermanentErrorConsumeDecision is a decision function that succeeds approximately
 // half of the time and fails with a non-permanent error the rest of the time.
-func randomNonPermanentErrorConsumeDecision(_ idSet) error {
+func randomNonPermanentErrorConsumeDecision(idSet) error {
 	if rand.Float32() < 0.5 {
 		return errNonPermanent
 	}
@@ -294,7 +288,7 @@ func randomNonPermanentErrorConsumeDecision(_ idSet) error {
 
 // randomPermanentErrorConsumeDecision is a decision function that succeeds approximately
 // half of the time and fails with a permanent error the rest of the time.
-func randomPermanentErrorConsumeDecision(_ idSet) error {
+func randomPermanentErrorConsumeDecision(idSet) error {
 	if rand.Float32() < 0.5 {
 		return consumererror.NewPermanent(errPermanent)
 	}
@@ -304,7 +298,7 @@ func randomPermanentErrorConsumeDecision(_ idSet) error {
 // randomErrorsConsumeDecision is a decision function that succeeds approximately
 // a third of the time, fails with a permanent error the third of the time and fails with
 // a non-permanent error the rest of the time.
-func randomErrorsConsumeDecision(_ idSet) error {
+func randomErrorsConsumeDecision(idSet) error {
 	r := rand.Float64()
 	third := 1.0 / 3.0
 	if r < third {
@@ -324,8 +318,8 @@ type mockConsumer struct {
 	t                    *testing.T
 	consumeDecisionFunc  consumeDecisionFunc
 	mux                  sync.Mutex
-	acceptedIds          idSet
-	droppedIds           idSet
+	acceptedIDs          idSet
+	droppedIDs           idSet
 	nonPermanentFailures int
 }
 
@@ -393,37 +387,82 @@ func idSetFromLogs(data plog.Logs) (idSet, error) {
 	return ds, nil
 }
 
+func (m *mockConsumer) ConsumeMetrics(_ context.Context, data pmetric.Metrics) error {
+	ids, err := idSetFromMetrics(data)
+	require.NoError(m.t, err)
+	return m.consume(ids)
+}
+
 func (m *mockConsumer) ConsumeProfiles(_ context.Context, data pprofile.Profiles) error {
 	ids, err := idSetFromProfiles(data)
 	require.NoError(m.t, err)
 	return m.consume(ids)
 }
 
-// idSetFromProfiles computes an idSet from given plog.Profiles. The idSet will contain ids of all log records.
-func idSetFromProfiles(data pprofile.Profiles) (idSet, error) {
+// idSetFromMetrics computes an idSet from given pmetric.Metrics. The idSet will contain ids of all metric data points.
+func idSetFromMetrics(data pmetric.Metrics) (idSet, error) {
 	ds := map[UniqueIDAttrVal]bool{}
-	rss := data.ResourceProfiles()
+	rss := data.ResourceMetrics()
 	for i := 0; i < rss.Len(); i++ {
-		ils := rss.At(i).ScopeProfiles()
+		ils := rss.At(i).ScopeMetrics()
 		for j := 0; j < ils.Len(); j++ {
-			ss := ils.At(j).Profiles()
+			ss := ils.At(j).Metrics()
 			for k := 0; k < ss.Len(); k++ {
 				elem := ss.At(k)
-				key, exists := elem.Attributes().Get(UniqueIDAttrName)
-				if !exists {
-					return ds, fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
+				switch elem.Type() {
+				case pmetric.MetricTypeGauge:
+					for l := 0; l < elem.Gauge().DataPoints().Len(); l++ {
+						dp := elem.Gauge().DataPoints().At(l)
+						if err := idSetFromDataPoint(ds, dp.Attributes()); err != nil {
+							return ds, err
+						}
+					}
+				case pmetric.MetricTypeSum:
+					for l := 0; l < elem.Sum().DataPoints().Len(); l++ {
+						dp := elem.Sum().DataPoints().At(l)
+						if err := idSetFromDataPoint(ds, dp.Attributes()); err != nil {
+							return ds, err
+						}
+					}
+				case pmetric.MetricTypeSummary:
+					for l := 0; l < elem.Summary().DataPoints().Len(); l++ {
+						dp := elem.Summary().DataPoints().At(l)
+						if err := idSetFromDataPoint(ds, dp.Attributes()); err != nil {
+							return ds, err
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					for l := 0; l < elem.Histogram().DataPoints().Len(); l++ {
+						dp := elem.Histogram().DataPoints().At(l)
+						if err := idSetFromDataPoint(ds, dp.Attributes()); err != nil {
+							return ds, err
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					for l := 0; l < elem.ExponentialHistogram().DataPoints().Len(); l++ {
+						dp := elem.ExponentialHistogram().DataPoints().At(l)
+						if err := idSetFromDataPoint(ds, dp.Attributes()); err != nil {
+							return ds, err
+						}
+					}
 				}
-				if key.Type() != pcommon.ValueTypeStr {
-					return ds, fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
-				}
-				ds[UniqueIDAttrVal(key.Str())] = true
 			}
 		}
 	}
 	return ds, nil
 }
 
-// TODO: Implement mockConsumer.ConsumeMetrics()
+func idSetFromDataPoint(ds map[UniqueIDAttrVal]bool, attributes pcommon.Map) error {
+	key, exists := attributes.Get(UniqueIDAttrName)
+	if !exists {
+		return fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
+	}
+	if key.Type() != pcommon.ValueTypeStr {
+		return fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
+	}
+	ds[UniqueIDAttrVal(key.Str())] = true
+	return nil
+}
 
 // consume the elements with the specified ids, regardless of the element data type.
 func (m *mockConsumer) consume(ids idSet) error {
@@ -437,7 +476,7 @@ func (m *mockConsumer) consume(ids idSet) error {
 		if consumererror.IsPermanent(err) {
 			// It is a permanent error, which means we need to drop the data.
 			// Remember the ids of dropped elements.
-			duplicates := m.droppedIds.merge(ids)
+			duplicates := m.droppedIDs.merge(ids)
 			require.Empty(m.t, duplicates, "elements that were dropped previously were sent again")
 		} else {
 			// It is a non-permanent error. Don't add it to the drop list. Remember the number of
@@ -449,7 +488,7 @@ func (m *mockConsumer) consume(ids idSet) error {
 	}
 
 	// The decision is a success. Remember the ids of the data in the accepted list.
-	duplicates := m.acceptedIds.merge(ids)
+	duplicates := m.acceptedIDs.merge(ids)
 	require.Empty(m.t, duplicates, "elements that were accepted previously were sent again")
 	return nil
 }
@@ -459,12 +498,71 @@ func (m *mockConsumer) consume(ids idSet) error {
 func (m *mockConsumer) acceptedAndDropped() (acceptedAndDropped idSet, duplicates []UniqueIDAttrVal) {
 	m.mux.Lock()
 	defer m.mux.Unlock()
-	return m.acceptedIds.union(m.droppedIds)
+	return m.acceptedIDs.union(m.droppedIDs)
 }
 
 func CreateOneLogWithID(id UniqueIDAttrVal) plog.Logs {
 	data := plog.NewLogs()
 	data.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr(
+		UniqueIDAttrName,
+		string(id),
+	)
+	return data
+}
+
+func CreateGaugeMetricWithID(id UniqueIDAttrVal) pmetric.Metrics {
+	data := pmetric.NewMetrics()
+	gauge := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+	gauge.AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes().PutStr(
+		UniqueIDAttrName,
+		string(id),
+	)
+	return data
+}
+
+func CreateSumMetricWithID(id UniqueIDAttrVal) pmetric.Metrics {
+	data := pmetric.NewMetrics()
+	sum := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+	sum.AppendEmpty().SetEmptySum().DataPoints().AppendEmpty().Attributes().PutStr(
+		UniqueIDAttrName,
+		string(id),
+	)
+	return data
+}
+
+func CreateSummaryMetricWithID(id UniqueIDAttrVal) pmetric.Metrics {
+	data := pmetric.NewMetrics()
+	summary := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+	summary.AppendEmpty().SetEmptySummary().DataPoints().AppendEmpty().Attributes().PutStr(
+		UniqueIDAttrName,
+		string(id),
+	)
+	return data
+}
+
+func CreateHistogramMetricWithID(id UniqueIDAttrVal) pmetric.Metrics {
+	data := pmetric.NewMetrics()
+	histogram := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+	histogram.AppendEmpty().SetEmptyHistogram().DataPoints().AppendEmpty().Attributes().PutStr(
+		UniqueIDAttrName,
+		string(id),
+	)
+	return data
+}
+
+func CreateExponentialHistogramMetricWithID(id UniqueIDAttrVal) pmetric.Metrics {
+	data := pmetric.NewMetrics()
+	exponentialHistogram := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+	exponentialHistogram.AppendEmpty().SetEmptyExponentialHistogram().DataPoints().AppendEmpty().Attributes().PutStr(
+		UniqueIDAttrName,
+		string(id),
+	)
+	return data
+}
+
+func CreateOneSpanWithID(id UniqueIDAttrVal) ptrace.Traces {
+	data := ptrace.NewTraces()
+	data.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().PutStr(
 		UniqueIDAttrName,
 		string(id),
 	)

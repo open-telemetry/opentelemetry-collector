@@ -1,0 +1,18 @@
+receivers:
+  nop_logs:
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  telemetry:
+    metrics:
+      address: localhost:8888
+  pipelines:
+    traces:
+      receivers: [nop_logs]
+      processors: [nop]
+      exporters: [nop]

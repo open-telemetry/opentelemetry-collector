@@ -1,0 +1,3 @@
+protocols:
+  http:
+    logs_url_path: ":invalid"

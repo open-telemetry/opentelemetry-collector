@@ -5,12 +5,17 @@ package connector // import "go.opentelemetry.io/collector/connector"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+)
+
+var (
+	errNilNextConsumer = errors.New("nil next Consumer")
 )
 
 // A Traces connector acts as an exporter from a traces pipeline and a receiver
@@ -30,13 +35,6 @@ type Traces interface {
 	consumer.Traces
 }
 
-// TracesRouter feeds the first consumer.Traces in each of the specified pipelines.
-// The router will create a fanout consumer for the set of pipelines and return a uuid
-type TracesRouter interface {
-	Consumer(...component.ID) (consumer.Traces, error)
-	PipelineIDs() []component.ID
-}
-
 // A Metrics connector acts as an exporter from a metrics pipeline and a receiver
 // to one or more traces, metrics, or logs pipelines.
 // Metrics feeds a consumer.Traces, consumer.Metrics, or consumer.Logs with data.
@@ -53,15 +51,9 @@ type Metrics interface {
 	consumer.Metrics
 }
 
-// MetricsRouter feeds the first consumer.Metrics in each of the specified pipelines.
-type MetricsRouter interface {
-	Consumer(...component.ID) (consumer.Metrics, error)
-	PipelineIDs() []component.ID
-}
-
 // A Logs connector acts as an exporter from a logs pipeline and a receiver
 // to one or more traces, metrics, or logs pipelines.
-// Logs feeds a consumer.Logs, consumer.Metrics, or consumer.Logs with data.
+// Logs feeds a consumer.Traces, consumer.Metrics, or consumer.Logs with data.
 //
 // Examples:
 //   - Structured logs containing span information could be consumed and emitted as traces.
@@ -72,12 +64,6 @@ type MetricsRouter interface {
 type Logs interface {
 	component.Component
 	consumer.Logs
-}
-
-// LogsRouter feeds the first consumer.Logs in each of the specified pipelines.
-type LogsRouter interface {
-	Consumer(...component.ID) (consumer.Logs, error)
-	PipelineIDs() []component.ID
 }
 
 // A Profiles connector acts as an exporter from a logs pipeline and a receiver
@@ -93,12 +79,6 @@ type LogsRouter interface {
 type Profiles interface {
 	component.Component
 	consumer.Profiles
-}
-
-// ProfilesRouter feeds the first consumer.Profiles in each of the specified pipelines.
-type ProfilesRouter interface {
-	Consumer(...component.ID) (consumer.Profiles, error)
-	PipelineIDs() []component.ID
 }
 
 // CreateSettings configures Connector creators.
@@ -676,6 +656,9 @@ func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.
 
 // CreateTracesToTraces creates a Traces connector based on the settings and config.
 func (b *Builder) CreateTracesToTraces(ctx context.Context, set CreateSettings, next consumer.Traces) (Traces, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -692,6 +675,9 @@ func (b *Builder) CreateTracesToTraces(ctx context.Context, set CreateSettings, 
 
 // CreateTracesToMetrics creates a Traces connector based on the settings and config.
 func (b *Builder) CreateTracesToMetrics(ctx context.Context, set CreateSettings, next consumer.Metrics) (Traces, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -708,6 +694,9 @@ func (b *Builder) CreateTracesToMetrics(ctx context.Context, set CreateSettings,
 
 // CreateTracesToLogs creates a Traces connector based on the settings and config.
 func (b *Builder) CreateTracesToLogs(ctx context.Context, set CreateSettings, next consumer.Logs) (Traces, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -740,6 +729,9 @@ func (b *Builder) CreateTracesToProfiles(ctx context.Context, set CreateSettings
 
 // CreateMetricsToTraces creates a Metrics connector based on the settings and config.
 func (b *Builder) CreateMetricsToTraces(ctx context.Context, set CreateSettings, next consumer.Traces) (Metrics, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -756,6 +748,9 @@ func (b *Builder) CreateMetricsToTraces(ctx context.Context, set CreateSettings,
 
 // CreateMetricsToMetrics creates a Metrics connector based on the settings and config.
 func (b *Builder) CreateMetricsToMetrics(ctx context.Context, set CreateSettings, next consumer.Metrics) (Metrics, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -772,6 +767,9 @@ func (b *Builder) CreateMetricsToMetrics(ctx context.Context, set CreateSettings
 
 // CreateMetricsToLogs creates a Metrics connector based on the settings and config.
 func (b *Builder) CreateMetricsToLogs(ctx context.Context, set CreateSettings, next consumer.Logs) (Metrics, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -804,6 +802,9 @@ func (b *Builder) CreateMetricsToProfiles(ctx context.Context, set CreateSetting
 
 // CreateLogsToTraces creates a Logs connector based on the settings and config.
 func (b *Builder) CreateLogsToTraces(ctx context.Context, set CreateSettings, next consumer.Traces) (Logs, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -820,6 +821,9 @@ func (b *Builder) CreateLogsToTraces(ctx context.Context, set CreateSettings, ne
 
 // CreateLogsToMetrics creates a Logs connector based on the settings and config.
 func (b *Builder) CreateLogsToMetrics(ctx context.Context, set CreateSettings, next consumer.Metrics) (Logs, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
@@ -836,6 +840,9 @@ func (b *Builder) CreateLogsToMetrics(ctx context.Context, set CreateSettings, n
 
 // CreateLogsToLogs creates a Logs connector based on the settings and config.
 func (b *Builder) CreateLogsToLogs(ctx context.Context, set CreateSettings, next consumer.Logs) (Logs, error) {
+	if next == nil {
+		return nil, errNilNextConsumer
+	}
 	cfg, existsCfg := b.cfgs[set.ID]
 	if !existsCfg {
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)

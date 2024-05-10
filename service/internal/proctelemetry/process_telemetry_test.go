@@ -9,7 +9,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -17,42 +16,22 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/metric"
-	"go.opencensus.io/metric/metricdata"
-	"go.opencensus.io/stats/view"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/metric/noop"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
 type testTelemetry struct {
 	component.TelemetrySettings
-	views           []*view.View
-	promHandler     http.Handler
-	meterProvider   *sdkmetric.MeterProvider
-	expectedMetrics []string
+	promHandler   http.Handler
+	meterProvider *sdkmetric.MeterProvider
 }
 
 var expectedMetrics = []string{
-	// Changing a metric name is a breaking change.
-	// Adding new metrics is ok as long it follows the conventions described at
-	// https://pkg.go.dev/go.opentelemetry.io/collector/obsreport?tab=doc#hdr-Naming_Convention_for_New_Metrics
-	"process/uptime",
-	"process/runtime/heap_alloc_bytes",
-	"process/runtime/total_alloc_bytes",
-	"process/runtime/total_sys_memory_bytes",
-	"process/cpu_seconds",
-	"process/memory/rss",
-}
-
-var otelExpectedMetrics = []string{
-	// OTel Go adds `_total` suffix
 	"process_uptime",
 	"process_runtime_heap_alloc_bytes",
 	"process_runtime_total_alloc_bytes",
@@ -64,16 +43,11 @@ var otelExpectedMetrics = []string{
 func setupTelemetry(t *testing.T) testTelemetry {
 	settings := testTelemetry{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-		expectedMetrics:   otelExpectedMetrics,
 	}
 	settings.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
 
-	settings.views = obsreportconfig.AllViews(configtelemetry.LevelNormal)
-	err := view.Register(settings.views...)
-	require.NoError(t, err)
-
 	promReg := prometheus.NewRegistry()
-	exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits())
+	exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutCounterSuffixes())
 	require.NoError(t, err)
 
 	settings.meterProvider = sdkmetric.NewMeterProvider(
@@ -102,20 +76,16 @@ func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_cli
 	return parser.TextToMetricFamilies(rr.Body)
 }
 
-func TestOtelProcessTelemetry(t *testing.T) {
+func TestProcessTelemetry(t *testing.T) {
 	tel := setupTelemetry(t)
 
-	require.NoError(t, RegisterProcessMetrics(nil, tel.MeterProvider, true, 0))
+	require.NoError(t, RegisterProcessMetrics(tel.MeterProvider, 0))
 
 	mp, err := fetchPrometheusMetrics(tel.promHandler)
 	require.NoError(t, err)
 
-	for _, metricName := range tel.expectedMetrics {
+	for _, metricName := range expectedMetrics {
 		metric, ok := mp[metricName]
-		if !ok {
-			withSuffix := metricName + "_total"
-			metric, ok = mp[withSuffix]
-		}
 		require.True(t, ok)
 		require.True(t, len(metric.Metric) == 1)
 		var metricValue float64
@@ -132,59 +102,4 @@ func TestOtelProcessTelemetry(t *testing.T) {
 
 		assert.Greater(t, metricValue, float64(0), metricName)
 	}
-}
-
-func TestOCProcessTelemetry(t *testing.T) {
-	ocRegistry := metric.NewRegistry()
-
-	require.NoError(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0))
-
-	// Check that the metrics are actually filled.
-	<-time.After(200 * time.Millisecond)
-
-	metrics := ocRegistry.Read()
-
-	for _, metricName := range expectedMetrics {
-		m := findMetric(metrics, metricName)
-		require.NotNil(t, m)
-		require.Len(t, m.TimeSeries, 1)
-		ts := m.TimeSeries[0]
-		assert.Len(t, ts.LabelValues, 0)
-		require.Len(t, ts.Points, 1)
-
-		var value float64
-		if metricName == "process/uptime" || metricName == "process/cpu_seconds" {
-			value = ts.Points[0].Value.(float64)
-		} else {
-			value = float64(ts.Points[0].Value.(int64))
-		}
-
-		if metricName == "process/uptime" || metricName == "process/cpu_seconds" {
-			// This likely will still be zero when running the test.
-			assert.GreaterOrEqual(t, value, float64(0), metricName)
-			continue
-		}
-
-		assert.Greater(t, value, float64(0), metricName)
-	}
-}
-
-func TestProcessTelemetryFailToRegister(t *testing.T) {
-	for _, metricName := range expectedMetrics {
-		t.Run(metricName, func(t *testing.T) {
-			ocRegistry := metric.NewRegistry()
-			_, err := ocRegistry.AddFloat64Gauge(metricName)
-			require.NoError(t, err)
-			assert.Error(t, RegisterProcessMetrics(ocRegistry, noop.NewMeterProvider(), false, 0))
-		})
-	}
-}
-
-func findMetric(metrics []*metricdata.Metric, name string) *metricdata.Metric {
-	for _, m := range metrics {
-		if m.Descriptor.Name == name {
-			return m
-		}
-	}
-	return nil
 }

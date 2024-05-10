@@ -7,8 +7,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const dataFormatProtobuf = "protobuf"
@@ -17,14 +18,14 @@ const dataFormatProtobuf = "protobuf"
 type Receiver struct {
 	plogotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Logs
-	obsrecv      *obsreport.Receiver
+	obsreport    *receiverhelper.ObsReport
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumer.Logs, obsrecv *obsreport.Receiver) *Receiver {
+func New(nextConsumer consumer.Logs, obsreport *receiverhelper.ObsReport) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
-		obsrecv:      obsrecv,
+		obsreport:    obsreport,
 	}
 }
 
@@ -36,9 +37,19 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 		return plogotlp.NewExportResponse(), nil
 	}
 
-	ctx = r.obsrecv.StartLogsOp(ctx)
+	ctx = r.obsreport.StartLogsOp(ctx)
 	err := r.nextConsumer.ConsumeLogs(ctx, ld)
-	r.obsrecv.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)
+	r.obsreport.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)
 
-	return plogotlp.NewExportResponse(), err
+	// Use appropriate status codes for permanent/non-permanent errors
+	// If we return the error straightaway, then the grpc implementation will set status code to Unknown
+	// Refer: https://github.com/grpc/grpc-go/blob/v1.59.0/server.go#L1345
+	// So, convert the error to appropriate grpc status and return the error
+	// NonPermanent errors will be converted to codes.Unavailable (equivalent to HTTP 503)
+	// Permanent errors will be converted to codes.InvalidArgument (equivalent to HTTP 400)
+	if err != nil {
+		return plogotlp.NewExportResponse(), errors.GetStatusFromError(err)
+	}
+
+	return plogotlp.NewExportResponse(), nil
 }

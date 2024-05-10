@@ -1,167 +1,57 @@
-# Collector GA Roadmap
+# Collector v1 Roadmap
 
-This document defines the roadmap followed by the OpenTelemetry Collector,
-along with tentative dates and requirements for GA (stability).
-
-In this document, the term “OpenTelemetry Collector packages" refers to all the golang
-modules and packages that are part of the “OpenTelemetry Collector” ecosystem which
-include the [core](https://github.com/open-telemetry/opentelemetry-collector) and
-[contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib).
-
-In this document, the terms "OpenTelemetry Collector" and "Collector" both specifically
-refer to the entire OpenTelemetry Collector ecosystem’s including core and contrib.
-These terms do not refer to the specification or the Client libraries in this document.
-
-## Current Status
-
-The OpenTelemetry Collector ecosystem right now has a lot of packages that are in different
-stages of stability (experimental, alpha, beta, etc.). All these packages have different
-public APIs/Interfaces (e.g. code API, configuration, etc.).
-
-A significant amount of legacy code was inherited from the Collector's ancestor
-[OpenCensus Service](https://github.com/census-instrumentation/opencensus-service), since then
-the Collector changed the internal data model and other significant changes were made.
-
-Trying to mark the entire ecosystem GA, at the same moment, will be a significant effort and
-will take a significant amount of time.
+This document contains the roadmap for the Collector. The main goal of this roadmap is to provide clarity on the areas of focus in order to release a v1 of the Collector.
 
 ## Proposal
 
-This document proposes a GA Roadmap based on multiple phases, where different parts of the
-collector will be released as stable at different moments of time.
+The proposed approach to delivering a stable release of the OpenTelemetry Collector is to produce a distribution of the Collector that contains a minimum set of components which have been stabilized. By doing so, the project contributors will ensure dependencies of those components have also been released under a stable version.
 
-At this moment we are completely defining only the first two phases of the process, and the
-next phases will be defined at a later stage once the Collector maintainers will have
-better understanding of the process and implications.
+The proposed distribution is set to include the following components only:
 
-The primary focus is on the tracing parts. When other signal's data models (proto definition)
-will be marked as stable, the amount of work necessary to stabilize their APIs will be minimal:
-`pdata` is auto-generated so all changes that we do for trace will apply to all of them,
-`consumer` is minimal interface, `component` as well.
+- OTLP receiver
+- OTLP exporter
+- OTLP HTTP exporter
 
-Metrics components such as (`receiver/prometheus`, `exporter/prometheusremotewrite`) are
-explicitly left out of this roadmap document because metrics data model is not complete.
-When that work finishes, we can add them to the Phase 3, or later.
+These modules depend on a list of other modules, the full list is available in issue [#9375](https://github.com/open-telemetry/opentelemetry-collector/issues/9375).
 
-### Phase 1
+All stabilized modules will conform to the API expectations outlined in the [VERSIONING.md](../VERSIONING.md) document.
 
-**Key Results:** At the end of this phase the Collector’s core API will be marked as Stable.
+## Out of scope
 
-At the end of this phase we want to achieve core APIs stability. This will allow developers
-to implement custom components and extend the collector will be marked as stable.
-The complete list of the packages/modules will be finalized during the first action item of
-this phase, but the tentative list is:
+Explicitly, the following are not in the scope of v1 for the purposes of this document:
 
-* `consumer`
-  * Official internal data model `pdata`.
-  * Interfaces and utils to build a Consumer for (trace, metrics, logs).
-* `config`
-  * Core `config` including service definition, component definition will be stabilized.
-  * To be determined which config helpers will be marked as stable (e.g. configgrpc, etc.).
-* `component`
-  * Interfaces and utils to build a Collector component (receiver, processor, exporter, extension).
-* `obsreport`
-  * Focus on the public API of this package. It is out of scope to ensure stability for the
-  metrics emitted (focus in phase 2).
-* `service`
-  * Public API to construct a OpenTelemetry Collector Service.
+* stabilization of additional components/APIs needed by distribution maintainers. Vendors are not the audience
+* Collector Builder
+* telemetrygen
+* mdatagen
+* Operator
 
-**Action Items:**
+Those components are free to pursue v1 at their own pace and may be the focus of future stability work.
 
-* Create a new milestone for this phase, create issues for all the other action items and add
-them to the milestone.
-* Agreement on all packages/modules that will be marked as stable during this phase.
-* Write a version doc as per [version and stability document](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/versioning-and-stability.md).
-  * Previously it was discussed that for the Collector it is fine to release stable golang modules
-  that contain APIs marked as experimental.
-  * Define status schema (experimental/stable), what are they applicable to every module.
-* Investigate if splitting into smaller, more granular, modules is possible.
-  * Define the modules schema, try to not break everyone.
-  See [here](https://github.com/golang/go/wiki/Modules#is-it-possible-to-add-a-module-to-a-multi-module-repository).
-  * Investigate how can we release multiple golang modules from the same repo, without asking
-  people that consume them to use a replace statement. See problem in contrib.
-  * Investigate how to release test-only utils.
-* Review all public APIs and godocs for modules that we want to release in this phase.
-  * Fix all critical issues, and remove unnecessary (“When in doubt leave it out”) public APIs.
-  * Remove all already deprecated code from the stable modules.
-* Transition to opentelemetry-go trace library from opencensus?
-* Investigate if any config helper needs to be released as stable, if any do the review of
-the public API, godoc and configuration.
-* Investigate tools that check for API compatibility for go modules, enable them for modules
-that we mark as stable.
+## Additional Requirements
 
-### Phase 2
+The following is a list of requirements for this minimal Collector distribution to be deemed as 1.0:
 
-**Key Results:** At the end of this phase the Collector’s end-to-end support for OTLP traces
-only be marked as GA.
-
-At the end of this phase we want to ensure that the Collector can be run in production, it can receive
-OTLP trace traffic and emit OTLP trace traffic. The complete list of the packages/modules will be
-finalized during the first part of this phase, but the tentative list is:
-
-* `receiver`
-  * `receiverhelper` - without scraper utils in this phase.
-  * `otlp`
-* `processor`
-  * `processorhelper`
-  * `batch`
-  * `memory_limiter`
-* `exporter`
-  * `exporterhelper`
-  * `otlp`
-  * `otlphttp`
-* `extension`
-  * `extensionhelper`
-  * `healthcheck`
-* `obsreport`
-  * Stabilize the observability metrics (user public metrics).
-
-**Action Items:**
-
-* Create a new milestone for this phase, create issues for all the other action items and add them
-to the milestone.
-* Agreement on all packages/modules that will be marked as stable during this phase.
-* Review all public APIs and godocs for modules that we want to release in this phase.
-  * Fix all critical issues, and remove unnecessary (“When in doubt leave it out”) public APIs.
-  * Remove all already deprecated code from the stable modules.
-* Review all public configuration for all the modules, fix issues.
-* Setup a proper loadtest environment and continuously publish results.
-* Ensure correctness tests produce the expected results, improve until confident that a binary
-that passes them is good to be shipped.
-* Enable security checks on every PR (currently some are ignored like `codeql`).
-
-### Phase 3
-
-**Key Results:** At the end of this phase all Collector’s core components (receivers,
-processors, exporters, extensions) for traces only will be marked as GA.
-
-At the end of this phase we want to ensure that the Collector can be run in production, it can receive the
-trace traffic and emit OTLP trace traffic. The complete list of the packages/modules will be finalized
-during the first part of this phase, but the tentative list is:
-
-* `receiver`
-  * `jaeger`
-  * `opencensus`
-  * `zipkin`
-* `processor`
-  * `spantransformer` - there are good reasons to merge `attributes` and `span`.
-  * `resource`
-  * `filter` - we will consider offering a filter processor for all telemetry signals not just for metrics
-* `exporter`
-  * `jaeger`
-  * `opencensus`
-  * `zipkin`
-* `extension`
-  * `pprof`
-  * `zpages`
-
-TODO: Add action items list.
-
-### Phase N
-
-TODO: Add more phases if/when necessary.
-
-## Alternatives
-
-One alternative proposal is to try to GA all packages at the same time. This proposal was rejected
-because of the complexity and size of the ecosystem that may force the GA process to take too much time.
+* The Collector must be observable
+  * Metrics and traces should be produced for data in the hot path
+  * Metrics should be documented in the end-user documentation
+  * Metrics, or a subset of them, should be marked as stable in the documentation
+  * Logs should be produced for Collector lifecycle events
+  * Stability expectations and lifecycle for telemetry should be documented, so that users can know what they can rely on  for their dashboards and alerts
+* The Collector must be scalable
+  * Backpressure from the exporter all the way back to the receiver should be supported
+  * Queueing must be supported to handle increased loads
+  * Performance metrics are in place and follow best practices for benchmarking
+  * Individual components must:
+    * Have their lifecycle expectations enshrined in tests
+    * Have goleak enabled
+* End-user documentation should be provided as part of the official project’s documentation under opentelemetry.io, including:
+  * Getting started with the Collector
+  * Available (stable) components and how to use them
+  * Blueprints for common use cases
+  * Error scenarios and error propagation
+  * Troubleshooting and how to obtain telemetry from the Collector for the purposes of bug reporting
+  * Queueing, batching, and handling of backpressure
+* The Collector must be supported
+  * Processes, workflows and expectations regarding support, bug reporting and questions should be documented.
+  * A minimum support period for 1.0 is documented, similarly to [API and SDK](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/versioning-and-stability.md#api-support) stability guarantees.

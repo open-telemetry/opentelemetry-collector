@@ -7,11 +7,14 @@ import (
 	"context"
 	"errors"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -19,33 +22,35 @@ var logsMarshaler = &plog.ProtoMarshaler{}
 var logsUnmarshaler = &plog.ProtoUnmarshaler{}
 
 type logsRequest struct {
-	baseRequest
 	ld     plog.Logs
 	pusher consumer.ConsumeLogsFunc
 }
 
-func newLogsRequest(ctx context.Context, ld plog.Logs, pusher consumer.ConsumeLogsFunc) internal.Request {
+func newLogsRequest(ld plog.Logs, pusher consumer.ConsumeLogsFunc) Request {
 	return &logsRequest{
-		baseRequest: baseRequest{ctx: ctx},
-		ld:          ld,
-		pusher:      pusher,
+		ld:     ld,
+		pusher: pusher,
 	}
 }
 
-func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) internal.RequestUnmarshaler {
-	return func(bytes []byte) (internal.Request, error) {
+func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) exporterqueue.Unmarshaler[Request] {
+	return func(bytes []byte) (Request, error) {
 		logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
 		if err != nil {
 			return nil, err
 		}
-		return newLogsRequest(context.Background(), logs, pusher), nil
+		return newLogsRequest(logs, pusher), nil
 	}
 }
 
-func (req *logsRequest) OnError(err error) internal.Request {
+func logsRequestMarshaler(req Request) ([]byte, error) {
+	return logsMarshaler.MarshalLogs(req.(*logsRequest).ld)
+}
+
+func (req *logsRequest) OnError(err error) Request {
 	var logError consumererror.Logs
 	if errors.As(err, &logError) {
-		return newLogsRequest(req.ctx, logError.Data(), req.pusher)
+		return newLogsRequest(logError.Data(), req.pusher)
 	}
 	return req
 }
@@ -54,11 +59,7 @@ func (req *logsRequest) Export(ctx context.Context) error {
 	return req.pusher(ctx, req.ld)
 }
 
-func (req *logsRequest) Marshal() ([]byte, error) {
-	return logsMarshaler.MarshalLogs(req.ld)
-}
-
-func (req *logsRequest) Count() int {
+func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
 }
 
@@ -69,7 +70,7 @@ type logsExporter struct {
 
 // NewLogsExporter creates an exporter.Logs that records observability metrics and wraps every request with a Span.
 func NewLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config,
 	pusher consumer.ConsumeLogsFunc,
@@ -78,35 +79,64 @@ func NewLogsExporter(
 	if cfg == nil {
 		return nil, errNilConfig
 	}
+	if pusher == nil {
+		return nil, errNilPushLogsData
+	}
+	logsOpts := []Option{
+		withMarshaler(logsRequestMarshaler), withUnmarshaler(newLogsRequestUnmarshalerFunc(pusher)),
+		withBatchFuncs(mergeLogs, mergeSplitLogs),
+	}
+	return NewLogsRequestExporter(ctx, set, requestFromLogs(pusher), append(logsOpts, options...)...)
+}
 
+// RequestFromLogsFunc converts plog.Logs data into a user-defined request.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+type RequestFromLogsFunc func(context.Context, plog.Logs) (Request, error)
+
+// requestFromLogs returns a RequestFromLogsFunc that converts plog.Logs into a Request.
+func requestFromLogs(pusher consumer.ConsumeLogsFunc) RequestFromLogsFunc {
+	return func(_ context.Context, ld plog.Logs) (Request, error) {
+		return newLogsRequest(ld, pusher), nil
+	}
+}
+
+// NewLogsRequestExporter creates new logs exporter based on custom LogsConverter and RequestSender.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewLogsRequestExporter(
+	_ context.Context,
+	set exporter.CreateSettings,
+	converter RequestFromLogsFunc,
+	options ...Option,
+) (exporter.Logs, error) {
 	if set.Logger == nil {
 		return nil, errNilLogger
 	}
 
-	if pusher == nil {
-		return nil, errNilPushLogsData
+	if converter == nil {
+		return nil, errNilLogsConverter
 	}
 
-	bs := fromOptions(options...)
-	be, err := newBaseExporter(set, bs, component.DataTypeLogs, newLogsRequestUnmarshalerFunc(pusher))
+	be, err := newBaseExporter(set, component.DataTypeLogs, newLogsExporterWithObservability, options...)
 	if err != nil {
 		return nil, err
 	}
-	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
-		return &logsExporterWithObservability{
-			obsrep:     be.obsrep,
-			nextSender: nextSender,
-		}
-	})
 
 	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
-		req := newLogsRequest(ctx, ld, pusher)
-		serr := be.sender.send(req)
-		if errors.Is(serr, errSendingQueueIsFull) {
-			be.obsrep.recordLogsEnqueueFailure(req.Context(), int64(req.Count()))
+		req, cErr := converter(ctx, ld)
+		if cErr != nil {
+			set.Logger.Error("Failed to convert logs. Dropping data.",
+				zap.Int("dropped_log_records", ld.LogRecordCount()),
+				zap.Error(err))
+			return consumererror.NewPermanent(cErr)
 		}
-		return serr
-	}, bs.consumerOptions...)
+		sErr := be.send(ctx, req)
+		if errors.Is(sErr, queue.ErrQueueIsFull) {
+			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeLogs, int64(req.ItemsCount()))
+		}
+		return sErr
+	}, be.consumerOptions...)
 
 	return &logsExporter{
 		baseExporter: be,
@@ -115,13 +145,17 @@ func NewLogsExporter(
 }
 
 type logsExporterWithObservability struct {
-	obsrep     *obsExporter
-	nextSender requestSender
+	baseRequestSender
+	obsrep *ObsReport
 }
 
-func (lewo *logsExporterWithObservability) send(req internal.Request) error {
-	req.SetContext(lewo.obsrep.StartLogsOp(req.Context()))
-	err := lewo.nextSender.send(req)
-	lewo.obsrep.EndLogsOp(req.Context(), req.Count(), err)
+func newLogsExporterWithObservability(obsrep *ObsReport) requestSender {
+	return &logsExporterWithObservability{obsrep: obsrep}
+}
+
+func (lewo *logsExporterWithObservability) send(ctx context.Context, req Request) error {
+	c := lewo.obsrep.StartLogsOp(ctx)
+	err := lewo.nextSender.send(c, req)
+	lewo.obsrep.EndLogsOp(c, req.ItemsCount(), err)
 	return err
 }

@@ -22,9 +22,9 @@ const (
 )
 
 var (
-	pbEncoder     = &protoEncoder{}
-	jsEncoder     = &jsonEncoder{}
-	jsonMarshaler = &jsonpb.Marshaler{}
+	pbEncoder       = &protoEncoder{}
+	jsEncoder       = &jsonEncoder{}
+	jsonPbMarshaler = &jsonpb.Marshaler{}
 )
 
 type encoder interface {
@@ -137,7 +137,7 @@ func (jsonEncoder) marshalProfilesResponse(resp pprofileotlp.ExportResponse) ([]
 
 func (jsonEncoder) marshalStatus(resp *spb.Status) ([]byte, error) {
 	buf := new(bytes.Buffer)
-	err := jsonMarshaler.Marshal(buf, resp)
+	err := jsonPbMarshaler.Marshal(buf, resp)
 	return buf.Bytes(), err
 }
 

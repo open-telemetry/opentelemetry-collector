@@ -47,9 +47,6 @@ func TestNewTracesProcessor_WithOptions(t *testing.T) {
 func TestNewTracesProcessor_NilRequiredFields(t *testing.T) {
 	_, err := NewTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), &testTracesCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
-
-	_, err = NewTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), &testTracesCfg, nil, newTestTProcessor(nil))
-	assert.Equal(t, component.ErrNilNextConsumer, err)
 }
 
 func TestNewTracesProcessor_ProcessTraceError(t *testing.T) {

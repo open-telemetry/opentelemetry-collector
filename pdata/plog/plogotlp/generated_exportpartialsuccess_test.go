@@ -10,6 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/pdata/internal"
+	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
 func TestExportPartialSuccess_MoveTo(t *testing.T) {
@@ -18,6 +21,11 @@ func TestExportPartialSuccess_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewExportPartialSuccess(), ms)
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState)) })
+	assert.Panics(t, func() {
+		newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState).MoveTo(dest)
+	})
 }
 
 func TestExportPartialSuccess_CopyTo(t *testing.T) {
@@ -28,6 +36,8 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	orig = generateTestExportPartialSuccess()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState)) })
 }
 
 func TestExportPartialSuccess_RejectedLogRecords(t *testing.T) {
@@ -35,6 +45,10 @@ func TestExportPartialSuccess_RejectedLogRecords(t *testing.T) {
 	assert.Equal(t, int64(0), ms.RejectedLogRecords())
 	ms.SetRejectedLogRecords(int64(13))
 	assert.Equal(t, int64(13), ms.RejectedLogRecords())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() {
+		newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState).SetRejectedLogRecords(int64(13))
+	})
 }
 
 func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
@@ -42,6 +56,10 @@ func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	assert.Equal(t, "", ms.ErrorMessage())
 	ms.SetErrorMessage("error message")
 	assert.Equal(t, "error message", ms.ErrorMessage())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() {
+		newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState).SetErrorMessage("error message")
+	})
 }
 
 func generateTestExportPartialSuccess() ExportPartialSuccess {

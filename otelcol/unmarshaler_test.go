@@ -5,6 +5,7 @@ package otelcol
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,7 +46,9 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 		Development: zapProdCfg.Development,
 		Encoding:    "console",
 		Sampling: &telemetry.LogsSamplingConfig{
-			Initial:    100,
+			Enabled:    true,
+			Tick:       10 * time.Second,
+			Initial:    10,
 			Thereafter: 100,
 		},
 		DisableCaller:     zapProdCfg.DisableCaller,
@@ -132,7 +135,7 @@ func TestPipelineConfigUnmarshalError(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			pips := new(pipelines.Config)
-			err := tt.conf.Unmarshal(&pips, confmap.WithErrorUnused())
+			err := tt.conf.Unmarshal(&pips)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectError)
 		})
@@ -200,7 +203,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.conf.Unmarshal(&service.Config{}, confmap.WithErrorUnused())
+			err := tt.conf.Unmarshal(&service.Config{})
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectError)
 		})

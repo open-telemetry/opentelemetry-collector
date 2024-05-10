@@ -5,24 +5,27 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   setup-environment:
+    permissions:
+      contents: write  # for Git to git push
     timeout-minutes: 30
     runs-on: ubuntu-latest
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'dependencies') }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.actor == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
         with:
-          repository: "renovate-bot/open-telemetry-_-opentelemetry-collector"
           ref: ${{ github.head_ref }}
-          token: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: 1.19
+          go-version: ~1.21.10
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ~/go/bin
@@ -41,5 +44,6 @@ jobs:
           git config user.email 107717825+opentelemetrybot@users.noreply.github.com
           echo "git diff --exit-code || (git add . && git commit -m \"go mod tidy\" && git push)"
           git diff --exit-code || (git add . && git commit -m "go mod tidy" && git push)
-        env:
-          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+      - uses: actions-ecosystem/action-remove-labels@2ce5d41b4b6aa8503e285553f75ed56e0a40bae0 # v1.3.0
+        with:
+          labels: renovatebot

@@ -11,42 +11,52 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/localhostgate"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 )
 
 const (
-	typeStr = "otlp"
+	grpcPort = 4317
+	httpPort = 4318
 
-	defaultGRPCEndpoint = "0.0.0.0:4317"
-	defaultHTTPEndpoint = "0.0.0.0:4318"
+	defaultTracesURLPath  = "/v1/traces"
+	defaultMetricsURLPath = "/v1/metrics"
+	defaultLogsURLPath    = "/v1/logs"
 )
 
 // NewFactory creates a new OTLP receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTraces, component.StabilityLevelStable),
-		receiver.WithMetrics(createMetrics, component.StabilityLevelStable),
-		receiver.WithLogs(createLog, component.StabilityLevelBeta),
-		receiver.WithProfiles(createProfile, component.StabilityLevelBeta))
+		receiver.WithTraces(createTraces, metadata.TracesStability),
+		receiver.WithMetrics(createMetrics, metadata.MetricsStability),
+		receiver.WithLogs(createLog, metadata.LogsStability),
+		receiver.WithProfiles(createProfile, metadata.ProfilesStability),
+	)
 }
 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
 		Protocols: Protocols{
-			GRPC: &configgrpc.GRPCServerSettings{
-				NetAddr: confignet.NetAddr{
-					Endpoint:  defaultGRPCEndpoint,
-					Transport: "tcp",
+			GRPC: &configgrpc.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  localhostgate.EndpointForPort(grpcPort),
+					Transport: confignet.TransportTypeTCP,
 				},
 				// We almost write 0 bytes, so no need to tune WriteBufferSize.
 				ReadBufferSize: 512 * 1024,
 			},
-			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPEndpoint,
+			HTTP: &HTTPConfig{
+				ServerConfig: &confighttp.ServerConfig{
+					Endpoint: localhostgate.EndpointForPort(httpPort),
+				},
+				TracesURLPath:  defaultTracesURLPath,
+				MetricsURLPath: defaultMetricsURLPath,
+				LogsURLPath:    defaultLogsURLPath,
 			},
 		},
 	}
@@ -60,16 +70,18 @@ func createTraces(
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.GetOrAdd(oCfg, func() (*otlpReceiver, error) {
-		return newOtlpReceiver(oCfg, set)
-	})
+	r, err := receivers.LoadOrStore(
+		oCfg,
+		func() (*otlpReceiver, error) {
+			return newOtlpReceiver(oCfg, &set)
+		},
+		&set.TelemetrySettings,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerTraceConsumer(nextConsumer); err != nil {
-		return nil, err
-	}
+	r.Unwrap().registerTraceConsumer(nextConsumer)
 	return r, nil
 }
 
@@ -81,16 +93,18 @@ func createMetrics(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.GetOrAdd(oCfg, func() (*otlpReceiver, error) {
-		return newOtlpReceiver(oCfg, set)
-	})
+	r, err := receivers.LoadOrStore(
+		oCfg,
+		func() (*otlpReceiver, error) {
+			return newOtlpReceiver(oCfg, &set)
+		},
+		&set.TelemetrySettings,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerMetricsConsumer(consumer); err != nil {
-		return nil, err
-	}
+	r.Unwrap().registerMetricsConsumer(consumer)
 	return r, nil
 }
 
@@ -102,16 +116,18 @@ func createLog(
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.GetOrAdd(oCfg, func() (*otlpReceiver, error) {
-		return newOtlpReceiver(oCfg, set)
-	})
+	r, err := receivers.LoadOrStore(
+		oCfg,
+		func() (*otlpReceiver, error) {
+			return newOtlpReceiver(oCfg, &set)
+		},
+		&set.TelemetrySettings,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerLogsConsumer(consumer); err != nil {
-		return nil, err
-	}
+	r.Unwrap().registerLogsConsumer(consumer)
 	return r, nil
 }
 
@@ -142,4 +158,4 @@ func createProfile(
 // create separate objects, they must use one otlpReceiver object per configuration.
 // When the receiver is shutdown it should be removed from this map so the same configuration
 // can be recreated successfully.
-var receivers = sharedcomponent.NewSharedComponents[*Config, *otlpReceiver]()
+var receivers = sharedcomponent.NewMap[*Config, *otlpReceiver]()

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 )
 
 func TestResource_MoveTo(t *testing.T) {
@@ -20,6 +21,9 @@ func TestResource_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewResource(), ms)
 	assert.Equal(t, Resource(internal.GenerateTestResource()), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newResource(&otlpresource.Resource{}, &sharedState)) })
+	assert.Panics(t, func() { newResource(&otlpresource.Resource{}, &sharedState).MoveTo(dest) })
 }
 
 func TestResource_CopyTo(t *testing.T) {
@@ -30,6 +34,8 @@ func TestResource_CopyTo(t *testing.T) {
 	orig = Resource(internal.GenerateTestResource())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newResource(&otlpresource.Resource{}, &sharedState)) })
 }
 
 func TestResource_Attributes(t *testing.T) {
@@ -44,4 +50,6 @@ func TestResource_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
 	ms.SetDroppedAttributesCount(uint32(17))
 	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newResource(&otlpresource.Resource{}, &sharedState).SetDroppedAttributesCount(uint32(17)) })
 }

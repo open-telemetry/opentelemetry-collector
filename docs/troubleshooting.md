@@ -11,8 +11,6 @@ Logs can be helpful in identifying issues. Always start by checking the log
 output and looking for potential issues.
 The verbosity level defaults to `INFO` and can be adjusted.
 
-#### Version 0.36 and above:
-
 Set the log level in the config `service::telemetry::logs`
 
 ```yaml
@@ -22,21 +20,11 @@ service:
       level: "debug"
 ```
 
-#### Version 0.35 and below:
-
-Pass `--log-level` flag to the `otelcol` process. See `--help` for more details.
-
-```console
-$ otelcol --log-level DEBUG
-```
-
 ### Metrics
 
 Prometheus metrics are exposed locally on port `8888` and path `/metrics`. For
 containerized environments it may be desirable to expose this port on a
 public interface instead of just locally.
-
-#### Version 0.43.0 and above:
 
 Set the address in the config `service::telemetry::metrics`
 
@@ -47,17 +35,24 @@ service:
       address: ":8888"
 ```
 
-#### Version 0.42.0 and below:
+A Grafana dashboard for these metrics can be found
+[here](https://grafana.com/grafana/dashboards/15983-opentelemetry-collector/).
 
-Pass `--metrics-addr <ADDR>` flag to the `otelcol` process. See `--help` for
-more details.
+You can enhance metrics telemetry level using `level` field. The following is a list of all possible values and their explanations.
 
-```console
-$ otelcol --metrics-addr 0.0.0.0:8888
+- "none" indicates that no telemetry data should be collected;
+- "basic" is the recommended and covers the basics of the service telemetry.
+- "normal" adds some other indicators on top of basic.
+- "detailed" adds dimensions and views to the previous levels.
+
+For example:
+```yaml
+service:
+  telemetry:
+    metrics:
+      level: detailed
+      address: ":8888"
 ```
-
-A grafana dashboard for these metrics can be found
-[here](https://grafana.com/grafana/dashboards/11575).
 
 Also note that a Collector can be configured to scrape its own metrics and send
 it through configured pipelines. For example:
@@ -76,13 +71,29 @@ receivers:
             regex: '.*grpc_io.*'
             action: drop
 exporters:
-  logging:
+  debug:
 service:
   pipelines:
     metrics:
       receivers: [prometheus]
       processors: []
-      exporters: [logging]
+      exporters: [debug]
+```
+
+### Traces
+
+OpenTelemetry Collector has an ability to send it's own traces using OTLP exporter. You can send the traces to OTLP server running on the same OpenTelemetry Collector, so it goes through configured pipelines. For example:
+
+```yaml
+service:
+  telemetry:
+    traces:
+      processors:
+        batch:
+          exporter:
+            otlp:
+              protocol: grpc/protobuf
+              endpoint: ${MY_POD_IP}:4317
 ```
 
 ### zPages
@@ -109,7 +120,7 @@ extensions:
 exporters](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#general-information)
 can be configured to inspect the data being processed by the Collector.
 
-For live troubleshooting purposes consider leveraging the `logging` exporter,
+For live troubleshooting purposes consider leveraging the `debug` exporter,
 which can be used to confirm that data is being received, processed and
 exported by the Collector.
 
@@ -117,13 +128,13 @@ exported by the Collector.
 receivers:
   zipkin:
 exporters:
-  logging:
+  debug:
 service:
   pipelines:
     traces:
       receivers: [zipkin]
       processors: []
-      exporters: [logging]
+      exporters: [debug]
 ```
 
 Get a Zipkin payload to test. For example create a file called `trace.json`
@@ -161,34 +172,42 @@ $ curl -X POST localhost:9411/api/v2/spans -H'Content-Type: application/json' -d
 You should see a log entry like the following from the Collector:
 
 ```
-2020-11-11T04:12:33.089Z	INFO	loggingexporter/logging_exporter.go:296	TraceExporter	{"#spans": 1}
+2023-09-07T09:57:43.468-0700    info    TracesExporter  {"kind": "exporter", "data_type": "traces", "name": "debug", "resource spans": 1, "spans": 2}
 ```
 
-You can also configure the `logging` exporter so the entire payload is printed:
+You can also configure the `debug` exporter so the entire payload is printed:
 
 ```yaml
 exporters:
-  logging:
+  debug:
     verbosity: detailed
 ```
 
 With the modified configuration if you re-run the test above the log output should look like:
 
 ```
-2020-11-11T04:08:17.344Z	DEBUG	loggingexporter/logging_exporter.go:353	ResourceSpans #0
-Resource labels:
-     -> service.name: Str(api)
+2023-09-07T09:57:12.820-0700    info    TracesExporter  {"kind": "exporter", "data_type": "traces", "name": "debug", "resource spans": 1, "spans": 2}
+2023-09-07T09:57:12.821-0700    info    ResourceSpans #0
+Resource SchemaURL: https://opentelemetry.io/schemas/1.4.0
+Resource attributes:
+     -> service.name: Str(telemetrygen)
 ScopeSpans #0
+ScopeSpans SchemaURL: 
+InstrumentationScope telemetrygen 
 Span #0
-    Trace ID       : 5982fe77008310cc80f1da5e10147519
-    Parent ID      : 90394f6bcffb5d13
-    ID             : 67fae42571535f60
-    Name           : /m/n/2.6.1
-    Kind           : SPAN_KIND_SERVER
-    Start time     : 2018-01-24 08:16:15.726 +0000 UTC
-    End time       : 2018-01-24 08:16:15.752 +0000 UTC
+    Trace ID       : 0c636f29e29816ea76e6a5b8cd6601cf
+    Parent ID      : 1a08eba9395c5243
+    ID             : 10cebe4b63d47cae
+    Name           : okey-dokey
+    Kind           : Internal
+    Start time     : 2023-09-07 16:57:12.045933 +0000 UTC
+    End time       : 2023-09-07 16:57:12.046058 +0000 UTC
+    Status code    : Unset
+    Status message : 
 Attributes:
-     -> data.http_response_code: Str(201)
+     -> span.kind: Str(server)
+     -> net.peer.ip: Str(1.2.3.4)
+     -> peer.service: Str(telemetrygen)
 ```
 
 ### Health Check
@@ -239,8 +258,7 @@ The Collector may exit/restart because:
 - Memory pressure due to missing or misconfigured
   [memory_limiter](https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md)
   processor.
-- [Improperly sized](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/performance.md)
-  for load.
+- Improperly sized for load.
 - Improperly configured (for example, a queue size configured higher
   than available memory).
 - Infrastructure resource limits (for example Kubernetes).
@@ -249,7 +267,7 @@ The Collector may exit/restart because:
 
 Data may be dropped for a variety of reasons, but most commonly because of an:
 
-- [Improperly sized Collector](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/performance.md) resulting in Collector being unable to process and export the data as fast as it is received.
+- Improperly sized Collector resulting in Collector being unable to process and export the data as fast as it is received.
 - Exporter destination unavailable or accepting the data too slowly.
 
 To mitigate drops, it is highly recommended to configure the
@@ -297,7 +315,7 @@ configuration issue. This could be due to a firewall, DNS, or proxy
 issue. Note that the Collector does have
 [proxy support](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
 
-### Startup failing in Windows Docker containers
+### Startup failing in Windows Docker containers (v0.90.1 and earlier)
 
 The process may fail to start in a Windows Docker container with the following
 error: `The service process could not connect to the service controller`. In
