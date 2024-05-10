@@ -7,9 +7,9 @@
 // to a DAG of components.  The configuration undergoes additional validation here as well, and is used to instantiate
 // the components of the pipeline.
 //
-// [Graph.StartAll] starts every component in the pipelines.
+// [Graph.StartAll] starts all components in each pipeline.
 //
-// [Graph.ShutdownAll] stops each component in the pipelines
+// [Graph.ShutdownAll] stops all components in each pipeline.
 package graph // import "go.opentelemetry.io/collector/service/internal/graph"
 
 import (
