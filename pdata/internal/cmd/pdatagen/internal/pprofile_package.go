@@ -11,7 +11,7 @@ var pprofile = &Package{
 		``,
 		`"go.opentelemetry.io/collector/pdata/internal"`,
 		`"go.opentelemetry.io/collector/pdata/internal/data"`,
-		`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1"`,
+		`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"`,
 		`"go.opentelemetry.io/collector/pdata/pcommon"`,
 	},
 	testImports: []string{
@@ -22,7 +22,7 @@ var pprofile = &Package{
 		``,
 		`"go.opentelemetry.io/collector/pdata/internal"`,
 		`"go.opentelemetry.io/collector/pdata/internal/data"`,
-		`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1"`,
+		`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"`,
 		`"go.opentelemetry.io/collector/pdata/pcommon"`,
 	},
 	structs: []baseStruct{

@@ -9,7 +9,7 @@ package pprofile
 import (
 	"sort"
 
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
 )
 
 // ProfileSlice logically represents a slice of ProfileContainer.

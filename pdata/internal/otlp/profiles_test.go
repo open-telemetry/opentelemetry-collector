@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
 )
 
 func TestDeprecatedScopeProfiles(t *testing.T) {

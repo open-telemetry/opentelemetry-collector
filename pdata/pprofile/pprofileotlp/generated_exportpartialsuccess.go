@@ -7,7 +7,7 @@
 package pprofileotlp
 
 import (
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1"
+	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1experimental"
 )
 
 // ExportPartialSuccess represents the details of a partially successful export request.

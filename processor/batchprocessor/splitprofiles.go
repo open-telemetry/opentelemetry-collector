@@ -47,7 +47,7 @@ func splitProfiles(size int, src pprofile.Profiles) pprofile.Profiles {
 
 			destIll := destRl.ScopeProfiles().AppendEmpty()
 			srcIll.Scope().CopyTo(destIll.Scope())
-			srcIll.Profiles().RemoveIf(func(srcMetric pprofile.Profile) bool {
+			srcIll.Profiles().RemoveIf(func(srcMetric pprofile.ProfileContainer) bool {
 				// If we are done skip everything else.
 				if totalCopiedProfiles == size {
 					return false
