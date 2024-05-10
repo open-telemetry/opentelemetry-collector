@@ -26,10 +26,10 @@ type provider struct {
 // This Provider supports "env" scheme, and can be called with a selector:
 // `env:NAME_OF_ENVIRONMENT_VARIABLE`
 func NewFactory() confmap.ProviderFactory {
-	return confmap.NewProviderFactory(new)
+	return confmap.NewProviderFactory(newProvider)
 }
 
-func new(ps confmap.ProviderSettings) confmap.Provider {
+func newProvider(ps confmap.ProviderSettings) confmap.Provider {
 	return &provider{
 		logger: ps.Logger,
 	}

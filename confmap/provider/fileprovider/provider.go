@@ -34,10 +34,10 @@ type provider struct{}
 // `file:c:/path/to/file` - absolute path including drive-letter (windows)
 // `file:c:\path\to\file` - absolute path including drive-letter (windows)
 func NewFactory() confmap.ProviderFactory {
-	return confmap.NewProviderFactory(new)
+	return confmap.NewProviderFactory(newProvider)
 }
 
-func new(confmap.ProviderSettings) confmap.Provider {
+func newProvider(confmap.ProviderSettings) confmap.Provider {
 	return &provider{}
 }
 

@@ -24,10 +24,10 @@ type converter struct {
 // NewFactory returns a factory for a  confmap.Converter,
 // which expands all environment variables for a given confmap.Conf.
 func NewFactory() confmap.ConverterFactory {
-	return confmap.NewConverterFactory(new)
+	return confmap.NewConverterFactory(newConverter)
 }
 
-func new(_ confmap.ConverterSettings) confmap.Converter {
+func newConverter(_ confmap.ConverterSettings) confmap.Converter {
 	return converter{
 		loggedDeprecations: make(map[string]struct{}),
 		logger:             zap.NewNop(), // TODO: pass logger in ConverterSettings

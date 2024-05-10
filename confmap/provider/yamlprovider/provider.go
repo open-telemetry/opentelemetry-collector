@@ -26,10 +26,10 @@ type provider struct{}
 // `yaml:processors::batch::timeout: 2s`
 // `yaml:processors::batch/foo::timeout: 3s`
 func NewFactory() confmap.ProviderFactory {
-	return confmap.NewProviderFactory(new)
+	return confmap.NewProviderFactory(newProvider)
 }
 
-func new(confmap.ProviderSettings) confmap.Provider {
+func newProvider(confmap.ProviderSettings) confmap.Provider {
 	return &provider{}
 }
 

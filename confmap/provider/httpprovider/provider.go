@@ -14,9 +14,9 @@ import (
 //
 // One example for HTTP URI is: http://localhost:3333/getConfig
 func NewFactory() confmap.ProviderFactory {
-	return confmap.NewProviderFactory(new)
+	return confmap.NewProviderFactory(newProvider)
 }
 
-func new(set confmap.ProviderSettings) confmap.Provider {
+func newProvider(set confmap.ProviderSettings) confmap.Provider {
 	return configurablehttpprovider.New(configurablehttpprovider.HTTPScheme, set)
 }
