@@ -7,6 +7,17 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.7.0/v0.100.0
+
+### 💡 Enhancements 💡
+
+- `configgrpc`: Adds `NewDefault*` functions for all the config structs. (#9654)
+- `exporterqueue`: Expose ErrQueueIsFull so upstream components can retry or apply backpressure. (#10070)
+
+### 🧰 Bug fixes 🧰
+
+- `mdatagen`: Call connectors with routers to be the same as the service graph (#10079)
+
 ## v1.6.0/v0.99.0
 
 ### 🛑 Breaking changes 🛑

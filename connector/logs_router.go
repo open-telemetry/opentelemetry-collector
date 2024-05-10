@@ -23,17 +23,17 @@ type LogsRouterAndConsumer interface {
 
 type logsRouter struct {
 	consumer.Logs
-	consumers map[component.ID]consumer.Logs
+	baseRouter[consumer.Logs]
 }
 
 func NewLogsRouter(cm map[component.ID]consumer.Logs) LogsRouterAndConsumer {
 	consumers := make([]consumer.Logs, 0, len(cm))
-	for _, consumer := range cm {
-		consumers = append(consumers, consumer)
+	for _, cons := range cm {
+		consumers = append(consumers, cons)
 	}
 	return &logsRouter{
-		Logs:      fanoutconsumer.NewLogs(consumers),
-		consumers: cm,
+		Logs:       fanoutconsumer.NewLogs(consumers),
+		baseRouter: newBaseRouter(fanoutconsumer.NewLogs, cm),
 	}
 }
 

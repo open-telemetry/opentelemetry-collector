@@ -245,30 +245,35 @@ func expandNilStructPointersHookFunc() mapstructure.DecodeHookFuncValue {
 // This is needed in combination with ComponentID, which may produce equal IDs for different strings,
 // and an error needs to be returned in that case, otherwise the last equivalent ID overwrites the previous one.
 func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncType {
-	return func(f reflect.Type, t reflect.Type, data any) (any, error) {
-		if f.Kind() != reflect.Map || f.Key().Kind() != reflect.String {
+	return func(from reflect.Type, to reflect.Type, data any) (any, error) {
+		if from.Kind() != reflect.Map || from.Key().Kind() != reflect.String {
 			return data, nil
 		}
 
-		if t.Kind() != reflect.Map {
+		if to.Kind() != reflect.Map {
 			return data, nil
 		}
 
-		if _, ok := reflect.New(t.Key()).Interface().(encoding.TextUnmarshaler); !ok {
+		// Checks that the key type of to implements the TextUnmarshaler interface.
+		if _, ok := reflect.New(to.Key()).Interface().(encoding.TextUnmarshaler); !ok {
 			return data, nil
 		}
 
-		m := reflect.MakeMap(reflect.MapOf(t.Key(), reflect.TypeOf(true)))
+		// Create a map with key value of to's key to bool.
+		fieldNameSet := reflect.MakeMap(reflect.MapOf(to.Key(), reflect.TypeOf(true)))
 		for k := range data.(map[string]any) {
-			tKey := reflect.New(t.Key())
+			// Create a new value of the to's key type.
+			tKey := reflect.New(to.Key())
+
+			// Use tKey to unmarshal the key of the map.
 			if err := tKey.Interface().(encoding.TextUnmarshaler).UnmarshalText([]byte(k)); err != nil {
 				return nil, err
 			}
-
-			if m.MapIndex(reflect.Indirect(tKey)).IsValid() {
+			// Checks if the key has already been decoded in a previous iteration.
+			if fieldNameSet.MapIndex(reflect.Indirect(tKey)).IsValid() {
 				return nil, fmt.Errorf("duplicate name %q after unmarshaling %v", k, tKey)
 			}
-			m.SetMapIndex(reflect.Indirect(tKey), reflect.ValueOf(true))
+			fieldNameSet.SetMapIndex(reflect.Indirect(tKey), reflect.ValueOf(true))
 		}
 		return data, nil
 	}

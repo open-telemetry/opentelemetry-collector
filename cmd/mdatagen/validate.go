@@ -8,24 +8,22 @@ import (
 	"fmt"
 	"regexp"
 
-	"go.uber.org/multierr"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func (md *metadata) Validate() error {
 	var errs error
 	if err := md.validateType(); err != nil {
-		errs = multierr.Append(errs, err)
+		errs = errors.Join(errs, err)
 	}
 	if err := md.validateStatus(); err != nil {
-		errs = multierr.Append(errs, err)
+		errs = errors.Join(errs, err)
 	}
 	if err := md.validateResourceAttributes(); err != nil {
-		errs = multierr.Append(errs, err)
+		errs = errors.Join(errs, err)
 	}
 	if err := md.validateMetrics(); err != nil {
-		errs = multierr.Append(errs, err)
+		errs = errors.Join(errs, err)
 	}
 	return errs
 }
@@ -64,11 +62,11 @@ func (md *metadata) validateStatus() error {
 		return errors.New("missing status")
 	}
 	if err := md.Status.validateClass(); err != nil {
-		errs = multierr.Append(errs, err)
+		errs = errors.Join(errs, err)
 	}
 	if md.Parent == "" {
 		if err := md.Status.validateStability(); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = errors.Join(errs, err)
 		}
 	}
 	return errs
@@ -91,7 +89,7 @@ func (s *Status) validateStability() error {
 	}
 	for stability, component := range s.Stability {
 		if len(component) == 0 {
-			errs = multierr.Append(errs, fmt.Errorf("missing component for stability: %v", stability))
+			errs = errors.Join(errs, fmt.Errorf("missing component for stability: %v", stability))
 		}
 		for _, c := range component {
 			if c != "metrics" &&
@@ -107,7 +105,7 @@ func (s *Status) validateStability() error {
 				c != "logs_to_metrics" &&
 				c != "logs_to_logs" &&
 				c != "extension" {
-				errs = multierr.Append(errs, fmt.Errorf("invalid component: %v", c))
+				errs = errors.Join(errs, fmt.Errorf("invalid component: %v", c))
 			}
 		}
 	}
@@ -118,11 +116,11 @@ func (md *metadata) validateResourceAttributes() error {
 	var errs error
 	for name, attr := range md.ResourceAttributes {
 		if attr.Description == "" {
-			errs = multierr.Append(errs, fmt.Errorf("empty description for resource attribute: %v", name))
+			errs = errors.Join(errs, fmt.Errorf("empty description for resource attribute: %v", name))
 		}
 		empty := ValueType{ValueType: pcommon.ValueTypeEmpty}
 		if attr.Type == empty {
-			errs = multierr.Append(errs, fmt.Errorf("empty type for resource attribute: %v", name))
+			errs = errors.Join(errs, fmt.Errorf("empty type for resource attribute: %v", name))
 		}
 	}
 	return errs
@@ -133,17 +131,17 @@ func (md *metadata) validateMetrics() error {
 	usedAttrs := map[attributeName]bool{}
 	for mn, m := range md.Metrics {
 		if m.Sum == nil && m.Gauge == nil {
-			errs = multierr.Append(errs, fmt.Errorf("metric %v doesn't have a metric type key, "+
+			errs = errors.Join(errs, fmt.Errorf("metric %v doesn't have a metric type key, "+
 				"one of the following has to be specified: sum, gauge", mn))
 			continue
 		}
 		if m.Sum != nil && m.Gauge != nil {
-			errs = multierr.Append(errs, fmt.Errorf("metric %v has more than one metric type keys, "+
+			errs = errors.Join(errs, fmt.Errorf("metric %v has more than one metric type keys, "+
 				"only one of the following has to be specified: sum, gauge", mn))
 			continue
 		}
 		if err := m.validate(); err != nil {
-			errs = multierr.Append(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
 			continue
 		}
 		unknownAttrs := make([]attributeName, 0, len(m.Attributes))
@@ -155,26 +153,26 @@ func (md *metadata) validateMetrics() error {
 			}
 		}
 		if len(unknownAttrs) > 0 {
-			errs = multierr.Append(errs, fmt.Errorf(`metric "%v" refers to undefined attributes: %v`, mn, unknownAttrs))
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v" refers to undefined attributes: %v`, mn, unknownAttrs))
 		}
 	}
-	errs = multierr.Append(errs, md.validateAttributes(usedAttrs))
+	errs = errors.Join(errs, md.validateAttributes(usedAttrs))
 	return errs
 }
 
 func (m *metric) validate() error {
 	var errs error
 	if m.Description == "" {
-		errs = multierr.Append(errs, errors.New(`missing metric description`))
+		errs = errors.Join(errs, errors.New(`missing metric description`))
 	}
 	if m.Unit == nil {
-		errs = multierr.Append(errs, errors.New(`missing metric unit`))
+		errs = errors.Join(errs, errors.New(`missing metric unit`))
 	}
 	if m.Sum != nil {
-		errs = multierr.Append(errs, m.Sum.Validate())
+		errs = errors.Join(errs, m.Sum.Validate())
 	}
 	if m.Gauge != nil {
-		errs = multierr.Append(errs, m.Gauge.Validate())
+		errs = errors.Join(errs, m.Gauge.Validate())
 	}
 	return errs
 }
@@ -191,18 +189,18 @@ func (md *metadata) validateAttributes(usedAttrs map[attributeName]bool) error {
 	unusedAttrs := make([]attributeName, 0, len(md.Attributes))
 	for attrName, attr := range md.Attributes {
 		if attr.Description == "" {
-			errs = multierr.Append(errs, fmt.Errorf(`missing attribute description for: %v`, attrName))
+			errs = errors.Join(errs, fmt.Errorf(`missing attribute description for: %v`, attrName))
 		}
 		empty := ValueType{ValueType: pcommon.ValueTypeEmpty}
 		if attr.Type == empty {
-			errs = multierr.Append(errs, fmt.Errorf("empty type for attribute: %v", attrName))
+			errs = errors.Join(errs, fmt.Errorf("empty type for attribute: %v", attrName))
 		}
 		if !usedAttrs[attrName] {
 			unusedAttrs = append(unusedAttrs, attrName)
 		}
 	}
 	if len(unusedAttrs) > 0 {
-		errs = multierr.Append(errs, fmt.Errorf("unused attributes: %v", unusedAttrs))
+		errs = errors.Join(errs, fmt.Errorf("unused attributes: %v", unusedAttrs))
 	}
 	return errs
 }

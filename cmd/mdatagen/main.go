@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package main
 
 import (
@@ -66,10 +68,11 @@ func run(ymlPath string) error {
 				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName); err != nil {
 				return err
 			}
-			if err = generateFile(filepath.Join(tmplDir, "package_test.go.tmpl"),
-				filepath.Join(ymlDir, "generated_package_test.go"), md, packageName); err != nil {
-				return err
-			}
+		}
+
+		if err = generateFile(filepath.Join(tmplDir, "package_test.go.tmpl"),
+			filepath.Join(ymlDir, "generated_package_test.go"), md, packageName); err != nil {
+			return err
 		}
 
 		if _, err = os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
@@ -79,6 +82,17 @@ func run(ymlPath string) error {
 				md, statusStart, statusEnd); err != nil {
 				return err
 			}
+		}
+	}
+
+	if len(md.Telemetry.Metrics) != 0 {
+		if err = generateFile(filepath.Join(tmplDir, "telemetry.go.tmpl"),
+			filepath.Join(codeDir, "generated_telemetry.go"), md, "metadata"); err != nil {
+			return err
+		}
+		if err = generateFile(filepath.Join(tmplDir, "telemetry_test.go.tmpl"),
+			filepath.Join(codeDir, "generated_telemetry_test.go"), md, "metadata"); err != nil {
+			return err
 		}
 	}
 
@@ -195,6 +209,9 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				},
 				"isConnector": func() bool {
 					return md.Status.Class == "connector"
+				},
+				"isCommand": func() bool {
+					return md.Status.Class == "cmd"
 				},
 				"supportsLogs": func() bool {
 					for _, signals := range md.Status.Stability {

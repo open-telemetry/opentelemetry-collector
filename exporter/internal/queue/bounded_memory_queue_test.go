@@ -133,7 +133,7 @@ func benchmarkQueueUsage(b *testing.B, sizer Sizer[fakeReq], requestsCount int) 
 func queueUsage(tb testing.TB, sizer Sizer[fakeReq], requestsCount int) {
 	var wg sync.WaitGroup
 	wg.Add(requestsCount)
-	q := NewBoundedMemoryQueue[fakeReq](MemoryQueueSettings[fakeReq]{Sizer: sizer, Capacity: 10 * requestsCount})
+	q := NewBoundedMemoryQueue[fakeReq](MemoryQueueSettings[fakeReq]{Sizer: sizer, Capacity: int64(10 * requestsCount)})
 	consumers := NewQueueConsumers(q, 1, func(context.Context, fakeReq) error {
 		wg.Done()
 		return nil
@@ -155,4 +155,12 @@ func TestZeroSizeNoConsumers(t *testing.T) {
 	assert.ErrorIs(t, q.Offer(context.Background(), "a"), ErrQueueIsFull) // in process
 
 	assert.NoError(t, q.Shutdown(context.Background()))
+}
+
+type fakeReq struct {
+	itemsCount int
+}
+
+func (r fakeReq) ItemsCount() int {
+	return r.itemsCount
 }

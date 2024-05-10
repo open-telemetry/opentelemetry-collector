@@ -35,8 +35,10 @@
       },
       {
         "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/contrib"],
-        "groupName": "All go.opentelemetry.io/contrib packages"
+        "matchSourceUrls": [
+          "https://github.com/open-telemetry/opentelemetry-go-contrib"
+        ],
+        "groupName": "All opentelemetry-go-contrib packages"
       },
       {
         "matchManagers": ["gomod"],
@@ -50,8 +52,13 @@
       },
       {
         "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://golang.org/x"],
+        "matchPackagePrefixes": ["golang.org/x"],
         "groupName": "All golang.org/x packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchPackagePrefixes": ["go.opentelemetry.io/collector"],
+        "groupName": "All go.opentelemetry.io/collector packages"
       },
       {
         "matchManagers": ["gomod"],
