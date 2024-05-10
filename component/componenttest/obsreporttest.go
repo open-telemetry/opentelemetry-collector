@@ -79,7 +79,7 @@ func (tts *TestTelemetry) CheckExporterMetricGauge(metric string, val int64) err
 // CheckExporterProfiles checks that for the current exported values for profiles exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func (tts *TestTelemetry) CheckExporterProfiles(sentProfiles, sendFailedProfiles int64) error {
-	return tts.otelPrometheusChecker.checkExporterProfiles(tts.id, sentProfiles, sendFailedProfiles)
+	return tts.prometheusChecker.checkExporterProfiles(tts.id, sentProfiles, sendFailedProfiles)
 }
 
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
@@ -103,7 +103,7 @@ func (tts *TestTelemetry) CheckProcessorLogs(acceptedLogRecords, refusedLogRecor
 // CheckProcessorProfiles checks that for the current exported values for profiles exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func (tts *TestTelemetry) CheckProcessorProfiles(acceptedProfiles, refusedProfiles, droppedProfiles int64) error {
-	return tts.otelPrometheusChecker.checkProcessorProfiles(tts.id, acceptedProfiles, refusedProfiles, droppedProfiles)
+	return tts.prometheusChecker.checkProcessorProfiles(tts.id, acceptedProfiles, refusedProfiles, droppedProfiles)
 }
 
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
@@ -121,7 +121,7 @@ func (tts *TestTelemetry) CheckReceiverLogs(protocol string, acceptedLogRecords,
 // CheckReceiverProfiles checks that for the current exported values for profiles receiver metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func (tts *TestTelemetry) CheckReceiverProfiles(protocol string, acceptedProfiles, droppedProfiles int64) error {
-	return tts.otelPrometheusChecker.checkReceiverProfiles(tts.id, protocol, acceptedProfiles, droppedProfiles)
+	return tts.prometheusChecker.checkReceiverProfiles(tts.id, protocol, acceptedProfiles, droppedProfiles)
 }
 
 // CheckReceiverMetrics checks that for the current exported values for metrics receiver metrics match given values.

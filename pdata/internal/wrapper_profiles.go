@@ -25,8 +25,8 @@ func SetProfilesState(ms Profiles, state State) {
 	*ms.state = state
 }
 
-func NewProfiles(orig *otlpcollectorprofile.ExportProfilesServiceRequest) Profiles {
-	return Profiles{orig: orig}
+func NewProfiles(orig *otlpcollectorprofile.ExportProfilesServiceRequest, state *State) Profiles {
+	return Profiles{orig: orig, state: state}
 }
 
 // ProfilesToProto internal helper to convert Profiles to protobuf representation.

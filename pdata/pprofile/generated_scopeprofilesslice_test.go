@@ -12,13 +12,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
 )
 
 func TestScopeProfilesSlice(t *testing.T) {
 	es := NewScopeProfilesSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newScopeProfilesSlice(&[]*otlpprofiles.ScopeProfiles{})
+	state := internal.StateMutable
+	es = newScopeProfilesSlice(&[]*otlpprofiles.ScopeProfiles{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewScopeProfiles()
@@ -30,6 +32,19 @@ func TestScopeProfilesSlice(t *testing.T) {
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
+}
+
+func TestScopeProfilesSliceReadOnly(t *testing.T) {
+	sharedState := internal.StateReadOnly
+	es := newScopeProfilesSlice(&[]*otlpprofiles.ScopeProfiles{}, &sharedState)
+	assert.Equal(t, 0, es.Len())
+	assert.Panics(t, func() { es.AppendEmpty() })
+	assert.Panics(t, func() { es.EnsureCapacity(2) })
+	es2 := NewScopeProfilesSlice()
+	es.CopyTo(es2)
+	assert.Panics(t, func() { es2.CopyTo(es) })
+	assert.Panics(t, func() { es.MoveAndAppendTo(es2) })
+	assert.Panics(t, func() { es2.MoveAndAppendTo(es) })
 }
 
 func TestScopeProfilesSlice_CopyTo(t *testing.T) {
@@ -134,6 +149,6 @@ func fillTestScopeProfilesSlice(es ScopeProfilesSlice) {
 	*es.orig = make([]*otlpprofiles.ScopeProfiles, 7)
 	for i := 0; i < 7; i++ {
 		(*es.orig)[i] = &otlpprofiles.ScopeProfiles{}
-		fillTestScopeProfiles(newScopeProfiles((*es.orig)[i]))
+		fillTestScopeProfiles(newScopeProfiles((*es.orig)[i], es.state))
 	}
 }

@@ -20,7 +20,7 @@ import (
 // Must use NewResourceProfiles function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceProfiles struct {
-	orig *otlpprofiles.ResourceProfiles
+	orig  *otlpprofiles.ResourceProfiles
 	state *internal.State
 }
 
@@ -40,6 +40,8 @@ func NewResourceProfiles() ResourceProfiles {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ResourceProfiles) MoveTo(dest ResourceProfiles) {
+	ms.state.AssertMutable()
+	dest.state.AssertMutable()
 	*dest.orig = *ms.orig
 	*ms.orig = otlpprofiles.ResourceProfiles{}
 }
@@ -56,6 +58,7 @@ func (ms ResourceProfiles) SchemaUrl() string {
 
 // SetSchemaUrl replaces the schemaurl associated with this ResourceProfiles.
 func (ms ResourceProfiles) SetSchemaUrl(v string) {
+	ms.state.AssertMutable()
 	ms.orig.SchemaUrl = v
 }
 
@@ -66,6 +69,7 @@ func (ms ResourceProfiles) ScopeProfiles() ScopeProfilesSlice {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceProfiles) CopyTo(dest ResourceProfiles) {
+	dest.state.AssertMutable()
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.ScopeProfiles().CopyTo(dest.ScopeProfiles())

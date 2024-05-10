@@ -13,7 +13,8 @@ import (
 type Profiles internal.Profiles
 
 func newProfiles(orig *otlpcollectorprofile.ExportProfilesServiceRequest) Profiles {
-	return Profiles(internal.NewProfiles(orig))
+	state := internal.StateMutable
+	return Profiles(internal.NewProfiles(orig, &state))
 }
 
 func (ms Profiles) getOrig() *otlpcollectorprofile.ExportProfilesServiceRequest {

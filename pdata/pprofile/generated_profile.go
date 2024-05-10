@@ -21,7 +21,7 @@ import (
 // Must use NewProfile function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Profile struct {
-	orig *otlpprofiles.ProfileContainer
+	orig  *otlpprofiles.ProfileContainer
 	state *internal.State
 }
 
@@ -92,6 +92,8 @@ func (ms Profile) SetDroppedAttributesCount(v uint32) {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Profile) CopyTo(dest Profile) {
+	ms.state.AssertMutable()
+	dest.state.AssertMutable()
 	dest.SetProfileID(ms.ProfileID())
 	dest.SetStartTime(ms.StartTime())
 	dest.SetEndTime(ms.EndTime())

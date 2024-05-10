@@ -20,12 +20,12 @@ import (
 // Must use NewScopeProfiles function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ScopeProfiles struct {
-	orig *otlpprofiles.ScopeProfiles
+	orig  *otlpprofiles.ScopeProfiles
 	state *internal.State
 }
 
 func newScopeProfiles(orig *otlpprofiles.ScopeProfiles, state *internal.State) ScopeProfiles {
-	return ScopeProfiles{orig:orig, state: state}
+	return ScopeProfiles{orig: orig, state: state}
 }
 
 // NewScopeProfiles creates a new empty ScopeProfiles.
@@ -40,6 +40,8 @@ func NewScopeProfiles() ScopeProfiles {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ScopeProfiles) MoveTo(dest ScopeProfiles) {
+	ms.state.AssertMutable()
+	dest.state.AssertMutable()
 	*dest.orig = *ms.orig
 	*ms.orig = otlpprofiles.ScopeProfiles{}
 }
@@ -56,6 +58,7 @@ func (ms ScopeProfiles) SchemaUrl() string {
 
 // SetSchemaUrl replaces the schemaurl associated with this ScopeProfiles.
 func (ms ScopeProfiles) SetSchemaUrl(v string) {
+	ms.state.AssertMutable()
 	ms.orig.SchemaUrl = v
 }
 
@@ -66,6 +69,7 @@ func (ms ScopeProfiles) Profiles() ProfileSlice {
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeProfiles) CopyTo(dest ScopeProfiles) {
+	dest.state.AssertMutable()
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Profiles().CopyTo(dest.Profiles())

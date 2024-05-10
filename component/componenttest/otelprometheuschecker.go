@@ -64,6 +64,10 @@ func (pc *prometheusChecker) checkProcessorLogs(processor component.ID, accepted
 	return pc.checkProcessor(processor, "log_records", accepted, refused, dropped)
 }
 
+func (pc *prometheusChecker) checkProcessorProfiles(processor component.ID, accepted, refused, dropped int64) error {
+	return pc.checkProcessor(processor, "profiles", accepted, refused, dropped)
+}
+
 func (pc *prometheusChecker) checkProcessor(processor component.ID, datatype string, accepted, refused, dropped int64) error {
 	processorAttrs := attributesForProcessorMetrics(processor)
 	return multierr.Combine(

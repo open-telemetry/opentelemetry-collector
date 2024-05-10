@@ -30,7 +30,7 @@ func GenerateProfiles(count int) pprofile.Profiles {
 	return ld
 }
 
-func fillProfileOne(profile pprofile.Profile) {
+func fillProfileOne(profile pprofile.ProfileContainer) {
 	profile.SetStartTime(profileTimestamp)
 	profile.SetEndTime(profileTimestamp)
 	profile.SetProfileID([16]byte{0x08, 0x04, 0x02, 0x01})
@@ -40,7 +40,7 @@ func fillProfileOne(profile pprofile.Profile) {
 	attrs.PutInt("instance_num", 1)
 }
 
-func fillProfileTwo(profile pprofile.Profile) {
+func fillProfileTwo(profile pprofile.ProfileContainer) {
 	profile.SetStartTime(profileTimestamp)
 	profile.SetEndTime(profileTimestamp)
 	profile.SetDroppedAttributesCount(1)

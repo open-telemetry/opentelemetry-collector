@@ -18,12 +18,17 @@ var jsonUnmarshaler = &pprofile.JSONUnmarshaler{}
 // ExportRequest represents the request for gRPC/HTTP client/server.
 // It's a wrapper for pprofile.Profiles data.
 type ExportRequest struct {
-	orig *otlpcollectorprofile.ExportProfilesServiceRequest
+	orig  *otlpcollectorprofile.ExportProfilesServiceRequest
+	state *internal.State
 }
 
 // NewExportRequest returns an empty ExportRequest.
 func NewExportRequest() ExportRequest {
-	return ExportRequest{orig: &otlpcollectorprofile.ExportProfilesServiceRequest{}}
+	state := internal.StateMutable
+	return ExportRequest{
+		orig:  &otlpcollectorprofile.ExportProfilesServiceRequest{},
+		state: &state,
+	}
 }
 
 // NewExportRequestFromProfiles returns a ExportRequest from pprofile.Profiles.
@@ -67,5 +72,5 @@ func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 }
 
 func (ms ExportRequest) Profiles() pprofile.Profiles {
-	return pprofile.Profiles(internal.NewProfiles(ms.orig))
+	return pprofile.Profiles(internal.NewProfiles(ms.orig, ms.state))
 }

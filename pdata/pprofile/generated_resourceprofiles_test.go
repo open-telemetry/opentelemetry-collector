@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,6 +22,9 @@ func TestResourceProfiles_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewResourceProfiles(), ms)
 	assert.Equal(t, generateTestResourceProfiles(), dest)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.MoveTo(newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState)) })
+	assert.Panics(t, func() { newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState).MoveTo(dest) })
 }
 
 func TestResourceProfiles_CopyTo(t *testing.T) {
@@ -31,6 +35,8 @@ func TestResourceProfiles_CopyTo(t *testing.T) {
 	orig = generateTestResourceProfiles()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { ms.CopyTo(newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState)) })
 }
 
 func TestResourceProfiles_Resource(t *testing.T) {
@@ -44,6 +50,10 @@ func TestResourceProfiles_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "", ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() {
+		newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
+	})
 }
 
 func TestResourceProfiles_ScopeProfiles(t *testing.T) {
@@ -60,7 +70,7 @@ func generateTestResourceProfiles() ResourceProfiles {
 }
 
 func fillTestResourceProfiles(tv ResourceProfiles) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource))
+	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeProfilesSlice(newScopeProfilesSlice(&tv.orig.ScopeProfiles))
+	fillTestScopeProfilesSlice(newScopeProfilesSlice(&tv.orig.ScopeProfiles, tv.state))
 }

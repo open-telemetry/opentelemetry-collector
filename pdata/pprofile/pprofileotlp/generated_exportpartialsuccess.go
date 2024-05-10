@@ -7,7 +7,8 @@
 package pprofileotlp
 
 import (
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1experimental"
+	"go.opentelemetry.io/collector/pdata/internal"
+	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1"
 )
 
 // ExportPartialSuccess represents the details of a partially successful export request.
@@ -18,11 +19,12 @@ import (
 // Must use NewExportPartialSuccess function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExportPartialSuccess struct {
-	orig *otlpcollectorprofile.ExportProfilesPartialSuccess
+	orig  *otlpcollectorprofile.ExportProfilesPartialSuccess
+	state *internal.State
 }
 
-func newExportPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess) ExportPartialSuccess {
-	return ExportPartialSuccess{orig}
+func newExportPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess, state *internal.State) ExportPartialSuccess {
+	return ExportPartialSuccess{orig: orig, state: state}
 }
 
 // NewExportPartialSuccess creates a new empty ExportPartialSuccess.
@@ -30,12 +32,15 @@ func newExportPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuc
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExportPartialSuccess() ExportPartialSuccess {
-	return newExportPartialSuccess(&otlpcollectorprofile.ExportProfilesPartialSuccess{})
+	state := internal.StateMutable
+	return newExportPartialSuccess(&otlpcollectorprofile.ExportProfilesPartialSuccess{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
+	ms.state.AssertMutable()
+	dest.state.AssertMutable()
 	*dest.orig = *ms.orig
 	*ms.orig = otlpcollectorprofile.ExportProfilesPartialSuccess{}
 }
@@ -47,6 +52,7 @@ func (ms ExportPartialSuccess) RejectedProfiles() int64 {
 
 // SetRejectedProfiles replaces the rejectedprofiles associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) SetRejectedProfiles(v int64) {
+	ms.state.AssertMutable()
 	ms.orig.RejectedProfiles = v
 }
 
@@ -57,11 +63,13 @@ func (ms ExportPartialSuccess) ErrorMessage() string {
 
 // SetErrorMessage replaces the errormessage associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) SetErrorMessage(v string) {
+	ms.state.AssertMutable()
 	ms.orig.ErrorMessage = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
+	dest.state.AssertMutable()
 	dest.SetRejectedProfiles(ms.RejectedProfiles())
 	dest.SetErrorMessage(ms.ErrorMessage())
 }

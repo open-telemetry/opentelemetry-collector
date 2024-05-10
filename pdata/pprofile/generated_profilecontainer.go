@@ -21,7 +21,7 @@ import (
 // Must use NewProfileContainer function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ProfileContainer struct {
-	orig *otlpprofiles.ProfileContainer
+	orig  *otlpprofiles.ProfileContainer
 	state *internal.State
 }
 
@@ -41,6 +41,8 @@ func NewProfileContainer() ProfileContainer {
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ProfileContainer) MoveTo(dest ProfileContainer) {
+	ms.state.AssertMutable()
+	dest.state.AssertMutable()
 	*dest.orig = *ms.orig
 	*ms.orig = otlpprofiles.ProfileContainer{}
 }
@@ -52,6 +54,7 @@ func (ms ProfileContainer) ProfileID() pcommon.ProfileID {
 
 // SetProfileID replaces the profileid associated with this ProfileContainer.
 func (ms ProfileContainer) SetProfileID(v pcommon.ProfileID) {
+	ms.state.AssertMutable()
 	ms.orig.ProfileId = data.ProfileID(v)
 }
 
@@ -62,6 +65,7 @@ func (ms ProfileContainer) StartTime() pcommon.Timestamp {
 
 // SetStartTime replaces the starttime associated with this ProfileContainer.
 func (ms ProfileContainer) SetStartTime(v pcommon.Timestamp) {
+	ms.state.AssertMutable()
 	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
@@ -72,6 +76,7 @@ func (ms ProfileContainer) EndTime() pcommon.Timestamp {
 
 // SetEndTime replaces the endtime associated with this ProfileContainer.
 func (ms ProfileContainer) SetEndTime(v pcommon.Timestamp) {
+	ms.state.AssertMutable()
 	ms.orig.EndTimeUnixNano = uint64(v)
 }
 
@@ -87,11 +92,13 @@ func (ms ProfileContainer) DroppedAttributesCount() uint32 {
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this ProfileContainer.
 func (ms ProfileContainer) SetDroppedAttributesCount(v uint32) {
+	ms.state.AssertMutable()
 	ms.orig.DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ProfileContainer) CopyTo(dest ProfileContainer) {
+	dest.state.AssertMutable()
 	dest.SetProfileID(ms.ProfileID())
 	dest.SetStartTime(ms.StartTime())
 	dest.SetEndTime(ms.EndTime())
