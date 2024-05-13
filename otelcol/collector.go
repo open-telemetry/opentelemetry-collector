@@ -3,7 +3,7 @@
 
 // Package otelcol handles the command-line, configuration, and runs the OpenTelemetry Collector.
 // It contains the main [Collector] struct and its constructor [NewCollector].
-// [Collector.Run] starts the collector and then blocks until it shuts down.
+// [Collector.Run] starts the Collector and then blocks until it shuts down.
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (

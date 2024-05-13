@@ -2,7 +2,7 @@
 
 This document describes the Collector internal architecture and startup flow. It can be helpful if you are starting to contribute to the Collector codebase.
 
-For the end-user focused architecture document, please see the [opentelemetry.io's Architecture documentation](https://opentelemetry.io/docs/collector/architecture/).  While it is end user focused - its still a good place to start if you're trying to learn about the Collector codebase.
+For the end-user focused architecture document, please see the [opentelemetry.io's Architecture documentation](https://opentelemetry.io/docs/collector/architecture/).  While it is end user focused - it's still a good place to start if you're trying to learn about the Collector codebase.
 
 ### Startup Diagram
 ```mermaid
