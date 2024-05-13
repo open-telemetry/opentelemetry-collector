@@ -74,7 +74,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 
 func makeLogsServiceClient(t *testing.T, lc consumer.Logs) plogotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, lc)
-	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	t.Cleanup(func() {
 		require.NoError(t, cc.Close())

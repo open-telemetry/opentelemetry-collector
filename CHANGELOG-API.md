@@ -7,6 +7,34 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.7.0/v0.100.0
+
+### 💡 Enhancements 💡
+
+- `configgrpc`: Adds `NewDefault*` functions for all the config structs. (#9654)
+- `exporterqueue`: Expose ErrQueueIsFull so upstream components can retry or apply backpressure. (#10070)
+
+### 🧰 Bug fixes 🧰
+
+- `mdatagen`: Call connectors with routers to be the same as the service graph (#10079)
+
+## v1.6.0/v0.99.0
+
+### 🛑 Breaking changes 🛑
+
+- `component`: Removed deprecated function `GetExporters` from `component.Host` interface (#9987)
+
+### 🚩 Deprecations 🚩
+
+- `confighttp`: deprecate ToClientContext, ToServerContext, ToListenerContext, replaced by ToClient, ToServer, ToListener (#9807)
+- `configtls`: Deprecates `ClientConfig.LoadTLSConfigContext` and `ServerConfig.LoadTLSConfigContext`, use `ClientConfig.LoadTLSConfig` and `ServerConfig.LoadTLSConfig` instead. (#9945)
+
+### 💡 Enhancements 💡
+
+- `configauth`: Adds `NewDefault*` functions for all the config structs. (#9821)
+- `configtls`: Adds `NewDefault*` functions for all the config structs. (#9658)
+- `pmetric`: Support metric.metadata in pdata/pmetric (#10006)
+
 ## v1.5.0/v0.98.0
 
 ### 🛑 Breaking changes 🛑

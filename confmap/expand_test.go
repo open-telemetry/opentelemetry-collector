@@ -42,7 +42,7 @@ func TestResolverExpandEnvVars(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			resolver, err := NewResolver(ResolverSettings{URIs: []string{filepath.Join("testdata", test.name)}, Providers: makeMapProvidersMap(fileProvider, envProvider), Converters: nil})
+			resolver, err := NewResolver(ResolverSettings{URIs: []string{filepath.Join("testdata", test.name)}, ProviderFactories: []ProviderFactory{fileProvider, envProvider}, ConverterFactories: nil})
 			require.NoError(t, err)
 
 			// Test that expanded configs are the same with the simple config with no env vars.
@@ -65,7 +65,7 @@ func TestResolverDoneNotExpandOldEnvVars(t *testing.T) {
 		return NewRetrieved("some string")
 	})
 
-	resolver, err := NewResolver(ResolverSettings{URIs: []string{"test:"}, Providers: makeMapProvidersMap(fileProvider, envProvider, emptySchemeProvider), Converters: nil})
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"test:"}, ProviderFactories: []ProviderFactory{fileProvider, envProvider, emptySchemeProvider}, ConverterFactories: nil})
 	require.NoError(t, err)
 
 	// Test that expanded configs are the same with the simple config with no env vars.
@@ -86,7 +86,7 @@ func TestResolverExpandMapAndSliceValues(t *testing.T) {
 		return NewRetrieved(receiverExtraMapValue)
 	})
 
-	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
 	require.NoError(t, err)
 
 	cfgMap, err := resolver.Resolve(context.Background())
@@ -295,7 +295,7 @@ func TestResolverExpandStringValues(t *testing.T) {
 				return NewRetrieved(uri[5:])
 			})
 
-			resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, newEnvProvider(), testProvider), Converters: nil})
+			resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, newEnvProvider(), testProvider}, ConverterFactories: nil})
 			require.NoError(t, err)
 
 			cfgMap, err := resolver.Resolve(context.Background())
@@ -305,7 +305,7 @@ func TestResolverExpandStringValues(t *testing.T) {
 	}
 }
 
-func newEnvProvider() Provider {
+func newEnvProvider() ProviderFactory {
 	return newFakeProvider("env", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
 		switch uri {
 		case "env:COMPLEX_VALUE":
@@ -369,7 +369,7 @@ func TestResolverExpandReturnError(t *testing.T) {
 				return nil, myErr
 			})
 
-			resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+			resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
 			require.NoError(t, err)
 
 			_, err = resolver.Resolve(context.Background())
@@ -388,7 +388,7 @@ func TestResolverInfiniteExpand(t *testing.T) {
 		return NewRetrieved(receiverValue)
 	})
 
-	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
 	require.NoError(t, err)
 
 	_, err = resolver.Resolve(context.Background())
@@ -404,7 +404,7 @@ func TestResolverExpandInvalidScheme(t *testing.T) {
 		panic("must not be called")
 	})
 
-	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
 	require.NoError(t, err)
 
 	_, err = resolver.Resolve(context.Background())
@@ -421,7 +421,7 @@ func TestResolverExpandInvalidOpaqueValue(t *testing.T) {
 		panic("must not be called")
 	})
 
-	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
 	require.NoError(t, err)
 
 	_, err = resolver.Resolve(context.Background())
@@ -437,7 +437,7 @@ func TestResolverExpandUnsupportedScheme(t *testing.T) {
 		panic("must not be called")
 	})
 
-	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
 	require.NoError(t, err)
 
 	_, err = resolver.Resolve(context.Background())
@@ -453,7 +453,7 @@ func TestResolverExpandStringValueInvalidReturnValue(t *testing.T) {
 		return NewRetrieved([]any{1243})
 	})
 
-	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
 	require.NoError(t, err)
 
 	_, err = resolver.Resolve(context.Background())

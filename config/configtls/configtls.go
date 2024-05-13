@@ -72,6 +72,11 @@ type Config struct {
 	ReloadInterval time.Duration `mapstructure:"reload_interval"`
 }
 
+// NewDefaultConfig creates a new TLSSetting with any default values set.
+func NewDefaultConfig() Config {
+	return Config{}
+}
+
 // ClientConfig contains TLS configurations that are specific to client
 // connections in addition to the common configurations. This should be used by
 // components configuring TLS client connections.
@@ -96,6 +101,13 @@ type ClientConfig struct {
 	ServerName string `mapstructure:"server_name_override"`
 }
 
+// NewDefaultClientConfig creates a new TLSClientSetting with any default values set.
+func NewDefaultClientConfig() ClientConfig {
+	return ClientConfig{
+		Config: NewDefaultConfig(),
+	}
+}
+
 // ServerConfig contains TLS configurations that are specific to server
 // connections in addition to the common configurations. This should be used by
 // components configuring TLS server connections.
@@ -113,6 +125,13 @@ type ServerConfig struct {
 	// Reload the ClientCAs file when it is modified
 	// (optional, default false)
 	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload"`
+}
+
+// NewDefaultServerConfig creates a new TLSServerSetting with any default values set.
+func NewDefaultServerConfig() ServerConfig {
+	return ServerConfig{
+		Config: NewDefaultConfig(),
+	}
 }
 
 // certReloader is a wrapper object for certificate reloading
@@ -358,7 +377,14 @@ func (c Config) loadCert(caPath string) (*x509.CertPool, error) {
 }
 
 // LoadTLSConfigContext loads the TLS configuration.
-func (c ClientConfig) LoadTLSConfigContext(_ context.Context) (*tls.Config, error) {
+//
+// Deprecated: [v0.99.0] Use LoadTLSConfig instead.
+func (c ClientConfig) LoadTLSConfigContext(ctx context.Context) (*tls.Config, error) {
+	return c.LoadTLSConfig(ctx)
+}
+
+// LoadTLSConfig loads the TLS configuration.
+func (c ClientConfig) LoadTLSConfig(_ context.Context) (*tls.Config, error) {
 	if c.Insecure && !c.hasCA() {
 		return nil, nil
 	}
@@ -372,15 +398,15 @@ func (c ClientConfig) LoadTLSConfigContext(_ context.Context) (*tls.Config, erro
 	return tlsCfg, nil
 }
 
-// LoadTLSConfig loads the TLS configuration.
+// LoadTLSConfigContext loads the TLS configuration.
 //
-// Deprecated: [v0.97.0] Use LoadTLSConfigContext instead.
-func (c ClientConfig) LoadTLSConfig() (*tls.Config, error) {
-	return c.LoadTLSConfigContext(context.Background())
+// Deprecated: [v0.99.0] Use LoadTLSConfig instead.
+func (c ServerConfig) LoadTLSConfigContext(ctx context.Context) (*tls.Config, error) {
+	return c.LoadTLSConfig(ctx)
 }
 
-// LoadTLSConfigContext loads the TLS configuration.
-func (c ServerConfig) LoadTLSConfigContext(_ context.Context) (*tls.Config, error) {
+// LoadTLSConfig loads the TLS configuration.
+func (c ServerConfig) LoadTLSConfig(_ context.Context) (*tls.Config, error) {
 	tlsCfg, err := c.loadTLSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load TLS config: %w", err)
@@ -401,13 +427,6 @@ func (c ServerConfig) LoadTLSConfigContext(_ context.Context) (*tls.Config, erro
 		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 	return tlsCfg, nil
-}
-
-// LoadTLSConfig loads the TLS configuration.
-//
-// Deprecated: [v0.97.0] Use LoadTLSConfigContext instead.
-func (c ServerConfig) LoadTLSConfig() (*tls.Config, error) {
-	return c.LoadTLSConfigContext(context.Background())
 }
 
 func (c ServerConfig) loadClientCAFile() (*x509.CertPool, error) {

@@ -37,26 +37,16 @@ type meterProvider struct {
 
 type meterProviderSettings struct {
 	res               *resource.Resource
-	logger            *zap.Logger
 	cfg               telemetry.MetricsConfig
 	asyncErrorChannel chan error
 }
 
-func newMeterProvider(set meterProviderSettings, disableHighCardinality bool, extendedConfig bool) (metric.MeterProvider, error) {
+func newMeterProvider(set meterProviderSettings, disableHighCardinality bool) (metric.MeterProvider, error) {
 	if set.cfg.Level == configtelemetry.LevelNone || (set.cfg.Address == "" && len(set.cfg.Readers) == 0) {
-		set.logger.Info(
-			"Skipping telemetry setup.",
-			zap.String(zapKeyTelemetryAddress, set.cfg.Address),
-			zap.String(zapKeyTelemetryLevel, set.cfg.Level.String()),
-		)
 		return noopmetric.NewMeterProvider(), nil
 	}
 
-	set.logger.Info("Setting up own telemetry...")
 	if len(set.cfg.Address) != 0 {
-		if extendedConfig {
-			set.logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
-		}
 		host, port, err := net.SplitHostPort(set.cfg.Address)
 		if err != nil {
 			return nil, err
@@ -94,11 +84,7 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool, ex
 		}
 		if server != nil {
 			mp.servers = append(mp.servers, server)
-			set.logger.Info(
-				"Serving metrics",
-				zap.String(zapKeyTelemetryAddress, server.Addr),
-				zap.String(zapKeyTelemetryLevel, set.cfg.Level.String()),
-			)
+
 		}
 		opts = append(opts, sdkmetric.WithReader(r))
 	}
@@ -109,6 +95,17 @@ func newMeterProvider(set meterProviderSettings, disableHighCardinality bool, ex
 		return nil, err
 	}
 	return mp, nil
+}
+
+// LogAboutServers logs about the servers that are serving metrics.
+func (mp *meterProvider) LogAboutServers(logger *zap.Logger, cfg telemetry.MetricsConfig) {
+	for _, server := range mp.servers {
+		logger.Info(
+			"Serving metrics",
+			zap.String(zapKeyTelemetryAddress, server.Addr),
+			zap.Stringer(zapKeyTelemetryLevel, cfg.Level),
+		)
+	}
 }
 
 // Shutdown the meter provider and all the associated resources.

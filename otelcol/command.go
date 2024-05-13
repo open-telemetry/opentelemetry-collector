@@ -41,6 +41,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 	return rootCmd
 }
 
+// Puts command line flags from flags into the CollectorSettings, to be used during config resolution.
 func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error {
 	if set.ConfigProvider == nil {
 		resolverSet := &set.ConfigProviderSettings.ResolverSettings
@@ -55,7 +56,7 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error
 		// Provide a default set of providers and converters if none have been specified.
 		// TODO: Remove this after CollectorSettings.ConfigProvider is removed and instead
 		// do it in the builder.
-		if len(resolverSet.Providers) == 0 && len(resolverSet.Converters) == 0 {
+		if len(resolverSet.ProviderFactories) == 0 && len(resolverSet.ConverterFactories) == 0 {
 			set.ConfigProviderSettings = newDefaultConfigProviderSettings(resolverSet.URIs)
 		}
 	}

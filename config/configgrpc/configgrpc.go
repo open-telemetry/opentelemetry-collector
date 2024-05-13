@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
@@ -44,6 +45,14 @@ type KeepaliveClientConfig struct {
 	Time                time.Duration `mapstructure:"time"`
 	Timeout             time.Duration `mapstructure:"timeout"`
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
+}
+
+// NewDefaultKeepaliveClientConfig returns a new instance of KeepaliveClientConfig with default values.
+func NewDefaultKeepaliveClientConfig() *KeepaliveClientConfig {
+	return &KeepaliveClientConfig{
+		Time:    time.Second * 10,
+		Timeout: time.Second * 10,
+	}
 }
 
 // ClientConfig defines common settings for a gRPC client configuration.
@@ -90,10 +99,27 @@ type ClientConfig struct {
 	Auth *configauth.Authentication `mapstructure:"auth"`
 }
 
+// NewDefaultClientConfig returns a new instance of ClientConfig with default values.
+func NewDefaultClientConfig() *ClientConfig {
+	return &ClientConfig{
+		TLSSetting: configtls.NewDefaultClientConfig(),
+		Keepalive:  NewDefaultKeepaliveClientConfig(),
+		Auth:       configauth.NewDefaultAuthentication(),
+	}
+}
+
 // KeepaliveServerConfig is the configuration for keepalive.
 type KeepaliveServerConfig struct {
 	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters"`
 	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy"`
+}
+
+// NewDefaultKeepaliveServerConfig returns a new instance of KeepaliveServerConfig with default values.
+func NewDefaultKeepaliveServerConfig() *KeepaliveServerConfig {
+	return &KeepaliveServerConfig{
+		ServerParameters:  NewDefaultKeepaliveServerParameters(),
+		EnforcementPolicy: NewDefaultKeepaliveEnforcementPolicy(),
+	}
 }
 
 // KeepaliveServerParameters allow configuration of the keepalive.ServerParameters.
@@ -107,12 +133,22 @@ type KeepaliveServerParameters struct {
 	Timeout               time.Duration `mapstructure:"timeout"`
 }
 
+// NewDefaultKeepaliveServerParameters creates and returns a new instance of KeepaliveServerParameters with default settings.
+func NewDefaultKeepaliveServerParameters() *KeepaliveServerParameters {
+	return &KeepaliveServerParameters{}
+}
+
 // KeepaliveEnforcementPolicy allow configuration of the keepalive.EnforcementPolicy.
 // The same default values as keepalive.EnforcementPolicy are applicable and get applied by the server.
 // See https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.
 type KeepaliveEnforcementPolicy struct {
 	MinTime             time.Duration `mapstructure:"min_time"`
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
+}
+
+// NewDefaultKeepaliveEnforcementPolicy creates and returns a new instance of KeepaliveEnforcementPolicy with default settings.
+func NewDefaultKeepaliveEnforcementPolicy() *KeepaliveEnforcementPolicy {
+	return &KeepaliveEnforcementPolicy{}
 }
 
 // ServerConfig defines common settings for a gRPC server configuration.
@@ -150,6 +186,14 @@ type ServerConfig struct {
 	IncludeMetadata bool `mapstructure:"include_metadata"`
 }
 
+// NewDefaultServerConfig returns a new instance of ServerConfig with default values.
+func NewDefaultServerConfig() *ServerConfig {
+	return &ServerConfig{
+		Keepalive: NewDefaultKeepaliveServerConfig(),
+		Auth:      configauth.NewDefaultAuthentication(),
+	}
+}
+
 // sanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
 func (gcs *ClientConfig) sanitizedEndpoint() string {
 	switch {
@@ -174,13 +218,13 @@ func (gcs *ClientConfig) isSchemeHTTPS() bool {
 // a non-blocking dial (the function won't wait for connections to be
 // established, and connecting happens in the background). To make it a blocking
 // dial, use grpc.WithBlock() dial option.
-func (gcs *ClientConfig) ToClientConn(ctx context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.DialOption) (*grpc.ClientConn, error) {
+func (gcs *ClientConfig) ToClientConn(_ context.Context, host component.Host, settings component.TelemetrySettings, extraOpts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	opts, err := gcs.toDialOptions(host, settings)
 	if err != nil {
 		return nil, err
 	}
 	opts = append(opts, extraOpts...)
-	return grpc.DialContext(ctx, gcs.sanitizedEndpoint(), opts...)
+	return grpc.NewClient(gcs.sanitizedEndpoint(), opts...)
 }
 
 func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
@@ -193,7 +237,7 @@ func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.T
 		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(cp)))
 	}
 
-	tlsCfg, err := gcs.TLSSetting.LoadTLSConfigContext(context.Background())
+	tlsCfg, err := gcs.TLSSetting.LoadTLSConfig(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -253,8 +297,10 @@ func (gcs *ClientConfig) toDialOptions(host component.Host, settings component.T
 
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
-		otelgrpc.WithMeterProvider(settings.MeterProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
+	}
+	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
+		otelOpts = append(otelOpts, otelgrpc.WithMeterProvider(settings.MeterProvider))
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -286,7 +332,7 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {
-		tlsCfg, err := gss.TLSSetting.LoadTLSConfigContext(context.Background())
+		tlsCfg, err := gss.TLSSetting.LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, err
 		}
@@ -356,8 +402,10 @@ func (gss *ServerConfig) toServerOption(host component.Host, settings component.
 
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
-		otelgrpc.WithMeterProvider(settings.MeterProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
+	}
+	if settings.MetricsLevel >= configtelemetry.LevelDetailed {
+		otelOpts = append(otelOpts, otelgrpc.WithMeterProvider(settings.MeterProvider))
 	}
 
 	// Enable OpenTelemetry observability plugin.

@@ -16,7 +16,7 @@ const schemeName = "yaml"
 
 type provider struct{}
 
-// NewWithSettings returns a new confmap.Provider that allows to provide yaml bytes.
+// NewFactory returns a factory for a confmap.Provider that allows to provide yaml bytes.
 //
 // This Provider supports "yaml" scheme, and can be called with a "uri" that follows:
 //
@@ -25,7 +25,11 @@ type provider struct{}
 // Examples:
 // `yaml:processors::batch::timeout: 2s`
 // `yaml:processors::batch/foo::timeout: 3s`
-func NewWithSettings(confmap.ProviderSettings) confmap.Provider {
+func NewFactory() confmap.ProviderFactory {
+	return confmap.NewProviderFactory(newProvider)
+}
+
+func newProvider(confmap.ProviderSettings) confmap.Provider {
 	return &provider{}
 }
 

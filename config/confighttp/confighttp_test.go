@@ -169,7 +169,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tt := componenttest.NewNopTelemetrySettings()
 			tt.TracerProvider = nil
-			client, err := test.settings.ToClientContext(context.Background(), host, tt)
+			client, err := test.settings.ToClient(context.Background(), host, tt)
 			if test.shouldError {
 				assert.Error(t, err)
 				return
@@ -222,7 +222,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tt := componenttest.NewNopTelemetrySettings()
 			tt.TracerProvider = nil
-			client, err := test.settings.ToClientContext(context.Background(), host, tt)
+			client, err := test.settings.ToClient(context.Background(), host, tt)
 			assert.NoError(t, err)
 			transport := client.Transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
@@ -272,7 +272,7 @@ func TestProxyURL(t *testing.T) {
 
 			tt := componenttest.NewNopTelemetrySettings()
 			tt.TracerProvider = nil
-			client, err := s.ToClientContext(context.Background(), componenttest.NewNopHost(), tt)
+			client, err := s.ToClient(context.Background(), componenttest.NewNopHost(), tt)
 
 			if tC.err {
 				require.Error(t, err)
@@ -342,7 +342,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToClientContext(context.Background(), host, componenttest.NewNopTelemetrySettings())
+			_, err := test.settings.ToClient(context.Background(), host, componenttest.NewNopTelemetrySettings())
 			assert.Regexp(t, test.err, err)
 		})
 	}
@@ -451,7 +451,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
-			client, err := test.settings.ToClientContext(context.Background(), test.host, component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone})
+			client, err := test.settings.ToClient(context.Background(), test.host, component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone})
 			if test.shouldErr {
 				assert.Error(t, err)
 				return
@@ -523,7 +523,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToListenerContext(context.Background())
+			_, err := test.settings.ToListener(context.Background())
 			assert.Regexp(t, test.err, err)
 		})
 	}
@@ -554,7 +554,7 @@ func TestHTTPServerWarning(t *testing.T) {
 			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
 
-			_, err := test.settings.ToServerContext(
+			_, err := test.settings.ToServer(
 				context.Background(),
 				componenttest.NewNopHost(),
 				set,
@@ -698,10 +698,10 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   "localhost:0",
 				TLSSetting: tt.tlsServerCreds,
 			}
-			ln, err := hss.ToListenerContext(context.Background())
+			ln, err := hss.ToListener(context.Background())
 			require.NoError(t, err)
 
-			s, err := hss.ToServerContext(
+			s, err := hss.ToServer(
 				context.Background(),
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
@@ -733,7 +733,7 @@ func TestHttpReception(t *testing.T) {
 					return rt, nil
 				}
 			}
-			client, errClient := hcs.ToClientContext(context.Background(), componenttest.NewNopHost(), component.TelemetrySettings{})
+			client, errClient := hcs.ToClient(context.Background(), componenttest.NewNopHost(), component.TelemetrySettings{})
 			require.NoError(t, errClient)
 
 			resp, errResp := client.Get(hcs.Endpoint)
@@ -812,10 +812,10 @@ func TestHttpCors(t *testing.T) {
 				CORS:     tt.CORSConfig,
 			}
 
-			ln, err := hss.ToListenerContext(context.Background())
+			ln, err := hss.ToListener(context.Background())
 			require.NoError(t, err)
 
-			s, err := hss.ToServerContext(
+			s, err := hss.ToServer(
 				context.Background(),
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
@@ -856,7 +856,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 	}
 
 	// This effectively does not enable CORS but should also not cause an error
-	s, err := hss.ToServerContext(
+	s, err := hss.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
@@ -887,7 +887,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 		},
 	}
 
-	srv, err := hss.ToServerContext(context.Background(), host, componenttest.NewNopTelemetrySettings(), nil)
+	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), nil)
 	require.NoError(t, err)
 	require.NotNil(t, srv)
 
@@ -930,10 +930,10 @@ func TestHttpServerHeaders(t *testing.T) {
 				ResponseHeaders: tt.headers,
 			}
 
-			ln, err := hss.ToListenerContext(context.Background())
+			ln, err := hss.ToListener(context.Background())
 			require.NoError(t, err)
 
-			s, err := hss.ToServerContext(
+			s, err := hss.ToServer(
 				context.Background(),
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
@@ -1017,7 +1017,7 @@ func ExampleServerConfig() {
 	settings := ServerConfig{
 		Endpoint: "localhost:443",
 	}
-	s, err := settings.ToServerContext(
+	s, err := settings.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
@@ -1026,7 +1026,7 @@ func ExampleServerConfig() {
 		panic(err)
 	}
 
-	l, err := settings.ToListenerContext(context.Background())
+	l, err := settings.ToListener(context.Background())
 	if err != nil {
 		panic(err)
 	}
@@ -1065,7 +1065,7 @@ func TestHttpClientHeaders(t *testing.T) {
 				Timeout:         0,
 				Headers:         tt.headers,
 			}
-			client, _ := setting.ToClientContext(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			req, err := http.NewRequest(http.MethodGet, setting.Endpoint, nil)
 			assert.NoError(t, err)
 			_, err = client.Do(req)
@@ -1101,7 +1101,7 @@ func TestHttpClientHostHeader(t *testing.T) {
 			Timeout:         0,
 			Headers:         tt.headers,
 		}
-		client, _ := setting.ToClientContext(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+		client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 		req, err := http.NewRequest(http.MethodGet, setting.Endpoint, nil)
 		assert.NoError(t, err)
 		_, err = client.Do(req)
@@ -1196,7 +1196,7 @@ func TestServerAuth(t *testing.T) {
 		handlerCalled = true
 	})
 
-	srv, err := hss.ToServerContext(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
+	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
 	require.NoError(t, err)
 
 	// test
@@ -1214,7 +1214,7 @@ func TestInvalidServerAuth(t *testing.T) {
 		},
 	}
 
-	srv, err := hss.ToServerContext(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), http.NewServeMux())
+	srv, err := hss.ToServer(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), http.NewServeMux())
 	require.Error(t, err)
 	require.Nil(t, srv)
 }
@@ -1237,7 +1237,7 @@ func TestFailedServerAuth(t *testing.T) {
 		},
 	}
 
-	srv, err := hss.ToServerContext(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	require.NoError(t, err)
 
 	// test
@@ -1260,7 +1260,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 		http.Error(w, "invalid request", http.StatusInternalServerError)
 	}
 
-	srv, err := hss.ToServerContext(
+	srv, err := hss.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
@@ -1289,7 +1289,7 @@ func TestServerWithDecoder(t *testing.T) {
 		return body, nil
 	}
 
-	srv, err := hss.ToServerContext(
+	srv, err := hss.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
@@ -1366,7 +1366,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 		TLSSetting: tlsServerCreds,
 	}
 
-	s, err := hss.ToServerContext(
+	s, err := hss.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
@@ -1375,7 +1375,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 			require.NoError(b, errWrite)
 		}))
 	require.NoError(b, err)
-	ln, err := hss.ToListenerContext(context.Background())
+	ln, err := hss.ToListener(context.Background())
 	require.NoError(b, err)
 
 	go func() {
@@ -1399,12 +1399,12 @@ func BenchmarkHttpRequest(b *testing.B) {
 		b.Run(bb.name, func(b *testing.B) {
 			var c *http.Client
 			if !bb.clientPerThread {
-				c, err = hcs.ToClientContext(context.Background(), componenttest.NewNopHost(), component.TelemetrySettings{})
+				c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), component.TelemetrySettings{})
 				require.NoError(b, err)
 			}
 			b.RunParallel(func(pb *testing.PB) {
 				if c == nil {
-					c, err = hcs.ToClientContext(context.Background(), componenttest.NewNopHost(), component.TelemetrySettings{})
+					c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), component.TelemetrySettings{})
 					require.NoError(b, err)
 				}
 				for pb.Next() {

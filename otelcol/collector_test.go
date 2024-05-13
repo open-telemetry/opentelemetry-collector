@@ -433,14 +433,6 @@ func TestCollectorDryRun(t *testing.T) {
 			},
 			expectedErr: `service::pipelines::traces: references processor "invalid" which is not configured`,
 		},
-		"logs_receiver_traces_pipeline": {
-			settings: CollectorSettings{
-				BuildInfo:              component.NewDefaultBuildInfo(),
-				Factories:              nopFactories,
-				ConfigProviderSettings: newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid-receiver-type.yaml")}),
-			},
-			expectedErr: `failed to build pipelines: failed to create "nop_logs" receiver for data type "traces": telemetry type is not supported`,
-		},
 	}
 
 	for name, test := range tests {
@@ -464,8 +456,8 @@ func TestPassConfmapToServiceFailure(t *testing.T) {
 		Factories: nopFactories,
 		ConfigProviderSettings: ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs:      []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
-				Providers: makeMapProvidersMap(newFailureProvider()),
+				URIs:              []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
+				ProviderFactories: []confmap.ProviderFactory{confmap.NewProviderFactory(newFailureProvider)},
 			},
 		},
 	}
@@ -488,7 +480,7 @@ func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.Wai
 
 type failureProvider struct{}
 
-func newFailureProvider() confmap.Provider {
+func newFailureProvider(_ confmap.ProviderSettings) confmap.Provider {
 	return &failureProvider{}
 }
 

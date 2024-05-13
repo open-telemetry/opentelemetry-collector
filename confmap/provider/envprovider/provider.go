@@ -21,11 +21,15 @@ type provider struct {
 	logger *zap.Logger
 }
 
-// NewWithSettings returns a new confmap.Provider that reads the configuration from the given environment variable.
+// NewFactory returns a factory for a confmap.Provider that reads the configuration from the given environment variable.
 //
 // This Provider supports "env" scheme, and can be called with a selector:
 // `env:NAME_OF_ENVIRONMENT_VARIABLE`
-func NewWithSettings(ps confmap.ProviderSettings) confmap.Provider {
+func NewFactory() confmap.ProviderFactory {
+	return confmap.NewProviderFactory(newProvider)
+}
+
+func newProvider(ps confmap.ProviderSettings) confmap.Provider {
 	return &provider{
 		logger: ps.Logger,
 	}

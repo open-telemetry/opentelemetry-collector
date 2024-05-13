@@ -21,13 +21,16 @@ type converter struct {
 	loggedDeprecations map[string]struct{}
 }
 
-// New returns a confmap.Converter, that expands all environment variables for a given confmap.Conf.
-//
-// Notice: This API is experimental.
-func New(_ confmap.ConverterSettings) confmap.Converter {
+// NewFactory returns a factory for a  confmap.Converter,
+// which expands all environment variables for a given confmap.Conf.
+func NewFactory() confmap.ConverterFactory {
+	return confmap.NewConverterFactory(newConverter)
+}
+
+func newConverter(set confmap.ConverterSettings) confmap.Converter {
 	return converter{
 		loggedDeprecations: make(map[string]struct{}),
-		logger:             zap.NewNop(), // TODO: pass logger in ConverterSettings
+		logger:             set.Logger,
 	}
 }
 
@@ -77,6 +80,12 @@ func (c converter) expandEnv(s string) string {
 		if str == "$" {
 			return "$"
 		}
-		return os.Getenv(str)
+		val, exists := os.LookupEnv(str)
+		if !exists {
+			c.logger.Warn("Configuration references unset environment variable", zap.String("name", str))
+		} else if len(val) == 0 {
+			c.logger.Info("Configuration references empty environment variable", zap.String("name", str))
+		}
+		return val
 	})
 }

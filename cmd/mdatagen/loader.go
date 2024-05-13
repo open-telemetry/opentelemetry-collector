@@ -117,6 +117,8 @@ type metric struct {
 	Sum *sum `mapstructure:"sum,omitempty"`
 	// Gauge stores metadata for gauge metric type
 	Gauge *gauge `mapstructure:"gauge,omitempty"`
+	// Gauge stores metadata for gauge metric type
+	Histogram *histogram `mapstructure:"histogram,omitempty"`
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []attributeName `mapstructure:"attributes"`
@@ -134,6 +136,9 @@ func (m metric) Data() MetricData {
 	}
 	if m.Gauge != nil {
 		return m.Gauge
+	}
+	if m.Histogram != nil {
+		return m.Histogram
 	}
 	return nil
 }
@@ -201,11 +206,28 @@ func (a attribute) TestValue() string {
 	return ""
 }
 
+type ignore struct {
+	Top []string `mapstructure:"top"`
+	Any []string `mapstructure:"any"`
+}
+
+type goLeak struct {
+	Skip     bool   `mapstructure:"skip"`
+	Ignore   ignore `mapstructure:"ignore"`
+	Setup    string `mapstructure:"setup"`
+	Teardown string `mapstructure:"teardown"`
+}
+
 type tests struct {
-	Config              any  `mapstructure:"config"`
-	SkipLifecycle       bool `mapstructure:"skip_lifecycle"`
-	SkipShutdown        bool `mapstructure:"skip_shutdown"`
-	ExpectConsumerError bool `mapstructure:"expect_consumer_error"`
+	Config              any    `mapstructure:"config"`
+	SkipLifecycle       bool   `mapstructure:"skip_lifecycle"`
+	SkipShutdown        bool   `mapstructure:"skip_shutdown"`
+	GoLeak              goLeak `mapstructure:"goleak"`
+	ExpectConsumerError bool   `mapstructure:"expect_consumer_error"`
+}
+
+type telemetry struct {
+	Metrics map[metricName]metric `mapstructure:"metrics"`
 }
 
 type metadata struct {
@@ -215,6 +237,8 @@ type metadata struct {
 	Parent string `mapstructure:"parent"`
 	// Status information for the component.
 	Status *Status `mapstructure:"status"`
+	// Telemetry information for the component.
+	Telemetry telemetry `mapstructure:"telemetry"`
 	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
@@ -245,7 +269,7 @@ type templateContext struct {
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := fileprovider.NewWithSettings(confmaptest.NewNopProviderSettings()).Retrieve(context.Background(), "file:"+filePath, nil)
+	cp, err := fileprovider.NewFactory().Create(confmaptest.NewNopProviderSettings()).Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}
