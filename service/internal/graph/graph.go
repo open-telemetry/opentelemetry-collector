@@ -549,6 +549,8 @@ func connectorStability(f connector.Factory, expType, recType component.Type) co
 			return f.TracesToMetricsStability()
 		case component.DataTypeLogs:
 			return f.TracesToLogsStability()
+		case component.DataTypeProfiles:
+			return f.TracesToProfilesStability()
 		}
 	case component.DataTypeMetrics:
 		switch recType {
@@ -558,6 +560,8 @@ func connectorStability(f connector.Factory, expType, recType component.Type) co
 			return f.MetricsToMetricsStability()
 		case component.DataTypeLogs:
 			return f.MetricsToLogsStability()
+		case component.DataTypeProfiles:
+			return f.MetricsToProfilesStability()
 		}
 	case component.DataTypeLogs:
 		switch recType {
@@ -567,6 +571,19 @@ func connectorStability(f connector.Factory, expType, recType component.Type) co
 			return f.LogsToMetricsStability()
 		case component.DataTypeLogs:
 			return f.LogsToLogsStability()
+		case component.DataTypeProfiles:
+			return f.LogsToProfilesStability()
+		}
+	case component.DataTypeProfiles:
+		switch recType {
+		case component.DataTypeTraces:
+			return f.ProfilesToTracesStability()
+		case component.DataTypeMetrics:
+			return f.ProfilesToMetricsStability()
+		case component.DataTypeLogs:
+			return f.ProfilesToLogsStability()
+		case component.DataTypeProfiles:
+			return f.ProfilesToProfilesStability()
 		}
 	}
 	return component.StabilityLevelUndefined

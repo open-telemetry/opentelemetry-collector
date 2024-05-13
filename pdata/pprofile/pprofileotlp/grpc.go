@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1experimental"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
@@ -79,6 +80,7 @@ type rawProfilesServer struct {
 
 func (s rawProfilesServer) Export(ctx context.Context, request *otlpcollectorprofile.ExportProfilesServiceRequest) (*otlpcollectorprofile.ExportProfilesServiceResponse, error) {
 	otlp.MigrateProfiles(request.ResourceProfiles)
-	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request})
+	state := internal.StateMutable
+	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request, state: &state})
 	return rsp.orig, err
 }

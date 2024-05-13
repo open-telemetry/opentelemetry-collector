@@ -35,7 +35,10 @@ func NewExportRequest() ExportRequest {
 // Because ExportRequest is a wrapper for pprofile.Profiles,
 // any changes to the provided Profiles struct will be reflected in the ExportRequest and vice versa.
 func NewExportRequestFromProfiles(ld pprofile.Profiles) ExportRequest {
-	return ExportRequest{orig: internal.GetOrigProfiles(internal.Profiles(ld))}
+	return ExportRequest{
+		orig:  internal.GetOrigProfiles(internal.Profiles(ld)),
+		state: internal.GetProfilesState(internal.Profiles(ld)),
+	}
 }
 
 // MarshalProto marshals ExportRequest into proto bytes.

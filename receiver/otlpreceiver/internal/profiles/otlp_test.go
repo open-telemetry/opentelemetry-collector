@@ -30,7 +30,7 @@ func TestExport(t *testing.T) {
 	profileSink := new(consumertest.ProfilesSink)
 	profileClient := makeProfilesServiceClient(t, profileSink)
 	resp, err := profileClient.Export(context.Background(), req)
-	require.NoError(t, err, "Failed to export trace: %v", err)
+	require.NoError(t, err, "Failed to export profile: %v", err)
 	require.NotNil(t, resp, "The response is missing")
 
 	lds := profileSink.AllProfiles()
@@ -43,7 +43,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 
 	profileClient := makeProfilesServiceClient(t, profileSink)
 	resp, err := profileClient.Export(context.Background(), pprofileotlp.NewExportRequest())
-	assert.NoError(t, err, "Failed to export trace: %v", err)
+	assert.NoError(t, err, "Failed to export profile: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
 
