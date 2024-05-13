@@ -27,6 +27,13 @@ const (
 	FailedToSendLogRecordsKey = "send_failed_log_records"
 	// FailedToEnqueueLogRecordsKey used to track logs that failed to be enqueued by exporters.
 	FailedToEnqueueLogRecordsKey = "enqueue_failed_log_records"
+
+	// SentProfilesKey used to track profiles sent by exporters.
+	SentProfilesKey = "sent_profiles"
+	// FailedToSendProfilesKey used to track profiles that failed to be sent by exporters.
+	FailedToSendProfilesKey = "send_failed_profiles"
+	// FailedToEnqueueProfilesKey used to track profiles that failed to be enqueued by exporters.
+	FailedToEnqueueProfilesKey = "enqueue_failed_profiles"
 )
 
 var (

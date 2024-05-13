@@ -66,6 +66,10 @@ func (tts *TestTelemetry) CheckExporterEnqueueFailedLogs(enqueueFailed int64) er
 	return tts.prometheusChecker.checkExporterEnqueueFailed(tts.id, "log_records", enqueueFailed)
 }
 
+func (tts *TestTelemetry) CheckExporterEnqueueFailedProfiles(enqueueFailed int64) error {
+	return tts.prometheusChecker.checkExporterEnqueueFailed(tts.id, "profiles", enqueueFailed)
+}
+
 // CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func (tts *TestTelemetry) CheckExporterLogs(sentLogRecords, sendFailedLogRecords int64) error {

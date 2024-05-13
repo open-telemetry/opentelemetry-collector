@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -27,22 +28,22 @@ import (
 )
 
 const (
-	fakeProfilesParentSpanName = "fake_logs_parent_span_name"
+	fakeProfilesParentSpanName = "fake_profiles_parent_span_name"
 )
 
 var (
-	fakeProfilesExporterName   = component.NewIDWithName("fake_logs_exporter", "with_name")
+	fakeProfilesExporterName   = component.MustNewIDWithName("fake_profiles_exporter", "with_name")
 	fakeProfilesExporterConfig = struct{}{}
 )
 
 func TestProfilesRequest(t *testing.T) {
-	lr := newProfilesRequest(context.Background(), testdata.GenerateProfiles(1), nil)
+	lr := newProfilesRequest(testdata.GenerateProfiles(1), nil)
 
 	logErr := consumererror.NewProfiles(errors.New("some error"), pprofile.NewProfiles())
 	assert.EqualValues(
 		t,
-		newProfilesRequest(context.Background(), pprofile.NewProfiles(), nil),
-		lr.OnError(logErr),
+		newProfilesRequest(pprofile.NewProfiles(), nil),
+		lr.(RequestErrorHandler).OnError(logErr),
 	)
 }
 
@@ -99,7 +100,7 @@ func TestProfilesExporter_WithRecordProfiles(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	le, err := NewProfilesExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeProfilesExporterConfig, newPushProfilesData(nil))
+	le, err := NewProfilesExporter(context.Background(), exporter.CreateSettings{ID: fakeProfilesExporterName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeProfilesExporterConfig, newPushProfilesData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -112,7 +113,7 @@ func TestProfilesExporter_WithRecordProfiles_ReturnError(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	le, err := NewProfilesExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeProfilesExporterConfig, newPushProfilesData(want))
+	le, err := NewProfilesExporter(context.Background(), exporter.CreateSettings{ID: fakeProfilesExporterName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeProfilesExporterConfig, newPushProfilesData(want))
 	require.Nil(t, err)
 	require.NotNil(t, le)
 
@@ -124,12 +125,12 @@ func TestProfilesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	rCfg := NewDefaultRetrySettings()
+	rCfg := configretry.NewDefaultBackOffConfig()
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
-	te, err := NewProfilesExporter(context.Background(), tt.ToExporterCreateSettings(), &fakeProfilesExporterConfig, newPushProfilesData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	te, err := NewProfilesExporter(context.Background(), exporter.CreateSettings{ID: fakeProfilesExporterName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeProfilesExporterConfig, newPushProfilesData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -140,8 +141,8 @@ func TestProfilesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 		_ = te.ConsumeProfiles(context.Background(), md)
 	}
 
-	// 2 batched must be in queue, and 5 batches (15 log records) rejected due to queue overflow
-	checkExporterEnqueueFailedProfilesStats(t, globalInstruments, fakeProfilesExporterName, int64(15))
+	// 2 batched must be in queue, and 5 batches (15 profiles) rejected due to queue overflow
+	require.NoError(t, tt.CheckExporterEnqueueFailedProfiles(int64(15)))
 }
 
 func TestProfilesExporter_WithSpan(t *testing.T) {

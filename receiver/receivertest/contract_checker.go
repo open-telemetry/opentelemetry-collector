@@ -387,6 +387,30 @@ func idSetFromLogs(data plog.Logs) (idSet, error) {
 	return ds, nil
 }
 
+// idSetFromLogs computes an idSet from given plog.Logs. The idSet will contain ids of all log records.
+func idSetFromProfiles(data pprofile.Profiles) (idSet, error) {
+	ds := map[UniqueIDAttrVal]bool{}
+	rss := data.ResourceProfiles()
+	for i := 0; i < rss.Len(); i++ {
+		ils := rss.At(i).ScopeProfiles()
+		for j := 0; j < ils.Len(); j++ {
+			ss := ils.At(j).Profiles()
+			for k := 0; k < ss.Len(); k++ {
+				elem := ss.At(k)
+				key, exists := elem.Attributes().Get(UniqueIDAttrName)
+				if !exists {
+					return ds, fmt.Errorf("invalid data element, attribute %q is missing", UniqueIDAttrName)
+				}
+				if key.Type() != pcommon.ValueTypeStr {
+					return ds, fmt.Errorf("invalid data element, attribute %q is wrong type %v", UniqueIDAttrName, key.Type())
+				}
+				ds[UniqueIDAttrVal(key.Str())] = true
+			}
+		}
+	}
+	return ds, nil
+}
+
 func (m *mockConsumer) ConsumeMetrics(_ context.Context, data pmetric.Metrics) error {
 	ids, err := idSetFromMetrics(data)
 	require.NoError(m.t, err)

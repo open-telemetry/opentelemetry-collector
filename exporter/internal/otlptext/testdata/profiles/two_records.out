@@ -1,0 +1,31 @@
+ResourceLog #0
+Resource SchemaURL: 
+Resource attributes:
+     -> resource-attr: Str(resource-attr-val-1)
+ScopeLogs #0
+ScopeLogs SchemaURL: 
+InstrumentationScope  
+LogRecord #0
+ObservedTimestamp: 1970-01-01 00:00:00 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+SeverityText: Info
+SeverityNumber: Info(9)
+Body: Str(This is a log message)
+Attributes:
+     -> app: Str(server)
+     -> instance_num: Int(1)
+Trace ID: 08040201000000000000000000000000
+Span ID: 0102040800000000
+Flags: 0
+LogRecord #1
+ObservedTimestamp: 1970-01-01 00:00:00 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+SeverityText: Info
+SeverityNumber: Info(9)
+Body: Str(something happened)
+Attributes:
+     -> customer: Str(acme)
+     -> env: Str(dev)
+Trace ID: 
+Span ID: 
+Flags: 0
