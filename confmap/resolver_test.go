@@ -425,6 +425,10 @@ func TestProvidesDefaultLogger(t *testing.T) {
 	_, err := NewResolver(ResolverSettings{
 		URIs:              []string{filepath.Join("testdata", "config.yaml")},
 		ProviderFactories: []ProviderFactory{factory},
+		ConverterFactories: []ConverterFactory{NewConverterFactory(func(set ConverterSettings) Converter {
+			assert.NotNil(t, set.Logger)
+			return &mockConverter{}
+		})},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, provider.logger)

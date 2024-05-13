@@ -34,10 +34,7 @@ type batchProcessorTelemetry struct {
 	exportCtx context.Context
 
 	processorAttr            []attribute.KeyValue
-	batchSizeTriggerSend     metric.Int64Counter
-	timeoutTriggerSend       metric.Int64Counter
-	batchSendSize            metric.Int64Histogram
-	batchSendSizeBytes       metric.Int64Histogram
+	telemetryBuilder         *metadata.TelemetryBuilder
 	batchMetadataCardinality metric.Int64ObservableUpDownCounter
 }
 
@@ -69,37 +66,12 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(set component.TelemetrySet
 		meter = noopmetric.Meter{}
 	}
 
-	bpt.batchSizeTriggerSend, err = meter.Int64Counter(
-		processorhelper.BuildCustomMetricName(typeStr, "batch_size_trigger_send"),
-		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	bpt.timeoutTriggerSend, err = meter.Int64Counter(
-		processorhelper.BuildCustomMetricName(typeStr, "timeout_trigger_send"),
-		metric.WithDescription("Number of times the batch was sent due to a timeout trigger"),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	bpt.batchSendSize, err = meter.Int64Histogram(
-		processorhelper.BuildCustomMetricName(typeStr, "batch_send_size"),
-		metric.WithDescription("Number of units in the batch"),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-
-	bpt.batchSendSizeBytes, err = meter.Int64Histogram(
-		processorhelper.BuildCustomMetricName(typeStr, "batch_send_size_bytes"),
-		metric.WithDescription("Number of bytes in batch that was sent"),
-		metric.WithUnit("By"),
-	)
+	bpt.telemetryBuilder, err = metadata.NewTelemetryBuilder(set)
 	errors = multierr.Append(errors, err)
 
 	bpt.batchMetadataCardinality, err = meter.Int64ObservableUpDownCounter(
-		processorhelper.BuildCustomMetricName(typeStr, "metadata_cardinality"),
-		metric.WithDescription("Number of distinct metadata value combinations being processed"),
+		processorhelper.BuildCustomMetricName(typeStr, ""),
+		metric.WithDescription(""),
 		metric.WithUnit("1"),
 		metric.WithInt64Callback(func(_ context.Context, obs metric.Int64Observer) error {
 			obs.Observe(int64(currentMetadataCardinality()))
@@ -114,13 +86,13 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(set component.TelemetrySet
 func (bpt *batchProcessorTelemetry) record(trigger trigger, sent, bytes int64) {
 	switch trigger {
 	case triggerBatchSize:
-		bpt.batchSizeTriggerSend.Add(bpt.exportCtx, 1, metric.WithAttributes(bpt.processorAttr...))
+		bpt.telemetryBuilder.ProcessorBatchBatchSizeTriggerSend.Add(bpt.exportCtx, 1, metric.WithAttributes(bpt.processorAttr...))
 	case triggerTimeout:
-		bpt.timeoutTriggerSend.Add(bpt.exportCtx, 1, metric.WithAttributes(bpt.processorAttr...))
+		bpt.telemetryBuilder.ProcessorBatchTimeoutTriggerSend.Add(bpt.exportCtx, 1, metric.WithAttributes(bpt.processorAttr...))
 	}
 
-	bpt.batchSendSize.Record(bpt.exportCtx, sent, metric.WithAttributes(bpt.processorAttr...))
+	bpt.telemetryBuilder.ProcessorBatchBatchSendSize.Record(bpt.exportCtx, sent, metric.WithAttributes(bpt.processorAttr...))
 	if bpt.detailed {
-		bpt.batchSendSizeBytes.Record(bpt.exportCtx, bytes, metric.WithAttributes(bpt.processorAttr...))
+		bpt.telemetryBuilder.ProcessorBatchBatchSendSizeBytes.Record(bpt.exportCtx, bytes, metric.WithAttributes(bpt.processorAttr...))
 	}
 }

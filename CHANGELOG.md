@@ -7,6 +7,22 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.7.0/v0.100.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: The `validate` sub-command no longer validates that each pipeline's type is the same as its component types (#10031)
+
+### 💡 Enhancements 💡
+
+- `semconv`: Add support for v1.25.0 semantic convention (#10072)
+- `builder`: remove the need to go get a module to address ambiguous import paths (#10015)
+- `pmetric`: Support parsing metric.metadata from OTLP JSON. (#10026)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix enabled config option for batch sender (#10076)
+
 ## v1.6.0/v0.99.0
 
 ### 🛑 Breaking changes 🛑
