@@ -104,10 +104,9 @@ func TestProfile_LinkTable(t *testing.T) {
 
 func TestProfile_StringTable(t *testing.T) {
 	ms := NewProfile()
-	assert.Equal(t, []string([]string(nil)), ms.StringTable())
-	testValStringTable := []string([]string{"test"})
-	ms.SetStringTable(testValStringTable)
-	assert.Equal(t, testValStringTable, ms.StringTable())
+	assert.Equal(t, pcommon.NewStringSlice(), ms.StringTable())
+	internal.FillTestStringSlice(internal.StringSlice(ms.StringTable()))
+	assert.Equal(t, pcommon.StringSlice(internal.GenerateTestStringSlice()), ms.StringTable())
 }
 
 func TestProfile_DropFrames(t *testing.T) {
@@ -191,7 +190,7 @@ func fillTestProfile(tv Profile) {
 	internal.FillTestMap(internal.NewMap(&tv.orig.AttributeTable, tv.state))
 	fillTestAttributeUnitSlice(newAttributeUnitSlice(&tv.orig.AttributeUnits, tv.state))
 	fillTestLinkSlice(newLinkSlice(&tv.orig.LinkTable, tv.state))
-	tv.orig.StringTable = []string{"test"}
+	internal.FillTestStringSlice(internal.NewStringSlice(&tv.orig.StringTable, tv.state))
 	tv.orig.DropFrames = int64(1)
 	tv.orig.KeepFrames = int64(1)
 	tv.orig.TimeNanos = 1234567890

@@ -91,15 +91,9 @@ func (ms Profile) LinkTable() LinkSlice {
 	return newLinkSlice(&ms.orig.LinkTable, ms.state)
 }
 
-// StringTable returns the stringtable associated with this Profile.
-func (ms Profile) StringTable() []string {
-	return []string(ms.orig.StringTable)
-}
-
-// SetStringTable replaces the stringtable associated with this Profile.
-func (ms Profile) SetStringTable(v []string) {
-	ms.state.AssertMutable()
-	ms.orig.StringTable = []string(v)
+// StringTable returns the StringTable associated with this Profile.
+func (ms Profile) StringTable() pcommon.StringSlice {
+	return pcommon.StringSlice(internal.NewStringSlice(&ms.orig.StringTable, ms.state))
 }
 
 // DropFrames returns the dropframes associated with this Profile.
@@ -190,7 +184,7 @@ func (ms Profile) CopyTo(dest Profile) {
 	ms.AttributeTable().CopyTo(dest.AttributeTable())
 	ms.AttributeUnits().CopyTo(dest.AttributeUnits())
 	ms.LinkTable().CopyTo(dest.LinkTable())
-	dest.SetStringTable(ms.StringTable())
+	ms.StringTable().CopyTo(dest.StringTable())
 	dest.SetDropFrames(ms.DropFrames())
 	dest.SetKeepFrames(ms.KeepFrames())
 	dest.SetStartTime(ms.StartTime())
