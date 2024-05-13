@@ -23,6 +23,10 @@ type converter struct {
 
 // NewFactory returns a factory for a  confmap.Converter,
 // which expands all environment variables for a given confmap.Conf.
+//
+// Deprecated: [v0.101.0] The expand converter is deprecated, the collector will no longer support this style environment
+// variable substitution by default. Use ${...} or ${env:...} instead.
+// See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/env-vars.md for more details.
 func NewFactory() confmap.ConverterFactory {
 	return confmap.NewConverterFactory(newConverter)
 }

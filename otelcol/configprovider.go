@@ -14,6 +14,16 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
 	"go.opentelemetry.io/collector/confmap/provider/httpsprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
+	"go.opentelemetry.io/collector/featuregate"
+)
+
+// AllowEnvVarExpansionFeatureGate is the feature gate that controls whether the collector
+// supports configuring the OpenTelemetry SDK via configuration
+var AllowEnvVarExpansionFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"confmap.allowEnvVarExpansion",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("controls whether the collector supports expanding $ENV in configuration"),
+	featuregate.WithRegisterFromVersion("v0.101.0"),
 )
 
 // ConfigProvider provides the service configuration.
@@ -132,6 +142,12 @@ func (cm *configProvider) GetConfmap(ctx context.Context) (*confmap.Conf, error)
 }
 
 func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
+	var converterFactories []confmap.ConverterFactory
+	if AllowEnvVarExpansionFeatureGate.IsEnabled() {
+		converterFactories = []confmap.ConverterFactory{
+			expandconverter.NewFactory(),
+		}
+	}
 	return ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs: uris,
@@ -142,7 +158,7 @@ func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
 				httpprovider.NewFactory(),
 				httpsprovider.NewFactory(),
 			},
-			ConverterFactories: []confmap.ConverterFactory{expandconverter.NewFactory()},
+			ConverterFactories: converterFactories,
 		},
 	}
 }
