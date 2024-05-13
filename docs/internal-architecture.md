@@ -2,7 +2,7 @@
 
 This document describes the Collector internal architecture and startup flow. It can be helpful if you are starting to contribute to the Collector codebase.
 
-For the end-user focused architecture document, please see the [opentelemetry.io's Architecture documentation](https://opentelemetry.io/docs/collector/architecture/) 
+For the end-user focused architecture document, please see the [opentelemetry.io's Architecture documentation](https://opentelemetry.io/docs/collector/architecture/).  While it is end user focused - its still a good place to start if you're trying to learn about the Collector codebase.
 
 ### Startup Diagram
 ```mermaid
@@ -36,7 +36,7 @@ flowchart TD
      Topological sort the graph, and create each component in reverse order`")
     L --> M(Receiver Factory) & N(Processor Factory) & O(Exporter Factory) & P(Connector Factory)
 ```
-### Important Files
+### Where to start to read the code
 Here is a brief list of useful and/or important files and interfaces that you may find valuable to glance through.
 Most of these have package-level documentation and function/struct-level comments that help explain the Collector!
 
@@ -50,6 +50,3 @@ Implementations of new components use this `NewFactory` function in their implem
 the Collector.  For example, the Collector uses this interface to give receivers a handle to a `nextConsumer` - 
 representing where the receiver can send data to that it has received.
 An example of this is in [exporter.go](../exporter/exporter.go).
-
-### [Architecture Docs](https://opentelemetry.io/docs/collector/architecture/)
-OpenTelemetry's Collector architecture is a great resource to understand the Collector!
