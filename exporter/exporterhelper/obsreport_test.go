@@ -39,6 +39,6 @@ func TestExportEnqueueFailure(t *testing.T) {
 	require.NoError(t, tt.CheckExporterEnqueueFailedMetrics(metricPoints))
 
 	profiles := int64(21) // TODO(@petethepig): update these
-	obsrep.recordEnqueueFailure(context.Background(), component.DataTypeMetrics, profiles)
-	require.NoError(t, tt.CheckExporterEnqueueFailedMetrics(profiles))
+	obsrep.recordEnqueueFailure(context.Background(), component.DataTypeProfiles, profiles)
+	require.NoError(t, tt.CheckExporterEnqueueFailedProfiles(profiles))
 }

@@ -82,6 +82,6 @@ func fillTestProfile(tv Profile) {
 	tv.orig.ProfileId = data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.EndTimeUnixNano = 1234567890
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes))
+	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.DroppedAttributesCount = uint32(17)
 }
