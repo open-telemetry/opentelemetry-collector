@@ -14,50 +14,50 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
-func TestNewByteSlice(t *testing.T) {
-	ms := NewByteSlice()
+func TestNewStringSlice(t *testing.T) {
+	ms := NewStringSlice()
 	assert.Equal(t, 0, ms.Len())
-	ms.FromRaw([]byte{1, 2, 3})
+	ms.FromRaw([]string{"a", "b", "c"})
 	assert.Equal(t, 3, ms.Len())
-	assert.Equal(t, []byte{1, 2, 3}, ms.AsRaw())
-	ms.SetAt(1, byte(5))
-	assert.Equal(t, []byte{1, 5, 3}, ms.AsRaw())
-	ms.FromRaw([]byte{3})
+	assert.Equal(t, []string{"a", "b", "c"}, ms.AsRaw())
+	ms.SetAt(1, string("d"))
+	assert.Equal(t, []string{"a", "d", "c"}, ms.AsRaw())
+	ms.FromRaw([]string{"c"})
 	assert.Equal(t, 1, ms.Len())
-	assert.Equal(t, byte(3), ms.At(0))
+	assert.Equal(t, string("c"), ms.At(0))
 
-	cp := NewByteSlice()
+	cp := NewStringSlice()
 	ms.CopyTo(cp)
-	ms.SetAt(0, byte(2))
-	assert.Equal(t, byte(2), ms.At(0))
-	assert.Equal(t, byte(3), cp.At(0))
+	ms.SetAt(0, string("b"))
+	assert.Equal(t, string("b"), ms.At(0))
+	assert.Equal(t, string("c"), cp.At(0))
 	ms.CopyTo(cp)
-	assert.Equal(t, byte(2), cp.At(0))
+	assert.Equal(t, string("b"), cp.At(0))
 
-	mv := NewByteSlice()
+	mv := NewStringSlice()
 	ms.MoveTo(mv)
 	assert.Equal(t, 0, ms.Len())
 	assert.Equal(t, 1, mv.Len())
-	assert.Equal(t, byte(2), mv.At(0))
-	ms.FromRaw([]byte{1, 2, 3})
+	assert.Equal(t, string("b"), mv.At(0))
+	ms.FromRaw([]string{"a", "b", "c"})
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
-	assert.Equal(t, byte(1), mv.At(0))
+	assert.Equal(t, string("a"), mv.At(0))
 }
 
-func TestByteSliceReadOnly(t *testing.T) {
-	raw := []byte{1, 2, 3}
+func TestStringSliceReadOnly(t *testing.T) {
+	raw := []string{"a", "b", "c"}
 	state := internal.StateReadOnly
-	ms := ByteSlice(internal.NewByteSlice(&raw, &state))
+	ms := StringSlice(internal.NewStringSlice(&raw, &state))
 
 	assert.Equal(t, 3, ms.Len())
-	assert.Equal(t, byte(1), ms.At(0))
-	assert.Panics(t, func() { ms.Append(1) })
+	assert.Equal(t, string("a"), ms.At(0))
+	assert.Panics(t, func() { ms.Append("a") })
 	assert.Panics(t, func() { ms.EnsureCapacity(2) })
 	assert.Equal(t, raw, ms.AsRaw())
 	assert.Panics(t, func() { ms.FromRaw(raw) })
 
-	ms2 := NewByteSlice()
+	ms2 := NewStringSlice()
 	ms.CopyTo(ms2)
 	assert.Equal(t, ms.AsRaw(), ms2.AsRaw())
 	assert.Panics(t, func() { ms2.CopyTo(ms) })
@@ -66,16 +66,16 @@ func TestByteSliceReadOnly(t *testing.T) {
 	assert.Panics(t, func() { ms2.MoveTo(ms) })
 }
 
-func TestByteSliceAppend(t *testing.T) {
-	ms := NewByteSlice()
-	ms.FromRaw([]byte{1, 2, 3})
-	ms.Append(5, 5)
+func TestStringSliceAppend(t *testing.T) {
+	ms := NewStringSlice()
+	ms.FromRaw([]string{"a", "b", "c"})
+	ms.Append("d", "d")
 	assert.Equal(t, 5, ms.Len())
-	assert.Equal(t, byte(5), ms.At(4))
+	assert.Equal(t, string("d"), ms.At(4))
 }
 
-func TestByteSliceEnsureCapacity(t *testing.T) {
-	ms := NewByteSlice()
+func TestStringSliceEnsureCapacity(t *testing.T) {
+	ms := NewStringSlice()
 	ms.EnsureCapacity(4)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 	ms.EnsureCapacity(2)
