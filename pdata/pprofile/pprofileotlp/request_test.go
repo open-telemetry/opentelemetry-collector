@@ -5,6 +5,7 @@ package pprofileotlp
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,12 +45,12 @@ func TestRequestToPData(t *testing.T) {
 }
 
 // TODO(@petethepig): fix this
-// func TestRequestJSON(t *testing.T) {
-// 	lr := NewExportRequest()
-// 	assert.NoError(t, lr.UnmarshalJSON(profilesRequestJSON))
-// 	assert.Equal(t, "test_profile_record", lr.Profiles().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0))
+func TestRequestJSON(t *testing.T) {
+	lr := NewExportRequest()
+	assert.NoError(t, lr.UnmarshalJSON(profilesRequestJSON))
+	assert.Equal(t, "test_profile_record", lr.Profiles().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0))
 
-// 	got, err := lr.MarshalJSON()
-// 	assert.NoError(t, err)
-// 	assert.Equal(t, strings.Join(strings.Fields(string(profilesRequestJSON)), ""), string(got))
-// }
+	got, err := lr.MarshalJSON()
+	assert.NoError(t, err)
+	assert.Equal(t, strings.Join(strings.Fields(string(profilesRequestJSON)), ""), string(got))
+}

@@ -52,7 +52,7 @@ func TestGrpc(t *testing.T) {
 	resp, err := profileClient.Export(context.Background(), generateProfilesRequest())
 	assert.NoError(t, err)
 	// TODO(@petethepig): fix this
-	assert.NotEqual(t, NewExportResponse(), resp)
+	assert.Equal(t, NewExportResponse(), resp)
 }
 
 func TestGrpcError(t *testing.T) {

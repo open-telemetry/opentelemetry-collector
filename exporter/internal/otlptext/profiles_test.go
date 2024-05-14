@@ -4,10 +4,14 @@
 package otlptext
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -53,15 +57,12 @@ func TestProfilesText(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// TODO(@petethepig): Fix this test
-			assert.Equal(t, "TODO", "TODO")
-
-			// got, err := NewTextProfilesMarshaler().MarshalProfiles(tt.in)
-			// assert.NoError(t, err)
-			// out, err := os.ReadFile(filepath.Join("testdata", "profiles", tt.out))
-			// require.NoError(t, err)
-			// expected := strings.ReplaceAll(string(out), "\r", "")
-			// assert.Equal(t, expected, string(got))
+			got, err := NewTextProfilesMarshaler().MarshalProfiles(tt.in)
+			assert.NoError(t, err)
+			out, err := os.ReadFile(filepath.Join("testdata", "profiles", tt.out))
+			require.NoError(t, err)
+			expected := strings.ReplaceAll(string(out), "\r", "")
+			assert.Equal(t, expected, string(got))
 		})
 	}
 }

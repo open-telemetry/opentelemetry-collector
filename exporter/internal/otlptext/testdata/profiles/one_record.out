@@ -1,19 +1,14 @@
-ResourceLog #0
+ResourceProfile #0
 Resource SchemaURL: 
 Resource attributes:
      -> resource-attr: Str(resource-attr-val-1)
-ScopeLogs #0
-ScopeLogs SchemaURL: 
+ScopeProfiles #0
+ScopeProfiles SchemaURL: 
 InstrumentationScope  
-LogRecord #0
-ObservedTimestamp: 1970-01-01 00:00:00 +0000 UTC
-Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
-SeverityText: Info
-SeverityNumber: Info(9)
-Body: Str(This is a log message)
+ProfileRecord #0
+Profile ID: 08040201000000000000000000000000
+StartTime: 2020-02-11 20:26:13.000000789 +0000 UTC
+EndTime: 2020-02-11 20:26:13.000000789 +0000 UTC
 Attributes:
      -> app: Str(server)
      -> instance_num: Int(1)
-Trace ID: 08040201000000000000000000000000
-Span ID: 0102040800000000
-Flags: 0
