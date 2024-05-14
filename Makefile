@@ -183,11 +183,9 @@ genproto-cleanup:
 
 # Generate OTLP Protobuf Go files. This will place generated files in PROTO_TARGET_GEN_DIR.
 genproto: genproto-cleanup
-# TODO(@petethepig): undo this
-# mkdir -p ${OPENTELEMETRY_PROTO_SRC_DIR}
-# curl -sSL https://api.github.com/repos/open-telemetry/opentelemetry-proto/tarball/${OPENTELEMETRY_PROTO_VERSION} | tar xz --strip 1 -C ${OPENTELEMETRY_PROTO_SRC_DIR}
-# # Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated
-	rsync -av ../opentelemetry-proto/ ${OPENTELEMETRY_PROTO_SRC_DIR}
+	mkdir -p ${OPENTELEMETRY_PROTO_SRC_DIR}
+	curl -sSL https://api.github.com/repos/open-telemetry/opentelemetry-proto/tarball/${OPENTELEMETRY_PROTO_VERSION} | tar xz --strip 1 -C ${OPENTELEMETRY_PROTO_SRC_DIR}
+	# Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated
 	$(MAKE) genproto_sub
 	$(MAKE) fmt
 	$(MAKE) genproto-cleanup
@@ -504,17 +502,3 @@ mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) install .
 	cd cmd/mdatagen && $(GOCMD) generate ./...
 	cd cmd/mdatagen && $(GOCMD) test ./...
-
-.PHONY: profile-benchmark
-profile-benchmark: $(ENVSUBST)
-	cd ./pdata/pprofile && go test -bench . -run=^$$ | tee /tmp/benchmarks.txt
-	@echo "Benchmark results for posting to Google Sheets:"
-	cat /tmp/benchmarks.txt | grep 'Benchmark' | grep 'retained_objects' | grep -v 'not found' | sed -E "s/[[:space:]]+/ /g"
-
-.PHONY: profile-benchmark-generate
-profile-benchmark-generate:
-	cd pdata/pprofile && go run ./benchmarks-generator
-
-.PHONY: profile-maligned
-profile-maligned:
-	cd pdata/internal/data/protogen/profiles/v1 && maligned .
