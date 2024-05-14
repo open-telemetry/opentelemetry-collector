@@ -25,7 +25,7 @@ func main() {
 	}
 
 	var converterFactories []confmap.ConverterFactory
-	if otelcol.AllowEnvVarExpansionFeatureGate.IsEnabled() {
+	if otelcol.PreventEnvVarExpansionFeatureGate.IsEnabled() {
 		converterFactories = []confmap.ConverterFactory{
 			expandconverter.NewFactory(),
 		}

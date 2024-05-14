@@ -73,7 +73,7 @@ func TestAddDefaultConfmapModules(t *testing.T) {
 			ResolverSettings: confmap.ResolverSettings{},
 		},
 	}
-	flgs := flags(featuregate.NewRegistry())
+	flgs := flags(featuregate.GlobalRegistry())
 	err := flgs.Parse([]string{"--config=otelcol-nop.yaml"})
 	require.NoError(t, err)
 

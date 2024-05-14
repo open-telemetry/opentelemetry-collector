@@ -24,6 +24,13 @@ func main() {
 		Version:     "{{ .Distribution.Version }}",
 	}
 
+    var converterFactories []confmap.ConverterFactory
+    if otelcol.PreventEnvVarExpansionFeatureGate.IsEnabled() {
+        converterFactories = []confmap.ConverterFactory{
+            expandconverter.NewFactory(),
+        }
+    }
+
 	set := otelcol.CollectorSettings{
 		BuildInfo: info,
 		Factories: components,
@@ -35,9 +42,7 @@ func main() {
 					{{.Name}}.NewFactory(),
 					{{- end}}
 				},
-				ConverterFactories: []confmap.ConverterFactory{
-					expandconverter.NewFactory(),
-				},
+				ConverterFactories: converterFactories,
 			},
 		},
 		{{- end}}

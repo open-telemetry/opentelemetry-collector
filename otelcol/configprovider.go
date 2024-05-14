@@ -17,10 +17,10 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-// AllowEnvVarExpansionFeatureGate is the feature gate that controls whether the collector
+// PreventEnvVarExpansionFeatureGate is the feature gate that controls whether the collector
 // supports configuring the OpenTelemetry SDK via configuration
-var AllowEnvVarExpansionFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"confmap.allowEnvVarExpansion",
+var PreventEnvVarExpansionFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"confmap.preventEnvVarExpansion",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("controls whether the collector supports expanding $ENV in configuration"),
 	featuregate.WithRegisterFromVersion("v0.101.0"),
@@ -143,7 +143,7 @@ func (cm *configProvider) GetConfmap(ctx context.Context) (*confmap.Conf, error)
 
 func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
 	var converterFactories []confmap.ConverterFactory
-	if AllowEnvVarExpansionFeatureGate.IsEnabled() {
+	if !PreventEnvVarExpansionFeatureGate.IsEnabled() {
 		converterFactories = []confmap.ConverterFactory{
 			expandconverter.NewFactory(),
 		}
