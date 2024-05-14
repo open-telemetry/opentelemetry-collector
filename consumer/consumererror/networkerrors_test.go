@@ -17,29 +17,29 @@ func TestStatusError_Error(t *testing.T) {
 	tests := []struct {
 		statusError error
 		msgContains string
-		validate    func(t *testing.T, se StatusError)
+		validate    func(t *testing.T, se NetworkError)
 	}{
 		{
-			statusError: NewHTTPStatus(errors.New("httperror"), 400),
-			validate: func(t *testing.T, se StatusError) {
+			statusError: NewHTTPError(errors.New("httperror"), 400),
+			validate: func(t *testing.T, se NetworkError) {
 				require.Contains(t, se.Error(), "400")
 			},
 		},
 		{
-			statusError: NewGRPCStatus(errors.New("status"), status.New(codes.InvalidArgument, "")),
-			validate: func(t *testing.T, se StatusError) {
+			statusError: NewGRPCError(errors.New("status"), status.New(codes.InvalidArgument, "")),
+			validate: func(t *testing.T, se NetworkError) {
 				require.Contains(t, se.Error(), "InvalidArgument")
 			},
 		},
 		{
-			statusError: NewGRPCStatus(errors.New("nil"), nil),
-			validate: func(t *testing.T, se StatusError) {
+			statusError: NewGRPCError(errors.New("nil"), nil),
+			validate: func(t *testing.T, se NetworkError) {
 				require.NotNil(t, se.Error())
 			},
 		},
 	}
 	for _, tt := range tests {
-		var se StatusError
+		var se NetworkError
 		require.True(t, errors.As(tt.statusError, &se))
 		tt.validate(t, se)
 	}
@@ -47,7 +47,7 @@ func TestStatusError_Error(t *testing.T) {
 
 func TestStatusError_Unwrap(t *testing.T) {
 	var err error = testErrorType{"some error"}
-	se := NewHTTPStatus(err, 400)
+	se := NewHTTPError(err, 400)
 	joinedErr := errors.Join(errors.New("other error"), se)
 	target := testErrorType{}
 	require.NotEqual(t, err, target)
@@ -61,20 +61,20 @@ func TestStatusError_GRPCStatus(t *testing.T) {
 		code        codes.Code
 	}{
 		{
-			statusError: NewHTTPStatus(errors.New("httperror"), 429),
+			statusError: NewHTTPError(errors.New("httperror"), 429),
 			code:        codes.ResourceExhausted,
 		},
 		{
-			statusError: NewGRPCStatus(errors.New("status"), status.New(codes.ResourceExhausted, "")),
+			statusError: NewGRPCError(errors.New("status"), status.New(codes.ResourceExhausted, "")),
 			code:        codes.ResourceExhausted,
 		},
 		{
-			statusError: NewGRPCStatus(errors.New("nil"), nil),
+			statusError: NewGRPCError(errors.New("nil"), nil),
 			code:        codes.Unknown,
 		},
 	}
 	for _, tt := range tests {
-		var se StatusError
+		var se NetworkError
 		require.True(t, errors.As(tt.statusError, &se))
 		status := se.GRPCStatus()
 		require.Equal(t, tt.code, status.Code())
@@ -88,22 +88,22 @@ func TestStatusError_HTTPStatus(t *testing.T) {
 		ok          bool
 	}{
 		{
-			statusError: NewHTTPStatus(errors.New("httperror"), http.StatusTooManyRequests),
+			statusError: NewHTTPError(errors.New("httperror"), http.StatusTooManyRequests),
 			code:        http.StatusTooManyRequests,
 			ok:          true,
 		},
 		{
-			statusError: NewGRPCStatus(errors.New("status"), status.New(codes.ResourceExhausted, "")),
+			statusError: NewGRPCError(errors.New("status"), status.New(codes.ResourceExhausted, "")),
 			code:        http.StatusTooManyRequests,
 			ok:          true,
 		},
 		{
-			statusError: NewGRPCStatus(errors.New("nil"), nil),
+			statusError: NewGRPCError(errors.New("nil"), nil),
 			code:        http.StatusInternalServerError,
 		},
 	}
 	for _, tt := range tests {
-		var se StatusError
+		var se NetworkError
 		require.True(t, errors.As(tt.statusError, &se))
 		code := se.HTTPStatus()
 		require.Equal(t, tt.code, code)
