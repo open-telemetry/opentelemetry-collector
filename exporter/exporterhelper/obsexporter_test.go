@@ -171,6 +171,55 @@ func TestExportLogsOp(t *testing.T) {
 	})
 }
 
+func TestExportProfilesOp(t *testing.T) {
+	testTelemetry(t, exporterID, func(t *testing.T, tt componenttest.TestTelemetry) {
+		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		defer parentSpan.End()
+
+		obsrep, err := newExporter(ObsReportSettings{
+			ExporterID:             exporterID,
+			ExporterCreateSettings: exporter.CreateSettings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		})
+		require.NoError(t, err)
+
+		params := []testParams{
+			{items: 17, err: nil},
+			{items: 23, err: errFake},
+		}
+		for i := range params {
+			ctx := obsrep.StartProfilesOp(parentCtx)
+			assert.NotNil(t, ctx)
+
+			obsrep.EndProfilesOp(ctx, params[i].items, params[i].err)
+		}
+
+		spans := tt.SpanRecorder.Ended()
+		require.Equal(t, len(params), len(spans))
+
+		var sentProfiles, failedToSendProfiles int
+		for i, span := range spans {
+			assert.Equal(t, "exporter/"+exporterID.String()+"/profiles", span.Name())
+			switch {
+			case params[i].err == nil:
+				sentProfiles += params[i].items
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentProfilesKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendProfilesKey, Value: attribute.Int64Value(0)})
+				assert.Equal(t, codes.Unset, span.Status().Code)
+			case errors.Is(params[i].err, errFake):
+				failedToSendProfiles += params[i].items
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentProfilesKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendProfilesKey, Value: attribute.Int64Value(int64(params[i].items))})
+				assert.Equal(t, codes.Error, span.Status().Code)
+				assert.Equal(t, params[i].err.Error(), span.Status().Description)
+			default:
+				t.Fatalf("unexpected error: %v", params[i].err)
+			}
+		}
+
+		require.NoError(t, tt.CheckExporterProfiles(int64(sentProfiles), int64(failedToSendProfiles)))
+	})
+}
+
 func TestCheckExporterTracesViews(t *testing.T) {
 	tt, err := componenttest.SetupTelemetry(exporterID)
 	require.NoError(t, err)

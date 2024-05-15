@@ -31,6 +31,8 @@ var profilesOTLP = func() Profiles {
 	return ld
 }()
 
+// TODO(@petethepig): Implement JSONMarshaler and JSONUnmarshaler for the Profile data type.
+
 // func TestProfilesJSON(t *testing.T) {
 // 	encoder := &JSONMarshaler{}
 // 	jsonBuf, err := encoder.MarshalProfiles(profilesOTLP)

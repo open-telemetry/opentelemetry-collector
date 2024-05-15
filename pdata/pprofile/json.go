@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
 
+// TODO(@petethepig): Implement JSONMarshaler and JSONUnmarshaler for the Profile data type.
 type JSONMarshaler struct{}
 
 func (*JSONMarshaler) MarshalProfiles(ld Profiles) ([]byte, error) {

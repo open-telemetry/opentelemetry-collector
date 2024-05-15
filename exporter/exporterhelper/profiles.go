@@ -90,11 +90,11 @@ func NewProfilesExporter(
 	if pusher == nil {
 		return nil, errNilPushProfilesData
 	}
-	logsOpts := []Option{
+	profilesOpts := []Option{
 		withMarshaler(profilesRequestMarshaler), withUnmarshaler(newProfilesRequestUnmarshalerFunc(pusher)),
 		withBatchFuncs(mergeProfiles, mergeSplitProfiles),
 	}
-	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(pusher), append(logsOpts, options...)...)
+	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(pusher), append(profilesOpts, options...)...)
 }
 
 // RequestFromProfilesFunc converts pprofile.Profiles data into a user-defined request.
@@ -109,7 +109,7 @@ func requestFromProfiles(pusher consumer.ConsumeProfilesFunc) RequestFromProfile
 	}
 }
 
-// NewProfilesRequestExporter creates new logs exporter based on custom ProfilesConverter and RequestSender.
+// NewProfilesRequestExporter creates new profiles exporter based on custom ProfilesConverter and RequestSender.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewProfilesRequestExporter(
@@ -134,8 +134,8 @@ func NewProfilesRequestExporter(
 	lc, err := consumer.NewProfiles(func(ctx context.Context, ld pprofile.Profiles) error {
 		req, cErr := converter(ctx, ld)
 		if cErr != nil {
-			set.Logger.Error("Failed to convert logs. Dropping data.",
-				zap.Int("dropped_log_records", ld.ProfileCount()),
+			set.Logger.Error("Failed to convert profiles. Dropping data.",
+				zap.Int("dropped_profiles", ld.ProfileCount()),
 				zap.Error(err))
 			return consumererror.NewPermanent(cErr)
 		}

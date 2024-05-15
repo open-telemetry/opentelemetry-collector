@@ -312,7 +312,7 @@ func (b *Builder) CreateProfiles(ctx context.Context, set CreateSettings) (Profi
 		return nil, fmt.Errorf("exporter factory not available for: %q", set.ID)
 	}
 
-	logStabilityLevel(set.Logger, f.LogsExporterStability())
+	logStabilityLevel(set.Logger, f.ProfilesExporterStability())
 	return f.CreateProfilesExporter(ctx, set, cfg)
 }
 

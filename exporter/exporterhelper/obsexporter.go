@@ -114,8 +114,8 @@ func (or *ObsReport) StartProfilesOp(ctx context.Context) context.Context {
 // EndProfilesOp completes the export operation that was started with StartProfilesOp.
 func (or *ObsReport) EndProfilesOp(ctx context.Context, numProfileRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numProfileRecords, err)
-	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeLogs, numSent, numFailedToSend)
-	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeProfiles, numSent, numFailedToSend)
+	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentProfilesKey, obsmetrics.FailedToSendProfilesKey)
 }
 
 // startOp creates the span used to trace the operation. Returning
