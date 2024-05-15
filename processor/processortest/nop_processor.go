@@ -34,7 +34,7 @@ func NewNopFactory() processor.Factory {
 		processor.WithTraces(createTracesProcessor, component.StabilityLevelStable),
 		processor.WithMetrics(createMetricsProcessor, component.StabilityLevelStable),
 		processor.WithLogs(createLogsProcessor, component.StabilityLevelStable),
-		processor.WithProfiles(createProfilesProcessor, component.StabilityLevelStable),
+		processor.WithProfiles(createProfilesProcessor, component.StabilityLevelAlpha),
 	)
 }
 
