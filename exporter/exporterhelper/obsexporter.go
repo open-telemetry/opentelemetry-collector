@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -70,7 +71,7 @@ func (or *ObsReport) StartTracesOp(ctx context.Context) context.Context {
 // EndTracesOp completes the export operation that was started with StartTracesOp.
 func (or *ObsReport) EndTracesOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeTraces, numSent, numFailedToSend)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeTraces, numSent, numFailedToSend, err)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSpansKey, obsmetrics.FailedToSendSpansKey)
 }
 
@@ -85,7 +86,7 @@ func (or *ObsReport) StartMetricsOp(ctx context.Context) context.Context {
 // StartMetricsOp.
 func (or *ObsReport) EndMetricsOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeMetrics, numSent, numFailedToSend)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeMetrics, numSent, numFailedToSend, err)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentMetricPointsKey, obsmetrics.FailedToSendMetricPointsKey)
 }
 
@@ -99,7 +100,7 @@ func (or *ObsReport) StartLogsOp(ctx context.Context) context.Context {
 // EndLogsOp completes the export operation that was started with StartLogsOp.
 func (or *ObsReport) EndLogsOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
-	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeLogs, numSent, numFailedToSend)
+	or.recordMetrics(noCancellationContext{Context: ctx}, component.DataTypeLogs, numSent, numFailedToSend, err)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
 }
 
@@ -111,7 +112,7 @@ func (or *ObsReport) startOp(ctx context.Context, operationSuffix string) contex
 	return ctx
 }
 
-func (or *ObsReport) recordMetrics(ctx context.Context, dataType component.DataType, sent, failed int64) {
+func (or *ObsReport) recordMetrics(ctx context.Context, dataType component.DataType, sent, failed int64, err error) {
 	if or.level == configtelemetry.LevelNone {
 		return
 	}
@@ -129,7 +130,12 @@ func (or *ObsReport) recordMetrics(ctx context.Context, dataType component.DataT
 	}
 
 	sentMeasure.Add(ctx, sent, metric.WithAttributes(or.otelAttrs...))
-	failedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))
+	if err != nil  && or.level == configtelemetry.LevelDetailed {
+		failedMeasure.Add(ctx, failed, metric.WithAttributes(
+			append(or.otelAttrs, attribute.String("reason", status.Convert(err).Code().String()))...))
+	} else {
+		failedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))
+	}
 }
 
 func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sentItemsKey, failedToSendItemsKey string) {

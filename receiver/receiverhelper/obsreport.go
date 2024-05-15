@@ -7,6 +7,7 @@ package receiverhelper // import "go.opentelemetry.io/collector/receiver/receive
 
 import (
 	"context"
+	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -170,7 +171,7 @@ func (rec *ObsReport) endOp(
 	span := trace.SpanFromContext(receiverCtx)
 
 	if rec.level != configtelemetry.LevelNone {
-		rec.recordMetrics(receiverCtx, dataType, numAccepted, numRefused)
+		rec.recordMetrics(receiverCtx, dataType, numAccepted, numRefused, err)
 	}
 
 	// end span according to errors
@@ -200,7 +201,7 @@ func (rec *ObsReport) endOp(
 	span.End()
 }
 
-func (rec *ObsReport) recordMetrics(receiverCtx context.Context, dataType component.DataType, numAccepted, numRefused int) {
+func (rec *ObsReport) recordMetrics(receiverCtx context.Context, dataType component.DataType, numAccepted, numRefused int, err error) {
 	var acceptedMeasure, refusedMeasure metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
@@ -215,5 +216,10 @@ func (rec *ObsReport) recordMetrics(receiverCtx context.Context, dataType compon
 	}
 
 	acceptedMeasure.Add(receiverCtx, int64(numAccepted), metric.WithAttributes(rec.otelAttrs...))
-	refusedMeasure.Add(receiverCtx, int64(numRefused), metric.WithAttributes(rec.otelAttrs...))
+	if err != nil && rec.level == configtelemetry.LevelDetailed {
+		refusedMeasure.Add(receiverCtx, int64(numRefused), metric.WithAttributes(
+			append(rec.otelAttrs, attribute.String("reason", status.Convert(err).Code().String()))...))
+	} else {
+		refusedMeasure.Add(receiverCtx, int64(numRefused), metric.WithAttributes(rec.otelAttrs...))
+	}
 }
