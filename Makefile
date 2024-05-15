@@ -160,8 +160,6 @@ OPENTELEMETRY_PROTO_SRC_DIR=pdata/internal/opentelemetry-proto
 OPENTELEMETRY_PROTO_VERSION=v1.2.0
 
 # Find all .proto files.
-# OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1experimental/*/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto) $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1experimental/*.proto)
-
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1experimental/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1experimental/*.proto))
 
 # Target directory to write generated files to.
