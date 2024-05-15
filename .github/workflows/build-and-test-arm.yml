@@ -13,6 +13,9 @@ env:
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
   GOPROXY: https://goproxy1.cncf.selfactuated.dev,direct
 
+permissions:
+  contents: read
+
 # Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
