@@ -963,6 +963,118 @@ func TestClientInfoInterceptors(t *testing.T) {
 	}
 }
 
+func TestClientMetadataWithAuthInterceptorsAndIncludeMetadata(t *testing.T) {
+	testCases := []struct {
+		desc            string
+		tester          func(context.Context, ptraceotlp.GRPCClient)
+		includeMetadata bool
+	}{
+		{
+			desc: "overwritten",
+			tester: func(ctx context.Context, cl ptraceotlp.GRPCClient) {
+				resp, errResp := cl.Export(ctx, ptraceotlp.NewExportRequest())
+				require.NoError(t, errResp)
+				require.NotNil(t, resp)
+			},
+			includeMetadata: true,
+		},
+		{
+			desc: "found",
+			tester: func(ctx context.Context, cl ptraceotlp.GRPCClient) {
+				resp, errResp := cl.Export(ctx, ptraceotlp.NewExportRequest())
+				require.NoError(t, errResp)
+				require.NotNil(t, resp)
+			},
+			includeMetadata: false,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			mock := &grpcTraceServer{}
+			var l net.Listener
+
+			// prepare the server
+			{
+				gss := &ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "localhost:0",
+						Transport: confignet.TransportTypeTCP,
+					},
+					IncludeMetadata: tC.includeMetadata,
+				}
+				gss.Auth = &configauth.Authentication{
+					AuthenticatorID: mockID,
+				}
+				host := &mockHost{
+					ext: map[component.ID]component.Component{
+						mockID: auth.NewServer(auth.WithServerAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+							return client.NewContext(ctx, client.Info{
+								Metadata: client.NewMetadata(metadata.Pairs("some-key-set-in-auth", "some-value-set-in-auth")),
+							}), nil
+						})),
+					},
+				}
+				srv, err := gss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings())
+				require.NoError(t, err)
+				ptraceotlp.RegisterGRPCServer(srv, mock)
+
+				defer srv.Stop()
+
+				l, err = gss.NetAddr.Listen(context.Background())
+				require.NoError(t, err)
+
+				go func() {
+					_ = srv.Serve(l)
+				}()
+			}
+
+			// prepare the client and execute a RPC
+			{
+				gcs := &ClientConfig{
+					Endpoint: l.Addr().String(),
+					TLSSetting: configtls.ClientConfig{
+						Insecure: true,
+					},
+					Headers: map[string]configopaque.String{
+						"header1": "value1",
+					},
+				}
+
+				tt, err := componenttest.SetupTelemetry(componentID)
+				require.NoError(t, err)
+				defer func() {
+					require.NoError(t, tt.Shutdown(context.Background()))
+				}()
+
+				grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings())
+				require.NoError(t, errClient)
+				defer func() { assert.NoError(t, grpcClientConn.Close()) }()
+
+				cl := ptraceotlp.NewGRPCClient(grpcClientConn)
+				ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
+				defer cancelFunc()
+
+				// test
+				tC.tester(ctx, cl)
+			}
+
+			// verify
+			cl := client.FromContext(mock.recordedContext)
+			if tC.includeMetadata == true {
+				// Since IncludeMetadata has been set to true, we will not be able to find
+				// below key in Metadata
+				assert.Nil(t, cl.Metadata.Get("some-key-set-in-auth"))
+			} else {
+				assert.Equal(t, cl.Metadata.Get("some-key-set-in-auth")[0], "some-value-set-in-auth")
+			}
+
+			// the client address is something like 127.0.0.1:41086
+			assert.Contains(t, cl.Addr.String(), "127.0.0.1")
+
+		})
+	}
+}
+
 func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	// prepare
 	handlerCalled := false
