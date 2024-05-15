@@ -118,7 +118,7 @@ Here is a list of community roles with current and previous members:
 
 - Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triagers)):
 
-  - [Andrzej Stencel](https://github.com/andrzej-stencel), Sumo Logic
+  - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
   - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
   - Actively seeking contributors to triage issues
 
