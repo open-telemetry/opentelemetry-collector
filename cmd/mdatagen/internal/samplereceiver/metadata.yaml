@@ -165,3 +165,11 @@ telemetry:
       unit: s
       histogram:
         value_type: double
+    process_runtime_total_alloc_bytes:
+      enabled: true
+      description: Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
+      unit: By
+      sum:
+        async: true
+        value_type: int
+        monotonic: true
