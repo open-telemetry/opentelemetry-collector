@@ -62,9 +62,10 @@ func TestCreateTracesReceiver(t *testing.T) {
 		ServerConfig: &confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
-		TracesURLPath:  defaultTracesURLPath,
-		MetricsURLPath: defaultMetricsURLPath,
-		LogsURLPath:    defaultLogsURLPath,
+		TracesURLPath:   defaultTracesURLPath,
+		MetricsURLPath:  defaultMetricsURLPath,
+		LogsURLPath:     defaultLogsURLPath,
+		ProfilesURLPath: defaultProfilesURLPath,
 	}
 
 	tests := []struct {
@@ -156,9 +157,10 @@ func TestCreateMetricReceiver(t *testing.T) {
 		ServerConfig: &confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
-		TracesURLPath:  defaultTracesURLPath,
-		MetricsURLPath: defaultMetricsURLPath,
-		LogsURLPath:    defaultLogsURLPath,
+		TracesURLPath:   defaultTracesURLPath,
+		MetricsURLPath:  defaultMetricsURLPath,
+		LogsURLPath:     defaultLogsURLPath,
+		ProfilesURLPath: defaultProfilesURLPath,
 	}
 
 	tests := []struct {
@@ -250,9 +252,10 @@ func TestCreateLogReceiver(t *testing.T) {
 		ServerConfig: &confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
-		TracesURLPath:  defaultTracesURLPath,
-		MetricsURLPath: defaultMetricsURLPath,
-		LogsURLPath:    defaultLogsURLPath,
+		TracesURLPath:   defaultTracesURLPath,
+		MetricsURLPath:  defaultMetricsURLPath,
+		LogsURLPath:     defaultLogsURLPath,
+		ProfilesURLPath: defaultProfilesURLPath,
 	}
 
 	tests := []struct {
@@ -317,6 +320,101 @@ func TestCreateLogReceiver(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mr, err := factory.CreateLogsReceiver(ctx, creationSet, tt.cfg, tt.sink)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			if tt.wantStartErr {
+				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
+			} else {
+				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.NoError(t, mr.Shutdown(context.Background()))
+			}
+		})
+	}
+}
+
+func TestCreateProfileReceiver(t *testing.T) {
+	factory := NewFactory()
+	defaultGRPCSettings := &configgrpc.ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  testutil.GetAvailableLocalAddress(t),
+			Transport: confignet.TransportTypeTCP,
+		},
+	}
+	defaultHTTPSettings := &HTTPConfig{
+		ServerConfig: &confighttp.ServerConfig{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
+		TracesURLPath:   defaultTracesURLPath,
+		MetricsURLPath:  defaultMetricsURLPath,
+		LogsURLPath:     defaultLogsURLPath,
+		ProfilesURLPath: defaultProfilesURLPath,
+	}
+
+	tests := []struct {
+		name         string
+		cfg          *Config
+		wantStartErr bool
+		wantErr      bool
+		sink         consumer.Profiles
+	}{
+		{
+			name: "default",
+			cfg: &Config{
+				Protocols: Protocols{
+					GRPC: defaultGRPCSettings,
+					HTTP: defaultHTTPSettings,
+				},
+			},
+			sink: consumertest.NewNop(),
+		},
+		{
+			name: "invalid_grpc_address",
+			cfg: &Config{
+				Protocols: Protocols{
+					GRPC: &configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
+							Endpoint:  "327.0.0.1:1122",
+							Transport: confignet.TransportTypeTCP,
+						},
+					},
+					HTTP: defaultHTTPSettings,
+				},
+			},
+			wantStartErr: true,
+			sink:         consumertest.NewNop(),
+		},
+		{
+			name: "invalid_http_address",
+			cfg: &Config{
+				Protocols: Protocols{
+					GRPC: defaultGRPCSettings,
+					HTTP: &HTTPConfig{
+						ServerConfig: &confighttp.ServerConfig{
+							Endpoint: "327.0.0.1:1122",
+						},
+						ProfilesURLPath: defaultProfilesURLPath,
+					},
+				},
+			},
+			wantStartErr: true,
+			sink:         consumertest.NewNop(),
+		},
+		{
+			name: "no_http_or_grcp_config",
+			cfg: &Config{
+				Protocols: Protocols{},
+			},
+			sink: consumertest.NewNop(),
+		},
+	}
+	ctx := context.Background()
+	creationSet := receivertest.NewNopCreateSettings()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mr, err := factory.CreateProfilesReceiver(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

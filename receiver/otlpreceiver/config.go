@@ -32,6 +32,9 @@ type HTTPConfig struct {
 
 	// The URL path to receive logs on. If omitted "/v1/logs" will be used.
 	LogsURLPath string `mapstructure:"logs_url_path,omitempty"`
+
+	// The URL path to receive logs on. If omitted "/v1experimental/profiles" will be used.
+	ProfilesURLPath string `mapstructure:"profiles_url_path,omitempty"`
 }
 
 // Protocols is the configuration for the supported protocols.

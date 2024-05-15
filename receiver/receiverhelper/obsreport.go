@@ -204,6 +204,9 @@ func (rec *ObsReport) endOp(
 		case component.DataTypeLogs:
 			acceptedItemsKey = obsmetrics.AcceptedLogRecordsKey
 			refusedItemsKey = obsmetrics.RefusedLogRecordsKey
+		case component.DataTypeProfiles:
+			acceptedItemsKey = obsmetrics.AcceptedProfilesKey
+			refusedItemsKey = obsmetrics.RefusedProfilesKey
 		}
 
 		span.SetAttributes(
@@ -228,6 +231,9 @@ func (rec *ObsReport) recordMetrics(receiverCtx context.Context, dataType compon
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedMetricPoints
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedMetricPoints
 	case component.DataTypeLogs:
+		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedLogRecords
+		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedLogRecords
+	case component.DataTypeProfiles:
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedLogRecords
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedLogRecords
 	}
