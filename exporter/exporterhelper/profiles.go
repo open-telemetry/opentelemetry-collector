@@ -43,6 +43,10 @@ func newProfilesRequestUnmarshalerFunc(pusher consumer.ConsumeProfilesFunc) expo
 	}
 }
 
+func profilesRequestMarshaler(req Request) ([]byte, error) {
+	return profilesMarshaler.MarshalProfiles(req.(*profilesRequest).pd)
+}
+
 func (req *profilesRequest) OnError(err error) Request {
 	var profileError consumererror.Profiles
 	if errors.As(err, &profileError) {
@@ -72,7 +76,7 @@ type profilesExporter struct {
 	consumer.Profiles
 }
 
-// NewLogsExporter creates an exporter.Logs that records observability metrics and wraps every request with a Span.
+// NewProfilesExporter creates an exporter.Profiles that records observability metrics and wraps every request with a Span.
 func NewProfilesExporter(
 	ctx context.Context,
 	set exporter.CreateSettings,
@@ -84,11 +88,11 @@ func NewProfilesExporter(
 		return nil, errNilConfig
 	}
 	if pusher == nil {
-		return nil, errNilPushLogsData
+		return nil, errNilPushProfilesData
 	}
 	logsOpts := []Option{
-		withMarshaler(logsRequestMarshaler), withUnmarshaler(newProfilesRequestUnmarshalerFunc(pusher)),
-		withBatchFuncs(mergeProfiles, mergeSplitLogs),
+		withMarshaler(profilesRequestMarshaler), withUnmarshaler(newProfilesRequestUnmarshalerFunc(pusher)),
+		withBatchFuncs(mergeProfiles, mergeSplitProfiles),
 	}
 	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(pusher), append(logsOpts, options...)...)
 }

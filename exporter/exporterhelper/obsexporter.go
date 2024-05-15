@@ -141,6 +141,9 @@ func (or *ObsReport) recordMetrics(ctx context.Context, dataType component.DataT
 	case component.DataTypeLogs:
 		sentMeasure = or.telemetryBuilder.ExporterSentLogRecords
 		failedMeasure = or.telemetryBuilder.ExporterSendFailedLogRecords
+	case component.DataTypeProfiles:
+		sentMeasure = or.telemetryBuilder.ExporterSentProfiles
+		failedMeasure = or.telemetryBuilder.ExporterSendFailedProfiles
 	}
 
 	sentMeasure.Add(ctx, sent, metric.WithAttributes(or.otelAttrs...))

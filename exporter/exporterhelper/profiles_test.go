@@ -211,10 +211,8 @@ func checkRecordedMetricsForProfilesExporter(t *testing.T, tt componenttest.Test
 
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	if wantError != nil {
-		// TODO(@petethepig): fix this
 		require.NoError(t, tt.CheckExporterProfiles(0, int64(numBatches*ld.ProfileCount())))
 	} else {
-		// TODO(@petethepig): fix this
 		require.NoError(t, tt.CheckExporterProfiles(int64(numBatches*ld.ProfileCount()), 0))
 	}
 }

@@ -58,7 +58,7 @@ telemetry:
 
     exporter_sent_log_records:
       enabled: true
-      description: Number of log record successfully sent to destination.
+      description: Number of log records successfully sent to destination.
       unit: 1
       sum:
         value_type: int
@@ -75,6 +75,30 @@ telemetry:
     exporter_enqueue_failed_log_records:
       enabled: true
       description: Number of log records failed to be added to the sending queue.
+      unit: 1
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_sent_profiles:
+      enabled: true
+      description: Number of profiles successfully sent to destination.
+      unit: 1
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_send_failed_profiles:
+      enabled: true
+      description: Number of profiles in failed attempts to send to destination.
+      unit: 1
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_enqueue_failed_profiles:
+      enabled: true
+      description: Number of profiles failed to be added to the sending queue.
       unit: 1
       sum:
         value_type: int
