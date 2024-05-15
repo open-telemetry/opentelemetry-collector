@@ -175,8 +175,8 @@ var (
 	DataTypeMetrics = mustNewDataType("metrics")
 
 	// DataTypeLogs is the data type tag for logs.
-	DataTypeLogs DataType = mustNewDataType("logs")
+	DataTypeLogs = mustNewDataType("logs")
 
 	// DataTypeProfiles is the data type tag for profiles.
-	DataTypeProfiles DataType = mustNewDataType("profiles")
+	DataTypeProfiles = mustNewDataType("profiles")
 )
