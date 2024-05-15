@@ -176,7 +176,7 @@ func (e *Encoder) encodeMap(value reflect.Value) (any, error) {
 		case reflect.String:
 			key = v.String()
 		default:
-			return nil, fmt.Errorf("%w, key: %q, kind: %v, type: %v", errNonStringEncodedKey, iterator.Key().Interface(), iterator.Key().Kind(), reflect.TypeOf(encoded))
+			return nil, fmt.Errorf("%w, key: %q, kind: %v, type: %T", errNonStringEncodedKey, iterator.Key().Interface(), iterator.Key().Kind(), encoded)
 		}
 
 		if _, ok := result[key]; ok {
