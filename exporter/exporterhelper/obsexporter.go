@@ -5,7 +5,6 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -185,9 +184,5 @@ func (or *ObsReport) recordEnqueueFailure(ctx context.Context, dataType componen
 		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedProfiles
 	}
 
-	fmt.Println("dataType", dataType)
-	fmt.Println("enqueueFailedMeasure", enqueueFailedMeasure)
-	fmt.Println("failed", failed)
-	fmt.Println("otelAttrs", or)
 	enqueueFailedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))
 }
