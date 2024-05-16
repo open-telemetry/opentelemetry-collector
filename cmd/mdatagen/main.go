@@ -85,13 +85,19 @@ func run(ymlPath string) error {
 		}
 	}
 
-	if len(md.Telemetry.Metrics) != 0 {
-		if err = generateFile(filepath.Join(tmplDir, "telemetry.go.tmpl"),
-			filepath.Join(codeDir, "generated_telemetry.go"), md, "metadata"); err != nil {
-			return err
-		}
-		if err = generateFile(filepath.Join(tmplDir, "telemetry_test.go.tmpl"),
-			filepath.Join(codeDir, "generated_telemetry_test.go"), md, "metadata"); err != nil {
+	toGenerate := map[string]string{}
+
+	if len(md.Telemetry.Metrics) != 0 { // if there are telemetry metrics, generate telemetry specific files
+		toGenerate[filepath.Join(tmplDir, "telemetry.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry.go")
+		toGenerate[filepath.Join(tmplDir, "telemetry_test.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry_test.go")
+	}
+
+	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 { // if there's metrics or internal metrics, generate documentation for them
+		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")
+	}
+
+	for tmpl, dst := range toGenerate {
+		if err = generateFile(tmpl, dst, md, "metadata"); err != nil {
 			return err
 		}
 	}
@@ -103,45 +109,30 @@ func run(ymlPath string) error {
 	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", filepath.Join(codeDir, "testdata"), err)
 	}
-	if err = generateFile(filepath.Join(tmplDir, "testdata", "config.yaml.tmpl"),
-		filepath.Join(codeDir, "testdata", "config.yaml"), md, "metadata"); err != nil {
-		return err
+
+	toGenerate = map[string]string{
+		filepath.Join(tmplDir, "testdata", "config.yaml.tmpl"): filepath.Join(codeDir, "testdata", "config.yaml"),
+		filepath.Join(tmplDir, "config.go.tmpl"):               filepath.Join(codeDir, "generated_config.go"),
+		filepath.Join(tmplDir, "config_test.go.tmpl"):          filepath.Join(codeDir, "generated_config_test.go"),
 	}
 
-	if err = generateFile(filepath.Join(tmplDir, "config.go.tmpl"),
-		filepath.Join(codeDir, "generated_config.go"), md, "metadata"); err != nil {
-		return err
-	}
-	if err = generateFile(filepath.Join(tmplDir, "config_test.go.tmpl"),
-		filepath.Join(codeDir, "generated_config_test.go"), md, "metadata"); err != nil {
-		return err
+	if len(md.ResourceAttributes) > 0 { // only generate resource files if resource attributes are configured
+		toGenerate[filepath.Join(tmplDir, "resource.go.tmpl")] = filepath.Join(codeDir, "generated_resource.go")
+		toGenerate[filepath.Join(tmplDir, "resource_test.go.tmpl")] = filepath.Join(codeDir, "generated_resource_test.go")
 	}
 
-	if len(md.ResourceAttributes) > 0 {
-		if err = generateFile(filepath.Join(tmplDir, "resource.go.tmpl"),
-			filepath.Join(codeDir, "generated_resource.go"), md, "metadata"); err != nil {
+	if len(md.Metrics) > 0 { // only generate metrics if metrics are present
+		toGenerate[filepath.Join(tmplDir, "metrics.go.tmpl")] = filepath.Join(codeDir, "generated_metrics.go")
+		toGenerate[filepath.Join(tmplDir, "metrics_test.go.tmpl")] = filepath.Join(codeDir, "generated_metrics_test.go")
+	}
+
+	for tmpl, dst := range toGenerate {
+		if err = generateFile(tmpl, dst, md, "metadata"); err != nil {
 			return err
 		}
-		if err = generateFile(filepath.Join(tmplDir, "resource_test.go.tmpl"),
-			filepath.Join(codeDir, "generated_resource_test.go"), md, "metadata"); err != nil {
-			return err
-		}
 	}
 
-	if len(md.Metrics) == 0 {
-		return nil
-	}
-
-	if err = generateFile(filepath.Join(tmplDir, "metrics.go.tmpl"),
-		filepath.Join(codeDir, "generated_metrics.go"), md, "metadata"); err != nil {
-		return err
-	}
-	if err = generateFile(filepath.Join(tmplDir, "metrics_test.go.tmpl"),
-		filepath.Join(codeDir, "generated_metrics_test.go"), md, "metadata"); err != nil {
-		return err
-	}
-
-	return generateFile(filepath.Join(tmplDir, "documentation.md.tmpl"), filepath.Join(ymlDir, "documentation.md"), md, "metadata")
+	return nil
 }
 
 func templatize(tmplFile string, md metadata) *template.Template {
@@ -158,6 +149,9 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				},
 				"metricInfo": func(mn metricName) metric {
 					return md.Metrics[mn]
+				},
+				"telemetryInfo": func(mn metricName) metric {
+					return md.Telemetry.Metrics[mn]
 				},
 				"parseImportsRequired": func(metrics map[metricName]metric) bool {
 					for _, m := range metrics {
