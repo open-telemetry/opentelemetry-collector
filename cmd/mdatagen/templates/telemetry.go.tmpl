@@ -4,6 +4,7 @@ package {{ .Package }}
 
 import (
     {{- if .Telemetry.Metrics }}
+    "context"
     "errors"
     {{- end }}
 
@@ -26,16 +27,33 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 type TelemetryBuilder struct {
 	{{- range $name, $metric := .Telemetry.Metrics }}
 	{{ $name.Render }} metric.{{ $metric.Data.Instrument }}
+    {{- if $metric.Data.Async }}
+    observe{{ $name.Render }} func() {{ $metric.Data.BasicType }}
+    {{- end }}
 	{{- end }}
 }
 
 // telemetryBuilderOption applies changes to default builder.
 type telemetryBuilderOption func(*TelemetryBuilder)
 
+{{- range $name, $metric := .Telemetry.Metrics }}
+    {{ if $metric.Data.Async -}}
+// With{{ $name.Render }}Callback sets callback for observable {{ $name.Render }} metric.
+func With{{ $name.Render }}Callback(cb func() {{ $metric.Data.BasicType }}) telemetryBuilderOption {
+    return func(builder *TelemetryBuilder) {
+        builder.observe{{ $name.Render }} = cb
+    }
+}
+    {{- end }}
+{{- end }}
+
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
     builder := TelemetryBuilder{}
+	for _, op := range options {
+		op(&builder)
+	}
     var err, errs error
     meter := Meter(settings)
     {{- range $name, $metric := .Telemetry.Metrics }}
@@ -43,6 +61,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
         "{{ $name }}",
         metric.WithDescription("{{ $metric.Description }}"),
         metric.WithUnit("{{ $metric.Unit }}"),
+        {{ if $metric.Data.Async -}}
+        metric.With{{ casesTitle $metric.Data.BasicType }}Callback(func(_ context.Context, o metric.{{ casesTitle $metric.Data.BasicType }}Observer) error {
+            o.Observe(builder.observe{{ $name.Render }}())
+            return nil
+        }),
+        {{- end }}
     )
     errs = errors.Join(errs, err)
     {{- end }}

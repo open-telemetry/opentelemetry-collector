@@ -37,6 +37,9 @@ type telemetryBuilderOption func(*TelemetryBuilder)
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
 	builder := TelemetryBuilder{}
+	for _, op := range options {
+		op(&builder)
+	}
 	var err, errs error
 	meter := Meter(settings)
 	builder.ReceiverAcceptedLogRecords, err = meter.Int64Counter(
