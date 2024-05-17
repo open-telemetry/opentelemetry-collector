@@ -16,8 +16,8 @@ import (
 func TestNetworkError_Error(t *testing.T) {
 	tests := []struct {
 		networkError error
-		msgContains string
-		validate    func(t *testing.T, se NetworkError)
+		msgContains  string
+		validate     func(t *testing.T, se NetworkError)
 	}{
 		{
 			networkError: NewHTTPError(errors.New("httperror"), 400),
@@ -40,7 +40,7 @@ func TestNetworkError_Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		var se NetworkError
-		require.True(t, errors.As(tt.statusError, &se))
+		require.True(t, errors.As(tt.networkError, &se))
 		tt.validate(t, se)
 	}
 }
@@ -58,19 +58,19 @@ func TestNetworkError_Unwrap(t *testing.T) {
 func TestNetworkError_GRPCStatus(t *testing.T) {
 	tests := []struct {
 		networkError error
-		code        codes.Code
+		code         codes.Code
 	}{
 		{
 			networkError: NewHTTPError(errors.New("httperror"), 429),
-			code:        codes.ResourceExhausted,
+			code:         codes.ResourceExhausted,
 		},
 		{
 			networkError: NewGRPCError(errors.New("status"), status.New(codes.ResourceExhausted, "")),
-			code:        codes.ResourceExhausted,
+			code:         codes.ResourceExhausted,
 		},
 		{
 			networkError: NewGRPCError(errors.New("nil"), nil),
-			code:        codes.Unknown,
+			code:         codes.Unknown,
 		},
 	}
 	for _, tt := range tests {
@@ -84,22 +84,22 @@ func TestNetworkError_GRPCStatus(t *testing.T) {
 func TestNetworkError_HTTPStatus(t *testing.T) {
 	tests := []struct {
 		networkError error
-		code        int
-		ok          bool
+		code         int
+		ok           bool
 	}{
 		{
-			statusError: NewHTTPError(errors.New("httperror"), http.StatusTooManyRequests),
-			code:        http.StatusTooManyRequests,
-			ok:          true,
+			networkError: NewHTTPError(errors.New("httperror"), http.StatusTooManyRequests),
+			code:         http.StatusTooManyRequests,
+			ok:           true,
 		},
 		{
 			networkError: NewGRPCError(errors.New("status"), status.New(codes.ResourceExhausted, "")),
-			code:        http.StatusTooManyRequests,
-			ok:          true,
+			code:         http.StatusTooManyRequests,
+			ok:           true,
 		},
 		{
 			networkError: NewGRPCError(errors.New("nil"), nil),
-			code:        http.StatusInternalServerError,
+			code:         http.StatusInternalServerError,
 		},
 	}
 	for _, tt := range tests {
