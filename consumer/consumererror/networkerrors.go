@@ -80,7 +80,7 @@ func NewHTTPError(err error, code int) error {
 	}
 }
 
-// NewHTTPStatus wraps an error with a given gRPC status code.
+// NewGRPCError wraps an error with a given gRPC status code.
 func NewGRPCError(err error, status *status.Status) error {
 	return NetworkError{
 		error:      err,
