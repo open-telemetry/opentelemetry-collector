@@ -125,6 +125,14 @@ Number of times the batch was sent due to a size trigger
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
+### process_runtime_total_alloc_bytes
+
+Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| By | Sum | Int | true |
+
 ### request_duration
 
 Duration of request
