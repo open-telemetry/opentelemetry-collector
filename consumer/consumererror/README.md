@@ -104,7 +104,7 @@ Using an error:
 
 ```golang
 err := nextConsumer(ctx, traces)
-var status consumererror.StatusError
+var status consumererror.NetworkError
 var retry consumererror.Traces
 
 if errors.As(err, &status) {

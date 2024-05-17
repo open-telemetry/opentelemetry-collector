@@ -13,26 +13,26 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func TestStatusError_Error(t *testing.T) {
+func TestNetworkError_Error(t *testing.T) {
 	tests := []struct {
-		statusError error
+		networkError error
 		msgContains string
 		validate    func(t *testing.T, se NetworkError)
 	}{
 		{
-			statusError: NewHTTPError(errors.New("httperror"), 400),
+			networkError: NewHTTPError(errors.New("httperror"), 400),
 			validate: func(t *testing.T, se NetworkError) {
 				require.Contains(t, se.Error(), "400")
 			},
 		},
 		{
-			statusError: NewGRPCError(errors.New("status"), status.New(codes.InvalidArgument, "")),
+			networkError: NewGRPCError(errors.New("status"), status.New(codes.InvalidArgument, "")),
 			validate: func(t *testing.T, se NetworkError) {
 				require.Contains(t, se.Error(), "InvalidArgument")
 			},
 		},
 		{
-			statusError: NewGRPCError(errors.New("nil"), nil),
+			networkError: NewGRPCError(errors.New("nil"), nil),
 			validate: func(t *testing.T, se NetworkError) {
 				require.NotNil(t, se.Error())
 			},
@@ -45,7 +45,7 @@ func TestStatusError_Error(t *testing.T) {
 	}
 }
 
-func TestStatusError_Unwrap(t *testing.T) {
+func TestNetworkError_Unwrap(t *testing.T) {
 	var err error = testErrorType{"some error"}
 	se := NewHTTPError(err, 400)
 	joinedErr := errors.Join(errors.New("other error"), se)
@@ -55,35 +55,35 @@ func TestStatusError_Unwrap(t *testing.T) {
 	require.Equal(t, err, target)
 }
 
-func TestStatusError_GRPCStatus(t *testing.T) {
+func TestNetworkError_GRPCStatus(t *testing.T) {
 	tests := []struct {
-		statusError error
+		networkError error
 		code        codes.Code
 	}{
 		{
-			statusError: NewHTTPError(errors.New("httperror"), 429),
+			networkError: NewHTTPError(errors.New("httperror"), 429),
 			code:        codes.ResourceExhausted,
 		},
 		{
-			statusError: NewGRPCError(errors.New("status"), status.New(codes.ResourceExhausted, "")),
+			networkError: NewGRPCError(errors.New("status"), status.New(codes.ResourceExhausted, "")),
 			code:        codes.ResourceExhausted,
 		},
 		{
-			statusError: NewGRPCError(errors.New("nil"), nil),
+			networkError: NewGRPCError(errors.New("nil"), nil),
 			code:        codes.Unknown,
 		},
 	}
 	for _, tt := range tests {
 		var se NetworkError
-		require.True(t, errors.As(tt.statusError, &se))
+		require.True(t, errors.As(tt.networkError, &se))
 		status := se.GRPCStatus()
 		require.Equal(t, tt.code, status.Code())
 	}
 }
 
-func TestStatusError_HTTPStatus(t *testing.T) {
+func TestNetworkError_HTTPStatus(t *testing.T) {
 	tests := []struct {
-		statusError error
+		networkError error
 		code        int
 		ok          bool
 	}{
@@ -93,18 +93,18 @@ func TestStatusError_HTTPStatus(t *testing.T) {
 			ok:          true,
 		},
 		{
-			statusError: NewGRPCError(errors.New("status"), status.New(codes.ResourceExhausted, "")),
+			networkError: NewGRPCError(errors.New("status"), status.New(codes.ResourceExhausted, "")),
 			code:        http.StatusTooManyRequests,
 			ok:          true,
 		},
 		{
-			statusError: NewGRPCError(errors.New("nil"), nil),
+			networkError: NewGRPCError(errors.New("nil"), nil),
 			code:        http.StatusInternalServerError,
 		},
 	}
 	for _, tt := range tests {
 		var se NetworkError
-		require.True(t, errors.As(tt.statusError, &se))
+		require.True(t, errors.As(tt.networkError, &se))
 		code := se.HTTPStatus()
 		require.Equal(t, tt.code, code)
 	}
