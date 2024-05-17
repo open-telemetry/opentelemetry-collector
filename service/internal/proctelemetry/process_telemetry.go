@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/internal/metadata"
+	"go.opentelemetry.io/collector/service/internal/servicetelemetry"
 )
 
 // processMetrics is a struct that contains views related to process metrics (cpu, mem, etc)
@@ -53,7 +54,7 @@ func WithHostProc(hostProc string) RegisterOption {
 
 // RegisterProcessMetrics creates a new set of processMetrics (mem, cpu) that can be used to measure
 // basic information about this process.
-func RegisterProcessMetrics(cfg component.TelemetrySettings, ballastSizeBytes uint64, opts ...RegisterOption) error {
+func RegisterProcessMetrics(cfg servicetelemetry.TelemetrySettings, ballastSizeBytes uint64, opts ...RegisterOption) error {
 	set := registerOption{}
 	for _, opt := range opts {
 		opt.apply(&set)
@@ -75,7 +76,7 @@ func RegisterProcessMetrics(cfg component.TelemetrySettings, ballastSizeBytes ui
 		return err
 	}
 
-	_, err = metadata.NewTelemetryBuilder(cfg,
+	_, err = metadata.NewTelemetryBuilder(cfg.ToComponentTelemetrySettings(&component.InstanceID{}),
 		metadata.WithProcessUptimeCallback(pm.updateProcessUptime),
 		metadata.WithProcessRuntimeHeapAllocBytesCallback(pm.updateAllocMem),
 		metadata.WithProcessRuntimeTotalAllocBytesCallback(pm.updateTotalAllocMem),
