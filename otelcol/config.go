@@ -20,21 +20,21 @@ var (
 // Config defines the configuration for the various elements of collector or agent.
 type Config struct {
 	// Receivers is a map of ComponentID to Receivers.
-	Receivers map[component.ID]component.Config
+	Receivers map[component.ID]component.Config `mapstructure:"receivers"`
 
 	// Exporters is a map of ComponentID to Exporters.
-	Exporters map[component.ID]component.Config
+	Exporters map[component.ID]component.Config `mapstructure:"exporters"`
 
 	// Processors is a map of ComponentID to Processors.
-	Processors map[component.ID]component.Config
+	Processors map[component.ID]component.Config `mapstructure:"processors"`
 
 	// Connectors is a map of ComponentID to connectors.
-	Connectors map[component.ID]component.Config
+	Connectors map[component.ID]component.Config `mapstructure:"connectors"`
 
 	// Extensions is a map of ComponentID to extensions.
-	Extensions map[component.ID]component.Config
+	Extensions map[component.ID]component.Config `mapstructure:"extensions"`
 
-	Service service.Config
+	Service service.Config `mapstructure:"service"`
 }
 
 // Validate returns an error if the config is invalid.
