@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"time"
 
@@ -103,6 +104,10 @@ type ClientConfig struct {
 	// HTTP2PingTimeout if there's no response to the ping within the configured value, the connection will be closed.
 	// If not set or set to 0, it defaults to 15s.
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout"`
+
+	// CookiesEnabled enables reusing cookies between requests.
+	// This is useful to manage sticky session cookies.
+	CookiesEnabled bool `mapstructure:"cookies_enabled"`
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
@@ -231,9 +236,18 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 		}
 	}
 
+	var jar http.CookieJar
+	if hcs.CookiesEnabled {
+		jar, err = cookiejar.New(nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &http.Client{
 		Transport: clientTransport,
 		Timeout:   hcs.Timeout,
+		Jar:       jar,
 	}, nil
 }
 
