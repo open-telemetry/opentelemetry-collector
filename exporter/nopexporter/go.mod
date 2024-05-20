@@ -2,8 +2,6 @@ module go.opentelemetry.io/collector/exporter/nopexporter
 
 go 1.21
 
-toolchain go1.21.6
-
 require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.100.0
