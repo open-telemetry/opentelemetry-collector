@@ -382,44 +382,6 @@ func TestResolverShutdownClosesWatch(t *testing.T) {
 	watcherWG.Wait()
 }
 
-func TestCantConfigureTwoProviderSettings(t *testing.T) {
-	_, err := NewResolver(ResolverSettings{
-		URIs:               []string{filepath.Join("testdata", "config.yaml")},
-		ProviderFactories:  []ProviderFactory{newFileProvider(t)},
-		Providers:          map[string]Provider{"mock": &mockProvider{}},
-		ConverterFactories: nil,
-	})
-	require.Error(t, err)
-}
-
-func TestCantConfigureTwoConverterSettings(t *testing.T) {
-	_, err := NewResolver(ResolverSettings{
-		URIs:               []string{filepath.Join("testdata", "config.yaml")},
-		ProviderFactories:  []ProviderFactory{newFileProvider(t)},
-		ConverterFactories: []ConverterFactory{NewConverterFactory(func(_ ConverterSettings) Converter { return &mockConverter{} })},
-		Converters:         []Converter{&mockConverter{err: errors.New("converter_err")}},
-	})
-	require.Error(t, err)
-}
-
-func TestTakesInstantiatedProviders(t *testing.T) {
-	_, err := NewResolver(ResolverSettings{
-		URIs:               []string{filepath.Join("testdata", "config.yaml")},
-		Providers:          map[string]Provider{"mock": &mockProvider{}},
-		ConverterFactories: nil,
-	})
-	require.NoError(t, err)
-}
-
-func TestTakesInstantiatedConverters(t *testing.T) {
-	_, err := NewResolver(ResolverSettings{
-		URIs:              []string{filepath.Join("testdata", "config.yaml")},
-		ProviderFactories: []ProviderFactory{newFileProvider(t)},
-		Converters:        []Converter{&mockConverter{err: errors.New("converter_err")}},
-	})
-	require.NoError(t, err)
-}
-
 func TestProvidesDefaultLogger(t *testing.T) {
 	factory, provider := newObservableFileProvider(t)
 	_, err := NewResolver(ResolverSettings{

@@ -39,23 +39,12 @@ type ResolverSettings struct {
 	// if a Provider is not given.
 	ProviderFactories []ProviderFactory
 
-	// Providers is a map of pairs <scheme, Provider>.
-	// It is required to have at least one Provider.
-	//
-	// Deprecated: [v0.99.0] Use ProviderFactories instead
-	Providers map[string]Provider
-
 	// ProviderSettings contains settings that will be passed to Provider
 	// factories when instantiating Providers.
 	ProviderSettings ProviderSettings
 
 	// ConverterFactories is a slice of Converter creation functions.
 	ConverterFactories []ConverterFactory
-
-	// Converters is a slice of Converters.
-	//
-	// Deprecated: [v0.99.0] Use ConverterFactories instead
-	Converters []Converter
 
 	// ConverterSettings contains settings that will be passed to Converter
 	// factories when instantiating Converters.
@@ -83,11 +72,11 @@ type ResolverSettings struct {
 // (see https://datatracker.ietf.org/doc/html/rfc3986). An empty "<scheme>" defaults to "file" schema.
 func NewResolver(set ResolverSettings) (*Resolver, error) {
 	if len(set.URIs) == 0 {
-		return nil, errors.New("invalid map resolver config: no URIs")
+		return nil, errors.New("invalid 'confmap.ResolverSettings' configuration: no URIs")
 	}
 
-	if len(set.ProviderFactories) == 0 && len(set.Providers) == 0 {
-		return nil, errors.New("invalid map resolver config: no Providers")
+	if len(set.ProviderFactories) == 0 {
+		return nil, errors.New("invalid 'confmap.ResolverSettings' configuration: no Providers")
 	}
 
 	if set.ProviderSettings.Logger == nil {
@@ -98,32 +87,15 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		set.ConverterSettings.Logger = zap.NewNop()
 	}
 
-	var providers map[string]Provider
-	var converters []Converter
-
-	if len(set.Providers) != 0 {
-		if len(set.ProviderFactories) != 0 {
-			return nil, errors.New("only one of ResolverSettings.Providers and ResolverSettings.ProviderFactories can be used")
-		}
-		providers = set.Providers
-	} else {
-		providers = make(map[string]Provider, len(set.ProviderFactories))
-		for _, factory := range set.ProviderFactories {
-			provider := factory.Create(set.ProviderSettings)
-			providers[provider.Scheme()] = provider
-		}
+	providers := make(map[string]Provider, len(set.ProviderFactories))
+	for _, factory := range set.ProviderFactories {
+		provider := factory.Create(set.ProviderSettings)
+		providers[provider.Scheme()] = provider
 	}
 
-	if len(set.Converters) != 0 {
-		if len(set.ConverterFactories) != 0 {
-			return nil, errors.New("only one of ResolverSettings.Converters and ResolverSettings.ConverterFactories can be used")
-		}
-		converters = set.Converters
-	} else {
-		converters = make([]Converter, len(set.ConverterFactories))
-		for i, factory := range set.ConverterFactories {
-			converters[i] = factory.Create(set.ConverterSettings)
-		}
+	converters := make([]Converter, len(set.ConverterFactories))
+	for i, factory := range set.ConverterFactories {
+		converters[i] = factory.Create(set.ConverterSettings)
 	}
 
 	// Safe copy, ensures the slices and maps cannot be changed from the caller.
