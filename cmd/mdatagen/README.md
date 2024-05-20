@@ -11,7 +11,7 @@ Examples of this metadata about a component are:
 
 The metadata generator defines a schema for specifying this information to ensure it is complete and well-formed.
 The metadata generator is then able to ingest the metadata, validate it against the schema and produce documentation in a standardized format.
-An example of how this generated documentation looks can be found in [documentation.md](./documentation.md).
+An example of how this generated documentation looks can be found in [documentation.md](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/internal/samplereceiver/documentation.md).
 
 ## Using the Metadata Generator
 
