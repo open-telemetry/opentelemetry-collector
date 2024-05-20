@@ -248,13 +248,13 @@ func TestDeprecatedWarning(t *testing.T) {
 		{
 			name: "malformed environment variable",
 			input: map[string]any{
-				"test": "${!BADHOST}",
+				"test": "${BAD!HOST}",
 			},
 			expectedOutput: map[string]any{
-				"test": "${!BADHOST}",
+				"test": "blah",
 			},
 			expectedWarnings: []string{},
-			expectedError:    errors.New("the uri \"!BADHOST\" doesn't match environment variable validation regex ^[a-zA-Z_][a-zA-Z0-9_]*$"),
+			expectedError:    errors.New("the uri \"BAD!HOST\" doesn't match environment variable validation regex ^[a-zA-Z_][a-zA-Z0-9_]*$"),
 		},
 	}
 
