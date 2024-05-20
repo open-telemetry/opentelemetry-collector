@@ -307,6 +307,9 @@ func TestResolverExpandStringValues(t *testing.T) {
 
 func newEnvProvider() ProviderFactory {
 	return newFakeProvider("env", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
+		if uri[0:4] != "env:" {
+			uri = "env:" + uri
+		}
 		switch uri {
 		case "env:COMPLEX_VALUE":
 			return NewRetrieved([]any{"localhost:3042"})
@@ -458,4 +461,17 @@ func TestResolverExpandStringValueInvalidReturnValue(t *testing.T) {
 
 	_, err = resolver.Resolve(context.Background())
 	assert.EqualError(t, err, `expanding ${test:PORT}, expected convertable to string value type, got ['ӛ']([]interface {})`)
+}
+
+func TestResolverDefaultProviderExpand(t *testing.T) {
+	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
+		return NewRetrieved(map[string]any{"foo": "${HOST}"})
+	})
+
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider}, DefaultProvider: newEnvProvider(), ConverterFactories: nil})
+	require.NoError(t, err)
+
+	cfgMap, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"foo": "localhost"}, cfgMap.ToStringMap())
 }

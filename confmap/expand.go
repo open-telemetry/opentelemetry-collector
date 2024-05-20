@@ -98,10 +98,17 @@ func findURI(input string) string {
 
 // findAndExpandURI attempts to find and expand the first occurrence of an expandable URI in input. If an expandable URI is found it
 // returns the input with the URI expanded, true and nil. Otherwise, it returns the unchanged input, false and the expanding error.
+// This method expects input to start with ${ and end with }
 func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bool, error) {
 	uri := findURI(input)
 	if uri == "" {
-		// No URI found, return.
+		if mr.defaultProvider != nil {
+			ret, err := mr.defaultProvider.Retrieve(ctx, input[2:len(input)-1], mr.onChange)
+			if err != nil {
+				return nil, false, err
+			}
+			return mr.handleRetrieved(ret)
+		}
 		return input, false, nil
 	}
 	if uri == input {
@@ -138,6 +145,12 @@ func toString(strURI string, input any) (string, error) {
 	}
 }
 
+func (mr *Resolver) handleRetrieved(ret *Retrieved) (any, bool, error) {
+	mr.closers = append(mr.closers, ret.Close)
+	val, err := ret.AsRaw()
+	return val, true, err
+}
+
 func (mr *Resolver) expandURI(ctx context.Context, uri string) (any, bool, error) {
 	lURI, err := newLocation(uri[2 : len(uri)-1])
 	if err != nil {
@@ -150,9 +163,7 @@ func (mr *Resolver) expandURI(ctx context.Context, uri string) (any, bool, error
 	if err != nil {
 		return nil, false, err
 	}
-	mr.closers = append(mr.closers, ret.Close)
-	val, err := ret.AsRaw()
-	return val, true, err
+	return mr.handleRetrieved(ret)
 }
 
 type location struct {

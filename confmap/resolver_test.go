@@ -395,3 +395,14 @@ func TestProvidesDefaultLogger(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, provider.logger)
 }
+
+func TestResolverDefaultProviderSet(t *testing.T) {
+	provider := newEnvProvider()
+	r, err := NewResolver(ResolverSettings{
+		URIs:              []string{"env:"},
+		ProviderFactories: []ProviderFactory{provider},
+		DefaultProvider:   provider,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, r.defaultProvider)
+}

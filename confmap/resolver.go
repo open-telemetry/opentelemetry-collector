@@ -20,9 +20,10 @@ var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
 
 // Resolver resolves a configuration as a Conf.
 type Resolver struct {
-	uris       []location
-	providers  map[string]Provider
-	converters []Converter
+	uris            []location
+	providers       map[string]Provider
+	defaultProvider Provider
+	converters      []Converter
 
 	closers []CloseFunc
 	watcher chan error
@@ -34,10 +35,15 @@ type ResolverSettings struct {
 	// It is required to have at least one location.
 	URIs []string
 
-	// ProviderFactories is a list of Provider creation functions.
-	// It is required to have at least one ProviderFactory
-	// if a Provider is not given.
+	// ProviderFactories is a slice of Provider creation functions.
+	// It is required to have at least one provider.
 	ProviderFactories []ProviderFactory
+
+	// DefaultProvider is the provider that is used if ${} syntax is used but no schema is provided.
+	// If no DefaultProvider is set, ${} with no schema will not be expanded.
+	// It is strongly recommended to set an EnvProvider as the default to align with the
+	// OpenTelemetry Configuration Specification
+	DefaultProvider ProviderFactory
 
 	// ProviderSettings contains settings that will be passed to Provider
 	// factories when instantiating Providers.
@@ -93,6 +99,11 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		providers[provider.Scheme()] = provider
 	}
 
+	var defaultProvider Provider
+	if set.DefaultProvider != nil {
+		defaultProvider = set.DefaultProvider.Create(set.ProviderSettings)
+	}
+
 	converters := make([]Converter, len(set.ConverterFactories))
 	for i, factory := range set.ConverterFactories {
 		converters[i] = factory.Create(set.ConverterSettings)
@@ -119,10 +130,11 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 	}
 
 	return &Resolver{
-		uris:       uris,
-		providers:  providers,
-		converters: converters,
-		watcher:    make(chan error, 1),
+		uris:            uris,
+		providers:       providers,
+		defaultProvider: defaultProvider,
+		converters:      converters,
+		watcher:         make(chan error, 1),
 	}, nil
 }
 
