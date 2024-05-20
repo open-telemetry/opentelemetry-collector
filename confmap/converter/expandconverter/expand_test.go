@@ -179,7 +179,7 @@ func TestDeprecatedWarning(t *testing.T) {
 	t.Setenv("HOST_NAME", "127.0.0.2")
 	t.Setenv("HOSTNAME", "127.0.0.3")
 
-	t.Setenv("!BADHO&ST", "127.0.0.2")
+	t.Setenv("BAD!HOST", "127.0.0.2")
 
 	var testCases = []struct {
 		name             string
