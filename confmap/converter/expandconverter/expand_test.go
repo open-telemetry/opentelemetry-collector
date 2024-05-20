@@ -254,7 +254,7 @@ func TestDeprecatedWarning(t *testing.T) {
 				"test": "blah",
 			},
 			expectedWarnings: []string{},
-			expectedError:    errors.New("the uri \"BAD!HOST\" doesn't match environment variable validation regex ^[a-zA-Z_][a-zA-Z0-9_]*$"),
+			expectedError:    errors.New("environment variable \"BAD!HOST\" has invalid name: must match regex ^[a-zA-Z_][a-zA-Z0-9_]*$"),
 		},
 	}
 
