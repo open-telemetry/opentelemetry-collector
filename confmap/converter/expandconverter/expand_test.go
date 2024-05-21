@@ -266,7 +266,6 @@ func TestDeprecatedWarning(t *testing.T) {
 			assert.Equal(t, tt.expectedError, err)
 			if tt.expectedError == nil {
 				assert.Equal(t, tt.expectedOutput, conf.ToStringMap())
-
 			}
 			assert.Equal(t, len(tt.expectedWarnings), len(logs.All()))
 			for i, variable := range tt.expectedWarnings {
