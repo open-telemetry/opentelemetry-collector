@@ -112,3 +112,31 @@ metrics:
 | string.resource.attr_disable_warning | Resource attribute with any string value. | Any Str | true |
 | string.resource.attr_remove_warning | Resource attribute with any string value. | Any Str | false |
 | string.resource.attr_to_be_removed | Resource attribute with any string value. | Any Str | true |
+
+## Internal Telemetry
+
+The following telemetry is emitted by this component.
+
+### batch_size_trigger_send
+
+Number of times the batch was sent due to a size trigger
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### process_runtime_total_alloc_bytes
+
+Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| By | Sum | Int | true |
+
+### request_duration
+
+Duration of request
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Histogram | Double |

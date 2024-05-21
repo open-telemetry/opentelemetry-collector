@@ -250,6 +250,18 @@ func TestLoadMetadata(t *testing.T) {
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 							},
 						},
+						"process_runtime_total_alloc_bytes": {
+							Enabled:     true,
+							Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
+							Unit:        strPtr("By"),
+							Sum: &sum{
+								Mono: Mono{true},
+								MetricValueType: MetricValueType{
+									ValueType: pmetric.NumberDataPointValueTypeInt,
+								},
+								Async: true,
+							},
+						},
 					},
 				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",

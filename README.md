@@ -24,7 +24,7 @@
     <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/open-telemetry/opentelemetry-collector?include_prereleases&style=for-the-badge">
   </a>
   <a href="https://www.bestpractices.dev/projects/8404"><img src="https://www.bestpractices.dev/projects/8404/badge">
-  </a> 
+  </a>
 </p>
 
 <p align="center">
@@ -61,7 +61,7 @@ Objectives:
 
 ## Supported OTLP version
 
-This code base is currently built against using OTLP protocol v1.1.0,
+This code base is currently built against using OTLP protocol v1.3.1,
 considered Stable. [See the OpenTelemetry Protocol Stability
 definition
 here.](https://github.com/open-telemetry/opentelemetry-proto?tab=readme-ov-file#stability-definition)
@@ -118,7 +118,7 @@ Here is a list of community roles with current and previous members:
 
 - Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triagers)):
 
-  - [Andrzej Stencel](https://github.com/andrzej-stencel), Sumo Logic
+  - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
   - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
   - Actively seeking contributors to triage issues
 

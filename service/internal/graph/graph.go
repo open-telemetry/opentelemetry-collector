@@ -1,6 +1,15 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Package graph contains the internal graph representation of the pipelines.
+//
+// [Build] is the constructor for a [Graph] object.  The method calls out to helpers that transform the graph from a config
+// to a DAG of components.  The configuration undergoes additional validation here as well, and is used to instantiate
+// the components of the pipeline.
+//
+// [Graph.StartAll] starts all components in each pipeline.
+//
+// [Graph.ShutdownAll] stops all components in each pipeline.
 package graph // import "go.opentelemetry.io/collector/service/internal/graph"
 
 import (

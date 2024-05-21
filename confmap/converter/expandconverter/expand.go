@@ -22,22 +22,17 @@ type converter struct {
 	loggedDeprecations map[string]struct{}
 }
 
-// New returns a confmap.Converter, that expands all environment variables for a given confmap.Conf.
-//
-// Notice: This API is experimental.
-//
-// Deprecated: [v0.99.0] Use NewFactory instead.
-func New(_ confmap.ConverterSettings) confmap.Converter {
-	return converter{
-		loggedDeprecations: make(map[string]struct{}),
-		logger:             zap.NewNop(), // TODO: pass logger in ConverterSettings
-	}
-}
-
 // NewFactory returns a factory for a  confmap.Converter,
 // which expands all environment variables for a given confmap.Conf.
 func NewFactory() confmap.ConverterFactory {
-	return confmap.NewConverterFactory(New)
+	return confmap.NewConverterFactory(newConverter)
+}
+
+func newConverter(set confmap.ConverterSettings) confmap.Converter {
+	return converter{
+		loggedDeprecations: make(map[string]struct{}),
+		logger:             set.Logger,
+	}
 }
 
 func (c converter) Convert(_ context.Context, conf *confmap.Conf) error {
@@ -99,14 +94,20 @@ func (c converter) expandEnv(s string) (string, error) {
 		if str == "$" {
 			return "$"
 		}
-
 		// For $ENV style environment variables os.Expand returns once it hits a character that isn't an underscore or
 		// an alphanumeric character - so we cannot detect those malformed environment variables.
 		// For ${ENV} style variables we can detect those kinds of env var names!
 		if !envprovider.EnvVarNameRegexp.MatchString(str) {
 			err = fmt.Errorf("environment variable %q has invalid name: must match regex %s", str, envprovider.EnvVarNamePattern)
+      return nil
 		}
-		return os.Getenv(str)
+		val, exists := os.LookupEnv(str)
+		if !exists {
+			c.logger.Warn("Configuration references unset environment variable", zap.String("name", str))
+		} else if len(val) == 0 {
+			c.logger.Info("Configuration references empty environment variable", zap.String("name", str))
+		}
+		return val
 	})
 	return res, err
 }

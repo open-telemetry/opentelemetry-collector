@@ -277,5 +277,5 @@ func TestDeprecatedWarning(t *testing.T) {
 }
 
 func createConverter() confmap.Converter {
-	return NewFactory().Create(confmap.ConverterSettings{})
+	return NewFactory().Create(confmap.ConverterSettings{Logger: zap.NewNop()})
 }
