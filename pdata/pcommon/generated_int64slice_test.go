@@ -14,50 +14,50 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
-func TestNewByteSlice(t *testing.T) {
-	ms := NewByteSlice()
+func TestNewInt64Slice(t *testing.T) {
+	ms := NewInt64Slice()
 	assert.Equal(t, 0, ms.Len())
-	ms.FromRaw([]byte{1, 2, 3})
+	ms.FromRaw([]int64{1, 2, 3})
 	assert.Equal(t, 3, ms.Len())
-	assert.Equal(t, []byte{1, 2, 3}, ms.AsRaw())
-	ms.SetAt(1, byte(5))
-	assert.Equal(t, []byte{1, 5, 3}, ms.AsRaw())
-	ms.FromRaw([]byte{3})
+	assert.Equal(t, []int64{1, 2, 3}, ms.AsRaw())
+	ms.SetAt(1, int64(5))
+	assert.Equal(t, []int64{1, 5, 3}, ms.AsRaw())
+	ms.FromRaw([]int64{3})
 	assert.Equal(t, 1, ms.Len())
-	assert.Equal(t, byte(3), ms.At(0))
+	assert.Equal(t, int64(3), ms.At(0))
 
-	cp := NewByteSlice()
+	cp := NewInt64Slice()
 	ms.CopyTo(cp)
-	ms.SetAt(0, byte(2))
-	assert.Equal(t, byte(2), ms.At(0))
-	assert.Equal(t, byte(3), cp.At(0))
+	ms.SetAt(0, int64(2))
+	assert.Equal(t, int64(2), ms.At(0))
+	assert.Equal(t, int64(3), cp.At(0))
 	ms.CopyTo(cp)
-	assert.Equal(t, byte(2), cp.At(0))
+	assert.Equal(t, int64(2), cp.At(0))
 
-	mv := NewByteSlice()
+	mv := NewInt64Slice()
 	ms.MoveTo(mv)
 	assert.Equal(t, 0, ms.Len())
 	assert.Equal(t, 1, mv.Len())
-	assert.Equal(t, byte(2), mv.At(0))
-	ms.FromRaw([]byte{1, 2, 3})
+	assert.Equal(t, int64(2), mv.At(0))
+	ms.FromRaw([]int64{1, 2, 3})
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
-	assert.Equal(t, byte(1), mv.At(0))
+	assert.Equal(t, int64(1), mv.At(0))
 }
 
-func TestByteSliceReadOnly(t *testing.T) {
-	raw := []byte{1, 2, 3}
+func TestInt64SliceReadOnly(t *testing.T) {
+	raw := []int64{1, 2, 3}
 	state := internal.StateReadOnly
-	ms := ByteSlice(internal.NewByteSlice(&raw, &state))
+	ms := Int64Slice(internal.NewInt64Slice(&raw, &state))
 
 	assert.Equal(t, 3, ms.Len())
-	assert.Equal(t, byte(1), ms.At(0))
+	assert.Equal(t, int64(1), ms.At(0))
 	assert.Panics(t, func() { ms.Append(1) })
 	assert.Panics(t, func() { ms.EnsureCapacity(2) })
 	assert.Equal(t, raw, ms.AsRaw())
 	assert.Panics(t, func() { ms.FromRaw(raw) })
 
-	ms2 := NewByteSlice()
+	ms2 := NewInt64Slice()
 	ms.CopyTo(ms2)
 	assert.Equal(t, ms.AsRaw(), ms2.AsRaw())
 	assert.Panics(t, func() { ms2.CopyTo(ms) })
@@ -66,16 +66,16 @@ func TestByteSliceReadOnly(t *testing.T) {
 	assert.Panics(t, func() { ms2.MoveTo(ms) })
 }
 
-func TestByteSliceAppend(t *testing.T) {
-	ms := NewByteSlice()
-	ms.FromRaw([]byte{1, 2, 3})
+func TestInt64SliceAppend(t *testing.T) {
+	ms := NewInt64Slice()
+	ms.FromRaw([]int64{1, 2, 3})
 	ms.Append(5, 5)
 	assert.Equal(t, 5, ms.Len())
-	assert.Equal(t, byte(5), ms.At(4))
+	assert.Equal(t, int64(5), ms.At(4))
 }
 
-func TestByteSliceEnsureCapacity(t *testing.T) {
-	ms := NewByteSlice()
+func TestInt64SliceEnsureCapacity(t *testing.T) {
+	ms := NewInt64Slice()
 	ms.EnsureCapacity(4)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 	ms.EnsureCapacity(2)
