@@ -104,15 +104,20 @@ func TestResolverExpandStringValues(t *testing.T) {
 		output any
 	}{
 		// Embedded.
+		//{
+		//	name:   "Test",
+		//	input:  "${env:HOST${HOST}${HOST}}",
+		//	output: "idk",
+		//},
 		{
 			name:   "NoMatchOldStyle",
 			input:  "${HOST}:${PORT}",
-			output: "${HOST}:${PORT}",
+			output: "localhost:3044",
 		},
 		{
 			name:   "NoMatchOldStyleNoBrackets",
 			input:  "${HOST}:$PORT",
-			output: "${HOST}:$PORT",
+			output: "localhost:$PORT",
 		},
 		{
 			name:   "ComplexValue",
@@ -137,7 +142,7 @@ func TestResolverExpandStringValues(t *testing.T) {
 		{
 			name:   "EmbeddedNewAndOldStyle",
 			input:  "${env:HOST}:${PORT}",
-			output: "localhost:${PORT}",
+			output: "localhost:3044",
 		},
 		{
 			name:   "Int",
@@ -230,7 +235,7 @@ func TestResolverExpandStringValues(t *testing.T) {
 		{
 			name:   "NoMatchOldStyleNested",
 			input:  "${test:localhost:${PORT}}",
-			output: "${test:localhost:${PORT}}",
+			output: "localhost:3044",
 		},
 		// Partial expand.
 		{
@@ -295,7 +300,8 @@ func TestResolverExpandStringValues(t *testing.T) {
 				return NewRetrieved(uri[5:])
 			})
 
-			resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, newEnvProvider(), testProvider}, ConverterFactories: nil})
+			envProvider := newEnvProvider()
+			resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, envProvider, testProvider}, DefaultProvider: envProvider, ConverterFactories: nil})
 			require.NoError(t, err)
 
 			cfgMap, err := resolver.Resolve(context.Background())

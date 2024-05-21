@@ -76,47 +76,45 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 	return value, false, nil
 }
 
+//test: "${http://example.com/?os=${env:OS}}"
+
 // findURI attempts to find the first expandable URI in input. It returns an expandable
 // URI, or an empty string if none are found.
 // Note: findURI is only called when input contains a closing bracket.
-func findURI(input string) string {
+func (mr *Resolver) findURI(input string) (string, bool) {
 	closeIndex := strings.Index(input, "}")
 	remaining := input[closeIndex+1:]
 	openIndex := strings.LastIndex(input[:closeIndex+1], "${")
 
 	// if there is a missing "${" or the uri does not contain ":", check the next URI.
-	if openIndex < 0 || !strings.Contains(input[openIndex:closeIndex+1], ":") {
+	if openIndex < 0 {
 		// if remaining does not contain "}", there are no URIs left: stop recursion.
 		if !strings.Contains(remaining, "}") {
-			return ""
+
+			return "", false
 		}
-		return findURI(remaining)
+		return mr.findURI(remaining)
 	}
 
-	return input[openIndex : closeIndex+1]
+	potentialURI := input[openIndex : closeIndex+1]
+	return potentialURI, strings.Contains(potentialURI, ":")
 }
 
 // findAndExpandURI attempts to find and expand the first occurrence of an expandable URI in input. If an expandable URI is found it
 // returns the input with the URI expanded, true and nil. Otherwise, it returns the unchanged input, false and the expanding error.
 // This method expects input to start with ${ and end with }
 func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bool, error) {
-	uri := findURI(input)
-	if uri == "" {
-		if mr.defaultProvider != nil {
-			ret, err := mr.defaultProvider.Retrieve(ctx, input[2:len(input)-1], mr.onChange)
-			if err != nil {
-				return nil, false, err
-			}
-			return mr.handleRetrieved(ret)
-		}
+	uri, schemeFound := mr.findURI(input)
+	if uri == "" || (!schemeFound && mr.defaultProvider == nil) {
+		// No URI found, return.
 		return input, false, nil
 	}
 	if uri == input {
 		// If the value is a single URI, then the return value can be anything.
 		// This is the case `foo: ${file:some_extra_config.yml}`.
-		return mr.expandURI(ctx, input)
+		return mr.expandURI(ctx, input, schemeFound)
 	}
-	expanded, changed, err := mr.expandURI(ctx, uri)
+	expanded, changed, err := mr.expandURI(ctx, uri, schemeFound)
 	if err != nil {
 		return input, false, err
 	}
@@ -145,25 +143,28 @@ func toString(strURI string, input any) (string, error) {
 	}
 }
 
-func (mr *Resolver) handleRetrieved(ret *Retrieved) (any, bool, error) {
+func (mr *Resolver) expandURI(ctx context.Context, uri string, hasScheme bool) (any, bool, error) {
+	var ret *Retrieved
+	var err error
+	uri = uri[2 : len(uri)-1]
+	if !hasScheme && mr.defaultProvider != nil {
+		ret, err = mr.defaultProvider.Retrieve(ctx, uri, mr.onChange)
+	} else {
+		lURI, locErr := newLocation(uri)
+		if locErr != nil {
+			return nil, false, locErr
+		}
+		if strings.Contains(lURI.opaqueValue, "$") {
+			return nil, false, fmt.Errorf("the uri %q contains unsupported characters ('$')", lURI.asString())
+		}
+		ret, err = mr.retrieveValue(ctx, lURI)
+	}
+	if err != nil {
+		return nil, false, err
+	}
 	mr.closers = append(mr.closers, ret.Close)
 	val, err := ret.AsRaw()
 	return val, true, err
-}
-
-func (mr *Resolver) expandURI(ctx context.Context, uri string) (any, bool, error) {
-	lURI, err := newLocation(uri[2 : len(uri)-1])
-	if err != nil {
-		return nil, false, err
-	}
-	if strings.Contains(lURI.opaqueValue, "$") {
-		return nil, false, fmt.Errorf("the uri %q contains unsupported characters ('$')", lURI.asString())
-	}
-	ret, err := mr.retrieveValue(ctx, lURI)
-	if err != nil {
-		return nil, false, err
-	}
-	return mr.handleRetrieved(ret)
 }
 
 type location struct {
