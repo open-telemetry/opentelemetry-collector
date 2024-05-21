@@ -77,6 +77,7 @@ var (
 		"/receiver/otlpreceiver",
 		"/otelcol",
 		"/pdata",
+		"/pdata/testdata",
 		"/semconv",
 		"/service",
 	}
@@ -423,6 +424,11 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 		assert.Truef(t, ok, "Module missing from replace statements list: %s", req.Mod.Path)
 
 		replaceMods[req.Mod.Path] = true
+	}
+
+	// those are modules that should be part of the replaces, but are not components
+	for _, unused := range []string{"/pdata/testdata"} {
+		replaceMods[modulePrefix+unused] = true
 	}
 
 	for k, v := range replaceMods {
