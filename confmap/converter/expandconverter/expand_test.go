@@ -276,6 +276,38 @@ func TestDeprecatedWarning(t *testing.T) {
 	}
 }
 
+func TestNewExpandConverterWithErrors(t *testing.T) {
+	var testCases = []struct {
+		name          string // test case name (also file name containing config yaml)
+		expectedError error
+	}{
+		{
+			name:          "expand-list-error.yaml",
+			expectedError: errors.New("environment variable \"EXTRA_LIST_^VALUE_2\" has invalid name: must match regex ^[a-zA-Z_][a-zA-Z0-9_]*$"),
+		},
+		{
+			name:          "expand-list-map-error.yaml",
+			expectedError: errors.New("environment variable \"EXTRA_LIST_MAP_V#ALUE_2\" has invalid name: must match regex ^[a-zA-Z_][a-zA-Z0-9_]*$"),
+		},
+		{
+			name:          "expand-map-error.yaml",
+			expectedError: errors.New("environment variable \"EX#TRA\" has invalid name: must match regex ^[a-zA-Z_][a-zA-Z0-9_]*$"),
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			conf, err := confmaptest.LoadConf(filepath.Join("testdata", "errors", test.name))
+			require.NoError(t, err, "Unable to get config")
+
+			// Test that expanded configs are the same with the simple config with no env vars.
+			err = createConverter().Convert(context.Background(), conf)
+
+			assert.Equal(t, test.expectedError, err)
+		})
+	}
+}
+
 func createConverter() confmap.Converter {
 	return NewFactory().Create(confmap.ConverterSettings{Logger: zap.NewNop()})
 }
