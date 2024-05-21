@@ -5,6 +5,7 @@ package envprovider
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -120,7 +121,7 @@ func TestEnvVarNameRestriction(t *testing.T) {
 
 	env := createProvider()
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
-	require.EqualError(t, err, "environment variable \"default%config\" has invalid name: must match regex ^[a-zA-Z_][a-zA-Z0-9_]*$")
+	assert.Equal(t, err, fmt.Errorf("environment variable \"default%%config\" has invalid name: must match regex %s", confmap.EnvVarNameRegexp))
 	assert.NoError(t, env.Shutdown(context.Background()))
 	assert.Nil(t, ret)
 }
