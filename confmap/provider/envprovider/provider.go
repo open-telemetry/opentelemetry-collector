@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 
 	"go.uber.org/zap"
@@ -17,11 +16,8 @@ import (
 )
 
 const (
-	schemeName        = "env"
-	EnvVarNamePattern = `^[a-zA-Z_][a-zA-Z0-9_]*$`
+	schemeName = "env"
 )
-
-var EnvVarNameRegexp = regexp.MustCompile(EnvVarNamePattern)
 
 type provider struct {
 	logger *zap.Logger
@@ -46,8 +42,8 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
 	envVarName := uri[len(schemeName)+1:]
-	if !EnvVarNameRegexp.MatchString(envVarName) {
-		return nil, fmt.Errorf("environment variable %q has invalid name: must match regex %s", envVarName, EnvVarNamePattern)
+	if !confmap.EnvVarNameRegexp.MatchString(envVarName) {
+		return nil, fmt.Errorf("environment variable %q has invalid name: must match regex %s", envVarName, confmap.EnvVarNamePattern)
 
 	}
 	val, exists := os.LookupEnv(envVarName)
