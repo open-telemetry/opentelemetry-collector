@@ -7,6 +7,21 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.8.0/v0.101.0
+
+### 🛑 Breaking changes 🛑
+
+- `confighttp`: Removes deprecated functions `ToClientContext`, `ToListenerContext`, and `ToServerContext`. (#10138)
+- `confmap`: Deprecate `NewWithSettings` for all Providers and `New` for all Converters (#10134)
+  Use `NewFactory` instead for all affected modules.
+- `confmap`: Remove deprecated `Providers` and `Converters` from `confmap.ResolverSettings` (#10173)
+  Use `ProviderSettings` and `ConverterSettings` instead.
+
+### 🧰 Bug fixes 🧰
+
+- `otelcol`: Add explicit mapstructure tags to main configuration struct (#10152)
+- `confmap`: Support string-like types as map keys when marshaling (#10137)
+
 ## v1.7.0/v0.100.0
 
 ### 💡 Enhancements 💡
