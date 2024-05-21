@@ -320,9 +320,9 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	// check telemetry server to ensure we get a response
 	var resp *http.Response
 
-	// #nosec G107
 	resp, err = http.Get(telemetryURL)
 	assert.NoError(t, err)
+	assert.NoError(t, resp.Body.Close())
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Shutdown the service
@@ -338,8 +338,8 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	// check telemetry server to ensure we get a response
 	require.Eventually(t,
 		func() bool {
-			// #nosec G107
 			resp, err = http.Get(telemetryURL)
+			assert.NoError(t, resp.Body.Close())
 			return err == nil
 		},
 		500*time.Millisecond,
