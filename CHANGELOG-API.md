@@ -43,6 +43,8 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 - `confighttp`: deprecate ToClientContext, ToServerContext, ToListenerContext, replaced by ToClient, ToServer, ToListener (#9807)
 - `configtls`: Deprecates `ClientConfig.LoadTLSConfigContext` and `ServerConfig.LoadTLSConfigContext`, use `ClientConfig.LoadTLSConfig` and `ServerConfig.LoadTLSConfig` instead. (#9945)
+- `confmap`: Deprecate the `Providers` and `Converters` fields in `confmap.ResolverSettings` (#9516)
+Use the `ProviderFactories` and `ConverterFactories` fields instead.
 
 ### 💡 Enhancements 💡
 
