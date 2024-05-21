@@ -1,8 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package service handles the command-line, configuration, and runs the
-// OpenTelemetry Collector.
+// Package otelcol handles the command-line, configuration, and runs the OpenTelemetry Collector.
+// It contains the main [Collector] struct and its constructor [NewCollector].
+// [Collector.Run] starts the Collector and then blocks until it shuts down.
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
@@ -167,7 +168,7 @@ func (col *Collector) Shutdown() {
 	}
 }
 
-// setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
+// setupConfigurationComponents loads the config, creates the graph, and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(StateStarting)
@@ -282,6 +283,7 @@ func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 // Sets up the control logic for config reloading and shutdown.
 func (col *Collector) Run(ctx context.Context) error {
+	// setupConfigurationComponents is the "main" function responsible for startup
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(StateClosed)
 		logger, loggerErr := newFallbackLogger(col.set.LoggingOptions)

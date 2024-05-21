@@ -108,6 +108,8 @@ in advance so that maintainers can decide if the proposal is a good fit for
 this repository. This will help avoid situations when you spend significant time
 on something that maintainers may decide this repo is not the right place for.
 
+If you're new to the Collector, the [internal architecture](docs/internal-architecture.md) documentation may be helpful.
+
 Follow the instructions below to create your PR.
 
 ### Fork
