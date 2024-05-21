@@ -341,6 +341,17 @@ func TestGenerateAndCompile(t *testing.T) {
 // local copy, `go get` will try to fetch the unreleased
 // version remotely and some tests will fail.
 func TestReplaceStatementsAreComplete(t *testing.T) {
+	workspaceDir := getWorkspaceDir()
+	replaceMods := map[string]bool{}
+
+	for _, suffix := range replaceModules {
+		replaceMods[modulePrefix+suffix] = false
+	}
+
+	for _, mod := range replaceModules {
+		verifyGoMod(t, workspaceDir+mod, replaceMods)
+	}
+
 	var err error
 	dir := t.TempDir()
 	cfg := NewDefaultConfig()
@@ -401,6 +412,14 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 	err = GenerateAndCompile(cfg)
 	require.NoError(t, err)
 
+	verifyGoMod(t, dir, replaceMods)
+
+	for k, v := range replaceMods {
+		assert.Truef(t, v, "Module not used: %s", k)
+	}
+}
+
+func verifyGoMod(t *testing.T, dir string, replaceMods map[string]bool) {
 	gomodpath := path.Join(dir, "go.mod")
 	// #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
 	gomod, err := os.ReadFile(gomodpath)
@@ -408,12 +427,6 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 
 	mod, err := modfile.Parse(gomodpath, gomod, nil)
 	require.NoError(t, err)
-
-	replaceMods := map[string]bool{}
-
-	for _, suffix := range replaceModules {
-		replaceMods[modulePrefix+suffix] = false
-	}
 
 	for _, req := range mod.Require {
 		if !strings.HasPrefix(req.Mod.Path, modulePrefix) {
@@ -424,15 +437,6 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 		assert.Truef(t, ok, "Module missing from replace statements list: %s", req.Mod.Path)
 
 		replaceMods[req.Mod.Path] = true
-	}
-
-	// those are modules that should be part of the replaces, but are not components
-	for _, unused := range []string{"/pdata/testdata"} {
-		replaceMods[modulePrefix+unused] = true
-	}
-
-	for k, v := range replaceMods {
-		assert.Truef(t, v, "Module not used: %s", k)
 	}
 }
 
@@ -454,10 +458,7 @@ func makeModule(dir string, fileContents []byte) error {
 }
 
 func generateReplaces() []string {
-	// This test is dependent on the current file structure.
-	// The goal is find the root of the repo so we can replace the root module.
-	_, thisFile, _, _ := runtime.Caller(0)
-	workspaceDir := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile)))))
+	workspaceDir := getWorkspaceDir()
 	modules := replaceModules
 	replaces := make([]string, len(modules))
 
@@ -466,4 +467,11 @@ func generateReplaces() []string {
 	}
 
 	return replaces
+}
+
+func getWorkspaceDir() string {
+	// This is dependent on the current file structure.
+	// The goal is find the root of the repo so we can replace the root module.
+	_, thisFile, _, _ := runtime.Caller(0)
+	return filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile)))))
 }
