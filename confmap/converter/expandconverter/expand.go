@@ -99,7 +99,7 @@ func (c converter) expandEnv(s string) (string, error) {
 		// For ${ENV} style variables we can detect those kinds of env var names!
 		if !envprovider.EnvVarNameRegexp.MatchString(str) {
 			err = fmt.Errorf("environment variable %q has invalid name: must match regex %s", str, envprovider.EnvVarNamePattern)
-      return nil
+			return ""
 		}
 		val, exists := os.LookupEnv(str)
 		if !exists {
