@@ -20,8 +20,8 @@ require (
 	go.opentelemetry.io/collector/exporter v0.100.0
 	go.opentelemetry.io/collector/extension v0.100.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.100.0
-	go.opentelemetry.io/collector/featuregate v1.7.0
-	go.opentelemetry.io/collector/pdata v1.7.0
+	go.opentelemetry.io/collector/featuregate v1.8.0
+	go.opentelemetry.io/collector/pdata v1.8.0
 	go.opentelemetry.io/collector/pdata/testdata v0.100.0
 	go.opentelemetry.io/collector/processor v0.100.0
 	go.opentelemetry.io/collector/receiver v0.100.0

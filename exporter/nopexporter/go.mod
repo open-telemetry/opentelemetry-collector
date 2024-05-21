@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.100.0
 	go.opentelemetry.io/collector/consumer v0.100.0
 	go.opentelemetry.io/collector/exporter v0.100.0
-	go.opentelemetry.io/collector/pdata v1.7.0
+	go.opentelemetry.io/collector/pdata v1.8.0
 	go.uber.org/goleak v1.3.0
 )
 
