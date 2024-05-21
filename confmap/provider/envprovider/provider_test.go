@@ -54,7 +54,7 @@ func TestInvalidYAML(t *testing.T) {
 }
 
 func TestEnv(t *testing.T) {
-	const envName = "default-config"
+	const envName = "default_config"
 	t.Setenv(envName, validYAML)
 
 	env := createProvider()
@@ -72,7 +72,7 @@ func TestEnv(t *testing.T) {
 }
 
 func TestEnvWithLogger(t *testing.T) {
-	const envName = "default-config"
+	const envName = "default_config"
 	t.Setenv(envName, validYAML)
 	core, ol := observer.New(zap.WarnLevel)
 	logger := zap.New(core)
@@ -93,7 +93,7 @@ func TestEnvWithLogger(t *testing.T) {
 }
 
 func TestUnsetEnvWithLoggerWarn(t *testing.T) {
-	const envName = "default-config"
+	const envName = "default_config"
 	core, ol := observer.New(zap.WarnLevel)
 	logger := zap.New(core)
 
@@ -114,8 +114,19 @@ func TestUnsetEnvWithLoggerWarn(t *testing.T) {
 	assert.Equal(t, envName, logLine.Context[0].String)
 }
 
+func TestEnvVarNameRestriction(t *testing.T) {
+	const envName = "default%config"
+	t.Setenv(envName, validYAML)
+
+	env := createProvider()
+	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	require.EqualError(t, err, "environment variable \"default%config\" has invalid name: must match regex ^[a-zA-Z_][a-zA-Z0-9_]*$")
+	assert.NoError(t, env.Shutdown(context.Background()))
+	assert.Nil(t, ret)
+}
+
 func TestEmptyEnvWithLoggerWarn(t *testing.T) {
-	const envName = "default-config"
+	const envName = "default_config"
 	t.Setenv(envName, "")
 
 	core, ol := observer.New(zap.InfoLevel)

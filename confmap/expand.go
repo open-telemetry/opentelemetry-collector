@@ -17,13 +17,10 @@ import (
 // Scheme name consist of a sequence of characters beginning with a letter and followed by any
 // combination of letters, digits, plus ("+"), period ("."), or hyphen ("-").
 const schemePattern = `[A-Za-z][A-Za-z0-9+.-]+`
-const EnvVarNamePattern = `^[a-zA-Z_][a-zA-Z0-9_]*$`
 
 var (
 	// Need to match new line as well in the OpaqueValue, so setting the "s" flag. See https://pkg.go.dev/regexp/syntax.
 	uriRegexp = regexp.MustCompile(`(?s:^(?P<Scheme>` + schemePattern + `):(?P<OpaqueValue>.*)$)`)
-
-	EnvVarNameRegexp = regexp.MustCompile(EnvVarNamePattern)
 
 	errTooManyRecursiveExpansions = errors.New("too many recursive expansions")
 )
@@ -142,15 +139,11 @@ func toString(strURI string, input any) (string, error) {
 }
 
 func (mr *Resolver) expandURI(ctx context.Context, uri string) (any, bool, error) {
-	println("expanduri")
 	lURI, err := newLocation(uri[2 : len(uri)-1])
 	if err != nil {
 		return nil, false, err
 	}
-	if !EnvVarNameRegexp.MatchString(lURI.opaqueValue) {
-		return nil, false, fmt.Errorf("the uri %q doesn't match environment variable validation regex %s", lURI.opaqueValue, EnvVarNamePattern)
 
-	}
 	ret, err := mr.retrieveValue(ctx, lURI)
 	if err != nil {
 		return nil, false, err
