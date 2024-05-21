@@ -15,13 +15,15 @@ import (
 )
 
 type TestComplexStruct struct {
-	Skipped   TestEmptyStruct             `mapstructure:",squash"`
-	Nested    TestSimpleStruct            `mapstructure:",squash"`
-	Slice     []TestSimpleStruct          `mapstructure:"slice,omitempty"`
-	Pointer   *TestSimpleStruct           `mapstructure:"ptr"`
-	Map       map[string]TestSimpleStruct `mapstructure:"map,omitempty"`
-	Remain    map[string]any              `mapstructure:",remain"`
-	Interface encoding.TextMarshaler
+	Skipped     TestEmptyStruct             `mapstructure:",squash"`
+	Nested      TestSimpleStruct            `mapstructure:",squash"`
+	Slice       []TestSimpleStruct          `mapstructure:"slice,omitempty"`
+	Pointer     *TestSimpleStruct           `mapstructure:"ptr"`
+	Map         map[string]TestSimpleStruct `mapstructure:"map,omitempty"`
+	Remain      map[string]any              `mapstructure:",remain"`
+	YAMLInline  map[string]any              `yaml:",inline"`
+	YAMLOmitted []TestSimpleStruct          `yaml:"omitted,omitempty"`
+	Interface   encoding.TextMarshaler
 }
 
 type TestSimpleStruct struct {
@@ -116,6 +118,10 @@ func TestEncode(t *testing.T) {
 					"remain2": "value",
 				},
 				Interface: TestID("value"),
+				YAMLInline: map[string]any{
+					"inline1": 23,
+					"inline2": "value",
+				},
 			},
 			want: map[string]any{
 				"value": "nested",
@@ -127,6 +133,8 @@ func TestEncode(t *testing.T) {
 				"interface": "value_",
 				"remain1":   23,
 				"remain2":   "value",
+				"inline1":   23,
+				"inline2":   "value",
 			},
 		},
 	}
@@ -160,10 +168,10 @@ func TestGetTagInfo(t *testing.T) {
 		},
 		"WithoutMapStructureTag": {
 			field: reflect.StructField{
-				Tag:  `yaml:"hello,inline"`,
-				Name: "YAML",
+				Tag:  `unsupported:"hello,inline"`,
+				Name: "ALLCAPS",
 			},
-			wantName: "yaml",
+			wantName: "allcaps",
 		},
 		"WithRename": {
 			field: reflect.StructField{

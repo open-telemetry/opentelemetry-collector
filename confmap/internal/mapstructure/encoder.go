@@ -15,10 +15,12 @@ import (
 
 const (
 	tagNameMapStructure = "mapstructure"
+	tagNameYAML         = "yaml"
 	optionSeparator     = ","
 	optionOmitEmpty     = "omitempty"
 	optionSquash        = "squash"
 	optionRemain        = "remain"
+	optionInline        = "inline"
 	optionSkip          = "-"
 )
 
@@ -193,22 +195,32 @@ func (e *Encoder) encodeMap(value reflect.Value) (any, error) {
 // Uses the lowercase field if not found. Checks for omitempty and squash.
 func getTagInfo(field reflect.StructField) *tagInfo {
 	info := tagInfo{}
-	if tag, ok := field.Tag.Lookup(tagNameMapStructure); ok {
-		options := strings.Split(tag, optionSeparator)
-		info.name = options[0]
-		if len(options) > 1 {
-			for _, option := range options[1:] {
-				switch option {
-				case optionOmitEmpty:
-					info.omitEmpty = true
-				case optionSquash, optionRemain:
-					info.squash = true
+	var found bool
+	supportedTags := []string{tagNameMapStructure, tagNameYAML}
+
+	for _, tagName := range supportedTags {
+		if tag, ok := field.Tag.Lookup(tagName); ok {
+			options := strings.Split(tag, optionSeparator)
+			info.name = options[0]
+			if len(options) > 1 {
+				for _, option := range options[1:] {
+					switch option {
+					case optionOmitEmpty:
+						info.omitEmpty = true
+					case optionSquash, optionRemain, optionInline:
+						info.squash = true
+					}
 				}
 			}
+			found = true
+			break
 		}
-	} else {
+	}
+
+	if !found {
 		info.name = strings.ToLower(field.Name)
 	}
+
 	return &info
 }
 
