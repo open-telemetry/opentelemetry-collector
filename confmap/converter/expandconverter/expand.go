@@ -54,7 +54,8 @@ func (c converter) expandStringValues(value any) (any, error) {
 	case []any:
 		nslice := make([]any, 0, len(v))
 		for _, vint := range v {
-			nv, err := c.expandStringValues(vint)
+			var nv any
+			nv, err = c.expandStringValues(vint)
 			if err != nil {
 				return nil, err
 			}
