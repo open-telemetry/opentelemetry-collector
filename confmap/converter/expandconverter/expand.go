@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/internal/envvar"
 )
 
 type converter struct {
@@ -97,8 +98,8 @@ func (c converter) expandEnv(s string) (string, error) {
 		// For $ENV style environment variables os.Expand returns once it hits a character that isn't an underscore or
 		// an alphanumeric character - so we cannot detect those malformed environment variables.
 		// For ${ENV} style variables we can detect those kinds of env var names!
-		if !confmap.EnvVarNameRegexp.MatchString(str) {
-			err = fmt.Errorf("environment variable %q has invalid name: must match regex %s", str, confmap.EnvVarNamePattern)
+		if !envvar.ValidationRegexp.MatchString(str) {
+			err = fmt.Errorf("environment variable %q has invalid name: must match regex %s", str, envvar.ValidationPattern)
 			return ""
 		}
 		val, exists := os.LookupEnv(str)

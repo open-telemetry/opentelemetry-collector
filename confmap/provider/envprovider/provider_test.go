@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/internal/envvar"
 )
 
 const envSchemePrefix = schemeName + ":"
@@ -121,7 +122,7 @@ func TestEnvVarNameRestriction(t *testing.T) {
 
 	env := createProvider()
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
-	assert.Equal(t, err, fmt.Errorf("environment variable \"default%%config\" has invalid name: must match regex %s", confmap.EnvVarNameRegexp))
+	assert.Equal(t, err, fmt.Errorf("environment variable \"default%%config\" has invalid name: must match regex %s", envvar.ValidationRegexp))
 	assert.NoError(t, env.Shutdown(context.Background()))
 	assert.Nil(t, ret)
 }

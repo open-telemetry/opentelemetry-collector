@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/internal/envvar"
 	"go.opentelemetry.io/collector/confmap/provider/internal"
 )
 
@@ -42,8 +43,8 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
 	envVarName := uri[len(schemeName)+1:]
-	if !confmap.EnvVarNameRegexp.MatchString(envVarName) {
-		return nil, fmt.Errorf("environment variable %q has invalid name: must match regex %s", envVarName, confmap.EnvVarNamePattern)
+	if !envvar.ValidationRegexp.MatchString(envVarName) {
+		return nil, fmt.Errorf("environment variable %q has invalid name: must match regex %s", envVarName, envvar.ValidationPattern)
 
 	}
 	val, exists := os.LookupEnv(envVarName)

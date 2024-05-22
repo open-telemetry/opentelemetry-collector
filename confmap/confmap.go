@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -22,11 +21,8 @@ import (
 
 const (
 	// KeyDelimiter is used as the default key delimiter in the default koanf instance.
-	KeyDelimiter      = "::"
-	EnvVarNamePattern = `^[a-zA-Z_][a-zA-Z0-9_]*$`
+	KeyDelimiter = "::"
 )
-
-var EnvVarNameRegexp = regexp.MustCompile(EnvVarNamePattern)
 
 // New creates a new empty confmap.Conf instance.
 func New() *Conf {

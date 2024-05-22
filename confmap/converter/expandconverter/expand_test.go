@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/internal/envvar"
 )
 
 func TestNewExpandConverter(t *testing.T) {
@@ -253,7 +254,7 @@ func TestDeprecatedWarning(t *testing.T) {
 				"test": "blah",
 			},
 			expectedWarnings: []string{},
-			expectedError:    fmt.Errorf("environment variable \"BAD!HOST\" has invalid name: must match regex %s", confmap.EnvVarNameRegexp),
+			expectedError:    fmt.Errorf("environment variable \"BAD!HOST\" has invalid name: must match regex %s", envvar.ValidationRegexp),
 		},
 	}
 
@@ -282,15 +283,15 @@ func TestNewExpandConverterWithErrors(t *testing.T) {
 	}{
 		{
 			name:          "expand-list-error.yaml",
-			expectedError: fmt.Errorf("environment variable \"EXTRA_LIST_^VALUE_2\" has invalid name: must match regex %s", confmap.EnvVarNameRegexp),
+			expectedError: fmt.Errorf("environment variable \"EXTRA_LIST_^VALUE_2\" has invalid name: must match regex %s", envvar.ValidationRegexp),
 		},
 		{
 			name:          "expand-list-map-error.yaml",
-			expectedError: fmt.Errorf("environment variable \"EXTRA_LIST_MAP_V#ALUE_2\" has invalid name: must match regex %s", confmap.EnvVarNameRegexp),
+			expectedError: fmt.Errorf("environment variable \"EXTRA_LIST_MAP_V#ALUE_2\" has invalid name: must match regex %s", envvar.ValidationRegexp),
 		},
 		{
 			name:          "expand-map-error.yaml",
-			expectedError: fmt.Errorf("environment variable \"EX#TRA\" has invalid name: must match regex %s", confmap.EnvVarNameRegexp),
+			expectedError: fmt.Errorf("environment variable \"EX#TRA\" has invalid name: must match regex %s", envvar.ValidationRegexp),
 		},
 	}
 
