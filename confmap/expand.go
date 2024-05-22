@@ -76,6 +76,14 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 	return value, false, nil
 }
 
+func (mr *Resolver) findURIHelper(remaining string) (string, string) {
+	// if remaining does not contain "}", there are no URIs left: stop recursion.
+	if !strings.Contains(remaining, "}") {
+		return "", ""
+	}
+	return mr.findURI(remaining)
+}
+
 // findURI attempts to find the first expandable URI in input. It returns an expandable
 // URI, or an empty string if none are found.
 // Note: findURI is only called when input contains a closing bracket.
@@ -85,16 +93,15 @@ func (mr *Resolver) findURI(input string) (string, string) {
 	openIndex := strings.LastIndex(input[:closeIndex+1], "${")
 
 	// if there is a missing "${" or the uri does not contain ":", check the next URI.
-	if openIndex < 0 || (!strings.Contains(input[openIndex:closeIndex+1], ":") && mr.defaultProvider == nil) {
-		// if remaining does not contain "}", there are no URIs left: stop recursion.
-		if !strings.Contains(remaining, "}") {
-			return "", ""
-		}
-		return mr.findURI(remaining)
+	if openIndex < 0 {
+		return mr.findURIHelper(remaining)
 	}
 
 	potentialURI := input[openIndex : closeIndex+1]
-	if !strings.Contains(potentialURI, ":") && mr.defaultProvider != nil {
+	if !strings.Contains(potentialURI, ":") {
+		if mr.defaultProvider == nil {
+			return mr.findURIHelper(remaining)
+		}
 		return potentialURI, strings.Replace(potentialURI, "${", fmt.Sprintf("${%v:", mr.defaultProvider.Scheme()), 1)
 	}
 	return potentialURI, potentialURI
