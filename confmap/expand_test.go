@@ -103,12 +103,6 @@ func TestResolverExpandStringValues(t *testing.T) {
 		input  string
 		output any
 	}{
-		// Embedded.
-		//{
-		//	name:   "Test",
-		//	input:  "${env:HOST${HOST}${HOST}}",
-		//	output: "idk",
-		//},
 		{
 			name:   "NoMatchOldStyle",
 			input:  "${HOST}:${PORT}",

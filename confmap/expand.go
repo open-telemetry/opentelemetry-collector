@@ -76,8 +76,6 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 	return value, false, nil
 }
 
-//test: "${http://example.com/?os=${env:OS}}"
-
 // findURI attempts to find the first expandable URI in input. It returns an expandable
 // URI, or an empty string if none are found.
 // Note: findURI is only called when input contains a closing bracket.
