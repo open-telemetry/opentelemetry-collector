@@ -27,6 +27,23 @@ func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 		zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	}
 
+	switch cfg.TimeEncoding {
+	case "Epoch":
+		zapCfg.EncoderConfig.EncodeTime = zapcore.EpochTimeEncoder
+	case "EpochMillis":
+		zapCfg.EncoderConfig.EncodeTime = zapcore.EpochMillisTimeEncoder
+	case "EpochNanos":
+		zapCfg.EncoderConfig.EncodeTime = zapcore.EpochNanosTimeEncoder
+	case "ISO8601":
+		zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	case "RFC3339":
+		zapCfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
+	case "RFC3339Nano":
+		zapCfg.EncoderConfig.EncodeTime = zapcore.RFC3339NanoTimeEncoder
+	case "":
+		// no-op
+	}
+
 	logger, err := zapCfg.Build(options...)
 	if err != nil {
 		return nil, err

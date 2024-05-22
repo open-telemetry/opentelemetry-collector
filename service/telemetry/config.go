@@ -92,6 +92,19 @@ type LogsConfig struct {
 	//
 	// By default, there is no initial field.
 	InitialFields map[string]any `mapstructure:"initial_fields"`
+
+	// TimeEncoding controls the zap logger's time encoding
+	// Permitted values are:
+	//  - "Epoch"
+	//  - "EpochMillis"
+	//  - "EpochNanos"
+	//  - "ISO8601"
+	//  - "RFC3339"
+	//  - "RFC3339Nano"
+	// Leaving the value blank results in the default time encoding, which
+	// depends on the message encoding (for JSON, it will be EpochNanos,
+	// and for console, it will be ISO8601
+	TimeEncoding string `mapstructure:"time_encoding"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
