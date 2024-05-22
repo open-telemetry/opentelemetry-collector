@@ -119,6 +119,13 @@ linters-settings:
           files:
             - "!**/*_test.go"
 
+  gosec:
+    excludes:
+      # https://github.com/golangci/golangci-lint/issues/4735
+      - G601
+      # https://github.com/golangci/golangci-lint/issues/4735
+      - G113
+
 linters:
   enable:
     - depguard
