@@ -7,7 +7,7 @@ change_type: breaking
 component: envprovider
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Restricts Environment Variable names.  Must start with a letter or and underscore, and can only contain underscores, letters, or numbers.
+note: Restricts Environment Variable names.  Environment variable names must now be ASCII only and start with a letter or an underscore, and can only contain underscores, letters, or numbers.
 
 # One or more tracking issues or pull requests related to the change
 issues: [9531]
