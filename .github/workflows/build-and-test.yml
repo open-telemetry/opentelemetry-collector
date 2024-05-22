@@ -6,6 +6,9 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+*"
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
@@ -15,11 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - name: Setup Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: ~1.21.9
+          go-version: ~1.21.10
           cache: false
       - name: Cache Go
         id: go-cache
@@ -38,11 +41,11 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - name: Setup Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: ~1.21.9
+          go-version: ~1.21.10
           cache: false
       - name: Cache Go
         id: go-cache
@@ -62,11 +65,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - name: Setup Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: ~1.21.9
+          go-version: ~1.21.10
           cache: false
       - name: Cache Go
         id: go-cache
@@ -87,11 +90,11 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - name: Setup Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: ~1.21.9
+          go-version: ~1.21.10
           cache: false
       - name: Cache Go
         id: go-cache
@@ -137,25 +140,22 @@ jobs:
   unittest-matrix:
     strategy:
       matrix:
-        runner: [ubuntu-latest, actuated-arm64-4cpu-4gb]
-        exclude:
-          - go-version: "~1.21.9"
-            runner: actuated-arm64-4cpu-4gb
-        go-version: ["~1.22", "~1.21.9"] # 1.20 needs quotes otherwise it's interpreted as 1.2
+        runner: [ubuntu-latest]
+        go-version: ["~1.22", "~1.21.10"] # 1.20 needs quotes otherwise it's interpreted as 1.2
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
       - name: Set up arkade
-        uses: alexellis/setup-arkade@v3
+        uses: alexellis/setup-arkade@b1816384b2260cfd2c023c6798d26075786cfc7f # v3
       - name: Install vmmeter
         run: |
           sudo -E arkade oci install ghcr.io/openfaasltd/vmmeter:latest --path /usr/local/bin/
       - name: Run vmmeter
-        uses: self-actuated/vmmeter-action@v1
+        uses: self-actuated/vmmeter-action@c7e2162e39294a810cab647cacc215ecd68a44f6 # v1
       - name: Checkout Repo
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - name: Setup Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version: ${{ matrix.go-version }}
           cache: false
@@ -197,11 +197,11 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - name: Setup Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: ~1.21.9
+          go-version: ~1.21.10
           cache: false
       - name: Cache Go
         id: go-cache
@@ -219,16 +219,9 @@ jobs:
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: Upload coverage report
-        uses: Wandalen/wretry.action@0dd1d5d77d019a6f85beb53d29e2ea2c7294d4f2 # v3.4.0
-        with:
-          action: codecov/codecov-action@v4
-          with: |
-            file: ./coverage.txt
-            fail_ci_if_error: true
-            verbose: true
-            token: ${{ secrets.CODECOV_TOKEN }}
-          attempt_limit: 10
-          attempt_delay: 15000
+        uses: codecov/codecov-action@125fc84a9a348dbcf27191600683ec096ec9021c # 4.4.1
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   cross-build-collector:
     needs: [setup-environment]
@@ -266,11 +259,11 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - name: Setup Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: ~1.21.9
+          go-version: ~1.21.10
           cache: false
       - name: Cache Go
         id: go-cache

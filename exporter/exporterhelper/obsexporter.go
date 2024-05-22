@@ -10,17 +10,13 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
-)
-
-const (
-	exporterScope = obsmetrics.Scope + obsmetrics.SpanNameSep + obsmetrics.ExporterKey
 )
 
 // ObsReport is a helper to add observability to an exporter.
@@ -30,16 +26,8 @@ type ObsReport struct {
 	tracer         trace.Tracer
 	logger         *zap.Logger
 
-	otelAttrs                   []attribute.KeyValue
-	sentSpans                   metric.Int64Counter
-	failedToSendSpans           metric.Int64Counter
-	failedToEnqueueSpans        metric.Int64Counter
-	sentMetricPoints            metric.Int64Counter
-	failedToSendMetricPoints    metric.Int64Counter
-	failedToEnqueueMetricPoints metric.Int64Counter
-	sentLogRecords              metric.Int64Counter
-	failedToSendLogRecords      metric.Int64Counter
-	failedToEnqueueLogRecords   metric.Int64Counter
+	otelAttrs        []attribute.KeyValue
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // ObsReportSettings are settings for creating an ObsReport.
@@ -54,7 +42,12 @@ func NewObsReport(cfg ObsReportSettings) (*ObsReport, error) {
 }
 
 func newExporter(cfg ObsReportSettings) (*ObsReport, error) {
-	exp := &ObsReport{
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(cfg.ExporterCreateSettings.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ObsReport{
 		level:          cfg.ExporterCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
 		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
@@ -63,75 +56,8 @@ func newExporter(cfg ObsReportSettings) (*ObsReport, error) {
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ExporterKey, cfg.ExporterID.String()),
 		},
-	}
-
-	if err := exp.createOtelMetrics(cfg); err != nil {
-		return nil, err
-	}
-
-	return exp, nil
-}
-
-func (or *ObsReport) createOtelMetrics(cfg ObsReportSettings) error {
-	meter := cfg.ExporterCreateSettings.MeterProvider.Meter(exporterScope)
-
-	var errors, err error
-
-	or.sentSpans, err = meter.Int64Counter(
-		obsmetrics.ExporterMetricPrefix+obsmetrics.SentSpansKey,
-		metric.WithDescription("Number of spans successfully sent to destination."),
-		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
-
-	or.failedToSendSpans, err = meter.Int64Counter(
-		obsmetrics.ExporterMetricPrefix+obsmetrics.FailedToSendSpansKey,
-		metric.WithDescription("Number of spans in failed attempts to send to destination."),
-		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
-
-	or.failedToEnqueueSpans, err = meter.Int64Counter(
-		obsmetrics.ExporterMetricPrefix+obsmetrics.FailedToEnqueueSpansKey,
-		metric.WithDescription("Number of spans failed to be added to the sending queue."),
-		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
-
-	or.sentMetricPoints, err = meter.Int64Counter(
-		obsmetrics.ExporterMetricPrefix+obsmetrics.SentMetricPointsKey,
-		metric.WithDescription("Number of metric points successfully sent to destination."),
-		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
-
-	or.failedToSendMetricPoints, err = meter.Int64Counter(
-		obsmetrics.ExporterMetricPrefix+obsmetrics.FailedToSendMetricPointsKey,
-		metric.WithDescription("Number of metric points in failed attempts to send to destination."),
-		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
-
-	or.failedToEnqueueMetricPoints, err = meter.Int64Counter(
-		obsmetrics.ExporterMetricPrefix+obsmetrics.FailedToEnqueueMetricPointsKey,
-		metric.WithDescription("Number of metric points failed to be added to the sending queue."),
-		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
-
-	or.sentLogRecords, err = meter.Int64Counter(
-		obsmetrics.ExporterMetricPrefix+obsmetrics.SentLogRecordsKey,
-		metric.WithDescription("Number of log record successfully sent to destination."),
-		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
-
-	or.failedToSendLogRecords, err = meter.Int64Counter(
-		obsmetrics.ExporterMetricPrefix+obsmetrics.FailedToSendLogRecordsKey,
-		metric.WithDescription("Number of log records in failed attempts to send to destination."),
-		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
-
-	or.failedToEnqueueLogRecords, err = meter.Int64Counter(
-		obsmetrics.ExporterMetricPrefix+obsmetrics.FailedToEnqueueLogRecordsKey,
-		metric.WithDescription("Number of log records failed to be added to the sending queue."),
-		metric.WithUnit("1"))
-	errors = multierr.Append(errors, err)
-
-	return errors
+		telemetryBuilder: telemetryBuilder,
+	}, nil
 }
 
 // StartTracesOp is called at the start of an Export operation.
@@ -192,14 +118,14 @@ func (or *ObsReport) recordMetrics(ctx context.Context, dataType component.DataT
 	var sentMeasure, failedMeasure metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
-		sentMeasure = or.sentSpans
-		failedMeasure = or.failedToSendSpans
+		sentMeasure = or.telemetryBuilder.ExporterSentSpans
+		failedMeasure = or.telemetryBuilder.ExporterSendFailedSpans
 	case component.DataTypeMetrics:
-		sentMeasure = or.sentMetricPoints
-		failedMeasure = or.failedToSendMetricPoints
+		sentMeasure = or.telemetryBuilder.ExporterSentMetricPoints
+		failedMeasure = or.telemetryBuilder.ExporterSendFailedMetricPoints
 	case component.DataTypeLogs:
-		sentMeasure = or.sentLogRecords
-		failedMeasure = or.failedToSendLogRecords
+		sentMeasure = or.telemetryBuilder.ExporterSentLogRecords
+		failedMeasure = or.telemetryBuilder.ExporterSendFailedLogRecords
 	}
 
 	sentMeasure.Add(ctx, sent, metric.WithAttributes(or.otelAttrs...))
@@ -232,11 +158,11 @@ func (or *ObsReport) recordEnqueueFailure(ctx context.Context, dataType componen
 	var enqueueFailedMeasure metric.Int64Counter
 	switch dataType {
 	case component.DataTypeTraces:
-		enqueueFailedMeasure = or.failedToEnqueueSpans
+		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedSpans
 	case component.DataTypeMetrics:
-		enqueueFailedMeasure = or.failedToEnqueueMetricPoints
+		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedMetricPoints
 	case component.DataTypeLogs:
-		enqueueFailedMeasure = or.failedToEnqueueLogRecords
+		enqueueFailedMeasure = or.telemetryBuilder.ExporterEnqueueFailedLogRecords
 	}
 
 	enqueueFailedMeasure.Add(ctx, failed, metric.WithAttributes(or.otelAttrs...))

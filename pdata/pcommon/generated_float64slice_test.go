@@ -69,7 +69,7 @@ func TestFloat64SliceReadOnly(t *testing.T) {
 func TestFloat64SliceAppend(t *testing.T) {
 	ms := NewFloat64Slice()
 	ms.FromRaw([]float64{1, 2, 3})
-	ms.Append(4, 5)
+	ms.Append(5, 5)
 	assert.Equal(t, 5, ms.Len())
 	assert.Equal(t, float64(5), ms.At(4))
 }

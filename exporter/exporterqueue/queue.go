@@ -11,6 +11,11 @@ import (
 	"go.opentelemetry.io/collector/exporter/internal/queue"
 )
 
+// ErrQueueIsFull is the error that Queue returns when full.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+var ErrQueueIsFull = queue.ErrQueueIsFull
+
 // Queue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
 // (boundedMemoryQueue) or via a disk-based queue (persistentQueue)
 // Experimental: This API is at the early stage of development and may change without backward compatibility
@@ -90,7 +95,7 @@ func sizerFromConfig[T itemsCounter](Config) queue.Sizer[T] {
 	return &queue.RequestSizer[T]{}
 }
 
-func capacityFromConfig(cfg Config) int {
+func capacityFromConfig(cfg Config) int64 {
 	// TODO: Handle other ways to measure the queue size once they are added.
-	return cfg.QueueSize
+	return int64(cfg.QueueSize)
 }

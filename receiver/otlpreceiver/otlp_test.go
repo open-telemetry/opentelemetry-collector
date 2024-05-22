@@ -1147,7 +1147,7 @@ func (esc *errOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Met
 	return esc.MetricsSink.ConsumeMetrics(ctx, md)
 }
 
-// ConsumeMetrics stores metrics to this sink.
+// ConsumeLogs stores metrics to this sink.
 func (esc *errOrSinkConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()
