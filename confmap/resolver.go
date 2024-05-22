@@ -102,6 +102,7 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 	var defaultProvider Provider
 	if set.DefaultProvider != nil {
 		defaultProvider = set.DefaultProvider.Create(set.ProviderSettings)
+		providers[defaultProvider.Scheme()] = defaultProvider
 	}
 
 	converters := make([]Converter, len(set.ConverterFactories))

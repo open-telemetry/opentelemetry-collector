@@ -81,40 +81,42 @@ func (mr *Resolver) expandValue(ctx context.Context, value any) (any, bool, erro
 // findURI attempts to find the first expandable URI in input. It returns an expandable
 // URI, or an empty string if none are found.
 // Note: findURI is only called when input contains a closing bracket.
-func (mr *Resolver) findURI(input string) (string, bool) {
+func (mr *Resolver) findURI(input string) (string, string) {
 	closeIndex := strings.Index(input, "}")
 	remaining := input[closeIndex+1:]
 	openIndex := strings.LastIndex(input[:closeIndex+1], "${")
 
 	// if there is a missing "${" or the uri does not contain ":", check the next URI.
-	if openIndex < 0 {
+	if openIndex < 0 || (!strings.Contains(input[openIndex:closeIndex+1], ":") && mr.defaultProvider == nil) {
 		// if remaining does not contain "}", there are no URIs left: stop recursion.
 		if !strings.Contains(remaining, "}") {
-
-			return "", false
+			return "", ""
 		}
 		return mr.findURI(remaining)
 	}
 
 	potentialURI := input[openIndex : closeIndex+1]
-	return potentialURI, strings.Contains(potentialURI, ":")
+	if !strings.Contains(potentialURI, ":") && mr.defaultProvider != nil {
+		return potentialURI, strings.Replace(potentialURI, "${", fmt.Sprintf("${%v:", mr.defaultProvider.Scheme()), 1)
+	}
+	return potentialURI, potentialURI
 }
 
 // findAndExpandURI attempts to find and expand the first occurrence of an expandable URI in input. If an expandable URI is found it
 // returns the input with the URI expanded, true and nil. Otherwise, it returns the unchanged input, false and the expanding error.
 // This method expects input to start with ${ and end with }
 func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bool, error) {
-	uri, schemeFound := mr.findURI(input)
-	if uri == "" || (!schemeFound && mr.defaultProvider == nil) {
+	unmodifiedURI, uri := mr.findURI(input)
+	if uri == "" {
 		// No URI found, return.
 		return input, false, nil
 	}
 	if uri == input {
 		// If the value is a single URI, then the return value can be anything.
 		// This is the case `foo: ${file:some_extra_config.yml}`.
-		return mr.expandURI(ctx, input, schemeFound)
+		return mr.expandURI(ctx, input)
 	}
-	expanded, changed, err := mr.expandURI(ctx, uri, schemeFound)
+	expanded, changed, err := mr.expandURI(ctx, uri)
 	if err != nil {
 		return input, false, err
 	}
@@ -122,7 +124,7 @@ func (mr *Resolver) findAndExpandURI(ctx context.Context, input string) (any, bo
 	if err != nil {
 		return input, false, err
 	}
-	return strings.ReplaceAll(input, uri, repl), changed, err
+	return strings.ReplaceAll(input, unmodifiedURI, repl), changed, err
 }
 
 // toString attempts to convert input to a string.
@@ -143,22 +145,15 @@ func toString(strURI string, input any) (string, error) {
 	}
 }
 
-func (mr *Resolver) expandURI(ctx context.Context, uri string, hasScheme bool) (any, bool, error) {
-	var ret *Retrieved
-	var err error
-	uri = uri[2 : len(uri)-1]
-	if !hasScheme && mr.defaultProvider != nil {
-		ret, err = mr.defaultProvider.Retrieve(ctx, uri, mr.onChange)
-	} else {
-		lURI, locErr := newLocation(uri)
-		if locErr != nil {
-			return nil, false, locErr
-		}
-		if strings.Contains(lURI.opaqueValue, "$") {
-			return nil, false, fmt.Errorf("the uri %q contains unsupported characters ('$')", lURI.asString())
-		}
-		ret, err = mr.retrieveValue(ctx, lURI)
+func (mr *Resolver) expandURI(ctx context.Context, uri string) (any, bool, error) {
+	lURI, err := newLocation(uri[2 : len(uri)-1])
+	if err != nil {
+		return nil, false, err
 	}
+	if strings.Contains(lURI.opaqueValue, "$") {
+		return nil, false, fmt.Errorf("the uri %q contains unsupported characters ('$')", lURI.asString())
+	}
+	ret, err := mr.retrieveValue(ctx, lURI)
 	if err != nil {
 		return nil, false, err
 	}
