@@ -99,19 +99,33 @@ func TestResolverExpandMapAndSliceValues(t *testing.T) {
 
 func TestResolverExpandStringValues(t *testing.T) {
 	tests := []struct {
-		name   string
-		input  string
-		output any
+		name            string
+		input           string
+		output          any
+		defaultProvider bool
 	}{
+		// Embedded.
 		{
 			name:   "NoMatchOldStyle",
 			input:  "${HOST}:${PORT}",
-			output: "localhost:3044",
+			output: "${HOST}:${PORT}",
+		},
+		{
+			name:            "NoMatchOldStyleDefaultProvider",
+			input:           "${HOST}:${PORT}",
+			output:          "localhost:3044",
+			defaultProvider: true,
 		},
 		{
 			name:   "NoMatchOldStyleNoBrackets",
 			input:  "${HOST}:$PORT",
-			output: "localhost:$PORT",
+			output: "${HOST}:$PORT",
+		},
+		{
+			name:            "NoMatchOldStyleNoBracketsDefaultProvider",
+			input:           "${HOST}:$PORT",
+			output:          "localhost:$PORT",
+			defaultProvider: true,
 		},
 		{
 			name:   "ComplexValue",
@@ -136,7 +150,13 @@ func TestResolverExpandStringValues(t *testing.T) {
 		{
 			name:   "EmbeddedNewAndOldStyle",
 			input:  "${env:HOST}:${PORT}",
-			output: "localhost:3044",
+			output: "localhost:${PORT}",
+		},
+		{
+			name:            "EmbeddedNewAndOldStyleDefaultProvider",
+			input:           "${env:HOST}:${PORT}",
+			output:          "localhost:3044",
+			defaultProvider: true,
 		},
 		{
 			name:   "Int",
@@ -181,9 +201,21 @@ func TestResolverExpandStringValues(t *testing.T) {
 			output: "localhost:3044",
 		},
 		{
+			name:            "NestedDefaultProvider",
+			input:           "${test:localhost:${PORT}}",
+			output:          "localhost:3044",
+			defaultProvider: true,
+		},
+		{
 			name:   "EmbeddedInNested",
 			input:  "${test:${env:HOST}:${env:PORT}}",
 			output: "localhost:3044",
+		},
+		{
+			name:            "EmbeddedInNestedDefaultProvider",
+			input:           "${test:${HOST}:${PORT}}",
+			output:          "localhost:3044",
+			defaultProvider: true,
 		},
 		{
 			name:   "EmbeddedAndNested",
@@ -202,9 +234,21 @@ func TestResolverExpandStringValues(t *testing.T) {
 			output: "env:HOST}",
 		},
 		{
+			name:            "NoMatchMissingOpeningBracketDefaultProvider",
+			input:           "env:HOST}",
+			output:          "env:HOST}",
+			defaultProvider: true,
+		},
+		{
 			name:   "NoMatchMissingClosingBracket",
 			input:  "${HOST",
 			output: "${HOST",
+		},
+		{
+			name:            "NoMatchMissingClosingBracketDefaultProvider",
+			input:           "${HOST",
+			output:          "${HOST",
+			defaultProvider: true,
 		},
 		{
 			name:   "NoMatchBracketsWithout$",
@@ -212,9 +256,21 @@ func TestResolverExpandStringValues(t *testing.T) {
 			output: "HO{ST}",
 		},
 		{
+			name:            "NoMatchBracketsWithout$DefaultProvider",
+			input:           "HO{ST}",
+			output:          "HO{ST}",
+			defaultProvider: true,
+		},
+		{
 			name:   "NoMatchOnlyMissingClosingBracket",
 			input:  "${env:HOST${env:PORT?os=${env:OS",
 			output: "${env:HOST${env:PORT?os=${env:OS",
+		},
+		{
+			name:            "NoMatchOnlyMissingClosingBracketDefaultProvider",
+			input:           "${env:HOST${env:PORT?os=${env:OS",
+			output:          "${env:HOST${env:PORT?os=${env:OS",
+			defaultProvider: true,
 		},
 		{
 			name:   "NoMatchOnlyMissingOpeningBracket",
@@ -222,20 +278,38 @@ func TestResolverExpandStringValues(t *testing.T) {
 			output: "env:HOST}env:PORT}?os=env:OS}",
 		},
 		{
+			name:            "NoMatchOnlyMissingOpeningBracketDefaultProvider",
+			input:           "env:HOST}env:PORT}?os=env:OS}",
+			output:          "env:HOST}env:PORT}?os=env:OS}",
+			defaultProvider: true,
+		},
+		{
 			name:   "NoMatchCloseBeforeOpen",
 			input:  "env:HOST}${env:PORT",
 			output: "env:HOST}${env:PORT",
 		},
 		{
+			name:            "NoMatchCloseBeforeOpenDefaultProvider",
+			input:           "env:HOST}${env:PORT",
+			output:          "env:HOST}${env:PORT",
+			defaultProvider: true,
+		},
+		{
 			name:   "NoMatchOldStyleNested",
 			input:  "${test:localhost:${PORT}}",
-			output: "localhost:3044",
+			output: "${test:localhost:${PORT}}",
 		},
 		// Partial expand.
 		{
 			name:   "PartialMatchMissingOpeningBracketFirst",
 			input:  "env:HOST}${env:PORT}",
 			output: "env:HOST}3044",
+		},
+		{
+			name:            "PartialMatchMissingOpeningBracketFirstDefaultProvider",
+			input:           "env:HOST}${PORT}",
+			output:          "env:HOST}3044",
+			defaultProvider: true,
 		},
 		{
 			name:   "PartialMatchMissingOpeningBracketLast",
@@ -295,7 +369,11 @@ func TestResolverExpandStringValues(t *testing.T) {
 			})
 
 			envProvider := newEnvProvider()
-			resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, envProvider, testProvider}, DefaultProvider: envProvider, ConverterFactories: nil})
+			set := ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, envProvider, testProvider}, ConverterFactories: nil}
+			if tt.defaultProvider {
+				set.DefaultProvider = envProvider
+			}
+			resolver, err := NewResolver(set)
 			require.NoError(t, err)
 
 			cfgMap, err := resolver.Resolve(context.Background())

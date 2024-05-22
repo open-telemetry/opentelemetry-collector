@@ -397,12 +397,16 @@ func TestProvidesDefaultLogger(t *testing.T) {
 }
 
 func TestResolverDefaultProviderSet(t *testing.T) {
-	provider := newEnvProvider()
+	envProvider := newEnvProvider()
+	fileProvider := newFileProvider(t)
+
 	r, err := NewResolver(ResolverSettings{
 		URIs:              []string{"env:"},
-		ProviderFactories: []ProviderFactory{provider},
-		DefaultProvider:   provider,
+		ProviderFactories: []ProviderFactory{fileProvider},
+		DefaultProvider:   envProvider,
 	})
 	require.NoError(t, err)
-	require.NotNil(t, r.defaultProvider)
+	assert.NotNil(t, r.defaultProvider)
+	_, ok := r.providers["env"]
+	assert.True(t, ok)
 }
