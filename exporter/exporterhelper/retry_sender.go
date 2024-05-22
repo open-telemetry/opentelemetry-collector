@@ -62,6 +62,7 @@ func newRetrySender(config configretry.BackOffConfig, set exporter.CreateSetting
 
 func (rs *retrySender) Shutdown(context.Context) error {
 	close(rs.stopCh)
+	rs.logger.Debug("Retry Sender has been shutdown", zap.String(obsmetrics.ExporterKey, rs.traceAttribute.Value.AsString()))
 	return nil
 }
 

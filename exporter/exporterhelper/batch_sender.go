@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // batchSender is a component that places requests into batches before passing them to the downstream senders.
@@ -38,7 +40,8 @@ type batchSender struct {
 	mu          sync.Mutex
 	activeBatch *batch
 
-	logger *zap.Logger
+	traceAttribute attribute.KeyValue
+	logger         *zap.Logger
 
 	shutdownCh chan struct{}
 	stopped    *atomic.Bool
@@ -49,6 +52,7 @@ func newBatchSender(cfg exporterbatcher.Config, set exporter.CreateSettings,
 	mf exporterbatcher.BatchMergeFunc[Request], msf exporterbatcher.BatchMergeSplitFunc[Request]) *batchSender {
 	bs := &batchSender{
 		activeBatch:    newEmptyBatch(),
+		traceAttribute: attribute.String(obsmetrics.ExporterKey, set.ID.String()),
 		cfg:            cfg,
 		logger:         set.Logger,
 		mergeFunc:      mf,
@@ -91,6 +95,7 @@ func (bs *batchSender) Start(_ context.Context, _ component.Host) error {
 		}
 	}()
 
+	bs.logger.Debug("Started Batch Sender", zap.String(obsmetrics.ExporterKey, bs.traceAttribute.Value.AsString()))
 	return nil
 }
 
@@ -213,11 +218,15 @@ func (bs *batchSender) updateActiveBatch(ctx context.Context, req Request) {
 }
 
 func (bs *batchSender) Shutdown(context.Context) error {
+	bs.logger.Debug("Shutting down Batch Sender", zap.String(obsmetrics.ExporterKey, bs.traceAttribute.Value.AsString()))
+
 	bs.stopped.Store(true)
 	close(bs.shutdownCh)
 	// Wait for the active requests to finish.
 	for bs.activeRequests.Load() > 0 {
 		time.Sleep(10 * time.Millisecond)
 	}
+
+	bs.logger.Debug("Batch Sender has been shutdown", zap.String(obsmetrics.ExporterKey, bs.traceAttribute.Value.AsString()))
 	return nil
 }
