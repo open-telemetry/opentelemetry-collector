@@ -9,11 +9,15 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	embeddedmetric "go.opentelemetry.io/otel/metric/embedded"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/trace"
 	embeddedtrace "go.opentelemetry.io/otel/trace/embedded"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 type mockMeter struct {
@@ -73,4 +77,48 @@ func TestNewTelemetryBuilder(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, applied)
+}
+
+type expectedMetrics struct {
+	// processor_batch_batch_send_size
+	ProcessorBatchBatchSendSize int64
+	// processor_batch_batch_send_size_bytes
+	ProcessorBatchBatchSendSizeBytes int64
+	// processor_batch_batch_size_trigger_send
+	ProcessorBatchBatchSizeTriggerSend int64
+	// processor_batch_timeout_trigger_send
+	ProcessorBatchTimeoutTriggerSend int64
+}
+
+type testTelemetry struct {
+	reader        *sdkmetric.ManualReader
+	meterProvider *sdkmetric.MeterProvider
+}
+
+func (tt *testTelemetry) NewCreateSettings() processor.CreateSettings {
+	settings := processortest.NewNopCreateSettings()
+	settings.MeterProvider = tt.meterProvider
+	settings.ID = component.NewID(Type)
+
+	return settings
+}
+
+func setupTelemetry() testTelemetry {
+	reader := sdkmetric.NewManualReader()
+	return testTelemetry{
+		reader:        reader,
+		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
+	}
+}
+
+func (tt *testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+	for _, sm := range got.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if m.Name == name {
+				return m
+			}
+		}
+	}
+
+	return metricdata.Metrics{}
 }

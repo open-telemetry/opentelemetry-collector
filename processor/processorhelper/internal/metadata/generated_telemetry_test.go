@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	embeddedmetric "go.opentelemetry.io/otel/metric/embedded"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/trace"
 	embeddedtrace "go.opentelemetry.io/otel/trace/embedded"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
@@ -73,4 +75,58 @@ func TestNewTelemetryBuilder(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, applied)
+}
+
+type expectedMetrics struct {
+	// processor_accepted_log_records
+	ProcessorAcceptedLogRecords int64
+	// processor_accepted_metric_points
+	ProcessorAcceptedMetricPoints int64
+	// processor_accepted_spans
+	ProcessorAcceptedSpans int64
+	// processor_dropped_log_records
+	ProcessorDroppedLogRecords int64
+	// processor_dropped_metric_points
+	ProcessorDroppedMetricPoints int64
+	// processor_dropped_spans
+	ProcessorDroppedSpans int64
+	// processor_refused_log_records
+	ProcessorRefusedLogRecords int64
+	// processor_refused_metric_points
+	ProcessorRefusedMetricPoints int64
+	// processor_refused_spans
+	ProcessorRefusedSpans int64
+}
+
+type testTelemetry struct {
+	reader        *sdkmetric.ManualReader
+	meterProvider *sdkmetric.MeterProvider
+}
+
+func (tt *testTelemetry) NewCreateSettings() pkg.CreateSettings {
+	settings := pkgtest.NewNopCreateSettings()
+	settings.MeterProvider = tt.meterProvider
+	settings.ID = component.NewID(Type)
+
+	return settings
+}
+
+func setupTelemetry() testTelemetry {
+	reader := sdkmetric.NewManualReader()
+	return testTelemetry{
+		reader:        reader,
+		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
+	}
+}
+
+func (tt *testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+	for _, sm := range got.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if m.Name == name {
+				return m
+			}
+		}
+	}
+
+	return metricdata.Metrics{}
 }
