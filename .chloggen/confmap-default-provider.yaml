@@ -7,7 +7,7 @@ change_type: enhancement
 component: confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Allow setting a default Provider on a Resolver to use when `${}` syntax is used without a schema
+note: Allow setting a default Provider on a Resolver to use when `${}` syntax is used without a scheme
 
 # One or more tracking issues or pull requests related to the change
 issues: [10182]
@@ -22,4 +22,4 @@ subtext:
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: []
+change_logs: [api]
