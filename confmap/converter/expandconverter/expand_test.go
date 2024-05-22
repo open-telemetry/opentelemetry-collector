@@ -256,6 +256,17 @@ func TestDeprecatedWarning(t *testing.T) {
 			expectedWarnings: []string{},
 			expectedError:    fmt.Errorf("environment variable \"BAD!HOST\" has invalid name: must match regex %s", envvar.ValidationRegexp),
 		},
+		{
+			name: "malformed environment variable number",
+			input: map[string]any{
+				"test": "${2BADHOST}",
+			},
+			expectedOutput: map[string]any{
+				"test": "blah",
+			},
+			expectedWarnings: []string{},
+			expectedError:    fmt.Errorf("environment variable \"2BADHOST\" has invalid name: must match regex %s", envvar.ValidationRegexp),
+		},
 	}
 
 	for _, tt := range testCases {
