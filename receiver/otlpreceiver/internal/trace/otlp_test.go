@@ -71,7 +71,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 
 func makeTraceServiceClient(t *testing.T, tc consumer.Traces) ptraceotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, tc)
-	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	t.Cleanup(func() {
 		require.NoError(t, cc.Close())
