@@ -75,7 +75,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, mc)
 
-	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
 	t.Cleanup(func() {
 		require.NoError(t, cc.Close())

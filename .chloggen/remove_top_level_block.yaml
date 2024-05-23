@@ -4,20 +4,18 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: mdatagen
+component: confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: add ability to use metadata.yaml to automatically generate instruments for components
+note: Remove top level condition when considering struct as Unmarshalers
 
 # One or more tracking issues or pull requests related to the change
-issues: [10054]
+issues: [7101]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  The `telemetry` section in metadata.yaml is used to generate
-  instruments for components to measure telemetry about themselves.
+subtext:
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
