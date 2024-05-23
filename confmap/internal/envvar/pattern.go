@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package envvar
+package envvar // import "go.opentelemetry.io/collector/confmap/internal/envvar"
 
 import "regexp"
 
