@@ -121,9 +121,9 @@ linters-settings:
 
   gosec:
     excludes:
-      # https://github.com/golangci/golangci-lint/issues/4735
+      # https://github.com/open-telemetry/opentelemetry-collector/issues/10213
       - G601
-      # https://github.com/golangci/golangci-lint/issues/4735
+      # https://github.com/open-telemetry/opentelemetry-collector/issues/10213
       - G113
 
 linters:
