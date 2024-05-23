@@ -84,11 +84,10 @@ func (mr *Resolver) findURI(input string) string {
 	remaining := input[closeIndex+1:]
 	openIndex := strings.LastIndex(input[:closeIndex+1], "${")
 
-	// if there is a missing "${" or the uri does not contain ":", check the next URI.
+	// if there is a missing "${" check the next URI.
 	if openIndex < 0 {
 		// if remaining does not contain "}", there are no URIs left: stop recursion.
 		if !strings.Contains(remaining, "}") {
-
 			return ""
 		}
 		return mr.findURI(remaining)
