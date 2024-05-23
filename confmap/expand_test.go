@@ -371,7 +371,7 @@ func TestResolverExpandStringValues(t *testing.T) {
 			envProvider := newEnvProvider()
 			set := ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, envProvider, testProvider}, ConverterFactories: nil}
 			if tt.defaultProvider {
-				set.DefaultProvider = envProvider
+				set.DefaultScheme = "env"
 			}
 			resolver, err := NewResolver(set)
 			require.NoError(t, err)
@@ -546,7 +546,7 @@ func TestResolverDefaultProviderExpand(t *testing.T) {
 		return NewRetrieved(map[string]any{"foo": "${HOST}"})
 	})
 
-	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider}, DefaultProvider: newEnvProvider(), ConverterFactories: nil})
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, newEnvProvider()}, DefaultScheme: "env", ConverterFactories: nil})
 	require.NoError(t, err)
 
 	cfgMap, err := resolver.Resolve(context.Background())
