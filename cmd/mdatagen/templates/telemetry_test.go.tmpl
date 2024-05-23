@@ -78,43 +78,4 @@ func TestNewTelemetryBuilder(t *testing.T) {
 	require.True(t, applied)
 }
 
-type expectedMetrics struct {
-	{{- range $name, $metric := .Telemetry.Metrics }}
-	// {{ $name }}
-	{{ $name.Render }} {{ $metric.Data.BasicType }}
-	{{- end }}
-}
-
-type testTelemetry struct {
-	reader        *sdkmetric.ManualReader
-	meterProvider *sdkmetric.MeterProvider
-}
-
-func (tt *testTelemetry) NewCreateSettings() {{ .Status.Class }}.CreateSettings {
-	settings := {{ .Status.Class }}test.NewNopCreateSettings()
-	settings.MeterProvider = tt.meterProvider
-	settings.ID = component.NewID(Type)
-
-	return settings
-}
-
-func setupTelemetry() testTelemetry {
-	reader := sdkmetric.NewManualReader()
-	return testTelemetry{
-		reader:        reader,
-		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
-	}
-}
-
-func (tt *testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
-	for _, sm := range got.ScopeMetrics {
-		for _, m := range sm.Metrics {
-			if m.Name == name {
-				return m
-			}
-		}
-	}
-
-	return metricdata.Metrics{}
-}
 {{- end }}

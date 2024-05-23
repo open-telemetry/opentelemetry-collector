@@ -59,7 +59,7 @@ func run(ymlPath string) error {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
 	}
 	if md.Status != nil {
-		if md.Status.Class != "cmd" && md.Status.Class != "pkg" {
+		if md.Status.Class != "cmd" && md.Status.Class != "pkg" && !md.Status.NotComponent {
 			if err = generateFile(filepath.Join(tmplDir, "status.go.tmpl"),
 				filepath.Join(codeDir, "generated_status.go"), md, "metadata"); err != nil {
 				return err
@@ -88,6 +88,10 @@ func run(ymlPath string) error {
 	toGenerate := map[string]string{}
 
 	if len(md.Telemetry.Metrics) != 0 { // if there are telemetry metrics, generate telemetry specific files
+		if err = generateFile(filepath.Join(tmplDir, "component_telemetry_test.go.tmpl"),
+			filepath.Join(ymlDir, "generated_component_telemetry_test.go"), md, packageName); err != nil {
+			return err
+		}
 		toGenerate[filepath.Join(tmplDir, "telemetry.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry.go")
 		toGenerate[filepath.Join(tmplDir, "telemetry_test.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry_test.go")
 	}
