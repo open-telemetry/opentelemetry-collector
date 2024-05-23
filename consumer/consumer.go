@@ -7,6 +7,8 @@ import (
 	"errors"
 )
 
+var ErrNilFunc = errors.New("nil consumer func")
+
 // Capabilities describes the capabilities of a Processor.
 type Capabilities struct {
 	// MutatesData is set to true if Consume* function of the
@@ -17,34 +19,35 @@ type Capabilities struct {
 	MutatesData bool
 }
 
-type baseConsumer interface {
+// Consumer is the base interface for any consumer implementation.
+type Consumer interface {
 	Capabilities() Capabilities
 }
 
-var errNilFunc = errors.New("nil consumer func")
-
-type baseImpl struct {
+// BaseImpl is the base implementation for the consumer implementation.
+type BaseImpl struct {
 	capabilities Capabilities
 }
 
 // Option to construct new consumers.
-type Option func(*baseImpl)
+type Option func(*BaseImpl)
 
 // WithCapabilities overrides the default GetCapabilities function for a processor.
 // The default GetCapabilities function returns mutable capabilities.
 func WithCapabilities(capabilities Capabilities) Option {
-	return func(o *baseImpl) {
+	return func(o *BaseImpl) {
 		o.capabilities = capabilities
 	}
 }
 
 // Capabilities returns the capabilities of the component
-func (bs baseImpl) Capabilities() Capabilities {
+func (bs BaseImpl) Capabilities() Capabilities {
 	return bs.capabilities
 }
 
-func newBaseImpl(options ...Option) *baseImpl {
-	bs := &baseImpl{
+// NewBaseImpl builds a new instance of BaseImpl
+func NewBaseImpl(options ...Option) *BaseImpl {
+	bs := &BaseImpl{
 		capabilities: Capabilities{MutatesData: false},
 	}
 

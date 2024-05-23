@@ -7,7 +7,9 @@ import (
 	"context"
 	"sync"
 
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/log"
+	"go.opentelemetry.io/collector/consumer/metric"
+	"go.opentelemetry.io/collector/consumer/trace"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -22,7 +24,7 @@ type TracesSink struct {
 	spanCount int
 }
 
-var _ consumer.Traces = (*TracesSink)(nil)
+var _ trace.Traces = (*TracesSink)(nil)
 
 // ConsumeTraces stores traces to this sink.
 func (ste *TracesSink) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
@@ -70,7 +72,7 @@ type MetricsSink struct {
 	dataPointCount int
 }
 
-var _ consumer.Metrics = (*MetricsSink)(nil)
+var _ metric.Metrics = (*MetricsSink)(nil)
 
 // ConsumeMetrics stores metrics to this sink.
 func (sme *MetricsSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
@@ -118,7 +120,7 @@ type LogsSink struct {
 	logRecordCount int
 }
 
-var _ consumer.Logs = (*LogsSink)(nil)
+var _ log.Logs = (*LogsSink)(nil)
 
 // ConsumeLogs stores logs to this sink.
 func (sle *LogsSink) ConsumeLogs(_ context.Context, ld plog.Logs) error {

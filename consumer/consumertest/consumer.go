@@ -7,6 +7,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/log"
+	"go.opentelemetry.io/collector/consumer/metric"
+	"go.opentelemetry.io/collector/consumer/trace"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -20,21 +23,21 @@ type Consumer interface {
 	// Capabilities to implement the base consumer functionality.
 	Capabilities() consumer.Capabilities
 
-	// ConsumeTraces to implement the consumer.Traces.
+	// ConsumeTraces to implement the trace.Traces.
 	ConsumeTraces(context.Context, ptrace.Traces) error
 
-	// ConsumeMetrics to implement the consumer.Metrics.
+	// ConsumeMetrics to implement the metric.Metrics.
 	ConsumeMetrics(context.Context, pmetric.Metrics) error
 
-	// ConsumeLogs to implement the consumer.Logs.
+	// ConsumeLogs to implement the log.Logs.
 	ConsumeLogs(context.Context, plog.Logs) error
 
 	unexported()
 }
 
-var _ consumer.Logs = (Consumer)(nil)
-var _ consumer.Metrics = (Consumer)(nil)
-var _ consumer.Traces = (Consumer)(nil)
+var _ log.Logs = (Consumer)(nil)
+var _ metric.Metrics = (Consumer)(nil)
+var _ trace.Traces = (Consumer)(nil)
 
 type nonMutatingConsumer struct{}
 
@@ -45,9 +48,9 @@ func (bc nonMutatingConsumer) Capabilities() consumer.Capabilities {
 
 type baseConsumer struct {
 	nonMutatingConsumer
-	consumer.ConsumeTracesFunc
-	consumer.ConsumeMetricsFunc
-	consumer.ConsumeLogsFunc
+	trace.ConsumeTracesFunc
+	metric.ConsumeMetricsFunc
+	log.ConsumeLogsFunc
 }
 
 func (bc baseConsumer) unexported() {}

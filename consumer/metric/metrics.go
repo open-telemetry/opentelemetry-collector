@@ -1,18 +1,19 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package consumer // import "go.opentelemetry.io/collector/consumer"
+package metric // import "go.opentelemetry.io/collector/consumer/metric"
 
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // Metrics is an interface that receives pmetric.Metrics, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type Metrics interface {
-	baseConsumer
+	consumer.Consumer
 	// ConsumeMetrics receives pmetric.Metrics for consumption.
 	ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error
 }
@@ -26,17 +27,17 @@ func (f ConsumeMetricsFunc) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 }
 
 type baseMetrics struct {
-	*baseImpl
+	*consumer.BaseImpl
 	ConsumeMetricsFunc
 }
 
 // NewMetrics returns a Metrics configured with the provided options.
-func NewMetrics(consume ConsumeMetricsFunc, options ...Option) (Metrics, error) {
+func NewMetrics(consume ConsumeMetricsFunc, options ...consumer.Option) (Metrics, error) {
 	if consume == nil {
-		return nil, errNilFunc
+		return nil, consumer.ErrNilFunc
 	}
 	return &baseMetrics{
-		baseImpl:           newBaseImpl(options...),
+		BaseImpl:           consumer.NewBaseImpl(options...),
 		ConsumeMetricsFunc: consume,
 	}, nil
 }

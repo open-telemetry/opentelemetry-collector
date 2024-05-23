@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package consumer
+package trace
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -17,21 +18,21 @@ func TestDefaultTraces(t *testing.T) {
 	cp, err := NewTraces(func(context.Context, ptrace.Traces) error { return nil })
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
-	assert.Equal(t, Capabilities{MutatesData: false}, cp.Capabilities())
+	assert.Equal(t, consumer.Capabilities{MutatesData: false}, cp.Capabilities())
 }
 
 func TestNilFuncTraces(t *testing.T) {
 	_, err := NewTraces(nil)
-	assert.Equal(t, errNilFunc, err)
+	assert.Equal(t, consumer.ErrNilFunc, err)
 }
 
 func TestWithCapabilitiesTraces(t *testing.T) {
 	cp, err := NewTraces(
 		func(context.Context, ptrace.Traces) error { return nil },
-		WithCapabilities(Capabilities{MutatesData: true}))
+		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
-	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())
+	assert.Equal(t, consumer.Capabilities{MutatesData: true}, cp.Capabilities())
 }
 
 func TestConsumeTraces(t *testing.T) {
