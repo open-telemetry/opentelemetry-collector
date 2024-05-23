@@ -109,7 +109,7 @@ func newQueueSender(q exporterqueue.Queue[Request], set exporter.CreateSettings,
 
 // Start is invoked during service startup.
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
-	qs.logger.Debug("Starting Queue Sender", zap.String(obsmetrics.ExporterKey, qs.fullName))
+	qs.logger.Debug("Starting Queue Sender")
 
 	if err := qs.consumers.Start(ctx, host); err != nil {
 		return err
@@ -139,19 +139,19 @@ func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 			return nil
 		}))
 
-	qs.logger.Debug("Started Queue Sender", zap.String(obsmetrics.ExporterKey, qs.fullName), zap.Error(err))
 	errs = multierr.Append(errs, err)
+	qs.logger.Debug("Started Queue Sender", zap.Error(errs))
 	return errs
 }
 
 // Shutdown is invoked during service shutdown.
 func (qs *queueSender) Shutdown(ctx context.Context) error {
-	qs.logger.Debug("Shutting Down Queue Sender", zap.String(obsmetrics.ExporterKey, qs.fullName))
+	qs.logger.Debug("Shutting Down Queue Sender")
 
 	// Stop the queue and consumers, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
 	err := qs.consumers.Shutdown(ctx)
-	qs.logger.Debug("Queue Sender has shut down", zap.String(obsmetrics.ExporterKey, qs.fullName), zap.Error(err))
+	qs.logger.Debug("Queue Sender has shut down", zap.Error(err))
 	return err
 }
 
