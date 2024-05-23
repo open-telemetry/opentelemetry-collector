@@ -1,7 +1,7 @@
 // Deprecated: Use the GOMEMLIMIT environment variable instead.
 module go.opentelemetry.io/collector/extension/ballastextension
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/stretchr/testify v1.9.0

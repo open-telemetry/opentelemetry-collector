@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/shirou/gopsutil/v3 v3.24.4
