@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/config/configtls
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/fsnotify/fsnotify v1.7.0

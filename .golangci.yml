@@ -119,6 +119,13 @@ linters-settings:
           files:
             - "!**/*_test.go"
 
+  gosec:
+    excludes:
+      # https://github.com/open-telemetry/opentelemetry-collector/issues/10213
+      - G601
+      # https://github.com/open-telemetry/opentelemetry-collector/issues/10213
+      - G113
+
 linters:
   enable:
     - depguard
