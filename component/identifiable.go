@@ -118,12 +118,12 @@ func (id PipelineID) Name() string {
 	return id.nameVal
 }
 
-// NewID returns a new ID with the given Type and empty name.
+// NewPipelineID returns a new PipelineID with the given DataType and empty name.
 func NewPipelineID(typeVal DataType) PipelineID {
 	return PipelineID{typeVal: typeVal}
 }
 
-// NewIDWithName returns a new ID with the given Type and name.
+// NewPipelineIDWithName returns a new PipelineID with the given DataType and name.
 func NewPipelineIDWithName(typeVal DataType, nameVal string) PipelineID {
 	return PipelineID{typeVal: typeVal, nameVal: nameVal}
 }
