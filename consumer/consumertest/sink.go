@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// TracesSink is a consumer.Traces that acts like a sink that
+// TracesSink is a ctrace.Traces that acts like a sink that
 // stores all traces and allows querying them for testing.
 type TracesSink struct {
 	nonMutatingConsumer
@@ -63,7 +63,7 @@ func (ste *TracesSink) Reset() {
 	ste.spanCount = 0
 }
 
-// MetricsSink is a consumer.Metrics that acts like a sink that
+// MetricsSink is a cmetric.Metrics that acts like a sink that
 // stores all metrics and allows querying them for testing.
 type MetricsSink struct {
 	nonMutatingConsumer
@@ -111,7 +111,7 @@ func (sme *MetricsSink) Reset() {
 	sme.dataPointCount = 0
 }
 
-// LogsSink is a consumer.Logs that acts like a sink that
+// LogsSink is a clog.Logs that acts like a sink that
 // stores all logs and allows querying them for testing.
 type LogsSink struct {
 	nonMutatingConsumer

@@ -44,21 +44,22 @@ func WithShutdown(shutdown component.ShutdownFunc) Option {
 // The default GetCapabilities function returns mutable capabilities.
 func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return func(o *baseSettings) {
-		o.consumerOptions = append(o.consumerOptions, consumer.WithCapabilities(capabilities))
+		o.capabilities = capabilities
 	}
 }
 
 type baseSettings struct {
 	component.StartFunc
 	component.ShutdownFunc
-	consumerOptions []consumer.Option
+
+	capabilities consumer.Capabilities
 }
 
 // fromOptions returns the internal settings starting from the default and applying all options.
 func fromOptions(options []Option) *baseSettings {
 	// Start from the default options:
 	opts := &baseSettings{
-		consumerOptions: []consumer.Option{consumer.WithCapabilities(consumer.Capabilities{MutatesData: true})},
+		capabilities: consumer.Capabilities{MutatesData: true},
 	}
 
 	for _, op := range options {

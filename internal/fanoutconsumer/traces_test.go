@@ -12,18 +12,19 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestTracesNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewNop()
-	tfc := NewTraces([]consumer.Traces{nop})
+	tfc := NewTraces([]ctrace.Traces{nop})
 	assert.Same(t, nop, tfc)
 }
 
 func TestTracesNotMultiplexingMutating(t *testing.T) {
 	p := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
-	lfc := NewTraces([]consumer.Traces{p})
+	lfc := NewTraces([]ctrace.Traces{p})
 	assert.True(t, lfc.Capabilities().MutatesData)
 }
 
@@ -32,7 +33,7 @@ func TestTracesMultiplexingNonMutating(t *testing.T) {
 	p2 := new(consumertest.TracesSink)
 	p3 := new(consumertest.TracesSink)
 
-	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
+	tfc := NewTraces([]ctrace.Traces{p1, p2, p3})
 	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
@@ -68,7 +69,7 @@ func TestTracesMultiplexingMutating(t *testing.T) {
 	p2 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
 	p3 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
 
-	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
+	tfc := NewTraces([]ctrace.Traces{p1, p2, p3})
 	assert.True(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
@@ -105,7 +106,7 @@ func TestReadOnlyTracesMultiplexingMutating(t *testing.T) {
 	p2 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
 	p3 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
 
-	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
+	tfc := NewTraces([]ctrace.Traces{p1, p2, p3})
 	assert.True(t, tfc.Capabilities().MutatesData)
 
 	tdOrig := testdata.GenerateTraces(1)
@@ -143,7 +144,7 @@ func TestTracesMultiplexingMixLastMutating(t *testing.T) {
 	p2 := new(consumertest.TracesSink)
 	p3 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
 
-	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
+	tfc := NewTraces([]ctrace.Traces{p1, p2, p3})
 	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
@@ -181,7 +182,7 @@ func TestTracesMultiplexingMixLastNonMutating(t *testing.T) {
 	p2 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
 	p3 := new(consumertest.TracesSink)
 
-	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
+	tfc := NewTraces([]ctrace.Traces{p1, p2, p3})
 	assert.False(t, tfc.Capabilities().MutatesData)
 	td := testdata.GenerateTraces(1)
 
@@ -218,7 +219,7 @@ func TestTracesWhenErrors(t *testing.T) {
 	p2 := consumertest.NewErr(errors.New("my error"))
 	p3 := new(consumertest.TracesSink)
 
-	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
+	tfc := NewTraces([]ctrace.Traces{p1, p2, p3})
 	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {

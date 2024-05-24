@@ -7,7 +7,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/nopreceiver/internal/metadata"
 )
@@ -22,15 +24,15 @@ func NewFactory() receiver.Factory {
 		receiver.WithLogs(createLogs, metadata.LogsStability))
 }
 
-func createTraces(context.Context, receiver.CreateSettings, component.Config, consumer.Traces) (receiver.Traces, error) {
+func createTraces(context.Context, receiver.CreateSettings, component.Config, ctrace.Traces) (receiver.Traces, error) {
 	return nopInstance, nil
 }
 
-func createMetrics(context.Context, receiver.CreateSettings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
+func createMetrics(context.Context, receiver.CreateSettings, component.Config, cmetric.Metrics) (receiver.Metrics, error) {
 	return nopInstance, nil
 }
 
-func createLogs(context.Context, receiver.CreateSettings, component.Config, consumer.Logs) (receiver.Logs, error) {
+func createLogs(context.Context, receiver.CreateSettings, component.Config, clog.Logs) (receiver.Logs, error) {
 	return nopInstance, nil
 }
 

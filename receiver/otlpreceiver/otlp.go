@@ -15,7 +15,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -32,9 +34,9 @@ type otlpReceiver struct {
 	serverGRPC *grpc.Server
 	serverHTTP *http.Server
 
-	nextTraces  consumer.Traces
-	nextMetrics consumer.Metrics
-	nextLogs    consumer.Logs
+	nextTraces  ctrace.Traces
+	nextMetrics cmetric.Metrics
+	nextLogs    clog.Logs
 	shutdownWG  sync.WaitGroup
 
 	obsrepGRPC *receiverhelper.ObsReport
@@ -198,14 +200,14 @@ func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 	return err
 }
 
-func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) {
+func (r *otlpReceiver) registerTraceConsumer(tc ctrace.Traces) {
 	r.nextTraces = tc
 }
 
-func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) {
+func (r *otlpReceiver) registerMetricsConsumer(mc cmetric.Metrics) {
 	r.nextMetrics = mc
 }
 
-func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) {
+func (r *otlpReceiver) registerLogsConsumer(lc clog.Logs) {
 	r.nextLogs = lc
 }

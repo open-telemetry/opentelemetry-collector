@@ -13,8 +13,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/cmetric"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 )
 
 var (
@@ -239,9 +241,9 @@ func TestBuilder(t *testing.T) {
 		name        string
 		id          component.ID
 		err         func(component.DataType, component.DataType) string
-		nextTraces  consumer.Traces
-		nextLogs    consumer.Logs
-		nextMetrics consumer.Metrics
+		nextTraces  ctrace.Traces
+		nextLogs    clog.Logs
+		nextMetrics cmetric.Metrics
 	}{
 		{
 			name: "unknown",
@@ -467,33 +469,33 @@ type nopConnector struct {
 	consumertest.Consumer
 }
 
-func createTracesToTraces(context.Context, CreateSettings, component.Config, consumer.Traces) (Traces, error) {
+func createTracesToTraces(context.Context, CreateSettings, component.Config, ctrace.Traces) (Traces, error) {
 	return nopInstance, nil
 }
-func createTracesToMetrics(context.Context, CreateSettings, component.Config, consumer.Metrics) (Traces, error) {
+func createTracesToMetrics(context.Context, CreateSettings, component.Config, cmetric.Metrics) (Traces, error) {
 	return nopInstance, nil
 }
-func createTracesToLogs(context.Context, CreateSettings, component.Config, consumer.Logs) (Traces, error) {
-	return nopInstance, nil
-}
-
-func createMetricsToTraces(context.Context, CreateSettings, component.Config, consumer.Traces) (Metrics, error) {
-	return nopInstance, nil
-}
-func createMetricsToMetrics(context.Context, CreateSettings, component.Config, consumer.Metrics) (Metrics, error) {
-	return nopInstance, nil
-}
-func createMetricsToLogs(context.Context, CreateSettings, component.Config, consumer.Logs) (Metrics, error) {
+func createTracesToLogs(context.Context, CreateSettings, component.Config, clog.Logs) (Traces, error) {
 	return nopInstance, nil
 }
 
-func createLogsToTraces(context.Context, CreateSettings, component.Config, consumer.Traces) (Logs, error) {
+func createMetricsToTraces(context.Context, CreateSettings, component.Config, ctrace.Traces) (Metrics, error) {
 	return nopInstance, nil
 }
-func createLogsToMetrics(context.Context, CreateSettings, component.Config, consumer.Metrics) (Logs, error) {
+func createMetricsToMetrics(context.Context, CreateSettings, component.Config, cmetric.Metrics) (Metrics, error) {
 	return nopInstance, nil
 }
-func createLogsToLogs(context.Context, CreateSettings, component.Config, consumer.Logs) (Logs, error) {
+func createMetricsToLogs(context.Context, CreateSettings, component.Config, clog.Logs) (Metrics, error) {
+	return nopInstance, nil
+}
+
+func createLogsToTraces(context.Context, CreateSettings, component.Config, ctrace.Traces) (Logs, error) {
+	return nopInstance, nil
+}
+func createLogsToMetrics(context.Context, CreateSettings, component.Config, cmetric.Metrics) (Logs, error) {
+	return nopInstance, nil
+}
+func createLogsToLogs(context.Context, CreateSettings, component.Config, clog.Logs) (Logs, error) {
 	return nopInstance, nil
 }
 

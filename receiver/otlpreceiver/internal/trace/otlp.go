@@ -6,7 +6,7 @@ package trace // import "go.opentelemetry.io/collector/receiver/otlpreceiver/int
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -17,12 +17,12 @@ const dataFormatProtobuf = "protobuf"
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
 type Receiver struct {
 	ptraceotlp.UnimplementedGRPCServer
-	nextConsumer consumer.Traces
+	nextConsumer ctrace.Traces
 	obsreport    *receiverhelper.ObsReport
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumer.Traces, obsreport *receiverhelper.ObsReport) *Receiver {
+func New(nextConsumer ctrace.Traces, obsreport *receiverhelper.ObsReport) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsreport:    obsreport,

@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor/internal/metadata"
 )
@@ -47,7 +49,7 @@ func createTraces(
 	_ context.Context,
 	set processor.CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Traces,
+	nextConsumer ctrace.Traces,
 ) (processor.Traces, error) {
 	return newBatchTracesProcessor(set, nextConsumer, cfg.(*Config))
 }
@@ -56,7 +58,7 @@ func createMetrics(
 	_ context.Context,
 	set processor.CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Metrics,
+	nextConsumer cmetric.Metrics,
 ) (processor.Metrics, error) {
 	return newBatchMetricsProcessor(set, nextConsumer, cfg.(*Config))
 }
@@ -65,7 +67,7 @@ func createLogs(
 	_ context.Context,
 	set processor.CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Logs,
+	nextConsumer clog.Logs,
 ) (processor.Logs, error) {
 	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config))
 }

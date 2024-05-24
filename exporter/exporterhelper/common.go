@@ -142,7 +142,7 @@ func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Facto
 // TODO: Verify if we can change the default to be mutable as we do for processors.
 func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return func(o *baseExporter) error {
-		o.consumerOptions = append(o.consumerOptions, consumer.WithCapabilities(capabilities))
+		o.capabilities = capabilities
 		return nil
 	}
 }
@@ -246,7 +246,7 @@ type baseExporter struct {
 	retrySender   requestSender
 	timeoutSender *timeoutSender // timeoutSender is always initialized.
 
-	consumerOptions []consumer.Option
+	capabilities consumer.Capabilities
 }
 
 func newBaseExporter(set exporter.CreateSettings, signal component.DataType, osf obsrepSenderFactory, options ...Option) (*baseExporter, error) {
@@ -283,7 +283,7 @@ func newBaseExporter(set exporter.CreateSettings, signal component.DataType, osf
 			bs.concurrencyLimit = uint64(qs.numConsumers)
 		}
 		// Batcher sender mutates the data.
-		be.consumerOptions = append(be.consumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+		be.capabilities = consumer.Capabilities{MutatesData: true}
 	}
 
 	return be, nil

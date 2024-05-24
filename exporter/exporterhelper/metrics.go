@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/cmetric"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
@@ -23,17 +23,17 @@ var metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
 
 type metricsRequest struct {
 	md     pmetric.Metrics
-	pusher consumer.ConsumeMetricsFunc
+	pusher cmetric.ConsumeMetricsFunc
 }
 
-func newMetricsRequest(md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) Request {
+func newMetricsRequest(md pmetric.Metrics, pusher cmetric.ConsumeMetricsFunc) Request {
 	return &metricsRequest{
 		md:     md,
 		pusher: pusher,
 	}
 }
 
-func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) exporterqueue.Unmarshaler[Request] {
+func newMetricsRequestUnmarshalerFunc(pusher cmetric.ConsumeMetricsFunc) exporterqueue.Unmarshaler[Request] {
 	return func(bytes []byte) (Request, error) {
 		metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
 		if err != nil {
@@ -65,7 +65,7 @@ func (req *metricsRequest) ItemsCount() int {
 
 type metricsExporter struct {
 	*baseExporter
-	consumer.Metrics
+	cmetric.Metrics
 }
 
 // NewMetricsExporter creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
@@ -73,7 +73,7 @@ func NewMetricsExporter(
 	ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config,
-	pusher consumer.ConsumeMetricsFunc,
+	pusher cmetric.ConsumeMetricsFunc,
 	options ...Option,
 ) (exporter.Metrics, error) {
 	if cfg == nil {
@@ -95,7 +95,7 @@ func NewMetricsExporter(
 type RequestFromMetricsFunc func(context.Context, pmetric.Metrics) (Request, error)
 
 // requestFromMetrics returns a RequestFromMetricsFunc that converts pdata.Metrics into a Request.
-func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestFromMetricsFunc {
+func requestFromMetrics(pusher cmetric.ConsumeMetricsFunc) RequestFromMetricsFunc {
 	return func(_ context.Context, md pmetric.Metrics) (Request, error) {
 		return newMetricsRequest(md, pusher), nil
 	}
@@ -123,7 +123,7 @@ func NewMetricsRequestExporter(
 		return nil, err
 	}
 
-	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
+	mc, err := cmetric.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		req, cErr := converter(ctx, md)
 		if cErr != nil {
 			set.Logger.Error("Failed to convert metrics. Dropping data.",
@@ -136,7 +136,7 @@ func NewMetricsRequestExporter(
 			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
 		}
 		return sErr
-	}, be.consumerOptions...)
+	}, cmetric.WithCapabilities(be.capabilities))
 
 	return &metricsExporter{
 		baseExporter: be,

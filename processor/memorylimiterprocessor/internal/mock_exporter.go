@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -19,7 +20,7 @@ type MockExporter struct {
 	Logs              consumertest.LogsSink
 }
 
-var _ consumer.Logs = (*MockExporter)(nil)
+var _ clog.Logs = (*MockExporter)(nil)
 
 func (e *MockExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}

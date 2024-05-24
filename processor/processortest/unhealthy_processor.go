@@ -8,8 +8,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/cmetric"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -34,21 +36,21 @@ func NewUnhealthyProcessorFactory() processor.Factory {
 	)
 }
 
-func createUnhealthyTracesProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, _ consumer.Traces) (processor.Traces, error) {
+func createUnhealthyTracesProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, _ ctrace.Traces) (processor.Traces, error) {
 	return &unhealthyProcessor{
 		Consumer:  consumertest.NewNop(),
 		telemetry: set.TelemetrySettings,
 	}, nil
 }
 
-func createUnhealthyMetricsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, _ consumer.Metrics) (processor.Metrics, error) {
+func createUnhealthyMetricsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, _ cmetric.Metrics) (processor.Metrics, error) {
 	return &unhealthyProcessor{
 		Consumer:  consumertest.NewNop(),
 		telemetry: set.TelemetrySettings,
 	}, nil
 }
 
-func createUnhealthyLogsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, _ consumer.Logs) (processor.Logs, error) {
+func createUnhealthyLogsProcessor(_ context.Context, set processor.CreateSettings, _ component.Config, _ clog.Logs) (processor.Logs, error) {
 	return &unhealthyProcessor{
 		Consumer:  consumertest.NewNop(),
 		telemetry: set.TelemetrySettings,

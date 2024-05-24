@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/cmetric"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -43,8 +44,8 @@ func TestMetricsRouterMultiplexing(t *testing.T) {
 func fuzzMetrics(numIDs, numCons, numMetrics int) func(*testing.T) {
 	return func(t *testing.T) {
 		allIDs := make([]component.ID, 0, numCons)
-		allCons := make([]consumer.Metrics, 0, numCons)
-		allConsMap := make(map[component.ID]consumer.Metrics)
+		allCons := make([]cmetric.Metrics, 0, numCons)
+		allConsMap := make(map[component.ID]cmetric.Metrics)
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
@@ -113,7 +114,7 @@ func TestMetricsRouterConsumers(t *testing.T) {
 
 	foo := new(consumertest.MetricsSink)
 	bar := new(consumertest.MetricsSink)
-	r := NewMetricsRouter(map[component.ID]consumer.Metrics{fooID: foo, barID: bar})
+	r := NewMetricsRouter(map[component.ID]cmetric.Metrics{fooID: foo, barID: bar})
 
 	rcs := r.PipelineIDs()
 	assert.Len(t, rcs, 2)

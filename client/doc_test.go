@@ -9,13 +9,13 @@ import (
 	"net"
 
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func Example_receiver() {
 	// Your receiver get a next consumer when it's constructed
-	var next consumer.Traces
+	var next ctrace.Traces
 
 	// You'll convert the incoming data into pipeline data
 	td := ptrace.NewTraces()

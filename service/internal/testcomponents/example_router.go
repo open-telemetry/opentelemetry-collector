@@ -9,6 +9,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -40,7 +43,7 @@ func createExampleRouterDefaultConfig() component.Config {
 	return &ExampleRouterConfig{}
 }
 
-func createExampleTracesRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, traces consumer.Traces) (connector.Traces, error) {
+func createExampleTracesRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, traces ctrace.Traces) (connector.Traces, error) {
 	c := cfg.(ExampleRouterConfig)
 	r := traces.(connector.TracesRouterAndConsumer)
 	left, _ := r.Consumer(c.Traces.Left)
@@ -51,7 +54,7 @@ func createExampleTracesRouter(_ context.Context, _ connector.CreateSettings, cf
 	}, nil
 }
 
-func createExampleMetricsRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, metrics consumer.Metrics) (connector.Metrics, error) {
+func createExampleMetricsRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, metrics cmetric.Metrics) (connector.Metrics, error) {
 	c := cfg.(ExampleRouterConfig)
 	r := metrics.(connector.MetricsRouterAndConsumer)
 	left, _ := r.Consumer(c.Metrics.Left)
@@ -62,7 +65,7 @@ func createExampleMetricsRouter(_ context.Context, _ connector.CreateSettings, c
 	}, nil
 }
 
-func createExampleLogsRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, logs consumer.Logs) (connector.Logs, error) {
+func createExampleLogsRouter(_ context.Context, _ connector.CreateSettings, cfg component.Config, logs clog.Logs) (connector.Logs, error) {
 	c := cfg.(ExampleRouterConfig)
 	r := logs.(connector.LogsRouterAndConsumer)
 	left, _ := r.Consumer(c.Logs.Left)
@@ -76,16 +79,16 @@ func createExampleLogsRouter(_ context.Context, _ connector.CreateSettings, cfg 
 type ExampleRouter struct {
 	componentState
 
-	tracesRight consumer.Traces
-	tracesLeft  consumer.Traces
+	tracesRight ctrace.Traces
+	tracesLeft  ctrace.Traces
 	tracesNum   int
 
-	metricsRight consumer.Metrics
-	metricsLeft  consumer.Metrics
+	metricsRight cmetric.Metrics
+	metricsLeft  cmetric.Metrics
 	metricsNum   int
 
-	logsRight consumer.Logs
-	logsLeft  consumer.Logs
+	logsRight clog.Logs
+	logsLeft  clog.Logs
 	logsNum   int
 }
 

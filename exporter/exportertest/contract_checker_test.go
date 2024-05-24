@@ -11,6 +11,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver"
@@ -27,9 +30,9 @@ var retryConfig = func() configretry.BackOffConfig {
 type mockReceiver struct {
 	component.StartFunc
 	component.ShutdownFunc
-	consumer.Traces
-	consumer.Metrics
-	consumer.Logs
+	ctrace.Traces
+	cmetric.Metrics
+	clog.Logs
 }
 
 // mockExporterFactory is a factory to create exporters sending data to the mockReceiver.
@@ -89,15 +92,15 @@ func newMockExporterFactory(mr *mockReceiver) exporter.Factory {
 func newMockReceiverFactory(mr *mockReceiver) receiver.Factory {
 	return receiver.NewFactory(component.MustNewType("pass_through_receiver"),
 		func() component.Config { return &nopConfig{} },
-		receiver.WithTraces(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c consumer.Traces) (receiver.Traces, error) {
+		receiver.WithTraces(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c ctrace.Traces) (receiver.Traces, error) {
 			mr.Traces = c
 			return mr, nil
 		}, component.StabilityLevelStable),
-		receiver.WithMetrics(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c consumer.Metrics) (receiver.Metrics, error) {
+		receiver.WithMetrics(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c cmetric.Metrics) (receiver.Metrics, error) {
 			mr.Metrics = c
 			return mr, nil
 		}, component.StabilityLevelStable),
-		receiver.WithLogs(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c consumer.Logs) (receiver.Logs, error) {
+		receiver.WithLogs(func(_ context.Context, _ receiver.CreateSettings, _ component.Config, c clog.Logs) (receiver.Logs, error) {
 			mr.Logs = c
 			return mr, nil
 		}, component.StabilityLevelStable),

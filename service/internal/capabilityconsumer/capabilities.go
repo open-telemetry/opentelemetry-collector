@@ -5,9 +5,12 @@ package capabilityconsumer // import "go.opentelemetry.io/collector/service/inte
 
 import (
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 )
 
-func NewLogs(logs consumer.Logs, cap consumer.Capabilities) consumer.Logs {
+func NewLogs(logs clog.Logs, cap consumer.Capabilities) clog.Logs {
 	if logs.Capabilities() == cap {
 		return logs
 	}
@@ -15,7 +18,7 @@ func NewLogs(logs consumer.Logs, cap consumer.Capabilities) consumer.Logs {
 }
 
 type capLogs struct {
-	consumer.Logs
+	clog.Logs
 	cap consumer.Capabilities
 }
 
@@ -23,7 +26,7 @@ func (mts capLogs) Capabilities() consumer.Capabilities {
 	return mts.cap
 }
 
-func NewMetrics(metrics consumer.Metrics, cap consumer.Capabilities) consumer.Metrics {
+func NewMetrics(metrics cmetric.Metrics, cap consumer.Capabilities) cmetric.Metrics {
 	if metrics.Capabilities() == cap {
 		return metrics
 	}
@@ -31,7 +34,7 @@ func NewMetrics(metrics consumer.Metrics, cap consumer.Capabilities) consumer.Me
 }
 
 type capMetrics struct {
-	consumer.Metrics
+	cmetric.Metrics
 	cap consumer.Capabilities
 }
 
@@ -39,7 +42,7 @@ func (mts capMetrics) Capabilities() consumer.Capabilities {
 	return mts.cap
 }
 
-func NewTraces(traces consumer.Traces, cap consumer.Capabilities) consumer.Traces {
+func NewTraces(traces ctrace.Traces, cap consumer.Capabilities) ctrace.Traces {
 	if traces.Capabilities() == cap {
 		return traces
 	}
@@ -47,7 +50,7 @@ func NewTraces(traces consumer.Traces, cap consumer.Capabilities) consumer.Trace
 }
 
 type capTraces struct {
-	consumer.Traces
+	ctrace.Traces
 	cap consumer.Capabilities
 }
 

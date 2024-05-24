@@ -9,6 +9,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -55,9 +58,9 @@ func TestShutdownVerifierTracesOnly(t *testing.T) {
 
 type passthroughProcessor struct {
 	processor.Traces
-	nextLogs    consumer.Logs
-	nextMetrics consumer.Metrics
-	nextTraces  consumer.Traces
+	nextLogs    clog.Logs
+	nextMetrics cmetric.Metrics
+	nextTraces  ctrace.Traces
 }
 
 func (passthroughProcessor) Start(context.Context, component.Host) error {
@@ -72,19 +75,19 @@ func (passthroughProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
-func createPassthroughLogsProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, logs consumer.Logs) (processor.Logs, error) {
+func createPassthroughLogsProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, logs clog.Logs) (processor.Logs, error) {
 	return passthroughProcessor{
 		nextLogs: logs,
 	}, nil
 }
 
-func createPassthroughMetricsProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, metrics consumer.Metrics) (processor.Metrics, error) {
+func createPassthroughMetricsProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, metrics cmetric.Metrics) (processor.Metrics, error) {
 	return passthroughProcessor{
 		nextMetrics: metrics,
 	}, nil
 }
 
-func createPassthroughTracesProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, traces consumer.Traces) (processor.Traces, error) {
+func createPassthroughTracesProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, traces ctrace.Traces) (processor.Traces, error) {
 	return passthroughProcessor{
 		nextTraces: traces,
 	}, nil

@@ -5,25 +5,25 @@ package connector // import "go.opentelemetry.io/collector/connector"
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/cmetric"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 )
 
-// MetricsRouterAndConsumer feeds the first consumer.Metrics in each of the specified pipelines.
+// MetricsRouterAndConsumer feeds the first cmetric.Metrics in each of the specified pipelines.
 type MetricsRouterAndConsumer interface {
-	consumer.Metrics
-	Consumer(...component.ID) (consumer.Metrics, error)
+	cmetric.Metrics
+	Consumer(...component.ID) (cmetric.Metrics, error)
 	PipelineIDs() []component.ID
 	privateFunc()
 }
 
 type metricsRouter struct {
-	consumer.Metrics
-	baseRouter[consumer.Metrics]
+	cmetric.Metrics
+	baseRouter[cmetric.Metrics]
 }
 
-func NewMetricsRouter(cm map[component.ID]consumer.Metrics) MetricsRouterAndConsumer {
-	consumers := make([]consumer.Metrics, 0, len(cm))
+func NewMetricsRouter(cm map[component.ID]cmetric.Metrics) MetricsRouterAndConsumer {
+	consumers := make([]cmetric.Metrics, 0, len(cm))
 	for _, cons := range cm {
 		consumers = append(consumers, cons)
 	}

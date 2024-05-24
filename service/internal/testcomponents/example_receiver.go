@@ -7,7 +7,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -30,7 +32,7 @@ func createTracesReceiver(
 	_ context.Context,
 	_ receiver.CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Traces,
+	nextConsumer ctrace.Traces,
 ) (receiver.Traces, error) {
 	tr := createReceiver(cfg)
 	tr.ConsumeTracesFunc = nextConsumer.ConsumeTraces
@@ -42,7 +44,7 @@ func createMetricsReceiver(
 	_ context.Context,
 	_ receiver.CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Metrics,
+	nextConsumer cmetric.Metrics,
 ) (receiver.Metrics, error) {
 	mr := createReceiver(cfg)
 	mr.ConsumeMetricsFunc = nextConsumer.ConsumeMetrics
@@ -53,7 +55,7 @@ func createLogsReceiver(
 	_ context.Context,
 	_ receiver.CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Logs,
+	nextConsumer clog.Logs,
 ) (receiver.Logs, error) {
 	lr := createReceiver(cfg)
 	lr.ConsumeLogsFunc = nextConsumer.ConsumeLogs
@@ -78,9 +80,9 @@ func createReceiver(cfg component.Config) *ExampleReceiver {
 // ExampleReceiver allows producing traces and metrics for testing purposes.
 type ExampleReceiver struct {
 	componentState
-	consumer.ConsumeTracesFunc
-	consumer.ConsumeMetricsFunc
-	consumer.ConsumeLogsFunc
+	ctrace.ConsumeTracesFunc
+	cmetric.ConsumeMetricsFunc
+	clog.ConsumeLogsFunc
 }
 
 // This is the map of already created example receivers for particular configurations.

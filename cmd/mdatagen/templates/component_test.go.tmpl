@@ -42,7 +42,9 @@ import (
 	{{- if isConnector }}
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/ctrace"
+	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/clog"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	{{- end }}
 	{{- if or isExporter isProcessor }}
@@ -125,7 +127,7 @@ func TestComponentLifecycle(t *testing.T) {
 				switch test.name {
 				case "logs":
 					e, ok := c.(exporter.Logs)
-					require.True(t, ok)				
+					require.True(t, ok)
 					logs := generateLifecycleTestLogs()
 					if !e.Capabilities().MutatesData {
 						logs.MarkReadOnly()
@@ -372,7 +374,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs_to_logs",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				router := connector.NewLogsRouter(map[component.ID]consumer.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
+				router := connector.NewLogsRouter(map[component.ID]clog.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
 				return factory.CreateLogsToLogs(ctx, set, cfg, router)
 			},
 		},
@@ -381,7 +383,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs_to_metrics",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{component.NewID(component.DataTypeMetrics): consumertest.NewNop()})
+				router := connector.NewMetricsRouter(map[component.ID]cmetric.Metrics{component.NewID(component.DataTypeMetrics): consumertest.NewNop()})
 				return factory.CreateLogsToMetrics(ctx, set, cfg, router)
 			},
 		},
@@ -390,7 +392,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs_to_traces",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				router := connector.NewTracesRouter(map[component.ID]consumer.Traces{component.NewID(component.DataTypeTraces): consumertest.NewNop()})
+				router := connector.NewTracesRouter(map[component.ID]ctrace.Traces{component.NewID(component.DataTypeTraces): consumertest.NewNop()})
 				return factory.CreateLogsToTraces(ctx, set, cfg, router)
 			},
 		},
@@ -399,7 +401,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "metrics_to_logs",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				router := connector.NewLogsRouter(map[component.ID]consumer.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
+				router := connector.NewLogsRouter(map[component.ID]clog.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
 				return factory.CreateMetricsToLogs(ctx, set, cfg, router)
 			},
 		},
@@ -408,7 +410,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "metrics_to_metrics",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{component.NewID(component.DataTypeMetrics): consumertest.NewNop()})
+				router := connector.NewMetricsRouter(map[component.ID]cmetric.Metrics{component.NewID(component.DataTypeMetrics): consumertest.NewNop()})
 				return factory.CreateMetricsToMetrics(ctx, set, cfg, router)
 			},
 		},
@@ -417,7 +419,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "metrics_to_traces",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				router := connector.NewTracesRouter(map[component.ID]consumer.Traces{component.NewID(component.DataTypeTraces): consumertest.NewNop()})
+				router := connector.NewTracesRouter(map[component.ID]ctrace.Traces{component.NewID(component.DataTypeTraces): consumertest.NewNop()})
 				return factory.CreateMetricsToTraces(ctx, set, cfg, router)
 			},
 		},
@@ -426,7 +428,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "traces_to_logs",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				router := connector.NewLogsRouter(map[component.ID]consumer.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
+				router := connector.NewLogsRouter(map[component.ID]clog.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
 				return factory.CreateTracesToLogs(ctx, set, cfg, router)
 			},
 		},
@@ -435,7 +437,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "traces_to_metrics",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{component.NewID(component.DataTypeMetrics): consumertest.NewNop()})
+				router := connector.NewMetricsRouter(map[component.ID]cmetric.Metrics{component.NewID(component.DataTypeMetrics): consumertest.NewNop()})
 				return factory.CreateTracesToMetrics(ctx, set, cfg, router)
 			},
 		},
@@ -444,7 +446,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "traces_to_traces",
 			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				router := connector.NewTracesRouter(map[component.ID]consumer.Traces{component.NewID(component.DataTypeTraces): consumertest.NewNop()})
+				router := connector.NewTracesRouter(map[component.ID]ctrace.Traces{component.NewID(component.DataTypeTraces): consumertest.NewNop()})
 				return factory.CreateTracesToTraces(ctx, set, cfg, router)
 			},
 		},

@@ -6,7 +6,7 @@ package metrics // import "go.opentelemetry.io/collector/receiver/otlpreceiver/i
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/cmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -17,12 +17,12 @@ const dataFormatProtobuf = "protobuf"
 // Receiver is the type used to handle metrics from OpenTelemetry exporters.
 type Receiver struct {
 	pmetricotlp.UnimplementedGRPCServer
-	nextConsumer consumer.Metrics
+	nextConsumer cmetric.Metrics
 	obsreport    *receiverhelper.ObsReport
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumer.Metrics, obsreport *receiverhelper.ObsReport) *Receiver {
+func New(nextConsumer cmetric.Metrics, obsreport *receiverhelper.ObsReport) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsreport:    obsreport,

@@ -11,7 +11,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 )
 
 var (
@@ -20,7 +22,7 @@ var (
 
 // Traces receiver receives traces.
 // Its purpose is to translate data from any format to the collector's internal trace format.
-// TracesReceiver feeds a consumer.Traces with data.
+// TracesReceiver feeds a ctrace.Traces with data.
 //
 // For example, it could be Zipkin data source which translates Zipkin spans into ptrace.Traces.
 type Traces interface {
@@ -29,7 +31,7 @@ type Traces interface {
 
 // Metrics receiver receives metrics.
 // Its purpose is to translate data from any format to the collector's internal metrics format.
-// MetricsReceiver feeds a consumer.Metrics with data.
+// MetricsReceiver feeds a cmetric.Metrics with data.
 //
 // For example, it could be Prometheus data source which translates Prometheus metrics into pmetric.Metrics.
 type Metrics interface {
@@ -38,7 +40,7 @@ type Metrics interface {
 
 // Logs receiver receives logs.
 // Its purpose is to translate data from any format to the collector's internal logs data format.
-// LogsReceiver feeds a consumer.Logs with data.
+// LogsReceiver feeds a clog.Logs with data.
 //
 // For example, it could be a receiver that reads syslogs and convert them into plog.Logs.
 type Logs interface {
@@ -66,7 +68,7 @@ type Factory interface {
 	// CreateTracesReceiver creates a TracesReceiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// an error will be returned instead. `nextConsumer` is never nil.
-	CreateTracesReceiver(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (Traces, error)
+	CreateTracesReceiver(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer ctrace.Traces) (Traces, error)
 
 	// TracesReceiverStability gets the stability level of the TracesReceiver.
 	TracesReceiverStability() component.StabilityLevel
@@ -74,7 +76,7 @@ type Factory interface {
 	// CreateMetricsReceiver creates a MetricsReceiver based on this config.
 	// If the receiver type does not support metrics or if the config is not valid
 	// an error will be returned instead. `nextConsumer` is never nil.
-	CreateMetricsReceiver(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (Metrics, error)
+	CreateMetricsReceiver(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer cmetric.Metrics) (Metrics, error)
 
 	// MetricsReceiverStability gets the stability level of the MetricsReceiver.
 	MetricsReceiverStability() component.StabilityLevel
@@ -82,7 +84,7 @@ type Factory interface {
 	// CreateLogsReceiver creates a LogsReceiver based on this config.
 	// If the receiver type does not support the data type or if the config is not valid
 	// an error will be returned instead. `nextConsumer` is never nil.
-	CreateLogsReceiver(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (Logs, error)
+	CreateLogsReceiver(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer clog.Logs) (Logs, error)
 
 	// LogsReceiverStability gets the stability level of the LogsReceiver.
 	LogsReceiverStability() component.StabilityLevel
@@ -104,14 +106,14 @@ func (f factoryOptionFunc) applyOption(o *factory) {
 }
 
 // CreateTracesFunc is the equivalent of Factory.CreateTraces.
-type CreateTracesFunc func(context.Context, CreateSettings, component.Config, consumer.Traces) (Traces, error)
+type CreateTracesFunc func(context.Context, CreateSettings, component.Config, ctrace.Traces) (Traces, error)
 
 // CreateTracesReceiver implements Factory.CreateTracesReceiver().
 func (f CreateTracesFunc) CreateTracesReceiver(
 	ctx context.Context,
 	set CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Traces) (Traces, error) {
+	nextConsumer ctrace.Traces) (Traces, error) {
 	if f == nil {
 		return nil, component.ErrDataTypeIsNotSupported
 	}
@@ -119,14 +121,14 @@ func (f CreateTracesFunc) CreateTracesReceiver(
 }
 
 // CreateMetricsFunc is the equivalent of Factory.CreateMetrics.
-type CreateMetricsFunc func(context.Context, CreateSettings, component.Config, consumer.Metrics) (Metrics, error)
+type CreateMetricsFunc func(context.Context, CreateSettings, component.Config, cmetric.Metrics) (Metrics, error)
 
 // CreateMetricsReceiver implements Factory.CreateMetricsReceiver().
 func (f CreateMetricsFunc) CreateMetricsReceiver(
 	ctx context.Context,
 	set CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Metrics,
+	nextConsumer cmetric.Metrics,
 ) (Metrics, error) {
 	if f == nil {
 		return nil, component.ErrDataTypeIsNotSupported
@@ -135,14 +137,14 @@ func (f CreateMetricsFunc) CreateMetricsReceiver(
 }
 
 // CreateLogsFunc is the equivalent of ReceiverFactory.CreateLogsReceiver().
-type CreateLogsFunc func(context.Context, CreateSettings, component.Config, consumer.Logs) (Logs, error)
+type CreateLogsFunc func(context.Context, CreateSettings, component.Config, clog.Logs) (Logs, error)
 
 // CreateLogsReceiver implements Factory.CreateLogsReceiver().
 func (f CreateLogsFunc) CreateLogsReceiver(
 	ctx context.Context,
 	set CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Logs,
+	nextConsumer clog.Logs,
 ) (Logs, error) {
 	if f == nil {
 		return nil, component.ErrDataTypeIsNotSupported
@@ -240,7 +242,7 @@ func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.
 }
 
 // CreateTraces creates a Traces receiver based on the settings and config.
-func (b *Builder) CreateTraces(ctx context.Context, set CreateSettings, next consumer.Traces) (Traces, error) {
+func (b *Builder) CreateTraces(ctx context.Context, set CreateSettings, next ctrace.Traces) (Traces, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -259,7 +261,7 @@ func (b *Builder) CreateTraces(ctx context.Context, set CreateSettings, next con
 }
 
 // CreateMetrics creates a Metrics receiver based on the settings and config.
-func (b *Builder) CreateMetrics(ctx context.Context, set CreateSettings, next consumer.Metrics) (Metrics, error) {
+func (b *Builder) CreateMetrics(ctx context.Context, set CreateSettings, next cmetric.Metrics) (Metrics, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -278,7 +280,7 @@ func (b *Builder) CreateMetrics(ctx context.Context, set CreateSettings, next co
 }
 
 // CreateLogs creates a Logs receiver based on the settings and config.
-func (b *Builder) CreateLogs(ctx context.Context, set CreateSettings, next consumer.Logs) (Logs, error) {
+func (b *Builder) CreateLogs(ctx context.Context, set CreateSettings, next clog.Logs) (Logs, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}

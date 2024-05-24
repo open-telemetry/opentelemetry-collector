@@ -19,7 +19,10 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/cmetric"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -32,7 +35,7 @@ var errTooManyBatchers = consumererror.NewPermanent(errors.New("too many batcher
 // batch_processor is a component that accepts spans and metrics, places them
 // into batches and sends downstream.
 //
-// batch_processor implements consumer.Traces and consumer.Metrics
+// batch_processor implements ctrace.Traces and cmetric.Metrics
 //
 // Batches are sent out with any of the following conditions:
 // - batch size reaches cfg.SendBatchSize
@@ -105,9 +108,9 @@ type batch interface {
 	add(item any)
 }
 
-var _ consumer.Traces = (*batchProcessor)(nil)
-var _ consumer.Metrics = (*batchProcessor)(nil)
-var _ consumer.Logs = (*batchProcessor)(nil)
+var _ ctrace.Traces = (*batchProcessor)(nil)
+var _ cmetric.Metrics = (*batchProcessor)(nil)
+var _ clog.Logs = (*batchProcessor)(nil)
 
 // newBatchProcessor returns a new batch processor component.
 func newBatchProcessor(set processor.CreateSettings, cfg *Config, batchFunc func() batch) (*batchProcessor, error) {
@@ -357,28 +360,28 @@ func (bp *batchProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 // newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
-func newBatchTracesProcessor(set processor.CreateSettings, next consumer.Traces, cfg *Config) (*batchProcessor, error) {
+func newBatchTracesProcessor(set processor.CreateSettings, next ctrace.Traces, cfg *Config) (*batchProcessor, error) {
 	return newBatchProcessor(set, cfg, func() batch { return newBatchTraces(next) })
 }
 
 // newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
-func newBatchMetricsProcessor(set processor.CreateSettings, next consumer.Metrics, cfg *Config) (*batchProcessor, error) {
+func newBatchMetricsProcessor(set processor.CreateSettings, next cmetric.Metrics, cfg *Config) (*batchProcessor, error) {
 	return newBatchProcessor(set, cfg, func() batch { return newBatchMetrics(next) })
 }
 
 // newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
-func newBatchLogsProcessor(set processor.CreateSettings, next consumer.Logs, cfg *Config) (*batchProcessor, error) {
+func newBatchLogsProcessor(set processor.CreateSettings, next clog.Logs, cfg *Config) (*batchProcessor, error) {
 	return newBatchProcessor(set, cfg, func() batch { return newBatchLogs(next) })
 }
 
 type batchTraces struct {
-	nextConsumer consumer.Traces
+	nextConsumer ctrace.Traces
 	traceData    ptrace.Traces
 	spanCount    int
 	sizer        ptrace.Sizer
 }
 
-func newBatchTraces(nextConsumer consumer.Traces) *batchTraces {
+func newBatchTraces(nextConsumer ctrace.Traces) *batchTraces {
 	return &batchTraces{nextConsumer: nextConsumer, traceData: ptrace.NewTraces(), sizer: &ptrace.ProtoMarshaler{}}
 }
 
@@ -419,13 +422,13 @@ func (bt *batchTraces) itemCount() int {
 }
 
 type batchMetrics struct {
-	nextConsumer   consumer.Metrics
+	nextConsumer   cmetric.Metrics
 	metricData     pmetric.Metrics
 	dataPointCount int
 	sizer          pmetric.Sizer
 }
 
-func newBatchMetrics(nextConsumer consumer.Metrics) *batchMetrics {
+func newBatchMetrics(nextConsumer cmetric.Metrics) *batchMetrics {
 	return &batchMetrics{nextConsumer: nextConsumer, metricData: pmetric.NewMetrics(), sizer: &pmetric.ProtoMarshaler{}}
 }
 
@@ -465,13 +468,13 @@ func (bm *batchMetrics) add(item any) {
 }
 
 type batchLogs struct {
-	nextConsumer consumer.Logs
+	nextConsumer clog.Logs
 	logData      plog.Logs
 	logCount     int
 	sizer        plog.Sizer
 }
 
-func newBatchLogs(nextConsumer consumer.Logs) *batchLogs {
+func newBatchLogs(nextConsumer clog.Logs) *batchLogs {
 	return &batchLogs{nextConsumer: nextConsumer, logData: plog.NewLogs(), sizer: &plog.ProtoMarshaler{}}
 }
 
