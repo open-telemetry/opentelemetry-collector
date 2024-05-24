@@ -34,7 +34,8 @@ README](../configtls/README.md).
 - [`disable_keep_alives`](https://golang.org/pkg/net/http/#Transport)
 - [`http2_read_idle_timeout`](https://pkg.go.dev/golang.org/x/net/http2#Transport)
 - [`http2_ping_timeout`](https://pkg.go.dev/golang.org/x/net/http2#Transport)
-- [`cookies_enabled`](https://pkg.go.dev/net/http#CookieJar) if enabled, the client will store cookies from server responses and reuse them in subsequent requests.
+- [`cookies`](https://pkg.go.dev/net/http#CookieJar)
+  - [`enabled`] if enabled, the client will store cookies from server responses and reuse them in subsequent requests.
 
 Example:
 
@@ -52,6 +53,8 @@ exporter:
       test1: "value1"
       "test 2": "value 2"
     compression: zstd
+    cookies:
+      enabled: true
 ```
 
 ## Server Configuration
