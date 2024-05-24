@@ -119,25 +119,13 @@ func (id PipelineID) Name() string {
 }
 
 // NewID returns a new ID with the given Type and empty name.
-func NewDataTypeID(typeVal DataType) PipelineID {
+func NewPipelineID(typeVal DataType) PipelineID {
 	return PipelineID{typeVal: typeVal}
 }
 
-// MustNewID builds a Type and returns a new ID with the given Type and empty name.
-// See MustNewType to check the valid values of typeVal.
-func MustNewDataTypeID(typeVal string) PipelineID {
-	return PipelineID{typeVal: MustNewDataType(typeVal)}
-}
-
 // NewIDWithName returns a new ID with the given Type and name.
-func NewDataTypeIDWithName(typeVal DataType, nameVal string) PipelineID {
+func NewPipelineIDWithName(typeVal DataType, nameVal string) PipelineID {
 	return PipelineID{typeVal: typeVal, nameVal: nameVal}
-}
-
-// MustNewIDWithName builds a Type and returns a new ID with the given Type and name.
-// See MustNewType to check the valid values of typeVal.
-func MustNewDataTypeIDWithName(typeVal string, nameVal string) PipelineID {
-	return PipelineID{typeVal: MustNewDataType(typeVal), nameVal: nameVal}
 }
 
 // MarshalText implements the encoding.TextMarshaler interface.
