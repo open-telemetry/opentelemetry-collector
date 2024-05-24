@@ -2140,7 +2140,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 	for _, dt := range dataTypes {
 		t.Run(dt.String()+"/receiver", func(t *testing.T) {
 			set.PipelineConfigs = pipelines.Config{
-				component.NewID(dt): {
+				component.NewPipelineID(dt): {
 					Receivers:  []component.ID{component.MustNewID("nop"), component.MustNewID("err")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -2154,7 +2154,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 
 		t.Run(dt.String()+"/processor", func(t *testing.T) {
 			set.PipelineConfigs = pipelines.Config{
-				component.NewID(dt): {
+				component.NewPipelineID(dt): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop"), component.MustNewID("err")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -2168,7 +2168,7 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 
 		t.Run(dt.String()+"/exporter", func(t *testing.T) {
 			set.PipelineConfigs = pipelines.Config{
-				component.NewID(dt): {
+				component.NewPipelineID(dt): {
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop"), component.MustNewID("err")},
@@ -2183,12 +2183,12 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 		for _, dt2 := range dataTypes {
 			t.Run(dt.String()+"/"+dt2.String()+"/connector", func(t *testing.T) {
 				set.PipelineConfigs = pipelines.Config{
-					component.NewIDWithName(dt, "in"): {
+					component.NewPipelineIDWithName(dt, "in"): {
 						Receivers:  []component.ID{component.MustNewID("nop")},
 						Processors: []component.ID{component.MustNewID("nop")},
 						Exporters:  []component.ID{component.MustNewID("nop"), component.MustNewIDWithName("err", "conn")},
 					},
-					component.NewIDWithName(dt2, "out"): {
+					component.NewPipelineIDWithName(dt2, "out"): {
 						Receivers:  []component.ID{component.MustNewID("nop"), component.MustNewIDWithName("err", "conn")},
 						Processors: []component.ID{component.MustNewID("nop")},
 						Exporters:  []component.ID{component.MustNewID("nop")},

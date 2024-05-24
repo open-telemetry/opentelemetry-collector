@@ -63,7 +63,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-service-pipeline-type",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[component.MustNewID("wrongtype")] = &PipelineConfig{
+				cfg[component.NewPipelineID("wrongtype")] = &PipelineConfig{
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
@@ -83,7 +83,7 @@ func TestConfigValidate(t *testing.T) {
 }
 
 func generateConfig() Config {
-	return map[component.ID]*PipelineConfig{
+	return map[component.PipelineID]*PipelineConfig{
 		component.NewPipelineID(component.DataTypeTraces): {
 			Receivers:  []component.ID{component.MustNewID("nop")},
 			Processors: []component.ID{component.MustNewID("nop")},
