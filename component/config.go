@@ -109,11 +109,6 @@ func callValidateIfPossible(v reflect.Value) error {
 	return nil
 }
 
-//type SignalOrComponentType interface {
-//	String() string
-//	MarshalText() ([]byte, error)
-//}
-
 // Type is the component type as it is used in the config.
 // Examples of a Type include the names of receivers (otlp, filelog, etc),
 // processors (batch, memory_limit, etc), or exporters (debug, rabbitmq)
