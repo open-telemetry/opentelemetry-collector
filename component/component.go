@@ -192,5 +192,5 @@ func (f CreateDefaultConfigFunc) CreateDefaultConfig() Config {
 type InstanceID struct {
 	ID          ID
 	Kind        Kind
-	PipelineIDs map[DataTypeID]struct{}
+	PipelineIDs map[PipelineID]struct{}
 }

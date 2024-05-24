@@ -17,7 +17,7 @@ var (
 )
 
 // Config defines the configurable settings for service telemetry.
-type Config map[component.DataTypeID]*PipelineConfig
+type Config map[component.PipelineID]*PipelineConfig
 
 func (cfg Config) Validate() error {
 	// Must have at least one pipeline.

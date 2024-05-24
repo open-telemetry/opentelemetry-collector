@@ -103,51 +103,51 @@ func (id ID) String() string {
 	return id.typeVal.String() + typeAndNameSeparator + id.nameVal
 }
 
-type DataTypeID struct {
+type PipelineID struct {
 	typeVal DataType `mapstructure:"-"`
 	nameVal string   `mapstructure:"-"`
 }
 
 // Type returns the type of the component.
-func (id DataTypeID) Type() DataType {
+func (id PipelineID) Type() DataType {
 	return id.typeVal
 }
 
 // Name returns the custom name of the component.
-func (id DataTypeID) Name() string {
+func (id PipelineID) Name() string {
 	return id.nameVal
 }
 
 // NewID returns a new ID with the given Type and empty name.
-func NewDataTypeID(typeVal DataType) DataTypeID {
-	return DataTypeID{typeVal: typeVal}
+func NewDataTypeID(typeVal DataType) PipelineID {
+	return PipelineID{typeVal: typeVal}
 }
 
 // MustNewID builds a Type and returns a new ID with the given Type and empty name.
 // See MustNewType to check the valid values of typeVal.
-func MustNewDataTypeID(typeVal string) DataTypeID {
-	return DataTypeID{typeVal: MustNewDataType(typeVal)}
+func MustNewDataTypeID(typeVal string) PipelineID {
+	return PipelineID{typeVal: MustNewDataType(typeVal)}
 }
 
 // NewIDWithName returns a new ID with the given Type and name.
-func NewDataTypeIDWithName(typeVal DataType, nameVal string) DataTypeID {
-	return DataTypeID{typeVal: typeVal, nameVal: nameVal}
+func NewDataTypeIDWithName(typeVal DataType, nameVal string) PipelineID {
+	return PipelineID{typeVal: typeVal, nameVal: nameVal}
 }
 
 // MustNewIDWithName builds a Type and returns a new ID with the given Type and name.
 // See MustNewType to check the valid values of typeVal.
-func MustNewDataTypeIDWithName(typeVal string, nameVal string) DataTypeID {
-	return DataTypeID{typeVal: MustNewDataType(typeVal), nameVal: nameVal}
+func MustNewDataTypeIDWithName(typeVal string, nameVal string) PipelineID {
+	return PipelineID{typeVal: MustNewDataType(typeVal), nameVal: nameVal}
 }
 
 // MarshalText implements the encoding.TextMarshaler interface.
 // This marshals the type and name as one string in the config.
-func (id DataTypeID) MarshalText() (text []byte, err error) {
+func (id PipelineID) MarshalText() (text []byte, err error) {
 	return []byte(id.String()), nil
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
-func (id *DataTypeID) UnmarshalText(text []byte) error {
+func (id *PipelineID) UnmarshalText(text []byte) error {
 	idStr := string(text)
 	items := strings.SplitN(idStr, typeAndNameSeparator, 2)
 	var typeStr, nameStr string
@@ -182,7 +182,7 @@ func (id *DataTypeID) UnmarshalText(text []byte) error {
 }
 
 // String returns the ID string representation as "type[/name]" format.
-func (id DataTypeID) String() string {
+func (id PipelineID) String() string {
 	if id.nameVal == "" {
 		return id.typeVal.String()
 	}

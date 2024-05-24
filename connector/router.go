@@ -13,26 +13,26 @@ import (
 
 type baseRouter[T any] struct {
 	fanout    func([]T) T
-	consumers map[component.DataTypeID]T
+	consumers map[component.PipelineID]T
 }
 
-func newBaseRouter[T any](fanout func([]T) T, cm map[component.DataTypeID]T) baseRouter[T] {
-	consumers := make(map[component.DataTypeID]T, len(cm))
+func newBaseRouter[T any](fanout func([]T) T, cm map[component.PipelineID]T) baseRouter[T] {
+	consumers := make(map[component.PipelineID]T, len(cm))
 	for k, v := range cm {
 		consumers[k] = v
 	}
 	return baseRouter[T]{fanout: fanout, consumers: consumers}
 }
 
-func (r *baseRouter[T]) PipelineIDs() []component.DataTypeID {
-	ids := make([]component.DataTypeID, 0, len(r.consumers))
+func (r *baseRouter[T]) PipelineIDs() []component.PipelineID {
+	ids := make([]component.PipelineID, 0, len(r.consumers))
 	for id := range r.consumers {
 		ids = append(ids, id)
 	}
 	return ids
 }
 
-func (r *baseRouter[T]) Consumer(pipelineIDs ...component.DataTypeID) (T, error) {
+func (r *baseRouter[T]) Consumer(pipelineIDs ...component.PipelineID) (T, error) {
 	var ret T
 	if len(pipelineIDs) == 0 {
 		return ret, fmt.Errorf("missing consumers")

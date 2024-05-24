@@ -28,7 +28,7 @@ func ReceiverLogger(logger *zap.Logger, id component.ID, dt component.DataType) 
 		zap.String(zapDataTypeKey, dt.String()))
 }
 
-func ProcessorLogger(logger *zap.Logger, id component.ID, pipelineID component.DataTypeID) *zap.Logger {
+func ProcessorLogger(logger *zap.Logger, id component.ID, pipelineID component.PipelineID) *zap.Logger {
 	return logger.With(
 		zap.String(zapKindKey, strings.ToLower(component.KindProcessor.String())),
 		zap.String(zapNameKey, id.String()),
