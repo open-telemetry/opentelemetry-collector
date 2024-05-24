@@ -7,9 +7,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/log"
-	"go.opentelemetry.io/collector/consumer/metric"
-	"go.opentelemetry.io/collector/consumer/trace"
+	"go.opentelemetry.io/collector/consumer/clog"
+	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -35,9 +35,9 @@ type Consumer interface {
 	unexported()
 }
 
-var _ log.Logs = (Consumer)(nil)
-var _ metric.Metrics = (Consumer)(nil)
-var _ trace.Traces = (Consumer)(nil)
+var _ clog.Logs = (Consumer)(nil)
+var _ cmetric.Metrics = (Consumer)(nil)
+var _ ctrace.Traces = (Consumer)(nil)
 
 type nonMutatingConsumer struct{}
 
@@ -48,9 +48,9 @@ func (bc nonMutatingConsumer) Capabilities() consumer.Capabilities {
 
 type baseConsumer struct {
 	nonMutatingConsumer
-	trace.ConsumeTracesFunc
-	metric.ConsumeMetricsFunc
-	log.ConsumeLogsFunc
+	ctrace.ConsumeTracesFunc
+	cmetric.ConsumeMetricsFunc
+	clog.ConsumeLogsFunc
 }
 
 func (bc baseConsumer) unexported() {}

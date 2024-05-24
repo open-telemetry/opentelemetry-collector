@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package trace // import "go.opentelemetry.io/collector/consumer/trace"
+package ctrace // import "go.opentelemetry.io/collector/consumer/ctrace"
 
 import (
 	"context"

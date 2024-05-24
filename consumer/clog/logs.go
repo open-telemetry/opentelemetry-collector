@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package log // import "go.opentelemetry.io/collector/consumer/log"
+package clog // import "go.opentelemetry.io/collector/consumer/clog"
 
 import (
 	"context"

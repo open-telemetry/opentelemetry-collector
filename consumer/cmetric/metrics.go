@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package metric // import "go.opentelemetry.io/collector/consumer/metric"
+package cmetric // import "go.opentelemetry.io/collector/consumer/cmetric"
 
 import (
 	"context"
