@@ -5,15 +5,26 @@ package metric // import "go.opentelemetry.io/collector/consumer/metric"
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/internal/base"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
+
+var errNilFunc = errors.New("nil consumer func")
+
+type config struct {
+	baseOptions []base.Option
+}
+
+// Option to construct new consumers.
+type Option func(config) config
 
 // Metrics is an interface that receives pmetric.Metrics, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type Metrics interface {
-	consumer.Consumer
+	base.Consumer
 	// ConsumeMetrics receives pmetric.Metrics for consumption.
 	ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error
 }
@@ -27,17 +38,32 @@ func (f ConsumeMetricsFunc) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 }
 
 type baseMetrics struct {
-	*consumer.BaseImpl
+	*base.Impl
 	ConsumeMetricsFunc
 }
 
 // NewMetrics returns a Metrics configured with the provided options.
-func NewMetrics(consume ConsumeMetricsFunc, options ...consumer.Option) (Metrics, error) {
+func NewMetrics(consume ConsumeMetricsFunc, options ...Option) (Metrics, error) {
 	if consume == nil {
-		return nil, consumer.ErrNilFunc
+		return nil, errNilFunc
 	}
+
+	cfg := config{}
+	for _, op := range options {
+		cfg = op(cfg)
+	}
+
 	return &baseMetrics{
-		BaseImpl:           consumer.NewBaseImpl(options...),
+		Impl:               base.NewImpl(cfg.baseOptions...),
 		ConsumeMetricsFunc: consume,
 	}, nil
+}
+
+// WithCapabilities overrides the default GetCapabilities function for a processor.
+// The default GetCapabilities function returns mutable capabilities.
+func WithCapabilities(capabilities consumer.Capabilities) Option {
+	return func(c config) config {
+		c.baseOptions = append(c.baseOptions, base.WithCapabilities(capabilities))
+		return c
+	}
 }

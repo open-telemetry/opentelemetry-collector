@@ -23,13 +23,13 @@ func TestDefaultTraces(t *testing.T) {
 
 func TestNilFuncTraces(t *testing.T) {
 	_, err := NewTraces(nil)
-	assert.Equal(t, consumer.ErrNilFunc, err)
+	assert.Equal(t, errNilFunc, err)
 }
 
 func TestWithCapabilitiesTraces(t *testing.T) {
 	cp, err := NewTraces(
 		func(context.Context, ptrace.Traces) error { return nil },
-		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+		WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 	assert.Equal(t, consumer.Capabilities{MutatesData: true}, cp.Capabilities())

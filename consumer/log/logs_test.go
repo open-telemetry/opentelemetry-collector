@@ -23,13 +23,13 @@ func TestDefaultLogs(t *testing.T) {
 
 func TestNilFuncLogs(t *testing.T) {
 	_, err := NewLogs(nil)
-	assert.Equal(t, consumer.ErrNilFunc, err)
+	assert.Equal(t, errNilFunc, err)
 }
 
 func TestWithCapabilitiesLogs(t *testing.T) {
 	cp, err := NewLogs(
 		func(context.Context, plog.Logs) error { return nil },
-		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+		WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeLogs(context.Background(), plog.NewLogs()))
 	assert.Equal(t, consumer.Capabilities{MutatesData: true}, cp.Capabilities())
