@@ -240,7 +240,7 @@ func TestServiceGetExporters(t *testing.T) {
 // and another service with a valid config can be started right after.
 func TestServiceTelemetryCleanupOnError(t *testing.T) {
 	invalidCfg := newNopConfig()
-	invalidCfg.Pipelines[component.MustNewID("traces")].Processors[0] = component.MustNewID("invalid")
+	invalidCfg.Pipelines[component.NewPipelineID(component.DataTypeTraces)].Processors[0] = component.MustNewID("invalid")
 	// Create a service with an invalid config and expect an error
 	_, err := New(context.Background(), newNopSettings(), invalidCfg)
 	require.Error(t, err)
@@ -532,17 +532,17 @@ func newNopSettings() Settings {
 
 func newNopConfig() Config {
 	return newNopConfigPipelineConfigs(pipelines.Config{
-		component.MustNewID("traces"): {
+		component.NewPipelineID(component.DataTypeTraces): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		component.MustNewID("metrics"): {
+		component.NewPipelineID(component.DataTypeMetrics): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		component.MustNewID("logs"): {
+		component.NewPipelineID(component.DataTypeLogs): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},

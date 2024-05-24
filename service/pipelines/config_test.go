@@ -28,7 +28,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "duplicate-processor-reference",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				pipe := cfg[component.MustNewID("traces")]
+				pipe := cfg[component.NewPipelineID(component.DataTypeTraces)]
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
@@ -38,7 +38,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "missing-pipeline-receivers",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[component.MustNewID("traces")].Receivers = nil
+				cfg[component.NewPipelineID(component.DataTypeTraces)].Receivers = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`pipeline "traces": %w`, errMissingServicePipelineReceivers),
@@ -47,7 +47,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "missing-pipeline-exporters",
 			cfgFn: func() Config {
 				cfg := generateConfig()
-				cfg[component.MustNewID("traces")].Exporters = nil
+				cfg[component.NewPipelineID(component.DataTypeTraces)].Exporters = nil
 				return cfg
 			},
 			expected: fmt.Errorf(`pipeline "traces": %w`, errMissingServicePipelineExporters),
@@ -84,7 +84,7 @@ func TestConfigValidate(t *testing.T) {
 
 func generateConfig() Config {
 	return map[component.ID]*PipelineConfig{
-		component.MustNewID("traces"): {
+		component.NewPipelineID(component.DataTypeTraces): {
 			Receivers:  []component.ID{component.MustNewID("nop")},
 			Processors: []component.ID{component.MustNewID("nop")},
 			Exporters:  []component.ID{component.MustNewID("nop")},
