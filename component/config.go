@@ -204,16 +204,3 @@ func NewDataType(ty string) (DataType, error) {
 		return "", fmt.Errorf("invalid data type %s", ty)
 	}
 }
-
-// MustNewType creates a type. It panics if the type is invalid.
-// A type must
-// - have at least one character,
-// - start with an ASCII alphabetic character and
-// - can only contain ASCII alphanumeric characters and '_'.
-func MustNewDataType(strType string) DataType {
-	ty, err := NewDataType(strType)
-	if err != nil {
-		panic(err)
-	}
-	return ty
-}
