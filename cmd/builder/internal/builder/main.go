@@ -13,7 +13,6 @@ import (
 	"slices"
 	"strings"
 	"text/template"
-	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/mod/modfile"
@@ -25,7 +24,6 @@ var (
 	ErrGoNotFound      = errors.New("go binary not found")
 	ErrDepNotFound     = errors.New("dependency not found in go mod file")
 	ErrVersionMismatch = errors.New("mismatch in go.mod and builder configuration versions")
-	errDownloadFailed  = errors.New("failed to download go modules")
 	errCompileFailed   = errors.New("failed to compile the OpenTelemetry Collector distribution")
 	skipStrictMsg      = "Use --skip-strict-versioning to temporarily disable this check. This flag will be removed in a future minor version"
 )
@@ -157,7 +155,7 @@ func GetModules(cfg Config) error {
 	}
 
 	if cfg.SkipStrictVersioning {
-		return downloadModules(cfg)
+		return nil
 	}
 
 	// Perform strict version checking.  For each component listed and the
@@ -197,22 +195,7 @@ func GetModules(cfg Config) error {
 		}
 	}
 
-	return downloadModules(cfg)
-}
-
-func downloadModules(cfg Config) error {
-	cfg.Logger.Info("Getting go modules")
-	failReason := "unknown"
-	for i := 1; i <= cfg.downloadModules.numRetries; i++ {
-		if _, err := runGoCommand(cfg, "mod", "download"); err != nil {
-			failReason = err.Error()
-			cfg.Logger.Info("Failed modules download", zap.String("retry", fmt.Sprintf("%d/%d", i, cfg.downloadModules.numRetries)))
-			time.Sleep(cfg.downloadModules.wait)
-			continue
-		}
-		return nil
-	}
-	return fmt.Errorf("%w: %s", errDownloadFailed, failReason)
+	return nil
 }
 
 func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplParams any) error {
