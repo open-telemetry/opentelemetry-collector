@@ -130,6 +130,8 @@ tests:
 # Optional: map of metric names with the key being the metric name and value
 # being described below.
 telemetry:
+  # Optional: level allows components to specify the minimum telemetry level for metrics to be produced. defaults to basic if not set.
+  level: string
   metrics:
     <metric.name>:
       # Required: whether the metric is collected by default.
