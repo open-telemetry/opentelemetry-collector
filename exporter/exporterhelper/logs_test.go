@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/conslog"
+	"go.opentelemetry.io/collector/consumer/conslog/conslogerror"
 	"go.opentelemetry.io/collector/consumer/conslog/conslogtest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -45,7 +46,7 @@ var (
 func TestLogsRequest(t *testing.T) {
 	lr := newLogsRequest(testdata.GenerateLogs(1), nil)
 
-	logErr := conslog.NewLogs(errors.New("some error"), plog.NewLogs())
+	logErr := conslogerror.NewLogs(errors.New("some error"), plog.NewLogs())
 	assert.EqualValues(
 		t,
 		newLogsRequest(plog.NewLogs(), nil),

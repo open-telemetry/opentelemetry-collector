@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package conslogerror // import "go.opentelemetry.io/collector/consumer/conslog/conslogerror"
+package cmetricerror // import "go.opentelemetry.io/collector/consumer/cmetric/cmetricerror"
 
 import (
 	"go.opentelemetry.io/collector/consumer/internal/consumererror"

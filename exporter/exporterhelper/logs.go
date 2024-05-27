@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/conslog"
+	"go.opentelemetry.io/collector/consumer/conslog/conslogerror"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
@@ -48,7 +49,7 @@ func logsRequestMarshaler(req Request) ([]byte, error) {
 }
 
 func (req *logsRequest) OnError(err error) Request {
-	var logError consumererror.Logs
+	var logError conslogerror.Logs
 	if errors.As(err, &logError) {
 		return newLogsRequest(logError.Data(), req.pusher)
 	}

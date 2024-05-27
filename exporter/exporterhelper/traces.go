@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/ctrace"
+	"go.opentelemetry.io/collector/consumer/ctrace/ctraceerror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
@@ -48,7 +49,7 @@ func tracesRequestMarshaler(req Request) ([]byte, error) {
 }
 
 func (req *tracesRequest) OnError(err error) Request {
-	var traceError consumererror.Traces
+	var traceError ctraceerror.Traces
 	if errors.As(err, &traceError) {
 		return newTracesRequest(traceError.Data(), req.pusher)
 	}

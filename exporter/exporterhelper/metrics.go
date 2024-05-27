@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/cmetric/cmetricerror"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
@@ -48,7 +49,7 @@ func metricsRequestMarshaler(req Request) ([]byte, error) {
 }
 
 func (req *metricsRequest) OnError(err error) Request {
-	var metricsError consumererror.Metrics
+	var metricsError cmetricerror.Metrics
 	if errors.As(err, &metricsError) {
 		return newMetricsRequest(metricsError.Data(), req.pusher)
 	}
