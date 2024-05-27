@@ -37,3 +37,10 @@ telemetry:
       unit: By
       histogram:
         value_type: int
+    processor_batch_metadata_cardinality:
+      enabled: true
+      description: Number of distinct metadata value combinations being processed
+      unit: 1
+      sum:
+        value_type: int
+        async: true

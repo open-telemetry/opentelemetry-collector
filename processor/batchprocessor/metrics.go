@@ -66,15 +66,18 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(set component.TelemetrySet
 		meter = noopmetric.Meter{}
 	}
 
-	bpt.telemetryBuilder, err = metadata.NewTelemetryBuilder(set, metadata.WithLevel(bpt.level))
+	bpt.telemetryBuilder, err = metadata.NewTelemetryBuilder(set,
+		metadata.WithLevel(bpt.level),
+		metadata.WithProcessorBatchMetadataCardinalityCallback(func() int64 { return int64(currentMetadataCardinality()) }),
+	)
 	errors = multierr.Append(errors, err)
 
 	bpt.batchMetadataCardinality, err = meter.Int64ObservableUpDownCounter(
-		processorhelper.BuildCustomMetricName(typeStr, "metadata_cardinality"),
-		metric.WithDescription("Number of distinct metadata value combinations being processed"),
+		processorhelper.BuildCustomMetricName(typeStr, ""),
+		metric.WithDescription(""),
 		metric.WithUnit("1"),
 		metric.WithInt64Callback(func(_ context.Context, obs metric.Int64Observer) error {
-			obs.Observe(int64(currentMetadataCardinality()))
+
 			return nil
 		}),
 	)
