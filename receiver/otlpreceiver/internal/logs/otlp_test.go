@@ -18,6 +18,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/conslog"
+	"go.opentelemetry.io/collector/consumer/conslog/conslogtest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -30,7 +31,7 @@ func TestExport(t *testing.T) {
 	ld := testdata.GenerateLogs(1)
 	req := plogotlp.NewExportRequestFromLogs(ld)
 
-	logSink := new(consumertest.LogsSink)
+	logSink := new(conslogtest.LogsSink)
 	logClient := makeLogsServiceClient(t, logSink)
 	resp, err := logClient.Export(context.Background(), req)
 	require.NoError(t, err, "Failed to export trace: %v", err)
@@ -42,7 +43,7 @@ func TestExport(t *testing.T) {
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
-	logSink := new(consumertest.LogsSink)
+	logSink := new(conslogtest.LogsSink)
 
 	logClient := makeLogsServiceClient(t, logSink)
 	resp, err := logClient.Export(context.Background(), plogotlp.NewExportRequest())

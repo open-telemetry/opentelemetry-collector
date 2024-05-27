@@ -18,6 +18,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/cmetric/cmetrictest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
@@ -30,7 +31,7 @@ func TestExport(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 
-	metricSink := new(consumertest.MetricsSink)
+	metricSink := new(cmetrictest.MetricsSink)
 	metricsClient := makeMetricsServiceClient(t, metricSink)
 	resp, err := metricsClient.Export(context.Background(), req)
 
@@ -43,7 +44,7 @@ func TestExport(t *testing.T) {
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
-	metricSink := new(consumertest.MetricsSink)
+	metricSink := new(cmetrictest.MetricsSink)
 	metricsClient := makeMetricsServiceClient(t, metricSink)
 	resp, err := metricsClient.Export(context.Background(), pmetricotlp.NewExportRequest())
 	require.NoError(t, err)

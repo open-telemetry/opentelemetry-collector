@@ -11,12 +11,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/cmetric/cmetrictest"
+	"go.opentelemetry.io/collector/consumer/conslog/conslogtest"
+	"go.opentelemetry.io/collector/consumer/ctrace/ctracetest"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestLogs(t *testing.T) {
-	sink := &consumertest.LogsSink{}
+	sink := &conslogtest.LogsSink{}
 	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
 
 	same := NewLogs(sink, consumer.Capabilities{MutatesData: false})
@@ -31,7 +33,7 @@ func TestLogs(t *testing.T) {
 }
 
 func TestMetrics(t *testing.T) {
-	sink := &consumertest.MetricsSink{}
+	sink := &cmetrictest.MetricsSink{}
 	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
 
 	same := NewMetrics(sink, consumer.Capabilities{MutatesData: false})
@@ -46,7 +48,7 @@ func TestMetrics(t *testing.T) {
 }
 
 func TestTraces(t *testing.T) {
-	sink := &consumertest.TracesSink{}
+	sink := &ctracetest.TracesSink{}
 	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
 
 	same := NewTraces(sink, consumer.Capabilities{MutatesData: false})

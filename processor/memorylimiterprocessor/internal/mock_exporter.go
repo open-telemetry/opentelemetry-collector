@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/conslog"
-	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/conslog/conslogtest"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -17,7 +17,7 @@ type MockExporter struct {
 	destAvailable     atomic.Bool
 	acceptedLogCount  atomic.Int64
 	deliveredLogCount atomic.Int64
-	Logs              consumertest.LogsSink
+	Logs              conslogtest.LogsSink
 }
 
 var _ conslog.Logs = (*MockExporter)(nil)
@@ -68,6 +68,6 @@ func NewMockExporter() *MockExporter {
 		destAvailable:     atomic.Bool{},
 		acceptedLogCount:  atomic.Int64{},
 		deliveredLogCount: atomic.Int64{},
-		Logs:              consumertest.LogsSink{},
+		Logs:              conslogtest.LogsSink{},
 	}
 }

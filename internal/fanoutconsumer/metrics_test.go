@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/cmetric/cmetrictest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -23,15 +24,15 @@ func TestMetricsNotMultiplexing(t *testing.T) {
 }
 
 func TestMetricssNotMultiplexingMutating(t *testing.T) {
-	p := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
+	p := &mutatingMetricsSink{MetricsSink: new(cmetrictest.MetricsSink)}
 	lfc := NewMetrics([]cmetric.Metrics{p})
 	assert.True(t, lfc.Capabilities().MutatesData)
 }
 
 func TestMetricsMultiplexingNonMutating(t *testing.T) {
-	p1 := new(consumertest.MetricsSink)
-	p2 := new(consumertest.MetricsSink)
-	p3 := new(consumertest.MetricsSink)
+	p1 := new(cmetrictest.MetricsSink)
+	p2 := new(cmetrictest.MetricsSink)
+	p3 := new(cmetrictest.MetricsSink)
 
 	mfc := NewMetrics([]cmetric.Metrics{p1, p2, p3})
 	assert.False(t, mfc.Capabilities().MutatesData)
@@ -65,9 +66,9 @@ func TestMetricsMultiplexingNonMutating(t *testing.T) {
 }
 
 func TestMetricsMultiplexingMutating(t *testing.T) {
-	p1 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
-	p2 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
-	p3 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
+	p1 := &mutatingMetricsSink{MetricsSink: new(cmetrictest.MetricsSink)}
+	p2 := &mutatingMetricsSink{MetricsSink: new(cmetrictest.MetricsSink)}
+	p3 := &mutatingMetricsSink{MetricsSink: new(cmetrictest.MetricsSink)}
 
 	mfc := NewMetrics([]cmetric.Metrics{p1, p2, p3})
 	assert.True(t, mfc.Capabilities().MutatesData)
@@ -102,9 +103,9 @@ func TestMetricsMultiplexingMutating(t *testing.T) {
 }
 
 func TestReadOnlyMetricsMultiplexingMixFirstMutating(t *testing.T) {
-	p1 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
-	p2 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
-	p3 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
+	p1 := &mutatingMetricsSink{MetricsSink: new(cmetrictest.MetricsSink)}
+	p2 := &mutatingMetricsSink{MetricsSink: new(cmetrictest.MetricsSink)}
+	p3 := &mutatingMetricsSink{MetricsSink: new(cmetrictest.MetricsSink)}
 
 	mfc := NewMetrics([]cmetric.Metrics{p1, p2, p3})
 	assert.True(t, mfc.Capabilities().MutatesData)
@@ -139,9 +140,9 @@ func TestReadOnlyMetricsMultiplexingMixFirstMutating(t *testing.T) {
 }
 
 func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
-	p1 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
-	p2 := new(consumertest.MetricsSink)
-	p3 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
+	p1 := &mutatingMetricsSink{MetricsSink: new(cmetrictest.MetricsSink)}
+	p2 := new(cmetrictest.MetricsSink)
+	p3 := &mutatingMetricsSink{MetricsSink: new(cmetrictest.MetricsSink)}
 
 	mfc := NewMetrics([]cmetric.Metrics{p1, p2, p3})
 	assert.False(t, mfc.Capabilities().MutatesData)
@@ -177,9 +178,9 @@ func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
 }
 
 func TestMetricsMultiplexingMixLastNonMutating(t *testing.T) {
-	p1 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
-	p2 := &mutatingMetricsSink{MetricsSink: new(consumertest.MetricsSink)}
-	p3 := new(consumertest.MetricsSink)
+	p1 := &mutatingMetricsSink{MetricsSink: new(cmetrictest.MetricsSink)}
+	p2 := &mutatingMetricsSink{MetricsSink: new(cmetrictest.MetricsSink)}
+	p3 := new(cmetrictest.MetricsSink)
 
 	mfc := NewMetrics([]cmetric.Metrics{p1, p2, p3})
 	assert.False(t, mfc.Capabilities().MutatesData)
@@ -216,7 +217,7 @@ func TestMetricsMultiplexingMixLastNonMutating(t *testing.T) {
 func TestMetricsWhenErrors(t *testing.T) {
 	p1 := mutatingErr{Consumer: consumertest.NewErr(errors.New("my error"))}
 	p2 := consumertest.NewErr(errors.New("my error"))
-	p3 := new(consumertest.MetricsSink)
+	p3 := new(cmetrictest.MetricsSink)
 
 	mfc := NewMetrics([]cmetric.Metrics{p1, p2, p3})
 	md := testdata.GenerateMetrics(1)
@@ -232,7 +233,7 @@ func TestMetricsWhenErrors(t *testing.T) {
 }
 
 type mutatingMetricsSink struct {
-	*consumertest.MetricsSink
+	*cmetrictest.MetricsSink
 }
 
 func (mts *mutatingMetricsSink) Capabilities() consumer.Capabilities {

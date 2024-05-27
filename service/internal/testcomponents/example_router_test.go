@@ -14,9 +14,11 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/cmetric/cmetrictest"
 	"go.opentelemetry.io/collector/consumer/conslog"
-	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/conslog/conslogtest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
+	"go.opentelemetry.io/collector/consumer/ctrace/ctracetest"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
@@ -36,8 +38,8 @@ func TestTracesRouter(t *testing.T) {
 	leftID := component.MustNewIDWithName("sink", "left")
 	rightID := component.MustNewIDWithName("sink", "right")
 
-	sinkLeft := new(consumertest.TracesSink)
-	sinkRight := new(consumertest.TracesSink)
+	sinkLeft := new(ctracetest.TracesSink)
+	sinkRight := new(ctracetest.TracesSink)
 
 	// The service will build a router to give to every connector.
 	// Many connectors will just call router.ConsumeTraces,
@@ -75,8 +77,8 @@ func TestMetricsRouter(t *testing.T) {
 	leftID := component.MustNewIDWithName("sink", "left")
 	rightID := component.MustNewIDWithName("sink", "right")
 
-	sinkLeft := new(consumertest.MetricsSink)
-	sinkRight := new(consumertest.MetricsSink)
+	sinkLeft := new(cmetrictest.MetricsSink)
+	sinkRight := new(cmetrictest.MetricsSink)
 
 	// The service will build a router to give to every connector.
 	// Many connectors will just call router.ConsumeMetrics,
@@ -114,8 +116,8 @@ func TestLogsRouter(t *testing.T) {
 	leftID := component.MustNewIDWithName("sink", "left")
 	rightID := component.MustNewIDWithName("sink", "right")
 
-	sinkLeft := new(consumertest.LogsSink)
-	sinkRight := new(consumertest.LogsSink)
+	sinkLeft := new(conslogtest.LogsSink)
+	sinkRight := new(conslogtest.LogsSink)
 
 	// The service will build a router to give to every connector.
 	// Many connectors will just call router.ConsumeLogs,

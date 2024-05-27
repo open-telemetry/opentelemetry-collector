@@ -13,14 +13,16 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/cmetric/cmetrictest"
+	"go.opentelemetry.io/collector/consumer/conslog/conslogtest"
+	"go.opentelemetry.io/collector/consumer/ctrace/ctracetest"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/processor"
 )
 
 func verifyTracesDoesNotProduceAfterShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
 	// Create a proc and output its produce to a sink.
-	nextSink := new(consumertest.TracesSink)
+	nextSink := new(ctracetest.TracesSink)
 	proc, err := factory.CreateTracesProcessor(context.Background(), NewNopCreateSettings(), cfg, nextSink)
 	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 		return
@@ -44,7 +46,7 @@ func verifyTracesDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fac
 
 func verifyLogsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
 	// Create a proc and output its produce to a sink.
-	nextSink := new(consumertest.LogsSink)
+	nextSink := new(conslogtest.LogsSink)
 	proc, err := factory.CreateLogsProcessor(context.Background(), NewNopCreateSettings(), cfg, nextSink)
 	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 		return
@@ -68,7 +70,7 @@ func verifyLogsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Facto
 
 func verifyMetricsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
 	// Create a proc and output its produce to a sink.
-	nextSink := new(consumertest.MetricsSink)
+	nextSink := new(cmetrictest.MetricsSink)
 	proc, err := factory.CreateMetricsProcessor(context.Background(), NewNopCreateSettings(), cfg, nextSink)
 	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 		return

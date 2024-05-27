@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
+	"go.opentelemetry.io/collector/consumer/ctrace/ctracetest"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
@@ -23,15 +24,15 @@ func TestTracesNotMultiplexing(t *testing.T) {
 }
 
 func TestTracesNotMultiplexingMutating(t *testing.T) {
-	p := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
+	p := &mutatingTracesSink{TracesSink: new(ctracetest.TracesSink)}
 	lfc := NewTraces([]ctrace.Traces{p})
 	assert.True(t, lfc.Capabilities().MutatesData)
 }
 
 func TestTracesMultiplexingNonMutating(t *testing.T) {
-	p1 := new(consumertest.TracesSink)
-	p2 := new(consumertest.TracesSink)
-	p3 := new(consumertest.TracesSink)
+	p1 := new(ctracetest.TracesSink)
+	p2 := new(ctracetest.TracesSink)
+	p3 := new(ctracetest.TracesSink)
 
 	tfc := NewTraces([]ctrace.Traces{p1, p2, p3})
 	assert.False(t, tfc.Capabilities().MutatesData)
@@ -65,9 +66,9 @@ func TestTracesMultiplexingNonMutating(t *testing.T) {
 }
 
 func TestTracesMultiplexingMutating(t *testing.T) {
-	p1 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
-	p2 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
-	p3 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
+	p1 := &mutatingTracesSink{TracesSink: new(ctracetest.TracesSink)}
+	p2 := &mutatingTracesSink{TracesSink: new(ctracetest.TracesSink)}
+	p3 := &mutatingTracesSink{TracesSink: new(ctracetest.TracesSink)}
 
 	tfc := NewTraces([]ctrace.Traces{p1, p2, p3})
 	assert.True(t, tfc.Capabilities().MutatesData)
@@ -102,9 +103,9 @@ func TestTracesMultiplexingMutating(t *testing.T) {
 }
 
 func TestReadOnlyTracesMultiplexingMutating(t *testing.T) {
-	p1 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
-	p2 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
-	p3 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
+	p1 := &mutatingTracesSink{TracesSink: new(ctracetest.TracesSink)}
+	p2 := &mutatingTracesSink{TracesSink: new(ctracetest.TracesSink)}
+	p3 := &mutatingTracesSink{TracesSink: new(ctracetest.TracesSink)}
 
 	tfc := NewTraces([]ctrace.Traces{p1, p2, p3})
 	assert.True(t, tfc.Capabilities().MutatesData)
@@ -140,9 +141,9 @@ func TestReadOnlyTracesMultiplexingMutating(t *testing.T) {
 }
 
 func TestTracesMultiplexingMixLastMutating(t *testing.T) {
-	p1 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
-	p2 := new(consumertest.TracesSink)
-	p3 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
+	p1 := &mutatingTracesSink{TracesSink: new(ctracetest.TracesSink)}
+	p2 := new(ctracetest.TracesSink)
+	p3 := &mutatingTracesSink{TracesSink: new(ctracetest.TracesSink)}
 
 	tfc := NewTraces([]ctrace.Traces{p1, p2, p3})
 	assert.False(t, tfc.Capabilities().MutatesData)
@@ -178,9 +179,9 @@ func TestTracesMultiplexingMixLastMutating(t *testing.T) {
 }
 
 func TestTracesMultiplexingMixLastNonMutating(t *testing.T) {
-	p1 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
-	p2 := &mutatingTracesSink{TracesSink: new(consumertest.TracesSink)}
-	p3 := new(consumertest.TracesSink)
+	p1 := &mutatingTracesSink{TracesSink: new(ctracetest.TracesSink)}
+	p2 := &mutatingTracesSink{TracesSink: new(ctracetest.TracesSink)}
+	p3 := new(ctracetest.TracesSink)
 
 	tfc := NewTraces([]ctrace.Traces{p1, p2, p3})
 	assert.False(t, tfc.Capabilities().MutatesData)
@@ -217,7 +218,7 @@ func TestTracesMultiplexingMixLastNonMutating(t *testing.T) {
 func TestTracesWhenErrors(t *testing.T) {
 	p1 := mutatingErr{Consumer: consumertest.NewErr(errors.New("my error"))}
 	p2 := consumertest.NewErr(errors.New("my error"))
-	p3 := new(consumertest.TracesSink)
+	p3 := new(ctracetest.TracesSink)
 
 	tfc := NewTraces([]ctrace.Traces{p1, p2, p3})
 	td := testdata.GenerateTraces(1)
@@ -233,7 +234,7 @@ func TestTracesWhenErrors(t *testing.T) {
 }
 
 type mutatingTracesSink struct {
-	*consumertest.TracesSink
+	*ctracetest.TracesSink
 }
 
 func (mts *mutatingTracesSink) Capabilities() consumer.Capabilities {

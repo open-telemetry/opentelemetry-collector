@@ -24,9 +24,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/cmetric"
+	"go.opentelemetry.io/collector/consumer/cmetric/cmetrictest"
 	"go.opentelemetry.io/collector/consumer/conslog"
+	"go.opentelemetry.io/collector/consumer/conslog/conslogtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
+	"go.opentelemetry.io/collector/consumer/ctrace/ctracetest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -108,7 +111,7 @@ func TestTraceRoundTrip(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			sink := new(consumertest.TracesSink)
+			sink := new(ctracetest.TracesSink)
 			startTracesReceiver(t, addr, sink)
 			exp := startTracesExporter(t, test.baseURL, test.overrideURL)
 
@@ -161,7 +164,7 @@ func TestMetricsRoundTrip(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			sink := new(consumertest.MetricsSink)
+			sink := new(cmetrictest.MetricsSink)
 			startMetricsReceiver(t, addr, sink)
 			exp := startMetricsExporter(t, test.baseURL, test.overrideURL)
 
@@ -214,7 +217,7 @@ func TestLogsRoundTrip(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			sink := new(consumertest.LogsSink)
+			sink := new(conslogtest.LogsSink)
 			startLogsReceiver(t, addr, sink)
 			exp := startLogsExporter(t, test.baseURL, test.overrideURL)
 

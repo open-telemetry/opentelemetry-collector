@@ -14,13 +14,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/conslog"
-	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/conslog/conslogtest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 type mutatingLogsSink struct {
-	*consumertest.LogsSink
+	*conslogtest.LogsSink
 }
 
 func (mts *mutatingLogsSink) Capabilities() consumer.Capabilities {
@@ -52,9 +52,9 @@ func fuzzLogs(numIDs, numCons, numLogs int) func(*testing.T) {
 			allIDs = append(allIDs, component.MustNewIDWithName("sink", strconv.Itoa(numCons)))
 			// Random chance for each consumer to be mutating
 			if (numCons+numLogs+i)%4 == 0 {
-				allCons = append(allCons, &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)})
+				allCons = append(allCons, &mutatingLogsSink{LogsSink: new(conslogtest.LogsSink)})
 			} else {
-				allCons = append(allCons, new(consumertest.LogsSink))
+				allCons = append(allCons, new(conslogtest.LogsSink))
 			}
 			allConsMap[allIDs[i]] = allCons[i]
 		}
@@ -91,7 +91,7 @@ func fuzzLogs(numIDs, numCons, numLogs int) func(*testing.T) {
 			for id := range expected {
 				logs := []plog.Logs{}
 				switch con := allConsMap[id].(type) {
-				case *consumertest.LogsSink:
+				case *conslogtest.LogsSink:
 					logs = con.AllLogs()
 				case *mutatingLogsSink:
 					logs = con.AllLogs()
@@ -112,8 +112,8 @@ func TestLogsRouterConsumers(t *testing.T) {
 	fooID := component.MustNewID("foo")
 	barID := component.MustNewID("bar")
 
-	foo := new(consumertest.LogsSink)
-	bar := new(consumertest.LogsSink)
+	foo := new(conslogtest.LogsSink)
+	bar := new(conslogtest.LogsSink)
 	r := NewLogsRouter(map[component.ID]conslog.Logs{fooID: foo, barID: bar})
 
 	rcs := r.PipelineIDs()

@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/conslog"
+	"go.opentelemetry.io/collector/consumer/conslog/conslogtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -23,15 +24,15 @@ func TestLogsNotMultiplexing(t *testing.T) {
 }
 
 func TestLogsNotMultiplexingMutating(t *testing.T) {
-	p := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
+	p := &mutatingLogsSink{LogsSink: new(conslogtest.LogsSink)}
 	lfc := NewLogs([]conslog.Logs{p})
 	assert.True(t, lfc.Capabilities().MutatesData)
 }
 
 func TestLogsMultiplexingNonMutating(t *testing.T) {
-	p1 := new(consumertest.LogsSink)
-	p2 := new(consumertest.LogsSink)
-	p3 := new(consumertest.LogsSink)
+	p1 := new(conslogtest.LogsSink)
+	p2 := new(conslogtest.LogsSink)
+	p3 := new(conslogtest.LogsSink)
 
 	lfc := NewLogs([]conslog.Logs{p1, p2, p3})
 	assert.False(t, lfc.Capabilities().MutatesData)
@@ -65,9 +66,9 @@ func TestLogsMultiplexingNonMutating(t *testing.T) {
 }
 
 func TestLogsMultiplexingMutating(t *testing.T) {
-	p1 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
-	p2 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
-	p3 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
+	p1 := &mutatingLogsSink{LogsSink: new(conslogtest.LogsSink)}
+	p2 := &mutatingLogsSink{LogsSink: new(conslogtest.LogsSink)}
+	p3 := &mutatingLogsSink{LogsSink: new(conslogtest.LogsSink)}
 
 	lfc := NewLogs([]conslog.Logs{p1, p2, p3})
 	assert.True(t, lfc.Capabilities().MutatesData)
@@ -102,9 +103,9 @@ func TestLogsMultiplexingMutating(t *testing.T) {
 }
 
 func TestReadOnlyLogsMultiplexingMutating(t *testing.T) {
-	p1 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
-	p2 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
-	p3 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
+	p1 := &mutatingLogsSink{LogsSink: new(conslogtest.LogsSink)}
+	p2 := &mutatingLogsSink{LogsSink: new(conslogtest.LogsSink)}
+	p3 := &mutatingLogsSink{LogsSink: new(conslogtest.LogsSink)}
 
 	lfc := NewLogs([]conslog.Logs{p1, p2, p3})
 	assert.True(t, lfc.Capabilities().MutatesData)
@@ -139,9 +140,9 @@ func TestReadOnlyLogsMultiplexingMutating(t *testing.T) {
 }
 
 func TestLogsMultiplexingMixLastMutating(t *testing.T) {
-	p1 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
-	p2 := new(consumertest.LogsSink)
-	p3 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
+	p1 := &mutatingLogsSink{LogsSink: new(conslogtest.LogsSink)}
+	p2 := new(conslogtest.LogsSink)
+	p3 := &mutatingLogsSink{LogsSink: new(conslogtest.LogsSink)}
 
 	lfc := NewLogs([]conslog.Logs{p1, p2, p3})
 	assert.False(t, lfc.Capabilities().MutatesData)
@@ -177,9 +178,9 @@ func TestLogsMultiplexingMixLastMutating(t *testing.T) {
 }
 
 func TestLogsMultiplexingMixLastNonMutating(t *testing.T) {
-	p1 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
-	p2 := &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)}
-	p3 := new(consumertest.LogsSink)
+	p1 := &mutatingLogsSink{LogsSink: new(conslogtest.LogsSink)}
+	p2 := &mutatingLogsSink{LogsSink: new(conslogtest.LogsSink)}
+	p3 := new(conslogtest.LogsSink)
 
 	lfc := NewLogs([]conslog.Logs{p1, p2, p3})
 	assert.False(t, lfc.Capabilities().MutatesData)
@@ -216,7 +217,7 @@ func TestLogsMultiplexingMixLastNonMutating(t *testing.T) {
 func TestLogsWhenErrors(t *testing.T) {
 	p1 := mutatingErr{Consumer: consumertest.NewErr(errors.New("my error"))}
 	p2 := consumertest.NewErr(errors.New("my error"))
-	p3 := new(consumertest.LogsSink)
+	p3 := new(conslogtest.LogsSink)
 
 	lfc := NewLogs([]conslog.Logs{p1, p2, p3})
 	ld := testdata.GenerateLogs(1)
@@ -232,7 +233,7 @@ func TestLogsWhenErrors(t *testing.T) {
 }
 
 type mutatingLogsSink struct {
-	*consumertest.LogsSink
+	*conslogtest.LogsSink
 }
 
 func (mts *mutatingLogsSink) Capabilities() consumer.Capabilities {

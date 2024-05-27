@@ -35,8 +35,11 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/cmetric/cmetrictest"
+	"go.opentelemetry.io/collector/consumer/conslog/conslogtest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/ctrace/ctracetest"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -559,7 +562,7 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
+	sink := &errOrSinkConsumer{TracesSink: new(ctracetest.TracesSink)}
 
 	recv := newGRPCReceiver(t, tt.TelemetrySettings(), addr, sink)
 	require.NotNil(t, recv)
@@ -640,7 +643,7 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
+	sink := &errOrSinkConsumer{TracesSink: new(ctracetest.TracesSink)}
 
 	recv := newHTTPReceiver(t, tt.TelemetrySettings(), addr, sink)
 	require.NotNil(t, recv)
@@ -990,7 +993,7 @@ func TestShutdown(t *testing.T) {
 	endpointGrpc := testutil.GetAvailableLocalAddress(t)
 	endpointHTTP := testutil.GetAvailableLocalAddress(t)
 
-	nextSink := new(consumertest.TracesSink)
+	nextSink := new(ctracetest.TracesSink)
 
 	// Create OTLP receiver with gRPC and HTTP protocols.
 	factory := NewFactory()
@@ -1097,18 +1100,18 @@ func exportTraces(cc *grpc.ClientConn, td ptrace.Traces) error {
 
 type errOrSinkConsumer struct {
 	consumertest.Consumer
-	*consumertest.TracesSink
-	*consumertest.MetricsSink
-	*consumertest.LogsSink
+	*ctracetest.TracesSink
+	*cmetrictest.MetricsSink
+	*conslogtest.LogsSink
 	mu           sync.Mutex
 	consumeError error // to be returned by ConsumeTraces, if set
 }
 
 func newErrOrSinkConsumer() *errOrSinkConsumer {
 	return &errOrSinkConsumer{
-		TracesSink:  new(consumertest.TracesSink),
-		MetricsSink: new(consumertest.MetricsSink),
-		LogsSink:    new(consumertest.LogsSink),
+		TracesSink:  new(ctracetest.TracesSink),
+		MetricsSink: new(cmetrictest.MetricsSink),
+		LogsSink:    new(conslogtest.LogsSink),
 	}
 }
 

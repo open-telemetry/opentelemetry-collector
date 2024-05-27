@@ -10,7 +10,9 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector/connectortest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/cmetric/cmetrictest"
+	"go.opentelemetry.io/collector/consumer/conslog/conslogtest"
+	"go.opentelemetry.io/collector/consumer/ctrace/ctracetest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -25,17 +27,17 @@ func TestForward(t *testing.T) {
 	set := connectortest.NewNopCreateSettings()
 	host := componenttest.NewNopHost()
 
-	tracesSink := new(consumertest.TracesSink)
+	tracesSink := new(ctracetest.TracesSink)
 	tracesToTraces, err := f.CreateTracesToTraces(ctx, set, cfg, tracesSink)
 	assert.NoError(t, err)
 	assert.NotNil(t, tracesToTraces)
 
-	metricsSink := new(consumertest.MetricsSink)
+	metricsSink := new(cmetrictest.MetricsSink)
 	metricsToMetrics, err := f.CreateMetricsToMetrics(ctx, set, cfg, metricsSink)
 	assert.NoError(t, err)
 	assert.NotNil(t, metricsToMetrics)
 
-	logsSink := new(consumertest.LogsSink)
+	logsSink := new(conslogtest.LogsSink)
 	logsToLogs, err := f.CreateLogsToLogs(ctx, set, cfg, logsSink)
 	assert.NoError(t, err)
 	assert.NotNil(t, logsToLogs)

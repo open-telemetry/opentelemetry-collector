@@ -23,9 +23,9 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
 	"go.opentelemetry.io/collector/consumer/ctrace/ctraceerror"
+	"go.opentelemetry.io/collector/consumer/ctrace/ctracetest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
@@ -160,7 +160,7 @@ func TestTracesExporter_WithPersistentQueue(t *testing.T) {
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
 	rCfg := configretry.NewDefaultBackOffConfig()
-	ts := consumertest.TracesSink{}
+	ts := ctracetest.TracesSink{}
 	set := exportertest.NewNopCreateSettings()
 	set.ID = component.MustNewIDWithName("test_traces", "with_persistent_queue")
 	te, err := NewTracesExporter(context.Background(), set, &fakeTracesExporterConfig, ts.ConsumeTraces, WithRetry(rCfg), WithQueue(qCfg))

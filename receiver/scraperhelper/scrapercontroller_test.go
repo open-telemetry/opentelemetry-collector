@@ -17,7 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/cmetric/cmetrictest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -139,7 +139,7 @@ func TestScrapeController(t *testing.T) {
 			tickerCh := make(chan time.Time)
 			options = append(options, WithTickerChannel(tickerCh))
 
-			sink := new(consumertest.MetricsSink)
+			sink := new(cmetrictest.MetricsSink)
 			cfg := newTestNoDelaySettings()
 			if test.scraperControllerSettings != nil {
 				cfg = test.scraperControllerSettings
@@ -273,7 +273,7 @@ func assertReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	assert.True(t, receiverSpan)
 }
 
-func assertReceiverViews(t *testing.T, tt componenttest.TestTelemetry, sink *consumertest.MetricsSink) {
+func assertReceiverViews(t *testing.T, tt componenttest.TestTelemetry, sink *cmetrictest.MetricsSink) {
 	dataPointCount := 0
 	for _, md := range sink.AllMetrics() {
 		dataPointCount += md.DataPointCount()
@@ -301,7 +301,7 @@ func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnl
 	assert.True(t, scraperSpan)
 }
 
-func assertScraperViews(t *testing.T, tt componenttest.TestTelemetry, expectedErr error, sink *consumertest.MetricsSink) {
+func assertScraperViews(t *testing.T, tt componenttest.TestTelemetry, expectedErr error, sink *cmetrictest.MetricsSink) {
 	expectedScraped := int64(sink.DataPointCount())
 	expectedErrored := int64(0)
 	if expectedErr != nil {
@@ -331,7 +331,7 @@ func TestSingleScrapePerInterval(t *testing.T) {
 	receiver, err := NewScraperControllerReceiver(
 		cfg,
 		receivertest.NewNopCreateSettings(),
-		new(consumertest.MetricsSink),
+		new(cmetrictest.MetricsSink),
 		AddScraper(scp),
 		WithTickerChannel(tickerCh),
 	)
@@ -376,7 +376,7 @@ func TestScrapeControllerStartsOnInit(t *testing.T) {
 			InitialDelay:       0,
 		},
 		receivertest.NewNopCreateSettings(),
-		new(consumertest.MetricsSink),
+		new(cmetrictest.MetricsSink),
 		AddScraper(scp),
 	)
 	require.NoError(t, err, "Must not error when creating scrape controller")
@@ -412,7 +412,7 @@ func TestScrapeControllerInitialDelay(t *testing.T) {
 	r, err := NewScraperControllerReceiver(
 		&cfg,
 		receivertest.NewNopCreateSettings(),
-		new(consumertest.MetricsSink),
+		new(cmetrictest.MetricsSink),
 		AddScraper(scp),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")

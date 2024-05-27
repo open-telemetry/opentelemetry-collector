@@ -18,8 +18,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/cmetric/cmetrictest"
+	"go.opentelemetry.io/collector/consumer/conslog/conslogtest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/ctrace/ctracetest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -79,7 +82,7 @@ func TestProcessorLifecycle(t *testing.T) {
 }
 
 func TestBatchProcessorSpansDelivered(t *testing.T) {
-	sink := new(consumertest.TracesSink)
+	sink := new(ctracetest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
 	creationSet := processortest.NewNopCreateSettings()
@@ -121,7 +124,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 }
 
 func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
-	sink := new(consumertest.TracesSink)
+	sink := new(ctracetest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
 	cfg.SendBatchMaxSize = 130
@@ -170,7 +173,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 
 func testBatchProcessorSentBySize(t *testing.T, tel testTelemetry) {
 	sizer := &ptrace.ProtoMarshaler{}
-	sink := new(consumertest.TracesSink)
+	sink := new(ctracetest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 20
 	cfg.SendBatchSize = uint32(sendBatchSize)
@@ -224,7 +227,7 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 }
 
 func testBatchProcessorSentBySizeWithMaxSize(t *testing.T, tel testTelemetry) {
-	sink := new(consumertest.TracesSink)
+	sink := new(ctracetest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 20
 	sendBatchMaxSize := 37
@@ -268,7 +271,7 @@ func testBatchProcessorSentBySizeWithMaxSize(t *testing.T, tel testTelemetry) {
 }
 
 func TestBatchProcessorSentByTimeout(t *testing.T) {
-	sink := new(consumertest.TracesSink)
+	sink := new(ctracetest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 100
 	cfg.SendBatchSize = uint32(sendBatchSize)
@@ -323,7 +326,7 @@ func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 		Timeout:       3 * time.Second,
 		SendBatchSize: 1000,
 	}
-	sink := new(consumertest.TracesSink)
+	sink := new(ctracetest.TracesSink)
 
 	creationSet := processortest.NewNopCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
@@ -354,7 +357,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 
 	requestCount := 100
 	metricsPerRequest := 5
-	sink := new(consumertest.MetricsSink)
+	sink := new(cmetrictest.MetricsSink)
 
 	creationSet := processortest.NewNopCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
@@ -411,7 +414,7 @@ func testBatchMetricProcessorBatchSize(t *testing.T, tel testTelemetry) {
 	metricsPerRequest := 5
 	dataPointsPerMetric := 2 // Since the int counter uses two datapoints.
 	dataPointsPerRequest := metricsPerRequest * dataPointsPerMetric
-	sink := new(consumertest.MetricsSink)
+	sink := new(cmetrictest.MetricsSink)
 
 	creationSet := tel.NewProcessorCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
@@ -478,7 +481,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	}
 	requestCount := 5
 	metricsPerRequest := 10
-	sink := new(consumertest.MetricsSink)
+	sink := new(cmetrictest.MetricsSink)
 
 	creationSet := processortest.NewNopCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
@@ -527,7 +530,7 @@ func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 	}
 	requestCount := 5
 	metricsPerRequest := 10
-	sink := new(consumertest.MetricsSink)
+	sink := new(cmetrictest.MetricsSink)
 
 	creationSet := processortest.NewNopCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
@@ -673,7 +676,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 
 	requestCount := 100
 	logsPerRequest := 5
-	sink := new(consumertest.LogsSink)
+	sink := new(conslogtest.LogsSink)
 
 	creationSet := processortest.NewNopCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
@@ -728,7 +731,7 @@ func testBatchLogProcessorBatchSize(t *testing.T, tel testTelemetry) {
 
 	requestCount := 100
 	logsPerRequest := 5
-	sink := new(consumertest.LogsSink)
+	sink := new(conslogtest.LogsSink)
 
 	creationSet := tel.NewProcessorCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
@@ -776,7 +779,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	}
 	requestCount := 5
 	logsPerRequest := 10
-	sink := new(consumertest.LogsSink)
+	sink := new(conslogtest.LogsSink)
 
 	creationSet := processortest.NewNopCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
@@ -825,7 +828,7 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	}
 	requestCount := 5
 	logsPerRequest := 10
-	sink := new(consumertest.LogsSink)
+	sink := new(conslogtest.LogsSink)
 
 	creationSet := processortest.NewNopCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
@@ -873,7 +876,7 @@ func TestShutdown(t *testing.T) {
 }
 
 type metadataTracesSink struct {
-	*consumertest.TracesSink
+	*ctracetest.TracesSink
 
 	lock               sync.Mutex
 	spanCountByToken12 map[string]int
@@ -899,7 +902,7 @@ func (mts *metadataTracesSink) ConsumeTraces(ctx context.Context, td ptrace.Trac
 
 func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 	sink := &metadataTracesSink{
-		TracesSink:         &consumertest.TracesSink{},
+		TracesSink:         &ctracetest.TracesSink{},
 		spanCountByToken12: map[string]int{},
 	}
 	cfg := createDefaultConfig().(*Config)
@@ -996,7 +999,7 @@ func TestBatchProcessorDuplicateMetadataKeys(t *testing.T) {
 func TestBatchProcessorMetadataCardinalityLimit(t *testing.T) {
 	const cardLimit = 10
 
-	sink := new(consumertest.TracesSink)
+	sink := new(ctracetest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetadataKeys = []string{"token"}
 	cfg.MetadataCardinalityLimit = cardLimit
@@ -1041,7 +1044,7 @@ func TestBatchZeroConfig(t *testing.T) {
 
 	const requestCount = 5
 	const logsPerRequest = 10
-	sink := new(consumertest.LogsSink)
+	sink := new(conslogtest.LogsSink)
 	creationSet := processortest.NewNopCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)
@@ -1082,7 +1085,7 @@ func TestBatchSplitOnly(t *testing.T) {
 
 	require.NoError(t, cfg.Validate())
 
-	sink := new(consumertest.LogsSink)
+	sink := new(conslogtest.LogsSink)
 	creationSet := processortest.NewNopCreateSettings()
 	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg)

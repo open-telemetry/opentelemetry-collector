@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
+	"go.opentelemetry.io/collector/consumer/ctrace/ctracetest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -30,7 +31,7 @@ func TestExport(t *testing.T) {
 	td := testdata.GenerateTraces(1)
 	req := ptraceotlp.NewExportRequestFromTraces(td)
 
-	traceSink := new(consumertest.TracesSink)
+	traceSink := new(ctracetest.TracesSink)
 	traceClient := makeTraceServiceClient(t, traceSink)
 	resp, err := traceClient.Export(context.Background(), req)
 	require.NoError(t, err, "Failed to export trace: %v", err)
@@ -41,7 +42,7 @@ func TestExport(t *testing.T) {
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
-	traceSink := new(consumertest.TracesSink)
+	traceSink := new(ctracetest.TracesSink)
 	traceClient := makeTraceServiceClient(t, traceSink)
 	resp, err := traceClient.Export(context.Background(), ptraceotlp.NewExportRequest())
 	assert.NoError(t, err, "Failed to export trace: %v", err)
