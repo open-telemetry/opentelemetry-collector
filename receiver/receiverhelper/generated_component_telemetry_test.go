@@ -70,3 +70,7 @@ func (tt *componentTestTelemetry) len(got metricdata.ResourceMetrics) int {
 
 	return metricsCount
 }
+
+func (tt *componentTestTelemetry) Shutdown(ctx context.Context) error {
+	return tt.meterProvider.Shutdown(ctx)
+}

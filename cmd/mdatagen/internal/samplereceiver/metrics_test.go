@@ -58,4 +58,5 @@ func TestComponentTelemetry(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, tt.Shutdown(context.Background()))
 }
