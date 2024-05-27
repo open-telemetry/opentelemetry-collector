@@ -1,16 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package consumertest // import "go.opentelemetry.io/collector/consumer/consumertest"
+package consumertest // import "go.opentelemetry.io/collector/consumer/internal/consumertest"
 
 import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/cmetric"
-	"go.opentelemetry.io/collector/consumer/conslog"
-	"go.opentelemetry.io/collector/consumer/ctrace"
-	"go.opentelemetry.io/collector/consumer/internal/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -36,15 +32,9 @@ type Consumer interface {
 	unexported()
 }
 
-var _ conslog.Logs = (Consumer)(nil)
-var _ cmetric.Metrics = (Consumer)(nil)
-var _ ctrace.Traces = (Consumer)(nil)
+type NonMutatingConsumer struct{}
 
-type baseConsumer struct {
-	consumertest.NonMutatingConsumer
-	ctrace.ConsumeTracesFunc
-	cmetric.ConsumeMetricsFunc
-	conslog.ConsumeLogsFunc
+// Capabilities returns the base consumer capabilities.
+func (bc NonMutatingConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
-
-func (bc baseConsumer) unexported() {}
