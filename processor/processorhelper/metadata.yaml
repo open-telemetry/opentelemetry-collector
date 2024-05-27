@@ -1,7 +1,8 @@
 type: processorhelper
 
 status:
-  class: pkg
+  class: processor
+  not_component: true
   stability:
     beta: [traces, metrics, logs]
   distributions: [core, contrib]
