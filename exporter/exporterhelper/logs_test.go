@@ -45,7 +45,7 @@ var (
 func TestLogsRequest(t *testing.T) {
 	lr := newLogsRequest(testdata.GenerateLogs(1), nil)
 
-	logErr := consumererror.NewLogs(errors.New("some error"), plog.NewLogs())
+	logErr := conslog.NewLogs(errors.New("some error"), plog.NewLogs())
 	assert.EqualValues(
 		t,
 		newLogsRequest(plog.NewLogs(), nil),

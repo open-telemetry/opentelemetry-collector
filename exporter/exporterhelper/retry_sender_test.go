@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/ctrace/ctraceerror"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -99,7 +100,7 @@ func TestQueuedRetry_OnError(t *testing.T) {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
 
-	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
+	traceErr := ctraceerror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
 	mockR := newMockRequest(2, traceErr)
 	ocs := be.obsrepSender.(*observabilityConsumerSender)
 	ocs.run(func() {

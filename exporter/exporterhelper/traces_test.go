@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/ctrace"
+	"go.opentelemetry.io/collector/consumer/ctrace/ctraceerror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/queue"
@@ -45,7 +46,7 @@ var (
 func TestTracesRequest(t *testing.T) {
 	mr := newTracesRequest(testdata.GenerateTraces(1), nil)
 
-	traceErr := consumererror.NewTraces(errors.New("some error"), ptrace.NewTraces())
+	traceErr := ctraceerror.NewTraces(errors.New("some error"), ptrace.NewTraces())
 	assert.EqualValues(t, newTracesRequest(ptrace.NewTraces(), nil), mr.(RequestErrorHandler).OnError(traceErr))
 }
 
