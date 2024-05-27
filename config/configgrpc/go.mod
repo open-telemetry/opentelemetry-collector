@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/config/configgrpc
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/mostynb/go-grpc-compression v1.2.2
@@ -21,7 +21,7 @@ require (
 	go.opentelemetry.io/otel v1.27.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/grpc v1.63.2
+	google.golang.org/grpc v1.64.0
 )
 
 require (

@@ -67,7 +67,7 @@ fmt: $(GOIMPORTS)
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.21
+	$(GOCMD) mod tidy -compat=1.21.0
 
 .PHONY: lint
 lint: $(LINT)
