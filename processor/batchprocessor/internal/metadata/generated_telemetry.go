@@ -6,9 +6,11 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -26,20 +28,35 @@ type TelemetryBuilder struct {
 	ProcessorBatchBatchSendSizeBytes   metric.Int64Histogram
 	ProcessorBatchBatchSizeTriggerSend metric.Int64Counter
 	ProcessorBatchTimeoutTriggerSend   metric.Int64Counter
+	level                              configtelemetry.Level
 }
 
 // telemetryBuilderOption applies changes to default builder.
 type telemetryBuilderOption func(*TelemetryBuilder)
 
+// WithLevel sets the current telemetry level for the component.
+func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.level = lvl
+	}
+}
+
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{}
+	builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
 	for _, op := range options {
 		op(&builder)
 	}
-	var err, errs error
-	meter := Meter(settings)
+	var (
+		err, errs error
+		meter     metric.Meter
+	)
+	if builder.level >= configtelemetry.LevelNormal {
+		meter = Meter(settings)
+	} else {
+		meter = noop.Meter{}
+	}
 	builder.ProcessorBatchBatchSendSize, err = meter.Int64Histogram(
 		"processor_batch_batch_send_size",
 		metric.WithDescription("Number of units in the batch"),

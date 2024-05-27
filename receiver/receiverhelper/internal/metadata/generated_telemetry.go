@@ -6,9 +6,11 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -28,20 +30,35 @@ type TelemetryBuilder struct {
 	ReceiverRefusedLogRecords    metric.Int64Counter
 	ReceiverRefusedMetricPoints  metric.Int64Counter
 	ReceiverRefusedSpans         metric.Int64Counter
+	level                        configtelemetry.Level
 }
 
 // telemetryBuilderOption applies changes to default builder.
 type telemetryBuilderOption func(*TelemetryBuilder)
 
+// WithLevel sets the current telemetry level for the component.
+func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.level = lvl
+	}
+}
+
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{}
+	builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
 	for _, op := range options {
 		op(&builder)
 	}
-	var err, errs error
-	meter := Meter(settings)
+	var (
+		err, errs error
+		meter     metric.Meter
+	)
+	if builder.level >= configtelemetry.LevelBasic {
+		meter = Meter(settings)
+	} else {
+		meter = noop.Meter{}
+	}
 	builder.ReceiverAcceptedLogRecords, err = meter.Int64Counter(
 		"receiver_accepted_log_records",
 		metric.WithDescription("Number of log records successfully pushed into the pipeline."),

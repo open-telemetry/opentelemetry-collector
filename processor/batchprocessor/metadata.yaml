@@ -9,6 +9,7 @@ status:
 tests:
 
 telemetry:
+  level: normal
   metrics:
     processor_batch_batch_size_trigger_send:
       enabled: true
