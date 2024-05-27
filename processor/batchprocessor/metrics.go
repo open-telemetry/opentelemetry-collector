@@ -70,8 +70,8 @@ func (bpt *batchProcessorTelemetry) createOtelMetrics(set component.TelemetrySet
 	errors = multierr.Append(errors, err)
 
 	bpt.batchMetadataCardinality, err = meter.Int64ObservableUpDownCounter(
-		processorhelper.BuildCustomMetricName(typeStr, ""),
-		metric.WithDescription(""),
+		processorhelper.BuildCustomMetricName(typeStr, "metadata_cardinality"),
+		metric.WithDescription("Number of distinct metadata value combinations being processed"),
 		metric.WithUnit("1"),
 		metric.WithInt64Callback(func(_ context.Context, obs metric.Int64Observer) error {
 			obs.Observe(int64(currentMetadataCardinality()))
